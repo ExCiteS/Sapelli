@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/scrollView"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/header"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Select the phone number of recipient"
+            tools:ignore="HardcodedText" >
+
+            <requestFocus />
+        </TextView>
+
+        <Spinner
+            android:id="@+id/txtPhoneNoSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:entries="@array/phones_array"
+            android:prompt="@string/phone_prompt" >
+        </Spinner>
+
+        <TextView
+            android:id="@+id/counter"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="0/0"
+            tools:ignore="HardcodedText" />
+
+        <EditText
+            android:id="@+id/txtMessage"
+            android:layout_width="fill_parent"
+            android:layout_height="250dp"
+            android:gravity="top"
+            android:inputType="textMultiLine"
+            android:scrollHorizontally="false"
+            android:text="This is a test! This is a test! This is a test! This is a test! This is a test! This is a test! This is a test! This is a test! "
+            tools:ignore="HardcodedText" />
+
+        <LinearLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center" >
+
+            <Button
+                android:id="@+id/btnSendSMS"
+                android:layout_width="130dp"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="Send SMS"
+                tools:ignore="HardcodedText" />
+
+            <Button
+                android:id="@+id/btnSendBinary"
+                android:layout_width="130dp"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:text="Send Binary"
+                tools:ignore="HardcodedText" />
+        </LinearLayout>
+    </LinearLayout>
+
+</ScrollView>
