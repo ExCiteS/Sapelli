@@ -1,12 +1,13 @@
-package com.example.observations;
+package uk.ac.ucl.excites.observations.transmission;
 
 import java.util.ArrayList;
 
 public class Transaction {
 
-	private static final int DEFAULT_SIZE = 10;
+	private static final int DEFAULT_SIZE = 100;
 	
 	private ArrayList<Observation> observations;
+	
 	private Integer ID;
 	private boolean sent = false;
 	private boolean received = false;
@@ -66,8 +67,16 @@ public class Transaction {
 		this.received = received;
 	}
 
-	public void send() {
+	public void send()
+	{
+		/* create and send sms messages */
+		
 		this.sent = true;
+	}
+	
+	public void resend(int part)
+	{
+		
 	}
 
 	public void receive() {

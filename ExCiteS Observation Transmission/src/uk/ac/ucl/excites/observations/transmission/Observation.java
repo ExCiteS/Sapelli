@@ -1,4 +1,4 @@
-package com.example.observations;
+package uk.ac.ucl.excites.observations.transmission;
 
 public class Observation {
 

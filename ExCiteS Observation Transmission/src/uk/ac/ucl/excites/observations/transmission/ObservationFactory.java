@@ -1,8 +1,7 @@
-package com.example.observations;
+package uk.ac.ucl.excites.observations.transmission;
 
 import java.util.List;
 
-import android.os.Environment;
 import android.util.Log;
 
 import com.db4o.*;

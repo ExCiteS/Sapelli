@@ -1,8 +1,10 @@
-package com.example.observations;
+package uk.ac.ucl.excites.observations.transmission;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+
+import com.example.observations.R;
 
 import android.os.Bundle;
 import android.app.Activity;
