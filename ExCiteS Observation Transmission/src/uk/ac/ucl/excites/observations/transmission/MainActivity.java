@@ -4,17 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.example.observations.R;
-
-import android.os.Bundle;
 import android.app.Activity;
+import android.os.Bundle;
 import android.view.Menu;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
 
 	private TextView textField;
-	private List<Observation> ObsInTrans;
 	private List<Observation> ObsNotInTrans;
 	private Observation[] observations;
 	private Transaction[] transactions;
@@ -35,42 +32,33 @@ public class MainActivity extends Activity {
 		// create db
 		ObservationFactory myObsFac = new ObservationFactory();
 		myObsFac.db();
-		
+
 		// store generated observations in db
 		for (int i = 0; i < observations.length; i++) {
 			myObsFac.storeObservation(observations[i]);
 		}
-		
+
 		// store generated transactions in db
 		for (int i = 0; i < transactions.length; i++) {
 			myObsFac.storeTransaction(transactions[i]);
 		}
 
-		// call methods to check with observations/transaction have not yet been sent/retrieved
+		// call methods to check with observations/transaction have not yet been
+		// sent/retrieved
 		List<Transaction> notSent = myObsFac.transNotSent();
 		List<Transaction> notReceived = myObsFac.transNotReceived();
-		
+
 		// locally store list containing all observations retrieved from the db
 		List<Observation> allObs = myObsFac.retrieveObservations();
-		
-		// locally store list containing all transactions retrieved from the db
-		List<Transaction> allTrans = myObsFac.retrieveTransactions();
-
-		// create list containing all observations that are contained in transactions
-		ObsInTrans = new ArrayList<Observation>();
-		for (int i = 0; i < allTrans.size(); i++)
-			for(Observation o : allTrans.get(i).getObservations())
-				ObsInTrans.add(o);
 
 		// create list containing all observations
 		ObsNotInTrans = new ArrayList<Observation>();
 		for (int i = 0; i < allObs.size(); i++) {
-			ObsNotInTrans.add(allObs.get(i));
+			if (allObs.get(i).getTransaction() == null) { //
+				ObsNotInTrans.add(allObs.get(i));
+			}
+
 		}
-
-		// delete observations that are already contained in any transaction
-		ObsNotInTrans.retainAll(ObsInTrans); 
-
 
 		// initialise textfield
 		textField = (TextView) findViewById(R.id.Textfield);
@@ -86,8 +74,9 @@ public class MainActivity extends Activity {
 					+ "\n";
 		}
 		textField.setText(printNotSent + printNotReceived);
-		
-		// call method to close the database file and release all resources associated with it
+
+		// call method to close the database file and release all resources
+		// associated with it
 		myObsFac.close();
 
 	}
@@ -111,8 +100,8 @@ public class MainActivity extends Activity {
 			Float bearing = new Random().nextFloat() * (360 - (0)) + (0);
 			long timestamp = System.currentTimeMillis();
 
-			observations[i] = new Observation(decision, lat, lng, alt,
-					gpsAcc, bearing, timestamp);
+			observations[i] = new Observation(decision, lat, lng, alt, gpsAcc,
+					bearing, timestamp);
 		}
 		return observations;
 	}
@@ -143,8 +132,13 @@ public class MainActivity extends Activity {
 				received = false;
 			}
 
-			transactions[i] = new Transaction(ID, sent, received);
-			for(Observation o : obs10)
+			transactions[i] = new Transaction(ID, sent, received, null); // receiver
+																			// is
+																			// null
+																			// for
+																			// the
+																			// moment
+			for (Observation o : obs10)
 				transactions[i].addObservation(o);
 		}
 		return transactions;

@@ -11,14 +11,16 @@ public class Transaction {
 	private Integer ID;
 	private boolean sent = false;
 	private boolean received = false;
+	private Receiver receiver;
 
 	public Transaction(Integer ID, boolean sent,
-			boolean received) {
+			boolean received, Receiver receiver) {
 		super();
 		this.observations = new ArrayList<Observation>();
 		this.ID = ID;
 		this.sent = sent;
 		this.received = received;
+		this.receiver = receiver;
 	}
 
 	public ArrayList<Observation> getObservations() {
