@@ -1,6 +1,8 @@
 package uk.ac.ucl.excites.encryption;
 
 import java.security.Key;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 
 import javax.crypto.Cipher;
@@ -10,34 +12,46 @@ import org.spongycastle.jce.provider.BouncyCastleProvider;
 import org.spongycastle.util.encoders.Base64;
 
 public class AESencrp {
-	private static final String ALGO = "AES";
-	private static final byte[] keyValue = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+	private final String ALGO = "AES";
+	private byte[] keyValue;
 
 	static {
 		Security.addProvider(new BouncyCastleProvider());
 	}
 
-	public static byte[] encrypt(String Data) throws Exception {
+	public byte[] encrypt(byte[] Data) throws Exception {
 		Key key = generateKey();
 		Cipher c = Cipher.getInstance(ALGO);
 		c.init(Cipher.ENCRYPT_MODE, key);
-		byte[] encVal = c.doFinal(Data.getBytes());
+		byte[] encVal = c.doFinal(Data);
 		new Base64();
 		byte[] encryptedValue = Base64.encode(encVal);
 		return encryptedValue;
 	}
 
-	public static String decrypt(byte[] Data) throws Exception {
+	public byte[] decrypt(byte[] Data) throws Exception {
 		Key key = generateKey();
 		Cipher c = Cipher.getInstance(ALGO);
 		c.init(Cipher.DECRYPT_MODE, key);
 		byte[] decordedValue = Base64.decode(Data);
 		byte[] decValue = c.doFinal(decordedValue);
-		String decryptedValue = new String(decValue);
-		return decryptedValue;
+//		String decryptedValue = new String(decValue);
+		return decValue;
 	}
 
-	private static Key generateKey() throws Exception {
+	public void getSHA256Hash(String password) {
+		MessageDigest digest = null;
+		try {
+			digest = MessageDigest.getInstance("SHA-256");
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		digest.reset();
+
+		this.keyValue = digest.digest(password.getBytes());
+	}
+
+	private Key generateKey() throws Exception {
 		Key key = new SecretKeySpec(keyValue, "AES");
 		return key;
 	}

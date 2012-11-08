@@ -6,34 +6,36 @@ import android.view.Menu;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
-	String passwordDec;
-	byte[] passwordEnc;
+	byte[] decoded;
+	byte[] encoded;
 
-	private TextView textField;
+//	private TextView textField;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 //		setContentView(R.layout.activity_main);
 
-		String content = "Text to be encrypted";
+		byte[] content = "Test".getBytes();
+		AESencrp aes = new AESencrp();
+		aes.getSHA256Hash("password");
 
 		try {
-			passwordEnc = AESencrp.encrypt(content);
+			encoded = aes.encrypt(content);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 		try {
-			passwordDec = AESencrp.decrypt(passwordEnc);
+			decoded = aes.decrypt(encoded);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 
 //		textField = (TextView) findViewById(R.id.textView);
-//		textField.setText("Plain Text : " + content + "\n"
-//				+ "Encrypted Text : " + passwordEnc + "\n"
-//				+ "Decrypted Text : " + passwordDec);
+//		textField.setText("Plain : " + Arrays.toString(content) + "\n\n"
+//				+ "Encrypted : " + Arrays.toString(encoded) + "\n\n"
+//				+ "Decrypted : " + Arrays.toString(decoded));
 
 	}
 
