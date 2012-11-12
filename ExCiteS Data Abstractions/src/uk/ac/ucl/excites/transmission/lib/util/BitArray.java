@@ -355,5 +355,11 @@ public class BitArray
 		System.out.println("Ok");
 		
 	}
+
+	public byte[] toBytes()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 }
