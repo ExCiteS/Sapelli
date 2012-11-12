@@ -14,7 +14,7 @@ public class MainActivity extends Activity {
 	private TextView textField;
 	private List<Observation> ObsNotInTrans;
 	private Observation[] observations;
-	private Transaction[] transactions;
+	private Transmission[] transactions;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -26,7 +26,7 @@ public class MainActivity extends Activity {
 		this.observations = generateObservations();
 
 		// call method to generate 5 transactions
-		this.transactions = new Transaction[5];
+		this.transactions = new Transmission[5];
 		this.transactions = generateTransactions();
 
 		// create db
@@ -45,8 +45,8 @@ public class MainActivity extends Activity {
 
 		// call methods to check with observations/transaction have not yet been
 		// sent/retrieved
-		List<Transaction> notSent = myObsFac.transNotSent();
-		List<Transaction> notReceived = myObsFac.transNotReceived();
+		List<Transmission> notSent = myObsFac.transNotSent();
+		List<Transmission> notReceived = myObsFac.transNotReceived();
 
 		// locally store list containing all observations retrieved from the db
 		List<Observation> allObs = myObsFac.retrieveObservations();
@@ -107,7 +107,7 @@ public class MainActivity extends Activity {
 	}
 
 	// generate transactions consisting of 10 observations stored in the db
-	public Transaction[] generateTransactions() {
+	public Transmission[] generateTransactions() {
 
 		for (int i = 0; i < transactions.length; i++) {
 
@@ -132,7 +132,7 @@ public class MainActivity extends Activity {
 				received = false;
 			}
 
-			transactions[i] = new Transaction(ID, sent, received, null); // receiver
+			transactions[i] = new Transmission(ID, null); // receiver
 																			// is
 																			// null
 																			// for

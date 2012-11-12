@@ -2,7 +2,7 @@ package uk.ac.ucl.excites.observations.transmission;
 
 import java.util.ArrayList;
 
-public class Transaction {
+public class Transmission {
 
 	private static final int DEFAULT_SIZE = 100;
 	
@@ -13,13 +13,13 @@ public class Transaction {
 	private boolean received = false;
 	private Receiver receiver;
 
-	public Transaction(Integer ID, boolean sent,
-			boolean received, Receiver receiver) {
+	public Transmission(Integer ID, Receiver receiver)
+	{
 		super();
 		this.observations = new ArrayList<Observation>();
 		this.ID = ID;
-		this.sent = sent;
-		this.received = received;
+		this.sent = false;
+		this.received = false;
 		this.receiver = receiver;
 	}
 
@@ -30,7 +30,7 @@ public class Transaction {
 	public void addObservation(Observation observation)
 	{
 		if(observations.size() == DEFAULT_SIZE)
-			throw new IllegalStateException("Transaction is full");
+			throw new IllegalStateException("Transmission is full");
 		observations.add(observation);
 		observation.setTransaction(this);
 	}
@@ -72,7 +72,6 @@ public class Transaction {
 	public void send()
 	{
 		/* create and send sms messages */
-		
 		this.sent = true;
 	}
 	

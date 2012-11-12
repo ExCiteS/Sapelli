@@ -39,7 +39,7 @@ public class ObservationFactory {
 	}
 
 	// store new transaction
-	public void storeTransaction(Transaction trans) {
+	public void storeTransaction(Transmission trans) {
 		db.store(trans);
 	}
 
@@ -50,30 +50,30 @@ public class ObservationFactory {
 	}
 
 	// retrieve all transactions
-	public List<Transaction> retrieveTransactions() {
-		List<Transaction> result = db.query(Transaction.class);
+	public List<Transmission> retrieveTransactions() {
+		List<Transmission> result = db.query(Transmission.class);
 		return result;
 	}
 
 	// retrieve transactions that have not yet been sent
-	public List<Transaction> transNotSent() {
-		return db.query(new Predicate<Transaction>() {
+	public List<Transmission> transNotSent() {
+		return db.query(new Predicate<Transmission>() {
 
 			private static final long serialVersionUID = 4796848447268681614L;
 
-			public boolean match(Transaction transaction) {
+			public boolean match(Transmission transaction) {
 				return transaction.isSent() == false;
 			}
 		});
 	}
 
 	// retrieve transactions that have not yet been received
-	public List<Transaction> transNotReceived() {
-		return db.query(new Predicate<Transaction>() {
+	public List<Transmission> transNotReceived() {
+		return db.query(new Predicate<Transmission>() {
 
 			private static final long serialVersionUID = -8293981698181882202L;
 
-			public boolean match(Transaction transaction) {
+			public boolean match(Transmission transaction) {
 				return transaction.isReceived() == false;
 			}
 		});

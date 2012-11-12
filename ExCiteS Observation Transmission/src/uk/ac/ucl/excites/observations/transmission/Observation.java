@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.observations.transmission;
 
-public class Observation {
+public class Observation
+{
 
 	private String decision;
 	private Float lat;
@@ -9,10 +10,10 @@ public class Observation {
 	private Float gpsAcc;
 	private Float bearing;
 	private long timestamp;
-	private Transaction transaction;
+	private Transmission transmission;
 
-	public Observation(String decision, Float lat, Float lng,
-			Float alt, Float gpsAcc, Float bearing, long timestamp) {
+	public Observation(String decision, Float lat, Float lng, Float alt, Float gpsAcc, Float bearing, long timestamp)
+	{
 		super();
 		this.decision = decision;
 		this.lat = lat;
@@ -23,74 +24,91 @@ public class Observation {
 		this.timestamp = timestamp;
 	}
 
-	public String getDecision() {
+	public String getDecision()
+	{
 		return decision;
 	}
 
-	public void setDecision(String decision) {
+	public void setDecision(String decision)
+	{
 		this.decision = decision;
 	}
 
-	public Float getLat() {
+	public Float getLat()
+	{
 		return lat;
 	}
 
-	public void setLat(Float lat) {
+	public void setLat(Float lat)
+	{
 		this.lat = lat;
 	}
 
-	public Float getLng() {
+	public Float getLng()
+	{
 		return lng;
 	}
 
-	public void setLng(Float lng) {
+	public void setLng(Float lng)
+	{
 		this.lng = lng;
 	}
 
-	public Float getAlt() {
+	public Float getAlt()
+	{
 		return alt;
 	}
 
-	public void setAlt(Float alt) {
+	public void setAlt(Float alt)
+	{
 		this.alt = alt;
 	}
 
-	public Float getGpsAcc() {
+	public Float getGpsAcc()
+	{
 		return gpsAcc;
 	}
 
-	public void setGpsAcc(Float gpsAcc) {
+	public void setGpsAcc(Float gpsAcc)
+	{
 		this.gpsAcc = gpsAcc;
 	}
 
-	public Float getBearing() {
+	public Float getBearing()
+	{
 		return bearing;
 	}
 
-	public void setBearing(Float bearing) {
+	public void setBearing(Float bearing)
+	{
 		this.bearing = bearing;
 	}
 
-	public long getTimestamp() {
+	public long getTimestamp()
+	{
 		return timestamp;
 	}
 
-	public void setTimestamp(long timestamp) {
+	public void setTimestamp(long timestamp)
+	{
 		this.timestamp = timestamp;
 	}
 
 	/**
-	 * @return the transaction
+	 * @return the transmission
 	 */
-	public Transaction getTransaction() {
-		return transaction;
+	public Transmission getTransaction()
+	{
+		return transmission;
 	}
 
 	/**
-	 * @param transaction the transaction to set
+	 * @param transmission
+	 *            the transmission to set
 	 */
-	public void setTransaction(Transaction transaction) {
-		this.transaction = transaction;
+	public void setTransaction(Transmission transaction)
+	{
+		this.transmission = transaction;
 	}
 
 }
