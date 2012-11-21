@@ -1,10 +1,7 @@
 package uk.ac.ucl.excites.compression;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
-
-import uk.ac.ucl.excites.observations.transmission.R;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -23,25 +20,15 @@ public class MainActivity extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
+//		setContentView(R.layout.activity_main);
 
 		String lipsum = "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 		uncompressed = lipsum.getBytes(Charset.forName("UTF-8"));
 
-		try {
-			compressed = Compressor.compress(uncompressed);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		compressed = Compression.compress(uncompressed);
 
-		try {
-			decompressed = Compressor.DeCompress(compressed);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		decompressed = Compression.decompress(compressed);
 
-		/* Display (un)compressed length and check whether output equals input */
-		
 //		String check;
 //		try {
 //			check = new String(decompressed, "UTF-8");
