@@ -15,7 +15,6 @@ public class Compressor{
         } catch(IOException e){
             throw new RuntimeException(e);
         }
-        System.out.printf("Compression ratio %f\n", (1.0f * content.length/byteArrayOutputStream.size()));
         return byteArrayOutputStream.toByteArray();
     }
 
@@ -27,13 +26,5 @@ public class Compressor{
             throw new RuntimeException(e);
         }
         return out.toByteArray();
-    }
-
-    public static boolean notWorthCompressing(String contentType){
-        return contentType.contains("jpeg")
-                || contentType.contains("pdf")
-                || contentType.contains("zip")
-                || contentType.contains("mpeg")
-                || contentType.contains("avi");
     }
 }
