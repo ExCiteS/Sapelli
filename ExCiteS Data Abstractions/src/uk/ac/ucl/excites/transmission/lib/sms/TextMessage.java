@@ -16,13 +16,13 @@ public class TextMessage extends Message
 	public TextMessage(SMSAgent receiver, SMSTransmission transmission)
 	{
 		super(receiver, transmission);
-		// TODO Auto-generated constructor stub
+
 	}
 
 	@Override
 	public int getMaxContentSize()
 	{
-		// TODO Auto-generated method stub
+
 		return 0;
 	}
 
