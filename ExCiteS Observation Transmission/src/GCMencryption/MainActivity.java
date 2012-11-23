@@ -15,7 +15,9 @@ public class MainActivity extends Activity {
 	byte[] decrypted;
 	String fail;
 	private TextView textField;
+	
 
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);

@@ -30,6 +30,7 @@ public class GCMencryp {
 		rand.nextBytes(IVvector);
 	}
 
+	
 	/**
 	 * Returns the ciphertext encrypted from the given plaintext and AEAD
 	 * parameters.
