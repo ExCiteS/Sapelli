@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="uk.ac.excites.transmission.relay"
+    android:versionCode="1"
+    android:versionName="1.0.0" >
+
+    <!-- http://developer.android.com/reference/android/Manifest.permission.html -->
+    <!-- Allows an application to read or write the system settings. -->
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <!-- Allows read only access to phone state. -->
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.BROADCAST_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.WRITE_SMS" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <uses-sdk
+        android:minSdkVersion="10"
+        android:targetSdkVersion="15" />
+
+    <application
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme" >
+        <activity
+            android:name=".BackgroundActivity"
+            android:label="@string/title_activity_main" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name=".Preferences" >
+        </activity>
+        <activity android:name=".About" >
+        </activity>
+
+        <service
+            android:name=".BackgroundService"
+            android:icon="@drawable/ic_launcher"
+            android:label="@string/service_name" >
+
+            <!-- android:process=":connectivity_service" -->
+        </service>
+    </application>
+
+</manifest>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <PreferenceCategory android:title="Category" >
+        <EditTextPreference
+            android:defaultValue="http://matthias.dev.uclexcites.co.uk:8080/ServerDataReceiver/ServerDataReceiver"
+            android:inputType="text"
+            android:key="serverAddress"
+            android:summary="This is the web address of the server where the relay sends the incoming messages."
+            android:title="Server Web Address" />
+        <EditTextPreference
+            android:defaultValue="1"
+            android:inputType="number"
+            android:key="timeSchedule"
+            android:summary="How often is the application sending messages to the server in seconds."
+            android:title="Time Schedule" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
