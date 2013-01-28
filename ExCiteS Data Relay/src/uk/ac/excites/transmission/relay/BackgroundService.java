@@ -133,6 +133,7 @@ public class BackgroundService extends Service
 			{
 				try
 				{
+					response = null;
 					response = postSmsObject(sms);
 					if (Constants.DEBUG_LOG)
 						Log.i(Constants.TAG, "POST sms: " + sms.getId() + " and the response is: " + response);
@@ -180,7 +181,7 @@ public class BackgroundService extends Service
 		} else
 		{
 			if (Constants.DEBUG_LOG)
-			Log.i(Constants.TAG, "--!-- SERVER_URL ERROR --!--");
+				Log.i(Constants.TAG, "--!-- SERVER_URL ERROR --!--");
 		}
 
 		// Set the POST parameters
