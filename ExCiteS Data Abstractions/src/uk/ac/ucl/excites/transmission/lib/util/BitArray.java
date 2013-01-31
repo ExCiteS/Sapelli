@@ -34,11 +34,12 @@ public class BitArray
 		return bits[index];
 	}
 	
-	public void set(int index, boolean bit)
+	public int set(int index, boolean bit)
 	{
 		if(index < 0 || index >= bits.length)
 			throw new IndexOutOfBoundsException("Index (" + index + ") out of bounds!");
 		bits[index] = bit;
+		return index++;
 	}
 	
 	public boolean[] getBits(int index, int length)
@@ -51,12 +52,13 @@ public class BitArray
 		return subarray;
 	}
 	
-	public void setBits(int index, boolean[] bits)
+	public int setBits(int index, boolean[] bits)
 	{
 		if(index < 0 || index > this.bits.length - bits.length)
 			throw new IndexOutOfBoundsException("Index (" + index + ") out of bounds!");
 		for(boolean bit : bits)
 			this.bits[index++] = bit;
+		return index + bits.length;
 	}
 	
 	public byte getByte(int index)
@@ -124,21 +126,25 @@ public class BitArray
 		}
 	}
 	
-	public long getInteger(int index, int numberOfBits, boolean signed, ByteOrder bo)
+	public long getInteger(int index, int numberOfBits, boolean signed/*, ByteOrder order*/)
 	{
-		//if(numberOfBits > 64)
-		//	throw new IllegalArgumentException("")
+		//LITTLE ENDIAN BYTE ORDER
+		//TODO Big endian byte order
+		
+		if(numberOfBits > 64)
+			throw new IllegalArgumentException("Cannot store more than 64 bits in value of type long");
 		long value = 0;
 		for (int i = 0; i < numberOfBits; i++)
 			value += get(index + i) ? (1l << i) : 0l;
-		if(value >= (long) Math.pow(2, numberOfBits - 1))
+		if(signed && value >= (long) Math.pow(2, numberOfBits - 1))
 			value -= (long) Math.pow(2, numberOfBits);
 		return value;
 	}
 	
-	public void setInteger(int index, long value, int numberOfBits, boolean signed, ByteOrder bo)
+	public void setInteger(int index, long value, int numberOfBits, boolean signed/*, ByteOrder order*/)
 	{
-		//TODO byteorder
+		//LITTLE ENDIAN BYTE ORDER
+		//TODO Big endian byte order
 		
 		if(signed)
 		{	//Signed
@@ -153,37 +159,42 @@ public class BitArray
 				throw new IllegalArgumentException("Unsigned value (" + value + ") does not fit in " + numberOfBits + " bits.");
 		}
 		
-		//TODO set unused bits to 0
 		if(signed && value < 0)
 			value += Math.pow(2, numberOfBits); //Two's complement
 		int i = 0;
-		while(value != 0l && i < index + numberOfBits)
+		while(value != 0l && i < numberOfBits)
 		{
 			set(index + i, value % 2l != 0);
 			i++;
 			value = value >>> 1;
 		}
+		//padding:
+		while(i < numberOfBits)
+		{
+			set(index + i, false);
+			i++;
+		}
 	}
 	
-	public float getFloat(int index)
-	{
-		return 0f;
-	}
-	
-	public void setFloat(int index, float f)
-	{
-		//setInteger(start, 4, true, Float.floatToRawIntBits(f), ByteOrder.nativeOrder());
-	}
-	
-	public double getDouble(int index)
-	{
-		return 0d;
-	}
-	
-	public void setDouble(int index, double d)
-	{
-		
-	}
+//	public float getFloat(int index)
+//	{
+//		return 0f;
+//	}
+//	
+//	public void setFloat(int index, float f)
+//	{
+//		//setInteger(start, 4, true, Float.floatToRawIntBits(f), ByteOrder.nativeOrder());
+//	}
+//	
+//	public double getDouble(int index)
+//	{
+//		return 0d;
+//	}
+//	
+//	public void setDouble(int index, double d)
+//	{
+//		
+//	}
 	
 	public String getString(int index, int numberOfBytes)
 	{
@@ -278,8 +289,8 @@ public class BitArray
 	 */
 	public static void main(String[] args)
 	{
-		String lipsum = "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-		byte[] uncompressed = lipsum.getBytes(Charset.forName("UTF-8"));
+		//String lipsum = "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+		//byte[] uncompressed = lipsum.getBytes(Charset.forName("UTF-8"));
 //		BitArray ba = new BitArray(8*lipsum.length()+7);
 //		ba.setBytes(0, lipsum.getBytes(Charset.forName("UTF-8")));
 //		
@@ -323,43 +334,60 @@ public class BitArray
 //			System.out.print(ba.get(i) ? "1" : "0");
 //		System.out.println("");
 		
-		BitArray ba = new BitArray(128);
+//		BitArray ba = new BitArray(128);
+//
+//		
+//		
+//		for(long i = Integer.MIN_VALUE; i <= Integer.MAX_VALUE; i+=100)
+//		{
+//			int index = 0;
+//		
+//			//System.out.println(i);
+////			String bitString = Long.toBinaryString(i);
+////			StringBuffer bff = new StringBuffer(bitString);
+////			bff.reverse();
+////			String bitString2 = bff.toString();
+//			//System.out.println(bitString2 + " (length: " + bitString.length() + ")");
+//		
+//			
+//			ba.setInteger(index, i, 32, true);
+//
+//			
+//			//for(int j = 0; j < 32; j++)
+//			//	System.out.print(ba.get(j) ? "1" : "0");
+//			//System.out.println("");
+//			
+//			long readNumber = ba.getInteger(0, 32, true);
+//			
+//			if(i != readNumber)
+//				System.out.println("Error " + i + " " + readNumber);
+//			
+//			
+//			//for(int i = 0; i < ba.size(); i++)
+//			//System.out.print(ba.get(i) ? "1" : "0");
+//		}
+//		System.out.println("Done");
 		
-		for(long i = Integer.MIN_VALUE; i <= Integer.MAX_VALUE; i+=10000000)
-		{
-			int index = 0;
-		
-			//System.out.println(i);
-			String bitString = Long.toBinaryString(i);
-			StringBuffer bff = new StringBuffer(bitString);
-			bff.reverse();
-			String bitString2 = bff.toString();
-			System.out.println(bitString2 + " (length: " + bitString.length() + ")");
-		
-			
-			ba.setInteger(index, i, 32, true, ByteOrder.nativeOrder());
+//		BitArray ba2 = new BitArray(128);
+//		ba2.setInteger(0, 1000, 16, true);
+//		
+//		System.out.println(BinaryHelpers.bin2Hex(ba2.getBytes(0, 1)));
 
-			
-			for(int j = 0; j < 32; j++)
-			System.out.print(ba.get(j) ? "1" : "0");
-			System.out.println("");
-			
-			long readNumber = ba.getInteger(0, 32, true, ByteOrder.nativeOrder());
-			
-			if(i != readNumber)
-				System.out.println("Error " + i + " " + readNumber);
-			
-			//for(int i = 0; i < ba.size(); i++)
-			//System.out.print(ba.get(i) ? "1" : "0");
-		}
-		System.out.println("Ok");
+		int i = 8;
+		i <<= 1;
+		i++;
+		System.out.println(i);
+		
 		
 	}
 
-	public byte[] toBytes()
-	{
-		// TODO Auto-generated method stub
-		return null;
-	}
+
+//	public byte[] toBytes()
+//	{
+//		
+//		return null;
+//	}
+	
+
 	
 }

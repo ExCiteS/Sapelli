@@ -1,9 +1,9 @@
+package uk.ac.ucl.excites.transmission.lib.util;
 /**
  * 
  */
-package uk.ac.ucl.excites.transmission.lib.util;
 
-import java.math.BigInteger;
+
 
 /**
  * @author mstevens
@@ -14,17 +14,31 @@ public final class BinaryHelpers
 	
 	private BinaryHelpers() { } //should not be instantiated
 	
-	public static String bin2Hex(byte[] data)
+	static public String bin2Hex(byte[] data)
 	{
-		return String.format("%0" + (data.length*2) + "X", new BigInteger(1, data));
+		StringBuffer bff = new StringBuffer();
+		for(byte b : data)
+			bff.append(String.format("%02X ", b));
+		return bff.toString();
 	}
 	
-	public static String toBinaryString(byte b)
+	static public String toBinaryString(byte b)
 	{
 		String str = "";
 		for(int i = 7; i >= 0; i--)
 			str += ((b & (1 << i)) != 0) ? "1" : "0";
 		return str;
+	}
+	
+	/**
+	 * Computes the minimum number of bytes needed to fit the given number of bits
+	 * 
+	 * @param bits
+	 * @return number of bytes needed
+	 */
+	static public int bytesNeeded(int bits)
+	{
+		return (bits + 7) / 8;
 	}
 
 }
