@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="uk/ac/ucl/excites/transmission/lib/compression/|uk/ac/ucl/excites/transmission/lib/model/advanced/|uk/ac/ucl/excites/transmission/lib/model/IntegerColumn.java" kind="src" path="src"/>
+	<classpathentry excluding="uk/ac/ucl/excites/storage/model/IntegerColumn.java" kind="src" path="src"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6">

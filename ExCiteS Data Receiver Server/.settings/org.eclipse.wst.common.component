@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?><project-modules id="moduleCoreId" project-version="1.5.0">
-    <wb-module deploy-name="ServerDataReceiver">
+    <wb-module deploy-name="ExCiteS Data Receiver Server">
         <wb-resource deploy-path="/" source-path="/WebContent" tag="defaultRootSource"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src"/>
-        <property name="context-root" value="ServerDataReceiver"/>
-        <property name="java-output-path" value="/ServerDataReceiver/build/classes"/>
+        <property name="java-output-path" value="/ExCiteS Data Receiver Server/build/classes"/>
+        <property name="context-root" value="ExCiteS Data Receiver Server"/>
     </wb-module>
 </project-modules>
