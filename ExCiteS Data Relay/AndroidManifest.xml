@@ -4,10 +4,11 @@
     android:versionCode="1"
     android:versionName="1.0.0" >
 
-    <!-- http://developer.android.com/reference/android/Manifest.permission.html -->
-    <!-- Allows an application to read or write the system settings. -->
+    <!--
+	    For more information on permission:  
+	    http://developer.android.com/reference/android/Manifest.permission.html
+    -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
-    <!-- Allows read only access to phone state. -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.SEND_SMS" />
