@@ -13,10 +13,10 @@ public abstract class Column<T>
 	private String name;
 	protected boolean optional;
 	
-	
-	protected Column(String name)
+	protected Column(String name, boolean optional)
 	{
 		this.name = name;
+		this.optional = optional;
 	}
 	
 	protected void setSchema(Schema schema)
@@ -81,7 +81,7 @@ public abstract class Column<T>
 	{
 		validate(value); //just in case...
 		if(optional)
-			bitStream.write(value != null);
+			bitStream.write(value != null); //write "presence"-bit
 		else
 		{
 			if(value == null)
@@ -100,12 +100,12 @@ public abstract class Column<T>
 	
 	public final T readValue(BitInputStream bitStream) throws IOException
 	{
-		if(optional)
+		T value = null;
+		if(!optional || bitStream.readBit()) //in case of optional column: only read value if "presence"-bit is true
 		{
-			//TODO handle optionalness
+			value = read(bitStream);
+			validate(value); //throw exception if invalid
 		}
-		T value = read(bitStream);
-		validate(value); //throw exception if invalid
 		return value;
 	}
 	

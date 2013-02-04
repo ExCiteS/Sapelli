@@ -18,9 +18,9 @@ public class BooleanColumn extends Column<Boolean>
 	/**
 	 * @param name
 	 */
-	public BooleanColumn(String name)
+	public BooleanColumn(String name, boolean optional)
 	{
-		super(name);
+		super(name, optional);
 	}
 
 	/* (non-Javadoc)

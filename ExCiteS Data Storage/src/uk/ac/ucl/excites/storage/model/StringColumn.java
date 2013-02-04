@@ -30,19 +30,19 @@ public class StringColumn extends Column<String>
 	private IntegerRangeMapping sizeField;
 	private Charset charset;
 	
-	public StringColumn(String name)
+	public StringColumn(String name, boolean optional)
 	{
-		this(name, DEFAULT_MAX_LENGTH, DEFAULT_CHARSET);
+		this(name, optional, DEFAULT_MAX_LENGTH, DEFAULT_CHARSET);
 	}
 	
-	public StringColumn(String name, int maxLengthBytes)
+	public StringColumn(String name, boolean optional, int maxLengthBytes)
 	{
-		this(name, maxLengthBytes, DEFAULT_CHARSET);
+		this(name, optional, maxLengthBytes, DEFAULT_CHARSET);
 	}
 	
-	public StringColumn(String name, int maxLengthBytes, Charset charset)
+	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset)
 	{
-		super(name);
+		super(name, optional);
 		this.maxLengthBytes = maxLengthBytes;
 		this.charset = charset;
 	}

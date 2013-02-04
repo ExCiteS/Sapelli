@@ -30,29 +30,30 @@ public class IntegerColumn extends Column<Long>
 	private boolean signed;
 	private IntegerRangeMapping rangeMapping;
 	
-	public IntegerColumn(String name, int sizeBits)
+	public IntegerColumn(String name, boolean optional, int sizeBits)
 	{
-		this(name, DEFAULT_SIGNEDNESS, sizeBits);
+		this(name, optional, DEFAULT_SIGNEDNESS, sizeBits);
 	}
 	
-	public IntegerColumn(String name)
+	public IntegerColumn(String name, boolean optional)
 	{
-		this(name, DEFAULT_SIGNEDNESS, DEFAULT_SIZE_BITS);
+		this(name, optional, DEFAULT_SIGNEDNESS, DEFAULT_SIZE_BITS);
 	}
 	
-	public IntegerColumn(String name, boolean signed)
+	public IntegerColumn(String name, boolean optional, boolean signed)
 	{
-		this(name, signed, DEFAULT_SIZE_BITS);
+		this(name, optional, signed, DEFAULT_SIZE_BITS);
 	}
 	
 	/**
 	 * @param name
+	 * @param optional
 	 * @param signed
 	 * @param sizeBits size in number of bits (minimum 1, maximum 64)
 	 */
-	public IntegerColumn(String name, boolean signed, int sizeBits)
+	public IntegerColumn(String name, boolean optional, boolean signed, int sizeBits)
 	{
-		super(name);
+		super(name, optional);
 		if(size < 1 || size > 64)
 			throw new IllegalArgumentException("Invalid size (" + sizeBits + "). Size must be between 1 and 64 bits.");
 		this.size = sizeBits;
@@ -67,9 +68,9 @@ public class IntegerColumn extends Column<Long>
 	 * @param minLogicalValue
 	 * @param maxLogicalValue
 	 */
-	public IntegerColumn(String name, int minLogicalValue, int maxLogicalValue)
+	public IntegerColumn(String name, boolean optional, int minLogicalValue, int maxLogicalValue)
 	{
-		super(name);
+		super(name, optional);
 		this.rangeMapping = new IntegerRangeMapping(minLogicalValue, maxLogicalValue);
 		this.size = rangeMapping.getSize();
 		this.signed = false;
