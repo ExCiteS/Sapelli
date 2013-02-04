@@ -53,7 +53,8 @@ public class ChoiceView extends GridView
 		setChoice(currentItems, startChoice.getCols());
 
 		// set click listener
-		setOnItemClickListener(new OnItemClickListener() {
+		setOnItemClickListener(new OnItemClickListener()
+		{
 			@Override
 			public void onItemClick(AdapterView<?> parent, View v,
 					int position, long id) {
