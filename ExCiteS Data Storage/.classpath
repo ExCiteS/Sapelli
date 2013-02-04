@@ -9,5 +9,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="gen"/>
+	<classpathentry kind="lib" path="libs/db4o-8.0.249.16098-core-java5.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
