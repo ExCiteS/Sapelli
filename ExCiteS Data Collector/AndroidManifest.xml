@@ -8,6 +8,15 @@
         android:minSdkVersion="9"
         android:targetSdkVersion="17" />
 
+    <!--
+	    For more information on permission:  
+	    http://developer.android.com/reference/android/Manifest.permission.html
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.RECORD_VIDEO" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"

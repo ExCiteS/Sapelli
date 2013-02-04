@@ -4,8 +4,9 @@ import java.util.List;
 
 import android.util.Log;
 
-import com.db4o.*;
-import com.db4o.query.*;
+import com.db4o.Db4oEmbedded;
+import com.db4o.ObjectContainer;
+import com.db4o.query.Predicate;
 
 public class ObservationFactory {
 
@@ -14,6 +15,7 @@ public class ObservationFactory {
 
 	// Opening the database
 	public void db() {
+		
 		try {
 			if (db == null || db.ext().isClosed()) {
 				this.db = Db4oEmbedded.openFile(
