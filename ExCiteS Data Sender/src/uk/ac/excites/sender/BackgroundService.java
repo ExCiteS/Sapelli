@@ -5,7 +5,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -32,10 +31,8 @@ public class BackgroundService extends Service
 	private boolean mAllowRebind; // indicates whether onRebind should be used
 	private static int serviceState = -1;
 
-	ScheduledExecutorService scheduleTaskExecutor;
-	ScheduledFuture<?> mScheduledFuture;
-
-	AlarmManager mAlarmManager;
+	private ScheduledExecutorService scheduleTaskExecutor;
+	private ScheduledFuture<?> mScheduledFuture;
 
 	@Override
 	public void onCreate()
