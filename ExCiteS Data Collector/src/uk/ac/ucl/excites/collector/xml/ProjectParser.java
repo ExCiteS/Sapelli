@@ -29,51 +29,43 @@ import android.util.Log;
  * @author mstevens
  *
  */
-public class ProjectParser extends DefaultHandler
-{
+public class ProjectParser extends DefaultHandler {
 
 	static private String TAG = "PROJECT PARSER";
-	
+
 	private Project project;
 	private Form currentForm;
 	private String currentFormStartFieldID;
 	private Choice currentChoice;
-	private HashMap<Field, String> fieldToJumpId;
-	private Hashtable<String, Field> idToField;
-	
-	public void runParser(File xmlFile)
-	{
-		try
-		{
+	private HashMap<Field, String> fieldToJumpId = new HashMap<Field, String>();
+	private Hashtable<String, Field> idToField = new Hashtable<String, Field>();
+
+	public void runParser(File xmlFile) {
+		try {
 			SAXParserFactory spf = SAXParserFactory.newInstance();
 			SAXParser sp = spf.newSAXParser();
 			XMLReader xr = sp.getXMLReader();
 			FileInputStream fis = new FileInputStream(xmlFile);
 			xr.setContentHandler(this);
 			xr.parse(new InputSource(fis));
-		}
-		catch(Exception e)
-		{
+		} catch (Exception e) {
 			Log.i(TAG, "XML Parsing Exception = " + e);
 			System.exit(-1);
 		}
 	}
-	
+
 	@Override
-	public void startDocument() throws SAXException
-	{
+	public void startDocument() throws SAXException {
 		Log.i(TAG, "Start document");
 	}
 
 	@Override
-	public void endDocument() throws SAXException
-	{
+	public void endDocument() throws SAXException {
 		Log.i(TAG, "End document");
-		//Resolve jumps...
-		for(Entry<Field, String> jump : fieldToJumpId.entrySet())
-		{
+		// Resolve jumps...
+		for (Entry<Field, String> jump : fieldToJumpId.entrySet()) {
 			Field target = idToField.get(jump.getValue());
-			if(target == null)
+			if (target == null)
 				Log.e(TAG, "Cannot resolve jump ID " + jump.getValue());
 			else
 				jump.getKey().setJump(target);
@@ -81,95 +73,102 @@ public class ProjectParser extends DefaultHandler
 	}
 
 	@Override
-	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
-	{
+	public void startElement(String uri, String localName, String qName,
+			Attributes attributes) throws SAXException {
 
-		if(qName.equals("ExCiteS-Collector-Project"))
-		{
+		if (qName.equals("ExCiteS-Collector-Project")) {
 			project = new Project();
 		}
-		
-		if(qName.equals("Data-Management"))
-		{
-			//TODO
+
+		if (qName.equals("Data-Management")) {
+			// TODO
 		}
-		
-		if(qName.equals("Form"))
-		{
+
+		if (qName.equals("Form")) {
 			currentForm = new Form();
 			project.addForm(currentForm);
-			if(attributes.getValue("startField") != null)
+			if (attributes.getValue("startField") != null)
 				currentFormStartFieldID = attributes.getValue("startField");
 			else
 				Log.w(TAG, "No startField attribute, will use first field");
-			//TODO other attributes
+			// TODO other attributes
 		}
-		
-		if(qName.equals("Choice"))
-		{
+
+		if (qName.equals("Choice")) {
+
 			Choice parent = currentChoice;
-			currentChoice = new Choice(parent); //old currentChoice becomes the parent (if it is null that's ok)
-			if(parent != null)
-				parent.addChild(currentChoice); //add new choice as child of parent
+			currentChoice = new Choice(parent); // old currentChoice becomes the
+												// parent (if it is null that's
+												// ok)
+			if (parent != null)
+				parent.addChild(currentChoice); // add new choice as child of
+												// parent
 			else
-				currentForm.addField(currentChoice); //this is a top-level Choice, so add it as a field of the form
-			//Id & jump
+				currentForm.addField(currentChoice); // this is a top-level
+														// Choice, so add it as
+														// a field of the form
+
+			if (attributes.getValue("img") != null)
+				currentChoice.setImagePath(attributes.getValue("img"));
+
+			if (attributes.getValue("cols") != null)
+				currentChoice.setCols(Integer.parseInt(attributes
+						.getValue("cols")));
+
+			if (attributes.getValue("value") != null)
+				currentChoice.setValue(attributes.getValue("value"));
+
+			// Id & jump
 			setIdAndJump(currentChoice, attributes);
-			//TODO other attributes
+			// TODO other attributes
 		}
-		
-		if(qName.equals("Location"))
-		{
+
+		if (qName.equals("Location")) {
 			LocationField locField = new LocationField();
 			currentForm.addField(locField);
 			setIdAndJump(locField, attributes);
-			//TODO other attributes
+			// TODO other attributes
 		}
-		
-		if(qName.equals("Photo"))
-		{
-			//TODO
+
+		if (qName.equals("Photo")) {
+			// TODO
 		}
-		
-		if(qName.equals("Audio"))
-		{
-			//TODO
+
+		if (qName.equals("Audio")) {
+			// TODO
 		}
 	}
-	
-	private void setIdAndJump(Field f, Attributes attributes)
-	{
-		if(attributes.getValue("id") != null)
-		{
+
+	private void setIdAndJump(Field f, Attributes attributes) {
+		if (attributes.getValue("id") != null) {
 			f.setId(attributes.getValue("id"));
 			idToField.put(f.getId(), f);
 		}
-		if(attributes.getValue("jump") != null)
+		if (attributes.getValue("jump") != null)
 			fieldToJumpId.put(currentChoice, attributes.getValue("jump"));
-		if(currentFormStartFieldID == null)
-		{
-			if(currentForm.getStart() == null) //no startID was specified and the start field is not set yet
+		if (currentFormStartFieldID == null) {
+			if (currentForm.getStart() == null) // no startID was specified and
+												// the start field is not set
+												// yet
 				currentForm.setStart(f);
-		}
-		else if(currentFormStartFieldID.equals(f.getId()))
+		} else if (currentFormStartFieldID.equals(f.getId()))
 			currentForm.setStart(f);
 	}
-	
+
 	@Override
-	public void endElement(String uri, String localName, String qName)
-	{
-		if(qName.equals("Form"))
-		{	
-			currentForm = null;
+	public void endElement(String uri, String localName, String qName) {
+		if (qName.equals("Form")) {
+			// currentForm = null; just for now
 			currentFormStartFieldID = null;
 		}
-		
-		if(qName.equals("Choice"))
+
+		if (qName.equals("Choice"))
 			currentChoice = currentChoice.getParent();
-		
-		
-		
+
 	}
-	
+
+	public Form getCurrentForm() {
+		return currentForm;
+	}
 
 }

@@ -10,7 +10,7 @@ public class Choice extends Field
 {
 
 	private Choice parent;
-	private ArrayList<Choice> children;
+	private ArrayList<Choice> children = new ArrayList<Choice>();
 	private String imagePath;
 	private int cols;
 	private int rows;
