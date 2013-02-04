@@ -23,6 +23,7 @@ import uk.ac.ucl.excites.collector.model.Field;
 import uk.ac.ucl.excites.collector.model.Form;
 import uk.ac.ucl.excites.collector.model.LocationField;
 import uk.ac.ucl.excites.collector.model.Project;
+import uk.ac.ucl.excites.storage.model.Schema;
 import android.util.Log;
 
 /**
@@ -33,6 +34,10 @@ public class ProjectParser extends DefaultHandler
 {
 
 	static private String TAG = "PROJECT PARSER";
+	static private final String FORM = "Form";
+	static private final String FORM_SCHEMA_ID = "schema-id";
+	static private final String FORM_SCHEMA_VERSION = "schema-versiob";
+	static private final String Field_NO_COLUMN = "noColumn";
 	
 	private Project project;
 	private Form currentForm;
@@ -94,9 +99,13 @@ public class ProjectParser extends DefaultHandler
 			//TODO
 		}
 		
-		if(qName.equals("Form"))
+		if(qName.equals(FORM))
 		{
-			currentForm = new Form();
+			if(attributes.getValue(FORM_SCHEMA_ID) == null)
+				throw attribMissing(FORM, FORM_SCHEMA_ID);
+			int schemaID = Integer.parseInt(attributes.getValue(FORM_SCHEMA_ID));			
+			int schemaVersion = (attributes.getValue(FORM_SCHEMA_VERSION) == null ? Schema.DEFAULT_VERSION : Integer.parseInt(attributes.getValue(FORM_SCHEMA_VERSION)));
+			currentForm = new Form(schemaID, schemaVersion, attributes.getValue("name"));
 			project.addForm(currentForm);
 			if(attributes.getValue("startField") != null)
 				currentFormStartFieldID = attributes.getValue("startField");
@@ -114,7 +123,9 @@ public class ProjectParser extends DefaultHandler
 			else
 				currentForm.addField(currentChoice); //this is a top-level Choice, so add it as a field of the form
 			//Id & jump
-			setIdAndJump(currentChoice, attributes);
+			setIDAndJump(currentChoice, attributes);
+			//No column:
+			currentChoice.setNoColumn(attributes.getValue(Field_NO_COLUMN) != null && attributes.getValue(Field_NO_COLUMN).equalsIgnoreCase("true"));
 			//TODO other attributes
 		}
 		
@@ -122,7 +133,7 @@ public class ProjectParser extends DefaultHandler
 		{
 			LocationField locField = new LocationField();
 			currentForm.addField(locField);
-			setIdAndJump(locField, attributes);
+			setIDAndJump(locField, attributes);
 			//TODO other attributes
 		}
 		
@@ -137,12 +148,12 @@ public class ProjectParser extends DefaultHandler
 		}
 	}
 	
-	private void setIdAndJump(Field f, Attributes attributes)
+	private void setIDAndJump(Field f, Attributes attributes)
 	{
 		if(attributes.getValue("id") != null)
 		{
-			f.setId(attributes.getValue("id"));
-			idToField.put(f.getId(), f);
+			f.setID(attributes.getValue("id"));
+			idToField.put(f.getID(), f);
 		}
 		if(attributes.getValue("jump") != null)
 			fieldToJumpId.put(currentChoice, attributes.getValue("jump"));
@@ -151,9 +162,9 @@ public class ProjectParser extends DefaultHandler
 			if(currentForm.getStart() == null) //no startID was specified and the start field is not set yet
 				currentForm.setStart(f);
 		}
-		else if(currentFormStartFieldID.equals(f.getId()))
+		else if(currentFormStartFieldID.equals(f.getID()))
 			currentForm.setStart(f);
-	}
+	}	
 	
 	@Override
 	public void endElement(String uri, String localName, String qName)
@@ -171,5 +182,9 @@ public class ProjectParser extends DefaultHandler
 		
 	}
 	
+	private SAXException attribMissing(String tag, String attribute)
+	{
+		return new SAXException(attribute + " is missing, this is a required attribute of " + tag + ".");
+	}
 
 }
