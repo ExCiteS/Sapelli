@@ -1,8 +1,5 @@
 package uk.ac.ucl.excites.collector.model;
 
-import java.util.List;
-
-import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
 
 /**

@@ -3,27 +3,22 @@
  */
 package uk.ac.ucl.excites.collector.model;
 
-import uk.ac.ucl.excites.storage.model.Schema;
-
 /**
  * @author Michalis Vitos
- *
+ * 
  */
-public class Audio extends Field
+public class Audio extends MediaAttachment
 {
-	
-	private int min;
-	private int max;
-	private Choice disableChoice;
+
 	private String pathRecordingImage;
 	private String pathStopImage;
-	
+
 	public Audio()
 	{
 		// Set the min to 0 and the max to the maximum value of an Integer
 		this(0, Integer.MAX_VALUE, null);
 	}
-	
+
 	/**
 	 * @param min
 	 * @param max
@@ -37,80 +32,37 @@ public class Audio extends Field
 	}
 
 	/**
-	 * @return the min
-	 */
-	public int getMin() {
-		return min;
-	}
-
-	/**
-	 * @param min the min to set
-	 */
-	public void setMin(int min) {
-		this.min = min;
-	}
-
-	/**
-	 * @return the max
-	 */
-	public int getMax() {
-		return max;
-	}
-
-	/**
-	 * @param max the max to set
-	 */
-	public void setMax(int max) {
-		this.max = max;
-	}
-
-	/**
-	 * @return the disableChoice
-	 */
-	public Choice getDisableChoice() {
-		return disableChoice;
-	}
-
-	/**
-	 * @param disableChoice the disableChoice to set
-	 */
-	public void setDisableChoice(Choice disableChoice) {
-		this.disableChoice = disableChoice;
-	}
-
-	/**
 	 * @return the pathRecordingImage
 	 */
-	public String getPathRecordingImage() {
+	public String getPathRecordingImage()
+	{
 		return pathRecordingImage;
 	}
 
 	/**
-	 * @param pathRecordingImage the pathRecordingImage to set
+	 * @param pathRecordingImage
+	 *            the pathRecordingImage to set
 	 */
-	public void setPathRecordingImage(String pathRecordingImage) {
+	public void setPathRecordingImage(String pathRecordingImage)
+	{
 		this.pathRecordingImage = pathRecordingImage;
 	}
 
 	/**
 	 * @return the pathStopImage
 	 */
-	public String getPathStopImage() {
+	public String getPathStopImage()
+	{
 		return pathStopImage;
 	}
 
 	/**
-	 * @param pathStopImage the pathStopImage to set
+	 * @param pathStopImage
+	 *            the pathStopImage to set
 	 */
-	public void setPathStopImage(String pathStopImage) {
+	public void setPathStopImage(String pathStopImage)
+	{
 		this.pathStopImage = pathStopImage;
 	}
 
-	@Override
-	protected void _addColumns(Schema schema)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-	
 }

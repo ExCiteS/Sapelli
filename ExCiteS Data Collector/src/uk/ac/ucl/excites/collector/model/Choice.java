@@ -1,9 +1,7 @@
 package uk.ac.ucl.excites.collector.model;
 
 import java.util.ArrayList;
-import java.util.List;
 
-import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Schema;
 
@@ -22,6 +20,7 @@ public class Choice extends Field
 	private int rows;
 	private String alt;
 	private String value;
+	private boolean enabled = true;
 
 	public Choice()
 	{
@@ -88,6 +87,24 @@ public class Choice extends Field
 	public void setValue(String value)
 	{
 		this.value = value;
+	}
+	
+	/**
+	 * @return the enabled
+	 */
+	public boolean isEnabled()
+	{
+		return enabled;
+	}
+	
+	public void disable()
+	{
+		enabled = false;
+	}
+	
+	public void enable()
+	{
+		enabled = true;
 	}
 
 	/**
@@ -164,6 +181,5 @@ public class Choice extends Field
 		//TODO
 		
 	}
-
 	
 }
