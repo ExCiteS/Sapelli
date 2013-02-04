@@ -16,7 +16,7 @@ public class Choice extends Field
 
 	private Choice parent;
 	private Choice root;
-	private ArrayList<Choice> children;
+	private ArrayList<Choice> children = new ArrayList<Choice>();
 	private String imagePath;
 	private int cols;
 	private int rows;
@@ -35,7 +35,6 @@ public class Choice extends Field
 			root = this;
 		else
 			root = parent.root;
-		this.children = new ArrayList<Choice>();
 	}
 	
 	public void addChild(Choice c)

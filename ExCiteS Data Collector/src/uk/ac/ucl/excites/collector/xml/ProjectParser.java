@@ -27,7 +27,7 @@ import uk.ac.ucl.excites.storage.model.Schema;
 import android.util.Log;
 
 /**
- * @author mstevens
+ * @author mstevens, julia
  *
  */
 public class ProjectParser extends DefaultHandler
@@ -38,16 +38,19 @@ public class ProjectParser extends DefaultHandler
 	static private final String FORM_SCHEMA_ID = "schema-id";
 	static private final String FORM_SCHEMA_VERSION = "schema-versiob";
 	static private final String Field_NO_COLUMN = "noColumn";
-	
+
 	private Project project;
 	private Form currentForm;
 	private String currentFormStartFieldID;
 	private Choice currentChoice;
 	private HashMap<Field, String> fieldToJumpId;
 	private Hashtable<String, Field> idToField;
-	
-	public void runParser(File xmlFile)
+
+	public Project ParseProject(File xmlFile)
 	{
+		project = null;
+		fieldToJumpId = new HashMap<Field, String>();
+		idToField = new Hashtable<String, Field>();
 		try
 		{
 			SAXParserFactory spf = SAXParserFactory.newInstance();
@@ -59,26 +62,24 @@ public class ProjectParser extends DefaultHandler
 		}
 		catch(Exception e)
 		{
-			Log.i(TAG, "XML Parsing Exception = " + e);
-			System.exit(-1);
+			Log.e(TAG, "XML Parsing Exception = " + e);
+			return null; //System.exit(-1);
 		}
+		return project;
 	}
-	
+
 	@Override
-	public void startDocument() throws SAXException
-	{
+	public void startDocument() throws SAXException {
 		Log.i(TAG, "Start document");
 	}
 
 	@Override
-	public void endDocument() throws SAXException
-	{
+	public void endDocument() throws SAXException {
 		Log.i(TAG, "End document");
-		//Resolve jumps...
-		for(Entry<Field, String> jump : fieldToJumpId.entrySet())
-		{
+		// Resolve jumps...
+		for (Entry<Field, String> jump : fieldToJumpId.entrySet()) {
 			Field target = idToField.get(jump.getValue());
-			if(target == null)
+			if (target == null)
 				Log.e(TAG, "Cannot resolve jump ID " + jump.getValue());
 			else
 				jump.getKey().setJump(target);
@@ -86,17 +87,16 @@ public class ProjectParser extends DefaultHandler
 	}
 
 	@Override
-	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
+	public void startElement(String uri, String localName, String qName,
+			Attributes attributes) throws SAXException
 	{
 
-		if(qName.equals("ExCiteS-Collector-Project"))
-		{
+		if (qName.equals("ExCiteS-Collector-Project")) {
 			project = new Project();
 		}
-		
-		if(qName.equals("Data-Management"))
-		{
-			//TODO
+
+		if (qName.equals("Data-Management")) {
+			// TODO
 		}
 		
 		if(qName.equals(FORM))
@@ -107,44 +107,53 @@ public class ProjectParser extends DefaultHandler
 			int schemaVersion = (attributes.getValue(FORM_SCHEMA_VERSION) == null ? Schema.DEFAULT_VERSION : Integer.parseInt(attributes.getValue(FORM_SCHEMA_VERSION)));
 			currentForm = new Form(schemaID, schemaVersion, attributes.getValue("name"));
 			project.addForm(currentForm);
-			if(attributes.getValue("startField") != null)
+			if (attributes.getValue("startField") != null)
 				currentFormStartFieldID = attributes.getValue("startField");
 			else
 				Log.w(TAG, "No startField attribute, will use first field");
-			//TODO other attributes
+			// TODO other attributes
 		}
-		
-		if(qName.equals("Choice"))
+
+		if (qName.equals("Choice"))
 		{
 			Choice parent = currentChoice;
-			currentChoice = new Choice(parent); //old currentChoice becomes the parent (if it is null that's ok)
-			if(parent != null)
-				parent.addChild(currentChoice); //add new choice as child of parent
+			currentChoice = new Choice(parent); // old currentChoice becomes the parent (if it is null that's ok)
+			if (parent != null)
+				parent.addChild(currentChoice); // add new choice as child of parent
 			else
 				currentForm.addField(currentChoice); //this is a top-level Choice, so add it as a field of the form
-			//Id & jump
+			//ID & jump
 			setIDAndJump(currentChoice, attributes);
 			//No column:
 			currentChoice.setNoColumn(attributes.getValue(Field_NO_COLUMN) != null && attributes.getValue(Field_NO_COLUMN).equalsIgnoreCase("true"));
-			//TODO other attributes
+			//Other attributes:
+			if (attributes.getValue("img") != null)
+				currentChoice.setImagePath(attributes.getValue("img"));
+			if (attributes.getValue("cols") != null)
+				currentChoice.setCols(Integer.parseInt(attributes.getValue("cols")));
+			if (attributes.getValue("rows") != null)
+				currentChoice.setCols(Integer.parseInt(attributes.getValue("rows")));
+			if (attributes.getValue("value") != null)
+				currentChoice.setValue(attributes.getValue("value"));
+			//...
 		}
-		
-		if(qName.equals("Location"))
+
+		if (qName.equals("Location"))
 		{
 			LocationField locField = new LocationField();
 			currentForm.addField(locField);
 			setIDAndJump(locField, attributes);
 			//TODO other attributes
 		}
-		
-		if(qName.equals("Photo"))
+
+		if (qName.equals("Photo"))
 		{
-			//TODO
+			// TODO
 		}
-		
-		if(qName.equals("Audio"))
+
+		if (qName.equals("Audio"))
 		{
-			//TODO
+			// TODO
 		}
 	}
 	
@@ -155,36 +164,33 @@ public class ProjectParser extends DefaultHandler
 			f.setID(attributes.getValue("id"));
 			idToField.put(f.getID(), f);
 		}
-		if(attributes.getValue("jump") != null)
+		if (attributes.getValue("jump") != null)
 			fieldToJumpId.put(currentChoice, attributes.getValue("jump"));
-		if(currentFormStartFieldID == null)
-		{
-			if(currentForm.getStart() == null) //no startID was specified and the start field is not set yet
+		if (currentFormStartFieldID == null) {
+			if (currentForm.getStart() == null) // no startID was specified and the start field is not set yet
 				currentForm.setStart(f);
 		}
 		else if(currentFormStartFieldID.equals(f.getID()))
 			currentForm.setStart(f);
-	}	
+	}
 	
 	@Override
 	public void endElement(String uri, String localName, String qName)
 	{
-		if(qName.equals("Form"))
-		{	
+		if (qName.equals("Form"))
+		{
 			currentForm = null;
 			currentFormStartFieldID = null;
 		}
-		
-		if(qName.equals("Choice"))
+
+		if (qName.equals("Choice"))
 			currentChoice = currentChoice.getParent();
-		
-		
-		
+
 	}
 	
 	private SAXException attribMissing(String tag, String attribute)
 	{
 		return new SAXException(attribute + " is missing, this is a required attribute of " + tag + ".");
 	}
-
+	
 }

@@ -6,9 +6,10 @@ package uk.ac.ucl.excites.storage.model;
 
 import java.io.IOException;
 
-import uk.ac.ucl.excites.transmission.lib.io.BitInputStream;
-import uk.ac.ucl.excites.transmission.lib.io.BitOutputStream;
-import uk.ac.ucl.excites.transmission.lib.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.storage.io.BitInputStream;
+import uk.ac.ucl.excites.storage.io.BitOutputStream;
+import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
+
 
 
 /**
@@ -83,8 +84,8 @@ public class IntegerColumn extends Column<Long>
 	@Override
 	protected void validate(Long value) throws IllegalArgumentException
 	{
-		if(rangeMapping != null)
-			value = rangeMapping.toRawValue(value);
+//		if(rangeMapping != null)
+//			value = rangeMapping.toRawValue(value);
 		//Size checks:
 		if(signed)
 		{	//Signed
@@ -104,17 +105,17 @@ public class IntegerColumn extends Column<Long>
 			throw new IllegalArgumentException("Cannot store negative value as unsigned integer");
 	}
 
-	@Override
-	protected void write(Long value, BitOutputStream bitStream) throws IOException
-	{
-		bitStream.write(value - shift, size, signed);
-	}
+//	@Override
+//	protected void write(Long value, BitOutputStream bitStream) throws IOException
+//	{
+//		bitStream.write(value - shift, size, signed);
+//	}
 
-	@Override
-	protected Long read(BitInputStream bitStream) throws IOException
-	{
-		return 0 /*TODO*/ + shift;
-	}
+//	@Override
+//	protected Long read(BitInputStream bitStream) throws IOException
+//	{
+//		return 0 /*TODO*/ + shift;
+//	}
 	
 	/**
 	 * @return the size in number of bits
@@ -136,6 +137,20 @@ public class IntegerColumn extends Column<Long>
 	public boolean isVariableSize()
 	{
 		return false;
+	}
+
+	@Override
+	protected void write(Long value, BitOutputStream bitStream) throws IOException
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	protected Long read(BitInputStream bitStream) throws IOException
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 }

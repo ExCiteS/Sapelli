@@ -15,7 +15,10 @@ import com.google.common.collect.Table;
 public class Schema
 {
 
+	public static final int DEFAULT_VERSION = 0;
+	
 	private int id;
+	private int version;
 	private String name;
 	private String description;
 	
@@ -31,19 +34,28 @@ public class Schema
 	//TODO epicollect URL?
 	//TODO excites URL?
 	
-	//TODO versioning? cloning?
-	
 	public Schema(int id)
 	{
-		this.id = id;
-		columnsMap = new LinkedHashMap<String, Column>();
-		columnsArray = new ArrayList<Column>();
+		this(id, DEFAULT_VERSION, null);
 	}
 	
 	public Schema(int id, String name)
 	{
-		this(id);
-		this.name = name;
+		this(id, DEFAULT_VERSION, name);
+	}
+	
+	public Schema(int id, int version)
+	{
+		this(id, version, null);
+	}
+	
+	public Schema(int id, int version, String name)
+	{
+		this.id = id;
+		this.version = version;
+		this.name = (name == null ? "Schema_" + id + "_v" + version : name);
+		columnsMap = new LinkedHashMap<String, Column>();
+		columnsArray = new ArrayList<Column>();
 	}
 	
 	protected void addColumn(Column column)
@@ -96,6 +108,14 @@ public class Schema
 	public int getID()
 	{
 		return id;
+	}
+
+	/**
+	 * @return the version
+	 */
+	public int getVersion()
+	{
+		return version;
 	}
 
 	/**
