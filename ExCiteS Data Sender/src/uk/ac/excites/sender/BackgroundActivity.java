@@ -5,27 +5,30 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 
-public class BackgroundActivity extends Activity {
+public class BackgroundActivity extends Activity
+{
 
 	private final String SERVICE_PACKAGE_NAME = BackgroundService.class.getName();
 
 	private Context mContext;
 	private Button startButton;
 	private Button stopButton;
+	private Button settingsButton;
 
 	@Override
-	public void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState)
+	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_background);
 
 		this.mContext = this;
 		startButton = (Button) findViewById(R.id.startService);
 		stopButton = (Button) findViewById(R.id.stopService);
+		settingsButton = (Button) findViewById(R.id.settingsService);
+
 		// Disable the Stop button
 		stopButton.setEnabled(false);
 
@@ -34,9 +37,11 @@ public class BackgroundActivity extends Activity {
 			Utilities.toggleAirplaneMode(mContext);
 
 		// Start Button
-		startButton.setOnClickListener(new View.OnClickListener() {
+		startButton.setOnClickListener(new View.OnClickListener()
+		{
 
-			public void onClick(View v) {
+			public void onClick(View v)
+			{
 				// Call the Service
 				Intent mIntent = new Intent(mContext, BackgroundService.class);
 				startService(mIntent);
@@ -48,18 +53,23 @@ public class BackgroundActivity extends Activity {
 		});
 
 		// Stop Button
-		stopButton.setOnClickListener(new View.OnClickListener() {
+		stopButton.setOnClickListener(new View.OnClickListener()
+		{
 
-			public void onClick(View v) {
+			public void onClick(View v)
+			{
 
 				// Terminate the Service
-				while (Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME)) {
+				while (Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME))
+				{
 					// Terminate the service
 					Intent mIntent = new Intent(mContext, BackgroundService.class);
-					if (mContext.stopService(mIntent)) {
+					if (mContext.stopService(mIntent))
+					{
 						if (Constants.DEBUG_LOG)
 							Log.i(Constants.TAG, "Background.onCreate(): Service Stoped.");
-					} else {
+					} else
+					{
 						if (Constants.DEBUG_LOG)
 							Log.i(Constants.TAG, "Background.onCreate(): Cannot Stop the Service.");
 					}
@@ -70,34 +80,33 @@ public class BackgroundActivity extends Activity {
 				stopButton.setEnabled(false);
 			}
 		});
+
+		// Settings Button
+		settingsButton.setOnClickListener(new View.OnClickListener()
+		{
+
+			public void onClick(View v)
+			{
+				// Start the Settings
+				Intent settingsActivity = new Intent(mContext, Preferences.class);
+				startActivity(settingsActivity);
+			}
+		});
+
 	}
 
 	@Override
-	protected void onResume() {
+	protected void onResume()
+	{
 		// TODO Auto-generated method stub
 		super.onResume();
 
-		if (Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME)) {
+		if (Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME))
+		{
 			startButton.setEnabled(false);
 			stopButton.setEnabled(true);
 			if (Constants.DEBUG_LOG)
 				Log.i(Constants.TAG, "Background.onResume(): Buttons Set.");
 		}
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.menu_main, menu);
-		return true;
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		if(item.getItemId() == R.id.menu_settings)
-		{
-			Intent settingsActivity = new Intent(mContext, Preferences.class);
-			startActivity(settingsActivity);
-		}
-		return true;
 	}
 }
