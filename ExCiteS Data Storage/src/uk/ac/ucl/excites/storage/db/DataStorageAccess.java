@@ -10,27 +10,29 @@ import android.util.Log;
 
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
+import com.db4o.query.Predicate;
 
 /**
- * @author mstevens
+ * @author mstevens, julia
  * 
  */
-public final class DataAccess {
+public final class DataStorageAccess {
 
 	static private String TAG = "DATA ACCESS";
 	private ObjectContainer db;
 
-	static private DataAccess INSTANCE = null;
+	static private DataStorageAccess INSTANCE = null;
 
-	static public DataAccess getInstance(String dbFilePath) {
+	static public DataStorageAccess getInstance(String dbFilePath)
+	{
 		if (INSTANCE == null)
-			INSTANCE = new DataAccess(dbFilePath);
+			INSTANCE = new DataStorageAccess(dbFilePath);
 		return INSTANCE;
 	}
 
 	// private DB4O ...
 
-	private DataAccess(String dbFilePath) {
+	private DataStorageAccess(String dbFilePath) {
 		try {
 			if (db == null || db.ext().isClosed()) {
 				this.db = Db4oEmbedded.openFile(
@@ -46,14 +48,32 @@ public final class DataAccess {
 	// TODO access methods
 	
 	// store schema
-	public void store(Schema schema) {
+	public void store(Schema schema)
+	{
 		db.store(schema);
 	}
 	
-	// retrieve all schemata
-	public List<Schema> retrieveSchemata() {
+	/**
+	 * Retrieves all schemata
+	 * 
+	 * @return
+	 */
+	public List<Schema> retrieveSchemata()
+	{
 		List<Schema> result = db.query(Schema.class);
 		return result;
+	}
+	
+	public Schema retrieveSchema(final int id, final int version)
+	{
+		return 	db.query(new Predicate<Schema>()
+				{
+					public boolean match(Schema s)
+					{
+						return s.getID() == id && s.getVersion() == version;
+					}
+				}).next(); //TODO check if this will return null if no match is find (rather than throwing an exception)
+		
 	}
 
 }

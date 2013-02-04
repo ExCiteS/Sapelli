@@ -1,5 +1,10 @@
 package uk.ac.ucl.excites.collector.model;
 
+import java.util.List;
+
+import uk.ac.ucl.excites.storage.model.Column;
+import uk.ac.ucl.excites.storage.model.Schema;
+
 /**
  * @author mstevens
  *
@@ -14,7 +19,7 @@ public abstract class Field
 	/**
 	 * @return the id
 	 */
-	public String getId()
+	public String getID()
 	{
 		return id;
 	}
@@ -22,7 +27,7 @@ public abstract class Field
 	/**
 	 * @param id the id to set
 	 */
-	public void setId(String id)
+	public void setID(String id)
 	{
 		this.id = id;
 	}
@@ -52,5 +57,13 @@ public abstract class Field
 	{
 		return jump;
 	}
+	
+	public void addColumns(Schema schema)
+	{
+		if(!noColumn)
+			_addColumns(schema);
+	}
+	
+	protected abstract void _addColumns(Schema schema);
 	
 }

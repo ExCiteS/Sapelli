@@ -1,6 +1,11 @@
 package uk.ac.ucl.excites.collector.model;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import uk.ac.ucl.excites.storage.model.Column;
+import uk.ac.ucl.excites.storage.model.IntegerColumn;
+import uk.ac.ucl.excites.storage.model.Schema;
 
 /**
  * @author mstevens
@@ -10,6 +15,7 @@ public class Choice extends Field
 {
 
 	private Choice parent;
+	private Choice root;
 	private ArrayList<Choice> children = new ArrayList<Choice>();
 	private String imagePath;
 	private int cols;
@@ -25,6 +31,10 @@ public class Choice extends Field
 	public Choice(Choice parent)
 	{
 		this.parent = parent;
+		if(parent == null)
+			root = this;
+		else
+			root = parent.root;
 	}
 	
 	public void addChild(Choice c)
@@ -87,6 +97,16 @@ public class Choice extends Field
 	{
 		return parent;
 	}
+	
+	/**
+	 * Returns the root of this choice tree. This can be the same object (i.e. 'this') if it is the root.
+	 * 
+	 * @return the root
+	 */
+	public Choice getRoot()
+	{
+		return root;
+	}
 
 	/**
 	 * @return the children
@@ -127,5 +147,23 @@ public class Choice extends Field
 	{
 		this.rows = rows;
 	}
+	
+	public boolean isLeaf()
+	{
+		return children.isEmpty();
+	}
+	
+	public boolean isRoot()
+	{
+		return parent == null;
+	}
+
+	@Override
+	protected void _addColumns(Schema schema)
+	{
+		//TODO
+		
+	}
+
 	
 }

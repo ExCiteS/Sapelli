@@ -3,6 +3,8 @@
  */
 package uk.ac.ucl.excites.collector.model;
 
+import uk.ac.ucl.excites.storage.model.Schema;
+
 
 
 /**
@@ -18,6 +20,14 @@ public class LocationField extends Field
 	private int type;
 	private float accuracy;
 	private int timeoutS;
+	
+	
+	@Override
+	protected void _addColumns(Schema schema)
+	{
+		//TODO
+		
+	}
 	
 	
 	
