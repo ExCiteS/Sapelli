@@ -13,17 +13,23 @@ import uk.ac.ucl.excites.storage.model.Schema;
  */
 public class LocationField extends Field
 {
-
+	
+	//Statics
 	public static final int TYPE_GPS = 1;
-	//...
-
+	public static final int TYPE_NETWORK = 2;
+	public static final int TYPE_DEFAULT = TYPE_GPS;
+	
+	public static final int DEFAULT_TIMEOUT_S = 300;
+	
+	//Dynamics
 	private int type;
-	private float accuracy;
 	private int timeoutS;
 	
 	public LocationField(String id)
 	{
 		super(id);
+		if(id == null)
+			throw new NullPointerException("ID of top-level field cannot be null");
 	}
 	
 	/**
@@ -41,24 +47,10 @@ public class LocationField extends Field
 	{
 		this.type = type;
 	}
-
+	
 	/**
-	 * @return the accuracy
-	 */
-	public float getAccuracy()
-	{
-		return accuracy;
-	}
-
-	/**
-	 * @param accuracy the accuracy to set
-	 */
-	public void setAccuracy(float accuracy)
-	{
-		this.accuracy = accuracy;
-	}
-
-	/**
+	 * This is the time to wait for coordinates while already on the waiting screen, time spent before is not counted
+	 * 
 	 * @return the timeoutS
 	 */
 	public int getTimeoutS()

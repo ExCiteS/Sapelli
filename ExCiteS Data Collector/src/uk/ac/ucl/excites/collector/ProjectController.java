@@ -5,6 +5,10 @@ package uk.ac.ucl.excites.collector;
 
 import java.util.Stack;
 
+import android.location.Location;
+import android.location.LocationListener;
+import android.os.Bundle;
+
 import uk.ac.ucl.excites.collector.model.Choice;
 import uk.ac.ucl.excites.collector.model.Field;
 import uk.ac.ucl.excites.collector.model.Form;
@@ -17,7 +21,7 @@ import uk.ac.ucl.excites.storage.model.Schema;
  * @author mstevens
  *
  */
-public class ProjectController
+public class ProjectController implements LocationListener
 {
 	
 	private Project project;
@@ -90,6 +94,34 @@ public class ProjectController
 		for(Field f : currentForm.getFields())
 			f.storeValues(record);
 		//End action:
+		
+	}
+
+	@Override
+	public void onLocationChanged(Location location)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onProviderDisabled(String provider)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onProviderEnabled(String provider)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onStatusChanged(String provider, int status, Bundle extras)
+	{
+		// TODO Auto-generated method stub
 		
 	}
 		

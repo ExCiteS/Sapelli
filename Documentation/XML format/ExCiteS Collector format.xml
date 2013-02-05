@@ -39,7 +39,8 @@
 		<Photo id="photo" min="0" max="2" jump="AudioPhoto" disableField="photoChoice"/>
 		<Audio id="audio" min="0" max="7" jump="AudioPhoto" recImg="" stopImg=""/>
 
-		<Location id="gpsLocation" type="GPS" accuracy="" timeout="3000"/>
+		<Location id="gpsLocation" type="GPS" timeout="300"/>
+		<!-- maybe later: accuracy attribute on Location (fine/coarse or an actual number? -->
 		
 		<Bearing id="" jump=""/>
 		

@@ -133,7 +133,19 @@ public class ProjectParser extends DefaultHandler
 			LocationField locField = new LocationField(attributes.getValue("id"));
 			currentForm.addField(locField);
 			rememberIDAndJump(locField, attributes);
-			//TODO other attributes
+			locField.setTimeoutS(attributes.getValue("timeout") == null ? LocationField.DEFAULT_TIMEOUT_S : Integer.parseInt(attributes.getValue("timeout")));
+			//Type:
+			String type = attributes.getValue("type");
+			if("GPS".equalsIgnoreCase(type))
+				locField.setType(LocationField.TYPE_GPS);
+			else if("Network".equalsIgnoreCase(type))
+				locField.setType(LocationField.TYPE_GPS);
+			else
+			{
+				if(type != null)
+					Log.w(TAG, "Unknown Location type (" + type + ").");
+				locField.setType(LocationField.TYPE_DEFAULT);
+			}			
 		}
 
 		if (qName.equals("Photo"))
