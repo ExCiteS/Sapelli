@@ -66,10 +66,7 @@ public abstract class Column<T>
 	{
 		if(this.schema != record.getSchema())
 			throw new IllegalArgumentException("Schema mismatch.");
-		T value = (T) schema.getTable().get(record, this);
-		if(!optional && value == null)
-			throw new IllegalStateException("Could not a find a value for this record & column, even though the column is non-optional!");
-		return value;
+		return (T) schema.getTable().get(record, this);
 	}
 	
 	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException

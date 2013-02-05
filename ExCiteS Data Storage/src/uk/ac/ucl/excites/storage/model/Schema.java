@@ -58,7 +58,7 @@ public class Schema
 		columnsArray = new ArrayList<Column>();
 	}
 	
-	protected void addColumn(Column column)
+	public void addColumn(Column column)
 	{
 		if(!sealed)
 		{

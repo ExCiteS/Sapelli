@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.collector.model;
 
+import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 
 /**
@@ -11,7 +12,13 @@ public abstract class Field
 
 	protected String id;
 	protected Field jump;
+	protected boolean enabled = true;
 	protected boolean noColumn;
+	
+	public Field(String id)
+	{
+		this.id = id;
+	}
 	
 	/**
 	 * @return the id
@@ -19,14 +26,6 @@ public abstract class Field
 	public String getID()
 	{
 		return id;
-	}
-
-	/**
-	 * @param id the id to set
-	 */
-	public void setID(String id)
-	{
-		this.id = id;
 	}
 
 	/**
@@ -55,12 +54,26 @@ public abstract class Field
 		return jump;
 	}
 	
-	public void addColumns(Schema schema)
+	/**
+	 * @return the enabled
+	 */
+	public boolean isEnabled()
 	{
-		if(!noColumn)
-			_addColumns(schema);
+		return enabled;
 	}
 	
-	protected abstract void _addColumns(Schema schema);
+	public void disable()
+	{
+		enabled = false;
+	}
+	
+	public void enable()
+	{
+		enabled = true;
+	}
+	
+	public abstract void addColumns(Schema schema);
+	
+	public abstract void storeValues(Record record);
 	
 }

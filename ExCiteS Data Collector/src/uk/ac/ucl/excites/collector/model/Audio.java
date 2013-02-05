@@ -10,26 +10,13 @@ package uk.ac.ucl.excites.collector.model;
 public class Audio extends MediaAttachment
 {
 
+	public Audio(String id)
+	{
+		super(id);
+	}
+
 	private String pathRecordingImage;
 	private String pathStopImage;
-
-	public Audio()
-	{
-		// Set the min to 0 and the max to the maximum value of an Integer
-		this(0, Integer.MAX_VALUE, null);
-	}
-
-	/**
-	 * @param min
-	 * @param max
-	 * @param disableChoice
-	 */
-	public Audio(int min, int max, Choice disableChoice)
-	{
-		this.min = min;
-		this.max = max;
-		this.disableChoice = disableChoice;
-	}
 
 	/**
 	 * @return the pathRecordingImage

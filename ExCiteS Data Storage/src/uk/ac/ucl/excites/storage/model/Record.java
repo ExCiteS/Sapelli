@@ -23,7 +23,7 @@ public class Record
 		this(schema, UNKNOWN_ID, UNKNOWN_ID);
 	}
 	
-	public Record(Schema schema, int deviceID)
+	public Record(Schema schema, long deviceID)
 	{
 		this(schema, UNKNOWN_ID, deviceID);
 	}

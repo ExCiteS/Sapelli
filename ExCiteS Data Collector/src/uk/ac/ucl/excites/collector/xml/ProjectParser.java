@@ -18,10 +18,13 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
+import uk.ac.ucl.excites.collector.model.Audio;
 import uk.ac.ucl.excites.collector.model.Choice;
 import uk.ac.ucl.excites.collector.model.Field;
 import uk.ac.ucl.excites.collector.model.Form;
 import uk.ac.ucl.excites.collector.model.LocationField;
+import uk.ac.ucl.excites.collector.model.MediaAttachment;
+import uk.ac.ucl.excites.collector.model.Photo;
 import uk.ac.ucl.excites.collector.model.Project;
 import uk.ac.ucl.excites.storage.model.Schema;
 import android.util.Log;
@@ -37,6 +40,7 @@ public class ProjectParser extends DefaultHandler
 	static private final String FORM = "Form";
 	static private final String FORM_SCHEMA_ID = "schema-id";
 	static private final String FORM_SCHEMA_VERSION = "schema-versiob";
+	static private final String FORM_START_FIELD = "startField";
 	static private final String Field_NO_COLUMN = "noColumn";
 
 	private Project project;
@@ -45,12 +49,14 @@ public class ProjectParser extends DefaultHandler
 	private Choice currentChoice;
 	private HashMap<Field, String> fieldToJumpId;
 	private Hashtable<String, Field> idToField;
+	private HashMap<MediaAttachment, String> mediaAttachToDisableId;
 
 	public Project ParseProject(File xmlFile)
 	{
 		project = null;
 		fieldToJumpId = new HashMap<Field, String>();
 		idToField = new Hashtable<String, Field>();
+		mediaAttachToDisableId = new HashMap<MediaAttachment, String>();
 		try
 		{
 			SAXParserFactory spf = SAXParserFactory.newInstance();
@@ -74,28 +80,15 @@ public class ProjectParser extends DefaultHandler
 	}
 
 	@Override
-	public void endDocument() throws SAXException {
-		Log.i(TAG, "End document");
-		// Resolve jumps...
-		for (Entry<Field, String> jump : fieldToJumpId.entrySet()) {
-			Field target = idToField.get(jump.getValue());
-			if (target == null)
-				Log.e(TAG, "Cannot resolve jump ID " + jump.getValue());
-			else
-				jump.getKey().setJump(target);
-		}
-	}
-
-	@Override
-	public void startElement(String uri, String localName, String qName,
-			Attributes attributes) throws SAXException
+	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
 	{
-
-		if (qName.equals("ExCiteS-Collector-Project")) {
+		if (qName.equals("ExCiteS-Collector-Project"))
+		{
 			project = new Project();
 		}
 
-		if (qName.equals("Data-Management")) {
+		if (qName.equals("Data-Management"))
+		{
 			// TODO
 		}
 		
@@ -107,8 +100,8 @@ public class ProjectParser extends DefaultHandler
 			int schemaVersion = (attributes.getValue(FORM_SCHEMA_VERSION) == null ? Schema.DEFAULT_VERSION : Integer.parseInt(attributes.getValue(FORM_SCHEMA_VERSION)));
 			currentForm = new Form(schemaID, schemaVersion, attributes.getValue("name"));
 			project.addForm(currentForm);
-			if (attributes.getValue("startField") != null)
-				currentFormStartFieldID = attributes.getValue("startField");
+			if(attributes.getValue(FORM_START_FIELD) != null)
+				currentFormStartFieldID = attributes.getValue(FORM_START_FIELD);
 			else
 				Log.w(TAG, "No startField attribute, will use first field");
 			// TODO other attributes
@@ -116,14 +109,11 @@ public class ProjectParser extends DefaultHandler
 
 		if (qName.equals("Choice"))
 		{
-			Choice parent = currentChoice;
-			currentChoice = new Choice(parent); // old currentChoice becomes the parent (if it is null that's ok)
-			if (parent != null)
-				parent.addChild(currentChoice); // add new choice as child of parent
-			else
+			currentChoice = new Choice(attributes.getValue("id"), currentChoice); //old currentChoice becomes the parent (if it is null that's ok)
+			if(currentChoice.isRoot())
 				currentForm.addField(currentChoice); //this is a top-level Choice, so add it as a field of the form
-			//ID & jump
-			setIDAndJump(currentChoice, attributes);
+			//Remember ID & jumps
+			rememberIDAndJump(currentChoice, attributes);
 			//No column:
 			currentChoice.setNoColumn(attributes.getValue(Field_NO_COLUMN) != null && attributes.getValue(Field_NO_COLUMN).equalsIgnoreCase("true"));
 			//Other attributes:
@@ -140,38 +130,85 @@ public class ProjectParser extends DefaultHandler
 
 		if (qName.equals("Location"))
 		{
-			LocationField locField = new LocationField();
+			LocationField locField = new LocationField(attributes.getValue("id"));
 			currentForm.addField(locField);
-			setIDAndJump(locField, attributes);
+			rememberIDAndJump(locField, attributes);
 			//TODO other attributes
 		}
 
 		if (qName.equals("Photo"))
 		{
+			Photo photoField = new Photo(attributes.getValue("id"));
+			currentForm.addField(photoField);
+			rememberIDAndJump(photoField, attributes);
+			mediaAttachmentAttributes(photoField, attributes);
 			// TODO
 		}
 
 		if (qName.equals("Audio"))
 		{
-			// TODO
+			Audio audioField = new Audio(attributes.getValue("id"));
+			currentForm.addField(audioField);
+			rememberIDAndJump(audioField, attributes);
+			mediaAttachmentAttributes(audioField, attributes);
+			// TODO button images
 		}
 	}
 	
-	private void setIDAndJump(Field f, Attributes attributes)
+	private void mediaAttachmentAttributes(MediaAttachment ma, Attributes attributes)
 	{
-		if(attributes.getValue("id") != null)
+		ma.setMinMax(	(attributes.getValue("min") == null ?
+							MediaAttachment.DEFAULT_MIN :
+							Integer.parseInt(attributes.getValue("min"))),
+						(attributes.getValue("max") == null ?
+							MediaAttachment.DEFAULT_MAX :
+							Integer.parseInt(attributes.getValue("max"))));
+		if(attributes.getValue("disableField") != null)
+			mediaAttachToDisableId.put(ma, attributes.getValue("disableField"));
+	}
+	
+	private void rememberIDAndJump(Field f, Attributes attributes)
+	{
+		//Remember ID:
+		if(f.getID() != null)
 		{
-			f.setID(attributes.getValue("id"));
+			if(idToField.get(f.getID()) != null)
+				Log.w(TAG, "Duplicate field id (" + f.getID() + "!");
 			idToField.put(f.getID(), f);
 		}
-		if (attributes.getValue("jump") != null)
-			fieldToJumpId.put(currentChoice, attributes.getValue("jump"));
-		if (currentFormStartFieldID == null) {
-			if (currentForm.getStart() == null) // no startID was specified and the start field is not set yet
-				currentForm.setStart(f);
+		//Remember jump:
+		if(attributes.getValue("jump") != null)
+			fieldToJumpId.put(f, attributes.getValue("jump"));
+		//Resolve/set form start field:
+		if(currentFormStartFieldID == null)
+		{
+			if(currentForm.getStart() == null) //no startID was specified and the start field is not set yet
+				currentForm.setStart(f); //set first field of the form as start field
 		}
 		else if(currentFormStartFieldID.equals(f.getID()))
 			currentForm.setStart(f);
+	}
+	
+	private void resolveJumpsAndDisablings()
+	{
+		// Resolve jumps...
+		for(Entry<Field, String> jump : fieldToJumpId.entrySet())
+		{
+			Field target = idToField.get(jump.getValue());
+			if (target == null)
+				Log.e(TAG, "Cannot resolve jump ID " + jump.getValue());
+			else
+				jump.getKey().setJump(target);
+		}
+		//Resolve disabling of Choices by MediaAttachments...
+		for(Entry<MediaAttachment, String> disable : mediaAttachToDisableId.entrySet())
+		{
+			Field target = idToField.get(disable.getValue());
+			if(target == null)
+				Log.e(TAG, "Cannot resolve disable field ID " + disable.getValue());
+			else
+				disable.getKey().setDisableChoice((Choice) target);
+		}
 	}
 	
 	@Override
@@ -185,7 +222,13 @@ public class ProjectParser extends DefaultHandler
 
 		if (qName.equals("Choice"))
 			currentChoice = currentChoice.getParent();
-
+	}
+	
+	@Override
+	public void endDocument() throws SAXException
+	{
+		Log.i(TAG, "End document");
+		resolveJumpsAndDisablings(); //!!!
 	}
 	
 	private SAXException attribMissing(String tag, String attribute)

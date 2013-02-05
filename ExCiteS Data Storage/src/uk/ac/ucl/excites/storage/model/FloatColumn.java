@@ -13,7 +13,7 @@ import uk.ac.ucl.excites.storage.io.BitOutputStream;
 public class FloatColumn extends Column<Float>
 {	
 	
-	protected FloatColumn(String name, boolean optional)
+	public FloatColumn(String name, boolean optional)
 	{
 		super(name, optional);
 	}

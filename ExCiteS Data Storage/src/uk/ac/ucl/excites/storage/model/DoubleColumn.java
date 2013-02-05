@@ -13,7 +13,7 @@ import uk.ac.ucl.excites.storage.io.BitOutputStream;
 public class DoubleColumn extends Column<Double>
 {	
 	
-	protected DoubleColumn(String name, boolean optional)
+	public DoubleColumn(String name, boolean optional)
 	{
 		super(name, optional);
 	}

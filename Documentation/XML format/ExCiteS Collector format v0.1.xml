@@ -1,0 +1,43 @@
+<project start="root" end="__QUIT|__LOOP">
+
+	<imagepicker id="root" rows="3" cols="2" fill="width|height">
+		<item img="animals.png" alt="Animals" value="animal" jump="animalForm"/>
+		<item img="" alt="" value="" colspan="2"/>
+		<item img="" alt="" value="" rowspan="2"/>
+		<item img="" alt=""/>
+		<item img="" alt=""/>
+		<item img="" alt=""/>
+	</imagepicker>
+
+	<imagepicker id="animalForm" rows="3" cols="2" fill="width|height" jump="observationTypeForm">
+		<item img="" alt="Eliphant" value="eliph"/>
+		<item img="" alt="Giraffe"  value="" colspan="2"/>
+		<item img="" alt="" rowspan="2"/>
+		<item img="" alt=""/>
+		<item img="" alt=""/>
+		<item img="" alt="" jump="oneMoreScreen"/>
+	</imagepicker>
+
+	<imagepicker id="observationTypeForm" rows="3" cols="1" fill="width">
+		<item img="" alt="Hear" jump="audio"/>
+		<item img="" alt="See" jump="photo"/>
+		<item img="" alt="Been told" jump="_END"/>
+	</imagepicker>
+
+<!--	<subform id="">
+		<location/>
+	</subform>
+
+	<subform id="">
+		<compass/>
+	</subform>
+
+	<subform id="photo">
+		<photo min="0" max="5"/>
+	</subform>
+
+	<subform id="">
+		<video>
+	</subform> -->
+
+</project>

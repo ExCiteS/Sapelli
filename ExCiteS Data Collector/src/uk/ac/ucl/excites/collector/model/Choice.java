@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.collector.model;
 import java.util.ArrayList;
 
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
+import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 
 /**
@@ -20,20 +21,24 @@ public class Choice extends Field
 	private int rows;
 	private String alt;
 	private String value;
-	private boolean enabled = true;
-
-	public Choice()
-	{
-		this(null);
-	}
 	
-	public Choice(Choice parent)
+	public Choice(String id, Choice parent)
 	{
+		super(id);
 		this.parent = parent;
 		if(parent == null)
-			root = this;
+		{	//this is a root choice
+			if(id == null)
+				throw new NullPointerException("ID cannot be null on a root (i.e. top-level) Choice.");
+			root = this; //self-pointer
+		}
 		else
+		{	//this is a child choice
+			parent.addChild(this); //add myself as a child of my parent
 			root = parent.root;
+			if(id == null)
+				this.id = parent.getID() + "." + parent.getChildren().size();
+		}
 	}
 	
 	public void addChild(Choice c)
@@ -89,24 +94,6 @@ public class Choice extends Field
 		this.value = value;
 	}
 	
-	/**
-	 * @return the enabled
-	 */
-	public boolean isEnabled()
-	{
-		return enabled;
-	}
-	
-	public void disable()
-	{
-		enabled = false;
-	}
-	
-	public void enable()
-	{
-		enabled = true;
-	}
-
 	/**
 	 * @return the parent
 	 */
@@ -174,11 +161,27 @@ public class Choice extends Field
 	{
 		return parent == null;
 	}
-
+	
 	@Override
-	protected void _addColumns(Schema schema)
+	public Field getJump()
+	{
+		if(jump == null && parent != null)
+			return parent.getJump();
+		else
+			return jump;
+	}
+	
+	@Override
+	public void addColumns(Schema schema)
 	{
 		//TODO
+		
+	}
+
+	@Override
+	public void storeValues(Record record)
+	{
+		
 		
 	}
 	

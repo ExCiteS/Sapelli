@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.collector.model;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import uk.ac.ucl.excites.storage.db.DataStorageAccess;
 import uk.ac.ucl.excites.storage.model.Schema;
@@ -71,6 +72,11 @@ public class Form
 			locationField = (LocationField) f;
 		}
 	}
+	
+	public List<Field> getFields()
+	{
+		return fields;
+	}
 
 	/**
 	 * @return the start
@@ -98,6 +104,30 @@ public class Form
 		return locationField;
 	}
 	
+	/**
+	 * @return the endAction
+	 */
+	public int getEndAction()
+	{
+		return endAction;
+	}
+
+	/**
+	 * @return the vibrateOnEnd
+	 */
+	public boolean isVibrateOnEnd()
+	{
+		return vibrateOnEnd;
+	}
+
+	/**
+	 * @return the endSoundPath
+	 */
+	public String getEndSoundPath()
+	{
+		return endSoundPath;
+	}
+
 	public Schema getSchema(DataStorageAccess dsa)
 	{
 		Schema schema = dsa.retrieveSchema(schemaID, schemaVersion);
@@ -105,7 +135,8 @@ public class Form
 		{
 			schema = new Schema(schemaID, schemaVersion, name);			
 			for(Field f : fields)
-				f.addColumns(schema);
+				if(!f.isNoColumn())
+					f.addColumns(schema);
 			schema.seal();
 			dsa.store(schema);
 		}
