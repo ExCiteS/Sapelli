@@ -81,7 +81,7 @@ public class StringColumn extends Column<String>
 	}
 	
 	/**
-	 * StringColumn overrides Column#writeValue(T, BitOutputStream) to force that the empty String ("") is treat as null
+	 * StringColumn overrides Column#writeValue(T, BitOutputStream) to force that the empty String ("") is treated as null
 	 * 
 	 * @see uk.ac.ucl.excites.storage.model.Column#writeValue(java.lang.Object, uk.ac.ucl.excites.storage.io.BitOutputStream)
 	 */
