@@ -18,10 +18,14 @@ public class DoubleColumn extends Column<Double>
 		super(name, optional);
 	}
 
+	/**
+	 * @param value the String to parse (can be expected to be neither null nor "")
+	 * @return the parsed value
+	 */
 	@Override
 	protected Double parse(String value)
 	{
-		return Double.parseDouble(value);
+		return Double.valueOf(value);
 	}
 
 	@Override

@@ -76,10 +76,14 @@ public class IntegerColumn extends Column<Long>
 		this.signed = false;
 	}
 	
+	/**
+	 * @param value the String to parse (can be expected to be neither null nor "")
+	 * @return the parsed value
+	 */
 	@Override
 	protected Long parse(String value)
 	{
-		return Long.parseLong(value);
+		return Long.valueOf(value);
 	}
 
 	@Override

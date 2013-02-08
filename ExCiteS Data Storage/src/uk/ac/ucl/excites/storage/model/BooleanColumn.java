@@ -23,13 +23,14 @@ public class BooleanColumn extends Column<Boolean>
 		super(name, optional);
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.storage.model.Column#parse(java.lang.String)
+	/**
+	 * @param value the String to parse (can be expected to be neither null nor "")
+	 * @return the parsed value
 	 */
 	@Override
 	protected Boolean parse(String value)
 	{
-		return Boolean.parseBoolean(value);
+		return Boolean.valueOf(value);
 	}
 
 	/* (non-Javadoc)

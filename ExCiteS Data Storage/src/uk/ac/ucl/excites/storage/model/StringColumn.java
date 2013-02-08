@@ -45,8 +45,13 @@ public class StringColumn extends Column<String>
 		super(name, optional);
 		this.maxLengthBytes = maxLengthBytes;
 		this.charset = charset;
+		this.sizeField = new IntegerRangeMapping(1, maxLengthBytes); //we don't store the empty string so effective size is always at least 1
 	}
-
+	
+	/**
+	 * @param value the String to parse (can be expected to be neither null nor "")
+	 * @return the parsed value
+	 */
 	@Override
 	protected String parse(String value)
 	{
@@ -54,21 +59,43 @@ public class StringColumn extends Column<String>
 		return value;
 	}
 
+	/**
+	 * Checks for empty string (only allowed if column is optional) and size restriction violations.
+	 * 
+	 * @see uk.ac.ucl.excites.storage.model.Column#validate(java.lang.Object)
+	 */
 	@Override
 	protected void validate(String value) throws IllegalArgumentException
 	{
-		int bytesNeeded = StringUtils.sizeBytes(value, charset);
-		if(bytesNeeded > maxLengthBytes)
-			throw new IllegalArgumentException("String is too long (it would take " + bytesNeeded + " bytes, while the maximum allowed is " + maxLengthBytes + " bytes).");
+		if(value.equals(""))
+		{
+			if(!optional)
+				throw new IllegalArgumentException("Empty String (which we treat the same as a null value) is not allowed in non-optional column");
+		}
+		else
+		{
+			int bytesNeeded = StringUtils.sizeBytes(value, charset);
+			if(bytesNeeded > maxLengthBytes)
+				throw new IllegalArgumentException("String \"" + value + "\" is too long (it would take " + bytesNeeded + " bytes, while the maximum allowed is " + maxLengthBytes + " bytes).");
+		}
+	}
+	
+	/**
+	 * StringColumn overrides Column#writeValue(T, BitOutputStream) to force that the empty String ("") is treat as null
+	 * 
+	 * @see uk.ac.ucl.excites.storage.model.Column#writeValue(java.lang.Object, uk.ac.ucl.excites.storage.io.BitOutputStream)
+	 */
+	@Override
+	public void writeValue(String value, BitOutputStream bitStream) throws IOException
+	{
+		super.writeValue(value.equals("") ? null : value, bitStream);
 	}
 
 	@Override
 	protected void write(String value, BitOutputStream bitStream) throws IOException
 	{
 		//Write length:
-		//TODO write lenth
-		//int bitsNeededForMaxSize = ;
-		//bitStream.write(StringUtils.sizeBytes(value, charset), bitsNeededForMaxSize, false);
+		sizeField.write(StringUtils.sizeBytes(value, charset), bitStream);
 		//Write actual string:
 		bitStream.write(value, charset);
 	}
@@ -76,8 +103,10 @@ public class StringColumn extends Column<String>
 	@Override
 	protected String read(BitInputStream bitStream) throws IOException
 	{
-		// TODO Auto-generated method stub
-		return null;
+		//Read length:
+		int numberOfBytes = (int) sizeField.read(bitStream);
+		//Read actual string:
+		return bitStream.readString(numberOfBytes, charset);
 	}
 
 	@Override
@@ -94,9 +123,7 @@ public class StringColumn extends Column<String>
 	@Override
 	public int getSize()
 	{
-		int bitsNeededForLengthField = 0;
-		//TODO compute bits used for size field!!
-		return bitsNeededForLengthField + (maxLengthBytes * 8);
+		return sizeField.getSize() + (maxLengthBytes * 8);
 	}
 	
 }

@@ -18,10 +18,14 @@ public class FloatColumn extends Column<Float>
 		super(name, optional);
 	}
 
+	/**
+	 * @param value the String to parse (can be expected to be neither null nor "")
+	 * @return the parsed value
+	 */
 	@Override
 	protected Float parse(String value)
 	{
-		return Float.parseFloat(value);
+		return Float.valueOf(value);
 	}
 
 	@Override

@@ -36,6 +36,10 @@ public abstract class Column<T>
 		storeValue(record, parsedValue);
 	}
 	
+	/**
+	 * @param value the String to parse (can be expected to be neither null nor "")
+	 * @return the parsed value
+	 */
 	protected abstract T parse(String value);
 	
 	public void storeValue(Record record, T value) throws IOException
@@ -74,7 +78,7 @@ public abstract class Column<T>
 		writeValue(retrieveValue(record), bitStream);		
 	}
 	
-	public final void writeValue(T value, BitOutputStream bitStream) throws IOException
+	public void writeValue(T value, BitOutputStream bitStream) throws IOException
 	{
 		if(optional)
 			bitStream.write(value != null); //write "presence"-bit
@@ -119,6 +123,7 @@ public abstract class Column<T>
 	
 	/**
 	 * Perform checks on potential value (e.g.: not too big for size restrictions, no invalid content, etc.) 
+	 * Argument is assumed to be non-null! Hence, null checks should happen before any call of this method.
 	 * Throws an IllegalArgumentException in case of invalid value
 	 * 
 	 * @param value
