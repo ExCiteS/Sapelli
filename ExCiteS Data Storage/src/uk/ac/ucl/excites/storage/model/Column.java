@@ -38,14 +38,14 @@ public abstract class Column<T>
 	
 	protected abstract T parse(String value);
 	
-	public void storeValue(Record record, T value) throws Exception
+	public void storeValue(Record record, T value) throws IOException
 	{
 		if(this.schema != record.getSchema())
 			throw new IllegalArgumentException("Schema mismatch.");
 		if(value == null)
 		{
 			if(!optional)
-				throw new NullPointerException("Cannot set null value for non-optional column!");
+				throw new IOException("Cannot set null value for non-optional column!");
 			//else: don't store anything (value is null but column is optional)
 		}
 		else
@@ -76,16 +76,18 @@ public abstract class Column<T>
 	
 	public final void writeValue(T value, BitOutputStream bitStream) throws IOException
 	{
-		validate(value); //just in case...
 		if(optional)
 			bitStream.write(value != null); //write "presence"-bit
 		else
 		{
 			if(value == null)
-				throw new IllegalStateException("Non-optional value is null!");
+				throw new IOException("Non-optional value is null!");
 		}
 		if(value != null)
+		{
+			validate(value); //just in case...
 			write(value, bitStream); //handled by subclass
+		}
 	}
 	
 	protected abstract void write(T value, BitOutputStream bitStream) throws IOException;
@@ -101,7 +103,9 @@ public abstract class Column<T>
 		if(!optional || bitStream.readBit()) //in case of optional column: only read value if "presence"-bit is true
 		{
 			value = read(bitStream);
-			validate(value); //throw exception if invalid
+			if(value == null)
+				throw new IOException(optional ? "Read null value even though presence-bit was set to true!" : "Non-optional value is null!");
+			validate(value); //throws exception if invalid
 		}
 		return value;
 	}

@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.storage.model;
 
+import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 
 /**
@@ -129,6 +130,22 @@ public class Record
 		}
 	}
 	
-//TODO	public void readFromBitStream(
+	public void readFromBitStream(BitInputStream bitStream, boolean readID, boolean readDeviceID) throws Exception
+	{
+		try
+		{
+			if(readID)
+				id = bitStream.readInt(); //reads ID as a 32bit integer
+			if(readDeviceID)
+				deviceID = bitStream.readLong(); //reads device ID as a 64bit integer
+			//read fields:
+			for(Column c : schema.getColumns())
+				c.readAndStoreValue(this, bitStream);
+		}
+		catch(Exception e)
+		{
+			throw new Exception("Error on attempting to read record", e);
+		}		
+	}
 
 }

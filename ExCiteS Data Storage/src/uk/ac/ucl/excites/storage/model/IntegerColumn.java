@@ -13,7 +13,7 @@ import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
 
 
 /**
- * A column for integers up to 64bits
+ * A column for integers up to 64 bits
  * 
  * @author mstevens
  *
@@ -68,7 +68,7 @@ public class IntegerColumn extends Column<Long>
 	 * @param minLogicalValue
 	 * @param maxLogicalValue
 	 */
-	public IntegerColumn(String name, boolean optional, int minLogicalValue, int maxLogicalValue)
+	public IntegerColumn(String name, boolean optional, long minLogicalValue, long maxLogicalValue)
 	{
 		super(name, optional);
 		this.rangeMapping = new IntegerRangeMapping(minLogicalValue, maxLogicalValue);
@@ -85,38 +85,61 @@ public class IntegerColumn extends Column<Long>
 	@Override
 	protected void validate(Long value) throws IllegalArgumentException
 	{
-//		if(rangeMapping != null)
-//			value = rangeMapping.toRawValue(value);
-		//Size checks:
-		if(signed)
-		{	//Signed
-			if(value < (long) (- Math.pow(2, size - 1)) || value > (long) (Math.pow(2, size - 1) - 1))
-				throw new IllegalArgumentException("Signed value (" + value + ") does not fit in " + size + " bits.");
-		}
+		if(rangeMapping != null && !rangeMapping.inRange(value))
+			throw new IllegalArgumentException("The value (" + value + ") is not in the allowed range of [" + rangeMapping.getLowBound() + ", " + rangeMapping.getHighBound() + "].");
 		else
-		{	//Unsigned
-			if(value < 0l)
-				throw new IllegalArgumentException("Cannot write negative value as unsigned interger.");
-			if(value > (long) (Math.pow(2, size) - 1))
-				throw new IllegalArgumentException("Unsigned value (" + value + ") does not fit in " + size + " bits.");
+		{
+			//Size checks:
+			if(signed)
+			{	//Signed
+				if(value < (long) (- Math.pow(2, size - 1)) || value > (long) (Math.pow(2, size - 1) - 1))
+					throw new IllegalArgumentException("Signed value (" + value + ") does not fit in " + size + " bits.");
+			}
+			else
+			{	//Unsigned
+				if(value < 0l)
+					throw new IllegalArgumentException("Cannot store negative value as unsigned interger.");
+				if(value > (long) (Math.pow(2, size) - 1))
+					throw new IllegalArgumentException("Unsigned value (" + value + ") does not fit in " + size + " bits.");
+			}
 		}
-		//Signedness check
-		//TODO how does shifting affect signedness and the test below?
-		if(!signed && value < 0)
-			throw new IllegalArgumentException("Cannot store negative value as unsigned integer");
+	}
+	
+	public long getMinValue()
+	{
+		if(rangeMapping != null)
+			return rangeMapping.getLowBound();
+		else
+			return (signed ?	(long) (- Math.pow(2, size - 1)) : 
+								0l);
 	}
 
-//	@Override
-//	protected void write(Long value, BitOutputStream bitStream) throws IOException
-//	{
-//		bitStream.write(value - shift, size, signed);
-//	}
+	public long getMaxValue()
+	{
+		if(rangeMapping != null)
+			return rangeMapping.getHighBound();
+		else
+			return (signed ?	(long) (Math.pow(2, size - 1) - 1) : 
+								(long) (Math.pow(2, size) - 1));
+	}
+	
+	@Override
+	protected void write(Long value, BitOutputStream bitStream) throws IOException
+	{
+		if(rangeMapping != null)
+			rangeMapping.write(value, bitStream);
+		else
+			bitStream.write(value, size, signed);
+	}
 
-//	@Override
-//	protected Long read(BitInputStream bitStream) throws IOException
-//	{
-//		return 0 /*TODO*/ + shift;
-//	}
+	@Override
+	protected Long read(BitInputStream bitStream) throws IOException
+	{
+		if(rangeMapping != null)
+			return rangeMapping.read(bitStream);
+		else
+			return bitStream.readInteger(size, signed);
+	}
 	
 	/**
 	 * @return the size in number of bits
@@ -138,20 +161,6 @@ public class IntegerColumn extends Column<Long>
 	public boolean isVariableSize()
 	{
 		return false;
-	}
-
-	@Override
-	protected void write(Long value, BitOutputStream bitStream) throws IOException
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	protected Long read(BitInputStream bitStream) throws IOException
-	{
-		// TODO Auto-generated method stub
-		return null;
 	}
 	
 }
