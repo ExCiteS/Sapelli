@@ -46,7 +46,8 @@ public class DateTimeColumn extends Column<DateTime>
 	}
 	
 	/**
-	 * Returns a DateTimeColumn that can hold any millisecond-accurate timestamp in the 21st century, including a local timezone reference
+	 * Returns a DateTimeColumn that can hold any millisecond-accurate timestamp in the 21st century, including a local timezone reference.
+	 * Takes up 49 bits.
 	 * 
 	 * @param name
 	 * @param optional
@@ -59,6 +60,7 @@ public class DateTimeColumn extends Column<DateTime>
 	
 	/**
 	 * Returns a DateTimeColumn that can hold any second-accurate timestamp in the 21st century, including a local timezone reference
+	 * Takes up 39 bits.
 	 * 
 	 * @param name
 	 * @param optional
@@ -71,7 +73,7 @@ public class DateTimeColumn extends Column<DateTime>
 	
 	/**
 	 * Returns a DateTimeColumn that only needs 30 bits.
-	 * This is achieved by using second-level accurate (instead of ms-level), by not storing the
+	 * This is achieved by using second-level accurate (instead of millisecond-level), by not storing the
 	 * local timezone, and by limiting the value range to a 34 year window starting on 2008/01/01
 	 * (taken because the first Android device was released in 2008).
 	 * 
