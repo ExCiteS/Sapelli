@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.storage.db.DataStorageAccess;
+import uk.ac.ucl.excites.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.storage.model.Schema;
 
 /**
@@ -20,6 +21,8 @@ public class Form
 	public static final int END_ACTION_LOOP = 0;
 	public static final int END_ACTION_EXIT = 1;
 	public static final int END_ACTION_DEFAULT = END_ACTION_LOOP;
+	
+	public static final String TIMESTAMP_COLUMN_NAME = "TimeStamp";
 	
 	//Dynamics-------------------------------------------------------
 	private int schemaID;
@@ -133,7 +136,8 @@ public class Form
 		Schema schema = dsa.retrieveSchema(schemaID, schemaVersion);
 		if(schema == null)
 		{
-			schema = new Schema(schemaID, schemaVersion, name);			
+			schema = new Schema(schemaID, schemaVersion, name);
+			schema.addColumn(DateTimeColumn.Century21NoMS(TIMESTAMP_COLUMN_NAME, false));
 			for(Field f : fields)
 				if(!f.isNoColumn())
 					f.addColumns(schema);

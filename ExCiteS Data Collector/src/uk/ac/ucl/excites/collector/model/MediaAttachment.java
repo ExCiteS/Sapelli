@@ -88,13 +88,13 @@ public class MediaAttachment extends Field
 	@Override
 	public void addColumns(Schema schema)
 	{
-		schema.addColumn(new IntegerColumn(id, false, min, max));
+		schema.addColumn(new IntegerColumn(id, true, min, max));
 	}
 	
 	@Override
 	public void storeValues(Record record)
 	{
-		int currentNumberOfItems = (Integer) record.get(id);
+		Integer currentNumberOfItems = (Integer) record.get(id);
 		
 		//TODO 
 	}

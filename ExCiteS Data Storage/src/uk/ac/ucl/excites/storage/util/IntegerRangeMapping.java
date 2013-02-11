@@ -25,6 +25,11 @@ import uk.ac.ucl.excites.storage.io.BitOutputStream;
 public class IntegerRangeMapping
 {
 
+	static public IntegerRangeMapping ForSize(long loBound, int sizeBits)
+	{
+		return new IntegerRangeMapping(loBound, BigInteger.valueOf((long) (Math.pow(2, sizeBits) - 1)).add(BigInteger.valueOf(loBound)).longValue());
+	}
+	
 	private int size; //size in number of bits
 	private long loBound = 0; //"shift" value
 	private long hiBound;
@@ -43,8 +48,6 @@ public class IntegerRangeMapping
 		BigInteger max = BigInteger.valueOf(hiBound).subtract(BigInteger.valueOf(loBound));
 		size = max.bitLength();
 		//Without BigInteger: size = Long.SIZE - Long.numberOfLeadingZeros(max); //gets the numbers of bits needed to store a positive non-0 integer (log2(x))
-		
-		System.out.println("[" + loBound + ", " + hiBound + "] will be mapped on: [ 0, " + max + " ]; Shift: " + loBound + "; Bits needed: " + size);
 	}
 	
 	/**
@@ -68,7 +71,19 @@ public class IntegerRangeMapping
 	 */
 	public long getHighBound()
 	{
-		return hiBound;
+		return getHighBound(true);
+	}
+	
+	/**
+	 * @param strict indicates whether the specified (true) or effective (false) upper bound is returned
+	 * @return the hiBound
+	 */
+	public long getHighBound(boolean strict)
+	{
+		if(strict)
+			return hiBound;
+		else
+			return BigInteger.valueOf(2).pow(size).subtract(BigInteger.ONE).add(BigInteger.valueOf(loBound)).longValue();
 	}
 
 	public BigInteger toRawValue(long logicalValue)
@@ -92,34 +107,55 @@ public class IntegerRangeMapping
 	}
 
 	/**
-	 * This method checks if the given value is in the logical range specified upon construction ([loBound, hiBound]).
+	 * This method checks if the given value is in the logical range
 	 * 
-	 * However, often it will be "technically" possible to store logical higher values using the allocated number
-	 * of bits (= size), namely all values from [loBound, (2^size) - 1 + loBound].
+	 * If strict is true the logical range is taken as specified upon construction: [loBound, hiBound];
+	 * If strict is false the logical range is taken as "effective" logical range of [loBound, (2^size) - 1 + loBound].
+	 * 
+	 * The difference between the logical range as specified and the "effective" one stems from the fact that it is
+	 * often "technically" possible to store higher logical values than the specified hiBound using the allocated
+	 * number of bits (= size), namely all values from [loBound, (2^size) - 1 + loBound].
 	 * For instance the logical range [-1, 255] will be mapped on [0, 256] but since this raw range requires 9 bits,
 	 * we could actually store all logical values of [-1, 510] (mapped onto raw range of [0, 511]).
-	 * To check if a logical value falls within this "effective" logical range the fits(long) method should be used instead.
 	 * 
 	 * @param logicalValue
-	 * @return whether or not the logical value is in the valid [loBound, hiBound] range
+	 * @parem strict whether or not to use the specified or effective logical range
+	 * @return whether or not the logical value is in the valid range
+	 */
+	public boolean inRange(long logicalValue, boolean strict)
+	{
+		return (getLowBound() <= logicalValue) && (logicalValue <= getHighBound(strict));
+	}
+
+	/**
+	 * This method checks if the given value is in the logical range as specified upon construction: [loBound, hiBound].
+	 *  
+	 * @param logicalValue
+	 * @return whether or not the logical value is in the valid range as specified upon construction
 	 */
 	public boolean inRange(long logicalValue)
 	{
-		return (loBound <= logicalValue) && (logicalValue <= hiBound);
+		return inRange(logicalValue, true);
 	}
 	
 	/**
 	 * This method checks whether the given value is in the "effective" logical range of [loBound, (2^size) - 1 + loBound]
-	 * 
-	 * To check if the value is in the logical range specified upon construction ([loBound, hiBound]) the inRange(long) method should be used instead.
 	 * 
 	 * @param logicalValue
 	 * @return whether or not the logical value is in the "effective" [loBound, (2^size) - 1 + loBound] range
 	 */
 	public boolean fits(long logicalValue)
 	{
+		return inRange(logicalValue, false);
+		/*//Alternative implementation:
 		BigInteger raw = toRawValue(logicalValue);
-		return raw.signum() >= 0 && raw.bitLength() <= size;
+		return raw.signum() >= 0 && raw.bitLength() <= size; */
+	}
+	
+	public String toString()
+	{
+		BigInteger max = BigInteger.valueOf(hiBound).subtract(BigInteger.valueOf(loBound));
+		return "IntegerRangeMapping of [" + loBound + ", " + hiBound + "] to [0, " + max + "] (shift: " + loBound + "; size: " + size + " bits)";
 	}
 	
 }

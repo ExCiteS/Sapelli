@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.storage.model;
 
 import java.io.IOException;
+import java.text.ParseException;
 
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
@@ -21,9 +22,10 @@ public class DoubleColumn extends Column<Double>
 	/**
 	 * @param value the String to parse (can be expected to be neither null nor "")
 	 * @return the parsed value
+	 * @throws ParseException
 	 */
 	@Override
-	protected Double parse(String value)
+	protected Double parse(String value) throws ParseException
 	{
 		return Double.valueOf(value);
 	}
@@ -56,6 +58,12 @@ public class DoubleColumn extends Column<Double>
 	public int getSize()
 	{
 		return Double.SIZE;
+	}
+
+	@Override
+	protected String toString(Double value)
+	{
+		return value.toString();
 	}
 
 }

@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.storage.model;
 
 import java.io.IOException;
+import java.text.ParseException;
 
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
@@ -26,9 +27,10 @@ public class BooleanColumn extends Column<Boolean>
 	/**
 	 * @param value the String to parse (can be expected to be neither null nor "")
 	 * @return the parsed value
+	 * @throws ParseException
 	 */
 	@Override
-	protected Boolean parse(String value)
+	protected Boolean parse(String value) throws ParseException
 	{
 		return Boolean.valueOf(value);
 	}
@@ -70,6 +72,12 @@ public class BooleanColumn extends Column<Boolean>
 	public int getSize()
 	{
 		return 1;
+	}
+
+	@Override
+	protected String toString(Boolean value)
+	{
+		return value.toString();
 	}
 
 }

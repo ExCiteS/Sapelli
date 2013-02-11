@@ -9,8 +9,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 /**
@@ -19,7 +17,8 @@ import android.widget.RelativeLayout;
  * 
  * @see SystemUiHider
  */
-public class MainActivity extends Activity {
+public class MainActivity extends Activity
+{
 
 	/**
 	 * Whether or not the system UI should be auto-hidden after

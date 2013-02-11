@@ -5,12 +5,11 @@ package uk.ac.ucl.excites.storage.model;
 
 
 import java.io.IOException;
+import java.text.ParseException;
 
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
-
-
 
 /**
  * A column for integers up to 64 bits
@@ -79,9 +78,10 @@ public class IntegerColumn extends Column<Long>
 	/**
 	 * @param value the String to parse (can be expected to be neither null nor "")
 	 * @return the parsed value
+	 * @throws ParseException
 	 */
 	@Override
-	protected Long parse(String value)
+	protected Long parse(String value) throws ParseException
 	{
 		return Long.valueOf(value);
 	}
@@ -165,6 +165,12 @@ public class IntegerColumn extends Column<Long>
 	public boolean isVariableSize()
 	{
 		return false;
+	}
+
+	@Override
+	protected String toString(Long value)
+	{
+		return value.toString();
 	}
 	
 }

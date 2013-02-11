@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.storage.model;
 
 import java.io.IOException;
+import java.text.ParseException;
 
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
@@ -21,9 +22,10 @@ public class FloatColumn extends Column<Float>
 	/**
 	 * @param value the String to parse (can be expected to be neither null nor "")
 	 * @return the parsed value
+	 * @throws ParseException
 	 */
 	@Override
-	protected Float parse(String value)
+	protected Float parse(String value) throws ParseException
 	{
 		return Float.valueOf(value);
 	}
@@ -56,6 +58,12 @@ public class FloatColumn extends Column<Float>
 	public int getSize()
 	{
 		return Float.SIZE;
+	}
+
+	@Override
+	protected String toString(Float value)
+	{
+		return value.toString();
 	}
 
 }

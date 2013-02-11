@@ -125,5 +125,11 @@ public class StringColumn extends Column<String>
 	{
 		return sizeField.getSize() + (maxLengthBytes * 8);
 	}
+
+	@Override
+	protected String toString(String value)
+	{
+		return value;
+	}
 	
 }

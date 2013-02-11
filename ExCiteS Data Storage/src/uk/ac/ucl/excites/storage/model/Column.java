@@ -2,6 +2,7 @@ package uk.ac.ucl.excites.storage.model;
 
 
 import java.io.IOException;
+import java.text.ParseException;
 
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
@@ -39,8 +40,9 @@ public abstract class Column<T>
 	/**
 	 * @param value the String to parse (can be expected to be neither null nor "")
 	 * @return the parsed value
+	 * @throws ParseException
 	 */
-	protected abstract T parse(String value);
+	protected abstract T parse(String value) throws ParseException;
 	
 	public void storeValue(Record record, T value) throws IOException
 	{
@@ -58,6 +60,17 @@ public abstract class Column<T>
 			schema.getTable().put(record, this, value);
 		}
 	}
+	
+	public String retrieveAndPrintValue(Record record)
+	{
+		T value = retrieveValue(record);
+		if(value != null)
+			return toString(value);
+		else
+			return null;
+	}
+	
+	protected abstract String toString(T value); 
 	
 	/**
 	 * Retrieves previously stored value for this column at a given record and casts it to the relevant native type (T)
