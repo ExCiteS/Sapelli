@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.collector.xml;
+package uk.ac.ucl.excites.collector.project.xml;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,14 +18,14 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-import uk.ac.ucl.excites.collector.model.Audio;
-import uk.ac.ucl.excites.collector.model.Choice;
-import uk.ac.ucl.excites.collector.model.Field;
-import uk.ac.ucl.excites.collector.model.Form;
-import uk.ac.ucl.excites.collector.model.LocationField;
-import uk.ac.ucl.excites.collector.model.MediaAttachment;
-import uk.ac.ucl.excites.collector.model.Photo;
-import uk.ac.ucl.excites.collector.model.Project;
+import uk.ac.ucl.excites.collector.project.model.Audio;
+import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.LocationField;
+import uk.ac.ucl.excites.collector.project.model.MediaAttachment;
+import uk.ac.ucl.excites.collector.project.model.Photo;
+import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.storage.model.Schema;
 import android.util.Log;
 

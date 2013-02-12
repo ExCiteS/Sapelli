@@ -9,11 +9,11 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
 
-import uk.ac.ucl.excites.collector.model.Choice;
-import uk.ac.ucl.excites.collector.model.Field;
-import uk.ac.ucl.excites.collector.model.Form;
-import uk.ac.ucl.excites.collector.model.Project;
-import uk.ac.ucl.excites.storage.db.DataStorageAccess;
+import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.db.DataStorageAccess;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 

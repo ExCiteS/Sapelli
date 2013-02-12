@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.storage.db;
+package uk.ac.ucl.excites.collector.project.db;
 
 import java.util.List;
 

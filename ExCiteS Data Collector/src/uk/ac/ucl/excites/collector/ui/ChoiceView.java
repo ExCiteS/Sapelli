@@ -4,10 +4,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Stack;
 
-import uk.ac.ucl.excites.collector.model.Choice;
-import uk.ac.ucl.excites.collector.model.Form;
-import uk.ac.ucl.excites.collector.model.Project;
-import uk.ac.ucl.excites.collector.xml.ProjectParser;
+import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Environment;
