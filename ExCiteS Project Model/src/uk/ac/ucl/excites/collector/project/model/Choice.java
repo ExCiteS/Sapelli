@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.collector.model;
+package uk.ac.ucl.excites.collector.project.model;
 
 import java.util.ArrayList;
 
@@ -175,13 +175,6 @@ public class Choice extends Field
 	public void addColumns(Schema schema)
 	{
 		//TODO
-		
-	}
-
-	@Override
-	public void storeValues(Record record)
-	{
-		
 		
 	}
 	

@@ -14,7 +14,7 @@ public abstract class Column<T>
 	private String name;
 	protected boolean optional;
 	
-	protected Column(String name, boolean optional)
+	public Column(String name, boolean optional)
 	{
 		this.name = name;
 		this.optional = optional;
@@ -41,8 +41,9 @@ public abstract class Column<T>
 	 * @param value the String to parse (can be expected to be neither null nor "")
 	 * @return the parsed value
 	 * @throws ParseException
+	 * @throws IllegalArgumentException
 	 */
-	protected abstract T parse(String value) throws ParseException;
+	protected abstract T parse(String value) throws ParseException, IllegalArgumentException;
 	
 	public void storeValue(Record record, T value) throws IOException
 	{
@@ -156,11 +157,14 @@ public abstract class Column<T>
 		return "Column [" + name + "]";
 	}
 	
+	/**
+	 * @return whether or not the size taken up by binary stored date varies at run-time (i.e. depending on input)
+	 */
 	public abstract boolean isVariableSize();
 	
 	/**
-	 * Returns the number of bits values for this column take up when writen to a binary representation
-	 * In case of a variable size the maximum effective size is returned
+	 * Returns the number of bits values for this column take up when written to a binary representation.
+	 * In case of a variable size the maximum effective size is returned.
 	 * 
 	 * @return
 	 */

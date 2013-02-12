@@ -1,12 +1,13 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.collector.model;
+package uk.ac.ucl.excites.collector.project.model;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.storage.db.DataStorageAccess;
+import uk.ac.ucl.excites.collector.project.db.DataStorageAccess;
+
 import uk.ac.ucl.excites.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.storage.model.Schema;
 
@@ -142,7 +143,7 @@ public class Form
 				if(!f.isNoColumn())
 					f.addColumns(schema);
 			schema.seal();
-			dsa.store(schema);
+			dsa.store(schema); //!!!
 		}
 		return schema;
 	}

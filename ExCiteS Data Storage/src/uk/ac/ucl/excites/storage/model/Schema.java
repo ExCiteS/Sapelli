@@ -24,8 +24,8 @@ public class Schema
 	
 	private LinkedHashMap<String,Column> columnsMap; 
 	private ArrayList<Column> columnsArray;
-	//TODO Do more google to find if there is a HashMap data structure that can return the keys as an array or ArrayList (in insertion order)?
-	//		In that case we don't need there separate arraylist
+	//TODO Do more Googling to find if there is a HashMap data structure that can return the keys as an array or ArrayList (in insertion order)?
+	//		In that case we don't need to have this separate arraylist
 	
 	private boolean sealed = false;
 	

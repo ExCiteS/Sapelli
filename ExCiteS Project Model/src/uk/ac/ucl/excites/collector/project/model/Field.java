@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.collector.model;
+package uk.ac.ucl.excites.collector.project.model;
 
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
@@ -73,7 +73,5 @@ public abstract class Field
 	}
 	
 	public abstract void addColumns(Schema schema);
-	
-	public abstract void storeValues(Record record);
 	
 }

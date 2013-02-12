@@ -143,7 +143,7 @@ public class DateTimeColumn extends Column<DateTime>
 	}
 	
 	@Override
-	protected DateTime parse(String value) throws ParseException
+	protected DateTime parse(String value) throws ParseException, IllegalArgumentException
 	{
 		return (keepLocalTimezone ? formatter.withOffsetParsed() : formatter).parseDateTime(value);
 	}

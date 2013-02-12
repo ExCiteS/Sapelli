@@ -23,7 +23,7 @@ public class StringColumn extends Column<String>
 	
 	//STATIC
 	private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
-	private static final int DEFAULT_MAX_LENGTH = 256;
+	private static final int DEFAULT_MAX_LENGTH = 256; //bytes
 	
 	//DYNAMIC
 	private int maxLengthBytes;
@@ -35,17 +35,28 @@ public class StringColumn extends Column<String>
 		this(name, optional, DEFAULT_MAX_LENGTH, DEFAULT_CHARSET);
 	}
 	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes) a String stored in this column can be
+	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes)
 	{
 		this(name, optional, maxLengthBytes, DEFAULT_CHARSET);
 	}
 	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes) a String stored in this column can be
+	 * @param charset the charset to use to encode/decode Strings to/from bytes
+	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset)
 	{
 		super(name, optional);
 		this.maxLengthBytes = maxLengthBytes;
 		this.charset = charset;
-		this.sizeField = new IntegerRangeMapping(1, maxLengthBytes); //we don't store the empty string so effective size is always at least 1
+		this.sizeField = new IntegerRangeMapping(1, maxLengthBytes); //we don't store the empty string so effective size is always at least 1 byte
 	}
 	
 	/**

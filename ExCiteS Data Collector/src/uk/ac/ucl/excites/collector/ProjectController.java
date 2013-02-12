@@ -9,11 +9,11 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
 
-import uk.ac.ucl.excites.collector.model.Choice;
-import uk.ac.ucl.excites.collector.model.Field;
-import uk.ac.ucl.excites.collector.model.Form;
-import uk.ac.ucl.excites.collector.model.Project;
-import uk.ac.ucl.excites.storage.db.DataStorageAccess;
+import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.db.DataStorageAccess;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 
@@ -59,6 +59,8 @@ public class ProjectController implements LocationListener
 		currentField = currentForm.getStart();
 		fieldHistory.clear();
 		
+		Schema schema = currentForm.getSchema(dsa);
+		Record record = new Record(schema, deviceID);
 	}
 	
 	public void goTo(Field nextField)
@@ -89,10 +91,10 @@ public class ProjectController implements LocationListener
 	public void endForm()
 	{
 		//Store values
-		Schema schema = currentForm.getSchema(dsa);
-		Record record = new Record(schema, deviceID);
-		for(Field f : currentForm.getFields())
-			f.storeValues(record);
+		
+		
+		//for(Field f : currentForm.getFields())
+		//	f.storeValues(record);
 		//End action:
 		
 	}

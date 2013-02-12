@@ -2,7 +2,7 @@ package uk.ac.ucl.excites.collector.ui;
 
 import java.util.ArrayList;
 
-import uk.ac.ucl.excites.collector.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.Choice;
 
 import android.content.Context;
 import android.graphics.Bitmap;

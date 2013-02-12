@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.collector.model;
+package uk.ac.ucl.excites.collector.project.model;
 
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
@@ -89,14 +89,6 @@ public class MediaAttachment extends Field
 	public void addColumns(Schema schema)
 	{
 		schema.addColumn(new IntegerColumn(id, true, min, max));
-	}
-	
-	@Override
-	public void storeValues(Record record)
-	{
-		Integer currentNumberOfItems = (Integer) record.get(id);
-		
-		//TODO 
 	}
 
 }

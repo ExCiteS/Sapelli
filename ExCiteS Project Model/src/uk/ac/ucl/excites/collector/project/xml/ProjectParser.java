@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.collector.xml;
+package uk.ac.ucl.excites.collector.project.xml;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,14 +18,14 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-import uk.ac.ucl.excites.collector.model.Audio;
-import uk.ac.ucl.excites.collector.model.Choice;
-import uk.ac.ucl.excites.collector.model.Field;
-import uk.ac.ucl.excites.collector.model.Form;
-import uk.ac.ucl.excites.collector.model.LocationField;
-import uk.ac.ucl.excites.collector.model.MediaAttachment;
-import uk.ac.ucl.excites.collector.model.Photo;
-import uk.ac.ucl.excites.collector.model.Project;
+import uk.ac.ucl.excites.collector.project.model.Audio;
+import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.LocationField;
+import uk.ac.ucl.excites.collector.project.model.MediaAttachment;
+import uk.ac.ucl.excites.collector.project.model.Photo;
+import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.storage.model.Schema;
 import android.util.Log;
 
@@ -51,7 +51,7 @@ public class ProjectParser extends DefaultHandler
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaAttachment, String> mediaAttachToDisableId;
 
-	public Project ParseProject(File xmlFile)
+	public Project parseProject(File xmlFile)
 	{
 		project = null;
 		fieldToJumpId = new HashMap<Field, String>();
@@ -136,18 +136,23 @@ public class ProjectParser extends DefaultHandler
 			locField.setTimeoutS(attributes.getValue("timeout") == null ? LocationField.DEFAULT_TIMEOUT_S : Integer.parseInt(attributes.getValue("timeout")));
 			//Type:
 			String type = attributes.getValue("type");
-			if("GPS".equalsIgnoreCase(type))
-				locField.setType(LocationField.TYPE_GPS);
-			else if("Network".equalsIgnoreCase(type))
-				locField.setType(LocationField.TYPE_GPS);
+			if(type != null)
+				Log.w(TAG, "Unknown Location type (" + type + ").");
 			else
-			{
-				if(type != null)
-					Log.w(TAG, "Unknown Location type (" + type + ").");
-				locField.setType(LocationField.TYPE_DEFAULT);
-			}			
+			{	
+				if("GPS".equalsIgnoreCase(type))
+					locField.setType(LocationField.TYPE_GPS);
+				else if("Network".equalsIgnoreCase(type))
+					locField.setType(LocationField.TYPE_GPS);
+			}
+			//Storage settings:
+			locField.setDoublePrecision(readBooleanAttribute(attributes, "doublePrecision", LocationField.DEFAULT_DOUBLE_PRECISION));
+			locField.setStoreAltitude(readBooleanAttribute(attributes, "storeAltitude", LocationField.DEFAULT_STORE_ALTITUDE));
+			locField.setStoreBearing(readBooleanAttribute(attributes, "storeBearing", LocationField.DEFAULT_STORE_BEARING));
+			locField.setStoreSpeed(readBooleanAttribute(attributes, "storeSpeed", LocationField.DEFAULT_STORE_SPEED));
+			locField.setStoreAccuracy(readBooleanAttribute(attributes, "storeAccuracy", LocationField.DEFAULT_STORE_ACCURACY));
 		}
-
+		
 		if (qName.equals("Photo"))
 		{
 			Photo photoField = new Photo(attributes.getValue("id"));
@@ -177,6 +182,16 @@ public class ProjectParser extends DefaultHandler
 							Integer.parseInt(attributes.getValue("max"))));
 		if(attributes.getValue("disableField") != null)
 			mediaAttachToDisableId.put(ma, attributes.getValue("disableField"));
+	}
+	
+	private boolean readBooleanAttribute(Attributes attributes, String attributeName, boolean defaultValue)
+	{
+		String text = attributes.getValue(attributeName).trim();
+		if(text == null || text.isEmpty())
+			return defaultValue;
+		else
+			return text.equalsIgnoreCase(Boolean.TRUE.toString()) ? Boolean.TRUE : defaultValue;
+		//We don't use Boolean.parseBoolean(String) because that returns false if the String does not equal true (so we wouldn't be able to return the defaultValue)
 	}
 	
 	private void rememberIDAndJump(Field f, Attributes attributes)

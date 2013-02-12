@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.collector.model;
+package uk.ac.ucl.excites.collector.project.model;
 
 import java.util.ArrayList;
 import java.util.List;
