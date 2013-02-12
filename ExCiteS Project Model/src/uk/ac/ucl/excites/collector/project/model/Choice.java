@@ -190,11 +190,21 @@ public class Choice extends Field
 		if(!isRoot() || noColumn)
 			return;
 		//Build value dictionary:
-		addValues(); //Depth-first-traveral to find all leafs/values
+		addValues(); //Finds & adds the values for all leafs
 		//Create & add column:
 		schema.addColumn(new IntegerColumn(id, true /* TODO determine if truly optional */, 0, valueDict.keySet().size() - 1));
 	}
 	
+	/**
+	 * Recursive method which implements a depth-first traversal that finds the values of all leafs.
+	 * If a leaf does not have a value of it's own the one of a parent is found using getValue(), if that
+	 * still does not result in a (non-null) value the id of the leaf is use (and kept) as its value.<br/>
+	 * <br/>
+	 * <b>Note 1:</b> This method should only be called after the whole choice tree is parsed & constructed (i.e. from addColumns()).<br/>
+	 * <b>Note 2:</b> This traversal strategy is better than adding values to the valueDict at in the constructor or in setValue()
+	 * because that could result in valueDict containing values that can never be chosen (namely when a non-leaf
+	 * has a value but all the leafs below it have values of their own).
+	 */
 	private void addValues()
 	{
 		if(isLeaf())
@@ -205,7 +215,7 @@ public class Choice extends Field
 				valueDict.put(getValue(), Integer.valueOf(valueDict.keySet().size()));
 		}
 		else
-			for(Choice child : children) //Depth-first-traversal
+			for(Choice child : children) //Depth-first traversal
 				child.addValues(); //recursive call
 	}
 	
@@ -214,7 +224,7 @@ public class Choice extends Field
 		((IntegerColumn) record.getSchema().getColumn(root.id)).storeValue(record, Long.valueOf(lookupValueCode()));
 	}
 	
-	private int lookupValueCode()
+	public int lookupValueCode()
 	{
 		return lookupValueCode(getValue());
 	}
