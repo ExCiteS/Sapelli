@@ -30,7 +30,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name="uk.ac.ucl.excites.collector.MainActivity"
+            android:name="uk.ac.ucl.excites.collector.ProjectPickerActivity"
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:icon="@drawable/collector"
             android:label="Collector"
@@ -64,6 +64,9 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        
+       	<activity android:name="uk.ac.ucl.excites.collector.ui.filedialog.FileDialog" >
         </activity>
 
         <service

@@ -1,5 +1,13 @@
 <resources>
 
     <color name="black_overlay">#66000000</color>
+    <color name="transparent">#00000000</color>
+    <color name="white">#FFffffff</color>
+    <color name="black">#FF000000</color>
+    <color name="divider">#33B8B8B8</color>
+    <color name="gray">#ffc0c0c0</color>
+    <color name="gray_transparent">#33c0c0c0</color>
+    <color name="focused">#99c0c0c0</color>
+    <color name="selected">#99c0c0c0</color>
 
 </resources>
