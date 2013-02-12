@@ -121,14 +121,14 @@ public class MainActivity extends Activity
 				mDelayHideTouchListener);
 
 		
-		// Example: add choiceView to a RelativeLayout
-		RelativeLayout rl = new RelativeLayout(this);		
-		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
-				RelativeLayout.LayoutParams.MATCH_PARENT,
-				RelativeLayout.LayoutParams.MATCH_PARENT);
-		ChoiceView choiceView = new ChoiceView(this);
-		rl.addView(choiceView, params);
-		setContentView(rl);
+//		// Example: add choiceView to a RelativeLayout
+//		RelativeLayout rl = new RelativeLayout(this);		
+//		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
+//				RelativeLayout.LayoutParams.MATCH_PARENT,
+//				RelativeLayout.LayoutParams.MATCH_PARENT);
+//		ChoiceView choiceView = new ChoiceView(this);
+//		rl.addView(choiceView, params);
+//		setContentView(rl);
 	}
 	
 
