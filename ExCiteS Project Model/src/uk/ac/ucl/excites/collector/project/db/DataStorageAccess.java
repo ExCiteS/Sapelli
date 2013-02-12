@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.collector.project.db;
 
 import java.util.List;
 
+import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.storage.model.Schema;
 import android.util.Log;
 
@@ -85,26 +86,24 @@ public final class DataStorageAccess
 		}).next(); // TODO check if this will return null if no match is find (rather than throwing an exception)
 
 	}
-	
-//	/**
-//	 * @param project
-//	 */
-//	public void store(Project project)
-//	{
-//		db.store(project);
-//	}
-//
-//	/**
-//	 * Retrieves all schemata
-//	 * 
-//	 * @return
-//	 */
-//	public List<Schema> retrieveSchemata()
-//	{
-//		List<Schema> result = db.query(Schema.class);
-//		return result;
-//	}
-//	
-	
+
+	/**
+	 * @param project
+	 */
+	public void store(Project project)
+	{
+		db.store(project);
+	}
+
+	/**
+	 * Retrieves all projects
+	 * 
+	 * @return
+	 */
+	public List<Project> retrieveProjects()
+	{
+		List<Project> result = db.query(Project.class);
+		return result;
+	}
 
 }
