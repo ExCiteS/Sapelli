@@ -14,7 +14,7 @@ public abstract class Column<T>
 	private String name;
 	protected boolean optional;
 	
-	protected Column(String name, boolean optional)
+	public Column(String name, boolean optional)
 	{
 		this.name = name;
 		this.optional = optional;

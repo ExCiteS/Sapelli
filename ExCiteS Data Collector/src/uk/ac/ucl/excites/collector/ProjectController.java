@@ -59,6 +59,8 @@ public class ProjectController implements LocationListener
 		currentField = currentForm.getStart();
 		fieldHistory.clear();
 		
+		Schema schema = currentForm.getSchema(dsa);
+		Record record = new Record(schema, deviceID);
 	}
 	
 	public void goTo(Field nextField)
@@ -89,10 +91,10 @@ public class ProjectController implements LocationListener
 	public void endForm()
 	{
 		//Store values
-		Schema schema = currentForm.getSchema(dsa);
-		Record record = new Record(schema, deviceID);
-		for(Field f : currentForm.getFields())
-			f.storeValues(record);
+		
+		
+		//for(Field f : currentForm.getFields())
+		//	f.storeValues(record);
 		//End action:
 		
 	}

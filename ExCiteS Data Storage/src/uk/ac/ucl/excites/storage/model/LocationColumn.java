@@ -32,7 +32,7 @@ public class LocationColumn extends Column<Location>
 	 * @param storeAccuracy
 	 * @param optional
 	 */
-	protected LocationColumn(String name, boolean doublePrecision, boolean storeAltitude, boolean storeBearing, boolean storeSpeed, boolean storeAccuracy, boolean optional)
+	public LocationColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeBearing, boolean storeSpeed, boolean storeAccuracy)
 	{
 		super(name, optional);
 		this.doublePrecision = doublePrecision;

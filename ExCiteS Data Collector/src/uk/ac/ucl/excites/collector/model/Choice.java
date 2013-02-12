@@ -177,12 +177,5 @@ public class Choice extends Field
 		//TODO
 		
 	}
-
-	@Override
-	public void storeValues(Record record)
-	{
-		
-		
-	}
 	
 }

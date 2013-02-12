@@ -74,6 +74,4 @@ public abstract class Field
 	
 	public abstract void addColumns(Schema schema);
 	
-	public abstract void storeValues(Record record);
-	
 }
