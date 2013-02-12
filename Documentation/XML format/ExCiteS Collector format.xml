@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ExCiteS-Collector-Project>
+<ExCiteS-Collector-Project name="Example1">
 	<Data-Management>
 		<Local/>
 		<Server/>

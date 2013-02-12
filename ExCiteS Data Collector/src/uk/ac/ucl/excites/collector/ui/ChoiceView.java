@@ -1,7 +1,7 @@
 package uk.ac.ucl.excites.collector.ui;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.collector.project.model.Choice;
@@ -17,7 +17,6 @@ import android.widget.AdapterView;
 import android.widget.GridView;
 
 public class ChoiceView extends GridView
-
 {
 
 	private final int BUTTON = 153;
@@ -29,22 +28,22 @@ public class ChoiceView extends GridView
 	ImageAdapter imageAdapter;
 	Choice startChoice;
 	Choice pointer;
-	ArrayList<Choice> currentItems = new ArrayList<Choice>();
+	List<Choice> currentItems;
 
-	public ChoiceView(final Context context) {
+	public ChoiceView(final Context context)
+	{
 		super(context);
 		this.context = context;
 		setBackgroundColor(Color.BLACK);
 
 		// run Parser
-		String xmlFilePath = Environment.getExternalStorageDirectory()
-				+ "/ExCiteSImagePicker/" + "ExCiteSCollectorXML.xml"; // path needs to be stored/passed as variable
+		String xmlFilePath = Environment.getExternalStorageDirectory() + "/ExCiteSImagePicker/" + "ExCiteSCollectorXML.xml"; // path needs to be stored/passed as variable
 		File xmlFile = new File(xmlFilePath);
 		if(!xmlFile.exists())
 			throw new IllegalArgumentException("XML file not found (" + xmlFilePath + ").");
 		ProjectParser parser = new ProjectParser();
 		Project project = parser.parseProject(xmlFile);
-		
+
 		// set start choice
 		Form currentForm = project.getForms().get(0);
 		startChoice = (Choice) currentForm.getStart();
@@ -52,21 +51,25 @@ public class ChoiceView extends GridView
 		imageAdapter = new ImageAdapter(context, BUTTON);
 		setChoice(currentItems, startChoice.getCols());
 
-		// set click listener
+		//set click listener
 		setOnItemClickListener(new OnItemClickListener()
 		{
 			@Override
-			public void onItemClick(AdapterView<?> parent, View v,
-					int position, long id) {
+			public void onItemClick(AdapterView<?> parent, View v, int position, long id)
+			{
 
 				// get children of pressed icon or jump
 				pointer = currentItems.get(position);
 				Choice jump = null;
-				if (currentItems.get(position).getChildren().size() != 0) {
+				if(currentItems.get(position).getChildren().size() != 0)
+				{
 					currentItems = pointer.getChildren();
-				} else {
+				}
+				else
+				{
 					jumps.push(pointer);
-					while (jump == null) {
+					while(jump == null)
+					{
 						jump = (Choice) pointer.getJump();
 						pointer = pointer.getParent();
 					}
@@ -81,7 +84,8 @@ public class ChoiceView extends GridView
 		});
 	}
 
-	public void setChoice(ArrayList<Choice> items, int cols) {
+	public void setChoice(List<Choice> items, int cols)
+	{
 		imageAdapter.clearSelectedIcons();
 		this.currentItems = items;
 		imageAdapter.IconsToDisplay(items);
@@ -91,23 +95,26 @@ public class ChoiceView extends GridView
 		setAdapter(imageAdapter);
 	}
 
-	public void backPressed() {
-
-		if (pointer.getParent() == null) {
+	public void backPressed()
+	{
+		if(pointer.getParent() == null)
+		{
 			pointer = jumps.pop();
 		}
 		pointer = pointer.getParent();
-		if (pointer.equals(startChoice)) {
+		if(pointer.equals(startChoice))
+		{
 			imageAdapter = new ImageAdapter(context, BUTTON);
 		}
-
 		setChoice(pointer.getChildren(), pointer.getCols());
 	}
 
 	@Override
 	// until back button is implemented, back key is used
-	public boolean onKeyDown(int keyCode, KeyEvent event) {
-		switch (keyCode) {
+	public boolean onKeyDown(int keyCode, KeyEvent event)
+	{
+		switch(keyCode)
+		{
 		case KeyEvent.KEYCODE_BACK:
 			backPressed();
 			return true;

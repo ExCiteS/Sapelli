@@ -1,5 +1,7 @@
 package uk.ac.ucl.excites.storage.model;
 
+import java.util.Set;
+
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 
@@ -10,32 +12,14 @@ import uk.ac.ucl.excites.storage.io.BitOutputStream;
 @SuppressWarnings("rawtypes")
 public class Record
 {
-	
-	static public final int UNKNOWN_ID = -1; 
-	
+
 	private Schema schema;
-	private int id;
-	private long deviceID;
-	
-	//TODO do we need record id's at all?
-	
+		
 	public Record(Schema schema)
-	{
-		this(schema, UNKNOWN_ID, UNKNOWN_ID);
-	}
-	
-	public Record(Schema schema, long deviceID)
-	{
-		this(schema, UNKNOWN_ID, deviceID);
-	}
-	
-	public Record(Schema schema, int id, long deviceID)
 	{
 		if(!schema.isSealed())
 			throw new IllegalArgumentException("Schema must be sealed before records based on it can be created!");
 		this.schema = schema;
-		this.id = id;
-		this.deviceID = deviceID;
 	}
 	
 	/**
@@ -95,34 +79,15 @@ public class Record
 	{
 		return schema;
 	}
-
-	/**
-	 * @return the id
-	 */
-	public int getID()
-	{
-		return id;
-	}
-
-	/**
-	 * @return the deviceID
-	 */
-	public long getDeviceID()
-	{
-		return deviceID;
-	}
 	
-	public void writeToBitStream(BitOutputStream bitStream, boolean writeID, boolean writeDeviceID) throws Exception
+	public void writeToBitStream(BitOutputStream bitStream, Set<Column> skipColumns) throws Exception
 	{
 		try
 		{
-			if(writeID)
-				bitStream.write(id); //writes ID as a 32bit integer
-			if(writeDeviceID)
-				bitStream.write(deviceID); //writes device ID as a 64bit integer
 			//write fields:
 			for(Column c : schema.getColumns())
-				c.retrieveAndWriteValue(this, bitStream);
+				if(!skipColumns.contains(c))
+					c.retrieveAndWriteValue(this, bitStream);
 		}
 		catch(Exception e)
 		{
@@ -130,22 +95,19 @@ public class Record
 		}
 	}
 	
-	public void readFromBitStream(BitInputStream bitStream, boolean readID, boolean readDeviceID) throws Exception
+	public void readFromBitStream(BitInputStream bitStream, Set<Column> skipColumns) throws Exception
 	{
 		try
 		{
-			if(readID)
-				id = bitStream.readInt(); //reads ID as a 32bit integer
-			if(readDeviceID)
-				deviceID = bitStream.readLong(); //reads device ID as a 64bit integer
 			//read fields:
 			for(Column c : schema.getColumns())
-				c.readAndStoreValue(this, bitStream);
+				if(!skipColumns.contains(c))
+					c.readAndStoreValue(this, bitStream);
 		}
 		catch(Exception e)
 		{
 			throw new Exception("Error on attempting to read record", e);
-		}		
+		}
 	}
 
 }

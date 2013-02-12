@@ -3,6 +3,10 @@ package uk.ac.ucl.excites.storage.model;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.google.common.collect.Table;
 
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
@@ -45,14 +49,20 @@ public abstract class Column<T>
 	 */
 	protected abstract T parse(String value) throws ParseException, IllegalArgumentException;
 	
-	public void storeValue(Record record, T value) throws IOException
+	/**
+	 * @param record
+	 * @param value
+	 * @throws IllegalArgumentException
+	 * @throws NullPointerException
+	 */
+	public void storeValue(Record record, T value) throws IllegalArgumentException, NullPointerException
 	{
 		if(this.schema != record.getSchema())
 			throw new IllegalArgumentException("Schema mismatch.");
 		if(value == null)
 		{
 			if(!optional)
-				throw new IOException("Cannot set null value for non-optional column!");
+				throw new NullPointerException("Cannot set null value for non-optional column!");
 			//else: don't store anything (value is null but column is optional)
 		}
 		else
@@ -169,5 +179,14 @@ public abstract class Column<T>
 	 * @return
 	 */
 	public abstract int getSize();
+	
+	public List<Record> equalitySelect(Table<Record, Column<T>, T> table, T value)
+	{
+		List<Record> records = new ArrayList<Record>();
+		for(Record r : table.rowKeySet())
+			if(table.row(r).get(this).equals(value))
+				records.add(r);
+		return records;
+	}
 	
 }

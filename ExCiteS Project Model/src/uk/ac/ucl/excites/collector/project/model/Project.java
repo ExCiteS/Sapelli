@@ -10,7 +10,7 @@ import java.util.List;
 public class Project
 {
 	
-	private ArrayList<Form> forms;
+	private List<Form> forms;
 	
 	public Project()
 	{

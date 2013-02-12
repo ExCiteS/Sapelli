@@ -20,6 +20,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import uk.ac.ucl.excites.collector.project.model.Audio;
 import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
@@ -218,7 +219,9 @@ public class ProjectParser extends DefaultHandler
 	
 	private void resolveJumpsAndDisablings()
 	{
-		// Resolve jumps...
+		//Add EndField instance so _END jumps can be resolved
+		idToField.put(EndField.getInstance().getID(), EndField.getInstance());
+		//Resolve jumps...
 		for(Entry<Field, String> jump : fieldToJumpId.entrySet())
 		{
 			Field target = idToField.get(jump.getValue());

@@ -9,8 +9,9 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.os.Bundle;
 
-import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.db.DataStorageAccess;
@@ -60,7 +61,7 @@ public class ProjectController implements LocationListener
 		fieldHistory.clear();
 		
 		Schema schema = currentForm.getSchema(dsa);
-		Record record = new Record(schema, deviceID);
+		//Record record = new Record(schema, deviceID);
 	}
 	
 	public void goTo(Field nextField)
@@ -77,7 +78,9 @@ public class ProjectController implements LocationListener
 		//...
 		// MediaAttachments
 		// ...
-		
+		// _END
+		if(currentField.equals(EndField.getInstance()))
+			endForm();
 	}
 	
 	public void goBack()

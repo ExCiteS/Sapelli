@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.collector.ui;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.model.Choice;
 
@@ -16,65 +17,64 @@ import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.TableRow.LayoutParams;
 
-public class ImageAdapter extends BaseAdapter {
+public class ImageAdapter extends BaseAdapter
+{
 	private Context context;
-	private ArrayList<String> selectedIcons = new ArrayList<String>();
+	private List<String> selectedIcons = new ArrayList<String>();
 	private int imageHeight;
 
-	public ImageAdapter(Context localContext, int height) {
+	public ImageAdapter(Context localContext, int height)
+	{
 		this.context = localContext;
 		this.imageHeight = height;
 	}
 
-	public int getCount() {
+	public int getCount()
+	{
 		return selectedIcons.size();
 	}
 
-	public Object getItem(int position) {
+	public Object getItem(int position)
+	{
 		return position;
 	}
 
-	public long getItemId(int position) {
+	public long getItemId(int position)
+	{
 		return position;
 	}
 
 	// create a new ImageView for each item referenced by the Adapter
-	public View getView(int position, View convertView, ViewGroup parent) {
+	public View getView(int position, View convertView, ViewGroup parent)
+	{
 		ImageView imageView;
-		if (convertView == null) {
-
+		if(convertView == null)
+		{
 			imageView = new ImageView(context);
-
 			imageView.setBackgroundColor(Color.WHITE);
-
-			Bitmap bm = BitmapFactory.decodeFile(selectedIcons.get(position)
-					.toString());
+			Bitmap bm = BitmapFactory.decodeFile(selectedIcons.get(position).toString());
 			imageView.setImageBitmap(bm);
-
-			imageView.setLayoutParams(new GridView.LayoutParams(
-					LayoutParams.WRAP_CONTENT, imageHeight));
-
+			imageView.setLayoutParams(new GridView.LayoutParams(LayoutParams.WRAP_CONTENT, imageHeight));
 			imageView.setScaleType(ImageView.ScaleType.CENTER);
-
-		} else {
+		}
+		else
+		{
 			imageView = (ImageView) convertView;
 		}
 
 		return imageView;
 	}
 
-	public void IconsToDisplay(ArrayList<Choice> children) {
-
-		for (int i = 0; i < children.size(); i++) {
-			selectedIcons.add(Environment.getExternalStorageDirectory()
-					+ "/ExCiteSImagePicker/Icons/"
-					+ children.get(i).getImagePath()); // path needs to be
-														// stored/passed as
-														// variable
+	public void IconsToDisplay(List<Choice> children)
+	{
+		for(int i = 0; i < children.size(); i++)
+		{
+			selectedIcons.add(Environment.getExternalStorageDirectory() + "/ExCiteSImagePicker/Icons/" + children.get(i).getImagePath()); // path needs to be stored/passed as variable
 		}
 	}
 
-	public void clearSelectedIcons() {
+	public void clearSelectedIcons()
+	{
 		selectedIcons.clear();
 	}
 }

@@ -51,9 +51,7 @@ public class ProjectPickerActivity extends Activity
 
 				// set file filter
 				mIntent.putExtra(FileDialog.FORMAT_FILTER, new String[] { "xml" });
-
 				startActivityForResult(mIntent, SETTINGS_REQUEST_IMPORT);
-
 			}
 		});
 

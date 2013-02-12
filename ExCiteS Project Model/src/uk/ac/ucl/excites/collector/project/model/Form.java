@@ -32,7 +32,7 @@ public class Form
 	
 	//Fields
 	private Field start;
-	private ArrayList<Field> fields;
+	private List<Field> fields;
 	private LocationField locationField;
 
 	//Android shortcut:
@@ -56,7 +56,7 @@ public class Form
 	public Form(int id, String name)
 	{
 		this(id, Schema.DEFAULT_VERSION, name);
-	}	
+	}
 	
 	public Form(int id, int version, String name)
 	{
@@ -133,15 +133,22 @@ public class Form
 	}
 
 	public Schema getSchema(DataStorageAccess dsa)
-	{
+	{	
 		Schema schema = dsa.retrieveSchema(schemaID, schemaVersion);
 		if(schema == null)
 		{
+			//Find optional choice fields
+			//TODO find optional choice fields
 			schema = new Schema(schemaID, schemaVersion, name);
+			//Device ID field:
+			//TODO device ID column
+			//Timestamp:
 			schema.addColumn(DateTimeColumn.Century21NoMS(TIMESTAMP_COLUMN_NAME, false));
+			//User defined fields:
 			for(Field f : fields)
 				if(!f.isNoColumn())
 					f.addColumns(schema);
+			//Seal & store the schema:
 			schema.seal();
 			dsa.store(schema); //!!!
 		}
