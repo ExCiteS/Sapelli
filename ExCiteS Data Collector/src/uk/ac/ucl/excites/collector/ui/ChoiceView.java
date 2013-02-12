@@ -43,8 +43,8 @@ public class ChoiceView extends GridView
 		if(!xmlFile.exists())
 			throw new IllegalArgumentException("XML file not found (" + xmlFilePath + ").");
 		ProjectParser parser = new ProjectParser();
-		Project project = parser.ParseProject(xmlFile);
-
+		Project project = parser.parseProject(xmlFile);
+		
 		// set start choice
 		Form currentForm = project.getForms().get(0);
 		startChoice = (Choice) currentForm.getStart();

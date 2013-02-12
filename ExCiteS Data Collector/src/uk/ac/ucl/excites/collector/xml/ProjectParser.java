@@ -51,7 +51,7 @@ public class ProjectParser extends DefaultHandler
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaAttachment, String> mediaAttachToDisableId;
 
-	public Project ParseProject(File xmlFile)
+	public Project parseProject(File xmlFile)
 	{
 		project = null;
 		fieldToJumpId = new HashMap<Field, String>();

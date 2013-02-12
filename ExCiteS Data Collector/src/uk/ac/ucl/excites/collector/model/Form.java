@@ -142,7 +142,7 @@ public class Form
 				if(!f.isNoColumn())
 					f.addColumns(schema);
 			schema.seal();
-			dsa.store(schema);
+			dsa.store(schema); //!!!
 		}
 		return schema;
 	}
