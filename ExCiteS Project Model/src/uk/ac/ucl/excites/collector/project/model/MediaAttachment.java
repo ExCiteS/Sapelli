@@ -4,7 +4,6 @@
 package uk.ac.ucl.excites.collector.project.model;
 
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
-import uk.ac.ucl.excites.storage.model.Schema;
 
 /**
  * @author mstevens
@@ -85,9 +84,9 @@ public class MediaAttachment extends Field
 	}
 	
 	@Override
-	public void addColumns(Schema schema)
+	protected IntegerColumn createColumn()
 	{
-		schema.addColumn(new IntegerColumn(id, true, min, max));
+		return new IntegerColumn(id, true, min, max);
 	}
 
 }

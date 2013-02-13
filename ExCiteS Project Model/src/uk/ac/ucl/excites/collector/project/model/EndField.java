@@ -3,7 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
-import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.storage.model.Column;
 
 /**
  * Dummy field to represent the end of any form.
@@ -31,9 +31,9 @@ public class EndField extends Field
 	}
 
 	@Override
-	public void addColumns(Schema schema)
+	protected Column<?> createColumn()
 	{
-		//this should never be called on the EndField (so if definitely shouldn't do anything)
+		return null;
 	}
 
 }

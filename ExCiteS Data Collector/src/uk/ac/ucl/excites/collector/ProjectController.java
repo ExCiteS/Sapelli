@@ -15,6 +15,7 @@ import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.FormEntry;
+import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.storage.model.Record;
@@ -107,28 +108,59 @@ public class ProjectController implements LocationListener
 	{
 		//Leafing current field...
 		if(currentField != null)
-		{
-			//Save value if necessary
-			//...
-			//Add to history:
-			fieldHistory.add(currentField);
-		}
+			fieldHistory.add(currentField); //Add to history
 		//Entering next field...
 		currentField = nextField;
 		// Choices
 		if(currentField instanceof Choice)
 		{
-			Choice currentChoice = (Choice) currentField;
-			//if(!(nextField instanceof Choice) || ((Choice) nextField).getRoot() != currentChoice.getRoot())
-				//currentChoice.getRoot()
+			//TODO set ChoiceView in activity
 		}
 		// Location
-		//...
+		else if(currentField instanceof LocationField)
+		{
+			//TODO
+		}
 		// MediaAttachment
+		
 		// ...
 		// _END
 		if(currentField.equals(EndField.getInstance()))
 			endForm();
+	}
+	
+	/**
+	 * To be called from UI/CollectorActivity
+	 * 
+	 * @param chosenChild
+	 */
+	public void choiceMade(Choice chosenChild)
+	{
+		//Note: chosenChild is not the currentField! The currentField (also a Choice) is its parent. 
+		if(chosenChild.isLeaf())
+		{
+			//Store value
+			if(!chosenChild.getRoot().isNoColumn())
+				chosenChild.storeValue(entry);
+			//Go to next field
+			goTo(currentForm.getNextField(chosenChild));
+			/* We cannot use goForward() here because then we would first need to make the
+			 * chosenChild the currentField, in which case it would end up in the fieldHistory
+			 * which does not make sense because a leaf choice cannot be displayed on its own.
+			 */
+		}
+		else
+			goTo(chosenChild); //chosenChild becames the new currentField (we go one level down in the choice tree)
+	}
+	
+	public void photoDone(boolean pictureTaken)
+	{
+		
+	}
+	
+	public void audioDone(boolean recordingMade)
+	{
+		
 	}
 	
 	public void endForm()

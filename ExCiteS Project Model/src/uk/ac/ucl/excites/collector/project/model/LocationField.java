@@ -4,7 +4,6 @@
 package uk.ac.ucl.excites.collector.project.model;
 
 import uk.ac.ucl.excites.storage.model.LocationColumn;
-import uk.ac.ucl.excites.storage.model.Schema;
 
 /**
  * @author mstevens
@@ -164,9 +163,9 @@ public class LocationField extends Field
 	}
 
 	@Override
-	public void addColumns(Schema schema)
+	protected LocationColumn createColumn()
 	{
-		schema.addColumn(new LocationColumn(id, true, doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy));
+		return new LocationColumn(id, true, doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy);
 	}
 	
 }

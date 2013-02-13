@@ -1,6 +1,6 @@
 package uk.ac.ucl.excites.collector.project.model;
 
-import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.storage.model.Column;
 
 /**
  * @author mstevens
@@ -35,7 +35,7 @@ public abstract class Field
 	{
 		return id;
 	}
-
+	
 	/**
 	 * @return the noColumn
 	 */
@@ -96,6 +96,12 @@ public abstract class Field
 		enabled = true;
 	}
 	
-	public abstract void addColumns(Schema schema);
+	/**
+	 * Returns a new Column object capable of storing values for this field
+	 * It is assumed that the field.id is used as the column name.
+	 * 
+	 * @return
+	 */
+	protected abstract Column<?> createColumn();
 	
 }

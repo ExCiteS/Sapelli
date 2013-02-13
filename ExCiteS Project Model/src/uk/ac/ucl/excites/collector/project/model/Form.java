@@ -84,7 +84,7 @@ public class Form
 		//Exception handling:
 		if(currentIndex < 0)
 			throw new IllegalArgumentException("The current field is not part of this form.");
-		//Check for jump field:
+		//Check for jump field (possibly the one of a parent in case of Choice):
 		Field jump = current.getJump();
 		if(jump != null)
 			return jump; //use jump as next
@@ -160,17 +160,20 @@ public class Form
 		Schema schema = dao.retrieveSchema(schemaID, schemaVersion);
 		if(schema == null)
 		{
-			//Find optional choice fields
-			//TODO find optional choice fields
 			schema = new Schema(schemaID, schemaVersion, name);
-			//Device ID field:
-			//TODO device ID column
-			//Timestamp:
+			//Internal-use columns:
+			// Device ID column:
+			
+			// Timestamp column:
 			schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP, false));
-			//User defined fields:
+			// Transmission information columns:
+			
+			
+			
+			//Columns for user-defined fields:
 			for(Field f : fields)
 				if(!f.isNoColumn())
-					f.addColumns(schema);
+					schema.addColumn(f.createColumn());
 			//Seal & store the schema:
 			schema.seal();
 			dao.store(schema); //!!!

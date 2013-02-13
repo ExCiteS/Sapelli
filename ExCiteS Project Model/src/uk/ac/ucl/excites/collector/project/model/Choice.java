@@ -5,7 +5,6 @@ import java.util.List;
 
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
-import uk.ac.ucl.excites.storage.model.Schema;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -47,7 +46,7 @@ public class Choice extends Field
 			root = parent.root;
 			if(id == null)
 				this.id = parent.getID() + "." + parent.getChildren().size();
-			valueDict = root.valueDict; //children share the valueDict of the root (so there is only one per choice tree)
+			valueDict = root.valueDict; //children share the valueDict of the root (so there is only 1 instance per choice tree)
 		}
 	}
 	
@@ -185,14 +184,20 @@ public class Choice extends Field
 	}
 	
 	@Override
-	public void addColumns(Schema schema)
+	public boolean isNoColumn()
 	{
-		if(!isRoot() || noColumn)
-			return;
+		return root.noColumn;
+	}
+	
+	@Override
+	protected IntegerColumn createColumn()
+	{
+		if(!isRoot())
+			throw new IllegalStateException("createColumn() should only be called on a root Choice object.");
 		//Build value dictionary:
 		addValues(); //Finds & adds the values for all leafs
 		//Create & add column:
-		schema.addColumn(new IntegerColumn(id, true /* TODO determine if truly optional */, 0, valueDict.keySet().size() - 1));
+		return new IntegerColumn(id, true /* TODO determine if truly optional */, 0, valueDict.keySet().size() - 1);
 	}
 	
 	/**
@@ -219,9 +224,9 @@ public class Choice extends Field
 				child.addValues(); //recursive call
 	}
 	
-	public void storeValue(Record record)
+	public void storeValue(FormEntry entry)
 	{
-		((IntegerColumn) record.getSchema().getColumn(root.id)).storeValue(record, Long.valueOf(lookupValueCode()));
+		((IntegerColumn) entry.getColumn(root.id)).storeValue(entry, Long.valueOf(lookupValueCode()));
 	}
 	
 	public int lookupValueCode()
