@@ -6,7 +6,7 @@ package uk.ac.ucl.excites.collector.project.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.collector.project.db.DataStorageAccess;
+import uk.ac.ucl.excites.collector.project.db.DataAccess;
 
 import uk.ac.ucl.excites.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.storage.model.Schema;
@@ -21,9 +21,15 @@ public class Form
 	//Statics--------------------------------------------------------
 	public static final int END_ACTION_LOOP = 0;
 	public static final int END_ACTION_EXIT = 1;
+	//public static final int END_ACTION_NEXT = 2;
 	public static final int END_ACTION_DEFAULT = END_ACTION_LOOP;
 	
-	public static final String TIMESTAMP_COLUMN_NAME = "TimeStamp";
+	public static final String COLUMN_TIMESTAMP = "TimeStamp";
+	public static final String COLUMN_DEVICE_ID = "DeviceID";
+	//public static final String COLUMN_USER = "User";
+	public static final String COLUMN_SENT_AT = "SentAt";
+	public static final String COLUMN_RECEIVED_AT = "ReceivedAt";
+	public static final String COLUMN_TRANSMISSION_TYPE = "TransmissionType";
 	
 	//Dynamics-------------------------------------------------------
 	private int schemaID;
@@ -48,23 +54,18 @@ public class Form
 	private boolean showBack;
 	private boolean showHome;
 	
-	public Form(int id)
+	public Form(String name, int schemaID)
 	{
-		this(id, null);
+		this(name, schemaID, Schema.DEFAULT_VERSION);
 	}
 	
-	public Form(int id, String name)
+	public Form(String name, int schemaID, int schemaVersion)
 	{
-		this(id, Schema.DEFAULT_VERSION, name);
-	}
-	
-	public Form(int id, int version, String name)
-	{
-		this.schemaID = id;
-		this.schemaVersion = version;
 		this.name = name;
+		this.schemaID = schemaID;
+		this.schemaVersion = schemaVersion;
 		this.fields = new ArrayList<Field>();
-	}
+	}	
 	
 	public void addField(Field f)
 	{
@@ -75,6 +76,28 @@ public class Form
 				throw new IllegalStateException("For now we only support 1 Location field per Form (this may change in the future).");
 			locationField = (LocationField) f;
 		}
+	}
+	
+	public Field getNextField(Field current)
+	{
+		int currentIndex = fields.indexOf(current);
+		//Exception handling:
+		if(currentIndex < 0)
+			throw new IllegalArgumentException("The current field is not part of this form.");
+		//Check for jump field:
+		Field jump = current.getJump();
+		if(jump != null)
+			return jump; //use jump as next
+		//No jump is set, check for field below current one
+		if(currentIndex + 1 < fields.size())
+			return fields.get(currentIndex + 1); //go to next field in the form
+		else
+			return EndField.getInstance(); //current field is the last of the form, go to end
+	}
+	
+	public String getName()
+	{
+		return name;
 	}
 	
 	public List<Field> getFields()
@@ -132,9 +155,9 @@ public class Form
 		return endSoundPath;
 	}
 
-	public Schema getSchema(DataStorageAccess dsa)
+	public Schema getSchema(DataAccess dao)
 	{	
-		Schema schema = dsa.retrieveSchema(schemaID, schemaVersion);
+		Schema schema = dao.retrieveSchema(schemaID, schemaVersion);
 		if(schema == null)
 		{
 			//Find optional choice fields
@@ -143,16 +166,27 @@ public class Form
 			//Device ID field:
 			//TODO device ID column
 			//Timestamp:
-			schema.addColumn(DateTimeColumn.Century21NoMS(TIMESTAMP_COLUMN_NAME, false));
+			schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP, false));
 			//User defined fields:
 			for(Field f : fields)
 				if(!f.isNoColumn())
 					f.addColumns(schema);
 			//Seal & store the schema:
 			schema.seal();
-			dsa.store(schema); //!!!
+			dao.store(schema); //!!!
 		}
 		return schema;
+	}
+	
+	public FormEntry newEntry(DataAccess dao)
+	{
+		FormEntry entry = new FormEntry(this, dao);
+		
+		//TODO set current time as timestamp
+		
+		//TODO set deviceID
+		
+		return entry;
 	}
 	
 }

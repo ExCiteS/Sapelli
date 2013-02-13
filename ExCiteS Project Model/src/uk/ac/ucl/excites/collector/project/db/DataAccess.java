@@ -17,24 +17,24 @@ import com.db4o.query.Predicate;
  * @author mstevens, julia
  * 
  */
-public final class DataStorageAccess
+public final class DataAccess
 {
 
 	static private String TAG = "DATA ACCESS";
 	private ObjectContainer db;
 
-	static private DataStorageAccess INSTANCE = null;
+	static private DataAccess INSTANCE = null;
 
-	static public DataStorageAccess getInstance(String dbFilePath)
+	static public DataAccess getInstance(String dbFilePath)
 	{
 		if(INSTANCE == null)
-			INSTANCE = new DataStorageAccess(dbFilePath);
+			INSTANCE = new DataAccess(dbFilePath);
 		return INSTANCE;
 	}
 
 	// private DB4O ...
 
-	private DataStorageAccess(String dbFilePath)
+	private DataAccess(String dbFilePath)
 	{
 		try
 		{

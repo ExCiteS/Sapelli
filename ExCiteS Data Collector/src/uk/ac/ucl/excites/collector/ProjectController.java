@@ -7,14 +7,16 @@ import java.util.Stack;
 
 import android.location.Location;
 import android.location.LocationListener;
+import android.nfc.FormatException;
 import android.os.Bundle;
 
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.FormEntry;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.db.DataStorageAccess;
+import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 
@@ -26,47 +28,93 @@ public class ProjectController implements LocationListener
 {
 	
 	private Project project;
-	private DataStorageAccess dsa;
+	private DataAccess dao;
 	private Form currentForm;
+	private FormEntry entry;
 	private Field currentField;
+	private CollectorActivity activity;
 	
 	private long deviceID;
 	
 	private Stack<Field> fieldHistory;
 	
-	public ProjectController(Project project, DataStorageAccess dsa)
+	public ProjectController(Project project, DataAccess dao, CollectorActivity activity)
 	{
 		this.project = project;
-		this.dsa = dsa;
+		this.dao = dao;
+		this.activity = activity;
+		
 		fieldHistory = new Stack<Field>();
 		
 		//TODO get device ID
 		deviceID = 0;
 		
-		//For now projects have only one form, so set the current form:
-		setForm(0);
+		startForm(0); //For now projects have only one form
 	}
 	
-	public void setForm(int index)
+	public void startForm(String formName)
 	{
-		currentForm = project.getForms().get(index);
-		
+		//Find form with the given name:
+		Form form = null;
+		for(Form f : project.getForms())
+			if(f.getName().equals(formName))
+			{
+				form = f;
+				break;
+			}
+		if(form != null)
+			startForm(form);
+		else
+			throw new IllegalArgumentException("Form " + formName + " could not be found in this project.");
 	}
 	
-	//TODO setForm by name
-	
-	public void startForm()
+	public void startForm(int formIndex)
 	{
-		currentField = currentForm.getStart();
+		startForm(project.getForms().get(formIndex));
+	}
+	
+	public void startForm(Form form)
+	{
+		currentForm = form;
+		restartForm();
+	}
+	
+	public void restartForm()
+	{
 		fieldHistory.clear();
 		
-		Schema schema = currentForm.getSchema(dsa);
-		//Record record = new Record(schema, deviceID);
+		entry = currentForm.newEntry(dao); //pass deviceID
+		
+		currentField = null;
+		goTo(currentForm.getStart());
+	}
+	
+	public void goForward()
+	{
+		if(currentField != null)
+			goTo(currentForm.getNextField(currentField));
+		else
+			restartForm(); //this shouldn't happen
+	}
+	
+	public void goBack()
+	{
+		if(!fieldHistory.isEmpty())
+			goTo(fieldHistory.pop());
 	}
 	
 	public void goTo(Field nextField)
 	{
-		//Save value if necessary
+		//Leafing current field...
+		if(currentField != null)
+		{
+			//Save value if necessary
+			//...
+			//Add to history:
+			fieldHistory.add(currentField);
+		}
+		//Entering next field...
+		currentField = nextField;
 		// Choices
 		if(currentField instanceof Choice)
 		{
@@ -74,32 +122,26 @@ public class ProjectController implements LocationListener
 			//if(!(nextField instanceof Choice) || ((Choice) nextField).getRoot() != currentChoice.getRoot())
 				//currentChoice.getRoot()
 		}
-		// Locations
+		// Location
 		//...
-		// MediaAttachments
+		// MediaAttachment
 		// ...
 		// _END
 		if(currentField.equals(EndField.getInstance()))
 			endForm();
 	}
 	
-	public void goBack()
-	{
-		if(!fieldHistory.isEmpty())
-		{
-			//goTo(fieldHistory.pop());
-		}
-	}
-	
 	public void endForm()
 	{
-		//Store values
+		//Store entry
+		//TODO store entry
 		
-		
-		//for(Field f : currentForm.getFields())
-		//	f.storeValues(record);
 		//End action:
-		
+		switch(currentForm.getEndAction())
+		{
+			case Form.END_ACTION_LOOP : restartForm(); break;
+			case Form.END_ACTION_EXIT : activity.finish(); break; //leaves the application!
+		}
 	}
 
 	@Override

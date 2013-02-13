@@ -38,7 +38,11 @@ public class ProjectParser extends DefaultHandler
 {
 
 	static private String TAG = "PROJECT PARSER";
+	
+	//Tags/attributes:
+	static private final String PROJECT = "ExCiteS-Collector-Project";
 	static private final String FORM = "Form";
+	static private final String FORM_NAME = "name";
 	static private final String FORM_SCHEMA_ID = "schema-id";
 	static private final String FORM_SCHEMA_VERSION = "schema-versiob";
 	static private final String FORM_START_FIELD = "startField";
@@ -83,23 +87,23 @@ public class ProjectParser extends DefaultHandler
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
 	{
-		if (qName.equals("ExCiteS-Collector-Project"))
+		//<ExCiteS-Collector-Project>
+		if (qName.equals(PROJECT))
 		{
 			project = new Project();
 		}
-
-		if (qName.equals("Data-Management"))
+		//<Data-Management>
+		else if (qName.equals("Data-Management"))
 		{
 			// TODO
 		}
-		
-		if(qName.equals(FORM))
+		//<FORM>
+		else if(qName.equals(FORM))
 		{
-			if(attributes.getValue(FORM_SCHEMA_ID) == null)
-				throw attribMissing(FORM, FORM_SCHEMA_ID);
-			int schemaID = Integer.parseInt(attributes.getValue(FORM_SCHEMA_ID));			
+			String name = readRequiredAttribute(FORM, attributes, FORM_NAME);
+			int schemaID = Integer.parseInt(readRequiredAttribute(FORM, attributes, FORM_SCHEMA_ID));
 			int schemaVersion = (attributes.getValue(FORM_SCHEMA_VERSION) == null ? Schema.DEFAULT_VERSION : Integer.parseInt(attributes.getValue(FORM_SCHEMA_VERSION)));
-			currentForm = new Form(schemaID, schemaVersion, attributes.getValue("name"));
+			currentForm = new Form(name, schemaID, schemaVersion);
 			project.addForm(currentForm);
 			if(attributes.getValue(FORM_START_FIELD) != null)
 				currentFormStartFieldID = attributes.getValue(FORM_START_FIELD);
@@ -107,8 +111,8 @@ public class ProjectParser extends DefaultHandler
 				Log.w(TAG, "No startField attribute, will use first field");
 			// TODO other attributes
 		}
-
-		if (qName.equals("Choice"))
+		//<CHOICE>
+		else if(qName.equals("Choice"))
 		{
 			currentChoice = new Choice(attributes.getValue("id"), currentChoice); //old currentChoice becomes the parent (if it is null that's ok)
 			if(currentChoice.isRoot())
@@ -128,8 +132,8 @@ public class ProjectParser extends DefaultHandler
 				currentChoice.setValue(attributes.getValue("value"));
 			//...
 		}
-
-		if (qName.equals("Location"))
+		//<LOCATION>
+		else if(qName.equals("Location"))
 		{
 			LocationField locField = new LocationField(attributes.getValue("id"));
 			currentForm.addField(locField);
@@ -153,8 +157,8 @@ public class ProjectParser extends DefaultHandler
 			locField.setStoreSpeed(readBooleanAttribute(attributes, "storeSpeed", LocationField.DEFAULT_STORE_SPEED));
 			locField.setStoreAccuracy(readBooleanAttribute(attributes, "storeAccuracy", LocationField.DEFAULT_STORE_ACCURACY));
 		}
-		
-		if (qName.equals("Photo"))
+		//<PHOTO>
+		else if(qName.equals("Photo"))
 		{
 			Photo photoField = new Photo(attributes.getValue("id"));
 			currentForm.addField(photoField);
@@ -162,8 +166,8 @@ public class ProjectParser extends DefaultHandler
 			mediaAttachmentAttributes(photoField, attributes);
 			// TODO
 		}
-
-		if (qName.equals("Audio"))
+		//<AUDIO>
+		else if(qName.equals("Audio"))
 		{
 			Audio audioField = new Audio(attributes.getValue("id"));
 			currentForm.addField(audioField);
@@ -171,6 +175,26 @@ public class ProjectParser extends DefaultHandler
 			mediaAttachmentAttributes(audioField, attributes);
 			// TODO button images
 		}
+	}	
+	
+	@Override
+	public void endElement(String uri, String localName, String qName) throws SAXException
+	{
+		//</ExCiteS-Collector-Project>
+		if(qName.equals(PROJECT))
+		{
+			if(project.getForms().size() == 0)
+				throw new SAXException("A project such have at least 1 form!");
+		}
+		//</Form>
+		else if(qName.equals(FORM))
+		{
+			currentForm = null;
+			currentFormStartFieldID = null;
+		}
+		//</Choice>
+		else if (qName.equals("Choice"))
+			currentChoice = currentChoice.getParent();
 	}
 	
 	private void mediaAttachmentAttributes(MediaAttachment ma, Attributes attributes)
@@ -242,28 +266,18 @@ public class ProjectParser extends DefaultHandler
 	}
 	
 	@Override
-	public void endElement(String uri, String localName, String qName)
-	{
-		if (qName.equals("Form"))
-		{
-			currentForm = null;
-			currentFormStartFieldID = null;
-		}
-
-		if (qName.equals("Choice"))
-			currentChoice = currentChoice.getParent();
-	}
-	
-	@Override
 	public void endDocument() throws SAXException
 	{
 		Log.i(TAG, "End document");
 		resolveJumpsAndDisablings(); //!!!
 	}
 	
-	private SAXException attribMissing(String tag, String attribute)
+	private String readRequiredAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
 	{
-		return new SAXException(attribute + " is missing, this is a required attribute of " + tag + ".");
+		String value = attributes.getValue(attributeName);
+		if(value == null)
+			throw new SAXException(attributeName + " is missing, this is a required attribute of " + qName + ".");
+		return value;
 	}
 	
 }
