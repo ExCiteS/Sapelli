@@ -134,8 +134,7 @@ public class ProjectController implements LocationListener
 	public void endForm()
 	{
 		//Store entry
-		//TODO store entry
-		
+		entry.store(); //saves entry in database
 		//End action:
 		switch(currentForm.getEndAction())
 		{

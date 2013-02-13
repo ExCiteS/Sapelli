@@ -4,7 +4,6 @@
 package uk.ac.ucl.excites.collector.project.model;
 
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
-import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 
 /**

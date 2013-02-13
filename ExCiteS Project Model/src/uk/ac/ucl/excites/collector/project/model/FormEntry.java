@@ -27,4 +27,9 @@ public class FormEntry extends Record
 		this.dao = dao;
 	}
 	
+	public void store()
+	{
+		//TODO store in db
+	}
+	
 }
