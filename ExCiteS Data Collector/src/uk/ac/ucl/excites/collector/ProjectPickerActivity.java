@@ -5,6 +5,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.filedialog.FileDialog;
 import android.app.Activity;
@@ -118,30 +119,35 @@ public class ProjectPickerActivity extends Activity
 		}
 
 		// parse XML
-		ProjectParser parser = new uk.ac.ucl.excites.collector.project.xml.ProjectParser();
-		Project project = parser.parseProject(new File(enterURL.getText().toString()));
-
-		if(project == null)
+		try
 		{
-
-			AlertDialog error = errorDialog("XML file could not be parsed successfully");
-			error.show();
+			ProjectParser parser = new ProjectParser();
+			String path = enterURL.getText().toString();
 			enterURL.setText("");
+			Project project = parser.parseProject(new File(path));
+			dao.store(project);
+		}
+		catch(DuplicateException de)
+		{
+			showParseError("Project could not be stored: " + de.getLocalizedMessage());
+			return;
+		}
+		catch(Exception e)
+		{
+			showParseError("XML file could not be parsed: " + e.getLocalizedMessage());
 			return;
 		}
 
-		// store project
-		dao.store(project);
+		//Update project list:
 		populateProjectList();
-
-
-
-		// delete file from editTextField and variable
-		enterURL.setText("");
-
-		// TODO run project
-
 	}
+	
+	private void showParseError(String errorMsg)
+	{
+		AlertDialog error = errorDialog(errorMsg);
+		error.show();
+	}
+	
 
 	// retrieve all parsed projects from db and populate list
 	public void populateProjectList()

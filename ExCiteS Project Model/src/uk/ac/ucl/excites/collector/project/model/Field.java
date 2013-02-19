@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.collector.project.model;
 
+import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.storage.model.Column;
 
 /**
@@ -123,5 +124,7 @@ public abstract class Field
 	{
 		return true;
 	}
+	
+	public abstract void setIn(FieldView fv);
 	
 }

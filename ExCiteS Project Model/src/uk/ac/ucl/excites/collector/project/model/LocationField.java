@@ -3,7 +3,9 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
+import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.storage.model.LocationColumn;
+import uk.ac.ucl.excites.storage.types.Location;
 
 /**
  * @author mstevens
@@ -13,8 +15,12 @@ public class LocationField extends Field
 {
 	
 	//Statics----------------------------------------------
+	public static final int TYPE_ANY = 0;
 	public static final int TYPE_GPS = 1;
 	public static final int TYPE_NETWORK = 2;
+	
+	public static final int LISTENER_UPDATE_MIN_TIME_MS = 15 * 1000;//30 seconds 
+	public static final int LISTENER_UPDATE_MIN_DISTANCE_M = 5; 	//5 meters
 	
 	//Defaults:
 	public static final int DEFAULT_TYPE = TYPE_GPS; 				//use GPS by default
@@ -81,9 +87,9 @@ public class LocationField extends Field
 	{
 		this.timeoutS = timeoutS;
 	}
-	
+
 	/**
-	 * @return whether or noty lat, lon & alt will be stored as 64 bit doubles (true) or 32 bit floats (false)
+	 * @return whether or not lat, lon & alt will be stored as 64 bit doubles (true) or 32 bit floats (false)
 	 */
 	public boolean isDoublePrecision()
 	{
@@ -166,6 +172,22 @@ public class LocationField extends Field
 	protected LocationColumn createColumn()
 	{
 		return new LocationColumn(id, true, doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy);
+	}
+	
+	public void storeLocation(Location location, FormEntry entry)
+	{
+		((LocationColumn) entry.getColumn(id)).storeValue(entry, location);
+	}
+	
+	public Location retrieveLocation(FormEntry entry)
+	{
+		return ((LocationColumn) entry.getColumn(id)).retrieveValue(entry);
+	}
+		
+	@Override
+	public void setIn(FieldView fv)
+	{
+		fv.setLocation(this);
 	}
 	
 }

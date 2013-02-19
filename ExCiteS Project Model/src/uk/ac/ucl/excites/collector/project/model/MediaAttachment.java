@@ -9,7 +9,7 @@ import uk.ac.ucl.excites.storage.model.IntegerColumn;
  * @author mstevens
  *
  */
-public class MediaAttachment extends Field
+public abstract class MediaAttachment extends Field
 {
 
 	static public final int DEFAULT_MIN = 0;

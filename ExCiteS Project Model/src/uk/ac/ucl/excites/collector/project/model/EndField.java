@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
+import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.storage.model.Column;
 
 /**
@@ -34,6 +35,12 @@ public class EndField extends Field
 	protected Column<?> createColumn()
 	{
 		return null;
+	}
+
+	@Override
+	public void setIn(FieldView fv)
+	{
+		//DOES NOTHING! (This should never be called)
 	}
 
 }

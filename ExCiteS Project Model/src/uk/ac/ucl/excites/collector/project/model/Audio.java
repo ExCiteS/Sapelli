@@ -3,6 +3,8 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
+import uk.ac.ucl.excites.collector.project.ui.FieldView;
+
 /**
  * @author Michalis Vitos
  * 
@@ -50,6 +52,12 @@ public class Audio extends MediaAttachment
 	public void setPathStopImage(String pathStopImage)
 	{
 		this.pathStopImage = pathStopImage;
+	}
+
+	@Override
+	public void setIn(FieldView fv)
+	{
+		fv.setAudio(this);
 	}
 
 }

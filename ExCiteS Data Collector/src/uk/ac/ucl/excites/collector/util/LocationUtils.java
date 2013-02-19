@@ -17,7 +17,7 @@ public final class LocationUtils
 	 * @param androidLocation
 	 * @return
 	 */
-	static Location getExCiteSLocation(android.location.Location androidLocation)
+	static public Location getExCiteSLocation(android.location.Location androidLocation)
 	{
 		return new Location(androidLocation.getLatitude(),
 							androidLocation.getLongitude(),

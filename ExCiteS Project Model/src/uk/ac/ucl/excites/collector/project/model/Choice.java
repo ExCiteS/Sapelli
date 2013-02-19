@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.collector.project.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 
 import com.google.common.collect.BiMap;
@@ -244,6 +245,12 @@ public class Choice extends Field
 	public String lookupValue(int valueCode)
 	{
 		return valueDict.inverse().get(Integer.valueOf(valueCode));
+	}
+
+	@Override
+	public void setIn(FieldView fv)
+	{
+		fv.setChoice(this);
 	}
 	
 }

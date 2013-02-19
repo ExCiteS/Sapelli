@@ -57,7 +57,7 @@ public class ProjectParser extends DefaultHandler
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaAttachment, String> mediaAttachToDisableId;
 
-	public Project parseProject(File xmlFile)
+	public Project parseProject(File xmlFile) throws Exception
 	{
 		project = null;
 		fieldToJumpId = new HashMap<Field, String>();
@@ -75,13 +75,15 @@ public class ProjectParser extends DefaultHandler
 		catch(Exception e)
 		{
 			Log.e(TAG, "XML Parsing Exception = " + e);
-			return null; //System.exit(-1);
+			//return null;
+			throw e;
 		}
 		return project;
 	}
 
 	@Override
-	public void startDocument() throws SAXException {
+	public void startDocument() throws SAXException
+	{
 		Log.i(TAG, "Start document");
 	}
 
@@ -147,7 +149,9 @@ public class ProjectParser extends DefaultHandler
 				Log.w(TAG, "Unknown Location type (" + type + ").");
 			else
 			{	
-				if("GPS".equalsIgnoreCase(type))
+				if("Any".equalsIgnoreCase(type))
+					locField.setType(LocationField.TYPE_ANY);
+				else if("GPS".equalsIgnoreCase(type))
 					locField.setType(LocationField.TYPE_GPS);
 				else if("Network".equalsIgnoreCase(type))
 					locField.setType(LocationField.TYPE_GPS);

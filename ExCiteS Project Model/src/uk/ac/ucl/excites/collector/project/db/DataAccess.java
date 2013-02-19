@@ -6,6 +6,7 @@ package uk.ac.ucl.excites.collector.project.db;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.storage.model.Schema;
 import android.util.Log;
 
@@ -90,8 +91,10 @@ public final class DataAccess
 	/**
 	 * @param project
 	 */
-	public void store(Project project)
+	public void store(Project project) throws DuplicateException 
 	{
+		if(retrieveProject(project.getName()) != null)
+			throw new DuplicateException("There is already a project named \"" + project.getName() + "\"!");
 		db.store(project);
 	}
 
@@ -104,6 +107,12 @@ public final class DataAccess
 	{
 		final List<Project> result = db.queryByExample(Project.class);
 		return result;
+	}
+	
+	public Project retrieveProject(String projectName)
+	{
+		//TODO
+		return null;
 	}
 	
 	/**

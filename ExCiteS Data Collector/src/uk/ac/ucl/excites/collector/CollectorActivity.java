@@ -1,7 +1,17 @@
 package uk.ac.ucl.excites.collector;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.project.model.Audio;
+import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.LocationField;
+import uk.ac.ucl.excites.collector.project.model.Photo;
 import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.ui.FieldView;
+import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.util.SystemUiHider;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -11,6 +21,7 @@ import android.os.Handler;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.RelativeLayout;
 
 /**
  * Main Collector activity
@@ -20,7 +31,7 @@ import android.view.View;
  * @see SystemUiHider
  * @author mstevens
  */
-public class CollectorActivity extends Activity
+public class CollectorActivity extends Activity implements FieldView
 {
 
 	/**
@@ -52,6 +63,7 @@ public class CollectorActivity extends Activity
 	private DataAccess dao;
 	private Project project;
 	private ProjectController controller;
+	private volatile Timer locationTimer;
 	
 	
 	@Override
@@ -191,17 +203,75 @@ public class CollectorActivity extends Activity
 		mHideHandler.postDelayed(mHideRunnable, delayMillis);
 	}
 	
+	/**
+	 * Maybe make this optional?
+	 */
 	@Override
-	// until back button is implemented, back key is used
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
 		switch(keyCode)
 		{
-		case KeyEvent.KEYCODE_BACK:
-			//backPressed();
-			return true;
+			case KeyEvent.KEYCODE_BACK:
+				controller.goBack();
+				return true;
 		}
 		return super.onKeyDown(keyCode, event);
+	}
+
+	public void setField(Field field, boolean showCancel, boolean showBack, boolean showForward)
+	{
+		//Show/hide buttons:
+		//TODO
+		
+		//Display the actual field (through double dispatch):
+		field.setIn(this);
+	}
+	
+	@Override
+	public void setChoice(Choice cf)
+	{
+		//create new ChoiceView
+		//add to layout
+		//setChoice: ((ChoiceView) currentView).setChoice(cf, controller);
+//		
+	}
+
+	@Override
+	public void setPhoto(Photo pf)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setAudio(Audio af)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setLocation(LocationField fl)
+	{
+		//Show waiting view
+		
+		//Start timeout counter
+		locationTimer = new Timer();
+		locationTimer.schedule(new TimerTask()
+		{
+			@Override
+			public void run()
+			{	//time's up!
+				controller.goForward();
+				
+			}
+		}, fl.getTimeoutS() * 1000);
+	}
+	
+	public void stopLocationTimer()
+	{
+		if(locationTimer != null)
+			locationTimer.cancel();
 	}
 	
 }

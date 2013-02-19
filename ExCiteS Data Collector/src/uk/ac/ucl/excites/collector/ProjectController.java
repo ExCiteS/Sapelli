@@ -3,10 +3,14 @@
  */
 package uk.ac.ucl.excites.collector;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Stack;
 
+import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
+import android.location.LocationManager;
 import android.nfc.FormatException;
 import android.os.Bundle;
 
@@ -18,6 +22,7 @@ import uk.ac.ucl.excites.collector.project.model.FormEntry;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.util.LocationUtils;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 
@@ -34,6 +39,7 @@ public class ProjectController implements LocationListener
 	private FormEntry entry;
 	private Field currentField;
 	private CollectorActivity activity;
+	private LocationManager locationManager;
 	
 	private long deviceID;
 	
@@ -88,6 +94,28 @@ public class ProjectController implements LocationListener
 		
 		currentField = null;
 		goTo(currentForm.getStart());
+		
+		if(currentForm.hasLocationField())
+		{	//start listening for location updates:
+			if(locationManager == null)
+				locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
+			List<String> providers = new ArrayList<String>();
+			switch(currentForm.getLocationField().getType())
+			{
+				case LocationField.TYPE_GPS : providers.add(LocationManager.GPS_PROVIDER); break;
+				case LocationField.TYPE_NETWORK : providers.add(LocationManager.NETWORK_PROVIDER); break;
+				//others later?
+				case LocationField.TYPE_ANY : providers = locationManager.getAllProviders(); break;
+				default : providers.add(LocationManager.GPS_PROVIDER);
+			}
+			for(String p : providers)
+				locationManager.requestLocationUpdates(p, LocationField.LISTENER_UPDATE_MIN_TIME_MS, LocationField.LISTENER_UPDATE_MIN_DISTANCE_M, this);
+		}
+		else
+		{	//stop listening for updates:
+			if(locationManager != null)
+				locationManager.removeUpdates(this);
+		}
 	}
 	
 	public void goForward()
@@ -111,22 +139,20 @@ public class ProjectController implements LocationListener
 			fieldHistory.add(currentField); //Add to history
 		//Entering next field...
 		currentField = nextField;
-		// Choices
-		if(currentField instanceof Choice)
-		{
-			//TODO set ChoiceView in activity
-		}
 		// Location
-		else if(currentField instanceof LocationField)
+		if(currentField == currentForm.getLocationField())
 		{
-			//TODO
+			if(currentForm.getLocationField().retrieveLocation(entry) != null)
+			{	//we have a location
+				goForward(); //skip the wait screen
+				return; //!!!
+			}
 		}
-		// MediaAttachment
-		
-		// ...
-		// _END
-		else if(currentField.equals(EndField.getInstance()))
-			endForm();
+		//Update GUI or loop/exit
+		if(currentField != EndField.getInstance())
+			activity.setField(currentField, true, !fieldHistory.empty(), false); //update GUI
+		else
+			endForm(); //currentField = _END, so we must loop or exit
 	}
 	
 	/**
@@ -153,54 +179,66 @@ public class ProjectController implements LocationListener
 			goTo(chosenChild); //chosenChild becomes the new currentField (we go one level down in the choice tree)
 	}
 	
+	@Override
+	public void onLocationChanged(Location location)
+	{
+		//Store the location:
+		currentForm.getLocationField().storeLocation(LocationUtils.getExCiteSLocation(location), entry);
+		//Check if waiting screen is shown:
+		if(currentField instanceof LocationField)
+		{	//this means the "waiting for location" screen is currently showed
+			activity.stopLocationTimer(); //stop timer!
+			goForward(); //stop waiting
+		}
+	}
+	
 	public void photoDone(boolean pictureTaken)
 	{
-		
+		//Store/increase number of photos taken
+		//TODO
+		//goto next/jump field:
+		goForward();
 	}
 	
 	public void audioDone(boolean recordingMade)
 	{
-		
+		//Store/increase number of recordings taken
+		//TODO
+		//goto next/jump field:
+		goForward();
 	}
 	
 	public void endForm()
 	{
 		//Store entry
 		entry.store(); //saves entry in database
+		//Play sound/ vibrate
+		//TODO		
 		//End action:
 		switch(currentForm.getEndAction())
 		{
 			case Form.END_ACTION_LOOP : restartForm(); break;
 			case Form.END_ACTION_EXIT : activity.finish(); break; //leaves the application!
+			//TODO default : 
 		}
 	}
 
 	@Override
-	public void onLocationChanged(Location location)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
 	public void onProviderDisabled(String provider)
-	{
-		// TODO Auto-generated method stub
-		
+	{	
+		//does nothing for now
 	}
 
 	@Override
 	public void onProviderEnabled(String provider)
-	{
-		// TODO Auto-generated method stub
-		
+	{	
+		//does nothing for now
 	}
 
 	@Override
 	public void onStatusChanged(String provider, int status, Bundle extras)
-	{
-		// TODO Auto-generated method stub
-		
+	{	
+		//does nothing for now
 	}
 		
 }
