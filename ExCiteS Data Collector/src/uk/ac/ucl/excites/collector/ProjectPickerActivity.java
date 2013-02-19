@@ -1,26 +1,38 @@
 package uk.ac.ucl.excites.collector;
 
 import java.io.File;
+import java.util.List;
 
+import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.filedialog.FileDialog;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.view.MotionEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Button;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.ListView;
 
+/**
+ * @author Julia
+ * 
+ */
 public class ProjectPickerActivity extends Activity
 {
 	// Define some variables
 	public static final int SETTINGS_REQUEST_IMPORT = 1;
-	private File browseXMLFile;
 	private EditText enterURL;
-	private Button browseButton;
+	private ListView projectList;
+	DataAccess dao;
+	List<Project> parsedProjects;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -32,55 +44,172 @@ public class ProjectPickerActivity extends Activity
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 		setContentView(R.layout.activity_projectpicker);
 
+		// Database instance (path may be changed)
+		dao = uk.ac.ucl.excites.collector.project.db.DataAccess.getInstance(Environment.getExternalStorageDirectory().getPath());
+
 		// Get View Elements
 		enterURL = (EditText) findViewById(R.id.EnterURL);
-		browseButton = (Button) findViewById(R.id.BrowseButton);
-		
-		// Browse Button
-		browseButton.setOnClickListener(new OnClickListener()
+		projectList = (ListView) findViewById(R.id.ProjectsList);
+
+		// get scrolling right
+		findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
 		{
 			@Override
-			public void onClick(View v)
+			public boolean onTouch(View v, MotionEvent event)
 			{
-				Intent mIntent = new Intent(getBaseContext(), FileDialog.class);
-				// Start from "/sdcard"
-				mIntent.putExtra(FileDialog.START_PATH, Environment.getExternalStorageDirectory().getPath());
-
-				// can user select directories or not
-				mIntent.putExtra(FileDialog.CAN_SELECT_DIR, true);
-
-				// set file filter
-				mIntent.putExtra(FileDialog.FORMAT_FILTER, new String[] { "xml" });
-				startActivityForResult(mIntent, SETTINGS_REQUEST_IMPORT);
+				projectList.getParent().requestDisallowInterceptTouchEvent(false);
+				return false;
+			}
+		});
+		projectList.setOnTouchListener(new View.OnTouchListener()
+		{
+			public boolean onTouch(View v, MotionEvent event)
+			{
+				// Disallow the touch request for parent scroll on touch of child view
+				v.getParent().requestDisallowInterceptTouchEvent(true);
+				return false;
 			}
 		});
 
-		/*
-		 * case R.id.settings_import:
-		 * 
-		 * break;
-		 */
+		// display parsed projects
+		populateProjectList();
+	}
+
+
+	public void browse(View view)
+	{
+		Intent mIntent = new Intent(getBaseContext(), FileDialog.class);
+		// Start from "/sdcard"
+		mIntent.putExtra(FileDialog.START_PATH, Environment.getExternalStorageDirectory().getPath());
+
+		// can user select directories or not
+		mIntent.putExtra(FileDialog.CAN_SELECT_DIR, true);
+
+		// set file filter
+		mIntent.putExtra(FileDialog.FORMAT_FILTER, new String[] { "xml" });
+		startActivityForResult(mIntent, SETTINGS_REQUEST_IMPORT);
 
 	}
 
+	public void removeProject()
+	{
+		dao.deleteProject(parsedProjects.get(projectList.getCheckedItemPosition()));
+		populateProjectList();
+	}
+
+	public void parseXML(View view)
+	{
+
+		if(enterURL.getText().length() == 0)
+		{
+			AlertDialog error = errorDialog("Please select an XML file");
+			error.show();
+			return;
+		}
+
+		// parse XML
+		ProjectParser parser = new uk.ac.ucl.excites.collector.project.xml.ProjectParser();
+		Project project = parser.parseProject(new File(enterURL.getText().toString()));
+
+		if(project == null)
+		{
+
+			AlertDialog error = errorDialog("XML file could not be parsed successfully");
+			error.show();
+			enterURL.setText("");
+			return;
+		}
+
+		// store project
+		dao.store(project);
+		populateProjectList();
+
+
+
+		// delete file from editTextField and variable
+		enterURL.setText("");
+
+		// TODO run project
+
+	}
+
+	// retrieve all parsed projects from db and populate list
+	public void populateProjectList()
+	{
+		parsedProjects = dao.retrieveProjects();
+		String[] values = new String[parsedProjects.size()];
+		for(int i = 0; i < parsedProjects.size(); i++)
+		{
+			values[i] = parsedProjects.get(i).getName();
+		}
+		ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_single_choice, android.R.id.text1, values);
+		projectList.setAdapter(adapter);
+
+	}
+
+	// file filter
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
 		super.onActivityResult(requestCode, resultCode, data);
 
-		if(resultCode == FileDialog.RESULT_OK)
+		if(resultCode == Activity.RESULT_OK)
 		{
 			switch(requestCode)
 			{
 			case SETTINGS_REQUEST_IMPORT:
 				// Get the result file path and import the settings
 				String fileSource = data.getStringExtra(FileDialog.RESULT_PATH).trim();
-				browseXMLFile = new File(fileSource);
 				enterURL.setText(fileSource);
 				enterURL.setSelection(fileSource.length());
 				break;
 			}
 		}
+	}
+
+	// dialog to check whether it is desired to remove project
+	public void removeDialog(View view)
+	{
+
+		System.out.println(projectList.getCheckedItemPosition());
+
+		if(projectList.getCheckedItemPosition() == -1)
+		{
+			AlertDialog NoSelection = errorDialog("Please select a project");
+			NoSelection.show();
+		}
+		else
+		{
+			AlertDialog removeDialogBox = new AlertDialog.Builder(this).setMessage("Are you sure that you want to remove the project?")
+					.setPositiveButton("Yes", new DialogInterface.OnClickListener()
+					{
+						public void onClick(DialogInterface dialog, int whichButton)
+						{
+							removeProject();
+						}
+					})
+
+					.setNegativeButton("Cancel", new DialogInterface.OnClickListener()
+					{
+						public void onClick(DialogInterface dialog, int whichButton)
+						{
+						}
+					}).create();
+
+			removeDialogBox.show();
+		}
+	}
+
+	// dialog shown when erroneous user interaction is detected
+	private AlertDialog errorDialog(String message)
+	{
+		AlertDialog Error = new AlertDialog.Builder(this).setTitle("Warning").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
+		{
+			public void onClick(DialogInterface dialog, int whichButton)
+			{
+			}
+		}).create();
+		return Error;
 	}
 
 	@Override
@@ -90,8 +219,18 @@ public class ProjectPickerActivity extends Activity
 	}
 
 	@Override
-	protected void onResume()
+	protected void onRestart()
 	{
-		super.onResume();
+		// open database
+		super.onRestart();
+		dao = uk.ac.ucl.excites.collector.project.db.DataAccess.getInstance(Environment.getExternalStorageDirectory().getPath());
+	}
+
+	@Override
+	protected void onStop()
+	{
+		// close database
+		super.onStop();
+		dao.closeDB();
 	}
 }

@@ -9,12 +9,13 @@ import java.util.List;
  */
 public class Project
 {
-	
+	private String name;
 	private List<Form> forms;
 	
-	public Project()
+	public Project(String name)
 	{
 		this.forms = new ArrayList<Form>();
+		this.name = name;
 	}
 	
 	public void addForm(Form frm)
@@ -25,6 +26,11 @@ public class Project
 	public List<Form> getForms()
 	{
 		return forms;
+	}
+	
+	public String getName()
+	{
+		return name;
 	}
 	
 }

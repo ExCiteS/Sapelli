@@ -41,6 +41,7 @@ public class ProjectParser extends DefaultHandler
 	
 	//Tags/attributes:
 	static private final String PROJECT = "ExCiteS-Collector-Project";
+	static private final String PROJECT_NAME = "name";
 	static private final String FORM = "Form";
 	static private final String FORM_NAME = "name";
 	static private final String FORM_SCHEMA_ID = "schema-id";
@@ -90,7 +91,8 @@ public class ProjectParser extends DefaultHandler
 		//<ExCiteS-Collector-Project>
 		if (qName.equals(PROJECT))
 		{
-			project = new Project();
+			String projectName = readRequiredAttribute(PROJECT, attributes, PROJECT_NAME);
+			project = new Project(projectName);
 		}
 		//<Data-Management>
 		else if (qName.equals("Data-Management"))

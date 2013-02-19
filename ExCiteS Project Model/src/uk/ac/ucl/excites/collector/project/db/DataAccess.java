@@ -40,7 +40,7 @@ public final class DataAccess
 		{
 			if(db == null || db.ext().isClosed())
 			{
-				this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), dbFilePath);
+				this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), dbFilePath + "/ExCiteS.db4o");
 				Log.d(TAG, "Opened new database connection");
 			}
 		}
@@ -102,8 +102,29 @@ public final class DataAccess
 	 */
 	public List<Project> retrieveProjects()
 	{
-		List<Project> result = db.query(Project.class);
+		final List<Project> result = db.queryByExample(Project.class);
 		return result;
+	}
+	
+	/**
+	 * Delete specific project
+	 * 
+	 * @return
+	 */
+	public void deleteProject(Project project){
+		db.delete(project);
+	}
+	
+	/**
+	 * Close db
+	 * 
+	 * @return
+	 */
+	public void closeDB()
+	{
+		db.close();
+		INSTANCE = null;
+		Log.d(TAG, "Closed database connection");
 	}
 
 }

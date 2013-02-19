@@ -10,17 +10,18 @@
 
     <!--
 	    For more information on permission:  
-	    http://developer.android.com/reference/android/Manifest.permission.html
+	    http://developer.android.com/reference/android/Manifest.permission.html
     -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    <uses-permission android:name="android.permission.BROADCAST_SMS" />
+    <uses-permission android:name="android.permission.BROADCAST_SMS" /> 
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.WRITE_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.launcher.permission.INSTALL_SHORTCUT" />
 
     <application
@@ -31,10 +32,8 @@
         android:theme="@style/AppTheme" >
         <activity
             android:name="uk.ac.ucl.excites.collector.ProjectPickerActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize"
             android:icon="@drawable/collector"
-            android:label="Collector"
-            android:theme="@style/FullscreenTheme" >
+            android:label="Collector" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -65,8 +64,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        
-       	<activity android:name="uk.ac.ucl.excites.collector.ui.filedialog.FileDialog" >
+        <activity android:name="uk.ac.ucl.excites.collector.ui.filedialog.FileDialog" >
         </activity>
 
         <service
