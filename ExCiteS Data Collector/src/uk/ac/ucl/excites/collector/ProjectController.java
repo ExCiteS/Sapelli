@@ -125,7 +125,7 @@ public class ProjectController implements LocationListener
 		
 		// ...
 		// _END
-		if(currentField.equals(EndField.getInstance()))
+		else if(currentField.equals(EndField.getInstance()))
 			endForm();
 	}
 	
@@ -150,7 +150,7 @@ public class ProjectController implements LocationListener
 			 */
 		}
 		else
-			goTo(chosenChild); //chosenChild becames the new currentField (we go one level down in the choice tree)
+			goTo(chosenChild); //chosenChild becomes the new currentField (we go one level down in the choice tree)
 	}
 	
 	public void photoDone(boolean pictureTaken)

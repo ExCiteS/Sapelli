@@ -104,4 +104,24 @@ public abstract class Field
 	 */
 	protected abstract Column<?> createColumn();
 	
+	/**
+	 * Meant to be overridden in (some) subclasses
+	 * 
+	 * @return the root Field of this Field
+	 */
+	public Field getRoot()
+	{
+		return this;
+	}
+	
+	/**
+	 * Meant to be overridden in (some) subclasses
+	 * 
+	 * @return whether or not this is a root Field
+	 */
+	public boolean isRoot()
+	{
+		return true;
+	}
+	
 }

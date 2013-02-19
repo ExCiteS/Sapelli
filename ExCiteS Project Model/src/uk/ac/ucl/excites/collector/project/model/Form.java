@@ -80,7 +80,7 @@ public class Form
 	
 	public Field getNextField(Field current)
 	{
-		int currentIndex = fields.indexOf(current);
+		int currentIndex = fields.indexOf(current.getRoot());
 		//Exception handling:
 		if(currentIndex < 0)
 			throw new IllegalArgumentException("The current field is not part of this form.");
@@ -88,7 +88,7 @@ public class Form
 		Field jump = current.getJump();
 		if(jump != null)
 			return jump; //use jump as next
-		//No jump is set, check for field below current one
+		//No jump is set, check for field below current one:
 		if(currentIndex + 1 < fields.size())
 			return fields.get(currentIndex + 1); //go to next field in the form
 		else

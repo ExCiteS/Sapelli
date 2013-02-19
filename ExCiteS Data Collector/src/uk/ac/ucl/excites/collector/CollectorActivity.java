@@ -8,6 +8,7 @@ import android.app.Activity;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -189,4 +190,18 @@ public class CollectorActivity extends Activity
 		mHideHandler.removeCallbacks(mHideRunnable);
 		mHideHandler.postDelayed(mHideRunnable, delayMillis);
 	}
+	
+	@Override
+	// until back button is implemented, back key is used
+	public boolean onKeyDown(int keyCode, KeyEvent event)
+	{
+		switch(keyCode)
+		{
+		case KeyEvent.KEYCODE_BACK:
+			//backPressed();
+			return true;
+		}
+		return super.onKeyDown(keyCode, event);
+	}
+	
 }

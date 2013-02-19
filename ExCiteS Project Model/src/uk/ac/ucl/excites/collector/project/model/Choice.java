@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
-import uk.ac.ucl.excites.storage.model.Record;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -119,9 +118,16 @@ public class Choice extends Field
 	 * 
 	 * @return the root
 	 */
+	@Override
 	public Choice getRoot()
 	{
 		return root;
+	}
+	
+	@Override
+	public boolean isRoot()
+	{
+		return parent == null;
 	}
 
 	/**
@@ -169,11 +175,6 @@ public class Choice extends Field
 		return children.isEmpty();
 	}
 	
-	public boolean isRoot()
-	{
-		return parent == null;
-	}
-	
 	@Override
 	public Field getJump()
 	{
@@ -186,7 +187,7 @@ public class Choice extends Field
 	@Override
 	public boolean isNoColumn()
 	{
-		return root.noColumn;
+		return root.noColumn; //!!!
 	}
 	
 	@Override

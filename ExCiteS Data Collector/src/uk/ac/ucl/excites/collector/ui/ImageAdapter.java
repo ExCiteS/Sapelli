@@ -67,9 +67,9 @@ public class ImageAdapter extends BaseAdapter
 
 	public void IconsToDisplay(List<Choice> children)
 	{
-		for(int i = 0; i < children.size(); i++)
+		for(Choice child : children)
 		{
-			selectedIcons.add(Environment.getExternalStorageDirectory() + "/ExCiteSImagePicker/Icons/" + children.get(i).getImagePath()); // path needs to be stored/passed as variable
+			selectedIcons.add(Environment.getExternalStorageDirectory() + "/ExCiteSImagePicker/Icons/" + child.getImagePath()); // path needs to be stored/passed as variable
 		}
 	}
 

@@ -2,6 +2,8 @@ package uk.ac.ucl.excites.collector;
 
 import java.io.File;
 
+import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.filedialog.FileDialog;
 import android.app.Activity;
 import android.content.Intent;
@@ -61,6 +63,16 @@ public class ProjectPickerActivity extends Activity
 		 * break;
 		 */
 
+		
+//		// run Parser
+//		String xmlFilePath = Environment.getExternalStorageDirectory() + "/ExCiteSImagePicker/" + "ExCiteSCollectorXML.xml"; // path needs to be stored/passed as variable
+//		File xmlFile = new File(xmlFilePath);
+//		if(!xmlFile.exists())
+//			throw new IllegalArgumentException("XML file not found (" + xmlFilePath + ").");
+//		ProjectParser parser = new ProjectParser();
+//		Project project = parser.parseProject(xmlFile);
+
+		
 	}
 
 	@Override
