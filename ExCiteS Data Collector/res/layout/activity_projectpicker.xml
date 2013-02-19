@@ -36,11 +36,11 @@
 
             <ListView
                 android:id="@+id/ProjectsList"
-                android:background="#FFFFFF"
                 android:layout_width="0dip"
                 android:layout_height="200dp"
                 android:layout_margin="5dp"
                 android:layout_weight="1"
+                android:background="#FFFFFF"
                 android:choiceMode="singleChoice" />
         </LinearLayout>
 
@@ -54,15 +54,15 @@
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:layout_weight=".5"
-                android:text="Load" />
+                android:text="Run Project" />
 
             <Button
                 android:id="@+id/RemoveProjectButton"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:layout_weight=".5"
-                android:text="Remove"
-                android:onClick="removeDialog" />
+                android:onClick="removeDialog"
+                android:text="Remove Project" />
         </LinearLayout>
 
         <LinearLayout
@@ -91,11 +91,10 @@
 
             <Button
                 android:id="@+id/DownloadButton"
-                android:layout_width="0dip"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="2.45"
                 android:onClick="parseXML"
-                android:text="Load" />
+                android:text="Load Project" />
         </LinearLayout>
     </LinearLayout>
 
