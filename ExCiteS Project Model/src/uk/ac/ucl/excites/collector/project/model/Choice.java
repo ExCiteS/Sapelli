@@ -196,12 +196,12 @@ public class Choice extends Field
 	{
 		if(!isRoot())
 			throw new IllegalStateException("createColumn() should only be called on a root Choice object.");
-		//Build value dictionary:
+		//Build value dictionary:	
 		addValues(); //Finds & adds the values for all leafs
 		//Create & add column:
 		return new IntegerColumn(id, true /* TODO determine if truly optional */, 0, valueDict.keySet().size() - 1);
 	}
-	
+
 	/**
 	 * Recursive method which implements a depth-first traversal that finds the values of all leafs.
 	 * If a leaf does not have a value of it's own the one of a parent is found using getValue(), if that
@@ -251,6 +251,11 @@ public class Choice extends Field
 	public void setIn(FieldView fv)
 	{
 		fv.setChoice(this);
+	}
+	
+	public String toString()
+	{
+		return "Choice " + id + (value != null ? " (value: " + value + ")" : " (no value set)");
 	}
 	
 }

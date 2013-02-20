@@ -66,6 +66,7 @@
         </activity>
         <activity android:name="uk.ac.ucl.excites.collector.ui.filedialog.FileDialog" >
         </activity>
+        <activity android:name="uk.ac.ucl.excites.collector.CollectorActivity"> </activity>
 
         <service
             android:name="uk.ac.excites.sender.BackgroundService"

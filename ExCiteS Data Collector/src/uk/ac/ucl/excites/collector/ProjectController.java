@@ -7,24 +7,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-import android.content.Context;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.nfc.FormatException;
-import android.os.Bundle;
-
-import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.EndField;
+import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.FormEntry;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.util.LocationUtils;
-import uk.ac.ucl.excites.storage.model.Record;
-import uk.ac.ucl.excites.storage.model.Schema;
+import android.content.Context;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
 
 /**
  * @author mstevens
