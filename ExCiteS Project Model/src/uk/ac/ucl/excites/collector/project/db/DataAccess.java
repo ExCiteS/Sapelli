@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.project.db;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -12,6 +13,8 @@ import android.util.Log;
 
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
+import com.db4o.ObjectSet;
+import com.db4o.query.Predicate;
 
 /**
  * @author mstevens, julia
@@ -78,12 +81,19 @@ public final class DataAccess
 	 */
 	public Schema retrieveSchema(final int id, final int version)
 	{
-		Schema theExample = new Schema(id, version);
-		final List<Schema> result = db.queryByExample(theExample);
-		if(result.isEmpty())
-			return null;
+
+		ObjectSet<Schema> result = db.query(new Predicate<Schema>()
+		{
+			public boolean match(Schema schema)
+			{
+				return schema.getID() == id && schema.getVersion() == version;
+			}
+		});
+
+		if(result.hasNext())
+			return result.next();
 		else
-			return result.get(0);
+			return null;
 
 	}
 

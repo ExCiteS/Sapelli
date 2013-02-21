@@ -11,24 +11,32 @@ import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.Photo;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
+import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import android.app.Activity;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.KeyEvent;
-import android.widget.ImageButton;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
+import android.view.Window;
+import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.LinearLayout;
 
 /**
  * Main Collector activity
- *
+ * 
  * @author mstevens, julia
  */
 public class CollectorActivity extends Activity implements FieldView
 {
 
 	// UI
-	ImageButton backButton;
-	ImageButton cancelButton;
-	
+	LinearLayout ll;
+	Button backButton;
+	Button cancelButton;
+
 	// Dynamic fields:
 	private DataAccess dao;
 	private Project project;
@@ -39,6 +47,11 @@ public class CollectorActivity extends Activity implements FieldView
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+
+		// Remove title
+		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		// Set to FullScreen
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
 		// get project name and path from bundle
 		Bundle extras = getIntent().getExtras();
@@ -54,17 +67,9 @@ public class CollectorActivity extends Activity implements FieldView
 		// Set-up controller:
 		controller = new ProjectController(project, dao, this);
 
-		// UI set-up:
-		setContentView(R.layout.activity_collector_fullscreen);
+		// start project
+		controller.startProject();
 
-		// // Example: add choiceView to a RelativeLayout
-		// RelativeLayout rl = new RelativeLayout(this);
-		// RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
-		// RelativeLayout.LayoutParams.MATCH_PARENT,
-		// RelativeLayout.LayoutParams.MATCH_PARENT);
-		// ChoiceView choiceView = new ChoiceView(this);
-		// rl.addView(choiceView, params);
-		// setContentView(rl);
 	}
 
 	/**
@@ -84,20 +89,51 @@ public class CollectorActivity extends Activity implements FieldView
 
 	public void setField(Field field, boolean showCancel, boolean showBack, boolean showForward)
 	{
-		LinearLayout ll = (LinearLayout) findViewById(R.id.activity_collector_fullscreen);
-		
-		if (showBack == true){
-			backButton = new ImageButton(this);
-			ll.addView(backButton);
+		// set up UI
+		ll = new LinearLayout(this);
+		ll.setOrientation(LinearLayout.VERTICAL);
+		ll.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		ll.setBackgroundColor(Color.BLACK);
+
+		// set up Buttons TODO change Button to ImageButton
+		LinearLayout buttonLayout = new LinearLayout(this);
+		buttonLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		buttonLayout.setWeightSum(1);
+		LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(155, 45, 0.5f);
+		if(showBack == true)
+
+		{
+			backButton = new Button(this);
+			backButton.setText("back");
+			backButton.setLayoutParams(buttonParams);
+			backButton.setOnClickListener(new OnClickListener()
+			{
+				public void onClick(View v)
+				{
+					controller.goBack();
+				}
+			});
+
+			buttonLayout.addView(backButton);
 		}
-		
-		if (showCancel == true){
-			cancelButton = new ImageButton(this);
-			ll.addView(cancelButton);
+
+		if(showCancel == true)
+		{
+			cancelButton = new Button(this);
+			cancelButton.setText("cancel");
+			cancelButton.setLayoutParams(buttonParams);
+			cancelButton.setOnClickListener(new OnClickListener()
+			{
+				public void onClick(View v)
+				{
+					controller.restartForm();
+				}
+			});
+
+			buttonLayout.addView(cancelButton);
+
 		}
-		
-		// Show/hide buttons:
-		// TODO
+		ll.addView(buttonLayout);
 
 		// Display the actual field (through double dispatch):
 		field.setIn(this);
@@ -106,10 +142,16 @@ public class CollectorActivity extends Activity implements FieldView
 	@Override
 	public void setChoice(Choice cf)
 	{
-		// create new ChoiceView
-		// add to layout
-		// setChoice: ((ChoiceView) currentView).setChoice(cf, controller);
-		//
+		ChoiceView choiceView = new ChoiceView(this);
+		choiceView.setChoice(cf, controller);
+
+		LinearLayout choiceLayout = new LinearLayout(this);
+		choiceLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+
+		choiceLayout.addView(choiceView);
+		ll.addView(choiceLayout);
+		setContentView(ll);
+
 	}
 
 	@Override

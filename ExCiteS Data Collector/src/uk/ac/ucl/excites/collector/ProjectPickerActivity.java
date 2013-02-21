@@ -242,22 +242,20 @@ public class ProjectPickerActivity extends Activity
 	@Override
 	protected void onPause()
 	{
-		super.onPause();
-	}
-
-	@Override
-	protected void onRestart()
-	{
-		// open database
-		super.onRestart();
-		dao = uk.ac.ucl.excites.collector.project.db.DataAccess.getInstance(Environment.getExternalStorageDirectory().getPath());
-	}
-
-	@Override
-	protected void onStop()
-	{
 		// close database
-		super.onStop();
+		super.onPause();
 		dao.closeDB();
 	}
+	
+	
+
+	@Override
+	protected void onResume()
+	{
+		// open database
+		super.onResume();
+		dao = DataAccess.getInstance(Environment.getExternalStorageDirectory().getPath());
+	}
+
+
 }

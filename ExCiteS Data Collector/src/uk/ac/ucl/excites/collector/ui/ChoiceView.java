@@ -18,6 +18,7 @@ public class ChoiceView extends GridView
 	private ImageAdapter imageAdapter;
 	private List<Choice> currentItems;
 
+
 	public ChoiceView(final Context context)
 	{
 		super(context);
@@ -43,6 +44,7 @@ public class ChoiceView extends GridView
 		imageAdapter.clearSelectedIcons();
 		imageAdapter.IconsToDisplay(currentItems);
 		setNumColumns(choice.getCols());
+		setAdapter(imageAdapter);
 		
 		//set click listener
 		setOnItemClickListener(new OnItemClickListener()
@@ -52,6 +54,7 @@ public class ChoiceView extends GridView
 			{
 				//get children of pressed icon or jump
 				controller.choiceMade(currentItems.get(position));
+
 			}
 		});
 	}
