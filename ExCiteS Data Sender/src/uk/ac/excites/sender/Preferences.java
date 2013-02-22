@@ -32,6 +32,19 @@ public class Preferences extends PreferenceActivity
 		startService(mIntent);
 	}
 
+	
+	/**
+	 * Check if the phone should get in Airplane Mode
+	 * 
+	 * @param mContext
+	 * @return
+	 */
+	public static boolean getAirplaneMode(Context mContext)
+	{
+		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+		return mSharedPreferences.getBoolean("airplaneMode", true);
+	}
+	
 	/**
 	 * Get the Phone Number of the centre phone that works as a rely
 	 * 
