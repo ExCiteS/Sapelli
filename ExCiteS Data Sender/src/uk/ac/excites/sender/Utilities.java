@@ -14,7 +14,8 @@ import android.util.Log;
  * @author Michalis Vitos
  * 
  */
-public class Utilities extends Application {
+public class Utilities extends Application
+{
 
 	/**
 	 * Check if a Service is Running
@@ -24,12 +25,15 @@ public class Utilities extends Application {
 	 *            ex. uk.ac.ucl.excites.launcher.LauncherService
 	 * @return
 	 */
-	public static boolean isMyServiceRunning(Context mContext, String serviceClassName) {
+	public static boolean isMyServiceRunning(Context mContext, String serviceClassName)
+	{
 		ActivityManager manager = (ActivityManager) mContext.getSystemService(ACTIVITY_SERVICE);
-		for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
+		for(RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE))
+		{
 
 			// Set the Service
-			if (serviceClassName.equals(service.service.getClassName())) {
+			if(serviceClassName.equals(service.service.getClassName()))
+			{
 				return true;
 			}
 		}
@@ -41,18 +45,21 @@ public class Utilities extends Application {
 	 * 
 	 * @return true if it is
 	 */
-	public static boolean inAirplaneMode(Context mContext) {
+	public static boolean inAirplaneMode(Context mContext)
+	{
 		return Settings.System.getInt(mContext.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, 0) == 1;
 	}
 
 	/**
 	 * Toggle thought the AirplaneMode
 	 */
-	public static void toggleAirplaneMode(Context mContext) {
+	public static void toggleAirplaneMode(Context mContext)
+	{
 
 		boolean isInAirplaneMode = inAirplaneMode(mContext);
 
-		try {
+		try
+		{
 			// If airplane mode is on, value 0, else value is 1
 			Settings.System.putInt(mContext.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, isInAirplaneMode ? 0 : 1);
 
@@ -61,11 +68,13 @@ public class Utilities extends Application {
 			intent.putExtra("state", !isInAirplaneMode);
 			mContext.sendBroadcast(intent);
 
-			if (Constants.DEBUG_LOG)
+			if(Constants.DEBUG_LOG)
 				Log.i(Constants.TAG, "Airplane mode is: " + (isInAirplaneMode ? "OFF" : "ON"));
 
-		} catch (Exception e) {
-			if (Constants.DEBUG_LOG)
+		}
+		catch(Exception e)
+		{
+			if(Constants.DEBUG_LOG)
 				Log.i(Constants.TAG, "exception:" + e.toString());
 		}
 	}

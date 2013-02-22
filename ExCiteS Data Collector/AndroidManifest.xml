@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="uk.ac.ucl.excites.collector"
+    package="uk.ac.ucl.excites.collect"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -12,27 +12,104 @@
 	    For more information on permission:  
 	    http://developer.android.com/reference/android/Manifest.permission.html
     -->
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.RECORD_VIDEO" />
-    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <uses-permission android:name="android.permission.BROADCAST_SMS" />
+    <uses-permission android:name="android.permission.READ_SMS" />
+    <uses-permission android:name="android.permission.WRITE_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.launcher.permission.INSTALL_SHORTCUT" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"
+        android:debuggable="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name="uk.ac.ucl.excites.collector.CollectorActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize"
-            android:label="@string/app_name"
-            android:theme="@style/FullscreenTheme" >
+            android:name="uk.ac.ucl.excites.collector.ProjectPickerActivity"
+            android:icon="@drawable/collector"
+            android:label="Collector" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="uk.ac.excites.sender.SenderBackgroundActivity"
+            android:exported="true"
+            android:label="@string/title_activity_main" >
+        </activity>
+        <activity
+            android:name="uk.ac.excites.sender.ShortcutCreator"
+            android:label="ExCiteS Service Settings" >
+            <intent-filter>
+                <action android:name="android.intent.action.CREATE_SHORTCUT" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="uk.ac.excites.sender.Preferences"
+            android:icon="@drawable/sender"
+            android:label="Preferences" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity android:name="uk.ac.ucl.excites.collector.ui.filedialog.FileDialog" >
+        </activity>
+        <activity android:name="uk.ac.ucl.excites.collector.CollectorActivity" >
+        </activity>
+        <activity android:name="com.dropbox.sync.android.DbxAuthActivity" />
+        <activity
+            android:name="com.dropbox.client2.android.AuthActivity"
+            android:launchMode="singleTask" >
+            <intent-filter>
+
+                <!-- HERE NEEDS THE ACTUAL DROPBOX APP KEY -->
+                <data android:scheme="db-y15h8nlpkr6ezp1" />
+
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.BROWSABLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <service
+            android:name="com.dropbox.sync.android.DbxSyncService"
+            android:enabled="true"
+            android:exported="false"
+            android:label="Dropbox Sync" >
+        </service>
+
+        <activity
+            android:name="uk.ac.excites.sender.dropbox.DropboxAuthentication"
+            android:label="@string/title_activity_dropbox" >
+        </activity>
+
+        <service
+            android:name="uk.ac.excites.sender.SenderBackgroundService"
+            android:icon="@drawable/ic_launcher"
+            android:label="@string/service_name" >
+        </service>
+
+        <receiver
+            android:name="uk.ac.excites.sender.BootReceiver"
+            android:exported="true" >
+            <intent-filter android:priority="9999999999" >
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

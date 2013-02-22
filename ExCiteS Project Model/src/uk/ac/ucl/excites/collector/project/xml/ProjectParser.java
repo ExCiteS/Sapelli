@@ -46,7 +46,7 @@ public class ProjectParser extends DefaultHandler
 	static private final String FORM = "Form";
 	static private final String FORM_NAME = "name";
 	static private final String FORM_SCHEMA_ID = "schema-id";
-	static private final String FORM_SCHEMA_VERSION = "schema-versiob";
+	static private final String FORM_SCHEMA_VERSION = "schema-version";
 	static private final String FORM_START_FIELD = "startField";
 	static private final String Field_NO_COLUMN = "noColumn";
 
@@ -133,10 +133,12 @@ public class ProjectParser extends DefaultHandler
 			if (attributes.getValue("cols") != null)
 				currentChoice.setCols(Integer.parseInt(attributes.getValue("cols")));
 			if (attributes.getValue("rows") != null)
-				currentChoice.setCols(Integer.parseInt(attributes.getValue("rows")));
+				currentChoice.setRows(Integer.parseInt(attributes.getValue("rows")));
 			if (attributes.getValue("value") != null)
 				currentChoice.setValue(attributes.getValue("value"));
 			//...
+			
+			Log.d(TAG, currentChoice.toString());
 		}
 		//<LOCATION>
 		else if(qName.equals("Location"))

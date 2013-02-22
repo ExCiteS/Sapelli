@@ -39,10 +39,10 @@
 		<Photo id="photo" min="0" max="2" jump="AudioPhoto" disableField="photoChoice"/>
 		<Audio id="audio" min="0" max="7" jump="AudioPhoto" recImg="" stopImg=""/>
 
-		<Location id="gpsLocation" type="GPS" timeout="300"/>
-		<!-- maybe later: accuracy attribute on Location (fine/coarse or an actual number? -->
+		<Orientation id="MagneticNorth" axes="Y"/>
 		
-		<Bearing id="" jump=""/>
+		<Location id="gpsLocation" type="GPS" timeout="300" waitAtField="true"/>
+		<!-- maybe later: accuracy attribute on Location (fine/coarse or an actual number? -->
 		
 	</Form>
 

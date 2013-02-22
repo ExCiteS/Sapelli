@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.project.db;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -12,6 +13,7 @@ import android.util.Log;
 
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
+import com.db4o.ObjectSet;
 import com.db4o.query.Predicate;
 
 /**
@@ -21,7 +23,9 @@ import com.db4o.query.Predicate;
 public final class DataAccess
 {
 
-	static private String TAG = "DATA ACCESS";
+	static private final String TAG = "DATA ACCESS";
+	static private final int PROJECT_ACTIVATION_DEPTH = 500;
+
 	private ObjectContainer db;
 
 	static private DataAccess INSTANCE = null;
@@ -75,23 +79,28 @@ public final class DataAccess
 	 * @param version
 	 * @return
 	 */
-	@SuppressWarnings("serial")
 	public Schema retrieveSchema(final int id, final int version)
 	{
-		return db.query(new Predicate<Schema>()
+
+		ObjectSet<Schema> result = db.query(new Predicate<Schema>()
 		{
-			public boolean match(Schema s)
+			public boolean match(Schema schema)
 			{
-				return s.getID() == id && s.getVersion() == version;
+				return schema.getID() == id && schema.getVersion() == version;
 			}
-		}).next(); // TODO check if this will return null if no match is find (rather than throwing an exception)
+		});
+
+		if(result.hasNext())
+			return result.next();
+		else
+			return null;
 
 	}
 
 	/**
 	 * @param project
 	 */
-	public void store(Project project) throws DuplicateException 
+	public void store(Project project) throws DuplicateException
 	{
 		if(retrieveProject(project.getName()) != null)
 			throw new DuplicateException("There is already a project named \"" + project.getName() + "\"!");
@@ -106,15 +115,30 @@ public final class DataAccess
 	public List<Project> retrieveProjects()
 	{
 		final List<Project> result = db.queryByExample(Project.class);
+		for(Project p : result)
+			db.activate(p, PROJECT_ACTIVATION_DEPTH);
 		return result;
 	}
-	
+
+	/**
+	 * Retrieves specific Project
+	 * 
+	 * @return null if project was not found
+	 */
 	public Project retrieveProject(String projectName)
 	{
-		//TODO
-		return null;
+		Project theExample = new Project(projectName);
+		final List<Project> result = db.queryByExample(theExample);
+		if(result.isEmpty())
+			return null;
+		else
+		{
+			Project p = result.get(0);
+			db.activate(p, PROJECT_ACTIVATION_DEPTH);
+			return p;
+		}
 	}
-	
+
 	/**
 	 * Delete specific project
 	 * 
@@ -124,7 +148,7 @@ public final class DataAccess
 	{
 		db.delete(project);
 	}
-	
+
 	/**
 	 * Close db
 	 * 

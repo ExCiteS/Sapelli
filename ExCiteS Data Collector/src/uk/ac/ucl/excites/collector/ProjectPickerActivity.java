@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.collector;
 import java.io.File;
 import java.util.List;
 
+import uk.ac.ucl.excites.collect.R;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
@@ -28,12 +29,15 @@ import android.widget.ListView;
  */
 public class ProjectPickerActivity extends Activity
 {
+	String dbPATH;
+	
 	// Define some variables
 	public static final int SETTINGS_REQUEST_IMPORT = 1;
 	private EditText enterURL;
 	private ListView projectList;
 	DataAccess dao;
 	List<Project> parsedProjects;
+
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -45,8 +49,9 @@ public class ProjectPickerActivity extends Activity
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 		setContentView(R.layout.activity_projectpicker);
 
-		// Database instance (path may be changed)
-		dao = uk.ac.ucl.excites.collector.project.db.DataAccess.getInstance(Environment.getExternalStorageDirectory().getPath());
+		// Database instance (path may be changed) TODO
+		dbPATH = Environment.getExternalStorageDirectory().getPath();
+		dao = uk.ac.ucl.excites.collector.project.db.DataAccess.getInstance(dbPATH);
 
 		// Get View Elements
 		enterURL = (EditText) findViewById(R.id.EnterURL);
@@ -74,8 +79,8 @@ public class ProjectPickerActivity extends Activity
 
 		// display parsed projects
 		populateProjectList();
+		
 	}
-
 
 	public void browse(View view)
 	{
@@ -89,17 +94,25 @@ public class ProjectPickerActivity extends Activity
 		// set file filter
 		mIntent.putExtra(FileDialog.FORMAT_FILTER, new String[] { "xml" });
 		startActivityForResult(mIntent, SETTINGS_REQUEST_IMPORT);
+	}
 
-		
-//		// run Parser
-//		String xmlFilePath = Environment.getExternalStorageDirectory() + "/ExCiteSImagePicker/" + "ExCiteSCollectorXML.xml"; // path needs to be stored/passed as variable
-//		File xmlFile = new File(xmlFilePath);
-//		if(!xmlFile.exists())
-//			throw new IllegalArgumentException("XML file not found (" + xmlFilePath + ").");
-//		ProjectParser parser = new ProjectParser();
-//		Project project = parser.parseProject(xmlFile);
 
+
+	public void runProject(View view)
+	{
+
+		if(projectList.getCheckedItemPosition() == -1)
+		{
+			AlertDialog NoSelection = errorDialog("Please select a project");
+			NoSelection.show();
+		}
 		
+		String project = parsedProjects.get(projectList.getCheckedItemPosition()).getName();
+		Intent i = new Intent(this, CollectorActivity.class);
+		i.putExtra("Project", project);
+		i.putExtra("Path", dbPATH);
+		startActivity(i);
+
 	}
 
 	public void removeProject()
@@ -108,6 +121,7 @@ public class ProjectPickerActivity extends Activity
 		populateProjectList();
 	}
 
+	
 	public void parseXML(View view)
 	{
 
@@ -138,16 +152,15 @@ public class ProjectPickerActivity extends Activity
 			return;
 		}
 
-		//Update project list:
+		// Update project list:
 		populateProjectList();
 	}
-	
+
 	private void showParseError(String errorMsg)
 	{
 		AlertDialog error = errorDialog(errorMsg);
 		error.show();
 	}
-	
 
 	// retrieve all parsed projects from db and populate list
 	public void populateProjectList()
@@ -231,22 +244,20 @@ public class ProjectPickerActivity extends Activity
 	@Override
 	protected void onPause()
 	{
-		super.onPause();
-	}
-
-	@Override
-	protected void onRestart()
-	{
-		// open database
-		super.onRestart();
-		dao = uk.ac.ucl.excites.collector.project.db.DataAccess.getInstance(Environment.getExternalStorageDirectory().getPath());
-	}
-
-	@Override
-	protected void onStop()
-	{
 		// close database
-		super.onStop();
+		super.onPause();
 		dao.closeDB();
 	}
+	
+	
+
+	@Override
+	protected void onResume()
+	{
+		// open database
+		super.onResume();
+		dao = DataAccess.getInstance(Environment.getExternalStorageDirectory().getPath());
+	}
+
+
 }
