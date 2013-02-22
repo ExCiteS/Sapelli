@@ -22,17 +22,19 @@ public class LocationColumn extends Column<Location>
 	protected boolean storeBearing;
 	protected boolean storeSpeed;
 	protected boolean storeAccuracy;
+	protected boolean storeProvider;
 	
 	/**
 	 * @param name
+	 * @param optional
 	 * @param doublePrecision
 	 * @param storeAltitude
 	 * @param storeBearing
 	 * @param storeSpeed
 	 * @param storeAccuracy
-	 * @param optional
+	 * @param storeProvider
 	 */
-	public LocationColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeBearing, boolean storeSpeed, boolean storeAccuracy)
+	public LocationColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeBearing, boolean storeSpeed, boolean storeAccuracy, boolean storeProvider)
 	{
 		super(name, optional);
 		this.doublePrecision = doublePrecision;
@@ -40,6 +42,7 @@ public class LocationColumn extends Column<Location>
 		this.storeBearing = storeBearing;
 		this.storeSpeed = storeSpeed;
 		this.storeAccuracy = storeAccuracy;
+		this.storeProvider = storeProvider;
 	}
 
 	/**
@@ -120,6 +123,8 @@ public class LocationColumn extends Column<Location>
 			else
 				bitStream.write(false); //presence bit
 		}
+		if(storeProvider)
+			Location.ProviderRange().write(value.getProvider(), bitStream);
 	}
 
 	@Override
@@ -137,7 +142,9 @@ public class LocationColumn extends Column<Location>
 		Float spe = (storeSpeed && bitStream.readBit() ? bitStream.readFloat() : null);
 		//Accuracy:
 		Float acc = (storeAccuracy && bitStream.readBit() ? bitStream.readFloat() : null);
-		return new Location(lat, lon, alt, bea, spe, acc);
+		//Provider:
+		int provider = (storeProvider ? (int) Location.ProviderRange().read(bitStream) : Location.PROVIDER_UNKNOWN);
+		return new Location(lat, lon, provider, alt, bea, spe, acc);
 	}
 
 	@Override
@@ -159,6 +166,7 @@ public class LocationColumn extends Column<Location>
 	public int getSize()
 	{
 		return 	(doublePrecision ? Double.SIZE : Float.SIZE) /*Lat*/ + (doublePrecision ? Double.SIZE : Float.SIZE) /*Lon*/ +
+				(storeProvider ? Location.ProviderRange().getSize() /*Provider*/ : 0) +
 				(storeAltitude ? (1 + (doublePrecision ? Double.SIZE : Float.SIZE)) /*Alt (w/ presence bit)*/ : 0) +
 				(storeBearing ? (1 + Float.SIZE) /*Bearing (w/ presence bit)*/ : 0) +
 				(storeSpeed ? (1 + Float.SIZE) /*Speed (w/ presence bit)*/ : 0) +

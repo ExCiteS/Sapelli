@@ -4,14 +4,15 @@
 package uk.ac.ucl.excites.collector;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Stack;
 
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.nfc.FormatException;
 import android.os.Bundle;
 
 import uk.ac.ucl.excites.collector.project.model.Field;
@@ -22,9 +23,9 @@ import uk.ac.ucl.excites.collector.project.model.FormEntry;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.util.DeviceID;
 import uk.ac.ucl.excites.collector.util.LocationUtils;
-import uk.ac.ucl.excites.storage.model.Record;
-import uk.ac.ucl.excites.storage.model.Schema;
+
 
 /**
  * @author mstevens
@@ -41,7 +42,7 @@ public class ProjectController implements LocationListener
 	private CollectorActivity activity;
 	private LocationManager locationManager;
 	
-	private long deviceID;
+	private long deviceID; //32bit unsigned CRC32 hashcode
 	
 	private Stack<Field> fieldHistory;
 	
@@ -53,10 +54,7 @@ public class ProjectController implements LocationListener
 		
 		fieldHistory = new Stack<Field>();
 		
-		//TODO get device ID
-		deviceID = 0;
-		
-		startForm(0); //For now projects have only one form
+		deviceID = (new DeviceID(activity)).getCRC32Hash();
 	}
 	
 	public void startForm(String formName)
@@ -88,34 +86,26 @@ public class ProjectController implements LocationListener
 	
 	public void restartForm()
 	{
+		//Clear stuff:
 		fieldHistory.clear();
-		
-		entry = currentForm.newEntry(dao); //pass deviceID
-		
 		currentField = null;
-		goTo(currentForm.getStart());
 		
-		if(currentForm.hasLocationField())
-		{	//start listening for location updates:
-			if(locationManager == null)
-				locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
-			List<String> providers = new ArrayList<String>();
-			switch(currentForm.getLocationField().getType())
-			{
-				case LocationField.TYPE_GPS : providers.add(LocationManager.GPS_PROVIDER); break;
-				case LocationField.TYPE_NETWORK : providers.add(LocationManager.NETWORK_PROVIDER); break;
-				//others later?
-				case LocationField.TYPE_ANY : providers = locationManager.getAllProviders(); break;
-				default : providers.add(LocationManager.GPS_PROVIDER);
-			}
-			for(String p : providers)
-				locationManager.requestLocationUpdates(p, LocationField.LISTENER_UPDATE_MIN_TIME_MS, LocationField.LISTENER_UPDATE_MIN_DISTANCE_M, this);
-		}
-		else
-		{	//stop listening for updates:
-			if(locationManager != null)
-				locationManager.removeUpdates(this);
-		}
+		//Create new record:
+		entry = currentForm.newEntry(dao, deviceID); //TODO pass deviceID
+
+		//Handle locationfield(s):
+//		if(currentForm.getLocationFields().size() > 0)
+//		{
+//
+//		
+//		}
+//		else
+//		{
+//			stopLocationListener();
+//		}
+		
+		//Begin completing the form at the start field:
+		goTo(currentForm.getStart());
 	}
 	
 	public void goForward()
@@ -139,11 +129,14 @@ public class ProjectController implements LocationListener
 			fieldHistory.add(currentField); //Add to history
 		//Entering next field...
 		currentField = nextField;
-		// Location
-		if(currentField == currentForm.getLocationField())
+		//Handle LocationField:
+		if(currentField instanceof LocationField)
 		{
-			if(currentForm.getLocationField().retrieveLocation(entry) != null)
-			{	//we have a location
+			LocationField lf = (LocationField) currentField;
+			if(lf.retrieveLocation(entry) == null)
+				startLocationListener(lf); //start listening for a location
+			else
+			{	//we already have a location
 				goForward(); //skip the wait screen
 				return; //!!!
 			}
@@ -156,7 +149,7 @@ public class ProjectController implements LocationListener
 	}
 	
 	/**
-	 * To be called from UI/CollectorActivity
+	 * To be called from ChoiceView
 	 * 
 	 * @param chosenChild
 	 */
@@ -177,19 +170,6 @@ public class ProjectController implements LocationListener
 		}
 		else
 			goTo(chosenChild); //chosenChild becomes the new currentField (we go one level down in the choice tree)
-	}
-	
-	@Override
-	public void onLocationChanged(Location location)
-	{
-		//Store the location:
-		currentForm.getLocationField().storeLocation(LocationUtils.getExCiteSLocation(location), entry);
-		//Check if waiting screen is shown:
-		if(currentField instanceof LocationField)
-		{	//this means the "waiting for location" screen is currently showed
-			activity.stopLocationTimer(); //stop timer!
-			goForward(); //stop waiting
-		}
 	}
 	
 	public void photoDone(boolean pictureTaken)
@@ -223,6 +203,67 @@ public class ProjectController implements LocationListener
 		}
 	}
 
+	private void startLocationListener(LocationField locField)
+	{
+		//TODO
+	}
+	
+	private void startLocationListener(List<LocationField> locFields)
+	{
+		//start listening for location updates:
+		if(locationManager == null)
+			locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
+		Set<String> providers = new HashSet<String>();
+			for(LocationField lf : locFields)
+				providers.addAll(LocationUtils.getProvider(locationManager, lf));
+		for(String p : providers)
+			locationManager.requestLocationUpdates(p, LocationField.LISTENER_UPDATE_MIN_TIME_MS, LocationField.LISTENER_UPDATE_MIN_DISTANCE_M, this);
+	}
+	
+	private void stopLocationListener()
+	{
+		if(locationManager != null)
+			locationManager.removeUpdates(this);
+	}
+	
+	@Override
+	public void onLocationChanged(Location location)
+	{
+		boolean keepListening = false;
+		for(LocationField lf : currentForm.getLocationFields())
+		{
+			boolean stored = lf.storeLocation(LocationUtils.getExCiteSLocation(location), entry);
+			
+			keepListening |= (lf.isWaitAtField() && currentField != lf);
+		}
+		if(!keepListening)
+			stopLocationListener();
+		
+		
+		//avoid overwrite after field?
+		
+		
+//		if(currentField instanceof LocationField)
+//		{	//user is waiting for a location for the currentfield
+//			activity.stopLocationTimer(); //stop waiting screen timer!
+//			stopLocationListener(); //stop listening for locations
+//			((LocationField) currentField).storeLocation(LocationUtils.getExCiteSLocation(location), entry); //store location 
+//			
+//			goForward(); //continue (will leave waiting screen)
+//		}
+//		else if(currentForm.getLocationFields().size() == 1)
+//		{
+//			LocationField lf = currentForm.getLocationFields().get(0);
+//			lf.storeLocation(LocationUtils.getExCiteSLocation(location), entry); //store location 
+//			if(!lf.isWaitAtField())
+//				stopLocationListener();
+//		}
+//		else
+//		{	//this should not happen really...
+//			
+//		}
+	}
+	
 	@Override
 	public void onProviderDisabled(String provider)
 	{	

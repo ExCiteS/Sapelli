@@ -2,11 +2,13 @@ package uk.ac.ucl.excites.storage.types;
 
 import org.apache.http.ParseException;
 
+import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
+
 
 /**
  * A pure-Java (i.e. framework independent) Location class<br/>
  * 
- * It holds latitude and longitude as 64 bit doubles.<br/>
+ * It holds latitude and longitude as 64 bit doubles, and an interger indicating the source (providor) of the location.<br/>
  * Optionally it can also hold altitude (as double) and bearing, speed & accuracy (all as 32 bit floats).
  * 
  * @author mstevens
@@ -17,17 +19,40 @@ public class Location
 	//Static---------------------------------------------------------
 	static final private String SEPARATOR = "|";
 	
+	static public final int PROVIDER_UNKNOWN = 0;
+	static public final int PROVIDER_GPS = 1;
+	static public final int PROVIDER_NETWORK = 2;
+	static public final int PROVIDER_MANUAL = 3; //e.g. pinpointed on map, coordinates entered in text fields, etc.
+	
+	static public String GetProviderName(int provider)
+	{
+		switch(provider)
+		{
+			case PROVIDER_UNKNOWN : return "Unkwown";
+			case PROVIDER_GPS : return "GPS";
+			case PROVIDER_NETWORK : return "Network";
+			case PROVIDER_MANUAL : return "Manual";
+			default : return "Unknown";
+		}
+	}
+	
+	static public IntegerRangeMapping ProviderRange()
+	{
+		return new IntegerRangeMapping(PROVIDER_UNKNOWN, PROVIDER_MANUAL);
+	}
+	
 	static public Location Parse(String text) throws ParseException
 	{
 		String[] parts = text.trim().split("\\" + SEPARATOR);
-		if(parts.length < 2)
-			throw new ParseException("Not a value location: " + text);
+		if(parts.length < 3)
+			throw new ParseException("Not a valid location: " + text);
 		return new Location(Double.parseDouble(parts[0]),
 							Double.parseDouble(parts[1]),
-							(parts.length > 2 && !parts[2].isEmpty() ? Double.valueOf(parts[2]) : null),
-							(parts.length > 3 && !parts[3].isEmpty() ? Float.valueOf(parts[3]) : null),
+							Integer.parseInt(parts[2]),
+							(parts.length > 3 && !parts[3].isEmpty() ? Double.valueOf(parts[3]) : null),
 							(parts.length > 4 && !parts[4].isEmpty() ? Float.valueOf(parts[4]) : null),
-							(parts.length > 5 && !parts[5].isEmpty() ? Float.valueOf(parts[5]) : null));
+							(parts.length > 5 && !parts[5].isEmpty() ? Float.valueOf(parts[5]) : null),
+							(parts.length > 6 && !parts[6].isEmpty() ? Float.valueOf(parts[6]) : null));
 	}
 	
 	//Dynamic--------------------------------------------------------
@@ -37,6 +62,7 @@ public class Location
 	protected Float bearing;
 	protected Float speed;
 	protected Float acc;
+	protected int provider;
 	
 	/**
 	 * @param lat
@@ -44,21 +70,24 @@ public class Location
 	 */
 	public Location(double lat, double lon)
 	{
-		this(lat, lon, null, null, null, null);
+		this(lat, lon, PROVIDER_UNKNOWN, null, null, null, null);
 	}
 	
 	/**
 	 * @param lat
 	 * @param lon
+	 * @param provider
 	 * @param alt
 	 * @param bearing
 	 * @param speed
 	 * @param acc
 	 */
-	public Location(double lat, double lon, Double alt, Float bearing, Float speed, Float acc)
+	public Location(double lat, double lon, int provider, Double alt, Float bearing, Float speed, Float acc)
 	{
 		this.lat = lat;
 		this.lon = lon;
+		this.provider = provider;
+		//optional (these can be null):
 		this.alt = alt;
 		this.bearing = bearing;
 		this.speed = speed;
@@ -144,10 +173,19 @@ public class Location
 		return acc;
 	}
 	
+	/**
+	 * @return the provider
+	 */
+	public int getProvider()
+	{
+		return provider;
+	}
+
 	public String toString()
 	{
 		return 	Double.toString(lat) + SEPARATOR +
 				Double.toString(lon) + SEPARATOR +
+				Integer.toString(provider) + SEPARATOR +
 				(alt != null ? alt.toString() : "") + SEPARATOR +
 				(bearing != null ? bearing.toString() : "") + SEPARATOR +
 				(speed != null ? speed.toString() : "") + SEPARATOR +

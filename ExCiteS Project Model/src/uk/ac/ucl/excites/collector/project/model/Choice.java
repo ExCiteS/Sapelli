@@ -30,13 +30,15 @@ public class Choice extends Field
 	
 	public Choice(String id, Choice parent)
 	{
-		super(id);
+		super(	id == null ? 
+					(parent == null ?
+						null /*Field constructor will throw NPE*/ :
+						parent.getID() + "." + parent.getChildren().size()) :
+					id);
 		this.children = new ArrayList<Choice>();
 		this.parent = parent;
 		if(parent == null)
 		{	//this is a root choice
-			if(id == null)
-				throw new NullPointerException("ID cannot be null on a root (i.e. top-level) Choice.");
 			root = this; //self-pointer
 			valueDict = HashBiMap.create(); //value dictionary
 		}
@@ -44,8 +46,6 @@ public class Choice extends Field
 		{	//this is a child choice
 			parent.addChild(this); //add myself as a child of my parent
 			root = parent.root;
-			if(id == null)
-				this.id = parent.getID() + "." + parent.getChildren().size();
 			valueDict = root.valueDict; //children share the valueDict of the root (so there is only 1 instance per choice tree)
 		}
 	}

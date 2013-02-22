@@ -18,28 +18,35 @@ public class LocationField extends Field
 	public static final int TYPE_ANY = 0;
 	public static final int TYPE_GPS = 1;
 	public static final int TYPE_NETWORK = 2;
+	//public static final int TYPE_PASSIVE = 3;
 	
 	public static final int LISTENER_UPDATE_MIN_TIME_MS = 15 * 1000;//30 seconds 
 	public static final int LISTENER_UPDATE_MIN_DISTANCE_M = 5; 	//5 meters
 	
 	//Defaults:
 	public static final int DEFAULT_TYPE = TYPE_GPS; 				//use GPS by default
+	public static final boolean DEFAULT_START_WITH_FORM = true;		//start listingen for location at the start of the form by default
+	public static final boolean DEFAULT_WAIT_AT_FIELD = false;		//do not wait for a new(er) location when at the field by default
 	public static final int DEFAULT_TIMEOUT_S = 300; 				//use timeout of 300 seconds (5 minutes) by default
 	public static final boolean DEFAULT_DOUBLE_PRECISION = false; 	//use 32 bit floats for lat, lon & alt by default
 	public static final boolean DEFAULT_STORE_ALTITUDE = true;		//store altitude by default
 	public static final boolean DEFAULT_STORE_BEARING = false;		//do not store bearing by default
 	public static final boolean DEFAULT_STORE_SPEED = false;		//do not store speed by default
 	public static final boolean DEFAULT_STORE_ACCURACY = true;		//store accuracy by default
+	public static final boolean DEFAULT_STORE_PROVIDER = false;		//do not store provider by default
 	
 	
 	//Dynamics---------------------------------------------
 	private int type;
+	private boolean startWithForm;
+	private boolean waitAtField;
 	private int timeoutS;
 	private boolean doublePrecision;
 	private boolean storeAltitude;
 	private boolean storeBearing;
 	private boolean storeSpeed;
 	private boolean storeAccuracy;
+	private boolean storeProvider;
 	
 	public LocationField(String id)
 	{
@@ -47,11 +54,15 @@ public class LocationField extends Field
 		if(id == null)
 			throw new NullPointerException("ID of top-level field cannot be null");
 		this.type = DEFAULT_TYPE;
+		this.startWithForm = DEFAULT_START_WITH_FORM;
+		this.waitAtField = DEFAULT_WAIT_AT_FIELD;
 		this.timeoutS = DEFAULT_TIMEOUT_S;
+		this.doublePrecision = DEFAULT_DOUBLE_PRECISION;
 		this.storeAltitude = DEFAULT_STORE_ALTITUDE;
 		this.storeBearing = DEFAULT_STORE_BEARING;
 		this.storeSpeed = DEFAULT_STORE_SPEED;
 		this.storeAccuracy = DEFAULT_STORE_ACCURACY;
+		this.storeProvider = DEFAULT_STORE_PROVIDER;
 	}
 	
 	/**
@@ -67,6 +78,8 @@ public class LocationField extends Field
 	 */
 	public void setType(int type)
 	{
+		if(type < TYPE_ANY || type > TYPE_NETWORK)
+			throw new IllegalArgumentException("Unknown location provider type (" + type + "!");
 		this.type = type;
 	}
 	
@@ -102,6 +115,38 @@ public class LocationField extends Field
 	public void setDoublePrecision(boolean doublePrecision)
 	{
 		this.doublePrecision = doublePrecision;
+	}
+	
+	/**
+	 * @return the startWithForm
+	 */
+	public boolean isStartWithForm()
+	{
+		return startWithForm;
+	}
+
+	/**
+	 * @param startWithForm the startWithForm to set
+	 */
+	public void setStartWithForm(boolean startWithForm)
+	{
+		this.startWithForm = startWithForm;
+	}
+
+	/**
+	 * @return the waitAtField
+	 */
+	public boolean isWaitAtField()
+	{
+		return waitAtField;
+	}
+
+	/**
+	 * @param waitAtField the waitAtField to set
+	 */
+	public void setWaitAtField(boolean waitAtField)
+	{
+		this.waitAtField = waitAtField;
 	}
 
 	/**
@@ -168,15 +213,40 @@ public class LocationField extends Field
 		this.storeAccuracy = storeAccuracy;
 	}
 
+	/**
+	 * @return the storeProvider
+	 */
+	public boolean isStoreProvider()
+	{
+		return storeProvider;
+	}
+
+	/**
+	 * @param storeProvider the storeProvider to set
+	 */
+	public void setStoreProvider(boolean storeProvider)
+	{
+		this.storeProvider = storeProvider;
+	}
+
 	@Override
 	protected LocationColumn createColumn()
 	{
-		return new LocationColumn(id, true, doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy);
+		return new LocationColumn(id, true, doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, storeProvider);
 	}
 	
-	public void storeLocation(Location location, FormEntry entry)
-	{
+	public boolean storeLocation(Location location, FormEntry entry)
+	{	
+		//Provider type check
+		if(type == LocationField.TYPE_GPS && location.getProvider() != Location.PROVIDER_GPS)
+			return false;
+		//Accuracy check
+		//TODO
+		//Other check?
+		
+		//Store value:
 		((LocationColumn) entry.getColumn(id)).storeValue(entry, location);
+		return true;
 	}
 	
 	public Location retrieveLocation(FormEntry entry)

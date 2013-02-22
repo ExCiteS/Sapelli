@@ -9,6 +9,7 @@ import java.util.List;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 
 import uk.ac.ucl.excites.storage.model.DateTimeColumn;
+import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Schema;
 
 /**
@@ -19,12 +20,15 @@ public class Form
 {
 	
 	//Statics--------------------------------------------------------
+	public static final boolean END_TIME_DEFAULT = false;
+	
 	public static final int END_ACTION_LOOP = 0;
 	public static final int END_ACTION_EXIT = 1;
 	//public static final int END_ACTION_NEXT = 2;
 	public static final int END_ACTION_DEFAULT = END_ACTION_LOOP;
 	
-	public static final String COLUMN_TIMESTAMP = "TimeStamp";
+	public static final String COLUMN_TIMESTAMP_START = "StartTime";
+	public static final String COLUMN_TIMESTAMP_END = "EndTime";
 	public static final String COLUMN_DEVICE_ID = "DeviceID";
 	//public static final String COLUMN_USER = "User";
 	public static final String COLUMN_SENT_AT = "SentAt";
@@ -39,12 +43,15 @@ public class Form
 	//Fields
 	private Field start;
 	private List<Field> fields;
-	private LocationField locationField;
+	private List<LocationField> locationFields;
 
 	//Android shortcut:
 	private boolean shortcut;
 	//shortcutIcon 
 
+	//Timestamps
+	private boolean storeEndTime;
+	
 	//End action:
 	private int endAction;
 	private boolean vibrateOnEnd;
@@ -65,17 +72,14 @@ public class Form
 		this.schemaID = schemaID;
 		this.schemaVersion = schemaVersion;
 		this.fields = new ArrayList<Field>();
-	}	
+		this.locationFields = new ArrayList<LocationField>();
+	}
 	
 	public void addField(Field f)
 	{
 		fields.add(f);
 		if(f instanceof LocationField)
-		{
-			if(locationField != null)
-				throw new IllegalStateException("For now we only support 1 Location field per Form (this may change in the future).");
-			locationField = (LocationField) f;
-		}
+			locationFields.add((LocationField) f);
 	}
 	
 	public Field getNextField(Field current)
@@ -121,16 +125,27 @@ public class Form
 		this.start = start;
 	}
 	
-	public boolean hasLocationField()
+	public List<LocationField> getLocationFields()
 	{
-		return locationField != null; 
+		return locationFields;
 	}
 	
-	public LocationField getLocationField()
+	/**
+	 * @return the storeEndTime
+	 */
+	public boolean isStoreEndTime()
 	{
-		return locationField;
+		return storeEndTime;
 	}
-	
+
+	/**
+	 * @param storeEndTime the storeEndTime to set
+	 */
+	public void setStoreEndTime(boolean storeEndTime)
+	{
+		this.storeEndTime = storeEndTime;
+	}
+
 	/**
 	 * @return the endAction
 	 */
@@ -138,7 +153,15 @@ public class Form
 	{
 		return endAction;
 	}
-
+		
+	/**
+	 * @param endAction the endAction to set
+	 */
+	public void setEndAction(int endAction)
+	{
+		this.endAction = endAction;
+	}
+	
 	/**
 	 * @return the vibrateOnEnd
 	 */
@@ -162,13 +185,13 @@ public class Form
 		{
 			schema = new Schema(schemaID, schemaVersion, name);
 			//Internal-use columns:
+			// Timestamp column(s):
+			schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_START, false));
+			if(storeEndTime)
+				schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_END, false));			
 			// Device ID column:
-			
-			// Timestamp column:
-			schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP, false));
+			schema.addColumn(new IntegerColumn(COLUMN_DEVICE_ID, false, false, 32));
 			// Transmission information columns:
-			
-			
 			
 			//Columns for user-defined fields:
 			for(Field f : fields)
@@ -181,13 +204,14 @@ public class Form
 		return schema;
 	}
 	
-	public FormEntry newEntry(DataAccess dao)
+	public FormEntry newEntry(DataAccess dao, long deviceID)
 	{
 		FormEntry entry = new FormEntry(this, dao);
 		
-		//TODO set current time as timestamp
+		//TODO Set current time as start timestamp
 		
-		//TODO set deviceID
+		//TODO Set deviceID
+		
 		
 		return entry;
 	}

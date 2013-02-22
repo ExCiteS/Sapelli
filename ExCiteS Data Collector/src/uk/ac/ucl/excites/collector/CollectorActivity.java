@@ -8,6 +8,7 @@ import uk.ac.ucl.excites.collector.project.model.Audio;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
+import uk.ac.ucl.excites.collector.project.model.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.Photo;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
@@ -251,7 +252,7 @@ public class CollectorActivity extends Activity implements FieldView
 	}
 
 	@Override
-	public void setLocation(LocationField fl)
+	public void setLocation(LocationField lf)
 	{
 		//Show waiting view
 		
@@ -265,13 +266,20 @@ public class CollectorActivity extends Activity implements FieldView
 				controller.goForward();
 				
 			}
-		}, fl.getTimeoutS() * 1000);
+		}, lf.getTimeoutS() * 1000);
 	}
 	
 	public void stopLocationTimer()
 	{
 		if(locationTimer != null)
 			locationTimer.cancel();
+	}
+
+	@Override
+	public void setOrientation(OrientationField of)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 	
 }

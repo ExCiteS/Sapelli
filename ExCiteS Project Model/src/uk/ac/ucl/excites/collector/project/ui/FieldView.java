@@ -18,6 +18,8 @@ public interface FieldView
 	
 	public void setAudio(Audio af);
 	
-	public void setLocation(LocationField fl);
+	public void setLocation(LocationField lf);
+	
+	public void setOrientation(OrientationField of);
 	
 }

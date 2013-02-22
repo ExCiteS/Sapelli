@@ -26,7 +26,9 @@ public abstract class Field
 	
 	public Field(String id)
 	{
-		this.id = id;
+		if(id == null || id.isEmpty())
+			throw new NullPointerException("ID cannot be null or empty.");
+		this.id = id.trim();
 	}
 	
 	/**
