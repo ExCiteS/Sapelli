@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.collector;
 import java.io.File;
 import java.util.List;
 
+import uk.ac.ucl.excites.collect.R;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
@@ -78,6 +79,7 @@ public class ProjectPickerActivity extends Activity
 
 		// display parsed projects
 		populateProjectList();
+		
 	}
 
 	public void browse(View view)
