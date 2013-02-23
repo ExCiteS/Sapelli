@@ -31,7 +31,6 @@ import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Bundle;
 
 /**
  * @author mstevens
@@ -104,15 +103,18 @@ public class ProjectController implements LocationListener
 		entry = currentForm.newEntry(dao, deviceID); //TODO pass deviceID
 
 		//Handle locationfield(s):
-//		if(currentForm.getLocationFields().size() > 0)
-//		{
-//
-//		
-//		}
-//		else
-//		{
-//			stopLocationListener();
-//		}
+		
+		
+		
+		if(currentForm.getLocationFields().size() > 0)
+		{
+
+		
+		}
+		else
+		{
+			stopLocationListener();
+		}
 		
 		//Begin completing the form at the start field:
 		goTo(currentForm.getStart());

@@ -6,7 +6,8 @@ package uk.ac.ucl.excites.collector.util;
  * @author Michalis Vitos
  * 
  */
-public final class Constants {
+public final class Constants
+{
 	
 	private Constants() {} //should not be instantiated
 
@@ -14,4 +15,5 @@ public final class Constants {
 	public static final boolean DEBUG_LOG = true;
 	// The tag used for the LogCat
 	public static final String TAG = "ExCiteS_Debug";
+	
 }

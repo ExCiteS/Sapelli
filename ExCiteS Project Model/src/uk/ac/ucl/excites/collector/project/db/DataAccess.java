@@ -3,7 +3,6 @@
  */
 package uk.ac.ucl.excites.collector.project.db;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -23,10 +22,9 @@ import com.db4o.query.Predicate;
 public final class DataAccess
 {
 
+	//Statics----------------------------------------------
 	static private final String TAG = "DATA ACCESS";
 	static private final int PROJECT_ACTIVATION_DEPTH = 500;
-
-	private ObjectContainer db;
 
 	static private DataAccess INSTANCE = null;
 
@@ -37,8 +35,10 @@ public final class DataAccess
 		return INSTANCE;
 	}
 
-	// private DB4O ...
-
+	
+	//Dynamics---------------------------------------------
+	private ObjectContainer db;
+	
 	private DataAccess(String dbFilePath)
 	{
 		try
@@ -79,6 +79,7 @@ public final class DataAccess
 	 * @param version
 	 * @return
 	 */
+	@SuppressWarnings("serial")
 	public Schema retrieveSchema(final int id, final int version)
 	{
 

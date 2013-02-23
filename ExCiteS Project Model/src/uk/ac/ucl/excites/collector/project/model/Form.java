@@ -6,6 +6,8 @@ package uk.ac.ucl.excites.collector.project.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.joda.time.DateTime;
+
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 
 import uk.ac.ucl.excites.storage.model.DateTimeColumn;
@@ -24,7 +26,7 @@ public class Form
 	
 	public static final int END_ACTION_LOOP = 0;
 	public static final int END_ACTION_EXIT = 1;
-	//public static final int END_ACTION_NEXT = 2;
+	//public static final int END_ACTION_NEXT_FORM = 2;
 	public static final int END_ACTION_DEFAULT = END_ACTION_LOOP;
 	
 	public static final String COLUMN_TIMESTAMP_START = "StartTime";
@@ -209,6 +211,7 @@ public class Form
 		FormEntry entry = new FormEntry(this, dao);
 		
 		//TODO Set current time as start timestamp
+		DateTime dt;
 		
 		//TODO Set deviceID
 		
