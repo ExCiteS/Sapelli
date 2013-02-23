@@ -62,7 +62,8 @@ public class ProjectController implements LocationListener
 		deviceID = (new DeviceID(activity)).getCRC32Hash();
 	}
 	
-	public void startProject (){
+	public void startProject()
+	{
 		startForm(0); // For now projects have only one form
 	}
 
