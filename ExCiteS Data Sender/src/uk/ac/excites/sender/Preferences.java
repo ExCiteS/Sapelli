@@ -1,6 +1,7 @@
 package uk.ac.excites.sender;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
@@ -15,7 +16,7 @@ import android.preference.PreferenceManager;
 public class Preferences extends PreferenceActivity
 {
 
-	public static final String PREFERENCES = "backgroundSharedPreferces";
+	public static final String PREFERENCES = "ExCiteS_Data_Sender_Preferences";
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -25,8 +26,25 @@ public class Preferences extends PreferenceActivity
 
 		addPreferencesFromResource(R.xml.background_preferences);
 		PreferenceManager.setDefaultValues(Preferences.this, R.xml.background_preferences, false);
+		
+		// Call the Service
+		Intent mIntent = new Intent(this, SenderBackgroundService.class);
+		startService(mIntent);
 	}
 
+	
+	/**
+	 * Check if the phone should get in Airplane Mode
+	 * 
+	 * @param mContext
+	 * @return
+	 */
+	public static boolean getAirplaneMode(Context mContext)
+	{
+		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+		return mSharedPreferences.getBoolean("airplaneMode", true);
+	}
+	
 	/**
 	 * Get the Phone Number of the centre phone that works as a rely
 	 * 
