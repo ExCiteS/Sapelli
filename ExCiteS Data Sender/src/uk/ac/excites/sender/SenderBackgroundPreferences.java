@@ -13,7 +13,7 @@ import android.preference.PreferenceManager;
  * @author Michalis Vitos
  * 
  */
-public class Preferences extends PreferenceActivity
+public class SenderBackgroundPreferences extends PreferenceActivity
 {
 
 	public static final String PREFERENCES = "ExCiteS_Data_Sender_Preferences";
@@ -25,7 +25,7 @@ public class Preferences extends PreferenceActivity
 		super.onCreate(savedInstanceState);
 
 		addPreferencesFromResource(R.xml.background_preferences);
-		PreferenceManager.setDefaultValues(Preferences.this, R.xml.background_preferences, false);
+		PreferenceManager.setDefaultValues(SenderBackgroundPreferences.this, R.xml.background_preferences, false);
 		
 		// Call the Service
 		Intent mIntent = new Intent(this, SenderBackgroundService.class);

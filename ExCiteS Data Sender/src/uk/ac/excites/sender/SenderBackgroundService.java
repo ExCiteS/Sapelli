@@ -15,6 +15,7 @@ import android.content.Intent;
 import android.os.Environment;
 import android.os.FileObserver;
 import android.os.IBinder;
+import android.preference.Preference;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
@@ -73,11 +74,11 @@ public class SenderBackgroundService extends Service
 	{
 
 		// Get the preferences
-		DROPBOX_UPLOAD = Preferences.getDropboxUpload(mContext);
-		AIRPLANE_MODE = Preferences.getAirplaneMode(mContext);
-		CENTER_PHONE_NUMBER = Preferences.getCenterPhoneNumber(mContext);
-		TIME_SCHEDULE = Preferences.getTimeSchedule(mContext);
-		MAX_ATTEMPS = Preferences.getMaxAttemps(mContext);
+		DROPBOX_UPLOAD = SenderBackgroundPreferences.getDropboxUpload(mContext);
+		AIRPLANE_MODE = SenderBackgroundPreferences.getAirplaneMode(mContext);
+		CENTER_PHONE_NUMBER = SenderBackgroundPreferences.getCenterPhoneNumber(mContext);
+		TIME_SCHEDULE = SenderBackgroundPreferences.getTimeSchedule(mContext);
+		MAX_ATTEMPS = SenderBackgroundPreferences.getMaxAttemps(mContext);
 
 		setServiceForeground(mContext);
 
@@ -196,7 +197,7 @@ public class SenderBackgroundService extends Service
 		final int myID = 9999;
 
 		// The intent to launch when the user clicks the expanded notification
-		Intent mIntent = new Intent(mContext, SenderBackgroundActivity.class);
+		Intent mIntent = new Intent(mContext, SenderBackgroundPreferences.class);
 		mIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
 		PendingIntent pendIntent = PendingIntent.getActivity(mContext, 0, mIntent, 0);
 

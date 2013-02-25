@@ -58,7 +58,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="uk.ac.excites.sender.Preferences"
+            android:name="uk.ac.excites.sender.SenderBackgroundPreferences"
             android:icon="@drawable/sender"
             android:label="Settings" >
             <intent-filter>
