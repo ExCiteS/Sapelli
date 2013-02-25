@@ -24,14 +24,22 @@ public class ImageAdapter extends BaseAdapter
 	static private int PADDING = 2; // pixels
 
 	private Context context;
+	private int imageWidth;
 	private int imageHeight;
 	private List<String> selectedIcons = new ArrayList<String>();
 	private List<Integer> buttonIDs = new ArrayList<Integer>();
 
-	public ImageAdapter(Context localContext, int height)
+	public ImageAdapter(Context localContext, int imageWidth, int imageHeight)
 	{
 		this.context = localContext;
-		this.imageHeight = height;
+		this.imageWidth = imageWidth;
+		this.imageHeight = imageHeight;
+	}
+	
+	public ImageAdapter(Context localContext, int imageHeight)
+	{
+		this.context = localContext;
+		this.imageHeight = imageHeight;
 	}
 
 	public int getCount()
@@ -66,14 +74,16 @@ public class ImageAdapter extends BaseAdapter
 				Bitmap bm = BitmapFactory.decodeFile(selectedIcons.get(position).toString());
 				imageView.setImageBitmap(bm);				
 				imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+				imageView.setLayoutParams(new GridView.LayoutParams(imageWidth, imageHeight));
 			}
 			else
 			{
 				imageView.setImageResource(buttonIDs.get(position));
 				imageView.setScaleType(ImageView.ScaleType.CENTER);
+				imageView.setLayoutParams(new GridView.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 			}
-			imageView.setLayoutParams(new GridView.LayoutParams(LayoutParams.MATCH_PARENT, imageHeight));
 			imageView.setPadding(PADDING, PADDING, PADDING, PADDING);
+			
 			
 		}
 		else

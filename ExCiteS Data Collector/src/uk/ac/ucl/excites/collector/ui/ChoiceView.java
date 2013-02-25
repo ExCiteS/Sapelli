@@ -6,14 +6,14 @@ import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.Point;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
 
 public class ChoiceView extends GridView
 {
-	static private final int BUTTON = 153;
-	static private final int NO_BUTTON = 135;
+	static private final int SPACING = 10;
 
 	private ImageAdapter imageAdapter;
 	private List<Choice> currentItems;
@@ -29,25 +29,22 @@ public class ChoiceView extends GridView
 		setAdapter(imageAdapter);
 	}
 
-
 	public void setChoice(Choice choice, final ProjectController controller)
 	{
 		if(choice.isLeaf())
 			throw new IllegalArgumentException("Cannot display leaf choice.");
 		currentItems = choice.getChildren();
 
-		if(choice.isRoot())
-			imageAdapter = new ImageAdapter(super.getContext(), BUTTON);
-		else
-			imageAdapter = new ImageAdapter(super.getContext(), NO_BUTTON);
+		int imageWidth = (getWidth() - ((choice.getCols() - 1) * SPACING )) / choice.getCols();
+		int imageHeight = (getHeight() - ((choice.getRows() - 1) * SPACING)) / choice.getRows();
+
+		imageAdapter = new ImageAdapter(super.getContext(), imageWidth, imageHeight);
 
 		imageAdapter.clearSelectedIcons();
 		imageAdapter.IconsToDisplay(currentItems);
 		setNumColumns(choice.getCols());
 		setAdapter(imageAdapter);
-		
-		
-		
+
 		// set click listener
 		setOnItemClickListener(new OnItemClickListener()
 		{
