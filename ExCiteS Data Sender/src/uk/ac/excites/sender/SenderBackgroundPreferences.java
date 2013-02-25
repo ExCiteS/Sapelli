@@ -3,9 +3,11 @@ package uk.ac.excites.sender;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.util.Log;
 
 /**
  * This class contains various utilities methods
@@ -13,7 +15,7 @@ import android.preference.PreferenceManager;
  * @author Michalis Vitos
  * 
  */
-public class SenderBackgroundPreferences extends PreferenceActivity
+public class SenderBackgroundPreferences extends PreferenceActivity implements OnSharedPreferenceChangeListener
 {
 
 	public static final String PREFERENCES = "ExCiteS_Data_Sender_Preferences";
@@ -27,11 +29,15 @@ public class SenderBackgroundPreferences extends PreferenceActivity
 		addPreferencesFromResource(R.xml.background_preferences);
 		PreferenceManager.setDefaultValues(SenderBackgroundPreferences.this, R.xml.background_preferences, false);
 		
+		// Register a listener
+		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+		mSharedPreferences.registerOnSharedPreferenceChangeListener(this);
+
 		// Call the Service
 		Intent mIntent = new Intent(this, SenderBackgroundService.class);
 		startService(mIntent);
 	}
-	
+
 	/**
 	 * Check if the phone should upload to Dropbox
 	 * 
@@ -44,7 +50,6 @@ public class SenderBackgroundPreferences extends PreferenceActivity
 		return mSharedPreferences.getBoolean("dropboxUpload", true);
 	}
 
-	
 	/**
 	 * Check if the phone should get in Airplane Mode
 	 * 
@@ -56,7 +61,7 @@ public class SenderBackgroundPreferences extends PreferenceActivity
 		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 		return mSharedPreferences.getBoolean("airplaneMode", true);
 	}
-	
+
 	/**
 	 * Get the Phone Number of the centre phone that works as a rely
 	 * 
@@ -87,9 +92,21 @@ public class SenderBackgroundPreferences extends PreferenceActivity
 	 * @param mContext
 	 * @return
 	 */
-	public static int getMaxAttemps(Context mContext)
+	public static int getMaxAttempts(Context mContext)
 	{
 		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return Integer.parseInt(mSharedPreferences.getString("maxAttemps", "1"));
+		return Integer.parseInt(mSharedPreferences.getString("maxAttempts", "1"));
+	}
+
+	@Override
+	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
+	{
+		
+		if(Constants.DEBUG_LOG)
+			Log.i(Constants.TAG, "onSharedPreferenceChanged(): key = " + key);
+		
+		// Call the Service
+		Intent mIntent = new Intent(this, SenderBackgroundService.class);
+		startService(mIntent);
 	}
 }

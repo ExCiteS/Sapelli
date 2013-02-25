@@ -15,7 +15,6 @@ import android.content.Intent;
 import android.os.Environment;
 import android.os.FileObserver;
 import android.os.IBinder;
-import android.preference.Preference;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
@@ -43,16 +42,17 @@ public class SenderBackgroundService extends Service
 	private static boolean AIRPLANE_MODE;
 	private static String CENTER_PHONE_NUMBER;
 	private static int TIME_SCHEDULE;
-	private static int MAX_ATTEMPS;
+	private static int MAX_ATTEMPTS;
 	private static DropboxSync folderObserver;
+	private static SmsSender smsSender;
+	private static boolean isSending;
 
 	// ================================================================================
 	// Define some variables
 	// ================================================================================
-	private Context mContext;
+	private static Context mContext;
 	private int mStartMode; // indicates how to behave if the service is killed
 	private boolean mAllowRebind; // indicates whether onRebind should be used
-	private static int serviceState = -1;
 
 	private ScheduledExecutorService scheduleTaskExecutor;
 	private ScheduledFuture<?> mScheduledFuture;
@@ -61,9 +61,14 @@ public class SenderBackgroundService extends Service
 	public void onCreate()
 	{
 		// The service is being created
-		this.mContext = this;
+		SenderBackgroundService.mContext = this;
 
-		checkServiceListener();
+		// Set the variable to false
+		isSending = false;
+
+		// Creates a thread pool that can schedule commands to run after a given
+		// delay, or to execute periodically.
+		scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
 
 		// Wait for the Debugger to be attached
 		// android.os.Debug.waitForDebugger();
@@ -72,14 +77,14 @@ public class SenderBackgroundService extends Service
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId)
 	{
-
 		// Get the preferences
 		DROPBOX_UPLOAD = SenderBackgroundPreferences.getDropboxUpload(mContext);
 		AIRPLANE_MODE = SenderBackgroundPreferences.getAirplaneMode(mContext);
 		CENTER_PHONE_NUMBER = SenderBackgroundPreferences.getCenterPhoneNumber(mContext);
 		TIME_SCHEDULE = SenderBackgroundPreferences.getTimeSchedule(mContext);
-		MAX_ATTEMPS = SenderBackgroundPreferences.getMaxAttemps(mContext);
+		MAX_ATTEMPTS = SenderBackgroundPreferences.getMaxAttempts(mContext);
 
+		smsSender = new SmsSender(mContext, MAX_ATTEMPTS);
 		setServiceForeground(mContext);
 
 		// ================================================================================
@@ -87,8 +92,6 @@ public class SenderBackgroundService extends Service
 		// ================================================================================
 		if(DROPBOX_UPLOAD)
 		{
-			// TODO check if is logged in to dropbox
-			Log.i(Constants.TAG, "--- Setting up observer for folder : " + pathToObserve);
 			folderObserver = new DropboxSync(pathToObserve);
 			folderObserver.startWatching();
 		}
@@ -96,98 +99,30 @@ public class SenderBackgroundService extends Service
 		// ================================================================================
 		// Schedule SMS Transmitting
 		// ================================================================================
-		scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
+
+		// Check if the scheduleTaskExecutor is running and stop it first
+		if(isSending)
+		{
+			mScheduledFuture.cancel(true);
+			isSending = false;
+		}
 
 		// This schedule a runnable task every TIME_SCHEDULE in minutes
 		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new Runnable()
 		{
 			public void run()
 			{
+				isSending = true;
 
 				if(Constants.DEBUG_LOG)
 					Log.i(Constants.TAG, "---------------------- Run Every: " + TIME_SCHEDULE + " minutes!!!! --------------------------");
 
-				// If the phone is in AirplaneMode, set it to off
-				// Wait until the phone is connected
-				if(Utilities.inAirplaneMode(mContext))
-				{
-					if(Constants.DEBUG_LOG)
-						Log.i(Constants.TAG, "The device is in Airplane mode");
+				smsSender.send();
 
-					Utilities.toggleAirplaneMode(mContext);
-
-					int tempCount = 0;
-
-					while(serviceState != 0 && tempCount < MAX_ATTEMPS)
-					{
-
-						Log.i(Constants.TAG, "Connection Attemp! " + tempCount);
-
-						// Wait for 1 a second on every attempt
-						try
-						{
-							Thread.sleep(1000);
-						}
-						catch(InterruptedException e)
-						{
-							if(Constants.DEBUG_LOG)
-								Log.i(Constants.TAG, e.toString());
-						}
-						tempCount++;
-					}
-				}
-
-				if(serviceState == 0)
-				{
-
-					// TODO Send messages
-					for(int i = 0; i < 10; i++)
-					{
-						Log.i(Constants.TAG, "SENDING MESSAGE!!!! " + i);
-						try
-						{
-							Thread.sleep(1000);
-						}
-						catch(InterruptedException e)
-						{
-							e.printStackTrace();
-						}
-					}
-				}
-
-				// Get in the AirplaneMode only if it is checked in the settings
-				Log.i(Constants.TAG, "The device is" + (AIRPLANE_MODE == true ? "" : " not") + " getting to Airplane Mode.");
-				if(!Utilities.inAirplaneMode(mContext) && (AIRPLANE_MODE == true))
-					Utilities.toggleAirplaneMode(mContext);
 			}
 		}, 0, TIME_SCHEDULE, TimeUnit.MINUTES);
 
 		return mStartMode;
-	}
-
-	/**
-	 * Check if there is GSM connectivity. The serrviceState has 3 modes, 0 : Normal operation condition, the phone is registered with an operator either in
-	 * home network or in roaming. 1 : Phone is not registered with any operator, the phone can be currently searching a new operator to register to, or not
-	 * searching to registration at all, or registration is denied, or radio signal is not available. 3 : Radio of telephony is explicitly powered off.
-	 */
-	public void checkServiceListener()
-	{
-
-		TelephonyManager telephonyManager = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
-
-		PhoneStateListener serviceListener = new PhoneStateListener()
-		{
-			public void onServiceStateChanged(ServiceState service)
-			{
-
-				serviceState = service.getState();
-				if(Constants.DEBUG_LOG)
-					Log.i(Constants.TAG, "GSM Service state: " + serviceState);
-
-			}
-		};
-
-		telephonyManager.listen(serviceListener, PhoneStateListener.LISTEN_SERVICE_STATE);
 	}
 
 	@SuppressWarnings("deprecation")
@@ -202,7 +137,7 @@ public class SenderBackgroundService extends Service
 		PendingIntent pendIntent = PendingIntent.getActivity(mContext, 0, mIntent, 0);
 
 		// This constructor is deprecated. Use Notification.Builder instead
-		Notification mNotification = new Notification(R.drawable.ic_launcher, getString(R.string.title_activity_main), System.currentTimeMillis());
+		Notification mNotification = new Notification(R.drawable.sender, getString(R.string.title_activity_main), System.currentTimeMillis());
 
 		// This method is deprecated. Use Notification.Builder instead.
 		mNotification.setLatestEventInfo(this, getString(R.string.title_activity_main), getString(R.string.notification), pendIntent);
@@ -321,7 +256,7 @@ public class SenderBackgroundService extends Service
 			}
 		}
 
-		public void uploadFile(File fileToUpload)
+		private void uploadFile(File fileToUpload)
 		{
 			DbxFile dropboxFile = null;
 			try
@@ -350,9 +285,116 @@ public class SenderBackgroundService extends Service
 			}
 		}
 
-		public void deleteFile(File fileToDelete)
+		private void deleteFile(File fileToDelete)
 		{
 			// For now, do not do anything
 		};
+	}
+
+	public static class SmsSender
+	{
+		private static int serviceState = -1;
+		private static int maxAttempts;
+
+		SmsSender(Context mContext, int maxAttempts)
+		{
+			checkServiceListener();
+			SmsSender.maxAttempts = maxAttempts;
+		}
+
+		public void send()
+		{
+
+			signalChecker();
+
+			if(serviceState == ServiceState.STATE_IN_SERVICE)
+			{
+
+				// TODO Send messages
+				for(int i = 0; i < 3; i++)
+				{
+					Log.i(Constants.TAG, "SENDING MESSAGE!!!! " + i);
+					try
+					{
+						Thread.sleep(1000);
+					}
+					catch(InterruptedException e)
+					{
+						e.printStackTrace();
+					}
+				}
+			}
+
+			// Get in the AirplaneMode only if it is checked in the settings
+			Log.i(Constants.TAG, "The device is" + (AIRPLANE_MODE == true ? "" : " not") + " getting to Airplane Mode.");
+			if(!Utilities.inAirplaneMode(mContext) && (AIRPLANE_MODE == true))
+				Utilities.toggleAirplaneMode(mContext);
+
+		}
+
+		/**
+		 * Check if phone is in Airplane Mode and try to find signal
+		 */
+		private void signalChecker()
+		{
+
+			if(Constants.DEBUG_LOG)
+				Log.i(Constants.TAG, "signalCheck() serviceState: " + serviceState);
+
+			// If the phone is in AirplaneMode, set it to off
+			// Wait until the phone is connected
+			if(Utilities.inAirplaneMode(mContext))
+			{
+				if(Constants.DEBUG_LOG)
+					Log.i(Constants.TAG, "The device is in Airplane mode");
+
+				Utilities.toggleAirplaneMode(mContext);
+
+				int tempCount = 0;
+
+				while(serviceState != ServiceState.STATE_IN_SERVICE && tempCount < maxAttempts)
+				{
+
+					Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
+
+					// Wait for 1 a second on every attempt
+					try
+					{
+						Thread.sleep(1000);
+					}
+					catch(InterruptedException e)
+					{
+						if(Constants.DEBUG_LOG)
+							Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
+					}
+					tempCount++;
+				}
+			}
+		}
+
+		/**
+		 * Check if there is GSM connectivity. The serrviceState has 3 modes, 0 : Normal operation condition, the phone is registered with an operator either in
+		 * home network or in roaming. 1 : Phone is not registered with any operator, the phone can be currently searching a new operator to register to, or not
+		 * searching to registration at all, or registration is denied, or radio signal is not available. 3 : Radio of telephony is explicitly powered off.
+		 */
+		private void checkServiceListener()
+		{
+
+			TelephonyManager telephonyManager = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+
+			PhoneStateListener serviceListener = new PhoneStateListener()
+			{
+				public void onServiceStateChanged(ServiceState service)
+				{
+
+					serviceState = service.getState();
+					// if(Constants.DEBUG_LOG)
+					// Log.i(Constants.TAG, "GSM Service state: " + serviceState);
+
+				}
+			};
+
+			telephonyManager.listen(serviceListener, PhoneStateListener.LISTEN_SERVICE_STATE);
+		}
 	}
 }
