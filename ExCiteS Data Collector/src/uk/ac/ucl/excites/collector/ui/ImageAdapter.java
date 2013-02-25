@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.collector.ui;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 
 import android.content.Context;
@@ -19,12 +20,13 @@ import android.widget.TableRow.LayoutParams;
 
 public class ImageAdapter extends BaseAdapter
 {
-	
-	static private int PADDING = 2; //pixels 
-	
+
+	static private int PADDING = 2; // pixels
+
 	private Context context;
-	private List<String> selectedIcons = new ArrayList<String>();
 	private int imageHeight;
+	private List<String> selectedIcons = new ArrayList<String>();
+	private List<Integer> buttonIDs = new ArrayList<Integer>();
 
 	public ImageAdapter(Context localContext, int height)
 	{
@@ -34,7 +36,10 @@ public class ImageAdapter extends BaseAdapter
 
 	public int getCount()
 	{
-		return selectedIcons.size();
+		if(buttonIDs.isEmpty())
+			return selectedIcons.size();
+		else
+			return buttonIDs.size();
 	}
 
 	public Object getItem(int position)
@@ -55,11 +60,21 @@ public class ImageAdapter extends BaseAdapter
 		{
 			imageView = new ImageView(context);
 			imageView.setBackgroundColor(Color.WHITE);
-			Bitmap bm = BitmapFactory.decodeFile(selectedIcons.get(position).toString());
-			imageView.setImageBitmap(bm);
-			imageView.setLayoutParams(new GridView.LayoutParams(LayoutParams.WRAP_CONTENT, imageHeight));
+
+			if(buttonIDs.isEmpty())
+			{
+				Bitmap bm = BitmapFactory.decodeFile(selectedIcons.get(position).toString());
+				imageView.setImageBitmap(bm);				
+				imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+			}
+			else
+			{
+				imageView.setImageResource(buttonIDs.get(position));
+				imageView.setScaleType(ImageView.ScaleType.CENTER);
+			}
+			imageView.setLayoutParams(new GridView.LayoutParams(LayoutParams.MATCH_PARENT, imageHeight));
 			imageView.setPadding(PADDING, PADDING, PADDING, PADDING);
-			imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+			
 		}
 		else
 		{
@@ -73,8 +88,18 @@ public class ImageAdapter extends BaseAdapter
 	{
 		for(Choice child : children)
 		{
-			selectedIcons.add(Environment.getExternalStorageDirectory() + "/ExCiteSImagePicker/Icons/" + child.getImagePath()); // path needs to be stored/passed as variable
+			selectedIcons.add(Environment.getExternalStorageDirectory() + "/ExCiteSImagePicker/Icons/" + child.getImagePath()); // path needs to be
+																																// stored/passed as variable
 		}
+	}
+
+	public void buttonsToDisplay(boolean back, boolean cancel)
+	{
+		if (back)
+		buttonIDs.add(R.drawable.back);
+		if (cancel)
+		buttonIDs.add(R.drawable.cancel);
+
 	}
 
 	public void clearSelectedIcons()

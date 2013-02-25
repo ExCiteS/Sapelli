@@ -45,7 +45,9 @@ public class ChoiceView extends GridView
 		imageAdapter.IconsToDisplay(currentItems);
 		setNumColumns(choice.getCols());
 		setAdapter(imageAdapter);
-
+		
+		
+		
 		// set click listener
 		setOnItemClickListener(new OnItemClickListener()
 		{
