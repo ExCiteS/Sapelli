@@ -51,11 +51,10 @@ public class ProjectController implements LocationListener
 
 		// TODO get device ID
 		deviceID = 0;
-
-	
 	}
 	
-	public void startProject (){
+	public void startProject ()
+	{
 		startForm(0); // For now projects have only one form
 	}
 

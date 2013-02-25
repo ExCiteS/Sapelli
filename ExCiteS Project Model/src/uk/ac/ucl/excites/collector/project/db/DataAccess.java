@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.project.db;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,27 +26,28 @@ public final class DataAccess
 
 	static private final String TAG = "DATA ACCESS";
 	static private final int PROJECT_ACTIVATION_DEPTH = 500;
+	static private final String DB_FILE_NAME = "ExCiteS.db4o";
 
 	private ObjectContainer db;
 
 	static private DataAccess INSTANCE = null;
 
-	static public DataAccess getInstance(String dbFilePath)
+	static public DataAccess getInstance(String dbFolderPath)
 	{
 		if(INSTANCE == null)
-			INSTANCE = new DataAccess(dbFilePath);
+			INSTANCE = new DataAccess(dbFolderPath);
 		return INSTANCE;
 	}
 
 	// private DB4O ...
 
-	private DataAccess(String dbFilePath)
+	private DataAccess(String dbFolderPath)
 	{
 		try
 		{
 			if(db == null || db.ext().isClosed())
 			{
-				this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), dbFilePath + "/ExCiteS.db4o");
+				this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), dbFolderPath + File.separator + DB_FILE_NAME);
 				Log.d(TAG, "Opened new database connection");
 			}
 		}

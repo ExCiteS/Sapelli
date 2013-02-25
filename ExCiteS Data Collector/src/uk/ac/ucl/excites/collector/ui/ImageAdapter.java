@@ -19,6 +19,9 @@ import android.widget.TableRow.LayoutParams;
 
 public class ImageAdapter extends BaseAdapter
 {
+	
+	static private int PADDING = 2; //pixels 
+	
 	private Context context;
 	private List<String> selectedIcons = new ArrayList<String>();
 	private int imageHeight;
@@ -55,7 +58,8 @@ public class ImageAdapter extends BaseAdapter
 			Bitmap bm = BitmapFactory.decodeFile(selectedIcons.get(position).toString());
 			imageView.setImageBitmap(bm);
 			imageView.setLayoutParams(new GridView.LayoutParams(LayoutParams.WRAP_CONTENT, imageHeight));
-			imageView.setScaleType(ImageView.ScaleType.CENTER);
+			imageView.setPadding(PADDING, PADDING, PADDING, PADDING);
+			imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 		}
 		else
 		{

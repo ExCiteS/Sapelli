@@ -22,6 +22,7 @@ import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 
 /**
@@ -34,8 +35,8 @@ public class CollectorActivity extends Activity implements FieldView
 
 	// UI
 	LinearLayout ll;
-	Button backButton;
-	Button cancelButton;
+	ImageButton backButton;
+	ImageButton cancelButton;
 
 	// Dynamic fields:
 	private DataAccess dao;
@@ -50,6 +51,7 @@ public class CollectorActivity extends Activity implements FieldView
 
 		// Remove title
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
+
 		// Set to FullScreen
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -103,8 +105,8 @@ public class CollectorActivity extends Activity implements FieldView
 		if(showBack == true)
 
 		{
-			backButton = new Button(this);
-			backButton.setText("back");
+			backButton = new ImageButton(this);
+			backButton.setImageResource(R.drawable.back);
 			backButton.setLayoutParams(buttonParams);
 			backButton.setOnClickListener(new OnClickListener()
 			{
@@ -119,8 +121,8 @@ public class CollectorActivity extends Activity implements FieldView
 
 		if(showCancel == true)
 		{
-			cancelButton = new Button(this);
-			cancelButton.setText("cancel");
+			cancelButton = new ImageButton(this);
+			cancelButton.setImageResource(R.drawable.cross);
 			cancelButton.setLayoutParams(buttonParams);
 			cancelButton.setOnClickListener(new OnClickListener()
 			{
@@ -143,7 +145,7 @@ public class CollectorActivity extends Activity implements FieldView
 	public void setChoice(Choice cf)
 	{
 		ChoiceView choiceView = new ChoiceView(this);
-		choiceView.setChoice(cf, controller);
+		
 
 		LinearLayout choiceLayout = new LinearLayout(this);
 		choiceLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
@@ -151,7 +153,9 @@ public class CollectorActivity extends Activity implements FieldView
 		choiceLayout.addView(choiceView);
 		ll.addView(choiceLayout);
 		setContentView(ll);
-
+		int width = choiceLayout.getWidth();
+		int height = choiceLayout.getHeight();
+		choiceView.setChoice(cf, controller);
 	}
 
 	@Override
