@@ -10,7 +10,7 @@
 
     <!--
 	    For more information on permission:  
-	    http://developer.android.com/reference/android/Manifest.permission.html
+	    http://developer.android.com/reference/android/Manifest.permission.html
     -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -45,6 +45,8 @@
             android:name="uk.ac.excites.sender.SenderBackgroundActivity"
             android:exported="true"
             android:label="@string/title_activity_main" >
+        </activity>
+        <activity android:name="uk.ac.excites.sender.dropbox.DropboxLogin" >
         </activity>
         <activity
             android:name="uk.ac.excites.sender.ShortcutCreator"

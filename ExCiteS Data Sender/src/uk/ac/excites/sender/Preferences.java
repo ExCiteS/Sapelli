@@ -31,6 +31,18 @@ public class Preferences extends PreferenceActivity
 		Intent mIntent = new Intent(this, SenderBackgroundService.class);
 		startService(mIntent);
 	}
+	
+	/**
+	 * Check if the phone should upload to Dropbox
+	 * 
+	 * @param mContext
+	 * @return
+	 */
+	public static boolean getDropboxUpload(Context mContext)
+	{
+		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+		return mSharedPreferences.getBoolean("dropboxUpload", true);
+	}
 
 	
 	/**
