@@ -1,6 +1,6 @@
 package uk.ac.ucl.excites.collector.ui;
 
-import uk.ac.ucl.excites.collect.R;
+import uk.ac.ucl.excites.collector.R;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.KeyEvent;

@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
 
-    <PreferenceCategory android:title="Category" >
+    <PreferenceCategory android:title="General" >
         <CheckBoxPreference
             android:key="airplaneMode"
-            android:title="Airplane Mode" 
-            android:summary="Check to get the phone in Airplane Mode to preserve battery."/>
-
+            android:summary="Check to get the phone in Airplane Mode to preserve battery."
+            android:title="Airplane Mode" />
+        <CheckBoxPreference
+            android:key="dropboxUpload"
+            android:summary="Check to upload data to the Dropbox."
+            android:title="Dropbox Upload" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="SMS Sending" >
         <EditTextPreference
-            android:defaultValue="+447577144675"
             android:inputType="phone"
             android:key="centerPhoneNumber"
             android:summary="This is the number of the phone that acts as a center relay."
@@ -22,7 +26,7 @@
         <EditTextPreference
             android:defaultValue="20"
             android:inputType="number"
-            android:key="maxAttemps"
+            android:key="maxAttempts"
             android:summary="How many seconds will the service wait for connectivity."
             android:title="Max Attemps" />
     </PreferenceCategory>

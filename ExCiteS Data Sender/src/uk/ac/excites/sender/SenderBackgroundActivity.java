@@ -89,7 +89,7 @@ public class SenderBackgroundActivity extends Activity
 			public void onClick(View v)
 			{
 				// Start the Settings
-				Intent settingsActivity = new Intent(mContext, Preferences.class);
+				Intent settingsActivity = new Intent(mContext, SenderBackgroundPreferences.class);
 				startActivity(settingsActivity);
 			}
 		});

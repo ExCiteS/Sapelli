@@ -137,8 +137,6 @@ public class ProjectParser extends DefaultHandler
 			if (attributes.getValue("value") != null)
 				currentChoice.setValue(attributes.getValue("value"));
 			//...
-			
-			Log.d(TAG, currentChoice.toString());
 		}
 		//<LOCATION>
 		else if(qName.equals("Location"))

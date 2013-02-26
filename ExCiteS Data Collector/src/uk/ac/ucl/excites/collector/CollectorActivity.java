@@ -13,16 +13,21 @@ import uk.ac.ucl.excites.collector.project.model.Photo;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
+import uk.ac.ucl.excites.collector.ui.ImageAdapter;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
+import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.Button;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
+import android.widget.GridView;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 
 /**
@@ -33,10 +38,12 @@ import android.widget.LinearLayout;
 public class CollectorActivity extends Activity implements FieldView
 {
 
+	static private final String TAG = "CollectorActivity";
+	
 	// UI
-	LinearLayout ll;
-	Button backButton;
-	Button cancelButton;
+	private LinearLayout rootLayout;
+	private GridView buttonsGrid;
+	private View fieldView;
 
 	// Dynamic fields:
 	private DataAccess dao;
@@ -51,6 +58,7 @@ public class CollectorActivity extends Activity implements FieldView
 
 		// Remove title
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
+
 		// Set to FullScreen
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
@@ -68,9 +76,15 @@ public class CollectorActivity extends Activity implements FieldView
 		// Set-up controller:
 		controller = new ProjectController(project, dao, this);
 
-		// start project
-		controller.startProject();
-
+		// Set up root layout UI
+		rootLayout = new LinearLayout(this);
+		rootLayout.setOrientation(LinearLayout.VERTICAL);
+		rootLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		rootLayout.setBackgroundColor(Color.BLACK);
+		setContentView(rootLayout);
+		
+		// Start project
+		controller.startProject(); //keep this as the last statement of the method!
 	}
 
 	/**
@@ -88,71 +102,83 @@ public class CollectorActivity extends Activity implements FieldView
 		return super.onKeyDown(keyCode, event);
 	}
 
-	public void setField(Field field, boolean showCancel, boolean showBack, boolean showForward)
+	public void setField(Field field, final boolean showCancel, final boolean showBack, boolean showForward)
 	{
-		// set up UI
-		ll = new LinearLayout(this);
-		ll.setOrientation(LinearLayout.VERTICAL);
-		ll.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-		ll.setBackgroundColor(Color.BLACK);
-
-		// set up Buttons TODO change Button to ImageButton
-		LinearLayout buttonLayout = new LinearLayout(this);
-		buttonLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-		buttonLayout.setWeightSum(1);
-		LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(155, 45, 0.5f);
-		if(showBack == true)
-
+		// set up Buttons
+		if(showBack || showCancel)
 		{
-			backButton = new Button(this);
-			backButton.setText("back");
-			backButton.setLayoutParams(buttonParams);
-			backButton.setOnClickListener(new OnClickListener()
+			if(buttonsGrid == null)
+			{	
+				buttonsGrid = new GridView(this);
+				rootLayout.addView(buttonsGrid);
+			}
+			
+			ImageAdapter adapter = new ImageAdapter(this, 45);
+			adapter.buttonsToDisplay(showBack, showCancel);
+			if(showBack && showCancel)
+				buttonsGrid.setNumColumns(2);
+			else
+				buttonsGrid.setNumColumns(1);
+			buttonsGrid.setHorizontalSpacing(10);
+			buttonsGrid.setVerticalSpacing(10);
+			buttonsGrid.setPadding(0, 0, 0, 10);
+			buttonsGrid.setAdapter(adapter);
+			buttonsGrid.setOnItemClickListener(new OnItemClickListener()
 			{
-				public void onClick(View v)
+				@Override
+				public void onItemClick(AdapterView<?> parent, View v, int position, long id)
 				{
-					controller.goBack();
+					if(showBack && showCancel)
+					{
+						if(position == 0)
+							controller.goBack();
+						if(position == 1)
+							controller.restartForm();
+						return;
+					}
+					if(showBack)
+						controller.goBack();
+					if(showCancel)
+						controller.restartForm();
 				}
 			});
-
-			buttonLayout.addView(backButton);
 		}
-
-		if(showCancel == true)
-		{
-			cancelButton = new Button(this);
-			cancelButton.setText("cancel");
-			cancelButton.setLayoutParams(buttonParams);
-			cancelButton.setOnClickListener(new OnClickListener()
-			{
-				public void onClick(View v)
-				{
-					controller.restartForm();
-				}
-			});
-
-			buttonLayout.addView(cancelButton);
-
+		else if(buttonsGrid != null)
+		{	
+			rootLayout.removeView(buttonsGrid);
+			buttonsGrid = null;
 		}
-		ll.addView(buttonLayout);
-
 		// Display the actual field (through double dispatch):
 		field.setIn(this);
 	}
+	
+	/**
+	 * Set the field view and removes any previous one from the screen
+	 * 
+	 * @param fieldView
+	 */
+	private void setFieldView(View fieldView)
+	{
+		if(this.fieldView != null)
+			rootLayout.removeView(this.fieldView); //throw away the old fieldField
+		this.fieldView = fieldView;
+		rootLayout.addView(fieldView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+	}
 
 	@Override
-	public void setChoice(Choice cf)
+	public void setChoice(final Choice cf)
 	{
-		ChoiceView choiceView = new ChoiceView(this);
-		choiceView.setChoice(cf, controller);
-
-		LinearLayout choiceLayout = new LinearLayout(this);
-		choiceLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-
-		choiceLayout.addView(choiceView);
-		ll.addView(choiceLayout);
-		setContentView(ll);
-
+		final ChoiceView choiceView = new ChoiceView(this);
+		setFieldView(choiceView);
+		choiceView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
+		{
+			public boolean onPreDraw()
+			{
+				choiceView.setChoice(cf, controller);
+				choiceView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
+				return true;
+			}
+		});
 	}
 
 	@Override

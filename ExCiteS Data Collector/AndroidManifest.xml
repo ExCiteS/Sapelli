@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="uk.ac.ucl.excites.collect"
+    package="uk.ac.ucl.excites.collector"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -10,7 +10,7 @@
 
     <!--
 	    For more information on permission:  
-	    http://developer.android.com/reference/android/Manifest.permission.html
+	    http://developer.android.com/reference/android/Manifest.permission.html
     -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -46,6 +46,8 @@
             android:exported="true"
             android:label="@string/title_activity_main" >
         </activity>
+        <activity android:name="uk.ac.excites.sender.dropbox.DropboxLogin" >
+        </activity>
         <activity
             android:name="uk.ac.excites.sender.ShortcutCreator"
             android:label="ExCiteS Service Settings" >
@@ -56,7 +58,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="uk.ac.excites.sender.Preferences"
+            android:name="uk.ac.excites.sender.SenderBackgroundPreferences"
             android:icon="@drawable/sender"
             android:label="Settings" >
             <intent-filter>

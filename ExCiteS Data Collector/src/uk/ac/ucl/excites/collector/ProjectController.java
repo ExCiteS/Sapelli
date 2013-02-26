@@ -3,7 +3,6 @@
  */
 package uk.ac.ucl.excites.collector;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -61,7 +60,6 @@ public class ProjectController implements LocationListener
 		this.activity = activity;
 
 		fieldHistory = new Stack<Field>();
-		
 		deviceID = (new DeviceID(activity)).getCRC32Hash();
 	}
 	
