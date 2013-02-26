@@ -19,12 +19,12 @@ public class SmsReceiver extends BroadcastReceiver
 		Bundle bundle = intent.getExtras();
 		SmsMessage[] msgs = null;
 		String str = "";
-		if (bundle != null)
+		if(bundle != null)
 		{
 			// ---retrieve the SMS message received---
 			Object[] pdus = (Object[]) bundle.get("pdus");
 			msgs = new SmsMessage[pdus.length];
-			for (int i = 0; i < msgs.length; i++)
+			for(int i = 0; i < msgs.length; i++)
 			{
 				msgs[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
 				str += "SMS " + (i + 1) + " from " + msgs[i].getOriginatingAddress() + "\n";

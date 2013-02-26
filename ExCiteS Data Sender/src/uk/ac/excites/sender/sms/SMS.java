@@ -75,7 +75,7 @@ public class SMS extends Activity
 				String phoneNo = phone_numbers[position];
 
 				String message = txtMessage.getText().toString();
-				if (phoneNo.length() > 0 && message.length() > 0)
+				if(phoneNo.length() > 0 && message.length() > 0)
 					sendSMS(phoneNo, message);
 				else
 					Toast.makeText(getBaseContext(), "Please enter both phone number and message.", Toast.LENGTH_SHORT).show();
@@ -93,7 +93,7 @@ public class SMS extends Activity
 				String phoneNo = phone_numbers[position];
 
 				String message = txtMessage.getText().toString();
-				if (phoneNo.length() > 0 && message.length() > 0)
+				if(phoneNo.length() > 0 && message.length() > 0)
 					sendBinary(phoneNo, message);
 				else
 					Toast.makeText(getBaseContext(), "Please enter both phone number and message.", Toast.LENGTH_SHORT).show();
@@ -149,7 +149,7 @@ public class SMS extends Activity
 			@Override
 			public void onReceive(Context arg0, Intent arg1)
 			{
-				switch (getResultCode())
+				switch(getResultCode())
 				{
 				case Activity.RESULT_OK:
 					Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_SHORT).show();
@@ -181,7 +181,7 @@ public class SMS extends Activity
 			@Override
 			public void onReceive(Context arg0, Intent arg1)
 			{
-				switch (getResultCode())
+				switch(getResultCode())
 				{
 				case Activity.RESULT_OK:
 					Toast.makeText(getBaseContext(), "SMS delivered", Toast.LENGTH_SHORT).show();
@@ -202,7 +202,7 @@ public class SMS extends Activity
 		ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
 		ArrayList<PendingIntent> deliveryIntents = new ArrayList<PendingIntent>();
 
-		for (int i = 0; i < parts.size(); i++)
+		for(int i = 0; i < parts.size(); i++)
 		{
 			sentIntents.add(sentPI);
 			deliveryIntents.add(deliveredPI);
@@ -236,7 +236,7 @@ public class SMS extends Activity
 			@Override
 			public void onReceive(Context arg0, Intent arg1)
 			{
-				switch (getResultCode())
+				switch(getResultCode())
 				{
 				case Activity.RESULT_OK:
 					Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_SHORT).show();
@@ -268,7 +268,7 @@ public class SMS extends Activity
 			@Override
 			public void onReceive(Context arg0, Intent arg1)
 			{
-				switch (getResultCode())
+				switch(getResultCode())
 				{
 				case Activity.RESULT_OK:
 					Toast.makeText(getBaseContext(), "SMS delivered", Toast.LENGTH_SHORT).show();
@@ -285,7 +285,7 @@ public class SMS extends Activity
 		SmsManager smsManager = SmsManager.getDefault();
 		byte[] data = new byte[message.length()];
 
-		for (int index = 0; index < message.length() && index < MAX_SMS_MESSAGE_LENGTH; ++index)
+		for(int index = 0; index < message.length() && index < MAX_SMS_MESSAGE_LENGTH; ++index)
 		{
 			data[index] = (byte) message.charAt(index);
 		}
@@ -293,7 +293,8 @@ public class SMS extends Activity
 		try
 		{
 			smsManager.sendDataMessage(phoneNumber, null, (short) SMS_PORT, data, sentPI, deliveredPI);
-		} catch (Exception e)
+		}
+		catch(Exception e)
 		{
 			Log.e(TAG, "Error in activity " + e.getClass().getName() + " / " + e.getMessage());
 		}

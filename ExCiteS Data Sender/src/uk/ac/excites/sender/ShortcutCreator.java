@@ -12,7 +12,7 @@ public class ShortcutCreator extends Activity
 	{
 		super.onCreate(savedInstanceState);
 
-		Intent shortcutIntent = new Intent(this, BackgroundActivity.class);
+		Intent shortcutIntent = new Intent(this, SenderBackgroundActivity.class);
 		ShortcutIconResource iconResource = Intent.ShortcutIconResource.fromContext(this, R.drawable.ic_launcher);
 
 		// The result we are passing back from this activity

@@ -4,7 +4,15 @@
 package uk.ac.ucl.excites.collector.project.db;
 
 import java.io.File;
+<<<<<<< HEAD
 import java.util.ArrayList;
+=======
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+>>>>>>> 2ad06e933ab09870a2157587ac1197659ddac9d1
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -18,13 +26,14 @@ import com.db4o.ObjectSet;
 import com.db4o.query.Predicate;
 
 /**
- * @author mstevens, julia
+ * @author mstevens, julia, Michalis Vitos
  * 
  */
 public final class DataAccess
 {
 
 	static private final String TAG = "DATA ACCESS";
+	static private final String DATABASE_NAME = "ExCiteS.db4o";
 	static private final int PROJECT_ACTIVATION_DEPTH = 500;
 	static private final String DB_FILE_NAME = "ExCiteS.db4o";
 
@@ -41,20 +50,83 @@ public final class DataAccess
 
 	// private DB4O ...
 
-	private DataAccess(String dbFolderPath)
+    private DataAccess(String dbFilePath)
+    {
+            try
+            {
+                    if(db == null || db.ext().isClosed())
+                    {
+                            this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), getDbPath(dbFilePath));
+                            Log.d(TAG, "Opened new database connection in file: " + getDbPath(dbFilePath));
+                    }
+            }
+            catch(Exception e)
+            {
+                    Log.e(TAG, "Unable to open database");
+            }
+    }
+
+	/**
+	 * Returns the file where the DB is saved
+	 * 
+	 * @param dbFilePath
+	 * @return
+	 */
+	public String getDbPath(String dbFilePath)
 	{
+		return dbFilePath + File.separator + DATABASE_NAME;
+	}
+
+	/**
+	 * Copy Database File to the destination
+	 * 
+	 * @param srcFilePath
+	 * @param dstFilePath
+	 */
+	public void copyDBtoSD(String srcFilePath, String dstFilePath)
+	{
+		File srcFile = new File(getDbPath(srcFilePath));
+		File destFile = new File(dstFilePath);
+
 		try
 		{
-			if(db == null || db.ext().isClosed())
-			{
-				this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), dbFolderPath + File.separator + DB_FILE_NAME);
-				Log.d(TAG, "Opened new database connection");
-			}
+			copyFile(srcFile, destFile);
 		}
-		catch(Exception e)
+		catch(IOException e)
 		{
-			Log.e(TAG, "Unable to open database");
+			Log.e(TAG, "Unable to copy database: " + e.toString());
 		}
+	}
+
+	/**
+	 * Method to Copy a file
+	 * 
+	 * @param srcFile
+	 * @param dstFile
+	 * @throws IOException
+	 */
+	private void copyFile(File srcFile, File dstFile) throws IOException
+	{
+		File directory = new File(dstFile.getParentFile().getAbsolutePath());
+		directory.mkdirs();
+		
+		if(!dstFile.exists())
+		{
+			dstFile.createNewFile();
+		}
+
+		InputStream in = new FileInputStream(srcFile);
+		OutputStream out = new FileOutputStream(dstFile);
+
+		// Transfer bytes from in to out
+		byte[] buf = new byte[1024];
+		int len;
+		while((len = in.read(buf)) > 0)
+		{
+			out.write(buf, 0, len);
+		}
+		in.close();
+		out.close();
 	}
 
 	/**

@@ -18,14 +18,14 @@ public class BinarySMSReceiver extends BroadcastReceiver
 		Bundle bundle = intent.getExtras();
 		SmsMessage[] msgs = null;
 
-		if (null != bundle)
+		if(null != bundle)
 		{
 			String info = "Binary SMS from ";
 			Object[] pdus = (Object[]) bundle.get("pdus");
 			msgs = new SmsMessage[pdus.length];
 			byte[] data = null;
 
-			for (int i = 0; i < msgs.length; i++)
+			for(int i = 0; i < msgs.length; i++)
 			{
 				msgs[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
 				info += msgs[i].getOriginatingAddress();
@@ -33,7 +33,7 @@ public class BinarySMSReceiver extends BroadcastReceiver
 
 				data = msgs[i].getUserData();
 
-				for (int index = 0; index < data.length; ++index)
+				for(int index = 0; index < data.length; ++index)
 				{
 					info += Character.toString((char) data[index]);
 				}

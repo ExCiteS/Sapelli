@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.collector;
 import java.io.File;
 import java.io.IOException;
 
+import uk.ac.ucl.excites.collect.R;
 import uk.ac.ucl.excites.collector.ui.FullscreenActivity;
 import uk.ac.ucl.excites.collector.util.AudioRecorder;
 import uk.ac.ucl.excites.collector.util.Constants;
