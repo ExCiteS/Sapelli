@@ -10,7 +10,8 @@
 
     <!--
 	    For more information on permission:  
-	    http://developer.android.com/reference/android/Manifest.permission.html    -->
+	    http://developer.android.com/reference/android/Manifest.permission.html
+    -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -69,8 +70,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="uk.ac.ucl.excites.collector.ui.filedialog.FileDialog" >
-        </activity>
+        <activity
+            android:name="group.pals.android.lib.ui.filechooser.FileChooserActivity"
+            android:configChanges="orientation|screenSize|keyboard|keyboardHidden" />
+
+        <service android:name="group.pals.android.lib.ui.filechooser.services.LocalFileProvider" >
+        </service>
+
         <activity android:name="uk.ac.ucl.excites.collector.CollectorActivity" >
         </activity>
         <activity android:name="com.dropbox.sync.android.DbxAuthActivity" />
