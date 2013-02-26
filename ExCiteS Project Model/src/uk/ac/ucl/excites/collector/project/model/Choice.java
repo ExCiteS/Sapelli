@@ -230,7 +230,7 @@ public class Choice extends Field
 	
 	public void storeValue(FormEntry entry)
 	{
-		((IntegerColumn) entry.getColumn(root.id)).storeValue(entry, Long.valueOf(lookupValueCode()));
+//		((IntegerColumn) entry.getColumn(root.id)).storeValue(entry, Long.valueOf(lookupValueCode()));
 	}
 	
 	public int lookupValueCode()

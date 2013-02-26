@@ -1,5 +1,8 @@
 package uk.ac.ucl.excites.collector;
 
+import group.pals.android.lib.ui.filechooser.FileChooserActivity;
+import group.pals.android.lib.ui.filechooser.io.localfile.LocalFile;
+
 import java.io.File;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -9,13 +12,13 @@ import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
-import uk.ac.ucl.excites.collector.ui.filedialog.FileDialog;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Parcelable;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.MotionEvent;
@@ -63,11 +66,10 @@ public class ProjectPickerActivity extends Activity
 		Log.d("ExCiteS_Debug", "Internal storage path: " + dbPATH);
 		dao = DataAccess.getInstance(dbPATH);
 
-/*		// TODO Copy function
-		String dstFilePath =  Environment.getExternalStorageDirectory().getPath() + File.separator + "0000" + File.separator + "ExCiteS_copy.db4o";
-		Log.e("ExCiteS_Debug", "Copy path:" + dstFilePath);
-		dao.copyDBtoSD(dstFilePath);
-*/
+		/*
+		 * // TODO Copy function String dstFilePath = Environment.getExternalStorageDirectory().getPath() + File.separator + "0000" + File.separator +
+		 * "ExCiteS_copy.db4o"; Log.e("ExCiteS_Debug", "Copy path:" + dstFilePath); dao.copyDBtoSD(dstFilePath);
+		 */
 		// Get View Elements
 		enterURL = (EditText) findViewById(R.id.EnterURL);
 		projectList = (ListView) findViewById(R.id.ProjectsList);
@@ -98,16 +100,12 @@ public class ProjectPickerActivity extends Activity
 
 	public void browse(View view)
 	{
-		Intent mIntent = new Intent(getBaseContext(), FileDialog.class);
+		Intent intent = new Intent(getBaseContext(), FileChooserActivity.class);
 		// Start from "/sdcard"
-		mIntent.putExtra(FileDialog.START_PATH, Environment.getExternalStorageDirectory().getPath());
-
-		// can user select directories or not
-		mIntent.putExtra(FileDialog.CAN_SELECT_DIR, true);
-
-		// set file filter
-		mIntent.putExtra(FileDialog.FORMAT_FILTER, new String[] { XML_FILE_EXTENSION, ExCiteSFileLoader.EXCITES_FILE_EXTENSION });
-		startActivityForResult(mIntent, SETTINGS_REQUEST_IMPORT);
+		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(Environment.getExternalStorageDirectory().getPath()));
+		// set file filter for .xml or .excites
+		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + "|" + ExCiteSFileLoader.EXCITES_FILE_EXTENSION + ")$");
+		startActivityForResult(intent, SETTINGS_REQUEST_IMPORT);
 	}
 
 	public void runProject(View view)
@@ -116,6 +114,7 @@ public class ProjectPickerActivity extends Activity
 		{
 			AlertDialog NoSelection = errorDialog("Please select a project");
 			NoSelection.show();
+			return;
 		}
 		Project selectedProject = parsedProjects.get(projectList.getCheckedItemPosition());
 		Intent i = new Intent(this, CollectorActivity.class);
@@ -231,10 +230,20 @@ public class ProjectPickerActivity extends Activity
 			switch(requestCode)
 			{
 			case SETTINGS_REQUEST_IMPORT:
-				// Get the result file path and import the settings
-				String fileSource = data.getStringExtra(FileDialog.RESULT_PATH).trim();
-				enterURL.setText(fileSource);
-				enterURL.setSelection(fileSource.length());
+				// Get the result file path
+				// A list of files will always return, if selection mode is single, the list contains one file
+				@SuppressWarnings("unchecked")
+				List<LocalFile> files = (List<LocalFile>) data.getSerializableExtra(FileChooserActivity._Results);
+
+				for(File f : files)
+				{
+
+					String fileSource = f.getAbsoluteFile().toString();
+					enterURL.setText(fileSource);
+					// Move the cursor to the end
+					enterURL.setSelection(fileSource.length());
+				}
+
 				break;
 			}
 		}
@@ -257,8 +266,7 @@ public class ProjectPickerActivity extends Activity
 						{
 							removeProject();
 						}
-					})
-					.setNegativeButton("Cancel", new DialogInterface.OnClickListener()
+					}).setNegativeButton("Cancel", new DialogInterface.OnClickListener()
 					{
 						public void onClick(DialogInterface dialog, int whichButton)
 						{

@@ -20,6 +20,7 @@ import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
@@ -30,6 +31,7 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.GridView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 
 /**
  * Main Collector activity
@@ -40,7 +42,7 @@ public class CollectorActivity extends Activity implements FieldView
 {
 
 	static private final String TAG = "CollectorActivity";
-	
+
 	static public final String PARAMETER_PROJECT_NAME = "Project_name";
 	static public final String PARAMETER_PROJECT_VERSION = "Project_version";
 	static public final String PARAMETER_DB_FOLDER_PATH = "DBFolderPath";
@@ -96,9 +98,9 @@ public class CollectorActivity extends Activity implements FieldView
 		rootLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		rootLayout.setBackgroundColor(Color.BLACK);
 		setContentView(rootLayout);
-		
+
 		// Start project
-		controller.startProject(); //keep this as the last statement of the method!
+		controller.startProject(); // keep this as the last statement of the method!
 	}
 
 	/**
@@ -122,11 +124,10 @@ public class CollectorActivity extends Activity implements FieldView
 		if(showBack || showCancel)
 		{
 			if(buttonsGrid == null)
-			{	
+			{
 				buttonsGrid = new GridView(this);
 				rootLayout.addView(buttonsGrid);
 			}
-			
 			ImageAdapter adapter = new ImageAdapter(this, project, 45);
 			adapter.buttonsToDisplay(showBack, showCancel);
 			if(showBack && showCancel)
@@ -158,14 +159,14 @@ public class CollectorActivity extends Activity implements FieldView
 			});
 		}
 		else if(buttonsGrid != null)
-		{	
+		{
 			rootLayout.removeView(buttonsGrid);
 			buttonsGrid = null;
 		}
 		// Display the actual field (through double dispatch):
 		field.setIn(this);
 	}
-	
+
 	/**
 	 * Set the field view and removes any previous one from the screen
 	 * 
@@ -174,7 +175,7 @@ public class CollectorActivity extends Activity implements FieldView
 	private void setFieldView(View fieldView)
 	{
 		if(this.fieldView != null)
-			rootLayout.removeView(this.fieldView); //throw away the old fieldField
+			rootLayout.removeView(this.fieldView); // throw away the old fieldField
 		this.fieldView = fieldView;
 		rootLayout.addView(fieldView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 	}
@@ -185,6 +186,15 @@ public class CollectorActivity extends Activity implements FieldView
 		ChoiceView choiceView = new ChoiceView(this);
 		choiceView.setChoice(cf, controller);
 		setFieldView(choiceView);
+//		choiceView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
+//		{
+//			public boolean onPreDraw()
+//			{
+//				choiceView.setChoice(cf, controller);
+//				choiceView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
+//				return true;
+//			}
+//		});
 	}
 
 	@Override
@@ -205,6 +215,10 @@ public class CollectorActivity extends Activity implements FieldView
 	public void setLocation(LocationField lf)
 	{
 		// Show waiting view
+		LinearLayout waitingView = new LinearLayout(this);
+		waitingView.setGravity(Gravity.CENTER);
+		waitingView.addView(new ProgressBar(this, null, android.R.attr.progressBarStyleLarge));
+		rootLayout.addView(waitingView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 
 		// Start timeout counter
 		locationTimer = new Timer();
@@ -229,7 +243,23 @@ public class CollectorActivity extends Activity implements FieldView
 	public void setOrientation(OrientationField of)
 	{
 		// TODO Auto-generated method stub
-		
+
 	}
 	
+	@Override
+	protected void onPause()
+	{
+		// close database
+		super.onPause();
+		dao.closeDB();
+	}
+
+	@Override
+	protected void onResume()
+	{
+		// open database
+		super.onResume();
+		dao.openDB();
+	}
+
 }
