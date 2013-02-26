@@ -31,7 +31,6 @@ public final class DataAccess
 	static private final String TAG = "DATA ACCESS";
 	static private final String DATABASE_NAME = "ExCiteS.db4o";
 	static private final int PROJECT_ACTIVATION_DEPTH = 500;
-	static private final String DB_FILE_NAME = "ExCiteS.db4o";
 
 	private ObjectContainer db;
 
@@ -151,7 +150,7 @@ public final class DataAccess
 	 */
 	public Schema retrieveSchema(final int id, final int version)
 	{
-
+		@SuppressWarnings("serial")
 		ObjectSet<Schema> result = db.query(new Predicate<Schema>()
 		{
 			public boolean match(Schema schema)
@@ -164,7 +163,6 @@ public final class DataAccess
 			return result.next();
 		else
 			return null;
-
 	}
 
 	/**
