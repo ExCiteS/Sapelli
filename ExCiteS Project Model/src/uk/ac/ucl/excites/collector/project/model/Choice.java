@@ -15,6 +15,8 @@ import com.google.common.collect.HashBiMap;
  */
 public class Choice extends Field
 {
+	
+	static public final int DEFAULT_NUM_COLS = 2;
 
 	static public final int UNKNOWN_VALUE_CODE = -1;
 	

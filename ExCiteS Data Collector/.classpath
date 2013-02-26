@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
+	<classpathentry excluding="uk/ac/ucl/excites/collector/ui/ButtonsGrid.java" kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ExCiteS Project Model"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ExCites Data Sender"/>

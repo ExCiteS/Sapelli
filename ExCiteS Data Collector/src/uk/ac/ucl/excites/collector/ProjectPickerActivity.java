@@ -2,9 +2,10 @@ package uk.ac.ucl.excites.collector;
 
 import java.io.File;
 import java.util.List;
+import java.util.regex.Pattern;
 
-import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
@@ -16,6 +17,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.util.Patterns;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.Window;
@@ -25,11 +27,17 @@ import android.widget.EditText;
 import android.widget.ListView;
 
 /**
- * @author Julia, Michalis Vitos
+ * @author Julia, Michalis Vitos, mstevens
  * 
  */
 public class ProjectPickerActivity extends Activity
 {
+
+	static private final String TAG = "ProjectPickerActivity";
+	
+	static private final String XML_FILE_EXTENSION = "xml";
+	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar; 
+
 	private String dbPATH;
 
 	// Define some variables
@@ -52,7 +60,7 @@ public class ProjectPickerActivity extends Activity
 		// Database instance (path may be changed)
 		// Path is on Internal Storage
 		dbPATH = this.getFilesDir().getAbsolutePath();
-		Log.d("ExCiteS_Debug", "Internal Storage path: " + dbPATH);
+		Log.d("ExCiteS_Debug", "Internal storage path: " + dbPATH);
 		dao = DataAccess.getInstance(dbPATH);
 
 /*		// TODO Copy function
@@ -98,7 +106,7 @@ public class ProjectPickerActivity extends Activity
 		mIntent.putExtra(FileDialog.CAN_SELECT_DIR, true);
 
 		// set file filter
-		mIntent.putExtra(FileDialog.FORMAT_FILTER, new String[] { "xml" });
+		mIntent.putExtra(FileDialog.FORMAT_FILTER, new String[] { XML_FILE_EXTENSION, ExCiteSFileLoader.EXCITES_FILE_EXTENSION });
 		startActivityForResult(mIntent, SETTINGS_REQUEST_IMPORT);
 	}
 
@@ -109,10 +117,11 @@ public class ProjectPickerActivity extends Activity
 			AlertDialog NoSelection = errorDialog("Please select a project");
 			NoSelection.show();
 		}
-		String project = parsedProjects.get(projectList.getCheckedItemPosition()).getName();
+		Project selectedProject = parsedProjects.get(projectList.getCheckedItemPosition());
 		Intent i = new Intent(this, CollectorActivity.class);
-		i.putExtra("Project", project);
-		i.putExtra("Path", dbPATH);
+		i.putExtra(CollectorActivity.PARAMETER_PROJECT_NAME, selectedProject.getName());
+		i.putExtra(CollectorActivity.PARAMETER_PROJECT_VERSION, selectedProject.getVersion());
+		i.putExtra(CollectorActivity.PARAMETER_DB_FOLDER_PATH, dbPATH);
 		startActivity(i);
 	}
 
@@ -122,42 +131,81 @@ public class ProjectPickerActivity extends Activity
 		populateProjectList();
 	}
 
-	public void parseXML(View view)
+	public void loadFile(View view)
 	{
 		if(enterURL.getText().length() == 0)
 		{
-			AlertDialog error = errorDialog("Please select an XML file");
-			error.show();
+			errorDialog("Please select an XML or ExCiteS file").show();
 			return;
 		}
-		// parse XML
+		String path = enterURL.getText().toString();
+		enterURL.setText("");
+				
+		//Download ExCiteS file if necessary
+		if(Pattern.matches(Patterns.WEB_URL.toString(), path) && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
+		{
+			//Download the file...
+			String pathToDownloadedFile = null;
+			//TODO
+			path = pathToDownloadedFile;
+		}
+		
+		//Try to load and/or parse...
+		Project project = null;
+		if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
+		{
+			//Parse XML file...
+			try
+			{
+				File xmlFile = new File(path);
+				//Use the path where the xml file currently is as the basePath (img and snd folders are assumed to be in the same place):
+				ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath());
+				project = parser.parseProject(xmlFile);
+			}
+			catch(Exception e)
+			{
+				Log.e(TAG, "XML file could not be parsed", e);
+				errorDialog("XML file could not be parsed: " + e.getLocalizedMessage()).show();
+				return;
+			}
+		}
+		else if(path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION));
+		{	
+			//Extract & parse ExCiteS file...
+			try
+			{
+				//Use /mnt/sdcard/ExCiteS/ as the basePath:
+				ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER);
+				project = loader.load(new File(path));
+			}
+			catch(Exception e)
+			{
+				Log.e(TAG, "Could not load excites file", e);
+				errorDialog("Could not load excites file: " + e.getLocalizedMessage()).show();
+				return;
+			}
+		}
+		
+		//Check if we have a project object:
+		if(project == null)
+		{
+			errorDialog("Invalid xml or excites file: " + path).show();
+			return;
+		}
+		
+		//Store the project object:
 		try
 		{
-			ProjectParser parser = new ProjectParser();
-			String path = enterURL.getText().toString();
-			enterURL.setText("");
-			Project project = parser.parseProject(new File(path));
 			dao.store(project);
 		}
 		catch(DuplicateException de)
 		{
-			showParseError("Project could not be stored: " + de.getLocalizedMessage());
+			errorDialog("Could not store project: " + de.getLocalizedMessage()).show();
 			return;
 		}
-		catch(Exception e)
-		{
-			showParseError("XML file could not be parsed: " + e.getLocalizedMessage());
-			return;
-		}
-
-		// Update project list:
+		
+		//Update project list:
 		populateProjectList();
-	}
-
-	private void showParseError(String errorMsg)
-	{
-		AlertDialog error = errorDialog(errorMsg);
-		error.show();
 	}
 
 	// retrieve all parsed projects from db and populate list
@@ -220,10 +268,14 @@ public class ProjectPickerActivity extends Activity
 		}
 	}
 
-	// dialog shown when erroneous user interaction is detected
+	/**
+	 * dialog shown when erroneous user interaction is detected
+	 * @param message
+	 * @return the dialog
+	 */
 	private AlertDialog errorDialog(String message)
 	{
-		AlertDialog Error = new AlertDialog.Builder(this).setTitle("Warning").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
+		AlertDialog Error = new AlertDialog.Builder(this).setTitle("Error").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
 		{
 			public void onClick(DialogInterface dialog, int whichButton)
 			{

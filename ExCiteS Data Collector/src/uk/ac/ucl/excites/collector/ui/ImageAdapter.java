@@ -5,12 +5,11 @@ import java.util.List;
 
 import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.project.model.Choice;
-
+import uk.ac.ucl.excites.collector.project.model.Project;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.os.Environment;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -24,21 +23,24 @@ public class ImageAdapter extends BaseAdapter
 	static private int PADDING = 2; // pixels
 
 	private Context context;
+	private Project project;
 	private int imageWidth;
 	private int imageHeight;
 	private List<String> selectedIcons = new ArrayList<String>();
 	private List<Integer> buttonIDs = new ArrayList<Integer>();
 
-	public ImageAdapter(Context localContext, int imageWidth, int imageHeight)
+	public ImageAdapter(Context localContext, Project project, int imageWidth, int imageHeight)
 	{
 		this.context = localContext;
+		this.project = project;
 		this.imageWidth = imageWidth;
 		this.imageHeight = imageHeight;
 	}
 	
-	public ImageAdapter(Context localContext, int imageHeight)
+	public ImageAdapter(Context localContext, Project project, int imageHeight)
 	{
 		this.context = localContext;
+		this.project = project;
 		this.imageHeight = imageHeight;
 	}
 
@@ -72,7 +74,7 @@ public class ImageAdapter extends BaseAdapter
 			if(buttonIDs.isEmpty())
 			{
 				Bitmap bm = BitmapFactory.decodeFile(selectedIcons.get(position).toString());
-				imageView.setImageBitmap(bm);				
+				imageView.setImageBitmap(bm);
 				imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
 				imageView.setLayoutParams(new GridView.LayoutParams(imageWidth, imageHeight));
 			}
@@ -83,8 +85,6 @@ public class ImageAdapter extends BaseAdapter
 				imageView.setLayoutParams(new GridView.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 			}
 			imageView.setPadding(PADDING, PADDING, PADDING, PADDING);
-			
-			
 		}
 		else
 		{
@@ -98,8 +98,7 @@ public class ImageAdapter extends BaseAdapter
 	{
 		for(Choice child : children)
 		{
-			selectedIcons.add(Environment.getExternalStorageDirectory() + "/ExCiteSImagePicker/Icons/" + child.getImagePath()); // path needs to be
-																																// stored/passed as variable
+			selectedIcons.add(project.getImagePath() + child.getImagePath()); // path needs to be stored/passed as variable
 		}
 	}
 

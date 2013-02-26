@@ -15,6 +15,8 @@ import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.ImageAdapter;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
@@ -27,7 +29,6 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.GridView;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 
 /**
@@ -39,6 +40,10 @@ public class CollectorActivity extends Activity implements FieldView
 {
 
 	static private final String TAG = "CollectorActivity";
+	
+	static public final String PARAMETER_PROJECT_NAME = "Project_name";
+	static public final String PARAMETER_PROJECT_VERSION = "Project_version";
+	static public final String PARAMETER_DB_FOLDER_PATH = "DBFolderPath";
 	
 	// UI
 	private LinearLayout rootLayout;
@@ -64,15 +69,24 @@ public class CollectorActivity extends Activity implements FieldView
 
 		// get project name and path from bundle
 		Bundle extras = getIntent().getExtras();
-		String projectName = extras.getString("Project");
-		String dbPath = extras.getString("Path");
-
+		String projectName = extras.getString(PARAMETER_PROJECT_NAME);
+		int projectVersion = extras.getInt(PARAMETER_PROJECT_VERSION);
+		String dbFolderPath = extras.getString(PARAMETER_DB_FOLDER_PATH);
+		
 		// Get DataAccess object
-		dao = DataAccess.getInstance(dbPath);
+		dao = DataAccess.getInstance(dbFolderPath);
 
 		// Get Project object:
-		project = dao.retrieveProject(projectName);// TODO error handling if not found
-
+		project = dao.retrieveProject(projectName, projectVersion);
+		if(project == null)
+		{
+			(new AlertDialog.Builder(this).setTitle("Error").setMessage("Could not find project: " + projectName + "(version " + projectVersion + ").").setNeutralButton("OK", new DialogInterface.OnClickListener()
+			{
+				public void onClick(DialogInterface dialog, int whichButton) {}
+			}).create()).show();
+			return;
+		}
+		
 		// Set-up controller:
 		controller = new ProjectController(project, dao, this);
 
@@ -113,7 +127,7 @@ public class CollectorActivity extends Activity implements FieldView
 				rootLayout.addView(buttonsGrid);
 			}
 			
-			ImageAdapter adapter = new ImageAdapter(this, 45);
+			ImageAdapter adapter = new ImageAdapter(this, project, 45);
 			adapter.buttonsToDisplay(showBack, showCancel);
 			if(showBack && showCancel)
 				buttonsGrid.setNumColumns(2);
@@ -168,17 +182,9 @@ public class CollectorActivity extends Activity implements FieldView
 	@Override
 	public void setChoice(final Choice cf)
 	{
-		final ChoiceView choiceView = new ChoiceView(this);
+		ChoiceView choiceView = new ChoiceView(this);
+		choiceView.setChoice(cf, controller);
 		setFieldView(choiceView);
-		choiceView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
-		{
-			public boolean onPreDraw()
-			{
-				choiceView.setChoice(cf, controller);
-				choiceView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
-				return true;
-			}
-		});
 	}
 
 	@Override

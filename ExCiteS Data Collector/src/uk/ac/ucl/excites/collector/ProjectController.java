@@ -23,6 +23,7 @@ import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.FormEntry;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
 import uk.ac.ucl.excites.collector.util.DeviceID;
 import uk.ac.ucl.excites.collector.util.LocationUtils;
 
@@ -154,7 +155,19 @@ public class ProjectController implements LocationListener
 		else
 			endForm(); // currentField = _END, so we must loop or exit
 	}
-
+	
+	public ButtonsState getButtonsState()
+	{
+		ButtonsState state = new ButtonsState(	currentForm.isShowBack() && !fieldHistory.empty(),
+												currentForm.isShowCancel() && !fieldHistory.empty(),
+												currentForm.isShowForward() && false /* for now we don't use the forward button*/);
+		//Note: these paths may be null (in which case built-in defaults must be used)
+		state.setBackImagePath(currentForm.getBackImagePath());
+		state.setCancelImagePath(currentForm.getCancelImagePath());
+		state.setForwardImagePath(currentForm.getForwardImagePath());
+		return state;
+	}
+	
 	/**
 	 * To be called from ChoiceView
 	 * 
@@ -212,6 +225,22 @@ public class ProjectController implements LocationListener
 			break; // leaves the application!
 		// TODO default :
 		}
+	}
+
+	/**
+	 * @return the currentForm
+	 */
+	public Form getCurrentForm()
+	{
+		return currentForm;
+	}
+
+	/**
+	 * @return the project
+	 */
+	public Project getProject()
+	{
+		return project;
 	}
 
 	private void startLocationListener(LocationField locField)
