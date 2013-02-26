@@ -75,7 +75,7 @@ public class ProjectParser extends DefaultHandler
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "XML Parsing Exception = " + e);
+			Log.e(TAG, "XML Parsing Exception = " + e, e);
 			//return null;
 			throw e;
 		}
@@ -290,11 +290,11 @@ public class ProjectParser extends DefaultHandler
 	
 	private boolean readBooleanAttribute(Attributes attributes, String attributeName, boolean defaultValue)
 	{
-		String text = attributes.getValue(attributeName).trim();
+		String text = attributes.getValue(attributeName);
 		if(text == null || text.isEmpty())
 			return defaultValue;
 		else
-			return text.equalsIgnoreCase(Boolean.TRUE.toString()) ? Boolean.TRUE : defaultValue;
+			return text.trim().equalsIgnoreCase(Boolean.TRUE.toString()) ? Boolean.TRUE : defaultValue;
 		//We don't use Boolean.parseBoolean(String) because that returns false if the String does not equal true (so we wouldn't be able to return the defaultValue)
 	}
 	
