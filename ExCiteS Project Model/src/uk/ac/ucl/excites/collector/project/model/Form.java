@@ -132,6 +132,19 @@ public class Form
 		return locationFields;
 	}
 	
+	public List<LocationField> getLocationFields(boolean onlyStartWithForm)
+	{
+		if(onlyStartWithForm)
+		{
+			List<LocationField> startLF = new ArrayList<LocationField>();
+			for(LocationField lf : getLocationFields())
+				if(lf.isStartWithForm())
+					startLF.add(lf);
+			return startLF;
+		}
+		return getLocationFields();
+	}
+	
 	/**
 	 * @return the storeEndTime
 	 */

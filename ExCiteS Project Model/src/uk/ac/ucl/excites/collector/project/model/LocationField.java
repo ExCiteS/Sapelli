@@ -237,14 +237,15 @@ public class LocationField extends Field
 	
 	public boolean storeLocation(Location location, FormEntry entry)
 	{	
+		//Time check
+		//TODO
 		//Provider type check
 		if(type == LocationField.TYPE_GPS && location.getProvider() != Location.PROVIDER_GPS)
 			return false;
 		//Accuracy check
 		//TODO
-		//Other check?
 		
-		//Store value:
+		//Ok location is good enough, so store it:
 		((LocationColumn) entry.getColumn(id)).storeValue(entry, location);
 		return true;
 	}

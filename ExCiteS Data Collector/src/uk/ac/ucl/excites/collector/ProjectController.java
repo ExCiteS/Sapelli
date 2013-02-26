@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.collector;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -41,16 +42,18 @@ public class ProjectController implements LocationListener
 
 	private Project project;
 	private DataAccess dao;
-	private Form currentForm;
-	private FormEntry entry;
-	private Field currentField;
 	private CollectorActivity activity;
-	private LocationManager locationManager;
 	
 	private long deviceID; //32bit unsigned CRC32 hashcode
 	
+	private Form currentForm;
+	private FormEntry entry;
+	private Field currentField;
 	private Stack<Field> fieldHistory;
-
+	
+	private LocationManager locationManager;
+	private Location currentBestLocation = null;
+	
 	public ProjectController(Project project, DataAccess dao, CollectorActivity activity)
 	{
 		this.project = project;
@@ -101,21 +104,14 @@ public class ProjectController implements LocationListener
 		currentField = null;
 		
 		//Create new record:
-		entry = currentForm.newEntry(dao, deviceID); //TODO pass deviceID
+		entry = currentForm.newEntry(dao, deviceID);
 
-		//Handle locationfield(s):
-		
-		
-		
-		if(currentForm.getLocationFields().size() > 0)
-		{
-
-		
-		}
+		//Location...
+		List<LocationField> lfStartWithForm = currentForm.getLocationFields(true);
+		if(!lfStartWithForm.isEmpty())
+			startLocationListener(lfStartWithForm); //start listening for location updates
 		else
-		{
-			stopLocationListener();
-		}
+			stopLocationListener(); //stop listening for location updates
 		
 		//Begin completing the form at the start field:
 		goTo(currentForm.getStart());
@@ -146,7 +142,7 @@ public class ProjectController implements LocationListener
 		if(currentField instanceof LocationField)
 		{
 			LocationField lf = (LocationField) currentField;
-			if(lf.retrieveLocation(entry) == null)
+			if(lf.isWaitAtField() || lf.storeLocation(LocationUtils.getExCiteSLocation(currentBestLocation), entry))
 				startLocationListener(lf); //start listening for a location
 			else
 			{	//we already have a location
@@ -222,17 +218,21 @@ public class ProjectController implements LocationListener
 
 	private void startLocationListener(LocationField locField)
 	{
-		//TODO
+		startLocationListener(Arrays.asList(locField));
 	}
 	
 	private void startLocationListener(List<LocationField> locFields)
 	{
-		//start listening for location updates:
+		if(locFields.isEmpty())
+			return;
+		//get locationmanager:
 		if(locationManager == null)
 			locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
+		//deteriment which provider(s) we need:
 		Set<String> providers = new HashSet<String>();
 			for(LocationField lf : locFields)
 				providers.addAll(LocationUtils.getProvider(locationManager, lf));
+		//start listening to each provider:
 		for(String p : providers)
 			locationManager.requestLocationUpdates(p, LocationField.LISTENER_UPDATE_MIN_TIME_MS, LocationField.LISTENER_UPDATE_MIN_DISTANCE_M, this);
 	}
@@ -246,16 +246,19 @@ public class ProjectController implements LocationListener
 	@Override
 	public void onLocationChanged(Location location)
 	{
-		boolean keepListening = false;
-		for(LocationField lf : currentForm.getLocationFields())
-		{
-			boolean stored = lf.storeLocation(LocationUtils.getExCiteSLocation(location), entry);
-			
-			keepListening |= (lf.isWaitAtField() && currentField != lf);
-		}
-		if(!keepListening)
-			stopLocationListener();
+		if(LocationUtils.isBetterLocation(location, currentBestLocation))
+			currentBestLocation = location;
 		
+//		boolean keepListening = false;
+//		for(LocationField lf : currentForm.getLocationFields())
+//		{
+//			boolean stored = lf.storeLocation(LocationUtils.getExCiteSLocation(location), entry);
+//			
+//			keepListening |= (lf.isWaitAtField() && currentField != lf);
+//		}
+//		if(!keepListening)
+//			stopLocationListener();
+//		
 		
 		//avoid overwrite after field?
 		
