@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.TreeMap;
 
-import uk.ac.ucl.excites.collect.R;
+import uk.ac.ucl.excites.collector.R;
 import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.content.DialogInterface;

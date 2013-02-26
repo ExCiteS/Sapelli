@@ -4,15 +4,11 @@
 package uk.ac.ucl.excites.collector.project.db;
 
 import java.io.File;
-<<<<<<< HEAD
-import java.util.ArrayList;
-=======
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
->>>>>>> 2ad06e933ab09870a2157587ac1197659ddac9d1
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -50,21 +46,21 @@ public final class DataAccess
 
 	// private DB4O ...
 
-    private DataAccess(String dbFilePath)
-    {
-            try
-            {
-                    if(db == null || db.ext().isClosed())
-                    {
-                            this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), getDbPath(dbFilePath));
-                            Log.d(TAG, "Opened new database connection in file: " + getDbPath(dbFilePath));
-                    }
-            }
-            catch(Exception e)
-            {
-                    Log.e(TAG, "Unable to open database");
-            }
-    }
+	private DataAccess(String dbFilePath)
+	{
+		try
+		{
+			if(db == null || db.ext().isClosed())
+			{
+				this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), getDbPath(dbFilePath));
+				Log.d(TAG, "Opened new database connection in file: " + getDbPath(dbFilePath));
+			}
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Unable to open database");
+		}
+	}
 
 	/**
 	 * Returns the file where the DB is saved
@@ -109,7 +105,7 @@ public final class DataAccess
 	{
 		File directory = new File(dstFile.getParentFile().getAbsolutePath());
 		directory.mkdirs();
-		
+
 		if(!dstFile.exists())
 		{
 			dstFile.createNewFile();

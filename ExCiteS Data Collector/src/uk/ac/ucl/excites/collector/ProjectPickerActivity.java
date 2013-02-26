@@ -1,10 +1,9 @@
 package uk.ac.ucl.excites.collector;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
-import uk.ac.ucl.excites.collect.R;
+import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
