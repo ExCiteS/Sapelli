@@ -103,11 +103,13 @@ public class ProjectPickerActivity extends Activity
 	}
 
 	public void runProject(View view)
+	
 	{
 		if(projectList.getCheckedItemPosition() == -1)
 		{
 			AlertDialog NoSelection = errorDialog("Please select a project");
 			NoSelection.show();
+			return;
 		}
 		String project = parsedProjects.get(projectList.getCheckedItemPosition()).getName();
 		Intent i = new Intent(this, CollectorActivity.class);

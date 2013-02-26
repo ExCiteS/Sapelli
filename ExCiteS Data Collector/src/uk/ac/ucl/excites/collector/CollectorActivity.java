@@ -234,5 +234,21 @@ public class CollectorActivity extends Activity implements FieldView
 		// TODO Auto-generated method stub
 
 	}
+	
+	@Override
+	protected void onPause()
+	{
+		// close database
+		super.onPause();
+		dao.closeDB();
+	}
+
+	@Override
+	protected void onResume()
+	{
+		// open database
+		super.onResume();
+		dao.openDB();
+	}
 
 }
