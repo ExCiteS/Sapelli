@@ -182,6 +182,8 @@ public class CollectorActivity extends Activity implements FieldView
 				return true;
 			}
 		});
+		
+
 	}
 
 	@Override
@@ -204,9 +206,8 @@ public class CollectorActivity extends Activity implements FieldView
 		// Show waiting view
 		LinearLayout waitingView = new LinearLayout(this);
 		waitingView.setGravity(Gravity.CENTER);
-		addContentView(waitingView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		waitingView.addView(new ProgressBar(this, null, android.R.attr.progressBarStyleLarge));
-
+		rootLayout.addView(waitingView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 
 		// Start timeout counter
 		locationTimer = new Timer();
