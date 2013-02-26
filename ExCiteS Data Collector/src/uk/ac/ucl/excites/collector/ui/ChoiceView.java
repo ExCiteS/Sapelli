@@ -7,6 +7,7 @@ import uk.ac.ucl.excites.collector.project.model.Choice;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.GridView;
@@ -39,8 +40,6 @@ public class ChoiceView extends GridView
 		int imageHeight = (getHeight() - ((choice.getRows() - 1) * SPACING)) / choice.getRows();
 
 		imageAdapter = new ImageAdapter(super.getContext(), imageWidth, imageHeight);
-
-		imageAdapter.clearSelectedIcons();
 		imageAdapter.IconsToDisplay(currentItems);
 		setNumColumns(choice.getCols());
 		setAdapter(imageAdapter);
@@ -53,7 +52,6 @@ public class ChoiceView extends GridView
 			{
 				// get children of pressed icon or jump
 				controller.choiceMade(currentItems.get(position));
-
 			}
 		});
 	}

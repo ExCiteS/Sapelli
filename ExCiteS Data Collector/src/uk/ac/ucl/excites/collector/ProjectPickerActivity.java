@@ -49,19 +49,17 @@ public class ProjectPickerActivity extends Activity
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 		setContentView(R.layout.activity_projectpicker);
 
-		// TODO
 		// Database instance (path may be changed)
 		// Path is on Internal Storage
-		// Why we use a hardcoded address here?
 		dbPATH = this.getFilesDir().getAbsolutePath();
-		Log.e("ExCiteS_Debug", "Internal Storage path:" + dbPATH);
-		dao = uk.ac.ucl.excites.collector.project.db.DataAccess.getInstance(dbPATH);
+		Log.d("ExCiteS_Debug", "Internal Storage path: " + dbPATH);
+		dao = DataAccess.getInstance(dbPATH);
 
-		// TODO Copy function
+/*		// TODO Copy function
 		String dstFilePath =  Environment.getExternalStorageDirectory().getPath() + File.separator + "0000" + File.separator + "ExCiteS_copy.db4o";
 		Log.e("ExCiteS_Debug", "Copy path:" + dstFilePath);
-		dao.copyDBtoSD(dbPATH, dstFilePath);
-
+		dao.copyDBtoSD(dstFilePath);
+*/
 		// Get View Elements
 		enterURL = (EditText) findViewById(R.id.EnterURL);
 		projectList = (ListView) findViewById(R.id.ProjectsList);
@@ -88,7 +86,6 @@ public class ProjectPickerActivity extends Activity
 
 		// display parsed projects
 		populateProjectList();
-
 	}
 
 	public void browse(View view)
@@ -107,19 +104,16 @@ public class ProjectPickerActivity extends Activity
 
 	public void runProject(View view)
 	{
-
 		if(projectList.getCheckedItemPosition() == -1)
 		{
 			AlertDialog NoSelection = errorDialog("Please select a project");
 			NoSelection.show();
 		}
-
 		String project = parsedProjects.get(projectList.getCheckedItemPosition()).getName();
 		Intent i = new Intent(this, CollectorActivity.class);
 		i.putExtra("Project", project);
 		i.putExtra("Path", dbPATH);
 		startActivity(i);
-
 	}
 
 	public void removeProject()
@@ -130,14 +124,12 @@ public class ProjectPickerActivity extends Activity
 
 	public void parseXML(View view)
 	{
-
 		if(enterURL.getText().length() == 0)
 		{
 			AlertDialog error = errorDialog("Please select an XML file");
 			error.show();
 			return;
 		}
-
 		// parse XML
 		try
 		{
@@ -179,7 +171,6 @@ public class ProjectPickerActivity extends Activity
 		}
 		ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_single_choice, android.R.id.text1, values);
 		projectList.setAdapter(adapter);
-
 	}
 
 	// file filter
@@ -187,7 +178,6 @@ public class ProjectPickerActivity extends Activity
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
 		super.onActivityResult(requestCode, resultCode, data);
-
 		if(resultCode == Activity.RESULT_OK)
 		{
 			switch(requestCode)
@@ -205,9 +195,6 @@ public class ProjectPickerActivity extends Activity
 	// dialog to check whether it is desired to remove project
 	public void removeDialog(View view)
 	{
-
-		System.out.println(projectList.getCheckedItemPosition());
-
 		if(projectList.getCheckedItemPosition() == -1)
 		{
 			AlertDialog NoSelection = errorDialog("Please select a project");
@@ -223,14 +210,12 @@ public class ProjectPickerActivity extends Activity
 							removeProject();
 						}
 					})
-
 					.setNegativeButton("Cancel", new DialogInterface.OnClickListener()
 					{
 						public void onClick(DialogInterface dialog, int whichButton)
 						{
 						}
 					}).create();
-
 			removeDialogBox.show();
 		}
 	}
@@ -260,7 +245,7 @@ public class ProjectPickerActivity extends Activity
 	{
 		// open database
 		super.onResume();
-		dao = DataAccess.getInstance(Environment.getExternalStorageDirectory().getPath());
+		dao.openDB();
 	}
 
 }

@@ -106,14 +106,9 @@ public class ImageAdapter extends BaseAdapter
 	public void buttonsToDisplay(boolean back, boolean cancel)
 	{
 		if (back)
-		buttonIDs.add(R.drawable.back);
+			buttonIDs.add(R.drawable.back);
 		if (cancel)
-		buttonIDs.add(R.drawable.cancel);
-
+			buttonIDs.add(R.drawable.cancel);
 	}
 
-	public void clearSelectedIcons()
-	{
-		selectedIcons.clear();
-	}
 }

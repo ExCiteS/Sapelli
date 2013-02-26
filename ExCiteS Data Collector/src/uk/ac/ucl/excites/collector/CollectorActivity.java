@@ -16,6 +16,7 @@ import uk.ac.ucl.excites.collector.ui.ImageAdapter;
 import android.app.Activity;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
@@ -36,10 +37,12 @@ import android.widget.LinearLayout;
 public class CollectorActivity extends Activity implements FieldView
 {
 
+	static private final String TAG = "CollectorActivity";
+	
 	// UI
-	LinearLayout rootLayout;
-	ImageButton backButton;
-	ImageButton cancelButton;
+	private LinearLayout rootLayout;
+	private GridView buttonsGrid;
+	private View fieldView;
 
 	// Dynamic fields:
 	private DataAccess dao;
@@ -72,9 +75,15 @@ public class CollectorActivity extends Activity implements FieldView
 		// Set-up controller:
 		controller = new ProjectController(project, dao, this);
 
-		// start project
-		controller.startProject();
-
+		// Set up root layout UI
+		rootLayout = new LinearLayout(this);
+		rootLayout.setOrientation(LinearLayout.VERTICAL);
+		rootLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		rootLayout.setBackgroundColor(Color.BLACK);
+		setContentView(rootLayout);
+		
+		// Start project
+		controller.startProject(); //keep this as the last statement of the method!
 	}
 
 	/**
@@ -93,42 +102,37 @@ public class CollectorActivity extends Activity implements FieldView
 	}
 
 	public void setField(Field field, final boolean showCancel, final boolean showBack, boolean showForward)
-
 	{
-		// set up UI
-		rootLayout = new LinearLayout(this);
-		rootLayout.setOrientation(LinearLayout.VERTICAL);
-		rootLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-		rootLayout.setBackgroundColor(Color.BLACK);
-
 		// set up Buttons
-		GridView buttonLayout = new GridView(this);
-
 		if(showBack || showCancel)
 		{
+			if(buttonsGrid == null)
+			{	
+				buttonsGrid = new GridView(this);
+				rootLayout.addView(buttonsGrid);
+			}
+			
 			ImageAdapter adapter = new ImageAdapter(this, 45);
 			adapter.buttonsToDisplay(showBack, showCancel);
 			if(showBack && showCancel)
-				buttonLayout.setNumColumns(2);
+				buttonsGrid.setNumColumns(2);
 			else
-				buttonLayout.setNumColumns(1);
-			buttonLayout.setHorizontalSpacing(10);
-			buttonLayout.setVerticalSpacing(10);
-			buttonLayout.setPadding(0, 0, 0, 10);
-			buttonLayout.setAdapter(adapter);
-			buttonLayout.setOnItemClickListener(new OnItemClickListener()
+				buttonsGrid.setNumColumns(1);
+			buttonsGrid.setHorizontalSpacing(10);
+			buttonsGrid.setVerticalSpacing(10);
+			buttonsGrid.setPadding(0, 0, 0, 10);
+			buttonsGrid.setAdapter(adapter);
+			buttonsGrid.setOnItemClickListener(new OnItemClickListener()
 			{
 				@Override
 				public void onItemClick(AdapterView<?> parent, View v, int position, long id)
 				{
-
 					if(showBack && showCancel)
 					{
 						if(position == 0)
 							controller.goBack();
 						if(position == 1)
 							controller.restartForm();
-
 						return;
 					}
 					if(showBack)
@@ -137,24 +141,36 @@ public class CollectorActivity extends Activity implements FieldView
 						controller.restartForm();
 				}
 			});
-
-			rootLayout.addView(buttonLayout);
 		}
-
+		else if(buttonsGrid != null)
+		{	
+			rootLayout.removeView(buttonsGrid);
+			buttonsGrid = null;
+		}
 		// Display the actual field (through double dispatch):
 		field.setIn(this);
-
-		setContentView(rootLayout);
+	}
+	
+	/**
+	 * Set the field view and removes any previous one from the screen
+	 * 
+	 * @param fieldView
+	 */
+	private void setFieldView(View fieldView)
+	{
+		if(this.fieldView != null)
+			rootLayout.removeView(this.fieldView); //throw away the old fieldField
+		this.fieldView = fieldView;
+		rootLayout.addView(fieldView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 	}
 
 	@Override
 	public void setChoice(final Choice cf)
 	{
 		final ChoiceView choiceView = new ChoiceView(this);
-		rootLayout.addView(choiceView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		setFieldView(choiceView);
 		choiceView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
 		{
-
 			public boolean onPreDraw()
 			{
 				choiceView.setChoice(cf, controller);

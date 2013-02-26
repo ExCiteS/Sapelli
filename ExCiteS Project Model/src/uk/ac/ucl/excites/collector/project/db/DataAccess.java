@@ -27,62 +27,79 @@ import com.db4o.query.Predicate;
  */
 public final class DataAccess
 {
-
+	//Static-----------------------------------------------
 	static private final String TAG = "DATA ACCESS";
 	static private final String DATABASE_NAME = "ExCiteS.db4o";
 	static private final int PROJECT_ACTIVATION_DEPTH = 500;
-
-	private ObjectContainer db;
-
 	static private DataAccess INSTANCE = null;
 
 	static public DataAccess getInstance(String dbFolderPath)
 	{
-		if(INSTANCE == null)
+		if(INSTANCE == null || INSTANCE.dbFolderPath != dbFolderPath)
 			INSTANCE = new DataAccess(dbFolderPath);
 		return INSTANCE;
 	}
 
-	// private DB4O ...
-
-	private DataAccess(String dbFilePath)
+	//Dynamics---------------------------------------------
+	private String dbFolderPath;
+	private ObjectContainer db;
+	
+	private DataAccess(String dbFolderPath)
 	{
 		try
 		{
-			if(db == null || db.ext().isClosed())
-			{
-				this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), getDbPath(dbFilePath));
-				Log.d(TAG, "Opened new database connection in file: " + getDbPath(dbFilePath));
-			}
+			this.dbFolderPath = dbFolderPath;
+			openDB(); //open the database!
+			Log.d(TAG, "Opened new database connection in file: " + getDbPath());
 		}
 		catch(Exception e)
 		{
 			Log.e(TAG, "Unable to open database");
 		}
 	}
+	
+	/**
+	 * (Re)Opens the database
+	 */
+	public void openDB()
+	{
+		if(db != null)
+		{
+			//Log.w(TAG, "Database is already open.");
+			return;
+		}
+		this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), getDbPath());
+	}
+	
+	/**
+	 * Closes the database. IT can be reopend with openDB().
+	 */
+	public void closeDB()
+	{
+		db.close();
+		db = null;
+		Log.d(TAG, "Closed database connection");
+	}
 
 	/**
 	 * Returns the file where the DB is saved
 	 * 
-	 * @param dbFilePath
 	 * @return
 	 */
-	public String getDbPath(String dbFilePath)
+	public String getDbPath()
 	{
-		return dbFilePath + File.separator + DATABASE_NAME;
+		return dbFolderPath + File.separator + DATABASE_NAME;
 	}
 
 	/**
 	 * Copy Database File to the destination
 	 * 
-	 * @param srcFilePath
 	 * @param dstFilePath
 	 */
-	public void copyDBtoSD(String srcFilePath, String dstFilePath)
+	public void copyDBtoSD(String dstFilePath)
 	{
-		File srcFile = new File(getDbPath(srcFilePath));
+		File srcFile = new File(getDbPath());
 		File destFile = new File(dstFilePath);
-
 		try
 		{
 			copyFile(srcFile, destFile);
@@ -216,17 +233,5 @@ public final class DataAccess
 	{
 		db.delete(project);
 	}
-
-	/**
-	 * Close db
-	 * 
-	 * @return
-	 */
-	public void closeDB()
-	{
-		db.close();
-		INSTANCE = null;
-		Log.d(TAG, "Closed database connection");
-	}
-
+	
 }
