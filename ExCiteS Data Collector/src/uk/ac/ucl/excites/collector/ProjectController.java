@@ -127,12 +127,9 @@ public class ProjectController implements LocationListener
 	{
 		if(!fieldHistory.isEmpty())
 		{
-			Field nextField = fieldHistory.pop();
-			if(!fieldHistory.isEmpty())
-				currentField = fieldHistory.pop();
-			else
-				currentField = null; // nextField = start, currentField not set
-			goTo(nextField);
+			Field previousField = fieldHistory.pop();
+			currentField = null;
+			goTo(previousField);
 		}
 	}
 
