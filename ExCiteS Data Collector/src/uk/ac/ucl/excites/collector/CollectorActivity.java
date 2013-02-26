@@ -183,18 +183,17 @@ public class CollectorActivity extends Activity implements FieldView
 	@Override
 	public void setChoice(final Choice cf)
 	{
-		ChoiceView choiceView = new ChoiceView(this);
-		choiceView.setChoice(cf, controller);
+		final ChoiceView choiceView = new ChoiceView(this);
 		setFieldView(choiceView);
-//		choiceView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
-//		{
-//			public boolean onPreDraw()
-//			{
-//				choiceView.setChoice(cf, controller);
-//				choiceView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
-//				return true;
-//			}
-//		});
+		choiceView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
+		{
+			public boolean onPreDraw()
+			{
+				choiceView.setChoice(cf, controller);
+				choiceView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
+				return true;
+			}
+		});
 	}
 
 	@Override

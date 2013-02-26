@@ -37,20 +37,8 @@ public class ChoiceView extends GridView
 			throw new IllegalArgumentException("Cannot display leaf choice.");
 		this.currentChoice = choice;
 		
-
-//		choiceView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
-//		{
-//			public boolean onPreDraw()
-//			{
-//				
-//				choiceView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
-//				return true;
-//			}
-//		});
-		
-		
-		int imageWidth = 155; //(getWidth() - ((choice.getCols() - 1) * SPACING )) / choice.getCols();
-		int imageHeight = 135; //(getHeight() - ((choice.getRows() - 1) * SPACING)) / choice.getRows();
+		int imageWidth = (getWidth() - ((choice.getCols() - 1) * SPACING )) / choice.getCols();
+		int imageHeight = (getHeight() - ((choice.getRows() - 1) * SPACING)) / choice.getRows();
 
 		imageAdapter = new ImageAdapter(super.getContext(), controller.getProject(), imageWidth, imageHeight);
 		imageAdapter.IconsToDisplay(choice.getChildren());
