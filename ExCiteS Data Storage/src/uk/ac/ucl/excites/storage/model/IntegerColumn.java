@@ -52,7 +52,7 @@ public class IntegerColumn extends Column<Long>
 	public IntegerColumn(String name, boolean optional, boolean signed, int sizeBits)
 	{
 		super(name, optional);
-		if(size < 1 || size > 64)
+		if(sizeBits < 1 || sizeBits > 64)
 			throw new IllegalArgumentException("Invalid size (" + sizeBits + "). Size must be between 1 and 64 bits.");
 		this.size = sizeBits;
 		this.signed = signed;
