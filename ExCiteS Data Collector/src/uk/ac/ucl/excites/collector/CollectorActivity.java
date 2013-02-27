@@ -1,5 +1,8 @@
 package uk.ac.ucl.excites.collector;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -15,8 +18,15 @@ import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.ImageAdapter;
 import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -27,7 +37,6 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.GridView;
-import android.widget.ImageButton;
 import android.widget.LinearLayout;
 
 /**
@@ -39,7 +48,7 @@ public class CollectorActivity extends Activity implements FieldView
 {
 
 	static private final String TAG = "CollectorActivity";
-	
+
 	// UI
 	private LinearLayout rootLayout;
 	private GridView buttonsGrid;
@@ -51,10 +60,22 @@ public class CollectorActivity extends Activity implements FieldView
 	private ProjectController controller;
 	private volatile Timer locationTimer;
 
+	// Request codes for returning data from intents
+	public static final int PHOTO_CAPTURE = 1;
+	public static final int VIDEO_CAPTURE = 2;
+	public static final int AUDIO_CAPTURE = 3;
+
+	// Temp location to save a photo
+	private static String tmpPhotoLocation;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+
+		// Retrieve the tmpPhotoLocation for the saved state
+		if(savedInstanceState != null)
+			tmpPhotoLocation = savedInstanceState.getString("tmpPhotoLocation");
 
 		// Remove title
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -82,9 +103,9 @@ public class CollectorActivity extends Activity implements FieldView
 		rootLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		rootLayout.setBackgroundColor(Color.BLACK);
 		setContentView(rootLayout);
-		
+
 		// Start project
-		controller.startProject(); //keep this as the last statement of the method!
+		controller.startProject(); // keep this as the last statement of the method!
 	}
 
 	/**
@@ -108,11 +129,11 @@ public class CollectorActivity extends Activity implements FieldView
 		if(showBack || showCancel)
 		{
 			if(buttonsGrid == null)
-			{	
+			{
 				buttonsGrid = new GridView(this);
 				rootLayout.addView(buttonsGrid);
 			}
-			
+
 			ImageAdapter adapter = new ImageAdapter(this, 45);
 			adapter.buttonsToDisplay(showBack, showCancel);
 			if(showBack && showCancel)
@@ -144,14 +165,14 @@ public class CollectorActivity extends Activity implements FieldView
 			});
 		}
 		else if(buttonsGrid != null)
-		{	
+		{
 			rootLayout.removeView(buttonsGrid);
 			buttonsGrid = null;
 		}
 		// Display the actual field (through double dispatch):
 		field.setIn(this);
 	}
-	
+
 	/**
 	 * Set the field view and removes any previous one from the screen
 	 * 
@@ -160,7 +181,7 @@ public class CollectorActivity extends Activity implements FieldView
 	private void setFieldView(View fieldView)
 	{
 		if(this.fieldView != null)
-			rootLayout.removeView(this.fieldView); //throw away the old fieldField
+			rootLayout.removeView(this.fieldView); // throw away the old fieldField
 		this.fieldView = fieldView;
 		rootLayout.addView(fieldView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 	}
@@ -184,8 +205,30 @@ public class CollectorActivity extends Activity implements FieldView
 	@Override
 	public void setPhoto(Photo pf)
 	{
-		// TODO Auto-generated method stub
+		// Define the temp name
+		final String PHOTO_PREFIX = "tmpPhoto";
+		final String PHOTO_SUFFIX = ".tmp";
+		File tmpPhotoFile = null;
 
+		// Create an image file
+		try
+		{
+			tmpPhotoFile = File.createTempFile(PHOTO_PREFIX, PHOTO_SUFFIX);
+			tmpPhotoLocation = tmpPhotoFile.getAbsolutePath();
+		}
+		catch(IOException e)
+		{
+			Log.e("ExCiteS_Debug", "setPhoto() error: " + e.toString());
+		}
+
+		// Check if the device is able to handle Photo Intents
+		if(isIntentAvailable(this, MediaStore.ACTION_IMAGE_CAPTURE))
+		{
+			Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+			// Save the photo to the tmp location
+			takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
+			startActivityForResult(takePictureIntent, PHOTO_CAPTURE);
+		}
 	}
 
 	@Override
@@ -193,6 +236,66 @@ public class CollectorActivity extends Activity implements FieldView
 	{
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent data)
+	{
+		// TODO Auto-generated method stub
+		super.onActivityResult(requestCode, resultCode, data);
+
+		if(resultCode == RESULT_CANCELED)
+		{
+			switch(requestCode)
+			{
+			case PHOTO_CAPTURE:
+				// TODO Delete the tmpFile
+				Log.i("ExCiteS_Debug", "PHOTO_CAPTURE - Canceled and file is in" + tmpPhotoLocation);
+				break;
+			}
+		}
+
+		if(resultCode == Activity.RESULT_OK)
+		{
+			switch(requestCode)
+			{
+			case PHOTO_CAPTURE:
+
+				Log.i("ExCiteS_Debug", "PHOTO_CAPTURE - The photo is in: " + tmpPhotoLocation);
+
+				// TODO Move the file from temp location to Projects Folder
+
+				// TODO
+				// get device id
+				// decide on suffix or not suffix
+				// get images folder
+				// final String JPEG_FILE_PREFIX = "deviceID-" + String.valueOf(System.currentTimeMillis());
+
+				// TODO Call Controller
+				controller.photoDone(true);
+
+				break;
+
+			}
+		}
+	}
+
+	@Override
+	public void onSaveInstanceState(Bundle bundle)
+	{
+		super.onSaveInstanceState(bundle);
+
+		// If the app is taking a photo, save the tmpPhotoLocation
+		if(tmpPhotoLocation != null)
+			bundle.putString("tmpPhotoLocation", tmpPhotoLocation);
+	}
+
+	public static boolean isIntentAvailable(Context context, String action)
+	{
+		final PackageManager packageManager = context.getPackageManager();
+		final Intent intent = new Intent(action);
+		List<ResolveInfo> list = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
+		return list.size() > 0;
 	}
 
 	@Override
@@ -223,7 +326,7 @@ public class CollectorActivity extends Activity implements FieldView
 	public void setOrientation(OrientationField of)
 	{
 		// TODO Auto-generated method stub
-		
+
 	}
-	
+
 }

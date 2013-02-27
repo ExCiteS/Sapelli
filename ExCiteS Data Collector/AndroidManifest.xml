@@ -8,10 +8,8 @@
         android:minSdkVersion="9"
         android:targetSdkVersion="17" />
 
-    <!--
-	    For more information on permission:  
-	    http://developer.android.com/reference/android/Manifest.permission.html
-    -->
+    <uses-feature android:name="android.hardware.camera" />
+    <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -27,6 +25,7 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:allowBackup="true"

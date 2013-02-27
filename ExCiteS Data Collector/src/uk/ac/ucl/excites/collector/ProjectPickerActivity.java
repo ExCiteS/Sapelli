@@ -55,7 +55,7 @@ public class ProjectPickerActivity extends Activity
 		// Database instance (path may be changed)
 		// Path is on Internal Storage
 		dbPATH = this.getFilesDir().getAbsolutePath();
-		Log.d("ExCiteS_Debug", "Internal Storage path: " + dbPATH);
+		// Log.d("ExCiteS_Debug", "Internal Storage path: " + dbPATH);
 		dao = DataAccess.getInstance(dbPATH);
 
 		/*

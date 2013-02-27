@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<ExCiteS-Collector-Project name="TestProject" version="1">
+<ExCiteS-Collector-Project name="AntiPoaching" version="1">
 	<Data-Management>
 		<Local/>
 		<Server/>
@@ -8,7 +8,7 @@
 	</Data-Management>
 
 	<Form name="" schema-id="1" schema-version="0" startField="Observation" end="_LOOP" shortcut="true" endSound="beep.wav" endVibrate="true" showBack="true" showHome="true">
-
+	
 		<Choice id="Observation" jump="SeeHearTold" rows="3" cols="2">
 			<Choice id="camp" value="camp" alt="" img="1.jpg" rows="2" cols="2">
 				<Choice id="campFire" value="campFire" alt="" img="1.1.jpg" rows="3" cols="1">
@@ -40,10 +40,13 @@
 		</Choice>
 		
 		<Choice id="AudioPhoto" noColumn="true" rows="1" cols="2">
-			<Choice id="audio" img="_audio-s.jpg" />
-			<Choice id="photoChoice" img="_video-s.jpg" />
+			<Choice id="photoChoice" img="_video-s.jpg" jump="photo" />
+			<Choice id="audioChoice" img="_audio-s.jpg" jump="audio" />
 		</Choice>
-
+		
+		<Photo id="photo" min="0" max="2" jump="_END" disableField="photoChoice"/>
+		
+		<Audio id="audio" min="0" max="7" jump="_END" recImg="" stopImg=""/>
 		
 	</Form>
 

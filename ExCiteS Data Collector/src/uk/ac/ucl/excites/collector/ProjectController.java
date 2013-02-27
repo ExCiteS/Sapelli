@@ -9,28 +9,22 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import android.content.Context;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
-import android.os.Bundle;
-
-import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.EndField;
+import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.FormEntry;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.util.DeviceID;
 import uk.ac.ucl.excites.collector.util.LocationUtils;
-
-import uk.ac.ucl.excites.collector.util.LocationUtils;
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Bundle;
+import android.util.Log;
 
 /**
  * @author mstevens
@@ -181,9 +175,10 @@ public class ProjectController implements LocationListener
 
 	public void photoDone(boolean pictureTaken)
 	{
-		// Store/increase number of photos taken
 		// TODO
+		// Store/increase number of photos taken
 		// goto next/jump field:
+		Log.d("ExCiteS_Debug", "ProjectController:photoDone()");
 		goForward();
 	}
 
