@@ -7,6 +7,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.project.io.InputOutput;
 import uk.ac.ucl.excites.collector.project.model.Audio;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.Field;
@@ -19,15 +20,15 @@ import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.ImageAdapter;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Gravity;
@@ -46,7 +47,7 @@ import android.widget.ProgressBar;
 /**
  * Main Collector activity
  * 
- * @author mstevens, julia
+ * @author mstevens, julia, Michalis Vitos
  */
 public class CollectorActivity extends Activity implements FieldView
 {
@@ -56,7 +57,7 @@ public class CollectorActivity extends Activity implements FieldView
 	static public final String PARAMETER_PROJECT_NAME = "Project_name";
 	static public final String PARAMETER_PROJECT_VERSION = "Project_version";
 	static public final String PARAMETER_DB_FOLDER_PATH = "DBFolderPath";
-	
+
 	// UI
 	private LinearLayout rootLayout;
 	private GridView buttonsGrid;
@@ -87,6 +88,9 @@ public class CollectorActivity extends Activity implements FieldView
 
 		// Remove title
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		
+		// Lock the orientation 
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
 		// Set to FullScreen
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -96,7 +100,7 @@ public class CollectorActivity extends Activity implements FieldView
 		String projectName = extras.getString(PARAMETER_PROJECT_NAME);
 		int projectVersion = extras.getInt(PARAMETER_PROJECT_VERSION);
 		String dbFolderPath = extras.getString(PARAMETER_DB_FOLDER_PATH);
-		
+
 		// Get DataAccess object
 		dao = DataAccess.getInstance(dbFolderPath);
 
@@ -104,13 +108,16 @@ public class CollectorActivity extends Activity implements FieldView
 		project = dao.retrieveProject(projectName, projectVersion);
 		if(project == null)
 		{
-			(new AlertDialog.Builder(this).setTitle("Error").setMessage("Could not find project: " + projectName + "(version " + projectVersion + ").").setNeutralButton("OK", new DialogInterface.OnClickListener()
-			{
-				public void onClick(DialogInterface dialog, int whichButton) {}
-			}).create()).show();
+			(new AlertDialog.Builder(this).setTitle("Error").setMessage("Could not find project: " + projectName + "(version " + projectVersion + ").")
+					.setNeutralButton("OK", new DialogInterface.OnClickListener()
+					{
+						public void onClick(DialogInterface dialog, int whichButton)
+						{
+						}
+					}).create()).show();
 			return;
 		}
-		
+
 		// Set-up controller:
 		controller = new ProjectController(project, dao, this);
 
@@ -229,8 +236,11 @@ public class CollectorActivity extends Activity implements FieldView
 		// Create an image file
 		try
 		{
-			tmpPhotoFile = File.createTempFile(PHOTO_PREFIX, PHOTO_SUFFIX);
+			// TODO Where should I save the temp file?
+			File parentDir = new File(project.getDataPath());
+			tmpPhotoFile = File.createTempFile(PHOTO_PREFIX, PHOTO_SUFFIX, parentDir);
 			tmpPhotoLocation = tmpPhotoFile.getAbsolutePath();
+			Log.i("ExCiteS_Debug", "SetPhoto(); " + tmpPhotoLocation);
 		}
 		catch(IOException e)
 		{
@@ -265,8 +275,8 @@ public class CollectorActivity extends Activity implements FieldView
 			switch(requestCode)
 			{
 			case PHOTO_CAPTURE:
-				// TODO Delete the tmpFile
-				Log.i("ExCiteS_Debug", "PHOTO_CAPTURE - Canceled and file is in" + tmpPhotoLocation);
+				// Delete the tmp file from the device
+				InputOutput.deleteFile(tmpPhotoLocation);
 				break;
 			}
 		}
@@ -277,21 +287,19 @@ public class CollectorActivity extends Activity implements FieldView
 			{
 			case PHOTO_CAPTURE:
 
-				Log.i("ExCiteS_Debug", "PHOTO_CAPTURE - The photo is in: " + tmpPhotoLocation);
-
-				// TODO Move the file from temp location to Projects Folder
-
 				// TODO
 				// get device id
 				// decide on suffix or not suffix
-				// get images folder
-				// final String JPEG_FILE_PREFIX = "deviceID-" + String.valueOf(System.currentTimeMillis());
+				String photoFilename = "DeviceId-" + System.currentTimeMillis();
+				
+				// Log.i("excites_debug", "Copy from: " + tmpPhotoLocation);
+				// Log.i("excites_debug", "Copy to: " + project.getDataPath() + File.separator + photoFilename);
+				
+				InputOutput.moveFile(tmpPhotoLocation, project.getDataPath() + File.separator + photoFilename);
 
 				// TODO Call Controller
 				controller.photoDone(true);
-
 				break;
-
 			}
 		}
 	}
@@ -348,7 +356,7 @@ public class CollectorActivity extends Activity implements FieldView
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	@Override
 	protected void onPause()
 	{

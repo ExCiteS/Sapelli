@@ -4,13 +4,9 @@
 package uk.ac.ucl.excites.collector.project.db;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.List;
 
+import uk.ac.ucl.excites.collector.project.io.InputOutput;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.storage.model.Schema;
@@ -109,47 +105,7 @@ public final class DataAccess
 	 */
 	public void copyDBtoSD(String dstFilePath)
 	{
-		File srcFile = new File(getDbPath());
-		File destFile = new File(dstFilePath);
-		try
-		{
-			copyFile(srcFile, destFile);
-		}
-		catch(IOException e)
-		{
-			Log.e(TAG, "Unable to copy database: " + e.toString());
-		}
-	}
-
-	/**
-	 * Method to Copy a file
-	 * 
-	 * @param srcFile
-	 * @param dstFile
-	 * @throws IOException
-	 */
-	private void copyFile(File srcFile, File dstFile) throws IOException
-	{
-		File directory = new File(dstFile.getParentFile().getAbsolutePath());
-		directory.mkdirs();
-
-		if(!dstFile.exists())
-		{
-			dstFile.createNewFile();
-		}
-
-		InputStream in = new FileInputStream(srcFile);
-		OutputStream out = new FileOutputStream(dstFile);
-
-		// Transfer bytes from in to out
-		byte[] buf = new byte[1024];
-		int len;
-		while((len = in.read(buf)) > 0)
-		{
-			out.write(buf, 0, len);
-		}
-		in.close();
-		out.close();
+		InputOutput.copyFile(getDbPath(), dstFilePath);
 	}
 
 	/**

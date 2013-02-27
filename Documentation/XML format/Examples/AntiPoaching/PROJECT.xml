@@ -32,7 +32,6 @@
 			</Choice>	
 		</Choice>	
 
-
 		<Choice id="SeeHearTold" jump="AudioPhoto" rows="2" cols="2">
 			<Choice img="see.jpg" alt="" value="Seen"/>
 			<Choice img="hear.jpg" alt="" value="Heard"/>
