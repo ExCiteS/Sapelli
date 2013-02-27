@@ -5,6 +5,8 @@ package uk.ac.ucl.excites.collector.project.xml;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map.Entry;
@@ -43,6 +45,7 @@ public class ProjectParser extends DefaultHandler
 	//Tags/attributes:
 	static private final String PROJECT = "ExCiteS-Collector-Project";
 	static private final String PROJECT_NAME = "name";
+	static private final String PROJECT_VERSION = "version";
 	static private final String FORM = "Form";
 	static private final String FORM_NAME = "name";
 	static private final String FORM_SCHEMA_ID = "schema-id";
@@ -50,6 +53,7 @@ public class ProjectParser extends DefaultHandler
 	static private final String FORM_START_FIELD = "startField";
 	static private final String Field_NO_COLUMN = "noColumn";
 
+	private String basePath;
 	private Project project;
 	private Form currentForm;
 	private String currentFormStartFieldID;
@@ -58,8 +62,22 @@ public class ProjectParser extends DefaultHandler
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaAttachment, String> mediaAttachToDisableId;
 
+	public ProjectParser(String basePath)
+	{
+		this.basePath = basePath;
+	}
+	
 	public Project parseProject(File xmlFile) throws Exception
 	{
+		if(xmlFile == null || !xmlFile.exists() || xmlFile.length() == 0)
+			throw new IllegalArgumentException("Invalid xmlFile (" + (xmlFile == null ? "null" : xmlFile.getAbsolutePath()) + ")!");
+		return parseProject(new FileInputStream(xmlFile));
+	}
+	
+	public Project parseProject(InputStream input) throws Exception
+	{
+		if(input == null)
+			throw new IllegalArgumentException("Invalid input stream");
 		project = null;
 		fieldToJumpId = new HashMap<Field, String>();
 		idToField = new Hashtable<String, Field>();
@@ -69,15 +87,25 @@ public class ProjectParser extends DefaultHandler
 			SAXParserFactory spf = SAXParserFactory.newInstance();
 			SAXParser sp = spf.newSAXParser();
 			XMLReader xr = sp.getXMLReader();
-			FileInputStream fis = new FileInputStream(xmlFile);
 			xr.setContentHandler(this);
-			xr.parse(new InputSource(fis));
+			xr.parse(new InputSource(input));
 		}
 		catch(Exception e)
 		{
 			Log.e(TAG, "XML Parsing Exception = " + e, e);
 			//return null;
 			throw e;
+		}
+		finally
+		{
+			try
+			{
+				input.close();
+			}
+			catch(IOException ioe)
+			{
+				ioe.printStackTrace();
+			}
 		}
 		return project;
 	}
@@ -95,7 +123,7 @@ public class ProjectParser extends DefaultHandler
 		if (qName.equals(PROJECT))
 		{
 			String projectName = readRequiredAttribute(PROJECT, attributes, PROJECT_NAME);
-			project = new Project(projectName);
+			project = new Project(projectName, readIntegerAttribute(attributes, PROJECT_VERSION, Project.DEFAULT_VERSION), basePath);
 		}
 		//<Data-Management>
 		else if (qName.equals("Data-Management"))
@@ -110,7 +138,14 @@ public class ProjectParser extends DefaultHandler
 			int schemaVersion = (attributes.getValue(FORM_SCHEMA_VERSION) == null ? Schema.DEFAULT_VERSION : Integer.parseInt(attributes.getValue(FORM_SCHEMA_VERSION)));
 			currentForm = new Form(name, schemaID, schemaVersion);
 			project.addForm(currentForm);
+			//Store end time?:
 			currentForm.setStoreEndTime(readBooleanAttribute(attributes, "storeEndTime", Form.END_TIME_DEFAULT));
+			//Which buttons are allowed to show:
+			currentForm.setShowBack(readBooleanAttribute(attributes, "showBackButton", Form.DEFAULT_SHOW_BACK));
+			currentForm.setShowCancel(readBooleanAttribute(attributes, "showCancelButton", Form.DEFAULT_SHOW_CANCEL));
+			currentForm.setShowForward(readBooleanAttribute(attributes, "showForwardButton", Form.DEFAULT_SHOW_FORWARD));
+			//Button background color:
+			
 			if(attributes.getValue(FORM_START_FIELD) != null)
 				currentFormStartFieldID = attributes.getValue(FORM_START_FIELD);
 			else
@@ -128,13 +163,13 @@ public class ProjectParser extends DefaultHandler
 			//No column:
 			currentChoice.setNoColumn(attributes.getValue(Field_NO_COLUMN) != null && attributes.getValue(Field_NO_COLUMN).equalsIgnoreCase("true"));
 			//Other attributes:
-			if (attributes.getValue("img") != null)
+			if(attributes.getValue("img") != null)
 				currentChoice.setImagePath(attributes.getValue("img"));
-			if (attributes.getValue("cols") != null)
-				currentChoice.setCols(Integer.parseInt(attributes.getValue("cols")));
-			if (attributes.getValue("rows") != null)
+			currentChoice.setCols(readIntegerAttribute(attributes, "cols", Choice.DEFAULT_NUM_COLS));
+			
+			if(attributes.getValue("rows") != null)
 				currentChoice.setRows(Integer.parseInt(attributes.getValue("rows")));
-			if (attributes.getValue("value") != null)
+			if(attributes.getValue("value") != null)
 				currentChoice.setValue(attributes.getValue("value"));
 			//...
 		}
@@ -288,7 +323,7 @@ public class ProjectParser extends DefaultHandler
 		return value;
 	}
 	
-	private boolean readBooleanAttribute(Attributes attributes, String attributeName, boolean defaultValue)
+	protected boolean readBooleanAttribute(Attributes attributes, String attributeName, boolean defaultValue)
 	{
 		String text = attributes.getValue(attributeName);
 		if(text == null || text.isEmpty())
@@ -296,6 +331,24 @@ public class ProjectParser extends DefaultHandler
 		else
 			return text.trim().equalsIgnoreCase(Boolean.TRUE.toString()) ? Boolean.TRUE : defaultValue;
 		//We don't use Boolean.parseBoolean(String) because that returns false if the String does not equal true (so we wouldn't be able to return the defaultValue)
+	}
+	
+	protected int readIntegerAttribute(Attributes attributes, String attributeName, int defaultValue)
+	{
+		String text = attributes.getValue(attributeName);
+		if(text == null || text.isEmpty())
+			return defaultValue;
+		else
+			return Integer.parseInt(text.trim());
+	}
+	
+	protected String readStringAttribute(Attributes attributes, String attributeName, String defaultValue)
+	{
+		String text = attributes.getValue(attributeName);
+		if(text == null || text.isEmpty())
+			return defaultValue;
+		else
+			return text;
 	}
 	
 }

@@ -29,6 +29,11 @@ public class Form
 	//public static final int END_ACTION_NEXT_FORM = 2;
 	public static final int END_ACTION_DEFAULT = END_ACTION_LOOP;
 	
+	public static boolean DEFAULT_SHOW_BACK = true;
+	public static boolean DEFAULT_SHOW_CANCEL = true;
+	public static boolean DEFAULT_SHOW_FORWARD = false; //for now we never show the forward button
+	public static String DEFAULT_BUTTON_BACKGROUND_COLOR = "#FFFFFF"; //White
+	
 	public static final String COLUMN_TIMESTAMP_START = "StartTime";
 	public static final String COLUMN_TIMESTAMP_END = "EndTime";
 	public static final String COLUMN_DEVICE_ID = "DeviceID";
@@ -61,7 +66,9 @@ public class Form
 	
 	//Buttons:
 	private boolean showBack;
-	private boolean showHome;
+	private boolean showCancel;
+	private boolean showForward;
+	private String backgroundColor;
 	
 	public Form(String name, int schemaID)
 	{
@@ -127,6 +134,54 @@ public class Form
 		this.start = start;
 	}
 	
+	/**
+	 * @return the showBack
+	 */
+	public boolean isShowBack()
+	{
+		return showBack;
+	}
+
+	/**
+	 * @param showBack the showBack to set
+	 */
+	public void setShowBack(boolean showBack)
+	{
+		this.showBack = showBack;
+	}
+
+	/**
+	 * @return the showCancel
+	 */
+	public boolean isShowCancel()
+	{
+		return showCancel;
+	}
+
+	/**
+	 * @param showCancel the showCancel to set
+	 */
+	public void setShowCancel(boolean showCancel)
+	{
+		this.showCancel = showCancel;
+	}
+
+	/**
+	 * @return the showForward
+	 */
+	public boolean isShowForward()
+	{
+		return showForward;
+	}
+
+	/**
+	 * @param showForward the showForward to set
+	 */
+	public void setShowForward(boolean showForward)
+	{
+		this.showForward = showForward;
+	}
+
 	public List<LocationField> getLocationFields()
 	{
 		return locationFields;
@@ -191,6 +246,21 @@ public class Form
 	public String getEndSoundPath()
 	{
 		return endSoundPath;
+	}
+	
+	public String getBackImagePath()
+	{
+		return null; //TODO
+	}
+	
+	public String getCancelImagePath()
+	{
+		return null; //TODO
+	}
+	
+	public String getForwardImagePath()
+	{
+		return null; //TODO
 	}
 
 	public Schema getSchema(DataAccess dao)

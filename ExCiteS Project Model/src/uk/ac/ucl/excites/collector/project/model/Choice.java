@@ -15,6 +15,8 @@ import com.google.common.collect.HashBiMap;
  */
 public class Choice extends Field
 {
+	
+	static public final int DEFAULT_NUM_COLS = 2;
 
 	static public final int UNKNOWN_VALUE_CODE = -1;
 	
@@ -228,7 +230,7 @@ public class Choice extends Field
 	
 	public void storeValue(FormEntry entry)
 	{
-		((IntegerColumn) entry.getColumn(root.id)).storeValue(entry, Long.valueOf(lookupValueCode()));
+//		((IntegerColumn) entry.getColumn(root.id)).storeValue(entry, Long.valueOf(lookupValueCode()));
 	}
 	
 	public int lookupValueCode()

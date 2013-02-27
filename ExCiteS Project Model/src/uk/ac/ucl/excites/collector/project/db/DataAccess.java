@@ -31,7 +31,7 @@ public final class DataAccess
 	//Statics----------------------------------------------
 	static private final String TAG = "DATA ACCESS";
 	static private final String DATABASE_NAME = "ExCiteS.db4o";
-	static private final int PROJECT_ACTIVATION_DEPTH = 500;
+	static private final int PROJECT_ACTIVATION_DEPTH = 100;
 	static private DataAccess INSTANCE = null;
 
 	static public DataAccess getInstance(String dbFolderPath)
@@ -46,11 +46,12 @@ public final class DataAccess
 	private ObjectContainer db;
 	
 	private DataAccess(String dbFolderPath)
-
 	{
+		if(dbFolderPath == null || dbFolderPath.isEmpty())
+			throw new IllegalArgumentException("Invalid database folder path");
+		this.dbFolderPath = dbFolderPath;
 		try
 		{
-			this.dbFolderPath = dbFolderPath;
 			openDB(); //open the database!
 			Log.d(TAG, "Opened new database connection in file: " + getDbPath());
 		}
@@ -60,6 +61,14 @@ public final class DataAccess
 		}
 	}
 	
+	/**
+	 * @return the dbFolderPath
+	 */
+	public String getDbFolderPath()
+	{
+		return dbFolderPath;
+	}
+
 	/**
 	 * (Re)Opens the database
 	 */
@@ -170,7 +179,6 @@ public final class DataAccess
 	@SuppressWarnings("serial")
 	public Schema retrieveSchema(final int id, final int version)
 	{
-		@SuppressWarnings("serial")
 		ObjectSet<Schema> result = db.query(new Predicate<Schema>()
 		{
 			public boolean match(Schema schema)
@@ -178,7 +186,6 @@ public final class DataAccess
 				return schema.getID() == id && schema.getVersion() == version;
 			}
 		});
-
 		if(result.hasNext())
 			return result.next();
 		else
@@ -190,7 +197,7 @@ public final class DataAccess
 	 */
 	public void store(Project project) throws DuplicateException
 	{
-		if(retrieveProject(project.getName()) != null)
+		if(retrieveProject(project.getName(), project.getVersion()) != null)
 			throw new DuplicateException("There is already a project named \"" + project.getName() + "\"!");
 		db.store(project);
 	}
@@ -213,10 +220,16 @@ public final class DataAccess
 	 * 
 	 * @return null if project was not found
 	 */
-	public Project retrieveProject(String projectName)
+	public Project retrieveProject(final String name, final int version)
 	{
-		Project theExample = new Project(projectName);
-		final List<Project> result = db.queryByExample(theExample);
+		@SuppressWarnings("serial")
+		ObjectSet<Project> result = db.query(new Predicate<Project>()
+		{
+			public boolean match(Project project)
+			{
+				return project.getName().equalsIgnoreCase(name) && project.getVersion() == version;
+			}
+		});
 		if(result.isEmpty())
 			return null;
 		else

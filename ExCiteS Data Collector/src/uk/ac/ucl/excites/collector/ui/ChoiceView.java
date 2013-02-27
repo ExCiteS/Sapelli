@@ -9,6 +9,7 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.widget.AdapterView;
 import android.widget.GridView;
 
@@ -17,7 +18,7 @@ public class ChoiceView extends GridView
 	static private final int SPACING = 10;
 
 	private ImageAdapter imageAdapter;
-	private List<Choice> currentItems;
+	private Choice currentChoice;
 
 	public ChoiceView(final Context context)
 	{
@@ -34,13 +35,13 @@ public class ChoiceView extends GridView
 	{
 		if(choice.isLeaf())
 			throw new IllegalArgumentException("Cannot display leaf choice.");
-		currentItems = choice.getChildren();
-
+		this.currentChoice = choice;
+		
 		int imageWidth = (getWidth() - ((choice.getCols() - 1) * SPACING )) / choice.getCols();
 		int imageHeight = (getHeight() - ((choice.getRows() - 1) * SPACING)) / choice.getRows();
 
-		imageAdapter = new ImageAdapter(super.getContext(), imageWidth, imageHeight);
-		imageAdapter.IconsToDisplay(currentItems);
+		imageAdapter = new ImageAdapter(super.getContext(), controller.getProject(), imageWidth, imageHeight);
+		imageAdapter.IconsToDisplay(choice.getChildren());
 		setNumColumns(choice.getCols());
 		setAdapter(imageAdapter);
 
@@ -51,7 +52,7 @@ public class ChoiceView extends GridView
 			public void onItemClick(AdapterView<?> parent, View v, int position, long id)
 			{
 				// get children of pressed icon or jump
-				controller.choiceMade(currentItems.get(position));
+				controller.choiceMade(currentChoice.getChildren().get(position));
 			}
 		});
 	}
