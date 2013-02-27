@@ -18,6 +18,7 @@ import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.ImageAdapter;
+import uk.ac.ucl.excites.collector.util.Debug;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -236,11 +237,11 @@ public class CollectorActivity extends Activity implements FieldView
 		// Create an image file
 		try
 		{
-			// TODO Where should I save the temp file?
+			// TODO Where should I save the tmp file?
 			File parentDir = new File(project.getDataPath());
 			tmpPhotoFile = File.createTempFile(PHOTO_PREFIX, PHOTO_SUFFIX, parentDir);
 			tmpPhotoLocation = tmpPhotoFile.getAbsolutePath();
-			Log.i("ExCiteS_Debug", "SetPhoto(); " + tmpPhotoLocation);
+			Debug.i("SetPhoto(); " + tmpPhotoLocation);
 		}
 		catch(IOException e)
 		{
