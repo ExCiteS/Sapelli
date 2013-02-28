@@ -221,7 +221,7 @@ public class CollectorActivity extends Activity implements FieldView
 			{
 				choiceView.setChoice(cf, controller);
 				choiceView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
-				return true;
+				return false;
 			}
 		});
 	}
