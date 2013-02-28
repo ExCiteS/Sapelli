@@ -89,8 +89,8 @@ public class CollectorActivity extends Activity implements FieldView
 
 		// Remove title
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
-		
-		// Lock the orientation 
+
+		// Lock the orientation
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
 		// Set to FullScreen
@@ -241,7 +241,7 @@ public class CollectorActivity extends Activity implements FieldView
 			File parentDir = new File(project.getDataPath());
 			tmpPhotoFile = File.createTempFile(PHOTO_PREFIX, PHOTO_SUFFIX, parentDir);
 			tmpPhotoLocation = tmpPhotoFile.getAbsolutePath();
-			Debug.i("SetPhoto(); " + tmpPhotoLocation);
+			Debug.i("SetPhoto() | tmpPhotoLocation = " + tmpPhotoLocation);
 		}
 		catch(IOException e)
 		{
@@ -292,11 +292,16 @@ public class CollectorActivity extends Activity implements FieldView
 				// get device id
 				// decide on suffix or not suffix
 				String photoFilename = "DeviceId-" + System.currentTimeMillis();
-				
-				// Log.i("excites_debug", "Copy from: " + tmpPhotoLocation);
-				// Log.i("excites_debug", "Copy to: " + project.getDataPath() + File.separator + photoFilename);
-				
-				InputOutput.moveFile(tmpPhotoLocation, project.getDataPath() + File.separator + photoFilename);
+
+				// Create the files
+				File from = new File(tmpPhotoLocation);
+				File to = new File(project.getDataPath() + File.separator + photoFilename);
+
+				// Debug.d("Copy from: " + from.getAbsolutePath() + File.separator + from.getName());
+				// Debug.d("Copy to: " + to.getAbsolutePath() + File.separator + to.getName());
+
+				// Rename the file
+				from.renameTo(to);
 
 				// TODO Call Controller
 				controller.photoDone(true);
