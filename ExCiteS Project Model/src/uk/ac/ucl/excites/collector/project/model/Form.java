@@ -9,7 +9,6 @@ import java.util.List;
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
-
 import uk.ac.ucl.excites.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Schema;
@@ -27,7 +26,7 @@ public class Form
 	public static final int END_ACTION_LOOP = 0;
 	public static final int END_ACTION_EXIT = 1;
 	//public static final int END_ACTION_NEXT_FORM = 2;
-	public static final int END_ACTION_DEFAULT = END_ACTION_LOOP;
+	public static final int DEFAULT_END_ACTION = END_ACTION_LOOP;
 	
 	public static boolean DEFAULT_SHOW_BACK = true;
 	public static boolean DEFAULT_SHOW_CANCEL = true;
@@ -82,6 +81,7 @@ public class Form
 		this.schemaVersion = schemaVersion;
 		this.fields = new ArrayList<Field>();
 		this.locationFields = new ArrayList<LocationField>();
+		this.endAction = DEFAULT_END_ACTION;
 	}
 	
 	public void addField(Field f)
@@ -98,14 +98,16 @@ public class Form
 		if(currentIndex < 0)
 			throw new IllegalArgumentException("The current field is not part of this form.");
 		//Check for jump field (possibly the one of a parent in case of Choice):
-		Field jump = current.getJump();
-		if(jump != null)
-			return jump; //use jump as next
-		//No jump is set, check for field below current one:
-		if(currentIndex + 1 < fields.size())
-			return fields.get(currentIndex + 1); //go to next field in the form
-		else
-			return EndField.getInstance(); //current field is the last of the form, go to end
+		Field next = current.getJump();
+		if(next == null)
+		{
+			//No jump is set, check for field below current one:
+			if(currentIndex + 1 < fields.size())
+				next = fields.get(currentIndex + 1); //go to next field in the form
+			else
+				next = new EndField(); //current field is the last of the form, go to end
+		}
+		return next; //use jump as next
 	}
 	
 	public String getName()

@@ -47,8 +47,8 @@ public class ProjectPickerActivity extends Activity
 	public static final int SETTINGS_REQUEST_IMPORT = 1;
 	private EditText enterURL;
 	private ListView projectList;
-	DataAccess dao;
-	List<Project> parsedProjects;
+	private DataAccess dao;
+	private List<Project> parsedProjects;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)

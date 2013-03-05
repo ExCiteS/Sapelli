@@ -87,6 +87,11 @@ public final class DataAccess
 		db = null;
 		Log.d(TAG, "Closed database connection");
 	}
+	
+	public boolean isOpen()
+	{
+		return db != null;
+	}
 
 	/**
 	 * Returns the file where the DB is saved

@@ -229,6 +229,15 @@ public class CollectorActivity extends Activity implements FieldView
 	@Override
 	public void setPhoto(Photo pf)
 	{
+		/*
+		 * There is an error regarding the returned intent from MediaStore.ACTION_IMAGE_CAPTURE https://code.google.com/p/android/issues/detail?id=1480
+		 * http://stackoverflow.com/questions/6530743/beautiful-way-to-come-over-bug-with-action-image-capture
+		 * http://stackoverflow.com/questions/1910608/android-action-image-capture-intent/1932268#1932268
+		 * http://stackoverflow.com/questions/12952859/capturing-images-with-mediastore-action-image-capture-intent-in-android
+		 * 
+		 * As a solution we are using a workaround of creating a temp file for the image to be saved and then we rename the the file accordingly.
+		 */
+
 		// Define the temp name
 		final String PHOTO_PREFIX = "tmpPhoto";
 		final String PHOTO_SUFFIX = ".tmp";
@@ -237,7 +246,7 @@ public class CollectorActivity extends Activity implements FieldView
 		// Create an image file
 		try
 		{
-			// TODO Where should I save the tmp file?
+			// The file is saved to the projects data folder
 			File parentDir = new File(project.getDataPath());
 			tmpPhotoFile = File.createTempFile(PHOTO_PREFIX, PHOTO_SUFFIX, parentDir);
 			tmpPhotoLocation = tmpPhotoFile.getAbsolutePath();
@@ -256,6 +265,10 @@ public class CollectorActivity extends Activity implements FieldView
 			takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
 			startActivityForResult(takePictureIntent, PHOTO_CAPTURE);
 		}
+		else
+		{
+			controller.photoDone(false);
+		}
 	}
 
 	@Override
@@ -268,7 +281,6 @@ public class CollectorActivity extends Activity implements FieldView
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
-		// TODO Auto-generated method stub
 		super.onActivityResult(requestCode, resultCode, data);
 
 		if(resultCode == RESULT_CANCELED)
@@ -278,11 +290,12 @@ public class CollectorActivity extends Activity implements FieldView
 			case PHOTO_CAPTURE:
 				// Delete the tmp file from the device
 				InputOutput.deleteFile(tmpPhotoLocation);
+				Debug.d("photo.RESULT_CANCELED");
+				controller.photoDone(false);
 				break;
 			}
 		}
-
-		if(resultCode == Activity.RESULT_OK)
+		else if(resultCode == Activity.RESULT_OK)
 		{
 			switch(requestCode)
 			{
@@ -297,13 +310,10 @@ public class CollectorActivity extends Activity implements FieldView
 				File from = new File(tmpPhotoLocation);
 				File to = new File(project.getDataPath() + File.separator + photoFilename);
 
-				// Debug.d("Copy from: " + from.getAbsolutePath() + File.separator + from.getName());
-				// Debug.d("Copy to: " + to.getAbsolutePath() + File.separator + to.getName());
-
 				// Rename the file
 				from.renameTo(to);
 
-				// TODO Call Controller
+				// Call Controller
 				controller.photoDone(true);
 				break;
 			}
