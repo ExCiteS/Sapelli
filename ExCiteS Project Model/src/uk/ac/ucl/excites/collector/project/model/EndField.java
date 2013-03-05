@@ -17,16 +17,7 @@ public class EndField extends Field
 
 	static public final String ID = "_END";
 	
-	static private EndField INSTANCE;
-	
-	static public EndField getInstance()
-	{
-		if(INSTANCE == null)
-			INSTANCE = new EndField();
-		return INSTANCE;
-	}
-	
-	private EndField()
+	public EndField()
 	{
 		super(ID);
 	}

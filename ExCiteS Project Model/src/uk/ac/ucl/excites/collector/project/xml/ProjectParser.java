@@ -287,7 +287,8 @@ public class ProjectParser extends DefaultHandler
 	private void resolveReferences()
 	{
 		//Add EndField instance so _END jumps can be resolved
-		idToField.put(EndField.getInstance().getID(), EndField.getInstance());
+		EndField end = new EndField();
+		idToField.put(end.getID(), end);
 		//Resolve jumps...
 		for(Entry<Field, String> jump : fieldToJumpId.entrySet())
 		{
