@@ -90,9 +90,6 @@ public class ProjectPickerActivity extends Activity
 				return false;
 			}
 		});
-
-		// display parsed projects
-		populateProjectList();
 	}
 
 	public void browse(View view)
@@ -315,6 +312,8 @@ public class ProjectPickerActivity extends Activity
 		// open database
 		super.onResume();
 		dao.openDB();
+		// Update project list:
+		populateProjectList();
 	}
 
 }
