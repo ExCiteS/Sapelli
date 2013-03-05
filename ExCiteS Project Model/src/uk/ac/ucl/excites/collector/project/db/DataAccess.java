@@ -6,9 +6,9 @@ package uk.ac.ucl.excites.collector.project.db;
 import java.io.File;
 import java.util.List;
 
-import uk.ac.ucl.excites.collector.project.io.InputOutput;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
+import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.storage.model.Schema;
 import android.util.Log;
 
@@ -110,7 +110,7 @@ public final class DataAccess
 	 */
 	public void copyDBtoSD(String dstFilePath)
 	{
-		InputOutput.copyFile(getDbPath(), dstFilePath);
+		FileHelpers.copyFile(getDbPath(), dstFilePath);
 	}
 
 	/**

@@ -7,7 +7,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
-import uk.ac.ucl.excites.collector.project.io.InputOutput;
 import uk.ac.ucl.excites.collector.project.model.Audio;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.Field;
@@ -16,6 +15,7 @@ import uk.ac.ucl.excites.collector.project.model.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.Photo;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
+import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.ImageAdapter;
 import uk.ac.ucl.excites.collector.util.Debug;
@@ -51,7 +51,8 @@ import android.widget.ProgressBar;
  */
 public class CollectorActivity extends Activity implements FieldView
 {
-
+	
+	@SuppressWarnings("unused")
 	static private final String TAG = "CollectorActivity";
 
 	static public final String PARAMETER_PROJECT_NAME = "Project_name";
@@ -288,7 +289,7 @@ public class CollectorActivity extends Activity implements FieldView
 			{
 			case PHOTO_CAPTURE:
 				// Delete the tmp file from the device
-				InputOutput.deleteFile(tmpPhotoLocation);
+				FileHelpers.deleteFile(tmpPhotoLocation);
 				controller.photoDone(false);
 				break;
 			}
