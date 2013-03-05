@@ -19,6 +19,7 @@ import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.ImageAdapter;
 import uk.ac.ucl.excites.collector.util.Debug;
+import uk.ac.ucl.excites.collector.util.SDCard;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -51,7 +52,7 @@ import android.widget.ProgressBar;
  */
 public class CollectorActivity extends Activity implements FieldView
 {
-	
+
 	@SuppressWarnings("unused")
 	static private final String TAG = "CollectorActivity";
 
@@ -86,6 +87,12 @@ public class CollectorActivity extends Activity implements FieldView
 		// Retrieve the tmpPhotoLocation for the saved state
 		if(savedInstanceState != null)
 			tmpPhotoLocation = savedInstanceState.getString("tmpPhotoLocation");
+
+		// Check if there is an SD Card, otherwise inform the user and finish the activity
+		if(!SDCard.isExternalStorageWritable())
+		{
+			SDCard.showError(this);
+		}
 
 		// Remove title
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -250,11 +257,11 @@ public class CollectorActivity extends Activity implements FieldView
 			File parentDir = new File(project.getDataPath());
 			tmpPhotoFile = File.createTempFile(PHOTO_PREFIX, PHOTO_SUFFIX, parentDir);
 			tmpPhotoLocation = tmpPhotoFile.getAbsolutePath();
-			//Debug.i("SetPhoto() | tmpPhotoLocation = " + tmpPhotoLocation);
+			// Debug.i("SetPhoto() | tmpPhotoLocation = " + tmpPhotoLocation);
 		}
 		catch(IOException e)
 		{
-			Debug.e( "setPhoto() error: " + e.toString(), e);
+			Debug.e("setPhoto() error: " + e.toString(), e);
 		}
 
 		// Check if the device is able to handle Photo Intents

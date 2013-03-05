@@ -12,6 +12,7 @@ import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
+import uk.ac.ucl.excites.collector.util.SDCard;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -37,9 +38,9 @@ public class ProjectPickerActivity extends Activity
 {
 
 	static private final String TAG = "ProjectPickerActivity";
-	
+
 	static private final String XML_FILE_EXTENSION = "xml";
-	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar; 
+	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
 
 	private String dbPATH;
 
@@ -66,10 +67,6 @@ public class ProjectPickerActivity extends Activity
 		// Log.d("ExCiteS_Debug", "Internal Storage path: " + dbPATH);
 		dao = DataAccess.getInstance(dbPATH);
 
-		/*
-		 * // TODO Copy function String dstFilePath = Environment.getExternalStorageDirectory().getPath() + File.separator + "0000" + File.separator +
-		 * "ExCiteS_copy.db4o"; Log.e("ExCiteS_Debug", "Copy path:" + dstFilePath); dao.copyDBtoSD(dstFilePath);
-		 */
 		// Get View Elements
 		enterURL = (EditText) findViewById(R.id.EnterURL);
 		projectList = (ListView) findViewById(R.id.ProjectsList);
@@ -137,27 +134,27 @@ public class ProjectPickerActivity extends Activity
 			errorDialog("Please select an XML or ExCiteS file").show();
 			return;
 		}
-			String path = enterURL.getText().toString();
-			enterURL.setText("");
-				
-		//Download ExCiteS file if necessary
+		String path = enterURL.getText().toString();
+		enterURL.setText("");
+
+		// Download ExCiteS file if necessary
 		if(Pattern.matches(Patterns.WEB_URL.toString(), path) && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
 		{
-			//Download the file...
+			// Download the file...
 			String pathToDownloadedFile = null;
-			//TODO
+			// TODO
 			path = pathToDownloadedFile;
 		}
-		
-		//Try to load and/or parse...
+
+		// Try to load and/or parse...
 		Project project = null;
 		if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
 		{
-			//Parse XML file...
+			// Parse XML file...
 			try
 			{
 				File xmlFile = new File(path);
-				//Use the path where the xml file currently is as the basePath (img and snd folders are assumed to be in the same place):
+				// Use the path where the xml file currently is as the basePath (img and snd folders are assumed to be in the same place):
 				ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath());
 				project = parser.parseProject(xmlFile);
 			}
@@ -165,34 +162,45 @@ public class ProjectPickerActivity extends Activity
 			{
 				Log.e(TAG, "XML file could not be parsed", e);
 				errorDialog("XML file could not be parsed: " + e.getLocalizedMessage()).show();
-			return;
+				return;
+			}
 		}
-		}
-		else if(path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION));
-		{	
-			//Extract & parse ExCiteS file...
+		else if(path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
+			;
+		{
+			// Extract & parse ExCiteS file...
 			try
 			{
-				//Use /mnt/sdcard/ExCiteS/ as the basePath:
-				ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER);
-				project = loader.load(new File(path));
+				// Check if there is an SD Card
+				if(SDCard.isExternalStorageWritable())
+				{
+					// Use /mnt/sdcard/ExCiteS/ as the basePath:
+					ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar
+							+ EXCITES_FOLDER);
+					project = loader.load(new File(path));
+				}
+				else
+				{
+					// Inform the user and close the application
+					SDCard.showError(this);
+				}
 			}
-		catch(Exception e)
-		{
+			catch(Exception e)
+			{
 				Log.e(TAG, "Could not load excites file", e);
 				errorDialog("Could not load excites file: " + e.getLocalizedMessage()).show();
-			return;
+				return;
+			}
 		}
-	}
-		
-		//Check if we have a project object:
+
+		// Check if we have a project object:
 		if(project == null)
-	{
+		{
 			errorDialog("Invalid xml or excites file: " + path).show();
 			return;
-	}
-		
-		//Store the project object:
+		}
+
+		// Store the project object:
 		try
 		{
 			dao.store(project);
@@ -202,8 +210,8 @@ public class ProjectPickerActivity extends Activity
 			errorDialog("Could not store project: " + de.getLocalizedMessage()).show();
 			return;
 		}
-		
-		//Update project list:
+
+		// Update project list:
 		populateProjectList();
 	}
 
@@ -278,6 +286,7 @@ public class ProjectPickerActivity extends Activity
 
 	/**
 	 * dialog shown when erroneous user interaction is detected
+	 * 
 	 * @param message
 	 * @return the dialog
 	 */
