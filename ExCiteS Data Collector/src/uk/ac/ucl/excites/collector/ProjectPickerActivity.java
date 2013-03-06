@@ -17,6 +17,7 @@ import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
+import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.util.SDCard;
@@ -29,6 +30,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Parcelable;
+import android.provider.SyncStateContract.Helpers;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.MotionEvent;
@@ -54,7 +56,7 @@ public class ProjectPickerActivity extends BaseActivity
 	private String dbPATH;
 
 	// Define some variables
-	public static final int SETTINGS_REQUEST_IMPORT = 1;
+	public static final int RETURN_BROWSE = 1;
 	private EditText enterURL;
 	private ListView projectList;
 	private DataAccess dao;
@@ -99,6 +101,12 @@ public class ProjectPickerActivity extends BaseActivity
 				return false;
 			}
 		});
+		
+		// Check if there is an SD Card
+		if(!SDCard.isExternalStorageWritable())
+		{	// Inform the user and close the application
+			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
+		}
 	}
 
 	public void browse(View view)
@@ -108,7 +116,7 @@ public class ProjectPickerActivity extends BaseActivity
 		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(Environment.getExternalStorageDirectory().getPath()));
 		// set file filter for .xml or .excites
 		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + "|" + ExCiteSFileLoader.EXCITES_FILE_EXTENSION + ")$");
-		startActivityForResult(intent, SETTINGS_REQUEST_IMPORT);
+		startActivityForResult(intent, RETURN_BROWSE);
 	}
 
 	public void runProject(View view)
@@ -135,87 +143,86 @@ public class ProjectPickerActivity extends BaseActivity
 	public void loadFile(View view)
 	{
 		// Define variables
-		String path = enterURL.getText().toString();
-		Project project = null;
-
+		String path = enterURL.getText().toString().trim();
 		if(path.isEmpty())
 		{
 			errorDialog("Please select an XML or ExCiteS file", false).show();
 			return;
 		}
-		// Download ExCiteS file if necessary
-		else if(Pattern.matches(Patterns.WEB_URL.toString(), path) && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
+				
+		Project project = null;
+		
+		// Download ExCiteS file if path is a URL
+		if(Pattern.matches(Patterns.WEB_URL.toString(), path) /*&& path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION)*/) //extension check commented out to support "smart" URLs
+		{
+			//start async task to download the file, the task will also call processExcitesFile() and checkProject()
+			(new DownloadFileFromURL(path, "Project")).execute();
+			return;
+		}
+		// Extract & parse a local ExCiteS file
+		else if(path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
+		{
+			project = processExcitesFile(new File(path));
+		}
+		// Parse a local XML file
+		else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
+		{
+			project = parseXML(new File(path));
+		}
+		//Add the project to the db & the list on the screen:
+		addProject(project, path); //null check (with appropriate error) happens in addProject()
+	}
+	
+	private Project parseXML(File xmlFile)
+	{
+		try
+		{
+			// Use the path where the xml file currently is as the basePath (img and snd folders are assumed to be in the same place):
+			ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath());
+			return parser.parseProject(xmlFile);
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "XML file could not be parsed", e);
+			errorDialog("XML file could not be parsed: " + e.getLocalizedMessage(), false).show();
+			return null;
+		}
+	}
+
+	private Project processExcitesFile(File excitesFile)
+	{
+		try
 		{
 			// Check if there is an SD Card
 			if(SDCard.isExternalStorageWritable())
 			{
-				// starting the Async Task
-				new DownloadFileFromURL(path, "Project.excites").execute();
+				// Use /mnt/sdcard/ExCiteS/ as the basePath:
+				ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER);
+				return loader.load(excitesFile);
 			}
 			else
 			{
 				// Inform the user and close the application
 				errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
+				return null;
 			}
-
 		}
-		// Parse a single XML file
-		else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
+		catch(Exception e)
 		{
-			try
-			{
-				File xmlFile = new File(path);
-				// Use the path where the xml file currently is as the basePath (img and snd folders are assumed to be in the same place):
-				ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath());
-				project = parser.parseProject(xmlFile);
-			}
-			catch(Exception e)
-			{
-				Log.e(TAG, "XML file could not be parsed", e);
-				errorDialog("XML file could not be parsed: " + e.getLocalizedMessage(), false).show();
-				return;
-			}
-
-			checkProject(project, path);
-		}
-		// Extract & parse an ExCiteS file
-		else if(path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
-		{
-			try
-			{
-				// Check if there is an SD Card
-				if(SDCard.isExternalStorageWritable())
-				{
-					// Use /mnt/sdcard/ExCiteS/ as the basePath:
-					ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER);
-					project = loader.load(new File(path));
-				}
-				else
-				{
-					// Inform the user and close the application
-					errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
-				}
-			}
-			catch(Exception e)
-			{
-				Log.e(TAG, "Could not load excites file", e);
-				errorDialog("Could not load excites file: " + e.getLocalizedMessage(), false).show();
-				return;
-			}
-
-			checkProject(project, path);
+			Log.e(TAG, "Could not load excites file", e);
+			errorDialog("Could not load excites file: " + e.getLocalizedMessage(), false).show();
+			return null;
 		}
 	}
-
-	private void checkProject(Project project, String path)
+	
+	private void addProject(Project project, String sourcePathOrURL)
 	{
 		// Check if we have a project object:
 		if(project == null)
 		{
-			errorDialog("Invalid xml or excites file: " + path, false).show();
+			errorDialog("Invalid xml or excites file: " + sourcePathOrURL, false).show();
 			return;
 		}
-
 		// Store the project object:
 		try
 		{
@@ -226,12 +233,13 @@ public class ProjectPickerActivity extends BaseActivity
 			errorDialog("Could not store project: " + de.getLocalizedMessage(), false).show();
 			return;
 		}
-
 		// Update project list:
 		populateProjectList();
 	}
 
-	// retrieve all parsed projects from db and populate list
+	/**
+	 * Retrieve all parsed projects from db and populate list
+	 */
 	public void populateProjectList()
 	{
 		parsedProjects = dao.retrieveProjects();
@@ -244,7 +252,6 @@ public class ProjectPickerActivity extends BaseActivity
 		projectList.setAdapter(adapter);
 	}
 
-	// file filter
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
@@ -253,27 +260,28 @@ public class ProjectPickerActivity extends BaseActivity
 		{
 			switch(requestCode)
 			{
-			case SETTINGS_REQUEST_IMPORT:
+			case RETURN_BROWSE:
 				// Get the result file path
 				// A list of files will always return, if selection mode is single, the list contains one file
 				@SuppressWarnings("unchecked")
 				List<LocalFile> files = (List<LocalFile>) data.getSerializableExtra(FileChooserActivity._Results);
-
 				for(File f : files)
 				{
-
 					String fileSource = f.getAbsoluteFile().toString();
 					enterURL.setText(fileSource);
 					// Move the cursor to the end
 					enterURL.setSelection(fileSource.length());
 				}
-
 				break;
 			}
 		}
 	}
 
-	// dialog to check whether it is desired to remove project
+	/**
+	 * Dialog to check whether it is desired to remove project
+	 * 
+	 * @param view
+	 */
 	public void removeDialog(View view)
 	{
 		if(projectList.getCheckedItemPosition() == -1)
@@ -321,24 +329,30 @@ public class ProjectPickerActivity extends BaseActivity
 	/**
 	 * Background Async Task to download file
 	 * 
-	 * @author Michalis Vitos
+	 * @author Michalis Vitos, mstevens
 	 * */
 	public class DownloadFileFromURL extends AsyncTask<Void, Integer, Void>
 	{
+		
+		static private final String TEMP_FILE_EXTENSION = "tmp";
+		
 		// Variables
-		private ProgressDialog mProgressDialog;
+		private long startTime;
 		private String downloadUrl;
+		private File downloadFolder;
 		private File downloadFile;
-		private Project project;
-
-		public DownloadFileFromURL(String downloadUrl, String filename)
+		private ProgressDialog mProgressDialog;
+		
+		public DownloadFileFromURL(String downloadUrl, String tempFilePrefix)
 		{
+			this.startTime = System.currentTimeMillis();
+			
 			this.downloadUrl = downloadUrl;
 			// Download file in folder /Download/timestamp-filename
-			this.downloadFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + File.separator
-					+ System.currentTimeMillis() + "-" + filename);
-
-			// instantiate it within the onCreate method
+			this.downloadFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+			this.downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + tempFilePrefix + '_' + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
+			
+			// Set-up the progress dialog
 			mProgressDialog = new ProgressDialog(ProjectPickerActivity.this);
 			mProgressDialog.setMessage("Downloading...");
 			mProgressDialog.setIndeterminate(false);
@@ -377,12 +391,10 @@ public class ProjectPickerActivity extends BaseActivity
 				// input stream to read file - with 8k buffer
 				InputStream input = new BufferedInputStream(url.openStream(), 8192);
 				// Output stream to write file
-				OutputStream output = new FileOutputStream(downloadFile.toString());
+				OutputStream output = new FileOutputStream(downloadFile);
 
 				byte data[] = new byte[1024];
-
 				long total = 0;
-
 				while((count = input.read(data)) != -1)
 				{
 					total += count;
@@ -402,9 +414,8 @@ public class ProjectPickerActivity extends BaseActivity
 			}
 			catch(Exception e)
 			{
-				Log.e("Error: ", e.getMessage(), e);
+				Log.e("Download error: ", e.getMessage(), e);
 			}
-
 			return null;
 		}
 
@@ -425,25 +436,20 @@ public class ProjectPickerActivity extends BaseActivity
 			// Dismiss the dialog after the file was downloaded
 			mProgressDialog.dismiss();
 
-			// Parse the project
-			try
-			{
-				// Use /mnt/sdcard/ExCiteS/ as the basePath:
-				ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar
-						+ EXCITES_FOLDER);
-				project = loader.load(downloadFile);
-
-				checkProject(project, downloadFile.toString());
-			}
-			catch(Exception e)
-			{
-				Log.e(TAG, "Could not load excites file", e);
-				errorDialog("Could not load excites file: " + e.getLocalizedMessage(), false).show();
-				return;
-			}
+			// Process the file & add the project to the db & list on the screen
+			Project project = processExcitesFile(downloadFile);
+			addProject(project, downloadUrl); //will show error if project is null
 			
-			// Delete the downloaded file
-			downloadFile.delete();
+			// Handle temp file:
+			if(project != null)
+			{	//Rename temp file:
+				downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_' + (startTime / 1000) + ".excites"));
+			}
+			else
+			{	//Delete temp file:
+				downloadFile.delete();
+			}
 		}
 	}
+	
 }
