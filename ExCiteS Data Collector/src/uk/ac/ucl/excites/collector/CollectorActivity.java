@@ -50,7 +50,7 @@ import android.widget.ProgressBar;
 public class CollectorActivity extends BaseActivity implements FieldView
 {
 
-	//STATICS--------------------------------------------------------
+	// STATICS--------------------------------------------------------
 	static private final String TAG = "CollectorActivity";
 
 	static public final String PARAMETER_PROJECT_NAME = "Project_name";
@@ -58,16 +58,16 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	static public final String PARAMETER_DB_FOLDER_PATH = "DBFolderPath";
 
 	static private final String TEMP_PHOTO_PREFIX = "tmpPhoto";
-    static private final String TEMP_PHOTO_SUFFIX = ".tmp";
-    static private final String TEMP_PHOTO_LOCATION_KEY = "tmpPhotoLocation";
-    
+	static private final String TEMP_PHOTO_SUFFIX = ".tmp";
+	static private final String TEMP_PHOTO_LOCATION_KEY = "tmpPhotoLocation";
+
 	// Request codes for returning data from intents
 	static public final int RETURN_PHOTO_CAPTURE = 1;
 	static public final int RETURN_VIDEO_CAPTURE = 2;
 	static public final int RETURN_AUDIO_CAPTURE = 3;
-    
-	//DYNAMICS-------------------------------------------------------
-	
+
+	// DYNAMICS-------------------------------------------------------
+
 	// UI
 	private LinearLayout rootLayout;
 	private ButtonView buttonView;
@@ -88,17 +88,18 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	{
 		super.onCreate(savedInstanceState);
 
-		//Retrieve the tmpPhotoLocation for the saved state
+		// Retrieve the tmpPhotoLocation for the saved state
 		if(savedInstanceState != null)
 			tmpPhotoLocation = savedInstanceState.getString(TEMP_PHOTO_LOCATION_KEY);
 
-		//Check if there is an SD Card, otherwise inform the user and finish the activity
+		// Check if there is an SD Card, otherwise inform the user and finish the activity
 		if(!SDCard.isExternalStorageWritable())
 		{
-			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show(); //will exit the activity after used clicks OK
+			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show(); // will exit the activity
+																																		// after used clicks OK
 			return;
 		}
-			
+
 		// get project name and path from bundle
 		Bundle extras = getIntent().getExtras();
 		String projectName = extras.getString(PARAMETER_PROJECT_NAME);
@@ -112,35 +113,31 @@ public class CollectorActivity extends BaseActivity implements FieldView
 		project = dao.retrieveProject(projectName, projectVersion);
 		if(project == null)
 		{
-			errorDialog("Could not find project: " + projectName + "(version " + projectVersion + ").", true).show(); //will quit activity after "OK" is clicked
+			errorDialog("Could not find project: " + projectName + "(version " + projectVersion + ").", true).show(); // will quit activity after "OK" is
+																														// clicked
 			return;
 		}
 
-		//UI setup:
-		requestWindowFeature(Window.FEATURE_NO_TITLE);																	// Remove title
-		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);												// Lock the orientation
-		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);	// Set to FullScreen
-		
+		// UI setup:
+		requestWindowFeature(Window.FEATURE_NO_TITLE); // Remove title
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // Lock the orientation
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN); // Set to FullScreen
+
 		// Set up root layout UI
 		rootLayout = new LinearLayout(this);
 		rootLayout.setOrientation(LinearLayout.VERTICAL);
 		rootLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		rootLayout.setBackgroundColor(Color.BLACK);
 		setContentView(rootLayout);
-		
+
 		// Set-up controller:
 		controller = new ProjectController(project, dao, this);
-	}
-	
-	@Override
-	protected void onStart()
-	{
-		super.onStart();
-		
+
 		if(controller != null)
 			controller.startProject();
 		else
-			errorDialog("Could not start project, controller is not set-up.", true); //will exit the activity after "OK" is clicked
+			errorDialog("Could not start project, controller is not set-up.", true); // will exit the activity after "OK" is clicked
+
 	}
 
 	/**
@@ -149,10 +146,10 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
-		switch (keyCode)
+		switch(keyCode)
 		{
 		case KeyEvent.KEYCODE_BACK:
-			controller.goBack(); //TODO maybe make this optional?
+			controller.goBack(); // TODO maybe make this optional?
 			return true;
 		case KeyEvent.KEYCODE_DPAD_RIGHT:
 			return true;
@@ -172,7 +169,7 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	@Override
 	public boolean onKeyUp(int keyCode, KeyEvent event)
 	{
-		switch (keyCode)
+		switch(keyCode)
 		{
 		case KeyEvent.KEYCODE_VOLUME_DOWN:
 			return true;
@@ -180,11 +177,10 @@ public class CollectorActivity extends BaseActivity implements FieldView
 			return true;
 		}
 		return super.onKeyUp(keyCode, event);
-	}	
+	}
 
 	/**
-	 * Called from the controller to set-up the UI for a given Field of the current Form
-	 * Uses double-dispatch to specialise based on Field type.
+	 * Called from the controller to set-up the UI for a given Field of the current Form Uses double-dispatch to specialise based on Field type.
 	 * 
 	 * @param field
 	 * @param showCancel
@@ -201,7 +197,7 @@ public class CollectorActivity extends BaseActivity implements FieldView
 				buttonView = new ButtonView(this);
 				rootLayout.addView(buttonView);
 			}
-	
+
 			buttonView.setButtonView(controller, viewWidth, showCancel, showBack, showForward);
 
 		}
@@ -243,7 +239,7 @@ public class CollectorActivity extends BaseActivity implements FieldView
 			}
 		});
 	}
-	
+
 	@Override
 	public void setAudio(final Audio af)
 	{
@@ -260,16 +256,15 @@ public class CollectorActivity extends BaseActivity implements FieldView
 		});
 	}
 
-	/** 
-	 * Calls on the built-in camera application of the phone to let the user take a photo 
+	/**
+	 * Calls on the built-in camera application of the phone to let the user take a photo
 	 * 
-	 * Note:
-	 * There is a known issue regarding the returned intent from MediaStore.ACTION_IMAGE_CAPTURE:
-	 *   - https://code.google.com/p/android/issues/detail?id=1480
-	 *   - http://stackoverflow.com/questions/6530743/beautiful-way-to-come-over-bug-with-action-image-capture
-	 *   - http://stackoverflow.com/questions/1910608/android-action-image-capture-intent/1932268#1932268
-	 *   - http://stackoverflow.com/questions/12952859/capturing-images-with-mediastore-action-image-capture-intent-in-android
-	 *   
+	 * Note: There is a known issue regarding the returned intent from MediaStore.ACTION_IMAGE_CAPTURE: -
+	 * https://code.google.com/p/android/issues/detail?id=1480 -
+	 * http://stackoverflow.com/questions/6530743/beautiful-way-to-come-over-bug-with-action-image-capture -
+	 * http://stackoverflow.com/questions/1910608/android-action-image-capture-intent/1932268#1932268 -
+	 * http://stackoverflow.com/questions/12952859/capturing-images-with-mediastore-action-image-capture-intent-in-android
+	 * 
 	 * As a workaround we create a temporary file for the image to be saved and afterwards (in cameraDone()) we rename the file to the correct name.
 	 */
 	@Override
@@ -277,14 +272,14 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	{
 		// Check if the device is able to handle Photo Intents
 		if(!isIntentAvailable(this, MediaStore.ACTION_IMAGE_CAPTURE))
-		{	//Device cannot take photos
+		{ // Device cannot take photos
 			Log.i(TAG, "Cannot take photo due to device limitation.");
-			controller.photoDone(false); //skip the Photo field
+			controller.photoDone(false); // skip the Photo field
 			return;
 		}
-		//else...
+		// else...
 		try
-		{	
+		{
 			// Check if data path is accessible
 			if(!FileHelpers.createFolder(project.getDataPath()))
 				throw new IOException("Data path (" + project.getDataPath() + ") is not accessible.");
@@ -293,9 +288,9 @@ public class CollectorActivity extends BaseActivity implements FieldView
 			File parentDir = new File(project.getDataPath()); // The file is saved to the projects data folder
 			File tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, parentDir);
 			tmpPhotoLocation = tmpPhotoFile.getAbsolutePath();
-			
+
 			// Save the photo to the tmp location
-			Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE); //Get the intent
+			Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE); // Get the intent
 			takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
 			startActivityForResult(takePictureIntent, RETURN_PHOTO_CAPTURE);
 		}
@@ -305,7 +300,7 @@ public class CollectorActivity extends BaseActivity implements FieldView
 			controller.photoDone(false);
 		}
 	}
-	
+
 	private void cameraDone(int resultCode)
 	{
 		if(resultCode == RESULT_CANCELED)
@@ -331,22 +326,27 @@ public class CollectorActivity extends BaseActivity implements FieldView
 			controller.photoDone(true);
 		}
 		else
-		{	//this should not happen
+		{ // this should not happen
 			controller.photoDone(false);
 		}
 	}
-	
+
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
 		super.onActivityResult(requestCode, resultCode, data);
 		switch(requestCode)
 		{
-			case RETURN_PHOTO_CAPTURE : cameraDone(resultCode); break;
-			case RETURN_VIDEO_CAPTURE : /* TODO */; break;
-			//more later?
-			default : return;
-		}	
+		case RETURN_PHOTO_CAPTURE:
+			cameraDone(resultCode);
+			break;
+		case RETURN_VIDEO_CAPTURE:
+			/* TODO */
+			break;
+		// more later?
+		default:
+			return;
+		}
 	}
 
 	@Override
