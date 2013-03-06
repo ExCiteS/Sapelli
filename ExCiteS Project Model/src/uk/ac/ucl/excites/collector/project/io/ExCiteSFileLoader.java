@@ -31,11 +31,13 @@ public class ExCiteSFileLoader
 
 	/**
 	 * @param basePath
+	 * @throws IOException 
 	 */
-	public ExCiteSFileLoader(String basePath)
+	public ExCiteSFileLoader(String basePath) throws IOException
 	{
 		this.basePath = basePath;
-		FileHelpers.folderChecker(basePath); // will create folder if needed
+		if(!FileHelpers.createFolder(basePath))
+			throw new IOException("Base path (" + basePath + ") does not exist and could not be created.");
 	}
 
 	public Project load(File excitesFile) throws Exception
@@ -87,7 +89,13 @@ public class ExCiteSFileLoader
 			{
 				System.out.println("Extracting: " + ze.getName());
 				if(ze.isDirectory())
-					FileHelpers.folderChecker(extractionPath + ze.getName());
+				{
+					if(!FileHelpers.createFolder(extractionPath + ze.getName()))
+					{
+						zin.close();
+						throw new IOException("Could not create folder: " + extractionPath + ze.getName());
+					}
+				}
 				else
 				{
 					FileOutputStream fout = new FileOutputStream(extractionPath + ze.getName(), false);

@@ -16,6 +16,7 @@ import uk.ac.ucl.excites.collector.project.model.Photo;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.AudioView;
+import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.ui.ButtonView;
 import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
@@ -48,7 +49,7 @@ import android.widget.ProgressBar;
  * 
  * @author mstevens, julia, Michalis Vitos
  */
-public class CollectorActivity extends Activity implements FieldView
+public class CollectorActivity extends BaseActivity implements FieldView
 {
 
 	@SuppressWarnings("unused")
@@ -90,7 +91,7 @@ public class CollectorActivity extends Activity implements FieldView
 		// Check if there is an SD Card, otherwise inform the user and finish the activity
 		if(!SDCard.isExternalStorageWritable())
 		{
-			SDCard.showError(this);
+			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
 		}
 
 		// Remove title
