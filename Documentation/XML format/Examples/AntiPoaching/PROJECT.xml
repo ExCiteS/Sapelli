@@ -7,7 +7,7 @@
 		<SMSRelay/>
 	</Data-Management>
 
-	<Form name="" schema-id="1" schema-version="0" startField="Observation" end="_LOOP" shortcut="true" endSound="beep.wav" endVibrate="true" showBack="true" showHome="true">
+	<Form name="" schema-id="1" schema-version="0" startField="Observation" end="_LOOP" shortcut="true" endSound="beep.mp3" endVibrate="true" showBack="true" showCancel="true">
 	
 		<Choice id="Observation" jump="SeeHearTold" rows="3" cols="2">
 			<Choice id="camp" value="camp" alt="" img="1.jpg" rows="2" cols="2">

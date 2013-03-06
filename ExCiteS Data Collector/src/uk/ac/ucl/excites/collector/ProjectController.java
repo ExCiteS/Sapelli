@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.collector;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -24,18 +25,22 @@ import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Vibrator;
 
 /**
- * @author mstevens
+ * @author mstevens, Michalis Vitos
  * 
  */
 public class ProjectController implements LocationListener
 {
 
 	@SuppressWarnings("unused")
-	static private final String TAG = "ProjecTcontroller";
-	
+	static private final String TAG = "ProjectController";
+
 	private Project project;
 	private DataAccess dao;
 	private CollectorActivity activity;
@@ -126,7 +131,7 @@ public class ProjectController implements LocationListener
 	{
 		if(!fieldHistory.isEmpty())
 		{
-			currentField = null; //!!! otherwise we create loops
+			currentField = null; // !!! otherwise we create loops
 			goTo(fieldHistory.pop());
 		}
 	}
@@ -156,19 +161,18 @@ public class ProjectController implements LocationListener
 		else
 			endForm(); // currentField = _END, so we must loop or exit
 	}
-	
+
 	public ButtonsState getButtonsState()
 	{
-		ButtonsState state = new ButtonsState(	currentForm.isShowBack() && !fieldHistory.empty(),
-												currentForm.isShowCancel() && !fieldHistory.empty(),
-												currentForm.isShowForward() && false /* for now we don't use the forward button*/);
-		//Note: these paths may be null (in which case built-in defaults must be used)
+		ButtonsState state = new ButtonsState(currentForm.isShowBack() && !fieldHistory.empty(), currentForm.isShowCancel() && !fieldHistory.empty(),
+				currentForm.isShowForward() && false /* for now we don't use the forward button */);
+		// Note: these paths may be null (in which case built-in defaults must be used)
 		state.setBackImagePath(currentForm.getBackImagePath());
 		state.setCancelImagePath(currentForm.getCancelImagePath());
 		state.setForwardImagePath(currentForm.getForwardImagePath());
 		return state;
 	}
-	
+
 	/**
 	 * To be called from ChoiceView
 	 * 
@@ -213,8 +217,40 @@ public class ProjectController implements LocationListener
 	{
 		// Store entry
 		entry.store(); // saves entry in database
-		// Play sound/ vibrate
-		// TODO
+
+		// Check if the form vibrates
+		if(currentForm.isVibrateOnEnd())
+		{
+			Vibrator vibrator = (Vibrator) activity.getSystemService(Context.VIBRATOR_SERVICE);
+			// Vibrate for 600 milliseconds
+			vibrator.vibrate(600);
+		}
+
+		// Check if the form play a sound
+		String endSound = currentForm.getEndSoundPath();
+		if(endSound != null && !endSound.isEmpty())
+		{
+			// Set up the Uri
+			File endSoundPath = new File(project.getSoundPath() + endSound);
+			
+			// Check if file actually exists
+			if(endSoundPath.exists())
+			{
+				// Play the sound
+				MediaPlayer mp = MediaPlayer.create(activity, Uri.fromFile(endSoundPath));
+				mp.start();
+				mp.setOnCompletionListener(new OnCompletionListener()
+				{
+
+					@Override
+					public void onCompletion(MediaPlayer mp)
+					{
+						mp.release();
+					}
+				});
+			}
+		}
+
 		// End action:
 		switch(currentForm.getEndAction())
 		{
