@@ -32,3 +32,5 @@ local.properties
 
 # Locally stored "Eclipse launch configurations"
 *.launch
+
+/Other Dependencies/Android FileChooser/lint.xml

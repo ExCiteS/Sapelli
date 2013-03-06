@@ -25,7 +25,6 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
-import android.util.Log;
 
 /**
  * @author mstevens
@@ -34,6 +33,9 @@ import android.util.Log;
 public class ProjectController implements LocationListener
 {
 
+	@SuppressWarnings("unused")
+	static private final String TAG = "ProjecTcontroller";
+	
 	private Project project;
 	private DataAccess dao;
 	private CollectorActivity activity;
@@ -97,6 +99,8 @@ public class ProjectController implements LocationListener
 		currentField = null;
 
 		// Create new record:
+		if(!dao.isOpen())
+			dao.openDB();
 		entry = currentForm.newEntry(dao, deviceID);
 
 		// Location...
@@ -147,7 +151,7 @@ public class ProjectController implements LocationListener
 			}
 		}
 		// Update GUI or loop/exit
-		if(currentField != EndField.getInstance())
+		if(!(currentField instanceof EndField))
 			activity.setField(currentField, !fieldHistory.empty(), !fieldHistory.empty(), false); // update GUI
 		else
 			endForm(); // currentField = _END, so we must loop or exit
@@ -194,7 +198,6 @@ public class ProjectController implements LocationListener
 		// TODO
 		// Store/increase number of photos taken
 		// goto next/jump field:
-		Log.d("ExCiteS_Debug", "ProjectController:photoDone()");
 		goForward();
 	}
 

@@ -12,6 +12,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 
 /**
@@ -34,7 +35,7 @@ public class ExCiteSFileLoader
 	public ExCiteSFileLoader(String basePath)
 	{
 		this.basePath = basePath;
-		folderChecker(basePath); // will create folder if needed
+		FileHelpers.folderChecker(basePath); // will create folder if needed
 	}
 
 	public Project load(File excitesFile) throws Exception
@@ -86,7 +87,7 @@ public class ExCiteSFileLoader
 			{
 				System.out.println("Extracting: " + ze.getName());
 				if(ze.isDirectory())
-					folderChecker(extractionPath + ze.getName());
+					FileHelpers.folderChecker(extractionPath + ze.getName());
 				else
 				{
 					FileOutputStream fout = new FileOutputStream(extractionPath + ze.getName(), false);
@@ -104,12 +105,4 @@ public class ExCiteSFileLoader
 			throw new IOException("Error on unzipping ExCiteS file", e);
 		}
 	}
-
-	private void folderChecker(String folderPath)
-	{
-		File folder = new File(folderPath);
-		if(!folder.exists() || !folder.isDirectory())
-			folder.mkdirs();
-	}
-
 }

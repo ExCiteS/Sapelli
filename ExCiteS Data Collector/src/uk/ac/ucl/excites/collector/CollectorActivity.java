@@ -7,7 +7,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
-import uk.ac.ucl.excites.collector.project.io.InputOutput;
 import uk.ac.ucl.excites.collector.project.model.Audio;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.Field;
@@ -18,8 +17,10 @@ import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.AudioView;
 import uk.ac.ucl.excites.collector.ui.ButtonView;
+import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.util.Debug;
+import uk.ac.ucl.excites.collector.util.SDCard;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -32,7 +33,6 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -51,6 +51,7 @@ import android.widget.ProgressBar;
 public class CollectorActivity extends Activity implements FieldView
 {
 
+	@SuppressWarnings("unused")
 	static private final String TAG = "CollectorActivity";
 
 	static public final String PARAMETER_PROJECT_NAME = "Project_name";
@@ -84,6 +85,12 @@ public class CollectorActivity extends Activity implements FieldView
 		// Retrieve the tmpPhotoLocation for the saved state
 		if(savedInstanceState != null)
 			tmpPhotoLocation = savedInstanceState.getString("tmpPhotoLocation");
+
+		// Check if there is an SD Card, otherwise inform the user and finish the activity
+		if(!SDCard.isExternalStorageWritable())
+		{
+			SDCard.showError(this);
+		}
 
 		// Remove title
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -208,6 +215,15 @@ public class CollectorActivity extends Activity implements FieldView
 	@Override
 	public void setPhoto(Photo pf)
 	{
+		/*
+		 * There is an error regarding the returned intent from MediaStore.ACTION_IMAGE_CAPTURE https://code.google.com/p/android/issues/detail?id=1480
+		 * http://stackoverflow.com/questions/6530743/beautiful-way-to-come-over-bug-with-action-image-capture
+		 * http://stackoverflow.com/questions/1910608/android-action-image-capture-intent/1932268#1932268
+		 * http://stackoverflow.com/questions/12952859/capturing-images-with-mediastore-action-image-capture-intent-in-android
+		 * 
+		 * As a solution we are using a workaround of creating a temp file for the image to be saved and then we rename the the file accordingly.
+		 */
+
 		// Define the temp name
 		final String PHOTO_PREFIX = "tmpPhoto";
 		final String PHOTO_SUFFIX = ".tmp";
@@ -216,15 +232,15 @@ public class CollectorActivity extends Activity implements FieldView
 		// Create an image file
 		try
 		{
-			// TODO Where should I save the tmp file?
+			// The file is saved to the projects data folder
 			File parentDir = new File(project.getDataPath());
 			tmpPhotoFile = File.createTempFile(PHOTO_PREFIX, PHOTO_SUFFIX, parentDir);
 			tmpPhotoLocation = tmpPhotoFile.getAbsolutePath();
-			Debug.i("SetPhoto(); " + tmpPhotoLocation);
+			// Debug.i("SetPhoto() | tmpPhotoLocation = " + tmpPhotoLocation);
 		}
 		catch(IOException e)
 		{
-			Log.e("ExCiteS_Debug", "setPhoto() error: " + e.toString());
+			Debug.e("setPhoto() error: " + e.toString(), e);
 		}
 
 		// Check if the device is able to handle Photo Intents
@@ -234,6 +250,10 @@ public class CollectorActivity extends Activity implements FieldView
 			// Save the photo to the tmp location
 			takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
 			startActivityForResult(takePictureIntent, PHOTO_CAPTURE);
+		}
+		else
+		{
+			controller.photoDone(false);
 		}
 	}
 
@@ -256,7 +276,6 @@ public class CollectorActivity extends Activity implements FieldView
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
-		// TODO Auto-generated method stub
 		super.onActivityResult(requestCode, resultCode, data);
 
 		if(resultCode == RESULT_CANCELED)
@@ -265,12 +284,12 @@ public class CollectorActivity extends Activity implements FieldView
 			{
 			case PHOTO_CAPTURE:
 				// Delete the tmp file from the device
-				InputOutput.deleteFile(tmpPhotoLocation);
+				FileHelpers.deleteFile(tmpPhotoLocation);
+				controller.photoDone(false);
 				break;
 			}
 		}
-
-		if(resultCode == Activity.RESULT_OK)
+		else if(resultCode == Activity.RESULT_OK)
 		{
 			switch(requestCode)
 			{
@@ -281,12 +300,14 @@ public class CollectorActivity extends Activity implements FieldView
 				// decide on suffix or not suffix
 				String photoFilename = "DeviceId-" + System.currentTimeMillis();
 
-				// Log.i("excites_debug", "Copy from: " + tmpPhotoLocation);
-				// Log.i("excites_debug", "Copy to: " + project.getDataPath() + File.separator + photoFilename);
+				// Create the files
+				File from = new File(tmpPhotoLocation);
+				File to = new File(project.getDataPath() + File.separator + photoFilename);
 
-				InputOutput.moveFile(tmpPhotoLocation, project.getDataPath() + File.separator + photoFilename);
+				// Rename the file
+				from.renameTo(to);
 
-				// TODO Call Controller
+				// Call Controller
 				controller.photoDone(true);
 				break;
 			}

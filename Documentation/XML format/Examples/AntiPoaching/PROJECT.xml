@@ -45,7 +45,7 @@
 		
 		<Photo id="photo" min="0" max="2" jump="_END" disableField="photoChoice"/>
 		
-		<Audio id="audio" min="0" max="7" jump="_END" recImg="" stopImg=""/>
+		<Audio id="audio" jump="AudioPhoto" max="7" min="0" stopImg="" recImg=""/>
 		
 	</Form>
 
