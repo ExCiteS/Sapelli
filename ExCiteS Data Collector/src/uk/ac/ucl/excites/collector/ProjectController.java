@@ -215,33 +215,29 @@ public class ProjectController implements LocationListener
 
 	public void endForm()
 	{
-		// Store entry
+		//Store entry
 		entry.store(); // saves entry in database
 
-		// Check if the form vibrates
+		//Signal the successful storage of the entry
+		// Vibration
 		if(currentForm.isVibrateOnEnd())
 		{
 			Vibrator vibrator = (Vibrator) activity.getSystemService(Context.VIBRATOR_SERVICE);
 			// Vibrate for 600 milliseconds
 			vibrator.vibrate(600);
 		}
-
-		// Check if the form play a sound
+		// Play sound
 		String endSound = currentForm.getEndSoundPath();
 		if(endSound != null && !endSound.isEmpty())
 		{
-			// Set up the Uri
-			File endSoundPath = new File(project.getSoundPath() + endSound);
-			
-			// Check if file actually exists
-			if(endSoundPath.exists())
+			File endSoundPath = new File(project.getSoundPath() + endSound);	
+			if(endSoundPath.exists()) //check if the file really exists
 			{
 				// Play the sound
 				MediaPlayer mp = MediaPlayer.create(activity, Uri.fromFile(endSoundPath));
 				mp.start();
 				mp.setOnCompletionListener(new OnCompletionListener()
 				{
-
 					@Override
 					public void onCompletion(MediaPlayer mp)
 					{
@@ -251,16 +247,15 @@ public class ProjectController implements LocationListener
 			}
 		}
 
-		// End action:
+		//End action:
 		switch(currentForm.getEndAction())
 		{
-		case Form.END_ACTION_LOOP:
-			restartForm();
-			break;
-		case Form.END_ACTION_EXIT:
-			activity.finish();
-			break; // leaves the application!
-		// TODO default :
+			case Form.END_ACTION_LOOP:
+				restartForm();
+				break;
+			case Form.END_ACTION_EXIT:
+				activity.finish();
+				break; // leaves the application!
 		}
 	}
 
