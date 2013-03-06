@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.ui;
 
+import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
 import android.content.Context;
 import android.graphics.Color;
 import android.widget.GridView;
@@ -15,7 +16,7 @@ public abstract class PickerView extends GridView
 {
 
 	static protected final int SPACING = 10;
-
+	
 	protected ImageAdapter imageAdapter;
 	
 	public PickerView(Context context)
@@ -26,7 +27,6 @@ public abstract class PickerView extends GridView
 		setBackgroundColor(Color.BLACK);
 		setHorizontalSpacing(10);
 		setVerticalSpacing(10);
-		setAdapter(imageAdapter);
 	}
 
 }

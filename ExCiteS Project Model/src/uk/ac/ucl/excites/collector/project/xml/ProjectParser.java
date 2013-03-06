@@ -171,7 +171,7 @@ public class ProjectParser extends DefaultHandler
 			currentChoice.setNoColumn(attributes.getValue(Field_NO_COLUMN) != null && attributes.getValue(Field_NO_COLUMN).equalsIgnoreCase("true"));
 			// Other attributes:
 			if(attributes.getValue("img") != null)
-				currentChoice.setImagePath(attributes.getValue("img"));
+				currentChoice.setImageLogicalPath(attributes.getValue("img"));
 			currentChoice.setCols(readIntegerAttribute(attributes, "cols", Choice.DEFAULT_NUM_COLS));
 
 			if(attributes.getValue("rows") != null)
@@ -227,9 +227,8 @@ public class ProjectParser extends DefaultHandler
 			currentForm.addField(audioField);
 			rememberIDAndJump(audioField, attributes);
 			mediaAttachmentAttributes(audioField, attributes);
-			audioField.setRecordingImagePath(attributes.getValue("recImg"));
-			audioField.setStopImagePath(attributes.getValue("stopImg"));
-			
+			audioField.setStartRecImageLogicalPath(attributes.getValue("startRecImg"));
+			audioField.setStopRecImageLogicalPath(attributes.getValue("stopRecImg"));
 		}
 		// <ORIENTATION>
 		else if(qName.equals("Orientation"))

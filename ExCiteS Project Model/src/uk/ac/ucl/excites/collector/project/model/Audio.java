@@ -6,7 +6,7 @@ package uk.ac.ucl.excites.collector.project.model;
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
 
 /**
- * @author Michalis Vitos
+ * @author Michalis Vitos, mstevens
  * 
  */
 public class Audio extends MediaAttachment
@@ -17,41 +17,39 @@ public class Audio extends MediaAttachment
 		super(id);
 	}
 
-	private String pathRecordingImage;
-	private String pathStopImage;
-
+	private String startRecImageLogicalPath;
+	private String stopRecImageLogicalPath;
+	
 	/**
-	 * @return the pathRecordingImage
+	 * @return the startRecImageLogicalPath
 	 */
-	public String getRecordingImagePath()
+	public String getStartRecImageLogicalPath()
 	{
-		return pathRecordingImage;
+		return startRecImageLogicalPath;
 	}
 
 	/**
-	 * @param pathRecordingImage
-	 *            the pathRecordingImage to set
+	 * @param startRecImageLogicalPath the startRecImageLogicalPath to set
 	 */
-	public void setRecordingImagePath(String pathRecordingImage)
+	public void setStartRecImageLogicalPath(String startRecImageLogicalPath)
 	{
-		this.pathRecordingImage = pathRecordingImage;
+		this.startRecImageLogicalPath = startRecImageLogicalPath;
 	}
 
 	/**
-	 * @return the pathStopImage
+	 * @return the stopRecImageLogicalPath
 	 */
-	public String getStopImagePath()
+	public String getStopRecImageLogicalPath()
 	{
-		return pathStopImage;
+		return stopRecImageLogicalPath;
 	}
 
 	/**
-	 * @param pathStopImage
-	 *            the pathStopImage to set
+	 * @param stopRecImageLogicalPath the stopRecImageLogicalPath to set
 	 */
-	public void setStopImagePath(String pathStopImage)
+	public void setStopRecImageLogicalPath(String stopRecImageLogicalPath)
 	{
-		this.pathStopImage = pathStopImage;
+		this.stopRecImageLogicalPath = stopRecImageLogicalPath;
 	}
 
 	@Override

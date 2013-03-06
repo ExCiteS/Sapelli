@@ -37,7 +37,7 @@
 		</Choice>
 
 		<Photo id="photo" min="0" max="2" jump="AudioPhoto" disableField="photoChoice"/>
-		<Audio id="audio" min="0" max="7" jump="AudioPhoto" recImg="" stopImg=""/>
+		<Audio id="audio" min="0" max="7" jump="AudioPhoto" startRecImg="" stopRecImg=""/>
 
 		<Orientation id="MagneticNorth" axes="Y"/>
 		

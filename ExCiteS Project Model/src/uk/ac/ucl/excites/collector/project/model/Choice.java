@@ -23,7 +23,7 @@ public class Choice extends Field
 	private Choice parent;
 	private Choice root;
 	private List<Choice> children;
-	private String imagePath;
+	private String imageLogicalPath;
 	private int cols;
 	private int rows;
 	private String alt;
@@ -56,21 +56,21 @@ public class Choice extends Field
 	{
 		children.add(c);
 	}
-	
+
 	/**
-	 * @return the imagePath
+	 * @return the imageLogicalPath
 	 */
-	public String getImagePath()
+	public String getImageLogicalPath()
 	{
-		return imagePath;
+		return imageLogicalPath;
 	}
 
 	/**
-	 * @param imagePath the imagePath to set
+	 * @param imageLogicalPath the imageLogicalPath to set
 	 */
-	public void setImagePath(String imagePath)
+	public void setImageLogicalPath(String imageLogicalPath)
 	{
-		this.imagePath = imagePath;
+		this.imageLogicalPath = imageLogicalPath;
 	}
 
 	/**
