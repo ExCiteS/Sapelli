@@ -3,7 +3,13 @@ package uk.ac.ucl.excites.collector;
 import group.pals.android.lib.ui.filechooser.FileChooserActivity;
 import group.pals.android.lib.ui.filechooser.io.localfile.LocalFile;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -15,8 +21,10 @@ import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.util.SDCard;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Parcelable;
@@ -126,28 +134,34 @@ public class ProjectPickerActivity extends Activity
 
 	public void loadFile(View view)
 	{
-		if(enterURL.getText().length() == 0)
+		// Define variables
+		String path = enterURL.getText().toString();
+		Project project = null;
+
+		if(path.isEmpty())
 		{
 			errorDialog("Please select an XML or ExCiteS file").show();
 			return;
 		}
-		String path = enterURL.getText().toString();
-		enterURL.setText("");
-
 		// Download ExCiteS file if necessary
-		if(Pattern.matches(Patterns.WEB_URL.toString(), path) && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
+		else if(Pattern.matches(Patterns.WEB_URL.toString(), path) && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
 		{
-			// Download the file...
-			String pathToDownloadedFile = null;
-			// TODO
-			path = pathToDownloadedFile;
-		}
+			// Check if there is an SD Card
+			if(SDCard.isExternalStorageWritable())
+			{
+				// starting the Async Task
+				new DownloadFileFromURL(path, "Project.excites").execute();
+			}
+			else
+			{
+				// Inform the user and close the application
+				SDCard.showError(this);
+			}
 
-		// Try to load and/or parse...
-		Project project = null;
-		if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
+		}
+		// Parse a single XML file
+		else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
 		{
-			// Parse XML file...
 			try
 			{
 				File xmlFile = new File(path);
@@ -161,11 +175,12 @@ public class ProjectPickerActivity extends Activity
 				errorDialog("XML file could not be parsed: " + e.getLocalizedMessage()).show();
 				return;
 			}
+
+			checkProject(project, path);
 		}
+		// Extract & parse an ExCiteS file
 		else if(path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
-			;
 		{
-			// Extract & parse ExCiteS file...
 			try
 			{
 				// Check if there is an SD Card
@@ -188,8 +203,13 @@ public class ProjectPickerActivity extends Activity
 				errorDialog("Could not load excites file: " + e.getLocalizedMessage()).show();
 				return;
 			}
-		}
 
+			checkProject(project, path);
+		}
+	}
+
+	private void checkProject(Project project, String path)
+	{
 		// Check if we have a project object:
 		if(project == null)
 		{
@@ -316,4 +336,132 @@ public class ProjectPickerActivity extends Activity
 		populateProjectList();
 	}
 
+	/**
+	 * Background Async Task to download file
+	 * 
+	 * @author Michalis Vitos
+	 * */
+	public class DownloadFileFromURL extends AsyncTask<Void, Integer, Void>
+	{
+		// Variables
+		private ProgressDialog mProgressDialog;
+		private String downloadUrl;
+		private File downloadFile;
+		private Project project;
+
+		public DownloadFileFromURL(String downloadUrl, String filename)
+		{
+			this.downloadUrl = downloadUrl;
+			// Download file in folder /Download/timestamp-filename
+			this.downloadFile = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + File.separator
+					+ System.currentTimeMillis() + "-" + filename);
+
+			// instantiate it within the onCreate method
+			mProgressDialog = new ProgressDialog(ProjectPickerActivity.this);
+			mProgressDialog.setMessage("Downloading...");
+			mProgressDialog.setIndeterminate(false);
+			mProgressDialog.setMax(100);
+			mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			mProgressDialog.setCancelable(false);
+		}
+
+		/**
+		 * Show Progress Bar Dialog before starting the downloading
+		 * */
+		@Override
+		protected void onPreExecute()
+		{
+			super.onPreExecute();
+			mProgressDialog.show();
+		}
+
+		/**
+		 * Downloading file in background thread
+		 * 
+		 * @return
+		 * */
+		@Override
+		protected Void doInBackground(Void... voids)
+		{
+			int count;
+			try
+			{
+				URL url = new URL(downloadUrl);
+				URLConnection conection = url.openConnection();
+				conection.connect();
+				// getting file length
+				int fileLength = conection.getContentLength();
+
+				// input stream to read file - with 8k buffer
+				InputStream input = new BufferedInputStream(url.openStream(), 8192);
+				// Output stream to write file
+				OutputStream output = new FileOutputStream(downloadFile.toString());
+
+				byte data[] = new byte[1024];
+
+				long total = 0;
+
+				while((count = input.read(data)) != -1)
+				{
+					total += count;
+					// Publish the progress....
+					publishProgress((int) (total * 100 / fileLength));
+
+					// writing data to file
+					output.write(data, 0, count);
+				}
+
+				// flushing output
+				output.flush();
+
+				// closing streams
+				output.close();
+				input.close();
+			}
+			catch(Exception e)
+			{
+				Log.e("Error: ", e.getMessage(), e);
+			}
+
+			return null;
+		}
+
+		/**
+		 * Updating progress bar
+		 * */
+		protected void onProgressUpdate(Integer... progress)
+		{
+			mProgressDialog.setProgress(progress[0]);
+		}
+
+		/**
+		 * After completing background task Dismiss the progress dialog and parse the project
+		 * **/
+		@Override
+		protected void onPostExecute(Void voids)
+		{
+			// Dismiss the dialog after the file was downloaded
+			mProgressDialog.dismiss();
+
+			// Parse the project
+			try
+			{
+				// Use /mnt/sdcard/ExCiteS/ as the basePath:
+				ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar
+						+ EXCITES_FOLDER);
+				project = loader.load(downloadFile);
+
+				checkProject(project, downloadFile.toString());
+			}
+			catch(Exception e)
+			{
+				Log.e(TAG, "Could not load excites file", e);
+				errorDialog("Could not load excites file: " + e.getLocalizedMessage()).show();
+				return;
+			}
+			
+			// Delete the downloaded file
+			downloadFile.delete();
+		}
+	}
 }
