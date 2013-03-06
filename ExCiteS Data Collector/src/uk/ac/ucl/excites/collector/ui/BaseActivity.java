@@ -9,6 +9,10 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 
 /**
+ * Abstract super class for our activities.
+ * 
+ * Provides an errorDialog method.
+ * 
  * @author mstevens
  *
  */
