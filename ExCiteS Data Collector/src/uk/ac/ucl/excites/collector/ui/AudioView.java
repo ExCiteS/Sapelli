@@ -59,19 +59,10 @@ public class AudioView extends PickerView
 				if(position == 0)
 				{
 
-					imageAdapter = new ImageAdapter(getContext(), controller.getProject(), imageSize, imageSize);
-					if(audio.getRecordingImagePath() != null && audio.getStopImagePath() != null)
-					{
-						imageAdapter.IconsToDisplay(audio);
-					}
-					else
-					{
-						imageAdapter.audioIconsToDisplay();
-					}
 					imageAdapter.setInvisible(0);
 					setAdapter(imageAdapter);
 
-					File cacheDir = new File(controller.getProject().getDataPath() + "/Audio-Recordings");
+					File cacheDir = new File(controller.getProject().getDataPath() + "/Audio-Recordings"); //TODO get rid of extension, rename files, remove subfolder 
 					if(!cacheDir.exists())
 						cacheDir.mkdirs();
 
