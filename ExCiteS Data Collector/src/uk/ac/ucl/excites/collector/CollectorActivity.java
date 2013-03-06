@@ -144,19 +144,43 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	}
 
 	/**
-	 * TODO Maybe make this optional?
+	 * Handle device key presses (mostly disabling them)
 	 */
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
-		switch(keyCode)
+		switch (keyCode)
 		{
 		case KeyEvent.KEYCODE_BACK:
-			controller.goBack();
+			controller.goBack(); //TODO maybe make this optional?
+			return true;
+		case KeyEvent.KEYCODE_DPAD_RIGHT:
+			return true;
+		case KeyEvent.KEYCODE_DPAD_LEFT:
+			return true;
+		case KeyEvent.KEYCODE_VOLUME_DOWN:
+			return true;
+		case KeyEvent.KEYCODE_VOLUME_UP:
 			return true;
 		}
 		return super.onKeyDown(keyCode, event);
 	}
+
+	/**
+	 * Handle device key presses (disabling them)
+	 */
+	@Override
+	public boolean onKeyUp(int keyCode, KeyEvent event)
+	{
+		switch (keyCode)
+		{
+		case KeyEvent.KEYCODE_VOLUME_DOWN:
+			return true;
+		case KeyEvent.KEYCODE_VOLUME_UP:
+			return true;
+		}
+		return super.onKeyUp(keyCode, event);
+	}	
 
 	/**
 	 * Called from the controller to set-up the UI for a given Field of the current Form
