@@ -18,6 +18,7 @@ import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
+import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.util.SDCard;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -42,7 +43,7 @@ import android.widget.ListView;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectPickerActivity extends Activity
+public class ProjectPickerActivity extends BaseActivity
 {
 
 	static private final String TAG = "ProjectPickerActivity";
@@ -114,8 +115,7 @@ public class ProjectPickerActivity extends Activity
 	{
 		if(projectList.getCheckedItemPosition() == -1)
 		{
-			AlertDialog NoSelection = errorDialog("Please select a project");
-			NoSelection.show();
+			errorDialog("Please select a project", false).show();
 			return;
 		}
 		Project selectedProject = parsedProjects.get(projectList.getCheckedItemPosition());
@@ -140,7 +140,7 @@ public class ProjectPickerActivity extends Activity
 
 		if(path.isEmpty())
 		{
-			errorDialog("Please select an XML or ExCiteS file").show();
+			errorDialog("Please select an XML or ExCiteS file", false).show();
 			return;
 		}
 		// Download ExCiteS file if necessary
@@ -172,7 +172,7 @@ public class ProjectPickerActivity extends Activity
 			catch(Exception e)
 			{
 				Log.e(TAG, "XML file could not be parsed", e);
-				errorDialog("XML file could not be parsed: " + e.getLocalizedMessage()).show();
+				errorDialog("XML file could not be parsed: " + e.getLocalizedMessage(), false).show();
 				return;
 			}
 
@@ -187,20 +187,19 @@ public class ProjectPickerActivity extends Activity
 				if(SDCard.isExternalStorageWritable())
 				{
 					// Use /mnt/sdcard/ExCiteS/ as the basePath:
-					ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar
-							+ EXCITES_FOLDER);
+					ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER);
 					project = loader.load(new File(path));
 				}
 				else
 				{
 					// Inform the user and close the application
-					SDCard.showError(this);
+					errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
 				}
 			}
 			catch(Exception e)
 			{
 				Log.e(TAG, "Could not load excites file", e);
-				errorDialog("Could not load excites file: " + e.getLocalizedMessage()).show();
+				errorDialog("Could not load excites file: " + e.getLocalizedMessage(), false).show();
 				return;
 			}
 
@@ -213,7 +212,7 @@ public class ProjectPickerActivity extends Activity
 		// Check if we have a project object:
 		if(project == null)
 		{
-			errorDialog("Invalid xml or excites file: " + path).show();
+			errorDialog("Invalid xml or excites file: " + path, false).show();
 			return;
 		}
 
@@ -224,7 +223,7 @@ public class ProjectPickerActivity extends Activity
 		}
 		catch(DuplicateException de)
 		{
-			errorDialog("Could not store project: " + de.getLocalizedMessage()).show();
+			errorDialog("Could not store project: " + de.getLocalizedMessage(), false).show();
 			return;
 		}
 
@@ -279,7 +278,7 @@ public class ProjectPickerActivity extends Activity
 	{
 		if(projectList.getCheckedItemPosition() == -1)
 		{
-			AlertDialog NoSelection = errorDialog("Please select a project");
+			AlertDialog NoSelection = errorDialog("Please select a project", false);
 			NoSelection.show();
 		}
 		else
@@ -299,23 +298,6 @@ public class ProjectPickerActivity extends Activity
 					}).create();
 			removeDialogBox.show();
 		}
-	}
-
-	/**
-	 * dialog shown when erroneous user interaction is detected
-	 * 
-	 * @param message
-	 * @return the dialog
-	 */
-	private AlertDialog errorDialog(String message)
-	{
-		AlertDialog Error = new AlertDialog.Builder(this).setTitle("Error").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
-		{
-			public void onClick(DialogInterface dialog, int whichButton)
-			{
-			}
-		}).create();
-		return Error;
 	}
 
 	@Override

@@ -22,7 +22,7 @@ public class ButtonView extends PickerView
 		super(context);
 	}
 
-	public void setButtonView(final ProjectController controller, final boolean showCancel, final boolean showBack, boolean showForward)
+	public void setButtonView(final ProjectController controller, int viewWidth, final boolean showCancel, final boolean showBack, boolean showForward)
 	{
 
 		int noOfButtons = 0;
@@ -30,7 +30,7 @@ public class ButtonView extends PickerView
 		noOfButtons += showBack ? 1 : 0;
 		noOfButtons += showForward ? 1 : 0;
 
-		int buttonWidth = (getWidth() - ((noOfButtons - 1) * SPACING)) / noOfButtons;
+		int buttonWidth = (viewWidth - ((noOfButtons - 1) * SPACING)) / noOfButtons;
 		int buttonHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, BUTTONHEIGHT, getResources().getDisplayMetrics());
 		ImageAdapter adapter = new ImageAdapter(super.getContext(), controller.getProject(), buttonWidth, buttonHeight);
 		adapter.buttonsToDisplay(showBack, showCancel);

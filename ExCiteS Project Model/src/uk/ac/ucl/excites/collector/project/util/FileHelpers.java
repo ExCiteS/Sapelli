@@ -7,8 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import android.util.Log;
-
 import com.google.common.io.Files;
 
 /**
@@ -108,17 +106,19 @@ public final class FileHelpers
 		}
 		catch(IOException e)
 		{
-			Log.e(TAG, "Error: ", e);
+			System.err.println("FileIO error: " + e.getLocalizedMessage());
+			e.printStackTrace();
 		}
 	}
 
 	/**
 	 * Delete a file
-	 * @param deleteFile
+	 * @param filePath
+	 * @return whether the file was deleted or not
 	 */
-	public static void deleteFile(String deleteFile)
+	public static boolean deleteFile(String filePath)
 	{
-		new File(deleteFile).delete();
+		return (new File(filePath)).delete();
 	}
 
 	/**
@@ -134,14 +134,22 @@ public final class FileHelpers
 		}
 		catch(IOException e)
 		{
-			Log.e(TAG, "Error: ", e);
+			System.err.println("FileIO error: " + e.getLocalizedMessage());
+			e.printStackTrace();
 		}
 	}
 
-	public static void folderChecker(String folderPath)
+	/**
+	 * Attempts to create the necessary (containing) folder(s) for a given path 
+	 * 
+	 * @param folderPath
+	 * @return success (whether the directory exists now)
+	 */
+	public static boolean createFolder(String folderPath)
 	{
 		File folder = new File(folderPath);
 		if(!folder.exists() || !folder.isDirectory())
-			folder.mkdirs();
+			return folder.mkdirs();
+		return true;
 	}
 }

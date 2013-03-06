@@ -1,8 +1,5 @@
 package uk.ac.ucl.excites.collector.util;
 
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.os.Environment;
 
 /**
@@ -13,7 +10,7 @@ import android.os.Environment;
 public class SDCard
 {
 
-	public static final String TAG = "FileHelpers";
+	public static final String TAG = "SDCard";
 
 	private SDCard()
 	{
@@ -48,15 +45,5 @@ public class SDCard
 		}
 		return false;
 	}
-
-	public static void showError(final Activity activity)
-	{
-		new AlertDialog.Builder(activity).setTitle("SD Card Error").setMessage("ExCiteS needs an SD Card in order to function. Please insert one and launch again the application.").setNeutralButton("OK", new DialogInterface.OnClickListener()
-		{
-			public void onClick(DialogInterface dialog, int whichButton)
-			{
-				activity.finish();
-			}
-		}).create().show();
-	}
+	
 }

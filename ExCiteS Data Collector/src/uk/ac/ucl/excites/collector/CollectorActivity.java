@@ -16,15 +16,13 @@ import uk.ac.ucl.excites.collector.project.model.Photo;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.AudioView;
+import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.ui.ButtonView;
 import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.util.Debug;
 import uk.ac.ucl.excites.collector.util.SDCard;
-import android.app.Activity;
-import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -33,6 +31,7 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
@@ -48,31 +47,38 @@ import android.widget.ProgressBar;
  * 
  * @author mstevens, julia, Michalis Vitos
  */
-public class CollectorActivity extends Activity implements FieldView
+public class CollectorActivity extends BaseActivity implements FieldView
 {
 
-	@SuppressWarnings("unused")
+	//STATICS--------------------------------------------------------
 	static private final String TAG = "CollectorActivity";
 
 	static public final String PARAMETER_PROJECT_NAME = "Project_name";
 	static public final String PARAMETER_PROJECT_VERSION = "Project_version";
 	static public final String PARAMETER_DB_FOLDER_PATH = "DBFolderPath";
 
+	static private final String TEMP_PHOTO_PREFIX = "tmpPhoto";
+    static private final String TEMP_PHOTO_SUFFIX = ".tmp";
+    static private final String TEMP_PHOTO_LOCATION_KEY = "tmpPhotoLocation";
+    
+	// Request codes for returning data from intents
+	static public final int RETURN_PHOTO_CAPTURE = 1;
+	static public final int RETURN_VIDEO_CAPTURE = 2;
+	static public final int RETURN_AUDIO_CAPTURE = 3;
+    
+	//DYNAMICS-------------------------------------------------------
+	
 	// UI
 	private LinearLayout rootLayout;
 	private ButtonView buttonView;
 	private View fieldView;
+	private int viewWidth;
 
 	// Dynamic fields:
 	private DataAccess dao;
 	private Project project;
 	private ProjectController controller;
 	private volatile Timer locationTimer;
-
-	// Request codes for returning data from intents
-	public static final int PHOTO_CAPTURE = 1;
-	public static final int VIDEO_CAPTURE = 2;
-	public static final int AUDIO_CAPTURE = 3;
 
 	// Temp location to save a photo
 	private static String tmpPhotoLocation;
@@ -82,25 +88,17 @@ public class CollectorActivity extends Activity implements FieldView
 	{
 		super.onCreate(savedInstanceState);
 
-		// Retrieve the tmpPhotoLocation for the saved state
+		//Retrieve the tmpPhotoLocation for the saved state
 		if(savedInstanceState != null)
-			tmpPhotoLocation = savedInstanceState.getString("tmpPhotoLocation");
+			tmpPhotoLocation = savedInstanceState.getString(TEMP_PHOTO_LOCATION_KEY);
 
-		// Check if there is an SD Card, otherwise inform the user and finish the activity
+		//Check if there is an SD Card, otherwise inform the user and finish the activity
 		if(!SDCard.isExternalStorageWritable())
 		{
-			SDCard.showError(this);
+			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show(); //will exit the activity after used clicks OK
+			return;
 		}
-
-		// Remove title
-		requestWindowFeature(Window.FEATURE_NO_TITLE);
-
-		// Lock the orientation
-		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-
-		// Set to FullScreen
-		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
+			
 		// get project name and path from bundle
 		Bundle extras = getIntent().getExtras();
 		String projectName = extras.getString(PARAMETER_PROJECT_NAME);
@@ -114,45 +112,85 @@ public class CollectorActivity extends Activity implements FieldView
 		project = dao.retrieveProject(projectName, projectVersion);
 		if(project == null)
 		{
-			(new AlertDialog.Builder(this).setTitle("Error").setMessage("Could not find project: " + projectName + "(version " + projectVersion + ").")
-					.setNeutralButton("OK", new DialogInterface.OnClickListener()
-					{
-						public void onClick(DialogInterface dialog, int whichButton)
-						{
-						}
-					}).create()).show();
+			errorDialog("Could not find project: " + projectName + "(version " + projectVersion + ").", true).show(); //will quit activity after "OK" is clicked
 			return;
 		}
 
-		// Set-up controller:
-		controller = new ProjectController(project, dao, this);
-
+		//UI setup:
+		requestWindowFeature(Window.FEATURE_NO_TITLE);																	// Remove title
+		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);												// Lock the orientation
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);	// Set to FullScreen
+		
 		// Set up root layout UI
 		rootLayout = new LinearLayout(this);
 		rootLayout.setOrientation(LinearLayout.VERTICAL);
 		rootLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		rootLayout.setBackgroundColor(Color.BLACK);
 		setContentView(rootLayout);
-
-		// Start project
-		controller.startProject(); // keep this as the last statement of the method!
+		
+		// Set-up controller:
+		controller = new ProjectController(project, dao, this);
+	}
+	
+	@Override
+	protected void onStart()
+	{
+		super.onStart();
+		
+		if(controller != null)
+			controller.startProject();
+		else
+			errorDialog("Could not start project, controller is not set-up.", true); //will exit the activity after "OK" is clicked
 	}
 
 	/**
-	 * Maybe make this optional?
+	 * Handle device key presses (mostly disabling them)
 	 */
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
-		switch(keyCode)
+		switch (keyCode)
 		{
 		case KeyEvent.KEYCODE_BACK:
-			controller.goBack();
+			controller.goBack(); //TODO maybe make this optional?
+			return true;
+		case KeyEvent.KEYCODE_DPAD_RIGHT:
+			return true;
+		case KeyEvent.KEYCODE_DPAD_LEFT:
+			return true;
+		case KeyEvent.KEYCODE_VOLUME_DOWN:
+			return true;
+		case KeyEvent.KEYCODE_VOLUME_UP:
 			return true;
 		}
 		return super.onKeyDown(keyCode, event);
 	}
 
+	/**
+	 * Handle device key presses (disabling them)
+	 */
+	@Override
+	public boolean onKeyUp(int keyCode, KeyEvent event)
+	{
+		switch (keyCode)
+		{
+		case KeyEvent.KEYCODE_VOLUME_DOWN:
+			return true;
+		case KeyEvent.KEYCODE_VOLUME_UP:
+			return true;
+		}
+		return super.onKeyUp(keyCode, event);
+	}	
+
+	/**
+	 * Called from the controller to set-up the UI for a given Field of the current Form
+	 * Uses double-dispatch to specialise based on Field type.
+	 * 
+	 * @param field
+	 * @param showCancel
+	 * @param showBack
+	 * @param showForward
+	 */
 	public void setField(Field field, final boolean showCancel, final boolean showBack, final boolean showForward)
 	{
 		// set up Buttons
@@ -163,15 +201,8 @@ public class CollectorActivity extends Activity implements FieldView
 				buttonView = new ButtonView(this);
 				rootLayout.addView(buttonView);
 			}
-			buttonView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
-			{
-				public boolean onPreDraw()
-				{
-					buttonView.setButtonView(controller, showCancel, showBack, showForward);
-					buttonView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
-					return false;
-				}
-			});
+	
+			buttonView.setButtonView(controller, viewWidth, showCancel, showBack, showForward);
 
 		}
 		else if(buttonView != null)
@@ -206,57 +237,13 @@ public class CollectorActivity extends Activity implements FieldView
 			public boolean onPreDraw()
 			{
 				choiceView.setChoice(cf, controller);
+				viewWidth = choiceView.getWidth();
 				choiceView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
 				return false;
 			}
 		});
 	}
-
-	@Override
-	public void setPhoto(Photo pf)
-	{
-		/*
-		 * There is an error regarding the returned intent from MediaStore.ACTION_IMAGE_CAPTURE https://code.google.com/p/android/issues/detail?id=1480
-		 * http://stackoverflow.com/questions/6530743/beautiful-way-to-come-over-bug-with-action-image-capture
-		 * http://stackoverflow.com/questions/1910608/android-action-image-capture-intent/1932268#1932268
-		 * http://stackoverflow.com/questions/12952859/capturing-images-with-mediastore-action-image-capture-intent-in-android
-		 * 
-		 * As a solution we are using a workaround of creating a temp file for the image to be saved and then we rename the the file accordingly.
-		 */
-
-		// Define the temp name
-		final String PHOTO_PREFIX = "tmpPhoto";
-		final String PHOTO_SUFFIX = ".tmp";
-		File tmpPhotoFile = null;
-
-		// Create an image file
-		try
-		{
-			// The file is saved to the projects data folder
-			File parentDir = new File(project.getDataPath());
-			tmpPhotoFile = File.createTempFile(PHOTO_PREFIX, PHOTO_SUFFIX, parentDir);
-			tmpPhotoLocation = tmpPhotoFile.getAbsolutePath();
-			// Debug.i("SetPhoto() | tmpPhotoLocation = " + tmpPhotoLocation);
-		}
-		catch(IOException e)
-		{
-			Debug.e("setPhoto() error: " + e.toString(), e);
-		}
-
-		// Check if the device is able to handle Photo Intents
-		if(isIntentAvailable(this, MediaStore.ACTION_IMAGE_CAPTURE))
-		{
-			Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-			// Save the photo to the tmp location
-			takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
-			startActivityForResult(takePictureIntent, PHOTO_CAPTURE);
-		}
-		else
-		{
-			controller.photoDone(false);
-		}
-	}
-
+	
 	@Override
 	public void setAudio(final Audio af)
 	{
@@ -273,45 +260,93 @@ public class CollectorActivity extends Activity implements FieldView
 		});
 	}
 
+	/** 
+	 * Calls on the built-in camera application of the phone to let the user take a photo 
+	 * 
+	 * Note:
+	 * There is a known issue regarding the returned intent from MediaStore.ACTION_IMAGE_CAPTURE:
+	 *   - https://code.google.com/p/android/issues/detail?id=1480
+	 *   - http://stackoverflow.com/questions/6530743/beautiful-way-to-come-over-bug-with-action-image-capture
+	 *   - http://stackoverflow.com/questions/1910608/android-action-image-capture-intent/1932268#1932268
+	 *   - http://stackoverflow.com/questions/12952859/capturing-images-with-mediastore-action-image-capture-intent-in-android
+	 *   
+	 * As a workaround we create a temporary file for the image to be saved and afterwards (in cameraDone()) we rename the file to the correct name.
+	 */
+	@Override
+	public void setPhoto(Photo pf)
+	{
+		// Check if the device is able to handle Photo Intents
+		if(!isIntentAvailable(this, MediaStore.ACTION_IMAGE_CAPTURE))
+		{	//Device cannot take photos
+			Log.i(TAG, "Cannot take photo due to device limitation.");
+			controller.photoDone(false); //skip the Photo field
+			return;
+		}
+		//else...
+		try
+		{	
+			// Check if data path is accessible
+			if(!FileHelpers.createFolder(project.getDataPath()))
+				throw new IOException("Data path (" + project.getDataPath() + ") is not accessible.");
+
+			// Set up temp file
+			File parentDir = new File(project.getDataPath()); // The file is saved to the projects data folder
+			File tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, parentDir);
+			tmpPhotoLocation = tmpPhotoFile.getAbsolutePath();
+			
+			// Save the photo to the tmp location
+			Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE); //Get the intent
+			takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
+			startActivityForResult(takePictureIntent, RETURN_PHOTO_CAPTURE);
+		}
+		catch(Exception e)
+		{
+			Debug.e("setPhoto() error: " + e.toString(), e);
+			controller.photoDone(false);
+		}
+	}
+	
+	private void cameraDone(int resultCode)
+	{
+		if(resultCode == RESULT_CANCELED)
+		{
+			FileHelpers.deleteFile(tmpPhotoLocation); // Delete the tmp file from the device
+			controller.photoDone(false);
+		}
+		else if(resultCode == RESULT_OK)
+		{
+			// TODO
+			// get device id
+			// decide on suffix or not suffix
+			String photoFilename = "DeviceId-" + System.currentTimeMillis();
+
+			// Create the files
+			File from = new File(tmpPhotoLocation);
+			File to = new File(project.getDataPath() + File.separator + photoFilename);
+
+			// Rename the file
+			from.renameTo(to);
+
+			// Call Controller
+			controller.photoDone(true);
+		}
+		else
+		{	//this should not happen
+			controller.photoDone(false);
+		}
+	}
+	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
 		super.onActivityResult(requestCode, resultCode, data);
-
-		if(resultCode == RESULT_CANCELED)
+		switch(requestCode)
 		{
-			switch(requestCode)
-			{
-			case PHOTO_CAPTURE:
-				// Delete the tmp file from the device
-				FileHelpers.deleteFile(tmpPhotoLocation);
-				controller.photoDone(false);
-				break;
-			}
-		}
-		else if(resultCode == Activity.RESULT_OK)
-		{
-			switch(requestCode)
-			{
-			case PHOTO_CAPTURE:
-
-				// TODO
-				// get device id
-				// decide on suffix or not suffix
-				String photoFilename = "DeviceId-" + System.currentTimeMillis();
-
-				// Create the files
-				File from = new File(tmpPhotoLocation);
-				File to = new File(project.getDataPath() + File.separator + photoFilename);
-
-				// Rename the file
-				from.renameTo(to);
-
-				// Call Controller
-				controller.photoDone(true);
-				break;
-			}
-		}
+			case RETURN_PHOTO_CAPTURE : cameraDone(resultCode); break;
+			case RETURN_VIDEO_CAPTURE : /* TODO */; break;
+			//more later?
+			default : return;
+		}	
 	}
 
 	@Override
@@ -321,7 +356,7 @@ public class CollectorActivity extends Activity implements FieldView
 
 		// If the app is taking a photo, save the tmpPhotoLocation
 		if(tmpPhotoLocation != null)
-			bundle.putString("tmpPhotoLocation", tmpPhotoLocation);
+			bundle.putString(TEMP_PHOTO_LOCATION_KEY, tmpPhotoLocation);
 	}
 
 	public static boolean isIntentAvailable(Context context, String action)
