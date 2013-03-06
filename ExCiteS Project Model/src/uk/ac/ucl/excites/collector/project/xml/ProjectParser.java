@@ -227,7 +227,9 @@ public class ProjectParser extends DefaultHandler
 			currentForm.addField(audioField);
 			rememberIDAndJump(audioField, attributes);
 			mediaAttachmentAttributes(audioField, attributes);
-			// TODO button images
+			audioField.setRecordingImagePath(attributes.getValue("recImg"));
+			audioField.setStopImagePath(attributes.getValue("stopImg"));
+			
 		}
 		// <ORIENTATION>
 		else if(qName.equals("Orientation"))
