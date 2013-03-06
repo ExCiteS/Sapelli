@@ -62,6 +62,7 @@ public class CollectorActivity extends Activity implements FieldView
 	private LinearLayout rootLayout;
 	private ButtonView buttonView;
 	private View fieldView;
+	private int viewWidth;
 
 	// Dynamic fields:
 	private DataAccess dao;
@@ -163,15 +164,8 @@ public class CollectorActivity extends Activity implements FieldView
 				buttonView = new ButtonView(this);
 				rootLayout.addView(buttonView);
 			}
-			buttonView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
-			{
-				public boolean onPreDraw()
-				{
-					buttonView.setButtonView(controller, showCancel, showBack, showForward);
-					buttonView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
-					return false;
-				}
-			});
+	
+			buttonView.setButtonView(controller, viewWidth, showCancel, showBack, showForward);
 
 		}
 		else if(buttonView != null)
@@ -206,6 +200,7 @@ public class CollectorActivity extends Activity implements FieldView
 			public boolean onPreDraw()
 			{
 				choiceView.setChoice(cf, controller);
+				viewWidth = choiceView.getWidth();
 				choiceView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
 				return false;
 			}
