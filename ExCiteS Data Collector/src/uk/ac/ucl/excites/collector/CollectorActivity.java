@@ -16,8 +16,9 @@ import uk.ac.ucl.excites.collector.project.model.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.Photo;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
+import uk.ac.ucl.excites.collector.ui.AudioView;
+import uk.ac.ucl.excites.collector.ui.ButtonView;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
-import uk.ac.ucl.excites.collector.ui.ImageAdapter;
 import uk.ac.ucl.excites.collector.util.Debug;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -39,9 +40,6 @@ import android.view.ViewGroup.LayoutParams;
 import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.view.Window;
 import android.view.WindowManager;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
-import android.widget.GridView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 
@@ -61,7 +59,7 @@ public class CollectorActivity extends Activity implements FieldView
 
 	// UI
 	private LinearLayout rootLayout;
-	private GridView buttonsGrid;
+	private ButtonView buttonView;
 	private View fieldView;
 
 	// Dynamic fields:
@@ -89,8 +87,8 @@ public class CollectorActivity extends Activity implements FieldView
 
 		// Remove title
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
-		
-		// Lock the orientation 
+
+		// Lock the orientation
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
 		// Set to FullScreen
@@ -148,50 +146,31 @@ public class CollectorActivity extends Activity implements FieldView
 		return super.onKeyDown(keyCode, event);
 	}
 
-	public void setField(Field field, final boolean showCancel, final boolean showBack, boolean showForward)
+	public void setField(Field field, final boolean showCancel, final boolean showBack, final boolean showForward)
 	{
 		// set up Buttons
-		if(showBack || showCancel)
+		if(showBack || showCancel || showForward)
 		{
-			if(buttonsGrid == null)
+			if(buttonView == null)
 			{
-				buttonsGrid = new GridView(this);
-				rootLayout.addView(buttonsGrid);
+				buttonView = new ButtonView(this);
+				rootLayout.addView(buttonView);
 			}
-			ImageAdapter adapter = new ImageAdapter(this, project, 45);
-			adapter.buttonsToDisplay(showBack, showCancel);
-			if(showBack && showCancel)
-				buttonsGrid.setNumColumns(2);
-			else
-				buttonsGrid.setNumColumns(1);
-			buttonsGrid.setHorizontalSpacing(10);
-			buttonsGrid.setVerticalSpacing(10);
-			buttonsGrid.setPadding(0, 0, 0, 10);
-			buttonsGrid.setAdapter(adapter);
-			buttonsGrid.setOnItemClickListener(new OnItemClickListener()
+			buttonView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
 			{
-				@Override
-				public void onItemClick(AdapterView<?> parent, View v, int position, long id)
+				public boolean onPreDraw()
 				{
-					if(showBack && showCancel)
-					{
-						if(position == 0)
-							controller.goBack();
-						if(position == 1)
-							controller.restartForm();
-						return;
-					}
-					if(showBack)
-						controller.goBack();
-					if(showCancel)
-						controller.restartForm();
+					buttonView.setButtonView(controller, showCancel, showBack, showForward);
+					buttonView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
+					return false;
 				}
 			});
+
 		}
-		else if(buttonsGrid != null)
+		else if(buttonView != null)
 		{
-			rootLayout.removeView(buttonsGrid);
-			buttonsGrid = null;
+			rootLayout.removeView(buttonView);
+			buttonView = null;
 		}
 		// Display the actual field (through double dispatch):
 		field.setIn(this);
@@ -259,10 +238,19 @@ public class CollectorActivity extends Activity implements FieldView
 	}
 
 	@Override
-	public void setAudio(Audio af)
+	public void setAudio(final Audio af)
 	{
-		// TODO Auto-generated method stub
-
+		final AudioView audioView = new AudioView(this);
+		setFieldView(audioView);
+		audioView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
+		{
+			public boolean onPreDraw()
+			{
+				audioView.setAudioView(af, controller);
+				audioView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
+				return false;
+			}
+		});
 	}
 
 	@Override
@@ -292,10 +280,10 @@ public class CollectorActivity extends Activity implements FieldView
 				// get device id
 				// decide on suffix or not suffix
 				String photoFilename = "DeviceId-" + System.currentTimeMillis();
-				
+
 				// Log.i("excites_debug", "Copy from: " + tmpPhotoLocation);
 				// Log.i("excites_debug", "Copy to: " + project.getDataPath() + File.separator + photoFilename);
-				
+
 				InputOutput.moveFile(tmpPhotoLocation, project.getDataPath() + File.separator + photoFilename);
 
 				// TODO Call Controller

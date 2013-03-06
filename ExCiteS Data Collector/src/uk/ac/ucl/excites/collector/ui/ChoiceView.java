@@ -1,35 +1,19 @@
 package uk.ac.ucl.excites.collector.ui;
 
-import java.util.List;
-
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import android.content.Context;
-import android.graphics.Color;
-import android.graphics.Point;
-import android.util.Log;
 import android.view.View;
-import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.widget.AdapterView;
-import android.widget.GridView;
 
-public class ChoiceView extends GridView
+public class ChoiceView extends PickerView
 {
-	static private final int SPACING = 10;
-
-	private ImageAdapter imageAdapter;
-	private Choice currentChoice;
-
-	public ChoiceView(final Context context)
+	public ChoiceView(Context context)
 	{
 		super(context);
-
-		// UI set-up:
-		setBackgroundColor(Color.BLACK);
-		setHorizontalSpacing(10);
-		setVerticalSpacing(10);
-		setAdapter(imageAdapter);
 	}
+
+	private Choice currentChoice;
 
 	public void setChoice(Choice choice, final ProjectController controller)
 	{

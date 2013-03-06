@@ -23,7 +23,7 @@ public class Audio extends MediaAttachment
 	/**
 	 * @return the pathRecordingImage
 	 */
-	public String getPathRecordingImage()
+	public String getRecordingImagePath()
 	{
 		return pathRecordingImage;
 	}
@@ -32,7 +32,7 @@ public class Audio extends MediaAttachment
 	 * @param pathRecordingImage
 	 *            the pathRecordingImage to set
 	 */
-	public void setPathRecordingImage(String pathRecordingImage)
+	public void setRecordingImagePath(String pathRecordingImage)
 	{
 		this.pathRecordingImage = pathRecordingImage;
 	}
@@ -40,7 +40,7 @@ public class Audio extends MediaAttachment
 	/**
 	 * @return the pathStopImage
 	 */
-	public String getPathStopImage()
+	public String getStopImagePath()
 	{
 		return pathStopImage;
 	}
@@ -49,7 +49,7 @@ public class Audio extends MediaAttachment
 	 * @param pathStopImage
 	 *            the pathStopImage to set
 	 */
-	public void setPathStopImage(String pathStopImage)
+	public void setStopImagePath(String pathStopImage)
 	{
 		this.pathStopImage = pathStopImage;
 	}

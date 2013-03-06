@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.R;
+import uk.ac.ucl.excites.collector.project.model.Audio;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import android.content.Context;
@@ -15,7 +16,6 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.TableRow.LayoutParams;
 
 public class ImageAdapter extends BaseAdapter
 {
@@ -26,8 +26,11 @@ public class ImageAdapter extends BaseAdapter
 	private Project project;
 	private int imageWidth;
 	private int imageHeight;
-	private List<String> selectedIcons = new ArrayList<String>();
-	private List<Integer> buttonIDs = new ArrayList<Integer>();
+	private List<String> custumIcons = new ArrayList<String>();
+	private List<Integer> defaultIcons = new ArrayList<Integer>();
+
+	private boolean invisible;
+	private int invisiblePosition;
 
 	public ImageAdapter(Context localContext, Project project, int imageWidth, int imageHeight)
 	{
@@ -36,20 +39,13 @@ public class ImageAdapter extends BaseAdapter
 		this.imageWidth = imageWidth;
 		this.imageHeight = imageHeight;
 	}
-	
-	public ImageAdapter(Context localContext, Project project, int imageHeight)
-	{
-		this.context = localContext;
-		this.project = project;
-		this.imageHeight = imageHeight;
-	}
 
 	public int getCount()
 	{
-		if(buttonIDs.isEmpty())
-			return selectedIcons.size();
+		if(defaultIcons.isEmpty())
+			return custumIcons.size();
 		else
-			return buttonIDs.size();
+			return defaultIcons.size();
 	}
 
 	public Object getItem(int position)
@@ -71,20 +67,22 @@ public class ImageAdapter extends BaseAdapter
 			imageView = new ImageView(context);
 			imageView.setBackgroundColor(Color.WHITE);
 
-			if(buttonIDs.isEmpty())
+			if(defaultIcons.isEmpty())
 			{
-				Bitmap bm = BitmapFactory.decodeFile(selectedIcons.get(position).toString());
+				Bitmap bm = BitmapFactory.decodeFile(custumIcons.get(position).toString());
 				imageView.setImageBitmap(bm);
 				imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-				imageView.setLayoutParams(new GridView.LayoutParams(imageWidth, imageHeight));
 			}
 			else
 			{
-				imageView.setImageResource(buttonIDs.get(position));
+				imageView.setImageResource(defaultIcons.get(position));
 				imageView.setScaleType(ImageView.ScaleType.CENTER);
-				imageView.setLayoutParams(new GridView.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 			}
+			imageView.setLayoutParams(new GridView.LayoutParams(imageWidth, imageHeight));
 			imageView.setPadding(PADDING, PADDING, PADDING, PADDING);
+			
+			if(invisible && position == invisiblePosition)
+				imageView.setVisibility(View.INVISIBLE);
 		}
 		else
 		{
@@ -98,16 +96,36 @@ public class ImageAdapter extends BaseAdapter
 	{
 		for(Choice child : children)
 		{
-			selectedIcons.add(project.getImagePath() + child.getImagePath()); // path needs to be stored/passed as variable
+			custumIcons.add(project.getImagePath() + child.getImagePath());
 		}
+	}
+
+	public void IconsToDisplay(Audio audio)
+	{
+		custumIcons.add(project.getImagePath() + audio.getRecordingImagePath());
+		custumIcons.add(project.getImagePath() + audio.getStopImagePath());
 	}
 
 	public void buttonsToDisplay(boolean back, boolean cancel)
 	{
-		if (back)
-			buttonIDs.add(R.drawable.back);
-		if (cancel)
-			buttonIDs.add(R.drawable.cancel);
+		if(back)
+			defaultIcons.add(R.drawable.back);
+		if(cancel)
+			defaultIcons.add(R.drawable.cancel);
+
+	}
+
+	public void audioIconsToDisplay()
+	{
+
+		defaultIcons.add(R.drawable.record);
+		defaultIcons.add(R.drawable.stop);
+	}
+
+	public void setInvisible(int position)
+	{
+		invisiblePosition = position;
+		invisible = true;
 	}
 
 }
