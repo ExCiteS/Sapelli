@@ -155,7 +155,7 @@ public class ProjectPickerActivity extends BaseActivity
 			else
 			{
 				// Inform the user and close the application
-				SDCard.showError(this);
+				errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
 			}
 
 		}
@@ -438,7 +438,7 @@ public class ProjectPickerActivity extends BaseActivity
 			catch(Exception e)
 			{
 				Log.e(TAG, "Could not load excites file", e);
-				errorDialog("Could not load excites file: " + e.getLocalizedMessage()).show();
+				errorDialog("Could not load excites file: " + e.getLocalizedMessage(), false).show();
 				return;
 			}
 			
