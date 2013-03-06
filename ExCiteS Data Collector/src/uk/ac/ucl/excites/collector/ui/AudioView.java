@@ -18,6 +18,7 @@ import uk.ac.ucl.excites.collector.util.Constants;
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.widget.AdapterView;
 
 /**
@@ -44,19 +45,32 @@ public class AudioView extends PickerView
 		setNumColumns(COLUMNS);
 		
 		//Adapter & images:
-		int imageSize = (getWidth() - SPACING) / COLUMNS;
-		imageAdapter = new ImageAdapter(super.getContext(), imageSize, imageSize); //the images are squares
+		imageAdapter = new ImageAdapter(super.getContext());
 		//	Start rec image:
 		if(audio.getStartRecImageLogicalPath() != null)
 			imageAdapter.addImage(new FileImage(project, audio.getStartRecImageLogicalPath()));
 		else
 			imageAdapter.addImage(new ResourceImage(R.drawable.record));
 		//  Stop rec image:
-			if(audio.getStopRecImageLogicalPath() != null)
-				imageAdapter.addImage(new FileImage(project, audio.getStopRecImageLogicalPath()));
-			else
-				imageAdapter.addImage(new ResourceImage(R.drawable.stop));
-		setAdapter(imageAdapter);
+		if(audio.getStopRecImageLogicalPath() != null)
+			imageAdapter.addImage(new FileImage(project, audio.getStopRecImageLogicalPath()));
+		else
+			imageAdapter.addImage(new ResourceImage(R.drawable.stop));
+		
+		// Set image dimensions when view dimensions are known:
+		getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
+		{
+			public boolean onPreDraw()
+			{	//the images are squares (width=height)
+				int imageSize = (getWidth() - SPACING) / COLUMNS;
+				imageAdapter.setImageWidth(imageSize);
+				imageAdapter.setImageHeight(imageSize);	
+				setAdapter(imageAdapter);
+				
+				getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
+				return false;
+			}
+		});
 
 		// set click listener
 		setOnItemClickListener(new OnItemClickListener()
@@ -66,7 +80,7 @@ public class AudioView extends PickerView
 			{
 				if(position == 0)
 				{
-					imageAdapter.setInvisible(0);
+					imageAdapter.makeInvisible(0);
 					setAdapter(imageAdapter);
 
 					File cacheDir = new File(controller.getProject().getDataPath() + "/Audio-Recordings"); //TODO get rid of extension, rename files, remove subfolder 

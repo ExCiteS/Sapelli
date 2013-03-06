@@ -12,6 +12,18 @@ import android.widget.ImageView;
 public abstract class Image
 {
 	
+	private boolean visible = true;
+	
 	public abstract void setIn(ImageView imageView);
 
+	public void setVisibility(boolean visible)
+	{
+		this.visible = visible;
+	}
+	
+	public boolean isVisible()
+	{
+		return visible;
+	}
+	
 }

@@ -14,12 +14,6 @@ public class ButtonsState
 	private boolean cancelShown;
 	private boolean forwardShown;
 	
-	private String backImagePath;
-	private String cancelImagePath;
-	private String forwardImagePath;
-	
-	private String backgroundColor;
-	
 	/**
 	 * @param backShown
 	 * @param cancelShown
@@ -59,70 +53,6 @@ public class ButtonsState
 	public boolean isForwardShown()
 	{
 		return forwardShown;
-	}
-
-	/**
-	 * @return the backImagePath
-	 */
-	public String getBackImagePath()
-	{
-		return backImagePath;
-	}
-
-	/**
-	 * @param backImagePath the backImagePath to set
-	 */
-	public void setBackImagePath(String backImagePath)
-	{
-		this.backImagePath = backImagePath;
-	}
-
-	/**
-	 * @return the cancelImagePath
-	 */
-	public String getCancelImagePath()
-	{
-		return cancelImagePath;
-	}
-
-	/**
-	 * @param cancelImagePath the cancelImagePath to set
-	 */
-	public void setCancelImagePath(String cancelImagePath)
-	{
-		this.cancelImagePath = cancelImagePath;
-	}
-
-	/**
-	 * @return the forwardImagePath
-	 */
-	public String getForwardImagePath()
-	{
-		return forwardImagePath;
-	}
-
-	/**
-	 * @param forwardImagePath the forwardImagePath to set
-	 */
-	public void setForwardImagePath(String forwardImagePath)
-	{
-		this.forwardImagePath = forwardImagePath;
-	}
-	
-	/**
-	 * @return the backgroundColor
-	 */
-	public String getBackgroundColor()
-	{
-		return backgroundColor;
-	}
-
-	/**
-	 * @param backgroundColor the backgroundColor to set
-	 */
-	public void setBackgroundColor(String backgroundColor)
-	{
-		this.backgroundColor = backgroundColor;
 	}
 
 	@Override

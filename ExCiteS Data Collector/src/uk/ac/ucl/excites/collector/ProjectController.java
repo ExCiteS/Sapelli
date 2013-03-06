@@ -157,19 +157,18 @@ public class ProjectController implements LocationListener
 		}
 		// Update GUI or loop/exit
 		if(!(currentField instanceof EndField))
-			activity.setField(currentField, !fieldHistory.empty(), !fieldHistory.empty(), false); // update GUI
+			activity.setField(currentField); // update GUI
 		else
 			endForm(); // currentField = _END, so we must loop or exit
 	}
 
 	public ButtonsState getButtonsState()
 	{
-		ButtonsState state = new ButtonsState(currentForm.isShowBack() && !fieldHistory.empty(), currentForm.isShowCancel() && !fieldHistory.empty(),
+		ButtonsState state = new ButtonsState(
+				currentForm.isShowBack() && !fieldHistory.empty(),
+				currentForm.isShowCancel() && !fieldHistory.empty(),
 				currentForm.isShowForward() && false /* for now we don't use the forward button */);
 		// Note: these paths may be null (in which case built-in defaults must be used)
-		state.setBackImagePath(currentForm.getBackImagePath());
-		state.setCancelImagePath(currentForm.getCancelImagePath());
-		state.setForwardImagePath(currentForm.getForwardImagePath());
 		return state;
 	}
 

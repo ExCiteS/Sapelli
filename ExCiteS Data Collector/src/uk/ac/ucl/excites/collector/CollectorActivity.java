@@ -36,7 +36,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup.LayoutParams;
-import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
@@ -72,7 +71,6 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	private LinearLayout rootLayout;
 	private ButtonView buttonView;
 	private View fieldView;
-	private int viewWidth;
 
 	// Dynamic fields:
 	private DataAccess dao;
@@ -183,33 +181,31 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	 * Called from the controller to set-up the UI for a given Field of the current Form Uses double-dispatch to specialise based on Field type.
 	 * 
 	 * @param field
-	 * @param showCancel
-	 * @param showBack
-	 * @param showForward
 	 */
-	public void setField(Field field, final boolean showCancel, final boolean showBack, final boolean showForward)
+	public void setField(Field field)
 	{
-		// set up Buttons
-		if(showBack || showCancel || showForward)
+		//Remove previous field view
+		removeFieldView();
+		// Set up buttons
+		if(buttonView == null)
 		{
-			if(buttonView == null)
-			{
-				buttonView = new ButtonView(this);
-				rootLayout.addView(buttonView);
-			}
-
-			buttonView.setButtonView(controller, viewWidth, showCancel, showBack, showForward);
-
+			buttonView = new ButtonView(this);
+			rootLayout.addView(buttonView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 		}
-		else if(buttonView != null)
-		{
-			rootLayout.removeView(buttonView);
-			buttonView = null;
-		}
+		buttonView.update(controller);
 		// Display the actual field (through double dispatch):
 		field.setIn(this);
 	}
 
+	private void removeFieldView()
+	{
+		if(this.fieldView != null)
+		{
+			rootLayout.removeView(this.fieldView); // throw away the old fieldField
+			this.fieldView = null;
+		}
+	}
+	
 	/**
 	 * Set the field view and removes any previous one from the screen
 	 * 
@@ -217,27 +213,17 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	 */
 	private void setFieldView(View fieldView)
 	{
-		if(this.fieldView != null)
-			rootLayout.removeView(this.fieldView); // throw away the old fieldField
+		removeFieldView();
 		this.fieldView = fieldView;
 		rootLayout.addView(fieldView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 	}
 
 	@Override
-	public void setChoice(final Choice cf)
+	public void setChoice(Choice cf)
 	{
-		final ChoiceView choiceView = new ChoiceView(this);
+		ChoiceView choiceView = new ChoiceView(this);
 		setFieldView(choiceView);
-		choiceView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
-		{
-			public boolean onPreDraw()
-			{
-				choiceView.setChoice(cf, controller);
-				viewWidth = choiceView.getWidth();
-				choiceView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
-				return false;
-			}
-		});
+		choiceView.setChoice(cf, controller);
 	}
 
 	@Override
@@ -245,15 +231,7 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	{
 		final AudioView audioView = new AudioView(this);
 		setFieldView(audioView);
-		audioView.getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
-		{
-			public boolean onPreDraw()
-			{
-				audioView.setAudioView(af, controller);
-				audioView.getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
-				return false;
-			}
-		});
+		audioView.setAudioView(af, controller);
 	}
 
 	/**

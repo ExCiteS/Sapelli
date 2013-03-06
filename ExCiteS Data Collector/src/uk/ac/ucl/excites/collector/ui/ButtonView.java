@@ -1,69 +1,136 @@
-/**
- * 
- */
+
 package uk.ac.ucl.excites.collector.ui;
 
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.R;
+import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
+import uk.ac.ucl.excites.collector.ui.images.FileImage;
 import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
 import uk.ac.ucl.excites.collector.ui.images.ResourceImage;
 import android.content.Context;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ImageView;
 
 /**
  * @author Julia, mstevens
  * 
  */
-public class ButtonView extends PickerView
+public class ButtonView extends PickerView implements AdapterView.OnItemClickListener
 {
-	public static float BUTTONHEIGHT = 45;
+	static public final float BUTTON_HEIGHT = 45;
 
+	static public final int BUTTON_TYPE_BACK = -1;
+	static public final int BUTTON_TYPE_CANCEL = 0;
+	static public final int BUTTON_TYPE_FORWARD = 1;
+	
+	private ProjectController controller;
+	private ButtonsState currentState;
+	private int[] positionToButton;
+	
+	/**
+	 * @param context
+	 */	
 	public ButtonView(Context context)
 	{
 		super(context);
+		setOnItemClickListener(this);
 	}
 
-	public void setButtonView(final ProjectController controller, int viewWidth, final boolean showCancel, final boolean showBack, boolean showForward)
+	public void update(ProjectController controller)
 	{
-		int noOfButtons = 0;
-		noOfButtons += showCancel ? 1 : 0;
-		noOfButtons += showBack ? 1 : 0;
-		noOfButtons += showForward ? 1 : 0;
-
-		setNumColumns(noOfButtons);
-		
-		// Adapter & images
-		int buttonWidth = (viewWidth - ((noOfButtons - 1) * SPACING)) / noOfButtons;
-		int buttonHeight = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, BUTTONHEIGHT, getResources().getDisplayMetrics());
-		ImageAdapter adapter = new ImageAdapter(super.getContext(), buttonWidth, buttonHeight);
-		if(showBack)
-			adapter.addImage(new ResourceImage(R.drawable.back));
-		if(showCancel)
-			adapter.addImage(new ResourceImage(R.drawable.cancel));
-		setAdapter(adapter);
-		
-		setPadding(0, 0, 0, SPACING);
-
-		setOnItemClickListener(new OnItemClickListener()
+		this.controller = controller;
+		ButtonsState newState = controller.getButtonsState();
+		if(newState == null)
 		{
-			@Override
-			public void onItemClick(AdapterView<?> parent, View v, int position, long id)
-			{
-				if(showBack && showCancel)
+			Log.w("ButtonView", "Received invalid (null) ButtonState.");
+			return;
+		}
+		
+		//Should we update at all?
+		if(currentState == null || !currentState.equals(newState))
+		{	//Yes...
+			currentState = newState;
+			positionToButton = new int[currentState.getNumberOfButtonsShown()];
+			
+			if(positionToButton.length >  0) //are there buttons to show?
+			{	//Yes...
+				// Local variables:
+				Project project = controller.getProject();
+				Form form = controller.getCurrentForm();
+				
+				// Columns
+				setNumColumns(positionToButton.length);
+				
+				// Padding
+				setPadding(0, 0, 0, SPACING);
+				
+				// Adapter & images
+				imageAdapter = new ImageAdapter(super.getContext());
+				int p = 0;
+				//	Add buttons:
+				if(currentState.isBackShown())
 				{
-					if(position == 0)
-						controller.goBack();
-					if(position == 1)
-						controller.restartForm();
-					return;
+					if(form.getBackImagePath() != null)
+						imageAdapter.addImage(new FileImage(project, form.getBackImagePath()));
+					else
+						imageAdapter.addImage(new ResourceImage(R.drawable.back));
+					positionToButton[p++] = BUTTON_TYPE_BACK;
 				}
-				if(showBack)
-					controller.goBack();
-				if(showCancel)
-					controller.restartForm();
+				if(currentState.isCancelShown())
+				{
+					if(form.getCancelImagePath() != null)
+						imageAdapter.addImage(new FileImage(project, form.getCancelImagePath()));
+					else
+						imageAdapter.addImage(new ResourceImage(R.drawable.cancel));
+					positionToButton[p++] = BUTTON_TYPE_CANCEL;
+				}
+				if(currentState.isForwardShown())
+				{
+					if(form.getForwardImagePath() != null)
+						imageAdapter.addImage(new FileImage(project, form.getForwardImagePath()));
+					else
+						imageAdapter.addImage(new ResourceImage(R.drawable.forward));
+					positionToButton[p++] = BUTTON_TYPE_FORWARD;
+				}
+				//  Button dimensions:
+				imageAdapter.setScaleType(ImageView.ScaleType.CENTER);
+				imageAdapter.setImageWidth(LayoutParams.MATCH_PARENT);
+				imageAdapter.setImageHeight((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, BUTTON_HEIGHT, getResources().getDisplayMetrics()));
+				//  Button background color:
+				try
+				{
+					//imageAdapter.setBackgroundColor(Color.parseColor(form.getBackgroundColor()));
+				}
+				catch(Exception ignore) {}
 			}
-		});
+			else
+			{	//No...
+				imageAdapter = null;
+				setPadding(0, 0, 0, 0); //collapse view
+			}
+			//And finally:
+			setAdapter(imageAdapter); //(no problem if imageAdapter is null)
+		}
 	}
+	
+	@Override
+	public void onItemClick(AdapterView<?> parent, View v, int position, long id)
+	{
+		if(position >= positionToButton.length)
+			return;
+		//else:
+		switch(positionToButton[position])
+		{
+			case BUTTON_TYPE_BACK		: controller.goBack(); break;
+			case BUTTON_TYPE_CANCEL		: controller.restartForm(); break;
+			case BUTTON_TYPE_FORWARD	: controller.goForward(); break;
+			default : return;
+		}
+	}
+
 }
