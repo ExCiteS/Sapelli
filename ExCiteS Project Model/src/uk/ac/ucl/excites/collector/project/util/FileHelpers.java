@@ -113,11 +113,12 @@ public final class FileHelpers
 
 	/**
 	 * Delete a file
-	 * @param deleteFile
+	 * @param filePath
+	 * @return whether the file was deleted or not
 	 */
-	public static void deleteFile(String deleteFile)
+	public static boolean deleteFile(String filePath)
 	{
-		new File(deleteFile).delete();
+		return (new File(filePath)).delete();
 	}
 
 	/**
