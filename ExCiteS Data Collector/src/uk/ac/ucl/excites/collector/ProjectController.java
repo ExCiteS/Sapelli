@@ -215,10 +215,10 @@ public class ProjectController implements LocationListener
 
 	public void endForm()
 	{
-		//Store entry
+		// Store entry
 		entry.store(); // saves entry in database
 
-		//Signal the successful storage of the entry
+		// Signal the successful storage of the entry
 		// Vibration
 		if(currentForm.isVibrateOnEnd())
 		{
@@ -230,8 +230,8 @@ public class ProjectController implements LocationListener
 		String endSound = currentForm.getEndSoundPath();
 		if(endSound != null && !endSound.isEmpty())
 		{
-			File endSoundPath = new File(project.getSoundPath() + endSound);	
-			if(endSoundPath.exists()) //check if the file really exists
+			File endSoundPath = new File(project.getSoundPath() + endSound);
+			if(endSoundPath.exists()) // check if the file really exists
 			{
 				// Play the sound
 				MediaPlayer mp = MediaPlayer.create(activity, Uri.fromFile(endSoundPath));
@@ -247,15 +247,15 @@ public class ProjectController implements LocationListener
 			}
 		}
 
-		//End action:
+		// End action:
 		switch(currentForm.getEndAction())
 		{
-			case Form.END_ACTION_LOOP:
-				restartForm();
-				break;
-			case Form.END_ACTION_EXIT:
-				activity.finish();
-				break; // leaves the application!
+		case Form.END_ACTION_LOOP:
+			restartForm();
+			break;
+		case Form.END_ACTION_EXIT:
+			activity.finish();
+			break; // leaves the application!
 		}
 	}
 
