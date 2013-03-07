@@ -10,6 +10,7 @@ import uk.ac.ucl.excites.collector.ui.images.FileImage;
 import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
 import uk.ac.ucl.excites.collector.ui.images.ResourceImage;
 import android.content.Context;
+import android.graphics.Color;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
@@ -22,6 +23,9 @@ import android.widget.ImageView;
  */
 public class ButtonView extends PickerView implements AdapterView.OnItemClickListener
 {
+	
+	static private final String TAG = "ButtonView";
+	
 	static public final float BUTTON_HEIGHT = 45;
 
 	static public final int BUTTON_TYPE_BACK = -1;
@@ -47,7 +51,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 		ButtonsState newState = controller.getButtonsState();
 		if(newState == null)
 		{
-			Log.w("ButtonView", "Received invalid (null) ButtonState.");
+			Log.w(TAG, "Received invalid (null) ButtonState.");
 			return;
 		}
 		
@@ -75,24 +79,27 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 				//	Add buttons:
 				if(currentState.isBackShown())
 				{
-					if(form.getBackImagePath() != null)
-						imageAdapter.addImage(new FileImage(project, form.getBackImagePath()));
+					String bckImg = form.getBackButtonImageLogicalPath(); 
+					if(bckImg != null && !bckImg.isEmpty())
+						imageAdapter.addImage(new FileImage(project, bckImg));
 					else
 						imageAdapter.addImage(new ResourceImage(R.drawable.back));
 					positionToButton[p++] = BUTTON_TYPE_BACK;
 				}
 				if(currentState.isCancelShown())
 				{
-					if(form.getCancelImagePath() != null)
-						imageAdapter.addImage(new FileImage(project, form.getCancelImagePath()));
+					String cncImg = form.getCancelButtonImageLogicalPath(); 
+					if(cncImg != null && !cncImg.isEmpty())
+						imageAdapter.addImage(new FileImage(project, cncImg));
 					else
 						imageAdapter.addImage(new ResourceImage(R.drawable.cancel));
 					positionToButton[p++] = BUTTON_TYPE_CANCEL;
 				}
 				if(currentState.isForwardShown())
 				{
-					if(form.getForwardImagePath() != null)
-						imageAdapter.addImage(new FileImage(project, form.getForwardImagePath()));
+					String fwdImg = form.getForwardButtonImageLogicalPath(); 
+					if(fwdImg != null && !fwdImg.isEmpty())
+						imageAdapter.addImage(new FileImage(project, fwdImg));
 					else
 						imageAdapter.addImage(new ResourceImage(R.drawable.forward));
 					positionToButton[p++] = BUTTON_TYPE_FORWARD;
@@ -101,12 +108,16 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 				imageAdapter.setScaleType(ImageView.ScaleType.CENTER);
 				imageAdapter.setImageWidth(LayoutParams.MATCH_PARENT);
 				imageAdapter.setImageHeight((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, BUTTON_HEIGHT, getResources().getDisplayMetrics()));
-				//  Button background color:
+				//  Button background colour:
 				try
 				{
-					//imageAdapter.setBackgroundColor(Color.parseColor(form.getBackgroundColor()));
+					imageAdapter.setBackgroundColor(Color.parseColor(form.getButtonBackgroundColor()));
 				}
-				catch(Exception ignore) {}
+				catch(IllegalArgumentException iae)
+				{
+					Log.w(TAG, "Unable to parse colour: " + form.getButtonBackgroundColor());
+					imageAdapter.setBackgroundColor(Color.parseColor(Form.DEFAULT_BUTTON_BACKGROUND_COLOR)); //light gray
+				}
 			}
 			else
 			{	//No...

@@ -111,8 +111,7 @@ public class CollectorActivity extends BaseActivity implements FieldView
 		project = dao.retrieveProject(projectName, projectVersion);
 		if(project == null)
 		{
-			errorDialog("Could not find project: " + projectName + "(version " + projectVersion + ").", true).show(); // will quit activity after "OK" is
-																														// clicked
+			errorDialog("Could not find project: " + projectName + "(version " + projectVersion + ").", true).show(); //will quit activity after "OK"
 			return;
 		}
 
@@ -121,21 +120,22 @@ public class CollectorActivity extends BaseActivity implements FieldView
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // Lock the orientation
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN); // Set to FullScreen
 
-		// Set up root layout UI
+		// Set-up root layout
 		rootLayout = new LinearLayout(this);
 		rootLayout.setOrientation(LinearLayout.VERTICAL);
 		rootLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		rootLayout.setBackgroundColor(Color.BLACK);
 		setContentView(rootLayout);
 
+		// Set-up buttonView
+		buttonView = new ButtonView(this);
+		rootLayout.addView(buttonView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		
 		// Set-up controller:
 		controller = new ProjectController(project, dao, this);
 
-		if(controller != null)
-			controller.startProject();
-		else
-			errorDialog("Could not start project, controller is not set-up.", true); // will exit the activity after "OK" is clicked
-
+		//Start project:
+		controller.startProject();
 	}
 
 	/**
@@ -184,14 +184,9 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	 */
 	public void setField(Field field)
 	{
-		//Remove previous field view
+		// Remove previous field view
 		removeFieldView();
-		// Set up buttons
-		if(buttonView == null)
-		{
-			buttonView = new ButtonView(this);
-			rootLayout.addView(buttonView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-		}
+		// Update buttons
 		buttonView.update(controller);
 		// Display the actual field (through double dispatch):
 		field.setIn(this);

@@ -32,7 +32,7 @@ public class Form
 	public static final boolean DEFAULT_SHOW_BACK = true;
 	public static final boolean DEFAULT_SHOW_CANCEL = true;
 	public static final boolean DEFAULT_SHOW_FORWARD = false; // for now we never show the forward button
-	public static final String DEFAULT_BUTTON_BACKGROUND_COLOR = "#FFFFFF"; // White
+	public static final String DEFAULT_BUTTON_BACKGROUND_COLOR = "#E8E8E8"; //light gray
 
 	public static final String COLUMN_TIMESTAMP_START = "StartTime";
 	public static final String COLUMN_TIMESTAMP_END = "EndTime";
@@ -53,7 +53,7 @@ public class Form
 	private List<LocationField> locationFields;
 
 	// Android shortcut:
-	private boolean shortcut;
+	//private boolean shortcut;
 	// shortcutIcon
 
 	// Timestamps
@@ -68,7 +68,10 @@ public class Form
 	private boolean showBack;
 	private boolean showCancel;
 	private boolean showForward;
-	private String backgroundColor;
+	private String backButtonImageLogicalPath;
+	private String cancelButtonImageLogicalPath;
+	private String forwardButtonImageLogicalPath;
+	private String buttonBackgroundColor;
 
 	public Form(String name, int schemaID)
 	{
@@ -82,6 +85,7 @@ public class Form
 		this.schemaVersion = schemaVersion;
 		this.fields = new ArrayList<Field>();
 		this.locationFields = new ArrayList<LocationField>();
+		this.buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
 		this.endAction = DEFAULT_END_ACTION;
 		this.vibrateOnEnd = DEFAULT_VIBRATE;
 	}
@@ -190,6 +194,70 @@ public class Form
 		this.showForward = showForward;
 	}
 
+	/**
+	 * @return the backButtonImageLogicalPath
+	 */
+	public String getBackButtonImageLogicalPath()
+	{
+		return backButtonImageLogicalPath;
+	}
+
+	/**
+	 * @param backButtonImageLogicalPath the backButtonImageLogicalPath to set
+	 */
+	public void setBackButtonImageLogicalPath(String backButtonImageLogicalPath)
+	{
+		this.backButtonImageLogicalPath = backButtonImageLogicalPath;
+	}
+
+	/**
+	 * @return the cancelButtonImageLogicalPath
+	 */
+	public String getCancelButtonImageLogicalPath()
+	{
+		return cancelButtonImageLogicalPath;
+	}
+
+	/**
+	 * @param cancelButtonImageLogicalPath the cancelButtonImageLogicalPath to set
+	 */
+	public void setCancelButtonImageLogicalPath(String cancelButtonImageLogicalPath)
+	{
+		this.cancelButtonImageLogicalPath = cancelButtonImageLogicalPath;
+	}
+
+	/**
+	 * @return the forwardButtonImageLogicalPath
+	 */
+	public String getForwardButtonImageLogicalPath()
+	{
+		return forwardButtonImageLogicalPath;
+	}
+
+	/**
+	 * @param forwardButtonImageLogicalPath the forwardButtonImageLogicalPath to set
+	 */
+	public void setForwardButtonImageLogicalPath(String forwardButtonImageLogicalPath)
+	{
+		this.forwardButtonImageLogicalPath = forwardButtonImageLogicalPath;
+	}
+
+	/**
+	 * @return the buttonBackgroundColor
+	 */
+	public String getButtonBackgroundColor()
+	{
+		return buttonBackgroundColor;
+	}
+
+	/**
+	 * @param buttonBackgroundColor the buttonBackgroundColor to set
+	 */
+	public void setButtonBackgroundColor(String buttonBackgroundColor)
+	{
+		this.buttonBackgroundColor = buttonBackgroundColor;
+	}
+
 	public List<LocationField> getLocationFields()
 	{
 		return locationFields;
@@ -274,21 +342,6 @@ public class Form
 	public void setEndSoundPath(String endSoundPath)
 	{
 		this.endSoundPath = endSoundPath;
-	}
-
-	public String getBackImagePath()
-	{
-		return null; // TODO
-	}
-
-	public String getCancelImagePath()
-	{
-		return null; // TODO
-	}
-
-	public String getForwardImagePath()
-	{
-		return null; // TODO
 	}
 
 	public Schema getSchema(DataAccess dao)

@@ -151,8 +151,13 @@ public class ProjectParser extends DefaultHandler
 			currentForm.setShowBack(readBooleanAttribute(attributes, "showBackButton", Form.DEFAULT_SHOW_BACK));
 			currentForm.setShowCancel(readBooleanAttribute(attributes, "showCancelButton", Form.DEFAULT_SHOW_CANCEL));
 			currentForm.setShowForward(readBooleanAttribute(attributes, "showForwardButton", Form.DEFAULT_SHOW_FORWARD));
-			// Button background color:
-
+			// Button images:
+			currentForm.setBackButtonImageLogicalPath(attributes.getValue("backButtonImg"));
+			currentForm.setCancelButtonImageLogicalPath(attributes.getValue("cancelButtonImg"));
+			currentForm.setForwardButtonImageLogicalPath(attributes.getValue("forwardButtonImg"));
+			// Button background colour:
+			currentForm.setButtonBackgroundColor(readStringAttribute(attributes, "buttonBackgroundColor", Form.DEFAULT_BUTTON_BACKGROUND_COLOR));
+			//Start field:
 			if(attributes.getValue(FORM_START_FIELD) != null && !attributes.getValue(FORM_START_FIELD).isEmpty())
 				currentFormStartFieldID = attributes.getValue(FORM_START_FIELD);
 			else
