@@ -225,7 +225,6 @@ public class ProjectPickerActivity extends BaseActivity
 		catch(Exception e)
 		{
 			Log.e(TAG, "XML file could not be parsed", e);
-			errorDialog("XML file could not be parsed: " + e.getLocalizedMessage(), false).show();
 			return null;
 		}
 	}
@@ -251,7 +250,6 @@ public class ProjectPickerActivity extends BaseActivity
 		catch(Exception e)
 		{
 			Log.e(TAG, "Could not load excites file", e);
-			errorDialog("Could not load excites file: " + e.getLocalizedMessage(), false).show();
 			return null;
 		}
 	}
@@ -367,7 +365,7 @@ public class ProjectPickerActivity extends BaseActivity
 		private String downloadUrl;
 		private File downloadFolder;
 		private File downloadFile;
-		private ProgressDialog mProgressDialog;
+		private ProgressDialog progressDialog;
 		
 		public DownloadFileFromURL(String downloadUrl, String tempFilePrefix)
 		{
@@ -379,12 +377,12 @@ public class ProjectPickerActivity extends BaseActivity
 			this.downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + tempFilePrefix + '_' + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 			
 			// Set-up the progress dialog
-			mProgressDialog = new ProgressDialog(ProjectPickerActivity.this);
-			mProgressDialog.setMessage("Downloading...");
-			mProgressDialog.setIndeterminate(false);
-			mProgressDialog.setMax(100);
-			mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			mProgressDialog.setCancelable(false);
+			progressDialog = new ProgressDialog(ProjectPickerActivity.this);
+			progressDialog.setMessage("Downloading...");
+			progressDialog.setIndeterminate(false);
+			progressDialog.setMax(100);
+			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			progressDialog.setCancelable(false);
 		}
 
 		/**
@@ -394,7 +392,7 @@ public class ProjectPickerActivity extends BaseActivity
 		protected void onPreExecute()
 		{
 			super.onPreExecute();
-			mProgressDialog.show();
+			progressDialog.show();
 		}
 
 		/**
@@ -447,10 +445,10 @@ public class ProjectPickerActivity extends BaseActivity
 
 		/**
 		 * Updating progress bar
-		 * */
+		 */
 		protected void onProgressUpdate(Integer... progress)
 		{
-			mProgressDialog.setProgress(progress[0]);
+			progressDialog.setProgress(progress[0]);
 		}
 
 		/**
@@ -460,7 +458,7 @@ public class ProjectPickerActivity extends BaseActivity
 		protected void onPostExecute(Void voids)
 		{
 			// Dismiss the dialog after the file was downloaded
-			mProgressDialog.dismiss();
+			progressDialog.dismiss();
 
 			// Process the file & add the project to the db & list on the screen
 			Project project = processExcitesFile(downloadFile);
