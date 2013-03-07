@@ -159,7 +159,7 @@ public final class DataAccess
 	public void store(Project project) throws DuplicateException
 	{
 		if(retrieveProject(project.getName(), project.getVersion()) != null)
-			throw new DuplicateException("There is already a project named \"" + project.getName() + "\"!");
+			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
 		db.store(project);
 	}
 

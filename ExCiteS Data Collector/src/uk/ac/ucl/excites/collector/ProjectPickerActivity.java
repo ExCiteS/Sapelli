@@ -269,7 +269,12 @@ public class ProjectPickerActivity extends BaseActivity
 		}
 		catch(DuplicateException de)
 		{
-			errorDialog("Could not store project: " + de.getLocalizedMessage(), false).show();
+			errorDialog(de.getLocalizedMessage(), false).show();
+			return;
+		}
+		catch(Exception e) //any other exception
+		{
+			errorDialog("Could not store project: " + e.getLocalizedMessage(), false).show();
 			return;
 		}
 		// Update project list:
