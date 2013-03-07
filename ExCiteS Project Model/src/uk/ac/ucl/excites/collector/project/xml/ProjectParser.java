@@ -40,7 +40,7 @@ import android.util.Log;
 public class ProjectParser extends DefaultHandler
 {
 
-	static private String TAG = "PROJECT PARSER";
+	static private final String TAG = "ProjectParser";
 
 	// Tags/attributes:
 	static private final String PROJECT = "ExCiteS-Collector-Project";
@@ -55,6 +55,7 @@ public class ProjectParser extends DefaultHandler
 	static private final String Field_NO_COLUMN = "noColumn";
 
 	private String basePath;
+	private boolean createProjectFolder;
 	private Project project;
 	private Form currentForm;
 	private String currentFormStartFieldID;
@@ -63,9 +64,11 @@ public class ProjectParser extends DefaultHandler
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaAttachment, String> mediaAttachToDisableId;
 
-	public ProjectParser(String basePath)
+	public ProjectParser(String basePath, boolean createProjectFolder)
 	{
 		this.basePath = basePath;
+		this.createProjectFolder = createProjectFolder;
+		Log.d(TAG, "basePath: " + basePath);
 	}
 
 	public Project parseProject(File xmlFile) throws Exception
@@ -123,8 +126,8 @@ public class ProjectParser extends DefaultHandler
 		// <ExCiteS-Collector-Project>
 		if(qName.equals(PROJECT))
 		{
-			String projectName = readRequiredAttribute(PROJECT, attributes, PROJECT_NAME);
-			project = new Project(projectName, readIntegerAttribute(attributes, PROJECT_VERSION, Project.DEFAULT_VERSION), basePath);
+			String projectName = readRequiredStringAttribute(PROJECT, attributes, PROJECT_NAME);
+			project = new Project(projectName, readIntegerAttribute(attributes, PROJECT_VERSION, Project.DEFAULT_VERSION), basePath, createProjectFolder);
 		}
 		// <Data-Management>
 		else if(qName.equals("Data-Management"))
@@ -134,8 +137,8 @@ public class ProjectParser extends DefaultHandler
 		// <FORM>
 		else if(qName.equals(FORM))
 		{
-			String name = readRequiredAttribute(FORM, attributes, FORM_NAME);
-			int schemaID = Integer.parseInt(readRequiredAttribute(FORM, attributes, FORM_SCHEMA_ID));
+			String name = readRequiredStringAttribute(FORM, attributes, FORM_NAME);
+			int schemaID = Integer.parseInt(readRequiredStringAttribute(FORM, attributes, FORM_SCHEMA_ID));
 			int schemaVersion = (attributes.getValue(FORM_SCHEMA_VERSION) == null ? Schema.DEFAULT_VERSION : Integer.parseInt(attributes
 					.getValue(FORM_SCHEMA_VERSION)));
 			currentForm = new Form(name, schemaID, schemaVersion);
@@ -325,7 +328,7 @@ public class ProjectParser extends DefaultHandler
 		resolveReferences(); // !!!
 	}
 
-	private String readRequiredAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
+	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
 	{
 		String value = attributes.getValue(attributeName);
 		if(value == null)
@@ -333,6 +336,15 @@ public class ProjectParser extends DefaultHandler
 		return value;
 	}
 
+	protected String readStringAttribute(Attributes attributes, String attributeName, String defaultValue)
+	{
+		String text = attributes.getValue(attributeName);
+		if(text == null || text.isEmpty())
+			return defaultValue;
+		else
+			return text;
+	}
+	
 	protected boolean readBooleanAttribute(Attributes attributes, String attributeName, boolean defaultValue)
 	{
 		String text = attributes.getValue(attributeName);
@@ -351,15 +363,6 @@ public class ProjectParser extends DefaultHandler
 			return defaultValue;
 		else
 			return Integer.parseInt(text.trim());
-	}
-
-	protected String readStringAttribute(Attributes attributes, String attributeName, String defaultValue)
-	{
-		String text = attributes.getValue(attributeName);
-		if(text == null || text.isEmpty())
-			return defaultValue;
-		else
-			return text;
 	}
 
 }

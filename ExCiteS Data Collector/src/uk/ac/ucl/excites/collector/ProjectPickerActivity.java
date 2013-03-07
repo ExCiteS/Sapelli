@@ -218,8 +218,8 @@ public class ProjectPickerActivity extends BaseActivity
 	{
 		try
 		{
-			// Use the path where the xml file currently is as the basePath (img and snd folders are assumed to be in the same place):
-			ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath());
+			// Use the path where the xml file currently is as the basePath (img and snd folders are assumed to be in the same place), no subfolders are created:
+			ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
 			return parser.parseProject(xmlFile);
 		}
 		catch(Exception e)

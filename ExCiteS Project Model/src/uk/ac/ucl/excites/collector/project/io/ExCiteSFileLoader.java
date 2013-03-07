@@ -48,7 +48,7 @@ public class ExCiteSFileLoader
 		// Parse PROJECT.xml:
 		try
 		{
-			ProjectParser parser = new ProjectParser(basePath);
+			ProjectParser parser = new ProjectParser(basePath, true);
 			p = parser.parseProject(getInputStream(excitesFile, PROJECT_FILE));
 		}
 		catch(Exception e)

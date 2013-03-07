@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.collector.project.model;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,12 +25,12 @@ public class Project
 	private String projectPath;
 	private List<Form> forms;
 	
-	public Project(String name, String basePath)
+	public Project(String name, String basePath) throws IOException
 	{
-		this(name, DEFAULT_VERSION, basePath);
+		this(name, DEFAULT_VERSION, basePath, false);
 	}
 	
-	public Project(String name, int version, String basePath)
+	public Project(String name, int version, String basePath, boolean createSubfolder)
 	{
 		if(name == null || name.isEmpty() || basePath == null || basePath.isEmpty())
 			throw new IllegalArgumentException("Both a name and a valid path are required");
@@ -38,7 +39,13 @@ public class Project
 		//Path
 		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
 			basePath += File.separatorChar;
-		this.projectPath = basePath + this.name + File.separatorChar + "v" + version + File.separatorChar;  
+		this.projectPath = basePath;
+		if(createSubfolder)
+		{
+			this.projectPath += this.name + File.separatorChar + "v" + version + File.separatorChar;
+			if(!FileHelpers.createFolder(projectPath))
+				throw new IllegalArgumentException("Could not create folder: " + projectPath);
+		}	
 		//Forms collection
 		this.forms = new ArrayList<Form>();
 	}
