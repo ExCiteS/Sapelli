@@ -83,5 +83,10 @@ public class Project
 		return projectPath + DATA_FOLDER + File.separator;
 	}
 	
+	public String toString()
+	{
+		return name + (version != DEFAULT_VERSION ? " (v" + version + ")" : "");
+	}
+	
 }
 

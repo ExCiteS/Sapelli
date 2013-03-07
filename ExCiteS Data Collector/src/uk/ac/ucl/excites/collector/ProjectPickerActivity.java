@@ -20,7 +20,6 @@ import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.util.SDCard;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -37,6 +36,7 @@ import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 
@@ -47,20 +47,24 @@ import android.widget.ListView;
 public class ProjectPickerActivity extends BaseActivity
 {
 
+	//STATIC---------------------------------------------------------
 	static private final String TAG = "ProjectPickerActivity";
 
 	static private final String XML_FILE_EXTENSION = "xml";
 	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
 
-	private String dbPATH;
-
-	// Define some variables
 	public static final int RETURN_BROWSE = 1;
+	
+	//DYNAMIC--------------------------------------------------------
+	private String databasePath;
+	private DataAccess dao;
+	
+	//UI
 	private EditText enterURL;
 	private ListView projectList;
-	private DataAccess dao;
-	private List<Project> parsedProjects;
-
+	private Button runBtn;
+	private Button removeBtn;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -73,14 +77,16 @@ public class ProjectPickerActivity extends BaseActivity
 
 		// Database instance (path may be changed)
 		// Path is on Internal Storage
-		dbPATH = this.getFilesDir().getAbsolutePath();
+		databasePath = this.getFilesDir().getAbsolutePath();
 		// Log.d("ExCiteS_Debug", "Internal Storage path: " + dbPATH);
-		dao = DataAccess.getInstance(dbPATH);
+		dao = DataAccess.getInstance(databasePath);
 
 		// Get View Elements
 		enterURL = (EditText) findViewById(R.id.EnterURL);
 		projectList = (ListView) findViewById(R.id.ProjectsList);
-
+		runBtn = (Button) findViewById(R.id.RunButton);
+		removeBtn = (Button) findViewById(R.id.RemoveButton);
+		
 		// get scrolling right
 		findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
 		{
@@ -118,24 +124,60 @@ public class ProjectPickerActivity extends BaseActivity
 		startActivityForResult(intent, RETURN_BROWSE);
 	}
 
-	public void runProject(View view)
+	/**
+	 * Retrieve all parsed projects from db and populate list
+	 */
+	public void populateProjectList()
+	{
+		projectList.setAdapter(new ArrayAdapter<Project>(this, android.R.layout.simple_list_item_single_choice, android.R.id.text1, dao.retrieveProjects()));
+		if(!projectList.getAdapter().isEmpty())
+		{
+			runBtn.setEnabled(true);
+			removeBtn.setEnabled(true);
+			projectList.setItemChecked(0, true); //check first project in the list
+		}
+		else
+		{
+			runBtn.setEnabled(false);
+			removeBtn.setEnabled(false);
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	protected void selectProjectInList(Project project)
+	{
+		projectList.setItemChecked(((ArrayAdapter<Project>) projectList.getAdapter()).getPosition(project), true);
+	}
+	
+	@SuppressWarnings("unchecked")
+	protected Project getSelectedProject()
 	{
 		if(projectList.getCheckedItemPosition() == -1)
+			return null;
+		return ((ArrayAdapter<Project>) projectList.getAdapter()).getItem(projectList.getCheckedItemPosition());
+	}
+	
+	public void runProject(View view)
+	{
+		Project p = getSelectedProject();
+		if(p == null)
 		{
 			errorDialog("Please select a project", false).show();
 			return;
 		}
-		Project selectedProject = parsedProjects.get(projectList.getCheckedItemPosition());
 		Intent i = new Intent(this, CollectorActivity.class);
-		i.putExtra(CollectorActivity.PARAMETER_PROJECT_NAME, selectedProject.getName());
-		i.putExtra(CollectorActivity.PARAMETER_PROJECT_VERSION, selectedProject.getVersion());
-		i.putExtra(CollectorActivity.PARAMETER_DB_FOLDER_PATH, dbPATH);
+		i.putExtra(CollectorActivity.PARAMETER_PROJECT_NAME, p.getName());
+		i.putExtra(CollectorActivity.PARAMETER_PROJECT_VERSION, p.getVersion());
+		i.putExtra(CollectorActivity.PARAMETER_DB_FOLDER_PATH, databasePath);
 		startActivity(i);
 	}
 
-	public void removeProject()
+	private void removeProject()
 	{
-		dao.deleteProject(parsedProjects.get(projectList.getCheckedItemPosition()));
+		Project p = getSelectedProject();
+		if(p == null)
+			return;
+		dao.deleteProject(p);
 		populateProjectList();
 	}
 
@@ -234,21 +276,7 @@ public class ProjectPickerActivity extends BaseActivity
 		}
 		// Update project list:
 		populateProjectList();
-	}
-
-	/**
-	 * Retrieve all parsed projects from db and populate list
-	 */
-	public void populateProjectList()
-	{
-		parsedProjects = dao.retrieveProjects();
-		String[] values = new String[parsedProjects.size()];
-		for(int i = 0; i < parsedProjects.size(); i++)
-		{
-			values[i] = parsedProjects.get(i).getName();
-		}
-		ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_single_choice, android.R.id.text1, values);
-		projectList.setAdapter(adapter);
+		selectProjectInList(project); //select the new project
 	}
 
 	@Override
@@ -285,8 +313,7 @@ public class ProjectPickerActivity extends BaseActivity
 	{
 		if(projectList.getCheckedItemPosition() == -1)
 		{
-			AlertDialog NoSelection = errorDialog("Please select a project", false);
-			NoSelection.show();
+			errorDialog("Please select a project", false).show();
 		}
 		else
 		{

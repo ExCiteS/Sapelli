@@ -50,7 +50,7 @@
             android:layout_marginBottom="20dp" >
 
             <Button
-                android:id="@+id/LoadProjectButton"
+                android:id="@+id/RunButton"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:layout_weight=".5"
@@ -58,7 +58,7 @@
                 android:onClick="runProject" />
 
             <Button
-                android:id="@+id/RemoveProjectButton"
+                android:id="@+id/RemoveButton"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:layout_weight=".5"
@@ -92,7 +92,7 @@
             android:layout_height="wrap_content" >
 
             <Button
-                android:id="@+id/DownloadButton"
+                android:id="@+id/LoadButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:onClick="loadFile"
