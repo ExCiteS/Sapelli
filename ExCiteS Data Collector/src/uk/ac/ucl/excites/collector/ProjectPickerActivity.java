@@ -19,7 +19,10 @@ import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
+import uk.ac.ucl.excites.collector.util.Debug;
 import uk.ac.ucl.excites.collector.util.SDCard;
+import uk.ac.ucl.excites.collector.util.QRcode.IntentIntegrator;
+import uk.ac.ucl.excites.collector.util.QRcode.IntentResult;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -57,7 +60,7 @@ public class ProjectPickerActivity extends BaseActivity
 	private String dbPATH;
 
 	// Define some variables
-	public static final int SETTINGS_REQUEST_IMPORT = 1;
+	public static final int BROWSE_FOR_FILE = 1;
 	private EditText enterURL;
 	private ListView projectList;
 	private DataAccess dao;
@@ -111,7 +114,7 @@ public class ProjectPickerActivity extends BaseActivity
 		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(Environment.getExternalStorageDirectory().getPath()));
 		// set file filter for .xml or .excites
 		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + "|" + ExCiteSFileLoader.EXCITES_FILE_EXTENSION + ")$");
-		startActivityForResult(intent, SETTINGS_REQUEST_IMPORT);
+		startActivityForResult(intent, BROWSE_FOR_FILE);
 	}
 
 	public void runProject(View view)
@@ -235,6 +238,13 @@ public class ProjectPickerActivity extends BaseActivity
 		populateProjectList();
 	}
 
+	public void scanQR(View view)
+	{
+		// Start the Intent to Scan a QR code
+		IntentIntegrator integrator = new IntentIntegrator(this);
+		integrator.initiateScan();
+	}
+
 	// retrieve all parsed projects from db and populate list
 	public void populateProjectList()
 	{
@@ -248,7 +258,6 @@ public class ProjectPickerActivity extends BaseActivity
 		projectList.setAdapter(adapter);
 	}
 
-	// file filter
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
@@ -257,7 +266,8 @@ public class ProjectPickerActivity extends BaseActivity
 		{
 			switch(requestCode)
 			{
-			case SETTINGS_REQUEST_IMPORT:
+			// FileDialog
+			case BROWSE_FOR_FILE:
 				// Get the result file path
 				// A list of files will always return, if selection mode is single, the list contains one file
 				@SuppressWarnings("unchecked")
@@ -271,7 +281,18 @@ public class ProjectPickerActivity extends BaseActivity
 					// Move the cursor to the end
 					enterURL.setSelection(fileSource.length());
 				}
+				break;
+			// QR Reader
+			case IntentIntegrator.REQUEST_CODE:
 
+				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+				if(scanResult != null)
+				{
+					String fileUrl = data.getStringExtra("SCAN_RESULT");
+					enterURL.setText(fileUrl);
+					// Move the cursor to the end
+					enterURL.setSelection(fileUrl.length());
+				}
 				break;
 			}
 		}

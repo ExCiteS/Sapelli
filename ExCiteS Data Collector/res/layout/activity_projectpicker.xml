@@ -54,8 +54,8 @@
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:layout_weight=".5"
-                android:text="Run Project"
-                android:onClick="runProject" />
+                android:onClick="runProject"
+                android:text="Run Project" />
 
             <Button
                 android:id="@+id/RemoveProjectButton"
@@ -75,8 +75,7 @@
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:layout_weight=".7"
-                android:inputType="textUri"
-                android:text="http://idesigner.gr/wp-content/uploads/test/AntiPoaching.excites" />
+                android:inputType="textUri" />
 
             <Button
                 android:id="@+id/BrowseButton"
@@ -90,6 +89,13 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" >
+
+            <Button
+                android:id="@+id/ScanButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:onClick="scanQR"
+                android:text="Scan QR Code" />
 
             <Button
                 android:id="@+id/DownloadButton"
