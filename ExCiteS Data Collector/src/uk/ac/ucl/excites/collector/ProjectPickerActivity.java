@@ -23,8 +23,11 @@ import uk.ac.ucl.excites.collector.util.SDCard;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -187,7 +190,8 @@ public class ProjectPickerActivity extends BaseActivity
 				if(SDCard.isExternalStorageWritable())
 				{
 					// Use /mnt/sdcard/ExCiteS/ as the basePath:
-					ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER);
+					ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar
+							+ EXCITES_FOLDER);
 					project = loader.load(new File(path));
 				}
 				else
@@ -323,7 +327,7 @@ public class ProjectPickerActivity extends BaseActivity
 	 * 
 	 * @author Michalis Vitos
 	 * */
-	public class DownloadFileFromURL extends AsyncTask<Void, Integer, Void>
+	public class DownloadFileFromURL extends AsyncTask<Void, Integer, Boolean>
 	{
 		// Variables
 		private ProgressDialog mProgressDialog;
@@ -344,16 +348,32 @@ public class ProjectPickerActivity extends BaseActivity
 			mProgressDialog.setIndeterminate(false);
 			mProgressDialog.setMax(100);
 			mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			mProgressDialog.setCancelable(false);
+			mProgressDialog.setCancelable(true);
+
+			// mProgressDialog.setButton(0, (char) "asdfsadf", "asdfsadf");
+
 		}
 
 		/**
 		 * Show Progress Bar Dialog before starting the downloading
 		 * */
+		@SuppressWarnings("deprecation")
 		@Override
 		protected void onPreExecute()
 		{
 			super.onPreExecute();
+
+			mProgressDialog.setButton("Cancel...", new DialogInterface.OnClickListener()
+			{
+				public void onClick(DialogInterface dialog, int which)
+				{
+					DownloadFileFromURL.this.cancel(true);
+					// Delete the downloaded file
+					downloadFile.delete();
+					return;
+				}
+			});
+
 			mProgressDialog.show();
 		}
 
@@ -363,49 +383,53 @@ public class ProjectPickerActivity extends BaseActivity
 		 * @return
 		 * */
 		@Override
-		protected Void doInBackground(Void... voids)
+		protected Boolean doInBackground(Void... voids)
 		{
-			int count;
-			try
+			if(isOnline(ProjectPickerActivity.this))
 			{
-				URL url = new URL(downloadUrl);
-				URLConnection conection = url.openConnection();
-				conection.connect();
-				// getting file length
-				int fileLength = conection.getContentLength();
-
-				// input stream to read file - with 8k buffer
-				InputStream input = new BufferedInputStream(url.openStream(), 8192);
-				// Output stream to write file
-				OutputStream output = new FileOutputStream(downloadFile.toString());
-
-				byte data[] = new byte[1024];
-
-				long total = 0;
-
-				while((count = input.read(data)) != -1)
+				int count;
+				try
 				{
-					total += count;
-					// Publish the progress....
-					publishProgress((int) (total * 100 / fileLength));
+					URL url = new URL(downloadUrl);
+					URLConnection conection = url.openConnection();
+					conection.connect();
+					// getting file length
+					int fileLength = conection.getContentLength();
 
-					// writing data to file
-					output.write(data, 0, count);
+					// input stream to read file - with 8k buffer
+					InputStream input = new BufferedInputStream(url.openStream(), 8192);
+					// Output stream to write file
+					OutputStream output = new FileOutputStream(downloadFile.toString());
+
+					byte data[] = new byte[1024];
+
+					long total = 0;
+
+					while((count = input.read(data)) != -1)
+					{
+						total += count;
+						// Publish the progress....
+						publishProgress((int) (total * 100 / fileLength));
+
+						// writing data to file
+						output.write(data, 0, count);
+					}
+
+					// flushing output
+					output.flush();
+
+					// closing streams
+					output.close();
+					input.close();
+				}
+				catch(Exception e)
+				{
+					Log.e("Error: ", e.getMessage(), e);
 				}
 
-				// flushing output
-				output.flush();
-
-				// closing streams
-				output.close();
-				input.close();
+				return true;
 			}
-			catch(Exception e)
-			{
-				Log.e("Error: ", e.getMessage(), e);
-			}
-
-			return null;
+			return false;
 		}
 
 		/**
@@ -420,30 +444,60 @@ public class ProjectPickerActivity extends BaseActivity
 		 * After completing background task Dismiss the progress dialog and parse the project
 		 * **/
 		@Override
-		protected void onPostExecute(Void voids)
+		protected void onPostExecute(Boolean downloadFinished)
 		{
 			// Dismiss the dialog after the file was downloaded
 			mProgressDialog.dismiss();
 
-			// Parse the project
-			try
+			if(downloadFinished)
 			{
-				// Use /mnt/sdcard/ExCiteS/ as the basePath:
-				ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar
-						+ EXCITES_FOLDER);
-				project = loader.load(downloadFile);
+				// Parse the project
+				try
+				{
+					// Use /mnt/sdcard/ExCiteS/ as the basePath:
+					ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar
+							+ EXCITES_FOLDER);
+					project = loader.load(downloadFile);
 
-				checkProject(project, downloadFile.toString());
+					// Rename the file to something more useful
+					if(project != null)
+					{
+						downloadFile.renameTo(new File(downloadFile.getParentFile().toString() + File.separator + project.getName() + "_v"
+								+ project.getVersion() + '_' + (System.currentTimeMillis() / 1000) + ".excites"));
+					}
+
+					checkProject(project, downloadFile.toString());
+				}
+				catch(Exception e)
+				{
+					Log.e(TAG, "Could not load excites file", e);
+					errorDialog("Could not load excites file: " + e.getLocalizedMessage(), false).show();
+					return;
+				}
 			}
-			catch(Exception e)
+			else
 			{
-				Log.e(TAG, "Could not load excites file", e);
-				errorDialog("Could not load excites file: " + e.getLocalizedMessage(), false).show();
-				return;
+				errorDialog("There is no internet connectivity.", false).show();
+				// Delete the downloaded file
+				downloadFile.delete();
 			}
-			
-			// Delete the downloaded file
-			downloadFile.delete();
 		}
+	}
+
+	/**
+	 * Check if the device is connected to Internet
+	 * 
+	 * @param mContext
+	 * @return
+	 */
+	public static boolean isOnline(Context mContext)
+	{
+		ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo netInfo = cm.getActiveNetworkInfo();
+		if(netInfo != null && netInfo.isConnected())
+		{
+			return true;
+		}
+		return false;
 	}
 }
