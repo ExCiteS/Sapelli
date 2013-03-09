@@ -31,7 +31,6 @@ import uk.ac.ucl.excites.collector.project.model.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.Photo;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.storage.model.Schema;
-import android.util.Log;
 
 /**
  * @author mstevens, julia, Michalis Vitos
@@ -39,8 +38,6 @@ import android.util.Log;
  */
 public class ProjectParser extends DefaultHandler
 {
-
-	static private final String TAG = "ProjectParser";
 
 	// Tags/attributes:
 	static private final String PROJECT = "ExCiteS-Collector-Project";
@@ -68,7 +65,6 @@ public class ProjectParser extends DefaultHandler
 	{
 		this.basePath = basePath;
 		this.createProjectFolder = createProjectFolder;
-		Log.d(TAG, "basePath: " + basePath);
 	}
 
 	public Project parseProject(File xmlFile) throws Exception
@@ -96,7 +92,8 @@ public class ProjectParser extends DefaultHandler
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "XML Parsing Exception = " + e, e);
+			System.err.println("XML Parsing Exception = " + e);
+			//e.printStackTrace(System.err);
 			// return null;
 			throw e;
 		}
@@ -117,7 +114,7 @@ public class ProjectParser extends DefaultHandler
 	@Override
 	public void startDocument() throws SAXException
 	{
-		Log.i(TAG, "Start document");
+		//does nothing (for now)
 	}
 
 	@Override
@@ -164,7 +161,7 @@ public class ProjectParser extends DefaultHandler
 			if(attributes.getValue(FORM_START_FIELD) != null && !attributes.getValue(FORM_START_FIELD).isEmpty())
 				currentFormStartFieldID = attributes.getValue(FORM_START_FIELD);
 			else
-				Log.w(TAG, "No startField attribute, will use first field");
+				System.out.println("Warning: No startField attribute, will use first field");
 			// TODO other attributes
 		}
 		// <CHOICE>
@@ -197,7 +194,7 @@ public class ProjectParser extends DefaultHandler
 			// Type:
 			String type = attributes.getValue("type");
 			if(type != null)
-				Log.w(TAG, "Unknown Location type (" + type + ").");
+				System.out.println("Warning: Unknown Location type (" + type + ").");
 			else
 			{
 				if("Any".equalsIgnoreCase(type))
@@ -263,7 +260,9 @@ public class ProjectParser extends DefaultHandler
 		}
 		// </Choice>
 		else if(qName.equals("Choice"))
+		{
 			currentChoice = currentChoice.getParent();
+		}
 	}
 
 	private void mediaAttachmentAttributes(MediaAttachment ma, Attributes attributes)
@@ -280,7 +279,7 @@ public class ProjectParser extends DefaultHandler
 		if(f.getID() != null)
 		{
 			if(idToField.get(f.getID()) != null)
-				Log.w(TAG, "Duplicate field id (" + f.getID() + "!");
+				System.out.println("Warning: Duplicate field id (" + f.getID() + "!");
 			idToField.put(f.getID(), f);
 		}
 		// Remember jump:
@@ -306,7 +305,7 @@ public class ProjectParser extends DefaultHandler
 		{
 			Field target = idToField.get(jump.getValue());
 			if(target == null)
-				Log.e(TAG, "Cannot resolve jump ID " + jump.getValue());
+				System.out.println("Warning: Cannot resolve jump ID " + jump.getValue());
 			else
 				jump.getKey().setJump(target);
 		}
@@ -315,7 +314,7 @@ public class ProjectParser extends DefaultHandler
 		{
 			Field target = idToField.get(disable.getValue());
 			if(target == null)
-				Log.e(TAG, "Cannot resolve disable field ID " + disable.getValue());
+				System.out.println("Warning: Cannot resolve disable field ID " + disable.getValue());
 			else
 				disable.getKey().setDisableChoice((Choice) target);
 		}
@@ -324,7 +323,6 @@ public class ProjectParser extends DefaultHandler
 	@Override
 	public void endDocument() throws SAXException
 	{
-		Log.i(TAG, "End document");
 		resolveReferences(); // !!!
 	}
 

@@ -274,6 +274,7 @@ public class ProjectPickerActivity extends BaseActivity
 		}
 		catch(Exception e) //any other exception
 		{
+			Log.e(TAG, "Could not store project.", e);
 			errorDialog("Could not store project: " + e.getLocalizedMessage(), false).show();
 			return;
 		}

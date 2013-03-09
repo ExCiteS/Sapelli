@@ -87,7 +87,7 @@ public class ExCiteSFileLoader
 			ZipEntry ze = null;
 			while((ze = zin.getNextEntry()) != null)
 			{
-				System.out.println("Extracting: " + ze.getName());
+				//System.out.println("Extracting: " + ze.getName());
 				if(ze.isDirectory())
 				{
 					if(!FileHelpers.createFolder(extractionPath + ze.getName()))

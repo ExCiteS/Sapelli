@@ -6,8 +6,6 @@ import java.util.List;
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 
 /**
  * @author mstevens
@@ -17,8 +15,6 @@ public class Choice extends Field
 {
 	
 	static public final int DEFAULT_NUM_COLS = 2;
-
-	static public final int UNKNOWN_VALUE_CODE = -1;
 	
 	private Choice parent;
 	private Choice root;
@@ -28,7 +24,7 @@ public class Choice extends Field
 	private int rows;
 	private String alt;
 	private String value;
-	private BiMap<String, Integer> valueDict;
+	private ValueDictionary valueDict;
 	
 	public Choice(String id, Choice parent)
 	{
@@ -42,7 +38,7 @@ public class Choice extends Field
 		if(parent == null)
 		{	//this is a root choice
 			root = this; //self-pointer
-			valueDict = HashBiMap.create(); //value dictionary
+			valueDict = new ValueDictionary(); //root holds the dictionary
 		}
 		else
 		{	//this is a child choice
@@ -194,16 +190,16 @@ public class Choice extends Field
 	}
 	
 	@Override
-	protected IntegerColumn createColumn()
+	public IntegerColumn createColumn() //TODO make protected again
 	{
+		System.out.println("creating column: " + id);
 		if(!isRoot())
 			throw new IllegalStateException("createColumn() should only be called on a root Choice object.");
-		//Build value dictionary:	
-		addValues(); //Finds & adds the values for all leafs
+		buildValueDict(); //Finds & adds the values for all leafs
 		//Create & add column:
-		return new IntegerColumn(id, true /* TODO determine if truly optional */, 0, valueDict.keySet().size() - 1);
+		return new IntegerColumn(id, true /* TODO determine if truly optional */, 0, valueDict.size() - 1);
 	}
-
+	
 	/**
 	 * Recursive method which implements a depth-first traversal that finds the values of all leafs.
 	 * If a leaf does not have a value of it's own the one of a parent is found using getValue(), if that
@@ -214,39 +210,28 @@ public class Choice extends Field
 	 * because that could result in valueDict containing values that can never be chosen (namely when a non-leaf
 	 * has a value but all the leafs below it have values of their own).
 	 */
-	private void addValues()
+	private void buildValueDict()
 	{
 		if(isLeaf())
 		{
-			if(getValue() == null) //getValue() will return the value of the Choice or of the/a parent, if there's no value set anywhere it will return null
+			if(getValue() == null || getValue().isEmpty()) //getValue() will return the value of the Choice or of the/a parent, if there's no value set anywhere it will return null
 				setValue(id); //id becomes value for this leaf Choice; after this getValue() will never again return null for this Choice object
-			if(!valueDict.containsKey(getValue()))
-				valueDict.put(getValue(), Integer.valueOf(valueDict.keySet().size()));
+			valueDict.addValue(getValue());
 		}
 		else
 			for(Choice child : children) //Depth-first traversal
-				child.addValues(); //recursive call
+				child.buildValueDict(); //recursive call
 	}
 	
 	public void storeValue(FormEntry entry)
 	{
-//		((IntegerColumn) entry.getColumn(root.id)).storeValue(entry, Long.valueOf(lookupValueCode()));
+		if(!noColumn)
+			((IntegerColumn) entry.getColumn(root.id)).storeValue(entry, Long.valueOf(lookupCode()));
 	}
 	
-	public int lookupValueCode()
+	public int lookupCode()
 	{
-		return lookupValueCode(getValue());
-	}
-	
-	public int lookupValueCode(String value)
-	{
-		Integer code = valueDict.get(value);
-		return (code != null ? code : UNKNOWN_VALUE_CODE);
-	}
-	
-	public String lookupValue(int valueCode)
-	{
-		return valueDict.inverse().get(Integer.valueOf(valueCode));
+		return valueDict.lookupCode(getValue());
 	}
 
 	@Override
