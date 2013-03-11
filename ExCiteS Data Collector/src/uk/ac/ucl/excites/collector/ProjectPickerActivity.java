@@ -19,7 +19,6 @@ import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
-import uk.ac.ucl.excites.collector.util.Debug;
 import uk.ac.ucl.excites.collector.util.SDCard;
 import uk.ac.ucl.excites.collector.util.QRcode.IntentIntegrator;
 import uk.ac.ucl.excites.collector.util.QRcode.IntentResult;
@@ -29,6 +28,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.Intent.ShortcutIconResource;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -52,17 +52,21 @@ import android.widget.ListView;
 public class ProjectPickerActivity extends BaseActivity
 {
 
-	static private final String TAG = "ProjectPickerActivity";
-
-	static private final String XML_FILE_EXTENSION = "xml";
-	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
-
-	private String dbPATH;
-
-	// Define some variables
-	public static final int BROWSE_FOR_FILE = 1;
+	// STATICS--------------------------------------------------------
+	private static final String TAG = "ProjectPickerActivity";
+	private static final String SHORTCUT_PROJECT_NAME = "Shortcut_Project_Name";
+	private static final String SHORTCUT_PROJECT_VERSION = "Shortcut_Project_Version";
+	private static final String XML_FILE_EXTENSION = "xml";
+	private static final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
+	private static final int BROWSE_FOR_FILE = 1;
+	
+	// DYNAMICS-------------------------------------------------------
+	
+	// UI
 	private EditText enterURL;
 	private ListView projectList;
+	
+	private String dbPATH;
 	private DataAccess dao;
 	private List<Project> parsedProjects;
 
@@ -81,6 +85,19 @@ public class ProjectPickerActivity extends BaseActivity
 		dbPATH = this.getFilesDir().getAbsolutePath();
 		// Log.d("ExCiteS_Debug", "Internal Storage path: " + dbPATH);
 		dao = DataAccess.getInstance(dbPATH);
+
+		// Get extra info and check if there is a shortcut info there
+		Bundle extras = getIntent().getExtras();
+		if(extras != null)
+		{
+			// Get the shortcut name and version
+			String projectName = extras.getString(SHORTCUT_PROJECT_NAME);
+			int projectVersion = extras.getInt(SHORTCUT_PROJECT_VERSION);
+
+			// Create and run a project
+			Project shortcutProject = new Project(projectName, projectVersion, dbPATH);
+			runProjectActivity(shortcutProject);
+		}
 
 		// Get View Elements
 		enterURL = (EditText) findViewById(R.id.EnterURL);
@@ -119,12 +136,18 @@ public class ProjectPickerActivity extends BaseActivity
 
 	public void runProject(View view)
 	{
+		// Check if the user has selected a project from the list
 		if(projectList.getCheckedItemPosition() == -1)
 		{
 			errorDialog("Please select a project", false).show();
 			return;
 		}
 		Project selectedProject = parsedProjects.get(projectList.getCheckedItemPosition());
+		runProjectActivity(selectedProject);
+	}
+
+	public void runProjectActivity(Project selectedProject)
+	{
 		Intent i = new Intent(this, CollectorActivity.class);
 		i.putExtra(CollectorActivity.PARAMETER_PROJECT_NAME, selectedProject.getName());
 		i.putExtra(CollectorActivity.PARAMETER_PROJECT_VERSION, selectedProject.getVersion());
@@ -243,6 +266,83 @@ public class ProjectPickerActivity extends BaseActivity
 		// Start the Intent to Scan a QR code
 		IntentIntegrator integrator = new IntentIntegrator(this);
 		integrator.initiateScan();
+	}
+
+	/**
+	 * Create a shortcut
+	 * 
+	 * @param view
+	 */
+	public void createShortcut(View view)
+	{
+		// Check if the user has selected a project from the list
+		if(projectList.getCheckedItemPosition() == -1)
+		{
+			errorDialog("Please select a project", false).show();
+			return;
+		}
+
+		// Get the selected project
+		Project selectedProject = parsedProjects.get(projectList.getCheckedItemPosition());
+
+		// Set the shortcut intent
+		Intent projectIntent = new Intent(getApplicationContext(), ProjectPickerActivity.class);
+		projectIntent.putExtra(SHORTCUT_PROJECT_NAME, selectedProject.getName());
+		projectIntent.putExtra(SHORTCUT_PROJECT_VERSION, selectedProject.getVersion());
+		projectIntent.setAction(Intent.ACTION_MAIN);
+
+		// Set up the icon
+		// TODO Get an icon from the form for each project
+		ShortcutIconResource iconResource = Intent.ShortcutIconResource.fromContext(ProjectPickerActivity.this, R.drawable.ic_launcher);
+
+		// The result we are passing back from this activity
+		Intent shortcutIntent = new Intent();
+		shortcutIntent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, iconResource);
+		// Do not allow duplicate shortcuts
+		shortcutIntent.putExtra("duplicate", false);
+		sendBroadcast(shortcutIntent);
+	}
+
+	/**
+	 * Remove a shortcut
+	 * 
+	 * @param view
+	 */
+	public void removeShortcut(View view)
+	{
+		// Check if the user has selected a project from the list
+		if(projectList.getCheckedItemPosition() == -1)
+		{
+			errorDialog("Please select a project", false).show();
+			return;
+		}
+
+		// Get the selected project
+		Project selectedProject = parsedProjects.get(projectList.getCheckedItemPosition());
+		
+		// Deleting shortcut
+		Intent projectIntent = new Intent(getApplicationContext(), ProjectPickerActivity.class);
+		projectIntent.setAction(Intent.ACTION_MAIN);
+
+		Intent shortcutIntent = new Intent();
+		shortcutIntent.setAction("com.android.launcher.action.UNINSTALL_SHORTCUT");
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
+		sendBroadcast(shortcutIntent);
+	}
+
+	/**
+	 * Return a name to be used for the creation / removal of shortcuts
+	 * 
+	 * @param project
+	 * @return
+	 */
+	public static String getShortcutName(Project project)
+	{
+		return project.getName() + " v" + project.getVersion();
 	}
 
 	// retrieve all parsed projects from db and populate list

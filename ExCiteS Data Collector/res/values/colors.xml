@@ -5,6 +5,7 @@
     <color name="white">#FFffffff</color>
     <color name="black">#FF000000</color>
     <color name="divider">#33B8B8B8</color>
+    <color name="divider2">#ffF0F0F0</color>
     <color name="gray">#ffc0c0c0</color>
     <color name="gray_transparent">#33c0c0c0</color>
     <color name="focused">#99c0c0c0</color>

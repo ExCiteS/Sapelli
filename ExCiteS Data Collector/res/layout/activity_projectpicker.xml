@@ -15,6 +15,7 @@
         android:orientation="vertical" >
 
         <LinearLayout
+            android:id="@+id/Title"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content" >
 
@@ -25,12 +26,13 @@
                 android:layout_marginBottom="10dp"
                 android:gravity="center"
                 android:text="ExCiteS Project Picker"
-                android:textAppearance="?android:attr/textAppearanceLarge"
+                android:textAppearance="?android:attr/textAppearanceMedium"
                 android:textColor="#FFFFFF"
                 android:textStyle="bold" />
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/Projects"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content" >
 
@@ -45,17 +47,10 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/AddRemoveProjectsButons"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp" >
-
-            <Button
-                android:id="@+id/LoadProjectButton"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:layout_weight=".5"
-                android:onClick="runProject"
-                android:text="Run Project" />
 
             <Button
                 android:id="@+id/RemoveProjectButton"
@@ -63,46 +58,124 @@
                 android:layout_height="wrap_content"
                 android:layout_weight=".5"
                 android:onClick="removeDialog"
-                android:text="Remove Project" />
+                android:text="Remove Project"
+                android:textAppearance="@style/ButtonBar" />
+
+            <Button
+                android:id="@+id/LoadProjectButton"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:layout_weight=".5"
+                android:onClick="runProject"
+                android:text="Run Project"
+                android:textAppearance="@style/ButtonBar" />
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content" >
+            android:id="@+id/AddRemoveShortcutButtons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" >
 
-            <EditText
-                android:id="@+id/EnterURL"
-                android:layout_width="0dip"
+            <TextView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight=".7"
-                android:inputType="textUri" />
+                android:gravity="center"
+                android:text="Create and Remove Shortcuts"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="#FFFFFF" />
 
-            <Button
-                android:id="@+id/BrowseButton"
-                android:layout_width="0dip"
+            <include layout="@layout/hr" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight=".3"
-                android:onClick="browse"
-                android:text="Browse" />
+                android:layout_marginBottom="20dp"
+                android:paddingTop="20dp" >
+
+                <Button
+                    android:id="@+id/CreateShortcutButton"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".5"
+                    android:onClick="createShortcut"
+                    android:text="Create Shortcut"
+                    android:textAppearance="@style/ButtonBar" />
+
+                <Button
+                    android:id="@+id/RemoveShortcutButton"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".5"
+                    android:onClick="removeShortcut"
+                    android:text="Remove Shortcut"
+                    android:textAppearance="@style/ButtonBar" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="50dp" >
 
-            <Button
-                android:id="@+id/ScanButton"
-                android:layout_width="wrap_content"
+            <TextView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onClick="scanQR"
-                android:text="Scan QR Code" />
+                android:gravity="center"
+                android:text="Load new Projects"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="#FFFFFF" />
 
-            <Button
-                android:id="@+id/DownloadButton"
-                android:layout_width="wrap_content"
+            <include layout="@layout/hr" />
+
+            <LinearLayout
+                android:id="@+id/URLBox"
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:onClick="loadFile"
-                android:text="Load Project" />
+                android:paddingTop="20dp" >
+
+                <EditText
+                    android:id="@+id/EnterURL"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".7"
+                    android:inputType="textUri" >
+
+                    <requestFocus />
+                </EditText>
+
+                <Button
+                    android:id="@+id/BrowseButton"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".3"
+                    android:onClick="browse"
+                    android:text="Browse"
+                    android:textAppearance="@style/ButtonBar" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/LoadProject"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" >
+
+                <Button
+                    android:id="@+id/ScanButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:onClick="scanQR"
+                    android:text="Scan QR Code"
+                    android:textAppearance="@style/ButtonBar" />
+
+                <Button
+                    android:id="@+id/DownloadButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:onClick="loadFile"
+                    android:text="Load Project"
+                    android:textAppearance="@style/ButtonBar" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
