@@ -4,5 +4,15 @@
     <string name="app_name">ExCiteS Data Collector</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
     <string name="dummy_button">Dummy Button</string>
+    <string name="browse">Browse</string>
+    <string name="scan_qr_code">Scan QR Code</string>
+    <string name="load_project">Load Project</string>
+    <string name="excites_project_picker">ExCiteS Project Picker</string>
+    <string name="available_projects">Available Projects</string>
+    <string name="run_project">Run project</string>
+    <string name="remove_project">Remove project</string>
+    <string name="shortcuts">Shortcuts</string>
+    <string name="create_shortcut">Create Shortcut</string>
+    <string name="remove_shortcut">Remove Shortcut</string>
 
 </resources>

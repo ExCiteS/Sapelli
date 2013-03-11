@@ -8,23 +8,31 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLConnection;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
+import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.util.SDCard;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.Intent.ShortcutIconResource;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
@@ -33,7 +41,6 @@ import android.util.Log;
 import android.util.Patterns;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
@@ -47,16 +54,21 @@ import android.widget.ListView;
 public class ProjectPickerActivity extends BaseActivity
 {
 
-	//STATIC---------------------------------------------------------
+	//STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectPickerActivity";
 
 	static private final String XML_FILE_EXTENSION = "xml";
 	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
+	static private final String DOWNLOADS_FOLDER = "Downloads" + File.separatorChar;
+	
+	private static final String SHORTCUT_PROJECT_NAME = "Shortcut_Project_Name";
+	private static final String SHORTCUT_PROJECT_VERSION = "Shortcut_Project_Version";
 
 	public static final int RETURN_BROWSE = 1;
 	
-	//DYNAMIC--------------------------------------------------------
+	//DYNAMICS-------------------------------------------------------
 	private String databasePath;
+	private String excitesFolderPath;
 	private DataAccess dao;
 	
 	//UI
@@ -69,24 +81,47 @@ public class ProjectPickerActivity extends BaseActivity
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		// Remove title
-		requestWindowFeature(Window.FEATURE_NO_TITLE);
+		
+		// Check if there is an SD Card
+		if(!SDCard.isExternalStorageWritable())
+		{	// Inform the user and close the application
+			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
+			return;
+		}
+		
+		// Paths...
+		// Database path is on Internal Storage
+		databasePath = this.getFilesDir().getAbsolutePath();
+		// ExCiteS folder
+		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER;
+		
+		// Get extra info and check if there is a shortcut info there
+		Bundle extras = getIntent().getExtras();
+		if(extras != null && extras.containsKey(SHORTCUT_PROJECT_NAME))
+		{
+			// Get the shortcut name and version
+			String projectName = extras.getString(SHORTCUT_PROJECT_NAME);
+			int projectVersion = extras.getInt(SHORTCUT_PROJECT_VERSION, Project.DEFAULT_VERSION);
+
+			// Create and run a project
+			runProjectActivity(projectName, projectVersion);
+			finish();
+			return;
+		}
+
+		// DataAccess instance:
+		dao = DataAccess.getInstance(databasePath);
+		
+		// Set-up UI...
+		setTitle("ExCiteS Project Picker");
 		// Hide soft keyboard on create
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 		setContentView(R.layout.activity_projectpicker);
-
-		// Database instance (path may be changed)
-		// Path is on Internal Storage
-		databasePath = this.getFilesDir().getAbsolutePath();
-		// Log.d("ExCiteS_Debug", "Internal Storage path: " + dbPATH);
-		dao = DataAccess.getInstance(databasePath);
-
 		// Get View Elements
 		enterURL = (EditText) findViewById(R.id.EnterURL);
 		projectList = (ListView) findViewById(R.id.ProjectsList);
-		runBtn = (Button) findViewById(R.id.RunButton);
-		removeBtn = (Button) findViewById(R.id.RemoveButton);
-		
+		runBtn = (Button) findViewById(R.id.RunProjectButton);
+		removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
 		// get scrolling right
 		findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
 		{
@@ -106,14 +141,8 @@ public class ProjectPickerActivity extends BaseActivity
 				return false;
 			}
 		});
-		
-		// Check if there is an SD Card
-		if(!SDCard.isExternalStorageWritable())
-		{	// Inform the user and close the application
-			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
-		}
 	}
-
+	
 	public void browse(View view)
 	{
 		Intent intent = new Intent(getBaseContext(), FileChooserActivity.class);
@@ -123,13 +152,13 @@ public class ProjectPickerActivity extends BaseActivity
 		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + "|" + ExCiteSFileLoader.EXCITES_FILE_EXTENSION + ")$");
 		startActivityForResult(intent, RETURN_BROWSE);
 	}
-
+	
 	/**
 	 * Retrieve all parsed projects from db and populate list
 	 */
 	public void populateProjectList()
 	{
-		projectList.setAdapter(new ArrayAdapter<Project>(this, android.R.layout.simple_list_item_single_choice, android.R.id.text1, dao.retrieveProjects()));
+		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list, android.R.id.text1, dao.retrieveProjects()));
 		if(!projectList.getAdapter().isEmpty())
 		{
 			runBtn.setEnabled(true);
@@ -165,13 +194,18 @@ public class ProjectPickerActivity extends BaseActivity
 			errorDialog("Please select a project", false).show();
 			return;
 		}
+		runProjectActivity(p.getName(), p.getVersion());
+	}
+	
+	public void runProjectActivity(String projectName, int projectVersion)
+	{
 		Intent i = new Intent(this, CollectorActivity.class);
-		i.putExtra(CollectorActivity.PARAMETER_PROJECT_NAME, p.getName());
-		i.putExtra(CollectorActivity.PARAMETER_PROJECT_VERSION, p.getVersion());
+		i.putExtra(CollectorActivity.PARAMETER_PROJECT_NAME, projectName);
+		i.putExtra(CollectorActivity.PARAMETER_PROJECT_VERSION, projectVersion);
 		i.putExtra(CollectorActivity.PARAMETER_DB_FOLDER_PATH, databasePath);
 		startActivity(i);
 	}
-
+	
 	private void removeProject()
 	{
 		Project p = getSelectedProject();
@@ -237,7 +271,7 @@ public class ProjectPickerActivity extends BaseActivity
 			if(SDCard.isExternalStorageWritable())
 			{
 				// Use /mnt/sdcard/ExCiteS/ as the basePath:
-				ExCiteSFileLoader loader = new ExCiteSFileLoader(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER);
+				ExCiteSFileLoader loader = new ExCiteSFileLoader(excitesFolderPath);
 				return loader.load(excitesFile);
 			}
 			else
@@ -282,7 +316,91 @@ public class ProjectPickerActivity extends BaseActivity
 		populateProjectList();
 		selectProjectInList(project); //select the new project
 	}
+	
+	public void scanQR(View view)
+	{
+		// Start the Intent to Scan a QR code
+		IntentIntegrator integrator = new IntentIntegrator(this);
+		integrator.initiateScan();
+	}
 
+	/**
+	 * Create a shortcut
+	 * 
+	 * @param view
+	 */
+	public void createShortcut(View view)
+	{
+		// Check if the user has selected a project from the list
+		if(projectList.getCheckedItemPosition() == -1)
+		{
+			errorDialog("Please select a project", false).show();
+			return;
+		}
+
+		// Get the selected project
+		Project selectedProject = getSelectedProject();
+
+		// Set the shortcut intent
+		Intent projectIntent = new Intent(getApplicationContext(), ProjectPickerActivity.class);
+		projectIntent.putExtra(SHORTCUT_PROJECT_NAME, selectedProject.getName());
+		projectIntent.putExtra(SHORTCUT_PROJECT_VERSION, selectedProject.getVersion());
+		projectIntent.setAction(Intent.ACTION_MAIN);
+
+		// Set up the icon
+		// TODO Get an icon from the form for each project
+		ShortcutIconResource iconResource = Intent.ShortcutIconResource.fromContext(ProjectPickerActivity.this, R.drawable.ic_launcher);
+
+		// The result we are passing back from this activity
+		Intent shortcutIntent = new Intent();
+		shortcutIntent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, iconResource);
+		// Do not allow duplicate shortcuts
+		shortcutIntent.putExtra("duplicate", false);
+		sendBroadcast(shortcutIntent);
+	}
+
+	/**
+	 * Remove a shortcut
+	 * 
+	 * @param view
+	 */
+	public void removeShortcut(View view)
+	{
+		// Check if the user has selected a project from the list
+		if(projectList.getCheckedItemPosition() == -1)
+		{
+			errorDialog("Please select a project", false).show();
+			return;
+		}
+
+		// Get the selected project
+		Project selectedProject = getSelectedProject();
+		
+		// Deleting shortcut
+		Intent projectIntent = new Intent(getApplicationContext(), ProjectPickerActivity.class);
+		projectIntent.setAction(Intent.ACTION_MAIN);
+
+		Intent shortcutIntent = new Intent();
+		shortcutIntent.setAction("com.android.launcher.action.UNINSTALL_SHORTCUT");
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
+		sendBroadcast(shortcutIntent);
+	}
+
+	/**
+	 * Return a name to be used for the creation / removal of shortcuts
+	 * 
+	 * @param project
+	 * @return
+	 */
+	public static String getShortcutName(Project project)
+	{
+		return project.getName() + " v" + project.getVersion();
+	}
+	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
@@ -291,6 +409,7 @@ public class ProjectPickerActivity extends BaseActivity
 		{
 			switch(requestCode)
 			{
+			// File browse dialog:
 			case RETURN_BROWSE:
 				// Get the result file path
 				// A list of files will always return, if selection mode is single, the list contains one file
@@ -304,9 +423,21 @@ public class ProjectPickerActivity extends BaseActivity
 					enterURL.setSelection(fileSource.length());
 				}
 				break;
+			// QR Reader
+			case IntentIntegrator.REQUEST_CODE :
+				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+				if(scanResult != null)
+				{
+					String fileUrl = data.getStringExtra("SCAN_RESULT");
+					enterURL.setText(fileUrl);
+					// Move the cursor to the end
+					enterURL.setSelection(fileUrl.length());
+				}
+				break;
 			}
 		}
 	}
+	
 
 	/**
 	 * Dialog to check whether it is desired to remove project
@@ -337,13 +468,14 @@ public class ProjectPickerActivity extends BaseActivity
 			removeDialogBox.show();
 		}
 	}
-
+	
 	@Override
 	protected void onPause()
 	{
 		// close database
 		super.onPause();
-		dao.closeDB();
+		if(dao != null)
+			dao.closeDB();
 	}
 
 	@Override
@@ -351,44 +483,59 @@ public class ProjectPickerActivity extends BaseActivity
 	{
 		// open database
 		super.onResume();
-		dao.openDB();
-		// Update project list:
-		populateProjectList();
+		if(dao != null)
+		{
+			dao.openDB();
+			// Update project list:
+			populateProjectList();
+		}
 	}
-
+	
 	/**
 	 * Background Async Task to download file
 	 * 
 	 * @author Michalis Vitos, mstevens
-	 * */
-	public class DownloadFileFromURL extends AsyncTask<Void, Integer, Void>
+	 */
+	public class DownloadFileFromURL extends AsyncTask<Void, Integer, Boolean>
 	{
 		
 		static private final String TEMP_FILE_EXTENSION = "tmp";
 		
 		// Variables
 		private long startTime;
+		private ProgressDialog progressDialog;
 		private String downloadUrl;
 		private File downloadFolder;
 		private File downloadFile;
-		private ProgressDialog progressDialog;
-		
-		public DownloadFileFromURL(String downloadUrl, String tempFilePrefix)
+
+		/**
+		 * Downloads the file
+		 * 
+		 * Note:
+		 * 	We do not use
+		 * 		Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+		 * 	as the download folder because it does not seem to be writable on the Xcover.
+		 * 
+		 * @param downloadUrl
+		 * @param filename
+		 */
+		public DownloadFileFromURL(String downloadUrl, String filename)
 		{
 			this.startTime = System.currentTimeMillis();
 			
 			this.downloadUrl = downloadUrl;
 			// Download file in folder /Download/timestamp-filename
-			this.downloadFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-			this.downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + tempFilePrefix + '_' + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
+			this.downloadFolder = new File(excitesFolderPath + DOWNLOADS_FOLDER);
+			FileHelpers.createFolder(downloadFolder);
+			this.downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 			
-			// Set-up the progress dialog
+			// instantiate it within the onCreate method
 			progressDialog = new ProgressDialog(ProjectPickerActivity.this);
 			progressDialog.setMessage("Downloading...");
 			progressDialog.setIndeterminate(false);
 			progressDialog.setMax(100);
 			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			progressDialog.setCancelable(false);
+			progressDialog.setCancelable(true);
 		}
 
 		/**
@@ -398,6 +545,17 @@ public class ProjectPickerActivity extends BaseActivity
 		protected void onPreExecute()
 		{
 			super.onPreExecute();
+
+			progressDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Cancel...", new DialogInterface.OnClickListener()
+			{
+				public void onClick(DialogInterface dialog, int which)
+				{
+					DownloadFileFromURL.this.cancel(true);
+					// Delete the downloaded file
+					downloadFile.delete();
+				}
+			});
+
 			progressDialog.show();
 		}
 
@@ -407,51 +565,57 @@ public class ProjectPickerActivity extends BaseActivity
 		 * @return
 		 * */
 		@Override
-		protected Void doInBackground(Void... voids)
+		protected Boolean doInBackground(Void... voids)
 		{
-			int count;
-			try
+			if(isOnline(ProjectPickerActivity.this))
 			{
-				URL url = new URL(downloadUrl);
-				URLConnection conection = url.openConnection();
-				conection.connect();
-				// getting file length
-				int fileLength = conection.getContentLength();
-
-				// input stream to read file - with 8k buffer
-				InputStream input = new BufferedInputStream(url.openStream(), 8192);
-				// Output stream to write file
-				OutputStream output = new FileOutputStream(downloadFile);
-
-				byte data[] = new byte[1024];
-				long total = 0;
-				while((count = input.read(data)) != -1)
+				int count;
+				try
 				{
-					total += count;
-					// Publish the progress....
-					publishProgress((int) (total * 100 / fileLength));
+					URL url = new URL(downloadUrl);
+					HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+					connection.setRequestMethod("GET");
+					connection.connect();
+					// getting file length
+					int fileLength = connection.getContentLength();
 
-					// writing data to file
-					output.write(data, 0, count);
+					// input stream to read file - with 8k buffer
+					InputStream input = new BufferedInputStream(url.openStream(), 8192);
+					// Output stream to write file
+					OutputStream output = new FileOutputStream(downloadFile);
+					
+					byte data[] = new byte[1024];
+					long total = 0;
+					while((count = input.read(data)) != -1)
+					{
+						total += count;
+						// Publish the progress....
+						publishProgress((int) (total * 100 / fileLength));
+
+						// writing data to file
+						output.write(data, 0, count);
+					}
+
+					// flushing output
+					output.flush();
+
+					// closing streams
+					output.close();
+					input.close();
 				}
-
-				// flushing output
-				output.flush();
-
-				// closing streams
-				output.close();
-				input.close();
+				catch(Exception e)
+				{
+					Log.e("Download error: ", e.getMessage(), e);
+					return false;
+				}
+				return true;
 			}
-			catch(Exception e)
-			{
-				Log.e("Download error: ", e.getMessage(), e);
-			}
-			return null;
+			return false;
 		}
 
 		/**
 		 * Updating progress bar
-		 */
+		 * */
 		protected void onProgressUpdate(Integer... progress)
 		{
 			progressDialog.setProgress(progress[0]);
@@ -461,25 +625,51 @@ public class ProjectPickerActivity extends BaseActivity
 		 * After completing background task Dismiss the progress dialog and parse the project
 		 * **/
 		@Override
-		protected void onPostExecute(Void voids)
+		protected void onPostExecute(Boolean downloadFinished)
 		{
 			// Dismiss the dialog after the file was downloaded
 			progressDialog.dismiss();
 
-			// Process the file & add the project to the db & list on the screen
-			Project project = processExcitesFile(downloadFile);
-			addProject(project, downloadUrl); //will show error if project is null
-			
-			// Handle temp file:
-			if(project != null)
-			{	//Rename temp file:
-				downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_' + (startTime / 1000) + ".excites"));
+			if(downloadFinished)
+			{
+				// Process the file & add the project to the db & list on the screen
+				Project project = processExcitesFile(downloadFile);
+				addProject(project, downloadUrl); //will show error if project is null
+				
+				// Handle temp file:
+				if(project != null)
+				{	//Rename temp file:
+					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_' + (startTime / 1000) + ".excites"));
+				}
+				else
+				{	//Delete temp file:
+					downloadFile.delete();
+				}
 			}
 			else
-			{	//Delete temp file:
+			{
+				errorDialog("Download error. Please check if you are connected to the Internet.", false).show();
+				// Delete the downloaded file
 				downloadFile.delete();
 			}
 		}
+	}
+
+	/**
+	 * Check if the device is connected to Internet
+	 * 
+	 * @param mContext
+	 * @return
+	 */
+	public static boolean isOnline(Context mContext)
+	{
+		ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo netInfo = cm.getActiveNetworkInfo();
+		if(netInfo != null && netInfo.isConnected())
+		{
+			return true;
+		}
+		return false;
 	}
 	
 }

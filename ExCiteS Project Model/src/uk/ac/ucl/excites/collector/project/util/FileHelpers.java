@@ -160,9 +160,20 @@ public final class FileHelpers
 	 */
 	public static boolean createFolder(String folderPath)
 	{
-		File folder = new File(folderPath);
+		return createFolder(new File(folderPath));
+	}
+	
+	/**
+	 * Attempts to create the necessary (containing) folder(s) for a given path
+	 * 
+	 * @param folderPath
+	 * @return success (whether the directory exists now)
+	 */
+	public static boolean createFolder(File folder)
+	{
 		if(!folder.exists() || !folder.isDirectory())
 			return folder.mkdirs();
 		return true;
 	}
+	
 }

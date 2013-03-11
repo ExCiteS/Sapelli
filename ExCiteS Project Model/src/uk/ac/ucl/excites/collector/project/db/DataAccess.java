@@ -38,6 +38,7 @@ public final class DataAccess
 	{
 		if(INSTANCE == null || INSTANCE.dbFolderPath != dbFolderPath)
 			INSTANCE = new DataAccess(dbFolderPath);
+		INSTANCE.openDB();
 		return INSTANCE;
 	}
 
@@ -55,8 +56,6 @@ public final class DataAccess
 		{
 			dbConfig = Db4oEmbedded.newConfiguration();
 			dbConfig.common().exceptionsOnNotStorable(true);
-			
-			
 			openDB(); //open the database!
 			Log.d(TAG, "Opened new database connection in file: " + getDbPath());
 		}

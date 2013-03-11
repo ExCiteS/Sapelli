@@ -14,89 +14,160 @@
         android:layout_marginTop="20dp"
         android:orientation="vertical" >
 
-        <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content" >
-
-            <TextView
+		<TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginBottom="10dp"
                 android:gravity="center"
-                android:text="ExCiteS Project Picker"
-                android:textAppearance="?android:attr/textAppearanceLarge"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold" />
-        </LinearLayout>
+                android:text="@string/available_projects"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="#FFFFFF" />
 
+            <include layout="@layout/hr" />
+        
         <LinearLayout
+            android:id="@+id/Projects"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content" >
 
             <ListView
                 android:id="@+id/ProjectsList"
                 android:layout_width="0dip"
-                android:layout_height="200dp"
+                android:layout_height="100dp"
                 android:layout_margin="5dp"
                 android:layout_weight="1"
                 android:background="#FFFFFF"
-                android:choiceMode="singleChoice" />
+                android:choiceMode="singleChoice">
+                <requestFocus />
+            </ListView>
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/AddRemoveProjectsButons"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp" >
 
             <Button
-                android:id="@+id/RunButton"
+                android:id="@+id/RunProjectButton"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:layout_weight=".5"
-                android:text="Run Project"
-                android:onClick="runProject" />
+                android:onClick="runProject"
+                android:text="@string/run_project"
+                android:textAppearance="@style/ButtonBar" />
 
             <Button
-                android:id="@+id/RemoveButton"
+                android:id="@+id/RemoveProjectButton"
                 android:layout_width="0dip"
                 android:layout_height="wrap_content"
                 android:layout_weight=".5"
                 android:onClick="removeDialog"
-                android:text="Remove Project" />
+                android:text="@string/remove_project"
+                android:textAppearance="@style/ButtonBar" />
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content" >
+            android:id="@+id/AddRemoveShortcutButtons"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" >
 
-            <EditText
-                android:id="@+id/EnterURL"
-                android:layout_width="0dip"
+            <TextView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight=".7"
-                android:inputType="textUri"
-                android:text="http://idesigner.gr/wp-content/uploads/test/AntiPoaching.excites" />
+                android:gravity="center"
+                android:text="@string/shortcuts"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="#FFFFFF" />
 
-            <Button
-                android:id="@+id/BrowseButton"
-                android:layout_width="0dip"
+            <include layout="@layout/hr" />
+
+            <LinearLayout
+                android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight=".3"
-                android:onClick="browse"
-                android:text="Browse" />
+                android:layout_marginBottom="20dp"
+                android:paddingTop="20dp" >
+
+                <Button
+                    android:id="@+id/CreateShortcutButton"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".5"
+                    android:onClick="createShortcut"
+                    android:text="@string/create_shortcut"
+                    android:textAppearance="@style/ButtonBar" />
+
+                <Button
+                    android:id="@+id/RemoveShortcutButton"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".5"
+                    android:onClick="removeShortcut"
+                    android:text="@string/remove_shortcut"
+                    android:textAppearance="@style/ButtonBar" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" >
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="50dp" >
 
-            <Button
-                android:id="@+id/LoadButton"
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="Load new Projects"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textColor="#FFFFFF" />
+
+            <include layout="@layout/hr" />
+
+            <LinearLayout
+                android:id="@+id/URLBox"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="20dp" >
+
+                <EditText
+                    android:id="@+id/EnterURL"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".7"
+                    android:inputType="textUri" />
+
+                <Button
+                    android:id="@+id/BrowseButton"
+                    android:layout_width="0dip"
+                    android:layout_height="wrap_content"
+                    android:layout_weight=".3"
+                    android:onClick="browse"
+                    android:text="@string/browse"
+                    android:textAppearance="@style/ButtonBar" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/LoadProject"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:onClick="loadFile"
-                android:text="Load Project" />
+                android:layout_height="wrap_content" >
+
+                <Button
+                    android:id="@+id/ScanButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:onClick="scanQR"
+                    android:text="@string/scan_qr_code"
+                    android:textAppearance="@style/ButtonBar" />
+
+                <Button
+                    android:id="@+id/DownloadButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:onClick="loadFile"
+                    android:text="@string/load_project"
+                    android:textAppearance="@style/ButtonBar" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
