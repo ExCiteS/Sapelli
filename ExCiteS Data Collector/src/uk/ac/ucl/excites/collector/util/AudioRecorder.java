@@ -9,13 +9,13 @@ import android.util.Log;
 /**
  * A Recording Utility Class
  * 
- * @author Michalis Vitos
+ * @author Michalis Vitos, mstevens
  * 
  */
 public class AudioRecorder
 {
 
-	final private MediaRecorder mMediaRecorder = new MediaRecorder();
+	final private MediaRecorder mediaRecorder = new MediaRecorder();
 	final private String path;
 	final private String filename;
 	final private String extension = ".3gp";
@@ -75,12 +75,12 @@ public class AudioRecorder
 			throw new IOException("Path to file could not be created.");
 		}
 
-		mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-		mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-		mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-		mMediaRecorder.setOutputFile(path);
-		mMediaRecorder.prepare();
-		mMediaRecorder.start();
+		mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+		mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+		mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+		mediaRecorder.setOutputFile(path);
+		mediaRecorder.prepare();
+		mediaRecorder.start();
 		isRecording = true;
 	}
 
@@ -91,8 +91,8 @@ public class AudioRecorder
 	{
 		if (isRecording)
 		{
-			mMediaRecorder.stop();
-			mMediaRecorder.release();
+			mediaRecorder.stop();
+			mediaRecorder.release();
 		}
 	}
 
@@ -105,4 +105,5 @@ public class AudioRecorder
 	{
 		return filename + extension;
 	}
+	
 }

@@ -9,7 +9,7 @@ import uk.ac.ucl.excites.collector.project.model.*;
  * @author mstevens
  *
  */
-public interface FieldView
+public interface CollectorUI
 {
 
 	public void setChoice(Choice cf);

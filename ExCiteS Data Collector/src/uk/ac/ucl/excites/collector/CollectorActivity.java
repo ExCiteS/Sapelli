@@ -14,12 +14,13 @@ import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.Photo;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.ui.FieldView;
+import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.ui.AudioView;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.ui.ButtonView;
 import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
+import uk.ac.ucl.excites.collector.util.Cancelable;
 import uk.ac.ucl.excites.collector.util.Debug;
 import uk.ac.ucl.excites.collector.util.SDCard;
 import android.content.Context;
@@ -46,7 +47,7 @@ import android.widget.ProgressBar;
  * 
  * @author mstevens, julia, Michalis Vitos
  */
-public class CollectorActivity extends BaseActivity implements FieldView
+public class CollectorActivity extends BaseActivity implements CollectorUI
 {
 
 	// STATICS--------------------------------------------------------
@@ -59,7 +60,10 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	static private final String TEMP_PHOTO_PREFIX = "tmpPhoto";
 	static private final String TEMP_PHOTO_SUFFIX = ".tmp";
 	static private final String TEMP_PHOTO_LOCATION_KEY = "tmpPhotoLocation";
-
+	
+	static private final int BUTTONS_VIEW_ID = 0;
+	static private final int FIELD_VIEW_ID = 1;
+	
 	// Request codes for returning data from intents
 	static public final int RETURN_PHOTO_CAPTURE = 1;
 	static public final int RETURN_VIDEO_CAPTURE = 2;
@@ -129,6 +133,7 @@ public class CollectorActivity extends BaseActivity implements FieldView
 
 		// Set-up buttonView
 		buttonView = new ButtonView(this);
+		buttonView.setId(BUTTONS_VIEW_ID);
 		rootLayout.addView(buttonView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 		
 		// Set-up controller:
@@ -198,10 +203,12 @@ public class CollectorActivity extends BaseActivity implements FieldView
 
 	private void removeFieldView()
 	{
-		if(this.fieldView != null)
+		if(fieldView != null)
 		{
-			rootLayout.removeView(this.fieldView); // throw away the old fieldField
-			this.fieldView = null;
+			if(fieldView instanceof Cancelable)
+				((Cancelable) fieldView).cancel(); //to stop audiorecording, ...
+			rootLayout.removeView(fieldView); // throw away the old fieldField
+			fieldView = null;
 		}
 	}
 	
@@ -213,6 +220,7 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	private void setFieldView(View fieldView)
 	{
 		removeFieldView();
+		fieldView.setId(FIELD_VIEW_ID);
 		this.fieldView = fieldView;
 		rootLayout.addView(fieldView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 	}
@@ -233,6 +241,28 @@ public class CollectorActivity extends BaseActivity implements FieldView
 		audioView.setAudioView(af, controller);
 	}
 
+	@Override
+	public void setLocation(LocationField lf)
+	{
+		// Show waiting view
+		LinearLayout waitingView = new LinearLayout(this);
+		waitingView.setGravity(Gravity.CENTER);
+		waitingView.addView(new ProgressBar(this, null, android.R.attr.progressBarStyleLarge));
+		setFieldView(waitingView);
+
+		// Start timeout counter
+		locationTimer = new Timer();
+		locationTimer.schedule(new TimerTask()
+		{
+			@Override
+			public void run()
+			{ // time's up!
+				controller.goForward();
+
+			}
+		}, lf.getTimeoutS() * 1000);
+	}
+	
 	/**
 	 * Calls on the built-in camera application of the phone to let the user take a photo
 	 * 
@@ -344,28 +374,6 @@ public class CollectorActivity extends BaseActivity implements FieldView
 		return list.size() > 0;
 	}
 
-	@Override
-	public void setLocation(LocationField lf)
-	{
-		// Show waiting view
-		LinearLayout waitingView = new LinearLayout(this);
-		waitingView.setGravity(Gravity.CENTER);
-		waitingView.addView(new ProgressBar(this, null, android.R.attr.progressBarStyleLarge));
-		rootLayout.addView(waitingView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-
-		// Start timeout counter
-		locationTimer = new Timer();
-		locationTimer.schedule(new TimerTask()
-		{
-			@Override
-			public void run()
-			{ // time's up!
-				controller.goForward();
-
-			}
-		}, lf.getTimeoutS() * 1000);
-	}
-
 	public void stopLocationTimer()
 	{
 		if(locationTimer != null)
@@ -375,24 +383,30 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	@Override
 	public void setOrientation(OrientationField of)
 	{
-		// TODO Auto-generated method stub
-
+		//do nothing (?)
 	}
 
 	@Override
 	protected void onPause()
-	{
-		// close database
+	{	// close database
 		super.onPause();
 		dao.closeDB();
 	}
 
 	@Override
 	protected void onResume()
-	{
-		// open database
+	{	// open database
 		super.onResume();
 		dao.openDB();
+	}
+	
+	@Override
+	protected void onDestroy()
+	{
+		//TODO or should this happen onStop()??
+		if(fieldView != null && fieldView instanceof Cancelable)
+			((Cancelable) fieldView).cancel();
+		super.onDestroy();
 	}
 
 }

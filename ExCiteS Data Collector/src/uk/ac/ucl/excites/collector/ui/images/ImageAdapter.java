@@ -78,6 +78,11 @@ public class ImageAdapter extends BaseAdapter
 	{
 		images.add(image);
 	}
+	
+	public void clear()
+	{
+		images.clear();
+	}
 
 	public int getCount()
 	{

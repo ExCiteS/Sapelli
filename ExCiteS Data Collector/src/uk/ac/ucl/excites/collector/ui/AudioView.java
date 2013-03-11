@@ -11,10 +11,11 @@ import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.project.model.Audio;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.ui.images.FileImage;
+import uk.ac.ucl.excites.collector.ui.images.Image;
 import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
 import uk.ac.ucl.excites.collector.ui.images.ResourceImage;
 import uk.ac.ucl.excites.collector.util.AudioRecorder;
-import uk.ac.ucl.excites.collector.util.Constants;
+import uk.ac.ucl.excites.collector.util.Cancelable;
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
@@ -22,16 +23,18 @@ import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.widget.AdapterView;
 
 /**
- * @author Julia, Michalis
+ * @author Julia, Michalis, mstevens
  * 
  */
-public class AudioView extends PickerView
+public class AudioView extends PickerView implements Cancelable
 {
-	static public final int COLUMNS = 2;
+
+	static private final String TAG = "AudioView";
 
 	private AudioRecorder audioRecorder;
-	private boolean recordingDone;
-
+	private Image startImage;
+	private Image stopImage;
+	
 	public AudioView(Context context)
 	{
 		super(context);
@@ -39,95 +42,110 @@ public class AudioView extends PickerView
 
 	public void setAudioView(final Audio audio, final ProjectController controller)
 	{
-		Project project = controller.getProject();
-		recordingDone = false;
+		Project project = controller.getProject();		
 		
-		setNumColumns(COLUMNS);
+		setNumColumns(1);
 		
 		//Adapter & images:
 		imageAdapter = new ImageAdapter(super.getContext());
 		//	Start rec image:
 		if(audio.getStartRecImageLogicalPath() != null)
-			imageAdapter.addImage(new FileImage(project, audio.getStartRecImageLogicalPath()));
+			startImage = new FileImage(project, audio.getStartRecImageLogicalPath());
 		else
-			imageAdapter.addImage(new ResourceImage(R.drawable.record));
+			startImage = new ResourceImage(R.drawable.record);
 		//  Stop rec image:
 		if(audio.getStopRecImageLogicalPath() != null)
-			imageAdapter.addImage(new FileImage(project, audio.getStopRecImageLogicalPath()));
+			stopImage = new FileImage(project, audio.getStopRecImageLogicalPath());
 		else
-			imageAdapter.addImage(new ResourceImage(R.drawable.stop));
+			stopImage = new ResourceImage(R.drawable.stop);
+		imageAdapter.addImage(startImage); //show start button
 		
 		// Set image dimensions when view dimensions are known:
 		getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
 		{
 			public boolean onPreDraw()
-			{	//the images are squares (width=height)
-				int imageSize = (getWidth() - SPACING) / COLUMNS;
-				imageAdapter.setImageWidth(imageSize);
-				imageAdapter.setImageHeight(imageSize);	
+			{
+				imageAdapter.setImageWidth(LayoutParams.MATCH_PARENT);
+				imageAdapter.setImageHeight(getHeight());
 				setAdapter(imageAdapter);
 				
 				getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
 				return false;
 			}
 		});
-
+				
 		// set click listener
 		setOnItemClickListener(new OnItemClickListener()
 		{
 			@Override
 			public void onItemClick(AdapterView<?> parent, View v, int position, long id)
 			{
-				if(position == 0)
-				{
-					imageAdapter.makeInvisible(0);
-					setAdapter(imageAdapter);
-
-					File cacheDir = new File(controller.getProject().getDataPath() + "/Audio-Recordings"); //TODO get rid of extension, rename files, remove subfolder 
-					if(!cacheDir.exists())
-						cacheDir.mkdirs();
-
-					String instanceFolder = cacheDir.toString();
-
-					// Timestamp
-					String timestamp = Long.toString(System.currentTimeMillis());
-
+				if(audioRecorder == null)
+				{	//Start button clicked
 					try
 					{
+						File cacheDir = new File(controller.getProject().getDataPath() + "/Audio-Recordings"); //TODO get rid of extension, rename files, remove subfolder 
+						if(!cacheDir.exists())
+							cacheDir.mkdirs();
+						String instanceFolder = cacheDir.toString();
+
+						// Timestamp
+						String timestamp = Long.toString(System.currentTimeMillis());
+						
 						audioRecorder = new AudioRecorder(instanceFolder, timestamp);
-					}
-					catch(Exception e)
-					{
-						e.printStackTrace();
-						if(Constants.DEBUG_LOG)
-							Log.i(Constants.TAG, e.toString());
-					}
-
-					// Start the recording
-					try
-					{
 						audioRecorder.start();
-						recordingDone = true;
 					}
 					catch(IOException e)
 					{
-						e.printStackTrace();
+						Log.e(TAG, "Could not start audio recording.", e);
+						controller.audioDone(false);
+						return; //!!!
+					}
+					
+					//Switch buttons:
+					imageAdapter.clear();
+					imageAdapter.addImage(stopImage);
+					setAdapter(imageAdapter);
+				}
+				else
+				{	//Stop button clicked
+					try
+					{
+						audioRecorder.stop();
+					}
+					catch(IOException e)
+					{
+						Log.e(TAG, "Error on stopping audio recording.", e);
+					}
+					finally
+					{
+						audioRecorder = null;
+						controller.audioDone(true);
 					}
 				}
-				if(position == 1)
-					// Stop the recording
-					try
-					{
-						if(recordingDone)
-							audioRecorder.stop();
-						controller.audioDone(recordingDone);
-					}
-					catch(IOException e)
-					{
-						e.printStackTrace();
-					}
 			}
 		});
+	}
+
+	@Override
+	public void cancel()
+	{
+		if(audioRecorder != null)
+		{
+			try
+			{
+				audioRecorder.stop();
+				//Log.d(TAG, "audioRecording stopped");
+			}
+			catch(IOException e)
+			{
+				Log.e(TAG, "Error on stopping audio recording.", e);
+			}
+			finally
+			{
+				audioRecorder = null;
+			}
+		}
 	}
 
 }

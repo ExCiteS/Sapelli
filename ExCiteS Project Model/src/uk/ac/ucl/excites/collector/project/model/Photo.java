@@ -3,7 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
-import uk.ac.ucl.excites.collector.project.ui.FieldView;
+import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 
 /**
  * @author Michalis Vitos
@@ -18,7 +18,7 @@ public class Photo extends MediaAttachment
 	}
 
 	@Override
-	public void setIn(FieldView fv)
+	public void setIn(CollectorUI fv)
 	{
 		fv.setPhoto(this);
 	}

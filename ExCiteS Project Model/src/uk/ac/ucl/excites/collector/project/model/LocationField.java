@@ -3,7 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
-import uk.ac.ucl.excites.collector.project.ui.FieldView;
+import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.storage.model.LocationColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.types.Location;
@@ -257,7 +257,7 @@ public class LocationField extends Field
 	}
 		
 	@Override
-	public void setIn(FieldView fv)
+	public void setIn(CollectorUI fv)
 	{
 		fv.setLocation(this);
 	}

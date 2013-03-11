@@ -3,7 +3,7 @@ package uk.ac.ucl.excites.collector.project.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.collector.project.ui.FieldView;
+import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 
@@ -241,7 +241,7 @@ public class Choice extends Field
 	}
 
 	@Override
-	public void setIn(FieldView fv)
+	public void setIn(CollectorUI fv)
 	{
 		fv.setChoice(this);
 	}
