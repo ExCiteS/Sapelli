@@ -106,13 +106,10 @@ public class ImageAdapter extends BaseAdapter
 			imageView.setBackgroundColor(backgroundColor);
 
 			Image img = images.get(position);
-			img.setIn(imageView); //set the image
+			img.setIn(imageView); //sets the image (if it is not invisible)
 			imageView.setScaleType(scaleType);
 			imageView.setLayoutParams(new GridView.LayoutParams(imageWidth, imageHeight));
 			imageView.setPadding(PADDING, PADDING, PADDING, PADDING);
-			
-			if(!img.isVisible())
-				imageView.setVisibility(View.INVISIBLE);
 		}
 		else
 		{

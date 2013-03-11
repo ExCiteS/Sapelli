@@ -11,17 +11,24 @@ public abstract class Field
 {
 	
 	//Statics----------------------------------------------
+	static public enum Optionalness
+	{
+	    ALWAYS,
+	    NOT_IF_REACHED,
+	    NEVER
+	}
 	
 	//Defaults:
 	static public final boolean DEFAULT_ENABLED = true;
-	static public final boolean DEFAULT_OPTIONAL = true;
+	static public final Optionalness DEFAULT_OPTIONAL = Optionalness.NOT_IF_REACHED;
 	static public final boolean DEFAULT_NO_COLUMN = false;
 	
 	//Dynamics---------------------------------------------
 	protected String id;
 	protected Field jump;
+	protected Column<?> column;
 	protected boolean enabled = DEFAULT_ENABLED;
-	protected boolean optional = DEFAULT_OPTIONAL;
+	protected Optionalness optional = DEFAULT_OPTIONAL;
 	protected boolean noColumn = DEFAULT_NO_COLUMN;
 	
 	public Field(String id)
@@ -58,7 +65,7 @@ public abstract class Field
 	/**
 	 * @return the optional
 	 */
-	public boolean isOptional()
+	public Optionalness getOptional()
 	{
 		return optional;
 	}
@@ -66,9 +73,9 @@ public abstract class Field
 	/**
 	 * @param optional the optional to set
 	 */
-	public void setOptional(boolean optional)
+	public void setOptional(Optionalness optionalness)
 	{
-		this.optional = optional;
+		this.optional = optionalness;
 	}
 
 	public void setJump(Field target)
@@ -97,6 +104,13 @@ public abstract class Field
 	public void enable()
 	{
 		enabled = true;
+	}
+	
+	public Column<?> getColumn()
+	{
+		if(!noColumn && this.column == null)
+			column = createColumn();
+		return column;
 	}
 	
 	/**

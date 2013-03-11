@@ -1,11 +1,9 @@
 package uk.ac.ucl.excites.storage.model;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.LinkedHashMap;
-
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author mstevens
@@ -22,17 +20,12 @@ public class Schema
 	private String name;
 	private String description;
 	
-	private LinkedHashMap<String,Column> columnsMap; 
-	private ArrayList<Column> columnsArray;
+	private ArrayList<Column> columns;
+	private Map<String, Integer> columnNameToIndex; 
 	//TODO Do more Googling to find if there is a HashMap data structure that can return the keys as an array or ArrayList (in insertion order)?
 	//		In that case we don't need to have this separate arraylist
 	
 	private boolean sealed = false;
-	
-	private Table<Record, Column, Object> table;
-	
-	//TODO epicollect URL?
-	//TODO excites URL?
 	
 	public Schema(int id)
 	{
@@ -54,16 +47,16 @@ public class Schema
 		this.id = id;
 		this.version = version;
 		this.name = (name == null ? "Schema_" + id + "_v" + version : name);
-		columnsMap = new LinkedHashMap<String, Column>();
-		columnsArray = new ArrayList<Column>();
+		columnNameToIndex = new LinkedHashMap<String, Integer>();
+		columns = new ArrayList<Column>();
 	}
 	
 	public void addColumn(Column column)
 	{
 		if(!sealed)
 		{
-			columnsMap.put(column.getName(), column);
-			columnsArray.add(column);
+			columnNameToIndex.put(column.getName(), columns.size());
+			columns.add(column);
 			column.setSchema(this);
 		}
 		else
@@ -72,17 +65,27 @@ public class Schema
 	
 	public Column getColumn(int index)
 	{
-		return columnsArray.get(index);
+		return columns.get(index);
 	}
 	
 	public Column getColumn(String name)
 	{
-		return columnsMap.get(name);
+		return columns.get(columnNameToIndex.get(name));
 	}
 	
-	public Collection<Column> getColumns()
+	public List<Column> getColumns()
 	{
-		return columnsArray;
+		return columns;
+	}
+	
+	public int getColumnIndex(String name)
+	{
+		return columnNameToIndex.get(name);
+	}
+	
+	public int getColumnIndex(Column column)
+	{
+		return columnNameToIndex.get(column.getName());
 	}
 
 	/**
@@ -99,7 +102,6 @@ public class Schema
 	public void seal()
 	{
 		this.sealed = true;
-		this.table = HashBasedTable.create(); //TODO try different Table implementations (see Guava docs)
 	}
 
 	/**
@@ -132,14 +134,6 @@ public class Schema
 	public String getDescription()
 	{
 		return description;
-	}
-
-	/**
-	 * @return the records
-	 */
-	public Table<Record, Column, Object> getTable()
-	{
-		return table;
 	}
 
 }

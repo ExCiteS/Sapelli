@@ -20,6 +20,7 @@ public class EndField extends Field
 	public EndField()
 	{
 		super(ID);
+		noColumn = true;
 	}
 
 	@Override

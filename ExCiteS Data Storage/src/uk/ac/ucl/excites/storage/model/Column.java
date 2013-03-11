@@ -3,10 +3,6 @@ package uk.ac.ucl.excites.storage.model;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.google.common.collect.Table;
 
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
@@ -68,7 +64,7 @@ public abstract class Column<T>
 		else
 		{
 			validate(value); //throws exception if invalid
-			schema.getTable().put(record, this, value);
+			record.setValue(this, value);
 		}
 	}
 	
@@ -94,7 +90,7 @@ public abstract class Column<T>
 	{
 		if(this.schema != record.getSchema())
 			throw new IllegalArgumentException("Schema mismatch.");
-		return (T) schema.getTable().get(record, this);
+		return (T) record.getValue(this);
 	}
 	
 	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException
@@ -162,6 +158,14 @@ public abstract class Column<T>
 		return name;
 	}
 
+	/**
+	 * @return the optional
+	 */
+	public boolean isOptional()
+	{
+		return optional;
+	}
+
 	public String toString()
 	{
 		return "Column [" + name + "]";
@@ -179,14 +183,5 @@ public abstract class Column<T>
 	 * @return
 	 */
 	public abstract int getSize();
-	
-	public List<Record> equalitySelect(Table<Record, Column<T>, T> table, T value)
-	{
-		List<Record> records = new ArrayList<Record>();
-		for(Record r : table.rowKeySet())
-			if(table.row(r).get(this).equals(value))
-				records.add(r);
-		return records;
-	}
 	
 }

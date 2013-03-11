@@ -19,11 +19,8 @@ public class ResourceImage extends Image
 		this.resourceID = id;
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.ui.images.Image#setIn(android.widget.ImageView)
-	 */
 	@Override
-	public void setIn(ImageView imageView)
+	protected void _setIn(ImageView imageView)
 	{
 		imageView.setImageResource(resourceID);
 	}

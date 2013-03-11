@@ -1,3 +1,6 @@
+/**
+ * 
+ */
 package uk.ac.ucl.excites.storage.model;
 
 import java.util.Set;
@@ -9,17 +12,56 @@ import uk.ac.ucl.excites.storage.io.BitOutputStream;
  * @author mstevens
  *
  */
-@SuppressWarnings("rawtypes")
 public class Record
 {
+	
+	protected Schema schema;
+	protected Object[] values;
 
-	private Schema schema;
-		
 	public Record(Schema schema)
 	{
 		if(!schema.isSealed())
-			throw new IllegalArgumentException("Schema must be sealed before records based on it can be created!");
+			throw new IllegalStateException("Schema must be sealed before records based on it can be created!");
 		this.schema = schema;
+		values = new Object[schema.getColumns().size()];
+	}
+	
+	/**
+	 * @return the schema
+	 */
+	public Schema getSchema()
+	{
+		return schema;
+	}
+	
+	protected void setValue(Column<?> column, Object value)
+	{
+		setValue(schema.getColumnIndex(column), value);
+	}
+	
+	protected void setValue(String columnName, Object value)
+	{
+		setValue(schema.getColumnIndex(columnName), value);
+	}
+	
+	protected void setValue(int columnIndex, Object value)
+	{
+		values[columnIndex] = value;
+	}
+
+	protected Object getValue(Column<?> column)
+	{
+		return getValue(schema.getColumnIndex(column));
+	}
+	
+	protected Object getValue(String columnName)
+	{
+		return getValue(schema.getColumnIndex(columnName));
+	}
+	
+	protected Object getValue(int columnIndex)
+	{
+		return values[columnIndex];
 	}
 	
 	/**
@@ -37,55 +79,27 @@ public class Record
 		int c = 0;
 		for(String v : values)
 		{
-			setParsedValue(c, v);
+			schema.getColumn(c).parseAndStoreValue(this, v);
 			c++;
 		}
 	}
 	
-	public void setParsedValue(String columnName, String value) throws Exception
+	public boolean isFilled()
 	{
-		setParsedValue(schema.getColumn(columnName), value);
+		for(Column<?> c : schema.getColumns())
+		{
+			Object v = getValue(c);
+			if(v == null && !c.isOptional())
+				return false; //null value in non-optional column	
+		}		
+		return true;
 	}
 	
-	public void setParsedValue(int columnIndex, String value) throws Exception
-	{
-		setParsedValue(schema.getColumn(columnIndex), value);
-	}
-		
-	public void setParsedValue(Column column, String value) throws Exception
-	{
-		column.parseAndStoreValue(this, value);
-	}
-	
-	public Object get(String columnName)
-	{
-		return get(schema.getColumn(columnName));
-	}
-	
-	public Object get(int columnIndex)
-	{
-		return get(schema.getColumn(columnIndex));
-	}
-	
-	public Object get(Column column)
-	{
-		return column.retrieveValue(this);
-	}
-
-	/**
-	 * @return the schema
-	 */
-	public Schema getSchema()
-	{
-		return schema;
-	}
-	
-	public void writeToBitStream(BitOutputStream bitStream, Set<Column> skipColumns) throws Exception
+	public void writeToBitStream(BitOutputStream bitStream, Set<Column<?>> skipColumns) throws Exception
 	{
 		try
-		{
-			//write fields:
-			for(Column c : schema.getColumns())
+		{	//write fields:
+			for(Column<?> c : schema.getColumns())
 				if(!skipColumns.contains(c))
 					c.retrieveAndWriteValue(this, bitStream);
 		}
@@ -95,19 +109,27 @@ public class Record
 		}
 	}
 	
-	public void readFromBitStream(BitInputStream bitStream, Set<Column> skipColumns) throws Exception
+	public void readFromBitStream(BitInputStream bitStream, Set<Column<?>> skipColumns) throws Exception
 	{
 		try
-		{
-			//read fields:
-			for(Column c : schema.getColumns())
+		{	//read fields:
+			for(Column<?> c : schema.getColumns())
 				if(!skipColumns.contains(c))
-					c.readAndStoreValue(this, bitStream);
+					c.readAndStoreValue(this, bitStream); 
 		}
 		catch(Exception e)
 		{
 			throw new Exception("Error on attempting to read record", e);
 		}
 	}
-
+	
+	@Override
+	public String toString()
+	{
+		StringBuffer bff = new StringBuffer();
+		for(Column<?> c : schema.getColumns())
+			bff.append(c.getName() + ": " + c.retrieveAndPrintValue(this) + "\n");
+		return bff.toString();
+	}
+	
 }

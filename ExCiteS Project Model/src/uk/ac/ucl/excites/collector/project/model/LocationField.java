@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.collector.project.model;
 
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.storage.model.LocationColumn;
+import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.types.Location;
 
 /**
@@ -232,10 +233,10 @@ public class LocationField extends Field
 	@Override
 	protected LocationColumn createColumn()
 	{
-		return new LocationColumn(id, true, doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, storeProvider);
+		return new LocationColumn(id, true /*always optional because we can never be sure to get coordinates*/, doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, storeProvider);
 	}
 	
-	public boolean storeLocation(Location location, FormEntry entry)
+	public boolean storeLocation(Location location, Record entry)
 	{	
 		//Time check
 		//TODO
@@ -246,13 +247,13 @@ public class LocationField extends Field
 		//TODO
 		
 		//Ok location is good enough, so store it:
-		((LocationColumn) entry.getColumn(id)).storeValue(entry, location);
+		((LocationColumn) column).storeValue(entry, location);
 		return true;
 	}
 	
-	public Location retrieveLocation(FormEntry entry)
+	public Location retrieveLocation(Record entry)
 	{
-		return ((LocationColumn) entry.getColumn(id)).retrieveValue(entry);
+		return ((LocationColumn) column).retrieveValue(entry);
 	}
 		
 	@Override

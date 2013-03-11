@@ -7,19 +7,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import com.google.common.io.Files;
 
 /**
  * File I/O helpers
  * 
  * @author mstevens, Michalis Vitos
- *
+ * 
  */
 public final class FileHelpers
 {
 	public static final String TAG = "FileHelpers";
-	
-	private FileHelpers() { } //no-one should instantiate this class
+
+	private FileHelpers()
+	{
+	} // no-one should instantiate this class
 
 	static public boolean isValidFileName(String filename)
 	{
@@ -66,7 +67,7 @@ public final class FileHelpers
 		}
 		return filename;
 	}
-	
+
 	/**
 	 * Method to Copy a file
 	 * 
@@ -76,24 +77,25 @@ public final class FileHelpers
 	 */
 	public static void copyFile(String srcFilepath, String dstFilepath)
 	{
+		copyFile(new File(srcFilepath), new File(dstFilepath));
+	}
+	
+	public static void copyFile(File srcFile, File dstFile)
+	{
 		try
 		{
-			// Create the files
-			File srcFile = new File(srcFilepath);
-			File dstFile = new File(dstFilepath);
-	
 			// Get the parent directory
 			File parentDir = new File(dstFile.getParentFile().getAbsolutePath());
 			parentDir.mkdirs();
-	
+
 			if(!dstFile.exists())
 			{
 				dstFile.createNewFile();
 			}
-	
+
 			InputStream in = new FileInputStream(srcFile);
 			OutputStream out = new FileOutputStream(dstFile);
-	
+
 			// Transfer bytes from in to out
 			byte[] buf = new byte[1024];
 			int len;
@@ -108,11 +110,12 @@ public final class FileHelpers
 		{
 			System.err.println("FileIO error: " + e.getLocalizedMessage());
 			e.printStackTrace();
-		}
+		}		
 	}
 
 	/**
 	 * Delete a file
+	 * 
 	 * @param filePath
 	 * @return whether the file was deleted or not
 	 */
@@ -123,6 +126,7 @@ public final class FileHelpers
 
 	/**
 	 * Move a file
+	 * 
 	 * @param srcFilepath
 	 * @param dstFilepath
 	 */
@@ -130,7 +134,16 @@ public final class FileHelpers
 	{
 		try
 		{
-			Files.move(new File(srcFilepath), new File(dstFilepath));
+			File from = new File(srcFilepath);
+			File to = new File(dstFilepath);
+			if(!from.equals(to))
+				throw new IllegalArgumentException("Source and destination files must be different.");
+			if(!from.renameTo(to))
+			{
+			      copyFile(from, to);
+			      if(!from.delete())
+			    	  throw new IOException("Unable to delete " + from);
+			}
 		}
 		catch(IOException e)
 		{
@@ -140,7 +153,7 @@ public final class FileHelpers
 	}
 
 	/**
-	 * Attempts to create the necessary (containing) folder(s) for a given path 
+	 * Attempts to create the necessary (containing) folder(s) for a given path
 	 * 
 	 * @param folderPath
 	 * @return success (whether the directory exists now)

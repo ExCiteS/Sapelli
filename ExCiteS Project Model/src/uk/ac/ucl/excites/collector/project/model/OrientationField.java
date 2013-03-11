@@ -46,7 +46,7 @@ public class OrientationField extends Field
 	@Override
 	protected OrientationColumn createColumn()
 	{
-		return new OrientationColumn(id, true, storeX, storeY, storeZ);
+		return new OrientationColumn(id, true /*always optional (in case the sensor doesn't work)*/, storeX, storeY, storeZ);
 	}
 
 	@Override

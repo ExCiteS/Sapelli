@@ -8,9 +8,9 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 
-import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
+import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 
 /**
@@ -31,7 +31,7 @@ public class Form
 	public static final boolean DEFAULT_VIBRATE = true;
 	public static final boolean DEFAULT_SHOW_BACK = true;
 	public static final boolean DEFAULT_SHOW_CANCEL = true;
-	public static final boolean DEFAULT_SHOW_FORWARD = false; // for now we never show the forward button
+	public static final boolean DEFAULT_SHOW_FORWARD = true;
 	public static final String DEFAULT_BUTTON_BACKGROUND_COLOR = "#E8E8E8"; //light gray
 
 	public static final String COLUMN_TIMESTAMP_START = "StartTime";
@@ -45,6 +45,7 @@ public class Form
 	// Dynamics-------------------------------------------------------
 	private int schemaID;
 	private int schemaVersion;
+	private Schema schema;
 	private String name;
 
 	// Fields
@@ -88,6 +89,11 @@ public class Form
 		this.buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
 		this.endAction = DEFAULT_END_ACTION;
 		this.vibrateOnEnd = DEFAULT_VIBRATE;
+	}
+	
+	public void initialiseStorage()
+	{
+		getSchema(); //this will also trigger all Column and ValueDictionaries to be created/initialised 
 	}
 
 	public void addField(Field f)
@@ -344,11 +350,27 @@ public class Form
 		this.endSoundPath = endSoundPath;
 	}
 
-	public Schema getSchema(DataAccess dao)
+	/**
+	 * @return the schemaID
+	 */
+	public int getSchemaID()
 	{
-		Schema schema = dao.retrieveSchema(schemaID, schemaVersion);
+		return schemaID;
+	}
+
+	/**
+	 * @return the schemaVersion
+	 */
+	public int getSchemaVersion()
+	{
+		return schemaVersion;
+	}
+
+	public Schema getSchema()
+	{
 		if(schema == null)
 		{
+			//create new one:
 			schema = new Schema(schemaID, schemaVersion, name);
 			// Internal-use columns:
 			// Timestamp column(s):
@@ -358,28 +380,36 @@ public class Form
 			// Device ID column:
 			schema.addColumn(new IntegerColumn(COLUMN_DEVICE_ID, false, false, 32));
 			// Transmission information columns:
-
+			
+			
 			// Columns for user-defined fields:
 			for(Field f : fields)
 				if(!f.isNoColumn())
-					schema.addColumn(f.createColumn());
+					schema.addColumn(f.getColumn());
 			// Seal & store the schema:
 			schema.seal();
-			dao.store(schema); // !!!
 		}
 		return schema;
 	}
-
-	public FormEntry newEntry(DataAccess dao, long deviceID)
+	
+	public Record newEntry(long deviceID)
 	{
-		FormEntry entry = new FormEntry(this, dao);
+		Record record = new Record(getSchema()); //call getSchema() once to make sure the schema (and columns) are initialised
+		
+		// Set current time as start timestamp
+		((DateTimeColumn) schema.getColumn(COLUMN_TIMESTAMP_START)).storeValue(record, new DateTime() /*= now*/);
 
-		// TODO Set current time as start timestamp
-		DateTime dt;
+		// Set deviceID
+		((IntegerColumn) schema.getColumn(COLUMN_DEVICE_ID)).storeValue(record, deviceID);
 
-		// TODO Set deviceID
-
-		return entry;
+		return record;
+	}
+	
+	public void finish(Record record)
+	{
+		if(storeEndTime)
+			// Set current time as end timestamp
+			((DateTimeColumn) schema.getColumn(COLUMN_TIMESTAMP_END)).storeValue(record, new DateTime() /*= now*/);
 	}
 
 }

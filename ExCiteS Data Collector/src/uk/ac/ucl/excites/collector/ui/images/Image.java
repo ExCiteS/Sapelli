@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.ui.images;
 
+import android.view.View;
 import android.widget.ImageView;
 
 /**
@@ -12,9 +13,17 @@ import android.widget.ImageView;
 public abstract class Image
 {
 	
-	private boolean visible = true;
+	protected boolean visible = true;
 	
-	public abstract void setIn(ImageView imageView);
+	public void setIn(ImageView imageView)
+	{
+		if(visible)
+			_setIn(imageView);
+		else
+			imageView.setVisibility(View.INVISIBLE);
+	}
+	
+	protected abstract void _setIn(ImageView imageView);
 
 	public void setVisibility(boolean visible)
 	{

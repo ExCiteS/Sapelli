@@ -6,16 +6,20 @@ package uk.ac.ucl.excites.collector.project.db;
 import java.io.File;
 import java.util.List;
 
+import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.util.FileHelpers;
+import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import android.util.Log;
 
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
+import com.db4o.config.EmbeddedConfiguration;
 import com.db4o.query.Predicate;
+
 
 /**
  * @author mstevens, julia, Michalis Vitos
@@ -27,7 +31,7 @@ public final class DataAccess
 	//Statics----------------------------------------------
 	static private final String TAG = "DATA ACCESS";
 	static private final String DATABASE_NAME = "ExCiteS.db4o";
-	static private final int PROJECT_ACTIVATION_DEPTH = 100;
+	static private final int ACTIVATION_DEPTH = 100;
 	static private DataAccess INSTANCE = null;
 
 	static public DataAccess getInstance(String dbFolderPath)
@@ -39,6 +43,7 @@ public final class DataAccess
 
 	//Dynamics---------------------------------------------
 	private String dbFolderPath;
+	private EmbeddedConfiguration dbConfig;
 	private ObjectContainer db;
 	
 	private DataAccess(String dbFolderPath)
@@ -48,6 +53,10 @@ public final class DataAccess
 		this.dbFolderPath = dbFolderPath;
 		try
 		{
+			dbConfig = Db4oEmbedded.newConfiguration();
+			dbConfig.common().exceptionsOnNotStorable(true);
+			
+			
 			openDB(); //open the database!
 			Log.d(TAG, "Opened new database connection in file: " + getDbPath());
 		}
@@ -75,7 +84,7 @@ public final class DataAccess
 			//Log.w(TAG, "Database is already open.");
 			return;
 		}
-		this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), getDbPath());
+		this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), getDbPath());		
 	}
 	
 	/**
@@ -129,30 +138,67 @@ public final class DataAccess
 	public List<Schema> retrieveSchemata()
 	{
 		List<Schema> result = db.query(Schema.class);
+		for(Schema s : result)
+			db.activate(s, ACTIVATION_DEPTH);
 		return result;
 	}
-
+	
+	/**
+	 * @param record
+	 */
+	public void store(Record record)
+	{
+		db.store(record);
+	}
+	
+	/**
+	 * Retrieve Records by their Schema
+	 * 
+	 * @param schema
+	 * @return
+	 */
+	public List<Record> retrieveRecords(final Schema schema)
+	{
+		ObjectSet<Record> result = db.query(new Predicate<Record>()
+		{
+			private static final long serialVersionUID = 1L;
+			
+			public boolean match(Record record)
+			{
+				return record.getSchema() == schema;
+			}
+		});
+		for(Record r : result)
+			db.activate(r, ACTIVATION_DEPTH);
+		return result;
+	}
+	
 	/**
 	 * @param id
 	 * @param version
 	 * @return
 	 */
-	@SuppressWarnings("serial")
 	public Schema retrieveSchema(final int id, final int version)
 	{
 		ObjectSet<Schema> result = db.query(new Predicate<Schema>()
 		{
+			private static final long serialVersionUID = 1L;
+			
 			public boolean match(Schema schema)
 			{
 				return schema.getID() == id && schema.getVersion() == version;
 			}
 		});
 		if(result.hasNext())
-			return result.next();
+		{
+			Schema s = result.next();
+			db.activate(s, ACTIVATION_DEPTH);
+			return s;
+		}
 		else
 			return null;
 	}
-
+	
 	/**
 	 * @param project
 	 */
@@ -160,6 +206,14 @@ public final class DataAccess
 	{
 		if(retrieveProject(project.getName(), project.getVersion()) != null)
 			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
+		db.store(project);
+	}
+	
+	/**
+	 * @param project
+	 */
+	public void update(Project project)
+	{
 		db.store(project);
 	}
 
@@ -172,7 +226,7 @@ public final class DataAccess
 	{
 		final List<Project> result = db.queryByExample(Project.class);
 		for(Project p : result)
-			db.activate(p, PROJECT_ACTIVATION_DEPTH);
+			db.activate(p, ACTIVATION_DEPTH);
 		return result;
 	}
 
@@ -196,7 +250,7 @@ public final class DataAccess
 		else
 		{
 			Project p = result.get(0);
-			db.activate(p, PROJECT_ACTIVATION_DEPTH);
+			db.activate(p, ACTIVATION_DEPTH);
 			return p;
 		}
 	}
@@ -209,6 +263,34 @@ public final class DataAccess
 	public void deleteProject(Project project)
 	{
 		db.delete(project);
+	}
+	
+	/**
+	 * Retrieve a form by its schemaID & version
+	 * 
+	 * @param schemaID
+	 * @param schemaVersion
+	 * @return
+	 */
+	public Form retrieveForm(final int schemaID, final int schemaVersion)
+	{
+		ObjectSet<Form> result = db.query(new Predicate<Form>()
+		{
+			private static final long serialVersionUID = 1L;
+			
+			public boolean match(Form form)
+			{
+				return form.getSchemaID() == schemaID && form.getSchemaVersion() == schemaVersion;
+			}
+		});
+		if(result.hasNext())
+		{
+			Form f = result.next();
+			db.activate(f, ACTIVATION_DEPTH);
+			return f;
+		}
+		else
+			return null;
 	}
 	
 }

@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.collector.project.model.Audio;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.MediaAttachment;
@@ -169,7 +170,10 @@ public class ProjectParser extends DefaultHandler
 		{
 			currentChoice = new Choice(attributes.getValue("id"), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
 			if(currentChoice.isRoot())
+			{
 				currentForm.addField(currentChoice); // this is a top-level Choice, so add it as a field of the form
+				setOptionalness(currentChoice, attributes);
+			}
 			// Remember ID & jumps
 			rememberIDAndJump(currentChoice, attributes);
 			// No column:
@@ -190,6 +194,7 @@ public class ProjectParser extends DefaultHandler
 		{
 			LocationField locField = new LocationField(attributes.getValue("id"));
 			currentForm.addField(locField);
+			setOptionalness(locField, attributes);
 			rememberIDAndJump(locField, attributes);
 			// Type:
 			String type = attributes.getValue("type");
@@ -240,6 +245,7 @@ public class ProjectParser extends DefaultHandler
 		{
 			OrientationField orField = new OrientationField(attributes.getValue("id"), attributes.getValue("axes"));
 			currentForm.addField(orField);
+			setOptionalness(orField, attributes);
 		}
 	}
 
@@ -255,6 +261,7 @@ public class ProjectParser extends DefaultHandler
 		// </Form>
 		else if(qName.equals(FORM))
 		{
+			currentForm.initialiseStorage(); //generates Schema, Column & ValueDictionaries
 			currentForm = null;
 			currentFormStartFieldID = null;
 		}
@@ -267,8 +274,8 @@ public class ProjectParser extends DefaultHandler
 
 	private void mediaAttachmentAttributes(MediaAttachment ma, Attributes attributes)
 	{
-		ma.setMinMax((attributes.getValue("min") == null ? MediaAttachment.DEFAULT_MIN : Integer.parseInt(attributes.getValue("min"))),
-				(attributes.getValue("max") == null ? MediaAttachment.DEFAULT_MAX : Integer.parseInt(attributes.getValue("max"))));
+		setOptionalness(ma, attributes);
+		ma.setMax((attributes.getValue("max") == null ? MediaAttachment.DEFAULT_MAX : Integer.parseInt(attributes.getValue("max"))));
 		if(attributes.getValue("disableField") != null)
 			mediaAttachToDisableId.put(ma, attributes.getValue("disableField").trim());
 	}
@@ -326,6 +333,22 @@ public class ProjectParser extends DefaultHandler
 		resolveReferences(); // !!!
 	}
 
+	protected void setOptionalness(Field field, Attributes attributes)
+	{
+		String optText = attributes.getValue("optional");
+		Optionalness opt = Field.DEFAULT_OPTIONAL;
+		if(optText != null && !optText.isEmpty())
+		{
+			if(optText.trim().equalsIgnoreCase("always") || optText.trim().equalsIgnoreCase("true"))
+				opt = Optionalness.ALWAYS;
+			else if(optText.trim().equalsIgnoreCase("notIfReached"))
+				opt = Optionalness.NOT_IF_REACHED;
+			else if(optText.trim().equalsIgnoreCase("never") || optText.trim().equalsIgnoreCase("false"))
+				opt = Optionalness.NEVER;
+		}
+		field.setOptional(opt);
+	}
+	
 	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
 	{
 		String value = attributes.getValue(attributeName);
@@ -349,7 +372,14 @@ public class ProjectParser extends DefaultHandler
 		if(text == null || text.isEmpty())
 			return defaultValue;
 		else
-			return text.trim().equalsIgnoreCase(Boolean.TRUE.toString()) ? Boolean.TRUE : defaultValue;
+		{
+			if(text.trim().equalsIgnoreCase(Boolean.TRUE.toString()))
+				return Boolean.TRUE;
+			else if(text.trim().equalsIgnoreCase(Boolean.FALSE.toString()))
+				return Boolean.FALSE;
+			else 
+				return defaultValue;
+		}
 		// We don't use Boolean.parseBoolean(String) because that returns false if the String does not equal true (so we wouldn't be able to return the
 		// defaultValue)
 	}

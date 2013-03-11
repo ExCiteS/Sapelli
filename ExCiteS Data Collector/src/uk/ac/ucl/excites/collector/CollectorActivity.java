@@ -184,12 +184,16 @@ public class CollectorActivity extends BaseActivity implements FieldView
 	 */
 	public void setField(Field field)
 	{
+		//briefly disable the buttons:
+		buttonView.disable();
 		// Remove previous field view
 		removeFieldView();
 		// Update buttons
 		buttonView.update(controller);
 		// Display the actual field (through double dispatch):
 		field.setIn(this);
+		//enable the buttons:
+		buttonView.enable();
 	}
 
 	private void removeFieldView()

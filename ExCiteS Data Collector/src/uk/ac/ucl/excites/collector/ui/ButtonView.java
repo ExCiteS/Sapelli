@@ -32,6 +32,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	static public final int BUTTON_TYPE_CANCEL = 0;
 	static public final int BUTTON_TYPE_FORWARD = 1;
 	
+	private boolean buttonsEnabled;
 	private ProjectController controller;
 	private ButtonsState currentState;
 	private int[] positionToButton;
@@ -42,7 +43,18 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	public ButtonView(Context context)
 	{
 		super(context);
+		buttonsEnabled = true;
 		setOnItemClickListener(this);
+	}
+	
+	public void disable()
+	{
+		buttonsEnabled = false;
+	}
+	
+	public void enable()
+	{
+		buttonsEnabled = true;
 	}
 
 	public void update(ProjectController controller)
@@ -132,16 +144,20 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	@Override
 	public void onItemClick(AdapterView<?> parent, View v, int position, long id)
 	{
-		if(position >= positionToButton.length)
-			return;
-		//else:
-		switch(positionToButton[position])
+		if(buttonsEnabled)
 		{
-			case BUTTON_TYPE_BACK		: controller.goBack(); break;
-			case BUTTON_TYPE_CANCEL		: controller.restartForm(); break;
-			case BUTTON_TYPE_FORWARD	: controller.goForward(); break;
-			default : return;
+			if(position >= positionToButton.length)
+				return;
+			//else:
+			switch(positionToButton[position])
+			{
+				case BUTTON_TYPE_BACK		: controller.goBack(); break;
+				case BUTTON_TYPE_CANCEL		: controller.restartForm(); break;
+				case BUTTON_TYPE_FORWARD	: controller.goForward(); break;
+				default : return;
+			}
 		}
+		//else: ignore the click
 	}
 
 }

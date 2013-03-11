@@ -22,7 +22,7 @@ public class FileImage extends Image
 	}
 	
 	@Override
-	public void setIn(ImageView imageView)
+	protected void _setIn(ImageView imageView)
 	{
 		imageView.setImageBitmap(BitmapFactory.decodeFile(path));
 	}

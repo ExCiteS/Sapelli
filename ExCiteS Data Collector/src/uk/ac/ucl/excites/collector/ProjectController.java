@@ -14,13 +14,15 @@ import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Choice;
 import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.model.Form;
-import uk.ac.ucl.excites.collector.project.model.FormEntry;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
+import uk.ac.ucl.excites.collector.project.model.MediaAttachment;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
 import uk.ac.ucl.excites.collector.util.DeviceID;
 import uk.ac.ucl.excites.collector.util.LocationUtils;
+import uk.ac.ucl.excites.storage.model.Record;
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
@@ -30,26 +32,28 @@ import android.media.MediaPlayer.OnCompletionListener;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.util.Log;
+
 
 /**
- * @author mstevens, Michalis Vitos
+ * @author mstevens, Michalis Vitos, Julia
  * 
  */
 public class ProjectController implements LocationListener
 {
 
-	@SuppressWarnings("unused")
 	static private final String TAG = "ProjectController";
 
 	private Project project;
 	private DataAccess dao;
 	private CollectorActivity activity;
 
-	private long deviceID; // 32bit unsigned CRC32 hashcode
+	private long deviceID; // 32 bit _unsigned_ CRC32 hashcode
 
 	private Form currentForm;
-	private FormEntry entry;
+	private Record record;
 	private Field currentField;
+	private Set<Field> tempDisabledFields;
 	private Stack<Field> fieldHistory;
 
 	private LocationManager locationManager;
@@ -62,12 +66,13 @@ public class ProjectController implements LocationListener
 		this.activity = activity;
 
 		fieldHistory = new Stack<Field>();
+		tempDisabledFields = new HashSet<Field>();
 		deviceID = (new DeviceID(activity)).getCRC32Hash();
 	}
 
 	public void startProject()
 	{
-		startForm(0); // For now projects have only one form
+		startForm(0); //For now projects have only one form
 	}
 
 	public void startForm(String formName)
@@ -101,13 +106,16 @@ public class ProjectController implements LocationListener
 	{
 		// Clear stuff:
 		fieldHistory.clear();
+		tempDisabledFields.clear();
 		currentField = null;
 
-		// Create new record:
+		// Open DB
 		if(!dao.isOpen())
 			dao.openDB();
-		entry = currentForm.newEntry(dao, deviceID);
-
+		
+		// Create new record:
+		record = currentForm.newEntry(deviceID);
+		
 		// Location...
 		List<LocationField> lfStartWithForm = currentForm.getLocationFields(true);
 		if(!lfStartWithForm.isEmpty())
@@ -139,7 +147,7 @@ public class ProjectController implements LocationListener
 	public void goTo(Field nextField)
 	{
 		// Leafing current field...
-		if(currentField != null)
+		if(currentField != null && currentField != nextField)
 			fieldHistory.add(currentField); // Add to history
 		// Entering next field...
 		currentField = nextField;
@@ -147,12 +155,20 @@ public class ProjectController implements LocationListener
 		if(currentField instanceof LocationField)
 		{
 			LocationField lf = (LocationField) currentField;
-			if(lf.isWaitAtField() || lf.storeLocation(LocationUtils.getExCiteSLocation(currentBestLocation), entry))
+			if(lf.isWaitAtField() || lf.storeLocation(LocationUtils.getExCiteSLocation(currentBestLocation), record))
 				startLocationListener(lf); // start listening for a location
 			else
 			{ // we already have a location
 				goForward(); // skip the wait screen
 				return; // !!!
+			}
+		}
+		if(currentField instanceof MediaAttachment)
+		{
+			if(((MediaAttachment) currentField).isMaxReached(record))
+			{	//Maximum number of attachments for this field is reached:
+				goForward(); //skip field
+				return; //!!!
 			}
 		}
 		// Update GUI or loop/exit
@@ -167,9 +183,14 @@ public class ProjectController implements LocationListener
 		ButtonsState state = new ButtonsState(
 				currentForm.isShowBack() && !fieldHistory.empty(),
 				currentForm.isShowCancel() && !fieldHistory.empty(),
-				currentForm.isShowForward() && false /* for now we don't use the forward button */);
+				currentForm.isShowForward() && currentField.getOptional() == Optionalness.ALWAYS);
 		// Note: these paths may be null (in which case built-in defaults must be used)
 		return state;
+	}
+	
+	public boolean isFieldEndabled(Field field)
+	{
+		return field.isEnabled() && !tempDisabledFields.contains(field);
 	}
 
 	/**
@@ -184,7 +205,7 @@ public class ProjectController implements LocationListener
 		{
 			// Store value
 			if(!chosenChild.getRoot().isNoColumn())
-				chosenChild.storeValue(entry);
+				chosenChild.storeValue(record);
 			// Go to next field
 			goTo(currentForm.getNextField(chosenChild));
 			/*
@@ -198,26 +219,50 @@ public class ProjectController implements LocationListener
 
 	public void photoDone(boolean pictureTaken)
 	{
-		// TODO
-		// Store/increase number of photos taken
-		// goto next/jump field:
-		goForward();
+		mediaDone(pictureTaken);
 	}
 
 	public void audioDone(boolean recordingMade)
 	{
-		// Store/increase number of recordings taken
-		// TODO
-		// goto next/jump field:
-		goForward();
+		mediaDone(recordingMade);
+	}
+	
+	private void mediaDone(boolean gotMedia)
+	{
+		MediaAttachment ma = (MediaAttachment) currentField;
+		if(gotMedia)
+		{
+			ma.incrementCount(record); // Store/increase number of pictures/recordings taken
+			if(ma.isMaxReached(record) && ma.getDisableChoice() != null)
+				tempDisabledFields.add(ma.getDisableChoice()); //disable the choice that makes the MA accessible
+			goForward(); //goto next/jump field
+		}
+		else
+		{
+			if(ma.getOptional() != Optionalness.ALWAYS)
+				//at least one attachment is required:
+				goTo(ma); //stay at this field
+			else
+				goForward(); //goto next/jump field
+		}
 	}
 
 	public void endForm()
 	{
-		// Store entry
-		entry.store(); // saves entry in database
-
-		// Signal the successful storage of the entry
+		//Finalise the record:
+		currentForm.finish(record); //sets end-time if necessary
+		
+		// Open DB
+		if(!dao.isOpen())
+			dao.openDB();
+		
+		// Store record
+		dao.store(record);
+		
+		Log.d(TAG, "Stored record:");
+		Log.d(TAG, record.toString());
+		
+		// Signal the successful storage of the record
 		// Vibration
 		if(currentForm.isVibrateOnEnd())
 		{
@@ -249,12 +294,12 @@ public class ProjectController implements LocationListener
 		// End action:
 		switch(currentForm.getEndAction())
 		{
-		case Form.END_ACTION_LOOP:
-			restartForm();
-			break;
-		case Form.END_ACTION_EXIT:
-			activity.finish();
-			break; // leaves the application!
+			case Form.END_ACTION_LOOP:
+				restartForm();
+				break;
+			case Form.END_ACTION_EXIT:
+				activity.finish();
+				break; // leaves the application!
 		}
 	}
 
@@ -310,7 +355,7 @@ public class ProjectController implements LocationListener
 		// boolean keepListening = false;
 		// for(LocationField lf : currentForm.getLocationFields())
 		// {
-		// boolean stored = lf.storeLocation(LocationUtils.getExCiteSLocation(location), entry);
+		// boolean stored = lf.storeLocation(LocationUtils.getExCiteSLocation(location), record);
 		//
 		// keepListening |= (lf.isWaitAtField() && currentField != lf);
 		// }
@@ -324,14 +369,14 @@ public class ProjectController implements LocationListener
 		// { //user is waiting for a location for the currentfield
 		// activity.stopLocationTimer(); //stop waiting screen timer!
 		// stopLocationListener(); //stop listening for locations
-		// ((LocationField) currentField).storeLocation(LocationUtils.getExCiteSLocation(location), entry); //store location
+		// ((LocationField) currentField).storeLocation(LocationUtils.getExCiteSLocation(location), record); //store location
 		//
 		// goForward(); //continue (will leave waiting screen)
 		// }
 		// else if(currentForm.getLocationFields().size() == 1)
 		// {
 		// LocationField lf = currentForm.getLocationFields().get(0);
-		// lf.storeLocation(LocationUtils.getExCiteSLocation(location), entry); //store location
+		// lf.storeLocation(LocationUtils.getExCiteSLocation(location), record); //store location
 		// if(!lf.isWaitAtField())
 		// stopLocationListener();
 		// }

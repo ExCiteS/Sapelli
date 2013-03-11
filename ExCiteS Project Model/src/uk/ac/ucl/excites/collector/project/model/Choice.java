@@ -5,6 +5,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.ui.FieldView;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
+import uk.ac.ucl.excites.storage.model.Record;
 
 
 /**
@@ -190,14 +191,19 @@ public class Choice extends Field
 	}
 	
 	@Override
-	public IntegerColumn createColumn() //TODO make protected again
+	public Optionalness getOptional()
 	{
-		System.out.println("creating column: " + id);
+		return root.optional;
+	}
+	
+	@Override
+	protected IntegerColumn createColumn()
+	{
 		if(!isRoot())
 			throw new IllegalStateException("createColumn() should only be called on a root Choice object.");
 		buildValueDict(); //Finds & adds the values for all leafs
 		//Create & add column:
-		return new IntegerColumn(id, true /* TODO determine if truly optional */, 0, valueDict.size() - 1);
+		return new IntegerColumn(id, (optional != Optionalness.NEVER), 0, valueDict.size() - 1);
 	}
 	
 	/**
@@ -223,10 +229,10 @@ public class Choice extends Field
 				child.buildValueDict(); //recursive call
 	}
 	
-	public void storeValue(FormEntry entry)
+	public void storeValue(Record entry)
 	{
-		if(!noColumn)
-			((IntegerColumn) entry.getColumn(root.id)).storeValue(entry, Long.valueOf(lookupCode()));
+		if(!isNoColumn())
+			((IntegerColumn) root.column).storeValue(entry, Long.valueOf(lookupCode()));
 	}
 	
 	public int lookupCode()
