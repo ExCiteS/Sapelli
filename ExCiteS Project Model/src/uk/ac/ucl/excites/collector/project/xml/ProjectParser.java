@@ -20,16 +20,16 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-import uk.ac.ucl.excites.collector.project.model.Audio;
-import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.AudioField;
+import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
-import uk.ac.ucl.excites.collector.project.model.MediaAttachment;
+import uk.ac.ucl.excites.collector.project.model.MediaField;
 import uk.ac.ucl.excites.collector.project.model.OrientationField;
-import uk.ac.ucl.excites.collector.project.model.Photo;
+import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.storage.model.Schema;
 
@@ -40,27 +40,40 @@ import uk.ac.ucl.excites.storage.model.Schema;
 public class ProjectParser extends DefaultHandler
 {
 
-	// Tags/attributes:
-	static private final String PROJECT = "ExCiteS-Collector-Project";
-	static private final String PROJECT_NAME = "name";
-	static private final String PROJECT_VERSION = "version";
-	static private final String FORM = "Form";
-	static private final String FORM_NAME = "name";
-	static private final String FORM_SCHEMA_ID = "schema-id";
-	static private final String FORM_SCHEMA_VERSION = "schema-version";
-	static private final String FORM_START_FIELD = "startField";
-	static private final String FORM_END_SOUND = "endSound";
-	static private final String Field_NO_COLUMN = "noColumn";
+	//STATICS--------------------------------------------------------
+	// Tags:
+	static private final String TAG_PROJECT = "ExCiteS-Collector-Project";
+	static private final String TAG_FORM = "Form";
+	private static final String TAG_CHOICE = "Choice";
+	static private final String TAG_AUDIO = "Audio";
+	static private final String TAG_PHOTO = "Photo";
+	static private final String TAG_ORIENTATION = "Orientation";
+	
+	// Attributes:
+	static private final String ATTRIBUTE_PROJECT_NAME = "name";
+	static private final String ATTRIBUTE_PROJECT_VERSION = "version";
+	static private final String ATTRIBUTE_FORM_NAME = "name";
+	static private final String ATTRIBUTE_FORM_SCHEMA_ID = "schema-id";
+	static private final String ATTRIBUTE_FORM_SCHEMA_VERSION = "schema-version";
+	static private final String ATTRIBUTE_FORM_START_FIELD = "startField";
+	static private final String ATTRIBUTE_FORM_END_SOUND = "endSound";
+	static private final String ATTRIBUTE_FIELD_ID = "id";
+	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
+	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
+	static private final String ATTRIBUTE_PHOTO_CAMERA = "camera";
+	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
+	
 
+	//DYNAMICS-------------------------------------------------------
 	private String basePath;
 	private boolean createProjectFolder;
 	private Project project;
 	private Form currentForm;
 	private String currentFormStartFieldID;
-	private Choice currentChoice;
+	private ChoiceField currentChoice;
 	private HashMap<Field, String> fieldToJumpId;
 	private Hashtable<String, Field> idToField;
-	private HashMap<MediaAttachment, String> mediaAttachToDisableId;
+	private HashMap<MediaField, String> mediaAttachToDisableId;
 
 	public ProjectParser(String basePath, boolean createProjectFolder)
 	{
@@ -82,7 +95,7 @@ public class ProjectParser extends DefaultHandler
 		project = null;
 		fieldToJumpId = new HashMap<Field, String>();
 		idToField = new Hashtable<String, Field>();
-		mediaAttachToDisableId = new HashMap<MediaAttachment, String>();
+		mediaAttachToDisableId = new HashMap<MediaField, String>();
 		try
 		{
 			SAXParserFactory spf = SAXParserFactory.newInstance();
@@ -122,31 +135,31 @@ public class ProjectParser extends DefaultHandler
 	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
 	{
 		// <ExCiteS-Collector-Project>
-		if(qName.equals(PROJECT))
+		if(qName.equals(TAG_PROJECT))
 		{
-			String projectName = readRequiredStringAttribute(PROJECT, attributes, PROJECT_NAME);
-			project = new Project(projectName, readIntegerAttribute(attributes, PROJECT_VERSION, Project.DEFAULT_VERSION), basePath, createProjectFolder);
+			String projectName = readRequiredStringAttribute(TAG_PROJECT, attributes, ATTRIBUTE_PROJECT_NAME);
+			project = new Project(projectName, readIntegerAttribute(attributes, ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION), basePath, createProjectFolder);
 		}
 		// <Data-Management>
 		else if(qName.equals("Data-Management"))
 		{
 			// TODO
 		}
-		// <FORM>
-		else if(qName.equals(FORM))
+		// <TAG_FORM>
+		else if(qName.equals(TAG_FORM))
 		{
-			String name = readRequiredStringAttribute(FORM, attributes, FORM_NAME);
-			int schemaID = Integer.parseInt(readRequiredStringAttribute(FORM, attributes, FORM_SCHEMA_ID));
-			int schemaVersion = (attributes.getValue(FORM_SCHEMA_VERSION) == null ? Schema.DEFAULT_VERSION : Integer.parseInt(attributes
-					.getValue(FORM_SCHEMA_VERSION)));
+			String name = readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_NAME);
+			int schemaID = Integer.parseInt(readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_SCHEMA_ID));
+			int schemaVersion = (attributes.getValue(ATTRIBUTE_FORM_SCHEMA_VERSION) == null ? Schema.DEFAULT_VERSION : Integer.parseInt(attributes
+					.getValue(ATTRIBUTE_FORM_SCHEMA_VERSION)));
 			currentForm = new Form(name, schemaID, schemaVersion);
 			project.addForm(currentForm);
 			// Store end time?:
 			currentForm.setStoreEndTime(readBooleanAttribute(attributes, "storeEndTime", Form.END_TIME_DEFAULT));
 			// Sound end vibration at the end of the form:
 			// Get the sound path
-			if(attributes.getValue(FORM_END_SOUND) != null && !attributes.getValue(FORM_END_SOUND).isEmpty())
-				currentForm.setEndSoundPath(attributes.getValue(FORM_END_SOUND));
+			if(attributes.getValue(ATTRIBUTE_FORM_END_SOUND) != null && !attributes.getValue(ATTRIBUTE_FORM_END_SOUND).isEmpty())
+				currentForm.setEndSoundPath(attributes.getValue(ATTRIBUTE_FORM_END_SOUND));
 			currentForm.setVibrateOnEnd(readBooleanAttribute(attributes, "endVibrate", Form.DEFAULT_VIBRATE));
 			// Which buttons are allowed to show:
 			currentForm.setShowBack(readBooleanAttribute(attributes, "showBackButton", Form.DEFAULT_SHOW_BACK));
@@ -159,29 +172,29 @@ public class ProjectParser extends DefaultHandler
 			// Button background colour:
 			currentForm.setButtonBackgroundColor(readStringAttribute(attributes, "buttonBackgroundColor", Form.DEFAULT_BUTTON_BACKGROUND_COLOR));
 			//Start field:
-			if(attributes.getValue(FORM_START_FIELD) != null && !attributes.getValue(FORM_START_FIELD).isEmpty())
-				currentFormStartFieldID = attributes.getValue(FORM_START_FIELD);
+			if(attributes.getValue(ATTRIBUTE_FORM_START_FIELD) != null && !attributes.getValue(ATTRIBUTE_FORM_START_FIELD).isEmpty())
+				currentFormStartFieldID = attributes.getValue(ATTRIBUTE_FORM_START_FIELD);
 			else
 				System.out.println("Warning: No startField attribute, will use first field");
 			// TODO other attributes
 		}
 		// <CHOICE>
-		else if(qName.equals("Choice"))
+		else if(qName.equals(TAG_CHOICE))
 		{
-			currentChoice = new Choice(attributes.getValue("id"), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
+			currentChoice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
 			if(currentChoice.isRoot())
 			{
-				currentForm.addField(currentChoice); // this is a top-level Choice, so add it as a field of the form
+				currentForm.addField(currentChoice); // this is a top-level ChoiceField, so add it as a field of the form
 				setOptionalness(currentChoice, attributes);
 			}
 			// Remember ID & jumps
 			rememberIDAndJump(currentChoice, attributes);
 			// No column:
-			currentChoice.setNoColumn(attributes.getValue(Field_NO_COLUMN) != null && attributes.getValue(Field_NO_COLUMN).equalsIgnoreCase("true"));
+			currentChoice.setNoColumn(attributes.getValue(ATTRIBUTE_FIELD_NO_COLUMN) != null && attributes.getValue(ATTRIBUTE_FIELD_NO_COLUMN).equalsIgnoreCase("true"));
 			// Other attributes:
 			if(attributes.getValue("img") != null)
 				currentChoice.setImageLogicalPath(attributes.getValue("img"));
-			currentChoice.setCols(readIntegerAttribute(attributes, "cols", Choice.DEFAULT_NUM_COLS));
+			currentChoice.setCols(readIntegerAttribute(attributes, "cols", ChoiceField.DEFAULT_NUM_COLS));
 
 			if(attributes.getValue("rows") != null)
 				currentChoice.setRows(Integer.parseInt(attributes.getValue("rows")));
@@ -192,7 +205,7 @@ public class ProjectParser extends DefaultHandler
 		// <LOCATION>
 		else if(qName.equals("Location"))
 		{
-			LocationField locField = new LocationField(attributes.getValue("id"));
+			LocationField locField = new LocationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 			currentForm.addField(locField);
 			setOptionalness(locField, attributes);
 			rememberIDAndJump(locField, attributes);
@@ -222,18 +235,22 @@ public class ProjectParser extends DefaultHandler
 			locField.setStoreProvider(readBooleanAttribute(attributes, "storeProvider", LocationField.DEFAULT_STORE_PROVIDER));
 		}
 		// <PHOTO>
-		else if(qName.equals("Photo"))
+		else if(qName.equals(TAG_PHOTO))
 		{
-			Photo photoField = new Photo(attributes.getValue("id"));
+			PhotoField photoField = new PhotoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 			currentForm.addField(photoField);
 			rememberIDAndJump(photoField, attributes);
 			mediaAttachmentAttributes(photoField, attributes);
-			// TODO
+			photoField.setCamera(attributes.getValue(ATTRIBUTE_PHOTO_CAMERA));
+			photoField.setCaptureButtonImageLogicalPath(attributes.getValue("captureImg"));
+			photoField.setApproveButtonImageLogicalPath(attributes.getValue("approveImg"));
+			photoField.setDiscardButtonImageLogicalPath(attributes.getValue("discardImg"));
+			photoField.setUseNativeApp(readBooleanAttribute(attributes, "useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP));
 		}
 		// <AUDIO>
-		else if(qName.equals("Audio"))
+		else if(qName.equals(TAG_AUDIO))
 		{
-			Audio audioField = new Audio(attributes.getValue("id"));
+			AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 			currentForm.addField(audioField);
 			rememberIDAndJump(audioField, attributes);
 			mediaAttachmentAttributes(audioField, attributes);
@@ -241,9 +258,9 @@ public class ProjectParser extends DefaultHandler
 			audioField.setStopRecImageLogicalPath(attributes.getValue("stopRecImg"));
 		}
 		// <ORIENTATION>
-		else if(qName.equals("Orientation"))
+		else if(qName.equals(TAG_ORIENTATION))
 		{
-			OrientationField orField = new OrientationField(attributes.getValue("id"), attributes.getValue("axes"));
+			OrientationField orField = new OrientationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getValue("axes"));
 			currentForm.addField(orField);
 			setOptionalness(orField, attributes);
 		}
@@ -253,31 +270,31 @@ public class ProjectParser extends DefaultHandler
 	public void endElement(String uri, String localName, String qName) throws SAXException
 	{
 		// </ExCiteS-Collector-Project>
-		if(qName.equals(PROJECT))
+		if(qName.equals(TAG_PROJECT))
 		{
 			if(project.getForms().size() == 0)
 				throw new SAXException("A project such have at least 1 form!");
 		}
 		// </Form>
-		else if(qName.equals(FORM))
+		else if(qName.equals(TAG_FORM))
 		{
 			currentForm.initialiseStorage(); //generates Schema, Column & ValueDictionaries
 			currentForm = null;
 			currentFormStartFieldID = null;
 		}
-		// </Choice>
-		else if(qName.equals("Choice"))
+		// </ChoiceField>
+		else if(qName.equals(TAG_CHOICE))
 		{
 			currentChoice = currentChoice.getParent();
 		}
 	}
 
-	private void mediaAttachmentAttributes(MediaAttachment ma, Attributes attributes)
+	private void mediaAttachmentAttributes(MediaField ma, Attributes attributes)
 	{
 		setOptionalness(ma, attributes);
-		ma.setMax((attributes.getValue("max") == null ? MediaAttachment.DEFAULT_MAX : Integer.parseInt(attributes.getValue("max"))));
-		if(attributes.getValue("disableField") != null)
-			mediaAttachToDisableId.put(ma, attributes.getValue("disableField").trim());
+		ma.setMax(readIntegerAttribute(attributes, "max", MediaField.DEFAULT_MAX));
+		if(attributes.getValue(ATTRIBUTE_DISABLE_FIELD) != null)
+			mediaAttachToDisableId.put(ma, attributes.getValue(ATTRIBUTE_DISABLE_FIELD).trim());
 	}
 
 	private void rememberIDAndJump(Field f, Attributes attributes)
@@ -290,23 +307,31 @@ public class ProjectParser extends DefaultHandler
 			idToField.put(f.getID(), f);
 		}
 		// Remember jump:
-		if(attributes.getValue("jump") != null)
-			fieldToJumpId.put(f, attributes.getValue("jump").trim());
+		if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
+		{
+			String jumpToId = attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim();
+			if(jumpToId.equalsIgnoreCase(EndField.ID))
+				jumpToId = EndField.ID(f.getForm());
+			fieldToJumpId.put(f, jumpToId);
+		}
 		// Resolve/set form start field:
 		if(currentFormStartFieldID == null)
 		{
-			if(currentForm.getStart() == null) // no startID was specified and the start field is not set yet
-				currentForm.setStart(f); // set first field of the form as start field
+			if(currentForm.getStartField() == null) // no startID was specified and the start field is not set yet
+				currentForm.setStartField(f); // set first field of the form as start field
 		}
 		else if(currentFormStartFieldID.equals(f.getID()))
-			currentForm.setStart(f);
+			currentForm.setStartField(f);
 	}
 
 	private void resolveReferences()
 	{
 		// Add EndField instance so _END jumps can be resolved
-		EndField end = new EndField();
-		idToField.put(end.getID(), end);
+		for(Form f : project.getForms())
+		{
+			EndField endF = new EndField(f);
+			idToField.put(endF.getID(), endF);
+		}
 		// Resolve jumps...
 		for(Entry<Field, String> jump : fieldToJumpId.entrySet())
 		{
@@ -317,13 +342,13 @@ public class ProjectParser extends DefaultHandler
 				jump.getKey().setJump(target);
 		}
 		// Resolve disabling of Choices by MediaAttachments...
-		for(Entry<MediaAttachment, String> disable : mediaAttachToDisableId.entrySet())
+		for(Entry<MediaField, String> disable : mediaAttachToDisableId.entrySet())
 		{
 			Field target = idToField.get(disable.getValue());
 			if(target == null)
 				System.out.println("Warning: Cannot resolve disable field ID " + disable.getValue());
 			else
-				disable.getKey().setDisableChoice((Choice) target);
+				disable.getKey().setDisableChoice((ChoiceField) target);
 		}
 	}
 

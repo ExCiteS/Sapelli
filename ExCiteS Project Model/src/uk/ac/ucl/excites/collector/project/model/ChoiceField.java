@@ -12,14 +12,14 @@ import uk.ac.ucl.excites.storage.model.Record;
  * @author mstevens
  *
  */
-public class Choice extends Field
+public class ChoiceField extends Field
 {
 	
 	static public final int DEFAULT_NUM_COLS = 2;
 	
-	private Choice parent;
-	private Choice root;
-	private List<Choice> children;
+	private ChoiceField parent;
+	private ChoiceField root;
+	private List<ChoiceField> children;
 	private String imageLogicalPath;
 	private int cols;
 	private int rows;
@@ -27,14 +27,15 @@ public class Choice extends Field
 	private String value;
 	private ValueDictionary valueDict;
 	
-	public Choice(String id, Choice parent)
+	public ChoiceField(Form form, String id, ChoiceField parent)
 	{
-		super(	id == null ? 
+		super(	form,
+				id == null ? 
 					(parent == null ?
 						null /*Field constructor will throw NPE*/ :
 						parent.getID() + "." + parent.getChildren().size()) :
 					id);
-		this.children = new ArrayList<Choice>();
+		this.children = new ArrayList<ChoiceField>();
 		this.parent = parent;
 		if(parent == null)
 		{	//this is a root choice
@@ -49,7 +50,7 @@ public class Choice extends Field
 		}
 	}
 	
-	public void addChild(Choice c)
+	public void addChild(ChoiceField c)
 	{
 		children.add(c);
 	}
@@ -108,7 +109,7 @@ public class Choice extends Field
 	/**
 	 * @return the parent
 	 */
-	public Choice getParent()
+	public ChoiceField getParent()
 	{
 		return parent;
 	}
@@ -119,7 +120,7 @@ public class Choice extends Field
 	 * @return the root
 	 */
 	@Override
-	public Choice getRoot()
+	public ChoiceField getRoot()
 	{
 		return root;
 	}
@@ -133,7 +134,7 @@ public class Choice extends Field
 	/**
 	 * @return the children
 	 */
-	public List<Choice> getChildren()
+	public List<ChoiceField> getChildren()
 	{
 		return children;
 	}
@@ -200,7 +201,7 @@ public class Choice extends Field
 	protected IntegerColumn createColumn()
 	{
 		if(!isRoot())
-			throw new IllegalStateException("createColumn() should only be called on a root Choice object.");
+			throw new IllegalStateException("createColumn() should only be called on a root ChoiceField object.");
 		buildValueDict(); //Finds & adds the values for all leafs
 		//Create & add column:
 		return new IntegerColumn(id, (optional != Optionalness.NEVER), 0, valueDict.size() - 1);
@@ -220,12 +221,12 @@ public class Choice extends Field
 	{
 		if(isLeaf())
 		{
-			if(getValue() == null || getValue().isEmpty()) //getValue() will return the value of the Choice or of the/a parent, if there's no value set anywhere it will return null
-				setValue(id); //id becomes value for this leaf Choice; after this getValue() will never again return null for this Choice object
+			if(getValue() == null || getValue().isEmpty()) //getValue() will return the value of the ChoiceField or of the/a parent, if there's no value set anywhere it will return null
+				setValue(id); //id becomes value for this leaf ChoiceField; after this getValue() will never again return null for this ChoiceField object
 			valueDict.addValue(getValue());
 		}
 		else
-			for(Choice child : children) //Depth-first traversal
+			for(ChoiceField child : children) //Depth-first traversal
 				child.buildValueDict(); //recursive call
 	}
 	
@@ -248,7 +249,7 @@ public class Choice extends Field
 	
 	public String toString()
 	{
-		return "Choice " + id + (value != null ? " (value: " + value + ")" : " (no value set)");
+		return "ChoiceField " + id + (value != null ? " (value: " + value + ")" : " (no value set)");
 	}
 	
 }

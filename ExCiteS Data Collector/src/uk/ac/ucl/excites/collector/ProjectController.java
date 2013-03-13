@@ -11,13 +11,13 @@ import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
-import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
-import uk.ac.ucl.excites.collector.project.model.MediaAttachment;
+import uk.ac.ucl.excites.collector.project.model.MediaField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
 import uk.ac.ucl.excites.collector.util.DeviceID;
@@ -124,7 +124,7 @@ public class ProjectController implements LocationListener
 			stopLocationListener(); // stop listening for location updates
 
 		// Begin completing the form at the start field:
-		goTo(currentForm.getStart());
+		goTo(currentForm.getStartField());
 	}
 
 	public void goForward()
@@ -163,9 +163,9 @@ public class ProjectController implements LocationListener
 				return; // !!!
 			}
 		}
-		if(currentField instanceof MediaAttachment)
+		if(currentField instanceof MediaField)
 		{
-			if(((MediaAttachment) currentField).isMaxReached(record))
+			if(((MediaField) currentField).isMaxReached(record))
 			{	//Maximum number of attachments for this field is reached:
 				goForward(); //skip field
 				return; //!!!
@@ -198,9 +198,9 @@ public class ProjectController implements LocationListener
 	 * 
 	 * @param chosenChild
 	 */
-	public void choiceMade(Choice chosenChild)
+	public void choiceMade(ChoiceField chosenChild)
 	{
-		// Note: chosenChild is not the currentField! The currentField (also a Choice) is its parent.
+		// Note: chosenChild is not the currentField! The currentField (also a ChoiceField) is its parent.
 		if(chosenChild.isLeaf())
 		{
 			// Store value
@@ -229,7 +229,7 @@ public class ProjectController implements LocationListener
 	
 	private void mediaDone(boolean gotMedia)
 	{
-		MediaAttachment ma = (MediaAttachment) currentField;
+		MediaField ma = (MediaField) currentField;
 		if(gotMedia)
 		{
 			ma.incrementCount(record); // Store/increase number of pictures/recordings taken
@@ -317,6 +317,22 @@ public class ProjectController implements LocationListener
 	public Project getProject()
 	{
 		return project;
+	}
+	
+	/**
+	 * @return the record
+	 */
+	public Record getCurrentRecord()
+	{
+		return record;
+	}
+
+	/**
+	 * @return the currentField
+	 */
+	public Field getCurrentField()
+	{
+		return currentField;
 	}
 
 	private void startLocationListener(LocationField locField)

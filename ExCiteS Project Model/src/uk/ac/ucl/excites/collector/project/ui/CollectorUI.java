@@ -12,11 +12,11 @@ import uk.ac.ucl.excites.collector.project.model.*;
 public interface CollectorUI
 {
 
-	public void setChoice(Choice cf);
+	public void setChoice(ChoiceField cf);
 	
-	public void setPhoto(Photo pf);
+	public void setPhoto(PhotoField pf);
 	
-	public void setAudio(Audio af);
+	public void setAudio(AudioField af);
 	
 	public void setLocation(LocationField lf);
 	

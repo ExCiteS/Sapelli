@@ -14,5 +14,6 @@
     <string name="shortcuts">Shortcuts</string>
     <string name="create_shortcut">Create Shortcut</string>
     <string name="remove_shortcut">Remove Shortcut</string>
+    <string name="take_photo">Take photo</string>
 
 </resources>

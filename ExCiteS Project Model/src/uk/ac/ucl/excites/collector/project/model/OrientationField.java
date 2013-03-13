@@ -21,9 +21,9 @@ public class OrientationField extends Field
 	private boolean storeY = false;
 	private boolean storeZ = false;
 	
-	public OrientationField(String id, String axes)
+	public OrientationField(Form form, String id, String axes)
 	{
-		super(id);
+		super(form, id);
 		if(axes != null)
 		{
 			for(char c : axes.trim().toUpperCase().toCharArray())

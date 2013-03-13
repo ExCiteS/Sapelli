@@ -95,7 +95,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 					if(bckImg != null && !bckImg.isEmpty())
 						imageAdapter.addImage(new FileImage(project, bckImg));
 					else
-						imageAdapter.addImage(new ResourceImage(R.drawable.back));
+						imageAdapter.addImage(new ResourceImage(R.drawable.button_back));
 					positionToButton[p++] = BUTTON_TYPE_BACK;
 				}
 				if(currentState.isCancelShown())
@@ -104,7 +104,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 					if(cncImg != null && !cncImg.isEmpty())
 						imageAdapter.addImage(new FileImage(project, cncImg));
 					else
-						imageAdapter.addImage(new ResourceImage(R.drawable.cancel));
+						imageAdapter.addImage(new ResourceImage(R.drawable.button_delete));
 					positionToButton[p++] = BUTTON_TYPE_CANCEL;
 				}
 				if(currentState.isForwardShown())
@@ -113,7 +113,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 					if(fwdImg != null && !fwdImg.isEmpty())
 						imageAdapter.addImage(new FileImage(project, fwdImg));
 					else
-						imageAdapter.addImage(new ResourceImage(R.drawable.forward));
+						imageAdapter.addImage(new ResourceImage(R.drawable.button_forward));
 					positionToButton[p++] = BUTTON_TYPE_FORWARD;
 				}
 				//  Button dimensions:

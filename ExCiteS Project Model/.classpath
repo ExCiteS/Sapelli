@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="uk/ac/ucl/excites/collector/project/data/FormEntry.java" kind="src" path="src"/>
+	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/ExCiteS Data Storage"/>
 	<classpathentry kind="lib" path="libs/db4o-8.0.249.16098-core-java5.jar">

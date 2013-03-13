@@ -3,14 +3,19 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
+import org.joda.time.DateTime;
+
+import uk.ac.ucl.excites.collector.project.data.FormEntry;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.storage.util.BinaryHelpers;
+import uk.ac.ucl.excites.storage.util.Hashing;
 
 /**
  * @author mstevens
  *
  */
-public abstract class MediaAttachment extends Field
+public abstract class MediaField extends Field
 {
 
 	//static public final int DEFAULT_MIN = 0;
@@ -18,11 +23,11 @@ public abstract class MediaAttachment extends Field
 	
 	//protected int min;
 	protected int max;
-	protected Choice disableChoice;
+	protected ChoiceField disableChoice;
 
-	public MediaAttachment(String id)
+	public MediaField(Form form, String id)
 	{
-		this(id, /*DEFAULT_MIN,*/ DEFAULT_MAX, null); //Use on byte --> up to 255 items
+		this(form, id, /*DEFAULT_MIN,*/ DEFAULT_MAX, null); //Use on byte --> up to 255 items
 	}
 
 	/**
@@ -30,14 +35,18 @@ public abstract class MediaAttachment extends Field
 	 * @param max
 	 * @param disableChoice
 	 */
-	public MediaAttachment(String id, /*int min,*/ int max, Choice disableChoice)
+	public MediaField(Form form, String id, /*int min,*/ int max, ChoiceField disableChoice)
 	{
-		super(id);
+		super(form, id);
 		if(id == null)
 			throw new NullPointerException("ID of top-level field cannot be null");
 		setMax(max); //setMinMax(min, max);
 		this.disableChoice = disableChoice;
 	}
+	
+	public abstract String getMediaType();
+	
+	public abstract String getFileExtension(String mediaType);
 
 //	/**
 //	 * @return the min
@@ -80,7 +89,7 @@ public abstract class MediaAttachment extends Field
 	/**
 	 * @return the disableChoice
 	 */
-	public Choice getDisableChoice()
+	public ChoiceField getDisableChoice()
 	{
 		return disableChoice;
 	}
@@ -88,7 +97,7 @@ public abstract class MediaAttachment extends Field
 	/**
 	 * @param disableChoice the disableChoice to set
 	 */
-	public void setDisableChoice(Choice disableChoice)
+	public void setDisableChoice(ChoiceField disableChoice)
 	{
 		this.disableChoice = disableChoice;
 	}
@@ -120,4 +129,23 @@ public abstract class MediaAttachment extends Field
 		((IntegerColumn) column).storeValue(record, Long.valueOf(++currentCount));
 	}
 
+	public String generateNewFilename(Record record)
+	{
+		return generateFilename(record, getCount(record));
+	}
+	
+	public String generateFilename(Record record, int attachmentNumber)
+	{
+		FormEntry entry = new FormEntry(form, record);
+		//Elements:
+		DateTime dt = entry.getStartTime(true);
+		long deviceID = entry.getDeviceID();
+		int fieldIdx = form.getFieldIndex(this);
+		String mediaType = getMediaType();
+		//Assemble:
+		String message = dt.toString() + Long.toString(deviceID) + Integer.toString(fieldIdx) + mediaType + Integer.toString(attachmentNumber);
+		//Return MD5 hash as hexadecimal String:
+		return BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(message.getBytes()).toByteArray());
+	}
+	
 }

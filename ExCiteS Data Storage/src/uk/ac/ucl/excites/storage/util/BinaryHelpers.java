@@ -3,8 +3,6 @@ package uk.ac.ucl.excites.storage.util;
  * 
  */
 
-
-
 /**
  * @author mstevens
  *
@@ -14,11 +12,11 @@ public final class BinaryHelpers
 	
 	private BinaryHelpers() { } //should not be instantiated
 	
-	static public String bin2Hex(byte[] data)
+	static public String toHexadecimealString(byte[] data)
 	{
 		StringBuffer bff = new StringBuffer();
 		for(byte b : data)
-			bff.append(String.format("%02X ", b));
+			bff.append(String.format("%02X", b));
 		return bff.toString();
 	}
 	

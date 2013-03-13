@@ -8,14 +8,15 @@ import java.io.IOException;
 
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.R;
-import uk.ac.ucl.excites.collector.project.model.Audio;
+import uk.ac.ucl.excites.collector.media.AudioRecorder;
+import uk.ac.ucl.excites.collector.project.model.AudioField;
+import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.ui.images.FileImage;
 import uk.ac.ucl.excites.collector.ui.images.Image;
 import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
 import uk.ac.ucl.excites.collector.ui.images.ResourceImage;
-import uk.ac.ucl.excites.collector.util.AudioRecorder;
-import uk.ac.ucl.excites.collector.util.Cancelable;
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
@@ -26,7 +27,7 @@ import android.widget.AdapterView;
  * @author Julia, Michalis, mstevens
  * 
  */
-public class AudioView extends PickerView implements Cancelable
+public class AudioView extends PickerView implements FieldView
 {
 
 	static private final String TAG = "AudioView";
@@ -40,8 +41,10 @@ public class AudioView extends PickerView implements Cancelable
 		super(context);
 	}
 
-	public void setAudioView(final Audio audio, final ProjectController controller)
+	@Override
+	public void initialise(final ProjectController controller, Field field)
 	{
+		final AudioField audioField = (AudioField) field;
 		Project project = controller.getProject();		
 		
 		setNumColumns(1);
@@ -49,15 +52,15 @@ public class AudioView extends PickerView implements Cancelable
 		//Adapter & images:
 		imageAdapter = new ImageAdapter(super.getContext());
 		//	Start rec image:
-		if(audio.getStartRecImageLogicalPath() != null)
-			startImage = new FileImage(project, audio.getStartRecImageLogicalPath());
+		if(audioField.getStartRecImageLogicalPath() != null)
+			startImage = new FileImage(project, audioField.getStartRecImageLogicalPath());
 		else
-			startImage = new ResourceImage(R.drawable.record);
+			startImage = new ResourceImage(R.drawable.start_audio_rec);
 		//  Stop rec image:
-		if(audio.getStopRecImageLogicalPath() != null)
-			stopImage = new FileImage(project, audio.getStopRecImageLogicalPath());
+		if(audioField.getStopRecImageLogicalPath() != null)
+			stopImage = new FileImage(project, audioField.getStopRecImageLogicalPath());
 		else
-			stopImage = new ResourceImage(R.drawable.stop);
+			stopImage = new ResourceImage(R.drawable.stop_audio_rec);
 		imageAdapter.addImage(startImage); //show start button
 		
 		// Set image dimensions when view dimensions are known:
@@ -84,18 +87,14 @@ public class AudioView extends PickerView implements Cancelable
 				{	//Start button clicked
 					try
 					{
-						File cacheDir = new File(controller.getProject().getDataPath() + "/Audio-Recordings"); //TODO get rid of extension, rename files, remove subfolder 
-						if(!cacheDir.exists())
-							cacheDir.mkdirs();
-						String instanceFolder = cacheDir.toString();
-
-						// Timestamp
-						String timestamp = Long.toString(System.currentTimeMillis());
+						File dataFolder = new File(controller.getProject().getDataPath()); 
+						if(!FileHelpers.createFolder(dataFolder))
+							throw new IOException("Unable to create data folder: " + dataFolder.getAbsolutePath());
 						
-						audioRecorder = new AudioRecorder(instanceFolder, timestamp);
+						audioRecorder = new AudioRecorder(dataFolder, audioField.generateNewFilename(controller.getCurrentRecord()));
 						audioRecorder.start();
 					}
-					catch(IOException e)
+					catch(Exception e)
 					{
 						Log.e(TAG, "Could not start audio recording.", e);
 						controller.audioDone(false);
@@ -109,22 +108,28 @@ public class AudioView extends PickerView implements Cancelable
 				}
 				else
 				{	//Stop button clicked
-					try
-					{
-						audioRecorder.stop();
-					}
-					catch(IOException e)
-					{
-						Log.e(TAG, "Error on stopping audio recording.", e);
-					}
-					finally
-					{
-						audioRecorder = null;
-						controller.audioDone(true);
-					}
+					stopRecording();
+					controller.audioDone(true);
 				}
 			}
 		});
+	}
+	
+	private void stopRecording()
+	{
+		try
+		{
+			audioRecorder.stop();
+			//Log.d(TAG, "audioRecording stopped");
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Error on stopping audio recording.", e);
+		}
+		finally
+		{
+			audioRecorder = null;
+		}
 	}
 
 	@Override
@@ -132,20 +137,14 @@ public class AudioView extends PickerView implements Cancelable
 	{
 		if(audioRecorder != null)
 		{
-			try
-			{
-				audioRecorder.stop();
-				//Log.d(TAG, "audioRecording stopped");
-			}
-			catch(IOException e)
-			{
-				Log.e(TAG, "Error on stopping audio recording.", e);
-			}
-			finally
-			{
-				audioRecorder = null;
-			}
+			stopRecording();
 		}
+	}
+
+	@Override
+	public View getView()
+	{
+		return this;
 	}
 
 }

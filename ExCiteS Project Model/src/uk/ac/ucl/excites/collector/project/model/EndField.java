@@ -17,9 +17,14 @@ public class EndField extends Field
 
 	static public final String ID = "_END";
 	
-	public EndField()
+	static public final String ID(Form form)
 	{
-		super(ID);
+		return ID + "_" + form.getName();
+	}
+	
+	public EndField(Form form)
+	{
+		super(form, ID(form));
 		noColumn = true;
 	}
 

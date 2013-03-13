@@ -49,9 +49,9 @@ public class LocationField extends Field
 	private boolean storeAccuracy;
 	private boolean storeProvider;
 	
-	public LocationField(String id)
+	public LocationField(Form form, String id)
 	{
-		super(id);
+		super(form, id);
 		if(id == null)
 			throw new NullPointerException("ID of top-level field cannot be null");
 		this.type = DEFAULT_TYPE;

@@ -1,7 +1,8 @@
 package uk.ac.ucl.excites.collector.ui;
 
 import uk.ac.ucl.excites.collector.ProjectController;
-import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.ui.images.FileImage;
 import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
 import uk.ac.ucl.excites.collector.ui.images.PlaceholderImage;
@@ -14,16 +15,24 @@ import android.widget.AdapterView;
  * @author Julia, mstevens
  *
  */
-public class ChoiceView extends PickerView
+public class ChoiceView extends PickerView implements FieldView
 {
 
 	public ChoiceView(Context context)
 	{
 		super(context);
 	}
-
-	public void setChoice(final Choice choice, final ProjectController controller)
+	
+	@Override
+	public View getView()
 	{
+		return this;
+	}
+
+	@Override
+	public void initialise(final ProjectController controller, Field field)
+	{
+		final ChoiceField choice = (ChoiceField) field;
 		if(choice.isLeaf())
 			throw new IllegalArgumentException("Cannot display leaf choice.");		
 		
@@ -33,7 +42,7 @@ public class ChoiceView extends PickerView
 		// Adapter & images:
 		imageAdapter = new ImageAdapter(getContext());
 		boolean atLeastOneEnabledChild = false;
-		for(Choice child : choice.getChildren())
+		for(ChoiceField child : choice.getChildren())
 		{
 			if(controller.isFieldEndabled(child))
 			{
@@ -68,11 +77,17 @@ public class ChoiceView extends PickerView
 			@Override
 			public void onItemClick(AdapterView<?> parent, View v, int position, long id)
 			{
-				Choice chosenChild = choice.getChildren().get(position);
+				ChoiceField chosenChild = choice.getChildren().get(position);
 				if(controller.isFieldEndabled(chosenChild))
 					controller.choiceMade(chosenChild); //pass the chosen child
 			}
 		});
 	}
 
+	@Override
+	public void cancel()
+	{
+		//does nothing
+	}
+	
 }

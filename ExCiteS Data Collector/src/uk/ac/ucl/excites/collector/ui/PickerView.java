@@ -25,8 +25,8 @@ public abstract class PickerView extends GridView
 		
 		// UI set-up:
 		setBackgroundColor(Color.BLACK);
-		setHorizontalSpacing(10);
-		setVerticalSpacing(10);
+		setHorizontalSpacing(SPACING);
+		setVerticalSpacing(SPACING);
 	}
 
 }

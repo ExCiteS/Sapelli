@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.storage.model;
 
-
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 
@@ -149,6 +150,48 @@ public abstract class Column<T>
 	 * @param value
 	 */
 	protected abstract void validate(T value) throws IllegalArgumentException;
+	
+	public T retrieveValueAsStoredBinary(Record record)
+	{
+		BitOutputStream out = null;
+		BitInputStream in = null;
+		try
+		{
+			//Output stream:
+			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
+			out = new BitOutputStream(rawOut);
+	
+			//Write value:
+			retrieveAndWriteValue(record, out);
+			
+			// Flush, close & get bytes:
+			out.flush();
+			out.close();
+	
+			//Input stream:
+			in = new BitInputStream(new ByteArrayInputStream(rawOut.toByteArray()));
+			
+			//Read value:
+			return readValue(in);
+		}
+		catch(Exception e)
+		{
+			System.err.println("Error in retrieveValueAsStoredBinary(Record): " + e.getLocalizedMessage());
+			e.printStackTrace();
+			return null;
+		}
+		finally
+		{
+			try
+			{
+				if(out != null)
+					out.close();
+				if(in != null)
+					in.close();
+			}
+			catch(Exception ignore) {}
+		}
+	}
 	
 	/**
 	 * @return the name

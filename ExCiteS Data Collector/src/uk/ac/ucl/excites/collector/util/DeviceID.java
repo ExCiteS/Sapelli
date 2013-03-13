@@ -1,8 +1,8 @@
 package uk.ac.ucl.excites.collector.util;
 
+import uk.ac.ucl.excites.storage.util.Hashing;
+
 import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.zip.CRC32;
 
 import android.bluetooth.BluetoothAdapter;
@@ -11,7 +11,7 @@ import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.provider.Settings.Secure;
 import android.telephony.TelephonyManager;
-import android.util.Log;
+
 
 /**
  * Class that provides various ways to uniquely (or as unique as possible) identify an Android device<br/>
@@ -164,18 +164,7 @@ public class DeviceID
 	 */
 	public BigInteger getMD5Hash()
 	{
-		MessageDigest md5 = null;
-		try
-		{
-			md5 = MessageDigest.getInstance("MD5");
-		}
-		catch(NoSuchAlgorithmException e)
-		{
-			Log.e("DeviceID", "Could not get MD5 implementation", e);
-			return BigInteger.ZERO;		
-		}
-		md5.update(collectInfo().getBytes());
-		return new BigInteger(md5.digest());
+		return Hashing.getMD5Hash(collectInfo().getBytes());
 	}
 
 }

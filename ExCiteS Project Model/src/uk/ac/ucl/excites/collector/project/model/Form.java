@@ -102,14 +102,19 @@ public class Form
 		if(f instanceof LocationField)
 			locationFields.add((LocationField) f);
 	}
+	
+	public int getFieldIndex(Field field)
+	{
+		return fields.indexOf(field.getRoot());
+	}
 
 	public Field getNextField(Field current)
 	{
-		int currentIndex = fields.indexOf(current.getRoot());
+		int currentIndex = getFieldIndex(current);
 		// Exception handling:
 		if(currentIndex < 0)
 			throw new IllegalArgumentException("The current field is not part of this form.");
-		// Check for jump field (possibly the one of a parent in case of Choice):
+		// Check for jump field (possibly the one of a parent in case of ChoiceField):
 		Field next = current.getJump();
 		if(next == null)
 		{
@@ -117,7 +122,7 @@ public class Form
 			if(currentIndex + 1 < fields.size())
 				next = fields.get(currentIndex + 1); // go to next field in the form
 			else
-				next = new EndField(); // current field is the last of the form, go to end
+				next = new EndField(this); // current field is the last of the form, go to end
 		}
 		return next; // use jump as next
 	}
@@ -135,7 +140,7 @@ public class Form
 	/**
 	 * @return the start
 	 */
-	public Field getStart()
+	public Field getStartField()
 	{
 		return start;
 	}
@@ -144,7 +149,7 @@ public class Form
 	 * @param start
 	 *            the start to set
 	 */
-	public void setStart(Field start)
+	public void setStartField(Field start)
 	{
 		this.start = start;
 	}

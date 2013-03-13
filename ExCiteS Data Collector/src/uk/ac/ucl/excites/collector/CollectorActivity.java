@@ -4,24 +4,23 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Timer;
-import java.util.TimerTask;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
-import uk.ac.ucl.excites.collector.project.model.Audio;
-import uk.ac.ucl.excites.collector.project.model.Choice;
+import uk.ac.ucl.excites.collector.project.model.AudioField;
+import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.OrientationField;
-import uk.ac.ucl.excites.collector.project.model.Photo;
+import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
+import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.ui.AudioView;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.ui.ButtonView;
-import uk.ac.ucl.excites.collector.project.util.FileHelpers;
+import uk.ac.ucl.excites.collector.ui.CameraView;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
-import uk.ac.ucl.excites.collector.util.Cancelable;
-import uk.ac.ucl.excites.collector.util.Debug;
+import uk.ac.ucl.excites.collector.ui.FieldView;
 import uk.ac.ucl.excites.collector.util.SDCard;
 import android.content.Context;
 import android.content.Intent;
@@ -33,14 +32,11 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.KeyEvent;
-import android.view.View;
 import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 
 /**
  * Main Collector activity
@@ -59,11 +55,11 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 
 	static private final String TEMP_PHOTO_PREFIX = "tmpPhoto";
 	static private final String TEMP_PHOTO_SUFFIX = ".tmp";
-	static private final String TEMP_PHOTO_LOCATION_KEY = "tmpPhotoLocation";
-	
+	static private final String TEMP_PHOTO_PATH_KEY = "tmpPhotoPath";
+
 	static private final int BUTTONS_VIEW_ID = 0;
 	static private final int FIELD_VIEW_ID = 1;
-	
+
 	// Request codes for returning data from intents
 	static public final int RETURN_PHOTO_CAPTURE = 1;
 	static public final int RETURN_VIDEO_CAPTURE = 2;
@@ -74,7 +70,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	// UI
 	private LinearLayout rootLayout;
 	private ButtonView buttonView;
-	private View fieldView;
+	private FieldView fieldView;
 
 	// Dynamic fields:
 	private DataAccess dao;
@@ -83,7 +79,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	private volatile Timer locationTimer;
 
 	// Temp location to save a photo
-	private static String tmpPhotoLocation;
+	private File tmpPhotoFile;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -92,13 +88,12 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 
 		// Retrieve the tmpPhotoLocation for the saved state
 		if(savedInstanceState != null)
-			tmpPhotoLocation = savedInstanceState.getString(TEMP_PHOTO_LOCATION_KEY);
+			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
 
 		// Check if there is an SD Card, otherwise inform the user and finish the activity
 		if(!SDCard.isExternalStorageWritable())
-		{
-			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show(); // will exit the activity
-																																		// after used clicks OK
+		{	//show error (activity will be exited after used clicks OK in the dialog):
+			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
 			return;
 		}
 
@@ -114,8 +109,8 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		// Get Project object:
 		project = dao.retrieveProject(projectName, projectVersion);
 		if(project == null)
-		{
-			errorDialog("Could not find project: " + projectName + "(version " + projectVersion + ").", true).show(); //will quit activity after "OK"
+		{	//show error (activity will be exited after used clicks OK in the dialog):
+			errorDialog("Could not find project: " + projectName + "(version " + projectVersion + ").", true).show();
 			return;
 		}
 
@@ -135,11 +130,11 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		buttonView = new ButtonView(this);
 		buttonView.setId(BUTTONS_VIEW_ID);
 		rootLayout.addView(buttonView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-		
+
 		// Set-up controller:
 		controller = new ProjectController(project, dao, this);
 
-		//Start project:
+		// Start project:
 		controller.startProject();
 	}
 
@@ -151,17 +146,17 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	{
 		switch(keyCode)
 		{
-		case KeyEvent.KEYCODE_BACK:
-			controller.goBack(); // TODO maybe make this optional?
-			return true;
-		case KeyEvent.KEYCODE_DPAD_RIGHT:
-			return true;
-		case KeyEvent.KEYCODE_DPAD_LEFT:
-			return true;
-		case KeyEvent.KEYCODE_VOLUME_DOWN:
-			return true;
-		case KeyEvent.KEYCODE_VOLUME_UP:
-			return true;
+			case KeyEvent.KEYCODE_BACK:
+				controller.goBack(); // TODO maybe make this optional?
+				return true;
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+				return true;
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+				return true;
+			case KeyEvent.KEYCODE_VOLUME_DOWN:
+				return true;
+			case KeyEvent.KEYCODE_VOLUME_UP:
+				return true;
 		}
 		return super.onKeyDown(keyCode, event);
 	}
@@ -174,10 +169,10 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	{
 		switch(keyCode)
 		{
-		case KeyEvent.KEYCODE_VOLUME_DOWN:
-			return true;
-		case KeyEvent.KEYCODE_VOLUME_UP:
-			return true;
+			case KeyEvent.KEYCODE_VOLUME_DOWN:
+				return true;
+			case KeyEvent.KEYCODE_VOLUME_UP:
+				return true;
 		}
 		return super.onKeyUp(keyCode, event);
 	}
@@ -189,7 +184,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	 */
 	public void setField(Field field)
 	{
-		//briefly disable the buttons:
+		// briefly disable the buttons:
 		buttonView.disable();
 		// Remove previous field view
 		removeFieldView();
@@ -197,7 +192,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		buttonView.update(controller);
 		// Display the actual field (through double dispatch):
 		field.setIn(this);
-		//enable the buttons:
+		// enable the buttons:
 		buttonView.enable();
 	}
 
@@ -205,106 +200,107 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	{
 		if(fieldView != null)
 		{
-			if(fieldView instanceof Cancelable)
-				((Cancelable) fieldView).cancel(); //to stop audiorecording, ...
-			rootLayout.removeView(fieldView); // throw away the old fieldField
+			fieldView.cancel(); // to stop audio recording, close camera, ...
+			rootLayout.removeView(fieldView.getView()); // throw away the old fieldField
 			fieldView = null;
 		}
 	}
-	
+
 	/**
 	 * Set the field view and removes any previous one from the screen
 	 * 
 	 * @param fieldView
 	 */
-	private void setFieldView(View fieldView)
+	private void setFieldView(FieldView fieldView, Field field)
 	{
-		removeFieldView();
-		fieldView.setId(FIELD_VIEW_ID);
+		removeFieldView(); //just in case
 		this.fieldView = fieldView;
-		rootLayout.addView(fieldView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		fieldView.getView().setId(FIELD_VIEW_ID);
+		fieldView.initialise(controller, field); // !!!
+		rootLayout.addView(fieldView.getView(), new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 	}
 
 	@Override
-	public void setChoice(Choice cf)
+	public void setChoice(ChoiceField cf)
 	{
-		ChoiceView choiceView = new ChoiceView(this);
-		setFieldView(choiceView);
-		choiceView.setChoice(cf, controller);
+		setFieldView(new ChoiceView(this), cf);
 	}
 
 	@Override
-	public void setAudio(final Audio af)
+	public void setAudio(AudioField af)
 	{
-		final AudioView audioView = new AudioView(this);
-		setFieldView(audioView);
-		audioView.setAudioView(af, controller);
+		setFieldView(new AudioView(this), af);
 	}
 
 	@Override
 	public void setLocation(LocationField lf)
 	{
 		// Show waiting view
-		LinearLayout waitingView = new LinearLayout(this);
-		waitingView.setGravity(Gravity.CENTER);
-		waitingView.addView(new ProgressBar(this, null, android.R.attr.progressBarStyleLarge));
-		setFieldView(waitingView);
+		// LinearLayout waitingView = new LinearLayout(this);
+		// waitingView.setGravity(Gravity.CENTER);
+		// waitingView.addView(new ProgressBar(this, null, android.R.attr.progressBarStyleLarge));
+		// setFieldView(waitingView);
 
-		// Start timeout counter
-		locationTimer = new Timer();
-		locationTimer.schedule(new TimerTask()
-		{
-			@Override
-			public void run()
-			{ // time's up!
-				controller.goForward();
+		// TODO put time in waitingview and stop on cancel()?
 
-			}
-		}, lf.getTimeoutS() * 1000);
+		// // Start timeout counter
+		// locationTimer = new Timer();
+		// locationTimer.schedule(new TimerTask()
+		// {
+		// @Override
+		// public void run()
+		// { // time's up!
+		// controller.goForward();
+		//
+		// }
+		// }, lf.getTimeoutS() * 1000);
 	}
-	
-	/**
-	 * Calls on the built-in camera application of the phone to let the user take a photo
-	 * 
-	 * Note: There is a known issue regarding the returned intent from MediaStore.ACTION_IMAGE_CAPTURE: -
-	 * https://code.google.com/p/android/issues/detail?id=1480 -
-	 * http://stackoverflow.com/questions/6530743/beautiful-way-to-come-over-bug-with-action-image-capture -
-	 * http://stackoverflow.com/questions/1910608/android-action-image-capture-intent/1932268#1932268 -
-	 * http://stackoverflow.com/questions/12952859/capturing-images-with-mediastore-action-image-capture-intent-in-android
-	 * 
-	 * As a workaround we create a temporary file for the image to be saved and afterwards (in cameraDone()) we rename the file to the correct name.
-	 */
+
 	@Override
-	public void setPhoto(Photo pf)
+	public void setPhoto(PhotoField pf)
 	{
-		// Check if the device is able to handle Photo Intents
-		if(!isIntentAvailable(this, MediaStore.ACTION_IMAGE_CAPTURE))
-		{ // Device cannot take photos
-			Log.i(TAG, "Cannot take photo due to device limitation.");
-			controller.photoDone(false); // skip the Photo field
-			return;
+		if(!pf.isUseNativeApp())
+		{	//Use built-in camera feature:
+			setFieldView(new CameraView(this), pf);
 		}
-		// else...
-		try
-		{
-			// Check if data path is accessible
-			if(!FileHelpers.createFolder(project.getDataPath()))
-				throw new IOException("Data path (" + project.getDataPath() + ") is not accessible.");
-
-			// Set up temp file
-			File parentDir = new File(project.getDataPath()); // The file is saved to the projects data folder
-			File tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, parentDir);
-			tmpPhotoLocation = tmpPhotoFile.getAbsolutePath();
-
-			// Save the photo to the tmp location
-			Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE); // Get the intent
-			takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
-			startActivityForResult(takePictureIntent, RETURN_PHOTO_CAPTURE);
-		}
-		catch(Exception e)
-		{
-			Debug.e("setPhoto() error: " + e.toString(), e);
-			controller.photoDone(false);
+		else
+		{	/* Use native/Android camera app
+			 * 
+			 * Note: There is a known issue regarding the returned intent from MediaStore.ACTION_IMAGE_CAPTURE:
+			 * 	- https://code.google.com/p/android/issues/detail?id=1480
+			 * 	- http://stackoverflow.com/questions/6530743/beautiful-way-to-come-over-bug-with-action-image-capture
+			 * 	- http://stackoverflow.com/questions/1910608/android-action-image-capture-intent/1932268#1932268
+			 * 	- http://stackoverflow.com/questions/12952859/capturing-images-with-mediastore-action-image-capture-intent-in-android
+			 * 
+			 * As a workaround we create a temporary file for the image to be saved and afterwards (in cameraDone()) we rename the file to the correct name.
+			 */
+			if(!isIntentAvailable(this, MediaStore.ACTION_IMAGE_CAPTURE)) //check if the device is able to handle PhotoField Intents
+			{ 	// Device cannot take photos
+				Log.i(TAG, "Cannot take photo due to device limitation.");
+				controller.photoDone(false); // skip the PhotoField field
+			}
+			else
+			{	// Device can take photos
+				try
+				{
+					// Check if data path is accessible
+					if(!FileHelpers.createFolder(project.getDataPath()))
+						throw new IOException("Data path (" + project.getDataPath() + ") is not accessible.");
+	
+					// Set up temp file (in the projects data folder)
+					tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, new File(project.getDataPath())); 
+	
+					// Save the photo to the tmp location
+					Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE); // Get the intent
+					takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
+					startActivityForResult(takePictureIntent, RETURN_PHOTO_CAPTURE);
+				}
+				catch(Exception e)
+				{
+					Log.e(TAG, "setPhoto() error", e);
+					controller.photoDone(false);
+				}
+			}
 		}
 	}
 
@@ -312,28 +308,21 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	{
 		if(resultCode == RESULT_CANCELED)
 		{
-			FileHelpers.deleteFile(tmpPhotoLocation); // Delete the tmp file from the device
+			if(tmpPhotoFile != null)
+				tmpPhotoFile.delete(); // Delete the tmp file from the device
 			controller.photoDone(false);
 		}
 		else if(resultCode == RESULT_OK)
 		{
-			// TODO
-			// get device id
-			// decide on suffix or not suffix
-			String photoFilename = "DeviceId-" + System.currentTimeMillis();
-
-			// Create the files
-			File from = new File(tmpPhotoLocation);
-			File to = new File(project.getDataPath() + File.separator + photoFilename);
-
 			// Rename the file
-			from.renameTo(to);
+			String newFilename = ((PhotoField) controller.getCurrentField()).generateNewFilename(controller.getCurrentRecord());
+			tmpPhotoFile.renameTo(new File(project.getDataPath() + File.separator + newFilename));
 
 			// Call Controller
 			controller.photoDone(true);
 		}
 		else
-		{ // this should not happen
+		{ 	// this should not happen
 			controller.photoDone(false);
 		}
 	}
@@ -344,15 +333,17 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		super.onActivityResult(requestCode, resultCode, data);
 		switch(requestCode)
 		{
-		case RETURN_PHOTO_CAPTURE:
-			cameraDone(resultCode);
-			break;
-		case RETURN_VIDEO_CAPTURE:
-			/* TODO */
-			break;
-		// more later?
-		default:
-			return;
+			case RETURN_AUDIO_CAPTURE :
+				/* TODO */
+				break;
+			case RETURN_PHOTO_CAPTURE :
+				cameraDone(resultCode);
+				break;
+			case RETURN_VIDEO_CAPTURE :
+				/* TODO */
+				break;
+			default:
+				return;
 		}
 	}
 
@@ -362,8 +353,8 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		super.onSaveInstanceState(bundle);
 
 		// If the app is taking a photo, save the tmpPhotoLocation
-		if(tmpPhotoLocation != null)
-			bundle.putString(TEMP_PHOTO_LOCATION_KEY, tmpPhotoLocation);
+		if(tmpPhotoFile != null)
+			bundle.putString(TEMP_PHOTO_PATH_KEY, tmpPhotoFile.getAbsolutePath());
 	}
 
 	public static boolean isIntentAvailable(Context context, String action)
@@ -383,29 +374,29 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	@Override
 	public void setOrientation(OrientationField of)
 	{
-		//do nothing (?)
+		// do nothing (?)
 	}
 
 	@Override
 	protected void onPause()
-	{	// close database
+	{ // close database
 		super.onPause();
 		dao.closeDB();
 	}
 
 	@Override
 	protected void onResume()
-	{	// open database
+	{ // open database
 		super.onResume();
 		dao.openDB();
 	}
-	
+
 	@Override
 	protected void onDestroy()
 	{
-		//TODO or should this happen onStop()??
-		if(fieldView != null && fieldView instanceof Cancelable)
-			((Cancelable) fieldView).cancel();
+		// TODO or should this happen onStop()??
+		if(fieldView != null)
+			fieldView.cancel();
 		super.onDestroy();
 	}
 

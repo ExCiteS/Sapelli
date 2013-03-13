@@ -25,17 +25,19 @@ public abstract class Field
 	
 	//Dynamics---------------------------------------------
 	protected String id;
+	protected Form form;
 	protected Field jump;
 	protected Column<?> column;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected Optionalness optional = DEFAULT_OPTIONAL;
 	protected boolean noColumn = DEFAULT_NO_COLUMN;
 	
-	public Field(String id)
+	public Field(Form form, String id)
 	{
 		if(id == null || id.isEmpty())
 			throw new NullPointerException("ID cannot be null or empty.");
 		this.id = id.trim();
+		this.form = form;
 	}
 	
 	/**
@@ -141,6 +143,14 @@ public abstract class Field
 		return true;
 	}
 	
+	/**
+	 * @return the form
+	 */
+	public Form getForm()
+	{
+		return form;
+	}
+
 	public abstract void setIn(CollectorUI fv);
 	
 }

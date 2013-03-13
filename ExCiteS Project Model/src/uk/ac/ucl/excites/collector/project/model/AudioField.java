@@ -9,12 +9,15 @@ import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
  * @author Michalis Vitos, mstevens
  * 
  */
-public class Audio extends MediaAttachment
+public class AudioField extends MediaField
 {
 
-	public Audio(String id)
+	private static final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
+	private static final String EXTENSION_3GPP = "3gp";
+
+	public AudioField(Form form, String id)
 	{
-		super(id);
+		super(form, id);
 	}
 
 	private String startRecImageLogicalPath;
@@ -58,4 +61,20 @@ public class Audio extends MediaAttachment
 		fv.setAudio(this);
 	}
 
+	@Override
+	public String getMediaType()
+	{
+		return MEDIA_TYPE_3GPP; //TODO support for other types
+	}
+
+	@Override
+	public String getFileExtension(String mediaType)
+	{
+		if(mediaType == MEDIA_TYPE_3GPP)
+			return EXTENSION_3GPP;
+		//else if //...
+		else
+			return EXTENSION_3GPP; //or the default
+	}
+	
 }
