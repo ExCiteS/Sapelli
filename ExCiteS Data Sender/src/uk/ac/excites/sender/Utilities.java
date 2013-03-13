@@ -30,9 +30,8 @@ public class Utilities extends Application
 		ActivityManager manager = (ActivityManager) mContext.getSystemService(ACTIVITY_SERVICE);
 		for(RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE))
 		{
-
 			// Set the Service
-			if(serviceClassName.equals(service.service.getClassName()))
+			if(serviceClassName != null && serviceClassName.equals(service.service.getClassName()))
 			{
 				return true;
 			}

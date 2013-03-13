@@ -1,10 +1,12 @@
 package uk.ac.excites.sender;
 
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
+import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -19,6 +21,9 @@ public class SenderBackgroundPreferences extends PreferenceActivity implements O
 {
 
 	public static final String PREFERENCES = "ExCiteS_Data_Sender_Preferences";
+	public static final String TAG = "SenderBackgroundPreferences";
+
+	private String serviceName;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -28,14 +33,29 @@ public class SenderBackgroundPreferences extends PreferenceActivity implements O
 
 		addPreferencesFromResource(R.xml.background_preferences);
 		PreferenceManager.setDefaultValues(SenderBackgroundPreferences.this, R.xml.background_preferences, false);
-		
+
 		// Register a listener
 		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 		mSharedPreferences.registerOnSharedPreferenceChangeListener(this);
 
-		// Call the Service
-		Intent mIntent = new Intent(this, SenderBackgroundService.class);
-		startService(mIntent);
+		// Debug the Preferences
+		if(Constants.DEBUG_LOG)
+			printPreferences(getApplicationContext());
+
+		// Start Button
+		Preference startButton = (Preference) findPreference("startButton");
+		startButton.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener()
+		{
+			@Override
+			public boolean onPreferenceClick(Preference arg0)
+			{
+				// Call the Service
+				Intent mIntent = new Intent(SenderBackgroundPreferences.this, SenderBackgroundService.class);
+				ComponentName mComponentName = startService(mIntent);
+				serviceName = mComponentName.getClassName();
+				return true;
+			}
+		});
 	}
 
 	/**
@@ -101,12 +121,28 @@ public class SenderBackgroundPreferences extends PreferenceActivity implements O
 	@Override
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
 	{
-		
+
 		if(Constants.DEBUG_LOG)
-			Log.i(Constants.TAG, "onSharedPreferenceChanged(): key = " + key);
-		
-		// Call the Service
-		Intent mIntent = new Intent(this, SenderBackgroundService.class);
-		startService(mIntent);
+		{
+			Log.i(TAG, "onSharedPreferenceChanged(): key = " + key);
+			printPreferences(getApplicationContext());
+		}
+
+		if(serviceName != null && Utilities.isMyServiceRunning(getApplicationContext(), serviceName))
+		{
+			// Call the Service
+			Intent mIntent = new Intent(this, SenderBackgroundService.class);
+			startService(mIntent);
+		}
+	}
+
+	public void printPreferences(Context mContext)
+	{
+		Log.d(TAG, "------------ Preferences: -------------");
+		Log.d(TAG, "DropboxUpload: " + (getDropboxUpload(mContext) ? "true" : "false"));
+		Log.d(TAG, "AirplaneMode: " + (getAirplaneMode(mContext) ? "true" : "false"));
+		Log.d(TAG, "CenterPhoneNumber: " + getCenterPhoneNumber(mContext));
+		Log.d(TAG, "TimeSchedule: " + getTimeSchedule(mContext));
+		Log.d(TAG, "MaxAttempts: " + getMaxAttempts(mContext));
 	}
 }
