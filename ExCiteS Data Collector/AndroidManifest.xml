@@ -31,8 +31,8 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <uses-feature android:name="android.hardware.camera" />
-	<uses-feature android:name="android.hardware.camera.autofocus" />
-    
+    <uses-feature android:name="android.hardware.camera.autofocus" />
+
     <application
         android:allowBackup="true"
         android:debuggable="true"
@@ -43,6 +43,7 @@
             android:name="uk.ac.ucl.excites.collector.ProjectPickerActivity"
             android:icon="@drawable/collector"
             android:label="Collector"
+            android:launchMode="singleTask"
             android:theme="@android:style/Theme.NoTitleBar" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -63,15 +64,15 @@
             android:label="ExCiteS Service Settings" >
             <intent-filter>
                 <action android:name="android.intent.action.CREATE_SHORTCUT" />
-
+                
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
-        </activity>
-        -->
+        </activity>        -->
         <activity
             android:name="uk.ac.excites.sender.SenderBackgroundPreferences"
             android:icon="@drawable/sender"
-            android:label="Settings" >
+            android:label="Settings"
+            android:launchMode="singleTask" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
