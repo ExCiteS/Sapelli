@@ -1,7 +1,13 @@
 package uk.ac.ucl.excites.collector.media;
 
+import java.util.List;
+
+import uk.ac.ucl.excites.collector.project.model.PhotoField;
+import uk.ac.ucl.excites.collector.project.model.PhotoField.FlashMode;
+import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
+import android.hardware.Camera.PictureCallback;
 import android.util.Log;
 import android.view.SurfaceHolder;
 
@@ -13,7 +19,10 @@ import android.view.SurfaceHolder;
  * 	- http://stackoverflow.com/a/8003222/1084488
  * 	- http://www.vogella.com/code/de.vogella.camera.api/codestartpage.html
  *  - http://android-er.blogspot.co.uk/2012/08/determine-best-camera-preview-size.html
- * 	- + some other posts on stackoverflow
+ * 
+ * To do's:
+ * 	- TODO Fix issue: auto flash mode never seems to flash (on XCover)
+ *  - TODO Capture using hardware shutter button
  * 
  * @author mstevens
  */
@@ -26,6 +35,7 @@ public class CameraController implements SurfaceHolder.Callback
 
 	private Camera camera;
 	private int cameraID = NO_CAMERA_FOUND;
+	private PhotoField.FlashMode flashMode = PhotoField.DEFAULT_FLASH_MODE;
 	private boolean inPreview = false;
 	private boolean cameraConfigured = false;
 
@@ -50,6 +60,11 @@ public class CameraController implements SurfaceHolder.Callback
 		}
 		return NO_CAMERA_FOUND;
 	}
+	
+	public void setFlashMode(FlashMode flashMode)
+	{
+		this.flashMode = flashMode;
+	}
 
 	public boolean foundCamera()
 	{
@@ -72,12 +87,10 @@ public class CameraController implements SurfaceHolder.Callback
 		inPreview = false;
 	}
 
-	public void takePicture()
+	public void takePicture(PictureCallback callback)
 	{
 		if(camera != null)
-		{
-			
-		}
+			camera.takePicture(null, null, callback);
 	}
 
 	public void close()
@@ -126,23 +139,29 @@ public class CameraController implements SurfaceHolder.Callback
 				camera.setDisplayOrientation(90); // TODO optionally make this change with device orientation?
 				Camera.Parameters parameters = camera.getParameters();
 				
-				//TODO flash support
-//				mSupportedFlashModes = mCamera.getParameters().getSupportedFlashModes();
-//		        // Set the camera to Auto Flash mode.
-//		        if (mSupportedFlashModes.contains(Camera.Parameters.FLASH_MODE_AUTO))
-//		        {
-//		            Camera.Parameters parameters = mCamera.getParameters();
-//		            parameters.setFlashMode(Camera.Parameters.FLASH_MODE_AUTO);             
-//		            mCamera.setParameters(parameters);
-//		        }
+				//Preview size:
+				Camera.Size previewSize = getBestPreviewSize(width, height, parameters);
+				if(previewSize != null)
+					parameters.setPreviewSize(previewSize.width, previewSize.height);
 				
-				Camera.Size size = getBestPreviewSize(width, height, parameters);
-				if(size != null)
-				{
-					parameters.setPreviewSize(size.width, size.height);
-					camera.setParameters(parameters);
-					cameraConfigured = true;
-				}
+				//Set focus mode:
+				if(parameters.getSupportedFocusModes().contains(Camera.Parameters.FLASH_MODE_AUTO))
+					parameters.setFocusMode(Camera.Parameters.FLASH_MODE_AUTO);
+				
+				//Flash mode:
+				parameters.setFlashMode(getAppropriateFlashMode(parameters));
+				
+				//Resulting file:
+				//	Format:
+				parameters.setPictureFormat(ImageFormat.JPEG);
+				parameters.set("jpeg-quality", 100);
+				//	Size:
+				Camera.Size pictureSize = getLargestPictureSize(parameters);
+				if(pictureSize != null)
+					parameters.setPictureSize(pictureSize.width, pictureSize.height);
+
+				camera.setParameters(parameters);
+				cameraConfigured = true;
 			}
 		}
 		startPreview();
@@ -154,6 +173,24 @@ public class CameraController implements SurfaceHolder.Callback
 		close();
 	}
 
+	private String getAppropriateFlashMode(Camera.Parameters parameters)
+	{
+		List<String> availableModes = parameters.getSupportedFlashModes();
+		switch(flashMode)
+		{
+			case ON :	if(availableModes.contains(Camera.Parameters.FLASH_MODE_ON))
+							return Camera.Parameters.FLASH_MODE_ON;
+						break;
+			case AUTO :	if(availableModes.contains(Camera.Parameters.FLASH_MODE_AUTO))
+							return Camera.Parameters.FLASH_MODE_AUTO;
+						break;
+			case OFF :	if(availableModes.contains(Camera.Parameters.FLASH_MODE_OFF))
+							return Camera.Parameters.FLASH_MODE_OFF;
+						break;
+		}
+		return parameters.getFlashMode(); //leave as is
+	}
+	
 	private Camera.Size getBestPreviewSize(int width, int height, Camera.Parameters parameters)
 	{
 		Camera.Size result = null;
@@ -162,19 +199,30 @@ public class CameraController implements SurfaceHolder.Callback
 			if(size.width <= width && size.height <= height)
 			{
 				if(result == null)
-				{
 					result = size;
-				}
 				else
 				{
 					int resultArea = result.width * result.height;
 					int newArea = size.width * size.height;
-
 					if(newArea > resultArea)
-					{
 						result = size;
-					}
 				}
+			}
+		}
+		return result;
+	}
+	
+	private Camera.Size getLargestPictureSize(Camera.Parameters parameters)
+	{
+		Camera.Size result = null;
+		for(Camera.Size size : parameters.getSupportedPictureSizes())
+		{
+			if(result == null)
+				result = size;
+			else
+			{
+				if(size.width * size.height > result.width * result.height)
+					result = size;
 			}
 		}
 		return result;

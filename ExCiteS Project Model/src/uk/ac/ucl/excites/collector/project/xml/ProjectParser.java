@@ -60,7 +60,6 @@ public class ProjectParser extends DefaultHandler
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
-	static private final String ATTRIBUTE_PHOTO_CAMERA = "camera";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
 	
 
@@ -69,7 +68,7 @@ public class ProjectParser extends DefaultHandler
 	private boolean createProjectFolder;
 	private Project project;
 	private Form currentForm;
-	private String currentFormStartFieldID;
+	private String currentFormStartFieldId;
 	private ChoiceField currentChoice;
 	private HashMap<Field, String> fieldToJumpId;
 	private Hashtable<String, Field> idToField;
@@ -145,14 +144,14 @@ public class ProjectParser extends DefaultHandler
 		{
 			// TODO
 		}
-		// <TAG_FORM>
+		// <Form>
 		else if(qName.equals(TAG_FORM))
 		{
 			String name = readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_NAME);
 			int schemaID = Integer.parseInt(readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_SCHEMA_ID));
 			int schemaVersion = (attributes.getValue(ATTRIBUTE_FORM_SCHEMA_VERSION) == null ? Schema.DEFAULT_VERSION : Integer.parseInt(attributes
 					.getValue(ATTRIBUTE_FORM_SCHEMA_VERSION)));
-			currentForm = new Form(name, schemaID, schemaVersion);
+			currentForm = new Form(project, name, schemaID, schemaVersion);
 			project.addForm(currentForm);
 			// Store end time?:
 			currentForm.setStoreEndTime(readBooleanAttribute(attributes, "storeEndTime", Form.END_TIME_DEFAULT));
@@ -173,12 +172,12 @@ public class ProjectParser extends DefaultHandler
 			currentForm.setButtonBackgroundColor(readStringAttribute(attributes, "buttonBackgroundColor", Form.DEFAULT_BUTTON_BACKGROUND_COLOR));
 			//Start field:
 			if(attributes.getValue(ATTRIBUTE_FORM_START_FIELD) != null && !attributes.getValue(ATTRIBUTE_FORM_START_FIELD).isEmpty())
-				currentFormStartFieldID = attributes.getValue(ATTRIBUTE_FORM_START_FIELD);
+				currentFormStartFieldId = attributes.getValue(ATTRIBUTE_FORM_START_FIELD);
 			else
 				System.out.println("Warning: No startField attribute, will use first field");
-			// TODO other attributes
+			// TODO shortcut image
 		}
-		// <CHOICE>
+		// <Choice>
 		else if(qName.equals(TAG_CHOICE))
 		{
 			currentChoice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
@@ -202,7 +201,7 @@ public class ProjectParser extends DefaultHandler
 				currentChoice.setValue(attributes.getValue("value"));
 			// ...
 		}
-		// <LOCATION>
+		// <Location>
 		else if(qName.equals("Location"))
 		{
 			LocationField locField = new LocationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
@@ -234,35 +233,51 @@ public class ProjectParser extends DefaultHandler
 			locField.setStoreAccuracy(readBooleanAttribute(attributes, "storeAccuracy", LocationField.DEFAULT_STORE_ACCURACY));
 			locField.setStoreProvider(readBooleanAttribute(attributes, "storeProvider", LocationField.DEFAULT_STORE_PROVIDER));
 		}
-		// <PHOTO>
+		// <Photo>
 		else if(qName.equals(TAG_PHOTO))
 		{
 			PhotoField photoField = new PhotoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 			currentForm.addField(photoField);
+			setOptionalness(photoField, attributes);
 			rememberIDAndJump(photoField, attributes);
 			mediaAttachmentAttributes(photoField, attributes);
-			photoField.setCamera(attributes.getValue(ATTRIBUTE_PHOTO_CAMERA));
+			photoField.setUseFrontFacingCamera(readBooleanAttribute(attributes, "useFrontCamera", PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA));
 			photoField.setCaptureButtonImageLogicalPath(attributes.getValue("captureImg"));
 			photoField.setApproveButtonImageLogicalPath(attributes.getValue("approveImg"));
 			photoField.setDiscardButtonImageLogicalPath(attributes.getValue("discardImg"));
+			String flashText = attributes.getValue("flash");
+			PhotoField.FlashMode flash = PhotoField.DEFAULT_FLASH_MODE;
+			if(flashText != null && !flashText.isEmpty())
+			{
+				flashText = flashText.trim();
+				if(flashText.equalsIgnoreCase("on") || flashText.equalsIgnoreCase("always") || flashText.equalsIgnoreCase("true"))
+					flash = PhotoField.FlashMode.ON;
+				else if(flashText.equalsIgnoreCase("auto"))
+					flash = PhotoField.FlashMode.AUTO;
+				else if(flashText.equalsIgnoreCase("off") || flashText.equalsIgnoreCase("never") || flashText.equalsIgnoreCase("false"))
+					flash = PhotoField.FlashMode.OFF;
+			}
+			photoField.setFlashMode(flash);
 			photoField.setUseNativeApp(readBooleanAttribute(attributes, "useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP));
 		}
-		// <AUDIO>
+		// <Audio>
 		else if(qName.equals(TAG_AUDIO))
 		{
 			AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 			currentForm.addField(audioField);
+			setOptionalness(audioField, attributes);
 			rememberIDAndJump(audioField, attributes);
 			mediaAttachmentAttributes(audioField, attributes);
 			audioField.setStartRecImageLogicalPath(attributes.getValue("startRecImg"));
 			audioField.setStopRecImageLogicalPath(attributes.getValue("stopRecImg"));
 		}
-		// <ORIENTATION>
+		// <Orientation>
 		else if(qName.equals(TAG_ORIENTATION))
 		{
 			OrientationField orField = new OrientationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getValue("axes"));
 			currentForm.addField(orField);
 			setOptionalness(orField, attributes);
+			rememberIDAndJump(orField, attributes);
 		}
 	}
 
@@ -280,7 +295,7 @@ public class ProjectParser extends DefaultHandler
 		{
 			currentForm.initialiseStorage(); //generates Schema, Column & ValueDictionaries
 			currentForm = null;
-			currentFormStartFieldID = null;
+			currentFormStartFieldId = null;
 		}
 		// </ChoiceField>
 		else if(qName.equals(TAG_CHOICE))
@@ -315,12 +330,12 @@ public class ProjectParser extends DefaultHandler
 			fieldToJumpId.put(f, jumpToId);
 		}
 		// Resolve/set form start field:
-		if(currentFormStartFieldID == null)
+		if(currentFormStartFieldId == null)
 		{
 			if(currentForm.getStartField() == null) // no startID was specified and the start field is not set yet
 				currentForm.setStartField(f); // set first field of the form as start field
 		}
-		else if(currentFormStartFieldID.equals(f.getID()))
+		else if(currentFormStartFieldId.equals(f.getID()))
 			currentForm.setStartField(f);
 	}
 

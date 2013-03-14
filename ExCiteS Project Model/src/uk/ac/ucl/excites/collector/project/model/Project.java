@@ -70,24 +70,42 @@ public class Project
 		return version;
 	}
 	
-	public String getProjectPath()
+	public String getProjectFolderPath()
 	{
 		return projectPath;
 	}
 	
-	public String getImagePath()
+	public String getImageFolderPath()
 	{
 		return projectPath + IMAGE_FOLDER + File.separator;
 	}
 	
-	public String getSoundPath()
+	public String getSoundFolderPath()
 	{
 		return projectPath + SOUND_FOLDER + File.separator;
 	}
 	
-	public String getDataPath()
+	public String getDataFolderPath()
 	{
 		return projectPath + DATA_FOLDER + File.separator;
+	}
+	
+	/**
+	 * @return File object pointing to the data folder for this project
+	 * @throws IOException - when the folder cannot be created or is not writable
+	 */
+	public File getDataFolder() throws IOException
+	{
+		File folder = new File(getDataFolderPath());
+		
+		// Check if data path is accessible
+		if(!FileHelpers.createFolder(folder))
+			throw new IOException("Data path (" + folder.getAbsolutePath() + ") cannot be created.");
+		
+		if(!folder.canWrite())
+			throw new IOException("Data path (" + folder.getAbsolutePath() + ") is not writable.");
+		
+		return folder;
 	}
 	
 	public String toString()

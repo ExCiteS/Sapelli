@@ -3,6 +3,9 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.collector.project.data.FormEntry;
@@ -129,9 +132,11 @@ public abstract class MediaField extends Field
 		((IntegerColumn) column).storeValue(record, Long.valueOf(++currentCount));
 	}
 
-	public String generateNewFilename(Record record)
+	public File getNewFile(Record record) throws IOException
 	{
-		return generateFilename(record, getCount(record));
+		String filename = generateFilename(record, getCount(record));
+		String dataFolderPath = form.getProject().getDataFolder().getAbsolutePath(); //getDataFolder() does the necessary checks (IOException is thrown in case of trouble)
+		return new File(dataFolderPath + File.separator + filename);
 	}
 	
 	public String generateFilename(Record record, int attachmentNumber)

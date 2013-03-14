@@ -224,7 +224,8 @@ public class ProjectPickerActivity extends BaseActivity
 			errorDialog("Please select an XML or ExCiteS file", false).show();
 			return;
 		}
-				
+		enterURL.setText(""); //clear field		
+		
 		Project project = null;
 		
 		// Download ExCiteS file if path is a URL

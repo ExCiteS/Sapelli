@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.collector;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -51,11 +52,13 @@ public class ProjectController implements LocationListener
 	private long deviceID; // 32 bit _unsigned_ CRC32 hashcode
 
 	private Form currentForm;
-	private Record record;
 	private Field currentField;
 	private Set<Field> tempDisabledFields;
 	private Stack<Field> fieldHistory;
 
+	private Record currentRecord;
+	private List<File> currentMediaAttachments;
+	
 	private LocationManager locationManager;
 	private Location currentBestLocation = null;
 
@@ -67,6 +70,7 @@ public class ProjectController implements LocationListener
 
 		fieldHistory = new Stack<Field>();
 		tempDisabledFields = new HashSet<Field>();
+		currentMediaAttachments = new ArrayList<File>();
 		deviceID = (new DeviceID(activity)).getCRC32Hash();
 	}
 
@@ -99,22 +103,19 @@ public class ProjectController implements LocationListener
 	public void startForm(Form form)
 	{
 		currentForm = form;
-		restartForm();
-	}
-
-	public void restartForm()
-	{
+		
 		// Clear stuff:
 		fieldHistory.clear();
 		tempDisabledFields.clear();
+		currentMediaAttachments.clear();
 		currentField = null;
 
 		// Open DB
 		if(!dao.isOpen())
 			dao.openDB();
 		
-		// Create new record:
-		record = currentForm.newEntry(deviceID);
+		// Create new currentRecord:
+		currentRecord = currentForm.newEntry(deviceID);
 		
 		// Location...
 		List<LocationField> lfStartWithForm = currentForm.getLocationFields(true);
@@ -127,12 +128,22 @@ public class ProjectController implements LocationListener
 		goTo(currentForm.getStartField());
 	}
 
+	public void cancelAndRestartForm()
+	{
+		//Delete any attachments:
+		for(File attachment : currentMediaAttachments)
+			if(attachment.exists())
+				attachment.delete();
+		//Restart the form:
+		startForm(currentForm);
+	}
+	
 	public void goForward()
 	{
 		if(currentField != null)
 			goTo(currentForm.getNextField(currentField));
 		else
-			restartForm(); // this shouldn't happen
+			startForm(currentForm); // this shouldn't happen really...
 	}
 
 	public void goBack()
@@ -155,7 +166,7 @@ public class ProjectController implements LocationListener
 		if(currentField instanceof LocationField)
 		{
 			LocationField lf = (LocationField) currentField;
-			if(lf.isWaitAtField() || lf.storeLocation(LocationUtils.getExCiteSLocation(currentBestLocation), record))
+			if(lf.isWaitAtField() || lf.storeLocation(LocationUtils.getExCiteSLocation(currentBestLocation), currentRecord))
 				startLocationListener(lf); // start listening for a location
 			else
 			{ // we already have a location
@@ -165,7 +176,7 @@ public class ProjectController implements LocationListener
 		}
 		if(currentField instanceof MediaField)
 		{
-			if(((MediaField) currentField).isMaxReached(record))
+			if(((MediaField) currentField).isMaxReached(currentRecord))
 			{	//Maximum number of attachments for this field is reached:
 				goForward(); //skip field
 				return; //!!!
@@ -205,7 +216,7 @@ public class ProjectController implements LocationListener
 		{
 			// Store value
 			if(!chosenChild.getRoot().isNoColumn())
-				chosenChild.storeValue(record);
+				chosenChild.storeValue(currentRecord);
 			// Go to next field
 			goTo(currentForm.getNextField(chosenChild));
 			/*
@@ -217,24 +228,15 @@ public class ProjectController implements LocationListener
 			goTo(chosenChild); // chosenChild becomes the new currentField (we go one level down in the choice tree)
 	}
 
-	public void photoDone(boolean pictureTaken)
-	{
-		mediaDone(pictureTaken);
-	}
-
-	public void audioDone(boolean recordingMade)
-	{
-		mediaDone(recordingMade);
-	}
-	
-	private void mediaDone(boolean gotMedia)
+	public void mediaDone(File mediaAttachment)
 	{
 		MediaField ma = (MediaField) currentField;
-		if(gotMedia)
+		if(mediaAttachment != null && mediaAttachment.exists())
 		{
-			ma.incrementCount(record); // Store/increase number of pictures/recordings taken
-			if(ma.isMaxReached(record) && ma.getDisableChoice() != null)
+			ma.incrementCount(currentRecord); // Store/increase number of pictures/recordings taken
+			if(ma.isMaxReached(currentRecord) && ma.getDisableChoice() != null)
 				tempDisabledFields.add(ma.getDisableChoice()); //disable the choice that makes the MA accessible
+			currentMediaAttachments.add(mediaAttachment);
 			goForward(); //goto next/jump field
 		}
 		else
@@ -249,20 +251,20 @@ public class ProjectController implements LocationListener
 
 	public void endForm()
 	{
-		//Finalise the record:
-		currentForm.finish(record); //sets end-time if necessary
+		//Finalise the currentRecord:
+		currentForm.finish(currentRecord); //sets end-time if necessary
 		
 		// Open DB
 		if(!dao.isOpen())
 			dao.openDB();
 		
-		// Store record
-		dao.store(record);
+		// Store currentRecord
+		dao.store(currentRecord);
 		
-		Log.d(TAG, "Stored record:");
-		Log.d(TAG, record.toString());
+		Log.d(TAG, "Stored currentRecord:");
+		Log.d(TAG, currentRecord.toString());
 		
-		// Signal the successful storage of the record
+		// Signal the successful storage of the currentRecord
 		// Vibration
 		if(currentForm.isVibrateOnEnd())
 		{
@@ -274,7 +276,7 @@ public class ProjectController implements LocationListener
 		String endSound = currentForm.getEndSoundPath();
 		if(endSound != null && !endSound.isEmpty())
 		{
-			File endSoundPath = new File(project.getSoundPath() + endSound);
+			File endSoundPath = new File(project.getSoundFolderPath() + endSound);
 			if(endSoundPath.exists()) // check if the file really exists
 			{
 				// Play the sound
@@ -295,7 +297,7 @@ public class ProjectController implements LocationListener
 		switch(currentForm.getEndAction())
 		{
 			case Form.END_ACTION_LOOP:
-				restartForm();
+				startForm(currentForm);
 				break;
 			case Form.END_ACTION_EXIT:
 				activity.finish();
@@ -320,11 +322,11 @@ public class ProjectController implements LocationListener
 	}
 	
 	/**
-	 * @return the record
+	 * @return the currentRecord
 	 */
 	public Record getCurrentRecord()
 	{
-		return record;
+		return currentRecord;
 	}
 
 	/**
@@ -371,7 +373,7 @@ public class ProjectController implements LocationListener
 		// boolean keepListening = false;
 		// for(LocationField lf : currentForm.getLocationFields())
 		// {
-		// boolean stored = lf.storeLocation(LocationUtils.getExCiteSLocation(location), record);
+		// boolean stored = lf.storeLocation(LocationUtils.getExCiteSLocation(location), currentRecord);
 		//
 		// keepListening |= (lf.isWaitAtField() && currentField != lf);
 		// }
@@ -385,14 +387,14 @@ public class ProjectController implements LocationListener
 		// { //user is waiting for a location for the currentfield
 		// activity.stopLocationTimer(); //stop waiting screen timer!
 		// stopLocationListener(); //stop listening for locations
-		// ((LocationField) currentField).storeLocation(LocationUtils.getExCiteSLocation(location), record); //store location
+		// ((LocationField) currentField).storeLocation(LocationUtils.getExCiteSLocation(location), currentRecord); //store location
 		//
 		// goForward(); //continue (will leave waiting screen)
 		// }
 		// else if(currentForm.getLocationFields().size() == 1)
 		// {
 		// LocationField lf = currentForm.getLocationFields().get(0);
-		// lf.storeLocation(LocationUtils.getExCiteSLocation(location), record); //store location
+		// lf.storeLocation(LocationUtils.getExCiteSLocation(location), currentRecord); //store location
 		// if(!lf.isWaitAtField())
 		// stopLocationListener();
 		// }

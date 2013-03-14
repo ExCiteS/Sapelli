@@ -58,7 +58,7 @@ public class ExCiteSFileLoader
 		// Extract excites file contents to project path:
 		try
 		{
-			unzip(excitesFile, p.getProjectPath());
+			unzip(excitesFile, p.getProjectFolderPath());
 		}
 		catch(Exception e)
 		{
