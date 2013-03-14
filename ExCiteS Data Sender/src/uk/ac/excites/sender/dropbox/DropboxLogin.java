@@ -45,6 +45,7 @@ public class DropboxLogin extends Activity
 			{
 				// ... Link failed or was cancelled by the user.
 				Log.i(Constants.TAG, "DropboxLogin onActivityResult not OK");
+				finish();
 			}
 		}
 		else
