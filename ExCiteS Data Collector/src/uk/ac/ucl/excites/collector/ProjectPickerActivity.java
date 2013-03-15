@@ -54,47 +54,52 @@ import android.widget.ListView;
 public class ProjectPickerActivity extends BaseActivity
 {
 
-	//STATICS--------------------------------------------------------
+	// STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectPickerActivity";
 
 	static private final String XML_FILE_EXTENSION = "xml";
 	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
 	static private final String DOWNLOADS_FOLDER = "Downloads" + File.separatorChar;
-	
+
+	// SHORTCUT ACTIONS
+	private static final String DEFAULT_INSTALL_SHORTCUT_ACTION = "com.android.launcher.action.INSTALL_SHORTCUT";
+	private static final String CUSTOM_INSTALL_SHORTCUT_ACTION = "com.shortcutreceiver.INSTALL_SHORTCUT";
+	private static final String DEFAULT_UNISTALL_SHORTCUT_ACTION = "com.android.launcher.action.UNINSTALL_SHORTCUT";
+	private static final String CUSTOM_UNISTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.UNINSTALL_SHORTCUT";
 	private static final String SHORTCUT_PROJECT_NAME = "Shortcut_Project_Name";
 	private static final String SHORTCUT_PROJECT_VERSION = "Shortcut_Project_Version";
 
 	public static final int RETURN_BROWSE = 1;
-	
-	//DYNAMICS-------------------------------------------------------
+
+	// DYNAMICS-------------------------------------------------------
 	private String databasePath;
 	private String excitesFolderPath;
 	private DataAccess dao;
-	
-	//UI
+
+	// UI
 	private EditText enterURL;
 	private ListView projectList;
 	private Button runBtn;
 	private Button removeBtn;
-	
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		
+
 		// Check if there is an SD Card
 		if(!SDCard.isExternalStorageWritable())
-		{	// Inform the user and close the application
+		{ // Inform the user and close the application
 			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
 			return;
 		}
-		
+
 		// Paths...
 		// Database path is on Internal Storage
 		databasePath = this.getFilesDir().getAbsolutePath();
 		// ExCiteS folder
 		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER;
-		
+
 		// Get extra info and check if there is a shortcut info there
 		Bundle extras = getIntent().getExtras();
 		if(extras != null && extras.containsKey(SHORTCUT_PROJECT_NAME))
@@ -111,7 +116,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 		// DataAccess instance:
 		dao = DataAccess.getInstance(databasePath);
-		
+
 		// Set-up UI...
 		setTitle("ExCiteS Project Picker");
 		// Hide soft keyboard on create
@@ -142,7 +147,7 @@ public class ProjectPickerActivity extends BaseActivity
 			}
 		});
 	}
-	
+
 	public void browse(View view)
 	{
 		Intent intent = new Intent(getBaseContext(), FileChooserActivity.class);
@@ -152,7 +157,7 @@ public class ProjectPickerActivity extends BaseActivity
 		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + "|" + ExCiteSFileLoader.EXCITES_FILE_EXTENSION + ")$");
 		startActivityForResult(intent, RETURN_BROWSE);
 	}
-	
+
 	/**
 	 * Retrieve all parsed projects from db and populate list
 	 */
@@ -163,7 +168,7 @@ public class ProjectPickerActivity extends BaseActivity
 		{
 			runBtn.setEnabled(true);
 			removeBtn.setEnabled(true);
-			projectList.setItemChecked(0, true); //check first project in the list
+			projectList.setItemChecked(0, true); // check first project in the list
 		}
 		else
 		{
@@ -171,13 +176,13 @@ public class ProjectPickerActivity extends BaseActivity
 			removeBtn.setEnabled(false);
 		}
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	protected void selectProjectInList(Project project)
 	{
 		projectList.setItemChecked(((ArrayAdapter<Project>) projectList.getAdapter()).getPosition(project), true);
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	protected Project getSelectedProject()
 	{
@@ -185,7 +190,7 @@ public class ProjectPickerActivity extends BaseActivity
 			return null;
 		return ((ArrayAdapter<Project>) projectList.getAdapter()).getItem(projectList.getCheckedItemPosition());
 	}
-	
+
 	public void runProject(View view)
 	{
 		Project p = getSelectedProject();
@@ -196,7 +201,7 @@ public class ProjectPickerActivity extends BaseActivity
 		}
 		runProjectActivity(p.getName(), p.getVersion());
 	}
-	
+
 	public void runProjectActivity(String projectName, int projectVersion)
 	{
 		Intent i = new Intent(this, CollectorActivity.class);
@@ -205,7 +210,7 @@ public class ProjectPickerActivity extends BaseActivity
 		i.putExtra(CollectorActivity.PARAMETER_DB_FOLDER_PATH, databasePath);
 		startActivity(i);
 	}
-	
+
 	private void removeProject()
 	{
 		Project p = getSelectedProject();
@@ -225,14 +230,13 @@ public class ProjectPickerActivity extends BaseActivity
 			return;
 		}
 		enterURL.setText(""); //clear field		
-		
 		Project project = null;
-		
+
 		// Download ExCiteS file if path is a URL
-		if(Pattern.matches(Patterns.WEB_URL.toString(), path) /*&& path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION)*/) //extension check commented out to support "smart" URLs
-		{
-			//start async task to download the file, the task will also call processExcitesFile() and checkProject()
-			(new DownloadFileFromURL(path, "Project")).execute();
+		if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION) */) 
+		{	//Extension check above is commented out to support "smart"/dynamic URLs
+			//Start async task to download the file:
+			(new DownloadFileFromURL(path, "Project")).execute(); //the task will also call processExcitesFile() and checkProject()
 			return;
 		}
 		// Extract & parse a local ExCiteS file
@@ -245,15 +249,16 @@ public class ProjectPickerActivity extends BaseActivity
 		{
 			project = parseXML(new File(path));
 		}
-		//Add the project to the db & the list on the screen:
-		addProject(project, path); //null check (with appropriate error) happens in addProject()
+		// Add the project to the db & the list on the screen:
+		addProject(project, path); // null check (with appropriate error) happens in addProject()
 	}
-	
+
 	private Project parseXML(File xmlFile)
 	{
 		try
 		{
-			// Use the path where the xml file currently is as the basePath (img and snd folders are assumed to be in the same place), no subfolders are created:
+			// Use the path where the xml file currently is as the basePath (img and snd folders are assumed to be in the same place), no subfolders are
+			// created:
 			ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
 			return parser.parseProject(xmlFile);
 		}
@@ -288,7 +293,7 @@ public class ProjectPickerActivity extends BaseActivity
 			return null;
 		}
 	}
-	
+
 	private void addProject(Project project, String sourcePathOrURL)
 	{
 		// Check if we have a project object:
@@ -307,7 +312,7 @@ public class ProjectPickerActivity extends BaseActivity
 			errorDialog(de.getLocalizedMessage(), false).show();
 			return;
 		}
-		catch(Exception e) //any other exception
+		catch(Exception e) // any other exception
 		{
 			Log.e(TAG, "Could not store project.", e);
 			errorDialog("Could not store project: " + e.getLocalizedMessage(), false).show();
@@ -315,9 +320,9 @@ public class ProjectPickerActivity extends BaseActivity
 		}
 		// Update project list:
 		populateProjectList();
-		selectProjectInList(project); //select the new project
+		selectProjectInList(project); // select the new project
 	}
-	
+
 	public void scanQR(View view)
 	{
 		// Start the Intent to Scan a QR code
@@ -352,15 +357,29 @@ public class ProjectPickerActivity extends BaseActivity
 		// TODO Get an icon from the form for each project
 		ShortcutIconResource iconResource = Intent.ShortcutIconResource.fromContext(ProjectPickerActivity.this, R.drawable.ic_launcher);
 
-		// The result we are passing back from this activity
+		// ================================================================================
+		// Create a shortcut to the standard Android Home Launcher
+		// ================================================================================
 		Intent shortcutIntent = new Intent();
-		shortcutIntent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
+		shortcutIntent.setAction(DEFAULT_INSTALL_SHORTCUT_ACTION);
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, iconResource);
 		// Do not allow duplicate shortcuts
 		shortcutIntent.putExtra("duplicate", false);
 		sendBroadcast(shortcutIntent);
+
+		// ================================================================================
+		// Create an Intent to work with the ExCiteS Launcher
+		// ================================================================================
+		Intent launcherIntent = new Intent();
+		launcherIntent.setAction(CUSTOM_INSTALL_SHORTCUT_ACTION);
+		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
+		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
+		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, iconResource);
+		// TODO Do I need this?
+		launcherIntent.putExtra("duplicate", false);
+		sendBroadcast(launcherIntent);
 	}
 
 	/**
@@ -379,16 +398,28 @@ public class ProjectPickerActivity extends BaseActivity
 
 		// Get the selected project
 		Project selectedProject = getSelectedProject();
-		
+
 		// Deleting shortcut
 		Intent projectIntent = new Intent(getApplicationContext(), ProjectPickerActivity.class);
 		projectIntent.setAction(Intent.ACTION_MAIN);
 
+		// ================================================================================
+		// Remove a shortcut from the standard Android Home Launcher
+		// ================================================================================
 		Intent shortcutIntent = new Intent();
-		shortcutIntent.setAction("com.android.launcher.action.UNINSTALL_SHORTCUT");
+		shortcutIntent.setAction(DEFAULT_UNISTALL_SHORTCUT_ACTION);
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
 		sendBroadcast(shortcutIntent);
+
+		// ================================================================================
+		// Remove a shortcut from the ExCiteS Launcher
+		// ================================================================================
+		Intent launcherIntent = new Intent();
+		launcherIntent.setAction(CUSTOM_UNISTALL_SHORTCUT_ACTION);
+		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
+		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
+		sendBroadcast(launcherIntent);
 	}
 
 	/**
@@ -401,7 +432,7 @@ public class ProjectPickerActivity extends BaseActivity
 	{
 		return project.getName() + " v" + project.getVersion();
 	}
-	
+
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
@@ -425,7 +456,7 @@ public class ProjectPickerActivity extends BaseActivity
 				}
 				break;
 			// QR Reader
-			case IntentIntegrator.REQUEST_CODE :
+			case IntentIntegrator.REQUEST_CODE:
 				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
 				if(scanResult != null)
 				{
@@ -438,7 +469,6 @@ public class ProjectPickerActivity extends BaseActivity
 			}
 		}
 	}
-	
 
 	/**
 	 * Dialog to check whether it is desired to remove project
@@ -469,7 +499,7 @@ public class ProjectPickerActivity extends BaseActivity
 			removeDialogBox.show();
 		}
 	}
-	
+
 	@Override
 	protected void onPause()
 	{
@@ -491,7 +521,7 @@ public class ProjectPickerActivity extends BaseActivity
 			populateProjectList();
 		}
 	}
-	
+
 	/**
 	 * Background Async Task to download file
 	 * 
@@ -499,9 +529,9 @@ public class ProjectPickerActivity extends BaseActivity
 	 */
 	public class DownloadFileFromURL extends AsyncTask<Void, Integer, Boolean>
 	{
-		
+
 		static private final String TEMP_FILE_EXTENSION = "tmp";
-		
+
 		// Variables
 		private long startTime;
 		private ProgressDialog progressDialog;
@@ -512,10 +542,8 @@ public class ProjectPickerActivity extends BaseActivity
 		/**
 		 * Downloads the file
 		 * 
-		 * Note:
-		 * 	We do not use
-		 * 		Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-		 * 	as the download folder because it does not seem to be writable on the Xcover.
+		 * Note: We do not use Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS); as the download folder because it does not seem
+		 * to be writable on the Xcover.
 		 * 
 		 * @param downloadUrl
 		 * @param filename
@@ -523,13 +551,13 @@ public class ProjectPickerActivity extends BaseActivity
 		public DownloadFileFromURL(String downloadUrl, String filename)
 		{
 			this.startTime = System.currentTimeMillis();
-			
+
 			this.downloadUrl = downloadUrl;
 			// Download file in folder /Download/timestamp-filename
 			this.downloadFolder = new File(excitesFolderPath + DOWNLOADS_FOLDER);
 			FileHelpers.createFolder(downloadFolder);
 			this.downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
-			
+
 			// instantiate it within the onCreate method
 			progressDialog = new ProgressDialog(ProjectPickerActivity.this);
 			progressDialog.setMessage("Downloading...");
@@ -584,7 +612,7 @@ public class ProjectPickerActivity extends BaseActivity
 					InputStream input = new BufferedInputStream(url.openStream(), 8192);
 					// Output stream to write file
 					OutputStream output = new FileOutputStream(downloadFile);
-					
+
 					byte data[] = new byte[1024];
 					long total = 0;
 					while((count = input.read(data)) != -1)
@@ -635,15 +663,16 @@ public class ProjectPickerActivity extends BaseActivity
 			{
 				// Process the file & add the project to the db & list on the screen
 				Project project = processExcitesFile(downloadFile);
-				addProject(project, downloadUrl); //will show error if project is null
-				
+				addProject(project, downloadUrl); // will show error if project is null
+
 				// Handle temp file:
 				if(project != null)
-				{	//Rename temp file:
-					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_' + (startTime / 1000) + ".excites"));
+				{ // Rename temp file:
+					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_'
+							+ (startTime / 1000) + ".excites"));
 				}
 				else
-				{	//Delete temp file:
+				{ // Delete temp file:
 					downloadFile.delete();
 				}
 			}
@@ -672,5 +701,5 @@ public class ProjectPickerActivity extends BaseActivity
 		}
 		return false;
 	}
-	
+
 }
