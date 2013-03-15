@@ -1,6 +1,5 @@
 package uk.ac.excites.sender;
 
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -22,8 +21,6 @@ public class SenderBackgroundPreferences extends PreferenceActivity implements O
 
 	public static final String PREFERENCES = "ExCiteS_Data_Sender_Preferences";
 	public static final String TAG = "SenderBackgroundPreferences";
-
-	private String serviceName;
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -51,8 +48,7 @@ public class SenderBackgroundPreferences extends PreferenceActivity implements O
 			{
 				// Call the Service
 				Intent mIntent = new Intent(SenderBackgroundPreferences.this, SenderBackgroundService.class);
-				ComponentName mComponentName = startService(mIntent);
-				serviceName = mComponentName.getClassName();
+				startService(mIntent);
 				return true;
 			}
 		});
@@ -128,7 +124,7 @@ public class SenderBackgroundPreferences extends PreferenceActivity implements O
 			printPreferences(getApplicationContext());
 		}
 
-		if(serviceName != null && Utilities.isMyServiceRunning(getApplicationContext(), serviceName))
+		if(SenderBackgroundService.class.getName() != null && Utilities.isMyServiceRunning(getApplicationContext(), SenderBackgroundService.class.getName()))
 		{
 			// Call the Service
 			Intent mIntent = new Intent(this, SenderBackgroundService.class);
