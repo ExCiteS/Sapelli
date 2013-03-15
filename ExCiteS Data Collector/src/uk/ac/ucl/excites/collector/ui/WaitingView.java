@@ -1,7 +1,11 @@
 package uk.ac.ucl.excites.collector.ui;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.util.Timeoutable;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.View;
@@ -15,6 +19,8 @@ import android.widget.ProgressBar;
 public class WaitingView extends LinearLayout implements FieldView
 {
 
+	protected Timer timeoutCounter = null;
+	
 	public WaitingView(Context context)
 	{
 		super(context);
@@ -26,13 +32,28 @@ public class WaitingView extends LinearLayout implements FieldView
 	@Override
 	public void cancel()
 	{
-		//does nothing
+		if(timeoutCounter != null)
+			timeoutCounter.cancel();
+		//else: do nothing
 	}
 
 	@Override
-	public void initialise(ProjectController controller, Field field)
+	public void initialise(final ProjectController controller, final Field field)
 	{
-		//does nothing		
+		if(field instanceof Timeoutable)
+		{
+			//Start timeout counter
+			timeoutCounter = new Timer();
+			timeoutCounter.schedule(new TimerTask()
+			{
+				@Override
+				public void run()
+				{	//time's up!
+					controller.timeout(field);
+				}
+			}, ((Timeoutable) field).getTimeoutS() * 1000 /*ms*/);
+		}
+		//else: do nothing
 	}
 
 	@Override

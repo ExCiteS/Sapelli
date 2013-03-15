@@ -44,7 +44,11 @@ public class ProjectController implements LocationListener
 {
 
 	static private final String TAG = "ProjectController";
-
+	
+	public static final int LOCATION_LISTENER_UPDATE_MIN_TIME_MS = 15 * 1000;//30 seconds 
+	public static final int LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M = 5; 	//5 meters
+	
+	
 	private Project project;
 	private DataAccess dao;
 	private CollectorActivity activity;
@@ -122,7 +126,7 @@ public class ProjectController implements LocationListener
 		if(!lfStartWithForm.isEmpty())
 			startLocationListener(lfStartWithForm); // start listening for location updates
 		else
-			stopLocationListener(); // stop listening for location updates
+			stopLocationListener(); // stop listening for location updates (if we were still listening for another form for example)
 
 		// Begin completing the form at the start field:
 		goTo(currentForm.getStartField());
@@ -163,17 +167,21 @@ public class ProjectController implements LocationListener
 		// Entering next field...
 		currentField = nextField;
 		// Handle LocationField:
-		if(currentField instanceof LocationField)
+		synchronized(currentBestLocation)
 		{
-			LocationField lf = (LocationField) currentField;
-			if(lf.isWaitAtField() || lf.storeLocation(LocationUtils.getExCiteSLocation(currentBestLocation), currentRecord))
-				startLocationListener(lf); // start listening for a location
-			else
-			{ // we already have a location
-				goForward(); // skip the wait screen
-				return; // !!!
+			if(currentField instanceof LocationField)
+			{
+				LocationField lf = (LocationField) currentField;
+				if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(currentBestLocation)))
+					startLocationListener(lf); // start listening for a location
+				else
+				{ 	//we already have a (good enough) location
+					goForward(); //skip the wait screen
+					return; //!!!
+				}
 			}
 		}
+		//Handle media fields:
 		if(currentField instanceof MediaField)
 		{
 			if(((MediaField) currentField).isMaxReached(currentRecord))
@@ -247,6 +255,23 @@ public class ProjectController implements LocationListener
 			else
 				goForward(); //goto next/jump field
 		}
+	}
+	
+	public void timeout(Field field)
+	{
+		if(field != currentField)
+			return; //this shouldn't happen really
+		//Handle location field
+		if(currentField instanceof LocationField)
+		{
+			LocationField lf = (LocationField) currentField;
+			if(lf.retrieveLocation(currentRecord) == null && lf.isUseBestNonQualifyingLocationAfterTimeout())
+				lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(currentBestLocation), true);
+		}
+		//else if() //other fields with timeouts in the future?
+		//...
+		//Continue:
+		goForward();
 	}
 
 	public void endForm()
@@ -349,13 +374,13 @@ public class ProjectController implements LocationListener
 		// get locationmanager:
 		if(locationManager == null)
 			locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
-		// deteriment which provider(s) we need:
+		// determine which provider(s) we need:
 		Set<String> providers = new HashSet<String>();
 		for(LocationField lf : locFields)
 			providers.addAll(LocationUtils.getProvider(locationManager, lf));
 		// start listening to each provider:
-		for(String p : providers)
-			locationManager.requestLocationUpdates(p, LocationField.LISTENER_UPDATE_MIN_TIME_MS, LocationField.LISTENER_UPDATE_MIN_DISTANCE_M, this);
+		for(String provider : providers)
+			locationManager.requestLocationUpdates(provider, LOCATION_LISTENER_UPDATE_MIN_TIME_MS, LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M, this);
 	}
 
 	private void stopLocationListener()
@@ -367,41 +392,26 @@ public class ProjectController implements LocationListener
 	@Override
 	public void onLocationChanged(Location location)
 	{
-		if(LocationUtils.isBetterLocation(location, currentBestLocation))
-			currentBestLocation = location;
-
-		// boolean keepListening = false;
-		// for(LocationField lf : currentForm.getLocationFields())
-		// {
-		// boolean stored = lf.storeLocation(LocationUtils.getExCiteSLocation(location), currentRecord);
-		//
-		// keepListening |= (lf.isWaitAtField() && currentField != lf);
-		// }
-		// if(!keepListening)
-		// stopLocationListener();
-		//
-
-		// avoid overwrite after field?
-
-		// if(currentField instanceof LocationField)
-		// { //user is waiting for a location for the currentfield
-		// activity.stopLocationTimer(); //stop waiting screen timer!
-		// stopLocationListener(); //stop listening for locations
-		// ((LocationField) currentField).storeLocation(LocationUtils.getExCiteSLocation(location), currentRecord); //store location
-		//
-		// goForward(); //continue (will leave waiting screen)
-		// }
-		// else if(currentForm.getLocationFields().size() == 1)
-		// {
-		// LocationField lf = currentForm.getLocationFields().get(0);
-		// lf.storeLocation(LocationUtils.getExCiteSLocation(location), currentRecord); //store location
-		// if(!lf.isWaitAtField())
-		// stopLocationListener();
-		// }
-		// else
-		// { //this should not happen really...
-		//
-		// }
+		synchronized(currentBestLocation)
+		{
+			if(LocationUtils.isBetterLocation(location, currentBestLocation))
+			{
+				currentBestLocation = location;
+				//check if we can/need to use the location now:
+				if(currentField instanceof LocationField)
+				{	//user is currently waiting for a location for the currentField
+					LocationField lf = (LocationField) currentField;
+					//try to store location:
+					if(lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(location)))
+					{	//location successfully stored:
+						if(currentForm.getLocationFields(true).isEmpty())
+							stopLocationListener(); //there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)						
+						goForward(); //continue (will leave waiting screen & stop the timeout timer)
+					}
+					//else (location was not accepted): do nothing (keep listening for a better location)
+				}
+			}
+		}
 	}
 
 	@Override

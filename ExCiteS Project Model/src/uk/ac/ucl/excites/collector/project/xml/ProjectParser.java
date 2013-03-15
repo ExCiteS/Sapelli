@@ -225,6 +225,9 @@ public class ProjectParser extends DefaultHandler
 			locField.setStartWithForm(readBooleanAttribute(attributes, "startWithForm", LocationField.DEFAULT_START_WITH_FORM));
 			locField.setWaitAtField(readBooleanAttribute(attributes, "waitAtField", LocationField.DEFAULT_WAIT_AT_FIELD));
 			locField.setTimeoutS(attributes.getValue("timeout") == null ? LocationField.DEFAULT_TIMEOUT_S : Integer.parseInt(attributes.getValue("timeout")));
+			locField.setMaxAgeS(readIntegerAttribute(attributes, "maxAge", LocationField.DEFAULT_MAX_AGE_S));
+			locField.setMaxAccuracyRadius(readFloatAttribute(attributes, "maxAccuracyRadius", LocationField.DEFAULT_MAX_ACCURACY_RADIUS));
+			locField.setUseBestNonQualifyingLocationAfterTimeout(readBooleanAttribute(attributes, "useBestKnownLocationOnTimeout", LocationField.DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT));
 			// Storage settings:
 			locField.setDoublePrecision(readBooleanAttribute(attributes, "doublePrecision", LocationField.DEFAULT_DOUBLE_PRECISION));
 			locField.setStoreAltitude(readBooleanAttribute(attributes, "storeAltitude", LocationField.DEFAULT_STORE_ALTITUDE));
@@ -431,6 +434,15 @@ public class ProjectParser extends DefaultHandler
 			return defaultValue;
 		else
 			return Integer.parseInt(text.trim());
+	}
+	
+	protected float readFloatAttribute(Attributes attributes, String attributeName, float defaultValue)
+	{
+		String text = attributes.getValue(attributeName);
+		if(text == null || text.isEmpty())
+			return defaultValue;
+		else
+			return Float.parseFloat(text.trim());
 	}
 
 }

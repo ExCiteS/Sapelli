@@ -2,7 +2,6 @@ package uk.ac.ucl.excites.collector;
 
 import java.io.File;
 import java.util.List;
-import java.util.Timer;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
@@ -75,7 +74,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	private DataAccess dao;
 	private Project project;
 	private ProjectController controller;
-	private volatile Timer locationTimer;
 
 	// Temp location to save a photo
 	private File tmpPhotoFile;
@@ -235,21 +233,13 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	public void setLocation(LocationField lf)
 	{
 		// Show waiting view
-		setFieldView(new WaitingView(this), lf);
-
-		// TODO put time in waitingview and stop on cancel()?
-
-		// // Start timeout counter
-		// locationTimer = new Timer();
-		// locationTimer.schedule(new TimerTask()
-		// {
-		// @Override
-		// public void run()
-		// { // time's up!
-		// controller.goForward();
-		//
-		// }
-		// }, lf.getTimeoutS() * 1000);
+		setFieldView(new WaitingView(this), lf); //will start timer
+	}
+	
+	@Override
+	public void setOrientation(OrientationField of)
+	{
+		// do nothing (?)
 	}
 
 	@Override
@@ -364,18 +354,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		final Intent intent = new Intent(action);
 		List<ResolveInfo> list = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
 		return list.size() > 0;
-	}
-
-	public void stopLocationTimer()
-	{
-		if(locationTimer != null)
-			locationTimer.cancel();
-	}
-
-	@Override
-	public void setOrientation(OrientationField of)
-	{
-		// do nothing (?)
 	}
 
 	@Override

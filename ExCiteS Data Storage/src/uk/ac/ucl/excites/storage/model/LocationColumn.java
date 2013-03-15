@@ -125,6 +125,7 @@ public class LocationColumn extends Column<Location>
 		}
 		if(storeProvider)
 			Location.ProviderRange().write(value.getProvider(), bitStream);
+		//Note: we never store value.getTime() (for now)
 	}
 
 	@Override
@@ -144,7 +145,7 @@ public class LocationColumn extends Column<Location>
 		Float acc = (storeAccuracy && bitStream.readBit() ? bitStream.readFloat() : null);
 		//Provider:
 		int provider = (storeProvider ? (int) Location.ProviderRange().read(bitStream) : Location.PROVIDER_UNKNOWN);
-		return new Location(lat, lon, provider, alt, bea, spe, acc);
+		return new Location(lat, lon, provider, alt, bea, spe, acc, null /*we never store time (for now)*/);
 	}
 
 	@Override
