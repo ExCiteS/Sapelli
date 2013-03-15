@@ -52,17 +52,19 @@ public class Location
 							(parts.length > 3 && !parts[3].isEmpty() ? Double.valueOf(parts[3]) : null),
 							(parts.length > 4 && !parts[4].isEmpty() ? Float.valueOf(parts[4]) : null),
 							(parts.length > 5 && !parts[5].isEmpty() ? Float.valueOf(parts[5]) : null),
-							(parts.length > 6 && !parts[6].isEmpty() ? Float.valueOf(parts[6]) : null));
+							(parts.length > 6 && !parts[6].isEmpty() ? Float.valueOf(parts[6]) : null),
+							(parts.length > 7 && !parts[7].isEmpty() ? Long.valueOf(parts[7]) : null));
 	}
 	
 	//Dynamic--------------------------------------------------------
 	protected double lat;
 	protected double lon;
+	protected int provider;
 	protected Double alt;
 	protected Float bearing;
 	protected Float speed;
 	protected Float acc;
-	protected int provider;
+	protected Long time;
 	
 	/**
 	 * @param lat
@@ -70,7 +72,7 @@ public class Location
 	 */
 	public Location(double lat, double lon)
 	{
-		this(lat, lon, PROVIDER_UNKNOWN, null, null, null, null);
+		this(lat, lon, PROVIDER_UNKNOWN, null, null, null, null, null);
 	}
 	
 	/**
@@ -81,8 +83,9 @@ public class Location
 	 * @param bearing
 	 * @param speed
 	 * @param acc
+	 * @param time
 	 */
-	public Location(double lat, double lon, int provider, Double alt, Float bearing, Float speed, Float acc)
+	public Location(double lat, double lon, int provider, Double alt, Float bearing, Float speed, Float acc, Long time)
 	{
 		this.lat = lat;
 		this.lon = lon;
@@ -92,6 +95,7 @@ public class Location
 		this.bearing = bearing;
 		this.speed = speed;
 		this.acc = acc;
+		this.time = time;
 	}
 	
 	/**
@@ -180,6 +184,21 @@ public class Location
 	{
 		return provider;
 	}
+	
+	public boolean hasTime()
+	{
+		return time != null;
+	}
+
+	/**
+	 * @return the time
+	 */
+	public long getTime()
+	{
+		if(time == null)
+			return 0l;
+		return time;
+	}
 
 	public String toString()
 	{
@@ -189,7 +208,8 @@ public class Location
 				(alt != null ? alt.toString() : "") + SEPARATOR +
 				(bearing != null ? bearing.toString() : "") + SEPARATOR +
 				(speed != null ? speed.toString() : "") + SEPARATOR +
-				(acc != null ? acc.toString() : "");
+				(acc != null ? acc.toString() : "") + SEPARATOR +
+				(time != null ? time.toString() : "");
 	}
 	
 }

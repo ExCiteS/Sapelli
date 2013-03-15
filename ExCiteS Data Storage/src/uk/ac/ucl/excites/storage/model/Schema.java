@@ -136,4 +136,29 @@ public class Schema
 		return description;
 	}
 
+	/**
+	 * @return whether or not the size taken up by binary stored records of this schema varies at run-time (i.e. depending on input)
+	 */
+	public boolean isVariableSize()
+	{
+		for(Column<?> c : columns)
+			if(c.isVariableSize())
+				return true;
+		return false;
+	}
+	
+	/**
+	 * Returns the number of bits records of this schema take up when written to a binary representation.
+	 * In case of a variable size the maximum effective size is returned.
+	 * 
+	 * @return
+	 */
+	public int getSize()
+	{
+		int total = 0;
+		for(Column<?> c : columns)
+			total += c.getSize();
+		return total;
+	}
+	
 }

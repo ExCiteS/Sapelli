@@ -4,7 +4,6 @@
 package uk.ac.ucl.excites.collector.ui;
 
 import java.io.File;
-import java.io.IOException;
 
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.R;
@@ -12,7 +11,6 @@ import uk.ac.ucl.excites.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.ui.images.FileImage;
 import uk.ac.ucl.excites.collector.ui.images.Image;
 import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
@@ -32,6 +30,7 @@ public class AudioView extends PickerView implements FieldView
 
 	static private final String TAG = "AudioView";
 
+	private File audioFile;
 	private AudioRecorder audioRecorder;
 	private Image startImage;
 	private Image stopImage;
@@ -45,8 +44,21 @@ public class AudioView extends PickerView implements FieldView
 	public void initialise(final ProjectController controller, Field field)
 	{
 		final AudioField audioField = (AudioField) field;
-		Project project = controller.getProject();		
+		Project project = controller.getProject();
 		
+		//Get audioFile:
+		try
+		{
+			audioFile = audioField.getNewFile(controller.getCurrentRecord());
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Could get audio file.", e);
+			controller.mediaDone(null);
+			return; //!!!
+		}
+		
+		//Columns:
 		setNumColumns(1);
 		
 		//Adapter & images:
@@ -77,7 +89,7 @@ public class AudioView extends PickerView implements FieldView
 			}
 		});
 				
-		// set click listener
+		// Set click listener
 		setOnItemClickListener(new OnItemClickListener()
 		{
 			@Override
@@ -87,20 +99,15 @@ public class AudioView extends PickerView implements FieldView
 				{	//Start button clicked
 					try
 					{
-						File dataFolder = new File(controller.getProject().getDataPath()); 
-						if(!FileHelpers.createFolder(dataFolder))
-							throw new IOException("Unable to create data folder: " + dataFolder.getAbsolutePath());
-						
-						audioRecorder = new AudioRecorder(dataFolder, audioField.generateNewFilename(controller.getCurrentRecord()));
+						audioRecorder = new AudioRecorder(audioFile);
 						audioRecorder.start();
 					}
 					catch(Exception e)
 					{
 						Log.e(TAG, "Could not start audio recording.", e);
-						controller.audioDone(false);
+						controller.mediaDone(null);
 						return; //!!!
 					}
-					
 					//Switch buttons:
 					imageAdapter.clear();
 					imageAdapter.addImage(stopImage);
@@ -109,7 +116,7 @@ public class AudioView extends PickerView implements FieldView
 				else
 				{	//Stop button clicked
 					stopRecording();
-					controller.audioDone(true);
+					controller.mediaDone(audioFile);
 				}
 			}
 		});
@@ -120,7 +127,6 @@ public class AudioView extends PickerView implements FieldView
 		try
 		{
 			audioRecorder.stop();
-			//Log.d(TAG, "audioRecording stopped");
 		}
 		catch(Exception e)
 		{

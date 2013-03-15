@@ -16,16 +16,22 @@ public class PhotoField extends MediaField
 	static private final String MEDIA_TYPE_JPEG = "PHOTO_JPEG";
 	static private final String EXTENSION_JPEG = "jpg";
 	
-	static public final int CAMERA_BACK = 0;
-	static public final int CAMERA_FRONT = 1;
+	static public enum FlashMode
+	{
+		AUTO,
+		ON,
+		OFF
+	}
 	
-	static public final int DEFAULT_CAMERA = CAMERA_BACK;
 	static public final boolean DEFAULT_USE_NATIVE_APP = false;
+	static public final boolean DEFAULT_USE_FRONT_FACING_CAMERA = false;
+	static public final FlashMode DEFAULT_FLASH_MODE = FlashMode.AUTO;
 	
 	//DYNAMICS-------------------------------------------------------
-	private int camera;
 	private boolean useNativeApp;
-
+	private boolean useFrontFacingCamera;
+	private FlashMode flashMode;
+	
 	private String captureButtonImageLogicalPath;
 	private String approveButtonImageLogicalPath;
 	private String discardButtonImageLogicalPath;
@@ -33,8 +39,9 @@ public class PhotoField extends MediaField
 	public PhotoField(Form form, String id)
 	{
 		super(form, id);
-		camera = DEFAULT_CAMERA;
 		useNativeApp = DEFAULT_USE_NATIVE_APP;
+		useFrontFacingCamera = DEFAULT_USE_FRONT_FACING_CAMERA;
+		flashMode = DEFAULT_FLASH_MODE;
 	}
 
 	@Override
@@ -44,24 +51,35 @@ public class PhotoField extends MediaField
 	}
 
 	/**
-	 * @return the camera
+	 * @return the useFrontFacingCamera
 	 */
-	public int getCamera()
+	public boolean isUseFrontFacingCamera()
 	{
-		return camera;
+		return useFrontFacingCamera;
 	}
 
 	/**
-	 * @param camera the camera to set
+	 * @param useFrontFacingCamera the useFrontFacingCamera to set
 	 */
-	public void setCamera(String camera)
+	public void setUseFrontFacingCamera(boolean useFrontFacingCamera)
 	{
-		if("back".equalsIgnoreCase(camera))
-			this.camera = CAMERA_BACK;
-		else if("front".equalsIgnoreCase(camera))
-			this.camera = CAMERA_FRONT;
-		else
-			this.camera = DEFAULT_CAMERA;
+		this.useFrontFacingCamera = useFrontFacingCamera;
+	}
+
+	/**
+	 * @return the flashMode
+	 */
+	public FlashMode getFlashMode()
+	{
+		return flashMode;
+	}
+
+	/**
+	 * @param flashMode the flashMode to set
+	 */
+	public void setFlashMode(FlashMode flashMode)
+	{
+		this.flashMode = flashMode;
 	}
 
 	/**

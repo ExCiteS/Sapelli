@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.collector.project.model;
 
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
+import uk.ac.ucl.excites.collector.project.util.Timeoutable;
 import uk.ac.ucl.excites.storage.model.LocationColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.types.Location;
@@ -12,7 +13,7 @@ import uk.ac.ucl.excites.storage.types.Location;
  * @author mstevens
  *
  */
-public class LocationField extends Field
+public class LocationField extends Field implements Timeoutable
 {
 	
 	//Statics----------------------------------------------
@@ -21,20 +22,20 @@ public class LocationField extends Field
 	public static final int TYPE_NETWORK = 2;
 	//public static final int TYPE_PASSIVE = 3;
 	
-	public static final int LISTENER_UPDATE_MIN_TIME_MS = 15 * 1000;//30 seconds 
-	public static final int LISTENER_UPDATE_MIN_DISTANCE_M = 5; 	//5 meters
-	
 	//Defaults:
-	public static final int DEFAULT_TYPE = TYPE_GPS; 				//use GPS by default
-	public static final boolean DEFAULT_START_WITH_FORM = true;		//start listingen for location at the start of the form by default
-	public static final boolean DEFAULT_WAIT_AT_FIELD = false;		//do not wait for a new(er) location when at the field by default
-	public static final int DEFAULT_TIMEOUT_S = 300; 				//use timeout of 300 seconds (5 minutes) by default
-	public static final boolean DEFAULT_DOUBLE_PRECISION = false; 	//use 32 bit floats for lat, lon & alt by default
-	public static final boolean DEFAULT_STORE_ALTITUDE = true;		//store altitude by default
-	public static final boolean DEFAULT_STORE_BEARING = false;		//do not store bearing by default
-	public static final boolean DEFAULT_STORE_SPEED = false;		//do not store speed by default
-	public static final boolean DEFAULT_STORE_ACCURACY = true;		//store accuracy by default
-	public static final boolean DEFAULT_STORE_PROVIDER = false;		//do not store provider by default
+	public static final int DEFAULT_TYPE = TYPE_GPS; 				//use GPS
+	public static final boolean DEFAULT_START_WITH_FORM = true;		//start listening for locations at the start of the form
+	public static final boolean DEFAULT_WAIT_AT_FIELD = false;		//do not wait for a new(er) location when at the field
+	public static final int DEFAULT_TIMEOUT_S = 5 * 60; 			//use timeout of 5 minutes (300 seconds)
+	public static final int DEFAULT_MAX_AGE_S = 10 * 60;			//use max age of 10 minutes (600 seconds)
+	public static final float DEFAULT_MAX_ACCURACY_RADIUS = 75;		//use a maximum acceptably accuracy radius of 75m (small is better) 
+	public static final boolean DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT = true;		//take the best known location (even though it does not meet type/age/accuracy requirements) if timeout passes
+	public static final boolean DEFAULT_DOUBLE_PRECISION = false; 	//use 32 bit floats for lat, lon & alt
+	public static final boolean DEFAULT_STORE_ALTITUDE = true;		//store altitude
+	public static final boolean DEFAULT_STORE_BEARING = false;		//do not store bearing
+	public static final boolean DEFAULT_STORE_SPEED = false;		//do not store speed
+	public static final boolean DEFAULT_STORE_ACCURACY = true;		//store accuracy
+	public static final boolean DEFAULT_STORE_PROVIDER = false;		//do not store provider
 	
 	
 	//Dynamics---------------------------------------------
@@ -42,6 +43,9 @@ public class LocationField extends Field
 	private boolean startWithForm;
 	private boolean waitAtField;
 	private int timeoutS;
+	private int maxAgeS;
+	private float maxAccuracyRadius;
+	private boolean useBestNonQualifyingLocationAfterTimeout;
 	private boolean doublePrecision;
 	private boolean storeAltitude;
 	private boolean storeBearing;
@@ -149,6 +153,54 @@ public class LocationField extends Field
 	{
 		this.waitAtField = waitAtField;
 	}
+	
+	/**
+	 * @return the maxAgeS
+	 */
+	public int getMaxAgeS()
+	{
+		return maxAgeS;
+	}
+
+	/**
+	 * @param maxAgeS the maxAgeS to set
+	 */
+	public void setMaxAgeS(int maxAgeS)
+	{
+		this.maxAgeS = maxAgeS;
+	}
+
+	/**
+	 * @return the maxAccuracyRadius
+	 */
+	public float getMaxAccuracyRadius()
+	{
+		return maxAccuracyRadius;
+	}
+
+	/**
+	 * @param maxAccuracyRadius the maxAccuracyRadius to set
+	 */
+	public void setMaxAccuracyRadius(float maxAccuracyRadius)
+	{
+		this.maxAccuracyRadius = maxAccuracyRadius;
+	}
+
+	/**
+	 * @return the useBestNonQualifyingLocationAfterTimeout
+	 */
+	public boolean isUseBestNonQualifyingLocationAfterTimeout()
+	{
+		return useBestNonQualifyingLocationAfterTimeout;
+	}
+
+	/**
+	 * @param useBestNonQualifyingLocationAfterTimeout the useBestNonQualifyingLocationAfterTimeout to set
+	 */
+	public void setUseBestNonQualifyingLocationAfterTimeout(boolean useBestNonQualifyingLocationAfterTimeout)
+	{
+		this.useBestNonQualifyingLocationAfterTimeout = useBestNonQualifyingLocationAfterTimeout;
+	}
 
 	/**
 	 * @return the storeAltitude
@@ -233,20 +285,33 @@ public class LocationField extends Field
 	@Override
 	protected LocationColumn createColumn()
 	{
-		return new LocationColumn(id, true /*always optional because we can never be sure to get coordinates*/, doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, storeProvider);
+		return new LocationColumn(id, (optional != Optionalness.NEVER), doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, storeProvider);
 	}
 	
-	public boolean storeLocation(Location location, Record entry)
+	public boolean storeLocation(Record entry, Location location)
+	{
+		return storeLocation(entry, location, false);
+	}
+	
+	public boolean storeLocation(Record entry, Location location, boolean bestWeCouldGet)
 	{	
-		//Time check
-		//TODO
-		//Provider type check
-		if(type == LocationField.TYPE_GPS && location.getProvider() != Location.PROVIDER_GPS)
+		//Null check:
+		if(location == null)
 			return false;
-		//Accuracy check
-		//TODO
-		
-		//Ok location is good enough, so store it:
+		if(!bestWeCouldGet)
+		{
+			//Time check:
+			long ageMS = System.currentTimeMillis() - location.getTime();
+			if(ageMS > maxAgeS * 1000)
+				return false; //location is too old
+			//Provider type check:
+			if(type == LocationField.TYPE_GPS && location.getProvider() != Location.PROVIDER_GPS)
+				return false;
+			//Accuracy check:
+			if(location.getAccuracy() > maxAccuracyRadius)
+				return false; //not accurate enough
+		}
+		//this location is good enough or it is the best we could get, so store it:
 		((LocationColumn) column).storeValue(entry, location);
 		return true;
 	}

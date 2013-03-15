@@ -1,9 +1,7 @@
 package uk.ac.ucl.excites.collector;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.List;
-import java.util.Timer;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
@@ -14,13 +12,13 @@ import uk.ac.ucl.excites.collector.project.model.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
-import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.ui.AudioView;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.ui.ButtonView;
 import uk.ac.ucl.excites.collector.ui.CameraView;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.FieldView;
+import uk.ac.ucl.excites.collector.ui.WaitingView;
 import uk.ac.ucl.excites.collector.util.SDCard;
 import android.content.Context;
 import android.content.Intent;
@@ -76,7 +74,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	private DataAccess dao;
 	private Project project;
 	private ProjectController controller;
-	private volatile Timer locationTimer;
 
 	// Temp location to save a photo
 	private File tmpPhotoFile;
@@ -236,24 +233,13 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	public void setLocation(LocationField lf)
 	{
 		// Show waiting view
-		// LinearLayout waitingView = new LinearLayout(this);
-		// waitingView.setGravity(Gravity.CENTER);
-		// waitingView.addView(new ProgressBar(this, null, android.R.attr.progressBarStyleLarge));
-		// setFieldView(waitingView);
-
-		// TODO put time in waitingview and stop on cancel()?
-
-		// // Start timeout counter
-		// locationTimer = new Timer();
-		// locationTimer.schedule(new TimerTask()
-		// {
-		// @Override
-		// public void run()
-		// { // time's up!
-		// controller.goForward();
-		//
-		// }
-		// }, lf.getTimeoutS() * 1000);
+		setFieldView(new WaitingView(this), lf); //will start timer
+	}
+	
+	@Override
+	public void setOrientation(OrientationField of)
+	{
+		// do nothing (?)
 	}
 
 	@Override
@@ -277,18 +263,15 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			if(!isIntentAvailable(this, MediaStore.ACTION_IMAGE_CAPTURE)) //check if the device is able to handle PhotoField Intents
 			{ 	// Device cannot take photos
 				Log.i(TAG, "Cannot take photo due to device limitation.");
-				controller.photoDone(false); // skip the PhotoField field
+				controller.mediaDone(null); // skip the PhotoField field (pass null to indicate no file was created)
 			}
 			else
 			{	// Device can take photos
+				tmpPhotoFile = null;
 				try
 				{
-					// Check if data path is accessible
-					if(!FileHelpers.createFolder(project.getDataPath()))
-						throw new IOException("Data path (" + project.getDataPath() + ") is not accessible.");
-	
 					// Set up temp file (in the projects data folder)
-					tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, new File(project.getDataPath())); 
+					tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, project.getDataFolder()); //getDataFolder() does the necessary IO checks
 	
 					// Save the photo to the tmp location
 					Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE); // Get the intent
@@ -297,8 +280,10 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 				}
 				catch(Exception e)
 				{
+					if(tmpPhotoFile != null && tmpPhotoFile.exists())
+						tmpPhotoFile.delete();
 					Log.e(TAG, "setPhoto() error", e);
-					controller.photoDone(false);
+					controller.mediaDone(null);
 				}
 			}
 		}
@@ -306,24 +291,30 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 
 	private void cameraDone(int resultCode)
 	{
-		if(resultCode == RESULT_CANCELED)
+		if(resultCode == RESULT_OK)
 		{
-			if(tmpPhotoFile != null)
+			if(tmpPhotoFile != null && tmpPhotoFile.exists())
+			{
+				try
+				{	// Rename the file & pass it to the controller
+					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewFile(controller.getCurrentRecord());
+					tmpPhotoFile.renameTo(newPhoto);
+					controller.mediaDone(newPhoto);
+				}
+				catch(Exception e)
+				{	// could not rename the file
+					tmpPhotoFile.delete();
+					controller.mediaDone(null);
+				}				
+			}
+			else
+				controller.mediaDone(null);
+		}
+		else //if(resultCode == RESULT_CANCELED)
+		{
+			if(tmpPhotoFile != null && tmpPhotoFile.exists())
 				tmpPhotoFile.delete(); // Delete the tmp file from the device
-			controller.photoDone(false);
-		}
-		else if(resultCode == RESULT_OK)
-		{
-			// Rename the file
-			String newFilename = ((PhotoField) controller.getCurrentField()).generateNewFilename(controller.getCurrentRecord());
-			tmpPhotoFile.renameTo(new File(project.getDataPath() + File.separator + newFilename));
-
-			// Call Controller
-			controller.photoDone(true);
-		}
-		else
-		{ 	// this should not happen
-			controller.photoDone(false);
+			controller.mediaDone(null);
 		}
 	}
 
@@ -363,18 +354,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		final Intent intent = new Intent(action);
 		List<ResolveInfo> list = packageManager.queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY);
 		return list.size() > 0;
-	}
-
-	public void stopLocationTimer()
-	{
-		if(locationTimer != null)
-			locationTimer.cancel();
-	}
-
-	@Override
-	public void setOrientation(OrientationField of)
-	{
-		// do nothing (?)
 	}
 
 	@Override

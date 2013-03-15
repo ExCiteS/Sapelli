@@ -18,7 +18,7 @@ public class FileImage extends Image
 	
 	public FileImage(Project project, String imageLogicalPath)
 	{
-		this.path = project.getImagePath() + imageLogicalPath;
+		this.path = project.getImageFolderPath() + imageLogicalPath;
 	}
 	
 	@Override

@@ -12,6 +12,7 @@ import android.util.Log;
  * @author Michalis Vitos, mstevens
  * 
  */
+@SuppressWarnings("unused")
 public class AudioRecorder
 {
 	
@@ -27,9 +28,9 @@ public class AudioRecorder
 	 * @param dataFolder
 	 * @param filename
 	 */
-	public AudioRecorder(File dataFolder, String filename)
+	public AudioRecorder(File audioFile)
 	{
-		this.audioFile = new File(dataFolder.getAbsolutePath() + File.separatorChar + filename);
+		this.audioFile = audioFile;
 		isRecording = false;
 	}
 
@@ -46,7 +47,7 @@ public class AudioRecorder
 		mediaRecorder.prepare();
 		mediaRecorder.start();
 		isRecording = true;
-		Log.d(TAG, "Started recording audio (output file: " + audioFile.getAbsolutePath() + ").");
+		//Log.d(TAG, "Started recording audio (output file: " + audioFile.getAbsolutePath() + ").");
 	}
 
 	/**
@@ -59,7 +60,7 @@ public class AudioRecorder
 			mediaRecorder.stop();
 			mediaRecorder.release();
 			mediaRecorder = null;
-			Log.d(TAG, "Stopped recording audio (output file: " + audioFile.getAbsolutePath() + ").");
+			//Log.d(TAG, "Stopped recording audio (output file: " + audioFile.getAbsolutePath() + ").");
 		}
 	}
 	

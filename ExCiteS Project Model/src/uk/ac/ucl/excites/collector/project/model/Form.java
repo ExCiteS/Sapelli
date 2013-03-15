@@ -43,6 +43,7 @@ public class Form
 	public static final String COLUMN_TRANSMISSION_TYPE = "TransmissionType";
 
 	// Dynamics-------------------------------------------------------
+	private Project project;
 	private int schemaID;
 	private int schemaVersion;
 	private Schema schema;
@@ -74,13 +75,14 @@ public class Form
 	private String forwardButtonImageLogicalPath;
 	private String buttonBackgroundColor;
 
-	public Form(String name, int schemaID)
+	public Form(Project project, String name, int schemaID)
 	{
-		this(name, schemaID, Schema.DEFAULT_VERSION);
+		this(project, name, schemaID, Schema.DEFAULT_VERSION);
 	}
 
-	public Form(String name, int schemaID, int schemaVersion)
+	public Form(Project project, String name, int schemaID, int schemaVersion)
 	{
+		this.project = project;
 		this.name = name;
 		this.schemaID = schemaID;
 		this.schemaVersion = schemaVersion;
@@ -94,6 +96,14 @@ public class Form
 	public void initialiseStorage()
 	{
 		getSchema(); //this will also trigger all Column and ValueDictionaries to be created/initialised 
+	}
+	
+	/**
+	 * @return the project
+	 */
+	public Project getProject()
+	{
+		return project;
 	}
 
 	public void addField(Field f)

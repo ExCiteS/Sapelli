@@ -215,7 +215,7 @@ public abstract class Column<T>
 	}
 	
 	/**
-	 * @return whether or not the size taken up by binary stored date varies at run-time (i.e. depending on input)
+	 * @return whether or not the size taken up by binary stored values for this column varies at run-time (i.e. depending on input)
 	 */
 	public abstract boolean isVariableSize();
 	

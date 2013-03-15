@@ -30,27 +30,34 @@ public final class LocationUtils
 	 */
 	static public Location getExCiteSLocation(android.location.Location androidLocation)
 	{
+		if(androidLocation == null)
+			return null;
 		int provider = Location.PROVIDER_UNKNOWN;
 		if(LocationManager.GPS_PROVIDER.equals(androidLocation.getProvider()))
 			provider = Location.PROVIDER_GPS;
 		else if(LocationManager.NETWORK_PROVIDER.equals(androidLocation.getProvider()))
 			provider = Location.PROVIDER_NETWORK;
-		return new Location(androidLocation.getLatitude(), androidLocation.getLongitude(), provider,
-				(androidLocation.hasAltitude() ? androidLocation.getAltitude() : null), (androidLocation.hasBearing() ? androidLocation.getBearing() : null),
-				(androidLocation.hasSpeed() ? androidLocation.getSpeed() : null), (androidLocation.hasAccuracy() ? androidLocation.getAccuracy() : null));
+		return new Location(androidLocation.getLatitude(),
+							androidLocation.getLongitude(),
+							provider,
+							(androidLocation.hasAltitude() ? androidLocation.getAltitude() : null),
+							(androidLocation.hasBearing() ? androidLocation.getBearing() : null),
+							(androidLocation.hasSpeed() ? androidLocation.getSpeed() : null),
+							(androidLocation.hasAccuracy() ? androidLocation.getAccuracy() : null),
+							androidLocation.getTime());
 	}
 
 	static public List<String> getProvider(LocationManager locManager, LocationField locField)
 	{
 		switch(locField.getType())
 		{
-		case LocationField.TYPE_ANY:
-			return locManager.getAllProviders();
-		case LocationField.TYPE_GPS:
-			return Arrays.asList(LocationManager.GPS_PROVIDER);
-		case LocationField.TYPE_NETWORK:
-			return Arrays.asList(LocationManager.NETWORK_PROVIDER);
-			// others later?
+			case LocationField.TYPE_ANY:
+				return locManager.getAllProviders();
+			case LocationField.TYPE_GPS:
+				return Arrays.asList(LocationManager.GPS_PROVIDER);
+			case LocationField.TYPE_NETWORK:
+				return Arrays.asList(LocationManager.NETWORK_PROVIDER);
+				// others later?
 		}
 		return new ArrayList<String>();
 	}

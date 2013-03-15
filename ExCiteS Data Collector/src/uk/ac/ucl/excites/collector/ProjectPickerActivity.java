@@ -229,17 +229,14 @@ public class ProjectPickerActivity extends BaseActivity
 			errorDialog("Please select an XML or ExCiteS file", false).show();
 			return;
 		}
-
+		enterURL.setText(""); //clear field		
 		Project project = null;
 
 		// Download ExCiteS file if path is a URL
-		if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION) */) // extension check
-																																			// commented out to
-																																			// support "smart"
-																																			// URLs
-		{
-			// start async task to download the file, the task will also call processExcitesFile() and checkProject()
-			(new DownloadFileFromURL(path, "Project")).execute();
+		if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION) */) 
+		{	//Extension check above is commented out to support "smart"/dynamic URLs
+			//Start async task to download the file:
+			(new DownloadFileFromURL(path, "Project")).execute(); //the task will also call processExcitesFile() and checkProject()
 			return;
 		}
 		// Extract & parse a local ExCiteS file
