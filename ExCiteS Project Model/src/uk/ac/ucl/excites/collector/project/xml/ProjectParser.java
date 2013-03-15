@@ -224,7 +224,7 @@ public class ProjectParser extends DefaultHandler
 			// Operating settings:
 			locField.setStartWithForm(readBooleanAttribute(attributes, "startWithForm", LocationField.DEFAULT_START_WITH_FORM));
 			locField.setWaitAtField(readBooleanAttribute(attributes, "waitAtField", LocationField.DEFAULT_WAIT_AT_FIELD));
-			locField.setTimeoutS(attributes.getValue("timeout") == null ? LocationField.DEFAULT_TIMEOUT_S : Integer.parseInt(attributes.getValue("timeout")));
+			locField.setTimeoutS(readIntegerAttribute(attributes, "timeout", LocationField.DEFAULT_TIMEOUT_S));
 			locField.setMaxAgeS(readIntegerAttribute(attributes, "maxAge", LocationField.DEFAULT_MAX_AGE_S));
 			locField.setMaxAccuracyRadius(readFloatAttribute(attributes, "maxAccuracyRadius", LocationField.DEFAULT_MAX_ACCURACY_RADIUS));
 			locField.setUseBestNonQualifyingLocationAfterTimeout(readBooleanAttribute(attributes, "useBestKnownLocationOnTimeout", LocationField.DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT));
@@ -300,9 +300,11 @@ public class ProjectParser extends DefaultHandler
 			currentForm = null;
 			currentFormStartFieldId = null;
 		}
-		// </ChoiceField>
+		// </Choice>
 		else if(qName.equals(TAG_CHOICE))
 		{
+			if(currentChoice.isRoot() && currentChoice.isLeaf())
+				throw new SAXException("Root choices need at least 1 child (but 2 children probably makes more sense)."); 			
 			currentChoice = currentChoice.getParent();
 		}
 	}
