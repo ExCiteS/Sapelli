@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import uk.ac.ucl.excites.collector.geo.OrientationListener;
+import uk.ac.ucl.excites.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.EndField;
@@ -19,11 +21,13 @@ import uk.ac.ucl.excites.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.MediaField;
+import uk.ac.ucl.excites.collector.project.model.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
 import uk.ac.ucl.excites.collector.util.DeviceID;
 import uk.ac.ucl.excites.collector.util.LocationUtils;
 import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.storage.types.Orientation;
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
@@ -40,7 +44,7 @@ import android.util.Log;
  * @author mstevens, Michalis Vitos, Julia
  * 
  */
-public class ProjectController implements LocationListener
+public class ProjectController implements LocationListener, OrientationListener
 {
 
 	static private final String TAG = "ProjectController";
@@ -65,7 +69,8 @@ public class ProjectController implements LocationListener
 	
 	private LocationManager locationManager;
 	private Location currentBestLocation = null;
-
+	private OrientationSensor orientationSensor;
+	
 	public ProjectController(Project project, DataAccess dao, CollectorActivity activity)
 	{
 		this.project = project;
@@ -76,6 +81,8 @@ public class ProjectController implements LocationListener
 		tempDisabledFields = new HashSet<Field>();
 		currentMediaAttachments = new ArrayList<File>();
 		deviceID = (new DeviceID(activity)).getCRC32Hash();
+		
+		orientationSensor = new OrientationSensor(activity);
 	}
 
 	public void startProject()
@@ -128,7 +135,7 @@ public class ProjectController implements LocationListener
 		else
 			stopLocationListener(); // stop listening for location updates (if we were still listening for another form for example)
 
-		// Begin completing the form at the start field:
+		// Begin filling out the form at the start field:
 		goTo(currentForm.getStartField());
 	}
 
@@ -159,7 +166,7 @@ public class ProjectController implements LocationListener
 		}
 	}
 
-	public void goTo(Field nextField)
+	public synchronized void goTo(Field nextField)
 	{
 		// Leafing current field...
 		if(currentField != null && currentField != nextField)
@@ -167,22 +174,25 @@ public class ProjectController implements LocationListener
 		// Entering next field...
 		currentField = nextField;
 		// Handle LocationField:
-		synchronized(currentBestLocation)
+		if(currentField instanceof LocationField)
 		{
-			if(currentField instanceof LocationField)
-			{
-				LocationField lf = (LocationField) currentField;
-				if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(currentBestLocation)))
-					startLocationListener(lf); // start listening for a location
-				else
-				{ 	//we already have a (good enough) location
-					goForward(); //skip the wait screen
-					return; //!!!
-				}
+			LocationField lf = (LocationField) currentField;
+			if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(currentBestLocation)))
+				startLocationListener(lf); // start listening for a location
+			else
+			{ 	//we already have a (good enough) location
+				goForward(); //skip the wait screen
+				return; //!!!
 			}
 		}
+		//Handle OrientationField:
+		else if(currentField instanceof OrientationField)
+		{
+			orientationSensor.start(this); //start listening for orientation updates
+			return; //!!! (orientation values will be received almost instantaneously, so we don't update the GUI
+		}
 		//Handle media fields:
-		if(currentField instanceof MediaField)
+		else if(currentField instanceof MediaField)
 		{
 			if(((MediaField) currentField).isMaxReached(currentRecord))
 			{	//Maximum number of attachments for this field is reached:
@@ -329,37 +339,16 @@ public class ProjectController implements LocationListener
 				break; // leaves the application!
 		}
 	}
-
-	/**
-	 * @return the currentForm
-	 */
-	public Form getCurrentForm()
-	{
-		return currentForm;
-	}
-
-	/**
-	 * @return the project
-	 */
-	public Project getProject()
-	{
-		return project;
-	}
 	
-	/**
-	 * @return the currentRecord
-	 */
-	public Record getCurrentRecord()
+	public void onOrientationChanged(Orientation orientation)
 	{
-		return currentRecord;
-	}
-
-	/**
-	 * @return the currentField
-	 */
-	public Field getCurrentField()
-	{
-		return currentField;
+		//Log.d(TAG, Float.toString(orientation.getAzimuth()) + "    " + Float.toString(orientation.getPitch()) + "    " + Float.toString(orientation.getRoll()));
+		if(currentField instanceof OrientationField)
+		{
+			((OrientationField) currentField).storeValue(currentRecord, orientation);
+			orientationSensor.stop(); //stop listening for updates
+			goForward();
+		}
 	}
 
 	private void startLocationListener(LocationField locField)
@@ -390,26 +379,23 @@ public class ProjectController implements LocationListener
 	}
 
 	@Override
-	public void onLocationChanged(Location location)
+	public synchronized void onLocationChanged(Location location)
 	{
-		synchronized(currentBestLocation)
+		if(LocationUtils.isBetterLocation(location, currentBestLocation))
 		{
-			if(LocationUtils.isBetterLocation(location, currentBestLocation))
-			{
-				currentBestLocation = location;
-				//check if we can/need to use the location now:
-				if(currentField instanceof LocationField)
-				{	//user is currently waiting for a location for the currentField
-					LocationField lf = (LocationField) currentField;
-					//try to store location:
-					if(lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(location)))
-					{	//location successfully stored:
-						if(currentForm.getLocationFields(true).isEmpty())
-							stopLocationListener(); //there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)						
-						goForward(); //continue (will leave waiting screen & stop the timeout timer)
-					}
-					//else (location was not accepted): do nothing (keep listening for a better location)
+			currentBestLocation = location;
+			//check if we can/need to use the location now:
+			if(currentField instanceof LocationField)
+			{	//user is currently waiting for a location for the currentField
+				LocationField lf = (LocationField) currentField;
+				//try to store location:
+				if(lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(location)))
+				{	//location successfully stored:
+					if(currentForm.getLocationFields(true).isEmpty())
+						stopLocationListener(); //there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)						
+					goForward(); //continue (will leave waiting screen & stop the timeout timer)
 				}
+				//else (location was not accepted): do nothing (keep listening for a better location)
 			}
 		}
 	}
@@ -430,6 +416,38 @@ public class ProjectController implements LocationListener
 	public void onStatusChanged(String provider, int status, Bundle extras)
 	{
 		// does nothing for now
+	}
+	
+	/**
+	 * @return the currentForm
+	 */
+	public Form getCurrentForm()
+	{
+		return currentForm;
+	}
+
+	/**
+	 * @return the project
+	 */
+	public Project getProject()
+	{
+		return project;
+	}
+	
+	/**
+	 * @return the currentRecord
+	 */
+	public Record getCurrentRecord()
+	{
+		return currentRecord;
+	}
+
+	/**
+	 * @return the currentField
+	 */
+	public Field getCurrentField()
+	{
+		return currentField;
 	}
 
 }

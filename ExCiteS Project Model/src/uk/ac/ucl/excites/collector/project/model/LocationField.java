@@ -288,12 +288,12 @@ public class LocationField extends Field implements Timeoutable
 		return new LocationColumn(id, (optional != Optionalness.NEVER), doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, storeProvider);
 	}
 	
-	public boolean storeLocation(Record entry, Location location)
+	public boolean storeLocation(Record record, Location location)
 	{
-		return storeLocation(entry, location, false);
+		return storeLocation(record, location, false);
 	}
 	
-	public boolean storeLocation(Record entry, Location location, boolean bestWeCouldGet)
+	public boolean storeLocation(Record record, Location location, boolean bestWeCouldGet)
 	{	
 		//Null check:
 		if(location == null)
@@ -312,7 +312,7 @@ public class LocationField extends Field implements Timeoutable
 				return false; //not accurate enough
 		}
 		//this location is good enough or it is the best we could get, so store it:
-		((LocationColumn) column).storeValue(entry, location);
+		((LocationColumn) column).storeValue(record, location);
 		return true;
 	}
 	

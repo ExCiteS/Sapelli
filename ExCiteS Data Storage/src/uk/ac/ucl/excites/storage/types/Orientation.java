@@ -23,72 +23,81 @@ public class Orientation
 	}
 	
 	//Dynamics---------------------------------------------
-	private Float x;
-	private Float y;
-	private Float z;
+	private Float azimuth;
+	private Float pitch;
+	private Float roll;
 	
 	/**
-	 * @param x
-	 * @param y
-	 * @param z
+	 * @param azimuth
+	 * @param pitch
+	 * @param roll
 	 */
-	public Orientation(Float x, Float y, Float z)
+	public Orientation(Float azimuth, Float pitch, Float roll)
 	{
-		this.x = x;
-		this.y = y;
-		this.z = z;
+		this.azimuth = azimuth;
+		this.pitch = pitch;
+		this.roll = roll;
 	}
 
 	/**
-	 * @return the x
+	 * Rotation around the Z axis: 0° to 360°.
+	 * 0° means the top of the device is pointing to magnetic North
+	 * 
+	 * @return the azimuth
 	 */
-	public float getX()
+	public float getAzimuth()
 	{
-		if(x == null)
+		if(azimuth == null)
 			return 0.0f;
-		return x;
+		return azimuth;
 	}
 
-	public boolean hasX()
+	public boolean hasAzimuth()
 	{
-		return x != null;
+		return azimuth != null;
 	}
 	
 	/**
-	 * @return the y
+	 * Rotation around the X axis: -90° to 90°.
+	 * 90° mean the device is pointed to the ground, -90° means it is pointed to the sky.
+	 * 
+	 * @return the pitch
 	 */
-	public float getY()
+	public float getPitch()
 	{
-		if(x == null)
+		if(pitch == null)
 			return 0.0f;
-		return y;
+		return pitch;
 	}
 
-	public boolean hasY()
+	public boolean hasPitch()
 	{
-		return y != null;
+		return pitch != null;
 	}
 	
 	/**
-	 * @return the z
+	 * Rotation around the Y axis: -180° to 180°.
+	 * 0° means the device is lying on its back (screen facing upwards), (-)180° means it is lying on its "face" (screen facing downwards).
+	 * 
+	 * @return the roll
 	 */
-	public float getZ()
+	public float getRoll()
 	{
-		if(x == null)
+		if(roll == null)
 			return 0.0f;
-		return z;
+		return roll;
 	}
 	
-	public boolean hasZ()
+	public boolean hasRoll()
 	{
-		return z != null;
+		return roll != null;
 	}
 	
 	public String toString()
 	{
-		return	(x != null ? x.toString() : "") + SEPARATOR +
-				(y != null ? y.toString() : "") + SEPARATOR +
-				(z != null ? z.toString() : "") + SEPARATOR;
+		return	(azimuth != null ? azimuth.toString() : "") + SEPARATOR +
+				(pitch != null ? pitch.toString() : "") + SEPARATOR +
+				(roll != null ? roll.toString() : "") + SEPARATOR;
 	}
 	
 }

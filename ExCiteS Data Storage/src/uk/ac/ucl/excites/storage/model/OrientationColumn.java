@@ -17,19 +17,19 @@ import uk.ac.ucl.excites.storage.types.Orientation;
 public class OrientationColumn extends Column<Orientation>
 {
 
-	private boolean storeX;
-	private boolean storeY;
-	private boolean storeZ;
+	private boolean storeAzimuth;
+	private boolean storePitch;
+	private boolean storeRoll;
 	
 	/**
 	 * 
 	 */
-	public OrientationColumn(String name, boolean optional, boolean storeX, boolean storeY, boolean storeZ)
+	public OrientationColumn(String name, boolean optional, boolean storeAzimuth, boolean storePitch, boolean storeRoll)
 	{
 		super(name, optional);
-		this.storeX = storeX;
-		this.storeY = storeY;
-		this.storeZ = storeZ;
+		this.storeAzimuth = storeAzimuth;
+		this.storePitch = storePitch;
+		this.storeRoll = storeRoll;
 	}
 
 	@Override
@@ -47,25 +47,25 @@ public class OrientationColumn extends Column<Orientation>
 	@Override
 	protected void write(Orientation value, BitOutputStream bitStream) throws IOException
 	{
-		if(storeX && value.hasX())
-			bitStream.write(value.getX());
-		if(storeY && value.hasY())
-			bitStream.write(value.getY());
-		if(storeZ && value.hasZ())
-			bitStream.write(value.getZ());
+		if(storeAzimuth && value.hasAzimuth())
+			bitStream.write(value.getAzimuth());
+		if(storePitch && value.hasPitch())
+			bitStream.write(value.getPitch());
+		if(storeRoll && value.hasRoll())
+			bitStream.write(value.getRoll());
 	}
 
 	@Override
 	protected Orientation read(BitInputStream bitStream) throws IOException
 	{
-		Float x = null, y = null, z = null;
-		if(storeX)
-			x = bitStream.readFloat();
-		if(storeY)
-			y = bitStream.readFloat();
-		if(storeZ)
-			z = bitStream.readFloat();
-		return new Orientation(x, y, z);
+		Float azimuth = null, pitch = null, roll = null;
+		if(storeAzimuth)
+			azimuth = bitStream.readFloat();
+		if(storePitch)
+			pitch = bitStream.readFloat();
+		if(storeRoll)
+			roll = bitStream.readFloat();
+		return new Orientation(azimuth, pitch, roll);
 	}
 
 	@Override
@@ -83,7 +83,7 @@ public class OrientationColumn extends Column<Orientation>
 	@Override
 	public int getSize()
 	{
-		return (storeX ? Float.SIZE : 0) + (storeY ? Float.SIZE : 0) + (storeZ ? Float.SIZE : 0);
+		return (storeAzimuth ? Float.SIZE : 0) + (storePitch ? Float.SIZE : 0) + (storeRoll ? Float.SIZE : 0);
 	}
 
 }

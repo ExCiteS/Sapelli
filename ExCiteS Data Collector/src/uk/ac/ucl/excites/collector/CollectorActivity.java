@@ -239,7 +239,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	@Override
 	public void setOrientation(OrientationField of)
 	{
-		// do nothing (?)
+		// do nothing (for now?)
 	}
 
 	@Override
