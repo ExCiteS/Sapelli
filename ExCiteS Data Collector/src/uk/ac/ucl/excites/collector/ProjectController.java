@@ -296,7 +296,7 @@ public class ProjectController implements LocationListener, OrientationListener
 		// Store currentRecord
 		dao.store(currentRecord);
 		
-		Log.d(TAG, "Stored currentRecord:");
+		Log.d(TAG, "Stored record:");
 		Log.d(TAG, currentRecord.toString());
 		
 		// Signal the successful storage of the currentRecord

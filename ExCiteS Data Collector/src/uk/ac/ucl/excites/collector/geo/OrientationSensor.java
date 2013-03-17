@@ -9,13 +9,17 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.util.Log;
 
 /**
  * @author mstevens
  * 
  */
+@SuppressWarnings("unused")
 public class OrientationSensor implements SensorEventListener
 {
+	
+	static protected final String TAG = "OrientationSensor";
 
 	private SensorManager sensorManager;
 
@@ -72,9 +76,11 @@ public class OrientationSensor implements SensorEventListener
 		switch(sensorEvent.sensor.getType())
 		{
 			case Sensor.TYPE_ACCELEROMETER:
+				//Log.d(TAG, "Accelerometer update");
 				gravity = sensorEvent.values.clone();
 				break;
 			case Sensor.TYPE_MAGNETIC_FIELD:
+				//Log.d(TAG, "Magnetic field update");
 				geomagnetic = sensorEvent.values.clone();
 				break;
 		}
