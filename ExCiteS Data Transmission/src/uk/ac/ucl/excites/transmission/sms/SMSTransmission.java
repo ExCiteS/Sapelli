@@ -34,7 +34,7 @@ public class SMSTransmission extends Transmission
 	private int smsMode;
 	private SMSSender sender;
 
-	private ArrayList<Message> messages;
+	private List<Message> parts;
 
 	public SMSTransmission(Schema schema, Integer id, SMSReceiver receiver, SMSSender sender)
 	{
@@ -44,12 +44,21 @@ public class SMSTransmission extends Transmission
 		this.receiver = receiver;
 		this.smsMode = receiver.getSmsMode();
 		this.sender = sender;
+		this.parts = new ArrayList<Message>();
 	}
 	
 	@Override
 	public boolean addRecord(Record record)
 	{
 		
+		
+		//BitArray dataToSend = new BitArray((HEADER_SIZE + content.length) * 8);
+		//Construct header	
+		
+		//Copy contents:
+		//dataToSend.setBytes(HEADER_SIZE * 8, content);
+		//Get byte[]
+		//byte[] bytes = dataToSend.toBytes();
 		
 		return true;
 	}
@@ -109,12 +118,44 @@ public class SMSTransmission extends Transmission
 	
 	public void partSent(Message smsMessage)
 	{
-		
+		boolean allSent = true;
+		DateTime lastSentAt = null;
+		for(Message m : parts)
+		{
+			if(!m.isSent())
+			{
+				allSent = false;
+				break;
+			}
+			else
+			{
+				if(lastSentAt == null || lastSentAt.isBefore(m.getSentAt()))
+					lastSentAt = m.getSentAt();
+			}
+		}
+		if(allSent)
+			sentAt = lastSentAt;
 	}
 
 	public void partReceived(Message smsMessage)
 	{
-		
+		boolean allReceived = true;
+		DateTime lastReceivedAt = null;
+		for(Message m : parts)
+		{
+			if(!m.isReceived())
+			{
+				allReceived = false;
+				break;
+			}
+			else
+			{
+				if(lastReceivedAt == null || lastReceivedAt.isBefore(m.getReceivedAt()))
+					lastReceivedAt = m.getReceivedAt();
+			}
+		}
+		if(allReceived)
+			receivedAt = lastReceivedAt;		
 	}
 	
 }

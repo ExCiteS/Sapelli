@@ -34,14 +34,24 @@ public abstract class Message
 		return (sentAt != null);
 	}
 	
+	public DateTime getSentAt()
+	{
+		return sentAt;
+	}
+	
 	public boolean isReceived()
 	{
 		return (receivedAt != null);
 	}
 	
+	public DateTime getReceivedAt()
+	{
+		return receivedAt;
+	}
+	
 	public void sentCallback()
 	{
-		sentAt = new DateTime();
+		sentAt = new DateTime(); //= now
 		transmission.partSent(this);
 	}
 
@@ -49,6 +59,11 @@ public abstract class Message
 	{
 		receivedAt = new DateTime(); //TODO get actual time of reception by receiver?
 		transmission.partReceived(this);
-	}	
+	}
+	
+	public SMSReceiver getReceiver()
+	{
+		return receiver;
+	}
 	
 }
