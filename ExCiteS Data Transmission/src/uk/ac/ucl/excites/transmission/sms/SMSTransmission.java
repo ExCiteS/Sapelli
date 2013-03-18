@@ -17,32 +17,22 @@ import uk.ac.ucl.excites.transmission.Transmission;
  * @author mstevens
  *
  */
-public class SMSTransmission extends Transmission
+public abstract class SMSTransmission extends Transmission
 {
 	
-	//Statics
-	public static final int SMS_MODE_BINARY = 0;
-	public static final int SMS_MODE_TEXT = 1;
-	
-	//Dynamics
-	private int mode = SMS_MODE_BINARY;
-	//private BitArray data;
-	
-	private int id;
-	private boolean full = false;
-	private SMSReceiver receiver;
-	private int smsMode;
-	private SMSSender sender;
+	protected SMSReceiver receiver;
+	protected SMSSender sender;
+	protected List<Message> parts;
 
-	private List<Message> parts;
-
+	protected int id;
+	protected boolean full = false;
+	
 	public SMSTransmission(Schema schema, Integer id, SMSReceiver receiver, SMSSender sender)
 	{
 		super(schema);
 		this.id = id;
 		
 		this.receiver = receiver;
-		this.smsMode = receiver.getSmsMode();
 		this.sender = sender;
 		this.parts = new ArrayList<Message>();
 	}
@@ -62,8 +52,6 @@ public class SMSTransmission extends Transmission
 		
 		return true;
 	}
-
-
 
 	public boolean isFull()
 	{

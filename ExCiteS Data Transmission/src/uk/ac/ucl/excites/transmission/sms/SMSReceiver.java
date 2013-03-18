@@ -9,14 +9,19 @@ import uk.ac.ucl.excites.transmission.util.Cryptography;
 public class SMSReceiver
 {
 	
+	//Statics
+	public static final int SMS_MODE_BINARY = 0;
+	public static final int SMS_MODE_TEXT = 1;
+		
 	private static final String DEFAULT_PASSWORD = "ExCiteSWC1E6BT";
 
+	//Dynamics
 	private String phoneNumber;
 	
 	private boolean encryt;
 	private byte[] hashedPassword;
 	private byte[] rehashedPassword;
-	private int smsMode = SMSTransmission.SMS_MODE_BINARY; //binary is default (for now)
+	private int smsMode = SMS_MODE_BINARY; //binary is default (for now)
 	
 	private int nextTransmissionID = 0;
 	

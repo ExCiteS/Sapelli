@@ -1,7 +1,12 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.transmission.sms;
+package uk.ac.ucl.excites.transmission.sms.text;
+
+import uk.ac.ucl.excites.transmission.sms.Message;
+import uk.ac.ucl.excites.transmission.sms.SMSReceiver;
+import uk.ac.ucl.excites.transmission.sms.SMSSender;
+import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 
 
 /**
