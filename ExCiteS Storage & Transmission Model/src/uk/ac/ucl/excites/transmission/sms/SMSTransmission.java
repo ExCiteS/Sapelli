@@ -45,7 +45,7 @@ public abstract class SMSTransmission extends Transmission
 	{
 		
 		//BitArray dataToSend = new BitArray((HEADER_SIZE + content.length) * 8);
-		//Construct header	
+		//Construct header
 		
 		//Copy contents:
 		//dataToSend.setBytes(HEADER_SIZE * 8, content);
@@ -76,8 +76,6 @@ public abstract class SMSTransmission extends Transmission
 //		observations.add(observation);
 //		observation.setTransaction(this);
 
-		
-		
 		return true;
 	}
 

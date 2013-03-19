@@ -8,6 +8,8 @@ import java.util.Set;
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 
+import uk.ac.ucl.excites.transmission.Transmission;
+
 /**
  * @author mstevens
  *
@@ -17,6 +19,7 @@ public class Record
 	
 	protected Schema schema;
 	protected Object[] values;
+	protected Transmission transmission;
 
 	public Record(Schema schema)
 	{
@@ -32,6 +35,11 @@ public class Record
 	public Schema getSchema()
 	{
 		return schema;
+	}
+	
+	public Transmission getTransmission()
+	{
+		return transmission;
 	}
 	
 	protected void setValue(Column<?> column, Object value)
