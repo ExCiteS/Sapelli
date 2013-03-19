@@ -61,7 +61,7 @@ public class BinaryMessage extends Message
 	public BinaryMessage(SMSAgent sender, byte[] data) throws Exception
 	{
 		super(sender);
-		
+		//read data:
 		BitInputStream in = null;
 		try
 		{

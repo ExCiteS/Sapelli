@@ -51,22 +51,7 @@ public abstract class SMSTransmission extends Transmission
 		//dataToSend.setBytes(HEADER_SIZE * 8, content);
 		//Get byte[]
 		//byte[] bytes = dataToSend.toBytes();
-		
-		return true;
-	}
 
-	public boolean isFull()
-	{
-		return full;
-	}
-
-	public byte getID()
-	{
-		return id;
-	}
-
-//	public void addObservation(Observation observation)
-//	{
 //		BitArray observationBits = observation.toBitArray(false);
 //		
 //		int headerSize = 12 * 8; //TODO move to statics
@@ -90,7 +75,21 @@ public abstract class SMSTransmission extends Transmission
 //		//TODO Accept observation or reject it, if reject: mark as full
 //		observations.add(observation);
 //		observation.setTransaction(this);
-//	}
+
+		
+		
+		return true;
+	}
+
+	public boolean isFull()
+	{
+		return full;
+	}
+
+	public byte getID()
+	{
+		return id;
+	}
 
 	@Override
 	public void send()
