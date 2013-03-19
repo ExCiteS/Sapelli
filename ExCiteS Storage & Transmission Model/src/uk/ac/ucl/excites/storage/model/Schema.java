@@ -14,6 +14,7 @@ public class Schema
 {
 
 	public static final int DEFAULT_VERSION = 0;
+	public static final int UNKNOWN_COLUMN_INDEX = -1;
 	
 	private int id;
 	private int version;
@@ -80,7 +81,10 @@ public class Schema
 	
 	public int getColumnIndex(String name)
 	{
-		return columnNameToIndex.get(name);
+		Integer idx = columnNameToIndex.get(name);
+		if(idx == null)
+			return UNKNOWN_COLUMN_INDEX;
+		return idx.intValue();
 	}
 	
 	public int getColumnIndex(Column column)

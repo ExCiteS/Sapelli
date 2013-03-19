@@ -48,6 +48,18 @@ public abstract class Column<T>
 	
 	/**
 	 * @param record
+	 * @param value (as object
+	 * @throws IllegalArgumentException
+	 * @throws NullPointerException
+	 */
+	@SuppressWarnings("unchecked")
+	public void storeObject(Record record, Object value) throws IllegalArgumentException, NullPointerException
+	{
+		storeValue(record, (T) value); 
+	}
+	
+	/**
+	 * @param record
 	 * @param value
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
@@ -97,6 +109,12 @@ public abstract class Column<T>
 	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException
 	{
 		writeValue(retrieveValue(record), bitStream);		
+	}
+
+	@SuppressWarnings("unchecked")
+	public void writeObject(Object value, BitOutputStream bitStream) throws IOException
+	{
+		writeValue((T) value, bitStream);
 	}
 	
 	public void writeValue(T value, BitOutputStream bitStream) throws IOException

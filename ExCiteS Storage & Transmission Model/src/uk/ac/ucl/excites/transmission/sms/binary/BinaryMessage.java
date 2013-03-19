@@ -23,8 +23,7 @@ public class BinaryMessage extends Message
 
 	//Static
 	public static final int MAX_TOTAL_SIZE_BYTES = 133; //in Bytes (Android takes 7 bits for the header)
-	public static final int MAX_TRANSMISSION_PARTS = 16;
-	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, MAX_TOTAL_SIZE_BYTES);
+	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, BinarySMSTransmission.MAX_TRANSMISSION_PARTS);
 	public static final int HEADER_SIZE_BITS =	SMSTransmission.ID_LENGTH_BITS /* Transmission ID */ +
 												PART_NUMBER_FIELD.getSize() /* Part number */ +
 												PART_NUMBER_FIELD.getSize() /* Parts total */; 
@@ -44,8 +43,8 @@ public class BinaryMessage extends Message
 	public BinaryMessage(SMSAgent receiver, SMSTransmission transmission, int partNumber, int totalParts, byte[] payload)
 	{
 		super(receiver, transmission, partNumber, totalParts);
-		if(totalParts > MAX_TRANSMISSION_PARTS)
-			throw new IllegalArgumentException("Max transmission length exceded (" + totalParts + "; max is " + MAX_TRANSMISSION_PARTS + ").");
+		if(totalParts > BinarySMSTransmission.MAX_TRANSMISSION_PARTS)
+			throw new IllegalArgumentException("Max transmission length exceded (" + totalParts + "; max is " + BinarySMSTransmission.MAX_TRANSMISSION_PARTS + ").");
 		if(payload.length > MAX_PAYLOAD_SIZE_BYTES)
 			throw new IllegalArgumentException("Content is too long (max size: " + MAX_PAYLOAD_SIZE_BYTES + ")");
 		this.payload = payload;

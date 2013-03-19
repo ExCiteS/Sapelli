@@ -3,11 +3,11 @@
  */
 package uk.ac.ucl.excites.storage.model;
 
+import java.io.IOException;
 import java.util.Set;
 
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
-
 import uk.ac.ucl.excites.transmission.Transmission;
 
 /**
@@ -40,6 +40,11 @@ public class Record
 	public Transmission getTransmission()
 	{
 		return transmission;
+	}
+	
+	public void setTransmission(Transmission transmission)
+	{
+		this.transmission = transmission;
 	}
 	
 	protected void setValue(Column<?> column, Object value)
@@ -103,7 +108,7 @@ public class Record
 		return true;
 	}
 	
-	public void writeToBitStream(BitOutputStream bitStream, Set<Column<?>> skipColumns) throws Exception
+	public void writeToBitStream(BitOutputStream bitStream, Set<Column<?>> skipColumns) throws IOException
 	{
 		try
 		{	//write fields:
@@ -113,11 +118,11 @@ public class Record
 		}
 		catch(Exception e)
 		{
-			throw new Exception("Error on attempting to write record", e);
+			throw new IOException("Error on attempting to write record", e);
 		}
 	}
 	
-	public void readFromBitStream(BitInputStream bitStream, Set<Column<?>> skipColumns) throws Exception
+	public void readFromBitStream(BitInputStream bitStream, Set<Column<?>> skipColumns) throws IOException
 	{
 		try
 		{	//read fields:
@@ -127,7 +132,7 @@ public class Record
 		}
 		catch(Exception e)
 		{
-			throw new Exception("Error on attempting to read record", e);
+			throw new IOException("Error on attempting to read record", e);
 		}
 	}
 	
