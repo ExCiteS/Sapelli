@@ -38,6 +38,7 @@ public class BinarySMSTransmission extends SMSTransmission
 		int maxPayloadSize = MAX_TRANSMISSION_PARTS * BinaryMessage.MAX_PAYLOAD_SIZE_BYTES;
 		if(data.length > maxPayloadSize)
 			throw new TransmissionCapacityExceededException("MaxPayloadSize (" + maxPayloadSize + "), exceeded by " + (data.length - maxPayloadSize) + " bytes");
+		int numberOfParts = (data.length / BinaryMessage.MAX_PAYLOAD_SIZE_BYTES) + ((data.length % BinaryMessage.MAX_PAYLOAD_SIZE_BYTES) > 0 ? 1 : 0);
 		List<Message> messages = new ArrayList<Message>();
 		int b = 0;
 		while(b < data.length)
@@ -49,7 +50,7 @@ public class BinarySMSTransmission extends SMSTransmission
 	}
 
 	@Override
-	protected byte[] mergeAndDeserialise(List<Message> parts)
+	protected byte[] mergeAndDeserialise(Set<Message> parts)
 	{
 		// TODO Auto-generated method stub
 		return null;

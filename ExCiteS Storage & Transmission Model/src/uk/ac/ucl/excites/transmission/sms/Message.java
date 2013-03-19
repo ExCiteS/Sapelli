@@ -1,5 +1,7 @@
 package uk.ac.ucl.excites.transmission.sms;
 
+import java.util.Comparator;
+
 import org.joda.time.DateTime;
 
 
@@ -125,6 +127,17 @@ public abstract class Message
 	public SMSAgent getSender()
 	{
 		return sender;
+	}
+	
+	public static class MessageComparator implements Comparator<Message>
+	{
+
+		@Override
+		public int compare(Message lhs, Message rhs)
+		{
+			return lhs.getPartNumber() - rhs.getPartNumber();
+		}
+		
 	}
 	
 }

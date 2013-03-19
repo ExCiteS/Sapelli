@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.joda.time.DateTime;
 
@@ -34,7 +36,7 @@ public abstract class SMSTransmission extends Transmission
 	protected SMSAgent receiver;
 	protected SMSAgent sender;
 	protected SMSService smsService;
-	protected List<Message> parts;
+	protected SortedSet<Message> parts;
 
 	protected byte id;
 	protected boolean full = false;
@@ -51,7 +53,7 @@ public abstract class SMSTransmission extends Transmission
 		
 		this.receiver = receiver;
 		this.smsService = smsService;
-		this.parts = new ArrayList<Message>();
+		this.parts = new TreeSet<Message>(new Message.MessageComparator());
 	}
 	
 	@Override
@@ -107,13 +109,13 @@ public abstract class SMSTransmission extends Transmission
 	{
 		if(msg.getTransmissionID() != id)
 			throw new IllegalArgumentException("This message does not belong to the transmission (ID mismatch)");
-		//TODO store msg in order
+		parts.add(msg);
 	}
 	
 	protected void prepareMessages() throws IOException, TransmissionCapacityExceededException
 	{
 		//Encode
-		byte[] data = encodeRecords();
+		byte[] data = encodeRecords(); //can throw IOException
 		
 		//Compress
 		data = compress(data);
@@ -122,7 +124,9 @@ public abstract class SMSTransmission extends Transmission
 		data = encrypt(data);
 		
 		//Serialise/Split
-		parts = serialiseAndSplit(data);
+		List<Message> msgs = serialiseAndSplit(data); //can throw TransmissionCapacityExceededException
+		for(Message m : msgs)
+			parts.add(m);
 	}
 	
 	protected void readMessages() throws IOException
@@ -261,7 +265,7 @@ public abstract class SMSTransmission extends Transmission
 	
 	protected abstract List<Message> serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException;
 	
-	protected abstract byte[] mergeAndDeserialise(List<Message> parts);
+	protected abstract byte[] mergeAndDeserialise(Set<Message> parts);
 	
 	public boolean isFull()
 	{

@@ -40,7 +40,7 @@ public class TextSMSTransmission extends SMSTransmission
 	}
 
 	@Override
-	protected byte[] mergeAndDeserialise(List<Message> parts)
+	protected byte[] mergeAndDeserialise(Set<Message> parts)
 	{
 		// TODO Auto-generated method stub
 		return null;
