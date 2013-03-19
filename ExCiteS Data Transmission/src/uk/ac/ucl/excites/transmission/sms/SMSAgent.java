@@ -6,7 +6,7 @@ import uk.ac.ucl.excites.transmission.util.Cryptography;
  * @author julia, mstevens
  *
  */
-public class SMSReceiver
+public class SMSAgent
 {
 	
 	//Statics
@@ -29,7 +29,7 @@ public class SMSReceiver
 	private long timeReceived;
 	private long timeSent;
 	
-	public SMSReceiver()
+	public SMSAgent()
 	{
 		
 	}	

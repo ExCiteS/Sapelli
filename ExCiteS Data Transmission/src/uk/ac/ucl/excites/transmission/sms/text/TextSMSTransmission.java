@@ -4,8 +4,8 @@
 package uk.ac.ucl.excites.transmission.sms.text;
 
 import uk.ac.ucl.excites.storage.model.Schema;
-import uk.ac.ucl.excites.transmission.sms.SMSReceiver;
-import uk.ac.ucl.excites.transmission.sms.SMSSender;
+import uk.ac.ucl.excites.transmission.sms.SMSAgent;
+import uk.ac.ucl.excites.transmission.sms.SMSService;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 
 /**
@@ -15,9 +15,9 @@ import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 public class TextSMSTransmission extends SMSTransmission
 {
 
-	public TextSMSTransmission(Schema schema, Integer id, SMSReceiver receiver, SMSSender sender)
+	public TextSMSTransmission(Schema schema, byte id, SMSAgent receiver, SMSService smsService)
 	{
-		super(schema, id, receiver, sender);
+		super(schema, id, receiver, smsService);
 	}
 
 }

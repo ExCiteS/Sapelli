@@ -4,10 +4,8 @@
 package uk.ac.ucl.excites.transmission.sms.text;
 
 import uk.ac.ucl.excites.transmission.sms.Message;
-import uk.ac.ucl.excites.transmission.sms.SMSReceiver;
-import uk.ac.ucl.excites.transmission.sms.SMSSender;
+import uk.ac.ucl.excites.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
-
 
 /**
  * @author mstevens
@@ -18,32 +16,49 @@ public class TextMessage extends Message
 
 	private String content;
 	
-	public TextMessage(SMSSender sender, SMSReceiver receiver, SMSTransmission transmission)
+	/**
+	 * To be called on the sending side.
+	 * 
+	 * @param receiver
+	 * @param transmission
+	 * @param partNumber
+	 * @param totalParts
+	 * @param payload
+	 */
+	public TextMessage(SMSAgent receiver, SMSTransmission transmission, int partNumber, int totalParts, byte[] payload)
 	{
-		super(sender, receiver, transmission);
-	}
-
-	@Override
-	public int getMaxContentSize()
-	{
-		return 0; //TODO 7*160 bits?
-	}
-
-	@Override
-	public void setContent(byte[] content)
-	{
+		super(receiver, transmission, partNumber, totalParts);
 		//TODO encode bytes in 7bit SMS text format
 	}
+
+	/**
+	 * To be called on the receiving side.
+	 * 
+	 * @param sender
+	 * @param text
+	 */
+	public TextMessage(SMSAgent sender, String text)
+	{
+		super(sender);
+		this.content = text;
+	}
 	
-	public String getContent()
+	public String getText()
 	{
 		return content;
+	}
+	
+	@Override
+	public byte[] getPayload()
+	{
+		//TODO decode to bytes
+		return new byte[140];
 	}
 
 	@Override
 	public void send()
 	{
-		sender.send(this);
+		transmission.getSMSService().send(this);
 	}
 
 }

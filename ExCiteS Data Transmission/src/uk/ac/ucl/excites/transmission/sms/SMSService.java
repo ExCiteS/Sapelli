@@ -11,7 +11,7 @@ import uk.ac.ucl.excites.transmission.sms.text.TextMessage;
  * @author mstevens
  *
  */
-public interface SMSSender
+public interface SMSService
 {
 
 	public boolean send(BinaryMessage binarySMS);

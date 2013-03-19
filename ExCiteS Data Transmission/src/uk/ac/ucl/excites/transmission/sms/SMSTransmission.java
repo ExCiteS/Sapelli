@@ -20,27 +20,29 @@ import uk.ac.ucl.excites.transmission.Transmission;
 public abstract class SMSTransmission extends Transmission
 {
 	
-	protected SMSReceiver receiver;
-	protected SMSSender sender;
+	static public final int ID_LENGTH_BITS = Byte.SIZE;
+	
+	protected SMSAgent receiver;
+	protected SMSAgent sender;
+	protected SMSService smsService;
 	protected List<Message> parts;
 
-	protected int id;
+	protected byte id;
 	protected boolean full = false;
 	
-	public SMSTransmission(Schema schema, Integer id, SMSReceiver receiver, SMSSender sender)
+	public SMSTransmission(Schema schema, byte id, SMSAgent receiver, SMSService smsService)
 	{
 		super(schema);
 		this.id = id;
 		
 		this.receiver = receiver;
-		this.sender = sender;
+		this.smsService = smsService;
 		this.parts = new ArrayList<Message>();
 	}
 	
 	@Override
 	public boolean addRecord(Record record)
 	{
-		
 		
 		//BitArray dataToSend = new BitArray((HEADER_SIZE + content.length) * 8);
 		//Construct header	
@@ -58,7 +60,7 @@ public abstract class SMSTransmission extends Transmission
 		return full;
 	}
 
-	public int getID()
+	public byte getID()
 	{
 		return id;
 	}
@@ -95,7 +97,6 @@ public abstract class SMSTransmission extends Transmission
 	{
 		/* create and send sms messages */
 
-		
 		
 	}
 
@@ -144,6 +145,11 @@ public abstract class SMSTransmission extends Transmission
 		}
 		if(allReceived)
 			receivedAt = lastReceivedAt;		
+	}
+	
+	public SMSService getSMSService()
+	{
+		return smsService;
 	}
 	
 }
