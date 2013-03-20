@@ -13,9 +13,6 @@ import java.net.URL;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import com.google.zxing.integration.android.IntentIntegrator;
-import com.google.zxing.integration.android.IntentResult;
-
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -47,9 +44,12 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+
 /**
  * @author Julia, Michalis Vitos, mstevens
- * 
+ *
  */
 public class ProjectPickerActivity extends BaseActivity
 {
@@ -63,7 +63,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	// SHORTCUT ACTIONS
 	private static final String DEFAULT_INSTALL_SHORTCUT_ACTION = "com.android.launcher.action.INSTALL_SHORTCUT";
-	private static final String CUSTOM_INSTALL_SHORTCUT_ACTION = "com.shortcutreceiver.INSTALL_SHORTCUT";
+	private static final String CUSTOM_INSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.INSTALL_SHORTCUT";
 	private static final String DEFAULT_UNISTALL_SHORTCUT_ACTION = "com.android.launcher.action.UNINSTALL_SHORTCUT";
 	private static final String CUSTOM_UNISTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.UNINSTALL_SHORTCUT";
 	private static final String SHORTCUT_PROJECT_NAME = "Shortcut_Project_Name";
@@ -96,7 +96,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 		// Paths...
 		// Database path is on Internal Storage
-		databasePath = this.getFilesDir().getAbsolutePath();
+		databasePath = getFilesDir().getAbsolutePath();
 		// ExCiteS folder
 		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER;
 
@@ -229,11 +229,11 @@ public class ProjectPickerActivity extends BaseActivity
 			errorDialog("Please select an XML or ExCiteS file", false).show();
 			return;
 		}
-		enterURL.setText(""); //clear field		
+		enterURL.setText(""); //clear field
 		Project project = null;
 
 		// Download ExCiteS file if path is a URL
-		if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION) */) 
+		if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION) */)
 		{	//Extension check above is commented out to support "smart"/dynamic URLs
 			//Start async task to download the file:
 			(new DownloadFileFromURL(path, "Project")).execute(); //the task will also call processExcitesFile() and checkProject()
@@ -241,14 +241,9 @@ public class ProjectPickerActivity extends BaseActivity
 		}
 		// Extract & parse a local ExCiteS file
 		else if(path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
-		{
 			project = processExcitesFile(new File(path));
-		}
-		// Parse a local XML file
 		else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
-		{
 			project = parseXML(new File(path));
-		}
 		// Add the project to the db & the list on the screen:
 		addProject(project, path); // null check (with appropriate error) happens in addProject()
 	}
@@ -332,7 +327,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	/**
 	 * Create a shortcut
-	 * 
+	 *
 	 * @param view
 	 */
 	public void createShortcut(View view)
@@ -384,7 +379,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	/**
 	 * Remove a shortcut
-	 * 
+	 *
 	 * @param view
 	 */
 	public void removeShortcut(View view)
@@ -424,7 +419,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	/**
 	 * Return a name to be used for the creation / removal of shortcuts
-	 * 
+	 *
 	 * @param project
 	 * @return
 	 */
@@ -438,7 +433,6 @@ public class ProjectPickerActivity extends BaseActivity
 	{
 		super.onActivityResult(requestCode, resultCode, data);
 		if(resultCode == Activity.RESULT_OK)
-		{
 			switch(requestCode)
 			{
 			// File browse dialog:
@@ -467,20 +461,17 @@ public class ProjectPickerActivity extends BaseActivity
 				}
 				break;
 			}
-		}
 	}
 
 	/**
 	 * Dialog to check whether it is desired to remove project
-	 * 
+	 *
 	 * @param view
 	 */
 	public void removeDialog(View view)
 	{
 		if(projectList.getCheckedItemPosition() == -1)
-		{
 			errorDialog("Please select a project", false).show();
-		}
 		else
 		{
 			AlertDialog removeDialogBox = new AlertDialog.Builder(this).setMessage("Are you sure that you want to remove the project?")
@@ -524,7 +515,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	/**
 	 * Background Async Task to download file
-	 * 
+	 *
 	 * @author Michalis Vitos, mstevens
 	 */
 	public class DownloadFileFromURL extends AsyncTask<Void, Integer, Boolean>
@@ -533,30 +524,30 @@ public class ProjectPickerActivity extends BaseActivity
 		static private final String TEMP_FILE_EXTENSION = "tmp";
 
 		// Variables
-		private long startTime;
-		private ProgressDialog progressDialog;
-		private String downloadUrl;
-		private File downloadFolder;
-		private File downloadFile;
+		private final long startTime;
+		private final ProgressDialog progressDialog;
+		private final String downloadUrl;
+		private final File downloadFolder;
+		private final File downloadFile;
 
 		/**
 		 * Downloads the file
-		 * 
+		 *
 		 * Note: We do not use Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS); as the download folder because it does not seem
 		 * to be writable on the Xcover.
-		 * 
+		 *
 		 * @param downloadUrl
 		 * @param filename
 		 */
 		public DownloadFileFromURL(String downloadUrl, String filename)
 		{
-			this.startTime = System.currentTimeMillis();
+			startTime = System.currentTimeMillis();
 
 			this.downloadUrl = downloadUrl;
 			// Download file in folder /Download/timestamp-filename
-			this.downloadFolder = new File(excitesFolderPath + DOWNLOADS_FOLDER);
+			downloadFolder = new File(excitesFolderPath + DOWNLOADS_FOLDER);
 			FileHelpers.createFolder(downloadFolder);
-			this.downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
+			downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 
 			// instantiate it within the onCreate method
 			progressDialog = new ProgressDialog(ProjectPickerActivity.this);
@@ -590,7 +581,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 		/**
 		 * Downloading file in background thread
-		 * 
+		 *
 		 * @return
 		 * */
 		@Override
@@ -667,14 +658,10 @@ public class ProjectPickerActivity extends BaseActivity
 
 				// Handle temp file:
 				if(project != null)
-				{ // Rename temp file:
 					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_'
 							+ (startTime / 1000) + ".excites"));
-				}
 				else
-				{ // Delete temp file:
 					downloadFile.delete();
-				}
 			}
 			else
 			{
@@ -687,7 +674,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	/**
 	 * Check if the device is connected to Internet
-	 * 
+	 *
 	 * @param mContext
 	 * @return
 	 */
@@ -696,9 +683,7 @@ public class ProjectPickerActivity extends BaseActivity
 		ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo netInfo = cm.getActiveNetworkInfo();
 		if(netInfo != null && netInfo.isConnected())
-		{
 			return true;
-		}
 		return false;
 	}
 
