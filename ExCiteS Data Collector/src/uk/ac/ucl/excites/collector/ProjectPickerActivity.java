@@ -216,6 +216,7 @@ public class ProjectPickerActivity extends BaseActivity
 		Project p = getSelectedProject();
 		if(p == null)
 			return;
+		removeShortcutFor(p);
 		dao.deleteProject(p);
 		populateProjectList();
 	}
@@ -350,7 +351,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 		// Set up the icon
 		// TODO Get an icon from the form for each project
-		ShortcutIconResource iconResource = Intent.ShortcutIconResource.fromContext(ProjectPickerActivity.this, R.drawable.ic_launcher);
+		ShortcutIconResource iconResource = Intent.ShortcutIconResource.fromContext(ProjectPickerActivity.this, R.drawable.excites_icon);
 
 		// ================================================================================
 		// Create a shortcut to the standard Android Home Launcher
@@ -372,8 +373,6 @@ public class ProjectPickerActivity extends BaseActivity
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, iconResource);
-		// TODO Do I need this?
-		launcherIntent.putExtra("duplicate", false);
 		sendBroadcast(launcherIntent);
 	}
 
@@ -391,9 +390,11 @@ public class ProjectPickerActivity extends BaseActivity
 			return;
 		}
 
-		// Get the selected project
-		Project selectedProject = getSelectedProject();
+		removeShortcutFor(getSelectedProject());
+	}
 
+	private void removeShortcutFor(Project project)
+	{
 		// Deleting shortcut
 		Intent projectIntent = new Intent(getApplicationContext(), ProjectPickerActivity.class);
 		projectIntent.setAction(Intent.ACTION_MAIN);
@@ -404,7 +405,7 @@ public class ProjectPickerActivity extends BaseActivity
 		Intent shortcutIntent = new Intent();
 		shortcutIntent.setAction(DEFAULT_UNISTALL_SHORTCUT_ACTION);
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
-		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(project));
 		sendBroadcast(shortcutIntent);
 
 		// ================================================================================
@@ -413,7 +414,7 @@ public class ProjectPickerActivity extends BaseActivity
 		Intent launcherIntent = new Intent();
 		launcherIntent.setAction(CUSTOM_UNISTALL_SHORTCUT_ACTION);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
-		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
+		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(project));
 		sendBroadcast(launcherIntent);
 	}
 
