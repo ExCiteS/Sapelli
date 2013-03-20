@@ -15,7 +15,7 @@ public abstract class Message
 	protected SMSAgent sender;
 	protected SMSAgent receiver;
 	protected SMSTransmission transmission;
-	protected byte transmissionID;
+	protected int transmissionID;
 	protected DateTime sentAt;
 	protected DateTime receivedAt;
 	protected int partNumber;
@@ -23,7 +23,7 @@ public abstract class Message
 	
 
 	/**
-	 * To be called on sending side
+	 * To be called on sending side.
 	 * 
 	 * @param receiver
 	 * @param transmission
@@ -42,7 +42,7 @@ public abstract class Message
 	}
 	
 	/**
-	 * To be called on receiver side
+	 * To be called on receiving side
 	 * 
 	 * @param sender
 	 */
@@ -61,12 +61,12 @@ public abstract class Message
 			this.transmission = transmission;
 		else
 			throw new IllegalStateException("Cannot change transmission.");
-	}	
+	}
 	
 	/**
 	 * @return the transmissionID
 	 */
-	public byte getTransmissionID()
+	public int getTransmissionID()
 	{
 		return transmissionID;
 	}

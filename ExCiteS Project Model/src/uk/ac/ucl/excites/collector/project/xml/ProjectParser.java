@@ -149,8 +149,7 @@ public class ProjectParser extends DefaultHandler
 		{
 			String name = readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_NAME);
 			int schemaID = Integer.parseInt(readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_SCHEMA_ID));
-			int schemaVersion = (attributes.getValue(ATTRIBUTE_FORM_SCHEMA_VERSION) == null ? Schema.DEFAULT_VERSION : Integer.parseInt(attributes
-					.getValue(ATTRIBUTE_FORM_SCHEMA_VERSION)));
+			int schemaVersion = readIntegerAttribute(attributes, ATTRIBUTE_FORM_SCHEMA_VERSION, Schema.DEFAULT_VERSION);
 			currentForm = new Form(project, name, schemaID, schemaVersion);
 			project.addForm(currentForm);
 			// Store end time?:

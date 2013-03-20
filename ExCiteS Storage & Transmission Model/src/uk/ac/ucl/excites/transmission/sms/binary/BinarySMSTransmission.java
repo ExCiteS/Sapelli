@@ -1,12 +1,12 @@
 package uk.ac.ucl.excites.transmission.sms.binary;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.transmission.SchemaProvider;
 import uk.ac.ucl.excites.transmission.sms.Message;
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.transmission.sms.SMSService;
@@ -24,14 +24,24 @@ public class BinarySMSTransmission extends SMSTransmission
 	
 	public BinarySMSTransmission(Schema schema, byte id, SMSAgent receiver, SMSService smsService)
 	{
-		super(schema, new HashSet<Column<?>>(), id, receiver, smsService);
+		super(schema, null, id, receiver, smsService);
 	}
 	
 	public BinarySMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, byte id, SMSAgent receiver, SMSService smsService)
 	{
 		super(schema, columnsToFactorOut, id, receiver, smsService);
 	}
-
+	
+	/**
+	 * To be called on the receiving side.
+	 * 
+	 * @param schemaProvider
+	 */
+	public BinarySMSTransmission(SchemaProvider schemaProvider)
+	{
+		super(schemaProvider);
+	}
+	
 	@Override
 	protected List<Message> serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException
 	{

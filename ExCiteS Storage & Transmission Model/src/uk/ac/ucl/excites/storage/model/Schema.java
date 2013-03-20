@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
+
 /**
  * @author mstevens
  *
@@ -15,6 +17,11 @@ public class Schema
 
 	public static final int DEFAULT_VERSION = 0;
 	public static final int UNKNOWN_COLUMN_INDEX = -1;
+	
+	public static final int SCHEMA_ID_SIZE = 24;
+	public static final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE);
+	public static final int SCHEMA_VERSION_SIZE = 8;
+	public static final IntegerRangeMapping SCHEMA_VERSION_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_VERSION_SIZE);
 	
 	private int id;
 	private int version;
@@ -45,8 +52,14 @@ public class Schema
 	
 	public Schema(int id, int version, String name)
 	{
-		this.id = id;
-		this.version = version;
+		if(SCHEMA_ID_FIELD.fits(id))
+			this.id = id;
+		else
+			throw new IllegalArgumentException("Invalid schema ID, valid values are " + SCHEMA_ID_FIELD.getLogicalRangeString() + ".");
+		if(SCHEMA_VERSION_FIELD.fits(version))
+			this.version = version;
+		else
+			throw new IllegalArgumentException("Invalid schema version, valid values are " + SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
 		this.name = (name == null ? "Schema_" + id + "_v" + version : name);
 		columnNameToIndex = new LinkedHashMap<String, Integer>();
 		columns = new ArrayList<Column>();
