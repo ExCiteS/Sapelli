@@ -136,17 +136,30 @@ public class CameraController implements SurfaceHolder.Callback
 			}
 			if(!cameraConfigured)
 			{
-				camera.setDisplayOrientation(90); // TODO optionally make this change with device orientation?
+				camera.setDisplayOrientation(90); //TODO optionally make this change with device orientation?
 				Camera.Parameters parameters = camera.getParameters();
+				
+				String params = parameters.flatten();
+				Log.d(TAG, params);
 				
 				//Preview size:
 				Camera.Size previewSize = getBestPreviewSize(width, height, parameters);
 				if(previewSize != null)
 					parameters.setPreviewSize(previewSize.width, previewSize.height);
 				
+				//Set scene mode:
+				List<String> sceneModes = parameters.getSupportedSceneModes();
+				if(sceneModes != null && sceneModes.contains(Camera.Parameters.SCENE_MODE_AUTO))
+					parameters.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
+					
+				//Set white balance:
+				List<String> whiteBalanceModes = parameters.getSupportedWhiteBalance();
+				if(whiteBalanceModes != null && whiteBalanceModes.contains(Camera.Parameters.WHITE_BALANCE_AUTO))
+					parameters.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
+				
 				//Set focus mode:
-				if(parameters.getSupportedFocusModes().contains(Camera.Parameters.FLASH_MODE_AUTO))
-					parameters.setFocusMode(Camera.Parameters.FLASH_MODE_AUTO);
+				if(parameters.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_AUTO))
+					parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
 				
 				//Flash mode:
 				parameters.setFlashMode(getAppropriateFlashMode(parameters));
@@ -176,17 +189,20 @@ public class CameraController implements SurfaceHolder.Callback
 	private String getAppropriateFlashMode(Camera.Parameters parameters)
 	{
 		List<String> availableModes = parameters.getSupportedFlashModes();
-		switch(flashMode)
+		if(availableModes != null)
 		{
-			case ON :	if(availableModes.contains(Camera.Parameters.FLASH_MODE_ON))
-							return Camera.Parameters.FLASH_MODE_ON;
-						break;
-			case AUTO :	if(availableModes.contains(Camera.Parameters.FLASH_MODE_AUTO))
-							return Camera.Parameters.FLASH_MODE_AUTO;
-						break;
-			case OFF :	if(availableModes.contains(Camera.Parameters.FLASH_MODE_OFF))
-							return Camera.Parameters.FLASH_MODE_OFF;
-						break;
+			switch(flashMode)
+			{
+				case ON :	if(availableModes.contains(Camera.Parameters.FLASH_MODE_ON))
+								return Camera.Parameters.FLASH_MODE_ON;
+							break;
+				case AUTO :	if(availableModes.contains(Camera.Parameters.FLASH_MODE_AUTO))
+								return Camera.Parameters.FLASH_MODE_AUTO;
+							break;
+				case OFF :	if(availableModes.contains(Camera.Parameters.FLASH_MODE_OFF))
+								return Camera.Parameters.FLASH_MODE_OFF;
+							break;
+			}
 		}
 		return parameters.getFlashMode(); //leave as is
 	}

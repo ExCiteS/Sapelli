@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+    <item android:id="@+id/sender_settings_menuitem"
+          android:icon="@android:drawable/ic_menu_preferences"
+          android:title="@string/sender_settings_menuitem" android:onClick="openSenderSettings" android:showAsAction="always" />
+</menu>

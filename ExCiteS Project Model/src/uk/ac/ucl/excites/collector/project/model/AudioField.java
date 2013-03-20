@@ -56,9 +56,9 @@ public class AudioField extends MediaField
 	}
 
 	@Override
-	public void setIn(CollectorUI fv)
+	public void setIn(CollectorUI ui)
 	{
-		fv.setAudio(this);
+		ui.setAudio(this);
 	}
 
 	@Override

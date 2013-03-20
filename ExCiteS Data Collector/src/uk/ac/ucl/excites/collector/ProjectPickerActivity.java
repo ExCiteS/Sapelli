@@ -13,9 +13,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import com.google.zxing.integration.android.IntentIntegrator;
-import com.google.zxing.integration.android.IntentResult;
-
+import uk.ac.excites.sender.SenderBackgroundPreferences;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -30,7 +28,8 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.Intent.ShortcutIconResource;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -39,6 +38,8 @@ import android.os.Environment;
 import android.os.Parcelable;
 import android.util.Log;
 import android.util.Patterns;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -46,6 +47,9 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
 
 /**
  * @author Julia, Michalis Vitos, mstevens
@@ -63,11 +67,12 @@ public class ProjectPickerActivity extends BaseActivity
 
 	// SHORTCUT ACTIONS
 	private static final String DEFAULT_INSTALL_SHORTCUT_ACTION = "com.android.launcher.action.INSTALL_SHORTCUT";
-	private static final String CUSTOM_INSTALL_SHORTCUT_ACTION = "com.shortcutreceiver.INSTALL_SHORTCUT";
+	private static final String CUSTOM_INSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.INSTALL_SHORTCUT";
 	private static final String DEFAULT_UNISTALL_SHORTCUT_ACTION = "com.android.launcher.action.UNINSTALL_SHORTCUT";
 	private static final String CUSTOM_UNISTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.UNINSTALL_SHORTCUT";
 	private static final String SHORTCUT_PROJECT_NAME = "Shortcut_Project_Name";
 	private static final String SHORTCUT_PROJECT_VERSION = "Shortcut_Project_Version";
+	private static final String SHORTCUT_PROJECT_ICON = "Shortcut_Project_Icon";
 
 	public static final int RETURN_BROWSE = 1;
 
@@ -81,6 +86,8 @@ public class ProjectPickerActivity extends BaseActivity
 	private ListView projectList;
 	private Button runBtn;
 	private Button removeBtn;
+	private Button createShortcutBtn;
+	private Button removeShortcutBtn;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -96,7 +103,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 		// Paths...
 		// Database path is on Internal Storage
-		databasePath = this.getFilesDir().getAbsolutePath();
+		databasePath = getFilesDir().getAbsolutePath();
 		// ExCiteS folder
 		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER;
 
@@ -127,6 +134,8 @@ public class ProjectPickerActivity extends BaseActivity
 		projectList = (ListView) findViewById(R.id.ProjectsList);
 		runBtn = (Button) findViewById(R.id.RunProjectButton);
 		removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
+		createShortcutBtn = (Button) findViewById(R.id.CreateShortcutButton);
+		removeShortcutBtn = (Button) findViewById(R.id.RemoveShortcutButton);
 		// get scrolling right
 		findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
 		{
@@ -146,6 +155,32 @@ public class ProjectPickerActivity extends BaseActivity
 				return false;
 			}
 		});
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		getMenuInflater().inflate(R.menu.projectpicker, menu);
+
+		// Set click listener (the android:onClick attribute in the XML only works on Android >= v3.0)
+		final MenuItem senderSettingsItem = menu.findItem(R.id.sender_settings_menuitem);
+		if(senderSettingsItem != null)
+		{
+			senderSettingsItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener()
+			{
+				public boolean onMenuItemClick(MenuItem item)
+				{
+					return(openSenderSettings(senderSettingsItem));
+				}
+			});
+		}
+		return true;
+	}
+	
+	public boolean openSenderSettings(MenuItem item)
+	{
+		startActivity(new Intent(getBaseContext(), SenderBackgroundPreferences.class));
+		return true;
 	}
 
 	public void browse(View view)
@@ -168,12 +203,16 @@ public class ProjectPickerActivity extends BaseActivity
 		{
 			runBtn.setEnabled(true);
 			removeBtn.setEnabled(true);
+			createShortcutBtn.setEnabled(true);
+			removeShortcutBtn.setEnabled(true);
 			projectList.setItemChecked(0, true); // check first project in the list
 		}
 		else
 		{
 			runBtn.setEnabled(false);
 			removeBtn.setEnabled(false);
+			createShortcutBtn.setEnabled(false);
+			removeShortcutBtn.setEnabled(false);
 		}
 	}
 
@@ -216,6 +255,7 @@ public class ProjectPickerActivity extends BaseActivity
 		Project p = getSelectedProject();
 		if(p == null)
 			return;
+		removeShortcutFor(p);
 		dao.deleteProject(p);
 		populateProjectList();
 	}
@@ -229,26 +269,21 @@ public class ProjectPickerActivity extends BaseActivity
 			errorDialog("Please select an XML or ExCiteS file", false).show();
 			return;
 		}
-		enterURL.setText(""); //clear field		
+		enterURL.setText(""); // clear field
 		Project project = null;
 
 		// Download ExCiteS file if path is a URL
-		if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION) */) 
-		{	//Extension check above is commented out to support "smart"/dynamic URLs
-			//Start async task to download the file:
-			(new DownloadFileFromURL(path, "Project")).execute(); //the task will also call processExcitesFile() and checkProject()
+		if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION) */)
+		{ // Extension check above is commented out to support "smart"/dynamic URLs
+			// Start async task to download the file:
+			(new DownloadFileFromURL(path, "Project")).execute(); // the task will also call processExcitesFile() and checkProject()
 			return;
 		}
 		// Extract & parse a local ExCiteS file
 		else if(path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
-		{
 			project = processExcitesFile(new File(path));
-		}
-		// Parse a local XML file
 		else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
-		{
 			project = parseXML(new File(path));
-		}
 		// Add the project to the db & the list on the screen:
 		addProject(project, path); // null check (with appropriate error) happens in addProject()
 	}
@@ -354,8 +389,14 @@ public class ProjectPickerActivity extends BaseActivity
 		projectIntent.setAction(Intent.ACTION_MAIN);
 
 		// Set up the icon
-		// TODO Get an icon from the form for each project
-		ShortcutIconResource iconResource = Intent.ShortcutIconResource.fromContext(ProjectPickerActivity.this, R.drawable.ic_launcher);
+		Drawable iconResource = null;
+		String logicalIconPath = selectedProject.getForms().get(0).getShortcutImageLogicalPath();
+		if(logicalIconPath == null || logicalIconPath.isEmpty())
+			iconResource = getResources().getDrawable(R.drawable.excites_icon);
+		else
+			iconResource = Drawable.createFromPath(selectedProject.getImageFolderPath() + logicalIconPath);
+
+		BitmapDrawable bitmapDrawable = (BitmapDrawable) iconResource;
 
 		// ================================================================================
 		// Create a shortcut to the standard Android Home Launcher
@@ -364,7 +405,7 @@ public class ProjectPickerActivity extends BaseActivity
 		shortcutIntent.setAction(DEFAULT_INSTALL_SHORTCUT_ACTION);
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
-		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, iconResource);
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmapDrawable.getBitmap());
 		// Do not allow duplicate shortcuts
 		shortcutIntent.putExtra("duplicate", false);
 		sendBroadcast(shortcutIntent);
@@ -376,9 +417,8 @@ public class ProjectPickerActivity extends BaseActivity
 		launcherIntent.setAction(CUSTOM_INSTALL_SHORTCUT_ACTION);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
-		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, iconResource);
-		// TODO Do I need this?
-		launcherIntent.putExtra("duplicate", false);
+		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmapDrawable.getBitmap());
+		launcherIntent.putExtra(SHORTCUT_PROJECT_ICON, selectedProject.getImageFolderPath() + logicalIconPath);
 		sendBroadcast(launcherIntent);
 	}
 
@@ -395,10 +435,11 @@ public class ProjectPickerActivity extends BaseActivity
 			errorDialog("Please select a project", false).show();
 			return;
 		}
+		removeShortcutFor(getSelectedProject());
+	}
 
-		// Get the selected project
-		Project selectedProject = getSelectedProject();
-
+	private void removeShortcutFor(Project project)
+	{
 		// Deleting shortcut
 		Intent projectIntent = new Intent(getApplicationContext(), ProjectPickerActivity.class);
 		projectIntent.setAction(Intent.ACTION_MAIN);
@@ -409,7 +450,7 @@ public class ProjectPickerActivity extends BaseActivity
 		Intent shortcutIntent = new Intent();
 		shortcutIntent.setAction(DEFAULT_UNISTALL_SHORTCUT_ACTION);
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
-		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(project));
 		sendBroadcast(shortcutIntent);
 
 		// ================================================================================
@@ -418,7 +459,7 @@ public class ProjectPickerActivity extends BaseActivity
 		Intent launcherIntent = new Intent();
 		launcherIntent.setAction(CUSTOM_UNISTALL_SHORTCUT_ACTION);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
-		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
+		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(project));
 		sendBroadcast(launcherIntent);
 	}
 
@@ -438,7 +479,6 @@ public class ProjectPickerActivity extends BaseActivity
 	{
 		super.onActivityResult(requestCode, resultCode, data);
 		if(resultCode == Activity.RESULT_OK)
-		{
 			switch(requestCode)
 			{
 			// File browse dialog:
@@ -467,7 +507,6 @@ public class ProjectPickerActivity extends BaseActivity
 				}
 				break;
 			}
-		}
 	}
 
 	/**
@@ -478,9 +517,7 @@ public class ProjectPickerActivity extends BaseActivity
 	public void removeDialog(View view)
 	{
 		if(projectList.getCheckedItemPosition() == -1)
-		{
 			errorDialog("Please select a project", false).show();
-		}
 		else
 		{
 			AlertDialog removeDialogBox = new AlertDialog.Builder(this).setMessage("Are you sure that you want to remove the project?")
@@ -533,11 +570,11 @@ public class ProjectPickerActivity extends BaseActivity
 		static private final String TEMP_FILE_EXTENSION = "tmp";
 
 		// Variables
-		private long startTime;
-		private ProgressDialog progressDialog;
-		private String downloadUrl;
-		private File downloadFolder;
-		private File downloadFile;
+		private final long startTime;
+		private final ProgressDialog progressDialog;
+		private final String downloadUrl;
+		private final File downloadFolder;
+		private final File downloadFile;
 
 		/**
 		 * Downloads the file
@@ -550,13 +587,13 @@ public class ProjectPickerActivity extends BaseActivity
 		 */
 		public DownloadFileFromURL(String downloadUrl, String filename)
 		{
-			this.startTime = System.currentTimeMillis();
+			startTime = System.currentTimeMillis();
 
 			this.downloadUrl = downloadUrl;
 			// Download file in folder /Download/timestamp-filename
-			this.downloadFolder = new File(excitesFolderPath + DOWNLOADS_FOLDER);
+			downloadFolder = new File(excitesFolderPath + DOWNLOADS_FOLDER);
 			FileHelpers.createFolder(downloadFolder);
-			this.downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
+			downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 
 			// instantiate it within the onCreate method
 			progressDialog = new ProgressDialog(ProjectPickerActivity.this);
@@ -667,14 +704,10 @@ public class ProjectPickerActivity extends BaseActivity
 
 				// Handle temp file:
 				if(project != null)
-				{ // Rename temp file:
 					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_'
 							+ (startTime / 1000) + ".excites"));
-				}
 				else
-				{ // Delete temp file:
 					downloadFile.delete();
-				}
 			}
 			else
 			{
@@ -696,9 +729,7 @@ public class ProjectPickerActivity extends BaseActivity
 		ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo netInfo = cm.getActiveNetworkInfo();
 		if(netInfo != null && netInfo.isConnected())
-		{
 			return true;
-		}
 		return false;
 	}
 

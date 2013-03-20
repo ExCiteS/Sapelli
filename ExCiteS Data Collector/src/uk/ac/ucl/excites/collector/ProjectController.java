@@ -15,7 +15,6 @@ import uk.ac.ucl.excites.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
-import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.model.Form;
@@ -200,11 +199,8 @@ public class ProjectController implements LocationListener, OrientationListener
 				return; //!!!
 			}
 		}
-		// Update GUI or loop/exit
-		if(!(currentField instanceof EndField))
-			activity.setField(currentField); // update GUI
-		else
-			endForm(); // currentField = _END, so we must loop or exit
+		// Update GUI (will also handle EndField & CancelField):
+		activity.setField(currentField);
 	}
 
 	public ButtonsState getButtonsState()

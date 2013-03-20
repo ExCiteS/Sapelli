@@ -242,9 +242,9 @@ public class ChoiceField extends Field
 	}
 
 	@Override
-	public void setIn(CollectorUI fv)
+	public void setIn(CollectorUI ui)
 	{
-		fv.setChoice(this);
+		ui.setChoice(this);
 	}
 	
 	public String toString()
