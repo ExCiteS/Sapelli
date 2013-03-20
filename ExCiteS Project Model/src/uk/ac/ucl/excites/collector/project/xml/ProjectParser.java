@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package uk.ac.ucl.excites.collector.project.xml;
 
@@ -35,7 +35,7 @@ import uk.ac.ucl.excites.storage.model.Schema;
 
 /**
  * @author mstevens, julia, Michalis Vitos
- * 
+ *
  */
 public class ProjectParser extends DefaultHandler
 {
@@ -48,7 +48,7 @@ public class ProjectParser extends DefaultHandler
 	static private final String TAG_AUDIO = "Audio";
 	static private final String TAG_PHOTO = "Photo";
 	static private final String TAG_ORIENTATION = "Orientation";
-	
+
 	// Attributes:
 	static private final String ATTRIBUTE_PROJECT_NAME = "name";
 	static private final String ATTRIBUTE_PROJECT_VERSION = "version";
@@ -57,15 +57,16 @@ public class ProjectParser extends DefaultHandler
 	static private final String ATTRIBUTE_FORM_SCHEMA_VERSION = "schema-version";
 	static private final String ATTRIBUTE_FORM_START_FIELD = "startField";
 	static private final String ATTRIBUTE_FORM_END_SOUND = "endSound";
+	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
-	
+
 
 	//DYNAMICS-------------------------------------------------------
-	private String basePath;
-	private boolean createProjectFolder;
+	private final String basePath;
+	private final boolean createProjectFolder;
 	private Project project;
 	private Form currentForm;
 	private String currentFormStartFieldId;
@@ -153,6 +154,9 @@ public class ProjectParser extends DefaultHandler
 					.getValue(ATTRIBUTE_FORM_SCHEMA_VERSION)));
 			currentForm = new Form(project, name, schemaID, schemaVersion);
 			project.addForm(currentForm);
+			// Shortcut image:
+			if(attributes.getValue(ATTRIBUTE_FORM_SHORTCUT_IMAGE) != null && !attributes.getValue(ATTRIBUTE_FORM_SHORTCUT_IMAGE).isEmpty())
+				currentForm.setShortcutImageLogicalPath(attributes.getValue(ATTRIBUTE_FORM_SHORTCUT_IMAGE));
 			// Store end time?:
 			currentForm.setStoreEndTime(readBooleanAttribute(attributes, "storeEndTime", Form.END_TIME_DEFAULT));
 			// Sound end vibration at the end of the form:
@@ -212,15 +216,12 @@ public class ProjectParser extends DefaultHandler
 			String type = attributes.getValue("type");
 			if(type != null)
 				System.out.println("Warning: Unknown Location type (" + type + ").");
-			else
-			{
-				if("Any".equalsIgnoreCase(type))
-					locField.setType(LocationField.TYPE_ANY);
-				else if("GPS".equalsIgnoreCase(type))
-					locField.setType(LocationField.TYPE_GPS);
-				else if("Network".equalsIgnoreCase(type))
-					locField.setType(LocationField.TYPE_GPS);
-			}
+			else if("Any".equalsIgnoreCase(type))
+				locField.setType(LocationField.TYPE_ANY);
+			else if("GPS".equalsIgnoreCase(type))
+				locField.setType(LocationField.TYPE_GPS);
+			else if("Network".equalsIgnoreCase(type))
+				locField.setType(LocationField.TYPE_GPS);
 			// Operating settings:
 			locField.setStartWithForm(readBooleanAttribute(attributes, "startWithForm", LocationField.DEFAULT_START_WITH_FORM));
 			locField.setWaitAtField(readBooleanAttribute(attributes, "waitAtField", LocationField.DEFAULT_WAIT_AT_FIELD));
@@ -307,7 +308,7 @@ public class ProjectParser extends DefaultHandler
 		else if(qName.equals(TAG_CHOICE))
 		{
 			if(currentChoice.isRoot() && currentChoice.isLeaf())
-				throw new SAXException("Root choices need at least 1 child (but 2 children probably makes more sense)."); 			
+				throw new SAXException("Root choices need at least 1 child (but 2 children probably makes more sense).");
 			currentChoice = currentChoice.getParent();
 		}
 	}
@@ -386,17 +387,15 @@ public class ProjectParser extends DefaultHandler
 		String optText = attributes.getValue("optional");
 		Optionalness opt = Field.DEFAULT_OPTIONAL;
 		if(optText != null && !optText.isEmpty())
-		{
 			if(optText.trim().equalsIgnoreCase("always") || optText.trim().equalsIgnoreCase("true"))
 				opt = Optionalness.ALWAYS;
 			else if(optText.trim().equalsIgnoreCase("notIfReached"))
 				opt = Optionalness.NOT_IF_REACHED;
 			else if(optText.trim().equalsIgnoreCase("never") || optText.trim().equalsIgnoreCase("false"))
 				opt = Optionalness.NEVER;
-		}
 		field.setOptional(opt);
 	}
-	
+
 	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
 	{
 		String value = attributes.getValue(attributeName);
@@ -413,23 +412,18 @@ public class ProjectParser extends DefaultHandler
 		else
 			return text;
 	}
-	
+
 	protected boolean readBooleanAttribute(Attributes attributes, String attributeName, boolean defaultValue)
 	{
 		String text = attributes.getValue(attributeName);
 		if(text == null || text.isEmpty())
 			return defaultValue;
+		else if(text.trim().equalsIgnoreCase(Boolean.TRUE.toString()))
+			return Boolean.TRUE;
+		else if(text.trim().equalsIgnoreCase(Boolean.FALSE.toString()))
+			return Boolean.FALSE;
 		else
-		{
-			if(text.trim().equalsIgnoreCase(Boolean.TRUE.toString()))
-				return Boolean.TRUE;
-			else if(text.trim().equalsIgnoreCase(Boolean.FALSE.toString()))
-				return Boolean.FALSE;
-			else 
-				return defaultValue;
-		}
-		// We don't use Boolean.parseBoolean(String) because that returns false if the String does not equal true (so we wouldn't be able to return the
-		// defaultValue)
+			return defaultValue;
 	}
 
 	protected int readIntegerAttribute(Attributes attributes, String attributeName, int defaultValue)
@@ -440,7 +434,7 @@ public class ProjectParser extends DefaultHandler
 		else
 			return Integer.parseInt(text.trim());
 	}
-	
+
 	protected float readFloatAttribute(Attributes attributes, String attributeName, float defaultValue)
 	{
 		String text = attributes.getValue(attributeName);

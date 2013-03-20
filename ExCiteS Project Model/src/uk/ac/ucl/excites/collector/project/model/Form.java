@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package uk.ac.ucl.excites.collector.project.model;
 
@@ -15,7 +15,7 @@ import uk.ac.ucl.excites.storage.model.Schema;
 
 /**
  * @author mstevens, Michalis Vitos
- * 
+ *
  */
 public class Form
 {
@@ -43,20 +43,19 @@ public class Form
 	public static final String COLUMN_TRANSMISSION_TYPE = "TransmissionType";
 
 	// Dynamics-------------------------------------------------------
-	private Project project;
-	private int schemaID;
-	private int schemaVersion;
+	private final Project project;
+	private final int schemaID;
+	private final int schemaVersion;
 	private Schema schema;
-	private String name;
+	private final String name;
 
 	// Fields
 	private Field start;
-	private List<Field> fields;
-	private List<LocationField> locationFields;
+	private final List<Field> fields;
+	private final List<LocationField> locationFields;
 
 	// Android shortcut:
-	//private boolean shortcut;
-	// shortcutIcon
+	private String shortcutImageLogicalPath;
 
 	// Timestamps
 	private boolean storeEndTime;
@@ -86,18 +85,18 @@ public class Form
 		this.name = name;
 		this.schemaID = schemaID;
 		this.schemaVersion = schemaVersion;
-		this.fields = new ArrayList<Field>();
-		this.locationFields = new ArrayList<LocationField>();
-		this.buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
-		this.endAction = DEFAULT_END_ACTION;
-		this.vibrateOnEnd = DEFAULT_VIBRATE;
+		fields = new ArrayList<Field>();
+		locationFields = new ArrayList<LocationField>();
+		buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
+		endAction = DEFAULT_END_ACTION;
+		vibrateOnEnd = DEFAULT_VIBRATE;
 	}
-	
+
 	public void initialiseStorage()
 	{
-		getSchema(); //this will also trigger all Column and ValueDictionaries to be created/initialised 
+		getSchema(); //this will also trigger all Column and ValueDictionaries to be created/initialised
 	}
-	
+
 	/**
 	 * @return the project
 	 */
@@ -112,7 +111,7 @@ public class Form
 		if(f instanceof LocationField)
 			locationFields.add((LocationField) f);
 	}
-	
+
 	public int getFieldIndex(Field field)
 	{
 		return fields.indexOf(field.getRoot());
@@ -127,13 +126,11 @@ public class Form
 		// Check for jump field (possibly the one of a parent in case of ChoiceField):
 		Field next = current.getJump();
 		if(next == null)
-		{
 			// No jump is set, check for field below current one:
 			if(currentIndex + 1 < fields.size())
 				next = fields.get(currentIndex + 1); // go to next field in the form
 			else
 				next = new EndField(this); // current field is the last of the form, go to end
-		}
 		return next; // use jump as next
 	}
 
@@ -162,6 +159,23 @@ public class Form
 	public void setStartField(Field start)
 	{
 		this.start = start;
+	}
+
+	/**
+	 * @return the shortcutImageLogicalPath
+	 */
+	public String getShortcutImageLogicalPath()
+	{
+		return shortcutImageLogicalPath;
+	}
+
+	/**
+	 * @param shortcutImageLogicalPath
+	 *            the shortcutImageLogicalPath to set
+	 */
+	public void setShortcutImageLogicalPath(String shortcutImageLogicalPath)
+	{
+		this.shortcutImageLogicalPath = shortcutImageLogicalPath;
 	}
 
 	/**
@@ -341,7 +355,7 @@ public class Form
 
 	/**
 	 * @param vibrateOnEnd
-	 * 
+	 *
 	 */
 	public void setVibrateOnEnd(boolean vibrateOnEnd)
 	{
@@ -395,8 +409,8 @@ public class Form
 			// Device ID column:
 			schema.addColumn(new IntegerColumn(COLUMN_DEVICE_ID, false, false, 32));
 			// Transmission information columns:
-			
-			
+
+
 			// Columns for user-defined fields:
 			for(Field f : fields)
 				if(!f.isNoColumn())
@@ -406,11 +420,11 @@ public class Form
 		}
 		return schema;
 	}
-	
+
 	public Record newEntry(long deviceID)
 	{
 		Record record = new Record(getSchema()); //call getSchema() once to make sure the schema (and columns) are initialised
-		
+
 		// Set current time as start timestamp
 		((DateTimeColumn) schema.getColumn(COLUMN_TIMESTAMP_START)).storeValue(record, new DateTime() /*= now*/);
 
@@ -419,7 +433,7 @@ public class Form
 
 		return record;
 	}
-	
+
 	public void finish(Record record)
 	{
 		if(storeEndTime)

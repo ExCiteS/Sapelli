@@ -27,7 +27,8 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.Intent.ShortcutIconResource;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -68,6 +69,7 @@ public class ProjectPickerActivity extends BaseActivity
 	private static final String CUSTOM_UNISTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.UNINSTALL_SHORTCUT";
 	private static final String SHORTCUT_PROJECT_NAME = "Shortcut_Project_Name";
 	private static final String SHORTCUT_PROJECT_VERSION = "Shortcut_Project_Version";
+	private static final String SHORTCUT_PROJECT_ICON = "Shortcut_Project_Icon";
 
 	public static final int RETURN_BROWSE = 1;
 
@@ -350,8 +352,14 @@ public class ProjectPickerActivity extends BaseActivity
 		projectIntent.setAction(Intent.ACTION_MAIN);
 
 		// Set up the icon
-		// TODO Get an icon from the form for each project
-		ShortcutIconResource iconResource = Intent.ShortcutIconResource.fromContext(ProjectPickerActivity.this, R.drawable.excites_icon);
+		Drawable iconResource = null;
+		String logicalIconPath = selectedProject.getForms().get(0).getShortcutImageLogicalPath();
+		if(logicalIconPath == null || logicalIconPath.isEmpty())
+			iconResource = getResources().getDrawable(R.drawable.excites_icon);
+		else
+			iconResource = Drawable.createFromPath(selectedProject.getImageFolderPath() + logicalIconPath);
+
+		BitmapDrawable bitmapDrawable = (BitmapDrawable) iconResource;
 
 		// ================================================================================
 		// Create a shortcut to the standard Android Home Launcher
@@ -360,7 +368,7 @@ public class ProjectPickerActivity extends BaseActivity
 		shortcutIntent.setAction(DEFAULT_INSTALL_SHORTCUT_ACTION);
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
-		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, iconResource);
+		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmapDrawable.getBitmap());
 		// Do not allow duplicate shortcuts
 		shortcutIntent.putExtra("duplicate", false);
 		sendBroadcast(shortcutIntent);
@@ -372,7 +380,8 @@ public class ProjectPickerActivity extends BaseActivity
 		launcherIntent.setAction(CUSTOM_INSTALL_SHORTCUT_ACTION);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
-		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, iconResource);
+		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmapDrawable.getBitmap());
+		launcherIntent.putExtra(SHORTCUT_PROJECT_ICON, selectedProject.getImageFolderPath() + logicalIconPath);
 		sendBroadcast(launcherIntent);
 	}
 
