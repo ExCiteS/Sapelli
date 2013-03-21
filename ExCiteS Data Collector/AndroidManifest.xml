@@ -8,7 +8,6 @@
         android:minSdkVersion="9"
         android:targetSdkVersion="17" />
 
-    <uses-feature android:name="android.hardware.camera" />
     <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -32,7 +31,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <uses-feature android:name="android.hardware.camera" />
-	<uses-feature android:name="android.hardware.camera.front" />
+    <uses-feature android:name="android.hardware.camera.front" />
     <uses-feature android:name="android.hardware.camera.any" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
     <uses-feature android:name="android.hardware.camera.flash" />
@@ -55,44 +54,30 @@
             </intent-filter>
         </activity>
         <activity
+            android:name="uk.ac.ucl.excites.collector.CollectorActivity"
+            android:theme="@android:style/Theme.NoTitleBar" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name="uk.ac.excites.sender.SenderBackgroundActivity"
             android:exported="true"
             android:label="@string/title_activity_main" >
         </activity>
-        <activity android:name="uk.ac.excites.sender.dropbox.DropboxLogin" >
-        </activity>
-        <!--
-        <activity
-            android:name="uk.ac.ucl.excites.collector.ShortcutCreator"
-            android:label="ExCiteS Service Settings" >
-            <intent-filter>
-                <action android:name="android.intent.action.CREATE_SHORTCUT" />
-                
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity>
-        -->
         <activity
             android:name="uk.ac.excites.sender.SenderBackgroundPreferences"
-            android:icon="@drawable/sender"
-            android:label="ExCiteS Settings"
-            android:launchMode="singleTask" >
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+            android:icon="@drawable/sender" >
+        </activity>
+        <activity android:name="uk.ac.excites.sender.dropbox.DropboxLogin" >
+        </activity>
+        <activity
+            android:name="uk.ac.excites.sender.dropbox.DropboxAuthentication"
+            android:label="@string/title_activity_dropbox" >
         </activity>
         <activity
             android:name="group.pals.android.lib.ui.filechooser.FileChooserActivity"
             android:configChanges="orientation|screenSize|keyboard|keyboardHidden" />
-
-        <service android:name="group.pals.android.lib.ui.filechooser.services.LocalFileProvider" />
-
-        <activity
-            android:name="uk.ac.ucl.excites.collector.CollectorActivity"
-            android:theme="@android:style/Theme.NoTitleBar" >
-        </activity>
         <activity android:name="com.dropbox.sync.android.DbxAuthActivity" />
         <activity
             android:name="com.dropbox.client2.android.AuthActivity"
@@ -110,21 +95,16 @@
         </activity>
 
         <service
+            android:name="uk.ac.excites.sender.SenderBackgroundService"
+            android:icon="@drawable/excites_icon"
+            android:label="@string/service_name" >
+        </service>
+        <service android:name="group.pals.android.lib.ui.filechooser.services.LocalFileProvider" />
+        <service
             android:name="com.dropbox.sync.android.DbxSyncService"
             android:enabled="true"
             android:exported="false"
             android:label="Dropbox Sync" >
-        </service>
-
-        <activity
-            android:name="uk.ac.excites.sender.dropbox.DropboxAuthentication"
-            android:label="@string/title_activity_dropbox" >
-        </activity>
-
-        <service
-            android:name="uk.ac.excites.sender.SenderBackgroundService"
-            android:icon="@drawable/excites_icon"
-            android:label="@string/service_name" >
         </service>
 
         <receiver
