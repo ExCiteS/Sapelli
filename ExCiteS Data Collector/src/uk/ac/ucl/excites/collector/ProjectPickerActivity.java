@@ -50,7 +50,7 @@ import com.google.zxing.integration.android.IntentResult;
 
 /**
  * @author Julia, Michalis Vitos, mstevens
- *
+ * 
  */
 public class ProjectPickerActivity extends BaseActivity
 {
@@ -232,14 +232,14 @@ public class ProjectPickerActivity extends BaseActivity
 			errorDialog("Please select an XML or ExCiteS file", false).show();
 			return;
 		}
-		enterURL.setText(""); //clear field
+		enterURL.setText(""); // clear field
 		Project project = null;
 
 		// Download ExCiteS file if path is a URL
 		if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION) */)
-		{	//Extension check above is commented out to support "smart"/dynamic URLs
-			//Start async task to download the file:
-			(new DownloadFileFromURL(path, "Project")).execute(); //the task will also call processExcitesFile() and checkProject()
+		{ // Extension check above is commented out to support "smart"/dynamic URLs
+			// Start async task to download the file:
+			(new DownloadFileFromURL(path, "Project")).execute(); // the task will also call processExcitesFile() and checkProject()
 			return;
 		}
 		// Extract & parse a local ExCiteS file
@@ -330,7 +330,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	/**
 	 * Create a shortcut
-	 *
+	 * 
 	 * @param view
 	 */
 	public void createShortcut(View view)
@@ -387,7 +387,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	/**
 	 * Remove a shortcut
-	 *
+	 * 
 	 * @param view
 	 */
 	public void removeShortcut(View view)
@@ -406,6 +406,8 @@ public class ProjectPickerActivity extends BaseActivity
 	{
 		// Deleting shortcut
 		Intent projectIntent = new Intent(getApplicationContext(), ProjectPickerActivity.class);
+		projectIntent.putExtra(SHORTCUT_PROJECT_NAME, project.getName());
+		projectIntent.putExtra(SHORTCUT_PROJECT_VERSION, project.getVersion());
 		projectIntent.setAction(Intent.ACTION_MAIN);
 
 		// ================================================================================
@@ -429,7 +431,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	/**
 	 * Return a name to be used for the creation / removal of shortcuts
-	 *
+	 * 
 	 * @param project
 	 * @return
 	 */
@@ -475,7 +477,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	/**
 	 * Dialog to check whether it is desired to remove project
-	 *
+	 * 
 	 * @param view
 	 */
 	public void removeDialog(View view)
@@ -525,7 +527,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	/**
 	 * Background Async Task to download file
-	 *
+	 * 
 	 * @author Michalis Vitos, mstevens
 	 */
 	public class DownloadFileFromURL extends AsyncTask<Void, Integer, Boolean>
@@ -542,10 +544,10 @@ public class ProjectPickerActivity extends BaseActivity
 
 		/**
 		 * Downloads the file
-		 *
+		 * 
 		 * Note: We do not use Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS); as the download folder because it does not seem
 		 * to be writable on the Xcover.
-		 *
+		 * 
 		 * @param downloadUrl
 		 * @param filename
 		 */
@@ -591,7 +593,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 		/**
 		 * Downloading file in background thread
-		 *
+		 * 
 		 * @return
 		 * */
 		@Override
@@ -684,7 +686,7 @@ public class ProjectPickerActivity extends BaseActivity
 
 	/**
 	 * Check if the device is connected to Internet
-	 *
+	 * 
 	 * @param mContext
 	 * @return
 	 */
