@@ -151,6 +151,6 @@ public abstract class Field
 		return form;
 	}
 
-	public abstract void setIn(CollectorUI fv);
+	public abstract void setIn(CollectorUI ui);
 	
 }

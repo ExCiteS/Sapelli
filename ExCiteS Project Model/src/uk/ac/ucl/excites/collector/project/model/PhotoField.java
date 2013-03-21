@@ -45,9 +45,9 @@ public class PhotoField extends MediaField
 	}
 
 	@Override
-	public void setIn(CollectorUI fv)
+	public void setIn(CollectorUI ui)
 	{
-		fv.setPhoto(this);
+		ui.setPhoto(this);
 	}
 
 	/**

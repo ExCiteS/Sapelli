@@ -3,12 +3,12 @@
  */
 package uk.ac.ucl.excites.transmission.sms.text;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.transmission.SchemaProvider;
 import uk.ac.ucl.excites.transmission.sms.Message;
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.transmission.sms.SMSService;
@@ -24,7 +24,7 @@ public class TextSMSTransmission extends SMSTransmission
 	
 	public TextSMSTransmission(Schema schema, byte id, SMSAgent receiver, SMSService smsService)
 	{
-		super(schema, new HashSet<Column<?>>(), id, receiver, smsService);
+		super(schema, null, id, receiver, smsService);
 	}
 
 	public TextSMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, byte id, SMSAgent receiver, SMSService smsService)
@@ -32,6 +32,16 @@ public class TextSMSTransmission extends SMSTransmission
 		super(schema, columnsToFactorOut, id, receiver, smsService);
 	}
 
+	/**
+	 * To be called on the receiving side.
+	 * 
+	 * @param schemaProvider
+	 */
+	public TextSMSTransmission(SchemaProvider schemaProvider)
+	{
+		super(schemaProvider);
+	}
+	
 	@Override
 	protected List<Message> serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException
 	{

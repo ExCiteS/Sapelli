@@ -6,8 +6,6 @@ package uk.ac.ucl.excites.transmission.sms;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
@@ -20,6 +18,8 @@ import uk.ac.ucl.excites.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.transmission.SchemaProvider;
 import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException;
 
@@ -31,28 +31,58 @@ import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException
 public abstract class SMSTransmission extends Transmission
 {
 	
-	static public final int ID_LENGTH_BITS = Byte.SIZE;
+	static public final int ID_SIZE_BITS = Byte.SIZE;
+	static public final int INITIAL_ID = 0;
+	static public final IntegerRangeMapping ID_FIELD = IntegerRangeMapping.ForSize(INITIAL_ID, ID_SIZE_BITS);
 	
 	protected SMSAgent receiver;
 	protected SMSAgent sender;
 	protected SMSService smsService;
 	protected SortedSet<Message> parts;
 
-	protected byte id;
+	protected Integer id = null;
 	protected boolean full = false;
 	
+	/**
+	 * To be called on the sending side.
+	 * 
+	 * @param schema
+	 * @param id
+	 * @param receiver
+	 * @param smsService
+	 */
 	public SMSTransmission(Schema schema, byte id, SMSAgent receiver, SMSService smsService)
 	{
-		this(schema, new HashSet<Column<?>>(), id, receiver, smsService);
+		this(schema, null, id, receiver, smsService);
 	}
 	
-	public SMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, byte id, SMSAgent receiver, SMSService smsService)
+	/**
+	 * To be called on the sending side.
+	 * 
+	 * @param schema
+	 * @param columnsToFactorOut
+	 * @param id
+	 * @param receiver
+	 * @param smsService
+	 */
+	public SMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, int id, SMSAgent receiver, SMSService smsService)
 	{
 		super(schema, columnsToFactorOut);
 		this.id = id;
 		
 		this.receiver = receiver;
 		this.smsService = smsService;
+		this.parts = new TreeSet<Message>(new Message.MessageComparator());
+	}
+	
+	/**
+	 * To be called on the receiving side.
+	 * 
+	 * @param schemaProvider
+	 */
+	public SMSTransmission(SchemaProvider schemaProvider)
+	{
+		super(schemaProvider);
 		this.parts = new TreeSet<Message>(new Message.MessageComparator());
 	}
 	
@@ -105,11 +135,40 @@ public abstract class SMSTransmission extends Transmission
 		return true;
 	}
 	
+	/**
+	 * To be called on receiving side.
+	 * 
+	 * @param msg
+	 */
 	public void addPart(Message msg)
 	{
-		if(msg.getTransmissionID() != id)
-			throw new IllegalArgumentException("This message does not belong to the transmission (ID mismatch)");
+		if(parts.isEmpty())
+		{	//set transmission ID & sender based on those of the first received message:
+			this.id = msg.getTransmissionID();
+			this.sender = msg.getSender();
+		}
+		else
+		{	//each following received message must have a matching transmission id, sender & partsTotal:
+			if(id.intValue() != msg.getTransmissionID())
+				throw new IllegalArgumentException("This message does not belong to the transmission (ID mismatch)");
+			if(!sender.equals(msg.getSender()))
+				throw new IllegalArgumentException("This message originates from another sender.");
+			
+		}
+		//TODO deal with duplicates!
 		parts.add(msg);
+	}
+	
+	/**
+	 * To be called on the receiving side.
+	 * 
+	 * @return whether all parts have been received
+	 */
+	public boolean isComplete()
+	{
+		if(parts.isEmpty())
+			return false;
+		return (parts.first().getTotalParts() == parts.size());
 	}
 	
 	protected void prepareMessages() throws IOException, TransmissionCapacityExceededException
@@ -131,6 +190,11 @@ public abstract class SMSTransmission extends Transmission
 	
 	protected void readMessages() throws IOException
 	{
+		if(parts.isEmpty())
+			throw new IllegalStateException("No messages to decode.");
+		if(!isComplete())
+			throw new IllegalStateException("Transmission is incomplete, " + (parts.first().getTotalParts() - parts.size()) + " parts missing.");
+		
 		//Merge/Deserialise
 		byte[] data = mergeAndDeserialise(parts);
 		
@@ -163,6 +227,10 @@ public abstract class SMSTransmission extends Transmission
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
 			out = new BitOutputStream(rawOut);
 	
+			//Write schema ID & version:
+			Schema.SCHEMA_ID_FIELD.write(schema.getID(), out);
+			Schema.SCHEMA_VERSION_FIELD.write(schema.getVersion(), out);
+			
 			//Write factored out values:
 			for(Column<?> c : columnsToFactorOut)
 				c.writeObject(factoredOutValues.get(c), out);
@@ -201,6 +269,16 @@ public abstract class SMSTransmission extends Transmission
 		{
 			//Input stream:
 			in = new BitInputStream(new ByteArrayInputStream(data));
+
+			//Read schema ID & version
+			int schemaID = (int) Schema.SCHEMA_ID_FIELD.read(in);
+			int schemaVersion = (int) Schema.SCHEMA_VERSION_FIELD.read(in);
+			
+			//Look-up schema & columns to factor out:
+			schema = schemaProvider.getSchema(schemaID, schemaVersion);
+			if(schema == null)
+				throw new IllegalStateException("Cannot decode message because schema (id: " + schemaID + "; version: " + schemaVersion + ") is unknown");
+			setColumnsToFactorOut(schemaProvider.getFactoredOutColumnsFor(schema));
 			
 			//Read factored out values:
 			for(Column<?> c : columnsToFactorOut)
@@ -272,9 +350,11 @@ public abstract class SMSTransmission extends Transmission
 		return full;
 	}
 
-	public byte getID()
-	{
-		return id;
+	public int getID()
+	{	
+		if(id == null)
+			throw new NullPointerException("Transmission ID has not been set.");
+		return id.intValue();
 	}
 
 	public void resend(int partNumber)

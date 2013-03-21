@@ -88,9 +88,9 @@ public class OrientationField extends Field
 	}
 	
 	@Override
-	public void setIn(CollectorUI fv)
+	public void setIn(CollectorUI ui)
 	{
-		fv.setOrientation(this);
+		ui.setOrientation(this);
 	}	
 
 }

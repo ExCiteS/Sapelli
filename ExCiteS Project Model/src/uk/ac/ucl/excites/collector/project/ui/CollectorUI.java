@@ -22,4 +22,8 @@ public interface CollectorUI
 	
 	public void setOrientation(OrientationField of);
 	
+	public void setEndField(EndField endF);
+	
+	public void setCancelField(CancelField cancelF);
+	
 }

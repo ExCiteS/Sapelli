@@ -13,6 +13,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import uk.ac.excites.sender.SenderBackgroundPreferences;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -37,6 +38,8 @@ import android.os.Environment;
 import android.os.Parcelable;
 import android.util.Log;
 import android.util.Patterns;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -83,6 +86,8 @@ public class ProjectPickerActivity extends BaseActivity
 	private ListView projectList;
 	private Button runBtn;
 	private Button removeBtn;
+	private Button createShortcutBtn;
+	private Button removeShortcutBtn;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -129,6 +134,8 @@ public class ProjectPickerActivity extends BaseActivity
 		projectList = (ListView) findViewById(R.id.ProjectsList);
 		runBtn = (Button) findViewById(R.id.RunProjectButton);
 		removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
+		createShortcutBtn = (Button) findViewById(R.id.CreateShortcutButton);
+		removeShortcutBtn = (Button) findViewById(R.id.RemoveShortcutButton);
 		// get scrolling right
 		findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
 		{
@@ -148,6 +155,32 @@ public class ProjectPickerActivity extends BaseActivity
 				return false;
 			}
 		});
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		getMenuInflater().inflate(R.menu.projectpicker, menu);
+
+		// Set click listener (the android:onClick attribute in the XML only works on Android >= v3.0)
+		final MenuItem senderSettingsItem = menu.findItem(R.id.sender_settings_menuitem);
+		if(senderSettingsItem != null)
+		{
+			senderSettingsItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener()
+			{
+				public boolean onMenuItemClick(MenuItem item)
+				{
+					return(openSenderSettings(senderSettingsItem));
+				}
+			});
+		}
+		return true;
+	}
+	
+	public boolean openSenderSettings(MenuItem item)
+	{
+		startActivity(new Intent(getBaseContext(), SenderBackgroundPreferences.class));
+		return true;
 	}
 
 	public void browse(View view)
@@ -170,12 +203,16 @@ public class ProjectPickerActivity extends BaseActivity
 		{
 			runBtn.setEnabled(true);
 			removeBtn.setEnabled(true);
+			createShortcutBtn.setEnabled(true);
+			removeShortcutBtn.setEnabled(true);
 			projectList.setItemChecked(0, true); // check first project in the list
 		}
 		else
 		{
 			runBtn.setEnabled(false);
 			removeBtn.setEnabled(false);
+			createShortcutBtn.setEnabled(false);
+			removeShortcutBtn.setEnabled(false);
 		}
 	}
 
@@ -398,7 +435,6 @@ public class ProjectPickerActivity extends BaseActivity
 			errorDialog("Please select a project", false).show();
 			return;
 		}
-
 		removeShortcutFor(getSelectedProject());
 	}
 

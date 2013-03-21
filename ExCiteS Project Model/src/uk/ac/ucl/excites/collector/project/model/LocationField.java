@@ -322,9 +322,9 @@ public class LocationField extends Field implements Timeoutable
 	}
 		
 	@Override
-	public void setIn(CollectorUI fv)
+	public void setIn(CollectorUI ui)
 	{
-		fv.setLocation(this);
+		ui.setLocation(this);
 	}
 	
 }

@@ -5,7 +5,9 @@ import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
+import uk.ac.ucl.excites.collector.project.model.CancelField;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.OrientationField;
@@ -217,6 +219,19 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		rootLayout.addView(fieldView.getView(), new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 	}
 
+
+	@Override
+	public void setEndField(EndField endF)
+	{
+		controller.endForm();
+	}
+
+	@Override
+	public void setCancelField(CancelField cancelF)
+	{
+		controller.cancelAndRestartForm();
+	}
+	
 	@Override
 	public void setChoice(ChoiceField cf)
 	{

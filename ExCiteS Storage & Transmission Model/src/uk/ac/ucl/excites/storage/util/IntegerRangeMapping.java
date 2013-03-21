@@ -158,4 +158,9 @@ public class IntegerRangeMapping
 		return "IntegerRangeMapping of [" + loBound + ", " + hiBound + "] to [0, " + max + "] (shift: " + loBound + "; size: " + size + " bits)";
 	}
 	
+	public String getLogicalRangeString()
+	{
+		return "[" + loBound + ", " + hiBound + "]";
+	}
+	
 }

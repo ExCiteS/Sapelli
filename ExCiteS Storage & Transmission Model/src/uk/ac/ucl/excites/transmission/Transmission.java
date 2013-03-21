@@ -28,6 +28,7 @@ public abstract class Transmission
 	protected DateTime confirmationSentAt = null;
 	protected DateTime confirmationReceivedAt = null;
 	
+	protected SchemaProvider schemaProvider; //only used on the receiving side
 	protected Schema schema;
 	protected Set<Column<?>> columnsToFactorOut;
 	protected Map<Column<?>, Object> factoredOutValues = null;
@@ -35,18 +36,54 @@ public abstract class Transmission
 
 	public Transmission(Schema schema)
 	{
-		this(schema, new HashSet<Column<?>>());
+		this(schema, null);
 	}
 	
+	/**
+	 * To be called at the sending side.
+	 * 
+	 * @param schema
+	 * @param columnsToFactorOut
+	 */
 	public Transmission(Schema schema, Set<Column<?>> columnsToFactorOut)
 	{
+		this(); //!!!
+		if(schema == null)
+			throw new NullPointerException("Schema cannot be null on sending side.");
 		this.schema = schema;
-		for(Column<?> c : columnsToFactorOut)
-			if(schema.getColumnIndex(c) == Schema.UNKNOWN_COLUMN_INDEX)
-				throw new IllegalArgumentException(c.toString() + " does not belong to the given schema.");
-		this.columnsToFactorOut = columnsToFactorOut;
+		setColumnsToFactorOut(columnsToFactorOut);
+	}
+	
+	/**
+	 * To be called at the receiving side.
+	 * 
+	 * @param schemaProvider
+	 */
+	public Transmission(SchemaProvider schemaProvider)
+	{
+		this(); //!!!
+		if(schemaProvider == null)
+			throw new NullPointerException("SchemaProvider cannot be null on receiving side.");
+		this.schemaProvider = schemaProvider;
+	}
+	
+	private Transmission()
+	{
 		this.factoredOutValues = new HashMap<Column<?>, Object>();
 		this.records = new ArrayList<Record>();
+	}
+	
+	protected void setColumnsToFactorOut(Set<Column<?>> columnsToFactorOut)
+	{
+		if(columnsToFactorOut == null)
+			columnsToFactorOut = new HashSet<Column<?>>();
+		else
+		{
+			for(Column<?> c : columnsToFactorOut)
+				if(schema.getColumnIndex(c) == Schema.UNKNOWN_COLUMN_INDEX)
+					throw new IllegalArgumentException(c.toString() + " does not belong to the given schema.");
+		}
+		this.columnsToFactorOut = columnsToFactorOut;
 	}
 	
 	public abstract boolean addRecord(Record record) throws Exception;

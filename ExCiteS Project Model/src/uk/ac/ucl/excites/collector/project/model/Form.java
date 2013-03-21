@@ -83,13 +83,19 @@ public class Form
 	{
 		this.project = project;
 		this.name = name;
-		this.schemaID = schemaID;
-		this.schemaVersion = schemaVersion;
-		fields = new ArrayList<Field>();
-		locationFields = new ArrayList<LocationField>();
-		buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
-		endAction = DEFAULT_END_ACTION;
-		vibrateOnEnd = DEFAULT_VIBRATE;
+		if(Schema.SCHEMA_ID_FIELD.fits(schemaID))
+			this.schemaID = schemaID;
+		else
+			throw new IllegalArgumentException("Invalid schema ID, valid values are " + Schema.SCHEMA_ID_FIELD.getLogicalRangeString() + ".");
+		if(Schema.SCHEMA_VERSION_FIELD.fits(schemaVersion))
+			this.schemaVersion = schemaVersion;
+		else
+			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
+		this.fields = new ArrayList<Field>();
+		this.locationFields = new ArrayList<LocationField>();
+		this.buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
+		this.endAction = DEFAULT_END_ACTION;
+		this.vibrateOnEnd = DEFAULT_VIBRATE;
 	}
 
 	public void initialiseStorage()

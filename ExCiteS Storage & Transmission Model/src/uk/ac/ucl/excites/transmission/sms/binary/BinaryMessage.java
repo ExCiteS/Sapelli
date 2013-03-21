@@ -24,7 +24,7 @@ public class BinaryMessage extends Message
 	//Static
 	public static final int MAX_TOTAL_SIZE_BYTES = 133; //in Bytes (Android takes 7 bits for the header)
 	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, BinarySMSTransmission.MAX_TRANSMISSION_PARTS);
-	public static final int HEADER_SIZE_BITS =	SMSTransmission.ID_LENGTH_BITS /* Transmission ID */ +
+	public static final int HEADER_SIZE_BITS =	SMSTransmission.ID_FIELD.getSize() /* Transmission ID */ +
 												PART_NUMBER_FIELD.getSize() /* Part number */ +
 												PART_NUMBER_FIELD.getSize() /* Parts total */; 
 	public static final int MAX_PAYLOAD_SIZE_BYTES = MAX_TOTAL_SIZE_BYTES - BinaryHelpers.bytesNeeded(HEADER_SIZE_BITS);
@@ -68,9 +68,9 @@ public class BinaryMessage extends Message
 			in = new BitInputStream(new ByteArrayInputStream(data));
 			
 			//Read header:
-			transmissionID = in.readByte();					//Transmission ID
-			partNumber = (int) PART_NUMBER_FIELD.read(in);	//Part number
-			totalParts = (int) PART_NUMBER_FIELD.read(in);	//Total parts
+			transmissionID = (int) SMSTransmission.ID_FIELD.read(in);	//Transmission ID
+			partNumber = (int) PART_NUMBER_FIELD.read(in);				//Part number
+			totalParts = (int) PART_NUMBER_FIELD.read(in);				//Total parts
 			
 			//Read payload:
 			payload = in.readBytes(data.length - BinaryHelpers.bytesNeeded(HEADER_SIZE_BITS), true);
@@ -113,9 +113,9 @@ public class BinaryMessage extends Message
 			out = new BitOutputStream(rawOut);
 	
 			//Write header:
-			out.write(transmission.getID());			//Transmission ID
-			PART_NUMBER_FIELD.write(partNumber, out);	//Part number
-			PART_NUMBER_FIELD.write(totalParts, out);	//Total parts
+			SMSTransmission.ID_FIELD.write(transmission.getID(), out);	//Transmission ID
+			PART_NUMBER_FIELD.write(partNumber, out);					//Part number
+			PART_NUMBER_FIELD.write(totalParts, out);					//Total parts
 			
 			//Write payload:
 			out.write(payload);

@@ -21,6 +21,7 @@ import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
 import uk.ac.ucl.excites.collector.project.model.AudioField;
+import uk.ac.ucl.excites.collector.project.model.CancelField;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
@@ -150,19 +151,16 @@ public class ProjectParser extends DefaultHandler
 		{
 			String name = readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_NAME);
 			int schemaID = Integer.parseInt(readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_SCHEMA_ID));
-			int schemaVersion = (attributes.getValue(ATTRIBUTE_FORM_SCHEMA_VERSION) == null ? Schema.DEFAULT_VERSION : Integer.parseInt(attributes
-					.getValue(ATTRIBUTE_FORM_SCHEMA_VERSION)));
+			int schemaVersion = readIntegerAttribute(attributes, ATTRIBUTE_FORM_SCHEMA_VERSION, Schema.DEFAULT_VERSION);
 			currentForm = new Form(project, name, schemaID, schemaVersion);
 			project.addForm(currentForm);
 			// Shortcut image:
-			if(attributes.getValue(ATTRIBUTE_FORM_SHORTCUT_IMAGE) != null && !attributes.getValue(ATTRIBUTE_FORM_SHORTCUT_IMAGE).isEmpty())
-				currentForm.setShortcutImageLogicalPath(attributes.getValue(ATTRIBUTE_FORM_SHORTCUT_IMAGE));
+			currentForm.setEndSoundPath(readStringAttribute(attributes, ATTRIBUTE_FORM_SHORTCUT_IMAGE, null));
 			// Store end time?:
 			currentForm.setStoreEndTime(readBooleanAttribute(attributes, "storeEndTime", Form.END_TIME_DEFAULT));
 			// Sound end vibration at the end of the form:
 			// Get the sound path
-			if(attributes.getValue(ATTRIBUTE_FORM_END_SOUND) != null && !attributes.getValue(ATTRIBUTE_FORM_END_SOUND).isEmpty())
-				currentForm.setEndSoundPath(attributes.getValue(ATTRIBUTE_FORM_END_SOUND));
+			currentForm.setEndSoundPath(readStringAttribute(attributes, ATTRIBUTE_FORM_END_SOUND, null));
 			currentForm.setVibrateOnEnd(readBooleanAttribute(attributes, "endVibrate", Form.DEFAULT_VIBRATE));
 			// Which buttons are allowed to show:
 			currentForm.setShowBack(readBooleanAttribute(attributes, "showBackButton", Form.DEFAULT_SHOW_BACK));
@@ -179,7 +177,6 @@ public class ProjectParser extends DefaultHandler
 				currentFormStartFieldId = attributes.getValue(ATTRIBUTE_FORM_START_FIELD);
 			else
 				System.out.println("Warning: No startField attribute, will use first field");
-			// TODO shortcut image
 		}
 		// <Choice>
 		else if(qName.equals(TAG_CHOICE))
@@ -193,7 +190,7 @@ public class ProjectParser extends DefaultHandler
 			// Remember ID & jumps
 			rememberIDAndJump(currentChoice, attributes);
 			// No column:
-			currentChoice.setNoColumn(attributes.getValue(ATTRIBUTE_FIELD_NO_COLUMN) != null && attributes.getValue(ATTRIBUTE_FIELD_NO_COLUMN).equalsIgnoreCase("true"));
+			currentChoice.setNoColumn(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
 			// Other attributes:
 			if(attributes.getValue("img") != null)
 				currentChoice.setImageLogicalPath(attributes.getValue("img"));
@@ -209,9 +206,8 @@ public class ProjectParser extends DefaultHandler
 		else if(qName.equals("Location"))
 		{
 			LocationField locField = new LocationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
-			currentForm.addField(locField);
-			setOptionalness(locField, attributes);
-			rememberIDAndJump(locField, attributes);
+			newField(locField, attributes);
+			
 			// Type:
 			String type = attributes.getValue("type");
 			if(type != null)
@@ -241,14 +237,11 @@ public class ProjectParser extends DefaultHandler
 		else if(qName.equals(TAG_PHOTO))
 		{
 			PhotoField photoField = new PhotoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
-			currentForm.addField(photoField);
-			setOptionalness(photoField, attributes);
-			rememberIDAndJump(photoField, attributes);
+			newField(photoField, attributes);
 			mediaAttachmentAttributes(photoField, attributes);
+			photoField.setUseNativeApp(readBooleanAttribute(attributes, "useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP));
+			// Camera options (only used when useNativeApp=false):
 			photoField.setUseFrontFacingCamera(readBooleanAttribute(attributes, "useFrontCamera", PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA));
-			photoField.setCaptureButtonImageLogicalPath(attributes.getValue("captureImg"));
-			photoField.setApproveButtonImageLogicalPath(attributes.getValue("approveImg"));
-			photoField.setDiscardButtonImageLogicalPath(attributes.getValue("discardImg"));
 			String flashText = attributes.getValue("flash");
 			PhotoField.FlashMode flash = PhotoField.DEFAULT_FLASH_MODE;
 			if(flashText != null && !flashText.isEmpty())
@@ -262,15 +255,16 @@ public class ProjectParser extends DefaultHandler
 					flash = PhotoField.FlashMode.OFF;
 			}
 			photoField.setFlashMode(flash);
-			photoField.setUseNativeApp(readBooleanAttribute(attributes, "useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP));
+			// Custom buttons (only used when useNativeApp=false):			
+			photoField.setCaptureButtonImageLogicalPath(attributes.getValue("captureImg"));
+			photoField.setApproveButtonImageLogicalPath(attributes.getValue("approveImg"));
+			photoField.setDiscardButtonImageLogicalPath(attributes.getValue("discardImg"));
 		}
 		// <Audio>
 		else if(qName.equals(TAG_AUDIO))
 		{
 			AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
-			currentForm.addField(audioField);
-			setOptionalness(audioField, attributes);
-			rememberIDAndJump(audioField, attributes);
+			newField(audioField, attributes);
 			mediaAttachmentAttributes(audioField, attributes);
 			audioField.setStartRecImageLogicalPath(attributes.getValue("startRecImg"));
 			audioField.setStopRecImageLogicalPath(attributes.getValue("stopRecImg"));
@@ -279,9 +273,7 @@ public class ProjectParser extends DefaultHandler
 		else if(qName.equals(TAG_ORIENTATION))
 		{
 			OrientationField orField = new OrientationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
-			currentForm.addField(orField);
-			setOptionalness(orField, attributes);
-			rememberIDAndJump(orField, attributes);
+			newField(orField, attributes);
 			orField.setStoreAzimuth(readBooleanAttribute(attributes, "azimuth", OrientationField.DEFAULT_STORE_AZIMUTH));
 			orField.setStoreAzimuth(readBooleanAttribute(attributes, "pitch", OrientationField.DEFAULT_STORE_PITCH));
 			orField.setStoreAzimuth(readBooleanAttribute(attributes, "roll", OrientationField.DEFAULT_STORE_ROLL));
@@ -313,6 +305,19 @@ public class ProjectParser extends DefaultHandler
 		}
 	}
 
+	/**
+	 * Adds field to current form, sets optionalness, remembers id & jump
+	 * 
+	 * @param f
+	 * @param attributes
+	 */
+	private void newField(Field f, Attributes attributes)
+	{
+		currentForm.addField(f);
+		setOptionalness(f, attributes);
+		rememberIDAndJump(f, attributes);
+	}
+	
 	private void mediaAttachmentAttributes(MediaField ma, Attributes attributes)
 	{
 		setOptionalness(ma, attributes);
@@ -350,11 +355,13 @@ public class ProjectParser extends DefaultHandler
 
 	private void resolveReferences()
 	{
-		// Add EndField instance so _END jumps can be resolved
+		// Add an EndField and an CancelField instance so that _END and _CANCEL jumps can be resolved
 		for(Form f : project.getForms())
 		{
 			EndField endF = new EndField(f);
 			idToField.put(endF.getID(), endF);
+			CancelField cancelF = new CancelField(f);
+			idToField.put(cancelF.getID(), cancelF);
 		}
 		// Resolve jumps...
 		for(Entry<Field, String> jump : fieldToJumpId.entrySet())

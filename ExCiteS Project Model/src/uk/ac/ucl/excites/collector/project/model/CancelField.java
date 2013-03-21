@@ -7,21 +7,21 @@ import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.storage.model.Column;
 
 /**
- * Dummy field to represent the end of any form.
+ * Dummy field to represent the cancelling of the current form session - triggering a return to the start field without any data being saved.
  * 
  * @author mstevens
  */
-public class EndField extends Field
+public class CancelField extends Field
 {
 
-	static public final String ID = "_END";
+	static public final String ID = "_CANCEL";
 	
 	static public final String ID(Form form)
 	{
 		return ID + "_" + form.getName();
 	}
 	
-	public EndField(Form form)
+	public CancelField(Form form)
 	{
 		super(form, ID(form));
 		noColumn = true;
@@ -36,7 +36,7 @@ public class EndField extends Field
 	@Override
 	public void setIn(CollectorUI ui)
 	{
-		ui.setEndField(this);
+		ui.setCancelField(this);
 	}
 
 }
