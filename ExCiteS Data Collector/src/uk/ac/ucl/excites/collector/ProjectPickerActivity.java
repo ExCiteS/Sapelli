@@ -378,11 +378,16 @@ public class ProjectPickerActivity extends BaseActivity
 
 		// Set up the icon
 		Drawable iconResource = null;
-		String logicalIconPath = selectedProject.getForms().get(0).getShortcutImageLogicalPath();
-		if(logicalIconPath == null || logicalIconPath.isEmpty())
+		String shortcutFullPath = null;
+		String shortcutLogicalPath = selectedProject.getForms().get(0).getShortcutImageLogicalPath();
+
+		if(shortcutLogicalPath == null || shortcutLogicalPath.isEmpty())
 			iconResource = getResources().getDrawable(R.drawable.excites_icon);
 		else
-			iconResource = Drawable.createFromPath(selectedProject.getImageFolderPath() + logicalIconPath);
+		{
+			iconResource = Drawable.createFromPath(selectedProject.getImageFolderPath() + shortcutLogicalPath);
+			shortcutFullPath = selectedProject.getImageFolderPath() + shortcutLogicalPath;
+		}
 
 		BitmapDrawable bitmapDrawable = (BitmapDrawable) iconResource;
 
@@ -406,7 +411,7 @@ public class ProjectPickerActivity extends BaseActivity
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmapDrawable.getBitmap());
-		launcherIntent.putExtra(SHORTCUT_PROJECT_ICON, selectedProject.getImageFolderPath() + logicalIconPath);
+		launcherIntent.putExtra(SHORTCUT_PROJECT_ICON, shortcutFullPath);
 		sendBroadcast(launcherIntent);
 	}
 
