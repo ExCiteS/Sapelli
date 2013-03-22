@@ -89,10 +89,8 @@ public final class FileHelpers
 			parentDir.mkdirs();
 
 			if(!dstFile.exists())
-			{
 				dstFile.createNewFile();
-			}
-
+			
 			InputStream in = new FileInputStream(srcFile);
 			OutputStream out = new FileOutputStream(dstFile);
 

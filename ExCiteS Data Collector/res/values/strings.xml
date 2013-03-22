@@ -16,5 +16,28 @@
     <string name="remove_shortcut">Remove Shortcut</string>
     <string name="take_photo">Take photo</string>
     <string name="sender_settings_menuitem">Data Sender Settings</string>
+    <string name="copy_db_menuitem">Copy DB4O to SD card</string>
+    <string name="title_activity_dropbox">Dropbox Authentication</string>
+    <string name="menu_settings">Settings</string>
+    <string name="title_activity_main">ExCiteS Background Service</string>
+    <string name="service_name">excitesbackgroundservice</string>
+    <string name="start_service">Start Service</string>
+    <string name="stop_service">Stop Service</string>
+    <string name="notification">The Service is running.</string>
+    <string name="hello">Hello World, SMS</string>
+    <string name="phone_prompt">Choose a phone</string>
+
+    <string-array name="phones_array">
+        <item>Michalis</item>
+        <item>Giff Gaff 1</item>
+        <item>Giff Gaff 2</item>
+    </string-array>
+    <string-array name="phones_numbers_array">
+        <item>+447577144675</item>
+        <item>+447521576319</item>
+        <item>+447521576326</item>
+    </string-array>
+
+    <string name="settings">Settings</string>
 
 </resources>

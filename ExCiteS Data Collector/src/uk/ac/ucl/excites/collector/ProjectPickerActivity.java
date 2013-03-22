@@ -13,7 +13,6 @@ import java.net.URL;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import uk.ac.excites.sender.SenderBackgroundPreferences;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -22,6 +21,7 @@ import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.util.SDCard;
+import uk.ac.ucl.excites.sender.SenderBackgroundPreferences;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -55,7 +55,7 @@ import com.google.zxing.integration.android.IntentResult;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectPickerActivity extends BaseActivity
+public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMenuItemClickListener
 {
 
 	// STATICS--------------------------------------------------------
@@ -64,7 +64,9 @@ public class ProjectPickerActivity extends BaseActivity
 	static private final String XML_FILE_EXTENSION = "xml";
 	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
 	static private final String DOWNLOADS_FOLDER = "Downloads" + File.separatorChar;
-
+	static private final String DB4O_DUMP_NAME = "DatabaseDump_";
+	static private final String DB4O_DUMP_EXTENSION = "db4o";
+	
 	// SHORTCUT ACTIONS
 	private static final String DEFAULT_INSTALL_SHORTCUT_ACTION = "com.android.launcher.action.INSTALL_SHORTCUT";
 	private static final String CUSTOM_INSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.INSTALL_SHORTCUT";
@@ -89,6 +91,8 @@ public class ProjectPickerActivity extends BaseActivity
 	private Button removeBtn;
 	private Button createShortcutBtn;
 	private Button removeShortcutBtn;
+	private MenuItem senderSettingsItem;
+	private MenuItem copyDBItem;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -149,24 +153,37 @@ public class ProjectPickerActivity extends BaseActivity
 	{
 		getMenuInflater().inflate(R.menu.projectpicker, menu);
 
-		// Set click listener (the android:onClick attribute in the XML only works on Android >= v3.0)
-		final MenuItem senderSettingsItem = menu.findItem(R.id.sender_settings_menuitem);
+		// Set click listeners (the android:onClick attribute in the XML only works on Android >= v3.0)
+		senderSettingsItem = menu.findItem(R.id.sender_settings_menuitem);
 		if(senderSettingsItem != null)
-		{
-			senderSettingsItem.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener()
-			{
-				public boolean onMenuItemClick(MenuItem item)
-				{
-					return(openSenderSettings(senderSettingsItem));
-				}
-			});
-		}
+			senderSettingsItem.setOnMenuItemClickListener(this);
+		copyDBItem = menu.findItem(R.id.copy_db_menuitem);
+		if(copyDBItem != null)
+			copyDBItem.setOnMenuItemClickListener(this);
 		return true;
+	}
+	
+	@Override
+	public boolean onMenuItemClick(MenuItem item)
+	{
+		if(item == senderSettingsItem)
+			return openSenderSettings(item);
+		else if(item == copyDBItem)
+			return copyDBtoSD(item);
+		return false;
 	}
 
 	public boolean openSenderSettings(MenuItem item)
 	{
 		startActivity(new Intent(getBaseContext(), SenderBackgroundPreferences.class));
+		return true;
+	}
+	
+	public boolean copyDBtoSD(MenuItem item)
+	{
+		dao.closeDB();
+		dao.copyDB(excitesFolderPath + DB4O_DUMP_NAME + System.currentTimeMillis() + "." + DB4O_DUMP_EXTENSION);
+		dao.openDB();
 		return true;
 	}
 

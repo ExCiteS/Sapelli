@@ -61,18 +61,18 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="uk.ac.excites.sender.SenderBackgroundActivity"
+            android:name="uk.ac.ucl.excites.sender.SenderBackgroundActivity"
             android:exported="true"
             android:label="@string/title_activity_main" >
         </activity>
         <activity
-            android:name="uk.ac.excites.sender.SenderBackgroundPreferences"
+            android:name="uk.ac.ucl.excites.sender.SenderBackgroundPreferences"
             android:icon="@drawable/sender" >
         </activity>
-        <activity android:name="uk.ac.excites.sender.dropbox.DropboxLogin" >
+        <activity android:name="uk.ac.ucl.excites.sender.dropbox.DropboxLogin" >
         </activity>
         <activity
-            android:name="uk.ac.excites.sender.dropbox.DropboxAuthentication"
+            android:name="uk.ac.ucl.excites.sender.dropbox.DropboxAuthentication"
             android:label="@string/title_activity_dropbox" >
         </activity>
         <activity
@@ -95,7 +95,7 @@
         </activity>
 
         <service
-            android:name="uk.ac.excites.sender.SenderBackgroundService"
+            android:name="uk.ac.ucl.excites.sender.SenderBackgroundService"
             android:icon="@drawable/excites_icon"
             android:label="@string/service_name" >
         </service>
@@ -108,7 +108,7 @@
         </service>
 
         <receiver
-            android:name="uk.ac.excites.sender.BootReceiver"
+            android:name="uk.ac.ucl.excites.sender.BootReceiver"
             android:exported="true" >
             <intent-filter android:priority="9999999999" >
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

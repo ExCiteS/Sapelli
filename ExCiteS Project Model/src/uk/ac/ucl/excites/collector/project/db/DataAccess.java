@@ -117,7 +117,7 @@ public final class DataAccess
 	 * 
 	 * @param dstFilePath
 	 */
-	public void copyDBtoSD(String dstFilePath)
+	public void copyDB(String dstFilePath)
 	{
 		FileHelpers.copyFile(getDbPath(), dstFilePath);
 	}
