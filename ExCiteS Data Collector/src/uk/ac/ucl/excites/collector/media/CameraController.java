@@ -6,6 +6,7 @@ import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.PhotoField.FlashMode;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
+import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.PictureCallback;
 import android.util.Log;
@@ -87,10 +88,19 @@ public class CameraController implements SurfaceHolder.Callback
 		inPreview = false;
 	}
 
-	public void takePicture(PictureCallback callback)
+	public void takePicture(final PictureCallback callback)
 	{
 		if(camera != null)
-			camera.takePicture(null, null, callback);
+		{
+			camera.autoFocus(new AutoFocusCallback()
+			{		
+				@Override
+				public void onAutoFocus(boolean success, Camera camera)
+				{
+					camera.takePicture(null, null, callback);
+				}
+			});
+		}
 	}
 
 	public void close()

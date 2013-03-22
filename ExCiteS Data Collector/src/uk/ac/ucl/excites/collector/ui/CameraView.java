@@ -57,6 +57,8 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 	private ImageView reviewView;
 	private RelativeLayout.LayoutParams buttonParams;
 
+	private volatile boolean handlingClick;
+	
 	private byte[] reviewPhotoData;
 
 	public CameraView(Context context)
@@ -90,7 +92,8 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 		this.controller = controller;
 		this.project = controller.getProject();
 		this.photoField = (PhotoField) field;
-
+		this.handlingClick = false;
+		
 		// Camera controller & camera selection:
 		cameraController = new CameraController(photoField.isUseFrontFacingCamera());
 		if(!cameraController.foundCamera())
@@ -130,44 +133,50 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 		
 		//Switch to review mode:
 		showNext();
+		handlingClick = false;
 	}
 
 	@Override
 	public void onItemClick(AdapterView<?> parent, View v, int position, long id)
 	{
-		if(getCurrentView() == captureLayout)
-		{ 	// in Capture mode --> there is (currently) only one button here: the one to take a photo
-			cameraController.takePicture(this);
-			cameraController.stopPreview();
-		}
-		else
-		{	// in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
-			if(position == 0)
-			{ 	// photo approved
-				try
-				{	// Save photo to file:
-					File photoFile = photoField.getNewFile(controller.getCurrentRecord());
-					FileOutputStream fos = new FileOutputStream(photoFile);
-					fos.write(reviewPhotoData);
-					fos.close();
-					controller.mediaDone(photoFile);
-				}
-				catch(Exception e)
-				{
-					Log.e(TAG, "Could not save photo.", e);
-					controller.mediaDone(null);
-				}
-				finally
-				{
-					cameraController.close();
-				}
+		if(!handlingClick) //only handle one click at the time
+		{
+			handlingClick = true;
+			if(getCurrentView() == captureLayout)
+			{ 	// in Capture mode --> there is (currently) only one button here: the one to take a photo
+				cameraController.takePicture(this);
+				cameraController.stopPreview();
 			}
-			else //if(position == 1)
-			{	// photo discarded
-				showNext(); //switch back to capture mode
-				cameraController.startPreview();
+			else
+			{	// in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
+				if(position == 0)
+				{ 	// photo approved
+					try
+					{	// Save photo to file:
+						File photoFile = photoField.getNewFile(controller.getCurrentRecord());
+						FileOutputStream fos = new FileOutputStream(photoFile);
+						fos.write(reviewPhotoData);
+						fos.close();
+						controller.mediaDone(photoFile);
+					}
+					catch(Exception e)
+					{
+						Log.e(TAG, "Could not save photo.", e);
+						controller.mediaDone(null);
+					}
+					finally
+					{
+						cameraController.close();
+					}
+				}
+				else //if(position == 1)
+				{	// photo discarded
+					showNext(); //switch back to capture mode
+					cameraController.startPreview();
+					handlingClick = false;
+				}
+				reviewPhotoData = null;
 			}
-			reviewPhotoData = null;
 		}
 	}
 
