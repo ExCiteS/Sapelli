@@ -70,9 +70,10 @@ public class ProjectPickerActivity extends BaseActivity
 	private static final String CUSTOM_INSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.INSTALL_SHORTCUT";
 	private static final String DEFAULT_UNISTALL_SHORTCUT_ACTION = "com.android.launcher.action.UNINSTALL_SHORTCUT";
 	private static final String CUSTOM_UNISTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.UNINSTALL_SHORTCUT";
-	private static final String SHORTCUT_PROJECT_NAME = "Shortcut_Project_Name";
-	private static final String SHORTCUT_PROJECT_VERSION = "Shortcut_Project_Version";
-	private static final String SHORTCUT_PROJECT_ICON = "Shortcut_Project_Icon";
+	public static final String SHORTCUT_PROJECT_NAME = "Shortcut_Project_Name";
+	public static final String SHORTCUT_PROJECT_VERSION = "Shortcut_Project_Version";
+	public static final String SHORTCUT_PROJECT_ICON = "Shortcut_Project_Icon";
+	public static final String SHORTCUT_PROJECT_DB = "Shortcut_Project_Database";
 
 	public static final int RETURN_BROWSE = 1;
 
@@ -106,20 +107,6 @@ public class ProjectPickerActivity extends BaseActivity
 		databasePath = getFilesDir().getAbsolutePath();
 		// ExCiteS folder
 		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER;
-
-		// Get extra info and check if there is a shortcut info there
-		Bundle extras = getIntent().getExtras();
-		if(extras != null && extras.containsKey(SHORTCUT_PROJECT_NAME))
-		{
-			// Get the shortcut name and version
-			String projectName = extras.getString(SHORTCUT_PROJECT_NAME);
-			int projectVersion = extras.getInt(SHORTCUT_PROJECT_VERSION, Project.DEFAULT_VERSION);
-
-			// Create and run a project
-			runProjectActivity(projectName, projectVersion);
-			finish();
-			return;
-		}
 
 		// DataAccess instance:
 		dao = DataAccess.getInstance(databasePath);
@@ -176,7 +163,7 @@ public class ProjectPickerActivity extends BaseActivity
 		}
 		return true;
 	}
-	
+
 	public boolean openSenderSettings(MenuItem item)
 	{
 		startActivity(new Intent(getBaseContext(), SenderBackgroundPreferences.class));
@@ -383,18 +370,24 @@ public class ProjectPickerActivity extends BaseActivity
 		Project selectedProject = getSelectedProject();
 
 		// Set the shortcut intent
-		Intent projectIntent = new Intent(getApplicationContext(), ProjectPickerActivity.class);
+		Intent projectIntent = new Intent(getApplicationContext(), CollectorActivity.class);
 		projectIntent.putExtra(SHORTCUT_PROJECT_NAME, selectedProject.getName());
 		projectIntent.putExtra(SHORTCUT_PROJECT_VERSION, selectedProject.getVersion());
+		projectIntent.putExtra(SHORTCUT_PROJECT_DB, databasePath);
 		projectIntent.setAction(Intent.ACTION_MAIN);
 
 		// Set up the icon
 		Drawable iconResource = null;
-		String logicalIconPath = selectedProject.getForms().get(0).getShortcutImageLogicalPath();
-		if(logicalIconPath == null || logicalIconPath.isEmpty())
+		String shortcutFullPath = null;
+		String shortcutLogicalPath = selectedProject.getForms().get(0).getShortcutImageLogicalPath();
+
+		if(shortcutLogicalPath == null || shortcutLogicalPath.isEmpty())
 			iconResource = getResources().getDrawable(R.drawable.excites_icon);
 		else
-			iconResource = Drawable.createFromPath(selectedProject.getImageFolderPath() + logicalIconPath);
+		{
+			iconResource = Drawable.createFromPath(selectedProject.getImageFolderPath() + shortcutLogicalPath);
+			shortcutFullPath = selectedProject.getImageFolderPath() + shortcutLogicalPath;
+		}
 
 		BitmapDrawable bitmapDrawable = (BitmapDrawable) iconResource;
 
@@ -418,7 +411,7 @@ public class ProjectPickerActivity extends BaseActivity
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmapDrawable.getBitmap());
-		launcherIntent.putExtra(SHORTCUT_PROJECT_ICON, selectedProject.getImageFolderPath() + logicalIconPath);
+		launcherIntent.putExtra(SHORTCUT_PROJECT_ICON, shortcutFullPath);
 		sendBroadcast(launcherIntent);
 	}
 
@@ -441,7 +434,10 @@ public class ProjectPickerActivity extends BaseActivity
 	private void removeShortcutFor(Project project)
 	{
 		// Deleting shortcut
-		Intent projectIntent = new Intent(getApplicationContext(), ProjectPickerActivity.class);
+		Intent projectIntent = new Intent(getApplicationContext(), CollectorActivity.class);
+		projectIntent.putExtra(SHORTCUT_PROJECT_NAME, project.getName());
+		projectIntent.putExtra(SHORTCUT_PROJECT_VERSION, project.getVersion());
+		projectIntent.putExtra(SHORTCUT_PROJECT_DB, databasePath);
 		projectIntent.setAction(Intent.ACTION_MAIN);
 
 		// ================================================================================

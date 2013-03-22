@@ -38,12 +38,12 @@ import uk.ac.ucl.excites.transmission.sms.SMSAgent;
 
 /**
  * @author mstevens, julia, Michalis Vitos
- *
+ * 
  */
 public class ProjectParser extends DefaultHandler
 {
 
-	//STATICS--------------------------------------------------------
+	// STATICS--------------------------------------------------------
 	// Tags:
 	static private final String TAG_PROJECT = "ExCiteS-Collector-Project";
 	static private final String TAG_CONFIGURATION = "Configuration";
@@ -77,7 +77,7 @@ public class ProjectParser extends DefaultHandler
 	private static final String ATTRIBUTE_SHOW_CANCEL = "showCancel";
 	private static final String ATTRIBUTE_SHOW_BACK = "showBack";
 
-	//DYNAMICS-------------------------------------------------------
+	// DYNAMICS-------------------------------------------------------
 	private final String basePath;
 	private final boolean createProjectFolder;
 	private Project project;
@@ -122,7 +122,7 @@ public class ProjectParser extends DefaultHandler
 		catch(Exception e)
 		{
 			System.err.println("XML Parsing Exception = " + e);
-			//e.printStackTrace(System.err);
+			// e.printStackTrace(System.err);
 			// return null;
 			throw e;
 		}
@@ -143,7 +143,7 @@ public class ProjectParser extends DefaultHandler
 	@Override
 	public void startDocument() throws SAXException
 	{
-		//does nothing (for now)
+		// does nothing (for now)
 	}
 
 	@Override
@@ -153,7 +153,8 @@ public class ProjectParser extends DefaultHandler
 		if(qName.equals(TAG_PROJECT))
 		{
 			String projectName = readRequiredStringAttribute(TAG_PROJECT, attributes, ATTRIBUTE_PROJECT_NAME);
-			project = new Project(projectName, readIntegerAttribute(attributes, ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION), basePath, createProjectFolder);
+			project = new Project(projectName, readIntegerAttribute(attributes, ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION), basePath,
+					createProjectFolder);
 		}
 		// <Configuration>
 		else if(qName.equals(TAG_CONFIGURATION))
@@ -227,7 +228,7 @@ public class ProjectParser extends DefaultHandler
 			currentForm.setForwardButtonImageLogicalPath(attributes.getValue("forwardButtonImg"));
 			// Button background colour:
 			currentForm.setButtonBackgroundColor(readStringAttribute(attributes, "buttonBackgroundColor", Form.DEFAULT_BUTTON_BACKGROUND_COLOR));
-			//Start field:
+			// Start field:
 			if(attributes.getValue(ATTRIBUTE_FORM_START_FIELD) != null && !attributes.getValue(ATTRIBUTE_FORM_START_FIELD).isEmpty())
 				currentFormStartFieldId = attributes.getValue(ATTRIBUTE_FORM_START_FIELD);
 			else
@@ -256,7 +257,7 @@ public class ProjectParser extends DefaultHandler
 		{
 			LocationField locField = new LocationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 			newField(locField, attributes);
-			
+
 			// Type:
 			String type = attributes.getValue("type");
 			if(type != null)
@@ -273,7 +274,8 @@ public class ProjectParser extends DefaultHandler
 			locField.setTimeoutS(readIntegerAttribute(attributes, "timeout", LocationField.DEFAULT_TIMEOUT_S));
 			locField.setMaxAgeS(readIntegerAttribute(attributes, "maxAge", LocationField.DEFAULT_MAX_AGE_S));
 			locField.setMaxAccuracyRadius(readFloatAttribute(attributes, "maxAccuracyRadius", LocationField.DEFAULT_MAX_ACCURACY_RADIUS));
-			locField.setUseBestNonQualifyingLocationAfterTimeout(readBooleanAttribute(attributes, "useBestKnownLocationOnTimeout", LocationField.DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT));
+			locField.setUseBestNonQualifyingLocationAfterTimeout(readBooleanAttribute(attributes, "useBestKnownLocationOnTimeout",
+					LocationField.DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT));
 			// Storage settings:
 			locField.setDoublePrecision(readBooleanAttribute(attributes, "doublePrecision", LocationField.DEFAULT_DOUBLE_PRECISION));
 			locField.setStoreAltitude(readBooleanAttribute(attributes, "storeAltitude", LocationField.DEFAULT_STORE_ALTITUDE));
@@ -304,7 +306,7 @@ public class ProjectParser extends DefaultHandler
 					flash = PhotoField.FlashMode.OFF;
 			}
 			photoField.setFlashMode(flash);
-			// Custom buttons (only used when useNativeApp=false):			
+			// Custom buttons (only used when useNativeApp=false):
 			photoField.setCaptureButtonImageLogicalPath(attributes.getValue("captureImg"));
 			photoField.setApproveButtonImageLogicalPath(attributes.getValue("approveImg"));
 			photoField.setDiscardButtonImageLogicalPath(attributes.getValue("discardImg"));
@@ -346,7 +348,7 @@ public class ProjectParser extends DefaultHandler
 		// </Form>
 		else if(qName.equals(TAG_FORM))
 		{
-			currentForm.initialiseStorage(); //generates Schema, Column & ValueDictionaries
+			currentForm.initialiseStorage(); // generates Schema, Column & ValueDictionaries
 			currentForm = null;
 			currentFormStartFieldId = null;
 		}
@@ -378,7 +380,7 @@ public class ProjectParser extends DefaultHandler
 		f.setShowCancel(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));
 		f.setShowForward(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
 	}
-	
+
 	private void mediaAttachmentAttributes(MediaField ma, Attributes attributes)
 	{
 		setOptionalness(ma, attributes);
