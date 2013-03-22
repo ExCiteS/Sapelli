@@ -149,9 +149,6 @@ public class CameraController implements SurfaceHolder.Callback
 				camera.setDisplayOrientation(90); //TODO optionally make this change with device orientation?
 				Camera.Parameters parameters = camera.getParameters();
 				
-				String params = parameters.flatten();
-				Log.d(TAG, params);
-				
 				//Preview size:
 				Camera.Size previewSize = getBestPreviewSize(width, height, parameters);
 				if(previewSize != null)

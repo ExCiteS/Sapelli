@@ -153,7 +153,7 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 				{ 	// photo approved
 					try
 					{	// Save photo to file:
-						File photoFile = photoField.getNewFile(controller.getCurrentRecord());
+						File photoFile = photoField.getNewTempFile(controller.getCurrentRecord());
 						FileOutputStream fos = new FileOutputStream(photoFile);
 						fos.write(reviewPhotoData);
 						fos.close();

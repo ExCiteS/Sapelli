@@ -66,9 +66,9 @@ public class Form
 	private String endSoundPath;
 
 	// Buttons:
-	private boolean showBack;
-	private boolean showCancel;
-	private boolean showForward;
+	private boolean showBack = DEFAULT_SHOW_BACK;
+	private boolean showCancel = DEFAULT_SHOW_CANCEL;
+	private boolean showForward = DEFAULT_SHOW_FORWARD;
 	private String backButtonImageLogicalPath;
 	private String cancelButtonImageLogicalPath;
 	private String forwardButtonImageLogicalPath;

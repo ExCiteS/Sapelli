@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.util.FileHelpers;
+import uk.ac.ucl.excites.transmission.Settings;
 
 /**
  * @author mstevens
@@ -19,10 +20,15 @@ public class Project
 	static public final String IMAGE_FOLDER = "img";
 	static public final String SOUND_FOLDER = "snd";
 	static public final String DATA_FOLDER = "data";
+	static public final String TEMP_FOLDER = "temp";
+	
+	static public final boolean DEFAULT_LOGGING = false;
 	
 	private String name;
 	private int version;
 	private String projectPath;
+	private Settings transmissionSettings;
+	private boolean logging;
 	private List<Form> forms;
 	
 	public Project(String name, String basePath) throws IOException
@@ -48,6 +54,8 @@ public class Project
 		}	
 		//Forms collection
 		this.forms = new ArrayList<Form>();
+		//Logging:
+		this.logging = DEFAULT_LOGGING;
 	}
 	
 	public void addForm(Form frm)
@@ -60,6 +68,22 @@ public class Project
 		return forms;
 	}
 	
+	/**
+	 * @return the transmissionSettings
+	 */
+	public Settings getTransmissionSettings()
+	{
+		return transmissionSettings;
+	}
+
+	/**
+	 * @param transmissionSettings the transmissionSettings to set
+	 */
+	public void setTransmissionSettings(Settings transmissionSettings)
+	{
+		this.transmissionSettings = transmissionSettings;
+	}
+
 	public String getName()
 	{
 		return name;
@@ -97,20 +121,54 @@ public class Project
 	public File getDataFolder() throws IOException
 	{
 		File folder = new File(getDataFolderPath());
-		
-		// Check if data path is accessible
-		if(!FileHelpers.createFolder(folder))
-			throw new IOException("Data path (" + folder.getAbsolutePath() + ") cannot be created.");
-		
-		if(!folder.canWrite())
-			throw new IOException("Data path (" + folder.getAbsolutePath() + ") is not writable.");
-		
+		checkFolder(folder);
+		return folder;
+	}
+	
+	public String getTempFolderPath()
+	{
+		return projectPath + TEMP_FOLDER + File.separator;
+	}
+	
+	/**
+	 * @return File object pointing to the temp folder for this project
+	 * @throws IOException - when the folder cannot be created or is not writable
+	 */
+	public File getTempFolder() throws IOException
+	{
+		File folder = new File(getTempFolderPath());
+		checkFolder(folder);
 		return folder;
 	}
 	
 	public String toString()
 	{
 		return name + (version != DEFAULT_VERSION ? " (v" + version + ")" : "");
+	}
+	
+	private void checkFolder(File folder) throws IOException
+	{
+		// Check if data path is accessible
+		if(!FileHelpers.createFolder(folder))
+			throw new IOException("Data path (" + folder.getAbsolutePath() + ") cannot be created.");
+		if(!folder.canWrite())
+			throw new IOException("Data path (" + folder.getAbsolutePath() + ") is not writable.");
+	}
+
+	/**
+	 * @return the logging
+	 */
+	public boolean isLogging()
+	{
+		return logging;
+	}
+
+	/**
+	 * @param logging the logging to set
+	 */
+	public void setLogging(boolean logging)
+	{
+		this.logging = logging;
 	}
 	
 }

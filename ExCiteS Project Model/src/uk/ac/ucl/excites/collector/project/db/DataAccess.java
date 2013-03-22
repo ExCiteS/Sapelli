@@ -12,6 +12,7 @@ import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.transmission.Transmission;
 import android.util.Log;
 
 import com.db4o.Db4oEmbedded;
@@ -165,6 +166,33 @@ public final class DataAccess
 			public boolean match(Record record)
 			{
 				return record.getSchema() == schema;
+			}
+		});
+		for(Record r : result)
+			db.activate(r, ACTIVATION_DEPTH);
+		return result;
+	}
+	
+	public List<Record> retrieveRecordsWithoutTransmission(final Schema schema)
+	{
+		return retrieveRecords(schema, null);
+	}
+	
+	/**
+	 * Retrieve Records of a given Schema which are associated with a given transmission
+	 * 
+	 * @param schema
+	 * @return
+	 */
+	public List<Record> retrieveRecords(final Schema schema, final Transmission transmission)
+	{
+		ObjectSet<Record> result = db.query(new Predicate<Record>()
+		{
+			private static final long serialVersionUID = 1L;
+			
+			public boolean match(Record record)
+			{
+				return record.getSchema() == schema && record.getTransmission() == transmission;
 			}
 		});
 		for(Record r : result)

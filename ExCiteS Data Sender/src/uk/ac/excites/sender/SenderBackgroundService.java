@@ -1,12 +1,20 @@
 package uk.ac.excites.sender;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import uk.ac.excites.sender.dropbox.Dropbox;
+import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.transmission.sms.binary.BinarySMSTransmission;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -36,14 +44,13 @@ public class SenderBackgroundService extends Service
 	// ================================================================================
 	// Static Fields
 	// ================================================================================
-	// TODO set up the folder to observe
-	private static final String pathToObserve = Environment.getExternalStorageDirectory().toString() + File.separator + "000sample" + File.separator;
-	private static boolean DROPBOX_UPLOAD;
+	static private final String TAG = "DataSenderService";
+	
+	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
 	private static boolean AIRPLANE_MODE;
-	private static String CENTER_PHONE_NUMBER;
 	private static int TIME_SCHEDULE;
 	private static int MAX_ATTEMPTS;
-	private static DropboxSync folderObserver;
+	private static List<DropboxSync> folderObservers;
 	private static SmsSender smsSender;
 	private static boolean isSending;
 
@@ -53,7 +60,10 @@ public class SenderBackgroundService extends Service
 	private static Context mContext;
 	private int mStartMode; // indicates how to behave if the service is killed
 	private boolean mAllowRebind; // indicates whether onRebind should be used
-
+	private String databasePath;
+	private String excitesFolderPath;
+	private DataAccess dao;
+	
 	private ScheduledExecutorService scheduleTaskExecutor;
 	private ScheduledFuture<?> mScheduledFuture;
 
@@ -70,6 +80,17 @@ public class SenderBackgroundService extends Service
 		// delay, or to execute periodically.
 		scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
 
+		// Db path:
+		databasePath = getFilesDir().getAbsolutePath();
+		// ExCiteS folder
+		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER;
+		
+		// DataAccess instance:
+		dao = DataAccess.getInstance(databasePath);
+		
+		// Folder observers:
+		folderObservers = new ArrayList<DropboxSync>();
+		
 		// Wait for the Debugger to be attached
 		// android.os.Debug.waitForDebugger();
 	}
@@ -78,23 +99,36 @@ public class SenderBackgroundService extends Service
 	public int onStartCommand(Intent intent, int flags, int startId)
 	{
 		// Get the preferences
-		DROPBOX_UPLOAD = SenderBackgroundPreferences.getDropboxUpload(mContext);
 		AIRPLANE_MODE = SenderBackgroundPreferences.getAirplaneMode(mContext);
-		CENTER_PHONE_NUMBER = SenderBackgroundPreferences.getCenterPhoneNumber(mContext);
 		TIME_SCHEDULE = SenderBackgroundPreferences.getTimeSchedule(mContext);
 		MAX_ATTEMPTS = SenderBackgroundPreferences.getMaxAttempts(mContext);
 
 		smsSender = new SmsSender(mContext, MAX_ATTEMPTS);
 		setServiceForeground(mContext);
-
-		// ================================================================================
-		// Upload to Dropbox
-		// ================================================================================
-		if(DROPBOX_UPLOAD)
+		
+		
+		for(Project p : dao.retrieveProjects())
 		{
-			folderObserver = new DropboxSync(pathToObserve);
-			folderObserver.startWatching();
+
+			// ================================================================================
+			// Upload to Dropbox
+			// ================================================================================
+			if(true /*check if dropbox enabled on project*/)
+			{
+				try
+				{
+					DropboxSync observer = new DropboxSync(p.getDataFolder()); 
+					folderObservers.add(observer);
+					observer.startWatching();
+				}
+				catch(Exception e)
+				{
+					Log.w(TAG, "Could not set up dropbox observer for project " + p.getName());
+				}
+			}
+			
 		}
+		
 
 		// ================================================================================
 		// Schedule SMS Transmitting
@@ -112,6 +146,65 @@ public class SenderBackgroundService extends Service
 		{
 			public void run()
 			{
+				
+				
+				for(Project p : dao.retrieveProjects())
+				{
+					for(Form f : p.getForms())
+					{
+						Schema schema = f.getSchema();
+						
+						List<Record> records = dao.retrieveRecordsWithoutTransmission(schema);
+						
+						BinarySMSTransmission t = null;
+						
+						while(!records.isEmpty() && !t.isFull())
+						{
+							try
+							{
+								t.addRecord(records.get(0));
+								
+								records.remove(0);
+							}
+							catch(Exception e)
+							{
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+							
+						}
+						
+						for(Record r : dao.retrieveRecordsWithoutTransmission(schema))
+						{
+							//BinarySMSTransmission transm = new BinarySMSTransmission(schema, 0, null, null);
+							
+							
+							
+						}
+						
+					}
+					
+					
+					
+				}
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
+				
 				isSending = true;
 
 				if(Constants.DEBUG_LOG)
@@ -201,10 +294,10 @@ public class SenderBackgroundService extends Service
 		 * 
 		 * @param path
 		 */
-		public DropboxSync(String path)
+		public DropboxSync(File folder)
 		{
-			super(path, flags);
-			absolutePath = path;
+			super(folder.getAbsolutePath(), flags);
+			absolutePath = folder.getAbsolutePath();
 
 			// Setup Dropbox
 			try

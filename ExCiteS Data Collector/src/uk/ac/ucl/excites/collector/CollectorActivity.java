@@ -286,7 +286,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 				try
 				{
 					// Set up temp file (in the projects data folder)
-					tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, project.getDataFolder()); //getDataFolder() does the necessary IO checks
+					tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, project.getTempFolder()); //getTempFolder() does the necessary IO checks
 	
 					// Save the photo to the tmp location
 					Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE); // Get the intent
@@ -312,7 +312,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			{
 				try
 				{	// Rename the file & pass it to the controller
-					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewFile(controller.getCurrentRecord());
+					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewTempFile(controller.getCurrentRecord());
 					tmpPhotoFile.renameTo(newPhoto);
 					controller.mediaDone(newPhoto);
 				}

@@ -153,7 +153,6 @@ public abstract class SMSTransmission extends Transmission
 				throw new IllegalArgumentException("This message does not belong to the transmission (ID mismatch)");
 			if(!sender.equals(msg.getSender()))
 				throw new IllegalArgumentException("This message originates from another sender.");
-			
 		}
 		//TODO deal with duplicates!
 		parts.add(msg);

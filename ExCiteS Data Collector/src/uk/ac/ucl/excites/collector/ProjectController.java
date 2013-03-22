@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.collector;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -206,9 +207,9 @@ public class ProjectController implements LocationListener, OrientationListener
 	public ButtonsState getButtonsState()
 	{
 		ButtonsState state = new ButtonsState(
-				currentForm.isShowBack() && !fieldHistory.empty(),
-				currentForm.isShowCancel() && !fieldHistory.empty(),
-				currentForm.isShowForward() && currentField.getOptional() == Optionalness.ALWAYS);
+				currentForm.isShowBack()	&& currentField.isShowBack()	&& !fieldHistory.empty(),
+				currentForm.isShowCancel()	&& currentField.isShowCancel()	&& !fieldHistory.empty(),
+				currentForm.isShowForward()	&& currentField.isShowForward()	&& currentField.getOptional() == Optionalness.ALWAYS);
 		// Note: these paths may be null (in which case built-in defaults must be used)
 		return state;
 	}
@@ -294,6 +295,18 @@ public class ProjectController implements LocationListener, OrientationListener
 		
 		Log.d(TAG, "Stored record:");
 		Log.d(TAG, currentRecord.toString());
+		
+		// Move attachments from temp to data folder:
+		try
+		{
+			File dataFolder = project.getDataFolder();
+			for(File attachment : currentMediaAttachments)
+				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
+		}
+		catch(IOException ioe)
+		{
+			Log.w(TAG, "Error on moving attachements to data folder.");
+		}
 		
 		// Signal the successful storage of the currentRecord
 		// Vibration

@@ -132,10 +132,10 @@ public abstract class MediaField extends Field
 		((IntegerColumn) column).storeValue(record, Long.valueOf(++currentCount));
 	}
 
-	public File getNewFile(Record record) throws IOException
+	public File getNewTempFile(Record record) throws IOException
 	{
 		String filename = generateFilename(record, getCount(record));
-		String dataFolderPath = form.getProject().getDataFolder().getAbsolutePath(); //getDataFolder() does the necessary checks (IOException is thrown in case of trouble)
+		String dataFolderPath = form.getProject().getTempFolder().getAbsolutePath(); //getTempFolder() does the necessary checks (IOException is thrown in case of trouble)
 		return new File(dataFolderPath + File.separator + filename);
 	}
 	

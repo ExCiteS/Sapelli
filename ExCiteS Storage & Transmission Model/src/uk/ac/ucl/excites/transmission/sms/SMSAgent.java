@@ -15,7 +15,7 @@ public class SMSAgent
 		if(phoneNumber == null || phoneNumber.isEmpty())
 			throw new IllegalArgumentException("Invalid phone number.");
 		this.phoneNumber = phoneNumber;
-	}	
+	}
 	
 	/**
 	 * @return the phoneNumber

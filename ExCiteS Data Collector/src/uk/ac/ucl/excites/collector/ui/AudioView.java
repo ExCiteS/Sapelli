@@ -49,7 +49,7 @@ public class AudioView extends PickerView implements FieldView
 		//Get audioFile:
 		try
 		{
-			audioFile = audioField.getNewFile(controller.getCurrentRecord());
+			audioFile = audioField.getNewTempFile(controller.getCurrentRecord());
 		}
 		catch(Exception e)
 		{

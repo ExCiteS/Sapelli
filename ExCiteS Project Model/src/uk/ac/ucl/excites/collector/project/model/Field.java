@@ -19,6 +19,9 @@ public abstract class Field
 	}
 	
 	//Defaults:
+	public static final boolean DEFAULT_SHOW_BACK = true;
+	public static final boolean DEFAULT_SHOW_CANCEL = true;
+	public static final boolean DEFAULT_SHOW_FORWARD = true;
 	static public final boolean DEFAULT_ENABLED = true;
 	static public final Optionalness DEFAULT_OPTIONAL = Optionalness.NOT_IF_REACHED;
 	static public final boolean DEFAULT_NO_COLUMN = false;
@@ -31,6 +34,10 @@ public abstract class Field
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected Optionalness optional = DEFAULT_OPTIONAL;
 	protected boolean noColumn = DEFAULT_NO_COLUMN;
+	// Buttons:
+	private boolean showBack = DEFAULT_SHOW_BACK;
+	private boolean showCancel = DEFAULT_SHOW_CANCEL;
+	private boolean showForward = DEFAULT_SHOW_FORWARD;
 	
 	public Field(Form form, String id)
 	{
@@ -108,6 +115,54 @@ public abstract class Field
 		enabled = true;
 	}
 	
+	/**
+	 * @return the showBack
+	 */
+	public boolean isShowBack()
+	{
+		return showBack;
+	}
+
+	/**
+	 * @param showBack the showBack to set
+	 */
+	public void setShowBack(boolean showBack)
+	{
+		this.showBack = showBack;
+	}
+
+	/**
+	 * @return the showCancel
+	 */
+	public boolean isShowCancel()
+	{
+		return showCancel;
+	}
+
+	/**
+	 * @param showCancel the showCancel to set
+	 */
+	public void setShowCancel(boolean showCancel)
+	{
+		this.showCancel = showCancel;
+	}
+
+	/**
+	 * @return the showForward
+	 */
+	public boolean isShowForward()
+	{
+		return showForward;
+	}
+
+	/**
+	 * @param showForward the showForward to set
+	 */
+	public void setShowForward(boolean showForward)
+	{
+		this.showForward = showForward;
+	}
+
 	public Column<?> getColumn()
 	{
 		if(!noColumn && this.column == null)

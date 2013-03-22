@@ -33,6 +33,8 @@ import uk.ac.ucl.excites.collector.project.model.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.transmission.Settings;
+import uk.ac.ucl.excites.transmission.sms.SMSAgent;
 
 /**
  * @author mstevens, julia, Michalis Vitos
@@ -44,6 +46,13 @@ public class ProjectParser extends DefaultHandler
 	//STATICS--------------------------------------------------------
 	// Tags:
 	static private final String TAG_PROJECT = "ExCiteS-Collector-Project";
+	static private final String TAG_CONFIGURATION = "Configuration";
+	static private final String TAG_TRANSMISSION = "Transmission";
+	static private final String TAG_DROPBOX_UPLOAD = "DropboxUpload";
+	static private final String TAG_HTTP_UPLOAD = "HTTPUpload";
+	static private final String TAG_SMS_UPLOAD = "SMSUpload";
+	static private final String TAG_ENCRYPTION = "Encryption";
+	static private final String TAG_LOGGING = "Logging";
 	static private final String TAG_FORM = "Form";
 	private static final String TAG_CHOICE = "Choice";
 	static private final String TAG_AUDIO = "Audio";
@@ -53,6 +62,7 @@ public class ProjectParser extends DefaultHandler
 	// Attributes:
 	static private final String ATTRIBUTE_PROJECT_NAME = "name";
 	static private final String ATTRIBUTE_PROJECT_VERSION = "version";
+	static private final String ATTRIBUTE_ENABLED = "enabled";
 	static private final String ATTRIBUTE_FORM_NAME = "name";
 	static private final String ATTRIBUTE_FORM_SCHEMA_ID = "schema-id";
 	static private final String ATTRIBUTE_FORM_SCHEMA_VERSION = "schema-version";
@@ -63,18 +73,22 @@ public class ProjectParser extends DefaultHandler
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
-
+	private static final String ATTRIBUTE_SHOW_FORWARD = "showForward";
+	private static final String ATTRIBUTE_SHOW_CANCEL = "showCancel";
+	private static final String ATTRIBUTE_SHOW_BACK = "showBack";
 
 	//DYNAMICS-------------------------------------------------------
 	private final String basePath;
 	private final boolean createProjectFolder;
 	private Project project;
+	private Settings transmissionSettings;
 	private Form currentForm;
 	private String currentFormStartFieldId;
 	private ChoiceField currentChoice;
 	private HashMap<Field, String> fieldToJumpId;
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaField, String> mediaAttachToDisableId;
+	private boolean inConfigTag = false;
 
 	public ProjectParser(String basePath, boolean createProjectFolder)
 	{
@@ -141,10 +155,51 @@ public class ProjectParser extends DefaultHandler
 			String projectName = readRequiredStringAttribute(TAG_PROJECT, attributes, ATTRIBUTE_PROJECT_NAME);
 			project = new Project(projectName, readIntegerAttribute(attributes, ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION), basePath, createProjectFolder);
 		}
-		// <Data-Management>
-		else if(qName.equals("Data-Management"))
+		// <Configuration>
+		else if(qName.equals(TAG_CONFIGURATION))
 		{
-			// TODO
+			inConfigTag = true;
+		}
+		// <Transmission>
+		else if(qName.equals(TAG_TRANSMISSION))
+		{
+			if(!inConfigTag)
+				throw new SAXException("<" + TAG_TRANSMISSION + "> should only appear in <" + TAG_CONFIGURATION + ">.");
+			transmissionSettings = new Settings();
+			project.setTransmissionSettings(transmissionSettings);
+		}
+		// <DropboxUpload>
+		else if(qName.equals(TAG_DROPBOX_UPLOAD))
+		{
+			transmissionSettings.setDropboxUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_DROPBOX_UPLOAD));
+		}
+		// <HTTPUpload>
+		else if(qName.equals(TAG_HTTP_UPLOAD))
+		{
+			transmissionSettings.setHTTPUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_HTTP_UPLOAD));
+			String server = attributes.getValue("server");
+			if(server != null && !server.isEmpty())
+				transmissionSettings.setServerAddress(server);
+		}
+		// <SMSUpload>
+		else if(qName.equals(TAG_SMS_UPLOAD))
+		{
+			transmissionSettings.setSMSUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_SMS_UPLOAD));
+			String relay = attributes.getValue("relay");
+			if(relay != null && !relay.isEmpty())
+				transmissionSettings.setSMSRelay(new SMSAgent(relay));
+		}
+		// <Encryption>
+		else if(qName.equals(TAG_ENCRYPTION))
+		{
+			transmissionSettings.setEncrypt(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_ENCRYPT));
+		}
+		// <Logging>
+		else if(qName.equals(TAG_LOGGING))
+		{
+			if(!inConfigTag)
+				throw new SAXException("<" + TAG_LOGGING + "> should only appear in <" + TAG_CONFIGURATION + ">.");
+			project.setLogging(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Project.DEFAULT_LOGGING));
 		}
 		// <Form>
 		else if(qName.equals(TAG_FORM))
@@ -155,7 +210,7 @@ public class ProjectParser extends DefaultHandler
 			currentForm = new Form(project, name, schemaID, schemaVersion);
 			project.addForm(currentForm);
 			// Shortcut image:
-			currentForm.setEndSoundPath(readStringAttribute(attributes, ATTRIBUTE_FORM_SHORTCUT_IMAGE, null));
+			currentForm.setShortcutImageLogicalPath(readStringAttribute(attributes, ATTRIBUTE_FORM_SHORTCUT_IMAGE, null));
 			// Store end time?:
 			currentForm.setStoreEndTime(readBooleanAttribute(attributes, "storeEndTime", Form.END_TIME_DEFAULT));
 			// Sound end vibration at the end of the form:
@@ -163,9 +218,9 @@ public class ProjectParser extends DefaultHandler
 			currentForm.setEndSoundPath(readStringAttribute(attributes, ATTRIBUTE_FORM_END_SOUND, null));
 			currentForm.setVibrateOnEnd(readBooleanAttribute(attributes, "endVibrate", Form.DEFAULT_VIBRATE));
 			// Which buttons are allowed to show:
-			currentForm.setShowBack(readBooleanAttribute(attributes, "showBackButton", Form.DEFAULT_SHOW_BACK));
-			currentForm.setShowCancel(readBooleanAttribute(attributes, "showCancelButton", Form.DEFAULT_SHOW_CANCEL));
-			currentForm.setShowForward(readBooleanAttribute(attributes, "showForwardButton", Form.DEFAULT_SHOW_FORWARD));
+			currentForm.setShowBack(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_BACK, Form.DEFAULT_SHOW_BACK));
+			currentForm.setShowCancel(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_CANCEL, Form.DEFAULT_SHOW_CANCEL));
+			currentForm.setShowForward(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_FORWARD, Form.DEFAULT_SHOW_FORWARD));
 			// Button images:
 			currentForm.setBackButtonImageLogicalPath(attributes.getValue("backButtonImg"));
 			currentForm.setCancelButtonImageLogicalPath(attributes.getValue("cancelButtonImg"));
@@ -182,13 +237,7 @@ public class ProjectParser extends DefaultHandler
 		else if(qName.equals(TAG_CHOICE))
 		{
 			currentChoice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
-			if(currentChoice.isRoot())
-			{
-				currentForm.addField(currentChoice); // this is a top-level ChoiceField, so add it as a field of the form
-				setOptionalness(currentChoice, attributes);
-			}
-			// Remember ID & jumps
-			rememberIDAndJump(currentChoice, attributes);
+			newField(currentChoice, attributes);
 			// No column:
 			currentChoice.setNoColumn(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
 			// Other attributes:
@@ -289,6 +338,11 @@ public class ProjectParser extends DefaultHandler
 			if(project.getForms().size() == 0)
 				throw new SAXException("A project such have at least 1 form!");
 		}
+		// </Configuration>
+		else if(qName.equals(TAG_CONFIGURATION))
+		{
+			inConfigTag = false;
+		}
 		// </Form>
 		else if(qName.equals(TAG_FORM))
 		{
@@ -313,9 +367,16 @@ public class ProjectParser extends DefaultHandler
 	 */
 	private void newField(Field f, Attributes attributes)
 	{
-		currentForm.addField(f);
-		setOptionalness(f, attributes);
+		if(f.isRoot())
+		{
+			currentForm.addField(f);
+			setOptionalness(f, attributes);
+		}
 		rememberIDAndJump(f, attributes);
+		// Which buttons are allowed to show:
+		f.setShowBack(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK));
+		f.setShowCancel(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));
+		f.setShowForward(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
 	}
 	
 	private void mediaAttachmentAttributes(MediaField ma, Attributes attributes)
