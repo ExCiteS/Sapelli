@@ -86,7 +86,11 @@ public class ProjectController implements LocationListener, OrientationListener
 	}
 
 	public void startProject()
-	{
+	{		
+		if(project.isLogging())
+		{
+			//TODO create logger
+		}
 		startForm(0); //For now projects have only one form
 	}
 
@@ -141,12 +145,39 @@ public class ProjectController implements LocationListener, OrientationListener
 
 	public void cancelAndRestartForm()
 	{
+		cancel(true);
+	}
+	
+	public void cancelAndStop()
+	{
+		cancel(false);
+	}
+	
+	public void cancel(boolean restart)
+	{
 		//Delete any attachments:
 		for(File attachment : currentMediaAttachments)
 			if(attachment.exists())
 				attachment.delete();
-		//Restart the form:
-		startForm(currentForm);
+		if(restart)
+		{
+			//Restart the form:
+			startForm(currentForm);
+		}
+		else
+		{
+			stopLocationListener(); //stop GPS!
+			currentMediaAttachments.clear();
+			fieldHistory.clear();
+			currentForm = null;
+			currentField = null;
+			currentRecord = null;
+			//close log file:
+			if(project.isLogging())
+			{
+				//TODO
+			}
+		}
 	}
 	
 	public void goForward()

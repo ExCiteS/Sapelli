@@ -141,7 +141,7 @@ public class Record
 	{
 		StringBuffer bff = new StringBuffer();
 		for(Column<?> c : schema.getColumns())
-			bff.append(c.getName() + ": " + c.retrieveAndPrintValue(this) + "\n");
+			bff.append(c.getName() + ": " + c.retrieveAndPrintValue(this) + "|");
 		return bff.toString();
 	}
 	

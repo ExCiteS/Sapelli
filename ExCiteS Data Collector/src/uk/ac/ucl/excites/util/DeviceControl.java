@@ -2,7 +2,6 @@ package uk.ac.ucl.excites.util;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sender.util.Constants;
 import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
@@ -18,6 +17,8 @@ import android.util.Log;
  */
 public final class DeviceControl
 {
+	
+	private static final String TAG = "DeviceControl";
 	
 	private DeviceControl() //class should not be instantiated
 	{}
@@ -41,8 +42,7 @@ public final class DeviceControl
 	{
 		boolean isInAirplaneMode = inAirplaneMode(context);
 		try
-		{
-			// If airplane mode is on, value 0, else value is 1
+		{	// If airplane mode is on, value 0, else value is 1
 			Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, isInAirplaneMode ? 0 : 1);
 
 			// Reload when the mode is changed each time by sending Intent
@@ -50,11 +50,11 @@ public final class DeviceControl
 			intent.putExtra("state", !isInAirplaneMode);
 			context.sendBroadcast(intent);
 
-			Log.d(Constants.TAG, "Airplane mode is: " + (isInAirplaneMode ? "OFF" : "ON"));
+			Log.d(TAG, "Airplane mode is: " + (isInAirplaneMode ? "OFF" : "ON"));
 		}
 		catch(Exception e)
 		{
-			Log.e(Constants.TAG, "Error upon toggling airplane more" + e.toString());
+			Log.e(TAG, "Error upon toggling airplane more.", e);
 		}
 	}
 	
@@ -66,19 +66,25 @@ public final class DeviceControl
 	
 	public static void playSoundFile(Context context, File soundFile)
 	{
-		if(soundFile.exists()) // check if the file really exists
+		try
 		{
-			// Play the sound
-			MediaPlayer mp = MediaPlayer.create(context, Uri.fromFile(soundFile));
-			mp.start();
-			mp.setOnCompletionListener(new OnCompletionListener()
-			{
-				@Override
-				public void onCompletion(MediaPlayer mp)
+			if(soundFile.exists()) // check if the file really exists
+			{	// Play the sound
+				MediaPlayer mp = MediaPlayer.create(context, Uri.fromFile(soundFile));
+				mp.start();
+				mp.setOnCompletionListener(new OnCompletionListener()
 				{
-					mp.release();
-				}
-			});
+					@Override
+					public void onCompletion(MediaPlayer mp)
+					{
+						mp.release();
+					}
+				});
+			}
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Error upon playing sound file.", e);
 		}
 	}
 	

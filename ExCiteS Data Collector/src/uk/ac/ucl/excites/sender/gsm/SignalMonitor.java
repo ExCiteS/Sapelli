@@ -9,7 +9,7 @@ import android.telephony.TelephonyManager;
 public class SignalMonitor extends PhoneStateListener
 {
 	
-	static private final String TAG = "SignalMonitor";
+	static protected final String TAG = "SignalMonitor";
 	
 	private TelephonyManager telephonyManager;
 	private int serviceState;

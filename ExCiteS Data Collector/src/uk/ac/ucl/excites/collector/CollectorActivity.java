@@ -2,6 +2,8 @@ package uk.ac.ucl.excites.collector;
 
 import java.io.File;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
@@ -64,6 +66,8 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	static public final int RETURN_PHOTO_CAPTURE = 1;
 	static public final int RETURN_VIDEO_CAPTURE = 2;
 	static public final int RETURN_AUDIO_CAPTURE = 3;
+	
+	private static final long TIMEOUT_MS = 5 * 60 * 1000; //timeout after 5 minutes
 
 	// DYNAMICS-------------------------------------------------------
 
@@ -84,6 +88,11 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	private String projectName;
 	private int projectVersion;
 	private String dbFolderPath;
+	
+	// Timeout:
+	protected boolean pausedForActivityResult = false;
+	protected Timer pauseTimer = null;
+	protected boolean timedOut = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -308,9 +317,11 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 				{
 					// Set up temp file (in the projects data folder)
 					tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, project.getTempFolder()); //getTempFolder() does the necessary IO checks
-					// Save the photo to the tmp location
-					Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE); // Get the intent
+					//Set-up intent:
+					Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 					takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
+					//Fire intent:
+					pausedForActivityResult = true;
 					startActivityForResult(takePictureIntent, RETURN_PHOTO_CAPTURE);
 				}
 				catch(Exception e)
@@ -358,6 +369,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
 		super.onActivityResult(requestCode, resultCode, data);
+		pausedForActivityResult = false;
 		switch(requestCode)
 		{
 		case RETURN_AUDIO_CAPTURE:
@@ -394,24 +406,66 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 
 	@Override
 	protected void onPause()
-	{ // close database
-		super.onPause();
+	{ 
+		//close database
 		dao.closeDB();
+		//set timeout timer:
+		if(!pausedForActivityResult)
+		{
+			pauseTimer = new Timer();
+			timedOut = false;
+			pauseTimer.schedule(new TimerTask()
+				{
+					@Override
+					public void run()
+					{	//time's up!
+						if(fieldView != null)
+							fieldView.cancel();
+						controller.cancelAndStop();
+						timedOut = true;
+						Log.i(TAG, "Time-out reached");
+					}
+				}, TIMEOUT_MS);
+		}
+		//super:
+		super.onPause();
 	}
 
 	@Override
 	protected void onResume()
-	{ // open database
-		super.onResume();
+	{
+		if(pausedForActivityResult)
+			pausedForActivityResult = false;
+		else
+		{
+			//restart project if needed:
+			if(timedOut)
+			{	//restart project:
+				controller.startProject();
+				timedOut = false;
+			}
+			else
+			{	//cancel timer if needed:
+				if(pauseTimer != null)
+					pauseTimer.cancel();
+			}
+		}
+		// open database
 		dao.openDB();
+		//super:
+		super.onResume();
 	}
 
 	@Override
 	protected void onDestroy()
 	{
-		// TODO or should this happen onStop()??
+		//clean up:
 		if(fieldView != null)
 			fieldView.cancel();
+		if(pauseTimer != null)
+			pauseTimer.cancel();
+		controller.cancelAndStop();
+		//super:
 		super.onDestroy();
 	}
 

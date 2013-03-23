@@ -224,7 +224,6 @@ public class DataSenderService extends Service
 					//Decide on transmission mode
 					
 					
-					
 					BinarySMSTransmission t = null;
 					
 					while(!records.isEmpty() && !t.isFull())

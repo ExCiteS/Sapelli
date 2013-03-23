@@ -16,7 +16,17 @@ import java.io.OutputStream;
  */
 public final class FileHelpers
 {
-	public static final String TAG = "FileHelpers";
+	
+	//Strategies for opening FileConnection on an existing file:
+	static final public int FILE_EXISTS_STRATEGY_REPLACE = 0;
+	static final public int FILE_EXISTS_STRATEGY_REJECT = 1;
+	static final public int FILE_EXISTS_STRATEGY_CREATE_RENAMED_FILE = 2;
+	static final public int FILE_EXISTS_STRATEGY_RENAME_EXISTING_FILE = 3;
+	static final public int FILE_EXISTS_STRATEGY_APPEND = 4;
+	
+	//Strategies for opening FileConnection on a non-existing file:
+	static final public int FILE_DOES_NOT_EXIST_STRATEGY_REJECT = 1;
+	static final public int FILE_DOES_NOT_EXIST_STRATEGY_CREATE = 2;
 
 	private FileHelpers()
 	{
