@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ExCiteS-Collector-Project name="Example1" version="1">
-	<Data-Management>
-		<Local/>
-		<Server/>
-		<SMSRelay/>
-	</Data-Management>
+	<Configuration>
+		<Transmission>
+			<DropboxUpload enabled="true"/>
+			<HTTPUpload enabled="true" server=""/>
+			<SMSUpload enabled="true" relay="+44..."/>
+			<Encryption enabled="true"/>
+		</Transmission>
+		<Logging enabled="true"/>
+	</Configuration>
 
 	<Form name="" schema-id="" schema-version="0" startField="Observation" end="_LOOP" shortcutImage="" endSound="beep.wav" endVibrate="true" showBack="true" showCancel="true">
 
@@ -39,10 +43,9 @@
 		<Photo id="photo" min="0" max="2" jump="AudioPhoto" disableField="photoChoice"/>
 		<Audio id="audio" min="0" max="7" jump="AudioPhoto" startRecImg="" stopRecImg=""/>
 
-		<Orientation id="MagneticNorth" axes="Y"/>
+		<Orientation id="MagneticNorth" storeAzimuth="true" storePitch="false" storeRoll="false"/>
 		
 		<Location id="gpsLocation" type="GPS" timeout="300" waitAtField="true"/>
-		<!-- maybe later: accuracy attribute on Location (fine/coarse or an actual number? -->
 		
 	</Form>
 
