@@ -299,7 +299,10 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			// Use the path where the xml file currently is as the basePath (img and snd folders are assumed to be in the same place), no subfolders are
 			// created:
 			ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
-			return parser.parseProject(xmlFile);
+			Project parsedProject = parser.parseProject(xmlFile);
+			//Show parser warnings if needed:
+			showParserWarnings(parser.getWarnings());
+			return parsedProject;
 		}
 		catch(Exception e)
 		{
@@ -317,7 +320,10 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			{
 				// Use /mnt/sdcard/ExCiteS/ as the basePath:
 				ExCiteSFileLoader loader = new ExCiteSFileLoader(excitesFolderPath);
-				return loader.load(excitesFile);
+				Project loadedProject = loader.load(excitesFile);
+				//Show parser warnings if needed:
+				showParserWarnings(loader.getParserWarnings());
+				return loadedProject;
 			}
 			else
 			{
@@ -330,6 +336,17 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		{
 			Log.e(TAG, "Could not load excites file", e);
 			return null;
+		}
+	}
+	
+	private void showParserWarnings(List<String> warnings)
+	{
+		if(!warnings.isEmpty())
+		{	//Show parser warnings:
+			String msg = "Parsing issues:\n";
+			for(String warning : warnings)
+				msg += warning + "\n";
+			warningDialog(msg).show();
 		}
 	}
 

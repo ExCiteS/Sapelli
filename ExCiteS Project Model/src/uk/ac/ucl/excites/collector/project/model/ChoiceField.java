@@ -15,6 +15,7 @@ import uk.ac.ucl.excites.storage.model.Record;
 public class ChoiceField extends Field
 {
 	
+	static public final int NON_LEAF_VALUE_INDEX = -1;
 	static public final int DEFAULT_NUM_COLS = 2;
 	
 	private ChoiceField parent;
@@ -25,28 +26,34 @@ public class ChoiceField extends Field
 	private int rows;
 	private String alt;
 	private String value;
-	private ValueDictionary valueDict;
+	private int finalValueIndex;
+	private List<ChoiceField> finalValueChoices;
 	
-	public ChoiceField(Form form, String id, ChoiceField parent)
+	public ChoiceField(Form form, String id, String value, ChoiceField parent)
 	{
 		super(	form,
-				id == null ? 
+				id == null || id.isEmpty() ?
 					(parent == null ?
-						null /*Field constructor will throw NPE*/ :
-						parent.getID() + "." + parent.getChildren().size()) :
+						null /* id is mandatory for the root: Field constructor will throw NullPointerException */ :
+						/* generate id based on parent ID and value or child number: */
+						parent.getID() + "." + (value == null || value.isEmpty() ?
+													parent.getChildren().size() :
+													value)) :
 					id);
 		this.children = new ArrayList<ChoiceField>();
 		this.parent = parent;
+		this.value = ((value == null || value.isEmpty()) ? null : value); //replace empty string with null (so we don't need to check for empty string elsewhere)
+		this.finalValueIndex = NON_LEAF_VALUE_INDEX; //will be changed for leaf choices in findFinalValues()
 		if(parent == null)
 		{	//this is a root choice
 			root = this; //self-pointer
-			valueDict = new ValueDictionary(); //root holds the dictionary
+			finalValueChoices = new ArrayList<ChoiceField>(); //root holds the finalValueChoices list
 		}
 		else
 		{	//this is a child choice
 			parent.addChild(this); //add myself as a child of my parent
 			root = parent.root;
-			valueDict = root.valueDict; //children share the valueDict of the root (so there is only 1 instance per choice tree)
+			finalValueChoices = root.finalValueChoices; //children share the finalValueChoices list of the root (so there is only 1 instance per choice tree)
 		}
 	}
 	
@@ -85,25 +92,6 @@ public class ChoiceField extends Field
 	public void setAlt(String alt)
 	{
 		this.alt = alt;
-	}
-
-	/**
-	 * @return the value
-	 */
-	public String getValue()
-	{
-		if(value == null && parent != null)
-			return parent.getValue(); //return value of parent
-		else
-			return value; //return own value (possibly null)
-	}
-
-	/**
-	 * @param value the value to set
-	 */
-	public void setValue(String value)
-	{
-		this.value = value;
 	}
 	
 	/**
@@ -202,43 +190,78 @@ public class ChoiceField extends Field
 	{
 		if(!isRoot())
 			throw new IllegalStateException("createColumn() should only be called on a root ChoiceField object.");
-		buildValueDict(); //Finds & adds the values for all leafs
-		//Create & add column:
-		return new IntegerColumn(id, (optional != Optionalness.NEVER), 0, valueDict.size() - 1);
+		this.findFinalValues(); //!!!
+		if(finalValueChoices.isEmpty())
+		{	//no values set
+			form.addWarning("noColumn was forced to true on ChoiceField " + getID() + " because it has no values.");
+			noColumn = true; //!!!
+			return null;
+		}
+		else
+		{	//Create column:
+			return new IntegerColumn(id, (optional != Optionalness.NEVER), 0, finalValueChoices.size() - 1);
+		}
 	}
 	
 	/**
-	 * Recursive method which implements a depth-first traversal that finds the values of all leafs.
-	 * If a leaf does not have a value of it's own the one of a parent is found using getValue(), if that
-	 * still does not result in a (non-null) value the id of the leaf is use (and kept) as its value.<br/>
-	 * <br/>
-	 * <b>Note 1:</b> This method should only be called after the whole choice tree is parsed & constructed (i.e. from addColumns()).<br/>
-	 * <b>Note 2:</b> This traversal strategy is better than adding values to the valueDict at in the constructor or in setValue()
-	 * because that could result in valueDict containing values that can never be chosen (namely when a non-leaf
-	 * has a value but all the leafs below it have values of their own).
+	 * @return the value
 	 */
-	private void buildValueDict()
+	public String getValue()
+	{
+		if(value == null && parent != null)
+			return parent.getValue(); //return value of parent
+		else
+			return value; //return own value (possibly null)
+	}
+	
+	private ChoiceField getLowestAncestorWithValue()
+	{
+		if(value == null && parent != null)
+			return parent.getLowestAncestorWithValue();
+		else
+			return this; //return self
+	}
+	
+	/**
+	 * Recursive method which implements a depth-first traversal that finds all leaves.
+	 * <br/>
+	 * <b>Note:</b> This method should only be called after the whole choice tree is parsed & constructed (i.e. from addColumns()).<br/>
+	 */
+	private void findFinalValues()
 	{
 		if(isLeaf())
 		{
-			if(getValue() == null || getValue().isEmpty()) //getValue() will return the value of the ChoiceField or of the/a parent, if there's no value set anywhere it will return null
-				setValue(id); //id becomes value for this leaf ChoiceField; after this getValue() will never again return null for this ChoiceField object
-			valueDict.addValue(getValue());
+			ChoiceField valuedChoice = this.getLowestAncestorWithValue();
+			if(valuedChoice.getValue() != null) //there must be at least one non-null value
+			{
+				//add to list of final choices and store index in the leaf (not in the valuedChoice!):
+				int index = finalValueChoices.indexOf(valuedChoice);
+				if(index == -1)
+				{
+					this.finalValueIndex = finalValueChoices.size();
+					finalValueChoices.add(valuedChoice);
+				}
+				else
+					//valuedChoice was already in the list:
+					this.finalValueIndex = index;
+			}
 		}
 		else
+		{
 			for(ChoiceField child : children) //Depth-first traversal
-				child.buildValueDict(); //recursive call
+				child.findFinalValues(); //recursive call
+		}
 	}
 	
 	public void storeValue(Record entry)
 	{
-		if(!isNoColumn())
-			((IntegerColumn) root.column).storeValue(entry, Long.valueOf(lookupCode()));
+		if(!isNoColumn() && isLeaf())
+			((IntegerColumn) root.column).storeValue(entry, Long.valueOf(finalValueIndex));
 	}
 	
-	public int lookupCode()
+	public ChoiceField lookupChoice(int valueIndex)
 	{
-		return valueDict.lookupCode(getValue());
+		return finalValueChoices.get(valueIndex);
 	}
 
 	@Override

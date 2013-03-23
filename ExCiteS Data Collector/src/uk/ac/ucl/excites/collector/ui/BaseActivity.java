@@ -33,7 +33,7 @@ public abstract class BaseActivity extends Activity
 	 */
 	protected AlertDialog errorDialog(String message, final boolean exitOnOK)
 	{
-		AlertDialog Error = new AlertDialog.Builder(this).setTitle("Error").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
+		AlertDialog error = new AlertDialog.Builder(this).setTitle("Error").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
 		{
 			public void onClick(DialogInterface dialog, int whichButton)
 			{
@@ -41,7 +41,21 @@ public abstract class BaseActivity extends Activity
 					finish();
 			}
 		}).create();
-		return Error;
+		return error;
 	}
 	
+	/**
+	 * dialog showing warnings
+	 * 
+	 * @param message
+	 * @return the dialog
+	 */
+	protected AlertDialog warningDialog(String message)
+	{
+		AlertDialog warning = new AlertDialog.Builder(this).setTitle("Warning").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
+		{
+			public void onClick(DialogInterface dialog, int whichButton) { /*does nothing*/ }
+		}).create();
+		return warning;
+	}
 }

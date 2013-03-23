@@ -95,7 +95,7 @@ public class DataSenderService extends Service
 			{
 				smsUpload = true;
 				if(!settings.isSMSIntroductionSent())
-				{	//TODO sent introduction
+				{	//TODO send introduction
 					
 				}
 			}
