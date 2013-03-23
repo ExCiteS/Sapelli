@@ -325,9 +325,9 @@ public class ProjectParser extends DefaultHandler
 		{
 			OrientationField orField = new OrientationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 			newField(orField, attributes);
-			orField.setStoreAzimuth(readBooleanAttribute(attributes, "azimuth", OrientationField.DEFAULT_STORE_AZIMUTH));
-			orField.setStoreAzimuth(readBooleanAttribute(attributes, "pitch", OrientationField.DEFAULT_STORE_PITCH));
-			orField.setStoreAzimuth(readBooleanAttribute(attributes, "roll", OrientationField.DEFAULT_STORE_ROLL));
+			orField.setStoreAzimuth(readBooleanAttribute(attributes, "storeAzimuth", OrientationField.DEFAULT_STORE_AZIMUTH));
+			orField.setStoreAzimuth(readBooleanAttribute(attributes, "storePitch", OrientationField.DEFAULT_STORE_PITCH));
+			orField.setStoreAzimuth(readBooleanAttribute(attributes, "storeRoll", OrientationField.DEFAULT_STORE_ROLL));
 		}
 	}
 
