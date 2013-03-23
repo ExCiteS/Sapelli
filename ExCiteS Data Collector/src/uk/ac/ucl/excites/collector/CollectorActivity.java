@@ -86,7 +86,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 
 	// Project Info
 	private String projectName;
-	private int projectVersion;
+	private String projectVersion;
 	private String dbFolderPath;
 	
 	// Timeout:
@@ -119,8 +119,8 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		// Get Project object:
 		project = dao.retrieveProject(projectName, projectVersion);
 		if(project == null)
-		{ // show error (activity will be exited after used clicks OK in the dialog):
-			errorDialog("Could not find project: " + projectName + "(version " + projectVersion + ").", true).show();
+		{	// show error (activity will be exited after used clicks OK in the dialog):
+			errorDialog("Could not find project: " + projectName + " (version " + projectVersion + ").", true).show();
 			return;
 		}
 
@@ -156,13 +156,15 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		{
 			// Get the shortcut name and version
 			projectName = extras.getString(ProjectPickerActivity.SHORTCUT_PROJECT_NAME);
-			projectVersion = extras.getInt(ProjectPickerActivity.SHORTCUT_PROJECT_VERSION, Project.DEFAULT_VERSION);
+			projectVersion = extras.getString(ProjectPickerActivity.SHORTCUT_PROJECT_VERSION);
+			if(projectVersion == null)
+				projectVersion = Project.DEFAULT_VERSION;
 			dbFolderPath = extras.getString(ProjectPickerActivity.SHORTCUT_PROJECT_DB);
 		}
 		else if(extras.containsKey(PARAMETER_PROJECT_NAME))
 		{
 			projectName = extras.getString(PARAMETER_PROJECT_NAME);
-			projectVersion = extras.getInt(PARAMETER_PROJECT_VERSION);
+			projectVersion = extras.getString(PARAMETER_PROJECT_VERSION);
 			dbFolderPath = extras.getString(PARAMETER_DB_FOLDER_PATH);
 		}
 	}
@@ -464,7 +466,8 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			fieldView.cancel();
 		if(pauseTimer != null)
 			pauseTimer.cancel();
-		controller.cancelAndStop();
+		if(controller != null)
+			controller.cancelAndStop();
 		//super:
 		super.onDestroy();
 	}

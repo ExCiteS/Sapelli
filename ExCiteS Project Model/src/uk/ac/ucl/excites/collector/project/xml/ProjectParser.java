@@ -153,8 +153,7 @@ public class ProjectParser extends DefaultHandler
 		if(qName.equals(TAG_PROJECT))
 		{
 			String projectName = readRequiredStringAttribute(TAG_PROJECT, attributes, ATTRIBUTE_PROJECT_NAME);
-			project = new Project(projectName, readIntegerAttribute(attributes, ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION), basePath,
-					createProjectFolder);
+			project = new Project(projectName, readStringAttribute(attributes, ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION), basePath, createProjectFolder);
 		}
 		// <Configuration>
 		else if(qName.equals(TAG_CONFIGURATION))
@@ -402,8 +401,13 @@ public class ProjectParser extends DefaultHandler
 		if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
 		{
 			String jumpToId = attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim();
+			//make _END form-specific:
 			if(jumpToId.equalsIgnoreCase(EndField.ID))
 				jumpToId = EndField.ID(f.getForm());
+			//make _CANCEL form-specific:
+			if(jumpToId.equalsIgnoreCase(CancelField.ID))
+				jumpToId = CancelField.ID(f.getForm());
+			//Store field & jumpToId:
 			fieldToJumpId.put(f, jumpToId);
 		}
 		// Resolve/set form start field:

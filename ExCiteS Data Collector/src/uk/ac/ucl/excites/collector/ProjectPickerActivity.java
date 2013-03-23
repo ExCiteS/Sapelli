@@ -245,7 +245,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		runProjectActivity(p.getName(), p.getVersion());
 	}
 
-	public void runProjectActivity(String projectName, int projectVersion)
+	public void runProjectActivity(String projectName, String projectVersion)
 	{
 		Intent i = new Intent(this, CollectorActivity.class);
 		i.putExtra(CollectorActivity.PARAMETER_PROJECT_NAME, projectName);
