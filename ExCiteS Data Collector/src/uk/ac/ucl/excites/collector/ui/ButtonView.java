@@ -153,7 +153,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 			{
 				case BUTTON_TYPE_BACK		: controller.goBack(); break;
 				case BUTTON_TYPE_CANCEL		: controller.cancelAndRestartForm(); break;
-				case BUTTON_TYPE_FORWARD	: controller.goForward(); break;
+				case BUTTON_TYPE_FORWARD	: controller.goForward(true); break;
 				default : return;
 			}
 		}
