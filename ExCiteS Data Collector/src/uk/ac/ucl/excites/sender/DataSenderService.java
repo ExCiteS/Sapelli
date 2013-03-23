@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.sender;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -20,6 +21,7 @@ import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.transmission.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.util.DeviceControl;
+import uk.ac.ucl.excites.util.Logger;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -51,6 +53,7 @@ public class DataSenderService extends Service
 	private boolean allowRebind; // indicates whether onRebind should be used
 	private String databasePath;
 	private DataAccess dao;
+	private Logger logger;
 	
 	private ScheduledExecutorService scheduleTaskExecutor;
 	private ScheduledFuture<?> mScheduledFuture;
@@ -89,6 +92,20 @@ public class DataSenderService extends Service
 		boolean smsUpload = false;
 		for(Project p : dao.retrieveProjects())
 		{
+			if(p.isLogging())
+			{
+				try
+				{
+					logger = new Logger(p.getLogFolderPath());
+					logger.addLog("PROJECT_SEND", p.getName());
+					logger.addWhiteSpace();
+				}
+				catch(IOException e)
+				{
+					Log.e(TAG, "Logger construction error", e);
+				}
+			}
+
 			Settings settings = p.getTransmissionSettings(); 
 			// Upload via SMS
 			if(settings.isSMSUpload())
