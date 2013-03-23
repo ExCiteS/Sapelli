@@ -28,15 +28,12 @@ import uk.ac.ucl.excites.collector.util.DeviceID;
 import uk.ac.ucl.excites.collector.util.LocationUtils;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.types.Orientation;
+import uk.ac.ucl.excites.util.DeviceControl;
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnCompletionListener;
-import android.net.Uri;
 import android.os.Bundle;
-import android.os.Vibrator;
 import android.util.Log;
 
 
@@ -47,12 +44,15 @@ import android.util.Log;
 public class ProjectController implements LocationListener, OrientationListener
 {
 
+	//STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectController";
 	
 	public static final int LOCATION_LISTENER_UPDATE_MIN_TIME_MS = 15 * 1000;//30 seconds 
 	public static final int LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M = 5; 	//5 meters
 	
+	private static final int VIBRATION_DURATION_MS = 600;
 	
+	//DYNAMICS-------------------------------------------------------
 	private Project project;
 	private DataAccess dao;
 	private CollectorActivity activity;
@@ -311,31 +311,11 @@ public class ProjectController implements LocationListener, OrientationListener
 		// Signal the successful storage of the currentRecord
 		// Vibration
 		if(currentForm.isVibrateOnEnd())
-		{
-			Vibrator vibrator = (Vibrator) activity.getSystemService(Context.VIBRATOR_SERVICE);
-			// Vibrate for 600 milliseconds
-			vibrator.vibrate(600);
-		}
+			DeviceControl.vibrate(activity, VIBRATION_DURATION_MS);
 		// Play sound
 		String endSound = currentForm.getEndSoundPath();
 		if(endSound != null && !endSound.isEmpty())
-		{
-			File endSoundPath = new File(project.getSoundFolderPath() + endSound);
-			if(endSoundPath.exists()) // check if the file really exists
-			{
-				// Play the sound
-				MediaPlayer mp = MediaPlayer.create(activity, Uri.fromFile(endSoundPath));
-				mp.start();
-				mp.setOnCompletionListener(new OnCompletionListener()
-				{
-					@Override
-					public void onCompletion(MediaPlayer mp)
-					{
-						mp.release();
-					}
-				});
-			}
-		}
+			DeviceControl.playSoundFile(activity, new File(project.getSoundFolderPath() + endSound));
 
 		// End action:
 		switch(currentForm.getEndAction())

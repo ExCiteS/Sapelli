@@ -1,7 +1,7 @@
 package uk.ac.ucl.excites.sender.dropbox;
 
 import uk.ac.ucl.excites.collector.R;
-import uk.ac.ucl.excites.sender.Constants;
+import uk.ac.ucl.excites.sender.util.Constants;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;

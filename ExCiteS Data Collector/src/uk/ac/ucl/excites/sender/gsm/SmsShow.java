@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sender.sms;
+package uk.ac.ucl.excites.sender.gsm;
 
 import uk.ac.ucl.excites.collector.R;
 import android.app.Activity;

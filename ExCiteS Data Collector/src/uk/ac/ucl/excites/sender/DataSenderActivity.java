@@ -1,20 +1,21 @@
 package uk.ac.ucl.excites.sender;
 
 import uk.ac.ucl.excites.collector.R;
+import uk.ac.ucl.excites.sender.util.Constants;
+import uk.ac.ucl.excites.sender.util.ServiceChecker;
+import uk.ac.ucl.excites.util.DeviceControl;
 import android.app.Activity;
-import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
-public class SenderBackgroundActivity extends Activity
+public class DataSenderActivity extends Activity
 {
 
-	private final String SERVICE_PACKAGE_NAME = SenderBackgroundService.class.getName();
+	private final String SERVICE_PACKAGE_NAME = DataSenderService.class.getName();
 
-	private Context mContext;
 	private Button startButton;
 	private Button stopButton;
 	private Button settingsButton;
@@ -25,7 +26,6 @@ public class SenderBackgroundActivity extends Activity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_background);
 
-		this.mContext = this;
 		startButton = (Button) findViewById(R.id.startService);
 		stopButton = (Button) findViewById(R.id.stopService);
 		settingsButton = (Button) findViewById(R.id.settingsService);
@@ -34,8 +34,8 @@ public class SenderBackgroundActivity extends Activity
 		stopButton.setEnabled(false);
 
 		// Get in the AirplaneMode
-		if(!Utilities.inAirplaneMode(mContext))
-			Utilities.toggleAirplaneMode(mContext);
+		if(!DeviceControl.inAirplaneMode(this))
+			DeviceControl.toggleAirplaneMode(this);
 
 		// Start Button
 		startButton.setOnClickListener(new View.OnClickListener()
@@ -44,7 +44,7 @@ public class SenderBackgroundActivity extends Activity
 			public void onClick(View v)
 			{
 				// Call the Service
-				Intent mIntent = new Intent(mContext, SenderBackgroundService.class);
+				Intent mIntent = new Intent(DataSenderActivity.this, DataSenderService.class);
 				startService(mIntent);
 
 				// Disable the Start button and enable the Stop
@@ -61,11 +61,11 @@ public class SenderBackgroundActivity extends Activity
 			{
 
 				// Terminate the Service
-				while(Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME))
+				while(ServiceChecker.isMyServiceRunning(DataSenderActivity.this, SERVICE_PACKAGE_NAME))
 				{
 					// Terminate the service
-					Intent mIntent = new Intent(mContext, SenderBackgroundService.class);
-					if(mContext.stopService(mIntent))
+					Intent mIntent = new Intent(DataSenderActivity.this, DataSenderService.class);
+					if(DataSenderActivity.this.stopService(mIntent))
 					{
 						if(Constants.DEBUG_LOG)
 							Log.i(Constants.TAG, "Background.onCreate(): Service Stoped.");
@@ -86,11 +86,10 @@ public class SenderBackgroundActivity extends Activity
 		// Settings Button
 		settingsButton.setOnClickListener(new View.OnClickListener()
 		{
-
 			public void onClick(View v)
 			{
 				// Start the Settings
-				Intent settingsActivity = new Intent(mContext, SenderBackgroundPreferences.class);
+				Intent settingsActivity = new Intent(DataSenderActivity.this, DataSenderPreferences.class);
 				startActivity(settingsActivity);
 			}
 		});
@@ -100,10 +99,9 @@ public class SenderBackgroundActivity extends Activity
 	@Override
 	protected void onResume()
 	{
-		// TODO Auto-generated method stub
 		super.onResume();
 
-		if(Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME))
+		if(ServiceChecker.isMyServiceRunning(this, SERVICE_PACKAGE_NAME))
 		{
 			startButton.setEnabled(false);
 			stopButton.setEnabled(true);

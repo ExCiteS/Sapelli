@@ -6,6 +6,8 @@ package uk.ac.ucl.excites.transmission.sms.binary;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
+import org.joda.time.DateTime;
+
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.storage.util.BinaryHelpers;
@@ -59,7 +61,7 @@ public class BinaryMessage extends Message
 	 */
 	public BinaryMessage(SMSAgent sender, byte[] data) throws Exception
 	{
-		super(sender);
+		super(sender, new DateTime() /*received NOW*/);
 		//read data:
 		BitInputStream in = null;
 		try

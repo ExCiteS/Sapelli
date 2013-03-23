@@ -16,8 +16,9 @@ public abstract class Message
 	protected SMSAgent receiver;
 	protected SMSTransmission transmission;
 	protected int transmissionID;
-	protected DateTime sentAt;
-	protected DateTime receivedAt;
+	protected DateTime sentAt;		//only on sending side
+	protected DateTime deliveredAt;	//only on sending side
+	protected DateTime receivedAt;	//only on receiving side
 	protected int partNumber;
 	protected int totalParts;
 	
@@ -46,9 +47,10 @@ public abstract class Message
 	 * 
 	 * @param sender
 	 */
-	public Message(SMSAgent sender)
+	public Message(SMSAgent sender, DateTime receivedAt)
 	{
 		this.sender = sender;
+		this.receivedAt = receivedAt;
 	}
 		
 	protected abstract byte[] getPayload();
@@ -112,11 +114,16 @@ public abstract class Message
 		sentAt = new DateTime(); //= now
 		transmission.partSent(this);
 	}
-
-	public void receptionCallback()
+	
+	public DateTime getDeliveredAt()
 	{
-		receivedAt = new DateTime(); //TODO get actual time of reception by receiver?
-		transmission.partReceived(this);
+		return deliveredAt;
+	}
+
+	public void deliveryCallback()
+	{
+		deliveredAt = new DateTime(); //TODO get actual time of reception by receiver?
+		transmission.partDelivered(this);
 	}
 	
 	public SMSAgent getReceiver()

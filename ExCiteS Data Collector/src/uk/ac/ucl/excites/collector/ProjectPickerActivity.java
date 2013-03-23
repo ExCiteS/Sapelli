@@ -21,7 +21,7 @@ import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.util.SDCard;
-import uk.ac.ucl.excites.sender.SenderBackgroundPreferences;
+import uk.ac.ucl.excites.sender.DataSenderPreferences;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
@@ -175,7 +175,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 
 	public boolean openSenderSettings(MenuItem item)
 	{
-		startActivity(new Intent(getBaseContext(), SenderBackgroundPreferences.class));
+		startActivity(new Intent(getBaseContext(), DataSenderPreferences.class));
 		return true;
 	}
 	

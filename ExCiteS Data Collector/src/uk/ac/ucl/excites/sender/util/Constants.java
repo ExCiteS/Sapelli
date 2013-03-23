@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sender;
+package uk.ac.ucl.excites.sender.util;
 
 /**
  * Here are defined some constant variables across the application.

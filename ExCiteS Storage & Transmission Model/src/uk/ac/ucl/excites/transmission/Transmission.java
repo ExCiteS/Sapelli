@@ -23,10 +23,8 @@ import uk.ac.ucl.excites.storage.model.Schema;
 public abstract class Transmission
 {
 
-	protected DateTime sentAt = null;
-	protected DateTime receivedAt = null;
-	protected DateTime confirmationSentAt = null;
-	protected DateTime confirmationReceivedAt = null;
+	protected DateTime sentAt = null; //used only on sending side
+	protected DateTime receivedAt = null; //used on receiving side, and TODO on sending side once we have acknowledgements working
 	
 	protected SchemaProvider schemaProvider; //only used on the receiving side
 	protected Schema schema;

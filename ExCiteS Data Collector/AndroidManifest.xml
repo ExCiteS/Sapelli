@@ -61,12 +61,12 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="uk.ac.ucl.excites.sender.SenderBackgroundActivity"
+            android:name="uk.ac.ucl.excites.sender.DataSenderActivity"
             android:exported="true"
             android:label="@string/title_activity_main" >
         </activity>
         <activity
-            android:name="uk.ac.ucl.excites.sender.SenderBackgroundPreferences"
+            android:name="uk.ac.ucl.excites.sender.DataSenderPreferences"
             android:icon="@drawable/sender" >
         </activity>
         <activity android:name="uk.ac.ucl.excites.sender.dropbox.DropboxLogin" >
@@ -95,7 +95,7 @@
         </activity>
 
         <service
-            android:name="uk.ac.ucl.excites.sender.SenderBackgroundService"
+            android:name="uk.ac.ucl.excites.sender.DataSenderService"
             android:icon="@drawable/excites_icon"
             android:label="@string/service_name" >
         </service>

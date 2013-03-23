@@ -3,7 +3,7 @@
 
     <PreferenceCategory android:title="General" >
         <CheckBoxPreference
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="airplaneMode"
             android:summary="Check to get the phone in Airplane Mode to preserve battery."
             android:title="Airplane Mode" />
@@ -14,13 +14,13 @@
             android:title="Dropbox Upload" />
     </PreferenceCategory>
     <PreferenceCategory android:title="SMS Sending" >
-        <EditTextPreference
+        <!-- <EditTextPreference
             android:inputType="phone"
             android:key="centerPhoneNumber"
             android:summary="This is the number of the phone that acts as a center relay."
-            android:title="Center Phone Number" />
+            android:title="Center Phone Number" />  -->
         <EditTextPreference
-            android:defaultValue="1"
+            android:defaultValue="15"
             android:inputType="number"
             android:key="timeSchedule"
             android:summary="How often is the application checking for connectivity in minutes."

@@ -16,7 +16,7 @@ public class BootReceiver extends BroadcastReceiver
 	public void onReceive(Context mContext, Intent mIntent)
 	{
 
-		Intent service = new Intent(mContext, SenderBackgroundService.class);
+		Intent service = new Intent(mContext, DataSenderService.class);
 		PendingIntent mPendingIntent = PendingIntent.getService(mContext, 0, service, 0);
 
 		// Set up a calendar 2 minutes from now

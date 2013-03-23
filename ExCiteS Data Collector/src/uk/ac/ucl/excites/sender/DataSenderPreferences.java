@@ -1,6 +1,8 @@
 package uk.ac.ucl.excites.sender;
 
 import uk.ac.ucl.excites.collector.R;
+import uk.ac.ucl.excites.sender.util.Constants;
+import uk.ac.ucl.excites.sender.util.ServiceChecker;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,11 +19,11 @@ import android.util.Log;
  * @author Michalis Vitos
  * 
  */
-public class SenderBackgroundPreferences extends PreferenceActivity implements OnSharedPreferenceChangeListener
+public class DataSenderPreferences extends PreferenceActivity implements OnSharedPreferenceChangeListener
 {
 
 	public static final String PREFERENCES = "ExCiteS_Data_Sender_Preferences";
-	public static final String TAG = "SenderBackgroundPreferences";
+	public static final String TAG = "DataSenderPreferences";
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -30,7 +32,7 @@ public class SenderBackgroundPreferences extends PreferenceActivity implements O
 		super.onCreate(savedInstanceState);
 
 		addPreferencesFromResource(R.xml.background_preferences);
-		PreferenceManager.setDefaultValues(SenderBackgroundPreferences.this, R.xml.background_preferences, false);
+		PreferenceManager.setDefaultValues(DataSenderPreferences.this, R.xml.background_preferences, false);
 
 		// Register a listener
 		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -48,7 +50,7 @@ public class SenderBackgroundPreferences extends PreferenceActivity implements O
 			public boolean onPreferenceClick(Preference arg0)
 			{
 				// Call the Service
-				Intent mIntent = new Intent(SenderBackgroundPreferences.this, SenderBackgroundService.class);
+				Intent mIntent = new Intent(DataSenderPreferences.this, DataSenderService.class);
 				startService(mIntent);
 				return true;
 			}
@@ -79,17 +81,17 @@ public class SenderBackgroundPreferences extends PreferenceActivity implements O
 		return mSharedPreferences.getBoolean("airplaneMode", true);
 	}
 
-	/**
-	 * Get the Phone Number of the centre phone that works as a rely
-	 * 
-	 * @param mContext
-	 * @return
-	 */
-	public static String getCenterPhoneNumber(Context mContext)
-	{
-		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return mSharedPreferences.getString("centerPhoneNumber", "");
-	}
+//	/**
+//	 * Get the Phone Number of the centre phone that works as a relay
+//	 * 
+//	 * @param mContext
+//	 * @return
+//	 */
+//	public static String getCenterPhoneNumber(Context mContext)
+//	{
+//		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+//		return mSharedPreferences.getString("centerPhoneNumber", "");
+//	}
 
 	/**
 	 * Get the number of minutes that the service is checking for connectivity
@@ -125,10 +127,10 @@ public class SenderBackgroundPreferences extends PreferenceActivity implements O
 			printPreferences(getApplicationContext());
 		}
 
-		if(SenderBackgroundService.class.getName() != null && Utilities.isMyServiceRunning(getApplicationContext(), SenderBackgroundService.class.getName()))
+		if(DataSenderService.class.getName() != null && ServiceChecker.isMyServiceRunning(getApplicationContext(), DataSenderService.class.getName()))
 		{
 			// Call the Service
-			Intent mIntent = new Intent(this, SenderBackgroundService.class);
+			Intent mIntent = new Intent(this, DataSenderService.class);
 			startService(mIntent);
 		}
 	}
@@ -138,7 +140,7 @@ public class SenderBackgroundPreferences extends PreferenceActivity implements O
 		Log.d(TAG, "------------ Preferences: -------------");
 		Log.d(TAG, "DropboxUpload: " + (getDropboxUpload(mContext) ? "true" : "false"));
 		Log.d(TAG, "AirplaneMode: " + (getAirplaneMode(mContext) ? "true" : "false"));
-		Log.d(TAG, "CenterPhoneNumber: " + getCenterPhoneNumber(mContext));
+		//Log.d(TAG, "CenterPhoneNumber: " + getCenterPhoneNumber(mContext));
 		Log.d(TAG, "TimeSchedule: " + getTimeSchedule(mContext));
 		Log.d(TAG, "MaxAttempts: " + getMaxAttempts(mContext));
 	}

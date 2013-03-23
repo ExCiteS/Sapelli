@@ -39,7 +39,8 @@ public abstract class SMSTransmission extends Transmission
 	protected SMSAgent sender;
 	protected SMSService smsService;
 	protected SortedSet<Message> parts;
-
+	protected DateTime deliveredAt;
+	
 	protected Integer id = null;
 	protected boolean full = false;
 	
@@ -361,6 +362,11 @@ public abstract class SMSTransmission extends Transmission
 		
 	}
 	
+	/**
+	 * Part has been sent
+	 * 
+	 * @param smsMessage
+	 */
 	public void partSent(Message smsMessage)
 	{
 		boolean allSent = true;
@@ -381,7 +387,38 @@ public abstract class SMSTransmission extends Transmission
 		if(allSent)
 			sentAt = lastSentAt;
 	}
+	
+	/**
+	 * Part has been delivered to relay
+	 * 
+	 * @param smsMessage
+	 */
+	public void partDelivered(Message smsMessage)
+	{
+		boolean allDelivered = true;
+		DateTime lastDeliveredAt = null;
+		for(Message m : parts)
+		{
+			if(!m.isReceived())
+			{
+				allDelivered = false;
+				break;
+			}
+			else
+			{
+				if(lastDeliveredAt == null || lastDeliveredAt.isBefore(m.getDeliveredAt()))
+					lastDeliveredAt = m.getDeliveredAt();
+			}
+		}
+		if(allDelivered)
+			deliveredAt = lastDeliveredAt;		
+	}
 
+	/**
+	 * Part has been received by server (used only on server side, reception acknowledgements are per transmission)
+	 * 
+	 * @param smsMessage
+	 */
 	public void partReceived(Message smsMessage)
 	{
 		boolean allReceived = true;

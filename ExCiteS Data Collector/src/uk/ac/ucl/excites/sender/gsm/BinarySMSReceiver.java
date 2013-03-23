@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sender.sms;
+package uk.ac.ucl.excites.sender.gsm;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,33 +10,38 @@ import android.telephony.SmsMessage;
  * @author Michalis Vitos
  * 
  */
-public class SmsReceiver extends BroadcastReceiver
+public class BinarySMSReceiver extends BroadcastReceiver
 {
 	@Override
 	public void onReceive(Context context, Intent intent)
 	{
-		// ---get the SMS message passed in---
 		Bundle bundle = intent.getExtras();
 		SmsMessage[] msgs = null;
-		String str = "";
-		if(bundle != null)
+
+		if(null != bundle)
 		{
-			// ---retrieve the SMS message received---
+			String info = "Binary SMS from ";
 			Object[] pdus = (Object[]) bundle.get("pdus");
 			msgs = new SmsMessage[pdus.length];
+			byte[] data = null;
+
 			for(int i = 0; i < msgs.length; i++)
 			{
 				msgs[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
-				str += "SMS " + (i + 1) + " from " + msgs[i].getOriginatingAddress() + "\n";
-				str += "SMS char lenght: " + msgs[i].getMessageBody().toString().length();
-				str += " : \n\n";
-				str += msgs[i].getMessageBody().toString();
-				str += "\n\n";
+				info += msgs[i].getOriginatingAddress();
+				info += "\n\n*****BINARY MESSAGE*****\n\n";
+
+				data = msgs[i].getUserData();
+
+				for(int index = 0; index < data.length; ++index)
+				{
+					info += Character.toString((char) data[index]);
+				}
 			}
 
 			Intent mIntent = new Intent(context, SmsShow.class);
 			mIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-			mIntent.putExtra("sms", str);
+			mIntent.putExtra("sms", info);
 			context.startActivity(mIntent);
 
 			// This will stop the Broadcast and not allow the message to
