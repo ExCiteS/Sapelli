@@ -11,6 +11,10 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+/**
+ * @author Michalis Vitos
+ *
+ */
 public class DataSenderActivity extends Activity
 {
 

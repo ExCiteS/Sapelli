@@ -13,8 +13,8 @@ import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.sender.dropbox.DropboxSync;
 import uk.ac.ucl.excites.sender.gsm.SMSSender;
+import uk.ac.ucl.excites.sender.gsm.SignalMonitor;
 import uk.ac.ucl.excites.sender.util.Constants;
-import uk.ac.ucl.excites.sender.util.ServiceChecker;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Settings;
@@ -40,8 +40,10 @@ public class DataSenderService extends Service
 
 	// Statics-------------------------------------------------------
 	static private final String TAG = "DataSenderService";
+	private static final long POST_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
 	
 	// Dynamics------------------------------------------------------
+	private SignalMonitor gsmMonitor;
 	private List<DropboxSync> folderObservers;
 	private SMSSender smsSender;
 	private boolean isSending;
@@ -80,7 +82,6 @@ public class DataSenderService extends Service
 	public int onStartCommand(Intent intent, int flags, int startId)
 	{
 		// Get the preferences
-//		AIRPLANE_MODE = DataSenderPreferences.getAirplaneMode(this);
 		final int timeSchedule = DataSenderPreferences.getTimeSchedule(this);
 		
 		setServiceForeground(this);
@@ -117,77 +118,22 @@ public class DataSenderService extends Service
 		
 		//if at least one project needs SMS sending:
 		if(smsUpload)
-			smsSender = new SMSSender(this, DataSenderPreferences.getMaxAttempts(this));
+			smsSender = new SMSSender(this);
 		
-		
+		//Start GSM SignalMonitor
+		gsmMonitor = new SignalMonitor(this);
 		
 		// ================================================================================
 		// Schedule Transmitting
 		// ================================================================================
-
 		// Check if the scheduleTaskExecutor is running and stop it first
 		if(isSending)
 		{
 			mScheduledFuture.cancel(true);
 			isSending = false;
 		}
-
 		// This schedule a runnable task every TIME_SCHEDULE in minutes
-		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new Runnable()
-		{
-			public void run()
-			{
-				
-				
-				for(Project p : dao.retrieveProjects())
-				{
-					for(Form f : p.getForms())
-					{
-						Schema schema = f.getSchema();
-						
-						List<Record> records = dao.retrieveRecordsWithoutTransmission(schema);
-						
-						BinarySMSTransmission t = null;
-						
-						while(!records.isEmpty() && !t.isFull())
-						{
-							try
-							{
-								t.addRecord(records.get(0));
-								
-								records.remove(0);
-							}
-							catch(Exception e)
-							{
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-							
-						}
-						
-						for(Record r : dao.retrieveRecordsWithoutTransmission(schema))
-						{
-							//BinarySMSTransmission transm = new BinarySMSTransmission(schema, 0, null, null);
-							
-							
-							
-						}
-						
-					}
-					
-					
-					
-				}
-				
-				
-				
-				
-				isSending = true;
-
-				if(Constants.DEBUG_LOG)
-					Log.i(Constants.TAG, "---------------------- Run Every: " + timeSchedule + " minutes!!!! --------------------------");
-			}
-		}, 0, timeSchedule, TimeUnit.MINUTES);
+		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
 
 		return startMode;
 	}
@@ -235,8 +181,8 @@ public class DataSenderService extends Service
 	@Override
 	public void onDestroy()
 	{
-		// Get in the AirplaneMode
-		if(!DeviceControl.inAirplaneMode(this))
+		// Go to AirplaneMode if needed:
+		if(DataSenderPreferences.getAirplaneMode(this) && !DeviceControl.inAirplaneMode(this))
 			DeviceControl.toggleAirplaneMode(this);
 		// The service is no longer used and is being destroyed
 		mScheduledFuture.cancel(true);
@@ -245,6 +191,93 @@ public class DataSenderService extends Service
 		if(Constants.DEBUG_LOG)
 			Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
 		android.os.Process.killProcess(pid);
+	}
+	
+	private class SendingTask implements Runnable
+	{
+		
+		private Context context = DataSenderService.this;
+		
+		public void run()
+		{
+			//Come out of airplane more if needed
+			if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
+			{
+				DeviceControl.toggleAirplaneMode(context);
+				
+				//Wait for connectivity to become available
+				try
+				{	
+					Thread.sleep(POST_AIRPLANE_MODE_WAITING_TIME_MS);
+				}
+				catch(Exception ignore) {}
+			}
+			
+			//Generate transmissions...
+			for(Project p : dao.retrieveProjects())
+			{
+				for(Form f : p.getForms())
+				{	
+					Schema schema = f.getSchema();
+					List<Record> records = dao.retrieveRecordsWithoutTransmission(schema);
+				
+					//Decide on transmission mode
+					
+					
+					
+					BinarySMSTransmission t = null;
+					
+					while(!records.isEmpty() && !t.isFull())
+					{
+						try
+						{
+							t.addRecord(records.get(0));
+							
+							records.remove(0);
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace();
+						}
+						
+					}
+					
+					for(Record r : dao.retrieveRecordsWithoutTransmission(schema))
+					{
+						//BinarySMSTransmission transm = new BinarySMSTransmission(schema, 0, null, null);
+						
+					}
+					
+				}
+				
+			}
+			
+			int tempCount = 0;
+			while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
+			{
+				Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
+				// Wait for 1 a second on every attempt
+				try
+				{
+					Thread.sleep(1000);
+				}
+				catch(InterruptedException e)
+				{
+					if(Constants.DEBUG_LOG)
+						Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
+				}
+				tempCount++;
+			}
+			
+			isSending = true;
+
+			//if(Constants.DEBUG_LOG)
+			//	Log.i(Constants.TAG, "---------------------- Run Every: " + timeSchedule + " minutes!!!! --------------------------");
+			
+			//Go back to airplane more if needed
+			if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))
+				DeviceControl.toggleAirplaneMode(context);
+		}
 	}
 
 }
