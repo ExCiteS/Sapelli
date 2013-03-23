@@ -15,7 +15,7 @@ import uk.ac.ucl.excites.transmission.Settings;
 public class Project
 {
 	
-	static public final int DEFAULT_VERSION = 0;
+	static public final String DEFAULT_VERSION = "0";
 	
 	static public final String IMAGE_FOLDER = "img";
 	static public final String SOUND_FOLDER = "snd";
@@ -26,7 +26,7 @@ public class Project
 	static public final boolean DEFAULT_LOGGING = false;
 	
 	private String name;
-	private int version;
+	private String version;
 	private String projectPath;
 	private Settings transmissionSettings;
 	private boolean logging;
@@ -37,7 +37,7 @@ public class Project
 		this(name, DEFAULT_VERSION, basePath, false);
 	}
 	
-	public Project(String name, int version, String basePath, boolean createSubfolder)
+	public Project(String name, String version, String basePath, boolean createSubfolder)
 	{
 		if(name == null || name.isEmpty() || basePath == null || basePath.isEmpty())
 			throw new IllegalArgumentException("Both a name and a valid path are required");
@@ -90,7 +90,7 @@ public class Project
 		return name;
 	}
 	
-	public int getVersion()
+	public String getVersion()
 	{
 		return version;
 	}

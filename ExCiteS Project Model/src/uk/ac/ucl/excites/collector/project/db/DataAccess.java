@@ -262,14 +262,14 @@ public final class DataAccess
 	 * 
 	 * @return null if project was not found
 	 */
-	public Project retrieveProject(final String name, final int version)
+	public Project retrieveProject(final String name, final String version)
 	{
 		@SuppressWarnings("serial")
 		ObjectSet<Project> result = db.query(new Predicate<Project>()
 		{
 			public boolean match(Project project)
 			{
-				return project.getName().equalsIgnoreCase(name) && project.getVersion() == version;
+				return project.getName().equalsIgnoreCase(name) && project.getVersion().equalsIgnoreCase(version);
 			}
 		});
 		if(result.isEmpty())

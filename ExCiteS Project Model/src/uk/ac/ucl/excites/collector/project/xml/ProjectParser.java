@@ -52,6 +52,8 @@ public class ProjectParser extends DefaultHandler
 	static private final String TAG_HTTP_UPLOAD = "HTTPUpload";
 	static private final String TAG_SMS_UPLOAD = "SMSUpload";
 	static private final String TAG_ENCRYPTION = "Encryption";
+	static private final String TAG_ALLOW_MOBILE_DATA = "AllowMobileData";
+	static private final String TAG_ALLOW_ROAMING = "AllowRoaming";
 	static private final String TAG_LOGGING = "Logging";
 	static private final String TAG_FORM = "Form";
 	private static final String TAG_CHOICE = "Choice";
@@ -153,8 +155,7 @@ public class ProjectParser extends DefaultHandler
 		if(qName.equals(TAG_PROJECT))
 		{
 			String projectName = readRequiredStringAttribute(TAG_PROJECT, attributes, ATTRIBUTE_PROJECT_NAME);
-			project = new Project(projectName, readIntegerAttribute(attributes, ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION), basePath,
-					createProjectFolder);
+			project = new Project(projectName, readStringAttribute(attributes, ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION), basePath, createProjectFolder);
 		}
 		// <Configuration>
 		else if(qName.equals(TAG_CONFIGURATION))
@@ -166,17 +167,23 @@ public class ProjectParser extends DefaultHandler
 		{
 			if(!inConfigTag)
 				throw new SAXException("<" + TAG_TRANSMISSION + "> should only appear in <" + TAG_CONFIGURATION + ">.");
+			if(project.getTransmissionSettings() != null)
+				throw new SAXException("There can be only one <" + TAG_TRANSMISSION + "> tag.");
 			transmissionSettings = new Settings();
 			project.setTransmissionSettings(transmissionSettings);
 		}
 		// <DropboxUpload>
 		else if(qName.equals(TAG_DROPBOX_UPLOAD))
 		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_DROPBOX_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
 			transmissionSettings.setDropboxUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_DROPBOX_UPLOAD));
 		}
 		// <HTTPUpload>
 		else if(qName.equals(TAG_HTTP_UPLOAD))
 		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_HTTP_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
 			transmissionSettings.setHTTPUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_HTTP_UPLOAD));
 			String server = attributes.getValue("server");
 			if(server != null && !server.isEmpty())
@@ -185,6 +192,8 @@ public class ProjectParser extends DefaultHandler
 		// <SMSUpload>
 		else if(qName.equals(TAG_SMS_UPLOAD))
 		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_SMS_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
 			transmissionSettings.setSMSUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_SMS_UPLOAD));
 			String relay = attributes.getValue("relay");
 			if(relay != null && !relay.isEmpty())
@@ -193,7 +202,23 @@ public class ProjectParser extends DefaultHandler
 		// <Encryption>
 		else if(qName.equals(TAG_ENCRYPTION))
 		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_ENCRYPTION + "> should only appear in <" + TAG_TRANSMISSION + ">.");
 			transmissionSettings.setEncrypt(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_ENCRYPT));
+		}
+		// <AllowMobileData>
+		else if(qName.equals(TAG_ALLOW_MOBILE_DATA))
+		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_ALLOW_MOBILE_DATA + "> should only appear in <" + TAG_TRANSMISSION + ">.");
+			transmissionSettings.setAllowMobileData(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_ALLOW_MOBILE_DATA));
+		}
+		// <AllowRoaming>
+		else if(qName.equals(TAG_ALLOW_ROAMING))
+		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_ALLOW_ROAMING + "> should only appear in <" + TAG_TRANSMISSION + ">.");
+			transmissionSettings.setAllowMobileData(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_ALLOW_ROAMING));
 		}
 		// <Logging>
 		else if(qName.equals(TAG_LOGGING))
@@ -325,9 +350,9 @@ public class ProjectParser extends DefaultHandler
 		{
 			OrientationField orField = new OrientationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 			newField(orField, attributes);
-			orField.setStoreAzimuth(readBooleanAttribute(attributes, "azimuth", OrientationField.DEFAULT_STORE_AZIMUTH));
-			orField.setStoreAzimuth(readBooleanAttribute(attributes, "pitch", OrientationField.DEFAULT_STORE_PITCH));
-			orField.setStoreAzimuth(readBooleanAttribute(attributes, "roll", OrientationField.DEFAULT_STORE_ROLL));
+			orField.setStoreAzimuth(readBooleanAttribute(attributes, "storeAzimuth", OrientationField.DEFAULT_STORE_AZIMUTH));
+			orField.setStoreAzimuth(readBooleanAttribute(attributes, "storePitch", OrientationField.DEFAULT_STORE_PITCH));
+			orField.setStoreAzimuth(readBooleanAttribute(attributes, "storeRoll", OrientationField.DEFAULT_STORE_ROLL));
 		}
 	}
 
@@ -344,6 +369,11 @@ public class ProjectParser extends DefaultHandler
 		else if(qName.equals(TAG_CONFIGURATION))
 		{
 			inConfigTag = false;
+		}
+		// </Transmission>
+		else if(qName.equals(TAG_TRANSMISSION))
+		{
+			transmissionSettings = null;
 		}
 		// </Form>
 		else if(qName.equals(TAG_FORM))
@@ -402,8 +432,13 @@ public class ProjectParser extends DefaultHandler
 		if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
 		{
 			String jumpToId = attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim();
+			//make _END form-specific:
 			if(jumpToId.equalsIgnoreCase(EndField.ID))
 				jumpToId = EndField.ID(f.getForm());
+			//make _CANCEL form-specific:
+			if(jumpToId.equalsIgnoreCase(CancelField.ID))
+				jumpToId = CancelField.ID(f.getForm());
+			//Store field & jumpToId:
 			fieldToJumpId.put(f, jumpToId);
 		}
 		// Resolve/set form start field:

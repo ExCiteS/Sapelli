@@ -6,6 +6,8 @@
 			<HTTPUpload enabled="true" server=""/>
 			<SMSUpload enabled="true" relay="+44..."/>
 			<Encryption enabled="true"/>
+			<AllowMobileData enabled="true"/>
+			<AllowRoaming enabled="false"/>
 		</Transmission>
 		<Logging enabled="true"/>
 	</Configuration>
