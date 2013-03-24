@@ -123,7 +123,7 @@ public class Settings
 	public void setPassword(String password)
 	{
 		//Do not store the password itself!
-		hashedPassword = Cryptography.getSHA256Hash(password);
+		hashedPassword = Cryptography.getSHA256Hash(password.trim());
 		rehashedPassword = Cryptography.getSHA256Hash(hashedPassword);
 	}
 	
