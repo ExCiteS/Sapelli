@@ -71,6 +71,7 @@ public class ProjectController implements LocationListener, OrientationListener
 	private Location currentBestLocation = null;
 	private OrientationSensor orientationSensor;
 
+	private long formStartTime;
 	private Logger logger;
 
 	public ProjectController(Project project, DataAccess dao, CollectorActivity activity)
@@ -93,11 +94,11 @@ public class ProjectController implements LocationListener, OrientationListener
 		{
 			try
 			{
-				logger = new Logger(project.getLogFolderPath());
+				logger = new Logger(project.getLogFolder().getAbsolutePath());
 
 				// Log the start of the project
-				logger.addLog("PROJECT_START", project.getName());
-				logger.addWhiteSpace();
+				logger.addLine("PROJECT_START", project.getName());
+				logger.addBlankLine();
 			}
 			catch(IOException e)
 			{
@@ -155,9 +156,10 @@ public class ProjectController implements LocationListener, OrientationListener
 		// log start form
 		if(logger != null)
 		{
-			logger.addLog("FORM_START", currentForm.getName());
+			formStartTime = System.currentTimeMillis();
+			logger.addLine("FORM_START", currentForm.getName());
 		}
-
+		
 		// Begin filling out the form at the start field:
 		goTo(currentForm.getStartField());
 	}
@@ -166,14 +168,13 @@ public class ProjectController implements LocationListener, OrientationListener
 	{
 		// cancel button pressed
 		if(logger != null)
-		{
-			logger.addLog("CANCEL_BUTTON", currentField.getID());
-		}
+			logger.addLine("CANCEL_BUTTON", currentField.getID());
+		
 		cancel(true);
 	}
 
 	public void cancelAndStop()
-	{
+	{		
 		cancel(false);
 	}
 
@@ -183,6 +184,7 @@ public class ProjectController implements LocationListener, OrientationListener
 		for(File attachment : currentMediaAttachments)
 			if(attachment.exists())
 				attachment.delete();
+		//restart or stop:
 		if(restart)
 		{
 			// Restart the form:
@@ -199,19 +201,17 @@ public class ProjectController implements LocationListener, OrientationListener
 			// close log file:
 			if(logger != null)
 			{
-				logger.addFinalLog("PROJECT_END", project.getName());
+				logger.addFinalLine("PROJECT_END", project.getName());
 				logger = null;
 			}
 		}
 	}
 
-	public void goForward(boolean user)
+	public void goForward(boolean requestedByUser)
 	{
 		// log interaction:
-		if(user && logger != null)
-		{
-			logger.addLog("FORWARD_BUTTON", currentField.getID());
-		}
+		if(requestedByUser && logger != null)
+			logger.addLine("FORWARD_BUTTON", currentField.getID());
 
 		if(currentField != null)
 			goTo(currentForm.getNextField(currentField));
@@ -225,9 +225,7 @@ public class ProjectController implements LocationListener, OrientationListener
 		{
 			// log interaction:
 			if(logger != null)
-			{
-				logger.addLog("BACK_BUTTON", currentField.getID());
-			}
+				logger.addLine("BACK_BUTTON", currentField.getID());
 
 			currentField = null; // !!! otherwise we create loops
 			goTo(fieldHistory.pop());
@@ -238,9 +236,7 @@ public class ProjectController implements LocationListener, OrientationListener
 	{
 		// log interaction
 		if(logger != null)
-		{
-			logger.addLog("REACHED", nextField.getID());
-		}
+			logger.addLine("REACHED", nextField.getID());
 
 		// Leafing current field...
 		if(currentField != null && currentField != nextField)
@@ -319,14 +315,12 @@ public class ProjectController implements LocationListener, OrientationListener
 
 	public void mediaDone(File mediaAttachment)
 	{
-		if(logger != null)
-		{
-			logger.addLog("REACHED", currentField.getID(), "NAME", mediaAttachment.getName());
-		}
-
 		MediaField ma = (MediaField) currentField;
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
+			if(logger != null)
+				logger.addLine("ATTACHMENT", currentField.getID(), mediaAttachment.getName());
+			
 			ma.incrementCount(currentRecord); // Store/increase number of pictures/recordings taken
 			if(ma.isMaxReached(currentRecord) && ma.getDisableChoice() != null)
 				tempDisabledFields.add(ma.getDisableChoice()); // disable the choice that makes the MA accessible
@@ -335,6 +329,9 @@ public class ProjectController implements LocationListener, OrientationListener
 		}
 		else
 		{
+			if(logger != null)
+				logger.addLine("ATTACHMENT", currentField.getID(), "NONE");
+			
 			if(ma.getOptional() != Optionalness.ALWAYS)
 				// at least one attachment is required:
 				goTo(ma); // stay at this field
@@ -347,6 +344,9 @@ public class ProjectController implements LocationListener, OrientationListener
 	{
 		if(field != currentField)
 			return; // this shouldn't happen really
+		//Log:
+		if(logger != null)
+			logger.addLine("TIMEOUT", currentField.getID());
 		// Handle location field
 		if(currentField instanceof LocationField)
 		{
@@ -362,6 +362,10 @@ public class ProjectController implements LocationListener, OrientationListener
 
 	public void endForm()
 	{
+		// Logging:
+		if(logger != null)
+			logger.addLine("FORM_END", currentForm.getName(), Long.toString((System.currentTimeMillis() - formStartTime) / 1000) + " seconds");
+		
 		// Finalise the currentRecord:
 		currentForm.finish(currentRecord); // sets end-time if necessary
 
@@ -375,12 +379,11 @@ public class ProjectController implements LocationListener, OrientationListener
 		Log.d(TAG, "Stored record:");
 		Log.d(TAG, currentRecord.toString());
 
-		// log start form
+		// logging:
 		if(logger != null)
 		{
-			logger.addLog("FORM_END", currentForm.getName());
-			logger.addLog("RECORD", currentRecord.toString());
-			logger.addWhiteSpace();
+			logger.addLine("RECORD", currentRecord.toString());
+			logger.addBlankLine();
 		}
 
 		// Move attachments from temp to data folder:
@@ -418,8 +421,6 @@ public class ProjectController implements LocationListener, OrientationListener
 
 	public void onOrientationChanged(Orientation orientation)
 	{
-		//Log.d(TAG, Float.toString(orientation.getAzimuth()) + "    " + Float.toString(orientation.getPitch()) + "    " + Float.toString(orientation.getRoll()));
-		// Float.toString(orientation.getRoll()));
 		if(currentField instanceof OrientationField)
 		{
 			((OrientationField) currentField).storeValue(currentRecord, orientation);

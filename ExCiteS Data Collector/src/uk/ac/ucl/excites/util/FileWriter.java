@@ -3,7 +3,6 @@ package uk.ac.ucl.excites.util;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
 import uk.ac.ucl.excites.collector.project.util.FileHelpers;
@@ -192,9 +191,9 @@ public class FileWriter
 			File file = new File(folder, FileHelpers.getFileName(fullPath));
 
 			// Open file:
-			OutputStream outputStream = new FileOutputStream(file, seekToEOF);
-			writer = ((characterEncoding == null || characterEncoding.equals("")) ? new OutputStreamWriter(outputStream) : new OutputStreamWriter(outputStream,
-					characterEncoding));
+			writer = ((characterEncoding == null || characterEncoding.equals("")) ?
+						new OutputStreamWriter(new FileOutputStream(file, seekToEOF)) :
+						new OutputStreamWriter(new FileOutputStream(file, seekToEOF), characterEncoding));
 		}
 		else
 			throw new Exception("Could not open FileWriter");

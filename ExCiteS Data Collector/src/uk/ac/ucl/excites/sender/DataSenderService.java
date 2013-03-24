@@ -97,8 +97,8 @@ public class DataSenderService extends Service
 				try
 				{
 					logger = new Logger(p.getLogFolderPath());
-					logger.addLog("PROJECT_SEND", p.getName());
-					logger.addWhiteSpace();
+					logger.addLine("PROJECT_SEND", p.getName());
+					logger.addBlankLine();
 				}
 				catch(IOException e)
 				{

@@ -9,10 +9,16 @@ import org.joda.time.format.ISODateTimeFormat;
 import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.util.Debug;
 
+/**
+ * @author Michalis Vitos, mstevens
+ *
+ */
 public class Logger
 {
+	
 	public static final String FIELD_SEPARATOR = "; ";
 	public static final String LOG_EXTENSION = ".log";
+	
 	private DateTimeFormatter formatter;
 	private FileWriter fileWriter;
 
@@ -34,53 +40,79 @@ public class Logger
 	/**
 	 * Add a new line with the following format: TIMESTAMP;MSG;
 	 * 
-	 * @param log
+	 * @param line
 	 */
-	public void addLog(String log)
+	public void addLine(String line)
 	{
-		fileWriter.writeLine(getTime() + FIELD_SEPARATOR + log + FIELD_SEPARATOR);
+		checkWriter();
+		fileWriter.writeLine(getTime() + FIELD_SEPARATOR + line + FIELD_SEPARATOR);
 	}
 
 	/**
-	 * 
-	 * @param logs
+	 * Add a new line with the following format: TIMESTAMP;fields[0];...;fields[fields.length-1]
+	 *  
+	 * @param fields
 	 */
-	public void addLog(String... logs)
+	public void addLine(String... fields)
 	{
+		checkWriter();
 		fileWriter.write(getTime());
-		for(String log : logs)
-		{
-			fileWriter.write(FIELD_SEPARATOR + log);
-		}
-
+		for(String field : fields)
+			fileWriter.write(FIELD_SEPARATOR + field);
 		fileWriter.writeLine(FIELD_SEPARATOR);
 	}
 
 	/**
 	 * Adds the final line to the Logger
 	 * 
-	 * @param log
+	 * @see Logger#addLine(String)
+	 * @param line
 	 */
-	public void addFinalLog(String log)
+	public void addFinalLine(String line)
 	{
-		addLog(log);
-		addWhiteSpace();
-		fileWriter.dispose();
-	}
-
-	public void addFinalLog(String... logs)
-	{
-		addLog(logs);
-		addWhiteSpace();
-		fileWriter.dispose();
+		addLine(line);
+		addBlankLine();
+		close();
 	}
 
 	/**
+	 * Adds the final line to the Logger
+	 * 
+	 * @see Logger#addLine(String...)
+	 * @param fields
+	 */
+	public void addFinalLine(String... fields)
+	{
+		addLine(fields);
+		addBlankLine();
+		close();
+	}
+	
+	/**
 	 * Add some whitespace
 	 */
-	public void addWhiteSpace()
+	public void addBlankLine()
 	{
+		checkWriter();
 		fileWriter.writeLine("");
+	}
+	
+	/**
+	 * Closes the log file. Nothing can be added to it after this method has been called.
+	 */
+	public void close()
+	{
+		if(fileWriter != null)
+		{
+			fileWriter.dispose();
+			fileWriter = null;
+		}
+	}
+	
+	private void checkWriter()
+	{
+		if(fileWriter == null || !fileWriter.isWritable())
+			throw new IllegalStateException("Logger has been closed or file is not writable.");
 	}
 
 	private String getTime()
@@ -88,4 +120,5 @@ public class Logger
 		DateTime now = new DateTime();
 		return formatter.withZone(now.getZone()).print(now);
 	}
+	
 }
