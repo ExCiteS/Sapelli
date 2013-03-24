@@ -11,8 +11,8 @@ import org.joda.time.DateTime;
 import uk.ac.ucl.excites.collector.project.data.FormEntry;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
-import uk.ac.ucl.excites.storage.util.BinaryHelpers;
-import uk.ac.ucl.excites.storage.util.Hashing;
+import uk.ac.ucl.excites.util.BinaryHelpers;
+import uk.ac.ucl.excites.util.Cryptography;
 
 /**
  * @author mstevens
@@ -150,7 +150,7 @@ public abstract class MediaField extends Field
 		//Assemble:
 		String message = dt.toString() + Long.toString(deviceID) + Integer.toString(fieldIdx) + mediaType + Integer.toString(attachmentNumber);
 		//Return MD5 hash as hexadecimal String:
-		return BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(message.getBytes()).toByteArray());
+		return BinaryHelpers.toHexadecimealString(Cryptography.getMD5Hash(message.getBytes()).toByteArray());
 	}
 	
 }

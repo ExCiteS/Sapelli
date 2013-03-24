@@ -1,4 +1,7 @@
-package uk.ac.ucl.excites.storage.util;
+package uk.ac.ucl.excites.util;
+
+import java.util.Arrays;
+
 /**
  * 
  */
@@ -11,6 +14,14 @@ public final class BinaryHelpers
 {
 	
 	private BinaryHelpers() { } //should not be instantiated
+	
+	static byte[] subByteArray(byte[] array, int offset, int length)
+	{
+		int to = offset + length;
+		if(to > array.length)
+			to = array.length;
+		return Arrays.copyOfRange(array, offset, to);
+	}
 	
 	static public String toHexadecimealString(byte[] data)
 	{

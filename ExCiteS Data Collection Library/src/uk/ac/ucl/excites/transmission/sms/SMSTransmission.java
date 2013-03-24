@@ -37,7 +37,7 @@ public abstract class SMSTransmission extends Transmission
 	
 	protected SMSAgent receiver;
 	protected SMSAgent sender;
-	protected SMSService smsService;
+	protected transient SMSService smsService;
 	protected SortedSet<Message> parts;
 	protected DateTime deliveredAt;
 	
@@ -50,11 +50,10 @@ public abstract class SMSTransmission extends Transmission
 	 * @param schema
 	 * @param id
 	 * @param receiver
-	 * @param smsService
 	 */
-	public SMSTransmission(Schema schema, byte id, SMSAgent receiver, SMSService smsService)
+	public SMSTransmission(Schema schema, byte id, SMSAgent receiver)
 	{
-		this(schema, null, id, receiver, smsService);
+		this(schema, null, id, receiver);
 	}
 	
 	/**
@@ -64,15 +63,13 @@ public abstract class SMSTransmission extends Transmission
 	 * @param columnsToFactorOut
 	 * @param id
 	 * @param receiver
-	 * @param smsService
 	 */
-	public SMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, int id, SMSAgent receiver, SMSService smsService)
+	public SMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, int id, SMSAgent receiver)
 	{
 		super(schema, columnsToFactorOut);
 		this.id = id;
 		
 		this.receiver = receiver;
-		this.smsService = smsService;
 		this.parts = new TreeSet<Message>(new Message.MessageComparator());
 	}
 	
@@ -208,14 +205,23 @@ public abstract class SMSTransmission extends Transmission
 		decodeRecords(data);
 	}
 
-	@Override
-	public void send() throws Exception
+	public void send(SMSService smsService) throws Exception
 	{
+		if(smsService == null)
+			throw new IllegalStateException("Please provide a non-null SMSService instance.");
+		this.smsService = smsService;
+		
 		//Prepare messages:
 		prepareMessages();
 		//Send them one by one:
 		for(Message m : parts)
 			m.send();
+	}
+	
+	@Override
+	public void send() throws Exception
+	{
+		send(smsService);
 	}
 	
 	protected byte[] encodeRecords() throws IOException
@@ -438,6 +444,11 @@ public abstract class SMSTransmission extends Transmission
 		}
 		if(allReceived)
 			receivedAt = lastReceivedAt;		
+	}
+	
+	public void setSMSService(SMSService smsService)
+	{
+		this.smsService = smsService;
 	}
 	
 	public SMSService getSMSService()

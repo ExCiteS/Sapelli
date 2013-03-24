@@ -1,7 +1,7 @@
  /**
  * 
  */
-package uk.ac.ucl.excites.collector.project.util;
+package uk.ac.ucl.excites.util;
 
 /**
  * @author mstevens

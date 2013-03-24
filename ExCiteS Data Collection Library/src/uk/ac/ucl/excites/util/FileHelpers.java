@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.collector.project.util;
+package uk.ac.ucl.excites.util;
 
 import java.io.File;
 import java.io.FileInputStream;

@@ -366,6 +366,11 @@ public class ProjectParser extends DefaultHandler
 		{
 			if(project.getForms().size() == 0)
 				throw new SAXException("A project such have at least 1 form!");
+			if(project.getTransmissionSettings() == null)
+			{
+				project.setTransmissionSettings(new Settings());
+				warnings.add("No transmission settings found, defaults are used");
+			}
 		}
 		// </Configuration>
 		else if(qName.equals(TAG_CONFIGURATION))

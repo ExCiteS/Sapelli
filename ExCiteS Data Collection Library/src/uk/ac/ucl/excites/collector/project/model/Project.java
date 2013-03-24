@@ -5,8 +5,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.transmission.Settings;
+import uk.ac.ucl.excites.util.FileHelpers;
 
 /**
  * @author mstevens

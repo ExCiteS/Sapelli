@@ -8,7 +8,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
-import uk.ac.ucl.excites.transmission.util.Cryptography;
+import uk.ac.ucl.excites.util.Cryptography;
 
 /**
  * @author mstevens
@@ -33,7 +33,7 @@ public class Settings
 	
 	static public final CompressionMode DEFAULT_COMPRESSION_MODE = CompressionMode.HUFFMAN;
 	static public final boolean DEFAULT_ENCRYPT = false;
-	static private final String DEFAULT_PASSWORD = "ExCiteSWC1E6BT";
+	static public final String DEFAULT_PASSWORD = "ExCiteSWC1E6BT";
 	static public final SMSMode DEFAULT_SMS_MODE = SMSMode.BINARY;
 	
 	static public final boolean DEFAULT_DROPBOX_UPLOAD = false;
@@ -119,7 +119,7 @@ public class Settings
 	{
 		this.encrypt = encrypt;
 	}
-
+	
 	public void setPassword(String password)
 	{
 		//Do not store the password itself!
