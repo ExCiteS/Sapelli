@@ -72,6 +72,10 @@
         <activity android:name="uk.ac.ucl.excites.sender.dropbox.DropboxLogin" >
         </activity>
         <activity
+            android:name="uk.ac.ucl.excites.collector.StatisticsActivity"
+            android:theme="@android:style/Theme.NoTitleBar" >
+        </activity>
+        <activity
             android:name="uk.ac.ucl.excites.sender.dropbox.DropboxAuthentication"
             android:label="@string/title_activity_dropbox" >
         </activity>

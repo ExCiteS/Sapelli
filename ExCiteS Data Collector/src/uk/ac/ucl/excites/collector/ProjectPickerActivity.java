@@ -66,7 +66,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	static private final String DOWNLOADS_FOLDER = "Downloads" + File.separatorChar;
 	static private final String DB4O_DUMP_NAME = "DatabaseDump_";
 	static private final String DB4O_DUMP_EXTENSION = "db4o";
-	
+
 	// SHORTCUT ACTIONS
 	private static final String DEFAULT_INSTALL_SHORTCUT_ACTION = "com.android.launcher.action.INSTALL_SHORTCUT";
 	private static final String CUSTOM_INSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.INSTALL_SHORTCUT";
@@ -93,6 +93,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	private Button removeShortcutBtn;
 	private MenuItem senderSettingsItem;
 	private MenuItem copyDBItem;
+	private MenuItem statisticsItem;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -160,9 +161,12 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		copyDBItem = menu.findItem(R.id.copy_db_menuitem);
 		if(copyDBItem != null)
 			copyDBItem.setOnMenuItemClickListener(this);
+		statisticsItem = menu.findItem(R.id.statistics_menuitem);
+		if(statisticsItem != null)
+			statisticsItem.setOnMenuItemClickListener(this);
 		return true;
 	}
-	
+
 	@Override
 	public boolean onMenuItemClick(MenuItem item)
 	{
@@ -170,6 +174,8 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			return openSenderSettings(item);
 		else if(item == copyDBItem)
 			return copyDBtoSD(item);
+		else if(item == statisticsItem)
+			return showStatistics(item);
 		return false;
 	}
 
@@ -178,12 +184,20 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		startActivity(new Intent(getBaseContext(), DataSenderPreferences.class));
 		return true;
 	}
-	
+
 	public boolean copyDBtoSD(MenuItem item)
 	{
 		dao.closeDB();
 		dao.copyDB(excitesFolderPath + DB4O_DUMP_NAME + System.currentTimeMillis() + "." + DB4O_DUMP_EXTENSION);
 		dao.openDB();
+		return true;
+	}
+
+	public boolean showStatistics(MenuItem item)
+	{
+		Intent intent = new Intent(getBaseContext(), StatisticsActivity.class);
+		intent.putExtra(StatisticsActivity.PARAMETER_DB_FOLDER_PATH, databasePath);
+		startActivity(intent);
 		return true;
 	}
 

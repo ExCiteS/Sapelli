@@ -26,6 +26,10 @@
     <string name="notification">The Service is running.</string>
     <string name="hello">Hello World, SMS</string>
     <string name="phone_prompt">Choose a phone</string>
+    <string name="show_statistics">Show</string>
+    <string name="app_usage_statistics">Statistics on App usage</string>
+    <string name="statistics_menuitem">Statistics</string>
+    
 
     <string-array name="phones_array">
         <item>Michalis</item>
