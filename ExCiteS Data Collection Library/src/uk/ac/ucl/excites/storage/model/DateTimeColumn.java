@@ -14,7 +14,7 @@ import org.joda.time.format.ISODateTimeFormat;
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.storage.util.TimeUtils;
+import uk.ac.ucl.excites.util.TimeUtils;
 
 /**
  * A column to store DateTime objects (cfr: http://joda-time.sourceforge.net)

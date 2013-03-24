@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.storage.util;
+package uk.ac.ucl.excites.util;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -6,12 +6,34 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * @author mstevens
- *
+ * 
  */
-public final class Hashing
+public final class Cryptography
 {
+
+	private Cryptography() { } //should not be instantiated
 	
-	private Hashing() { } //should not be instantiated
+	static public byte[] getSHA256Hash(String data)
+	{
+		return getSHA256Hash(data.getBytes());
+	}
+	
+	static public byte[] getSHA256Hash(byte[] data)
+	{
+		MessageDigest digest = null;
+		try
+		{
+			digest = MessageDigest.getInstance("SHA-256");
+		}
+		catch(NoSuchAlgorithmException ex)
+		{
+			System.err.println("Cannot get hash algorithm: " + ex.getLocalizedMessage());
+			ex.printStackTrace(System.err);
+			return null;
+		}
+		digest.reset();
+		return digest.digest(data);
+	}
 	
 	/**
 	 * Returns a 128 bit MD5 hash code based on the provided data

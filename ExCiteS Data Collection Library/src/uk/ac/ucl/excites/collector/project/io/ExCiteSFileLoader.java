@@ -13,8 +13,8 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
+import uk.ac.ucl.excites.util.FileHelpers;
 
 /**
  * Loader for .excites files (which are actually just renamed ZIP files)

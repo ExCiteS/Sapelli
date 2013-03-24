@@ -61,7 +61,6 @@ public class BinarySMSTransmission extends SMSTransmission
 	@Override
 	protected byte[] mergeAndDeserialise(Set<Message> parts)
 	{
-		// TODO Auto-generated method stub
 		return null;
 	}
 

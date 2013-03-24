@@ -4,10 +4,10 @@
 package uk.ac.ucl.excites.collector.project.model;
 
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
-import uk.ac.ucl.excites.collector.project.util.Timeoutable;
 import uk.ac.ucl.excites.storage.model.LocationColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.types.Location;
+import uk.ac.ucl.excites.util.Timeoutable;
 
 /**
  * @author mstevens

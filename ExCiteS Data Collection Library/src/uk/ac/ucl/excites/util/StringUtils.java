@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.storage.util;
+package uk.ac.ucl.excites.util;
 
 import java.nio.charset.Charset;
 

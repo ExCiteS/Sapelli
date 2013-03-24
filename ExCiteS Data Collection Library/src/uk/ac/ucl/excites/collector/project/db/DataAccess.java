@@ -9,10 +9,10 @@ import java.util.List;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
-import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Transmission;
+import uk.ac.ucl.excites.util.FileHelpers;
 
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;

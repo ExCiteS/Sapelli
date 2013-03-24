@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.storage.util;
+package uk.ac.ucl.excites.util;
 
 import java.util.Calendar;
 import java.util.TimeZone;

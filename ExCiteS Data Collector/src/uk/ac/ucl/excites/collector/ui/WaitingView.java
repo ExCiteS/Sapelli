@@ -5,7 +5,7 @@ import java.util.TimerTask;
 
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.project.model.Field;
-import uk.ac.ucl.excites.collector.project.util.Timeoutable;
+import uk.ac.ucl.excites.util.Timeoutable;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.View;
