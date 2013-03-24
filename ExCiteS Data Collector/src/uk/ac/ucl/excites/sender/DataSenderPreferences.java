@@ -58,18 +58,6 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	}
 
 	/**
-	 * Check if the phone should upload to Dropbox
-	 * 
-	 * @param mContext
-	 * @return
-	 */
-	public static boolean getDropboxUpload(Context mContext)
-	{
-		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return mSharedPreferences.getBoolean("dropboxUpload", true);
-	}
-
-	/**
 	 * Check if the phone should get in Airplane Mode
 	 * 
 	 * @param mContext
@@ -78,7 +66,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	public static boolean getAirplaneMode(Context mContext)
 	{
 		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return mSharedPreferences.getBoolean("airplaneMode", true);
+		return mSharedPreferences.getBoolean("airplaneMode", false);
 	}
 
 //	/**
@@ -92,6 +80,18 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 //		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
 //		return mSharedPreferences.getString("centerPhoneNumber", "");
 //	}
+
+	/**
+	 * Check if the phone should upload to Dropbox
+	 * 
+	 * @param mContext
+	 * @return
+	 */
+	public static boolean getDropboxUpload(Context mContext)
+	{
+		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+		return mSharedPreferences.getBoolean("dropboxUpload", true);
+	}
 
 	/**
 	 * Get the number of minutes that the service is checking for connectivity
