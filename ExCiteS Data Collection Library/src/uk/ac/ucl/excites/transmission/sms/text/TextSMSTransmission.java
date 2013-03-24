@@ -11,7 +11,6 @@ import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.SchemaProvider;
 import uk.ac.ucl.excites.transmission.sms.Message;
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
-import uk.ac.ucl.excites.transmission.sms.SMSService;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException;
 
@@ -22,14 +21,14 @@ import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException
 public class TextSMSTransmission extends SMSTransmission
 {
 	
-	public TextSMSTransmission(Schema schema, byte id, SMSAgent receiver, SMSService smsService)
+	public TextSMSTransmission(Schema schema, byte id, SMSAgent receiver)
 	{
-		super(schema, null, id, receiver, smsService);
+		super(schema, null, id, receiver);
 	}
 
-	public TextSMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, byte id, SMSAgent receiver, SMSService smsService)
+	public TextSMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, byte id, SMSAgent receiver)
 	{
-		super(schema, columnsToFactorOut, id, receiver, smsService);
+		super(schema, columnsToFactorOut, id, receiver);
 	}
 
 	/**
