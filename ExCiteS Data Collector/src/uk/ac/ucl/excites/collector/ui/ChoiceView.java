@@ -13,7 +13,7 @@ import android.widget.AdapterView;
 
 /**
  * @author Julia, mstevens
- *
+ * 
  */
 public class ChoiceView extends PickerView implements FieldView
 {
@@ -22,7 +22,7 @@ public class ChoiceView extends PickerView implements FieldView
 	{
 		super(context);
 	}
-	
+
 	@Override
 	public View getView()
 	{
@@ -34,11 +34,11 @@ public class ChoiceView extends PickerView implements FieldView
 	{
 		final ChoiceField choice = (ChoiceField) field;
 		if(choice.isLeaf())
-			throw new IllegalArgumentException("Cannot display leaf choice.");		
-		
+			throw new IllegalArgumentException("Cannot display leaf choice.");
+
 		// Number of columns:
 		setNumColumns(choice.getCols());
-		
+
 		// Adapter & images:
 		imageAdapter = new ImageAdapter(getContext());
 		boolean atLeastOneEnabledChild = false;
@@ -50,28 +50,28 @@ public class ChoiceView extends PickerView implements FieldView
 				atLeastOneEnabledChild = true;
 			}
 			else
-				imageAdapter.addImage(new PlaceholderImage()); //show blank space instead of image for disabled choices 
+				imageAdapter.addImage(new PlaceholderImage()); // show blank space instead of image for disabled choices
 		}
 		if(!atLeastOneEnabledChild)
-		{	//all children are disabled
-			controller.goForward(); //skip this field
+		{ // all children are disabled
+			controller.goForward(false); // skip this field
 			return;
 		}
-		
+
 		// Set image dimensions when view dimensions are known:
 		getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
 		{
 			public boolean onPreDraw()
 			{
-				imageAdapter.setImageWidth((getWidth() - ((choice.getCols() - 1) * SPACING )) / choice.getCols());
+				imageAdapter.setImageWidth((getWidth() - ((choice.getCols() - 1) * SPACING)) / choice.getCols());
 				imageAdapter.setImageHeight((getHeight() - ((choice.getRows() - 1) * SPACING)) / choice.getRows());
 				setAdapter(imageAdapter);
-				
+
 				getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
 				return false;
 			}
 		});
-		
+
 		setOnItemClickListener(new OnItemClickListener()
 		{
 			@Override
@@ -79,7 +79,7 @@ public class ChoiceView extends PickerView implements FieldView
 			{
 				ChoiceField chosenChild = choice.getChildren().get(position);
 				if(controller.isFieldEndabled(chosenChild))
-					controller.choiceMade(chosenChild); //pass the chosen child
+					controller.choiceMade(chosenChild); // pass the chosen child
 			}
 		});
 	}
@@ -87,7 +87,7 @@ public class ChoiceView extends PickerView implements FieldView
 	@Override
 	public void cancel()
 	{
-		//does nothing
+		// does nothing
 	}
-	
+
 }

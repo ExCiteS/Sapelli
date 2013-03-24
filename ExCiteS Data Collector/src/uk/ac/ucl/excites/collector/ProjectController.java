@@ -29,13 +29,13 @@ import uk.ac.ucl.excites.collector.util.LocationUtils;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.types.Orientation;
 import uk.ac.ucl.excites.util.DeviceControl;
+import uk.ac.ucl.excites.util.Logger;
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
-
 
 /**
  * @author mstevens, Michalis Vitos, Julia
@@ -44,15 +44,15 @@ import android.util.Log;
 public class ProjectController implements LocationListener, OrientationListener
 {
 
-	//STATICS--------------------------------------------------------
+	// STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectController";
-	
-	public static final int LOCATION_LISTENER_UPDATE_MIN_TIME_MS = 15 * 1000;//30 seconds 
-	public static final int LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M = 5; 	//5 meters
-	
+
+	public static final int LOCATION_LISTENER_UPDATE_MIN_TIME_MS = 15 * 1000;// 30 seconds
+	public static final int LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M = 5; // 5 meters
+
 	private static final int VIBRATION_DURATION_MS = 600;
-	
-	//DYNAMICS-------------------------------------------------------
+
+	// DYNAMICS-------------------------------------------------------
 	private Project project;
 	private DataAccess dao;
 	private CollectorActivity activity;
@@ -66,11 +66,14 @@ public class ProjectController implements LocationListener, OrientationListener
 
 	private Record currentRecord;
 	private List<File> currentMediaAttachments;
-	
+
 	private LocationManager locationManager;
 	private Location currentBestLocation = null;
 	private OrientationSensor orientationSensor;
-	
+
+	private long formStartTime;
+	private Logger logger;
+
 	public ProjectController(Project project, DataAccess dao, CollectorActivity activity)
 	{
 		this.project = project;
@@ -81,17 +84,28 @@ public class ProjectController implements LocationListener, OrientationListener
 		tempDisabledFields = new HashSet<Field>();
 		currentMediaAttachments = new ArrayList<File>();
 		deviceID = (new DeviceID(activity)).getCRC32Hash();
-		
+
 		orientationSensor = new OrientationSensor(activity);
 	}
 
 	public void startProject()
-	{		
+	{
 		if(project.isLogging())
 		{
-			//TODO create logger
+			try
+			{
+				logger = new Logger(project.getLogFolder().getAbsolutePath());
+
+				// Log the start of the project
+				logger.addLine("PROJECT_START", project.getName());
+				logger.addBlankLine();
+			}
+			catch(IOException e)
+			{
+				Log.e(TAG, "Logger construction error", e);
+			}
 		}
-		startForm(0); //For now projects have only one form
+		startForm(0); // For now projects have only one form
 	}
 
 	public void startForm(String formName)
@@ -118,7 +132,7 @@ public class ProjectController implements LocationListener, OrientationListener
 	public void startForm(Form form)
 	{
 		currentForm = form;
-		
+
 		// Clear stuff:
 		fieldHistory.clear();
 		tempDisabledFields.clear();
@@ -128,10 +142,10 @@ public class ProjectController implements LocationListener, OrientationListener
 		// Open DB
 		if(!dao.isOpen())
 			dao.openDB();
-		
+
 		// Create new currentRecord:
 		currentRecord = currentForm.newEntry(deviceID);
-		
+
 		// Location...
 		List<LocationField> lfStartWithForm = currentForm.getLocationFields(true);
 		if(!lfStartWithForm.isEmpty())
@@ -139,49 +153,66 @@ public class ProjectController implements LocationListener, OrientationListener
 		else
 			stopLocationListener(); // stop listening for location updates (if we were still listening for another form for example)
 
+		// log start form
+		if(logger != null)
+		{
+			formStartTime = System.currentTimeMillis();
+			logger.addLine("FORM_START", currentForm.getName());
+		}
+		
 		// Begin filling out the form at the start field:
 		goTo(currentForm.getStartField());
 	}
 
 	public void cancelAndRestartForm()
 	{
+		// cancel button pressed
+		if(logger != null)
+			logger.addLine("CANCEL_BUTTON", currentField.getID());
+		
 		cancel(true);
 	}
-	
+
 	public void cancelAndStop()
-	{
+	{		
 		cancel(false);
 	}
-	
-	public void cancel(boolean restart)
+
+	private void cancel(boolean restart)
 	{
-		//Delete any attachments:
+		// Delete any attachments:
 		for(File attachment : currentMediaAttachments)
 			if(attachment.exists())
 				attachment.delete();
+		//restart or stop:
 		if(restart)
 		{
-			//Restart the form:
+			// Restart the form:
 			startForm(currentForm);
 		}
 		else
 		{
-			stopLocationListener(); //stop GPS!
+			stopLocationListener(); // stop GPS!
 			currentMediaAttachments.clear();
 			fieldHistory.clear();
 			currentForm = null;
 			currentField = null;
 			currentRecord = null;
-			//close log file:
-			if(project.isLogging())
+			// close log file:
+			if(logger != null)
 			{
-				//TODO
+				logger.addFinalLine("PROJECT_END", project.getName());
+				logger = null;
 			}
 		}
 	}
-	
-	public void goForward()
+
+	public void goForward(boolean requestedByUser)
 	{
+		// log interaction:
+		if(requestedByUser && logger != null)
+			logger.addLine("FORWARD_BUTTON", currentField.getID());
+
 		if(currentField != null)
 			goTo(currentForm.getNextField(currentField));
 		else
@@ -192,6 +223,10 @@ public class ProjectController implements LocationListener, OrientationListener
 	{
 		if(!fieldHistory.isEmpty())
 		{
+			// log interaction:
+			if(logger != null)
+				logger.addLine("BACK_BUTTON", currentField.getID());
+
 			currentField = null; // !!! otherwise we create loops
 			goTo(fieldHistory.pop());
 		}
@@ -199,6 +234,10 @@ public class ProjectController implements LocationListener, OrientationListener
 
 	public synchronized void goTo(Field nextField)
 	{
+		// log interaction
+		if(logger != null)
+			logger.addLine("REACHED", nextField.getID());
+
 		// Leafing current field...
 		if(currentField != null && currentField != nextField)
 			fieldHistory.add(currentField); // Add to history
@@ -211,24 +250,24 @@ public class ProjectController implements LocationListener, OrientationListener
 			if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(currentBestLocation)))
 				startLocationListener(lf); // start listening for a location
 			else
-			{ 	//we already have a (good enough) location
-				goForward(); //skip the wait screen
-				return; //!!!
+			{ // we already have a (good enough) location
+				goForward(false); // skip the wait screen
+				return; // !!!
 			}
 		}
-		//Handle OrientationField:
+		// Handle OrientationField:
 		else if(currentField instanceof OrientationField)
 		{
-			orientationSensor.start(this); //start listening for orientation updates
-			return; //!!! (orientation values will be received almost instantaneously, so we don't update the GUI
+			orientationSensor.start(this); // start listening for orientation updates
+			return; // !!! (orientation values will be received almost instantaneously, so we don't update the GUI
 		}
-		//Handle media fields:
+		// Handle media fields:
 		else if(currentField instanceof MediaField)
 		{
 			if(((MediaField) currentField).isMaxReached(currentRecord))
-			{	//Maximum number of attachments for this field is reached:
-				goForward(); //skip field
-				return; //!!!
+			{ // Maximum number of attachments for this field is reached:
+				goForward(false); // skip field
+				return; // !!!
 			}
 		}
 		// Update GUI (will also handle EndField & CancelField):
@@ -244,7 +283,7 @@ public class ProjectController implements LocationListener, OrientationListener
 		// Note: these paths may be null (in which case built-in defaults must be used)
 		return state;
 	}
-	
+
 	public boolean isFieldEndabled(Field field)
 	{
 		return field.isEnabled() && !tempDisabledFields.contains(field);
@@ -279,54 +318,74 @@ public class ProjectController implements LocationListener, OrientationListener
 		MediaField ma = (MediaField) currentField;
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
+			if(logger != null)
+				logger.addLine("ATTACHMENT", currentField.getID(), mediaAttachment.getName());
+			
 			ma.incrementCount(currentRecord); // Store/increase number of pictures/recordings taken
 			if(ma.isMaxReached(currentRecord) && ma.getDisableChoice() != null)
-				tempDisabledFields.add(ma.getDisableChoice()); //disable the choice that makes the MA accessible
+				tempDisabledFields.add(ma.getDisableChoice()); // disable the choice that makes the MA accessible
 			currentMediaAttachments.add(mediaAttachment);
-			goForward(); //goto next/jump field
+			goForward(false); // goto next/jump field
 		}
 		else
 		{
+			if(logger != null)
+				logger.addLine("ATTACHMENT", currentField.getID(), "NONE");
+			
 			if(ma.getOptional() != Optionalness.ALWAYS)
-				//at least one attachment is required:
-				goTo(ma); //stay at this field
+				// at least one attachment is required:
+				goTo(ma); // stay at this field
 			else
-				goForward(); //goto next/jump field
+				goForward(false); // goto next/jump field
 		}
 	}
-	
+
 	public void timeout(Field field)
 	{
 		if(field != currentField)
-			return; //this shouldn't happen really
-		//Handle location field
+			return; // this shouldn't happen really
+		//Log:
+		if(logger != null)
+			logger.addLine("TIMEOUT", currentField.getID());
+		// Handle location field
 		if(currentField instanceof LocationField)
 		{
 			LocationField lf = (LocationField) currentField;
 			if(lf.retrieveLocation(currentRecord) == null && lf.isUseBestNonQualifyingLocationAfterTimeout())
 				lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(currentBestLocation), true);
 		}
-		//else if() //other fields with timeouts in the future?
-		//...
-		//Continue:
-		goForward();
+		// else if() //other fields with timeouts in the future?
+		// ...
+		// Continue:
+		goForward(false);
 	}
 
 	public void endForm()
 	{
-		//Finalise the currentRecord:
-		currentForm.finish(currentRecord); //sets end-time if necessary
+		// Logging:
+		if(logger != null)
+			logger.addLine("FORM_END", currentForm.getName(), Long.toString((System.currentTimeMillis() - formStartTime) / 1000) + " seconds");
 		
+		// Finalise the currentRecord:
+		currentForm.finish(currentRecord); // sets end-time if necessary
+
 		// Open DB
 		if(!dao.isOpen())
 			dao.openDB();
-		
+
 		// Store currentRecord
 		dao.store(currentRecord);
-		
+
 		Log.d(TAG, "Stored record:");
 		Log.d(TAG, currentRecord.toString());
-		
+
+		// logging:
+		if(logger != null)
+		{
+			logger.addLine("RECORD", currentRecord.toString());
+			logger.addBlankLine();
+		}
+
 		// Move attachments from temp to data folder:
 		try
 		{
@@ -338,7 +397,7 @@ public class ProjectController implements LocationListener, OrientationListener
 		{
 			Log.w(TAG, "Error on moving attachements to data folder.");
 		}
-		
+
 		// Signal the successful storage of the currentRecord
 		// Vibration
 		if(currentForm.isVibrateOnEnd())
@@ -351,23 +410,22 @@ public class ProjectController implements LocationListener, OrientationListener
 		// End action:
 		switch(currentForm.getEndAction())
 		{
-			case Form.END_ACTION_LOOP:
-				startForm(currentForm);
-				break;
-			case Form.END_ACTION_EXIT:
-				activity.finish();
-				break; // leaves the application!
+		case Form.END_ACTION_LOOP:
+			startForm(currentForm);
+			break;
+		case Form.END_ACTION_EXIT:
+			activity.finish();
+			break; // leaves the application!
 		}
 	}
-	
+
 	public void onOrientationChanged(Orientation orientation)
 	{
-		//Log.d(TAG, Float.toString(orientation.getAzimuth()) + "    " + Float.toString(orientation.getPitch()) + "    " + Float.toString(orientation.getRoll()));
 		if(currentField instanceof OrientationField)
 		{
 			((OrientationField) currentField).storeValue(currentRecord, orientation);
-			orientationSensor.stop(); //stop listening for updates
-			goForward();
+			orientationSensor.stop(); // stop listening for updates
+			goForward(false);
 		}
 	}
 
@@ -404,18 +462,18 @@ public class ProjectController implements LocationListener, OrientationListener
 		if(LocationUtils.isBetterLocation(location, currentBestLocation))
 		{
 			currentBestLocation = location;
-			//check if we can/need to use the location now:
+			// check if we can/need to use the location now:
 			if(currentField instanceof LocationField)
-			{	//user is currently waiting for a location for the currentField
+			{ // user is currently waiting for a location for the currentField
 				LocationField lf = (LocationField) currentField;
-				//try to store location:
+				// try to store location:
 				if(lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(location)))
-				{	//location successfully stored:
+				{ // location successfully stored:
 					if(currentForm.getLocationFields(true).isEmpty())
-						stopLocationListener(); //there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)						
-					goForward(); //continue (will leave waiting screen & stop the timeout timer)
+						stopLocationListener(); // there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)
+					goForward(false); // continue (will leave waiting screen & stop the timeout timer)
 				}
-				//else (location was not accepted): do nothing (keep listening for a better location)
+				// else (location was not accepted): do nothing (keep listening for a better location)
 			}
 		}
 	}
@@ -437,7 +495,7 @@ public class ProjectController implements LocationListener, OrientationListener
 	{
 		// does nothing for now
 	}
-	
+
 	/**
 	 * @return the currentForm
 	 */
@@ -453,7 +511,7 @@ public class ProjectController implements LocationListener, OrientationListener
 	{
 		return project;
 	}
-	
+
 	/**
 	 * @return the currentRecord
 	 */

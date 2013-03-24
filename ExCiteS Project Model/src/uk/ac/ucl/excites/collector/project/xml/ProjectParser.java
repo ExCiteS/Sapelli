@@ -7,8 +7,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map.Entry;
 
 import javax.xml.parsers.SAXParser;
@@ -52,6 +54,8 @@ public class ProjectParser extends DefaultHandler
 	static private final String TAG_HTTP_UPLOAD = "HTTPUpload";
 	static private final String TAG_SMS_UPLOAD = "SMSUpload";
 	static private final String TAG_ENCRYPTION = "Encryption";
+	static private final String TAG_ALLOW_MOBILE_DATA = "AllowMobileData";
+	static private final String TAG_ALLOW_ROAMING = "AllowRoaming";
 	static private final String TAG_LOGGING = "Logging";
 	static private final String TAG_FORM = "Form";
 	private static final String TAG_CHOICE = "Choice";
@@ -72,6 +76,7 @@ public class ProjectParser extends DefaultHandler
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
+	private static final String ATTRIBUTE_CHOICE_VALUE = "value";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
 	private static final String ATTRIBUTE_SHOW_FORWARD = "showForward";
 	private static final String ATTRIBUTE_SHOW_CANCEL = "showCancel";
@@ -89,11 +94,13 @@ public class ProjectParser extends DefaultHandler
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaField, String> mediaAttachToDisableId;
 	private boolean inConfigTag = false;
+	private List<String> warnings;
 
 	public ProjectParser(String basePath, boolean createProjectFolder)
 	{
 		this.basePath = basePath;
 		this.createProjectFolder = createProjectFolder;
+		this.warnings = new ArrayList<String>(); 
 	}
 
 	public Project parseProject(File xmlFile) throws Exception
@@ -110,6 +117,7 @@ public class ProjectParser extends DefaultHandler
 		project = null;
 		fieldToJumpId = new HashMap<Field, String>();
 		idToField = new Hashtable<String, Field>();
+		warnings.clear();
 		mediaAttachToDisableId = new HashMap<MediaField, String>();
 		try
 		{
@@ -165,17 +173,23 @@ public class ProjectParser extends DefaultHandler
 		{
 			if(!inConfigTag)
 				throw new SAXException("<" + TAG_TRANSMISSION + "> should only appear in <" + TAG_CONFIGURATION + ">.");
+			if(project.getTransmissionSettings() != null)
+				throw new SAXException("There can be only one <" + TAG_TRANSMISSION + "> tag.");
 			transmissionSettings = new Settings();
 			project.setTransmissionSettings(transmissionSettings);
 		}
 		// <DropboxUpload>
 		else if(qName.equals(TAG_DROPBOX_UPLOAD))
 		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_DROPBOX_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
 			transmissionSettings.setDropboxUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_DROPBOX_UPLOAD));
 		}
 		// <HTTPUpload>
 		else if(qName.equals(TAG_HTTP_UPLOAD))
 		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_HTTP_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
 			transmissionSettings.setHTTPUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_HTTP_UPLOAD));
 			String server = attributes.getValue("server");
 			if(server != null && !server.isEmpty())
@@ -184,6 +198,8 @@ public class ProjectParser extends DefaultHandler
 		// <SMSUpload>
 		else if(qName.equals(TAG_SMS_UPLOAD))
 		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_SMS_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
 			transmissionSettings.setSMSUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_SMS_UPLOAD));
 			String relay = attributes.getValue("relay");
 			if(relay != null && !relay.isEmpty())
@@ -192,7 +208,23 @@ public class ProjectParser extends DefaultHandler
 		// <Encryption>
 		else if(qName.equals(TAG_ENCRYPTION))
 		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_ENCRYPTION + "> should only appear in <" + TAG_TRANSMISSION + ">.");
 			transmissionSettings.setEncrypt(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_ENCRYPT));
+		}
+		// <AllowMobileData>
+		else if(qName.equals(TAG_ALLOW_MOBILE_DATA))
+		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_ALLOW_MOBILE_DATA + "> should only appear in <" + TAG_TRANSMISSION + ">.");
+			transmissionSettings.setAllowMobileData(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_ALLOW_MOBILE_DATA));
+		}
+		// <AllowRoaming>
+		else if(qName.equals(TAG_ALLOW_ROAMING))
+		{
+			if(transmissionSettings == null)
+				throw new SAXException("<" + TAG_ALLOW_ROAMING + "> should only appear in <" + TAG_TRANSMISSION + ">.");
+			transmissionSettings.setAllowMobileData(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_ALLOW_ROAMING));
 		}
 		// <Logging>
 		else if(qName.equals(TAG_LOGGING))
@@ -231,12 +263,12 @@ public class ProjectParser extends DefaultHandler
 			if(attributes.getValue(ATTRIBUTE_FORM_START_FIELD) != null && !attributes.getValue(ATTRIBUTE_FORM_START_FIELD).isEmpty())
 				currentFormStartFieldId = attributes.getValue(ATTRIBUTE_FORM_START_FIELD);
 			else
-				System.out.println("Warning: No startField attribute, will use first field");
+				warnings.add("No startField attribute, will use first field");
 		}
 		// <Choice>
 		else if(qName.equals(TAG_CHOICE))
 		{
-			currentChoice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
+			currentChoice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getValue(ATTRIBUTE_CHOICE_VALUE), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
 			newField(currentChoice, attributes);
 			// No column:
 			currentChoice.setNoColumn(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
@@ -244,12 +276,8 @@ public class ProjectParser extends DefaultHandler
 			if(attributes.getValue("img") != null)
 				currentChoice.setImageLogicalPath(attributes.getValue("img"));
 			currentChoice.setCols(readIntegerAttribute(attributes, "cols", ChoiceField.DEFAULT_NUM_COLS));
-
 			if(attributes.getValue("rows") != null)
 				currentChoice.setRows(Integer.parseInt(attributes.getValue("rows")));
-			if(attributes.getValue("value") != null)
-				currentChoice.setValue(attributes.getValue("value"));
-			// ...
 		}
 		// <Location>
 		else if(qName.equals("Location"))
@@ -260,7 +288,7 @@ public class ProjectParser extends DefaultHandler
 			// Type:
 			String type = attributes.getValue("type");
 			if(type != null)
-				System.out.println("Warning: Unknown Location type (" + type + ").");
+				warnings.add("Unknown Location type (" + type + ").");
 			else if("Any".equalsIgnoreCase(type))
 				locField.setType(LocationField.TYPE_ANY);
 			else if("GPS".equalsIgnoreCase(type))
@@ -344,10 +372,16 @@ public class ProjectParser extends DefaultHandler
 		{
 			inConfigTag = false;
 		}
+		// </Transmission>
+		else if(qName.equals(TAG_TRANSMISSION))
+		{
+			transmissionSettings = null;
+		}
 		// </Form>
 		else if(qName.equals(TAG_FORM))
 		{
 			currentForm.initialiseStorage(); // generates Schema, Column & ValueDictionaries
+			warnings.addAll(currentForm.getWarnings());
 			currentForm = null;
 			currentFormStartFieldId = null;
 		}
@@ -394,7 +428,7 @@ public class ProjectParser extends DefaultHandler
 		if(f.getID() != null)
 		{
 			if(idToField.get(f.getID()) != null)
-				System.out.println("Warning: Duplicate field id (" + f.getID() + "!");
+				warnings.add("Duplicate field ID: " + f.getID() + " (possibly based on value)!");
 			idToField.put(f.getID(), f);
 		}
 		// Remember jump:
@@ -435,7 +469,7 @@ public class ProjectParser extends DefaultHandler
 		{
 			Field target = idToField.get(jump.getValue());
 			if(target == null)
-				System.out.println("Warning: Cannot resolve jump ID " + jump.getValue());
+				warnings.add("Cannot resolve jump ID " + jump.getValue());
 			else
 				jump.getKey().setJump(target);
 		}
@@ -444,7 +478,7 @@ public class ProjectParser extends DefaultHandler
 		{
 			Field target = idToField.get(disable.getValue());
 			if(target == null)
-				System.out.println("Warning: Cannot resolve disable field ID " + disable.getValue());
+				warnings.add("Cannot resolve disable field ID " + disable.getValue());
 			else
 				disable.getKey().setDisableChoice((ChoiceField) target);
 		}
@@ -516,6 +550,11 @@ public class ProjectParser extends DefaultHandler
 			return defaultValue;
 		else
 			return Float.parseFloat(text.trim());
+	}
+	
+	public List<String> getWarnings()
+	{
+		return warnings;
 	}
 
 }

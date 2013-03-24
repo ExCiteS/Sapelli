@@ -8,6 +8,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -27,17 +28,17 @@ public class ExCiteSFileLoader
 	static public final String EXCITES_FILE_EXTENSION = "excites";
 	static private final String PROJECT_FILE = "PROJECT.xml";
 
-	public String basePath;
-
+	private ProjectParser parser;
+	
 	/**
 	 * @param basePath
 	 * @throws IOException 
 	 */
 	public ExCiteSFileLoader(String basePath) throws IOException
 	{
-		this.basePath = basePath;
 		if(!FileHelpers.createFolder(basePath))
 			throw new IOException("Base path (" + basePath + ") does not exist and could not be created.");
+		parser = new ProjectParser(basePath, true);
 	}
 
 	public Project load(File excitesFile) throws Exception
@@ -47,8 +48,7 @@ public class ExCiteSFileLoader
 		Project p = null;
 		// Parse PROJECT.xml:
 		try
-		{
-			ProjectParser parser = new ProjectParser(basePath, true);
+		{	
 			p = parser.parseProject(getInputStream(excitesFile, PROJECT_FILE));
 		}
 		catch(Exception e)
@@ -65,6 +65,11 @@ public class ExCiteSFileLoader
 			throw new Exception("Error on extracting contents of " + excitesFile.getName(), e);
 		}
 		return p;
+	}
+	
+	public List<String> getParserWarnings()
+	{
+		return parser.getWarnings();
 	}
 
 	private InputStream getInputStream(File zipFile, String filename) throws IOException

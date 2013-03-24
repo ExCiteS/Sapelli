@@ -21,6 +21,7 @@ public class Project
 	static public final String SOUND_FOLDER = "snd";
 	static public final String DATA_FOLDER = "data";
 	static public final String TEMP_FOLDER = "temp";
+	static public final String LOG_FOLDER = "logs";
 	
 	static public final boolean DEFAULT_LOGGING = false;
 	
@@ -169,6 +170,18 @@ public class Project
 	public void setLogging(boolean logging)
 	{
 		this.logging = logging;
+	}
+	
+	public String getLogFolderPath() throws IOException
+	{
+		return getDataFolder().getAbsolutePath() + File.separator + LOG_FOLDER + File.separator;
+	}
+	
+	public File getLogFolder() throws IOException
+	{
+		File folder = new File(getLogFolderPath());
+		checkFolder(folder);
+		return folder;
 	}
 	
 }

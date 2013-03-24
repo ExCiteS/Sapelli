@@ -49,6 +49,8 @@ public class Form
 	private Schema schema;
 	private final String name;
 
+	private transient List<String> warnings;
+	
 	// Fields
 	private Field start;
 	private final List<Field> fields;
@@ -445,6 +447,20 @@ public class Form
 		if(storeEndTime)
 			// Set current time as end timestamp
 			((DateTimeColumn) schema.getColumn(COLUMN_TIMESTAMP_END)).storeValue(record, new DateTime() /*= now*/);
+	}
+	
+	protected void addWarning(String warning)
+	{
+		if(warnings == null)
+			warnings = new ArrayList<String>();
+		warnings.add(warning);
+	}
+	
+	public List<String> getWarnings()
+	{
+		if(warnings == null)
+			return new ArrayList<String>(); //leave this.warnings null
+		return warnings;
 	}
 
 }

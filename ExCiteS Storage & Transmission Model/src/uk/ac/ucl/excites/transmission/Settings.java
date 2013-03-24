@@ -40,6 +40,9 @@ public class Settings
 	static public final boolean DEFAULT_HTTP_UPLOAD = false;
 	static public final boolean DEFAULT_SMS_UPLOAD = false;
 	
+	static public final boolean DEFAULT_ALLOW_MOBILE_DATA = false;
+	static public final boolean DEFAULT_ALLOW_ROAMING = false;
+	
 	//DYNAMICS-------------------------------------------------------
 	
 	//General--------------------------
@@ -51,6 +54,9 @@ public class Settings
 	protected boolean dropboxUpload;
 	protected boolean httpUpload;
 	protected boolean smsUpload;
+	
+	protected boolean allowMobileData;
+	protected boolean allowRoaming;
 	
 	//HTTP specific--------------------
 	protected String serverAddress;
@@ -66,8 +72,6 @@ public class Settings
 	//Used on receiving side only:
 	protected List<SMSAgent> smsApprovedSenders;
 	
-	
-	
 	public Settings()
 	{
 		compressionMode = DEFAULT_COMPRESSION_MODE;
@@ -76,6 +80,8 @@ public class Settings
 		dropboxUpload = DEFAULT_DROPBOX_UPLOAD;
 		httpUpload = DEFAULT_HTTP_UPLOAD;
 		smsUpload = DEFAULT_SMS_UPLOAD;
+		allowMobileData = DEFAULT_ALLOW_MOBILE_DATA;
+		allowRoaming = DEFAULT_ALLOW_ROAMING;
 		smsMode = DEFAULT_SMS_MODE;
 		smsIntroductionSent = false;
 		smsNextTransmissionID = SMSTransmission.INITIAL_ID;
@@ -267,6 +273,38 @@ public class Settings
 	public void setServerAddress(String serverAddress)
 	{
 		this.serverAddress = serverAddress;
+	}
+
+	/**
+	 * @return the allowMobileData
+	 */
+	public boolean isAllowMobileData()
+	{
+		return allowMobileData;
+	}
+
+	/**
+	 * @param allowMobileData the allowMobileData to set
+	 */
+	public void setAllowMobileData(boolean allowMobileData)
+	{
+		this.allowMobileData = allowMobileData;
+	}
+
+	/**
+	 * @return the allowRoaming
+	 */
+	public boolean isAllowRoaming()
+	{
+		return allowRoaming;
+	}
+
+	/**
+	 * @param allowRoaming the allowRoaming to set
+	 */
+	public void setAllowRoaming(boolean allowRoaming)
+	{
+		this.allowRoaming = allowRoaming;
 	}
 	
 }
