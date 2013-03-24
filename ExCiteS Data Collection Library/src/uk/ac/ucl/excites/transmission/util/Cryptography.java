@@ -3,8 +3,6 @@ package uk.ac.ucl.excites.transmission.util;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import android.util.Log;
-
 /**
  * @author mstevens
  * 
@@ -12,8 +10,6 @@ import android.util.Log;
 public class Cryptography
 {
 
-	public static final String TAG = "Cryptography";
-	
 	public static byte[] getSHA256Hash(String data)
 	{
 		return getSHA256Hash(data.getBytes());
@@ -28,7 +24,9 @@ public class Cryptography
 		}
 		catch(NoSuchAlgorithmException ex)
 		{
-			Log.e(TAG, "Cannot get hash algorithm", ex);
+			System.err.println("Cannot get hash algorithm: " + ex.getLocalizedMessage());
+			ex.printStackTrace(System.err);
+			return null;
 		}
 		digest.reset();
 		return digest.digest(data);

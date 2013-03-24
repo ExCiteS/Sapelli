@@ -13,7 +13,6 @@ import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Transmission;
-import android.util.Log;
 
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
@@ -58,11 +57,12 @@ public final class DataAccess
 			dbConfig = Db4oEmbedded.newConfiguration();
 			dbConfig.common().exceptionsOnNotStorable(true);
 			openDB(); //open the database!
-			Log.d(TAG, "Opened new database connection in file: " + getDbPath());
+			System.out.println(TAG + " opened new database connection in file: " + getDbPath());
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "Unable to open database");
+			System.err.println(TAG + " is unable to open database.");
+			e.printStackTrace(System.err);
 		}
 	}
 	
@@ -94,7 +94,7 @@ public final class DataAccess
 	{
 		db.close();
 		db = null;
-		Log.d(TAG, "Closed database connection");
+		System.out.println(TAG + " closed database connection");
 	}
 	
 	public boolean isOpen()

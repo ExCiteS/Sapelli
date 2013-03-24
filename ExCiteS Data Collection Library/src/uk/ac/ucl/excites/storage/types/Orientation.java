@@ -1,6 +1,6 @@
 package uk.ac.ucl.excites.storage.types;
 
-import org.apache.http.ParseException;
+import java.text.ParseException;
 
 /**
  * @author mstevens
@@ -12,11 +12,11 @@ public class Orientation
 	//Statics----------------------------------------------
 	static final private String SEPARATOR = "|";
 	
-	static public Orientation Parse(String text)
+	static public Orientation Parse(String text) throws ParseException
 	{
 		String[] parts = text.trim().split("\\" + SEPARATOR);
 		if(parts.length != 3)
-			throw new ParseException("Not a valid orientation: " + text);
+			throw new ParseException("Not a valid orientation: " + text, 0);
 		return new Orientation(	(!parts[0].isEmpty() ? Float.valueOf(parts[0]) : null),
 								(!parts[1].isEmpty() ? Float.valueOf(parts[1]) : null),
 								(!parts[2].isEmpty() ? Float.valueOf(parts[2]) : null));

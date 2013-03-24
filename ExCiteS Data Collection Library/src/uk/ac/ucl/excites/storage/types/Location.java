@@ -1,6 +1,6 @@
 package uk.ac.ucl.excites.storage.types;
 
-import org.apache.http.ParseException;
+import java.text.ParseException;
 
 import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
 
@@ -45,7 +45,7 @@ public class Location
 	{
 		String[] parts = text.trim().split("\\" + SEPARATOR);
 		if(parts.length < 3)
-			throw new ParseException("Not a valid location: " + text);
+			throw new ParseException("Not a valid location: " + text, 0);
 		return new Location(Double.parseDouble(parts[0]),
 							Double.parseDouble(parts[1]),
 							Integer.parseInt(parts[2]),
