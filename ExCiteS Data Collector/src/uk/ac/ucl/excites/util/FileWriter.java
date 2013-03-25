@@ -5,7 +5,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 
-import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import android.util.Log;
 
 /**

@@ -3,6 +3,7 @@
 	<name>ExCiteS Data Server</name>
 	<comment></comment>
 	<projects>
+		<project>ExCiteS Data Collection Tomcat Library</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -33,4 +34,10 @@
 		<nature>org.eclipse.jdt.core.javanature</nature>
 		<nature>org.eclipse.wst.jsdt.core.jsNature</nature>
 	</natures>
+	<variableList>
+		<variable>
+			<name>REPO</name>
+			<value>$%7BPARENT-1-PROJECT_LOC%7D</value>
+		</variable>
+	</variableList>
 </projectDescription>

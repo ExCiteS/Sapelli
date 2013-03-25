@@ -35,38 +35,26 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 		PreferenceManager.setDefaultValues(DataSenderPreferences.this, R.xml.background_preferences, false);
 
 		// Register a listener
-		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
-		mSharedPreferences.registerOnSharedPreferenceChangeListener(this);
+		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+		sharedPreferences.registerOnSharedPreferenceChangeListener(this);
 
 		// Debug the Preferences
 		if(Constants.DEBUG_LOG)
 			printPreferences(getApplicationContext());
 
 		// Start Button
-		Preference startButton = (Preference) findPreference("startButton");
+		Preference startButton = findPreference("startButton");
 		startButton.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener()
 		{
 			@Override
 			public boolean onPreferenceClick(Preference arg0)
 			{
 				// Call the Service
-				Intent mIntent = new Intent(DataSenderPreferences.this, DataSenderService.class);
-				startService(mIntent);
+				Intent intent = new Intent(DataSenderPreferences.this, DataSenderService.class);
+				startService(intent);
 				return true;
 			}
 		});
-	}
-
-	/**
-	 * Check if the phone should upload to Dropbox
-	 * 
-	 * @param mContext
-	 * @return
-	 */
-	public static boolean getDropboxUpload(Context mContext)
-	{
-		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return mSharedPreferences.getBoolean("dropboxUpload", true);
 	}
 
 	/**
@@ -77,8 +65,8 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	 */
 	public static boolean getAirplaneMode(Context mContext)
 	{
-		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return mSharedPreferences.getBoolean("airplaneMode", true);
+		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+		return sharedPreferences.getBoolean("airplaneMode", false);
 	}
 
 //	/**
@@ -94,6 +82,18 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 //	}
 
 	/**
+	 * Check if the phone should upload to Dropbox
+	 * 
+	 * @param mContext
+	 * @return
+	 */
+	public static boolean getDropboxUpload(Context mContext)
+	{
+		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+		return sharedPreferences.getBoolean("dropboxUpload", true);
+	}
+
+	/**
 	 * Get the number of minutes that the service is checking for connectivity
 	 * 
 	 * @param mContext
@@ -101,8 +101,8 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	 */
 	public static int getTimeSchedule(Context mContext)
 	{
-		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return Integer.parseInt(mSharedPreferences.getString("timeSchedule", "1"));
+		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+		return Integer.parseInt(sharedPreferences.getString("timeSchedule", "1"));
 	}
 
 	/**
@@ -113,8 +113,8 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	 */
 	public static int getMaxAttempts(Context mContext)
 	{
-		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return Integer.parseInt(mSharedPreferences.getString("maxAttempts", "1"));
+		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+		return Integer.parseInt(sharedPreferences.getString("maxAttempts", "1"));
 	}
 
 	@Override
@@ -127,12 +127,8 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 			printPreferences(getApplicationContext());
 		}
 
-		if(DataSenderService.class.getName() != null && ServiceChecker.isMyServiceRunning(getApplicationContext(), DataSenderService.class.getName()))
-		{
-			// Call the Service
-			Intent mIntent = new Intent(this, DataSenderService.class);
-			startService(mIntent);
-		}
+		// Restart the Service
+		ServiceChecker.restartActiveDataSender(this);
 	}
 
 	public void printPreferences(Context mContext)

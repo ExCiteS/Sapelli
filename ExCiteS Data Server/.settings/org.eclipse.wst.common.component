@@ -2,6 +2,9 @@
     <wb-module deploy-name="ExCiteS Data Receiver Server">
         <wb-resource deploy-path="/" source-path="/WebContent" tag="defaultRootSource"/>
         <wb-resource deploy-path="/WEB-INF/classes" source-path="/src"/>
+        <dependent-module archiveName="ExCiteS Data Collection Tomcat Library.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/ExCiteS Data Collection Tomcat Library/ExCiteS Data Collection Tomcat Library">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
         <property name="java-output-path" value="/ExCiteS Data Receiver Server/build/classes"/>
         <property name="context-root" value="ExCiteS Data Receiver Server"/>
     </wb-module>

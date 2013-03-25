@@ -17,13 +17,16 @@ import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
-import uk.ac.ucl.excites.collector.project.util.FileHelpers;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.util.SDCard;
 import uk.ac.ucl.excites.sender.DataSenderPreferences;
+import uk.ac.ucl.excites.sender.util.ServiceChecker;
+import uk.ac.ucl.excites.transmission.Settings;
+import uk.ac.ucl.excites.util.FileHelpers;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -94,12 +97,13 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	private MenuItem senderSettingsItem;
 	private MenuItem copyDBItem;
 	private MenuItem statisticsItem;
+	private Dialog encryptionDialog;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-
+		
 		// Check if there is an SD Card
 		if(!SDCard.isExternalStorageWritable())
 		{ // Inform the user and close the application
@@ -276,6 +280,9 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		removeShortcutFor(p);
 		dao.deleteProject(p);
 		populateProjectList();
+
+		// Restart the DataSenderService to stop monitoring the deleted project
+		ServiceChecker.restartActiveDataSender(this);
 	}
 
 	public void loadFile(View view)
@@ -364,7 +371,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		}
 	}
 
-	private void addProject(Project project, String sourcePathOrURL)
+	private void addProject(final Project project, String sourcePathOrURL)
 	{
 		// Check if we have a project object:
 		if(project == null)
@@ -372,10 +379,53 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			errorDialog("Invalid xml or excites file: " + sourcePathOrURL, false).show();
 			return;
 		}
-		// Store the project object:
+
+		// Encryption Check
+		if(project.getTransmissionSettings().isEncrypt())
+		{
+			// encryptionDialog = new AlertDialog.Builder(this);
+			AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
+			builder.setTitle("Project Encryption");
+			builder.setMessage("This project requires a password in order to encrypt and transmit the data. Please provide a password:");
+
+			// Set an EditText view to get user input
+			final EditText input = new EditText(this);
+			builder.setView(input);
+
+			builder.setPositiveButton("Ok", new DialogInterface.OnClickListener()
+			{
+				public void onClick(DialogInterface dialog, int whichButton)
+				{
+					if(input.getText().toString().equals(""))
+					{
+						// Set the Default Password
+						project.getTransmissionSettings().setPassword(Settings.DEFAULT_PASSWORD);
+						// Store the project object:
+						storeProject(project);
+					}
+					else
+					{
+						// Set the Password
+						project.getTransmissionSettings().setPassword(input.getText().toString());
+						// Store the project object:
+						storeProject(project);
+					}
+				}
+			});
+
+			encryptionDialog = builder.create();
+			encryptionDialog.show();
+		}
+		else
+			storeProject(project);
+	}
+
+	private void storeProject(Project p)
+	{
 		try
 		{
-			dao.store(project);
+			dao.store(p);
 		}
 		catch(DuplicateException de)
 		{
@@ -388,9 +438,13 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			errorDialog("Could not store project: " + e.getLocalizedMessage(), false).show();
 			return;
 		}
+
 		// Update project list:
 		populateProjectList();
-		selectProjectInList(project); // select the new project
+		selectProjectInList(p); // select the new project
+		
+		// Restart the DataSenderService to start monitoring the new project
+		ServiceChecker.restartActiveDataSender(this);
 	}
 
 	public void scanQR(View view)
@@ -588,6 +642,9 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		super.onPause();
 		if(dao != null)
 			dao.closeDB();
+
+		if(encryptionDialog != null)
+			encryptionDialog.dismiss();
 	}
 
 	@Override

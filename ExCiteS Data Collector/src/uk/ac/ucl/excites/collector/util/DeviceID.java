@@ -1,6 +1,6 @@
 package uk.ac.ucl.excites.collector.util;
 
-import uk.ac.ucl.excites.storage.util.Hashing;
+import uk.ac.ucl.excites.transmission.crypto.Hashing;
 
 import java.math.BigInteger;
 import java.util.zip.CRC32;
