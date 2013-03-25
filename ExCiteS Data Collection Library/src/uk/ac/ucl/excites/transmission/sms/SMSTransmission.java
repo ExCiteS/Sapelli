@@ -227,9 +227,11 @@ public abstract class SMSTransmission extends Transmission
 		
 		//Prepare messages:
 		prepareMessages();
-		//Send them one by one:
+		
+		//Send unsent messages one by one:
 		for(Message m : parts)
-			m.send();
+			if(!m.isSent())
+				m.send();
 	}
 	
 	@Override

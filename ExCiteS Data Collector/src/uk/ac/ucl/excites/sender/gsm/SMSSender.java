@@ -2,6 +2,8 @@ package uk.ac.ucl.excites.sender.gsm;
 
 import java.util.ArrayList;
 
+import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.sms.SMSService;
 import uk.ac.ucl.excites.transmission.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.transmission.sms.text.TextMessage;
@@ -23,11 +25,13 @@ public class SMSSender implements SMSService
 	private static final short SMS_PORT = 2013;
 	
 	private Context context;
+	private DataAccess dao;
 	private SmsManager smsManager;
 	
-	public SMSSender(Context context)
+	public SMSSender(Context context, DataAccess dao)
 	{
 		this.context = context;
+		this.dao = dao;
 		this.smsManager = SmsManager.getDefault();
 	}
 
@@ -47,6 +51,7 @@ public class SMSSender implements SMSService
 				{
 				case Activity.RESULT_OK:
 					textSMS.sentCallback(); //!!!
+					updateTransmission(textSMS.getTransmission()); //!!!
 					Log.i(TAG, "BroadcastReceiver: SMS sent");
 					break;
 				case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
@@ -75,6 +80,7 @@ public class SMSSender implements SMSService
 				{
 				case Activity.RESULT_OK:
 					textSMS.deliveryCallback(); //!!!
+					updateTransmission(textSMS.getTransmission()); //!!!
 					Log.i(TAG, "BroadcastReceiver: SMS delivered");
 					break;
 				case Activity.RESULT_CANCELED:
@@ -127,6 +133,7 @@ public class SMSSender implements SMSService
 				{
 				case Activity.RESULT_OK:
 					binarySMS.sentCallback();
+					updateTransmission(binarySMS.getTransmission()); //!!!
 					Log.i(TAG, "BroadcastReceiver: SMS sent");
 					break;
 				case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
@@ -155,6 +162,7 @@ public class SMSSender implements SMSService
 				{
 				case Activity.RESULT_OK:
 					binarySMS.deliveryCallback();
+					updateTransmission(binarySMS.getTransmission()); //!!!
 					Log.i(TAG, "BroadcastReceiver: SMS delivered");
 					break;
 				case Activity.RESULT_CANCELED:
@@ -174,6 +182,16 @@ public class SMSSender implements SMSService
 			return false;
 		}
 		return true;
+	}
+	
+	private void updateTransmission(Transmission transmission)
+	{
+		boolean wasDBOpen = dao.isOpen();
+		if(!wasDBOpen)
+			dao.openDB();
+		//TODO Update transmission
+		if(!wasDBOpen)
+			dao.closeDB();
 	}
 
 }

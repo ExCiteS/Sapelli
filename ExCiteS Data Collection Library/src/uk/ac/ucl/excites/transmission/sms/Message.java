@@ -115,6 +115,11 @@ public abstract class Message
 		transmission.partSent(this);
 	}
 	
+	public boolean isDelivered()
+	{
+		return (deliveredAt != null);
+	}
+	
 	public DateTime getDeliveredAt()
 	{
 		return deliveredAt;
@@ -134,6 +139,11 @@ public abstract class Message
 	public SMSAgent getSender()
 	{
 		return sender;
+	}
+	
+	public SMSTransmission getTransmission()
+	{
+		return transmission;
 	}
 	
 	public static class MessageComparator implements Comparator<Message>

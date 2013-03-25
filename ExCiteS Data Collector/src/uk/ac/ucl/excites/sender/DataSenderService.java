@@ -25,6 +25,7 @@ import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Settings;
+import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.transmission.sms.text.TextSMSTransmission;
@@ -102,6 +103,9 @@ public class DataSenderService extends Service
 		setServiceForeground(this);
 		
 		boolean smsUpload = false;
+		boolean dbOpen = dao.isOpen();
+		if(!dbOpen)
+			dao.openDB(); //!!!
 		for(Project p : dao.retrieveProjects())
 		{
 			if(p.isLogging())
@@ -145,10 +149,12 @@ public class DataSenderService extends Service
 				}
 			}
 		}
+		if(!dbOpen)
+			dao.closeDB(); //!!! close if it was closed before
 		
 		//if at least one project needs SMS sending:
 		if(smsUpload)
-			smsSender = new SMSSender(this);
+			smsSender = new SMSSender(this, dao);
 		
 		//Start GSM SignalMonitor
 		gsmMonitor = new SignalMonitor(this);
@@ -164,48 +170,8 @@ public class DataSenderService extends Service
 		}
 		// This schedule a runnable task every TIME_SCHEDULE in minutes
 		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
-
+		
 		return startMode;
-	}
-
-	@SuppressWarnings("deprecation")
-	public void setServiceForeground(Context mContext)
-	{
-		final int myID = 9999;
-
-		// The intent to launch when the user clicks the expanded notification
-		Intent mIntent = new Intent(mContext, DataSenderPreferences.class);
-		mIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-		PendingIntent pendIntent = PendingIntent.getActivity(mContext, 0, mIntent, 0);
-
-		// This constructor is deprecated. Use Notification.Builder instead
-		Notification mNotification = new Notification(R.drawable.sender, getString(R.string.title_activity_main), System.currentTimeMillis());
-
-		// This method is deprecated. Use Notification.Builder instead.
-		mNotification.setLatestEventInfo(this, getString(R.string.title_activity_main), getString(R.string.notification), pendIntent);
-
-		mNotification.flags |= Notification.FLAG_NO_CLEAR;
-		startForeground(myID, mNotification);
-	}
-
-	@Override
-	public IBinder onBind(Intent intent)
-	{
-		return null;
-	}
-
-	@Override
-	public boolean onUnbind(Intent intent)
-	{
-		// All clients have unbound with unbindService()
-		return allowRebind;
-	}
-
-	@Override
-	public void onRebind(Intent intent)
-	{
-		// A client is binding to the service with bindService(),
-		// after onUnbind() has already been called
 	}
 
 	@Override
@@ -270,6 +236,10 @@ public class DataSenderService extends Service
 //				tempCount++;
 //			}
 			
+			boolean dbOpen = dao.isOpen();
+			if(!dbOpen)
+				dao.openDB(); //!!!
+			
 			//Generate transmissions...
 			for(Project p : dao.retrieveProjects())
 			{
@@ -286,7 +256,10 @@ public class DataSenderService extends Service
 						for(Record r : records)
 							dao.store(r); //update records so associated transmissions are stored
 						
-						//TODO store transmissions themselves
+						//store transmissions
+						for(Transmission t : smsTransmissions)
+							dao.store(t);
+						
 						//TODO make sure they are restored upon sending call backs
 						
 						//TODO fetch unsent existing smstransmissions from db
@@ -310,6 +283,9 @@ public class DataSenderService extends Service
 				}
 				
 			}
+			
+			if(!dbOpen)
+				dao.closeDB();
 			
 			isSending = true;
 
@@ -360,6 +336,47 @@ public class DataSenderService extends Service
 				transmissions.add(t);
 		}
 		return transmissions;
+	}
+	
+
+	@SuppressWarnings("deprecation")
+	public void setServiceForeground(Context mContext)
+	{
+		final int myID = 9999;
+
+		// The intent to launch when the user clicks the expanded notification
+		Intent mIntent = new Intent(mContext, DataSenderPreferences.class);
+		mIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+		PendingIntent pendIntent = PendingIntent.getActivity(mContext, 0, mIntent, 0);
+
+		// This constructor is deprecated. Use Notification.Builder instead
+		Notification mNotification = new Notification(R.drawable.sender, getString(R.string.title_activity_main), System.currentTimeMillis());
+
+		// This method is deprecated. Use Notification.Builder instead.
+		mNotification.setLatestEventInfo(this, getString(R.string.title_activity_main), getString(R.string.notification), pendIntent);
+
+		mNotification.flags |= Notification.FLAG_NO_CLEAR;
+		startForeground(myID, mNotification);
+	}
+
+	@Override
+	public IBinder onBind(Intent intent)
+	{
+		return null;
+	}
+
+	@Override
+	public boolean onUnbind(Intent intent)
+	{
+		// All clients have unbound with unbindService()
+		return allowRebind;
+	}
+
+	@Override
+	public void onRebind(Intent intent)
+	{
+		// A client is binding to the service with bindService(),
+		// after onUnbind() has already been called
 	}
 
 }
