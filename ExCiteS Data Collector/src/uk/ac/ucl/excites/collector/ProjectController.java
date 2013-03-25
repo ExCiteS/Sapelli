@@ -46,6 +46,7 @@ public class ProjectController implements LocationListener, OrientationListener
 
 	// STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectController";
+	static private final String LOG_PREFIX = "Collector_";
 
 	public static final int LOCATION_LISTENER_UPDATE_MIN_TIME_MS = 15 * 1000;// 30 seconds
 	public static final int LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M = 5; // 5 meters
@@ -94,7 +95,7 @@ public class ProjectController implements LocationListener, OrientationListener
 		{
 			try
 			{
-				logger = new Logger(project.getLogFolder().getAbsolutePath());
+				logger = new Logger(project.getLogFolder().getAbsolutePath(), LOG_PREFIX);
 
 				// Log the start of the project
 				logger.addLine("PROJECT_START", project.getName());
