@@ -31,7 +31,7 @@ public class TextSMSTransmission extends SMSTransmission
 	 * @param receiver
 	 * @param settings
 	 */
-	public TextSMSTransmission(Schema schema, byte id, SMSAgent receiver, Settings settings)
+	public TextSMSTransmission(Schema schema, int id, SMSAgent receiver, Settings settings)
 	{
 		super(schema, null, id, receiver, settings);
 	}
@@ -45,7 +45,7 @@ public class TextSMSTransmission extends SMSTransmission
 	 * @param receiver
 	 * @param settings
 	 */
-	public TextSMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, byte id, SMSAgent receiver, Settings settings)
+	public TextSMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, int id, SMSAgent receiver, Settings settings)
 	{
 		super(schema, columnsToFactorOut, id, receiver, settings);
 	}

@@ -57,7 +57,7 @@ public abstract class SMSTransmission extends Transmission
 	 * @param receiver
 	 * @param settings
 	 */
-	public SMSTransmission(Schema schema, byte id, SMSAgent receiver, Settings settings)
+	public SMSTransmission(Schema schema, int id, SMSAgent receiver, Settings settings)
 	{
 		this(schema, null, id, receiver, settings);
 	}

@@ -2,7 +2,9 @@ package uk.ac.ucl.excites.sender;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -16,10 +18,13 @@ import uk.ac.ucl.excites.sender.dropbox.DropboxSync;
 import uk.ac.ucl.excites.sender.gsm.SMSSender;
 import uk.ac.ucl.excites.sender.gsm.SignalMonitor;
 import uk.ac.ucl.excites.sender.util.Constants;
+import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Settings;
+import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.sms.binary.BinarySMSTransmission;
+import uk.ac.ucl.excites.transmission.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.util.DeviceControl;
 import uk.ac.ucl.excites.util.Logger;
 import android.app.Notification;
@@ -42,7 +47,7 @@ public class DataSenderService extends Service
 
 	// Statics-------------------------------------------------------
 	static private final String TAG = "DataSenderService";
-	static private final String LOG_PREFIX = "DataSender_";
+	static private final String LOG_PREFIX = "Sender_";
 	private static final long POST_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
 	
 	// Dynamics------------------------------------------------------
@@ -237,31 +242,28 @@ public class DataSenderService extends Service
 				for(Form f : p.getForms())
 				{	
 					Schema schema = f.getSchema();
-					List<Record> records = dao.retrieveRecordsWithoutTransmission(schema);
+					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
 				
 					//Decide on transmission mode
-					
-					
-					BinarySMSTransmission t = null;
-					
-					while(!records.isEmpty() && !t.isFull())
+					if(gsmMonitor.isInService())
 					{
-						try
-						{
-							t.addRecord(records.get(0));
-							
-							records.remove(0);
-						}
-						catch(Exception e)
-						{
-							e.printStackTrace();
-						}
+						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records);
 						
-					}
-					
-					for(Record r : dao.retrieveRecordsWithoutTransmission(schema))
-					{
-						//BinarySMSTransmission transm = new BinarySMSTransmission(schema, 0, null, null);
+						//TODO store transmissions
+						//TODO make sure they are restored upon sending call backs
+						
+						//Send them
+						for(SMSTransmission t : smsTransmissions)
+						{
+							try
+							{
+								t.send(smsSender);
+							}
+							catch(Exception e)
+							{
+								//TODO
+							}
+						}
 						
 					}
 					
@@ -269,22 +271,22 @@ public class DataSenderService extends Service
 				
 			}
 			
-			int tempCount = 0;
-			while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
-			{
-				Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
-				// Wait for 1 a second on every attempt
-				try
-				{
-					Thread.sleep(1000);
-				}
-				catch(InterruptedException e)
-				{
-					if(Constants.DEBUG_LOG)
-						Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
-				}
-				tempCount++;
-			}
+//			int tempCount = 0;
+//			while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
+//			{
+//				Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
+//				// Wait for 1 a second on every attempt
+//				try
+//				{
+//					Thread.sleep(1000);
+//				}
+//				catch(InterruptedException e)
+//				{
+//					if(Constants.DEBUG_LOG)
+//						Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
+//				}
+//				tempCount++;
+//			}
 			
 			isSending = true;
 
@@ -295,6 +297,48 @@ public class DataSenderService extends Service
 			if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))
 				DeviceControl.toggleAirplaneMode(context);
 		}
+	}
+	
+	private List<SMSTransmission> generateSMSTransmissions(Project project, Schema schema, List<Record> records)
+	{
+		//Settings
+		Settings settings = project.getTransmissionSettings();
+		
+		//Columns to factor out:
+		Set<Column<?>> factorOut = new HashSet<Column<?>>();
+		factorOut.add(schema.getColumn(Form.COLUMN_DEVICE_ID));
+		
+		//Make transmissions: 
+		List<SMSTransmission> transmissions = new ArrayList<SMSTransmission>();
+		while(!records.isEmpty())
+		{
+			// Create transmission:			
+			SMSTransmission t = null;
+			switch(settings.getSMSMode())
+			{
+				case BINARY : t = new BinarySMSTransmission(schema, factorOut, settings.getSMSTransmissionID(), settings.getSMSRelay(), settings);
+				case TEXT : t = new TextSMSTransmission(schema, factorOut, settings.getSMSTransmissionID(), settings.getSMSRelay(), settings);
+			}
+			//Add as many records as possible:
+			while(!records.isEmpty() && !t.isFull())
+			{
+				try
+				{
+					t.addRecord(records.get(0));
+				}
+				catch(Exception e)
+				{
+					//TODO log to project logger
+					Log.e(TAG, "Error upon adding record", e);
+				}
+				finally
+				{
+					records.remove(0);
+				}
+			}
+			transmissions.add(t);
+		}
+		return transmissions;
 	}
 
 }
