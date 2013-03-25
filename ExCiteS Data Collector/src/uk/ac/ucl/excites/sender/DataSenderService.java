@@ -42,6 +42,7 @@ public class DataSenderService extends Service
 
 	// Statics-------------------------------------------------------
 	static private final String TAG = "DataSenderService";
+	static private final String LOG_PREFIX = "DataSender_";
 	private static final long POST_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
 	
 	// Dynamics------------------------------------------------------
@@ -96,7 +97,7 @@ public class DataSenderService extends Service
 			{
 				try
 				{
-					logger = new Logger(p.getLogFolderPath());
+					logger = new Logger(p.getLogFolderPath(), LOG_PREFIX);
 					logger.addLine("PROJECT_SEND", p.getName());
 					logger.addBlankLine();
 				}

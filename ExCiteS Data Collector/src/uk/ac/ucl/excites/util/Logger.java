@@ -21,14 +21,13 @@ public class Logger
 	private DateTimeFormatter formatter;
 	private FileWriter fileWriter;
 
-	public Logger(String filePath)
+	public Logger(String folderPath, String baseFileName)
 	{
 		this.formatter = ISODateTimeFormat.dateTime();
-		this.fileWriter = new FileWriter(filePath + File.separator + System.currentTimeMillis() + LOG_EXTENSION);
-
 		try
 		{
-			this.fileWriter.open(FileHelpers.FILE_EXISTS_STRATEGY_APPEND, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
+			this.fileWriter = new FileWriter(folderPath + File.separator + baseFileName + (System.currentTimeMillis() / 1000) + LOG_EXTENSION);
+			fileWriter.open(FileHelpers.FILE_EXISTS_STRATEGY_APPEND, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 		}
 		catch(Exception e)
 		{
