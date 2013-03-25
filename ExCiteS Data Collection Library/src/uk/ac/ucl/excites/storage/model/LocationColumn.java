@@ -154,30 +154,34 @@ public class LocationColumn extends Column<Location>
 		//does nothing (for now)
 	}
 
-	@Override
+	/*@Override
 	public boolean isVariableSize()
 	{
 		return (storeAltitude || storeAccuracy || storeBearing || storeSpeed);
-		/* Size is fixed if neither altitude, bearing, speed or accuracy are stored, if one or more of these
-		 * fields are stored the size is variable because these fields are not always present in a Location object.
-		 */
-	}
+		// Size is fixed if neither altitude, bearing, speed or accuracy are stored, if one or more of these
+		// fields are stored the size is variable because these fields are not always present in a Location object.
+	}*/
 	
 	@Override
 	public int _getMinimumSize()
 	{
 		return 	(doublePrecision ? Double.SIZE : Float.SIZE) /*Lat*/ + (doublePrecision ? Double.SIZE : Float.SIZE) /*Lon*/ +
-				(storeProvider ? Location.ProviderRange().getSize() /*Provider*/ : 0);
+				(storeProvider ? Location.ProviderRange().getSize() /*Provider*/ : 0) +
+				(storeAltitude ? 1 /*Alt presence bit (when there is no alt)*/ : 0) +
+				(storeBearing ? 1 /*Bearing presence bit (when there is no bearing)*/ : 0) +
+				(storeSpeed ? 1 /*Speed presence bit (when there is no speed)*/ : 0) +
+				(storeAccuracy ? 1 /*Acc presence bit (when there is no acc)*/ : 0);	
 	}
 	
 	@Override
 	public int _getMaximumSize()
 	{
-		return 	_getMinimumSize() +
+		return 	(doublePrecision ? Double.SIZE : Float.SIZE) /*Lat*/ + (doublePrecision ? Double.SIZE : Float.SIZE) /*Lon*/ +
+				(storeProvider ? Location.ProviderRange().getSize() /*Provider*/ : 0) +
 				(storeAltitude ? (1 + (doublePrecision ? Double.SIZE : Float.SIZE)) /*Alt (w/ presence bit)*/ : 0) +
 				(storeBearing ? (1 + Float.SIZE) /*Bearing (w/ presence bit)*/ : 0) +
 				(storeSpeed ? (1 + Float.SIZE) /*Speed (w/ presence bit)*/ : 0) +
-				(storeAccuracy ? (1 + Float.SIZE) /*Acc (w/ presence bit)*/ : 0);				
+				(storeAccuracy ? (1 + Float.SIZE) /*Acc (w/ presence bit)*/ : 0);			
 	}
 
 }
