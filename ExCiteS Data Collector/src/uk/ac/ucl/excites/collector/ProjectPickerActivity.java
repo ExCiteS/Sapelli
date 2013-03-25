@@ -21,6 +21,7 @@ import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.util.SDCard;
 import uk.ac.ucl.excites.sender.DataSenderPreferences;
+import uk.ac.ucl.excites.sender.util.ServiceChecker;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.util.FileHelpers;
 import android.app.Activity;
@@ -265,6 +266,9 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		removeShortcutFor(p);
 		dao.deleteProject(p);
 		populateProjectList();
+
+		// Restart the DataSenderService to stop monitoring the deleted project
+		ServiceChecker.restartActiveDataSender(this);
 	}
 
 	public void loadFile(View view)
@@ -424,6 +428,9 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		// Update project list:
 		populateProjectList();
 		selectProjectInList(p); // select the new project
+		
+		// Restart the DataSenderService to start monitoring the new project
+		ServiceChecker.restartActiveDataSender(this);
 	}
 
 	public void scanQR(View view)
