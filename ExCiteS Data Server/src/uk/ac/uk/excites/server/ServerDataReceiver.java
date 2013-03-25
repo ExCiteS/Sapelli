@@ -12,9 +12,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import uk.ac.uk.excites.server.db.Db4oServletListener;
-
-import com.db4o.ObjectContainer;
+import uk.ac.ucl.excites.collector.project.db.DataAccess;
 
 /**
  * Servlet implementation class DataReceiver
@@ -23,6 +21,7 @@ public class ServerDataReceiver extends HttpServlet
 {
 	// private static final String SENDER_PHONE_NUMBER = "SenderPhoneNumber";
 	private static final long serialVersionUID = 5655090058815084878L;
+	private DataAccess dao;
 
 	/**
 	 * @see HttpServlet#HttpServlet()
@@ -56,7 +55,23 @@ public class ServerDataReceiver extends HttpServlet
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
 		// Get the session container
-		ObjectContainer db = (ObjectContainer) request.getAttribute(Db4oServletListener.KEY_DB4O_SESSION);
+		// dao = DataAccessHelper.getInstance(request);
+		// Get a writer
+		PrintWriter out = response.getWriter();
+
+		out.println("doPost()");
+
+		// TODO
+		try
+		{
+			// Project project = new Project("Test", "Test");
+			// dao.store(project);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+
 
 		String smsID = request.getParameter("smsID");
 		// Set smsID to -1 if it is null
@@ -66,14 +81,12 @@ public class ServerDataReceiver extends HttpServlet
 		String smsData = request.getParameter("smsData");
 
 		// TODO Save Received SMS
-		SMS sms = new SMS(smsID, smsPhoneNumber, smsTimestamp, smsData);
-		db.store(sms);
+		// SMS sms = new SMS(smsID, smsPhoneNumber, smsTimestamp, smsData);
+		// dao.store(sms);
 
-		generateCsvFile(response, smsID, smsPhoneNumber, smsTimestamp, smsData);
+		// generateCsvFile(response, smsID, smsPhoneNumber, smsTimestamp, smsData);
 
 		// TODO Print ok or error
-		// then get the writer and write the response data
-		PrintWriter out = response.getWriter();
 		out.println("OK:" + smsID);
 		out.close();
 

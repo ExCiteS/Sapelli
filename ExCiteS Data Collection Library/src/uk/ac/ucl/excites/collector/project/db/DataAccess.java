@@ -42,6 +42,11 @@ public final class DataAccess
 		return INSTANCE;
 	}
 
+	static public DataAccess getInstance(ObjectContainer db)
+	{
+		return new DataAccess(db);
+	}
+
 	//Dynamics---------------------------------------------
 	private String dbFolderPath;
 	private EmbeddedConfiguration dbConfig;
@@ -66,6 +71,11 @@ public final class DataAccess
 		}
 	}
 	
+	private DataAccess(ObjectContainer db)
+	{
+		this.db = db;
+	}
+
 	/**
 	 * @return the dbFolderPath
 	 */
