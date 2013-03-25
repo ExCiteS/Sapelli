@@ -2,8 +2,11 @@ package uk.ac.ucl.excites.sender;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -59,7 +62,7 @@ public class DataSenderService extends Service
 	private boolean allowRebind; // indicates whether onRebind should be used
 	private String databasePath;
 	private DataAccess dao;
-	private Logger logger;
+	private Map<Project,Logger> loggers;
 	
 	private ScheduledExecutorService scheduleTaskExecutor;
 	private ScheduledFuture<?> mScheduledFuture;
@@ -67,6 +70,9 @@ public class DataSenderService extends Service
 	@Override
 	public void onCreate()
 	{
+		//Loggers
+		loggers = new HashMap<Project, Logger>();
+		
 		// Set the variable to false
 		isSending = false;
 
@@ -102,9 +108,10 @@ public class DataSenderService extends Service
 			{
 				try
 				{
-					logger = new Logger(p.getLogFolderPath(), LOG_PREFIX);
-					logger.addLine("PROJECT_SEND", p.getName());
-					logger.addBlankLine();
+					Logger logger = new Logger(p.getLogFolderPath(), LOG_PREFIX);
+					for(Entry<Project, Logger> pl : loggers.entrySet())
+						pl.getValue().addFinalLine("DataSender", "Service started.");
+					loggers.put(p, logger);
 				}
 				catch(IOException e)
 				{
@@ -204,9 +211,14 @@ public class DataSenderService extends Service
 	@Override
 	public void onDestroy()
 	{
+		//Close loggers:
+		for(Entry<Project, Logger> pl : loggers.entrySet())
+			pl.getValue().addFinalLine("DataSender", "Service stopped.");
+		
 		// Go to AirplaneMode if needed:
 		if(DataSenderPreferences.getAirplaneMode(this) && !DeviceControl.inAirplaneMode(this))
 			DeviceControl.toggleAirplaneMode(this);
+		
 		// The service is no longer used and is being destroyed
 		mScheduledFuture.cancel(true);
 		stopSelf();
@@ -223,6 +235,9 @@ public class DataSenderService extends Service
 		
 		public void run()
 		{
+			for(Entry<Project, Logger> pl : loggers.entrySet())
+				pl.getValue().addLine("Sending task");
+			
 			//Come out of airplane more if needed
 			if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
 			{
@@ -236,40 +251,7 @@ public class DataSenderService extends Service
 				catch(Exception ignore) {}
 			}
 			
-			//Generate transmissions...
-			for(Project p : dao.retrieveProjects())
-			{
-				for(Form f : p.getForms())
-				{	
-					Schema schema = f.getSchema();
-					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
-				
-					//Decide on transmission mode
-					if(gsmMonitor.isInService())
-					{
-						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records);
-						
-						//TODO store transmissions
-						//TODO make sure they are restored upon sending call backs
-						
-						//Send them
-						for(SMSTransmission t : smsTransmissions)
-						{
-							try
-							{
-								t.send(smsSender);
-							}
-							catch(Exception e)
-							{
-								//TODO
-							}
-						}
-						
-					}
-					
-				}
-				
-			}
+			//TODO Block until we have connectivity
 			
 //			int tempCount = 0;
 //			while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
@@ -288,6 +270,47 @@ public class DataSenderService extends Service
 //				tempCount++;
 //			}
 			
+			//Generate transmissions...
+			for(Project p : dao.retrieveProjects())
+			{
+				for(Form f : p.getForms())
+				{	
+					Settings settings = p.getTransmissionSettings();
+					Schema schema = f.getSchema();
+					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
+					
+					//Decide on transmission mode
+					if(settings.isSMSUpload() && gsmMonitor.isInService()) //TODO do roaming check
+					{
+						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(settings, schema, records);
+						for(Record r : records)
+							dao.store(r); //update records so associated transmissions are stored
+						
+						//TODO store transmissions themselves
+						//TODO make sure they are restored upon sending call backs
+						
+						//TODO fetch unsent existing smstransmissions from db
+						
+						//Send them
+						//TODO check signal again?
+						for(SMSTransmission t : smsTransmissions)
+						{
+							try
+							{
+								t.send(smsSender);
+							}
+							catch(Exception e)
+							{
+								//TODO
+							}
+						}
+						
+					}
+					
+				}
+				
+			}
+			
 			isSending = true;
 
 			//if(Constants.DEBUG_LOG)
@@ -299,11 +322,8 @@ public class DataSenderService extends Service
 		}
 	}
 	
-	private List<SMSTransmission> generateSMSTransmissions(Project project, Schema schema, List<Record> records)
+	private List<SMSTransmission> generateSMSTransmissions(Settings settings, Schema schema, List<Record> records)
 	{
-		//Settings
-		Settings settings = project.getTransmissionSettings();
-		
 		//Columns to factor out:
 		Set<Column<?>> factorOut = new HashSet<Column<?>>();
 		factorOut.add(schema.getColumn(Form.COLUMN_DEVICE_ID));
@@ -336,7 +356,8 @@ public class DataSenderService extends Service
 					records.remove(0);
 				}
 			}
-			transmissions.add(t);
+			if(!t.isEmpty())				
+				transmissions.add(t);
 		}
 		return transmissions;
 	}

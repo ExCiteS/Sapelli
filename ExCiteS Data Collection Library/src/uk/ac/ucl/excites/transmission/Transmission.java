@@ -107,7 +107,7 @@ public abstract class Transmission
 	
 	public boolean isEmpty()
 	{
-		return records.size() == 0;
+		return records.isEmpty();
 	}
 	
 	public boolean isSent()
