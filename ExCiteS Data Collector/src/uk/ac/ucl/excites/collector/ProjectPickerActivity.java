@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -220,7 +221,9 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	 */
 	public void populateProjectList()
 	{
-		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list, android.R.id.text1, dao.retrieveProjects()));
+		if(!dao.isOpen())
+			dao.openDB();
+		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list, android.R.id.text1, new ArrayList<Project>(dao.retrieveProjects())));
 		if(!projectList.getAdapter().isEmpty())
 		{
 			runBtn.setEnabled(true);
@@ -654,7 +657,6 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		super.onResume();
 		if(dao != null)
 		{
-			dao.openDB();
 			// Update project list:
 			populateProjectList();
 		}

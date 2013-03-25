@@ -38,16 +38,16 @@ public class StatisticsActivity extends ExpandableListActivity
 
 	static public final String PARAMETER_DB_FOLDER_PATH = "DBFolderPath";
 	private static final String KeyGROUP = "Project";
-	private static final String KeyCHILD = "Log";
-
+	private static final String KeyCHILD_LABEL = "ChildLabel";
+	private static final String KeyCHILD = "FormOrLogChild";
+	
 	private String dbFolderPath;
-	private DataAccess dao;
 
 	List<Project> projects;
 	PopupWindow popupWindow;
 
 	private ArrayList<Map<String, String>> groupContent = new ArrayList<Map<String, String>>();
-	private ArrayList<ArrayList<Map<String, String>>> childContent = new ArrayList<ArrayList<Map<String, String>>>();
+	private ArrayList<ArrayList<Map<String, ?>>> childContent = new ArrayList<ArrayList<Map<String, ?>>>();
 
 	public void onCreate(Bundle savedInstanceState)
 	{
@@ -57,15 +57,39 @@ public class StatisticsActivity extends ExpandableListActivity
 
 		// get db instance
 		dbFolderPath = getIntent().getExtras().getString(PARAMETER_DB_FOLDER_PATH);
-		dao = DataAccess.getInstance(dbFolderPath);
-
+	}
+	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
+		
+		//Populate UI:
+		DataAccess dao = DataAccess.getInstance(dbFolderPath);
 		try
 		{
-			createLists(); // generate content for expandable lists
+			projects = new ArrayList<Project>(dao.retrieveProjects());
+			List<Form> forms;
+			List<Record> records;
+			for(Project project : projects)
+			{
+				forms = project.getForms();
+				for(Form form : forms)
+				{
+					records = dao.retrieveRecords(form.getSchema());
+					Map<String, String> statisticsMap = new HashMap<String, String>();
+					String statistics = "Project: " + project.getName() + "\n" + form.getName() + ": " + records.size() + " records stored";
+					statisticsMap.put(KeyGROUP, statistics);
+					groupContent.add(statisticsMap);
+					childContent.add(listFormsAndLogFiles(dao, project));
+				}
+			}
 		}
 		catch(IOException e)
 		{
 			e.printStackTrace();
+			dao.closeDB(); //!!!
+			return;
 		}
 
 		// define adapter for ListView
@@ -75,38 +99,11 @@ public class StatisticsActivity extends ExpandableListActivity
 				new int[] { android.R.id.text1 }, // Data under the key goes into this TextView
 				childContent, // childContent describes second-level entries
 				R.layout.expandable_list_child_item, // Layout for second-level entries
-				new String[] { KeyCHILD }, // Key in childData maps to display
+				new String[] { KeyCHILD_LABEL }, // Key in childData maps to display
 				new int[] { android.R.id.text1 } // Data under the keys above go into this TextView
 		);
 		setListAdapter(expListAdapter); // setting the adapter in the list.
-
-	}
-
-	/**
-	 * Generates content to show in expandable list
-	 * 
-	 * @throws IOException
-	 */
-	private void createLists() throws IOException
-	{
-		projects = dao.retrieveProjects();
-		List<Form> forms;
-		List<Record> records;
-
-		for(Project project : projects)
-		{
-			forms = project.getForms();
-			for(Form form : forms)
-			{
-				records = dao.retrieveRecords(form.getSchema());
-				Map<String, String> statisticsMap = new HashMap<String, String>();
-				String statistics = "Project: " + project.getName() + "\n" + form.getName() + ": " + records.size() + " records stored";
-				statisticsMap.put(KeyGROUP, statistics);
-				groupContent.add(statisticsMap);
-				ArrayList<Map<String, String>> children = listLogFiles(project.getLogFolderPath());
-				childContent.add(children);
-			}
-		}
+		dao.closeDB(); //!!!
 	}
 
 	/**
@@ -115,29 +112,45 @@ public class StatisticsActivity extends ExpandableListActivity
 	 * @param path
 	 *            of log files
 	 * @return list of log file names
+	 * @throws IOException 
 	 */
-	private ArrayList<Map<String, String>> listLogFiles(String path)
+	private ArrayList<Map<String, ?>> listFormsAndLogFiles(DataAccess dao, Project project) throws IOException
 	{
-		ArrayList<Map<String, String>> children = new ArrayList<Map<String, String>>();
+		ArrayList<Map<String, ?>> children = new ArrayList<Map<String, ?>>();
+		//Forms:
+		for(Form f : project.getForms())
+		{
+			List<Record> records = new ArrayList<Record>(dao.retrieveRecords(f.getSchema()));
+			if(!records.isEmpty())
+			{
+				Map<String, Object> formMap = new HashMap<String, Object>();
+				FormChild c = new FormChild(f, records);
+				formMap.put(KeyCHILD_LABEL, c.toString());
+				formMap.put(KeyCHILD, c);
+				children.add(formMap);
+			}
+		}
+		//Log files:
+		String path = project.getLogFolderPath();
 		File folder = new File(path);
 		File[] listOfFiles;
+		
 		if(folder.listFiles() != null)
 		{
 			listOfFiles = folder.listFiles();
-
 			for(int i = 0; i < listOfFiles.length; i++)
 			{
 				if(listOfFiles[i].isFile())
 				{
-					String fileName = listOfFiles[i].getName();
-					Map<String, String> logMap = new HashMap<String, String>();
-					logMap.put(KeyCHILD, fileName);
+					Map<String, Object> logMap = new HashMap<String, Object>();
+					Child c = new LogChild(listOfFiles[i].getName());
+					logMap.put(KeyCHILD_LABEL, c.toString());
+					logMap.put(KeyCHILD, c);
 					children.add(logMap);
 				}
 			}
 		}
 		return children;
-
 	}
 
 	// show log on child click
@@ -145,16 +158,24 @@ public class StatisticsActivity extends ExpandableListActivity
 	{
 		try
 		{
-			showLog(projects.get(groupPosition).getLogFolderPath() + childContent.get(groupPosition).get(childPosition).get(KeyCHILD));
+			Child clickedChild = (Child) childContent.get(groupPosition).get(childPosition).get(KeyCHILD);
+			if(clickedChild instanceof LogChild)
+				showLog(projects.get(groupPosition).getLogFolderPath() + ((LogChild) clickedChild).filename);
+			else if (clickedChild instanceof FormChild)
+			{
+				
+				for(Record r : ((FormChild) clickedChild).getRecords())
+				{
+
+				}
+			}
 		}
 		catch(FileNotFoundException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		catch(IOException e)
 		{
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return true;
@@ -167,7 +188,6 @@ public class StatisticsActivity extends ExpandableListActivity
 	 */
 	public void showLog(String path) throws FileNotFoundException
 	{
-
 		LayoutInflater layoutInflater = (LayoutInflater) getBaseContext().getSystemService(LAYOUT_INFLATER_SERVICE);
 		View popupView = layoutInflater.inflate(R.layout.show_log, null);
 		((TextView) popupView.findViewById(R.id.LogTextView)).setText(readFile(path));
@@ -184,9 +204,7 @@ public class StatisticsActivity extends ExpandableListActivity
 	 */
 	private String readFile(String path) throws FileNotFoundException
 	{
-
 		StringBuilder text = new StringBuilder();
-
 		try
 		{
 			BufferedReader br = new BufferedReader(new FileReader(path));
@@ -211,14 +229,52 @@ public class StatisticsActivity extends ExpandableListActivity
 	{
 		popupWindow.dismiss();
 	}
-
-	@Override
-	protected void onPause()
+	
+	public class Child
 	{
-		// close database
-		super.onPause();
-		if(dao != null)
-			dao.closeDB();
-
+		
 	}
+	
+	public class LogChild extends Child
+	{
+		
+		private String filename;
+		
+		public LogChild(String filename)
+		{
+			this.filename = filename;
+		}
+		
+		@Override
+		public String toString()
+		{
+			return filename;
+		}
+	}
+	
+	public class FormChild extends Child
+	{
+		
+		private Form form;
+		private List<Record> records;
+		
+		public FormChild(Form form, List<Record> records)
+		{
+			this.form = form;
+			this.records = records;
+		}
+		
+		@Override
+		public String toString()
+		{
+			return form.getName() + " records";
+		}
+
+		public List<Record> getRecords()
+		{
+			return records;
+		}
+		
+	}
+
 }
