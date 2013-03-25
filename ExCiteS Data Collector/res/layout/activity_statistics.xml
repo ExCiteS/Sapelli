@@ -1,63 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/scrollView"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/StatisticsView"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:background="@color/gray" >
 
-    <LinearLayout
-        android:layout_width="fill_parent"
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="top"
-        android:layout_marginLeft="5dp"
-        android:layout_marginRight="5dp"
-        android:layout_marginTop="20dp"
-        android:orientation="vertical" >
+        android:layout_marginTop="10dp"
+        android:gravity="center"
+        android:text="@string/log_files"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="#FFFFFF" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="@string/app_usage_statistics"
-            android:textAppearance="?android:attr/textAppearanceSmall"
-            android:textColor="#FFFFFF" />
+    <View
+        android:id="@+id/separator"
+        android:layout_width="fill_parent"
+        android:layout_height="1dip"
+        android:layout_below="@+id/textView1"
+        android:layout_marginBottom="10dip"
+        android:background="@color/white" />
 
-        <include layout="@layout/hr" />
+    <ExpandableListView
+        android:id="@android:id/list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/separator"
+        android:layout_margin="5dp"
+        android:background="#fff"
+        android:cacheColorHint="#fff"
+        android:padding="3dp" >
+    </ExpandableListView>
 
-        <LinearLayout
-            android:id="@+id/Projects"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content" >
-
-            <ListView
-                android:id="@+id/ProjectsList"
-                android:layout_width="0dip"
-                android:layout_height="200dp"
-                android:layout_margin="5dp"
-                android:layout_weight="1"
-                android:background="#FFFFFF"
-                android:choiceMode="singleChoice" >
-
-                <requestFocus />
-            </ListView>
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/AddRemoveProjectsButons"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="20dp"
-            android:weightSum="1" >
-
-            <Button
-                android:id="@+id/ShowStatisticsButton"
-                android:layout_width="0dip"
-                android:layout_height="wrap_content"
-                android:layout_weight=".5"
-                android:onClick="runProject"
-                android:text="@string/show_statistics"
-                android:textAppearance="@style/ButtonBar" />
-        </LinearLayout>
-    </LinearLayout>
-
-</LinearLayout>
+</RelativeLayout>
