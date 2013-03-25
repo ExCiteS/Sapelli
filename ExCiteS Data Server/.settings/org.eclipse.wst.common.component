@@ -5,6 +5,15 @@
         <dependent-module archiveName="ExCiteS Data Collection Tomcat Library.jar" deploy-path="/WEB-INF/lib" handle="module:/resource/ExCiteS Data Collection Tomcat Library/ExCiteS Data Collection Tomcat Library">
             <dependency-type>uses</dependency-type>
         </dependent-module>
+        <dependent-module archiveName="xz-1.2.jar" deploy-path="/WEB-INF/lib" handle="module:/classpath/lib/ExCiteS Data Collection Library/libs/xz-1.2.jar">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="commons-io-2.4.jar" deploy-path="/WEB-INF/lib" handle="module:/classpath/lib/ExCiteS Data Collection Library/libs/commons-io-2.4.jar">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
+        <dependent-module archiveName="joda-time-2.1.jar" deploy-path="/WEB-INF/lib" handle="module:/classpath/lib/ExCiteS Data Collection Library/libs/joda-time-2.1.jar">
+            <dependency-type>uses</dependency-type>
+        </dependent-module>
         <property name="java-output-path" value="/ExCiteS Data Receiver Server/build/classes"/>
         <property name="context-root" value="ExCiteS Data Receiver Server"/>
     </wb-module>

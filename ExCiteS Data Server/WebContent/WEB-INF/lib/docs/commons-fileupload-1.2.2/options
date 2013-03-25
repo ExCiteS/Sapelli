@@ -1,0 +1,28 @@
+-classpath
+'D:/workspace/commons-fileupload1/target/checkout/target/classes;D:/Documents and Settings/jwiedman/.m2/repository/commons-io/commons-io/1.3.2/commons-io-1.3.2.jar;D:/Documents and Settings/jwiedman/.m2/repository/portlet-api/portlet-api/1.0/portlet-api-1.0.jar;D:/Documents and Settings/jwiedman/.m2/repository/javax/servlet/servlet-api/2.4/servlet-api-2.4.jar'
+-encoding
+'iso-8859-1'
+-protected
+-quiet
+-source
+'1.3'
+-sourcepath
+'D:/workspace/commons-fileupload1/target/checkout/src/java'
+-author
+-bottom
+'Copyright &#169; 2002-2010 <a href="http://www.apache.org/">The Apache Software Foundation</a>. All Rights Reserved.'
+-charset
+'iso-8859-1'
+-d
+'D:/workspace/commons-fileupload1/target/checkout/target/site/apidocs'
+-docencoding
+'iso-8859-1'
+-doctitle
+'Commons FileUpload 1.2.2 API'
+-link
+'http://java.sun.com/javase/6/docs/api'
+-linksource
+-use
+-version
+-windowtitle
+'Commons FileUpload 1.2.2 API'

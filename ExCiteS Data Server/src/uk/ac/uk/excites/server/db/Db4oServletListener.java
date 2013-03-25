@@ -6,6 +6,8 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
 
+import uk.ac.uk.excites.server.ProjectUpload;
+
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectServer;
 import com.db4o.cs.Db4oClientServer;
@@ -38,7 +40,8 @@ public class Db4oServletListener implements ServletContextListener, ServletReque
 	public void contextInitialized(ServletContextEvent event)
 	{
 		ServletContext context = event.getServletContext();
-		String filePath = context.getRealPath("WEB-INF/" + context.getInitParameter(KEY_DB4O_FILE_NAME));
+		// String filePath = context.getRealPath("WEB-INF/" + context.getInitParameter(KEY_DB4O_FILE_NAME));
+		String filePath = ProjectUpload.getUploadsFolderPath(context) + context.getInitParameter(KEY_DB4O_FILE_NAME);
 	
 		ServerConfiguration config = Db4oClientServer.newServerConfiguration();
 		config.common().reflectWith(new JdkReflector(getClass().getClassLoader()));

@@ -9,6 +9,21 @@
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.web.container"/>
 	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/ExCiteS Data Collection Tomcat Library"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/ExCiteS Data Collection Tomcat Library"/>
+	<classpathentry exported="true" kind="lib" path="/ExCiteS Data Collection Library/libs/commons-io-2.4.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/D:/Dropbox/_dev_/git/datacollectionsuite/ExCiteS Data Collection Library/libs/docs/commons-io-2.4-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry exported="true" kind="lib" path="/ExCiteS Data Collection Library/libs/joda-time-2.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/D:/Dropbox/_dev_/git/datacollectionsuite/ExCiteS Data Collection Library/libs/docs/joda-time-2.1-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry exported="true" kind="lib" path="/ExCiteS Data Collection Library/libs/xz-1.2.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/D:/Dropbox/_dev_/git/datacollectionsuite/ExCiteS Data Collection Library/libs/docs/xz-1.2-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

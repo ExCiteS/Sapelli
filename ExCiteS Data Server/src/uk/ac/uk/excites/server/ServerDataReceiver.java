@@ -13,13 +13,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.uk.excites.server.db.DataAccessHelper;
 
 /**
  * Servlet implementation class DataReceiver
  */
 public class ServerDataReceiver extends HttpServlet
 {
-	// private static final String SENDER_PHONE_NUMBER = "SenderPhoneNumber";
 	private static final long serialVersionUID = 5655090058815084878L;
 	private DataAccess dao;
 
@@ -37,12 +37,6 @@ public class ServerDataReceiver extends HttpServlet
 	 */
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
-		// String senderPhoneNumber = request.getParameter("senderPhoneNumber");
-		// String messageDigest = request.getParameter("messageDigest");
-		// request.setAttribute("phone", senderPhoneNumber); // This will be available as ${phone}
-		// request.setAttribute("message", messageDigest); // This will be available as ${message}
-		// request.getRequestDispatcher("DataReceiver.jsp").forward(request, response);
-
 		// Print a HTTP_CONNECTIVITY_OK
 		PrintWriter out = response.getWriter();
 		out.println("HTTP_CONNECTIVITY_OK");
@@ -55,23 +49,9 @@ public class ServerDataReceiver extends HttpServlet
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
 		// Get the session container
-		// dao = DataAccessHelper.getInstance(request);
+		dao = DataAccessHelper.getInstance(request);
 		// Get a writer
 		PrintWriter out = response.getWriter();
-
-		out.println("doPost()");
-
-		// TODO
-		try
-		{
-			// Project project = new Project("Test", "Test");
-			// dao.store(project);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-
 
 		String smsID = request.getParameter("smsID");
 		// Set smsID to -1 if it is null

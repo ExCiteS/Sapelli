@@ -24,5 +24,6 @@
 			<attribute name="javadoc_location" value="jar:file:/D:/Dropbox/_dev_/git/datacollectionsuite/ExCiteS Data Collection Library/libs/docs/xz-1.2-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
