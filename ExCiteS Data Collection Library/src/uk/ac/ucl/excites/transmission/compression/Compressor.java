@@ -7,7 +7,7 @@ package uk.ac.ucl.excites.transmission.compression;
 public abstract class Compressor
 {
 
-	public abstract String getCompressionType();
+	public abstract CompressorFactory.CompressionMode getMode();
 	
 	public abstract byte[] compress(byte[] data) throws CompressorException;
 

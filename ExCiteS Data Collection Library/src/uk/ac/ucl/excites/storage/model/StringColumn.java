@@ -54,7 +54,7 @@ public class StringColumn extends Column<String>
 	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset)
 	{
 		super(name, optional);
-		this.maxLengthBytes = maxLengthBytes;
+		this.maxLengthBytes = maxLengthBytes; //TODO check on value
 		this.charset = charset;
 		this.sizeField = new IntegerRangeMapping(1, maxLengthBytes); //we don't store the empty string so effective size is always at least 1 byte
 	}
@@ -99,7 +99,7 @@ public class StringColumn extends Column<String>
 	@Override
 	public void writeValue(String value, BitOutputStream bitStream) throws IOException
 	{
-		super.writeValue(value.equals("") ? null : value, bitStream);
+		super.writeValue("".equals(value) ? null : value, bitStream);
 	}
 
 	@Override
@@ -121,20 +121,15 @@ public class StringColumn extends Column<String>
 	}
 
 	@Override
-	public boolean isVariableSize()
+	protected int _getMinimumSize()
 	{
-		return true;
+		return sizeField.getSize() + Byte.SIZE; //TODO isn't it at least 2, if we do a proper check on maxLengthBytes in constructor it must be at least 2, unless we start accepting empty strings
 	}
-
-	/**
-	 * Returns the maximum, effective (including the length field) number of bits this column will take up
-	 * 
-	 * @see uk.ac.ucl.excites.storage.model.Column#getSize()
-	 */
+	
 	@Override
-	public int getSize()
+	protected int _getMaximumSize()
 	{
-		return sizeField.getSize() + (maxLengthBytes * 8);
+		return sizeField.getSize() + maxLengthBytes * Byte.SIZE;
 	}
 
 	@Override

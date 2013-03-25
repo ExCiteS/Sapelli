@@ -101,7 +101,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-
+		
 		// Check if there is an SD Card
 		if(!SDCard.isExternalStorageWritable())
 		{ // Inform the user and close the application

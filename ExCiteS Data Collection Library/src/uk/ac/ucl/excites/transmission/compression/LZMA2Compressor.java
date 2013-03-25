@@ -12,6 +12,7 @@ import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.UnsupportedOptionsException;
 
 import uk.ac.ucl.excites.transmission.compression.Compressor;
+import uk.ac.ucl.excites.transmission.compression.CompressorFactory.CompressionMode;
 
 public class LZMA2Compressor extends Compressor
 {
@@ -29,12 +30,6 @@ public class LZMA2Compressor extends Compressor
 			e.printStackTrace();
 		}
 	}
-	
-	@Override
-	public String getCompressionType()
-	{
-		return "LZMA2";
-	}
 
 	@Override
 	public byte[] compress(byte[] data) throws CompressorException
@@ -48,7 +43,7 @@ public class LZMA2Compressor extends Compressor
         }
         catch(IOException ioe)
         {
-        	throw new CompressorException("Error upon " + getCompressionType() + " compression", ioe);
+        	throw new CompressorException("Error upon " + getMode() + " compression", ioe);
         }
         return byteArrayOutputStream.toByteArray();
 	}
@@ -65,7 +60,7 @@ public class LZMA2Compressor extends Compressor
         }
         catch(IOException ioe)
         {
-        	throw new CompressorException("Error upon " + getCompressionType() + " decompression", ioe);
+        	throw new CompressorException("Error upon " + getMode() + " decompression", ioe);
         }
         return out.toByteArray();
 	}
@@ -87,6 +82,12 @@ public class LZMA2Compressor extends Compressor
 			wrappedStream.write(b);
 		}
 
+	}
+
+	@Override
+	public CompressionMode getMode()
+	{
+		return CompressionMode.LZMA2;
 	}
 
 }

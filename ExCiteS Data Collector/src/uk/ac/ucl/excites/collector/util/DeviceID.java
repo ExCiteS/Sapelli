@@ -1,6 +1,6 @@
 package uk.ac.ucl.excites.collector.util;
 
-import uk.ac.ucl.excites.util.Cryptography;
+import uk.ac.ucl.excites.transmission.crypto.Hashing;
 
 import java.math.BigInteger;
 import java.util.zip.CRC32;
@@ -164,7 +164,7 @@ public class DeviceID
 	 */
 	public BigInteger getMD5Hash()
 	{
-		return Cryptography.getMD5Hash(collectInfo().getBytes());
+		return Hashing.getMD5Hash(collectInfo().getBytes());
 	}
 
 }

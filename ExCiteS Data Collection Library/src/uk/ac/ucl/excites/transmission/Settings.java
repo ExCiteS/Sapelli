@@ -8,7 +8,8 @@ import java.util.List;
 
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
-import uk.ac.ucl.excites.util.Cryptography;
+import uk.ac.ucl.excites.transmission.compression.CompressorFactory.CompressionMode;
+import uk.ac.ucl.excites.transmission.crypto.*;
 
 /**
  * @author mstevens
@@ -18,20 +19,13 @@ public class Settings
 {
 
 	//STATICS--------------------------------------------------------
-	static public enum CompressionMode
-	{
-		NONE,
-		HUFFMAN,
-		GZIP
-	}
-	
 	public static enum SMSMode
 	{
 		BINARY,
 		TEXT
 	}
 	
-	static public final CompressionMode DEFAULT_COMPRESSION_MODE = CompressionMode.HUFFMAN;
+	static public final CompressionMode DEFAULT_COMPRESSION_MODE = CompressionMode.GZIP;
 	static public final boolean DEFAULT_ENCRYPT = false;
 	static public final String DEFAULT_PASSWORD = "ExCiteSWC1E6BT";
 	static public final SMSMode DEFAULT_SMS_MODE = SMSMode.BINARY;
@@ -48,8 +42,9 @@ public class Settings
 	//General--------------------------
 	protected CompressionMode compressionMode;
 	protected boolean encrypt;
-	protected byte[] hashedPassword;
-	protected byte[] rehashedPassword;
+	protected byte[] encryptionKey;
+	protected byte[] encryptionSalt;
+	protected byte[] encryptionKeyHash;
 	
 	protected boolean dropboxUpload;
 	protected boolean httpUpload;
@@ -123,8 +118,12 @@ public class Settings
 	public void setPassword(String password)
 	{
 		//Do not store the password itself!
-		hashedPassword = Cryptography.getSHA256Hash(password.trim());
-		rehashedPassword = Cryptography.getSHA256Hash(hashedPassword);
+		SecureKeyGenerator keygen = new SecureKeyGenerator(password, 256);
+		encryptionKey = keygen.getKey();
+		encryptionSalt = keygen.getSalt();
+		encryptionKeyHash = Hashing.getSHA256Hash(encryptionKey);
+		//hashedPassword = Cryptography.getSHA256Hash(password.trim());
+		//rehashedPassword = Cryptography.getSHA256Hash(hashedPassword);
 	}
 	
 	/**
@@ -185,22 +184,6 @@ public class Settings
 	public void setSMSIntroductionSent(boolean smsIntroductionSent)
 	{
 		this.smsIntroductionSent = smsIntroductionSent;
-	}
-
-	/**
-	 * @return the hashedPassword
-	 */
-	public byte[] getHashedPassword()
-	{
-		return hashedPassword;
-	}
-
-	/**
-	 * @return the rehashedPassword
-	 */
-	public byte[] getRehashedPassword()
-	{
-		return rehashedPassword;
 	}
 
 	/**

@@ -46,15 +46,15 @@ public class FloatColumn extends Column<Float>
 	{
 		return bitStream.readFloat();
 	}
-
+	
 	@Override
-	public boolean isVariableSize()
+	protected int _getMinimumSize()
 	{
-		return false;
+		return Float.SIZE;
 	}
-
+	
 	@Override
-	public int getSize()
+	protected int _getMaximumSize()
 	{
 		return Float.SIZE;
 	}

@@ -26,15 +26,22 @@ public abstract class Transmission
 	protected DateTime sentAt = null; //used only on sending side
 	protected DateTime receivedAt = null; //used on receiving side, and TODO on sending side once we have acknowledgements working
 	
+	protected Settings settings;
 	protected SchemaProvider schemaProvider; //only used on the receiving side
 	protected Schema schema;
 	protected Set<Column<?>> columnsToFactorOut;
 	protected Map<Column<?>, Object> factoredOutValues = null;
 	protected List<Record> records;
 
-	public Transmission(Schema schema)
+	/**
+	 * To be called at the sending side.
+	 * 
+	 * @param schema
+	 * @param settings
+	 */
+	public Transmission(Schema schema, Settings settings)
 	{
-		this(schema, null);
+		this(schema, null, settings);
 	}
 	
 	/**
@@ -42,10 +49,11 @@ public abstract class Transmission
 	 * 
 	 * @param schema
 	 * @param columnsToFactorOut
+	 * @param settings
 	 */
-	public Transmission(Schema schema, Set<Column<?>> columnsToFactorOut)
+	public Transmission(Schema schema, Set<Column<?>> columnsToFactorOut, Settings settings)
 	{
-		this(); //!!!
+		this(settings); //!!!
 		if(schema == null)
 			throw new NullPointerException("Schema cannot be null on sending side.");
 		this.schema = schema;
@@ -56,17 +64,19 @@ public abstract class Transmission
 	 * To be called at the receiving side.
 	 * 
 	 * @param schemaProvider
+	 * @param settings
 	 */
-	public Transmission(SchemaProvider schemaProvider)
+	public Transmission(SchemaProvider schemaProvider, Settings settings)
 	{
-		this(); //!!!
+		this(settings); //!!!
 		if(schemaProvider == null)
 			throw new NullPointerException("SchemaProvider cannot be null on receiving side.");
 		this.schemaProvider = schemaProvider;
 	}
 	
-	private Transmission()
+	private Transmission(Settings settings)
 	{
+		this.settings = settings;
 		this.factoredOutValues = new HashMap<Column<?>, Object>();
 		this.records = new ArrayList<Record>();
 	}
@@ -92,6 +102,8 @@ public abstract class Transmission
 	}
 	
 	public abstract void send() throws Exception;
+	
+	public abstract void receive() throws Exception;
 	
 	public boolean isEmpty()
 	{

@@ -3,7 +3,9 @@
  */
 package uk.ac.ucl.excites.storage.model;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 import uk.ac.ucl.excites.storage.io.BitInputStream;
@@ -133,6 +135,37 @@ public class Record
 		catch(Exception e)
 		{
 			throw new IOException("Error on attempting to read record", e);
+		}
+	}
+	
+	/**
+	 * Gets the size of this record in number of bits
+	 * 
+	 * @return
+	 */
+	public int getSize()
+	{
+		BitOutputStream out = null;
+		try
+		{
+			out = new BitOutputStream(new ByteArrayOutputStream());
+			this.writeToBitStream(out, new HashSet<Column<?>>());
+			return out.getNumberOfBitsWritten();
+		}
+		catch(IOException e)
+		{
+			System.err.println("Error upon calculating record size: " + e.getLocalizedMessage());
+			e.printStackTrace(System.err);
+			return -1;
+		}
+		finally
+		{
+			if(out != null)
+				try
+				{
+					out.close();
+				}
+				catch(IOException ignore) {}
 		}
 	}
 	

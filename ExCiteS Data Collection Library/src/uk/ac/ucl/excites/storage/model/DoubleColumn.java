@@ -48,13 +48,13 @@ public class DoubleColumn extends Column<Double>
 	}
 
 	@Override
-	public boolean isVariableSize()
+	protected int _getMinimumSize()
 	{
-		return false;
+		return Double.SIZE;
 	}
-
+	
 	@Override
-	public int getSize()
+	protected int _getMaximumSize()
 	{
 		return Double.SIZE;
 	}

@@ -28,6 +28,7 @@ public final class BitOutputStream extends OutputStream
 	private OutputStream output; 		// Underlying byte stream to write to
 	private int currentByte; 			// Buffered bits stored as an int (always in the range 0x00 to 0xFF)
 	private int numBitsInCurrentByte; 	// Always between 0 and 7, inclusive
+	private int numberOfBitsWritten;
 	
 	public BitOutputStream(OutputStream out)
 	{
@@ -37,6 +38,7 @@ public final class BitOutputStream extends OutputStream
 		closed = false;
 		currentByte = 0;
 		numBitsInCurrentByte = 0;
+		numberOfBitsWritten = 0;
 	}
 
 	/**
@@ -49,6 +51,7 @@ public final class BitOutputStream extends OutputStream
 	{
 		if(closed)
 			throw new IOException("This stream is closed");
+		numberOfBitsWritten++;
 		currentByte <<= 1;
 		if(bit)
 			currentByte++;
@@ -345,6 +348,11 @@ public final class BitOutputStream extends OutputStream
     {
     	writePadding();
     	output.flush();
+    }
+    
+    public int getNumberOfBitsWritten()
+    {
+    	return numberOfBitsWritten;
     }
 
 }

@@ -234,7 +234,7 @@ public final class BitInputStream extends InputStream
 	{
 		try
 		{
-			return (int) readInteger(Byte.SIZE, false);
+			return (int) readInteger(Byte.SIZE, true);
 		}
 		catch(EOFException eof)
 		{
@@ -416,6 +416,35 @@ public final class BitInputStream extends InputStream
 	{
 		input.close();
 		closed = true;
+	}
+	
+	/**
+	 * The (estimated) number of bits left available for reading.
+	 * Calls atEnd().
+	 * 
+	 * @return
+	 */
+	public int bitsAvailable()
+	{
+		try
+		{
+			if(atEnd())
+				return 0;
+			else
+				return numBitsRemaining + (input.available() * 8);
+		}
+		catch(IOException e)
+		{
+			return numBitsRemaining;
+		}
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.io.InputStream#available()
+	 */
+	public int available() throws IOException
+	{
+		return (numBitsRemaining == 8 ? 1 : 0) + input.available();
 	}
 	
 	/* (non-Javadoc)

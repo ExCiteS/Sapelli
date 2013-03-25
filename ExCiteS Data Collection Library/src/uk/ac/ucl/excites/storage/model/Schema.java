@@ -165,16 +165,39 @@ public class Schema
 	}
 	
 	/**
-	 * Returns the number of bits records of this schema take up when written to a binary representation.
+	 * Returns the number of bits a record of this schema takes up when written to a binary representation.
 	 * In case of a variable size the maximum effective size is returned.
 	 * 
 	 * @return
 	 */
 	public int getSize()
 	{
+		return getMaximumSize();
+	}
+	
+	/**
+	 * Returns the minimum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * 
+	 * @return
+	 */
+	public int getMinimumSize()
+	{
 		int total = 0;
 		for(Column<?> c : columns)
-			total += c.getSize();
+			total += c.getMinimumSize();
+		return total;
+	}
+	
+	/**
+	 * Returns the maximum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * 
+	 * @return
+	 */
+	public int getMaximumSize()
+	{
+		int total = 0;
+		for(Column<?> c : columns)
+			total += c.getMaximumSize();
 		return total;
 	}
 	

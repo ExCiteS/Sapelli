@@ -162,16 +162,22 @@ public class LocationColumn extends Column<Location>
 		 * fields are stored the size is variable because these fields are not always present in a Location object.
 		 */
 	}
-
+	
 	@Override
-	public int getSize()
+	public int _getMinimumSize()
 	{
 		return 	(doublePrecision ? Double.SIZE : Float.SIZE) /*Lat*/ + (doublePrecision ? Double.SIZE : Float.SIZE) /*Lon*/ +
-				(storeProvider ? Location.ProviderRange().getSize() /*Provider*/ : 0) +
+				(storeProvider ? Location.ProviderRange().getSize() /*Provider*/ : 0);
+	}
+	
+	@Override
+	public int _getMaximumSize()
+	{
+		return 	_getMinimumSize() +
 				(storeAltitude ? (1 + (doublePrecision ? Double.SIZE : Float.SIZE)) /*Alt (w/ presence bit)*/ : 0) +
 				(storeBearing ? (1 + Float.SIZE) /*Bearing (w/ presence bit)*/ : 0) +
 				(storeSpeed ? (1 + Float.SIZE) /*Speed (w/ presence bit)*/ : 0) +
-				(storeAccuracy ? (1 + Float.SIZE) /*Acc (w/ presence bit)*/ : 0);
+				(storeAccuracy ? (1 + Float.SIZE) /*Acc (w/ presence bit)*/ : 0);				
 	}
 
 }

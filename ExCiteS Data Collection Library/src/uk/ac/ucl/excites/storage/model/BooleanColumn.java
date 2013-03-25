@@ -61,13 +61,13 @@ public class BooleanColumn extends Column<Boolean>
 	}
 
 	@Override
-	public boolean isVariableSize()
+	protected int _getMinimumSize()
 	{
-		return false;
+		return 1;
 	}
-
+	
 	@Override
-	public int getSize()
+	protected int _getMaximumSize()
 	{
 		return 1;
 	}

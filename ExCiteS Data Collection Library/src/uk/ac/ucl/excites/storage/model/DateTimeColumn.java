@@ -172,15 +172,15 @@ public class DateTimeColumn extends Column<DateTime>
 	}
 
 	@Override
-	public boolean isVariableSize()
-	{
-		return false;
-	}
-
-	@Override
-	public int getSize()
+	protected int _getMinimumSize()
 	{
 		return timeMapping.getSize() + (keepLocalTimezone ? TIMEZONE_QH_OFFSET_SIZE : 0);
+	}
+	
+	@Override
+	protected int _getMaximumSize()
+	{
+		return _getMinimumSize(); //size is fixed
 	}
 	
 	public DateTime getLowBound()

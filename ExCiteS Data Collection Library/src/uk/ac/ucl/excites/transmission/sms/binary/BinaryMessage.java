@@ -41,6 +41,7 @@ public class BinaryMessage extends Message
 	 * @param transmission
 	 * @param partNumber
 	 * @param totalParts
+	 * @param payload
 	 */
 	public BinaryMessage(SMSAgent receiver, SMSTransmission transmission, int partNumber, int totalParts, byte[] payload)
 	{

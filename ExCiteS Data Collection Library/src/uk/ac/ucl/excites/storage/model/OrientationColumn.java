@@ -73,17 +73,17 @@ public class OrientationColumn extends Column<Orientation>
 	{
 		//does nothing
 	}
-
+	
 	@Override
-	public boolean isVariableSize()
-	{
-		return false;
-	}
-
-	@Override
-	public int getSize()
+	protected int _getMinimumSize()
 	{
 		return (storeAzimuth ? Float.SIZE : 0) + (storePitch ? Float.SIZE : 0) + (storeRoll ? Float.SIZE : 0);
+	}
+	
+	@Override
+	protected int _getMaximumSize()
+	{
+		return _getMinimumSize(); //size is fixed
 	}
 
 }

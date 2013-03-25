@@ -1,17 +1,18 @@
-package uk.ac.ucl.excites.util;
+package uk.ac.ucl.excites.transmission.crypto;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+
 /**
  * @author mstevens
  * 
  */
-public final class Cryptography
+public final class Hashing
 {
 
-	private Cryptography() { } //should not be instantiated
+	private Hashing() { } //should not be instantiated
 	
 	static public byte[] getSHA256Hash(String data)
 	{

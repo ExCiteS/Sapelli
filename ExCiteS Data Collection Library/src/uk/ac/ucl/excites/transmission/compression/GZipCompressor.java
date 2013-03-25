@@ -9,14 +9,10 @@ import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.io.IOUtils;
 
+import uk.ac.ucl.excites.transmission.compression.CompressorFactory.CompressionMode;
+
 public class GZipCompressor extends Compressor
 {
-
-	@Override
-	public String getCompressionType()
-	{
-		return "GZip";
-	}
 
 	@Override
 	public byte[] compress(byte[] data) throws CompressorException
@@ -30,7 +26,7 @@ public class GZipCompressor extends Compressor
         }
         catch(IOException ioe)
         {
-            throw new CompressorException("Error upon " + getCompressionType() + " compression", ioe);
+            throw new CompressorException("Error upon " + getMode() + " compression", ioe);
         }
         return byteArrayOutputStream.toByteArray();
 	}
@@ -47,9 +43,15 @@ public class GZipCompressor extends Compressor
         }
         catch(IOException ioe)
         {
-        	throw new CompressorException("Error upon " + getCompressionType() + " decompression", ioe);
+        	throw new CompressorException("Error upon " + getMode() + " decompression", ioe);
         }
         return out.toByteArray();
+	}
+
+	@Override
+	public CompressionMode getMode()
+	{
+		return CompressionMode.GZIP;
 	}
 
 

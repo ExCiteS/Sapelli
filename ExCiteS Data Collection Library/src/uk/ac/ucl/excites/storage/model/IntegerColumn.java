@@ -144,10 +144,14 @@ public class IntegerColumn extends Column<Long>
 			return bitStream.readInteger(size, signed);
 	}
 	
-	/**
-	 * @return the size in number of bits
-	 */
-	public int getSize()
+	@Override
+	protected int _getMinimumSize()
+	{
+		return size;
+	}
+	
+	@Override
+	protected int _getMaximumSize()
 	{
 		return size;
 	}
@@ -158,12 +162,6 @@ public class IntegerColumn extends Column<Long>
 	public boolean isSigned()
 	{
 		return signed;
-	}
-
-	@Override
-	public boolean isVariableSize()
-	{
-		return false;
 	}
 
 	@Override

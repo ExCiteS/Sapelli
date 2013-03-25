@@ -15,7 +15,7 @@ public final class BinaryHelpers
 	
 	private BinaryHelpers() { } //should not be instantiated
 	
-	static byte[] subByteArray(byte[] array, int offset, int length)
+	static public byte[] subByteArray(byte[] array, int offset, int length)
 	{
 		int to = offset + length;
 		if(to > array.length)

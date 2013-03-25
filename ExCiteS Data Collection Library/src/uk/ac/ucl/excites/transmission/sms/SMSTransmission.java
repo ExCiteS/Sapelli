@@ -20,7 +20,10 @@ import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.transmission.SchemaProvider;
+import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.transmission.Transmission;
+import uk.ac.ucl.excites.transmission.compression.CompressorFactory;
+import uk.ac.ucl.excites.transmission.compression.CompressorException;
 import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException;
 
 
@@ -44,16 +47,19 @@ public abstract class SMSTransmission extends Transmission
 	protected Integer id = null;
 	protected boolean full = false;
 	
+	protected float compressionRatio = 1.0f;
+	
 	/**
 	 * To be called on the sending side.
 	 * 
 	 * @param schema
 	 * @param id
 	 * @param receiver
+	 * @param settings
 	 */
-	public SMSTransmission(Schema schema, byte id, SMSAgent receiver)
+	public SMSTransmission(Schema schema, byte id, SMSAgent receiver, Settings settings)
 	{
-		this(schema, null, id, receiver);
+		this(schema, null, id, receiver, settings);
 	}
 	
 	/**
@@ -63,10 +69,11 @@ public abstract class SMSTransmission extends Transmission
 	 * @param columnsToFactorOut
 	 * @param id
 	 * @param receiver
+	 * @param settings
 	 */
-	public SMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, int id, SMSAgent receiver)
+	public SMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, int id, SMSAgent receiver, Settings settings)
 	{
-		super(schema, columnsToFactorOut);
+		super(schema, columnsToFactorOut, settings);
 		this.id = id;
 		
 		this.receiver = receiver;
@@ -77,10 +84,11 @@ public abstract class SMSTransmission extends Transmission
 	 * To be called on the receiving side.
 	 * 
 	 * @param schemaProvider
+	 * @param settings
 	 */
-	public SMSTransmission(SchemaProvider schemaProvider)
+	public SMSTransmission(SchemaProvider schemaProvider, Settings settings)
 	{
-		super(schemaProvider);
+		super(schemaProvider, settings);
 		this.parts = new TreeSet<Message>(new Message.MessageComparator());
 	}
 	
@@ -152,8 +160,13 @@ public abstract class SMSTransmission extends Transmission
 			if(!sender.equals(msg.getSender()))
 				throw new IllegalArgumentException("This message originates from another sender.");
 		}
-		//TODO deal with duplicates!
-		parts.add(msg);
+		if(!parts.contains(msg)) //check for duplicates
+			parts.add(msg);
+	}
+	
+	public SortedSet<Message> getParts()
+	{
+		return parts;
 	}
 	
 	/**
@@ -168,7 +181,7 @@ public abstract class SMSTransmission extends Transmission
 		return (parts.first().getTotalParts() == parts.size());
 	}
 	
-	protected void prepareMessages() throws IOException, TransmissionCapacityExceededException
+	protected void prepareMessages() throws IOException, TransmissionCapacityExceededException, CompressorException
 	{
 		//Encode
 		byte[] data = encodeRecords(); //can throw IOException
@@ -181,11 +194,12 @@ public abstract class SMSTransmission extends Transmission
 		
 		//Serialise/Split
 		List<Message> msgs = serialiseAndSplit(data); //can throw TransmissionCapacityExceededException
+		parts.clear(); //clear previous messages! (don't move this line!)
 		for(Message m : msgs)
 			parts.add(m);
 	}
 	
-	protected void readMessages() throws IOException
+	protected void readMessages() throws IOException, CompressorException
 	{
 		if(parts.isEmpty())
 			throw new IllegalStateException("No messages to decode.");
@@ -224,6 +238,13 @@ public abstract class SMSTransmission extends Transmission
 		send(smsService);
 	}
 	
+	public void receive() throws Exception
+	{
+		if(!isComplete())
+			throw new IllegalStateException("Transmission is incomplete.");
+		readMessages();
+	}
+	
 	protected byte[] encodeRecords() throws IOException
 	{
 		BitOutputStream out = null;
@@ -241,8 +262,6 @@ public abstract class SMSTransmission extends Transmission
 			for(Column<?> c : columnsToFactorOut)
 				c.writeObject(factoredOutValues.get(c), out);
 			
-			//TODO write number of records?
-			
 			//Write records:
 			for(Record r : records)
 				r.writeToBitStream(out, columnsToFactorOut);
@@ -250,7 +269,7 @@ public abstract class SMSTransmission extends Transmission
 			//Flush, close & get bytes:
 			out.flush();
 			out.close();
-	
+			
 			return rawOut.toByteArray();
 		}
 		catch(Exception e)
@@ -274,7 +293,8 @@ public abstract class SMSTransmission extends Transmission
 		try
 		{
 			//Input stream:
-			in = new BitInputStream(new ByteArrayInputStream(data));
+			ByteArrayInputStream rawIn = new ByteArrayInputStream(data);
+			in = new BitInputStream(rawIn);
 
 			//Read schema ID & version
 			int schemaID = (int) Schema.SCHEMA_ID_FIELD.read(in);
@@ -290,15 +310,13 @@ public abstract class SMSTransmission extends Transmission
 			for(Column<?> c : columnsToFactorOut)
 				factoredOutValues.put(c, c.readValue(in));
 			
-			//TODO read number of records?
-			
 			//Read records:
-			while(!in.atEnd())
+			int minimumRecordSize = schema.getMinimumSize();
+			while(in.bitsAvailable() >= minimumRecordSize)
 			{
 				Record r = new Record(schema);
 				r.readFromBitStream(in, columnsToFactorOut);
 				//Set factored out values:
-				//Read factored out values:
 				for(Column<?> c : columnsToFactorOut)
 					c.storeObject(r, factoredOutValues.get(c));
 				records.add(r);
@@ -319,18 +337,18 @@ public abstract class SMSTransmission extends Transmission
 		}
 	}
 	
-	protected byte[] compress(byte[] data)
+	protected byte[] compress(byte[] data) throws CompressorException
 	{
-		//TODO compression
-		
-		return data;
+		byte[] compressedData = CompressorFactory.getCompressor(settings.getCompressionMode()).compress(data);
+		compressionRatio = ((float) compressedData.length) / data.length;
+		return compressedData;
 	}
 	
-	protected byte[] decompress(byte[] data)
+	protected byte[] decompress(byte[] compressedData) throws CompressorException
 	{
-		//TODO decompression
-		
-		return data;
+		byte[] decompressedData = CompressorFactory.getCompressor(settings.getCompressionMode()).decompress(compressedData);
+		compressionRatio = ((float) compressedData.length) / decompressedData.length;
+		return decompressedData;
 	}
 
 	protected byte[] encrypt(byte[] data)
@@ -349,7 +367,7 @@ public abstract class SMSTransmission extends Transmission
 	
 	protected abstract List<Message> serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException;
 	
-	protected abstract byte[] mergeAndDeserialise(Set<Message> parts);
+	protected abstract byte[] mergeAndDeserialise(SortedSet<Message> parts) throws IOException;
 	
 	public boolean isFull()
 	{
@@ -454,6 +472,11 @@ public abstract class SMSTransmission extends Transmission
 	public SMSService getSMSService()
 	{
 		return smsService;
+	}
+	
+	public float getCompressionRatio()
+	{
+		return compressionRatio;
 	}
 	
 }

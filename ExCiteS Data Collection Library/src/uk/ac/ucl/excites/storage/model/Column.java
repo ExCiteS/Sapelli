@@ -235,14 +235,57 @@ public abstract class Column<T>
 	/**
 	 * @return whether or not the size taken up by binary stored values for this column varies at run-time (i.e. depending on input)
 	 */
-	public abstract boolean isVariableSize();
+	public boolean isVariableSize()
+	{
+		return optional ? true : (_getMinimumSize() != _getMaximumSize());
+	}
 	
 	/**
 	 * Returns the number of bits values for this column take up when written to a binary representation.
-	 * In case of a variable size the maximum effective size is returned.
+	 * In case of a variable size the maximum size is returned.
 	 * 
 	 * @return
 	 */
-	public abstract int getSize();
+	public int getSize()
+	{
+		return getMaximumSize();
+	}
+	
+	/**
+	 * Returns the maximum effective number of bits values for this column take up when written to a binary representation, including the presence-bit in case of an optional column.
+	 * 
+	 * @return
+	 */
+	public int getMaximumSize()
+	{
+		return (optional ? 1 : 0) + _getMaximumSize();
+	}
+	
+	/**
+	 * Returns the maximum number of bits values for this column take up when written to a binary representation, _without_ the presence-bit in case of an optional column.
+	 * 
+	 * @return
+	 */
+	protected abstract int _getMaximumSize();
+	
+	/**
+	 * Returns the minimum effective number of bits values for this column take up when written to a binary representation, including the presence-bit in case of an optional column.
+	 * 
+	 * @return
+	 */
+	public int getMinimumSize()
+	{
+		if(optional)
+			return 1;
+		else
+			return _getMinimumSize();
+	}
+	
+	/**
+	 * Returns the minimum number of bits values for this column take up when written to a binary representation, _without_ the presence-bit in case of an optional column.
+	 * 
+	 * @return
+	 */
+	protected abstract int _getMinimumSize();
 	
 }
