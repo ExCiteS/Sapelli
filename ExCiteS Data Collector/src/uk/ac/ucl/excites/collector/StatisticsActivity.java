@@ -159,16 +159,18 @@ public class StatisticsActivity extends ExpandableListActivity
 		try
 		{
 			Child clickedChild = (Child) childContent.get(groupPosition).get(childPosition).get(KeyCHILD);
-			if(clickedChild instanceof LogChild)
-				showLog(projects.get(groupPosition).getLogFolderPath() + ((LogChild) clickedChild).filename);
+			if(clickedChild instanceof LogChild)				
+				displayText(readFile(projects.get(groupPosition).getLogFolderPath() + ((LogChild) clickedChild).filename));
 			else if (clickedChild instanceof FormChild)
 			{
-				
+				String text = "";
 				for(Record r : ((FormChild) clickedChild).getRecords())
 				{
-
+					text += r.toString() +"\n\n";	
 				}
+				displayText(text);
 			}
+		
 		}
 		catch(FileNotFoundException e)
 		{
@@ -183,14 +185,14 @@ public class StatisticsActivity extends ExpandableListActivity
 
 	
 	/**
-	 * @param path
+	 * @param text
 	 * @throws FileNotFoundException
 	 */
-	public void showLog(String path) throws FileNotFoundException
+	public void displayText(String text) throws FileNotFoundException
 	{
 		LayoutInflater layoutInflater = (LayoutInflater) getBaseContext().getSystemService(LAYOUT_INFLATER_SERVICE);
 		View popupView = layoutInflater.inflate(R.layout.show_log, null);
-		((TextView) popupView.findViewById(R.id.LogTextView)).setText(readFile(path));
+		((TextView) popupView.findViewById(R.id.LogTextView)).setText(text);
 		popupWindow = new PopupWindow(popupView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 		popupWindow.showAtLocation(this.findViewById(R.id.StatisticsView), Gravity.CENTER, 0, 0);
 	}
