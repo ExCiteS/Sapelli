@@ -57,7 +57,7 @@ public abstract class SMSTransmission extends Transmission
 	 * @param receiver
 	 * @param settings
 	 */
-	public SMSTransmission(Schema schema, byte id, SMSAgent receiver, Settings settings)
+	public SMSTransmission(Schema schema, int id, SMSAgent receiver, Settings settings)
 	{
 		this(schema, null, id, receiver, settings);
 	}
@@ -227,9 +227,11 @@ public abstract class SMSTransmission extends Transmission
 		
 		//Prepare messages:
 		prepareMessages();
-		//Send them one by one:
+		
+		//Send unsent messages one by one:
 		for(Message m : parts)
-			m.send();
+			if(!m.isSent())
+				m.send();
 	}
 	
 	@Override

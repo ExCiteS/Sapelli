@@ -12,6 +12,7 @@ import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Transmission;
+import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.util.FileHelpers;
 
 import com.db4o.Db4oEmbedded;
@@ -328,6 +329,73 @@ public final class DataAccess
 		}
 		else
 			return null;
+	}
+	
+	/**
+	 * @param transmission
+	 */
+	public void store(Transmission transmission)
+	{
+		db.store(transmission);
+	}
+	
+	/**
+	 * Retrieves all transmissions
+	 * 
+	 * @return
+	 */
+	public List<Transmission> retrieveTransmissions()
+	{
+		final List<Transmission> result = db.queryByExample(Transmission.class);
+		for(Transmission t : result)
+			db.activate(t, ACTIVATION_DEPTH);
+		return result;
+	}
+
+	/**
+	 * Retrieves all unsent transmissions
+	 * 
+	 * @return
+	 */
+	public List<Transmission> retrieveUnsentTransmissions()
+	{
+		@SuppressWarnings("serial")
+		ObjectSet<Transmission> result = db.query(new Predicate<Transmission>()
+		{
+			public boolean match(Transmission t)
+			{
+				return !t.isSent();
+			}
+		});
+		for(Transmission t : result)
+			db.activate(t, ACTIVATION_DEPTH);
+		return result;
+	}
+	
+	/**
+	 * Retrieve SMSTransmission by id
+	 * 
+	 * @param id
+	 * @return
+	 */
+	public SMSTransmission retrieveSMSTransmission(final int id)
+	{
+		@SuppressWarnings("serial")
+		ObjectSet<SMSTransmission> result = db.query(new Predicate<SMSTransmission>()
+		{
+			public boolean match(SMSTransmission t)
+			{
+				return t.getID() == id;
+			}
+		});
+		if(result.isEmpty())
+			return null;
+		else
+		{
+			SMSTransmission t = result.get(0);
+			db.activate(t, ACTIVATION_DEPTH);
+			return t;
+		}		
 	}
 	
 }

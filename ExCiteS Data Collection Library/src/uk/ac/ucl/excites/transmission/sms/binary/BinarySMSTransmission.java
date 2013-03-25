@@ -34,7 +34,7 @@ public class BinarySMSTransmission extends SMSTransmission
 	 * @param receiver
 	 * @param settings
 	 */
-	public BinarySMSTransmission(Schema schema, byte id, SMSAgent receiver, Settings settings)
+	public BinarySMSTransmission(Schema schema, int id, SMSAgent receiver, Settings settings)
 	{
 		super(schema, null, id, receiver, settings);
 	}
@@ -48,7 +48,7 @@ public class BinarySMSTransmission extends SMSTransmission
 	 * @param receiver
 	 * @param settings
 	 */
-	public BinarySMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, byte id, SMSAgent receiver, Settings settings)
+	public BinarySMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, int id, SMSAgent receiver, Settings settings)
 	{
 		super(schema, columnsToFactorOut, id, receiver, settings);
 	}

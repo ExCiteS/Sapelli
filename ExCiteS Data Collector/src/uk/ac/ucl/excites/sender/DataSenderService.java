@@ -2,7 +2,12 @@ package uk.ac.ucl.excites.sender;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -16,10 +21,14 @@ import uk.ac.ucl.excites.sender.dropbox.DropboxSync;
 import uk.ac.ucl.excites.sender.gsm.SMSSender;
 import uk.ac.ucl.excites.sender.gsm.SignalMonitor;
 import uk.ac.ucl.excites.sender.util.Constants;
+import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Settings;
+import uk.ac.ucl.excites.transmission.Transmission;
+import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.sms.binary.BinarySMSTransmission;
+import uk.ac.ucl.excites.transmission.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.util.DeviceControl;
 import uk.ac.ucl.excites.util.Logger;
 import android.app.Notification;
@@ -42,6 +51,7 @@ public class DataSenderService extends Service
 
 	// Statics-------------------------------------------------------
 	static private final String TAG = "DataSenderService";
+	static private final String LOG_PREFIX = "Sender_";
 	private static final long POST_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
 	
 	// Dynamics------------------------------------------------------
@@ -53,7 +63,7 @@ public class DataSenderService extends Service
 	private boolean allowRebind; // indicates whether onRebind should be used
 	private String databasePath;
 	private DataAccess dao;
-	private Logger logger;
+	private Map<Project,Logger> loggers;
 	
 	private ScheduledExecutorService scheduleTaskExecutor;
 	private ScheduledFuture<?> mScheduledFuture;
@@ -61,6 +71,9 @@ public class DataSenderService extends Service
 	@Override
 	public void onCreate()
 	{
+		//Loggers
+		loggers = new HashMap<Project, Logger>();
+		
 		// Set the variable to false
 		isSending = false;
 
@@ -90,15 +103,19 @@ public class DataSenderService extends Service
 		setServiceForeground(this);
 		
 		boolean smsUpload = false;
+		boolean dbOpen = dao.isOpen();
+		if(!dbOpen)
+			dao.openDB(); //!!!
 		for(Project p : dao.retrieveProjects())
 		{
 			if(p.isLogging())
 			{
 				try
 				{
-					logger = new Logger(p.getLogFolderPath());
-					logger.addLine("PROJECT_SEND", p.getName());
-					logger.addBlankLine();
+					Logger logger = new Logger(p.getLogFolderPath(), LOG_PREFIX);
+					for(Entry<Project, Logger> pl : loggers.entrySet())
+						pl.getValue().addFinalLine("DataSender", "Service started.");
+					loggers.put(p, logger);
 				}
 				catch(IOException e)
 				{
@@ -132,10 +149,12 @@ public class DataSenderService extends Service
 				}
 			}
 		}
+		if(!dbOpen)
+			dao.closeDB(); //!!! close if it was closed before
 		
 		//if at least one project needs SMS sending:
 		if(smsUpload)
-			smsSender = new SMSSender(this);
+			smsSender = new SMSSender(this, dao);
 		
 		//Start GSM SignalMonitor
 		gsmMonitor = new SignalMonitor(this);
@@ -151,9 +170,174 @@ public class DataSenderService extends Service
 		}
 		// This schedule a runnable task every TIME_SCHEDULE in minutes
 		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
-
+		
 		return startMode;
 	}
+
+	@Override
+	public void onDestroy()
+	{
+		//Close loggers:
+		for(Entry<Project, Logger> pl : loggers.entrySet())
+			pl.getValue().addFinalLine("DataSender", "Service stopped.");
+		
+		// Go to AirplaneMode if needed:
+		if(DataSenderPreferences.getAirplaneMode(this) && !DeviceControl.inAirplaneMode(this))
+			DeviceControl.toggleAirplaneMode(this);
+		
+		// The service is no longer used and is being destroyed
+		mScheduledFuture.cancel(true);
+		stopSelf();
+		int pid = android.os.Process.myPid();
+		if(Constants.DEBUG_LOG)
+			Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
+		android.os.Process.killProcess(pid);
+	}
+	
+	private class SendingTask implements Runnable
+	{
+		
+		private Context context = DataSenderService.this;
+		
+		public void run()
+		{
+			for(Entry<Project, Logger> pl : loggers.entrySet())
+				pl.getValue().addLine("Sending task");
+			
+			//Come out of airplane more if needed
+			if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
+			{
+				DeviceControl.toggleAirplaneMode(context);
+				
+				//Wait for connectivity to become available
+				try
+				{	
+					Thread.sleep(POST_AIRPLANE_MODE_WAITING_TIME_MS);
+				}
+				catch(Exception ignore) {}
+			}
+			
+			//TODO Block until we have connectivity
+			
+//			int tempCount = 0;
+//			while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
+//			{
+//				Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
+//				// Wait for 1 a second on every attempt
+//				try
+//				{
+//					Thread.sleep(1000);
+//				}
+//				catch(InterruptedException e)
+//				{
+//					if(Constants.DEBUG_LOG)
+//						Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
+//				}
+//				tempCount++;
+//			}
+			
+			boolean dbOpen = dao.isOpen();
+			if(!dbOpen)
+				dao.openDB(); //!!!
+			
+			//Generate transmissions...
+			for(Project p : dao.retrieveProjects())
+			{
+				for(Form f : p.getForms())
+				{	
+					Settings settings = p.getTransmissionSettings();
+					Schema schema = f.getSchema();
+					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
+					
+					//Decide on transmission mode
+					if(settings.isSMSUpload() && gsmMonitor.isInService()) //TODO do roaming check
+					{
+						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(settings, schema, records);
+						for(Record r : records)
+							dao.store(r); //update records so associated transmissions are stored
+						
+						//store transmissions
+						for(Transmission t : smsTransmissions)
+							dao.store(t);
+						
+						//TODO make sure they are restored upon sending call backs
+						
+						//TODO fetch unsent existing smstransmissions from db
+						
+						//Send them
+						//TODO check signal again?
+						for(SMSTransmission t : smsTransmissions)
+						{
+							try
+							{
+								t.send(smsSender);
+							}
+							catch(Exception e)
+							{
+								//TODO
+							}
+						}
+						
+					}
+					
+				}
+				
+			}
+			
+			if(!dbOpen)
+				dao.closeDB();
+			
+			isSending = true;
+
+			//if(Constants.DEBUG_LOG)
+			//	Log.i(Constants.TAG, "---------------------- Run Every: " + timeSchedule + " minutes!!!! --------------------------");
+			
+			//Go back to airplane more if needed
+			if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))
+				DeviceControl.toggleAirplaneMode(context);
+		}
+	}
+	
+	private List<SMSTransmission> generateSMSTransmissions(Settings settings, Schema schema, List<Record> records)
+	{
+		//Columns to factor out:
+		Set<Column<?>> factorOut = new HashSet<Column<?>>();
+		factorOut.add(schema.getColumn(Form.COLUMN_DEVICE_ID));
+		
+		//Make transmissions: 
+		List<SMSTransmission> transmissions = new ArrayList<SMSTransmission>();
+		while(!records.isEmpty())
+		{
+			// Create transmission:			
+			SMSTransmission t = null;
+			switch(settings.getSMSMode())
+			{
+				case BINARY : t = new BinarySMSTransmission(schema, factorOut, settings.getSMSTransmissionID(), settings.getSMSRelay(), settings);
+				case TEXT : t = new TextSMSTransmission(schema, factorOut, settings.getSMSTransmissionID(), settings.getSMSRelay(), settings);
+			}
+			//Add as many records as possible:
+			while(!records.isEmpty() && !t.isFull())
+			{
+				try
+				{
+					t.addRecord(records.get(0));
+				}
+				catch(Exception e)
+				{
+					//TODO log to project logger
+					Log.e(TAG, "Error upon adding record", e);
+				}
+				finally
+				{
+					records.remove(0);
+				}
+			}
+			if(!t.isEmpty())				
+				transmissions.add(t);
+		}
+		return transmissions;
+	}
+	
 
 	@SuppressWarnings("deprecation")
 	public void setServiceForeground(Context mContext)
@@ -193,107 +377,6 @@ public class DataSenderService extends Service
 	{
 		// A client is binding to the service with bindService(),
 		// after onUnbind() has already been called
-	}
-
-	@Override
-	public void onDestroy()
-	{
-		// Go to AirplaneMode if needed:
-		if(DataSenderPreferences.getAirplaneMode(this) && !DeviceControl.inAirplaneMode(this))
-			DeviceControl.toggleAirplaneMode(this);
-		// The service is no longer used and is being destroyed
-		mScheduledFuture.cancel(true);
-		stopSelf();
-		int pid = android.os.Process.myPid();
-		if(Constants.DEBUG_LOG)
-			Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
-		android.os.Process.killProcess(pid);
-	}
-	
-	private class SendingTask implements Runnable
-	{
-		
-		private Context context = DataSenderService.this;
-		
-		public void run()
-		{
-			//Come out of airplane more if needed
-			if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
-			{
-				DeviceControl.toggleAirplaneMode(context);
-				
-				//Wait for connectivity to become available
-				try
-				{	
-					Thread.sleep(POST_AIRPLANE_MODE_WAITING_TIME_MS);
-				}
-				catch(Exception ignore) {}
-			}
-			
-			//Generate transmissions...
-			for(Project p : dao.retrieveProjects())
-			{
-				for(Form f : p.getForms())
-				{	
-					Schema schema = f.getSchema();
-					List<Record> records = dao.retrieveRecordsWithoutTransmission(schema);
-				
-					//Decide on transmission mode
-					
-					
-					BinarySMSTransmission t = null;
-					
-					while(!records.isEmpty() && !t.isFull())
-					{
-						try
-						{
-							t.addRecord(records.get(0));
-							
-							records.remove(0);
-						}
-						catch(Exception e)
-						{
-							e.printStackTrace();
-						}
-						
-					}
-					
-					for(Record r : dao.retrieveRecordsWithoutTransmission(schema))
-					{
-						//BinarySMSTransmission transm = new BinarySMSTransmission(schema, 0, null, null);
-						
-					}
-					
-				}
-				
-			}
-			
-			int tempCount = 0;
-			while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
-			{
-				Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
-				// Wait for 1 a second on every attempt
-				try
-				{
-					Thread.sleep(1000);
-				}
-				catch(InterruptedException e)
-				{
-					if(Constants.DEBUG_LOG)
-						Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
-				}
-				tempCount++;
-			}
-			
-			isSending = true;
-
-			//if(Constants.DEBUG_LOG)
-			//	Log.i(Constants.TAG, "---------------------- Run Every: " + timeSchedule + " minutes!!!! --------------------------");
-			
-			//Go back to airplane more if needed
-			if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))
-				DeviceControl.toggleAirplaneMode(context);
-		}
 	}
 
 }
