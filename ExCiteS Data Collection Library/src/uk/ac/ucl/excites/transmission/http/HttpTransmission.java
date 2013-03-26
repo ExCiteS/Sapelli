@@ -34,4 +34,11 @@ public class HttpTransmission extends Transmission
 		
 	}
 
+	@Override
+	public boolean isFull()
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
+	
 }

@@ -103,7 +103,18 @@ public abstract class Transmission
 	
 	public abstract void send() throws Exception;
 	
+	public void resend() throws Exception
+	{
+		//Clear early sentAt value (otherwise send() won't work):
+		sentAt = null;
+		
+		//Resend:
+		send();
+	}
+	
 	public abstract void receive() throws Exception;
+	
+	public abstract boolean isFull();
 	
 	public boolean isEmpty()
 	{
