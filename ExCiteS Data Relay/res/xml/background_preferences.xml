@@ -9,7 +9,7 @@
             android:summary="This is the web address of the server where the relay sends the incoming messages."
             android:title="Server Web Address" />
         <EditTextPreference
-            android:defaultValue="1"
+            android:defaultValue="10"
             android:inputType="number"
             android:key="timeSchedule"
             android:summary="How often is the application sending messages to the server in seconds."

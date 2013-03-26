@@ -14,7 +14,7 @@
         <dependent-module archiveName="joda-time-2.1.jar" deploy-path="/WEB-INF/lib" handle="module:/classpath/lib/ExCiteS Data Collection Library/libs/joda-time-2.1.jar">
             <dependency-type>uses</dependency-type>
         </dependent-module>
-        <dependent-module archiveName="commons-codec-1.7.jar" deploy-path="/WEB-INF/lib" handle="module:/classpath/lib/ExCiteS Data Collection Library/libs/commons-codec-1.7.jar">
+        <dependent-module archiveName="sc-light-jdk15on-1.47.0.2.jar" deploy-path="/WEB-INF/lib" handle="module:/classpath/lib/ExCiteS Data Collection Library/libs/sc-light-jdk15on-1.47.0.2.jar">
             <dependency-type>uses</dependency-type>
         </dependent-module>
         <property name="java-output-path" value="/ExCiteS Data Receiver Server/build/classes"/>

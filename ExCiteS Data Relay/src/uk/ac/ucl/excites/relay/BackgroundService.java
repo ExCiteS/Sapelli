@@ -107,7 +107,7 @@ public class BackgroundService extends Service
 			public void run()
 			{
 				isSending = true;
-				Debug.d("-------------------- Run Every: " + TIME_SCHEDULE + " seconds!!!! ------------------------");
+				// Debug.d("-------------------- Run Every: " + TIME_SCHEDULE + " seconds!!!! ------------------------");
 				// Try to send all the Sms Objects
 				sendSmsObjects();
 			}
@@ -142,7 +142,7 @@ public class BackgroundService extends Service
 			}
 			else
 			{
-				Debug.d("--!-- No Internet Connection --!--");
+				Debug.d("No Internet Connection");
 			}
 
 			// Check if response is null
@@ -251,8 +251,7 @@ public class BackgroundService extends Service
 			@Override
 			public void onReceive(Context context, Intent intent)
 			{
-				// if (Constants.DEBUG_LOG)
-				// Log.i(Constants.TAG, "--- Received Binary SMS ---");
+				Debug.i("Received Binary SMS");
 
 				Bundle bundle = intent.getExtras();
 				SmsMessage[] msgs = null;
@@ -301,6 +300,7 @@ public class BackgroundService extends Service
 		mIntentFilter.addDataAuthority("*", "2013");
 		// mIntentFilter.addDataType(type)
 		registerReceiver(smsReceiver, mIntentFilter);
+		Debug.d("Set up BibnarySMS receiver.");
 	}
 
 	@SuppressWarnings("deprecation")

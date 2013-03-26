@@ -51,7 +51,7 @@
         <receiver
             android:name="uk.ac.ucl.excites.relay.BootReceiver"
             android:exported="true" >
-            <intent-filter android:priority="9999999999" >
+            <intent-filter android:priority="9999" >
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>

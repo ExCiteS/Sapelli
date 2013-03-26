@@ -76,7 +76,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 
 		sms.setId(id);
 
-		Debug.d("-- Stored SMSObject to DB: " + sms.toString().substring(0, 60) + "... ---");
+		Debug.d("Stored: " + sms.toString().substring(0, 60) + "... ---");
 	}
 
 	// Retrieve all SMS
@@ -109,7 +109,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 			} while (cursor.moveToNext());
 		}
 
-		Debug.d("-- Retrieving SMSObjects from the DB: found: " + smsList.size());
+		Debug.d("Found: " + smsList.size());
 
 		return smsList;
 	}

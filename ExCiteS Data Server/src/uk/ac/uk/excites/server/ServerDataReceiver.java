@@ -3,9 +3,7 @@ package uk.ac.uk.excites.server;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.io.StringWriter;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -58,6 +56,7 @@ public class ServerDataReceiver extends HttpServlet
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
+
 		// Get context
 		ServletContext context = getServletContext();
 		// Get the session container
@@ -65,12 +64,20 @@ public class ServerDataReceiver extends HttpServlet
 		// Get a writer
 		PrintWriter out = response.getWriter();
 
+		// Logging for errors and SMS
+		FileWriter errorLog = new FileWriter(ProjectUpload.getProjectsUploadFolderPath(context) + "errors.csv", true);
+		FileWriter smsLog = new FileWriter(ProjectUpload.getProjectsUploadFolderPath(context) + "sms.csv", true);
+		//FileWriter recordLog = new FileWriter(ProjectUpload.getProjectsUploadFolderPath(context) + "record.csv", true);
+
 		String smsID = request.getParameter("smsID");
 		// Set smsID to -1 if it is null
 		smsID = (smsID == null) ? "-1" : smsID;
 		String smsPhoneNumber = request.getParameter("smsPhoneNumber");
 		String smsTimestamp = request.getParameter("smsTimestamp");
 		byte[] smsData = Base64.decodeBase64(request.getParameter("smsData"));
+
+		// TODO Log SMS
+		logSMStoCsv(smsLog, smsID, smsPhoneNumber, smsTimestamp, new String(smsData));
 		
 		// Save Received SMS, add to transmission and try to decode records
 		try
@@ -88,78 +95,45 @@ public class ServerDataReceiver extends HttpServlet
 				
 				//store the records:
 				for(Record r : transmission.getRecords())
+				{
+					logToCsvLine(errorLog, r.toString() + "\n");
 					dao.store(r);
+				}
 			}
 			dao.store(transmission); //!!!
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace(System.err);
+			StringWriter sw = new StringWriter();
+			PrintWriter pw = new PrintWriter(sw);
+			e.printStackTrace(pw);
+			logToCsvLine(errorLog, sw.toString());
 		}
 
-		// TODO
-		logToCsvFile(context, response, smsID, smsPhoneNumber, smsTimestamp, new String(smsData));
 
 		// TODO Print ok or error
 		out.println("OK:" + smsID);
 		out.close();
 	}
 
-	private static void logToCsvFile(ServletContext context, HttpServletResponse response, String smsID, String smsPhoneNumber, String smsTimestamp,
-			String smsData)
-			throws IOException
+	private static void logSMStoCsv(FileWriter writer, String smsID, String smsPhoneNumber, String smsTimestamp, String smsData)
+	{
+		String line = smsID + "," + smsPhoneNumber + "," + smsTimestamp + "," + smsData + '\n';
+		logToCsvLine(writer, line);
+	}
+
+	private static void logToCsvLine(FileWriter writer, String msg)
 	{
 		try
 		{
-			// TODO
-			String filePath = ProjectUpload.getProjectsUploadFolderPath(context) + "logging.csv";
-			FileWriter writer = new FileWriter(filePath, true);
-
-			writer.append(smsID + ",");
-			writer.append(smsPhoneNumber + ",");
-			writer.append(smsTimestamp + ",");
-			writer.append(smsData);
-			writer.append('\n');
-
+			writer.append(msg);
 			writer.flush();
 			writer.close();
 		}
 		catch(IOException e)
 		{
-			// Debug Code
-			PrintWriter out = response.getWriter();
-			out.println("In the CSV Writer, error: " + e.toString());
+			e.printStackTrace(System.err);
 		}
 	}
 
-	// TODO is needed?
-	public static byte[] getSHA256Hash(byte[] data)
-	{
-		MessageDigest digest = null;
-		try
-		{
-			digest = MessageDigest.getInstance("SHA-256");
-		}
-		catch(NoSuchAlgorithmException ex)
-		{
-			// Log.e(TAG, "Cannot get hash algorithm", ex);
-		}
-		digest.reset();
-		return digest.digest(data);
-	}
-
-	// TODO is needed?
-	public static String bin2Hex(byte[] data)
-	{
-		return String.format("%0" + (data.length * 2) + "X", new BigInteger(1, data));
-	}
-
-	// TODO is needed?
-	public static String toBinaryString(byte b)
-	{
-		String str = "";
-		for(int i = 7; i >= 0; i--)
-			str += ((b & (1 << i)) != 0) ? "1" : "0";
-		return str;
-	}
 }
