@@ -66,8 +66,8 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	static public final int RETURN_PHOTO_CAPTURE = 1;
 	static public final int RETURN_VIDEO_CAPTURE = 2;
 	static public final int RETURN_AUDIO_CAPTURE = 3;
-	
-	private static final long TIMEOUT_MS = 5 * 60 * 1000; //timeout after 5 minutes
+
+	private static final long TIMEOUT_MS = 5 * 60 * 1000; // timeout after 5 minutes
 
 	// DYNAMICS-------------------------------------------------------
 
@@ -88,7 +88,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	private String projectName;
 	private String projectVersion;
 	private String dbFolderPath;
-	
+
 	// Timeout:
 	protected boolean pausedForActivityResult = false;
 	protected Timer pauseTimer = null;
@@ -114,12 +114,12 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		loadProjectInfo();
 
 		// Get DataAccess object
-		dao = DataAccess.getInstance(dbFolderPath); //will be open
+		dao = DataAccess.getInstance(dbFolderPath); // will be open
 
 		// Get Project object:
 		project = dao.retrieveProject(projectName, projectVersion);
 		if(project == null)
-		{	// show error (activity will be exited after used clicks OK in the dialog):
+		{ // show error (activity will be exited after used clicks OK in the dialog):
 			errorDialog("Could not find project: " + projectName + " (version " + projectVersion + ").", true).show();
 			return;
 		}
@@ -215,6 +215,9 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	 */
 	public void setField(Field field)
 	{
+		// avoid layout shift (known Android bug when using full screen)
+		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
+
 		// briefly disable the buttons:
 		buttonView.disable();
 		// Remove previous field view
@@ -318,11 +321,12 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 				try
 				{
 					// Set up temp file (in the projects data folder)
-					tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, project.getTempFolder()); //getTempFolder() does the necessary IO checks
-					//Set-up intent:
+					tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, project.getTempFolder()); // getTempFolder() does the necessary IO
+																														// checks
+					// Set-up intent:
 					Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 					takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
-					//Fire intent:
+					// Fire intent:
 					pausedForActivityResult = true;
 					startActivityForResult(takePictureIntent, RETURN_PHOTO_CAPTURE);
 				}
@@ -344,7 +348,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			if(tmpPhotoFile != null && tmpPhotoFile.exists())
 			{
 				try
-				{	// Rename the file & pass it to the controller
+				{ // Rename the file & pass it to the controller
 					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewTempFile(controller.getCurrentRecord());
 					tmpPhotoFile.renameTo(newPhoto);
 					controller.mediaDone(newPhoto);
@@ -409,55 +413,56 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	@Override
 	protected void onPause()
 	{
-		//set timeout timer:
+		// set timeout timer:
 		if(!pausedForActivityResult)
 		{
 			pauseTimer = new Timer();
 			timedOut = false;
 			pauseTimer.schedule(new TimerTask()
-				{
-					@Override
-					public void run()
-					{	//time's up!
-						if(fieldView != null)
-							fieldView.cancel();
-						controller.cancelAndStop();
-						timedOut = true;
-						Log.i(TAG, "Time-out reached");
-					}
-				}, TIMEOUT_MS);
+			{
+				@Override
+				public void run()
+				{ // time's up!
+					if(fieldView != null)
+						fieldView.cancel();
+					controller.cancelAndStop();
+					timedOut = true;
+					Log.i(TAG, "Time-out reached");
+				}
+			}, TIMEOUT_MS);
 		}
-		//super:
+		// super:
 		super.onPause();
 	}
 
 	@Override
 	protected void onResume()
 	{
+		// super:
+		super.onResume();
+
 		if(pausedForActivityResult)
 			pausedForActivityResult = false;
 		else
 		{
-			//restart project if needed:
+			// restart project if needed:
 			if(timedOut)
-			{	//restart project:
+			{ // restart project:
 				controller.startProject();
 				timedOut = false;
 			}
 			else
-			{	//cancel timer if needed:
+			{ // cancel timer if needed:
 				if(pauseTimer != null)
 					pauseTimer.cancel();
 			}
 		}
-		//super:
-		super.onResume();
 	}
 
 	@Override
 	protected void onDestroy()
 	{
-		//clean up:
+		// clean up:
 		dao.closeDB();
 		if(fieldView != null)
 			fieldView.cancel();
@@ -465,7 +470,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			pauseTimer.cancel();
 		if(controller != null)
 			controller.cancelAndStop();
-		//super:
+		// super:
 		super.onDestroy();
 	}
 
