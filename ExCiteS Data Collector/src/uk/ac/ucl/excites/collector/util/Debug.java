@@ -16,12 +16,12 @@ public class Debug
 	public static void v(String tag, String msg)
 	{
 		if(DEBUG)
-			Log.v(tag, msg);
+			Log.v(tag, getPrintableName() + msg);
 	}
 
 	public static void v(String msg)
 	{
-		v(TAG, msg);
+		v(TAG, getPrintableName() + msg);
 	}
 
 	public static void d(String tag, String msg)
@@ -32,40 +32,40 @@ public class Debug
 
 	public static void d(String msg)
 	{
-		d(TAG, msg);
+		d(TAG, getPrintableName() + msg);
 	}
 
 	public static void i(String tag, String msg)
 	{
 		if(DEBUG)
-			Log.i(tag, msg);
+			Log.i(tag, getPrintableName() + msg);
 	}
 
 	public static void i(String msg)
 	{
-		i(TAG, msg);
+		i(TAG, getPrintableName() + msg);
 	}
 
 	public static void w(String tag, String msg)
 	{
 		if(DEBUG)
-			Log.w(tag, msg);
+			Log.w(tag, getPrintableName() + msg);
 	}
 
 	public static void w(String msg)
 	{
-		Debug.w(TAG, msg);
+		Debug.w(TAG, getPrintableName() + msg);
 	}
 
 	public static void e(String tag, String msg)
 	{
 		if(DEBUG)
-			Log.e(tag, msg);
+			Log.e(tag, getPrintableName() + msg);
 	}
 
 	public static void e(String msg)
 	{
-		e(TAG, msg);
+		e(TAG, getPrintableName() + msg);
 	}
 
 	/**
@@ -78,7 +78,7 @@ public class Debug
 		if(DEBUG)
 		{
 			Log.e(TAG, "//================================================================================");
-			Log.e(TAG, msg, e);
+			Log.e(TAG, getPrintableName() + msg, e);
 			Log.e(TAG, "//================================================================================");
 		}
 	}
@@ -93,8 +93,26 @@ public class Debug
 		if(DEBUG)
 		{
 			Log.e(TAG, "//================================================================================");
-			Log.e(TAG, new Exception().getStackTrace()[1].toString(), e);
+			Log.e(TAG, getPrintableName(), e);
 			Log.e(TAG, "//================================================================================");
 		}
+	}
+
+	public static String getPrintableName()
+	{
+		// Take the stack of the current thread
+		final StackTraceElement stackTraceElement = Thread.currentThread().getStackTrace()[4];
+
+		// Find the class name
+		String packageName = stackTraceElement.getClassName().toString();
+		String className = packageName.substring(packageName.lastIndexOf('.') + 1);
+
+		String info = "[";
+		info += stackTraceElement.getLineNumber() + " ";
+		info += className + ":";
+		info += stackTraceElement.getMethodName().toString();
+		info += "] ";
+
+		return info;
 	}
 }
