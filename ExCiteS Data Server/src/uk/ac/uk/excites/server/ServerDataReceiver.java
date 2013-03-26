@@ -3,6 +3,7 @@ package uk.ac.uk.excites.server;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -66,6 +67,7 @@ public class ServerDataReceiver extends HttpServlet
 		// Logging for errors and SMS
 		FileWriter errorLog = new FileWriter(ProjectUpload.getProjectsUploadFolderPath(context) + "errors.csv", true);
 		FileWriter smsLog = new FileWriter(ProjectUpload.getProjectsUploadFolderPath(context) + "sms.csv", true);
+		//FileWriter recordLog = new FileWriter(ProjectUpload.getProjectsUploadFolderPath(context) + "record.csv", true);
 
 		String smsID = request.getParameter("smsID");
 		// Set smsID to -1 if it is null
@@ -94,7 +96,7 @@ public class ServerDataReceiver extends HttpServlet
 				//store the records:
 				for(Record r : transmission.getRecords())
 				{
-					logToCsvLine(errorLog, r.toString());
+					logToCsvLine(errorLog, r.toString() + "\n");
 					dao.store(r);
 				}
 			}
@@ -102,7 +104,10 @@ public class ServerDataReceiver extends HttpServlet
 		}
 		catch(Exception e)
 		{
-			logToCsvLine(errorLog, e.getStackTrace().toString());
+			StringWriter sw = new StringWriter();
+			PrintWriter pw = new PrintWriter(sw);
+			e.printStackTrace(pw);
+			logToCsvLine(errorLog, sw.toString());
 		}
 
 
