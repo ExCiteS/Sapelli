@@ -1,8 +1,9 @@
 package uk.ac.ucl.excites.relay.sms;
 
-import android.annotation.SuppressLint;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+
+import android.annotation.SuppressLint;
 
 /**
  * An SMS Object to store SMSs
@@ -15,14 +16,14 @@ public class SmsObject
 	private long id;
 	private String number;
 	private long timestamp;
-	private byte[] message;
+	private String message;
 
 	public SmsObject()
 	{
 		// this(null, (Long) null, null);
 	}
 
-	public SmsObject(String telephoneNumber, long messageTimestamp, byte[] messageData)
+	public SmsObject(String telephoneNumber, long messageTimestamp, String messageData)
 	{
 		this.number = telephoneNumber;
 		this.timestamp = messageTimestamp;
@@ -59,12 +60,12 @@ public class SmsObject
 		this.timestamp = messageTimestamp;
 	}
 
-	public byte[] getMessageData()
+	public String getMessageData()
 	{
 		return message;
 	}
 
-	public void setMessageData(byte[] messageData)
+	public void setMessageData(String messageData)
 	{
 		this.message = messageData;
 	}
@@ -72,15 +73,6 @@ public class SmsObject
 	@SuppressLint("SimpleDateFormat")
 	public String toString()
 	{
-		String messageString = "";
-		if (message != null)
-		{
-			for (int index = 0; index < message.length; ++index)
-			{
-				messageString += Character.toString((char) message[index]);
-			}
-		}
-
 		String timeString = "";
 		if (timestamp > 0)
 		{
@@ -94,7 +86,6 @@ public class SmsObject
 		printOut += "id: " + id;
 		printOut += " | Telephone: " + number;
 		printOut += " | Time: " + timeString;
-		printOut += " | Message: " + messageString;
 		return printOut;
 	}
 }
