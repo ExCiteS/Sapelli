@@ -316,6 +316,8 @@ public abstract class SMSTransmission extends Transmission
 		if(!isComplete())
 			throw new IllegalStateException("Transmission is incomplete.");
 		readMessages();
+		if(!records.isEmpty())
+			receivedAt = new DateTime(); //= now
 	}
 	
 	protected byte[] encodeRecords() throws IOException
