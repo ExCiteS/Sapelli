@@ -15,7 +15,7 @@ public class GZipCompressor extends Compressor
 {
 
 	@Override
-	public byte[] compress(byte[] data) throws CompressorException
+	public byte[] compress(byte[] data) throws IOException
 	{
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try
@@ -26,13 +26,13 @@ public class GZipCompressor extends Compressor
         }
         catch(IOException ioe)
         {
-            throw new CompressorException("Error upon " + getMode() + " compression", ioe);
+            throw new IOException("Error upon " + getMode() + " compression", ioe);
         }
         return byteArrayOutputStream.toByteArray();
 	}
 
 	@Override
-	public byte[] decompress(byte[] compressedData) throws CompressorException
+	public byte[] decompress(byte[] compressedData) throws IOException
 	{
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try
@@ -43,7 +43,7 @@ public class GZipCompressor extends Compressor
         }
         catch(IOException ioe)
         {
-        	throw new CompressorException("Error upon " + getMode() + " decompression", ioe);
+        	throw new IOException("Error upon " + getMode() + " decompression", ioe);
         }
         return out.toByteArray();
 	}

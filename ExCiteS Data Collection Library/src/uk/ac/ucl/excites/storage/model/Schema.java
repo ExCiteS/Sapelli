@@ -201,4 +201,16 @@ public class Schema
 		return total;
 	}
 	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(obj instanceof Schema)
+		{
+			Schema other = (Schema) obj;
+			return id == other.id && version == other.version;
+		}
+		else
+			return false;
+	}
+	
 }

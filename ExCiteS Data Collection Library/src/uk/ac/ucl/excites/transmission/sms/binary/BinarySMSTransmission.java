@@ -9,7 +9,7 @@ import java.util.SortedSet;
 
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
-import uk.ac.ucl.excites.transmission.SchemaProvider;
+import uk.ac.ucl.excites.transmission.ModelProvider;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.transmission.sms.Message;
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
@@ -56,12 +56,12 @@ public class BinarySMSTransmission extends SMSTransmission
 	/**
 	 * To be called on the receiving side.
 	 * 
-	 * @param schemaProvider
+	 * @param modelProvider
 	 * @param settings
 	 */
-	public BinarySMSTransmission(SchemaProvider schemaProvider, Settings settings)
+	public BinarySMSTransmission(ModelProvider modelProvider)
 	{
-		super(schemaProvider, settings);
+		super(modelProvider);
 	}
 	
 	@Override

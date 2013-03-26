@@ -1,5 +1,7 @@
 package uk.ac.ucl.excites.transmission.compression;
 
+import java.io.IOException;
+
 import uk.ac.ucl.excites.transmission.compression.CompressorFactory.CompressionMode;
 
 /**
@@ -10,13 +12,13 @@ public class DummyCompressor extends Compressor
 {
 
 	@Override
-	public byte[] compress(byte[] data) throws CompressorException
+	public byte[] compress(byte[] data) throws IOException
 	{
 		return data;
 	}
 
 	@Override
-	public byte[] decompress(byte[] compressedData) throws CompressorException
+	public byte[] decompress(byte[] compressedData) throws IOException
 	{
 		return compressedData;
 	}

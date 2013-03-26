@@ -21,7 +21,7 @@ import javax.crypto.spec.PBEKeySpec;
 public class SecureKeyGenerator
 {
 
-	static private final int NUMBER_OF_ITERATIONS = 1000;
+	static private final int NUMBER_OF_ITERATIONS = 100;
 	static public final int SALT_LENGTH = 8;
 	
 	static public byte[] GenerateSalt()

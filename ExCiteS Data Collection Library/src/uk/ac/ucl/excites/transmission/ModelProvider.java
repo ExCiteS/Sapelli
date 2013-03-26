@@ -12,10 +12,12 @@ import uk.ac.ucl.excites.storage.model.Schema;
  * @author mstevens
  *
  */
-public interface SchemaProvider
+public interface ModelProvider
 {
 
 	public Schema getSchema(int id, int version);
+	
+	public Settings getSettingsFor(Schema schema);
 	
 	public Set<Column<?>> getFactoredOutColumnsFor(Schema schema);
 	

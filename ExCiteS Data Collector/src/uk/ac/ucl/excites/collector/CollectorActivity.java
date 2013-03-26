@@ -114,7 +114,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		loadProjectInfo();
 
 		// Get DataAccess object
-		dao = DataAccess.getInstance(dbFolderPath);
+		dao = DataAccess.getInstance(dbFolderPath); //will be open
 
 		// Get Project object:
 		project = dao.retrieveProject(projectName, projectVersion);
@@ -408,9 +408,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 
 	@Override
 	protected void onPause()
-	{ 
-		//close database
-		dao.closeDB();
+	{
 		//set timeout timer:
 		if(!pausedForActivityResult)
 		{
@@ -452,8 +450,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 					pauseTimer.cancel();
 			}
 		}
-		// open database
-		dao.openDB();
 		//super:
 		super.onResume();
 	}
@@ -462,6 +458,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	protected void onDestroy()
 	{
 		//clean up:
+		dao.closeDB();
 		if(fieldView != null)
 			fieldView.cancel();
 		if(pauseTimer != null)

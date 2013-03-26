@@ -191,10 +191,9 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	}
 
 	public boolean copyDBtoSD(MenuItem item)
-	{
+	{	
 		dao.closeDB();
 		dao.copyDB(excitesFolderPath + DB4O_DUMP_NAME + System.currentTimeMillis() + "." + DB4O_DUMP_EXTENSION);
-		dao.openDB();
 		return true;
 	}
 
@@ -221,8 +220,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	 */
 	public void populateProjectList()
 	{
-		if(!dao.isOpen())
-			dao.openDB();
+		dao.openDB();
 		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list, android.R.id.text1, new ArrayList<Project>(dao.retrieveProjects())));
 		if(!projectList.getAdapter().isEmpty())
 		{
@@ -239,6 +237,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			createShortcutBtn.setEnabled(false);
 			removeShortcutBtn.setEnabled(false);
 		}
+		dao.closeDB();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -281,8 +280,9 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		if(p == null)
 			return;
 		removeShortcutFor(p);
+		dao.openDB(); //first open db
 		dao.deleteProject(p);
-		populateProjectList();
+		populateProjectList(); //populate will close DB
 
 		// Restart the DataSenderService to stop monitoring the deleted project
 		ServiceChecker.restartActiveDataSender(this);
@@ -428,7 +428,9 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	{
 		try
 		{
+			dao.openDB();
 			dao.store(p);
+			dao.closeDB();
 		}
 		catch(DuplicateException de)
 		{
@@ -641,11 +643,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	@Override
 	protected void onPause()
 	{
-		// close database
 		super.onPause();
-		if(dao != null)
-			dao.closeDB();
-
 		if(encryptionDialog != null)
 			encryptionDialog.dismiss();
 	}
@@ -653,12 +651,11 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	@Override
 	protected void onResume()
 	{
-		// open database
 		super.onResume();
 		if(dao != null)
 		{
 			// Update project list:
-			populateProjectList();
+			populateProjectList(); //will open & close DB
 		}
 	}
 

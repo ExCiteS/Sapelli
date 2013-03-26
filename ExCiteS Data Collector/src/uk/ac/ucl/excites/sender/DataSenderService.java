@@ -91,7 +91,7 @@ public class DataSenderService extends Service
 		folderObservers = new ArrayList<DropboxSync>();
 		
 		// Wait for the Debugger to be attached
-		// android.os.Debug.waitForDebugger();
+		//android.os.Debug.waitForDebugger();
 	}
 
 	@Override
@@ -243,9 +243,10 @@ public class DataSenderService extends Service
 			//Generate transmissions...
 			for(Project p : dao.retrieveProjects())
 			{
+				Settings settings = p.getTransmissionSettings();
+				
 				for(Form f : p.getForms())
-				{	
-					Settings settings = p.getTransmissionSettings();
+				{		
 					Schema schema = f.getSchema();
 					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
 					
@@ -275,6 +276,7 @@ public class DataSenderService extends Service
 							catch(Exception e)
 							{
 								//TODO
+								Log.e(TAG, "error on sending smstransmission", e);
 							}
 						}
 						
@@ -312,8 +314,8 @@ public class DataSenderService extends Service
 			SMSTransmission t = null;
 			switch(settings.getSMSMode())
 			{
-				case BINARY : t = new BinarySMSTransmission(schema, factorOut, settings.getSMSTransmissionID(), settings.getSMSRelay(), settings);
-				case TEXT : t = new TextSMSTransmission(schema, factorOut, settings.getSMSTransmissionID(), settings.getSMSRelay(), settings);
+				case BINARY : t = new BinarySMSTransmission(schema, factorOut, settings.getSMSTransmissionID(), settings.getSMSRelay(), settings); break;
+				case TEXT : t = new TextSMSTransmission(schema, factorOut, settings.getSMSTransmissionID(), settings.getSMSRelay(), settings); break;
 			}
 			//Add as many records as possible:
 			while(!records.isEmpty() && !t.isFull())
@@ -332,7 +334,7 @@ public class DataSenderService extends Service
 					records.remove(0);
 				}
 			}
-			if(!t.isEmpty())				
+			if(!t.isEmpty())
 				transmissions.add(t);
 		}
 		return transmissions;

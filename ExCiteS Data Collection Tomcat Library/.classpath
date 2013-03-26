@@ -3,7 +3,7 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry exported="true" kind="lib" path="/ExCiteS Data Collection Library/libs/commons-io-2.4.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/D:/Dropbox/_dev_/git/datacollectionsuite/ExCiteS Data Collection Library/libs/docs/commons-io-2.4-javadoc.jar!/"/>
+			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS Data Collection Library/libs/docs/commons-io-2.4-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry exported="true" kind="lib" path="/ExCiteS Data Collection Library/libs/db4o-8.0.249.16098-core-java5.jar">
@@ -13,21 +13,20 @@
 	</classpathentry>
 	<classpathentry exported="true" kind="lib" path="/ExCiteS Data Collection Library/libs/joda-time-2.1.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/D:/Dropbox/_dev_/git/datacollectionsuite/ExCiteS Data Collection Library/libs/docs/joda-time-2.1-javadoc.jar!/"/>
+			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS Data Collection Library/libs/docs/joda-time-2.1-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry exported="true" kind="lib" path="/ExCiteS Data Collection Library/libs/xz-1.2.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/D:/Dropbox/_dev_/git/datacollectionsuite/ExCiteS Data Collection Library/libs/docs/xz-1.2-javadoc.jar!/"/>
+			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS Data Collection Library/libs/docs/xz-1.2-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="con" path="org.eclipse.jst.j2ee.internal.module.container"/>
 	<classpathentry kind="con" path="org.eclipse.jst.server.core.container/org.eclipse.jst.server.tomcat.runtimeTarget/Apache Tomcat v6.0">
 		<attributes>
 			<attribute name="owner.project.facets" value="jst.utility"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jre7">
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER">
 		<attributes>
 			<attribute name="owner.project.facets" value="java"/>
 		</attributes>

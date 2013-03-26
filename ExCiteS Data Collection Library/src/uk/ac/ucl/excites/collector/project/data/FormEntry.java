@@ -26,7 +26,7 @@ public class FormEntry
 	
 	public FormEntry(Form form, Record record)
 	{
-		if(form.getSchema() != record.getSchema())
+		if(!record.getSchema().equals(form.getSchema()))
 			throw new IllegalArgumentException("Schema mismatch!");
 		this.form = form;
 		this.record = record;

@@ -12,7 +12,15 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.codec.binary.Base64;
+
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.project.db.ProjectModelProvider;
+import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.transmission.sms.SMSAgent;
+import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
+import uk.ac.ucl.excites.transmission.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.transmission.sms.binary.BinarySMSTransmission;
 import uk.ac.uk.excites.server.db.DataAccessHelper;
 
 /**
@@ -57,19 +65,39 @@ public class ServerDataReceiver extends HttpServlet
 		// Set smsID to -1 if it is null
 		smsID = (smsID == null) ? "-1" : smsID;
 		String smsPhoneNumber = request.getParameter("smsPhoneNumber");
-		String smsTimestamp = request.getParameter("smsTimestamp");
-		String smsData = request.getParameter("smsData");
-
-		// TODO Save Received SMS
-		// SMS sms = new SMS(smsID, smsPhoneNumber, smsTimestamp, smsData);
-		// dao.store(sms);
+		//String smsTimestamp = request.getParameter("smsTimestamp");
+		byte[] smsData = Base64.decodeBase64(request.getParameter("smsData"));
+		
+		// Save Received SMS, add to transmission and try to decode records
+		try
+		{
+			BinaryMessage sms = new BinaryMessage(new SMSAgent(smsPhoneNumber), smsData);
+			SMSTransmission transmission = dao.retrieveSMSTransmission(sms.getTransmissionID());
+			if(transmission == null)
+				transmission = new BinarySMSTransmission(new ProjectModelProvider(dao));
+			transmission.addPart(sms);
+			
+			//Try to decode: //TODO put this in a separate thread
+			if(transmission.isComplete())
+			{
+				transmission.receive();
+				
+				//store the records:
+				for(Record r : transmission.getRecords())
+					dao.store(r);
+			}
+			dao.store(transmission); //!!!
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+		}
 
 		// generateCsvFile(response, smsID, smsPhoneNumber, smsTimestamp, smsData);
 
 		// TODO Print ok or error
 		out.println("OK:" + smsID);
 		out.close();
-
 	}
 
 	private static void generateCsvFile(HttpServletResponse response, String smsID, String smsPhoneNumber, String smsTimestamp, String smsData)

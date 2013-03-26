@@ -66,7 +66,7 @@ public abstract class Column<T>
 	 */
 	public void storeValue(Record record, T value) throws IllegalArgumentException, NullPointerException
 	{
-		if(this.schema != record.getSchema())
+		if(!record.getSchema().equals(this.schema))
 			throw new IllegalArgumentException("Schema mismatch.");
 		if(value == null)
 		{
@@ -101,7 +101,7 @@ public abstract class Column<T>
 	@SuppressWarnings("unchecked")
 	public T retrieveValue(Record record)
 	{
-		if(this.schema != record.getSchema())
+		if(!record.getSchema().equals(this.schema))
 			throw new IllegalArgumentException("Schema mismatch.");
 		return (T) record.getValue(this);
 	}

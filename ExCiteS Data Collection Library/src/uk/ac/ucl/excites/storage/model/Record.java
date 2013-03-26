@@ -25,6 +25,8 @@ public class Record
 
 	public Record(Schema schema)
 	{
+		if(schema == null)
+			throw new NullPointerException("Schema cannot be null!");
 		if(!schema.isSealed())
 			throw new IllegalStateException("Schema must be sealed before records based on it can be created!");
 		this.schema = schema;

@@ -351,7 +351,7 @@ public final class BitInputStream extends InputStream
 	 */
 	public float readFloat() throws IOException
 	{
-		return Float.intBitsToFloat((int) readInteger(Float.SIZE, false));
+		return Float.intBitsToFloat((int) readInteger(Float.SIZE, true));
 	}
 	
 	/**
@@ -362,7 +362,7 @@ public final class BitInputStream extends InputStream
 	 */
 	public double readDouble() throws IOException
 	{
-		return Double.longBitsToDouble(readInteger(Double.SIZE, false));
+		return Double.longBitsToDouble(readInteger(Double.SIZE, true));
 	}
 	
 	/**

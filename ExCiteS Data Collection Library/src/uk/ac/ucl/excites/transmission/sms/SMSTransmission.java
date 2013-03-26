@@ -19,11 +19,10 @@ import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.transmission.SchemaProvider;
+import uk.ac.ucl.excites.transmission.ModelProvider;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.compression.CompressorFactory;
-import uk.ac.ucl.excites.transmission.compression.CompressorException;
 import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException;
 
 
@@ -83,12 +82,12 @@ public abstract class SMSTransmission extends Transmission
 	/**
 	 * To be called on the receiving side.
 	 * 
-	 * @param schemaProvider
+	 * @param modelProvider
 	 * @param settings
 	 */
-	public SMSTransmission(SchemaProvider schemaProvider, Settings settings)
+	public SMSTransmission(ModelProvider modelProvider)
 	{
-		super(schemaProvider, settings);
+		super(modelProvider);
 		this.parts = new TreeSet<Message>(new Message.MessageComparator());
 	}
 	
@@ -181,42 +180,114 @@ public abstract class SMSTransmission extends Transmission
 		return (parts.first().getTotalParts() == parts.size());
 	}
 	
-	protected void prepareMessages() throws IOException, TransmissionCapacityExceededException, CompressorException
+	protected void prepareMessages() throws IOException, TransmissionCapacityExceededException
 	{
-		//Encode
-		byte[] data = encodeRecords(); //can throw IOException
+		BitOutputStream out = null;
+		try
+		{
+			// Encode records
+			byte[] data = encodeRecords(); //can throw IOException
+			//System.out.println("Encoded records to: " + data.length + " bytes");
+			//System.out.println("Hash: " + BinaryHelpers.toHexadecimealString(Hashing.getSHA256Hash(data)));
+			
+			// Compress records
+			data = compress(data);
+			
+			// Encrypt records
+			data = encrypt(data);
 		
-		//Compress
-		data = compress(data);
-		
-		//Encrypt
-		data = encrypt(data);
-		
-		//Serialise/Split
-		List<Message> msgs = serialiseAndSplit(data); //can throw TransmissionCapacityExceededException
-		parts.clear(); //clear previous messages! (don't move this line!)
-		for(Message m : msgs)
-			parts.add(m);
+			// Output stream:
+			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
+			out = new BitOutputStream(rawOut);
+			
+			// Write schema ID & version:
+			Schema.SCHEMA_ID_FIELD.write(schema.getID(), out);
+			Schema.SCHEMA_VERSION_FIELD.write(schema.getVersion(), out);
+			
+			// Write the encoded, compressed & encrypted records:
+			out.write(data);
+			
+			// Flush & close the stream and get bytes:
+			out.flush();
+			out.close();
+			data = rawOut.toByteArray();
+
+			// Serialise/Split
+			List<Message> msgs = serialiseAndSplit(data); //can throw TransmissionCapacityExceededException
+			parts.clear(); //clear previous messages! (don't move this line!)
+			for(Message m : msgs)
+				parts.add(m);
+		}
+		catch(IOException e)
+		{
+			throw new IOException("Error on preparing messages.", e);
+		}
+		finally
+		{
+			try
+			{
+				if(out != null)
+					out.close();
+			}
+			catch(Exception ignore) {}
+		}
 	}
 	
-	protected void readMessages() throws IOException, CompressorException
+	protected void readMessages() throws IOException
 	{
 		if(parts.isEmpty())
 			throw new IllegalStateException("No messages to decode.");
 		if(!isComplete())
 			throw new IllegalStateException("Transmission is incomplete, " + (parts.first().getTotalParts() - parts.size()) + " parts missing.");
 		
-		//Merge/Deserialise
-		byte[] data = mergeAndDeserialise(parts);
+		BitInputStream in = null;
+		try
+		{
+			// Merge/Deserialise
+			byte[] data = mergeAndDeserialise(parts);
 		
-		//Decrypt
-		data = decrypt(data);
-		
-		//Decompress
-		data = decompress(data);
-		
-		//Decode
-		decodeRecords(data);
+			// Input stream:
+			ByteArrayInputStream rawIn = new ByteArrayInputStream(data);
+			in = new BitInputStream(rawIn);
+			
+			// Read schema ID & version
+			int schemaID = (int) Schema.SCHEMA_ID_FIELD.read(in);
+			int schemaVersion = (int) Schema.SCHEMA_VERSION_FIELD.read(in);
+			
+			// Look-up schema, settings & columns to factor out:
+			schema = modelProvider.getSchema(schemaID, schemaVersion);
+			if(schema == null)
+				throw new IllegalStateException("Cannot decode message because schema (id: " + schemaID + "; version: " + schemaVersion + ") is unknown");
+			settings = modelProvider.getSettingsFor(schema);
+			setColumnsToFactorOut(modelProvider.getFactoredOutColumnsFor(schema));
+			
+			// Read encrypted, compressed & encoded records:
+			data = in.readBytes(in.available());
+			
+			// Decrypt records
+			data = decrypt(data);
+			
+			// Decompress records
+			data = decompress(data);
+			
+			// Decode records
+			//System.out.println("Decoding records from: " + data.length + " bytes");
+			//System.out.println("Hash: " + BinaryHelpers.toHexadecimealString(Hashing.getSHA256Hash(data)));
+			decodeRecords(data);
+		}
+		catch(Exception e)
+		{
+			throw new IOException("Error on reading messages.", e);
+		}
+		finally
+		{
+			try
+			{
+				if(in != null)
+					in.close();
+			}
+			catch(Exception ignore) {}
+		}
 	}
 
 	public void send(SMSService smsService) throws Exception
@@ -255,10 +326,6 @@ public abstract class SMSTransmission extends Transmission
 			//Output stream:
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
 			out = new BitOutputStream(rawOut);
-	
-			//Write schema ID & version:
-			Schema.SCHEMA_ID_FIELD.write(schema.getID(), out);
-			Schema.SCHEMA_VERSION_FIELD.write(schema.getVersion(), out);
 			
 			//Write factored out values:
 			for(Column<?> c : columnsToFactorOut)
@@ -268,10 +335,9 @@ public abstract class SMSTransmission extends Transmission
 			for(Record r : records)
 				r.writeToBitStream(out, columnsToFactorOut);
 			
-			//Flush, close & get bytes:
+			//Flush & close the stream and get bytes:
 			out.flush();
 			out.close();
-			
 			return rawOut.toByteArray();
 		}
 		catch(Exception e)
@@ -297,16 +363,6 @@ public abstract class SMSTransmission extends Transmission
 			//Input stream:
 			ByteArrayInputStream rawIn = new ByteArrayInputStream(data);
 			in = new BitInputStream(rawIn);
-
-			//Read schema ID & version
-			int schemaID = (int) Schema.SCHEMA_ID_FIELD.read(in);
-			int schemaVersion = (int) Schema.SCHEMA_VERSION_FIELD.read(in);
-			
-			//Look-up schema & columns to factor out:
-			schema = schemaProvider.getSchema(schemaID, schemaVersion);
-			if(schema == null)
-				throw new IllegalStateException("Cannot decode message because schema (id: " + schemaID + "; version: " + schemaVersion + ") is unknown");
-			setColumnsToFactorOut(schemaProvider.getFactoredOutColumnsFor(schema));
 			
 			//Read factored out values:
 			for(Column<?> c : columnsToFactorOut)
@@ -339,14 +395,14 @@ public abstract class SMSTransmission extends Transmission
 		}
 	}
 	
-	protected byte[] compress(byte[] data) throws CompressorException
+	protected byte[] compress(byte[] data) throws IOException
 	{
 		byte[] compressedData = CompressorFactory.getCompressor(settings.getCompressionMode()).compress(data);
 		compressionRatio = ((float) compressedData.length) / data.length;
 		return compressedData;
 	}
 	
-	protected byte[] decompress(byte[] compressedData) throws CompressorException
+	protected byte[] decompress(byte[] compressedData) throws IOException
 	{
 		byte[] decompressedData = CompressorFactory.getCompressor(settings.getCompressionMode()).decompress(compressedData);
 		compressionRatio = ((float) compressedData.length) / decompressedData.length;

@@ -112,6 +112,12 @@ public final class DataAccess
 	{
 		return db != null;
 	}
+	
+	public void commit()
+	{
+		if(db != null)
+			db.commit();
+	}
 
 	/**
 	 * Returns the file where the DB is saved

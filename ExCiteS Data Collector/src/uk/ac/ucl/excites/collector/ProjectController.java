@@ -140,13 +140,9 @@ public class ProjectController implements LocationListener, OrientationListener
 		currentMediaAttachments.clear();
 		currentField = null;
 
-		// Open DB
-		if(!dao.isOpen())
-			dao.openDB();
-
 		// Create new currentRecord:
 		currentRecord = currentForm.newEntry(deviceID);
-
+		
 		// Location...
 		List<LocationField> lfStartWithForm = currentForm.getLocationFields(true);
 		if(!lfStartWithForm.isEmpty())
@@ -376,7 +372,8 @@ public class ProjectController implements LocationListener, OrientationListener
 
 		// Store currentRecord
 		dao.store(currentRecord);
-
+		dao.commit();
+		
 		Log.d(TAG, "Stored record:");
 		Log.d(TAG, currentRecord.toString());
 

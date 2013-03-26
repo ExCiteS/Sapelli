@@ -37,7 +37,7 @@ public class ChoiceField extends Field
 						null /* id is mandatory for the root: Field constructor will throw NullPointerException */ :
 						/* generate id based on parent ID and value or child number: */
 						parent.getID() + "." + (value == null || value.isEmpty() ?
-													parent.getChildren().size() :
+													parent.getChildren().size() + 1 :
 													value)) :
 					id);
 		this.children = new ArrayList<ChoiceField>();

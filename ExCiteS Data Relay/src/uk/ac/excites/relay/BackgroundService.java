@@ -34,6 +34,7 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.telephony.SmsMessage;
+import android.util.Base64;
 import android.util.Log;
 import android.webkit.URLUtil;
 
@@ -135,14 +136,14 @@ public class BackgroundService extends Service
 				{
 					response = null;
 					response = postSmsObject(sms);
-					if (Constants.DEBUG_LOG)
+					if(Constants.DEBUG_LOG)
 						Log.i(Constants.TAG, "POST sms: " + sms.getId() + " and the response is: " + response);
-				} catch (Exception e)
+				}
+				catch (Exception e)
 				{
 					if (Constants.DEBUG_LOG)
-						Log.i(Constants.TAG, "sendSmsObjects(): Exception: " + e.toString());
+						Log.e(Constants.TAG, "sendSmsObjects(): Exception: " + e.toString(), e);
 				}
-
 			} else
 			{
 				if (Constants.DEBUG_LOG)
@@ -150,13 +151,12 @@ public class BackgroundService extends Service
 			}
 
 			// Check if response is null
-			if (response != null && response.contains("OK:"))
+			if (response != null && response.substring(0, 3).equalsIgnoreCase("OK:"))
 			{
 				String[] responseStrings = response.split(":");
 				long idPart = Long.valueOf(responseStrings[1]);
 
-				// Check if the post was successful and delete the SMS from the
-				// db
+				// Check if the post was successful and delete the SMS from the db
 				if (idPart == sms.getId())
 				{
 					dao.deleteSmsObject(sms);
@@ -189,15 +189,9 @@ public class BackgroundService extends Service
 		nameValuePairList.add(new BasicNameValuePair("smsID", String.valueOf(smsObject.getId())));
 		nameValuePairList.add(new BasicNameValuePair("smsPhoneNumber", smsObject.getTelephoneNumber()));
 		nameValuePairList.add(new BasicNameValuePair("smsTimestamp", String.valueOf(smsObject.getMessageTimestamp())));
-		try
-		{
-			String data = new String(smsObject.getMessageData(), "UTF-8");
-			nameValuePairList.add(new BasicNameValuePair("smsData", data));
-		} catch (UnsupportedEncodingException e)
-		{
-			if (Constants.DEBUG_LOG)
-				Log.i(Constants.TAG, "--!-- postSmsObject(): tried to get string from data --!--: " + e.toString());
-		}
+		
+		String data = Base64.encodeToString(smsObject.getMessageData(), Base64.CRLF); 
+		nameValuePairList.add(new BasicNameValuePair("smsData", data));
 
 		// POST them
 		try
@@ -222,20 +216,14 @@ public class BackgroundService extends Service
 				// So we can't initialise InputStream although it is not an
 				// interface
 				InputStream inputStream = httpResponse.getEntity().getContent();
-
 				InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-
 				BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
 				StringBuilder stringBuilder = new StringBuilder();
-
 				String bufferedStrChunk = null;
-
 				while ((bufferedStrChunk = bufferedReader.readLine()) != null)
 				{
 					stringBuilder.append(bufferedStrChunk);
 				}
-
 				return stringBuilder.toString();
 
 			} catch (ClientProtocolException e)

@@ -254,7 +254,7 @@ public final class BitOutputStream extends OutputStream
 	 */
 	public void write(float value) throws IOException
 	{
-		write(Float.floatToRawIntBits(value), Integer.SIZE, false);
+		write(Float.floatToRawIntBits(value), Integer.SIZE, true);
 	}
 	
 	/**
@@ -265,7 +265,7 @@ public final class BitOutputStream extends OutputStream
 	 */
 	public void write(double value) throws IOException
 	{
-		write(Double.doubleToRawLongBits(value), Long.SIZE, false);
+		write(Double.doubleToRawLongBits(value), Long.SIZE, true);
 	}
 		
 	/**
