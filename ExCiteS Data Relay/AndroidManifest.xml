@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="uk.ac.excites.relay"
+    package="uk.ac.ucl.excites.relay"
     android:versionCode="1"
     android:versionName="1.0.0" >
 
@@ -27,7 +27,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name=".BackgroundActivity"
+            android:name="uk.ac.ucl.excites.relay.BackgroundActivity"
             android:label="@string/title_activity_main" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -35,13 +35,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".Preferences" >
+        <activity android:name="uk.ac.ucl.excites.relay.Preferences" >
         </activity>
-        <activity android:name=".About" >
+        <activity android:name="uk.ac.ucl.excites.relay.About" >
         </activity>
 
         <service
-            android:name=".BackgroundService"
+            android:name="uk.ac.ucl.excites.relay.BackgroundService"
             android:icon="@drawable/ic_launcher"
             android:label="@string/service_name" >
 

@@ -1,10 +1,10 @@
-package uk.ac.excites.relay.sms;
+package uk.ac.ucl.excites.relay.sms;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.excites.relay.Constants;
+import uk.ac.ucl.excites.relay.Constants;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;

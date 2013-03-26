@@ -1,4 +1,4 @@
-package uk.ac.excites.relay.sms;
+package uk.ac.ucl.excites.relay.sms;
 
 import android.annotation.SuppressLint;
 import java.text.SimpleDateFormat;

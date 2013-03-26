@@ -1,4 +1,4 @@
-package uk.ac.excites.relay;
+package uk.ac.ucl.excites.relay;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,8 +21,8 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
-import uk.ac.excites.relay.sms.SmsDatabaseSQLite;
-import uk.ac.excites.relay.sms.SmsObject;
+import uk.ac.ucl.excites.relay.sms.SmsDatabaseSQLite;
+import uk.ac.ucl.excites.relay.sms.SmsObject;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -39,8 +39,7 @@ import android.util.Log;
 import android.webkit.URLUtil;
 
 /**
- * A service that checks if the phone received any SMS messages and POST them to
- * the server
+ * A service that checks if the phone received any SMS messages and POST them to the server
  * 
  * @author Michalis Vitos
  * 
@@ -96,7 +95,7 @@ public class BackgroundService extends Service
 		setServiceForeground(mContext);
 
 		// Check if the scheduleTaskExecutor is running and stop it first
-		if (isSending)
+		if(isSending)
 		{
 			mScheduledFuture.cancel(true);
 			isSending = false;
@@ -109,7 +108,7 @@ public class BackgroundService extends Service
 			public void run()
 			{
 				isSending = true;
-				if (Constants.DEBUG_LOG)
+				if(Constants.DEBUG_LOG)
 					Log.i(Constants.TAG, "-------------------- Run Every: " + TIME_SCHEDULE + " seconds!!!! ------------------------");
 				// Try to send all the Sms Objects
 				sendSmsObjects();
@@ -127,10 +126,10 @@ public class BackgroundService extends Service
 		List<SmsObject> smsList = dao.retrieveSmsObjects();
 
 		String response = null;
-		for (SmsObject sms : smsList)
+		for(SmsObject sms : smsList)
 		{
 			// Check if there is connectivity
-			if (Utilities.isOnline(mContext))
+			if(Utilities.isOnline(mContext))
 			{
 				try
 				{
@@ -139,25 +138,26 @@ public class BackgroundService extends Service
 					if(Constants.DEBUG_LOG)
 						Log.i(Constants.TAG, "POST sms: " + sms.getId() + " and the response is: " + response);
 				}
-				catch (Exception e)
+				catch(Exception e)
 				{
-					if (Constants.DEBUG_LOG)
+					if(Constants.DEBUG_LOG)
 						Log.e(Constants.TAG, "sendSmsObjects(): Exception: " + e.toString(), e);
 				}
-			} else
+			}
+			else
 			{
-				if (Constants.DEBUG_LOG)
+				if(Constants.DEBUG_LOG)
 					Log.i(Constants.TAG, "--!-- No Internet Connection --!--");
 			}
 
 			// Check if response is null
-			if (response != null && response.substring(0, 3).equalsIgnoreCase("OK:"))
+			if(response != null && response.substring(0, 3).equalsIgnoreCase("OK:"))
 			{
 				String[] responseStrings = response.split(":");
 				long idPart = Long.valueOf(responseStrings[1]);
 
 				// Check if the post was successful and delete the SMS from the db
-				if (idPart == sms.getId())
+				if(idPart == sms.getId())
 				{
 					dao.deleteSmsObject(sms);
 				}
@@ -174,13 +174,14 @@ public class BackgroundService extends Service
 		HttpClient httpClient = new DefaultHttpClient();
 		// Check the validity of the URL
 		HttpPost httpPost = null;
-		if (URLUtil.isValidUrl(SERVER_URL))
+		if(URLUtil.isValidUrl(SERVER_URL))
 		{
 			httpPost = new HttpPost(SERVER_URL);
 			// Log.i(Constants.TAG, "--!-- SERVER_URL: " + SERVER_URL);
-		} else
+		}
+		else
 		{
-			if (Constants.DEBUG_LOG)
+			if(Constants.DEBUG_LOG)
 				Log.i(Constants.TAG, "--!-- SERVER_URL ERROR --!--");
 		}
 
@@ -189,8 +190,8 @@ public class BackgroundService extends Service
 		nameValuePairList.add(new BasicNameValuePair("smsID", String.valueOf(smsObject.getId())));
 		nameValuePairList.add(new BasicNameValuePair("smsPhoneNumber", smsObject.getTelephoneNumber()));
 		nameValuePairList.add(new BasicNameValuePair("smsTimestamp", String.valueOf(smsObject.getMessageTimestamp())));
-		
-		String data = Base64.encodeToString(smsObject.getMessageData(), Base64.CRLF); 
+
+		String data = Base64.encodeToString(smsObject.getMessageData(), Base64.CRLF);
 		nameValuePairList.add(new BasicNameValuePair("smsData", data));
 
 		// POST them
@@ -220,26 +221,29 @@ public class BackgroundService extends Service
 				BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
 				StringBuilder stringBuilder = new StringBuilder();
 				String bufferedStrChunk = null;
-				while ((bufferedStrChunk = bufferedReader.readLine()) != null)
+				while((bufferedStrChunk = bufferedReader.readLine()) != null)
 				{
 					stringBuilder.append(bufferedStrChunk);
 				}
 				return stringBuilder.toString();
 
-			} catch (ClientProtocolException e)
+			}
+			catch(ClientProtocolException e)
 			{
-				if (Constants.DEBUG_LOG)
+				if(Constants.DEBUG_LOG)
 					Log.i(Constants.TAG, "--!-- postSmsObject(): ClientProtocolException: --!--: " + e.toString());
 
-			} catch (IOException e)
+			}
+			catch(IOException e)
 			{
-				if (Constants.DEBUG_LOG)
+				if(Constants.DEBUG_LOG)
 					Log.i(Constants.TAG, "--!-- postSmsObject(): IOException: --!--: " + e.toString());
 			}
 
-		} catch (UnsupportedEncodingException e)
+		}
+		catch(UnsupportedEncodingException e)
 		{
-			if (Constants.DEBUG_LOG)
+			if(Constants.DEBUG_LOG)
 				Log.i(Constants.TAG, "--!-- postSmsObject(): UnsupportedEncodingException: --!--: " + e.toString());
 		}
 
@@ -262,7 +266,7 @@ public class BackgroundService extends Service
 				Bundle bundle = intent.getExtras();
 				SmsMessage[] msgs = null;
 
-				if (null != bundle)
+				if(null != bundle)
 				{
 					// In telecommunications the term (PDU) means protocol data
 					// unit.
@@ -276,7 +280,7 @@ public class BackgroundService extends Service
 					Object[] pdus = (Object[]) bundle.get("pdus");
 					msgs = new SmsMessage[pdus.length];
 
-					for (int i = 0; i < msgs.length; i++)
+					for(int i = 0; i < msgs.length; i++)
 					{
 						// Create the Message
 						msgs[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
@@ -364,13 +368,14 @@ public class BackgroundService extends Service
 			mScheduledFuture.cancel(true);
 			stopSelf();
 			int pid = android.os.Process.myPid();
-			if (Constants.DEBUG_LOG)
+			if(Constants.DEBUG_LOG)
 				Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
 			android.os.Process.killProcess(pid);
 
-		} catch (Exception e)
+		}
+		catch(Exception e)
 		{
-			if (Constants.DEBUG_LOG)
+			if(Constants.DEBUG_LOG)
 				Log.i(Constants.TAG, "BackgroundService: onDestroy() + error: " + e.toString());
 		}
 	}

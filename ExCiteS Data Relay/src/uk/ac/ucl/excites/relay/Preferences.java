@@ -1,4 +1,4 @@
-package uk.ac.excites.relay;
+package uk.ac.ucl.excites.relay;
 
 import java.util.regex.Pattern;
 
@@ -36,8 +36,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	}
 
 	/**
-	 * Get the server address where the application is sending (POST) the
-	 * incoming messages
+	 * Get the server address where the application is sending (POST) the incoming messages
 	 * 
 	 * @param mContext
 	 * @return
@@ -70,11 +69,11 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
 	{
 		// Check for a valid URL pattern
-		if (key.equals("serverAddress"))
+		if(key.equals("serverAddress"))
 		{
 			String value = sharedPreferences.getString("serverAddress", "");
 
-			if (!Pattern.matches(Patterns.WEB_URL.toString(), value))
+			if(!Pattern.matches(Patterns.WEB_URL.toString(), value))
 			{
 				// Show a message
 				final AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -82,13 +81,15 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 				builder.setMessage("Please insert a valid URL address");
 				builder.setPositiveButton(android.R.string.ok, null);
 				builder.show();
-			} else
+			}
+			else
 			{
 				// Call the Service
 				Intent mIntent = new Intent(this, BackgroundService.class);
 				startService(mIntent);
 			}
-		} else if (key.equals("timeSchedule"))
+		}
+		else if(key.equals("timeSchedule"))
 		{
 			// Call the Service
 			Intent mIntent = new Intent(this, BackgroundService.class);

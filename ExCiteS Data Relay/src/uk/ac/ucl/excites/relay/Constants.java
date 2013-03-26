@@ -1,4 +1,4 @@
-package uk.ac.excites.relay;
+package uk.ac.ucl.excites.relay;
 
 /**
  * Here are defined some constant variables across the application.
@@ -6,7 +6,8 @@ package uk.ac.excites.relay;
  * @author Michalis Vitos
  * 
  */
-public final class Constants {
+public final class Constants 
+{
 	
 	private Constants() {} //should not be instantiated
 

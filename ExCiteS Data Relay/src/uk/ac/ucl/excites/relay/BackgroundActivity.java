@@ -1,4 +1,4 @@
-package uk.ac.excites.relay;
+package uk.ac.ucl.excites.relay;
 
 import android.app.Activity;
 import android.content.Context;
@@ -25,16 +25,17 @@ public class BackgroundActivity extends Activity
 		serviceRunning = (TextView) findViewById(R.id.service_running);
 
 		// Get out of the AirplaneMode
-		if (Utilities.inAirplaneMode(mContext))
+		if(Utilities.inAirplaneMode(mContext))
 			Utilities.toggleAirplaneMode(mContext);
 
 		// Set the message
-		if (Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME))
+		if(Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME))
 		{
 			serviceRunning.setText(getResources().getString(R.string.service_is_running));
-			if (Constants.DEBUG_LOG)
+			if(Constants.DEBUG_LOG)
 				Log.i(Constants.TAG, "Background.onStart(): Message Set.");
-		} else
+		}
+		else
 		{
 			serviceRunning.setText(getResources().getString(R.string.service_is_not_running));
 			// Call the Service
@@ -48,12 +49,13 @@ public class BackgroundActivity extends Activity
 	{
 		super.onResume();
 
-		if (Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME))
+		if(Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME))
 		{
 			serviceRunning.setText(getResources().getString(R.string.service_is_running));
 			// if (Constants.DEBUG_LOG)
 			// Log.i(Constants.TAG, "Background.onResume(): Message Set.");
-		} else
+		}
+		else
 		{
 			serviceRunning.setText(getResources().getString(R.string.service_is_not_running));
 		}
@@ -69,7 +71,7 @@ public class BackgroundActivity extends Activity
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item)
 	{
-		switch (item.getItemId())
+		switch(item.getItemId())
 		{
 		case R.id.menu_settings:
 
@@ -85,16 +87,17 @@ public class BackgroundActivity extends Activity
 			break;
 		case R.id.menu_exit:
 			// Terminate the Service
-			while (Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME))
+			while(Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME))
 			{
 				// Terminate the service
 				Intent mIntent = new Intent(mContext, BackgroundService.class);
-				if (mContext.stopService(mIntent))
+				if(mContext.stopService(mIntent))
 				{
 					// if (Constants.DEBUG_LOG)
 					// Log.i(Constants.TAG,
 					// "Background.onCreate(): Service Stoped.");
-				} else
+				}
+				else
 				{
 					// if (Constants.DEBUG_LOG)
 					// Log.i(Constants.TAG,

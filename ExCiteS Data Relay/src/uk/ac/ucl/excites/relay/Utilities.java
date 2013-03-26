@@ -1,4 +1,4 @@
-package uk.ac.excites.relay;
+package uk.ac.ucl.excites.relay;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -35,11 +35,11 @@ public class Utilities extends Application
 	public static boolean isMyServiceRunning(Context mContext, String serviceClassName)
 	{
 		ActivityManager manager = (ActivityManager) mContext.getSystemService(ACTIVITY_SERVICE);
-		for (RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE))
+		for(RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE))
 		{
 
 			// Set the Service
-			if (serviceClassName.equals(service.service.getClassName()))
+			if(serviceClassName.equals(service.service.getClassName()))
 			{
 				return true;
 			}
@@ -75,25 +75,27 @@ public class Utilities extends Application
 			intent.putExtra("state", !isInAirplaneMode);
 			mContext.sendBroadcast(intent);
 
-			if (Constants.DEBUG_LOG)
+			if(Constants.DEBUG_LOG)
 				Log.i(Constants.TAG, "Airplane mode is: " + (isInAirplaneMode ? "OFF" : "ON"));
 
-		} catch (Exception e)
+		}
+		catch(Exception e)
 		{
-			if (Constants.DEBUG_LOG)
+			if(Constants.DEBUG_LOG)
 				Log.i(Constants.TAG, "exception:" + e.toString());
 		}
 	}
 
 	/**
 	 * Check if the web server is up and running
+	 * 
 	 * @param mContext
 	 * @return
 	 */
 	public static boolean isServerOnline(Context mContext)
 	{
 
-		if (isOnline(mContext))
+		if(isOnline(mContext))
 		{
 			try
 			{
@@ -102,14 +104,15 @@ public class Utilities extends Application
 				URLConnection mURLConnection = url.openConnection();
 				BufferedReader mBufferedReader = new BufferedReader(new InputStreamReader(mURLConnection.getInputStream()));
 				String line;
-				while ((line = mBufferedReader.readLine()) != null)
+				while((line = mBufferedReader.readLine()) != null)
 				{
 					text = text + line + "\n";
 				}
 				mBufferedReader.close();
-				if (text.contains("HTTP_CONNECTIVITY_OK"))
+				if(text.contains("HTTP_CONNECTIVITY_OK"))
 					return true;
-			} catch (Exception e)
+			}
+			catch(Exception e)
 			{
 				return false;
 			}
@@ -127,7 +130,7 @@ public class Utilities extends Application
 	{
 		ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo netInfo = cm.getActiveNetworkInfo();
-		if (netInfo != null && netInfo.isConnected())
+		if(netInfo != null && netInfo.isConnected())
 		{
 			return true;
 		}
