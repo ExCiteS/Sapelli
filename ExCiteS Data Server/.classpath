@@ -25,5 +25,10 @@
 			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS Data Collection Library/libs/docs/xz-1.2-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+		<classpathentry kind="lib" path="/ExCiteS Data Collection Library/libs/commons-codec-1.7.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS Data Collection Library/libs/docs/commons-codec-1.7-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="build/classes"/>
 </classpath>

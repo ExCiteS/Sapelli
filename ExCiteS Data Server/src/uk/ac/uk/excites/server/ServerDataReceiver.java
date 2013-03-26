@@ -24,7 +24,9 @@ import uk.ac.ucl.excites.transmission.sms.binary.BinarySMSTransmission;
 import uk.ac.uk.excites.server.db.DataAccessHelper;
 
 /**
- * Servlet implementation class DataReceiver
+ * Servlet implementation to Receive SMS Transmitions from Relay
+ * 
+ * @author Michalis Vitos
  */
 public class ServerDataReceiver extends HttpServlet
 {
@@ -105,6 +107,7 @@ public class ServerDataReceiver extends HttpServlet
 	{
 		try
 		{
+			// TODO
 			FileWriter writer = new FileWriter("/var/lib/tomcat6/webapps/ServerDataReceiver/test.csv", true);
 
 			writer.append(smsID + ",");
