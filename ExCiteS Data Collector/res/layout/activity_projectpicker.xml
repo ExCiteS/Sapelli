@@ -34,7 +34,7 @@
             <ListView
                 android:id="@+id/ProjectsList"
                 android:layout_width="0dip"
-                android:layout_height="100dp"
+                android:layout_height="150dp"
                 android:layout_margin="5dp"
                 android:layout_weight="1"
                 android:background="#fff"
@@ -68,48 +68,6 @@
                 android:onClick="removeDialog"
                 android:text="@string/remove_project"
                 android:textAppearance="@style/ButtonBar" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:id="@+id/AddRemoveShortcutButtons"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" >
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/shortcuts"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="#FFFFFF" />
-
-            <include layout="@layout/hr" />
-
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="20dp"
-                android:paddingTop="5dp" >
-
-                <Button
-                    android:id="@+id/CreateShortcutButton"
-                    android:layout_width="0dip"
-                    android:layout_height="wrap_content"
-                    android:layout_weight=".5"
-                    android:onClick="createShortcut"
-                    android:text="@string/create_shortcut"
-                    android:textAppearance="@style/ButtonBar" />
-
-                <Button
-                    android:id="@+id/RemoveShortcutButton"
-                    android:layout_width="0dip"
-                    android:layout_height="wrap_content"
-                    android:layout_weight=".5"
-                    android:onClick="removeShortcut"
-                    android:text="@string/remove_shortcut"
-                    android:textAppearance="@style/ButtonBar" />
-            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout

@@ -93,11 +93,11 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	private ListView projectList;
 	private Button runBtn;
 	private Button removeBtn;
-	private Button createShortcutBtn;
-	private Button removeShortcutBtn;
 	private MenuItem senderSettingsItem;
 	private MenuItem copyDBItem;
 	private MenuItem statisticsItem;
+	private MenuItem createShortcutItem;
+	private MenuItem removeShortcutItem;
 	private Dialog encryptionDialog;
 
 	@Override
@@ -131,8 +131,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		projectList = (ListView) findViewById(R.id.ProjectsList);
 		runBtn = (Button) findViewById(R.id.RunProjectButton);
 		removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
-		createShortcutBtn = (Button) findViewById(R.id.CreateShortcutButton);
-		removeShortcutBtn = (Button) findViewById(R.id.RemoveShortcutButton);
+
 		// get scrolling right
 		findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
 		{
@@ -169,6 +168,12 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		statisticsItem = menu.findItem(R.id.statistics_menuitem);
 		if(statisticsItem != null)
 			statisticsItem.setOnMenuItemClickListener(this);
+		createShortcutItem = menu.findItem(R.id.create_shortcut);
+		if(createShortcutItem != null)
+			createShortcutItem.setOnMenuItemClickListener(this);
+		removeShortcutItem = menu.findItem(R.id.remove_shortcut);
+		if(removeShortcutItem != null)
+			removeShortcutItem.setOnMenuItemClickListener(this);
 		return true;
 	}
 
@@ -181,6 +186,16 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			return copyDBtoSD(item);
 		else if(item == statisticsItem)
 			return showStatistics(item);
+		else if(item == createShortcutItem)
+		{
+			createShortcut();
+			return true;
+		}
+		else if(item == removeShortcutItem)
+		{
+			removeShortcut();
+			return true;
+		}
 		return false;
 	}
 
@@ -226,16 +241,12 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		{
 			runBtn.setEnabled(true);
 			removeBtn.setEnabled(true);
-			createShortcutBtn.setEnabled(true);
-			removeShortcutBtn.setEnabled(true);
 			projectList.setItemChecked(0, true); // check first project in the list
 		}
 		else
 		{
 			runBtn.setEnabled(false);
 			removeBtn.setEnabled(false);
-			createShortcutBtn.setEnabled(false);
-			removeShortcutBtn.setEnabled(false);
 		}
 		dao.closeDB();
 	}
@@ -464,7 +475,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	 * 
 	 * @param view
 	 */
-	public void createShortcut(View view)
+	public void createShortcut()
 	{
 		// Check if the user has selected a project from the list
 		if(projectList.getCheckedItemPosition() == -1)
@@ -527,7 +538,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	 * 
 	 * @param view
 	 */
-	public void removeShortcut(View view)
+	public void removeShortcut()
 	{
 		// Check if the user has selected a project from the list
 		if(projectList.getCheckedItemPosition() == -1)

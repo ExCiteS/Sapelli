@@ -19,5 +19,17 @@
         android:onClick="showStatistics"
         android:showAsAction="always"
         android:title="@string/statistics_menuitem"/>
+    <item
+        android:id="@+id/create_shortcut"
+        android:icon="@android:drawable/ic_menu_directions"
+        android:onClick="showStatistics"
+        android:showAsAction="always"
+        android:title="@string/create_shortcut"/>
+    <item
+        android:id="@+id/remove_shortcut"
+        android:icon="@android:drawable/ic_menu_directions"
+        android:onClick="showStatistics"
+        android:showAsAction="always"
+        android:title="@string/remove_shortcut"/>
 
 </menu>
