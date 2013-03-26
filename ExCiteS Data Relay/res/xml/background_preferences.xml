@@ -3,7 +3,7 @@
 
     <PreferenceCategory android:title="Category" >
         <EditTextPreference
-            android:defaultValue="http://matthias.dev.uclexcites.org:8080/ServerDataReceiver/ServerDataReceiver"
+            android:defaultValue="http://matthias.dev.uclexcites.org:8080/ExCiteS%20Data%20Server/data_receiver"
             android:inputType="text"
             android:key="serverAddress"
             android:summary="This is the web address of the server where the relay sends the incoming messages."
