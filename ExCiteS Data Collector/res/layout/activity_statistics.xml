@@ -9,9 +9,9 @@
         android:id="@+id/textView1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="20dp"
         android:gravity="center"
-        android:text="@string/log_files"
+        android:text="@string/app_usage_statistics"
         android:textAppearance="?android:attr/textAppearanceSmall"
         android:textColor="#FFFFFF" />
 
@@ -20,7 +20,7 @@
         android:layout_width="fill_parent"
         android:layout_height="1dip"
         android:layout_below="@+id/textView1"
-        android:layout_marginBottom="10dip"
+        android:layout_marginBottom="5dip"
         android:background="@color/white" />
 
     <ExpandableListView

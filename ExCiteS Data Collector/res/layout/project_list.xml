@@ -3,9 +3,9 @@
     android:id="@android:id/text1"
     android:layout_width="match_parent"
     android:layout_height="40dp"
-    android:textAppearance="?android:attr/textAppearanceSmall"
-    android:gravity="center_vertical"
     android:checkMark="?android:attr/listChoiceIndicatorSingle"
+    android:gravity="center_vertical"
     android:paddingLeft="6dip"
     android:paddingRight="6dip"
-/>
+    android:textAppearance="?android:attr/textAppearanceSmall"
+    android:textColor="@color/black" />

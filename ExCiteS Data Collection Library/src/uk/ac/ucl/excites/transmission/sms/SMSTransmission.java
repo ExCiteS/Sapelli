@@ -288,6 +288,11 @@ public abstract class SMSTransmission extends Transmission
 	public void send(SMSService smsService) throws Exception
 	{
 		//Some checks:
+		if(isSent())
+		{
+			System.out.println("All parts of this SMSTransmission have already been sent.");
+			return;
+		}
 		if(records.isEmpty())
 			throw new IllegalStateException("Transmission has no records. Add at least 1 record before sending the transmission .");
 		if(smsService == null)
@@ -312,15 +317,20 @@ public abstract class SMSTransmission extends Transmission
 	public void receive() throws Exception
 	{
 		//Some checks:
+		if(isReceived())
+		{
+			System.out.println("This SMSTransmission has already been received.");
+			return;
+		}
 		if(parts.isEmpty())
 			throw new IllegalStateException("No messages to decode.");
 		if(!isComplete())
 			throw new IllegalStateException("Transmission is incomplete, " + (parts.first().getTotalParts() - parts.size()) + " parts missing.");
 		
-		//Read messages
+		//Read messages:
 		readMessages();
 		
-		//on successful reading of messages:
+		//On successful reading of messages:
 		if(!records.isEmpty())
 			receivedAt = new DateTime(); //= now
 	}
@@ -448,7 +458,7 @@ public abstract class SMSTransmission extends Transmission
 
 	public void resend(int partNumber)
 	{
-		
+		//TODO resent of individual part
 	}
 	
 	/**
