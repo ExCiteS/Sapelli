@@ -6,7 +6,7 @@
 
     <!--
 	    For more information on permission:  
-	    http://developer.android.com/reference/android/Manifest.permission.html
+	    http://developer.android.com/reference/android/Manifest.permission.html
     -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -47,6 +47,14 @@
 
             <!-- android:process=":connectivity_service" -->
         </service>
+
+        <receiver
+            android:name="uk.ac.ucl.excites.relay.BootReceiver"
+            android:exported="true" >
+            <intent-filter android:priority="9999999999" >
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>
