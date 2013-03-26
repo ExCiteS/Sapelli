@@ -38,4 +38,16 @@
     <url-pattern>/ProjectUpload</url-pattern>
     <url-pattern>/project_upload</url-pattern>
   </servlet-mapping>
+  
+  <servlet>
+    <description></description>
+    <display-name>AccessManager</display-name>
+    <servlet-name>AccessManager</servlet-name>
+    <servlet-class>uk.ac.uk.excites.server.util.AccessManager</servlet-class>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>AccessManager</servlet-name>
+    <url-pattern>/AccessManager</url-pattern>
+    <url-pattern>/ExCiteS_Storage/*</url-pattern>
+  </servlet-mapping>
 </web-app>
