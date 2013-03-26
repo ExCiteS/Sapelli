@@ -12,22 +12,24 @@
         android:layout_marginLeft="5dp"
         android:layout_marginRight="5dp"
         android:layout_marginTop="20dp"
-        android:orientation="vertical">
+        android:layout_marginBottom="10dp"
+        android:orientation="vertical" >
 
-		<TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/available_projects"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="#FFFFFF" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/available_projects"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="#FFFFFF" />
 
-            <include layout="@layout/hr" />
-        
+        <include layout="@layout/hr" />
+
         <LinearLayout
             android:id="@+id/Projects"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content" >
+            android:layout_height="wrap_content"
+            android:paddingTop="5dp" >
 
             <ListView
                 android:id="@+id/ProjectsList"
@@ -35,8 +37,10 @@
                 android:layout_height="100dp"
                 android:layout_margin="5dp"
                 android:layout_weight="1"
-                android:background="#FFFFFF"
-                android:choiceMode="singleChoice">
+                android:background="#fff"
+                android:cacheColorHint="#fff"
+                android:choiceMode="singleChoice" >
+
                 <requestFocus />
             </ListView>
         </LinearLayout>
@@ -86,7 +90,7 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="20dp"
-                android:paddingTop="20dp" >
+                android:paddingTop="5dp" >
 
                 <Button
                     android:id="@+id/CreateShortcutButton"
@@ -111,8 +115,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingBottom="50dp" >
+            android:orientation="vertical" >
 
             <TextView
                 android:layout_width="match_parent"
@@ -128,20 +131,20 @@
                 android:id="@+id/URLBox"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
-                android:paddingTop="20dp" >
+                android:paddingTop="5dp" >
 
                 <EditText
                     android:id="@+id/EnterURL"
                     android:layout_width="0dip"
                     android:layout_height="wrap_content"
-                    android:layout_weight=".7"
+                    android:layout_weight=".75"
                     android:inputType="textUri" />
 
                 <Button
                     android:id="@+id/BrowseButton"
                     android:layout_width="0dip"
                     android:layout_height="wrap_content"
-                    android:layout_weight=".3"
+                    android:layout_weight=".25"
                     android:onClick="browse"
                     android:text="@string/browse"
                     android:textAppearance="@style/ButtonBar" />
