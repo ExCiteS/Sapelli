@@ -13,7 +13,6 @@ import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.provider.Settings;
-import android.util.Log;
 
 /**
  * This class contains various utilities methods
@@ -75,14 +74,12 @@ public class Utilities extends Application
 			intent.putExtra("state", !isInAirplaneMode);
 			mContext.sendBroadcast(intent);
 
-			if(Constants.DEBUG_LOG)
-				Log.i(Constants.TAG, "Airplane mode is: " + (isInAirplaneMode ? "OFF" : "ON"));
+			Debug.d("Airplane mode is: " + (isInAirplaneMode ? "OFF" : "ON"));
 
 		}
 		catch(Exception e)
 		{
-			if(Constants.DEBUG_LOG)
-				Log.i(Constants.TAG, "exception:" + e.toString());
+			Debug.e(e);
 		}
 	}
 

@@ -4,13 +4,12 @@ import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.relay.Constants;
+import uk.ac.ucl.excites.relay.Debug;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
 
 public class SmsDatabaseSQLite extends SQLiteOpenHelper
 {
@@ -35,8 +34,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 	public void onCreate(SQLiteDatabase db)
 	{
 		String CREATE_SMS_TABLE = "CREATE TABLE " + TABLE_SMS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + KEY_NUMBER + " TEXT, " + KEY_TIME + " INTEGER, " + KEY_MESSAGE + " TEXT" + ") ";
-		if (Constants.DEBUG_LOG)
-			Log.i(Constants.TAG, "SQL: " + CREATE_SMS_TABLE);
+		Debug.d("SQL: " + CREATE_SMS_TABLE);
 		db.execSQL(CREATE_SMS_TABLE);
 	}
 
@@ -78,8 +76,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 
 		sms.setId(id);
 
-		if (Constants.DEBUG_LOG)
-			Log.i(Constants.TAG, "-- Stored SMSObject to DB: " + sms.toString().substring(0, 60) + "... ---");
+		Debug.d("-- Stored SMSObject to DB: " + sms.toString().substring(0, 60) + "... ---");
 	}
 
 	// Retrieve all SMS
@@ -112,8 +109,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 			} while (cursor.moveToNext());
 		}
 
-		if (Constants.DEBUG_LOG)
-			Log.i(Constants.TAG, "-- Retrieving SMSObjects from the DB: found: " + smsList.size());
+		Debug.d("-- Retrieving SMSObjects from the DB: found: " + smsList.size());
 
 		return smsList;
 	}

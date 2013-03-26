@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
@@ -32,8 +31,7 @@ public class BackgroundActivity extends Activity
 		if(Utilities.isMyServiceRunning(mContext, SERVICE_PACKAGE_NAME))
 		{
 			serviceRunning.setText(getResources().getString(R.string.service_is_running));
-			if(Constants.DEBUG_LOG)
-				Log.i(Constants.TAG, "Background.onStart(): Message Set.");
+			Debug.d("Background.onStart(): Message Set.");
 		}
 		else
 		{
