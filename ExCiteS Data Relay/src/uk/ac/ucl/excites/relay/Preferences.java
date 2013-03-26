@@ -56,7 +56,7 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 	public static int getTimeSchedule(Context mContext)
 	{
 		SharedPreferences mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return Integer.parseInt(mSharedPreferences.getString("timeSchedule", "1"));
+		return Integer.parseInt(mSharedPreferences.getString("timeSchedule", "3"));
 	}
 
 	public static SharedPreferences getSharedPreferences(Context context)
