@@ -7,6 +7,7 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -39,7 +40,6 @@ public class ServerDataReceiver extends HttpServlet
 	public ServerDataReceiver()
 	{
 		super();
-		// TODO Auto-generated constructor stub
 	}
 
 	/**
@@ -58,6 +58,8 @@ public class ServerDataReceiver extends HttpServlet
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
+		// Get context
+		ServletContext context = getServletContext();
 		// Get the session container
 		dao = DataAccessHelper.getInstance(request);
 		// Get a writer
@@ -67,7 +69,7 @@ public class ServerDataReceiver extends HttpServlet
 		// Set smsID to -1 if it is null
 		smsID = (smsID == null) ? "-1" : smsID;
 		String smsPhoneNumber = request.getParameter("smsPhoneNumber");
-		//String smsTimestamp = request.getParameter("smsTimestamp");
+		String smsTimestamp = request.getParameter("smsTimestamp");
 		byte[] smsData = Base64.decodeBase64(request.getParameter("smsData"));
 		
 		// Save Received SMS, add to transmission and try to decode records
@@ -95,20 +97,23 @@ public class ServerDataReceiver extends HttpServlet
 			e.printStackTrace(System.err);
 		}
 
-		// generateCsvFile(response, smsID, smsPhoneNumber, smsTimestamp, smsData);
+		// TODO
+		logToCsvFile(context, response, smsID, smsPhoneNumber, smsTimestamp, new String(smsData));
 
 		// TODO Print ok or error
 		out.println("OK:" + smsID);
 		out.close();
 	}
 
-	private static void generateCsvFile(HttpServletResponse response, String smsID, String smsPhoneNumber, String smsTimestamp, String smsData)
+	private static void logToCsvFile(ServletContext context, HttpServletResponse response, String smsID, String smsPhoneNumber, String smsTimestamp,
+			String smsData)
 			throws IOException
 	{
 		try
 		{
 			// TODO
-			FileWriter writer = new FileWriter("/var/lib/tomcat6/webapps/ServerDataReceiver/test.csv", true);
+			String filePath = ProjectUpload.getProjectsUploadFolderPath(context) + "logging.csv";
+			FileWriter writer = new FileWriter(filePath, true);
 
 			writer.append(smsID + ",");
 			writer.append(smsPhoneNumber + ",");
@@ -127,6 +132,7 @@ public class ServerDataReceiver extends HttpServlet
 		}
 	}
 
+	// TODO is needed?
 	public static byte[] getSHA256Hash(byte[] data)
 	{
 		MessageDigest digest = null;
@@ -142,11 +148,13 @@ public class ServerDataReceiver extends HttpServlet
 		return digest.digest(data);
 	}
 
+	// TODO is needed?
 	public static String bin2Hex(byte[] data)
 	{
 		return String.format("%0" + (data.length * 2) + "X", new BigInteger(1, data));
 	}
 
+	// TODO is needed?
 	public static String toBinaryString(byte b)
 	{
 		String str = "";

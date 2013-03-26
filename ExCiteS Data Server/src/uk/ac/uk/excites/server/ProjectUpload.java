@@ -3,7 +3,6 @@ package uk.ac.uk.excites.server;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintWriter;
 import java.util.List;
 
 import javax.servlet.RequestDispatcher;
@@ -65,14 +64,13 @@ public class ProjectUpload extends HttpServlet
 	 */
 	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
-		// Get context and a printer
-		PrintWriter out = response.getWriter();
+		// Get context
 		ServletContext context = getServletContext();
 
 		// Get the database instance
 		dao = DataAccessHelper.getInstance(request);
 
-		// TODO Upload Code
+		// Upload Code
 		File upFile = uploadFile(context, request);
 
 		if(upFile != null)
