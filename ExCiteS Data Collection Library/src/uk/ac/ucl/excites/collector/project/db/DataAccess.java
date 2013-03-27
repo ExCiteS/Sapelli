@@ -49,8 +49,8 @@ public final class DataAccess
 	}
 
 	//Dynamics---------------------------------------------
-	private String dbFolderPath;
-	private EmbeddedConfiguration dbConfig;
+	private String dbFolderPath = null;
+	private boolean serverMode = false;
 	private ObjectContainer db;
 	
 	private DataAccess(String dbFolderPath)
@@ -60,8 +60,6 @@ public final class DataAccess
 		this.dbFolderPath = dbFolderPath;
 		try
 		{
-			dbConfig = Db4oEmbedded.newConfiguration();
-			dbConfig.common().exceptionsOnNotStorable(true);
 			openDB(); //open the database!
 			System.out.println(TAG + " opened new database connection in file: " + getDbPath());
 		}
@@ -75,6 +73,7 @@ public final class DataAccess
 	private DataAccess(ObjectContainer db)
 	{
 		this.db = db;
+		this.serverMode = true;
 	}
 
 	/**
@@ -90,12 +89,14 @@ public final class DataAccess
 	 */
 	public void openDB()
 	{
-		if(db != null)
+		if(serverMode || db != null)
 		{
 			//Log.w(TAG, "Database is already open.");
 			return;
 		}
-		this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), getDbPath());		
+		EmbeddedConfiguration dbConfig = Db4oEmbedded.newConfiguration();
+		dbConfig.common().exceptionsOnNotStorable(true);
+		this.db = Db4oEmbedded.openFile(dbConfig, getDbPath());		
 	}
 	
 	/**
@@ -103,9 +104,12 @@ public final class DataAccess
 	 */
 	public void closeDB()
 	{
-		db.close();
-		db = null;
-		System.out.println(TAG + " closed database connection");
+		if(db != null && !serverMode) //never close in servermode!
+		{
+			db.close();
+			db = null;
+			System.out.println(TAG + " closed database connection");
+		}
 	}
 	
 	public boolean isOpen()

@@ -4,9 +4,11 @@ import java.util.ArrayList;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.transmission.Transmission;
+import uk.ac.ucl.excites.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.transmission.sms.SMSService;
 import uk.ac.ucl.excites.transmission.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.transmission.sms.text.TextMessage;
+import uk.ac.ucl.excites.util.BinaryHelpers;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -52,7 +54,7 @@ public class SMSSender implements SMSService
 				case Activity.RESULT_OK:
 					textSMS.sentCallback(); //!!!
 					updateTransmission(textSMS.getTransmission()); //!!!
-					Log.i(TAG, "BroadcastReceiver: SMS sent");
+					Log.i(TAG, "BroadcastReceiver: SMS " + textSMS.getPartNumber() + "/" + textSMS.getTotalParts() + " of transmission with ID " + textSMS.getTransmissionID() + " sent");
 					break;
 				case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
 					Log.i(TAG, "BroadcastReceiver: Generic failure");
@@ -122,7 +124,7 @@ public class SMSSender implements SMSService
 	{
 		PendingIntent sentPI = PendingIntent.getBroadcast(context, 0, new Intent(SMS_SENT), 0);
 		PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, new Intent(SMS_DELIVERED), 0);
-
+		
 		// When the SMS has been sent
 		context.registerReceiver(new BroadcastReceiver()
 		{
@@ -134,7 +136,7 @@ public class SMSSender implements SMSService
 				case Activity.RESULT_OK:
 					binarySMS.sentCallback();
 					updateTransmission(binarySMS.getTransmission()); //!!!
-					Log.i(TAG, "BroadcastReceiver: SMS sent");
+					Log.i(TAG, "BroadcastReceiver: SMS " + binarySMS.getPartNumber() + "/" + binarySMS.getTotalParts() + " of transmission with ID " + binarySMS.getTransmissionID() + " sent");
 					break;
 				case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
 					Log.i(TAG, "BroadcastReceiver: Generic failure");
@@ -174,6 +176,7 @@ public class SMSSender implements SMSService
 
 		try
 		{
+			Log.d(TAG, "Sending binary SMS, content hash: " + BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(binarySMS.getBytes()).toByteArray()));
 			smsManager.sendDataMessage(binarySMS.getReceiver().getPhoneNumber(), null, SMS_PORT, binarySMS.getBytes(), sentPI, deliveredPI);
 		}
 		catch(Exception e)

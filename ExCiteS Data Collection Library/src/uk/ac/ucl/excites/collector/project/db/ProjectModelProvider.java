@@ -41,8 +41,13 @@ public class ProjectModelProvider implements ModelProvider
 		}
 		finally
 		{
-			if(!open)
-				dao.closeDB();
+			try
+			{
+				dao.commit();
+//				if(!open)
+//					dao.closeDB();
+			}
+			catch(Exception ignore) {}
 		}
 	}
 
@@ -68,8 +73,8 @@ public class ProjectModelProvider implements ModelProvider
 		}
 		finally
 		{
-			if(!open)
-				dao.closeDB();
+//			if(!open)
+//				dao.closeDB();
 		}
 	}
 

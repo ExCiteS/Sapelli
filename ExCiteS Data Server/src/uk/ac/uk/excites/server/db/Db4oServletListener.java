@@ -41,7 +41,7 @@ public class Db4oServletListener implements ServletContextListener, ServletReque
 	{
 		ServletContext context = event.getServletContext();
 		// String filePath = context.getRealPath("WEB-INF/" + context.getInitParameter(KEY_DB4O_FILE_NAME));
-		String filePath = ProjectUpload.getUploadsFolderPath(context) + context.getInitParameter(KEY_DB4O_FILE_NAME);
+		String filePath = ProjectUpload.getExCiteSFolderPath(context) + context.getInitParameter(KEY_DB4O_FILE_NAME);
 	
 		ServerConfiguration config = Db4oClientServer.newServerConfiguration();
 		config.common().reflectWith(new JdkReflector(getClass().getClassLoader()));
