@@ -1,6 +1,5 @@
 package uk.ac.ucl.excites.relay.sms;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,14 +60,8 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 		ContentValues values = new ContentValues();
 		values.put(KEY_NUMBER, sms.getTelephoneNumber());
 		values.put(KEY_TIME, sms.getMessageTimestamp());
-		try
-		{
-			String data = new String(sms.getMessageData(), "UTF-8");
-			values.put(KEY_MESSAGE, data);
-		} catch (UnsupportedEncodingException e)
-		{
-			e.printStackTrace();
-		}
+		String data = sms.getMessageData();
+		values.put(KEY_MESSAGE, data);
 
 		// Inserting Row
 		long id = db.insert(TABLE_SMS, null, values);
@@ -76,7 +69,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 
 		sms.setId(id);
 
-		Debug.d("Stored: " + sms.toString().substring(0, 60) + "... ---");
+		Debug.d("Stored: " + sms.toString());
 	}
 
 	// Retrieve all SMS
@@ -98,12 +91,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 				sms.setId(cursor.getLong(0));
 				sms.setTelephoneNumber(cursor.getString(1));
 				sms.setMessageTimestamp(cursor.getLong(2));
-				try
-				{
-					sms.setMessageData(cursor.getString(3).getBytes("UTF-8"));
-				} catch (UnsupportedEncodingException e)
-				{
-				}
+				sms.setMessageData(cursor.getString(3));
 				smsList.add(sms);
 
 			} while (cursor.moveToNext());
@@ -138,30 +126,5 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 		db.delete(TABLE_SMS, null, null);
 		// print the size
 		retrieveSmsObjects();
-	}
-
-	/**
-	 * Add some SMS messages to the db
-	 * 
-	 * @param number
-	 *            of SMS messages to add
-	 */
-	public void populateDb(int number)
-	{
-		for (int i = 0; i < number; i++)
-		{
-			String telephoneNumber = "+44000000" + i;
-			long messageTimestamp = System.currentTimeMillis();
-			byte[] messageData = null;
-			try
-			{
-				messageData = ("Hello world " + i).getBytes("UTF-8");
-			} catch (UnsupportedEncodingException e)
-			{
-			}
-
-			SmsObject sms = new SmsObject(telephoneNumber, messageTimestamp, messageData);
-			storeSmsObject(sms);
-		}
 	}
 }

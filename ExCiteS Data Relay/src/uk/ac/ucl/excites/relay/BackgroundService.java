@@ -23,6 +23,8 @@ import org.apache.http.message.BasicNameValuePair;
 
 import uk.ac.ucl.excites.relay.sms.SmsDatabaseSQLite;
 import uk.ac.ucl.excites.relay.sms.SmsObject;
+import uk.ac.ucl.excites.relay.util.BinaryHelpers;
+import uk.ac.ucl.excites.relay.util.Hashing;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -185,7 +187,7 @@ public class BackgroundService extends Service
 		nameValuePairList.add(new BasicNameValuePair("smsPhoneNumber", smsObject.getTelephoneNumber()));
 		nameValuePairList.add(new BasicNameValuePair("smsTimestamp", String.valueOf(smsObject.getMessageTimestamp())));
 
-		String data = Base64.encodeToString(smsObject.getMessageData(), Base64.CRLF);
+		String data = smsObject.getMessageData();
 		nameValuePairList.add(new BasicNameValuePair("smsData", data));
 
 		// POST them
@@ -278,7 +280,10 @@ public class BackgroundService extends Service
 						SmsObject receivedSms = new SmsObject();
 						receivedSms.setTelephoneNumber(msgs[i].getOriginatingAddress());
 						receivedSms.setMessageTimestamp(msgs[i].getTimestampMillis());
-						receivedSms.setMessageData(msgs[i].getUserData());
+						receivedSms.setMessageData(Base64.encodeToString(msgs[i].getUserData(), Base64.CRLF));
+						
+						Debug.d("Received SMS and it's content hash is:"
+								+ BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(msgs[i].getUserData()).toByteArray()));
 
 						// Store the SmsObject to the db
 						dao.storeSmsObject(receivedSms);
