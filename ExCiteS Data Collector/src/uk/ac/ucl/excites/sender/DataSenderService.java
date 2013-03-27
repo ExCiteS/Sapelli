@@ -247,8 +247,8 @@ public class DataSenderService extends Service
 					Schema schema = f.getSchema();
 					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
 					
-					Debug.d("There are: " + records.size() + " records of form: " + f.getName() + " v" + f.getSchemaVersion() + " of project: " + p.getName()
-							+ " v" + p.getVersion());
+					Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version "
+							+ p.getVersion() + ").");
 					for(Record record : records)
 					{
 						Debug.d("Record: " + record.toString());
@@ -260,6 +260,7 @@ public class DataSenderService extends Service
 						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(settings, schema, records);
 						for(Record r : records)
 							dao.store(r); //update records so associated transmissions are stored
+						dao.commit();
 						
 						//store transmissions
 						for(Transmission t : smsTransmissions)
@@ -275,6 +276,7 @@ public class DataSenderService extends Service
 						{
 							try
 							{
+								Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + t.getCompressionRatio()*100 + "%), stored in " + t.getParts().size() + " messages");
 								t.send(smsSender);
 							}
 							catch(Exception e)
@@ -285,7 +287,6 @@ public class DataSenderService extends Service
 						}
 						
 					}
-					
 				}
 				
 			}
@@ -337,6 +338,7 @@ public class DataSenderService extends Service
 			}
 			if(!t.isEmpty())
 				transmissions.add(t);
+			//TODO store setting to save next transmission ID !!
 		}
 		return transmissions;
 	}

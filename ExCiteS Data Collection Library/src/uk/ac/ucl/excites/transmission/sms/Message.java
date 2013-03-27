@@ -4,7 +4,6 @@ import java.util.Comparator;
 
 import org.joda.time.DateTime;
 
-
 /**
  * @author mstevens
  *

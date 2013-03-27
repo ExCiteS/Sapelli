@@ -33,7 +33,7 @@ import uk.ac.uk.excites.server.util.Utilities;
  */
 public class ProjectUpload extends HttpServlet
 {
-	public static final String UPLOAD_FOLDER = "ExCiteS_Storage";
+	public static final String EXCITES_FOLDER = "ExCiteS_Storage";
 	public static final String PROJECTS_FOLDER = "Projects";
 
 	private static final long serialVersionUID = 1L;
@@ -78,7 +78,6 @@ public class ProjectUpload extends HttpServlet
 			// Extract and Parse project
 			ExCiteSFileLoader loader = new ExCiteSFileLoader(getProjectsUploadFolderPath(context));
 			Project loadedProject = null;
-
 			try
 			{
 				loadedProject = loader.load(upFile);
@@ -184,9 +183,9 @@ public class ProjectUpload extends HttpServlet
 	 * @param context
 	 * @return
 	 */
-	public static File getUploadsFolder(ServletContext context)
+	public static File getExCiteSFolder(ServletContext context)
 	{
-		File folder = new File(context.getRealPath("/") + UPLOAD_FOLDER + File.separator);
+		File folder = new File("/var/" + EXCITES_FOLDER + File.separator);
 		FileHelpers.createFolder(folder);
 		return folder;
 	}
@@ -197,9 +196,9 @@ public class ProjectUpload extends HttpServlet
 	 * @param context
 	 * @return
 	 */
-	public static String getUploadsFolderPath(ServletContext context)
+	public static String getExCiteSFolderPath(ServletContext context)
 	{
-		return getUploadsFolder(context).getAbsolutePath() + File.separator;
+		return getExCiteSFolder(context).getAbsolutePath() + File.separator;
 	}
 
 	/**
@@ -210,7 +209,7 @@ public class ProjectUpload extends HttpServlet
 	 */
 	public static File getProjectsUploadFolder(ServletContext context)
 	{
-		File folder = new File(getUploadsFolderPath(context) + File.separator + PROJECTS_FOLDER + File.separator);
+		File folder = new File(getExCiteSFolderPath(context) + File.separator + PROJECTS_FOLDER + File.separator);
 		FileHelpers.createFolder(folder);
 		return folder;
 	}

@@ -29,7 +29,7 @@ public final class DataAccess
 	// Statics----------------------------------------------
 	static private final String TAG = "DATA ACCESS";
 	static private final int ACTIVATION_DEPTH = 100;
-
+
 	// Dynamics---------------------------------------------
 	private ObjectContainer db;
 	
@@ -319,4 +319,3 @@ public final class DataAccess
 		}		
 	}
 }
-	
