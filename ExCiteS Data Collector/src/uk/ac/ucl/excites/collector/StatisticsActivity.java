@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import uk.ac.ucl.excites.CollectorApp;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -36,13 +37,10 @@ import android.widget.Toast;
 public class StatisticsActivity extends ExpandableListActivity
 {
 
-	static public final String PARAMETER_DB_FOLDER_PATH = "DBFolderPath";
 	private static final String KeyGROUP = "Project";
 	private static final String KeyCHILD_LABEL = "ChildLabel";
 	private static final String KeyCHILD = "FormOrLogChild";
 	
-	private String dbFolderPath;
-
 	List<Project> projects;
 	PopupWindow popupWindow;
 
@@ -55,8 +53,6 @@ public class StatisticsActivity extends ExpandableListActivity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_statistics);
 
-		// get db instance
-		dbFolderPath = getIntent().getExtras().getString(PARAMETER_DB_FOLDER_PATH);
 	}
 	
 	@Override
@@ -65,7 +61,7 @@ public class StatisticsActivity extends ExpandableListActivity
 		super.onResume();
 		
 		//Populate UI:
-		DataAccess dao = DataAccess.getInstance(dbFolderPath);
+		DataAccess dao = ((CollectorApp) getApplication()).getDatabaseInstance();
 		try
 		{
 			projects = new ArrayList<Project>(dao.retrieveProjects());
@@ -88,7 +84,6 @@ public class StatisticsActivity extends ExpandableListActivity
 		catch(IOException e)
 		{
 			e.printStackTrace();
-			dao.closeDB(); //!!!
 			return;
 		}
 
@@ -103,7 +98,6 @@ public class StatisticsActivity extends ExpandableListActivity
 				new int[] { android.R.id.text1 } // Data under the keys above go into this TextView
 		);
 		setListAdapter(expListAdapter); // setting the adapter in the list.
-		dao.closeDB(); //!!!
 	}
 
 	/**

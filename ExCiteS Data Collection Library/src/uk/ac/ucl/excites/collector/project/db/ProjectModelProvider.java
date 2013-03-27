@@ -32,18 +32,7 @@ public class ProjectModelProvider implements ModelProvider
 	@Override
 	public Schema getSchema(int id, int version)
 	{
-		boolean open = dao.isOpen();
-		try
-		{
-			if(!open)
-				dao.openDB();
-			return dao.retrieveSchema(id, version);
-		}
-		finally
-		{
-			if(!open)
-				dao.closeDB();
-		}
+		return dao.retrieveSchema(id, version);
 	}
 
 	/* (non-Javadoc)
@@ -52,24 +41,17 @@ public class ProjectModelProvider implements ModelProvider
 	@Override
 	public Settings getSettingsFor(Schema schema)
 	{
-		boolean open = dao.isOpen();
-		try
+		Form form = dao.retrieveForm(schema.getID(), schema.getVersion());
+		if(form != null)
 		{
-			if(!open)
-				dao.openDB();
-			Form form = dao.retrieveForm(schema.getID(), schema.getVersion());
-			if(form != null)
-				if(form.getProject() != null)
-					return form.getProject().getTransmissionSettings();
-				else
-					return null;
+			if(form.getProject() != null)
+				return form.getProject().getTransmissionSettings();
 			else
 				return null;
 		}
-		finally
+		else
 		{
-			if(!open)
-				dao.closeDB();
+			return null;
 		}
 	}
 

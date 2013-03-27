@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import uk.ac.ucl.excites.CollectorApp;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -79,12 +80,10 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	public static final String SHORTCUT_PROJECT_NAME = "Shortcut_Project_Name";
 	public static final String SHORTCUT_PROJECT_VERSION = "Shortcut_Project_Version";
 	public static final String SHORTCUT_PROJECT_ICON = "Shortcut_Project_Icon";
-	public static final String SHORTCUT_PROJECT_DB = "Shortcut_Project_Database";
 
 	public static final int RETURN_BROWSE = 1;
 
 	// DYNAMICS-------------------------------------------------------
-	private String databasePath;
 	private String excitesFolderPath;
 	private DataAccess dao;
 
@@ -112,14 +111,12 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			return;
 		}
 
-		// Paths...
-		// Database path is on Internal Storage
-		databasePath = getFilesDir().getAbsolutePath();
 		// ExCiteS folder
 		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER;
 
 		// DataAccess instance:
-		dao = DataAccess.getInstance(databasePath);
+		// TODO
+		dao = ((CollectorApp) getApplication()).getDatabaseInstance();
 
 		// Set-up UI...
 		setTitle("ExCiteS Project Picker");
@@ -207,15 +204,14 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 
 	public boolean copyDBtoSD(MenuItem item)
 	{	
-		dao.closeDB();
-		dao.copyDB(excitesFolderPath + DB4O_DUMP_NAME + System.currentTimeMillis() + "." + DB4O_DUMP_EXTENSION);
+		dao.copyDB(((CollectorApp) getApplication()).getDatabasePath(), excitesFolderPath + DB4O_DUMP_NAME + System.currentTimeMillis() + "."
+				+ DB4O_DUMP_EXTENSION);
 		return true;
 	}
 
 	public boolean showStatistics(MenuItem item)
 	{
 		Intent intent = new Intent(getBaseContext(), StatisticsActivity.class);
-		intent.putExtra(StatisticsActivity.PARAMETER_DB_FOLDER_PATH, databasePath);
 		startActivity(intent);
 		return true;
 	}
@@ -235,7 +231,6 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	 */
 	public void populateProjectList()
 	{
-		dao.openDB();
 		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list, android.R.id.text1, new ArrayList<Project>(dao.retrieveProjects())));
 		if(!projectList.getAdapter().isEmpty())
 		{
@@ -248,7 +243,6 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			runBtn.setEnabled(false);
 			removeBtn.setEnabled(false);
 		}
-		dao.closeDB();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -281,7 +275,6 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		Intent i = new Intent(this, CollectorActivity.class);
 		i.putExtra(CollectorActivity.PARAMETER_PROJECT_NAME, projectName);
 		i.putExtra(CollectorActivity.PARAMETER_PROJECT_VERSION, projectVersion);
-		i.putExtra(CollectorActivity.PARAMETER_DB_FOLDER_PATH, databasePath);
 		startActivity(i);
 	}
 
@@ -291,7 +284,6 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		if(p == null)
 			return;
 		removeShortcutFor(p);
-		dao.openDB(); //first open db
 		dao.deleteProject(p);
 		populateProjectList(); //populate will close DB
 
@@ -439,9 +431,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	{
 		try
 		{
-			dao.openDB();
 			dao.store(p);
-			dao.closeDB();
 		}
 		catch(DuplicateException de)
 		{
@@ -491,7 +481,6 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		Intent projectIntent = new Intent(getApplicationContext(), CollectorActivity.class);
 		projectIntent.putExtra(SHORTCUT_PROJECT_NAME, selectedProject.getName());
 		projectIntent.putExtra(SHORTCUT_PROJECT_VERSION, selectedProject.getVersion());
-		projectIntent.putExtra(SHORTCUT_PROJECT_DB, databasePath);
 		projectIntent.setAction(Intent.ACTION_MAIN);
 
 		// Set up the icon
@@ -555,7 +544,6 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		Intent projectIntent = new Intent(getApplicationContext(), CollectorActivity.class);
 		projectIntent.putExtra(SHORTCUT_PROJECT_NAME, project.getName());
 		projectIntent.putExtra(SHORTCUT_PROJECT_VERSION, project.getVersion());
-		projectIntent.putExtra(SHORTCUT_PROJECT_DB, databasePath);
 		projectIntent.setAction(Intent.ACTION_MAIN);
 
 		// ================================================================================

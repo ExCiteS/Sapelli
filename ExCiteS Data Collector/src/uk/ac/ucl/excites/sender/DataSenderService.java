@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import uk.ac.ucl.excites.CollectorApp;
 import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Form;
@@ -29,6 +30,7 @@ import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.transmission.sms.text.TextSMSTransmission;
+import uk.ac.ucl.excites.util.Debug;
 import uk.ac.ucl.excites.util.DeviceControl;
 import uk.ac.ucl.excites.util.Logger;
 import android.app.Notification;
@@ -85,7 +87,7 @@ public class DataSenderService extends Service
 		databasePath = getFilesDir().getAbsolutePath();
 		
 		// DataAccess instance:
-		dao = DataAccess.getInstance(databasePath);
+		dao = ((CollectorApp) getApplication()).getDatabaseInstance();
 		
 		// Folder observers:
 		folderObservers = new ArrayList<DropboxSync>();
@@ -103,9 +105,7 @@ public class DataSenderService extends Service
 		setServiceForeground(this);
 		
 		boolean smsUpload = false;
-		boolean dbOpen = dao.isOpen();
-		if(!dbOpen)
-			dao.openDB(); //!!!
+
 		for(Project p : dao.retrieveProjects())
 		{
 			if(p.isLogging())
@@ -149,9 +149,7 @@ public class DataSenderService extends Service
 				}
 			}
 		}
-		if(!dbOpen)
-			dao.closeDB(); //!!! close if it was closed before
-		
+
 		//if at least one project needs SMS sending:
 		if(smsUpload)
 			smsSender = new SMSSender(this, dao);
@@ -169,7 +167,7 @@ public class DataSenderService extends Service
 			isSending = false;
 		}
 		// This schedule a runnable task every TIME_SCHEDULE in minutes
-		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
+		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, /* TODO TimeUnit.MINUTES */TimeUnit.SECONDS);
 		
 		return startMode;
 	}
@@ -192,15 +190,18 @@ public class DataSenderService extends Service
 		if(Constants.DEBUG_LOG)
 			Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
 		android.os.Process.killProcess(pid);
+
+		// TODO Maybe here close the db
 	}
 	
 	private class SendingTask implements Runnable
 	{
-		
 		private Context context = DataSenderService.this;
 		
 		public void run()
 		{
+			Debug.d("----------------Runner!-------------");
+
 			for(Entry<Project, Logger> pl : loggers.entrySet())
 				pl.getValue().addLine("Sending task");
 			
@@ -236,10 +237,6 @@ public class DataSenderService extends Service
 //				tempCount++;
 //			}
 			
-			boolean dbOpen = dao.isOpen();
-			if(!dbOpen)
-				dao.openDB(); //!!!
-			
 			//Generate transmissions...
 			for(Project p : dao.retrieveProjects())
 			{
@@ -250,6 +247,13 @@ public class DataSenderService extends Service
 					Schema schema = f.getSchema();
 					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
 					
+					Debug.d("There are: " + records.size() + " records of form: " + f.getName() + " v" + f.getSchemaVersion() + " of project: " + p.getName()
+							+ " v" + p.getVersion());
+					for(Record record : records)
+					{
+						Debug.d("Record: " + record.toString());
+					}
+
 					//Decide on transmission mode
 					if(settings.isSMSUpload() && gsmMonitor.isInService()) //TODO do roaming check
 					{
@@ -285,9 +289,6 @@ public class DataSenderService extends Service
 				}
 				
 			}
-			
-			if(!dbOpen)
-				dao.closeDB();
 			
 			isSending = true;
 

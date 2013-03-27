@@ -366,10 +366,6 @@ public class ProjectController implements LocationListener, OrientationListener
 		// Finalise the currentRecord:
 		currentForm.finish(currentRecord); // sets end-time if necessary
 
-		// Open DB
-		if(!dao.isOpen())
-			dao.openDB();
-
 		// Store currentRecord
 		dao.store(currentRecord);
 		dao.commit();

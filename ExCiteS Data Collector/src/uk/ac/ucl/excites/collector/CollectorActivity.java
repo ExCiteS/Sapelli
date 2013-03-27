@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import uk.ac.ucl.excites.CollectorApp;
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
 import uk.ac.ucl.excites.collector.project.model.CancelField;
@@ -53,7 +54,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 
 	static public final String PARAMETER_PROJECT_NAME = "Project_name";
 	static public final String PARAMETER_PROJECT_VERSION = "Project_version";
-	static public final String PARAMETER_DB_FOLDER_PATH = "DBFolderPath";
 
 	static private final String TEMP_PHOTO_PREFIX = "tmpPhoto";
 	static private final String TEMP_PHOTO_SUFFIX = ".tmp";
@@ -87,7 +87,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	// Project Info
 	private String projectName;
 	private String projectVersion;
-	private String dbFolderPath;
 
 	// Timeout:
 	protected boolean pausedForActivityResult = false;
@@ -114,7 +113,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		loadProjectInfo();
 
 		// Get DataAccess object
-		dao = DataAccess.getInstance(dbFolderPath); // will be open
+		dao = ((CollectorApp) getApplication()).getDatabaseInstance(); // will be open
 
 		// Get Project object:
 		project = dao.retrieveProject(projectName, projectVersion);
@@ -159,13 +158,11 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			projectVersion = extras.getString(ProjectPickerActivity.SHORTCUT_PROJECT_VERSION);
 			if(projectVersion == null)
 				projectVersion = Project.DEFAULT_VERSION;
-			dbFolderPath = extras.getString(ProjectPickerActivity.SHORTCUT_PROJECT_DB);
 		}
 		else if(extras.containsKey(PARAMETER_PROJECT_NAME))
 		{
 			projectName = extras.getString(PARAMETER_PROJECT_NAME);
 			projectVersion = extras.getString(PARAMETER_PROJECT_VERSION);
-			dbFolderPath = extras.getString(PARAMETER_DB_FOLDER_PATH);
 		}
 	}
 
@@ -463,7 +460,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	protected void onDestroy()
 	{
 		// clean up:
-		dao.closeDB();
 		if(fieldView != null)
 			fieldView.cancel();
 		if(pauseTimer != null)

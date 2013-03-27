@@ -186,12 +186,7 @@ public class SMSSender implements SMSService
 	
 	private void updateTransmission(Transmission transmission)
 	{
-		boolean wasDBOpen = dao.isOpen();
-		if(!wasDBOpen)
-			dao.openDB();
 		//TODO Update transmission
-		if(!wasDBOpen)
-			dao.closeDB();
 	}
 
 }

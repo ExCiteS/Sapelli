@@ -3,7 +3,6 @@
  */
 package uk.ac.ucl.excites.collector.project.db;
 
-import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.model.Form;
@@ -15,10 +14,8 @@ import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.util.FileHelpers;
 
-import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
-import com.db4o.config.EmbeddedConfiguration;
 import com.db4o.query.Predicate;
 
 
@@ -29,88 +26,16 @@ import com.db4o.query.Predicate;
 public final class DataAccess
 {
 
-	//Statics----------------------------------------------
+	// Statics----------------------------------------------
 	static private final String TAG = "DATA ACCESS";
-	static private final String DATABASE_NAME = "ExCiteS.db4o";
 	static private final int ACTIVATION_DEPTH = 100;
-	static private DataAccess INSTANCE = null;
 
-	static public DataAccess getInstance(String dbFolderPath)
-	{
-		if(INSTANCE == null || INSTANCE.dbFolderPath != dbFolderPath)
-			INSTANCE = new DataAccess(dbFolderPath);
-		INSTANCE.openDB();
-		return INSTANCE;
-	}
-
-	static public DataAccess getInstance(ObjectContainer db)
-	{
-		return new DataAccess(db);
-	}
-
-	//Dynamics---------------------------------------------
-	private String dbFolderPath;
-	private EmbeddedConfiguration dbConfig;
+	// Dynamics---------------------------------------------
 	private ObjectContainer db;
 	
-	private DataAccess(String dbFolderPath)
-	{
-		if(dbFolderPath == null || dbFolderPath.isEmpty())
-			throw new IllegalArgumentException("Invalid database folder path");
-		this.dbFolderPath = dbFolderPath;
-		try
-		{
-			dbConfig = Db4oEmbedded.newConfiguration();
-			dbConfig.common().exceptionsOnNotStorable(true);
-			openDB(); //open the database!
-			System.out.println(TAG + " opened new database connection in file: " + getDbPath());
-		}
-		catch(Exception e)
-		{
-			System.err.println(TAG + " is unable to open database.");
-			e.printStackTrace(System.err);
-		}
-	}
-	
-	private DataAccess(ObjectContainer db)
+	public DataAccess(ObjectContainer db)
 	{
 		this.db = db;
-	}
-
-	/**
-	 * @return the dbFolderPath
-	 */
-	public String getDbFolderPath()
-	{
-		return dbFolderPath;
-	}
-
-	/**
-	 * (Re)Opens the database
-	 */
-	public void openDB()
-	{
-		if(db != null)
-		{
-			//Log.w(TAG, "Database is already open.");
-			return;
-		}
-		this.db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), getDbPath());		
-	}
-	
-	/**
-	 * Closes the database. IT can be reopend with openDB().
-	 */
-	public void closeDB()
-	{
-		db.close();
-		db = null;
-		System.out.println(TAG + " closed database connection");
-	}
-	
-	public boolean isOpen()
-	{
-		return db != null;
 	}
 	
 	public void commit()
@@ -120,23 +45,13 @@ public final class DataAccess
 	}
 
 	/**
-	 * Returns the file where the DB is saved
-	 * 
-	 * @return
-	 */
-	public String getDbPath()
-	{
-		return dbFolderPath + File.separator + DATABASE_NAME;
-	}
-
-	/**
 	 * Copy Database File to the destination
 	 * 
 	 * @param dstFilePath
 	 */
-	public void copyDB(String dstFilePath)
+	public void copyDB(String srcFilePath, String dstFilePath)
 	{
-		FileHelpers.copyFile(getDbPath(), dstFilePath);
+		FileHelpers.copyFile(srcFilePath, dstFilePath);
 	}
 
 	/**
@@ -403,5 +318,5 @@ public final class DataAccess
 			return t;
 		}		
 	}
-	
 }
+	

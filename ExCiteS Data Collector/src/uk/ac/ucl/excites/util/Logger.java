@@ -109,7 +109,7 @@ public class Logger
 	private void checkWriter()
 	{
 		if(fileWriter == null || !fileWriter.isWritable())
-			throw new IllegalStateException("Logger has been closed or file is not writable.");
+			throw new IllegalStateException("Logger " + fileWriter.getFullPath() + "has been closed or file is not writable.");
 	}
 
 	private String getTime()
