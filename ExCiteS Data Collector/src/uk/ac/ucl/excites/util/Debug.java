@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.collector.util;
+package uk.ac.ucl.excites.util;
 
 import android.util.Log;
 
@@ -21,7 +21,8 @@ public class Debug
 
 	public static void v(String msg)
 	{
-		v(TAG, getPrintableName() + msg);
+		if(DEBUG)
+			Log.v(TAG, getPrintableName() + msg);
 	}
 
 	public static void d(String tag, String msg)
@@ -32,7 +33,8 @@ public class Debug
 
 	public static void d(String msg)
 	{
-		d(TAG, getPrintableName() + msg);
+		if(DEBUG)
+			Log.d(TAG, getPrintableName() + msg);
 	}
 
 	public static void i(String tag, String msg)
@@ -43,7 +45,8 @@ public class Debug
 
 	public static void i(String msg)
 	{
-		i(TAG, getPrintableName() + msg);
+		if(DEBUG)
+			Log.i(TAG, getPrintableName() + msg);
 	}
 
 	public static void w(String tag, String msg)
@@ -54,7 +57,8 @@ public class Debug
 
 	public static void w(String msg)
 	{
-		Debug.w(TAG, getPrintableName() + msg);
+		if(DEBUG)
+			Log.w(TAG, getPrintableName() + msg);
 	}
 
 	public static void e(String tag, String msg)
@@ -65,7 +69,8 @@ public class Debug
 
 	public static void e(String msg)
 	{
-		e(TAG, getPrintableName() + msg);
+		if(DEBUG)
+			Log.e(TAG, getPrintableName() + msg);
 	}
 
 	/**

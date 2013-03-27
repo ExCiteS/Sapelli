@@ -6,7 +6,6 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
-import uk.ac.ucl.excites.collector.util.Debug;
 
 /**
  * @author Michalis Vitos, mstevens
