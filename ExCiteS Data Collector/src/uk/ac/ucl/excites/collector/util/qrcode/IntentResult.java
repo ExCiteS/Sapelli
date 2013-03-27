@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.zxing.integration.android;
+package uk.ac.ucl.excites.collector.util.qrcode;
 
 
 /**

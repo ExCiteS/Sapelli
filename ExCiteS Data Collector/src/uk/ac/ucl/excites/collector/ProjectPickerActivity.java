@@ -21,6 +21,8 @@ import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.util.SDCard;
+import uk.ac.ucl.excites.collector.util.qrcode.IntentIntegrator;
+import uk.ac.ucl.excites.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sender.DataSenderPreferences;
 import uk.ac.ucl.excites.sender.util.ServiceChecker;
 import uk.ac.ucl.excites.transmission.Settings;
@@ -52,8 +54,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 
-import com.google.zxing.integration.android.IntentIntegrator;
-import com.google.zxing.integration.android.IntentResult;
 
 /**
  * @author Julia, Michalis Vitos, mstevens
