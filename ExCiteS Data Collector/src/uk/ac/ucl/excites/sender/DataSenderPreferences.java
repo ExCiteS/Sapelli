@@ -90,7 +90,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	public static boolean getDropboxUpload(Context mContext)
 	{
 		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return sharedPreferences.getBoolean("dropboxUpload", true);
+		return sharedPreferences.getBoolean("dropboxUpload", false);
 	}
 
 	/**

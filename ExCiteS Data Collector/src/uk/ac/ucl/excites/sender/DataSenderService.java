@@ -101,6 +101,7 @@ public class DataSenderService extends Service
 	{
 		// Get the preferences
 		final int timeSchedule = DataSenderPreferences.getTimeSchedule(this);
+		final boolean dropboxUpload = DataSenderPreferences.getDropboxUpload(this);
 		
 		setServiceForeground(this);
 		
@@ -135,7 +136,7 @@ public class DataSenderService extends Service
 			}
 			
 			// Upload to Dropbox
-			if(settings.isDropboxUpload())
+			if(dropboxUpload && settings.isDropboxUpload())
 			{
 				try
 				{

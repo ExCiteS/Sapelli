@@ -8,7 +8,7 @@
             android:summary="Check to get the phone in Airplane Mode to preserve battery."
             android:title="Airplane Mode" />
         <CheckBoxPreference
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="dropboxUpload"
             android:summary="Check to upload data to the Dropbox."
             android:title="Dropbox Upload" />
