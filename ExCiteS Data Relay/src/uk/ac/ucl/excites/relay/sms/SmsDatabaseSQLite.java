@@ -3,7 +3,7 @@ package uk.ac.ucl.excites.relay.sms;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.relay.Debug;
+import uk.ac.ucl.excites.relay.util.Debug;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;

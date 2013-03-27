@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.relay;
+package uk.ac.ucl.excites.relay.util;
 
 import android.util.Log;
 
