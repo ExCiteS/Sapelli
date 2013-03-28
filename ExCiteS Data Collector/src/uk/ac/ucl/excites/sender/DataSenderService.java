@@ -1,6 +1,5 @@
 package uk.ac.ucl.excites.sender;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -63,7 +62,6 @@ public class DataSenderService extends Service
 	private boolean isSending;
 	private int startMode; // indicates how to behave if the service is killed
 	private boolean allowRebind; // indicates whether onRebind should be used
-	private String databasePath;
 	private DataAccess dao;
 	private Map<Project,Logger> loggers;
 	
@@ -83,9 +81,6 @@ public class DataSenderService extends Service
 		// delay, or to execute periodically.
 		scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
 
-		// Db path:
-		databasePath = getFilesDir().getAbsolutePath();
-		
 		// DataAccess instance:
 		dao = ((CollectorApp) getApplication()).getDatabaseInstance();
 		
@@ -115,12 +110,12 @@ public class DataSenderService extends Service
 				{
 					Logger logger = new Logger(p.getLogFolderPath(), LOG_PREFIX);
 					for(Entry<Project, Logger> pl : loggers.entrySet())
-						pl.getValue().addFinalLine("DataSender", "Service started.");
+						pl.getValue().addLine("DataSender", "Service started.");
 					loggers.put(p, logger);
 				}
-				catch(IOException e)
+				catch(Exception e)
 				{
-					Log.e(TAG, "Logger construction error", e);
+					Debug.e("Logger construction error", e);
 				}
 			}
 
@@ -168,7 +163,7 @@ public class DataSenderService extends Service
 			isSending = false;
 		}
 		// This schedule a runnable task every TIME_SCHEDULE in minutes
-		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, /* TODO TimeUnit.MINUTES */TimeUnit.SECONDS);
+		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
 		
 		return startMode;
 	}
