@@ -26,7 +26,7 @@ public class BackgroundActivity extends Activity
 		// Check the preferences for a server address
 		if(Preferences.getServerAddress(this).isEmpty())
 		{
-			Preferences.printPreferences(mContext);
+			Preferences.printPreferences(this);
 			Toast t = Toast.makeText(this, "Please set up a Url server address.", Toast.LENGTH_LONG);
 			t.show();
 

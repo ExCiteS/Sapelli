@@ -131,13 +131,13 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 		ServiceChecker.restartActiveDataSender(this);
 	}
 
-	public void printPreferences(Context mContext)
+	public static void printPreferences(Context context)
 	{
 		Log.d(TAG, "------------ Preferences: -------------");
-		Log.d(TAG, "DropboxUpload: " + (getDropboxUpload(mContext) ? "true" : "false"));
-		Log.d(TAG, "AirplaneMode: " + (getAirplaneMode(mContext) ? "true" : "false"));
+		Log.d(TAG, "DropboxUpload: " + (getDropboxUpload(context) ? "true" : "false"));
+		Log.d(TAG, "AirplaneMode: " + (getAirplaneMode(context) ? "true" : "false"));
 		//Log.d(TAG, "CenterPhoneNumber: " + getCenterPhoneNumber(mContext));
-		Log.d(TAG, "TimeSchedule: " + getTimeSchedule(mContext));
-		Log.d(TAG, "MaxAttempts: " + getMaxAttempts(mContext));
+		Log.d(TAG, "TimeSchedule: " + getTimeSchedule(context));
+		Log.d(TAG, "MaxAttempts: " + getMaxAttempts(context));
 	}
 }

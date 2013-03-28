@@ -55,6 +55,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 
 
 /**
@@ -149,6 +150,17 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 				return false;
 			}
 		});
+
+		// Check the Preferences
+		if(DataSenderPreferences.getTimeSchedule(this) == 1)
+		{
+			DataSenderPreferences.printPreferences(this);
+			Toast t = Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG);
+			t.show();
+
+			Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
+			startActivity(settingsActivity);
+		}
 
 		// Start the DataSenderService
 		Intent service = new Intent(this, DataSenderService.class);
