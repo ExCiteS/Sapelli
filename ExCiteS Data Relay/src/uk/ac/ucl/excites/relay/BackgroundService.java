@@ -137,7 +137,10 @@ public class BackgroundService extends Service
 				{
 					response = null;
 					response = postSmsObject(sms);
-					Debug.d("POST sms: " + sms.getId() + " and the response is: " + response);
+					if(response != null)
+						Debug.d("POST sms: " + sms.getId() + " and the response is: " + response);
+					else
+						Debug.d("An error has occured upon sending the SMS.");
 				}
 				catch(Exception e)
 				{
@@ -173,6 +176,12 @@ public class BackgroundService extends Service
 		HttpClient httpClient = new DefaultHttpClient();
 		// Check the validity of the URL
 		HttpPost httpPost = null;
+		if(SERVER_URL == null)
+		{
+			Debug.d("URL is null!");
+			return null;
+		}
+		Debug.d("URL: " + SERVER_URL);
 		if(URLUtil.isValidUrl(SERVER_URL))
 		{
 			httpPost = new HttpPost(SERVER_URL);
@@ -181,6 +190,7 @@ public class BackgroundService extends Service
 		else
 		{
 			Debug.d("--!-- SERVER_URL ERROR --!--");
+			return null;
 		}
 
 		// Set the POST parameters

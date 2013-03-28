@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites;
+package uk.ac.ucl.excites.collector;
 
 import java.io.File;
 
