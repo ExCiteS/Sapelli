@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.collector.util.SDCard;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sender.DataSenderPreferences;
+import uk.ac.ucl.excites.sender.DataSenderService;
 import uk.ac.ucl.excites.sender.util.ServiceChecker;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.util.FileHelpers;
@@ -53,6 +54,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 
 
 /**
@@ -147,6 +149,21 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 				return false;
 			}
 		});
+
+		// Check the Preferences
+		if(DataSenderPreferences.getTimeSchedule(this) == 1)
+		{
+			DataSenderPreferences.printPreferences(this);
+			Toast t = Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG);
+			t.show();
+
+			Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
+			startActivity(settingsActivity);
+		}
+
+		// Start the DataSenderService
+		Intent service = new Intent(this, DataSenderService.class);
+		startService(service);
 	}
 
 	@Override
