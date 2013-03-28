@@ -2,6 +2,7 @@ package uk.ac.ucl.excites.relay;
 
 import java.util.regex.Pattern;
 
+import uk.ac.ucl.excites.relay.util.Debug;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -95,5 +96,12 @@ public class Preferences extends PreferenceActivity implements OnSharedPreferenc
 			Intent mIntent = new Intent(this, BackgroundService.class);
 			startService(mIntent);
 		}
+	}
+
+	public static void printPreferences(Context context)
+	{
+		Debug.d("------------ Preferences: -------------");
+		Debug.d("ServerAddress: " + getServerAddress(context));
+		Debug.d("TimeSchedule: " + getTimeSchedule(context));
 	}
 }

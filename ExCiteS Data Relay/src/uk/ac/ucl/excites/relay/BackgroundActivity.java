@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class BackgroundActivity extends Activity
 {
@@ -20,9 +21,20 @@ public class BackgroundActivity extends Activity
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_background);
-
 		this.mContext = this;
+
+		// Check the preferences for a server address
+		if(Preferences.getServerAddress(this).isEmpty())
+		{
+			Preferences.printPreferences(mContext);
+			Toast t = Toast.makeText(this, "Please set up a Url server address.", Toast.LENGTH_LONG);
+			t.show();
+
+			Intent settingsActivity = new Intent(this, Preferences.class);
+			startActivity(settingsActivity);
+		}
+
+		setContentView(R.layout.activity_background);
 		serviceRunning = (TextView) findViewById(R.id.service_running);
 
 		// Get out of the AirplaneMode

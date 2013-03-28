@@ -307,7 +307,7 @@ public class BackgroundService extends Service
 		mIntentFilter.addDataAuthority("*", "2013");
 		// mIntentFilter.addDataType(type)
 		registerReceiver(smsReceiver, mIntentFilter);
-		Debug.d("Set up BibnarySMS receiver.");
+		Debug.d("Set up BinarySMS receiver.");
 	}
 
 	@SuppressWarnings("deprecation")
