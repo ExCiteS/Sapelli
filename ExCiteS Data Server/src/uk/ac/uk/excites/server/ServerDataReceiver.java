@@ -72,9 +72,6 @@ public class ServerDataReceiver extends HttpServlet
 		FileWriter smsLog = new FileWriter(ProjectUpload.getProjectsUploadFolderPath(context) + "sms.csv", true);
 		//FileWriter recordLog = new FileWriter(ProjectUpload.getProjectsUploadFolderPath(context) + "record.csv", true);
 		
-		if(!dao.isOpen())
-			logToCsvLine(errorLog, "No db object set in DataAccess!");
-		
 		String smsID = request.getParameter("smsID");
 		// Set smsID to -1 if it is null
 		smsID = (smsID == null) ? "-1" : smsID;

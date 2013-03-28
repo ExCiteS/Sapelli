@@ -18,7 +18,7 @@ public class DataAccessHelper
 	{
 		// Get the session container
 		ObjectContainer db = (ObjectContainer) request.getAttribute(Db4oServletListener.KEY_DB4O_SESSION);
-		return DataAccess.getInstance(db);
+		return new DataAccess(db);
 	}
 
 }

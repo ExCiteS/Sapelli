@@ -10,6 +10,11 @@ import android.content.res.Configuration;
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
 import com.db4o.config.EmbeddedConfiguration;
+import com.db4o.ext.DatabaseFileLockedException;
+import com.db4o.ext.DatabaseReadOnlyException;
+import com.db4o.ext.Db4oIOException;
+import com.db4o.ext.IncompatibleFileFormatException;
+import com.db4o.ext.OldFormatException;
 
 /**
  * Application App to keep the db4o object throughout the lifecycle of the Collector
@@ -23,8 +28,6 @@ public class CollectorApp extends Application
 
 	private volatile static ObjectContainer db;
 	private EmbeddedConfiguration dbConfig;
-
-
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig)
@@ -41,15 +44,13 @@ public class CollectorApp extends Application
 
 		// TODO Create the db Container
 		dbInit();
-
-
 	}
 
 	@Override
 	public void onLowMemory()
 	{
 		super.onLowMemory();
-		Debug.d("Called!");
+		Debug.d("onLowMemory() called!");
 	}
 
 	@Override
@@ -59,7 +60,7 @@ public class CollectorApp extends Application
 		// This method is for use in emulated process environments. It will never be called on
 		// a production Android device, where processes are removed by simply killing them; no
 		// user code (including this callback) is executed when doing so.
-		Debug.d("Show never being called!");
+		Debug.d("Should never be called!");
 	}
 
 	private void dbInit()
@@ -72,7 +73,7 @@ public class CollectorApp extends Application
 		{
 			dbConfig = Db4oEmbedded.newConfiguration();
 			dbConfig.common().exceptionsOnNotStorable(true);
-			openDB(dbFileName); // open the database!
+			openDB(dbFileName); // open the database! (throws various exceptions)
 		}
 		catch(Exception e)
 		{
@@ -83,7 +84,7 @@ public class CollectorApp extends Application
 	/**
 	 * (Re)Opens the database
 	 */
-	private void openDB(String dbFileName)
+	private void openDB(String dbFileName) throws Db4oIOException, DatabaseFileLockedException, IncompatibleFileFormatException, OldFormatException, DatabaseReadOnlyException
 	{
 		if(db != null)
 		{
