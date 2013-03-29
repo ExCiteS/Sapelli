@@ -1,5 +1,9 @@
-<resources>
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
 
     <style name="AppTheme" parent="android:Theme.Light" />
+
+    <style name="MainActivityPadding">
+        <item name="android:padding">10dp</item>
+    </style>
 
 </resources>

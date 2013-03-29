@@ -17,7 +17,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 	private static final String DATABASE_NAME = "ExCiteS_Relay_SQLite";
 	private static final String TABLE_SMS = "Sms";
 
-	// Contacts Table Columns names
+	// Sms Table Columns names
 	private static final String KEY_ID = "id";
 	private static final String KEY_NUMBER = "number";
 	private static final String KEY_TIME = "timestamp";
@@ -126,5 +126,43 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 		db.delete(TABLE_SMS, null, null);
 		// print the size
 		retrieveSmsObjects();
+	}
+
+	/**
+	 * Add some SMS messages to the db
+	 * 
+	 * @param number
+	 *            of SMS messages to add
+	 */
+	public void populateDb(int number)
+	{
+		for(int i = 0; i < number; i++)
+		{
+			String telephoneNumber = "+44000000" + i;
+			long messageTimestamp = System.currentTimeMillis();
+			String messageData = "This is a SMS message # " + i;
+
+			SmsObject sms = new SmsObject(telephoneNumber, messageTimestamp, messageData);
+			storeSmsObject(sms);
+		}
+	}
+
+	/**
+	 * Get the total number of SMS received by the Relay
+	 * 
+	 * @return
+	 */
+	public int getTotal()
+	{
+		SQLiteDatabase db = this.getWritableDatabase();
+		int total = 0;
+
+		String query = "SELECT * FROM SQLITE_SEQUENCE";
+		Cursor cursor = db.rawQuery(query, null);
+		if(cursor.moveToFirst() && cursor.getString(cursor.getColumnIndex("name")).equals(TABLE_SMS))
+		{
+			total = cursor.getInt(cursor.getColumnIndex("seq"));
+		}
+		return total;
 	}
 }
