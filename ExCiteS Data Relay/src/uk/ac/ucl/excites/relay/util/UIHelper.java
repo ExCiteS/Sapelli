@@ -2,6 +2,12 @@ package uk.ac.ucl.excites.relay.util;
 
 import android.os.Handler;
 
+/**
+ * Class for updating the UI
+ * 
+ * @author Michalis Vitos
+ * 
+ */
 public class UIHelper
 {
 	private Handler handler = new Handler();

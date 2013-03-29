@@ -2,6 +2,12 @@ package uk.ac.ucl.excites.relay;
 
 import android.app.Application;
 
+/**
+ * The Application Object used to keep some Global values
+ * 
+ * @author Michalis Vitos
+ * 
+ */
 public class RelayApp extends Application
 {
 	private static long lastReceivedSMS;

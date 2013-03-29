@@ -8,6 +8,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
+/**
+ * A Boot Receiver that auto starts the Relay on device boot
+ * 
+ * @author Michalis Vitos
+ * 
+ */
 public class BootReceiver extends BroadcastReceiver
 {
 

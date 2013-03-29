@@ -16,6 +16,12 @@ import android.view.MenuItem;
 import android.widget.TextView;
 import android.widget.Toast;
 
+/**
+ * Main Activity that shows the stats
+ * 
+ * @author Michalis Vitos
+ * 
+ */
 public class BackgroundActivity extends Activity
 {
 	public static final String SERVICE_PACKAGE_NAME = BackgroundService.class.getName();
