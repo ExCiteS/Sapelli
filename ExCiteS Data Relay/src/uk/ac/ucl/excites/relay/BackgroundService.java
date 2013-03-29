@@ -81,7 +81,7 @@ public class BackgroundService extends Service
 		isSending = false;
 
 		// TODO test
-		// dao.populateDb(150);
+		// dao.populateDb(10);
 		// dao.retrieveSmsObjects();
 
 		// Wait for the Debugger to be attached
@@ -161,6 +161,8 @@ public class BackgroundService extends Service
 				// Check if the post was successful and delete the SMS from the db
 				if(idPart == sms.getId())
 				{
+					// Set the LastSentSMS
+					RelayApp.setLastSentSMS(System.currentTimeMillis());
 					dao.deleteSmsObject(sms);
 				}
 			}
@@ -294,6 +296,9 @@ public class BackgroundService extends Service
 						receivedSms.setMessageTimestamp(msgs[i].getTimestampMillis());
 						receivedSms.setMessageData(Base64.encodeToString(msgs[i].getUserData(), Base64.CRLF));
 						
+						// Set the LastReceivedSMS
+						RelayApp.setLastReceivedSMS(msgs[i].getTimestampMillis());
+
 						Debug.d("Received SMS and it's content hash is:"
 								+ BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(msgs[i].getUserData()).toByteArray()));
 

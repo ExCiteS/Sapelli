@@ -19,5 +19,10 @@
 \nDeveloped for ExCiteS Research Group at UCL by Michalis Vitos
 \ninfo@michalisvitos.gr</string>
     <string name="application_icon">Application Icon</string>
+    <string name="total_sms_received_">"Total SMS Received: "</string>
+    <string name="total_sms_sent_">"Total SMS Sent: "</string>
+    <string name="last_sms_received_">"Last SMS Received: "</string>
+    <string name="last_sms_sent_">"Last SMS Sent: "</string>
+    <string name="_">-</string>
 
 </resources>
