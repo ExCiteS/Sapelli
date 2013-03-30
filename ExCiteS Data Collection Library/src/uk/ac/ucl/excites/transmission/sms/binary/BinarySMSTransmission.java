@@ -2,10 +2,7 @@ package uk.ac.ucl.excites.transmission.sms.binary;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
-import java.util.SortedSet;
 
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
@@ -65,29 +62,27 @@ public class BinarySMSTransmission extends SMSTransmission
 	}
 	
 	@Override
-	protected List<Message> serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException
+	protected void serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException
 	{
 		int maxPayloadSize = MAX_TRANSMISSION_PARTS * BinaryMessage.MAX_PAYLOAD_SIZE_BYTES;
 		if(data.length > maxPayloadSize)
 			throw new TransmissionCapacityExceededException("MaxPayloadSize (" + maxPayloadSize + "), exceeded by " + (data.length - maxPayloadSize) + " bytes");
 		int numberOfParts = (data.length / BinaryMessage.MAX_PAYLOAD_SIZE_BYTES) + ((data.length % BinaryMessage.MAX_PAYLOAD_SIZE_BYTES) > 0 ? 1 : 0);
-		List<Message> messages = new ArrayList<Message>();
 		int b = 0;
 		while(b < data.length)
 		{
 			byte[] partData = BinaryHelpers.subByteArray(data, b, BinaryMessage.MAX_PAYLOAD_SIZE_BYTES);
-			Message msg = new BinaryMessage(receiver, this, messages.size() + 1, numberOfParts, partData);
-			messages.add(msg);
+			Message msg = new BinaryMessage(receiver, this, parts.size() + 1, numberOfParts, partData);
+			parts.add(msg);
 			b += BinaryMessage.MAX_PAYLOAD_SIZE_BYTES;
 		}
-		return messages;
 	}
 
 	@Override
-	protected byte[] mergeAndDeserialise(SortedSet<Message> parts) throws IOException
+	protected byte[] mergeAndDeserialise() throws IOException
 	{
 		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-		for(Message part : parts)
+		for(Message part : getSortedParts())
 			rawOut.write(((BinaryMessage) part).getPayload());
 		rawOut.flush();
 		rawOut.close();

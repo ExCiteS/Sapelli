@@ -3,6 +3,9 @@ package uk.ac.ucl.excites.collector;
 import java.io.File;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.util.Debug;
 import android.app.Application;
 import android.content.res.Configuration;
@@ -72,7 +75,14 @@ public class CollectorApp extends Application
 		try
 		{
 			dbConfig = Db4oEmbedded.newConfiguration();
+			dbConfig.common().updateDepth(DataAccess.UPDATE_DEPTH);
 			dbConfig.common().exceptionsOnNotStorable(true);
+			dbConfig.common().objectClass(Record.class).cascadeOnActivate(true);
+			dbConfig.common().objectClass(Record.class).cascadeOnUpdate(true);
+			dbConfig.common().objectClass(Transmission.class).cascadeOnActivate(true);
+			dbConfig.common().objectClass(Transmission.class).cascadeOnUpdate(true);
+			dbConfig.common().objectClass(Project.class).cascadeOnActivate(true);
+			dbConfig.common().objectClass(Project.class).cascadeOnUpdate(true);
 			openDB(dbFileName); // open the database! (throws various exceptions)
 		}
 		catch(Exception e)

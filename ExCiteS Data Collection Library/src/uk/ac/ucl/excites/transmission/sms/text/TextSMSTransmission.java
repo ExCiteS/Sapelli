@@ -3,16 +3,12 @@
  */
 package uk.ac.ucl.excites.transmission.sms.text;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
-import java.util.SortedSet;
 
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.ModelProvider;
 import uk.ac.ucl.excites.transmission.Settings;
-import uk.ac.ucl.excites.transmission.sms.Message;
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException;
@@ -63,14 +59,13 @@ public class TextSMSTransmission extends SMSTransmission
 	}
 	
 	@Override
-	protected List<Message> serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException
+	protected void serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException
 	{
-		//TODO
-		return new ArrayList<Message>();
+		//TODO<
 	}
 
 	@Override
-	protected byte[] mergeAndDeserialise(SortedSet<Message> parts)
+	protected byte[] mergeAndDeserialise()
 	{
 		// TODO
 		return null;

@@ -54,7 +54,8 @@ public class SMSSender implements SMSService
 				case Activity.RESULT_OK:
 					textSMS.sentCallback(); //!!!
 					updateTransmission(textSMS.getTransmission()); //!!!
-					Log.i(TAG, "BroadcastReceiver: SMS " + textSMS.getPartNumber() + "/" + textSMS.getTotalParts() + " of transmission with ID " + textSMS.getTransmissionID() + " sent");
+					context.unregisterReceiver(this); //otherwise the sent notification seems to arrive 2-3 times
+					Log.i(TAG, "BroadcastReceiver: SMS " + textSMS.getPartNumber() + "/" + textSMS.getTotalParts() + " of transmission with ID " + textSMS.getTransmissionID() + " has been sent.");
 					break;
 				case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
 					Log.i(TAG, "BroadcastReceiver: Generic failure");
@@ -83,7 +84,8 @@ public class SMSSender implements SMSService
 				case Activity.RESULT_OK:
 					textSMS.deliveryCallback(); //!!!
 					updateTransmission(textSMS.getTransmission()); //!!!
-					Log.i(TAG, "BroadcastReceiver: SMS delivered");
+					context.unregisterReceiver(this); //otherwise the delivery notification seems to arrive 2-3 times
+					Log.i(TAG, "BroadcastReceiver: SMS " + textSMS.getPartNumber() + "/" + textSMS.getTotalParts() + " of transmission with ID " + textSMS.getTransmissionID() + " has been delivered.");
 					break;
 				case Activity.RESULT_CANCELED:
 					Log.i(TAG, "BroadcastReceiver: SMS not delivered");
@@ -124,7 +126,7 @@ public class SMSSender implements SMSService
 	{
 		PendingIntent sentPI = PendingIntent.getBroadcast(context, 0, new Intent(SMS_SENT), 0);
 		PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, new Intent(SMS_DELIVERED), 0);
-		
+			
 		// When the SMS has been sent
 		context.registerReceiver(new BroadcastReceiver()
 		{
@@ -136,7 +138,8 @@ public class SMSSender implements SMSService
 				case Activity.RESULT_OK:
 					binarySMS.sentCallback();
 					updateTransmission(binarySMS.getTransmission()); //!!!
-					Log.i(TAG, "BroadcastReceiver: SMS " + binarySMS.getPartNumber() + "/" + binarySMS.getTotalParts() + " of transmission with ID " + binarySMS.getTransmissionID() + " sent");
+					context.unregisterReceiver(this); //otherwise the sent notification seems to arrive 2-3 times
+					Log.i(TAG, "BroadcastReceiver: SMS " + binarySMS.getPartNumber() + "/" + binarySMS.getTotalParts() + " of transmission with ID " + binarySMS.getTransmissionID() + " has been sent.");
 					break;
 				case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
 					Log.i(TAG, "BroadcastReceiver: Generic failure");
@@ -165,7 +168,8 @@ public class SMSSender implements SMSService
 				case Activity.RESULT_OK:
 					binarySMS.deliveryCallback();
 					updateTransmission(binarySMS.getTransmission()); //!!!
-					Log.i(TAG, "BroadcastReceiver: SMS delivered");
+					context.unregisterReceiver(this); //otherwise the delivery notification seems to arrive 2-3 times
+					Log.i(TAG, "BroadcastReceiver: SMS " + binarySMS.getPartNumber() + "/" + binarySMS.getTotalParts() + " of transmission with ID " + binarySMS.getTransmissionID() + " has been delivered.");
 					break;
 				case Activity.RESULT_CANCELED:
 					Log.i(TAG, "BroadcastReceiver: SMS not delivered");
@@ -189,7 +193,8 @@ public class SMSSender implements SMSService
 	
 	private void updateTransmission(Transmission transmission)
 	{
-		//TODO Update transmission
+		dao.store(transmission);
+		dao.commit();
 	}
 
 }

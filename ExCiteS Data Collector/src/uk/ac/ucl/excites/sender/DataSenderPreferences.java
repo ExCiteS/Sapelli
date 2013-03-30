@@ -94,6 +94,18 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	}
 
 	/**
+	 * Check if the phone should upload via SMS
+	 * 
+	 * @param mContext
+	 * @return
+	 */
+	public static boolean getSMSUpload(Context mContext)
+	{
+		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+		return sharedPreferences.getBoolean("smsUpload", true);
+	}
+	
+	/**
 	 * Get the number of minutes that the service is checking for connectivity
 	 * 
 	 * @param mContext
@@ -134,10 +146,11 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	public static void printPreferences(Context context)
 	{
 		Log.d(TAG, "------------ Preferences: -------------");
-		Log.d(TAG, "DropboxUpload: " + (getDropboxUpload(context) ? "true" : "false"));
 		Log.d(TAG, "AirplaneMode: " + (getAirplaneMode(context) ? "true" : "false"));
 		//Log.d(TAG, "CenterPhoneNumber: " + getCenterPhoneNumber(mContext));
 		Log.d(TAG, "TimeSchedule: " + getTimeSchedule(context));
 		Log.d(TAG, "MaxAttempts: " + getMaxAttempts(context));
+		Log.d(TAG, "SMSUpload: " + (getSMSUpload(context) ? "true" : "false"));
+		Log.d(TAG, "DropboxUpload: " + (getDropboxUpload(context) ? "true" : "false"));
 	}
 }

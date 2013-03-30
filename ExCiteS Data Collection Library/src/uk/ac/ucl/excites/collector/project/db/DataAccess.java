@@ -27,8 +27,9 @@ public final class DataAccess
 {
 
 	// Statics----------------------------------------------
-	static private final String TAG = "DATA ACCESS";
-	static private final int ACTIVATION_DEPTH = 100;
+	static protected final String TAG = "DATA ACCESS";
+	static public final int ACTIVATION_DEPTH = 40;
+	static public final int UPDATE_DEPTH = 40;
 
 	// Dynamics---------------------------------------------
 	private ObjectContainer db;
@@ -40,8 +41,7 @@ public final class DataAccess
 	
 	public void commit()
 	{
-		if(db != null)
-			db.commit();
+		db.commit();
 	}
 
 	/**

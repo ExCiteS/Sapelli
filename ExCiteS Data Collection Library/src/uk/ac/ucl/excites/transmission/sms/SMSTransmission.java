@@ -6,7 +6,7 @@ package uk.ac.ucl.excites.transmission.sms;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -40,7 +40,7 @@ public abstract class SMSTransmission extends Transmission
 	protected SMSAgent receiver;
 	protected SMSAgent sender;
 	protected transient SMSService smsService;
-	protected SortedSet<Message> parts;
+	protected ArrayList<Message> parts;
 	protected DateTime deliveredAt;
 	
 	protected Integer id = null;
@@ -76,7 +76,7 @@ public abstract class SMSTransmission extends Transmission
 		this.id = id;
 		
 		this.receiver = receiver;
-		this.parts = new TreeSet<Message>(new Message.MessageComparator());
+		this.parts = new ArrayList<Message>();
 	}
 	
 	/**
@@ -88,7 +88,7 @@ public abstract class SMSTransmission extends Transmission
 	public SMSTransmission(ModelProvider modelProvider)
 	{
 		super(modelProvider);
-		this.parts = new TreeSet<Message>(new Message.MessageComparator());
+		this.parts = new ArrayList<Message>();
 	}
 	
 	@Override
@@ -159,13 +159,20 @@ public abstract class SMSTransmission extends Transmission
 			if(!sender.equals(msg.getSender()))
 				throw new IllegalArgumentException("This message originates from another sender.");
 		}
-		if(!parts.contains(msg)) //check for duplicates
+		if(!getSortedParts().contains(msg)) //check for duplicates
 			parts.add(msg);
 	}
 	
-	public SortedSet<Message> getParts()
+	public SortedSet<Message> getSortedParts()
 	{
-		return parts;
+		SortedSet<Message> sortedParts = new TreeSet<Message>(new Message.MessageComparator());
+		sortedParts.addAll(parts);
+		return sortedParts;
+	}
+	
+	public int getTotalParts()
+	{
+		return parts.size();
 	}
 	
 	/**
@@ -177,7 +184,7 @@ public abstract class SMSTransmission extends Transmission
 	{
 		if(parts.isEmpty())
 			return false;
-		return (parts.first().getTotalParts() == parts.size());
+		return (getSortedParts().first().getTotalParts() == parts.size());
 	}
 	
 	protected void prepareMessages() throws IOException, TransmissionCapacityExceededException
@@ -213,10 +220,8 @@ public abstract class SMSTransmission extends Transmission
 			data = rawOut.toByteArray();
 
 			// Serialise/Split
-			List<Message> msgs = serialiseAndSplit(data); //can throw TransmissionCapacityExceededException
-			parts.clear(); //clear previous messages! (don't move this line!)
-			for(Message m : msgs)
-				parts.add(m);
+			parts.clear();  //clear previous messages
+			serialiseAndSplit(data); //can throw TransmissionCapacityExceededException
 		}
 		catch(IOException e)
 		{
@@ -239,7 +244,7 @@ public abstract class SMSTransmission extends Transmission
 		try
 		{
 			// Merge/Deserialise
-			byte[] data = mergeAndDeserialise(parts);
+			byte[] data = mergeAndDeserialise();
 		
 			// Input stream:
 			ByteArrayInputStream rawIn = new ByteArrayInputStream(data);
@@ -325,7 +330,7 @@ public abstract class SMSTransmission extends Transmission
 		if(parts.isEmpty())
 			throw new IllegalStateException("No messages to decode.");
 		if(!isComplete())
-			throw new IllegalStateException("Transmission is incomplete, " + (parts.first().getTotalParts() - parts.size()) + " parts missing.");
+			throw new IllegalStateException("Transmission is incomplete, " + (getSortedParts().first().getTotalParts() - parts.size()) + " parts missing.");
 		
 		//Read messages:
 		readMessages();
@@ -440,9 +445,9 @@ public abstract class SMSTransmission extends Transmission
 		return data;
 	}
 	
-	protected abstract List<Message> serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException;
+	protected abstract void serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException;
 	
-	protected abstract byte[] mergeAndDeserialise(SortedSet<Message> parts) throws IOException;
+	protected abstract byte[] mergeAndDeserialise() throws IOException;
 	
 	public boolean isFull()
 	{

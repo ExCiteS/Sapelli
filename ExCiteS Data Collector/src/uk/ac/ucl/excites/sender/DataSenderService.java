@@ -96,11 +96,12 @@ public class DataSenderService extends Service
 	{
 		// Get the preferences
 		final int timeSchedule = DataSenderPreferences.getTimeSchedule(this);
-		final boolean dropboxUpload = DataSenderPreferences.getDropboxUpload(this);
+		boolean dropboxUpload = DataSenderPreferences.getDropboxUpload(this);
+		boolean smsUpload = DataSenderPreferences.getSMSUpload(this);
 		
 		setServiceForeground(this);
 		
-		boolean smsUpload = false;
+		boolean projectWithSMSEnabled = false;
 
 		for(Project p : dao.retrieveProjects())
 		{
@@ -121,9 +122,9 @@ public class DataSenderService extends Service
 
 			Settings settings = p.getTransmissionSettings(); 
 			// Upload via SMS
-			if(settings.isSMSUpload())
+			if(smsUpload && settings.isSMSUpload())
 			{
-				smsUpload = true;
+				projectWithSMSEnabled = true;
 				if(!settings.isSMSIntroductionSent())
 				{	//TODO send introduction
 					
@@ -147,7 +148,7 @@ public class DataSenderService extends Service
 		}
 
 		//if at least one project needs SMS sending:
-		if(smsUpload)
+		if(projectWithSMSEnabled)
 			smsSender = new SMSSender(this, dao);
 		
 		//Start GSM SignalMonitor
@@ -243,26 +244,19 @@ public class DataSenderService extends Service
 					Schema schema = f.getSchema();
 					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
 					
-					Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version "
-							+ p.getVersion() + ").");
-					for(Record record : records)
-					{
-						Debug.d("Record: " + record.toString());
-					}
-
+					Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version " + p.getVersion() + ").");
+					
 					//Decide on transmission mode
-					if(settings.isSMSUpload() && gsmMonitor.isInService()) //TODO do roaming check
+					if(DataSenderPreferences.getSMSUpload(DataSenderService.this) && settings.isSMSUpload() && gsmMonitor.isInService()) //TODO do roaming check
 					{
 						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(settings, schema, records);
-						for(Record r : records)
-							dao.store(r); //update records so associated transmissions are stored
-						dao.commit();
 						
+						//update records so associated transmissions are stored
+						for(Record r : records)
+							dao.store(r);
 						//store transmissions
 						for(Transmission t : smsTransmissions)
 							dao.store(t);
-						
-						//TODO make sure they are restored upon sending call backs
 						
 						//TODO fetch unsent existing smstransmissions from db
 						
@@ -272,7 +266,7 @@ public class DataSenderService extends Service
 						{
 							try
 							{
-								Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + t.getCompressionRatio()*100 + "%), stored in " + t.getParts().size() + " messages");
+								Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + t.getCompressionRatio()*100 + "%), stored in " + t.getTotalParts() + " messages");
 								t.send(smsSender);
 							}
 							catch(Exception e)
@@ -281,10 +275,22 @@ public class DataSenderService extends Service
 								Log.e(TAG, "error on sending smstransmission", e);
 							}
 						}
-						
 					}
+					
+					dao.commit();
+					List<Record> records2 = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
+					for(Record r : records2)
+						Log.d(TAG, r.getTransmission() == null ? "null" : "not null");
+					if(records2.isEmpty())
+					Log.d(TAG, "no records without transmissions");
+					
 				}
 				
+				//update project to store settings:
+				dao.update(p);
+				
+				//commit changes to db:
+				dao.commit();
 			}
 			
 			isSending = true;
@@ -334,7 +340,6 @@ public class DataSenderService extends Service
 			}
 			if(!t.isEmpty())
 				transmissions.add(t);
-			//TODO store setting to save next transmission ID !!
 		}
 		return transmissions;
 	}

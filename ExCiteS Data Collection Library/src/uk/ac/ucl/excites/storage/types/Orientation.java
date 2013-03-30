@@ -10,7 +10,7 @@ public class Orientation
 {
 	
 	//Statics----------------------------------------------
-	static final private String SEPARATOR = "|";
+	static final private String SEPARATOR = ";";
 	
 	static public Orientation Parse(String text) throws ParseException
 	{
@@ -97,7 +97,7 @@ public class Orientation
 	{
 		return	(azimuth != null ? azimuth.toString() : "") + SEPARATOR +
 				(pitch != null ? pitch.toString() : "") + SEPARATOR +
-				(roll != null ? roll.toString() : "") + SEPARATOR;
+				(roll != null ? roll.toString() : "");
 	}
 	
 }

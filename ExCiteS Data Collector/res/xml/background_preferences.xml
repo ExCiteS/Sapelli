@@ -1,29 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
-
     <PreferenceCategory android:title="General" >
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="airplaneMode"
-            android:summary="Check to get the phone in Airplane Mode to preserve battery."
+            android:summary="Check to make the phone go into Airplane Mode to preserve battery."
             android:title="Airplane Mode" />
-        <CheckBoxPreference
-            android:defaultValue="false"
-            android:key="dropboxUpload"
-            android:summary="Check to upload data to the Dropbox."
-            android:title="Dropbox Upload" />
-    </PreferenceCategory>
-    <PreferenceCategory android:title="SMS Sending" >
-        <!-- <EditTextPreference
-            android:inputType="phone"
-            android:key="centerPhoneNumber"
-            android:summary="This is the number of the phone that acts as a center relay."
-            android:title="Center Phone Number" />  -->
         <EditTextPreference
             android:defaultValue="15"
             android:inputType="number"
             android:key="timeSchedule"
-            android:summary="How often is the application checking for connectivity in minutes."
+            android:summary="How often is the service checks for connectivity in minutes."
             android:title="Time Schedule" />
         <EditTextPreference
             android:defaultValue="20"
@@ -31,6 +18,25 @@
             android:key="maxAttempts"
             android:summary="How many seconds will the service wait for connectivity."
             android:title="Max Attemps" />
+    </PreferenceCategory>
+    <PreferenceCategory android:title="Data upload" >
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="smsUpload"
+            android:summary="Check to disable data sending via SMS."
+            android:title="Enable SMS sending" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="dropboxUpload"
+            android:summary="Check to upload data to the Dropbox."
+            android:title="Dropbox Upload" />
+        <!--
+             <EditTextPreference
+            android:inputType="phone"
+            android:key="centerPhoneNumber"
+            android:summary="This is the number of the phone that acts as a center relay."
+            android:title="Center Phone Number" />
+        -->
     </PreferenceCategory>
     <PreferenceCategory android:title="Start the service" >
         <Preference
