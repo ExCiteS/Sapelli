@@ -13,6 +13,7 @@ bin/
 gen/
 distro/
 dist/
+build/
 
 # temp folders and files
 tmp/**
