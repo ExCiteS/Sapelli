@@ -248,6 +248,9 @@ public class DataSenderService extends Service implements TransmissionSender
 			{
 				Settings settings = p.getTransmissionSettings();
 				
+				//Log signal strength:
+				loggers.get(p).addLine("Current cellular signal strength: " + gsmMonitor.getSignalStrength());
+				
 				for(Form f : p.getForms())
 				{		
 					Schema schema = f.getSchema();			
@@ -255,8 +258,22 @@ public class DataSenderService extends Service implements TransmissionSender
 					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
 					Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version " + p.getVersion() + ").");
 					
+					if(records.isEmpty())
+					{
+						loggers.get(p).addLine("No records to send for form " + f.getName());
+						continue;
+					}
+					
+					//loggers.get(p).addLine("")
+					
 					//Decide on transmission mode
-					if(DataSenderPreferences.getSMSUpload(DataSenderService.this) && settings.isSMSUpload() && gsmMonitor.isInService()) //TODO do roaming check
+					//TODO
+					
+					//HTTP over GPRS/EDGE/3G/4G or Wi-Fi
+					//TODO HTTPTransmissions
+					
+					//SMS
+					if(DataSenderPreferences.getSMSUpload(DataSenderService.this) && settings.isSMSUpload() && gsmMonitor.isInService() && (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()))
 					{
 						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records.iterator());
 						

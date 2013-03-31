@@ -54,8 +54,6 @@ public class ProjectParser extends DefaultHandler
 	static private final String TAG_HTTP_UPLOAD = "HTTPUpload";
 	static private final String TAG_SMS_UPLOAD = "SMSUpload";
 	static private final String TAG_ENCRYPTION = "Encryption";
-	static private final String TAG_ALLOW_MOBILE_DATA = "AllowMobileData";
-	static private final String TAG_ALLOW_ROAMING = "AllowRoaming";
 	static private final String TAG_LOGGING = "Logging";
 	static private final String TAG_FORM = "Form";
 	private static final String TAG_CHOICE = "Choice";
@@ -67,6 +65,8 @@ public class ProjectParser extends DefaultHandler
 	static private final String ATTRIBUTE_PROJECT_NAME = "name";
 	static private final String ATTRIBUTE_PROJECT_VERSION = "version";
 	static private final String ATTRIBUTE_ENABLED = "enabled";
+	static private final String ATTRIBUTE_MOBILE_DATA = "allowMobileData";
+	static private final String ATTRIBUTE_ROAMING = "allowRoaming";
 	static private final String ATTRIBUTE_FORM_NAME = "name";
 	static private final String ATTRIBUTE_FORM_SCHEMA_ID = "schema-id";
 	static private final String ATTRIBUTE_FORM_SCHEMA_VERSION = "schema-version";
@@ -184,6 +184,8 @@ public class ProjectParser extends DefaultHandler
 			if(transmissionSettings == null)
 				throw new SAXException("<" + TAG_DROPBOX_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
 			transmissionSettings.setDropboxUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_DROPBOX_UPLOAD));
+			transmissionSettings.setDropboxAllowMobileData(readBooleanAttribute(attributes, ATTRIBUTE_MOBILE_DATA, Settings.DEFAULT_DROPBOX_ALLOW_MOBILE_DATA));
+			transmissionSettings.setDropboxAllowRoaming(readBooleanAttribute(attributes, ATTRIBUTE_ROAMING, Settings.DEFAULT_DROPBOX_ALLOW_ROAMING));
 		}
 		// <HTTPUpload>
 		else if(qName.equals(TAG_HTTP_UPLOAD))
@@ -194,6 +196,8 @@ public class ProjectParser extends DefaultHandler
 			String server = attributes.getValue("server");
 			if(server != null && !server.isEmpty())
 				transmissionSettings.setServerAddress(server);
+			transmissionSettings.setHTTPAllowMobileData(readBooleanAttribute(attributes, ATTRIBUTE_MOBILE_DATA, Settings.DEFAULT_HTTP_ALLOW_MOBILE_DATA));
+			transmissionSettings.setHTTPAllowRoaming(readBooleanAttribute(attributes, ATTRIBUTE_ROAMING, Settings.DEFAULT_HTTP_ALLOW_ROAMING));
 		}
 		// <SMSUpload>
 		else if(qName.equals(TAG_SMS_UPLOAD))
@@ -204,6 +208,7 @@ public class ProjectParser extends DefaultHandler
 			String relay = attributes.getValue("relay");
 			if(relay != null && !relay.isEmpty())
 				transmissionSettings.setSMSRelay(new SMSAgent(relay));
+			transmissionSettings.setSMSAllowRoaming(readBooleanAttribute(attributes, ATTRIBUTE_ROAMING, Settings.DEFAULT_SMS_ALLOW_ROAMING));
 		}
 		// <Encryption>
 		else if(qName.equals(TAG_ENCRYPTION))
@@ -211,20 +216,6 @@ public class ProjectParser extends DefaultHandler
 			if(transmissionSettings == null)
 				throw new SAXException("<" + TAG_ENCRYPTION + "> should only appear in <" + TAG_TRANSMISSION + ">.");
 			transmissionSettings.setEncrypt(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_ENCRYPT));
-		}
-		// <AllowMobileData>
-		else if(qName.equals(TAG_ALLOW_MOBILE_DATA))
-		{
-			if(transmissionSettings == null)
-				throw new SAXException("<" + TAG_ALLOW_MOBILE_DATA + "> should only appear in <" + TAG_TRANSMISSION + ">.");
-			transmissionSettings.setAllowMobileData(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_ALLOW_MOBILE_DATA));
-		}
-		// <AllowRoaming>
-		else if(qName.equals(TAG_ALLOW_ROAMING))
-		{
-			if(transmissionSettings == null)
-				throw new SAXException("<" + TAG_ALLOW_ROAMING + "> should only appear in <" + TAG_TRANSMISSION + ">.");
-			transmissionSettings.setAllowMobileData(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_ALLOW_ROAMING));
 		}
 		// <Logging>
 		else if(qName.equals(TAG_LOGGING))

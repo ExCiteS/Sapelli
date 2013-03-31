@@ -30,11 +30,15 @@ public class Settings
 	static public final SMSMode DEFAULT_SMS_MODE = SMSMode.BINARY;
 	
 	static public final boolean DEFAULT_DROPBOX_UPLOAD = false;
-	static public final boolean DEFAULT_HTTP_UPLOAD = false;
-	static public final boolean DEFAULT_SMS_UPLOAD = false;
+	static public final boolean DEFAULT_DROPBOX_ALLOW_MOBILE_DATA = false;
+	static public final boolean DEFAULT_DROPBOX_ALLOW_ROAMING = false;
 	
-	static public final boolean DEFAULT_ALLOW_MOBILE_DATA = false;
-	static public final boolean DEFAULT_ALLOW_ROAMING = false;
+	static public final boolean DEFAULT_HTTP_UPLOAD = false;
+	static public final boolean DEFAULT_HTTP_ALLOW_MOBILE_DATA = true;
+	static public final boolean DEFAULT_HTTP_ALLOW_ROAMING = false;
+	
+	static public final boolean DEFAULT_SMS_UPLOAD = false;
+	static public final boolean DEFAULT_SMS_ALLOW_ROAMING = false;	
 	
 	//DYNAMICS-------------------------------------------------------
 	
@@ -44,25 +48,26 @@ public class Settings
 	protected byte[] encryptionKey;
 	protected byte[] encryptionSalt;
 	protected byte[] encryptionKeyHash;
-	
+
+	//Dropbox--------------------------
 	protected boolean dropboxUpload;
+	protected boolean dropboxAllowMobileData;
+	protected boolean dropboxAllowRoaming;
+	
+	//HTTP-----------------------------
 	protected boolean httpUpload;
-	protected boolean smsUpload;
-	
-	protected boolean allowMobileData;
-	protected boolean allowRoaming;
-	
-	//HTTP specific--------------------
 	protected String serverAddress;
+	protected boolean httpAllowMobileData;
+	protected boolean httpAllowRoaming;
 	
-	//SMS specific---------------------
+	//SMS------------------------------
+	protected boolean smsUpload;
+	protected boolean smsAllowRoaming;
 	protected SMSMode smsMode;
-	
-	//Used on sending side only:
+	// Sending side:
 	protected SMSAgent smsRelay;
 	protected boolean smsIntroductionSent;
-	
-	//Used on receiving side only:
+	// Receiving side:
 	protected List<SMSAgent> smsApprovedSenders;
 	
 	public Settings()
@@ -71,10 +76,13 @@ public class Settings
 		encrypt = DEFAULT_ENCRYPT;
 		setPassword(DEFAULT_PASSWORD);
 		dropboxUpload = DEFAULT_DROPBOX_UPLOAD;
+		dropboxAllowMobileData = DEFAULT_DROPBOX_ALLOW_MOBILE_DATA;
+		dropboxAllowRoaming = DEFAULT_DROPBOX_ALLOW_ROAMING;
 		httpUpload = DEFAULT_HTTP_UPLOAD;
+		httpAllowMobileData = DEFAULT_HTTP_ALLOW_MOBILE_DATA;
+		httpAllowRoaming = DEFAULT_HTTP_ALLOW_ROAMING;
 		smsUpload = DEFAULT_SMS_UPLOAD;
-		allowMobileData = DEFAULT_ALLOW_MOBILE_DATA;
-		allowRoaming = DEFAULT_ALLOW_ROAMING;
+		smsAllowRoaming = DEFAULT_SMS_ALLOW_ROAMING;
 		smsMode = DEFAULT_SMS_MODE;
 		smsIntroductionSent = false;
 		smsApprovedSenders = new ArrayList<SMSAgent>();
@@ -244,35 +252,83 @@ public class Settings
 	}
 
 	/**
-	 * @return the allowMobileData
+	 * @return the dropboxAllowMobileData
 	 */
-	public boolean isAllowMobileData()
+	public boolean isDropboxAllowMobileData()
 	{
-		return allowMobileData;
+		return dropboxAllowMobileData;
 	}
 
 	/**
-	 * @param allowMobileData the allowMobileData to set
+	 * @param dropboxAllowMobileData the dropboxAllowMobileData to set
 	 */
-	public void setAllowMobileData(boolean allowMobileData)
+	public void setDropboxAllowMobileData(boolean dropboxAllowMobileData)
 	{
-		this.allowMobileData = allowMobileData;
+		this.dropboxAllowMobileData = dropboxAllowMobileData;
 	}
 
 	/**
-	 * @return the allowRoaming
+	 * @return the dropboxAllowRoaming
 	 */
-	public boolean isAllowRoaming()
+	public boolean isDropboxAllowRoaming()
 	{
-		return allowRoaming;
+		return dropboxAllowRoaming;
 	}
 
 	/**
-	 * @param allowRoaming the allowRoaming to set
+	 * @param dropboxAllowRoaming the dropboxAllowRoaming to set
 	 */
-	public void setAllowRoaming(boolean allowRoaming)
+	public void setDropboxAllowRoaming(boolean dropboxAllowRoaming)
 	{
-		this.allowRoaming = allowRoaming;
+		this.dropboxAllowRoaming = dropboxAllowRoaming;
+	}
+
+	/**
+	 * @return the httpAllowMobileData
+	 */
+	public boolean isHTTPAllowMobileData()
+	{
+		return httpAllowMobileData;
+	}
+
+	/**
+	 * @param httpAllowMobileData the httpAllowMobileData to set
+	 */
+	public void setHTTPAllowMobileData(boolean httpAllowMobileData)
+	{
+		this.httpAllowMobileData = httpAllowMobileData;
+	}
+
+	/**
+	 * @return the httpAllowRoaming
+	 */
+	public boolean isHTTPAllowRoaming()
+	{
+		return httpAllowRoaming;
+	}
+
+	/**
+	 * @param httpAllowRoaming the httpAllowRoaming to set
+	 */
+	public void setHTTPAllowRoaming(boolean httpAllowRoaming)
+	{
+		this.httpAllowRoaming = httpAllowRoaming;
+	}
+
+	/**
+	 * @return the smsAllowRoaming
+	 */
+	public boolean isSMSAllowRoaming()
+	{
+		return smsAllowRoaming;
+	}
+
+	/**
+	 * @param smsAllowRoaming the smsAllowRoaming to set
+	 */
+	public void setSMSAllowRoaming(boolean smsAllowRoaming)
+	{
+		this.smsAllowRoaming = smsAllowRoaming;
 	}
 	
 }
