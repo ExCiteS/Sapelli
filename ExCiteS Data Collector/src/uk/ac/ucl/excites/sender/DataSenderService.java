@@ -92,6 +92,11 @@ public class DataSenderService extends Service implements TransmissionSender
 		
 		// ID generator for SMSTransmissions:
 		smsTransmissionID = dao.retrieveTransmissionID();
+		if(smsTransmissionID == null)
+		{
+			smsTransmissionID = new SMSTransmissionID();
+			dao.store(smsTransmissionID);
+		}
 		
 		// Folder observers:
 		folderObservers = new ArrayList<DropboxSync>();
@@ -196,8 +201,6 @@ public class DataSenderService extends Service implements TransmissionSender
 		if(Constants.DEBUG_LOG)
 			Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
 		android.os.Process.killProcess(pid);
-
-		// TODO Maybe here close the db
 	}
 	
 	private class SendingTask implements Runnable
@@ -248,8 +251,11 @@ public class DataSenderService extends Service implements TransmissionSender
 			{
 				Settings settings = p.getTransmissionSettings();
 				
-				//Log signal strength:
+				//Log signal strength & roaming:
 				loggers.get(p).addLine("Current cellular signal strength: " + gsmMonitor.getSignalStrength());
+				loggers.get(p).addLine("Device is " + (gsmMonitor.isRoaming() ? "" : "not ") + "currently roaming.");
+				
+				Debug.d("Device is " + (gsmMonitor.isRoaming() ? "" : "not ") + "currently roaming");
 				
 				for(Form f : p.getForms())
 				{		
@@ -263,8 +269,8 @@ public class DataSenderService extends Service implements TransmissionSender
 						loggers.get(p).addLine("No records to send for form " + f.getName());
 						continue;
 					}
-					
-					//loggers.get(p).addLine("")
+					else
+						loggers.get(p).addLine(records.size() + " records to send for form " + f.getName());
 					
 					//Decide on transmission mode
 					//TODO
@@ -275,32 +281,32 @@ public class DataSenderService extends Service implements TransmissionSender
 					//SMS
 					if(DataSenderPreferences.getSMSUpload(DataSenderService.this) && settings.isSMSUpload() && gsmMonitor.isInService() && (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()))
 					{
+						//Generate transmission(s)
 						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records.iterator());
 						
-						//update records so associated transmissions are stored
-						//for(Record r : records)
-						//	dao.store(r);
-						//Store transmissions
+						//Store transmission(s) & update records so associated transmission is stored
 						for(Transmission t : smsTransmissions)
 						{
 							for(Record r : t.getRecords())
 								dao.store(r);
 							dao.store(t);
 						}
+						
 						//TODO fetch unsent existing smstransmissions from db
 						
-						//Send them
+						//Send transmission(s)
 						//TODO check signal again?
 						for(SMSTransmission t : smsTransmissions)
 						{
 							try
 							{
-								Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + t.getCompressionRatio()*100 + "%), stored in " + t.getTotalParts() + " messages");
+								loggers.get(p).addLine("Sending SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalParts() + " messages");
+								Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalParts() + " messages");
 								t.send(DataSenderService.this);
 							}
 							catch(Exception e)
 							{
-								//TODO
+								loggers.get(p).addLine("Error upon sending SMSTransmission: " + e.getMessage());
 								Log.e(TAG, "error on sending smstransmission", e);
 							}
 						}
@@ -313,9 +319,6 @@ public class DataSenderService extends Service implements TransmissionSender
 			}
 			
 			isSending = true;
-
-			//if(Constants.DEBUG_LOG)
-			//	Log.i(Constants.TAG, "---------------------- Run Every: " + timeSchedule + " minutes!!!! --------------------------");
 			
 			//Go back to airplane more if needed
 			if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))

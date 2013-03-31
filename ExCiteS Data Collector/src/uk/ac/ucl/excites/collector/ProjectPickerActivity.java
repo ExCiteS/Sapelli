@@ -220,8 +220,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 
 	public boolean copyDBtoSD(MenuItem item)
 	{	
-		dao.copyDB(((CollectorApp) getApplication()).getDatabasePath(), excitesFolderPath + DB4O_DUMP_NAME + System.currentTimeMillis() + "."
-				+ DB4O_DUMP_EXTENSION);
+		((CollectorApp) getApplication()).backupDatabase(excitesFolderPath + DB4O_DUMP_NAME + System.currentTimeMillis() + "." + DB4O_DUMP_EXTENSION);
 		return true;
 	}
 

@@ -38,7 +38,7 @@ public class Settings
 	static public final boolean DEFAULT_HTTP_ALLOW_ROAMING = false;
 	
 	static public final boolean DEFAULT_SMS_UPLOAD = false;
-	static public final boolean DEFAULT_SMS_ALLOW_ROAMING = false;	
+	static public final boolean DEFAULT_SMS_ALLOW_ROAMING = false;
 	
 	//DYNAMICS-------------------------------------------------------
 	

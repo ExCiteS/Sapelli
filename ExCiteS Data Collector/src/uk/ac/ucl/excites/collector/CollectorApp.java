@@ -30,7 +30,6 @@ public class CollectorApp extends Application
 	static private final String DATABASE_NAME = "ExCiteS.db4o";
 
 	private volatile static ObjectContainer db;
-	private EmbeddedConfiguration dbConfig;
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig)
@@ -45,7 +44,24 @@ public class CollectorApp extends Application
 		super.onCreate();
 		Debug.d("Called!");
 		
-		dbInit();
+		String dbFileName = getDatabasePath();
+		try
+		{
+			EmbeddedConfiguration dbConfig = Db4oEmbedded.newConfiguration();
+			dbConfig.common().updateDepth(DataAccess.UPDATE_DEPTH);
+			dbConfig.common().exceptionsOnNotStorable(true);
+			dbConfig.common().objectClass(Record.class).cascadeOnActivate(true);
+			dbConfig.common().objectClass(Record.class).cascadeOnUpdate(true);
+			dbConfig.common().objectClass(Transmission.class).cascadeOnActivate(true);
+			dbConfig.common().objectClass(Transmission.class).cascadeOnUpdate(true);
+			dbConfig.common().objectClass(Project.class).cascadeOnActivate(true);
+			dbConfig.common().objectClass(Project.class).cascadeOnUpdate(true);
+			openDB(dbFileName, dbConfig); // open the database! (throws various exceptions)
+		}
+		catch(Exception e)
+		{
+			Debug.e("Unable to open database.", e);
+		}
 	}
 
 	@Override
@@ -65,42 +81,17 @@ public class CollectorApp extends Application
 		Debug.d("Should never be called!");
 	}
 
-	private void dbInit()
-	{
-		String dbFileName = getDatabasePath();
-
-		if(dbFileName == null || dbFileName.isEmpty())
-			throw new IllegalArgumentException("Invalid database file name");
-		try
-		{
-			dbConfig = Db4oEmbedded.newConfiguration();
-			dbConfig.common().updateDepth(DataAccess.UPDATE_DEPTH);
-			dbConfig.common().exceptionsOnNotStorable(true);
-			dbConfig.common().objectClass(Record.class).cascadeOnActivate(true);
-			dbConfig.common().objectClass(Record.class).cascadeOnUpdate(true);
-			dbConfig.common().objectClass(Transmission.class).cascadeOnActivate(true);
-			dbConfig.common().objectClass(Transmission.class).cascadeOnUpdate(true);
-			dbConfig.common().objectClass(Project.class).cascadeOnActivate(true);
-			dbConfig.common().objectClass(Project.class).cascadeOnUpdate(true);
-			openDB(dbFileName); // open the database! (throws various exceptions)
-		}
-		catch(Exception e)
-		{
-			Debug.e("Unable to open database.", e);
-		}
-	}
-
 	/**
 	 * (Re)Opens the database
 	 */
-	private void openDB(String dbFileName) throws Db4oIOException, DatabaseFileLockedException, IncompatibleFileFormatException, OldFormatException, DatabaseReadOnlyException
+	private void openDB(String dbFileName, EmbeddedConfiguration config) throws Db4oIOException, DatabaseFileLockedException, IncompatibleFileFormatException, OldFormatException, DatabaseReadOnlyException
 	{
 		if(db != null)
 		{
 			Debug.i("Database is already open.");
 			return;
 		}
-		db = Db4oEmbedded.openFile(Db4oEmbedded.newConfiguration(), dbFileName);
+		db = Db4oEmbedded.openFile(config, dbFileName);
 		Debug.i("Opened new database connection in file: " + dbFileName);
 	}
 
@@ -114,6 +105,12 @@ public class CollectorApp extends Application
 	{
 		// Always store the db to the internal storage of the Android device
 		return getFilesDir().getAbsolutePath() + File.separator + DATABASE_NAME;
+	}
+	
+	public void backupDatabase(String filePath)
+	{
+		db.commit();
+		db.ext().backup(filePath);
 	}
 	
 	// TODO close?

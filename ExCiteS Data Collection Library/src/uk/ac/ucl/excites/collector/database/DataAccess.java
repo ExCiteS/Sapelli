@@ -13,7 +13,6 @@ import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmissionID;
-import uk.ac.ucl.excites.util.FileHelpers;
 
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
@@ -43,16 +42,6 @@ public final class DataAccess
 	public void commit()
 	{
 		db.commit();
-	}
-
-	/**
-	 * Copy Database File to the destination
-	 * 
-	 * @param dstFilePath
-	 */
-	public void copyDB(String srcFilePath, String dstFilePath)
-	{
-		FileHelpers.copyFile(srcFilePath, dstFilePath);
 	}
 
 	/**
@@ -90,12 +79,6 @@ public final class DataAccess
 	public void delete(Record record)
 	{
 		db.delete(record);
-	}
-	
-	public void update(Record record)
-	{
-		delete(record); //TODO deleting the record first really shouldn't be necessary but somehow it is, find out why!
-		store(record);
 	}
 	
 	/**
@@ -188,7 +171,6 @@ public final class DataAccess
 	 */
 	public void update(Project project)
 	{
-		db.delete(project); //TODO deleting the project first really shouldn't be necessary but somehow it is, find out why!
 		db.store(project);
 	}
 
@@ -340,15 +322,6 @@ public final class DataAccess
 	 */
 	public void store(SMSTransmissionID id)
 	{
-		db.store(id);
-	}
-	
-	/**
-	 * @param id
-	 */
-	public void update(SMSTransmissionID id)
-	{
-		db.delete(id); //TODO deleting the id first really shouldn't be necessary but somehow it is, find out why!
 		db.store(id);
 	}
 	

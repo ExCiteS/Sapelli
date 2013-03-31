@@ -16,7 +16,7 @@ public class SMSTransmissionID
 	static public final int INITIAL_ID = 0;
 	static public final IntegerRangeMapping FIELD = IntegerRangeMapping.ForSize(INITIAL_ID, ID_SIZE_BITS);
 
-	protected int nextTransmissionID;
+	private int nextTransmissionID;
 
 	public SMSTransmissionID()
 	{
