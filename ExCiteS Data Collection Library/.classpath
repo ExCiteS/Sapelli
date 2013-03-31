@@ -22,6 +22,7 @@
 			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS Data Collection Library/libs/docs/xz-1.2-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry exported="true" kind="lib" path="libs/jbzip2-0.9.1.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/sc-light-jdk15on-1.47.0.2.jar"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>

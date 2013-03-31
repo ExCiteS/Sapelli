@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="MacRoman" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <jardesc>
-    <jar path="jbzip2/jbzip2-0.9.1.jar"/>
+    <jar path="jbzip2/dist/jbzip2-0.9.1.jar"/>
     <options buildIfNeeded="true" compress="true" descriptionLocation="/jbzip2/jbzip2.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="false" overwrite="false" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
@@ -13,7 +13,6 @@
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
         <file path="/jbzip2/AUTHORS"/>
         <javaElement handleIdentifier="=jbzip2/src&lt;org.itadaki.bzip2"/>
-        <javaElement handleIdentifier="=jbzip2/src&lt;demo"/>
         <file path="/jbzip2/LICENCE"/>
     </selectedElements>
 </jardesc>
