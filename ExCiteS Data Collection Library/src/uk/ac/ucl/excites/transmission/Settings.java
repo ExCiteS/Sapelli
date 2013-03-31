@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
-import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.compression.CompressorFactory.CompressionMode;
 import uk.ac.ucl.excites.transmission.crypto.*;
 
@@ -62,7 +61,6 @@ public class Settings
 	//Used on sending side only:
 	protected SMSAgent smsRelay;
 	protected boolean smsIntroductionSent;
-	protected int smsNextTransmissionID;
 	
 	//Used on receiving side only:
 	protected List<SMSAgent> smsApprovedSenders;
@@ -79,7 +77,6 @@ public class Settings
 		allowRoaming = DEFAULT_ALLOW_ROAMING;
 		smsMode = DEFAULT_SMS_MODE;
 		smsIntroductionSent = false;
-		smsNextTransmissionID = SMSTransmission.INITIAL_ID;
 		smsApprovedSenders = new ArrayList<SMSAgent>();
 	}
 	
@@ -126,18 +123,6 @@ public class Settings
 		//rehashedPassword = Cryptography.getSHA256Hash(hashedPassword);
 	}
 	
-	/**
-	 * @return the smsNextTransmissionID
-	 */
-	public int getSMSTransmissionID()
-	{
-		int current = smsNextTransmissionID;
-		//Next one after the current:
-		smsNextTransmissionID = (SMSTransmission.ID_FIELD.fits(current + 1) ? (current + 1) : SMSTransmission.INITIAL_ID);
-		//Return current
-		return current;
-	}
-
 	/**
 	 * @return the smsMode
 	 */

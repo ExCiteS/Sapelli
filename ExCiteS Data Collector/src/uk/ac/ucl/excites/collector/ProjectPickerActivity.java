@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
@@ -300,7 +300,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		if(p == null)
 			return;
 		removeShortcutFor(p);
-		dao.deleteProject(p);
+		dao.delete(p);
 		populateProjectList(); //populate will close DB
 
 		// Restart the DataSenderService to stop monitoring the deleted project
@@ -420,27 +420,18 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 				public void onClick(DialogInterface dialog, int whichButton)
 				{
 					if(input.getText().toString().equals(""))
-					{
-						// Set the Default Password
-						project.getTransmissionSettings().setPassword(Settings.DEFAULT_PASSWORD);
-						// Store the project object:
-						storeProject(project);
-					}
+						project.getTransmissionSettings().setPassword(Settings.DEFAULT_PASSWORD); // Set the Default Password
 					else
-					{
-						// Set the Password
-						project.getTransmissionSettings().setPassword(input.getText().toString());
-						// Store the project object:
-						storeProject(project);
-					}
+						project.getTransmissionSettings().setPassword(input.getText().toString()); // Set the Password
 				}
 			});
 
 			encryptionDialog = builder.create();
 			encryptionDialog.show();
 		}
-		else
-			storeProject(project);
+		
+		// Store the project object:
+		storeProject(project);
 	}
 
 	private void storeProject(Project p)

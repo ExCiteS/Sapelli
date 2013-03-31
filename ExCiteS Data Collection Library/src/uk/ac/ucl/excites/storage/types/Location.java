@@ -17,7 +17,7 @@ public class Location
 {
 
 	//Static---------------------------------------------------------
-	static final private String SEPARATOR = "|";
+	static final private String SEPARATOR = ";";
 	
 	static public final int PROVIDER_UNKNOWN = 0;
 	static public final int PROVIDER_GPS = 1;

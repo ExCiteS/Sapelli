@@ -2,7 +2,7 @@ package uk.ac.ucl.excites.collector;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.transmission.Transmission;
@@ -44,8 +44,7 @@ public class CollectorApp extends Application
 	{
 		super.onCreate();
 		Debug.d("Called!");
-
-		// TODO Create the db Container
+		
 		dbInit();
 	}
 
@@ -116,8 +115,8 @@ public class CollectorApp extends Application
 		// Always store the db to the internal storage of the Android device
 		return getFilesDir().getAbsolutePath() + File.separator + DATABASE_NAME;
 	}
-
-	// TODO
+	
+	// TODO close?
 	// public void closeDB()
 	// {
 	// db.close();

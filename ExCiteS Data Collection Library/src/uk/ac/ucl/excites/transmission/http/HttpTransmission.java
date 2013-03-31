@@ -4,6 +4,7 @@ import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.Settings;
+import uk.ac.ucl.excites.transmission.TransmissionSender;
 
 public class HttpTransmission extends Transmission
 {
@@ -21,8 +22,10 @@ public class HttpTransmission extends Transmission
 	}
 
 	@Override
-	public void send()
+	public void send(TransmissionSender sender)
 	{
+		//HTTPClient client = sender.getHTTPClient();
+		
 		// TODO Auto-generated method stub
 		
 	}

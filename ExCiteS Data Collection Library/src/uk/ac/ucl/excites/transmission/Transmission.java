@@ -101,15 +101,15 @@ public abstract class Transmission
 		return records;
 	}
 	
-	public abstract void send() throws Exception;
+	public abstract void send(TransmissionSender sender) throws Exception;
 	
-	public void resend() throws Exception
+	public void resend(TransmissionSender sender) throws Exception
 	{
 		//Clear early sentAt value (otherwise send() won't work):
 		sentAt = null;
 		
 		//Resend:
-		send();
+		send(sender);
 	}
 	
 	public abstract void receive() throws Exception;

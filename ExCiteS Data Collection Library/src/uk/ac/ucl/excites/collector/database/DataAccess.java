@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.collector.project.db;
+package uk.ac.ucl.excites.collector.database;
 
 import java.util.List;
 
@@ -12,6 +12,7 @@ import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
+import uk.ac.ucl.excites.transmission.sms.SMSTransmissionID;
 import uk.ac.ucl.excites.util.FileHelpers;
 
 import com.db4o.ObjectContainer;
@@ -76,11 +77,25 @@ public final class DataAccess
 	}
 	
 	/**
-	 * @param record
+	 * @param record - the record to store
 	 */
 	public void store(Record record)
 	{
 		db.store(record);
+	}
+	
+	/**
+	 * @param record - the record to delete
+	 */
+	public void delete(Record record)
+	{
+		db.delete(record);
+	}
+	
+	public void update(Record record)
+	{
+		delete(record); //TODO deleting the record first really shouldn't be necessary but somehow it is, find out why!
+		store(record);
 	}
 	
 	/**
@@ -105,9 +120,9 @@ public final class DataAccess
 		return result;
 	}
 	
-	public List<Record> retrieveRecordsWithoutTransmission(final Schema schema)
+	public List<Record> retrieveRecordsWithoutTransmission(Schema schema)
 	{
-		return retrieveRecords(schema, null);
+		return retrieveRecords(schema, null); //will return records without a transmission
 	}
 	
 	/**
@@ -173,6 +188,7 @@ public final class DataAccess
 	 */
 	public void update(Project project)
 	{
+		db.delete(project); //TODO deleting the project first really shouldn't be necessary but somehow it is, find out why!
 		db.store(project);
 	}
 
@@ -219,7 +235,7 @@ public final class DataAccess
 	 * 
 	 * @return
 	 */
-	public void deleteProject(Project project)
+	public void delete(Project project)
 	{
 		db.delete(project);
 	}
@@ -318,4 +334,30 @@ public final class DataAccess
 			return t;
 		}		
 	}
+	
+	/**
+	 * @param id
+	 */
+	public void store(SMSTransmissionID id)
+	{
+		db.store(id);
+	}
+	
+	/**
+	 * @param id
+	 */
+	public void update(SMSTransmissionID id)
+	{
+		db.delete(id); //TODO deleting the id first really shouldn't be necessary but somehow it is, find out why!
+		db.store(id);
+	}
+	
+	public SMSTransmissionID retrieveTransmissionID()
+	{
+		List<SMSTransmissionID> result = db.query(SMSTransmissionID.class);
+		if(result.isEmpty())
+			return null;
+		return result.get(0);
+	}
+	
 }

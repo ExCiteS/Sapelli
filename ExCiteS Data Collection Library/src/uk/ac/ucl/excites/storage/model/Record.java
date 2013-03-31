@@ -21,8 +21,8 @@ public class Record
 	
 	protected Schema schema;
 	protected Object[] values;
-	protected Transmission transmission;
-
+	protected Transmission transmission = null;
+	
 	public Record(Schema schema)
 	{
 		if(schema == null)
@@ -55,7 +55,7 @@ public class Record
 	{
 		setValue(schema.getColumnIndex(column), value);
 	}
-	
+
 	protected void setValue(String columnName, Object value)
 	{
 		setValue(schema.getColumnIndex(columnName), value);

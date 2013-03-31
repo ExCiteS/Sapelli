@@ -54,7 +54,7 @@ public abstract class Message
 		
 	protected abstract byte[] getPayload();
 	
-	public abstract void send();
+	public abstract void send(SMSService smsService);
 	
 	public void setTransmission(SMSTransmission transmission)
 	{

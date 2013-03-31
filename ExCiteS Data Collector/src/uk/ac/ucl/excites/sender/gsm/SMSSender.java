@@ -2,7 +2,7 @@ package uk.ac.ucl.excites.sender.gsm;
 
 import java.util.ArrayList;
 
-import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.transmission.sms.SMSService;

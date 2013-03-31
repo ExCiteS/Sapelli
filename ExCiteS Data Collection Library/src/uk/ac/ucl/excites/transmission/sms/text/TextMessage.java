@@ -7,6 +7,7 @@ import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.transmission.sms.Message;
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
+import uk.ac.ucl.excites.transmission.sms.SMSService;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 
 /**
@@ -73,9 +74,9 @@ public class TextMessage extends Message
 	}
 
 	@Override
-	public void send()
+	public void send(SMSService smsService)
 	{
-		transmission.getSMSService().send(this);
+		smsService.send(this);
 	}
 
 }

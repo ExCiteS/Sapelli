@@ -6,7 +6,6 @@ package uk.ac.ucl.excites.transmission.sms;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -18,8 +17,8 @@ import uk.ac.ucl.excites.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
-import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.transmission.ModelProvider;
+import uk.ac.ucl.excites.transmission.TransmissionSender;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.compression.CompressorFactory;
@@ -33,14 +32,9 @@ import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException
 public abstract class SMSTransmission extends Transmission
 {
 	
-	static public final int ID_SIZE_BITS = Byte.SIZE;
-	static public final int INITIAL_ID = 0;
-	static public final IntegerRangeMapping ID_FIELD = IntegerRangeMapping.ForSize(INITIAL_ID, ID_SIZE_BITS);
-	
 	protected SMSAgent receiver;
 	protected SMSAgent sender;
-	protected transient SMSService smsService;
-	protected ArrayList<Message> parts;
+	protected SortedSet<Message> parts;
 	protected DateTime deliveredAt;
 	
 	protected Integer id = null;
@@ -76,7 +70,7 @@ public abstract class SMSTransmission extends Transmission
 		this.id = id;
 		
 		this.receiver = receiver;
-		this.parts = new ArrayList<Message>();
+		this.parts = new TreeSet<Message>(new Message.MessageComparator());
 	}
 	
 	/**
@@ -88,7 +82,7 @@ public abstract class SMSTransmission extends Transmission
 	public SMSTransmission(ModelProvider modelProvider)
 	{
 		super(modelProvider);
-		this.parts = new ArrayList<Message>();
+		this.parts = new TreeSet<Message>(new Message.MessageComparator());
 	}
 	
 	@Override
@@ -159,15 +153,13 @@ public abstract class SMSTransmission extends Transmission
 			if(!sender.equals(msg.getSender()))
 				throw new IllegalArgumentException("This message originates from another sender.");
 		}
-		if(!getSortedParts().contains(msg)) //check for duplicates
+		if(!parts.contains(msg)) //check for duplicates
 			parts.add(msg);
 	}
 	
-	public SortedSet<Message> getSortedParts()
+	public SortedSet<Message> getParts()
 	{
-		SortedSet<Message> sortedParts = new TreeSet<Message>(new Message.MessageComparator());
-		sortedParts.addAll(parts);
-		return sortedParts;
+		return parts;
 	}
 	
 	public int getTotalParts()
@@ -184,7 +176,7 @@ public abstract class SMSTransmission extends Transmission
 	{
 		if(parts.isEmpty())
 			return false;
-		return (getSortedParts().first().getTotalParts() == parts.size());
+		return (parts.first().getTotalParts() == parts.size());
 	}
 	
 	protected void prepareMessages() throws IOException, TransmissionCapacityExceededException
@@ -290,7 +282,7 @@ public abstract class SMSTransmission extends Transmission
 		}
 	}
 
-	public void send(SMSService smsService) throws Exception
+	public void send(TransmissionSender sender) throws Exception
 	{
 		//Some checks:
 		if(isSent())
@@ -300,9 +292,8 @@ public abstract class SMSTransmission extends Transmission
 		}
 		if(records.isEmpty())
 			throw new IllegalStateException("Transmission has no records. Add at least 1 record before sending the transmission .");
-		if(smsService == null)
-			throw new IllegalStateException("Please provide a non-null SMSService instance.");
-		this.smsService = smsService;
+		if(sender == null)
+			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
 		
 		//Prepare messages:
 		prepareMessages();
@@ -310,13 +301,7 @@ public abstract class SMSTransmission extends Transmission
 		//Send unsent messages one by one:
 		for(Message m : parts)
 			if(!m.isSent())
-				m.send();
-	}
-	
-	@Override
-	public void send() throws Exception
-	{
-		send(smsService);
+				m.send(sender.getSMSService());
 	}
 	
 	public void receive() throws Exception
@@ -330,7 +315,7 @@ public abstract class SMSTransmission extends Transmission
 		if(parts.isEmpty())
 			throw new IllegalStateException("No messages to decode.");
 		if(!isComplete())
-			throw new IllegalStateException("Transmission is incomplete, " + (getSortedParts().first().getTotalParts() - parts.size()) + " parts missing.");
+			throw new IllegalStateException("Transmission is incomplete, " + (parts.first().getTotalParts() - parts.size()) + " parts missing.");
 		
 		//Read messages:
 		readMessages();
@@ -542,16 +527,6 @@ public abstract class SMSTransmission extends Transmission
 		}
 		if(allReceived)
 			receivedAt = lastReceivedAt;		
-	}
-	
-	public void setSMSService(SMSService smsService)
-	{
-		this.smsService = smsService;
-	}
-	
-	public SMSService getSMSService()
-	{
-		return smsService;
 	}
 	
 	public float getCompressionRatio()

@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.sender;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.collector.CollectorApp;
 import uk.ac.ucl.excites.collector.R;
-import uk.ac.ucl.excites.collector.project.db.DataAccess;
+import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.sender.dropbox.DropboxSync;
@@ -26,7 +27,11 @@ import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.transmission.Transmission;
+import uk.ac.ucl.excites.transmission.TransmissionSender;
+import uk.ac.ucl.excites.transmission.http.HTTPClient;
+import uk.ac.ucl.excites.transmission.sms.SMSService;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
+import uk.ac.ucl.excites.transmission.sms.SMSTransmissionID;
 import uk.ac.ucl.excites.transmission.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.transmission.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.util.Debug;
@@ -47,7 +52,7 @@ import android.util.Log;
  * @author Michalis Vitos, mstevens
  * 
  */
-public class DataSenderService extends Service
+public class DataSenderService extends Service implements TransmissionSender
 {
 
 	// Statics-------------------------------------------------------
@@ -59,6 +64,7 @@ public class DataSenderService extends Service
 	private SignalMonitor gsmMonitor;
 	private List<DropboxSync> folderObservers;
 	private SMSSender smsSender;
+	private SMSTransmissionID smsTransmissionID;
 	private boolean isSending;
 	private int startMode; // indicates how to behave if the service is killed
 	private boolean allowRebind; // indicates whether onRebind should be used
@@ -83,6 +89,9 @@ public class DataSenderService extends Service
 
 		// DataAccess instance:
 		dao = ((CollectorApp) getApplication()).getDatabaseInstance();
+		
+		// ID generator for SMSTransmissions:
+		smsTransmissionID = dao.retrieveTransmissionID();
 		
 		// Folder observers:
 		folderObservers = new ArrayList<DropboxSync>();
@@ -241,23 +250,26 @@ public class DataSenderService extends Service
 				
 				for(Form f : p.getForms())
 				{		
-					Schema schema = f.getSchema();
-					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
+					Schema schema = f.getSchema();			
 					
+					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
 					Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version " + p.getVersion() + ").");
 					
 					//Decide on transmission mode
 					if(DataSenderPreferences.getSMSUpload(DataSenderService.this) && settings.isSMSUpload() && gsmMonitor.isInService()) //TODO do roaming check
 					{
-						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(settings, schema, records);
+						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records.iterator());
 						
 						//update records so associated transmissions are stored
-						for(Record r : records)
-							dao.store(r);
-						//store transmissions
+						//for(Record r : records)
+						//	dao.store(r);
+						//Store transmissions
 						for(Transmission t : smsTransmissions)
+						{
+							for(Record r : t.getRecords())
+								dao.store(r);
 							dao.store(t);
-						
+						}
 						//TODO fetch unsent existing smstransmissions from db
 						
 						//Send them
@@ -267,7 +279,7 @@ public class DataSenderService extends Service
 							try
 							{
 								Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + t.getCompressionRatio()*100 + "%), stored in " + t.getTotalParts() + " messages");
-								t.send(smsSender);
+								t.send(DataSenderService.this);
 							}
 							catch(Exception e)
 							{
@@ -277,17 +289,7 @@ public class DataSenderService extends Service
 						}
 					}
 					
-					dao.commit();
-					List<Record> records2 = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
-					for(Record r : records2)
-						Log.d(TAG, r.getTransmission() == null ? "null" : "not null");
-					if(records2.isEmpty())
-					Log.d(TAG, "no records without transmissions");
-					
 				}
-				
-				//update project to store settings:
-				dao.update(p);
 				
 				//commit changes to db:
 				dao.commit();
@@ -304,38 +306,42 @@ public class DataSenderService extends Service
 		}
 	}
 	
-	private List<SMSTransmission> generateSMSTransmissions(Settings settings, Schema schema, List<Record> records)
+	private List<SMSTransmission> generateSMSTransmissions(Project project, Schema schema, Iterator<Record> records)
 	{
+		//Settings:
+		Settings settings = project.getTransmissionSettings();
+		
 		//Columns to factor out:
 		Set<Column<?>> factorOut = new HashSet<Column<?>>();
 		factorOut.add(schema.getColumn(Form.COLUMN_DEVICE_ID));
 		
 		//Make transmissions: 
 		List<SMSTransmission> transmissions = new ArrayList<SMSTransmission>();
-		while(!records.isEmpty())
+		while(records.hasNext())
 		{
 			// Create transmission:			
 			SMSTransmission t = null;
 			switch(settings.getSMSMode())
 			{
-				case BINARY : t = new BinarySMSTransmission(schema, factorOut, settings.getSMSTransmissionID(), settings.getSMSRelay(), settings); break;
-				case TEXT : t = new TextSMSTransmission(schema, factorOut, settings.getSMSTransmissionID(), settings.getSMSRelay(), settings); break;
+				case BINARY : t = new BinarySMSTransmission(schema, factorOut, smsTransmissionID.getNewID(), settings.getSMSRelay(), settings); break;
+				case TEXT : t = new TextSMSTransmission(schema, factorOut, smsTransmissionID.getNewID(), settings.getSMSRelay(), settings); break;
 			}
-			//Add as many records as possible:
-			while(!records.isEmpty() && !t.isFull())
+			
+			// Update SMSTransmissionID:
+			dao.store(smsTransmissionID);
+			
+			// Add as many records as possible:
+			while(records.hasNext() && !t.isFull())
 			{
+				Record r = records.next();
 				try
 				{
-					t.addRecord(records.get(0));
+					t.addRecord(r);
 				}
 				catch(Exception e)
 				{
-					//TODO log to project logger
+					loggers.get(project).addLine("Error upon adding record: " + r.toString());
 					Log.e(TAG, "Error upon adding record", e);
-				}
-				finally
-				{
-					records.remove(0);
 				}
 			}
 			if(!t.isEmpty())
@@ -383,6 +389,19 @@ public class DataSenderService extends Service
 	{
 		// A client is binding to the service with bindService(),
 		// after onUnbind() has already been called
+	}
+
+	@Override
+	public SMSService getSMSService()
+	{
+		return smsSender;
+	}
+
+	@Override
+	public HTTPClient getHTTPClient()
+	{
+		// TODO return HTTPClient
+		return null;
 	}
 
 }

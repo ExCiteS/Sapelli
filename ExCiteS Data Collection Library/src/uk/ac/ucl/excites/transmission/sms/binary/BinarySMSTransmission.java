@@ -82,7 +82,7 @@ public class BinarySMSTransmission extends SMSTransmission
 	protected byte[] mergeAndDeserialise() throws IOException
 	{
 		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-		for(Message part : getSortedParts())
+		for(Message part : parts)
 			rawOut.write(((BinaryMessage) part).getPayload());
 		rawOut.flush();
 		rawOut.close();
