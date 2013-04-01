@@ -7,7 +7,7 @@
             android:summary="Check to make the phone go into Airplane Mode to preserve battery."
             android:title="Airplane Mode" />
         <EditTextPreference
-            android:defaultValue="15"
+            android:defaultValue="120"
             android:inputType="number"
             android:key="timeSchedule"
             android:summary="How often is the service checks for connectivity in minutes."
