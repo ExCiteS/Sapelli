@@ -4,11 +4,13 @@ import java.io.File;
 
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.util.CrashReporter;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.util.Debug;
 import android.app.Application;
 import android.content.res.Configuration;
+import android.os.Environment;
 
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
@@ -27,7 +29,8 @@ import com.db4o.ext.OldFormatException;
  */
 public class CollectorApp extends Application
 {
-	static private final String DATABASE_NAME = "ExCiteS.db4o";
+	private static final String DATABASE_NAME = "ExCiteS.db4o";
+	private static final String CRASH_FOLDER = "ExCiteS" + File.separator + "crash";
 
 	private volatile static ObjectContainer db;
 
@@ -44,6 +47,10 @@ public class CollectorApp extends Application
 		super.onCreate();
 		Debug.d("Called!");
 		
+		// Set up a CrashReporter to the ExCiteS/crash Folder
+		final String localPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + CRASH_FOLDER;
+		Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(localPath, getResources().getString(R.string.app_name)));
+
 		String dbFileName = getDatabasePath();
 		try
 		{
