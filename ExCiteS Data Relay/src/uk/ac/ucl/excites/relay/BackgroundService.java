@@ -106,18 +106,34 @@ public class BackgroundService extends Service
 
 		// Creates and executes a periodic action that becomes enabled first
 		// after the given initial delay, and subsequently with the given period
-		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new Runnable()
-		{
-			public void run()
-			{
-				isSending = true;
-				// Debug.d("-------------------- Run Every: " + TIME_SCHEDULE + " seconds!!!! ------------------------");
-				// Try to send all the Sms Objects
-				sendSmsObjects();
-			}
-		}, 0, TIME_SCHEDULE, TimeUnit.SECONDS);
+		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, TIME_SCHEDULE, TimeUnit.SECONDS);
 
 		return START_STICKY;
+	}
+
+	/**
+	 * Class to manage the sending of SMSes
+	 * 
+	 * @author Michalis Vitos
+	 * 
+	 */
+	private class SendingTask implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			try
+			{
+				// Try to send all the Sms Objects
+				isSending = true;
+				sendSmsObjects();
+			}
+			catch(Exception e)
+			{
+				Debug.e(e);
+				Thread.currentThread().getUncaughtExceptionHandler().uncaughtException(Thread.currentThread(), e);
+			}
+		}
 	}
 
 	/**
