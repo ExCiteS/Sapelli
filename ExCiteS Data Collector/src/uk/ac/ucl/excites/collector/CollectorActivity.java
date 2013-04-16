@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.WaitingView;
 import uk.ac.ucl.excites.collector.util.SDCard;
+import uk.ac.ucl.excites.util.Debug;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -108,20 +109,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			return;
 		}
 
-		// get project name and path from bundle
-		loadProjectInfo();
-
-		// Get DataAccess object
-		dao = ((CollectorApp) getApplication()).getDatabaseInstance(); // will be open
-
-		// Get Project object:
-		project = dao.retrieveProject(projectName, projectVersion);
-		if(project == null)
-		{ // show error (activity will be exited after used clicks OK in the dialog):
-			errorDialog("Could not find project: " + projectName + " (version " + projectVersion + ").", true).show();
-			return;
-		}
-
 		// UI setup:
 		requestWindowFeature(Window.FEATURE_NO_TITLE); // Remove title
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // Lock the orientation
@@ -138,15 +125,9 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		buttonView = new ButtonView(this);
 		buttonView.setId(BUTTONS_VIEW_ID);
 		rootLayout.addView(buttonView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-
-		// Set-up controller:
-		controller = new ProjectController(project, dao, this);
-
-		// Start project:
-		controller.startProject();
 	}
 
-	private void loadProjectInfo()
+	private void loadProject()
 	{
 		// Get extra info and check if there is a shortcut info there
 		Bundle extras = getIntent().getExtras();
@@ -163,6 +144,25 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			projectName = extras.getString(PARAMETER_PROJECT_NAME);
 			projectVersion = extras.getString(PARAMETER_PROJECT_VERSION);
 		}
+
+		Debug.d("projectName: " + projectName);
+
+		// Get DataAccess object
+		dao = ((CollectorApp) getApplication()).getDatabaseInstance(); // will be open
+
+		// Get Project object:
+		project = dao.retrieveProject(projectName, projectVersion);
+		if(project == null)
+		{ // show error (activity will be exited after used clicks OK in the dialog):
+			errorDialog("Could not find project: " + projectName + " (version " + projectVersion + ").", true).show();
+			return;
+		}
+
+		// Set-up controller:
+		controller = new ProjectController(project, dao, this);
+
+		// Start project:
+		controller.startProject();
 	}
 
 	/**
@@ -436,6 +436,9 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	{
 		// super:
 		super.onResume();
+
+		// Load the project
+		loadProject();
 
 		if(pausedForActivityResult)
 			pausedForActivityResult = false;
