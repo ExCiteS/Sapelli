@@ -145,7 +145,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			projectVersion = extras.getString(PARAMETER_PROJECT_VERSION);
 		}
 
-		Debug.d("projectName: " + projectName);
+		Debug.d("extras: " + extras);
 
 		// Get DataAccess object
 		dao = ((CollectorApp) getApplication()).getDatabaseInstance(); // will be open
@@ -456,6 +456,14 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 					pauseTimer.cancel();
 			}
 		}
+	}
+
+	@Override
+	protected void onNewIntent(Intent intent)
+	{
+		super.onNewIntent(intent);
+		// Change the current intent
+		setIntent(intent);
 	}
 
 	@Override
