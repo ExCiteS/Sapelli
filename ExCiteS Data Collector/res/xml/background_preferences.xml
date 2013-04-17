@@ -15,7 +15,7 @@
             android:defaultValue="120"
             android:inputType="number"
             android:key="timeSchedule"
-            android:summary="How often is the service checks for connectivity in minutes."
+            android:summary="How often does the service checks for connectivity in minutes."
             android:title="Time Schedule" />
         <EditTextPreference
             android:defaultValue="20"
@@ -28,12 +28,12 @@
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="smsUpload"
-            android:summary="Check to disable data sending via SMS."
+            android:summary="Check to enable data sending via SMS."
             android:title="Enable SMS sending" />
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="dropboxUpload"
-            android:summary="Check to upload data to the Dropbox."
+            android:summary="Check to upload data to a Dropbox account."
             android:title="Dropbox Upload" />
         <!--
              <EditTextPreference
