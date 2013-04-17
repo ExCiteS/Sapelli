@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.sender.util;
 
 import uk.ac.ucl.excites.sender.DataSenderService;
+import uk.ac.ucl.excites.util.Debug;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.content.Context;
@@ -14,6 +15,8 @@ import android.content.Intent;
  */
 public class ServiceChecker
 {
+
+	public static final String DATA_SENDER_SERVICE = DataSenderService.class.getName();
 
 	/**
 	 * Check if a Service is Running
@@ -40,11 +43,42 @@ public class ServiceChecker
 	 */
 	public static void restartActiveDataSender(Context context)
 	{
-		if(DataSenderService.class.getName() != null && ServiceChecker.isMyServiceRunning(context.getApplicationContext(), DataSenderService.class.getName()))
+		if(DATA_SENDER_SERVICE != null && isMyServiceRunning(context.getApplicationContext(), DATA_SENDER_SERVICE))
 		{
 			// Call the Service
 			Intent intent = new Intent(context, DataSenderService.class);
 			context.startService(intent);
+		}
+	}
+
+	/**
+	 * Method to start the Service if it is not already active
+	 */
+	public static void startService(Context context)
+	{
+		if(DATA_SENDER_SERVICE != null && !isMyServiceRunning(context.getApplicationContext(), DATA_SENDER_SERVICE))
+		{
+			// Call the Service
+			Intent intent = new Intent(context, DataSenderService.class);
+			context.startService(intent);
+		}
+	}
+
+	/**
+	 * Method to stop the service if it is already active
+	 * 
+	 * @param context
+	 */
+	public static void stopService(Context context)
+	{
+		while(isMyServiceRunning(context, DATA_SENDER_SERVICE))
+		{
+			// Terminate the service
+			Intent intent = new Intent(context, DataSenderService.class);
+			if(context.stopService(intent))
+				Debug.d("Service Stoped");
+			else
+				Debug.d("Cannot Stop the Service.");
 		}
 	}
 }

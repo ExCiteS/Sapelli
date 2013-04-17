@@ -50,11 +50,11 @@ public final class DeviceControl
 			intent.putExtra("state", !isInAirplaneMode);
 			context.sendBroadcast(intent);
 
-			Log.d(TAG, "Airplane mode is: " + (isInAirplaneMode ? "OFF" : "ON"));
+			Debug.d("Airplane mode is: " + (isInAirplaneMode ? "OFF" : "ON"));
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "Error upon toggling airplane more.", e);
+			Debug.e("Error upon toggling airplane more.", e);
 		}
 	}
 	

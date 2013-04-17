@@ -88,7 +88,7 @@ public class BackgroundActivity extends Activity
 			public void run()
 			{
 				// Get the Dates
-				SimpleDateFormat dateFormat = new SimpleDateFormat("KK:mm:ss dd-MM-yyyy", Locale.ENGLISH);
+				SimpleDateFormat dateFormat = new SimpleDateFormat(SmsDatabaseSQLite.DATE_FORMAT, Locale.ENGLISH);
 				String lastReceived = (dao.getLastReceived() != 0) ? dateFormat.format(new Date(dao.getLastReceived())) : "-";
 				String lastSent = (dao.getLastSent() != 0) ? dateFormat.format(new Date(dao.getLastSent())) : "-";
 
@@ -152,6 +152,11 @@ public class BackgroundActivity extends Activity
 
 			Intent logIntent = new Intent(mContext, LogActivity.class);
 			startActivity(logIntent);
+
+			break;
+		case R.id.menu_backup:
+
+			SmsDatabaseSQLite.copyDBtoSD(this);
 
 			break;
 		case R.id.menu_about:

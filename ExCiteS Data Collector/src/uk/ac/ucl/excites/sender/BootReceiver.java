@@ -2,7 +2,6 @@ package uk.ac.ucl.excites.sender;
 
 import java.util.Calendar;
 
-
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -16,8 +15,13 @@ public class BootReceiver extends BroadcastReceiver
 	public void onReceive(Context mContext, Intent mIntent)
 	{
 
-		Intent service = new Intent(mContext, DataSenderService.class);
-		PendingIntent mPendingIntent = PendingIntent.getService(mContext, 0, service, 0);
+		PendingIntent mPendingIntent = null;
+
+		if(DataSenderPreferences.getSenderEnabled(mContext))
+		{
+			Intent service = new Intent(mContext, DataSenderService.class);
+			mPendingIntent = PendingIntent.getService(mContext, 0, service, 0);
+		}
 
 		// Set up a calendar 2 minutes from now
 		Calendar mCalendar = Calendar.getInstance();

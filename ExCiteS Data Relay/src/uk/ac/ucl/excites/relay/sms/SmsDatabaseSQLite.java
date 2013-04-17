@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.relay.sms;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -7,11 +8,14 @@ import java.util.List;
 import java.util.Locale;
 
 import uk.ac.ucl.excites.relay.util.Debug;
+import uk.ac.ucl.excites.relay.util.FileHelpers;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Environment;
+import android.widget.Toast;
 
 /**
  * Class for creating and maintaining the database
@@ -34,6 +38,8 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 	private static final String KEY_MESSAGE = "message";
 	private static final String KEY_RECEIVED = "dateReceived";
 	private static final String KEY_SENT = "dateSent";
+
+	public static final String DATE_FORMAT = "KK:mm:ss a dd-MM-yyyy";
 
 	public SmsDatabaseSQLite(Context context)
 	{
@@ -318,9 +324,16 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 	public String dumpHtmlTable(String table, int limit)
 	{
 		SQLiteDatabase db = this.getWritableDatabase();
-
+		String selectQuery = null;
+		
 		// Print table header
-		String selectQuery = "SELECT * FROM " + table + " ORDER BY " + KEY_ID + " DESC LIMIT " + limit;
+		if(table.equals(TABLE_SMS))
+			selectQuery = "SELECT " + KEY_ID + " as 'SMS #', " + KEY_NUMBER + " as 'Phone Number', " + KEY_TIME + " as 'Time Sent', " + KEY_RECEIVED
+					+ " as 'Time Received at Relay', " + KEY_SENT + " as 'Time Sent to Server' FROM " + table + " ORDER BY "
+					+ KEY_ID + " DESC LIMIT " + limit;
+		else
+			selectQuery = "SELECT * FROM " + table + " ORDER BY " + KEY_ID + " DESC LIMIT " + limit;
+			
 		String output = "<h3>Log Result for table: " + table + "</h3>";
 		output += "<table border=1 style='font-size:10pt; white-space: nowrap;'>";
 
@@ -332,7 +345,6 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 		output += "<tr>";
 		for(String column : columnNames)
 		{
-
 			// Don't print the message as is binary
 			if(column.equals(KEY_MESSAGE))
 				continue;
@@ -354,11 +366,12 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 					continue;
 
 				output += "<td>";
-				SimpleDateFormat dateFormat = new SimpleDateFormat("KK:mm:ss dd-MM-yyyy", Locale.ENGLISH);
+				SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
 
-				if(column.equals(KEY_TIME) || column.equals(KEY_RECEIVED) || column.equals(KEY_SENT))
+				if(column.contains("Time"))
 				{
-					output += dateFormat.format(new Date(cursor.getLong((cursor.getColumnIndex(column)))));
+					final long date = cursor.getLong(cursor.getColumnIndex(column));
+					output += (date != 0) ? dateFormat.format(new Date(date)) : "-";
 					continue;
 				}
 
@@ -407,4 +420,28 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 
 		return text;
 	}
+
+	/**
+	 * Copy Database File to the destination
+	 * 
+	 * @param dstFilePath
+	 */
+	public static void copyDBtoSD(Context context, String dstFilePath)
+	{
+		String currentDb = context.getDatabasePath(DATABASE_NAME).getAbsolutePath();
+		FileHelpers.copyFile(currentDb, dstFilePath);
+		Toast.makeText(context, "Database was copied to folder: " + dstFilePath, Toast.LENGTH_LONG).show();
+	}
+
+	/**
+	 * Copy Database File to the SD Card
+	 * 
+	 * @param dstFilePath
+	 */
+	public static void copyDBtoSD(Context context)
+	{
+		String dstFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + DATABASE_NAME;
+		copyDBtoSD(context, dstFilePath);
+	}
+
 }

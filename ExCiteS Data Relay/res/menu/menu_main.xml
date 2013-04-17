@@ -9,12 +9,16 @@
         android:orderInCategory="101"
         android:title="@string/menu_log"/>
     <item
-        android:id="@+id/menu_about"
+        android:id="@+id/menu_backup"
         android:orderInCategory="102"
+        android:title="@string/menu_backup"/>
+    <item
+        android:id="@+id/menu_about"
+        android:orderInCategory="103"
         android:title="@string/menu_about"/>
     <item
         android:id="@+id/menu_exit"
-        android:orderInCategory="103"
+        android:orderInCategory="104"
         android:title="@string/menu_exit"/>
 
 </menu>

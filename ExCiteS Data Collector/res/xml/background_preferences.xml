@@ -2,7 +2,7 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
     <PreferenceCategory android:title="General" >
         <CheckBoxPreference
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="enableSender"
             android:summary="Enable data sending background service."
             android:title="Enable sender" />
@@ -15,7 +15,7 @@
             android:defaultValue="120"
             android:inputType="number"
             android:key="timeSchedule"
-            android:summary="How often is the service checks for connectivity in minutes."
+            android:summary="How often does the service checks for connectivity in minutes."
             android:title="Time Schedule" />
         <EditTextPreference
             android:defaultValue="20"
@@ -28,12 +28,12 @@
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="smsUpload"
-            android:summary="Check to disable data sending via SMS."
+            android:summary="Check to enable data sending via SMS."
             android:title="Enable SMS sending" />
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="dropboxUpload"
-            android:summary="Check to upload data to the Dropbox."
+            android:summary="Check to upload data to a Dropbox account."
             android:title="Dropbox Upload" />
         <!--
              <EditTextPreference
@@ -43,11 +43,4 @@
             android:title="Center Phone Number" />
         -->
     </PreferenceCategory>
-    <PreferenceCategory android:title="Start the service" >
-        <Preference
-            android:key="startButton"
-            android:summary="Click here to start the ExCiteS service"
-            android:title="Start the service" />
-    </PreferenceCategory>
-
 </PreferenceScreen>
