@@ -67,7 +67,7 @@ public class DataSenderService extends Service implements TransmissionSender
 	private SMSSender smsSender;
 	private SMSTransmissionID smsTransmissionID;
 	private boolean isSending;
-	private int startMode; // indicates how to behave if the service is killed
+	private int startMode = START_STICKY; // indicates how to behave if the service is killed
 	private boolean allowRebind; // indicates whether onRebind should be used
 	private DataAccess dao;
 	private Map<Project,Logger> loggers;
@@ -217,7 +217,7 @@ public class DataSenderService extends Service implements TransmissionSender
 			// Try to save any exception into the SD Card
 			try
 			{
-				Debug.d("----------------Runner!-------------");
+				Debug.d("-- SendingTask Started --");
 	
 				for(Entry<Project, Logger> pl : loggers.entrySet())
 					pl.getValue().addLine("Sending task");
@@ -226,13 +226,17 @@ public class DataSenderService extends Service implements TransmissionSender
 				if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
 				{
 					DeviceControl.toggleAirplaneMode(context);
-					
+					Debug.d("Phone was in AirplaneMode and try to get it out.");
+
 					//Wait for connectivity to become available
 					try
 					{	
 						Thread.sleep(POST_AIRPLANE_MODE_WAITING_TIME_MS);
 					}
-					catch(Exception ignore) {}
+					catch(Exception ignore)
+					{
+						Debug.e(ignore);
+					}
 				}
 				
 				//TODO Block until we have connectivity
@@ -346,9 +350,16 @@ public class DataSenderService extends Service implements TransmissionSender
 					{	//Wait for messages to be sent
 						Thread.sleep(PRE_AIRPLANE_MODE_WAITING_TIME_MS);
 					}
-					catch(Exception ignore) {}
+					catch(Exception ignore)
+					{
+						Debug.e(ignore);
+					}
+
 					DeviceControl.toggleAirplaneMode(context);
+					Debug.d("Phone must go in AirplaneMode and try to get it in.");
 				}
+
+				Debug.d("-- SendingTask Ended --");
 			}
 			catch(Exception e)
 			{

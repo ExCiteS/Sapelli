@@ -24,7 +24,6 @@ import uk.ac.ucl.excites.collector.util.SDCard;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sender.DataSenderPreferences;
-import uk.ac.ucl.excites.sender.DataSenderService;
 import uk.ac.ucl.excites.sender.util.ServiceChecker;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.util.FileHelpers;
@@ -162,8 +161,10 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		}
 
 		// Start the DataSenderService
-		Intent service = new Intent(this, DataSenderService.class);
-		startService(service);
+		if(DataSenderPreferences.getSenderEnabled(this))
+		{
+			ServiceChecker.startService(this);
+		}
 	}
 
 	@Override
