@@ -358,7 +358,8 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 
 				if(column.equals(KEY_TIME) || column.equals(KEY_RECEIVED) || column.equals(KEY_SENT))
 				{
-					output += dateFormat.format(new Date(cursor.getLong((cursor.getColumnIndex(column)))));
+					final long date = cursor.getLong(cursor.getColumnIndex(column));
+					output += (date != 0) ? dateFormat.format(new Date(date)) : "-";
 					continue;
 				}
 
