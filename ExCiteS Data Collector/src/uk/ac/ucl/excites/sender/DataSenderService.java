@@ -59,6 +59,7 @@ public class DataSenderService extends Service implements TransmissionSender
 	static private final String TAG = "DataSenderService";
 	static private final String LOG_PREFIX = "Sender_";
 	private static final long POST_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
+	private static final long PRE_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
 	
 	// Dynamics------------------------------------------------------
 	private SignalMonitor gsmMonitor;
@@ -109,9 +110,13 @@ public class DataSenderService extends Service implements TransmissionSender
 	public int onStartCommand(Intent intent, int flags, int startId)
 	{
 		// Get the preferences
+		boolean senderEnabled = DataSenderPreferences.getSenderEnabled(this);
 		final int timeSchedule = DataSenderPreferences.getTimeSchedule(this);
 		boolean dropboxUpload = DataSenderPreferences.getDropboxUpload(this);
 		boolean smsUpload = DataSenderPreferences.getSMSUpload(this);
+		
+		//if(!senderEnabled)
+		//	stopSelf();
 		
 		setServiceForeground(this);
 		
@@ -279,14 +284,25 @@ public class DataSenderService extends Service implements TransmissionSender
 					//TODO HTTPTransmissions
 					
 					//SMS
+					/*Log.d(TAG, "prefs sms upload: " + DataSenderPreferences.getSMSUpload(DataSenderService.this));
+					Log.d(TAG, "project sms upload: " + settings.isSMSUpload());
+					Log.d(TAG, "gsm service: " + gsmMonitor.isInService());
+					Log.d(TAG, "proj allow roaming: " + settings.isSMSAllowRoaming());
+					Log.d(TAG, "gsm service roaming: " + gsmMonitor.isRoaming());
+					Log.d(TAG, "roaming decision: " + (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()));*/
+					
 					if(DataSenderPreferences.getSMSUpload(DataSenderService.this) && settings.isSMSUpload() && gsmMonitor.isInService() && (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()))
 					{
+						Log.d(TAG, "Attempting SMS transmission generation");
+						
 						//Generate transmission(s)
 						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records.iterator());
 						
 						//Store transmission(s) & update records so associated transmission is stored
 						for(Transmission t : smsTransmissions)
 						{
+							Log.d(TAG, "Transmission " + ((SMSTransmission) t).getID());
+							
 							for(Record r : t.getRecords())
 								dao.store(r);
 							dao.store(t);
@@ -322,7 +338,14 @@ public class DataSenderService extends Service implements TransmissionSender
 			
 			//Go back to airplane more if needed
 			if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))
+			{
+				try
+				{	//Wait for messages to be sent
+					Thread.sleep(PRE_AIRPLANE_MODE_WAITING_TIME_MS);
+				}
+				catch(Exception ignore) {}
 				DeviceControl.toggleAirplaneMode(context);
+			}
 		}
 	}
 	

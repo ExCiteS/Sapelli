@@ -58,6 +58,18 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	}
 
 	/**
+	 * Check if the data sender should run
+	 * 
+	 * @param mContext
+	 * @return
+	 */
+	public static boolean getSenderEnabled(Context mContext)
+	{
+		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+		return sharedPreferences.getBoolean("enableSender", false);
+	}
+	
+	/**
 	 * Check if the phone should get in Airplane Mode
 	 * 
 	 * @param mContext
@@ -146,6 +158,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	public static void printPreferences(Context context)
 	{
 		Log.d(TAG, "------------ Preferences: -------------");
+		Log.d(TAG, "Sender enabled: " + (getSenderEnabled(context) ? "true" : "false"));
 		Log.d(TAG, "AirplaneMode: " + (getAirplaneMode(context) ? "true" : "false"));
 		//Log.d(TAG, "CenterPhoneNumber: " + getCenterPhoneNumber(mContext));
 		Log.d(TAG, "TimeSchedule: " + getTimeSchedule(context));
