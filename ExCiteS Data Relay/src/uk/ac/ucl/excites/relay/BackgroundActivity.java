@@ -154,6 +154,11 @@ public class BackgroundActivity extends Activity
 			startActivity(logIntent);
 
 			break;
+		case R.id.menu_backup:
+
+			SmsDatabaseSQLite.copyDBtoSD(this);
+
+			break;
 		case R.id.menu_about:
 
 			Intent aboutActivity = new Intent(mContext, About.class);

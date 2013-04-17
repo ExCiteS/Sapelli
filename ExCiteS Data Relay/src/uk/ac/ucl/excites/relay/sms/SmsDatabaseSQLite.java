@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.relay.sms;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -7,11 +8,14 @@ import java.util.List;
 import java.util.Locale;
 
 import uk.ac.ucl.excites.relay.util.Debug;
+import uk.ac.ucl.excites.relay.util.FileHelpers;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Environment;
+import android.widget.Toast;
 
 /**
  * Class for creating and maintaining the database
@@ -408,4 +412,28 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 
 		return text;
 	}
+
+	/**
+	 * Copy Database File to the destination
+	 * 
+	 * @param dstFilePath
+	 */
+	public static void copyDBtoSD(Context context, String dstFilePath)
+	{
+		String currentDb = context.getDatabasePath(DATABASE_NAME).getAbsolutePath();
+		FileHelpers.copyFile(currentDb, dstFilePath);
+		Toast.makeText(context, "Database was copied to folder: " + dstFilePath, Toast.LENGTH_LONG).show();
+	}
+
+	/**
+	 * Copy Database File to the SD Card
+	 * 
+	 * @param dstFilePath
+	 */
+	public static void copyDBtoSD(Context context)
+	{
+		String dstFilePath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + DATABASE_NAME;
+		copyDBtoSD(context, dstFilePath);
+	}
+
 }
