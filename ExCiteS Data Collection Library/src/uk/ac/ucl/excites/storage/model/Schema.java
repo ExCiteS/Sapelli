@@ -84,7 +84,10 @@ public class Schema
 	
 	public Column getColumn(String name)
 	{
-		return columns.get(columnNameToIndex.get(name));
+		Integer idx = columnNameToIndex.get(name);
+		if(idx == null)
+			return null;
+		return columns.get(idx);
 	}
 	
 	public List<Column> getColumns()

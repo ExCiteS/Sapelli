@@ -8,12 +8,6 @@
         android:showAsAction="always"
         android:title="@string/sender_settings_menuitem"/>
     <item
-        android:id="@+id/copy_db_menuitem"
-        android:icon="@android:drawable/ic_menu_save"
-        android:onClick="copyDBtoSD"
-        android:showAsAction="always"
-        android:title="@string/copy_db_menuitem"/>
-    <item
         android:id="@+id/statistics_menuitem"
         android:icon="@android:drawable/ic_menu_info_details"
         android:onClick="showStatistics"
@@ -27,9 +21,27 @@
         android:title="@string/create_shortcut"/>
     <item
         android:id="@+id/remove_shortcut"
-        android:icon="@android:drawable/ic_menu_directions"
+        android:icon="@android:drawable/ic_menu_delete"
         android:onClick="showStatistics"
         android:showAsAction="always"
         android:title="@string/remove_shortcut"/>
+    <item
+        android:id="@+id/export_records_menuitem"
+        android:icon="@android:drawable/ic_menu_save"
+        android:onClick="exportRecords"
+        android:showAsAction="always"
+        android:title="@string/export_records_menuitem"/>
+    <item
+        android:id="@+id/import_records_menuitem"
+        android:icon="@drawable/ic_menu_archive"
+        android:onClick="importRecords"
+        android:showAsAction="always"
+        android:title="@string/import_records_menuitem"/>
+    <item
+        android:id="@+id/copy_db_menuitem"
+        android:icon="@android:drawable/ic_menu_save"
+        android:onClick="copyDBtoSD"
+        android:showAsAction="always"
+        android:title="@string/copy_db_menuitem"/>
 
 </menu>

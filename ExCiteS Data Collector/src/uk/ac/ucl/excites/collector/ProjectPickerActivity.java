@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
+import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
@@ -26,14 +27,20 @@ import uk.ac.ucl.excites.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sender.DataSenderPreferences;
 import uk.ac.ucl.excites.sender.DataSenderService;
 import uk.ac.ucl.excites.sender.util.ServiceChecker;
+import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.storage.xml.RecordsExporter;
+import uk.ac.ucl.excites.storage.xml.RecordsImporter;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.util.FileHelpers;
+import uk.ac.ucl.excites.util.TimeUtils;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -68,9 +75,8 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	static private final String TAG = "ProjectPickerActivity";
 
 	static private final String XML_FILE_EXTENSION = "xml";
-	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
 	static private final String DOWNLOADS_FOLDER = "Downloads" + File.separatorChar;
-	static private final String DB4O_DUMP_NAME = "DatabaseDump_";
+	static private final String DB4O_DUMP_NAME = "DatabaseDump";
 	static private final String DB4O_DUMP_EXTENSION = "db4o";
 
 	// SHORTCUT ACTIONS
@@ -82,10 +88,10 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	public static final String SHORTCUT_PROJECT_VERSION = "Shortcut_Project_Version";
 	public static final String SHORTCUT_PROJECT_ICON = "Shortcut_Project_Icon";
 
-	public static final int RETURN_BROWSE = 1;
+	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
+	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
 
 	// DYNAMICS-------------------------------------------------------
-	private String excitesFolderPath;
 	private DataAccess dao;
 
 	// UI
@@ -94,6 +100,8 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	private Button runBtn;
 	private Button removeBtn;
 	private MenuItem senderSettingsItem;
+	private MenuItem exportRecordsItem;
+	private MenuItem importRecordsItem;
 	private MenuItem copyDBItem;
 	private MenuItem statisticsItem;
 	private MenuItem createShortcutItem;
@@ -106,19 +114,15 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		super.onCreate(savedInstanceState);
 		
 		// Check if there is an SD Card
-		if(!SDCard.isExternalStorageWritable())
+		if(!SDCard.isExternalStorageWritable() || !FileHelpers.createFolder(((CollectorApp) getApplication()).getExcitesFolderPath()))
 		{ // Inform the user and close the application
-			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
+			errorDialog("ExCiteS needs write access to the external storage in order to function. Please insert an SD card and restart the application.", true).show();
 			return;
 		}
 
-		// ExCiteS folder
-		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separatorChar + EXCITES_FOLDER;
-
 		// DataAccess instance:
-		// TODO
 		dao = ((CollectorApp) getApplication()).getDatabaseInstance();
-
+		
 		// Set-up UI...
 		setTitle("ExCiteS Project Picker");
 		// Hide soft keyboard on create
@@ -175,6 +179,12 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		senderSettingsItem = menu.findItem(R.id.sender_settings_menuitem);
 		if(senderSettingsItem != null)
 			senderSettingsItem.setOnMenuItemClickListener(this);
+		exportRecordsItem = menu.findItem(R.id.export_records_menuitem);
+		if(exportRecordsItem != null)
+			exportRecordsItem.setOnMenuItemClickListener(this);
+		importRecordsItem = menu.findItem(R.id.import_records_menuitem);
+		if(importRecordsItem != null)
+			importRecordsItem.setOnMenuItemClickListener(this);
 		copyDBItem = menu.findItem(R.id.copy_db_menuitem);
 		if(copyDBItem != null)
 			copyDBItem.setOnMenuItemClickListener(this);
@@ -195,6 +205,10 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	{
 		if(item == senderSettingsItem)
 			return openSenderSettings(item);
+		else if(item == exportRecordsItem)
+			return exportRecords(item);
+		else if(item == importRecordsItem)
+			return importRecords(item);
 		else if(item == copyDBItem)
 			return copyDBtoSD(item);
 		else if(item == statisticsItem)
@@ -217,10 +231,84 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		startActivity(new Intent(getBaseContext(), DataSenderPreferences.class));
 		return true;
 	}
+	
+	public boolean exportRecords(MenuItem item)
+	{
+		//TODO make async
+		final RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao);
+		final Project p = getSelectedProject();
+		if(p != null)
+		{
+			AlertDialog dialog = new AlertDialog.Builder(this)
+			.setMessage("Do you want to export the records of the selected project [" + p.toString() + "], or of all projects (including deleted ones)?")
+			.setPositiveButton("Selected", new OnClickListener()
+			{
+				@Override
+				public void onClick(DialogInterface dialog, int which)
+				{
+					ArrayList<Schema> schemas = new ArrayList<Schema>();
+					for(Form f : p.getForms())
+						schemas.add(f.getSchema());
+					try
+					{
+						exporter.export(schemas, p.toString());
+					}
+					catch(Exception e)
+					{
+						errorDialog("Could not export records: " + e.getMessage(), false);
+						Log.e(TAG, "Could not export records", e);
+					}
+				}
+			})
+			.setNegativeButton("All", new OnClickListener()
+			{
+				@Override
+				public void onClick(DialogInterface dialog, int which)
+				{
+					try
+					{
+						exporter.exportAll();
+					}
+					catch(Exception e)
+					{
+						errorDialog("Could not export records: " + e.getMessage(), false);
+						Log.e(TAG, "Could not export records", e);
+					}
+				}
+			})
+			.create();
+			dialog.show();
+		}
+		else
+			try
+			{
+				exporter.exportAll();
+			}
+			catch(Exception e)
+			{
+				errorDialog("Could not export records: " + e.getMessage(), false);
+				Log.e(TAG, "Could not export records", e);
+			}
+		return true;
+	}
+	
+	public boolean importRecords(MenuItem item)
+	{
+		Intent intent = new Intent(getBaseContext(), FileChooserActivity.class);
+		// Start from "/sdcard"
+		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(Environment.getExternalStorageDirectory().getPath()));
+		// set file filter for .xml or .excites
+		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + ")$");
+		startActivityForResult(intent, RETURN_BROWSE_FOR_RECORD_IMPORT);
+		return true;
+	}
 
 	public boolean copyDBtoSD(MenuItem item)
-	{	
-		((CollectorApp) getApplication()).backupDatabase(excitesFolderPath + DB4O_DUMP_NAME + System.currentTimeMillis() + "." + DB4O_DUMP_EXTENSION);
+	{
+		String exportFolderPath = ((CollectorApp) getApplication()).getDumpFolderPath();
+		if(!FileHelpers.createFolder(exportFolderPath))
+		throw new IllegalArgumentException("Export folder (" + exportFolderPath + ") does not exist and could not be created!");
+		((CollectorApp) getApplication()).backupDatabase(exportFolderPath + DB4O_DUMP_NAME + "_" + TimeUtils.getTimestampForFileName() + "." + DB4O_DUMP_EXTENSION);
 		return true;
 	}
 
@@ -238,7 +326,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(Environment.getExternalStorageDirectory().getPath()));
 		// set file filter for .xml or .excites
 		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + "|" + ExCiteSFileLoader.EXCITES_FILE_EXTENSION + ")$");
-		startActivityForResult(intent, RETURN_BROWSE);
+		startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
 	}
 
 	/**
@@ -361,7 +449,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			if(SDCard.isExternalStorageWritable())
 			{
 				// Use /mnt/sdcard/ExCiteS/ as the basePath:
-				ExCiteSFileLoader loader = new ExCiteSFileLoader(excitesFolderPath);
+				ExCiteSFileLoader loader = new ExCiteSFileLoader(((CollectorApp) getApplication()).getExcitesFolderPath() + File.separator);
 				Project loadedProject = loader.load(excitesFile);
 				//Show parser warnings if needed:
 				showParserWarnings(loader.getParserWarnings());
@@ -589,18 +677,52 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		if(resultCode == Activity.RESULT_OK)
 			switch(requestCode)
 			{
-			// File browse dialog:
-			case RETURN_BROWSE:
+			// File browse dialog for project loading:
+			case RETURN_BROWSE_FOR_PROJECT_LOAD :
+				// Get the result file path
+				// A list of files will always return, if selection mode is single, the list contains one file
+				@SuppressWarnings("unchecked")
+				List<LocalFile> projFiles = (List<LocalFile>) data.getSerializableExtra(FileChooserActivity._Results);
+				if(!projFiles.isEmpty())
+				{
+					String fileSource = projFiles.get(0).getAbsoluteFile().toString();
+					enterURL.setText(fileSource);
+					// Move the cursor to the end
+					enterURL.setSelection(fileSource.length());
+				}
+				break;
+			// File browse dialog for record importing:
+			case RETURN_BROWSE_FOR_RECORD_IMPORT :
 				// Get the result file path
 				// A list of files will always return, if selection mode is single, the list contains one file
 				@SuppressWarnings("unchecked")
 				List<LocalFile> files = (List<LocalFile>) data.getSerializableExtra(FileChooserActivity._Results);
-				for(File f : files)
+				if(!files.isEmpty())
 				{
-					String fileSource = f.getAbsoluteFile().toString();
-					enterURL.setText(fileSource);
-					// Move the cursor to the end
-					enterURL.setSelection(fileSource.length());
+					try
+					{	//TODO make import & storage async	
+						//Import:
+						RecordsImporter importer = new RecordsImporter(dao);
+						List<Record> records = importer.importFrom(files.get(0).getAbsoluteFile());
+						
+						//Show parser warnings if needed:
+						showParserWarnings(importer.getWarnings());
+						
+						/*//TEST CODE (export again to compare with imported file):
+						RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao);
+						exporter.export(records);*/
+						
+						//Store the records:
+						//for(Record r : records)
+						//	dao.store(r); //TODO avoid duplicates!
+						
+						//User feedback:
+						infoDialog("Succesfully imported " + records.size() + " records.").show(); //TODO report skipped duplicates
+					}
+					catch(Exception e)
+					{
+						errorDialog("Error upon importing records: " + e.getMessage(), false).show();
+					}
 				}
 				break;
 			// QR Reader
@@ -696,7 +818,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 
 			this.downloadUrl = downloadUrl;
 			// Download file in folder /Download/timestamp-filename
-			downloadFolder = new File(excitesFolderPath + DOWNLOADS_FOLDER);
+			downloadFolder = new File(((CollectorApp) getApplication()).getExcitesFolderPath() + DOWNLOADS_FOLDER);
 			FileHelpers.createFolder(downloadFolder);
 			downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 

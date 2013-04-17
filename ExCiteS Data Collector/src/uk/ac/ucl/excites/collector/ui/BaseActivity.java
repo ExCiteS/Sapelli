@@ -11,7 +11,7 @@ import android.os.Bundle;
 /**
  * Abstract super class for our activities.
  * 
- * Provides an errorDialog method.
+ * Provides dialog methods.
  * 
  * @author mstevens
  *
@@ -58,4 +58,20 @@ public abstract class BaseActivity extends Activity
 		}).create();
 		return warning;
 	}
+	
+	/**
+	 * dialog showing info
+	 * 
+	 * @param message
+	 * @return the dialog
+	 */
+	protected AlertDialog infoDialog(String message)
+	{
+		AlertDialog warning = new AlertDialog.Builder(this).setTitle("Info").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
+		{
+			public void onClick(DialogInterface dialog, int whichButton) { /*does nothing*/ }
+		}).create();
+		return warning;
+	}
+	
 }

@@ -4,11 +4,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-
-import android.util.Log;
+import java.nio.charset.Charset;
 
 /**
- * Text-based file writer class (code borrowed from NoiseTube Mobile)
+ * Text-based file writer class (some code borrowed from NoiseTube Mobile; Licensed under LGPL v2.1)
  * 
  * @author mstevens
  * 
@@ -16,10 +15,8 @@ import android.util.Log;
 public class FileWriter
 {
 
-	protected final static String TAG = "FileWriter";
-
 	protected String fullPath;
-	protected String characterEncoding = null;
+	protected Charset charset; 
 
 	protected OutputStreamWriter writer = null;
 
@@ -29,7 +26,7 @@ public class FileWriter
 
 	public FileWriter(String fullPath)
 	{
-		this(fullPath, null); // will use system default char encoding
+		this(fullPath, Charset.defaultCharset()); // will use system default char encoding
 	}
 
 	/**
@@ -40,8 +37,19 @@ public class FileWriter
 	 */
 	public FileWriter(String fullPath, String characterEncoding)
 	{
+		this(fullPath, Charset.forName(characterEncoding));
+	}
+	
+	/**
+	 * We create this writer, providing the full filepath (e.g. "/my/path/myfile.raw")
+	 * 
+	 * @param fullPath
+	 *            The full filepath (e.g. "/my/path/myfile.raw")
+	 */
+	public FileWriter(String fullPath, Charset charset)
+	{
 		this.fullPath = fullPath;
-		this.characterEncoding = characterEncoding;
+		this.charset = charset;
 		this.folder = FileHelpers.getFolder(FileHelpers.getFolderPath(fullPath));
 	}
 
@@ -85,7 +93,7 @@ public class FileWriter
 			}
 			catch(Exception e)
 			{
-				Log.d(TAG, "Could not write to file", e);
+				
 				close();
 			}
 		}
@@ -102,7 +110,8 @@ public class FileWriter
 			}
 			catch(Exception e)
 			{
-				Log.d(TAG, "Could not write to file", e);
+				System.err.println("FileWriter: Could not write to file: " + e.getMessage());
+				e.printStackTrace(System.err);
 				close();
 			}
 		}
@@ -119,14 +128,6 @@ public class FileWriter
 	public String getFullPath()
 	{
 		return fullPath;
-	}
-
-	/**
-	 * @return the characterEncoding
-	 */
-	public String getCharacterEncoding()
-	{
-		return characterEncoding;
 	}
 
 	@Override
@@ -190,9 +191,7 @@ public class FileWriter
 			File file = new File(folder, FileHelpers.getFileName(fullPath));
 
 			// Open file:
-			writer = ((characterEncoding == null || characterEncoding.equals("")) ?
-						new OutputStreamWriter(new FileOutputStream(file, seekToEOF)) :
-						new OutputStreamWriter(new FileOutputStream(file, seekToEOF), characterEncoding));
+			writer = new OutputStreamWriter(new FileOutputStream(file, seekToEOF), charset);
 		}
 		else
 			throw new Exception("Could not open FileWriter");

@@ -38,4 +38,13 @@ public final class StringUtils
 		return string.getBytes(UTF8).length;
 	}
 	
+	static public String addTabsFront(String string, int tabs)
+	{
+		StringBuffer bff = new StringBuffer();
+		for(int t = 0; t < tabs; t++)
+			bff.append('\t');
+		bff.append(string);
+		return bff.toString();
+	}
+	
 }

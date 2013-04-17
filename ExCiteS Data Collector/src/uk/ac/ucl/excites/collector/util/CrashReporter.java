@@ -8,13 +8,14 @@ import java.io.Writer;
 import java.lang.Thread.UncaughtExceptionHandler;
 
 import uk.ac.ucl.excites.util.FileHelpers;
+import uk.ac.ucl.excites.util.TimeUtils;
 
 /**
  * Simple Class to Log App Crashes to a file<br>
  * in order to use call: <br>
  * <code>Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(localPath, getResources().getString(R.string.app_name)))</code>
  * 
- * @author Michalis Vitos
+ * @author Michalis Vitos, mstevens
  * 
  */
 public class CrashReporter implements UncaughtExceptionHandler
@@ -36,18 +37,14 @@ public class CrashReporter implements UncaughtExceptionHandler
 
 	public void uncaughtException(Thread t, Throwable e)
 	{
-		String timestamp = String.valueOf(System.currentTimeMillis());
 		final Writer result = new StringWriter();
 		final PrintWriter printWriter = new PrintWriter(result);
 		e.printStackTrace(printWriter);
 		String stacktrace = result.toString();
 		printWriter.close();
-		String filename = namePrefix + "_" + timestamp + ".stacktrace";
-
+		String filename = namePrefix + "_" + TimeUtils.getTimestampForFileName() + ".stacktrace";
 		if(localPath != null)
-		{
 			writeToFile(stacktrace, filename);
-		}
 
 		defaultUEH.uncaughtException(t, e);
 	}

@@ -29,7 +29,8 @@
     <string name="show_statistics">Show</string>
     <string name="app_usage_statistics">Statistics on App usage</string>
     <string name="statistics_menuitem">Statistics</string>
-    
+    <string name="export_records_menuitem">Export records</string>
+    <string name="import_records_menuitem">Import records</string>
 
     <string-array name="phones_array">
         <item>Michalis</item>

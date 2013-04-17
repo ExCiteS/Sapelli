@@ -81,7 +81,7 @@ public abstract class Column<T>
 		}
 	}
 	
-	public String retrieveAndPrintValue(Record record)
+	public String retrieveValueAsString(Record record)
 	{
 		T value = retrieveValue(record);
 		if(value != null)

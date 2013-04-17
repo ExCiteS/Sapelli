@@ -82,6 +82,19 @@ public final class DataAccess
 	}
 	
 	/**
+	 * Retrieve all Records
+	 * 
+	 * @return
+	 */
+	public List<Record> retrieveRecords()
+	{
+		List<Record> result = db.query(Record.class);
+		for(Record r : result)
+			db.activate(r, ACTIVATION_DEPTH);
+		return result;
+	}
+	
+	/**
 	 * Retrieve Records by their Schema
 	 * 
 	 * @param schema

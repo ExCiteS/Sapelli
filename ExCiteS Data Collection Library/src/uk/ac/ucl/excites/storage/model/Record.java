@@ -11,6 +11,8 @@ import java.util.Set;
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.transmission.Transmission;
+import uk.ac.ucl.excites.util.StringUtils;
+import uk.ac.ucl.excites.util.XMLUtils;
 
 /**
  * @author mstevens
@@ -18,6 +20,11 @@ import uk.ac.ucl.excites.transmission.Transmission;
  */
 public class Record
 {
+	
+	static public final String TAG_RECORD = "Record";
+	
+	static public final String ATTRIBUTE_FORM_SCHEMA_ID = "schema-id";
+	static public final String ATTRIBUTE_FORM_SCHEMA_VERSION = "schema-version";
 	
 	protected Schema schema;
 	protected Object[] values;
@@ -176,8 +183,28 @@ public class Record
 	{
 		StringBuffer bff = new StringBuffer();
 		for(Column<?> c : schema.getColumns())
-			bff.append(c.getName() + ": " + c.retrieveAndPrintValue(this) + "|");
+			bff.append(c.getName() + ": " + c.retrieveValueAsString(this) + "|");
 		return bff.toString();
+	}
+	
+	public String toXML(int tabs)
+	{
+		//TODO transmission/sent
+		StringBuilder bldr = new StringBuilder();
+		bldr.append(StringUtils.addTabsFront("<" + TAG_RECORD + " " + ATTRIBUTE_FORM_SCHEMA_ID + "=\"" + schema.getID() + "\" " + ATTRIBUTE_FORM_SCHEMA_VERSION + "=\"" + schema.getVersion() + "\">\n", tabs));
+		for(Column<?> c : schema.getColumns())
+		{
+			String columnName = XMLUtils.escapeCharacters(c.getName());
+			String valueStr = c.retrieveValueAsString(this);
+			if(valueStr != null)
+				bldr.append(StringUtils.addTabsFront("<" + columnName + ">" + XMLUtils.escapeCharacters(valueStr) + "</" + columnName + ">\n", tabs + 1));
+			else
+			{
+				bldr.append(StringUtils.addTabsFront(XMLUtils.comment(columnName + " is null") + "\n", tabs + 1));
+			}
+		}
+		bldr.append(StringUtils.addTabsFront("</" + TAG_RECORD + ">", tabs));
+		return bldr.toString();
 	}
 	
 }

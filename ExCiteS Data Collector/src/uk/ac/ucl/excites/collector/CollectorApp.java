@@ -29,10 +29,15 @@ import com.db4o.ext.OldFormatException;
  */
 public class CollectorApp extends Application
 {
-	private static final String DATABASE_NAME = "ExCiteS.db4o";
-	private static final String CRASH_FOLDER = "ExCiteS" + File.separator + "crash";
+	
+	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
+	static private final String DATABASE_NAME = "ExCiteS.db4o";
+	static private final String DUMP_FOLDER = "Dumps" + File.separator;
 
-	private volatile static ObjectContainer db;
+	static private volatile ObjectContainer db;
+	
+	private String excitesFolderPath;
+	private String dumpFolderPath;
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig)
@@ -47,9 +52,12 @@ public class CollectorApp extends Application
 		super.onCreate();
 		Debug.d("Called!");
 		
+		// Paths
+		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + EXCITES_FOLDER;
+		dumpFolderPath =  excitesFolderPath + DUMP_FOLDER;
+		
 		// Set up a CrashReporter to the ExCiteS/crash Folder
-		final String localPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + CRASH_FOLDER;
-		Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(localPath, getResources().getString(R.string.app_name)));
+		Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(dumpFolderPath, getResources().getString(R.string.app_name)));
 
 		String dbFileName = getDatabasePath();
 		try
@@ -69,6 +77,22 @@ public class CollectorApp extends Application
 		{
 			Debug.e("Unable to open database.", e);
 		}
+	}
+	
+	/**
+	 * @return the excitesFolderPath
+	 */
+	public String getExcitesFolderPath()
+	{
+		return excitesFolderPath;
+	}
+
+	/**
+	 * @return the dumpFolderPath
+	 */
+	public String getDumpFolderPath()
+	{
+		return dumpFolderPath;
 	}
 
 	@Override
