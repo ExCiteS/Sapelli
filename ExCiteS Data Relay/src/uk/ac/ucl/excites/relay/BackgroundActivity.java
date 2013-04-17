@@ -2,6 +2,7 @@ package uk.ac.ucl.excites.relay;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 import uk.ac.ucl.excites.relay.sms.SmsDatabaseSQLite;
 import uk.ac.ucl.excites.relay.util.Debug;
@@ -86,19 +87,14 @@ public class BackgroundActivity extends Activity
 			@Override
 			public void run()
 			{
-				// Get Totals
-				int currentSms = dao.retrieveSmsObjects().size();
-				int totalReceived = dao.getTotal();
-				int totalSent = totalReceived - currentSms;
-
 				// Get the Dates
-				SimpleDateFormat dateFormat = new SimpleDateFormat("KK:mm:ss dd-MM-yyyy");
-				String lastReceived = (RelayApp.getLastReceivedSMS() != 0) ? dateFormat.format(new Date(RelayApp.getLastReceivedSMS())) : "-";
-				String lastSent = (RelayApp.getLastSentSMS() != 0) ? dateFormat.format(new Date(RelayApp.getLastSentSMS())) : "-";
+				SimpleDateFormat dateFormat = new SimpleDateFormat("KK:mm:ss dd-MM-yyyy", Locale.ENGLISH);
+				String lastReceived = (dao.getLastReceived() != 0) ? dateFormat.format(new Date(dao.getLastReceived())) : "-";
+				String lastSent = (dao.getLastSent() != 0) ? dateFormat.format(new Date(dao.getLastSent())) : "-";
 
 				// Set the UI
-				totalSmsReceived.setText(Integer.toString(totalReceived));
-				totalSmsSent.setText(Integer.toString(totalSent));
+				totalSmsReceived.setText(Integer.toString(dao.getTotal()));
+				totalSmsSent.setText(Integer.toString(dao.getSent()));
 				lastSmsReceived.setText(lastReceived);
 				lastSmsSent.setText(lastSent);
 			}
@@ -150,6 +146,12 @@ public class BackgroundActivity extends Activity
 
 			Intent settingsActivity = new Intent(mContext, Preferences.class);
 			startActivity(settingsActivity);
+
+			break;
+		case R.id.menu_log:
+
+			Intent logIntent = new Intent(mContext, LogActivity.class);
+			startActivity(logIntent);
 
 			break;
 		case R.id.menu_about:

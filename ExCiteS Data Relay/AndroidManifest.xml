@@ -37,6 +37,8 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name="uk.ac.ucl.excites.relay.LogActivity" >
+        </activity>
         <activity android:name="uk.ac.ucl.excites.relay.Preferences" >
         </activity>
         <activity android:name="uk.ac.ucl.excites.relay.About" >
