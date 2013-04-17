@@ -324,9 +324,16 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 	public String dumpHtmlTable(String table, int limit)
 	{
 		SQLiteDatabase db = this.getWritableDatabase();
-
+		String selectQuery = null;
+		
 		// Print table header
-		String selectQuery = "SELECT * FROM " + table + " ORDER BY " + KEY_ID + " DESC LIMIT " + limit;
+		if(table.equals(TABLE_SMS))
+			selectQuery = "SELECT " + KEY_ID + " as 'SMS #', " + KEY_NUMBER + " as 'Phone Number', " + KEY_TIME + " as 'Time Sent', " + KEY_RECEIVED
+					+ " as 'Time Received at Relay', " + KEY_SENT + " as 'Time Sent to Server' FROM " + table + " ORDER BY "
+					+ KEY_ID + " DESC LIMIT " + limit;
+		else
+			selectQuery = "SELECT * FROM " + table + " ORDER BY " + KEY_ID + " DESC LIMIT " + limit;
+			
 		String output = "<h3>Log Result for table: " + table + "</h3>";
 		output += "<table border=1 style='font-size:10pt; white-space: nowrap;'>";
 
@@ -338,7 +345,6 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 		output += "<tr>";
 		for(String column : columnNames)
 		{
-
 			// Don't print the message as is binary
 			if(column.equals(KEY_MESSAGE))
 				continue;
@@ -362,7 +368,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 				output += "<td>";
 				SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
 
-				if(column.equals(KEY_TIME) || column.equals(KEY_RECEIVED) || column.equals(KEY_SENT))
+				if(column.contains("Time"))
 				{
 					final long date = cursor.getLong(cursor.getColumnIndex(column));
 					output += (date != 0) ? dateFormat.format(new Date(date)) : "-";
