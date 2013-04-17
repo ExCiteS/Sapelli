@@ -106,18 +106,34 @@ public class BackgroundService extends Service
 
 		// Creates and executes a periodic action that becomes enabled first
 		// after the given initial delay, and subsequently with the given period
-		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new Runnable()
-		{
-			public void run()
-			{
-				isSending = true;
-				// Debug.d("-------------------- Run Every: " + TIME_SCHEDULE + " seconds!!!! ------------------------");
-				// Try to send all the Sms Objects
-				sendSmsObjects();
-			}
-		}, 0, TIME_SCHEDULE, TimeUnit.SECONDS);
+		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, TIME_SCHEDULE, TimeUnit.SECONDS);
 
 		return START_STICKY;
+	}
+
+	/**
+	 * Class to manage the sending of SMSes
+	 * 
+	 * @author Michalis Vitos
+	 * 
+	 */
+	private class SendingTask implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			try
+			{
+				// Try to send all the Sms Objects
+				isSending = true;
+				sendSmsObjects();
+			}
+			catch(Exception e)
+			{
+				Debug.e(e);
+				Thread.currentThread().getUncaughtExceptionHandler().uncaughtException(Thread.currentThread(), e);
+			}
+		}
 	}
 
 	/**
@@ -125,7 +141,7 @@ public class BackgroundService extends Service
 	 */
 	private void sendSmsObjects()
 	{
-		List<SmsObject> smsList = dao.retrieveSmsObjects();
+		List<SmsObject> smsList = dao.getUnsentSms();
 
 		String response = null;
 		for(SmsObject sms : smsList)
@@ -138,7 +154,7 @@ public class BackgroundService extends Service
 					response = null;
 					response = postSmsObject(sms);
 					if(response != null)
-						Debug.d("POST sms: " + sms.getId() + " and the response is: " + response);
+						Debug.d("POST sms: " + sms.getId() + " and the response is: " + (response.length() > 60 ? response.substring(0, 50) : response));
 					else
 						Debug.d("An error has occured upon sending the SMS.");
 				}
@@ -161,9 +177,8 @@ public class BackgroundService extends Service
 				// Check if the post was successful and delete the SMS from the db
 				if(idPart == sms.getId())
 				{
-					// Set the LastSentSMS
-					RelayApp.setLastSentSMS(System.currentTimeMillis());
-					dao.deleteSmsObject(sms);
+					// Update the sms table
+					dao.updateSent(sms);
 				}
 			}
 		}
@@ -296,14 +311,11 @@ public class BackgroundService extends Service
 						receivedSms.setMessageTimestamp(msgs[i].getTimestampMillis());
 						receivedSms.setMessageData(Base64.encodeToString(msgs[i].getUserData(), Base64.CRLF));
 						
-						// Set the LastReceivedSMS
-						RelayApp.setLastReceivedSMS(msgs[i].getTimestampMillis());
-
-						Debug.d("Received SMS and it's content hash is:"
+						Debug.d("Received SMS and it's content hash is: "
 								+ BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(msgs[i].getUserData()).toByteArray()));
 
 						// Store the SmsObject to the db
-						dao.storeSmsObject(receivedSms);
+						dao.storeSms(receivedSms);
 					}
 				}
 

@@ -214,139 +214,149 @@ public class DataSenderService extends Service implements TransmissionSender
 		
 		public void run()
 		{
-			Debug.d("----------------Runner!-------------");
-
-			for(Entry<Project, Logger> pl : loggers.entrySet())
-				pl.getValue().addLine("Sending task");
-			
-			//Come out of airplane more if needed
-			if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
+			// Try to save any exception into the SD Card
+			try
 			{
-				DeviceControl.toggleAirplaneMode(context);
+				Debug.d("----------------Runner!-------------");
+	
+				for(Entry<Project, Logger> pl : loggers.entrySet())
+					pl.getValue().addLine("Sending task");
 				
-				//Wait for connectivity to become available
-				try
-				{	
-					Thread.sleep(POST_AIRPLANE_MODE_WAITING_TIME_MS);
-				}
-				catch(Exception ignore) {}
-			}
-			
-			//TODO Block until we have connectivity
-			
-//			int tempCount = 0;
-//			while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
-//			{
-//				Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
-//				// Wait for 1 a second on every attempt
-//				try
-//				{
-//					Thread.sleep(1000);
-//				}
-//				catch(InterruptedException e)
-//				{
-//					if(Constants.DEBUG_LOG)
-//						Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
-//				}
-//				tempCount++;
-//			}
-			
-			//Generate transmissions...
-			for(Project p : dao.retrieveProjects())
-			{
-				Settings settings = p.getTransmissionSettings();
-				
-				//Log signal strength & roaming:
-				loggers.get(p).addLine("Current cellular signal strength: " + gsmMonitor.getSignalStrength());
-				loggers.get(p).addLine("Device is " + (gsmMonitor.isRoaming() ? "" : "not ") + "currently roaming.");
-				
-				Debug.d("Device is " + (gsmMonitor.isRoaming() ? "" : "not ") + "currently roaming");
-				
-				for(Form f : p.getForms())
-				{		
-					Schema schema = f.getSchema();			
+				//Come out of airplane more if needed
+				if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
+				{
+					DeviceControl.toggleAirplaneMode(context);
 					
-					List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
-					Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version " + p.getVersion() + ").");
-					
-					if(records.isEmpty())
-					{
-						loggers.get(p).addLine("No records to send for form " + f.getName());
-						continue;
+					//Wait for connectivity to become available
+					try
+					{	
+						Thread.sleep(POST_AIRPLANE_MODE_WAITING_TIME_MS);
 					}
-					else
-						loggers.get(p).addLine(records.size() + " records to send for form " + f.getName());
+					catch(Exception ignore) {}
+				}
+				
+				//TODO Block until we have connectivity
+				
+	//			int tempCount = 0;
+	//			while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
+	//			{
+	//				Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
+	//				// Wait for 1 a second on every attempt
+	//				try
+	//				{
+	//					Thread.sleep(1000);
+	//				}
+	//				catch(InterruptedException e)
+	//				{
+	//					if(Constants.DEBUG_LOG)
+	//						Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
+	//				}
+	//				tempCount++;
+	//			}
+				
+				//Generate transmissions...
+				for(Project p : dao.retrieveProjects())
+				{
+					Settings settings = p.getTransmissionSettings();
 					
-					//Decide on transmission mode
-					//TODO
+					//Log signal strength & roaming:
+					loggers.get(p).addLine("Current cellular signal strength: " + gsmMonitor.getSignalStrength());
+					loggers.get(p).addLine("Device is " + (gsmMonitor.isRoaming() ? "" : "not ") + "currently roaming.");
 					
-					//HTTP over GPRS/EDGE/3G/4G or Wi-Fi
-					//TODO HTTPTransmissions
+					Debug.d("Device is " + (gsmMonitor.isRoaming() ? "" : "not ") + "currently roaming");
 					
-					//SMS
-					/*Log.d(TAG, "prefs sms upload: " + DataSenderPreferences.getSMSUpload(DataSenderService.this));
-					Log.d(TAG, "project sms upload: " + settings.isSMSUpload());
-					Log.d(TAG, "gsm service: " + gsmMonitor.isInService());
-					Log.d(TAG, "proj allow roaming: " + settings.isSMSAllowRoaming());
-					Log.d(TAG, "gsm service roaming: " + gsmMonitor.isRoaming());
-					Log.d(TAG, "roaming decision: " + (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()));*/
-					
-					if(DataSenderPreferences.getSMSUpload(DataSenderService.this) && settings.isSMSUpload() && gsmMonitor.isInService() && (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()))
-					{
-						Log.d(TAG, "Attempting SMS transmission generation");
+					for(Form f : p.getForms())
+					{		
+						Schema schema = f.getSchema();			
 						
-						//Generate transmission(s)
-						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records.iterator());
+						List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
+						Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version " + p.getVersion() + ").");
 						
-						//Store transmission(s) & update records so associated transmission is stored
-						for(Transmission t : smsTransmissions)
+						if(records.isEmpty())
 						{
-							Log.d(TAG, "Transmission " + ((SMSTransmission) t).getID());
+							loggers.get(p).addLine("No records to send for form " + f.getName());
+							continue;
+						}
+						else
+							loggers.get(p).addLine(records.size() + " records to send for form " + f.getName());
+						
+						//Decide on transmission mode
+						//TODO
+						
+						//HTTP over GPRS/EDGE/3G/4G or Wi-Fi
+						//TODO HTTPTransmissions
+						
+						//SMS
+						/*Log.d(TAG, "prefs sms upload: " + DataSenderPreferences.getSMSUpload(DataSenderService.this));
+						Log.d(TAG, "project sms upload: " + settings.isSMSUpload());
+						Log.d(TAG, "gsm service: " + gsmMonitor.isInService());
+						Log.d(TAG, "proj allow roaming: " + settings.isSMSAllowRoaming());
+						Log.d(TAG, "gsm service roaming: " + gsmMonitor.isRoaming());
+						Log.d(TAG, "roaming decision: " + (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()));*/
+						
+						if(DataSenderPreferences.getSMSUpload(DataSenderService.this) && settings.isSMSUpload() && gsmMonitor.isInService() && (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()))
+						{
+							Log.d(TAG, "Attempting SMS transmission generation");
 							
-							for(Record r : t.getRecords())
-								dao.store(r);
-							dao.store(t);
+							//Generate transmission(s)
+							List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records.iterator());
+							
+							//Store transmission(s) & update records so associated transmission is stored
+							for(Transmission t : smsTransmissions)
+							{
+								Log.d(TAG, "Transmission " + ((SMSTransmission) t).getID());
+								
+								for(Record r : t.getRecords())
+									dao.store(r);
+								dao.store(t);
+							}
+							
+							//TODO fetch unsent existing smstransmissions from db
+							
+							//Send transmission(s)
+							//TODO check signal again?
+							for(SMSTransmission t : smsTransmissions)
+							{
+								try
+								{
+									loggers.get(p).addLine("Sending SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalParts() + " messages");
+									Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalParts() + " messages");
+									t.send(DataSenderService.this);
+								}
+								catch(Exception e)
+								{
+									loggers.get(p).addLine("Error upon sending SMSTransmission: " + e.getMessage());
+									Log.e(TAG, "error on sending smstransmission", e);
+								}
+							}
 						}
 						
-						//TODO fetch unsent existing smstransmissions from db
-						
-						//Send transmission(s)
-						//TODO check signal again?
-						for(SMSTransmission t : smsTransmissions)
-						{
-							try
-							{
-								loggers.get(p).addLine("Sending SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalParts() + " messages");
-								Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalParts() + " messages");
-								t.send(DataSenderService.this);
-							}
-							catch(Exception e)
-							{
-								loggers.get(p).addLine("Error upon sending SMSTransmission: " + e.getMessage());
-								Log.e(TAG, "error on sending smstransmission", e);
-							}
-						}
 					}
 					
+					//commit changes to db:
+					dao.commit();
 				}
 				
-				//commit changes to db:
-				dao.commit();
-			}
-			
-			isSending = true;
-			
-			//Go back to airplane more if needed
-			if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))
-			{
-				try
-				{	//Wait for messages to be sent
-					Thread.sleep(PRE_AIRPLANE_MODE_WAITING_TIME_MS);
+				isSending = true;
+				
+				//Go back to airplane more if needed
+				if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))
+				{
+					try
+					{	//Wait for messages to be sent
+						Thread.sleep(PRE_AIRPLANE_MODE_WAITING_TIME_MS);
+					}
+					catch(Exception ignore) {}
+					DeviceControl.toggleAirplaneMode(context);
 				}
-				catch(Exception ignore) {}
-				DeviceControl.toggleAirplaneMode(context);
+			}
+			catch(Exception e)
+			{
+				Debug.e(e);
+				Thread.currentThread().getUncaughtExceptionHandler().uncaughtException(Thread.currentThread(), e);
 			}
 		}
+			
 	}
 	
 	private List<SMSTransmission> generateSMSTransmissions(Project project, Schema schema, Iterator<Record> records)

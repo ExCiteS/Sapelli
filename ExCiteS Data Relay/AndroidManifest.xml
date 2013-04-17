@@ -17,6 +17,7 @@
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.WRITE_SMS" />
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <uses-sdk
         android:minSdkVersion="10"
@@ -35,6 +36,8 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity android:name="uk.ac.ucl.excites.relay.LogActivity" >
         </activity>
         <activity android:name="uk.ac.ucl.excites.relay.Preferences" >
         </activity>

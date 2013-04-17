@@ -1,7 +1,10 @@
 package uk.ac.ucl.excites.relay.sms;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import uk.ac.ucl.excites.relay.util.Debug;
 import android.content.ContentValues;
@@ -11,7 +14,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 /**
- * Class for creating and maintining the database
+ * Class for creating and maintaining the database
  * 
  * @author Michalis Vitos
  * 
@@ -19,15 +22,18 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class SmsDatabaseSQLite extends SQLiteOpenHelper
 {
 	// Define Database Parameters
-	private static final int DATABASE_VERSION = 1;
+	private static final int DATABASE_VERSION = 2;
 	private static final String DATABASE_NAME = "ExCiteS_Relay_SQLite";
-	private static final String TABLE_SMS = "Sms";
+	public static final String TABLE_SMS = "Sms";
+	private static final String TABLE_SMS_TMP = "Sms_tmp";
 
 	// Sms Table Columns names
 	private static final String KEY_ID = "id";
 	private static final String KEY_NUMBER = "number";
 	private static final String KEY_TIME = "timestamp";
 	private static final String KEY_MESSAGE = "message";
+	private static final String KEY_RECEIVED = "dateReceived";
+	private static final String KEY_SENT = "dateSent";
 
 	public SmsDatabaseSQLite(Context context)
 	{
@@ -38,7 +44,8 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 	@Override
 	public void onCreate(SQLiteDatabase db)
 	{
-		String CREATE_SMS_TABLE = "CREATE TABLE " + TABLE_SMS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + KEY_NUMBER + " TEXT, " + KEY_TIME + " INTEGER, " + KEY_MESSAGE + " TEXT" + ") ";
+		String CREATE_SMS_TABLE = "CREATE TABLE " + TABLE_SMS + "(" + KEY_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " + KEY_NUMBER + " TEXT, " + KEY_TIME
+				+ " INTEGER, " + KEY_MESSAGE + " TEXT, " + KEY_RECEIVED + " TEXT, " + KEY_SENT + " TEXT" + ") ";
 		Debug.d("SQL: " + CREATE_SMS_TABLE);
 		db.execSQL(CREATE_SMS_TABLE);
 	}
@@ -47,19 +54,37 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
 	{
-		// Drop older table if existed
-		db.execSQL("DROP TABLE IF EXISTS " + TABLE_SMS);
+		Debug.d("Old is: " + oldVersion + " New is: " + newVersion);
+
+		// Change the name of the old table
+		db.execSQL("ALTER TABLE " + TABLE_SMS + " RENAME TO " + TABLE_SMS_TMP + "_" + oldVersion);
 
 		// Create tables again
 		onCreate(db);
+
+		// Copy files from to Sms_tmp_1 to the current Sms table
+		// This is used to from version 1 to 2
+		String COPY_SMS_TABLE = "INSERT INTO " + TABLE_SMS + " SELECT NULL, " + KEY_NUMBER + ", " + KEY_TIME + ", " + KEY_MESSAGE + ", NULL, NULL FROM "
+				+ TABLE_SMS_TMP + "_1";
+		Debug.d("SQL: " + COPY_SMS_TABLE);
+		db.execSQL(COPY_SMS_TABLE);
+		// TODO Make sure that everything is copied correctly before deleting the old table
+		// Drop the Old Table
+		// db.execSQL("DROP TABLE IF EXISTS " + TABLE_SMS_TMP + "_1");
+
+		db.close();
 	}
 
 	/**
 	 * All CRUD(Create, Read, Update, Delete) Operations
 	 */
 
-	// Store a SMS Object
-	public void storeSmsObject(SmsObject sms)
+	/**
+	 * Stores an SmsObject to the db
+	 * 
+	 * @param sms
+	 */
+	public void storeSms(SmsObject sms)
 	{
 		SQLiteDatabase db = this.getWritableDatabase();
 
@@ -68,6 +93,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 		values.put(KEY_TIME, sms.getMessageTimestamp());
 		String data = sms.getMessageData();
 		values.put(KEY_MESSAGE, data);
+		values.put(KEY_RECEIVED, System.currentTimeMillis());
 
 		// Inserting Row
 		long id = db.insert(TABLE_SMS, null, values);
@@ -78,60 +104,84 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 		Debug.d("Stored: " + sms.toString());
 	}
 
-	// Retrieve all SMS
-	public List<SmsObject> retrieveSmsObjects()
+	/**
+	 * Update the Sent info
+	 * 
+	 * @param sms
+	 */
+	public void updateSent(SmsObject sms)
+	{
+		long id = sms.getId();
+
+		SQLiteDatabase db = this.getWritableDatabase();
+		db.execSQL("UPDATE " + TABLE_SMS + " SET " + KEY_SENT + "=" + System.currentTimeMillis() + " WHERE " + KEY_ID + "=" + id);
+		db.close();
+	}
+
+	/**
+	 * Retrieve all SmsObjects
+	 * 
+	 * @return
+	 */
+	public List<SmsObject> getUnsentSms()
 	{
 		List<SmsObject> smsList = new ArrayList<SmsObject>();
 
-		String selectQuery = "SELECT * FROM " + TABLE_SMS;
+		String selectQuery = "SELECT * FROM " + TABLE_SMS + " WHERE " + KEY_SENT + " IS NULL";
 
 		SQLiteDatabase db = this.getWritableDatabase();
 		Cursor cursor = db.rawQuery(selectQuery, null);
 
-		// looping through all rows and adding to list
-		if (cursor.moveToFirst())
+		// looping through all rows
+		while(cursor.moveToNext())
 		{
-			do
-			{
-				SmsObject sms = new SmsObject();
-				sms.setId(cursor.getLong(0));
-				sms.setTelephoneNumber(cursor.getString(1));
-				sms.setMessageTimestamp(cursor.getLong(2));
-				sms.setMessageData(cursor.getString(3));
-				smsList.add(sms);
-
-			} while (cursor.moveToNext());
+			SmsObject sms = new SmsObject();
+			sms.setId(cursor.getLong(0));
+			sms.setTelephoneNumber(cursor.getString(1));
+			sms.setMessageTimestamp(cursor.getLong(2));
+			sms.setMessageData(cursor.getString(3));
+			smsList.add(sms);
 		}
 
+		db.close();
 		Debug.d("Found: " + smsList.size());
 
 		return smsList;
 	}
 
-	public void deleteSmsObject(SmsObject sms)
+	protected void deleteSms(SmsObject sms)
 	{
 		long id = sms.getId();
 
 		SQLiteDatabase db = this.getWritableDatabase();
-		db.delete(TABLE_SMS, KEY_ID + " = ?", new String[]
-		{ String.valueOf(id) });
+		db.delete(TABLE_SMS, KEY_ID + " = ?", new String[] { String.valueOf(id) });
 		db.close();
 	}
 
-	public void deleteSmsObjects(List<SmsObject> smsList)
+	/**
+	 * Delete a list of Sms Objects
+	 * 
+	 * @param smsList
+	 */
+	protected void deleteSms(List<SmsObject> smsList)
 	{
-		for (SmsObject sms : smsList)
-			deleteSmsObject(sms);
+		for(SmsObject sms : smsList)
+			deleteSms(sms);
 	}
 
-	public void deleteAllSmsObjects()
+	/**
+	 * ATTENTION: Delete all Sms Objects
+	 * 
+	 * @param smsList
+	 */
+	protected void deleteAllSms()
 	{
 
 		SQLiteDatabase db = this.getWritableDatabase();
 
 		db.delete(TABLE_SMS, null, null);
 		// print the size
-		retrieveSmsObjects();
+		getUnsentSms();
 	}
 
 	/**
@@ -140,7 +190,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 	 * @param number
 	 *            of SMS messages to add
 	 */
-	public void populateDb(int number)
+	protected void populateDb(int number)
 	{
 		for(int i = 0; i < number; i++)
 		{
@@ -149,7 +199,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 			String messageData = "This is a SMS message # " + i;
 
 			SmsObject sms = new SmsObject(telephoneNumber, messageTimestamp, messageData);
-			storeSmsObject(sms);
+			storeSms(sms);
 		}
 	}
 
@@ -161,14 +211,200 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 	public int getTotal()
 	{
 		SQLiteDatabase db = this.getWritableDatabase();
-		int total = 0;
 
-		String query = "SELECT * FROM SQLITE_SEQUENCE";
+		String query = "SELECT * FROM " + TABLE_SMS;
 		Cursor cursor = db.rawQuery(query, null);
-		if(cursor.moveToFirst() && cursor.getString(cursor.getColumnIndex("name")).equals(TABLE_SMS))
+
+		cursor.moveToNext();
+
+		return cursor.getCount();
+	}
+
+	/**
+	 * Get the total number of SMS sent by the Relay
+	 * 
+	 * @return
+	 */
+	public int getSent()
+	{
+		SQLiteDatabase db = this.getWritableDatabase();
+
+		String query = "SELECT * FROM " + TABLE_SMS + " WHERE " + KEY_SENT + " IS NOT NULL";
+		Cursor cursor = db.rawQuery(query, null);
+
+		cursor.moveToNext();
+		cursor.getCount();
+
+		return cursor.getCount();
+	}
+
+	/**
+	 * Get the timestamp of the last received message
+	 * 
+	 * @return
+	 */
+	public long getLastReceived()
+	{
+		SQLiteDatabase db = this.getWritableDatabase();
+
+		long lastReceived = 0;
+
+		String query = "SELECT " + KEY_RECEIVED + " FROM " + TABLE_SMS + " WHERE " + KEY_ID + " = (SELECT MAX(" + KEY_ID + ") FROM " + TABLE_SMS + ");";
+		Cursor cursor = db.rawQuery(query, null);
+
+		while(cursor.moveToNext())
 		{
-			total = cursor.getInt(cursor.getColumnIndex("seq"));
+			lastReceived = cursor.getLong(cursor.getColumnIndex(KEY_RECEIVED));
 		}
-		return total;
+
+		return lastReceived;
+	}
+
+	/**
+	 * Get the timestamp of the last sent message
+	 * 
+	 * @return
+	 */
+	public long getLastSent()
+	{
+		SQLiteDatabase db = this.getWritableDatabase();
+
+		long lastSent = 0;
+
+		String query = "SELECT " + KEY_SENT + " FROM " + TABLE_SMS + " WHERE " + KEY_ID + " = (SELECT MAX(" + KEY_ID + ") FROM " + TABLE_SMS + " WHERE "
+				+ KEY_SENT + " IS NOT NULL);";
+		Cursor cursor = db.rawQuery(query, null);
+
+		while(cursor.moveToNext())
+		{
+			lastSent = cursor.getLong(cursor.getColumnIndex(KEY_SENT));
+		}
+
+		return lastSent;
+	}
+
+	/**
+	 * Get all the Tables of the db
+	 * 
+	 * @return
+	 */
+	public List<String> getAllTables()
+	{
+		final ArrayList<String> tables = new ArrayList<String>();
+
+		SQLiteDatabase db = this.getWritableDatabase();
+		Cursor cursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
+
+		while(cursor.moveToNext())
+		{
+			String tmpTable = cursor.getString(0);
+			if(tmpTable.equalsIgnoreCase("android_metadata") || tmpTable.equalsIgnoreCase("sqlite_sequence"))
+				continue;
+			else
+				tables.add(tmpTable);
+		}
+
+		db.close();
+
+		return tables;
+	}
+
+	/**
+	 * Dump a table
+	 * 
+	 * @param table
+	 * @param rowLength
+	 */
+	public String dumpHtmlTable(String table, int limit)
+	{
+		SQLiteDatabase db = this.getWritableDatabase();
+
+		// Print table header
+		String selectQuery = "SELECT * FROM " + table + " ORDER BY " + KEY_ID + " DESC LIMIT " + limit;
+		String output = "<h3>Log Result for table: " + table + "</h3>";
+		output += "<table border=1 style='font-size:10pt; white-space: nowrap;'>";
+
+		Cursor cursor = db.rawQuery(selectQuery, null);
+
+		// Print column names
+		String[] columnNames = cursor.getColumnNames();
+
+		output += "<tr>";
+		for(String column : columnNames)
+		{
+
+			// Don't print the message as is binary
+			if(column.equals(KEY_MESSAGE))
+				continue;
+
+			output += "<th>";
+			output += column;
+			output += "</th>";
+		}
+		output += "</tr>";
+
+		// looping through all rows and print the content
+		while(cursor.moveToNext())
+		{
+			output += "<tr>";
+			for(String column : columnNames)
+			{
+				// Don't print the message as is binary
+				if(column.equals(KEY_MESSAGE))
+					continue;
+
+				output += "<td>";
+				SimpleDateFormat dateFormat = new SimpleDateFormat("KK:mm:ss dd-MM-yyyy", Locale.ENGLISH);
+
+				if(column.equals(KEY_TIME) || column.equals(KEY_RECEIVED) || column.equals(KEY_SENT))
+				{
+					output += dateFormat.format(new Date(cursor.getLong((cursor.getColumnIndex(column)))));
+					continue;
+				}
+
+				output += cursor.getString(cursor.getColumnIndex(column));
+				output += "</td>";
+			}
+			output += "</tr>";
+		}
+
+		output += "</table>";
+		db.close();
+
+		return output;
+	}
+
+	/**
+	 * Dump all tables
+	 */
+	public void dumpDb()
+	{
+		List<String> tables = getAllTables();
+
+		for(String table : tables)
+		{
+			dumpHtmlTable(table, 2000);
+		}
+	}
+
+	/**
+	 * Return the string with a padding
+	 * 
+	 * @param string
+	 * @param pad
+	 * @param left
+	 * @return
+	 */
+	public static String addPad(String text, String pad, int length, String side)
+	{
+		for(int i = text.length(); i < length; i++)
+		{
+			if(side.equalsIgnoreCase("right"))
+				text = text + pad;
+			else if(side.equalsIgnoreCase("left"))
+				text = pad + text;
+		}
+
+		return text;
 	}
 }
