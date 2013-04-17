@@ -39,6 +39,8 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 	private static final String KEY_RECEIVED = "dateReceived";
 	private static final String KEY_SENT = "dateSent";
 
+	public static final String DATE_FORMAT = "KK:mm:ss a dd-MM-yyyy";
+
 	public SmsDatabaseSQLite(Context context)
 	{
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -358,7 +360,7 @@ public class SmsDatabaseSQLite extends SQLiteOpenHelper
 					continue;
 
 				output += "<td>";
-				SimpleDateFormat dateFormat = new SimpleDateFormat("KK:mm:ss dd-MM-yyyy", Locale.ENGLISH);
+				SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT, Locale.ENGLISH);
 
 				if(column.equals(KEY_TIME) || column.equals(KEY_RECEIVED) || column.equals(KEY_SENT))
 				{
