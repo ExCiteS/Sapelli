@@ -2,10 +2,9 @@ package uk.ac.ucl.excites.sender.dropbox;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sender.util.Constants;
+import uk.ac.ucl.excites.util.Debug;
 import android.content.Context;
 import android.os.FileObserver;
-import android.util.Log;
 
 import com.dropbox.sync.android.DbxAccountManager;
 import com.dropbox.sync.android.DbxFile;
@@ -20,7 +19,7 @@ import com.dropbox.sync.android.DbxPath;
  */
 public class DropboxSync extends FileObserver
 {
-	private static final int flags = FileObserver.CREATE | FileObserver.DELETE;
+	private static final int flags = FileObserver.CREATE | FileObserver.DELETE | FileObserver.MOVED_TO;
 	private String absolutePath;
 
 	// Dropbox Variables
@@ -35,7 +34,9 @@ public class DropboxSync extends FileObserver
 	public DropboxSync(Context context, File folder)
 	{
 		super(folder.getAbsolutePath(), flags);
-		absolutePath = folder.getAbsolutePath();
+		absolutePath = folder.getAbsolutePath() + File.separator;
+
+		Debug.d("Set up Dropbox Observer to folder: " + absolutePath);
 
 		// Setup Dropbox
 		try
@@ -47,6 +48,7 @@ public class DropboxSync extends FileObserver
 				// Set up Dropbox
 				mDbxAcctMgr = mDropbox.getDropboxManager();
 				dbxFs = DbxFileSystem.forAccount(mDbxAcctMgr.getLinkedAccount());
+				Debug.d("Dropbox has been linked.");
 			}
 			else
 			{
@@ -55,13 +57,15 @@ public class DropboxSync extends FileObserver
 		}
 		catch(Exception e)
 		{
-			Log.e(Constants.TAG, "DropboxSync() error: " + e.toString());
+			Debug.e("DropboxSync() error: ", e);
 		}
 	}
 
 	@Override
 	public synchronized void onEvent(int event, String path)
 	{
+
+		Debug.d("Event: " + event + " and path: " + path);
 
 		// Make sure the path is not null
 		if(path == null)
@@ -76,7 +80,12 @@ public class DropboxSync extends FileObserver
 		switch(event)
 		{
 		case FileObserver.CREATE:
-			Log.i(Constants.TAG, "File: " + fileToUpload + " was created.");
+			Debug.d("File: " + fileToUpload + " was created.");
+			uploadFile(fileToUpload);
+			break;
+
+		case FileObserver.MOVED_TO:
+			Debug.d("File: " + fileToUpload + " was moved to.");
 			uploadFile(fileToUpload);
 			break;
 
@@ -95,7 +104,8 @@ public class DropboxSync extends FileObserver
 			// Path to the Dropbox Structure where to upload the file
 			// TODO Add the Project's Folder etc
 			DbxPath dropboxPath = new DbxPath(fileToUpload.getName());
-			Log.i(Constants.TAG, "File does " + (!dbxFs.isFile(dropboxPath) ? "not " : "") + "exist");
+			Debug.d("File to upload: " + fileToUpload);
+			Debug.d("File does " + (!dbxFs.isFile(dropboxPath) ? "not " : "") + "exist");
 			if(dbxFs.isFile(dropboxPath))
 				dropboxFile = dbxFs.open(dropboxPath);
 			else
@@ -106,13 +116,13 @@ public class DropboxSync extends FileObserver
 		}
 		catch(Exception e)
 		{
-			Log.e(Constants.TAG, e.toString());
+			Debug.e(e);
 		}
 		finally
 		{
 			if(dropboxFile != null)
 				dropboxFile.close();
-			Log.i(Constants.TAG, "File upload scheduled: " + fileToUpload.getName());
+			Debug.d("File upload scheduled: " + fileToUpload.getName());
 		}
 	}
 
