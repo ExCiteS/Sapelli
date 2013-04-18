@@ -19,7 +19,7 @@ import com.dropbox.sync.android.DbxPath;
  */
 public class DropboxSync extends FileObserver
 {
-	private static final int flags = FileObserver.CREATE | FileObserver.DELETE | FileObserver.MOVED_TO;
+	private static final int flags = FileObserver.CREATE | FileObserver.DELETE | FileObserver.MOVED_TO | FileObserver.CLOSE_WRITE;
 	private String absolutePath;
 
 	// Dropbox Variables
@@ -76,14 +76,22 @@ public class DropboxSync extends FileObserver
 		// File to upload to Dropbox
 		File fileToUpload = new File(absolutePath + path);
 
-		// Check what changed to the Projects Folder and upload or delete the file
+		// Check what was changed to the Projects Folder and upload or delete the file
 		switch(event)
 		{
+		// Case used for new files
 		case FileObserver.CREATE:
-			Debug.d("File: " + fileToUpload + " was created.");
+			Debug.d("File: " + fileToUpload + " was created but no action is taken.");
+			// uploadFile(fileToUpload);
+			break;
+
+		// Case used for closed files
+		case FileObserver.CLOSE_WRITE:
+			Debug.d("File: " + fileToUpload + " was closed.");
 			uploadFile(fileToUpload);
 			break;
 
+		// Case used for photos
 		case FileObserver.MOVED_TO:
 			Debug.d("File: " + fileToUpload + " was moved to.");
 			uploadFile(fileToUpload);
