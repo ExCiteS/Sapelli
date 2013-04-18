@@ -7,10 +7,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.Map.Entry;
 
 import javax.xml.parsers.SAXParser;
@@ -20,7 +18,6 @@ import org.xml.sax.Attributes;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.DefaultHandler;
 
 import uk.ac.ucl.excites.collector.project.model.AudioField;
 import uk.ac.ucl.excites.collector.project.model.CancelField;
@@ -37,15 +34,19 @@ import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
+import uk.ac.ucl.excites.util.XMLParser;
 
 /**
  * @author mstevens, julia, Michalis Vitos
  * 
  */
-public class ProjectParser extends DefaultHandler
+public class ProjectParser extends XMLParser
 {
 
 	// STATICS--------------------------------------------------------
+	// Format version:
+	static public final String HIGHEST_SUPPORTED_VERSION = "1.0";
+	
 	// Tags:
 	static private final String TAG_PROJECT = "ExCiteS-Collector-Project";
 	static private final String TAG_CONFIGURATION = "Configuration";
@@ -56,7 +57,7 @@ public class ProjectParser extends DefaultHandler
 	static private final String TAG_ENCRYPTION = "Encryption";
 	static private final String TAG_LOGGING = "Logging";
 	static private final String TAG_FORM = "Form";
-	private static final String TAG_CHOICE = "Choice";
+	static private final String TAG_CHOICE = "Choice";
 	static private final String TAG_AUDIO = "Audio";
 	static private final String TAG_PHOTO = "Photo";
 	static private final String TAG_ORIENTATION = "Orientation";
@@ -76,6 +77,7 @@ public class ProjectParser extends DefaultHandler
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
+	static private final String ATTRIBUTE_FIELD_SKIP_ON_BACK = "skipOnBack";
 	private static final String ATTRIBUTE_CHOICE_VALUE = "value";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
 	private static final String ATTRIBUTE_SHOW_FORWARD = "showForward";
@@ -94,13 +96,12 @@ public class ProjectParser extends DefaultHandler
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaField, String> mediaAttachToDisableId;
 	private boolean inConfigTag = false;
-	private List<String> warnings;
 
 	public ProjectParser(String basePath, boolean createProjectFolder)
 	{
+		super();
 		this.basePath = basePath;
 		this.createProjectFolder = createProjectFolder;
-		this.warnings = new ArrayList<String>(); 
 	}
 
 	public Project parseProject(File xmlFile) throws Exception
@@ -404,12 +405,27 @@ public class ProjectParser extends DefaultHandler
 			setOptionalness(f, attributes);
 		}
 		rememberIDAndJump(f, attributes);
+		f.setSkipOnBack(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK));
 		// Which buttons are allowed to show:
 		f.setShowBack(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK));
 		f.setShowCancel(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));
 		f.setShowForward(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
 	}
 
+	protected void setOptionalness(Field field, Attributes attributes)
+	{
+		String optText = attributes.getValue("optional");
+		Optionalness opt = Field.DEFAULT_OPTIONAL;
+		if(optText != null && !optText.isEmpty())
+			if(optText.trim().equalsIgnoreCase("always") || optText.trim().equalsIgnoreCase("true"))
+				opt = Optionalness.ALWAYS;
+			else if(optText.trim().equalsIgnoreCase("notIfReached"))
+				opt = Optionalness.NOT_IF_REACHED;
+			else if(optText.trim().equalsIgnoreCase("never") || optText.trim().equalsIgnoreCase("false"))
+				opt = Optionalness.NEVER;
+		field.setOptional(opt);
+	}
+	
 	private void mediaAttachmentAttributes(MediaField ma, Attributes attributes)
 	{
 		setOptionalness(ma, attributes);
@@ -484,73 +500,6 @@ public class ProjectParser extends DefaultHandler
 	public void endDocument() throws SAXException
 	{
 		resolveReferences(); // !!!
-	}
-
-	protected void setOptionalness(Field field, Attributes attributes)
-	{
-		String optText = attributes.getValue("optional");
-		Optionalness opt = Field.DEFAULT_OPTIONAL;
-		if(optText != null && !optText.isEmpty())
-			if(optText.trim().equalsIgnoreCase("always") || optText.trim().equalsIgnoreCase("true"))
-				opt = Optionalness.ALWAYS;
-			else if(optText.trim().equalsIgnoreCase("notIfReached"))
-				opt = Optionalness.NOT_IF_REACHED;
-			else if(optText.trim().equalsIgnoreCase("never") || optText.trim().equalsIgnoreCase("false"))
-				opt = Optionalness.NEVER;
-		field.setOptional(opt);
-	}
-
-	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
-	{
-		String value = attributes.getValue(attributeName);
-		if(value == null)
-			throw new SAXException(attributeName + " is missing, this is a required attribute of " + qName + ".");
-		return value;
-	}
-
-	protected String readStringAttribute(Attributes attributes, String attributeName, String defaultValue)
-	{
-		String text = attributes.getValue(attributeName);
-		if(text == null || text.isEmpty())
-			return defaultValue;
-		else
-			return text;
-	}
-
-	protected boolean readBooleanAttribute(Attributes attributes, String attributeName, boolean defaultValue)
-	{
-		String text = attributes.getValue(attributeName);
-		if(text == null || text.isEmpty())
-			return defaultValue;
-		else if(text.trim().equalsIgnoreCase(Boolean.TRUE.toString()))
-			return Boolean.TRUE;
-		else if(text.trim().equalsIgnoreCase(Boolean.FALSE.toString()))
-			return Boolean.FALSE;
-		else
-			return defaultValue;
-	}
-
-	protected int readIntegerAttribute(Attributes attributes, String attributeName, int defaultValue)
-	{
-		String text = attributes.getValue(attributeName);
-		if(text == null || text.isEmpty())
-			return defaultValue;
-		else
-			return Integer.parseInt(text.trim());
-	}
-
-	protected float readFloatAttribute(Attributes attributes, String attributeName, float defaultValue)
-	{
-		String text = attributes.getValue(attributeName);
-		if(text == null || text.isEmpty())
-			return defaultValue;
-		else
-			return Float.parseFloat(text.trim());
-	}
-	
-	public List<String> getWarnings()
-	{
-		return warnings;
 	}
 
 }

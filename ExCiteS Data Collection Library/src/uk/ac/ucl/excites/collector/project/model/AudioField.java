@@ -68,7 +68,7 @@ public class AudioField extends MediaField
 	}
 
 	@Override
-	public String getFileExtension(String mediaType)
+	protected String getFileExtension(String mediaType)
 	{
 		if(mediaType == MEDIA_TYPE_3GPP)
 			return EXTENSION_3GPP;

@@ -5,6 +5,8 @@ package uk.ac.ucl.excites.collector.project.model;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.joda.time.DateTime;
 
@@ -12,6 +14,7 @@ import uk.ac.ucl.excites.collector.project.data.FormEntry;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.util.BinaryHelpers;
+import uk.ac.ucl.excites.util.ROT13;
 import uk.ac.ucl.excites.transmission.crypto.Hashing;
 
 /**
@@ -23,6 +26,8 @@ public abstract class MediaField extends Field
 
 	//static public final int DEFAULT_MIN = 0;
 	static public final int DEFAULT_MAX = 255; //column will use 1 byte
+	
+	static private final Pattern REGEX_PATTERN_FOR_MEDIA_FILE_WITH_OBFUSCATED_EXTENSION = Pattern.compile("^([0-9A-F]{32})_([0-9A-Z]+)$");
 	
 	//protected int min;
 	protected int max;
@@ -49,7 +54,12 @@ public abstract class MediaField extends Field
 	
 	public abstract String getMediaType();
 	
-	public abstract String getFileExtension(String mediaType);
+	public String getFileExtension()
+	{
+		return getFileExtension(getMediaType()).toLowerCase();
+	}
+	
+	protected abstract String getFileExtension(String mediaType);
 
 //	/**
 //	 * @return the min
@@ -134,12 +144,12 @@ public abstract class MediaField extends Field
 
 	public File getNewTempFile(Record record) throws IOException
 	{
-		String filename = generateFilename(record, getCount(record));
+		String filename = generateFilename(record, getCount(record), true);
 		String dataFolderPath = form.getProject().getTempFolder().getAbsolutePath(); //getTempFolder() does the necessary checks (IOException is thrown in case of trouble)
 		return new File(dataFolderPath + File.separator + filename);
 	}
 	
-	public String generateFilename(Record record, int attachmentNumber)
+	public String generateFilename(Record record, int attachmentNumber, boolean obfuscatedExtension)
 	{
 		FormEntry entry = new FormEntry(form, record);
 		//Elements:
@@ -150,7 +160,26 @@ public abstract class MediaField extends Field
 		//Assemble:
 		String message = dt.toString() + Long.toString(deviceID) + Integer.toString(fieldIdx) + mediaType + Integer.toString(attachmentNumber);
 		//Return MD5 hash as hexadecimal String:
-		return BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(message.getBytes()).toByteArray());
+		return 	BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(message.getBytes()).toByteArray(), 16) +
+				(obfuscatedExtension ? 	"_" + ROT13.rot13NumRot5(getFileExtension()).toUpperCase() :
+										"." + getFileExtension());
+	}
+	
+	public static String getNonObfuscatedFilename(String filename)
+	{
+		Matcher matcher = REGEX_PATTERN_FOR_MEDIA_FILE_WITH_OBFUSCATED_EXTENSION.matcher(filename);
+		if(matcher.find() && matcher.groupCount() == 2)
+		{	// Got match!
+			/*
+			 * System.out.println("Found value: " + matcher.group(0)); //entire expression
+			 * System.out.println("Found value: " + matcher.group(1)); //hash part
+			 * System.out.println("Found value: " + matcher.group(2)); //ROT13-ed and uppercased extension
+			 */
+			return matcher.group(1) /*hash*/ + "." + ROT13.rot13NumRot5(matcher.group(2)).toLowerCase();
+		}
+		else
+			// No match, return filename as-is:
+			return filename;
 	}
 	
 }
