@@ -23,14 +23,23 @@ public final class BinaryHelpers
 		return Arrays.copyOfRange(array, offset, to);
 	}
 	
-	static public String toHexadecimealString(byte[] data)
+	static public String toHexadecimealString(byte[] data, int length)
 	{
 		StringBuffer bff = new StringBuffer();
+		//zero padding:
+		for(int i = data.length; i < length; i++)
+			bff.append("00");
+		//the bytes:
 		for(byte b : data)
 			bff.append(String.format("%02X", b));
 		return bff.toString();
 	}
 	
+	static public String toHexadecimealString(byte[] data)
+	{
+		return toHexadecimealString(data, data.length);
+	}
+		
 	static public String toBinaryString(byte b)
 	{
 		String str = "";

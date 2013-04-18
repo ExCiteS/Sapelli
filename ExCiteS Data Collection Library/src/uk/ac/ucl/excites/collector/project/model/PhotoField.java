@@ -153,7 +153,7 @@ public class PhotoField extends MediaField
 	}
 
 	@Override
-	public String getFileExtension(String mediaType)
+	protected String getFileExtension(String mediaType)
 	{
 		return EXTENSION_JPEG;
 	}
