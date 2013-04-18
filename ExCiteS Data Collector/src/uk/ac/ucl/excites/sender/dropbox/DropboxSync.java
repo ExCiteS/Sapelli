@@ -6,7 +6,6 @@ import uk.ac.ucl.excites.collector.project.model.MediaField;
 import uk.ac.ucl.excites.sender.util.RecursiveFileObserver;
 import uk.ac.ucl.excites.util.Debug;
 import android.content.Context;
-import android.os.Environment;
 import android.os.FileObserver;
 
 import com.dropbox.sync.android.DbxAccountManager;
@@ -23,8 +22,9 @@ import com.dropbox.sync.android.DbxPath;
 public class DropboxSync extends RecursiveFileObserver
 {
 	private static final int flags = FileObserver.CREATE | FileObserver.DELETE | FileObserver.MOVED_TO | FileObserver.CLOSE_WRITE;
-	private static String SD_CARD_PATH = Environment.getExternalStorageDirectory().getPath();
 
+	private String basePath;
+	
 	// Dropbox Variables
 	private DbxAccountManager mDbxAcctMgr;
 	private DbxFileSystem dbxFs;
@@ -36,10 +36,11 @@ public class DropboxSync extends RecursiveFileObserver
 	 * 
 	 * @param path
 	 */
-	public DropboxSync(Context context, File folder)
+	public DropboxSync(Context context, File folder, String basePath)
 	{
 		super(folder.getAbsolutePath(), flags);
-
+		this.basePath = basePath;
+		
 		Debug.d("Set up Dropbox Observer to folder: " + folder.getAbsolutePath());
 
 		// Setup Dropbox
@@ -114,8 +115,8 @@ public class DropboxSync extends RecursiveFileObserver
 		try
 		{
 			// Path to the Dropbox Structure where to upload the file
-			// fileToUplad - sd card path
-			DbxPath dropboxPath = new DbxPath(fileToUpload.getParent().replace(SD_CARD_PATH, "") + File.separator
+			// fileToUplad - base path
+			DbxPath dropboxPath = new DbxPath(fileToUpload.getParent().replace(basePath, "") + File.separator
 					+ MediaField.getNonObfuscatedFilename(fileToUpload.getName()));
 
 			Debug.d("File to be uploaded is: " + fileToUpload);

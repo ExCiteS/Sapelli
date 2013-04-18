@@ -52,7 +52,7 @@ public class CollectorApp extends Application
 		super.onCreate();
 		Debug.d("Called!");
 		
-		// Paths
+		// Paths:
 		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + EXCITES_FOLDER;
 		dumpFolderPath =  excitesFolderPath + DUMP_FOLDER;
 		

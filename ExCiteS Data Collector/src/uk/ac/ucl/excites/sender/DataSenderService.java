@@ -110,13 +110,9 @@ public class DataSenderService extends Service implements TransmissionSender
 	public int onStartCommand(Intent intent, int flags, int startId)
 	{
 		// Get the preferences
-		boolean senderEnabled = DataSenderPreferences.getSenderEnabled(this);
 		final int timeSchedule = DataSenderPreferences.getTimeSchedule(this);
 		boolean dropboxUpload = DataSenderPreferences.getDropboxUpload(this);
 		boolean smsUpload = DataSenderPreferences.getSMSUpload(this);
-		
-		//if(!senderEnabled)
-		//	stopSelf();
 		
 		setServiceForeground(this);
 		
@@ -155,7 +151,7 @@ public class DataSenderService extends Service implements TransmissionSender
 			{
 				try
 				{
-					DropboxSync observer = new DropboxSync(getApplicationContext(), p.getDataFolder()); 
+					DropboxSync observer = new DropboxSync(getApplicationContext(), p.getDataFolder(), ((CollectorApp) getApplication()).getExcitesFolderPath()); 
 					folderObservers.add(observer);
 					observer.startWatching();
 				}
