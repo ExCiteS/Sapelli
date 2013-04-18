@@ -43,7 +43,7 @@ public class CollectorApp extends Application
 	public void onConfigurationChanged(Configuration newConfig)
 	{
 		super.onConfigurationChanged(newConfig);
-		Debug.d(newConfig.toString());
+		// Debug.d(newConfig.toString());
 	}
 
 	@Override

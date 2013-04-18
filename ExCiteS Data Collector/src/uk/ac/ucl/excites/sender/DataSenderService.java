@@ -161,7 +161,7 @@ public class DataSenderService extends Service implements TransmissionSender
 				}
 				catch(Exception e)
 				{
-					Log.w(TAG, "Could not set up dropbox observer for project " + p.getName());
+					Debug.d("Could not set up Dropbox Observer for project " + p.getName());
 				}
 			}
 		}
@@ -218,7 +218,7 @@ public class DataSenderService extends Service implements TransmissionSender
 			try
 			{
 				Debug.d("-- SendingTask Started --");
-	
+
 				for(Entry<Project, Logger> pl : loggers.entrySet())
 					pl.getValue().addLine("Sending task");
 				
