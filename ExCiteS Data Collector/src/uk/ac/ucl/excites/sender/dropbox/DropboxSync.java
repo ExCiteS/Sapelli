@@ -6,6 +6,7 @@ import uk.ac.ucl.excites.collector.project.model.MediaField;
 import uk.ac.ucl.excites.sender.util.RecursiveFileObserver;
 import uk.ac.ucl.excites.util.Debug;
 import android.content.Context;
+import android.os.Environment;
 import android.os.FileObserver;
 
 import com.dropbox.sync.android.DbxAccountManager;
@@ -22,7 +23,7 @@ import com.dropbox.sync.android.DbxPath;
 public class DropboxSync extends RecursiveFileObserver
 {
 	private static final int flags = FileObserver.CREATE | FileObserver.DELETE | FileObserver.MOVED_TO | FileObserver.CLOSE_WRITE;
-	private String absolutePath;
+	private static String SD_CARD_PATH = Environment.getExternalStorageDirectory().getPath();
 
 	// Dropbox Variables
 	private DbxAccountManager mDbxAcctMgr;
@@ -38,9 +39,8 @@ public class DropboxSync extends RecursiveFileObserver
 	public DropboxSync(Context context, File folder)
 	{
 		super(folder.getAbsolutePath(), flags);
-		absolutePath = folder.getAbsolutePath() + File.separator;
 
-		Debug.d("Set up Dropbox Observer to folder: " + absolutePath);
+		Debug.d("Set up Dropbox Observer to folder: " + folder.getAbsolutePath());
 
 		// Setup Dropbox
 		try
@@ -114,8 +114,9 @@ public class DropboxSync extends RecursiveFileObserver
 		try
 		{
 			// Path to the Dropbox Structure where to upload the file
-			// TODO Add the Project's Folder etc
-			DbxPath dropboxPath = new DbxPath(MediaField.getNonObfuscatedFilename(fileToUpload.getName()));
+			// fileToUplad - sd card path
+			DbxPath dropboxPath = new DbxPath(fileToUpload.getParent().replace(SD_CARD_PATH, "") + File.separator
+					+ MediaField.getNonObfuscatedFilename(fileToUpload.getName()));
 
 			Debug.d("File to be uploaded is: " + fileToUpload);
 			Debug.d("Dropbox path to upload is: " + dropboxPath);
@@ -137,7 +138,7 @@ public class DropboxSync extends RecursiveFileObserver
 		{
 			if(dropboxFile != null)
 				dropboxFile.close();
-			Debug.d("File upload scheduled: " + fileToUpload.getName());
+			Debug.d("File upload scheduled: " + fileToUpload.getName() + " Dropbox side name: " + MediaField.getNonObfuscatedFilename(fileToUpload.getName()));
 		}
 	}
 
