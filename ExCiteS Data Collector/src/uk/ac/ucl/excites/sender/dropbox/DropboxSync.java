@@ -104,6 +104,7 @@ public class DropboxSync extends FileObserver
 			// Path to the Dropbox Structure where to upload the file
 			// TODO Add the Project's Folder etc
 			DbxPath dropboxPath = new DbxPath(fileToUpload.getName());
+			Debug.d("File to upload: " + fileToUpload);
 			Debug.d("File does " + (!dbxFs.isFile(dropboxPath) ? "not " : "") + "exist");
 			if(dbxFs.isFile(dropboxPath))
 				dropboxFile = dbxFs.open(dropboxPath);
