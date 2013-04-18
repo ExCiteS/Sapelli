@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.sender.dropbox;
 
+import uk.ac.ucl.excites.util.Debug;
 import android.content.Context;
 import android.content.Intent;
 
@@ -30,6 +31,7 @@ public class Dropbox
 	{
 		this.mDbxAccountManager = DbxAccountManager.getInstance(applicationContext, appKey, appSecret);
 		this.mContext = applicationContext;
+		Debug.d("Dropbox Version: " + DbxAccountManager.SDK_VERSION_NAME);
 	}
 
 	/**
