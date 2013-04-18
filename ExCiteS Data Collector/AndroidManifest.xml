@@ -91,7 +91,7 @@
             <intent-filter>
 
                 <!-- HERE NEEDS THE ACTUAL DROPBOX APP KEY -->
-                <data android:scheme="db-y15h8nlpkr6ezp1" />
+                <data android:scheme="db-5nmqrrg0m50fu7z" />
 
                 <action android:name="android.intent.action.VIEW" />
 

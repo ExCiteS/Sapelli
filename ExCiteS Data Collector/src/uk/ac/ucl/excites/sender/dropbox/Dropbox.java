@@ -19,8 +19,8 @@ public class Dropbox
 	/*
 	 * HERE GOES THE ACTUAL DROPBOX API KEY AND SECRET
 	 */
-	private static final String appKey = "y15h8nlpkr6ezp1";
-	private static final String appSecret = "wbn1bdrc5l7bdxp";
+	private static final String appKey = "5nmqrrg0m50fu7z";
+	private static final String appSecret = "ejqh8w7r0xjhi52";
 
 	/**
 	 * Initialise the configuration

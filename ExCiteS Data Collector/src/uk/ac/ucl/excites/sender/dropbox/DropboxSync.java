@@ -69,7 +69,7 @@ public class DropboxSync extends RecursiveFileObserver
 	public synchronized void onEvent(int event, String path)
 	{
 
-		Debug.d("Event: " + event + " and path: " + path);
+		// Debug.d("Event: " + event + " and path: " + path);
 
 		// Make sure the path is not null
 		if(path == null)
@@ -116,7 +116,11 @@ public class DropboxSync extends RecursiveFileObserver
 			// Path to the Dropbox Structure where to upload the file
 			// TODO Add the Project's Folder etc
 			DbxPath dropboxPath = new DbxPath(MediaField.getNonObfuscatedFilename(fileToUpload.getName()));
-			Debug.d("File " + dropboxPath.getName() + " does " + (!dbxFs.isFile(dropboxPath) ? "not " : "") + "exist.");
+
+			Debug.d("File to be uploaded is: " + fileToUpload);
+			Debug.d("Dropbox path to upload is: " + dropboxPath);
+
+			Debug.d("File " + dropboxPath.getName() + " does " + (!dbxFs.isFile(dropboxPath) ? "not" : "") + " exist on the Dropbox Server.");
 			if(!dbxFs.isFile(dropboxPath))
 			{
 				dropboxFile = dbxFs.create(dropboxPath);
