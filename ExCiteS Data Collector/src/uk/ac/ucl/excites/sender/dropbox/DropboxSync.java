@@ -2,6 +2,8 @@ package uk.ac.ucl.excites.sender.dropbox;
 
 import java.io.File;
 
+import uk.ac.ucl.excites.collector.project.model.MediaField;
+import uk.ac.ucl.excites.sender.util.RecursiveFileObserver;
 import uk.ac.ucl.excites.util.Debug;
 import android.content.Context;
 import android.os.FileObserver;
@@ -17,7 +19,7 @@ import com.dropbox.sync.android.DbxPath;
  * @author Michalis Vitos
  * 
  */
-public class DropboxSync extends FileObserver
+public class DropboxSync extends RecursiveFileObserver
 {
 	private static final int flags = FileObserver.CREATE | FileObserver.DELETE | FileObserver.MOVED_TO | FileObserver.CLOSE_WRITE;
 	private String absolutePath;
@@ -25,6 +27,8 @@ public class DropboxSync extends FileObserver
 	// Dropbox Variables
 	private DbxAccountManager mDbxAcctMgr;
 	private DbxFileSystem dbxFs;
+
+	// TODO Scan folder for files and upload them to the Dropbox if they don't exist
 
 	/**
 	 * Constructor takes the Folder to watch as a parameter
@@ -74,7 +78,7 @@ public class DropboxSync extends FileObserver
 		}
 
 		// File to upload to Dropbox
-		File fileToUpload = new File(absolutePath + path);
+		File fileToUpload = new File(path);
 
 		// Check what was changed to the Projects Folder and upload or delete the file
 		switch(event)
@@ -111,16 +115,15 @@ public class DropboxSync extends FileObserver
 		{
 			// Path to the Dropbox Structure where to upload the file
 			// TODO Add the Project's Folder etc
-			DbxPath dropboxPath = new DbxPath(fileToUpload.getName());
-			Debug.d("File to upload: " + fileToUpload);
-			Debug.d("File does " + (!dbxFs.isFile(dropboxPath) ? "not " : "") + "exist");
-			if(dbxFs.isFile(dropboxPath))
-				dropboxFile = dbxFs.open(dropboxPath);
-			else
+			DbxPath dropboxPath = new DbxPath(MediaField.getNonObfuscatedFilename(fileToUpload.getName()));
+			Debug.d("File " + dropboxPath.getName() + " does " + (!dbxFs.isFile(dropboxPath) ? "not " : "") + "exist.");
+			if(!dbxFs.isFile(dropboxPath))
+			{
 				dropboxFile = dbxFs.create(dropboxPath);
+				// Upload the file to Dropbox
+				dropboxFile.writeFromExistingFile(fileToUpload, false);
+			}
 
-			// Upload the file to Dropbox
-			dropboxFile.writeFromExistingFile(fileToUpload, false);
 		}
 		catch(Exception e)
 		{
