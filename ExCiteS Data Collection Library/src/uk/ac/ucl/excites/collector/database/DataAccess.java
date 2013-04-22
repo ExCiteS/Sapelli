@@ -49,7 +49,7 @@ public final class DataAccess
 	 */
 	public void store(Schema schema)
 	{
-		db.store(schema);
+		storeObj(schema);
 	}
 
 	/**
@@ -64,13 +64,13 @@ public final class DataAccess
 			db.activate(s, ACTIVATION_DEPTH);
 		return result;
 	}
-	
+
 	/**
 	 * @param record - the record to store
 	 */
 	public void store(Record record)
 	{
-		db.store(record);
+		storeObj(record);
 	}
 	
 	/**
@@ -78,7 +78,7 @@ public final class DataAccess
 	 */
 	public void delete(Record record)
 	{
-		db.delete(record);
+		deleteObj(record);
 	}
 	
 	/**
@@ -176,7 +176,7 @@ public final class DataAccess
 	{
 		if(retrieveProject(project.getName(), project.getVersion()) != null)
 			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
-		db.store(project);
+		storeObj(project);
 	}
 	
 	/**
@@ -184,7 +184,7 @@ public final class DataAccess
 	 */
 	public void update(Project project)
 	{
-		db.store(project);
+		storeObj(project);
 	}
 
 	/**
@@ -232,7 +232,7 @@ public final class DataAccess
 	 */
 	public void delete(Project project)
 	{
-		db.delete(project);
+		deleteObj(project);
 	}
 	
 	/**
@@ -268,7 +268,7 @@ public final class DataAccess
 	 */
 	public void store(Transmission transmission)
 	{
-		db.store(transmission);
+		storeObj(transmission);
 	}
 	
 	/**
@@ -335,7 +335,7 @@ public final class DataAccess
 	 */
 	public void store(SMSTransmissionID id)
 	{
-		db.store(id);
+		storeObj(id);
 	}
 	
 	public SMSTransmissionID retrieveTransmissionID()
@@ -345,5 +345,16 @@ public final class DataAccess
 			return null;
 		return result.get(0);
 	}
-	
+
+	public void storeObj(Object obj)
+	{
+		db.store(obj);
+		db.commit();
+	}
+
+	public void deleteObj(Object obj)
+	{
+		db.delete(obj);
+		db.commit();
+	}
 }
