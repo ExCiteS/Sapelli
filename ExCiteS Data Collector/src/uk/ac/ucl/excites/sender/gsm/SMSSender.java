@@ -29,6 +29,8 @@ public class SMSSender implements SMSService
 	private Context context;
 	private DataAccess dao;
 	private SmsManager smsManager;
+	private BroadcastReceiver smsSent;
+	private BroadcastReceiver smsDelivered;
 	
 	public SMSSender(Context context, DataAccess dao)
 	{
@@ -44,17 +46,18 @@ public class SMSSender implements SMSService
 		PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, new Intent(SMS_DELIVERED), 0);
 
 		// When the SMS has been sent
-		context.registerReceiver(new BroadcastReceiver()
+		smsSent = new BroadcastReceiver()
 		{
 			@Override
 			public void onReceive(Context context, Intent intent)
 			{
+				context.unregisterReceiver(smsSent); // otherwise the sent notification seems to arrive 2-3 times
+
 				switch(getResultCode())
 				{
 				case Activity.RESULT_OK:
 					textSMS.sentCallback(); //!!!
 					updateTransmission(textSMS.getTransmission()); //!!!
-					context.unregisterReceiver(this); //otherwise the sent notification seems to arrive 2-3 times
 					Log.i(TAG, "BroadcastReceiver: SMS " + textSMS.getPartNumber() + "/" + textSMS.getTotalParts() + " of transmission with ID " + textSMS.getTransmissionID() + " has been sent.");
 					break;
 				case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
@@ -71,20 +74,22 @@ public class SMSSender implements SMSService
 					break;
 				}
 			}
-		}, new IntentFilter(SMS_SENT));
+		};
+		context.registerReceiver(smsSent, new IntentFilter(SMS_SENT));
 
 		// When the SMS has been delivered
-		context.registerReceiver(new BroadcastReceiver()
+		smsDelivered = new BroadcastReceiver()
 		{
 			@Override
 			public void onReceive(Context context, Intent intent)
 			{
+				context.unregisterReceiver(smsDelivered); // otherwise the delivery notification seems to arrive 2-3 times
+
 				switch(getResultCode())
 				{
 				case Activity.RESULT_OK:
 					textSMS.deliveryCallback(); //!!!
 					updateTransmission(textSMS.getTransmission()); //!!!
-					context.unregisterReceiver(this); //otherwise the delivery notification seems to arrive 2-3 times
 					Log.i(TAG, "BroadcastReceiver: SMS " + textSMS.getPartNumber() + "/" + textSMS.getTotalParts() + " of transmission with ID " + textSMS.getTransmissionID() + " has been delivered.");
 					break;
 				case Activity.RESULT_CANCELED:
@@ -92,7 +97,8 @@ public class SMSSender implements SMSService
 					break;
 				}
 			}
-		}, new IntentFilter(SMS_DELIVERED));
+		};
+		context.registerReceiver(smsDelivered, new IntentFilter(SMS_DELIVERED));
 		
 		try
 		{
@@ -194,7 +200,6 @@ public class SMSSender implements SMSService
 	private void updateTransmission(Transmission transmission)
 	{
 		dao.store(transmission);
-		dao.commit();
 	}
 
 }
