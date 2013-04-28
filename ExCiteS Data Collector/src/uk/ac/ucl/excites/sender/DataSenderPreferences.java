@@ -4,6 +4,7 @@ import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.sender.util.Constants;
 import uk.ac.ucl.excites.sender.util.ServiceChecker;
 import uk.ac.ucl.excites.util.Debug;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -112,7 +113,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	public static int getTimeSchedule(Context mContext)
 	{
 		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return Integer.parseInt(sharedPreferences.getString("timeSchedule", "1"));
+		return ((sharedPreferences.getString("timeSchedule", "1")).equals("")) ? 1 : Integer.parseInt(sharedPreferences.getString("timeSchedule", "10"));
 	}
 
 	/**
@@ -138,6 +139,9 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 			printPreferences(context);
 		}
 		
+		// ================================================================================
+		// ================================================================================
+
 		if(key.equals("enableSender"))
 		{
 			// If true start service, otherwise try to stop it
@@ -151,6 +155,23 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 				Intent intent = new Intent(context, DataSenderPreferences.class);
 				intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 				context.startActivity(intent);
+			}
+		}
+		else if(key.equals("timeSchedule"))
+		{
+			if(getTimeSchedule(context) == 0)
+			{
+				// Show a message
+				final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+				builder.setTitle("Invalid Input");
+				builder.setMessage("Please insert a value over 0.");
+				builder.setPositiveButton(android.R.string.ok, null);
+				builder.show();
+			}
+			else
+			{
+				// Restart the Service
+				ServiceChecker.restartActiveDataSender(context);
 			}
 		}
 		else
