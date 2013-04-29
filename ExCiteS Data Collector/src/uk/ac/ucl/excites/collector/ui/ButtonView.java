@@ -26,7 +26,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	
 	static private final String TAG = "ButtonView";
 	
-	static public final float BUTTON_HEIGHT = 45;
+	static public final float BUTTON_HEIGHT = 65;
 
 	static public final int BUTTON_TYPE_BACK = -1;
 	static public final int BUTTON_TYPE_CANCEL = 0;
