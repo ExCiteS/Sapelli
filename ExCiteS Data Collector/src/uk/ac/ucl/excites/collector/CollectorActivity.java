@@ -159,7 +159,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		}
 
 		// Set-up controller:
-		controller = new ProjectController(project, dao, this);
+		controller = new ProjectController(project, dao, this, this);
 
 		// Start project:
 		controller.startProject();
@@ -409,6 +409,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	@Override
 	protected void onPause()
 	{
+		// TODO Fix bug that freezes the interface
 		// set timeout timer:
 		if(!pausedForActivityResult)
 		{
