@@ -5,6 +5,7 @@ import java.io.File;
 import uk.ac.ucl.excites.collector.project.model.MediaField;
 import uk.ac.ucl.excites.sender.util.RecursiveFileObserver;
 import uk.ac.ucl.excites.util.Debug;
+import uk.ac.ucl.excites.util.FileHelpers;
 import android.content.Context;
 import android.os.FileObserver;
 
@@ -123,11 +124,23 @@ public class DropboxSync extends RecursiveFileObserver
 			Debug.d("Dropbox path to upload is: " + dropboxPath);
 
 			Debug.d("File " + dropboxPath.getName() + " does " + (!dbxFs.isFile(dropboxPath) ? "not" : "") + " exist on the Dropbox Server.");
-			if(!dbxFs.isFile(dropboxPath))
+
+			// TODO Change the
+			// TODO Get the image extension from the Media Class
+			// for now we do not upload images
+			// String image_ext = (new PhotoField()).getFileExtension();
+			String image_ext = "jpg";
+			
+			// Upload only approved files
+			if(!FileHelpers.getFileExtension(dropboxPath.getName()).equals(image_ext) && !dbxFs.isFile(dropboxPath))
 			{
 				dropboxFile = dbxFs.create(dropboxPath);
 				// Upload the file to Dropbox
 				dropboxFile.writeFromExistingFile(fileToUpload, false);
+			}
+			else
+			{
+				Debug.d("For now will not try to upload " + dropboxPath.getName() + " because it is an image");
 			}
 
 		}
