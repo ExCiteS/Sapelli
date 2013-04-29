@@ -227,7 +227,15 @@ public class ProjectController implements LocationListener, OrientationListener
 				logger.addLine("BACK_BUTTON", currentField.getID());
 
 			currentField = null; // !!! otherwise we create loops
-			goTo(fieldHistory.pop());
+			final Field previousField = fieldHistory.pop();
+
+			// TODO Maybe there is a better way of handling back buttons
+			if(previousField instanceof LocationField)
+				goTo(fieldHistory.pop()); // Move two fields backwards
+			else if(currentField instanceof OrientationField)
+				goTo(fieldHistory.pop()); // Move two fields backwards
+			else
+				goTo(previousField);
 		}
 	}
 
