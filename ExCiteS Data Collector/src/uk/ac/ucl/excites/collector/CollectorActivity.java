@@ -409,7 +409,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	@Override
 	protected void onPause()
 	{
-		// TODO Fix bug that freezes the interface
 		// set timeout timer:
 		if(!pausedForActivityResult)
 		{
@@ -438,9 +437,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		// super:
 		super.onResume();
 
-		// Load the project
-		loadProject();
-
 		if(pausedForActivityResult)
 			pausedForActivityResult = false;
 		else
@@ -455,6 +451,9 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			{ // cancel timer if needed:
 				if(pauseTimer != null)
 					pauseTimer.cancel();
+
+				// Load the project
+				loadProject();
 			}
 		}
 	}
