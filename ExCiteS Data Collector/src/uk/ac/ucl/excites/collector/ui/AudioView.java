@@ -82,7 +82,7 @@ public class AudioView extends PickerView implements FieldView
 			public boolean onPreDraw()
 			{
 				imageAdapter.setImageWidth(LayoutParams.MATCH_PARENT);
-				imageAdapter.setImageHeight(getHeight() / imageAdapter.getCount());
+				imageAdapter.setImageHeight((getHeight() - PickerView.SPACING) / imageAdapter.getCount());
 				setAdapter(imageAdapter);
 
 				getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop

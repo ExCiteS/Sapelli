@@ -73,7 +73,7 @@ public class DataSenderService extends Service implements TransmissionSender
 	private Map<Project,Logger> loggers;
 	
 	private ScheduledExecutorService scheduleTaskExecutor;
-	private ScheduledFuture<?> mScheduledFuture;
+	private ScheduledFuture<?> scheduledFuture;
 
 	@Override
 	public void onCreate()
@@ -175,11 +175,11 @@ public class DataSenderService extends Service implements TransmissionSender
 		// Check if the scheduleTaskExecutor is running and stop it first
 		if(isSending)
 		{
-			mScheduledFuture.cancel(true);
+			scheduledFuture.cancel(true);
 			isSending = false;
 		}
 		// This schedule a runnable task every TIME_SCHEDULE in minutes
-		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
+		scheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
 		
 		return startMode;
 	}
@@ -196,7 +196,8 @@ public class DataSenderService extends Service implements TransmissionSender
 			DeviceControl.toggleAirplaneMode(this);
 		
 		// The service is no longer used and is being destroyed
-		mScheduledFuture.cancel(true);
+		if(scheduledFuture != null)
+			scheduledFuture.cancel(true);
 		stopSelf();
 		int pid = android.os.Process.myPid();
 		if(Constants.DEBUG_LOG)
