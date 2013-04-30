@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.sender.gsm;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.transmission.Transmission;
@@ -9,6 +10,7 @@ import uk.ac.ucl.excites.transmission.sms.SMSService;
 import uk.ac.ucl.excites.transmission.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.transmission.sms.text.TextMessage;
 import uk.ac.ucl.excites.util.BinaryHelpers;
+import uk.ac.ucl.excites.util.Debug;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -29,14 +31,26 @@ public class SMSSender implements SMSService
 	private Context context;
 	private DataAccess dao;
 	private SmsManager smsManager;
-	private BroadcastReceiver smsSent;
-	private BroadcastReceiver smsDelivered;
+
+	// Keep the receivers to Lists
+	private List<BroadcastReceiver> textMessageSent;
+	private List<BroadcastReceiver> textMessageDelivered;
+	private List<BroadcastReceiver> binaryMessageSent;
+	private List<BroadcastReceiver> binaryMessageDelivered;
 	
 	public SMSSender(Context context, DataAccess dao)
 	{
 		this.context = context;
 		this.dao = dao;
 		this.smsManager = SmsManager.getDefault();
+		
+		// Initiate the Lists
+		textMessageSent = new ArrayList<BroadcastReceiver>();
+		textMessageDelivered = new ArrayList<BroadcastReceiver>();
+		binaryMessageSent = new ArrayList<BroadcastReceiver>();
+		binaryMessageDelivered = new ArrayList<BroadcastReceiver>();
+
+		Debug.d("Created a new SMSSender: " + this.toString());
 	}
 
 	@Override
@@ -46,19 +60,21 @@ public class SMSSender implements SMSService
 		PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, new Intent(SMS_DELIVERED), 0);
 
 		// When the SMS has been sent
-		smsSent = new BroadcastReceiver()
+		BroadcastReceiver newTextMessageSent = new BroadcastReceiver()
 		{
 			@Override
 			public void onReceive(Context context, Intent intent)
 			{
-				context.unregisterReceiver(smsSent); // otherwise the sent notification seems to arrive 2-3 times
+				if(!textMessageSent.isEmpty())
+					context.unregisterReceiver(textMessageSent.remove(0)); // otherwise the sent notification seems to arrive 2-3 times
 
 				switch(getResultCode())
 				{
 				case Activity.RESULT_OK:
 					textSMS.sentCallback(); //!!!
 					updateTransmission(textSMS.getTransmission()); //!!!
-					Log.i(TAG, "BroadcastReceiver: SMS " + textSMS.getPartNumber() + "/" + textSMS.getTotalParts() + " of transmission with ID " + textSMS.getTransmissionID() + " has been sent.");
+					Log.i(TAG, "BroadcastReceiver: Binary SMS " + textSMS.getPartNumber() + "/" + textSMS.getTotalParts() + " of transmission with ID "
+							+ textSMS.getTransmissionID() + " has been sent.");
 					break;
 				case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
 					Log.i(TAG, "BroadcastReceiver: Generic failure");
@@ -75,30 +91,34 @@ public class SMSSender implements SMSService
 				}
 			}
 		};
-		context.registerReceiver(smsSent, new IntentFilter(SMS_SENT));
+		context.registerReceiver(newTextMessageSent, new IntentFilter(SMS_SENT));
+		textMessageSent.add(newTextMessageSent);
 
 		// When the SMS has been delivered
-		smsDelivered = new BroadcastReceiver()
+		BroadcastReceiver newTextMessageDelivered = new BroadcastReceiver()
 		{
 			@Override
 			public void onReceive(Context context, Intent intent)
 			{
-				context.unregisterReceiver(smsDelivered); // otherwise the delivery notification seems to arrive 2-3 times
+				if(!textMessageDelivered.isEmpty())
+					context.unregisterReceiver(textMessageDelivered.remove(0)); // otherwise the sent notification seems to arrive 2-3 times
 
 				switch(getResultCode())
 				{
 				case Activity.RESULT_OK:
 					textSMS.deliveryCallback(); //!!!
 					updateTransmission(textSMS.getTransmission()); //!!!
-					Log.i(TAG, "BroadcastReceiver: SMS " + textSMS.getPartNumber() + "/" + textSMS.getTotalParts() + " of transmission with ID " + textSMS.getTransmissionID() + " has been delivered.");
+					Log.i(TAG, "BroadcastReceiver: Binary SMS " + textSMS.getPartNumber() + "/" + textSMS.getTotalParts() + " of transmission with ID "
+							+ textSMS.getTransmissionID() + " has been delivered.");
 					break;
 				case Activity.RESULT_CANCELED:
-					Log.i(TAG, "BroadcastReceiver: SMS not delivered");
+					Log.i(TAG, "BroadcastReceiver: Binary SMS not delivered");
 					break;
 				}
 			}
 		};
-		context.registerReceiver(smsDelivered, new IntentFilter(SMS_DELIVERED));
+		context.registerReceiver(newTextMessageDelivered, new IntentFilter(SMS_DELIVERED));
+		textMessageDelivered.add(newTextMessageDelivered);
 		
 		try
 		{
@@ -134,17 +154,23 @@ public class SMSSender implements SMSService
 		PendingIntent deliveredPI = PendingIntent.getBroadcast(context, 0, new Intent(SMS_DELIVERED), 0);
 			
 		// When the SMS has been sent
-		context.registerReceiver(new BroadcastReceiver()
+		BroadcastReceiver newBinaryMessageSent = new BroadcastReceiver()
 		{
 			@Override
 			public void onReceive(Context context, Intent intent)
 			{
+				if(!binaryMessageSent.isEmpty())
+				{
+					final BroadcastReceiver remove = binaryMessageSent.remove(0);
+					context.unregisterReceiver(remove); // otherwise the sent notification seems to arrive 2-3 times
+					Debug.d("Unregistered binaryMessageSent: " + remove.toString());
+				}
+
 				switch(getResultCode())
 				{
 				case Activity.RESULT_OK:
 					binarySMS.sentCallback();
 					updateTransmission(binarySMS.getTransmission()); //!!!
-					context.unregisterReceiver(this); //otherwise the sent notification seems to arrive 2-3 times
 					Log.i(TAG, "BroadcastReceiver: SMS " + binarySMS.getPartNumber() + "/" + binarySMS.getTotalParts() + " of transmission with ID " + binarySMS.getTransmissionID() + " has been sent.");
 					break;
 				case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
@@ -161,20 +187,29 @@ public class SMSSender implements SMSService
 					break;
 				}
 			}
-		}, new IntentFilter(SMS_SENT));
+		};
+		context.registerReceiver(newBinaryMessageSent, new IntentFilter(SMS_SENT));
+		binaryMessageSent.add(newBinaryMessageSent);
+		Debug.d("Registered binaryMessageSent: " + newBinaryMessageSent.toString());
 
 		// When the SMS has been delivered
-		context.registerReceiver(new BroadcastReceiver()
+		BroadcastReceiver newBinaryMessageDelivered = new BroadcastReceiver()
 		{
 			@Override
 			public void onReceive(Context context, Intent intent)
 			{
+				if(!binaryMessageDelivered.isEmpty())
+				{
+					final BroadcastReceiver remove = binaryMessageDelivered.remove(0);
+					context.unregisterReceiver(remove); // otherwise the sent notification seems to arrive 2-3 times
+					Debug.d("Unregistered binaryMessageDelivered: " + remove.toString());
+				}
+
 				switch(getResultCode())
 				{
 				case Activity.RESULT_OK:
 					binarySMS.deliveryCallback();
 					updateTransmission(binarySMS.getTransmission()); //!!!
-					context.unregisterReceiver(this); //otherwise the delivery notification seems to arrive 2-3 times
 					Log.i(TAG, "BroadcastReceiver: SMS " + binarySMS.getPartNumber() + "/" + binarySMS.getTotalParts() + " of transmission with ID " + binarySMS.getTransmissionID() + " has been delivered.");
 					break;
 				case Activity.RESULT_CANCELED:
@@ -182,7 +217,10 @@ public class SMSSender implements SMSService
 					break;
 				}
 			}
-		}, new IntentFilter(SMS_DELIVERED));
+		};
+		context.registerReceiver(newBinaryMessageDelivered, new IntentFilter(SMS_DELIVERED));
+		binaryMessageDelivered.add(newBinaryMessageDelivered);
+		Debug.d("Registered binaryMessageDelivered: " + newBinaryMessageDelivered.toString());
 
 		try
 		{

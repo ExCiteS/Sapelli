@@ -165,6 +165,8 @@ public class DataSenderService extends Service implements TransmissionSender
 		//if at least one project needs SMS sending:
 		if(projectWithSMSEnabled)
 			smsSender = new SMSSender(this, dao);
+		else
+			Debug.d("SMS Uploading is not enabled");
 		
 		//Start GSM SignalMonitor
 		gsmMonitor = new SignalMonitor(this);
