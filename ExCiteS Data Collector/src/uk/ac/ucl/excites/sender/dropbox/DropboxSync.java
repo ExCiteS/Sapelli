@@ -23,9 +23,10 @@ import com.dropbox.sync.android.DbxPath;
 public class DropboxSync extends RecursiveFileObserver
 {
 	private static final int flags = FileObserver.CREATE | FileObserver.DELETE | FileObserver.MOVED_TO | FileObserver.CLOSE_WRITE;
+	private static final String NOT_ALLOWED_FILE = "jpg";
 
 	private String basePath;
-	
+
 	// Dropbox Variables
 	private DbxAccountManager mDbxAcctMgr;
 	private DbxFileSystem dbxFs;
@@ -41,7 +42,7 @@ public class DropboxSync extends RecursiveFileObserver
 	{
 		super(folder.getAbsolutePath(), flags);
 		this.basePath = basePath;
-		
+
 		Debug.d("Set up Dropbox Observer to folder: " + folder.getAbsolutePath());
 
 		// Setup Dropbox
@@ -112,47 +113,54 @@ public class DropboxSync extends RecursiveFileObserver
 
 	private void uploadFile(File fileToUpload)
 	{
+		// Get the non Obfuscated filename and the extension
+		final String nonObfuscatedFilename = MediaField.getNonObfuscatedFilename(fileToUpload.getName());
+		final String fileExtension = FileHelpers.getFileExtension(nonObfuscatedFilename);
+
+		Debug.d("The file is: " + nonObfuscatedFilename + " and its filename is: " + fileExtension);
+
 		DbxFile dropboxFile = null;
-		try
+
+		// TODO Change the approved list from XML
+		// TODO Get the image extension from the Media Class
+		// for now we do not upload images
+
+		// Upload only approved files
+		if(!fileExtension.equals(NOT_ALLOWED_FILE))
 		{
-			// Path to the Dropbox Structure where to upload the file
-			// fileToUplad - base path
-			DbxPath dropboxPath = new DbxPath(fileToUpload.getParent().replace(basePath, "") + File.separator
-					+ MediaField.getNonObfuscatedFilename(fileToUpload.getName()));
-
-			Debug.d("File to be uploaded is: " + fileToUpload);
-			Debug.d("Dropbox path to upload is: " + dropboxPath);
-
-			Debug.d("File " + dropboxPath.getName() + " does " + (!dbxFs.isFile(dropboxPath) ? "not" : "") + " exist on the Dropbox Server.");
-
-			// TODO Change the
-			// TODO Get the image extension from the Media Class
-			// for now we do not upload images
-			// String image_ext = (new PhotoField()).getFileExtension();
-			String image_ext = "jpg";
-			
-			// Upload only approved files
-			if(!FileHelpers.getFileExtension(dropboxPath.getName()).equals(image_ext) && !dbxFs.isFile(dropboxPath))
+			try
 			{
-				dropboxFile = dbxFs.create(dropboxPath);
-				// Upload the file to Dropbox
-				dropboxFile.writeFromExistingFile(fileToUpload, false);
-			}
-			else
-			{
-				Debug.d("For now will not try to upload " + dropboxPath.getName() + " because it is an image");
-			}
+				// Path to the Dropbox Structure where to upload the file
+				// fileToUplad - base path
+				DbxPath dropboxPath = new DbxPath(fileToUpload.getParent().replace(basePath, "") + File.separator + nonObfuscatedFilename);
 
+				Debug.d("File to be uploaded is: " + fileToUpload);
+				Debug.d("Dropbox path to upload is: " + dropboxPath);
+
+				Debug.d("File " + dropboxPath.getName() + " does " + (!dbxFs.isFile(dropboxPath) ? "not" : "") + " exist on the Dropbox Server.");
+
+				// Create the file if it does not exist
+				if(!dbxFs.isFile(dropboxPath))
+				{
+					dropboxFile = dbxFs.create(dropboxPath);
+					// Upload the file to Dropbox
+					dropboxFile.writeFromExistingFile(fileToUpload, false);
+				}
+			}
+			catch(Exception e)
+			{
+				Debug.e(e);
+			}
+			finally
+			{
+				if(dropboxFile != null)
+					dropboxFile.close();
+				Debug.d("File upload scheduled: " + fileToUpload.getName() + " Dropbox side name: " + nonObfuscatedFilename);
+			}
 		}
-		catch(Exception e)
+		else
 		{
-			Debug.e(e);
-		}
-		finally
-		{
-			if(dropboxFile != null)
-				dropboxFile.close();
-			Debug.d("File upload scheduled: " + fileToUpload.getName() + " Dropbox side name: " + MediaField.getNonObfuscatedFilename(fileToUpload.getName()));
+			Debug.d("For now will not try to upload " + nonObfuscatedFilename + " because it has the extention: " + fileExtension);
 		}
 	}
 
