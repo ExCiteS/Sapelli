@@ -132,10 +132,11 @@ public class DropboxSync extends RecursiveFileObserver
 			{
 				// Path to the Dropbox Structure where to upload the file
 				// fileToUplad - base path
-				DbxPath dropboxPath = new DbxPath(fileToUpload.getParent().replace(basePath, "") + File.separator + nonObfuscatedFilename);
+				final String dropboxServerPath = fileToUpload.getParent().replace(basePath, "") + File.separator + nonObfuscatedFilename;
+				DbxPath dropboxPath = new DbxPath(dropboxServerPath);
 
-				Debug.d("File to be uploaded is: " + fileToUpload);
-				Debug.d("Dropbox path to upload is: " + dropboxPath);
+				Debug.d("File to be uploaded is: " + fileToUpload.toString());
+				Debug.d("Dropbox path to upload is: " + dropboxPath.toString());
 
 				Debug.d("File " + dropboxPath.getName() + " does " + (!dbxFs.isFile(dropboxPath) ? "not" : "") + " exist on the Dropbox Server.");
 
