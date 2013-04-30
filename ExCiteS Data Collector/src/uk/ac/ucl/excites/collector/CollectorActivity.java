@@ -103,7 +103,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		super.onCreate(savedInstanceState);
 
 		// Retrieve the tmpPhotoLocation for the saved state
-		if(savedInstanceState != null)
+		if(savedInstanceState != null && savedInstanceState.containsKey(TEMP_PHOTO_PATH_KEY))
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
 
 		// Check if there is an SD Card, otherwise inform the user and finish the activity
