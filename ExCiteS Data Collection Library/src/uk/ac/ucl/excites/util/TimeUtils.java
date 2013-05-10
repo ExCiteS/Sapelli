@@ -8,8 +8,8 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 /**
- * @author mstevens
- *
+ * @author mstevens, Michalis Vitos
+ * 
  */
 public final class TimeUtils
 {
@@ -49,4 +49,8 @@ public final class TimeUtils
 		return FileTimestampFormatter.print(DateTime.now());
 	}
 	
+	static public String getTimestampForFileName(long timestamp)
+	{
+		return FileTimestampFormatter.print(timestamp);
+	}
 }
