@@ -1,6 +1,9 @@
 package uk.ac.ucl.excites.collector;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -69,7 +72,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	static public final int RETURN_VIDEO_CAPTURE = 2;
 	static public final int RETURN_AUDIO_CAPTURE = 3;
 
-	private static final long TIMEOUT_MS = 5; // timeout after 5 minutes
+	private static final int TIMEOUT_MIN = 5; // timeout after 5 minutes
 
 	// DYNAMICS-------------------------------------------------------
 
@@ -433,7 +436,13 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			// Creates a thread pool that can schedule commands to run after a given
 			// delay, or to execute periodically.
 			scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
-			scheduledFuture = scheduleTaskExecutor.schedule(pause, TIMEOUT_MS, TimeUnit.MINUTES);
+			scheduledFuture = scheduleTaskExecutor.schedule(pause, TIMEOUT_MIN, TimeUnit.MINUTES);
+
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(new Date());
+			calendar.add(Calendar.MINUTE, TIMEOUT_MIN);
+			String formattedDate = new SimpleDateFormat("HH:mm:ss.S").format(calendar.getTime());
+			Debug.d("Scheduled a timeout to take place at: " + formattedDate);
 		}
 		// super:
 		super.onPause();
@@ -472,6 +481,9 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		super.onNewIntent(intent);
 		// Change the current intent
 		setIntent(intent);
+
+		if(controller != null)
+			controller.cancelAndStop();
 	}
 
 	@Override
