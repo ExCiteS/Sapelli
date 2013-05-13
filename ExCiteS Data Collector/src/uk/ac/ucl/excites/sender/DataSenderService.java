@@ -60,6 +60,7 @@ public class DataSenderService extends Service implements TransmissionSender
 	static private final String LOG_PREFIX = "Sender_";
 	private static final long POST_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
 	private static final long PRE_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
+	private static final long INTERVAL_BETWEEN_SMS_SENDING = 2 * 1000;
 	
 	// Dynamics------------------------------------------------------
 	private SignalMonitor gsmMonitor;
@@ -73,7 +74,7 @@ public class DataSenderService extends Service implements TransmissionSender
 	private Map<Project,Logger> loggers;
 	
 	private ScheduledExecutorService scheduleTaskExecutor;
-	private ScheduledFuture<?> mScheduledFuture;
+	private ScheduledFuture<?> scheduledFuture;
 
 	@Override
 	public void onCreate()
@@ -165,6 +166,8 @@ public class DataSenderService extends Service implements TransmissionSender
 		//if at least one project needs SMS sending:
 		if(projectWithSMSEnabled)
 			smsSender = new SMSSender(this, dao);
+		else
+			Debug.d("SMS Uploading is not enabled");
 		
 		//Start GSM SignalMonitor
 		gsmMonitor = new SignalMonitor(this);
@@ -175,11 +178,11 @@ public class DataSenderService extends Service implements TransmissionSender
 		// Check if the scheduleTaskExecutor is running and stop it first
 		if(isSending)
 		{
-			mScheduledFuture.cancel(true);
+			scheduledFuture.cancel(true);
 			isSending = false;
 		}
 		// This schedule a runnable task every TIME_SCHEDULE in minutes
-		mScheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
+		scheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
 		
 		return startMode;
 	}
@@ -196,7 +199,8 @@ public class DataSenderService extends Service implements TransmissionSender
 			DeviceControl.toggleAirplaneMode(this);
 		
 		// The service is no longer used and is being destroyed
-		mScheduledFuture.cancel(true);
+		if(scheduledFuture != null)
+			scheduledFuture.cancel(true);
 		stopSelf();
 		int pid = android.os.Process.myPid();
 		if(Constants.DEBUG_LOG)
@@ -219,7 +223,7 @@ public class DataSenderService extends Service implements TransmissionSender
 					pl.getValue().addLine("Sending task");
 				
 				//Come out of airplane more if needed
-				if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
+				if(DeviceControl.inAirplaneMode(context))
 				{
 					DeviceControl.toggleAirplaneMode(context);
 					Debug.d("Phone was in AirplaneMode and try to get it out.");
@@ -227,6 +231,7 @@ public class DataSenderService extends Service implements TransmissionSender
 					//Wait for connectivity to become available
 					try
 					{	
+						Debug.d("POST_AIRPLANE_MODE_WAITING_TIME_MS: " + POST_AIRPLANE_MODE_WAITING_TIME_MS);
 						Thread.sleep(POST_AIRPLANE_MODE_WAITING_TIME_MS);
 					}
 					catch(Exception ignore)
@@ -235,24 +240,24 @@ public class DataSenderService extends Service implements TransmissionSender
 					}
 				}
 				
-				//TODO Block until we have connectivity
+				// TODO Block until we have connectivity
 				
-	//			int tempCount = 0;
-	//			while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
-	//			{
-	//				Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
-	//				// Wait for 1 a second on every attempt
-	//				try
-	//				{
-	//					Thread.sleep(1000);
-	//				}
-	//				catch(InterruptedException e)
-	//				{
-	//					if(Constants.DEBUG_LOG)
-	//						Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
-	//				}
-	//				tempCount++;
-	//			}
+				//	int tempCount = 0;
+				//	while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
+				//	{
+				//		Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
+				//		// Wait for 1 a second on every attempt
+				//		try
+				//		{
+				//			Thread.sleep(1000);
+				//		}
+				//		catch(InterruptedException e)
+				//		{
+				//			if(Constants.DEBUG_LOG)
+				//				Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
+				//		}
+				//		tempCount++;
+				//	}
 				
 				//Generate transmissions...
 				for(Project p : dao.retrieveProjects())
@@ -267,7 +272,7 @@ public class DataSenderService extends Service implements TransmissionSender
 					
 					for(Form f : p.getForms())
 					{		
-						Schema schema = f.getSchema();			
+						Schema schema = f.getSchema();
 						
 						List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
 						Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version " + p.getVersion() + ").");
@@ -311,7 +316,7 @@ public class DataSenderService extends Service implements TransmissionSender
 								dao.store(t);
 							}
 							
-							//TODO fetch unsent existing smstransmissions from db
+							// TODO fetch unsent existing sms transmissions from db
 							
 							//Send transmission(s)
 							//TODO check signal again?
@@ -322,28 +327,32 @@ public class DataSenderService extends Service implements TransmissionSender
 									loggers.get(p).addLine("Sending SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalParts() + " messages");
 									Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalParts() + " messages");
 									t.send(DataSenderService.this);
+
+									// Debug.d("INTERVAL_BETWEEN_SMS_SENDING: " + INTERVAL_BETWEEN_SMS_SENDING);
+									// Thread.sleep(INTERVAL_BETWEEN_SMS_SENDING);
 								}
 								catch(Exception e)
 								{
 									loggers.get(p).addLine("Error upon sending SMSTransmission: " + e.getMessage());
-									Log.e(TAG, "error on sending smstransmission", e);
+									Log.e(TAG, "error on sending sms transmission", e);
 								}
 							}
 						}
-						
 					}
 					
-					//commit changes to db:
-					dao.commit();
+					// commit changes to db:
+					// dao.commit();
 				}
 				
 				isSending = true;
 				
+				// TODO Airplane mode causes bugs to the sending process of the transmissions
 				//Go back to airplane more if needed
 				if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))
 				{
 					try
 					{	//Wait for messages to be sent
+						Debug.d("PRE_AIRPLANE_MODE_WAITING_TIME_MS: " + PRE_AIRPLANE_MODE_WAITING_TIME_MS);
 						Thread.sleep(PRE_AIRPLANE_MODE_WAITING_TIME_MS);
 					}
 					catch(Exception ignore)

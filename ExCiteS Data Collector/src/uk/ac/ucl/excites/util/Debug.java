@@ -37,6 +37,12 @@ public class Debug
 			Log.d(TAG, getPrintableName() + msg);
 	}
 
+	public static void d()
+	{
+		if(DEBUG)
+			Log.d(TAG, getPrintableName());
+	}
+
 	public static void i(String tag, String msg)
 	{
 		if(DEBUG)

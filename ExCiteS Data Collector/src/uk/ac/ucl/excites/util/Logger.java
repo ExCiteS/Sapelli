@@ -25,7 +25,7 @@ public class Logger
 		this.formatter = ISODateTimeFormat.dateTime();
 		try
 		{
-			this.fileWriter = new FileWriter(folderPath + File.separator + baseFileName + (System.currentTimeMillis() / 1000) + LOG_EXTENSION);
+			this.fileWriter = new FileWriter(folderPath + File.separator + baseFileName + (TimeUtils.getTimestampForFileName()) + LOG_EXTENSION);
 			fileWriter.open(FileHelpers.FILE_EXISTS_STRATEGY_APPEND, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 		}
 		catch(Exception e)

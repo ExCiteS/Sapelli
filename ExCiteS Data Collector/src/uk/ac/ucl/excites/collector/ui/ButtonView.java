@@ -9,16 +9,18 @@ import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
 import uk.ac.ucl.excites.collector.ui.images.FileImage;
 import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
 import uk.ac.ucl.excites.collector.ui.images.ResourceImage;
+import uk.ac.ucl.excites.util.Debug;
 import android.content.Context;
 import android.graphics.Color;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
+import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 
 /**
- * @author Julia, mstevens
+ * @author Julia, mstevens, Michalis Vitos
  * 
  */
 public class ButtonView extends PickerView implements AdapterView.OnItemClickListener
@@ -26,7 +28,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	
 	static private final String TAG = "ButtonView";
 	
-	static public final float BUTTON_HEIGHT = 45;
+	static public final float BUTTON_HEIGHT = 65;
 
 	static public final int BUTTON_TYPE_BACK = -1;
 	static public final int BUTTON_TYPE_CANCEL = 0;
@@ -144,6 +146,8 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	@Override
 	public void onItemClick(AdapterView<?> parent, View v, int position, long id)
 	{
+		v.startAnimation(AnimationUtils.loadAnimation(getContext(), R.layout.image_click_animation));
+
 		if(buttonsEnabled)
 		{
 			if(position >= positionToButton.length)

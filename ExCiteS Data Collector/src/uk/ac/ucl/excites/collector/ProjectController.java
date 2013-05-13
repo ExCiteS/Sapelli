@@ -12,9 +12,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.collector.geo.OrientationSensor;
-import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Field.Optionalness;
@@ -57,6 +57,7 @@ public class ProjectController implements LocationListener, OrientationListener
 	private Project project;
 	private DataAccess dao;
 	private CollectorActivity activity;
+	private Context context;
 
 	private long deviceID; // 32 bit _unsigned_ CRC32 hashcode
 
@@ -75,11 +76,12 @@ public class ProjectController implements LocationListener, OrientationListener
 	private long formStartTime;
 	private Logger logger;
 
-	public ProjectController(Project project, DataAccess dao, CollectorActivity activity)
+	public ProjectController(Project project, DataAccess dao, CollectorActivity activity, Context context)
 	{
 		this.project = project;
 		this.dao = dao;
 		this.activity = activity;
+		this.context = context;
 
 		fieldHistory = new Stack<Field>();
 		tempDisabledFields = new HashSet<Field>();
@@ -225,7 +227,15 @@ public class ProjectController implements LocationListener, OrientationListener
 				logger.addLine("BACK_BUTTON", currentField.getID());
 
 			currentField = null; // !!! otherwise we create loops
-			goTo(fieldHistory.pop());
+			final Field previousField = fieldHistory.pop();
+
+			// TODO Maybe there is a better way of handling back buttons
+			if(previousField instanceof LocationField)
+				goTo(fieldHistory.pop()); // Move two fields backwards
+			else if(currentField instanceof OrientationField)
+				goTo(fieldHistory.pop()); // Move two fields backwards
+			else
+				goTo(previousField);
 		}
 	}
 
@@ -267,8 +277,12 @@ public class ProjectController implements LocationListener, OrientationListener
 				return; // !!!
 			}
 		}
+
+		// TODO Add a delay tag to the XML and load it from there
+		// TODO Maybe add the above code to the AsyncTask
 		// Update GUI (will also handle EndField & CancelField):
-		activity.setField(currentField);
+		InterfaceDelay ui = new InterfaceDelay(context, 700, activity, currentField);
+		ui.execute();
 	}
 
 	public ButtonsState getButtonsState()
@@ -368,7 +382,6 @@ public class ProjectController implements LocationListener, OrientationListener
 
 		// Store currentRecord
 		dao.store(currentRecord);
-		dao.commit();
 		
 		Log.d(TAG, "Stored record:");
 		Log.d(TAG, currentRecord.toString());

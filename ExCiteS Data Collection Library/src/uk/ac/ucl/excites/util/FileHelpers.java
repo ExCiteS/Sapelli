@@ -254,7 +254,7 @@ public final class FileHelpers
 	static public String getFileExtension(String filePath)
 	{
 		int lastIndex = filePath.lastIndexOf(".");
-		String result = filePath.substring(lastIndex, filePath.length());
+		String result = filePath.substring(lastIndex + 1, filePath.length());
 		return result;
 	}
 

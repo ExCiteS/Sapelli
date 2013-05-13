@@ -34,7 +34,7 @@ public class AudioView extends PickerView implements FieldView
 	private AudioRecorder audioRecorder;
 	private Image startImage;
 	private Image stopImage;
-	
+
 	public AudioView(Context context)
 	{
 		super(context);
@@ -45,8 +45,8 @@ public class AudioView extends PickerView implements FieldView
 	{
 		final AudioField audioField = (AudioField) field;
 		Project project = controller.getProject();
-		
-		//Get audioFile:
+
+		// Get audioFile:
 		try
 		{
 			audioFile = audioField.getNewTempFile(controller.getCurrentRecord());
@@ -55,48 +55,62 @@ public class AudioView extends PickerView implements FieldView
 		{
 			Log.e(TAG, "Could get audio file.", e);
 			controller.mediaDone(null);
-			return; //!!!
+			return; // !!!
 		}
-		
-		//Columns:
+
+		// Columns:
 		setNumColumns(1);
-		
-		//Adapter & images:
+
+		// Adapter & images:
 		imageAdapter = new ImageAdapter(super.getContext());
-		//	Start rec image:
+		// Start rec image:
 		if(audioField.getStartRecImageLogicalPath() != null)
 			startImage = new FileImage(project, audioField.getStartRecImageLogicalPath());
 		else
 			startImage = new ResourceImage(R.drawable.start_audio_rec);
-		//  Stop rec image:
+		// Stop rec image:
 		if(audioField.getStopRecImageLogicalPath() != null)
 			stopImage = new FileImage(project, audioField.getStopRecImageLogicalPath());
 		else
 			stopImage = new ResourceImage(R.drawable.stop_audio_rec);
-		imageAdapter.addImage(startImage); //show start button
-		
+		imageAdapter.addImage(startImage); // show start button
+		imageAdapter.addImage(stopImage); // show stop button
+
 		// Set image dimensions when view dimensions are known:
 		getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
 		{
 			public boolean onPreDraw()
 			{
 				imageAdapter.setImageWidth(LayoutParams.MATCH_PARENT);
-				imageAdapter.setImageHeight(getHeight());
+				imageAdapter.setImageHeight((getHeight() - PickerView.SPACING) / imageAdapter.getCount());
 				setAdapter(imageAdapter);
-				
+
 				getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
 				return false;
 			}
 		});
-				
+
 		// Set click listener
 		setOnItemClickListener(new OnItemClickListener()
 		{
 			@Override
 			public void onItemClick(AdapterView<?> parent, View v, int position, long id)
 			{
-				if(audioRecorder == null)
-				{	//Start button clicked
+				if(position == 1) // crossed microphone
+				{
+					if(audioRecorder == null)
+					{
+						controller.goForward(true);
+					}
+
+					else
+					{ // Stop button clicked
+						stopRecording();
+						controller.mediaDone(audioFile);
+					}
+				}
+				else
+				{
 					try
 					{
 						audioRecorder = new AudioRecorder(audioFile);
@@ -106,22 +120,16 @@ public class AudioView extends PickerView implements FieldView
 					{
 						Log.e(TAG, "Could not start audio recording.", e);
 						controller.mediaDone(null);
-						return; //!!!
+						return; // !!!
 					}
-					//Switch buttons:
-					imageAdapter.clear();
-					imageAdapter.addImage(stopImage);
+					// Switch buttons:
+					imageAdapter.makeInvisible(0);
 					setAdapter(imageAdapter);
-				}
-				else
-				{	//Stop button clicked
-					stopRecording();
-					controller.mediaDone(audioFile);
 				}
 			}
 		});
 	}
-	
+
 	private void stopRecording()
 	{
 		try

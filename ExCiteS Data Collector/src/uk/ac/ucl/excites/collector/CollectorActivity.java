@@ -1,9 +1,14 @@
 package uk.ac.ucl.excites.collector;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
@@ -67,7 +72,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	static public final int RETURN_VIDEO_CAPTURE = 2;
 	static public final int RETURN_AUDIO_CAPTURE = 3;
 
-	private static final long TIMEOUT_MS = 5 * 60 * 1000; // timeout after 5 minutes
+	private static final int TIMEOUT_MIN = 5; // timeout after 5 minutes
 
 	// DYNAMICS-------------------------------------------------------
 
@@ -90,8 +95,10 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 
 	// Timeout:
 	protected boolean pausedForActivityResult = false;
-	protected Timer pauseTimer = null;
 	protected boolean timedOut = false;
+
+	private ScheduledExecutorService scheduleTaskExecutor;
+	private ScheduledFuture<?> scheduledFuture;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -99,7 +106,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		super.onCreate(savedInstanceState);
 
 		// Retrieve the tmpPhotoLocation for the saved state
-		if(savedInstanceState != null)
+		if(savedInstanceState != null && savedInstanceState.containsKey(TEMP_PHOTO_PATH_KEY))
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
 
 		// Check if there is an SD Card, otherwise inform the user and finish the activity
@@ -159,7 +166,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		}
 
 		// Set-up controller:
-		controller = new ProjectController(project, dao, this);
+		controller = new ProjectController(project, dao, this, this);
 
 		// Start project:
 		controller.startProject();
@@ -412,9 +419,8 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		// set timeout timer:
 		if(!pausedForActivityResult)
 		{
-			pauseTimer = new Timer();
 			timedOut = false;
-			pauseTimer.schedule(new TimerTask()
+			Runnable pause = new Runnable()
 			{
 				@Override
 				public void run()
@@ -425,7 +431,18 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 					timedOut = true;
 					Log.i(TAG, "Time-out reached");
 				}
-			}, TIMEOUT_MS);
+			};
+
+			// Creates a thread pool that can schedule commands to run after a given
+			// delay, or to execute periodically.
+			scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
+			scheduledFuture = scheduleTaskExecutor.schedule(pause, TIMEOUT_MIN, TimeUnit.MINUTES);
+
+			Calendar calendar = Calendar.getInstance();
+			calendar.setTime(new Date());
+			calendar.add(Calendar.MINUTE, TIMEOUT_MIN);
+			String formattedDate = new SimpleDateFormat("HH:mm:ss.S").format(calendar.getTime());
+			Debug.d("Scheduled a timeout to take place at: " + formattedDate);
 		}
 		// super:
 		super.onPause();
@@ -436,9 +453,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 	{
 		// super:
 		super.onResume();
-
-		// Load the project
-		loadProject();
 
 		if(pausedForActivityResult)
 			pausedForActivityResult = false;
@@ -452,8 +466,11 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			}
 			else
 			{ // cancel timer if needed:
-				if(pauseTimer != null)
-					pauseTimer.cancel();
+				if(scheduledFuture != null)
+					scheduledFuture.cancel(true);
+
+				// Load the project
+				loadProject();
 			}
 		}
 	}
@@ -464,6 +481,9 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		super.onNewIntent(intent);
 		// Change the current intent
 		setIntent(intent);
+
+		if(controller != null)
+			controller.cancelAndStop();
 	}
 
 	@Override
@@ -472,8 +492,8 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		// clean up:
 		if(fieldView != null)
 			fieldView.cancel();
-		if(pauseTimer != null)
-			pauseTimer.cancel();
+		if(scheduledFuture != null)
+			scheduledFuture.cancel(true);
 		if(controller != null)
 			controller.cancelAndStop();
 		// super:
