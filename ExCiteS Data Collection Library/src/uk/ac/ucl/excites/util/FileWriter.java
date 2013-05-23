@@ -136,12 +136,12 @@ public class FileWriter
 		dispose();
 	}
 
-	public void open(int fileExistsStrategy, int fileDoesNotExistStrategy) throws Exception
+	public void open(int fileExistsStrategy, int fileDoesNotExistStrategy) throws IOException
 	{
 		if(fullPath == null)
 			throw new NullPointerException();
 		if(!FileHelpers.isFilePath(fullPath))
-			throw new Exception("Not a valid file path (" + fullPath + ")");
+			throw new IOException("Not a valid file path (" + fullPath + ")");
 		if(fileExistsStrategy < 0 || fileExistsStrategy > 4)
 			throw new IllegalArgumentException("Invalid file exists strategy");
 		if(fileDoesNotExistStrategy < 1 || fileDoesNotExistStrategy > 2)
@@ -194,7 +194,7 @@ public class FileWriter
 			writer = new OutputStreamWriter(new FileOutputStream(file, seekToEOF), charset);
 		}
 		else
-			throw new Exception("Could not open FileWriter");
+			throw new IOException("Could not open FileWriter");
 	}
 
 	protected void _dispose()
