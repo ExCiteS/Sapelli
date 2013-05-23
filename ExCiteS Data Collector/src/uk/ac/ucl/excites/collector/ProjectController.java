@@ -57,7 +57,6 @@ public class ProjectController implements LocationListener, OrientationListener
 	private Project project;
 	private DataAccess dao;
 	private CollectorActivity activity;
-	private Context context;
 
 	private long deviceID; // 32 bit _unsigned_ CRC32 hashcode
 
@@ -76,12 +75,11 @@ public class ProjectController implements LocationListener, OrientationListener
 	private long formStartTime;
 	private Logger logger;
 
-	public ProjectController(Project project, DataAccess dao, CollectorActivity activity, Context context)
+	public ProjectController(Project project, DataAccess dao, CollectorActivity activity)
 	{
 		this.project = project;
 		this.dao = dao;
 		this.activity = activity;
-		this.context = context;
 
 		fieldHistory = new Stack<Field>();
 		tempDisabledFields = new HashSet<Field>();
@@ -281,7 +279,7 @@ public class ProjectController implements LocationListener, OrientationListener
 		// TODO Add a delay tag to the XML and load it from there
 		// TODO Maybe add the above code to the AsyncTask
 		// Update GUI (will also handle EndField & CancelField):
-		InterfaceDelay ui = new InterfaceDelay(context, 700, activity, currentField);
+		InterfaceDelay ui = new InterfaceDelay(700, activity, currentField);
 		ui.execute();
 	}
 
