@@ -416,9 +416,6 @@ public class Form
 				schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_END, false));
 			// Device ID column:
 			schema.addColumn(new IntegerColumn(COLUMN_DEVICE_ID, false, false, 32));
-			// Transmission information columns:
-
-
 			// Columns for user-defined fields:
 			for(Field f : fields)
 				if(!f.isNoColumn())
