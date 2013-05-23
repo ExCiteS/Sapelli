@@ -17,14 +17,21 @@ import android.util.Log;
 /**
  * This class contains various utilities methods
  * 
- * @author Michalis Vitos
+ * @author Michalis Vitos, mstevens
  * 
  */
 public class DataSenderPreferences extends PreferenceActivity implements OnSharedPreferenceChangeListener
 {
 
+	private static final String TAG = "DataSenderPreferences";
+	
 	public static final String PREFERENCES = "ExCiteS_Data_Sender_Preferences";
-	public static final String TAG = "DataSenderPreferences";
+	private static final String PREF_AIRPLANE_MODE = "airplaneMode";
+	private static final String PREF_DROPBOX_UPLOAD = "dropboxUpload";
+	private static final String PREF_SMS_UPLOAD = "smsUpload";
+	private static final String PREF_MAX_ATTEMPTS = "maxAttempts";
+	private static final String PREF_TIME_SCHEDULE = "timeSchedule";
+	private static final String PREF_ENABLE_SENDER = "enableSender";
 
 	@SuppressWarnings("deprecation")
 	@Override
@@ -32,7 +39,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	{
 		super.onCreate(savedInstanceState);
 
-		addPreferencesFromResource(R.xml.background_preferences);
+		addPreferencesFromResource(R.xml.background_preferences); //TODO remove use of deprecated method
 		PreferenceManager.setDefaultValues(DataSenderPreferences.this, R.xml.background_preferences, false);
 
 		// Register a listener
@@ -53,7 +60,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	public static boolean getSenderEnabled(Context mContext)
 	{
 		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return sharedPreferences.getBoolean("enableSender", false);
+		return sharedPreferences.getBoolean(PREF_ENABLE_SENDER, false);
 	}
 	
 	/**
@@ -65,7 +72,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	public static boolean getAirplaneMode(Context mContext)
 	{
 		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return sharedPreferences.getBoolean("airplaneMode", false);
+		return sharedPreferences.getBoolean(PREF_AIRPLANE_MODE, false);
 	}
 
 //	/**
@@ -89,7 +96,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	public static boolean getDropboxUpload(Context mContext)
 	{
 		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return sharedPreferences.getBoolean("dropboxUpload", false);
+		return sharedPreferences.getBoolean(PREF_DROPBOX_UPLOAD, false);
 	}
 
 	/**
@@ -101,7 +108,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	public static boolean getSMSUpload(Context mContext)
 	{
 		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return sharedPreferences.getBoolean("smsUpload", true);
+		return sharedPreferences.getBoolean(PREF_SMS_UPLOAD, true);
 	}
 	
 	/**
@@ -113,7 +120,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	public static int getTimeSchedule(Context mContext)
 	{
 		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return ((sharedPreferences.getString("timeSchedule", "1")).equals("")) ? 1 : Integer.parseInt(sharedPreferences.getString("timeSchedule", "10"));
+		return ((sharedPreferences.getString(PREF_TIME_SCHEDULE, "1")).equals("")) ? 1 : Integer.parseInt(sharedPreferences.getString(PREF_TIME_SCHEDULE, "10"));
 	}
 
 	/**
@@ -125,7 +132,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 	public static int getMaxAttempts(Context mContext)
 	{
 		SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(mContext);
-		return Integer.parseInt(sharedPreferences.getString("maxAttempts", "1"));
+		return Integer.parseInt(sharedPreferences.getString(PREF_MAX_ATTEMPTS, "1"));
 	}
 
 	@Override
@@ -142,7 +149,7 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 		// ================================================================================
 		// ================================================================================
 
-		if(key.equals("enableSender"))
+		if(key.equals(PREF_ENABLE_SENDER))
 		{
 			// If true start service, otherwise try to stop it
 			if(getSenderEnabled(context))
@@ -157,14 +164,14 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 				context.startActivity(intent);
 			}
 		}
-		else if(key.equals("timeSchedule"))
+		else if(key.equals(PREF_TIME_SCHEDULE))
 		{
-			if(getTimeSchedule(context) == 0)
+			if(getTimeSchedule(context) <= 0)
 			{
 				// Show a message
 				final AlertDialog.Builder builder = new AlertDialog.Builder(this);
 				builder.setTitle("Invalid Input");
-				builder.setMessage("Please insert a value over 0.");
+				builder.setMessage("Please insert an interval value higher than 0.");
 				builder.setPositiveButton(android.R.string.ok, null);
 				builder.show();
 			}
@@ -192,4 +199,5 @@ public class DataSenderPreferences extends PreferenceActivity implements OnShare
 		Log.d(TAG, "SMSUpload: " + (getSMSUpload(context) ? "true" : "false"));
 		Log.d(TAG, "DropboxUpload: " + (getDropboxUpload(context) ? "true" : "false"));
 	}
+	
 }
