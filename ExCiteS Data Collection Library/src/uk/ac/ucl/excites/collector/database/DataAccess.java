@@ -49,7 +49,7 @@ public final class DataAccess
 	 */
 	public void store(Schema schema)
 	{
-		storeObj(schema);
+		storeObject(schema);
 	}
 
 	/**
@@ -64,13 +64,39 @@ public final class DataAccess
 			db.activate(s, ACTIVATION_DEPTH);
 		return result;
 	}
-
+	
+	/**
+	 * @param id
+	 * @param version
+	 * @return
+	 */
+	public Schema retrieveSchema(final int id, final int version)
+	{
+		ObjectSet<Schema> result = db.query(new Predicate<Schema>()
+		{
+			private static final long serialVersionUID = 1L;
+			
+			public boolean match(Schema schema)
+			{
+				return schema.getID() == id && schema.getVersion() == version;
+			}
+		});
+		if(result.hasNext())
+		{
+			Schema s = result.next();
+			db.activate(s, ACTIVATION_DEPTH);
+			return s;
+		}
+		else
+			return null;
+	}
+	
 	/**
 	 * @param record - the record to store
 	 */
 	public void store(Record record)
 	{
-		storeObj(record);
+		storeObject(record);
 	}
 	
 	/**
@@ -78,7 +104,7 @@ public final class DataAccess
 	 */
 	public void delete(Record record)
 	{
-		deleteObj(record);
+		deleteObject(record);
 	}
 	
 	/**
@@ -144,39 +170,13 @@ public final class DataAccess
 	}
 	
 	/**
-	 * @param id
-	 * @param version
-	 * @return
-	 */
-	public Schema retrieveSchema(final int id, final int version)
-	{
-		ObjectSet<Schema> result = db.query(new Predicate<Schema>()
-		{
-			private static final long serialVersionUID = 1L;
-			
-			public boolean match(Schema schema)
-			{
-				return schema.getID() == id && schema.getVersion() == version;
-			}
-		});
-		if(result.hasNext())
-		{
-			Schema s = result.next();
-			db.activate(s, ACTIVATION_DEPTH);
-			return s;
-		}
-		else
-			return null;
-	}
-	
-	/**
 	 * @param project
 	 */
 	public void store(Project project) throws DuplicateException
 	{
 		if(retrieveProject(project.getName(), project.getVersion()) != null)
 			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
-		storeObj(project);
+		storeObject(project);
 	}
 	
 	/**
@@ -184,7 +184,7 @@ public final class DataAccess
 	 */
 	public void update(Project project)
 	{
-		storeObj(project);
+		storeObject(project);
 	}
 
 	/**
@@ -232,7 +232,7 @@ public final class DataAccess
 	 */
 	public void delete(Project project)
 	{
-		deleteObj(project);
+		deleteObject(project);
 	}
 	
 	/**
@@ -268,7 +268,7 @@ public final class DataAccess
 	 */
 	public void store(Transmission transmission)
 	{
-		storeObj(transmission);
+		storeObject(transmission);
 	}
 	
 	/**
@@ -335,7 +335,7 @@ public final class DataAccess
 	 */
 	public void store(SMSTransmissionID id)
 	{
-		storeObj(id);
+		storeObject(id);
 	}
 	
 	public SMSTransmissionID retrieveTransmissionID()
@@ -346,15 +346,29 @@ public final class DataAccess
 		return result.get(0);
 	}
 
-	public void storeObj(Object obj)
+	public void storeObject(Object obj)
+	{
+		storeObject(obj, true);
+	}
+	
+	public void storeObject(Object obj, boolean commit)
 	{
 		db.store(obj);
-		db.commit();
+		if(commit)
+			db.commit();
 	}
-
-	public void deleteObj(Object obj)
+	
+	public void deleteObject(Object obj)
+	{
+		deleteObject(obj, true);
+	}
+	
+	public void deleteObject(Object obj, boolean commit)
 	{
 		db.delete(obj);
+		if(commit)
+			db.commit();
 		db.commit();
 	}
+	
 }
