@@ -67,7 +67,6 @@ public class DataSenderService extends Service implements TransmissionSender
 	private List<DropboxSync> folderObservers;
 	private SMSSender smsSender;
 	private SMSTransmissionID smsTransmissionID;
-	private boolean isSending;
 	private int startMode = START_STICKY; // indicates how to behave if the service is killed
 	private boolean allowRebind; // indicates whether onRebind should be used
 	private DataAccess dao;
@@ -81,9 +80,6 @@ public class DataSenderService extends Service implements TransmissionSender
 	{
 		//Loggers
 		loggers = new HashMap<Project, Logger>();
-		
-		// Set the variable to false
-		isSending = false;
 
 		// Creates a thread pool that can schedule commands to run after a given
 		// delay, or to execute periodically.
@@ -175,18 +171,19 @@ public class DataSenderService extends Service implements TransmissionSender
 		// ================================================================================
 		// Schedule Transmitting
 		// ================================================================================
-		// Check if the scheduleTaskExecutor is running and stop it first
-		if(isSending)
+		if(scheduledFuture != null)
 		{
-			scheduledFuture.cancel(true);
-			isSending = false;
+			/* Note: we can check if it the task is currently executing with isRunning(scheduledFuture),
+			 * However, we cancel the scheduledFuture anyway to ensure that an earlier schedule will never be executed at a later time.
+			 */
+			scheduledFuture.cancel(true); //TODO this does NOT actually interrupt the running task, we should check for Thread.interrupted() from within the task and end it ourselves
 		}
-		// This schedule a runnable task every TIME_SCHEDULE in minutes
+		// Schedule a runnable task every TIME_SCHEDULE in minutes:
 		scheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
 		
 		return startMode;
 	}
-
+	
 	@Override
 	public void onDestroy()
 	{
@@ -223,7 +220,7 @@ public class DataSenderService extends Service implements TransmissionSender
 					pl.getValue().addLine("Sending task");
 				
 				//Come out of airplane more if needed
-				if(DeviceControl.inAirplaneMode(context))
+				if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
 				{
 					DeviceControl.toggleAirplaneMode(context);
 					Debug.d("Phone was in AirplaneMode and try to get it out.");
@@ -234,9 +231,9 @@ public class DataSenderService extends Service implements TransmissionSender
 						Debug.d("POST_AIRPLANE_MODE_WAITING_TIME_MS: " + POST_AIRPLANE_MODE_WAITING_TIME_MS);
 						Thread.sleep(POST_AIRPLANE_MODE_WAITING_TIME_MS);
 					}
-					catch(Exception ignore)
+					catch(InterruptedException ie)
 					{
-						Debug.e(ignore);
+						//TODO rollback(?) & return
 					}
 				}
 				
@@ -328,8 +325,15 @@ public class DataSenderService extends Service implements TransmissionSender
 									Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalParts() + " messages");
 									t.send(DataSenderService.this);
 
-									// Debug.d("INTERVAL_BETWEEN_SMS_SENDING: " + INTERVAL_BETWEEN_SMS_SENDING);
-									// Thread.sleep(INTERVAL_BETWEEN_SMS_SENDING);
+//									try
+//									{	
+//										Debug.d("INTERVAL_BETWEEN_SMS_SENDING: " + INTERVAL_BETWEEN_SMS_SENDING);
+//										Thread.sleep(INTERVAL_BETWEEN_SMS_SENDING);
+//									}
+//									catch(InterruptedException ie)
+//									{
+//										//TODO rollback(?) & return
+//									}
 								}
 								catch(Exception e)
 								{
@@ -343,9 +347,7 @@ public class DataSenderService extends Service implements TransmissionSender
 					// commit changes to db:
 					// dao.commit();
 				}
-				
-				isSending = true;
-				
+
 				// TODO Airplane mode causes bugs to the sending process of the transmissions
 				//Go back to airplane more if needed
 				if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))
@@ -355,9 +357,9 @@ public class DataSenderService extends Service implements TransmissionSender
 						Debug.d("PRE_AIRPLANE_MODE_WAITING_TIME_MS: " + PRE_AIRPLANE_MODE_WAITING_TIME_MS);
 						Thread.sleep(PRE_AIRPLANE_MODE_WAITING_TIME_MS);
 					}
-					catch(Exception ignore)
+					catch(InterruptedException ie)
 					{
-						Debug.e(ignore);
+						//TODO rollback(?) & return
 					}
 
 					DeviceControl.toggleAirplaneMode(context);
@@ -434,12 +436,24 @@ public class DataSenderService extends Service implements TransmissionSender
 		Notification mNotification = new Notification(R.drawable.sender, getString(R.string.title_activity_main), System.currentTimeMillis());
 
 		// This method is deprecated. Use Notification.Builder instead.
-		mNotification.setLatestEventInfo(this, getString(R.string.title_activity_main), getString(R.string.notification), pendIntent);
+		mNotification.setLatestEventInfo(this, getString(R.string.title_activity_main), getString(R.string.notification), pendIntent); //TODO remove use of deprecated method 
 
 		mNotification.flags |= Notification.FLAG_NO_CLEAR;
 		startForeground(myID, mNotification);
 	}
 
+	/**
+	 * Checks if a scheduledFuture is currently executing its task
+	 * 
+	 * @see http://stackoverflow.com/a/4840622/1084488
+	 * 
+	 * @param future
+	 */
+	protected static boolean isRunning(ScheduledFuture<?> future)
+	{
+	    return future.getDelay(TimeUnit.MILLISECONDS) <= 0;
+	}
+	
 	@Override
 	public IBinder onBind(Intent intent)
 	{
