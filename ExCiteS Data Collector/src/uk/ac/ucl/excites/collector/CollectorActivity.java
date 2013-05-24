@@ -132,6 +132,9 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		buttonView = new ButtonView(this);
 		buttonView.setId(BUTTONS_VIEW_ID);
 		rootLayout.addView(buttonView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		
+		// Load the project
+		loadProject();
 	}
 
 	private void loadProject()
@@ -460,17 +463,16 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		{
 			// restart project if needed:
 			if(timedOut)
-			{ // restart project:
+			{ 
+				// restart project:
 				controller.startProject();
 				timedOut = false;
 			}
 			else
-			{ // cancel timer if needed:
+			{ 	
+				// cancel timer if needed:
 				if(scheduledFuture != null)
 					scheduledFuture.cancel(true);
-
-				// Load the project
-				loadProject();
 			}
 		}
 	}
@@ -484,6 +486,9 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 
 		if(controller != null)
 			controller.cancelAndStop();
+		
+		// Load the project
+		loadProject();
 	}
 
 	@Override
