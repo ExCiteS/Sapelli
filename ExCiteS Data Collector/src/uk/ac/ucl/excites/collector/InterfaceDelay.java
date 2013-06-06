@@ -2,21 +2,18 @@ package uk.ac.ucl.excites.collector;
 
 import uk.ac.ucl.excites.collector.project.model.Field;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
 public class InterfaceDelay extends AsyncTask<Void, Void, Void>
 {
-	private Context context;
 	private CollectorActivity activity;
 	private Field currentField;
 	private long delay;
 	private ProgressDialog dialog;
 
-	public InterfaceDelay(Context context, long delay, CollectorActivity activity, Field currentField)
+	public InterfaceDelay(long delay, CollectorActivity activity, Field currentField)
 	{
-		this.context = context;
 		this.delay = delay;
 		this.activity = activity;
 		this.currentField = currentField;
@@ -26,7 +23,7 @@ public class InterfaceDelay extends AsyncTask<Void, Void, Void>
 	@Override
 	protected void onPreExecute()
 	{
-		dialog = new ProgressDialog(context);
+		dialog = new ProgressDialog(activity);
 		dialog.setCancelable(false);
 		dialog.show();
 	}

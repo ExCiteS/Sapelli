@@ -170,7 +170,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		}
 
 		// Set-up controller:
-		controller = new ProjectController(project, dao, this, this);
+		controller = new ProjectController(project, dao, this);
 
 		// Start project:
 		controller.startProject();
