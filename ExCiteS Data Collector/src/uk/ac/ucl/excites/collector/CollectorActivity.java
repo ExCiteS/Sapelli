@@ -30,6 +30,7 @@ import uk.ac.ucl.excites.collector.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.WaitingView;
 import uk.ac.ucl.excites.collector.util.SDCard;
 import uk.ac.ucl.excites.util.Debug;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -416,6 +417,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		return list.size() > 0;
 	}
 
+	@SuppressLint("SimpleDateFormat")
 	@Override
 	protected void onPause()
 	{
