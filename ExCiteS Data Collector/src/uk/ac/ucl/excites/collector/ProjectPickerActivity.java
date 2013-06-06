@@ -6,6 +6,7 @@ import group.pals.android.lib.ui.filechooser.io.localfile.LocalFile;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -488,6 +489,16 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		{
 			errorDialog("Invalid xml or excites file: " + sourcePathOrURL, false).show();
 			return;
+		}
+		
+		// Generate documentation
+		try
+		{
+			project.generateDocumentation();
+		}
+		catch(IOException e)
+		{
+			errorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
 		}
 
 		// Encryption Check

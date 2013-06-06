@@ -7,6 +7,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.util.FileHelpers;
+import uk.ac.ucl.excites.util.FileWriter;
 
 /**
  * @author mstevens
@@ -21,7 +22,8 @@ public class Project
 	static public final String SOUND_FOLDER = "snd";
 	static public final String DATA_FOLDER = "data";
 	static public final String TEMP_FOLDER = "temp";
-	static public final String LOG_FOLDER = "logs";
+	static public final String LOG_FOLDER = "logs"; //subfolder of data/
+	static public final String DOCS_FOLDER = "docs";
 	
 	static public final boolean DEFAULT_LOGGING = false;
 	
@@ -182,6 +184,47 @@ public class Project
 		File folder = new File(getLogFolderPath());
 		checkFolder(folder);
 		return folder;
+	}
+	
+	public String getDocsFolderPath()
+	{
+		return projectPath + DOCS_FOLDER + File.separator;
+	}
+	
+	/**
+	 * @return File object pointing to the docs folder for this project
+	 * @throws IOException - when the folder cannot be created or is not writable
+	 */
+	public File getDocsFolder() throws IOException
+	{
+		File folder = new File(getDocsFolderPath());
+		checkFolder(folder);
+		return folder;
+	}
+	
+	/**
+	 * For now this only generates CSV files that document the indexed values for ChoiceFields
+	 * 
+	 * @throws IOException
+	 */
+	public void generateDocumentation() throws IOException
+	{
+		File docsFolder = getDocsFolder();
+
+		for(Form form : forms)
+		{
+			for(Field field : form.getFields())
+			{
+				if(!field.isNoColumn() && field instanceof ChoiceField)
+				{					
+					FileWriter writer = new FileWriter(docsFolder.getAbsolutePath() + File.separator + form.getName() + "_" + field.getID() + ".csv");
+					writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
+					writer.write(((ChoiceField) field).getDictionary().toCSV(";"));
+					writer.close();
+				}
+			}
+		}
+		
 	}
 	
 }

@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.collector.project.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
@@ -9,13 +10,15 @@ import uk.ac.ucl.excites.storage.model.Record;
 
 
 /**
+ * Each ChoiceField represents a node in a decision tree. The whole of such a tree (starting with the root) describes the possible values the field (stored as an IntegerColumn) can take.
+ * 
  * @author mstevens
- *
  */
 public class ChoiceField extends Field
 {
 	
 	static public final int NON_LEAF_VALUE_INDEX = -1;
+	static public final int NON_SELECTABLE_CHOICE_INDEX = -1;
 	static public final int DEFAULT_NUM_COLS = 2;
 	
 	private ChoiceField parent;
@@ -26,8 +29,7 @@ public class ChoiceField extends Field
 	private int rows;
 	private String alt;
 	private String value;
-	private int finalValueIndex;
-	private List<ChoiceField> finalValueChoices;
+	private ChoiceDictionary dictionary;
 	
 	public ChoiceField(Form form, String id, String value, ChoiceField parent)
 	{
@@ -43,17 +45,16 @@ public class ChoiceField extends Field
 		this.children = new ArrayList<ChoiceField>();
 		this.parent = parent;
 		this.value = ((value == null || value.isEmpty()) ? null : value); //replace empty string with null (so we don't need to check for empty string elsewhere)
-		this.finalValueIndex = NON_LEAF_VALUE_INDEX; //will be changed for leaf choices in findFinalValues()
 		if(parent == null)
 		{	//this is a root choice
 			root = this; //self-pointer
-			finalValueChoices = new ArrayList<ChoiceField>(); //root holds the finalValueChoices list
+			dictionary = new ChoiceDictionary(); //root holds the dictionary
 		}
 		else
 		{	//this is a child choice
 			parent.addChild(this); //add myself as a child of my parent
 			root = parent.root;
-			finalValueChoices = root.finalValueChoices; //children share the finalValueChoices list of the root (so there is only 1 instance per choice tree)
+			dictionary = root.dictionary; //children share the dictionary of the root (so there is only 1 instance per choice tree)
 		}
 	}
 	
@@ -186,12 +187,23 @@ public class ChoiceField extends Field
 	}
 	
 	@Override
+	public void setIn(CollectorUI ui)
+	{
+		ui.setChoice(this);
+	}
+	
+	public String toString()
+	{
+		return "ChoiceField " + id + (value != null ? " (value: " + value + ")" : " (no value set)");
+	}
+	
+	@Override
 	protected IntegerColumn createColumn()
 	{
 		if(!isRoot())
 			throw new IllegalStateException("createColumn() should only be called on a root ChoiceField object.");
-		this.findFinalValues(); //!!!
-		if(finalValueChoices.isEmpty())
+		dictionary.initialise(this); //!!!
+		if(dictionary.isEmpty())
 		{	//no values set
 			form.addWarning("noColumn was forced to true on ChoiceField " + getID() + " because it has no values.");
 			noColumn = true; //!!!
@@ -199,7 +211,7 @@ public class ChoiceField extends Field
 		}
 		else
 		{	//Create column:
-			return new IntegerColumn(id, (optional != Optionalness.NEVER), 0, finalValueChoices.size() - 1);
+			return new IntegerColumn(id, (optional != Optionalness.NEVER), 0, dictionary.size() - 1);
 		}
 	}
 	
@@ -216,63 +228,111 @@ public class ChoiceField extends Field
 	
 	private ChoiceField getLowestAncestorWithValue()
 	{
-		if(value == null && parent != null)
-			return parent.getLowestAncestorWithValue();
+		if(value == null) //we don't need to check for empty String because those are replaced by null in the constructor
+		{
+			if(parent != null)
+				return parent.getLowestAncestorWithValue(); //recursive call
+			else
+				return null; //in case there is no value all the way to the root
+		}
 		else
 			return this; //return self
-	}
-	
-	/**
-	 * Recursive method which implements a depth-first traversal that finds all leaves.
-	 * <br/>
-	 * <b>Note:</b> This method should only be called after the whole choice tree is parsed & constructed (i.e. from addColumns()).<br/>
-	 */
-	private void findFinalValues()
-	{
-		if(isLeaf())
-		{
-			ChoiceField valuedChoice = this.getLowestAncestorWithValue();
-			if(valuedChoice.getValue() != null) //there must be at least one non-null value
-			{
-				//add to list of final choices and store index in the leaf (not in the valuedChoice!):
-				int index = finalValueChoices.indexOf(valuedChoice);
-				if(index == -1)
-				{
-					this.finalValueIndex = finalValueChoices.size();
-					finalValueChoices.add(valuedChoice);
-				}
-				else
-					//valuedChoice was already in the list:
-					this.finalValueIndex = index;
-			}
-		}
-		else
-		{
-			for(ChoiceField child : children) //Depth-first traversal
-				child.findFinalValues(); //recursive call
-		}
 	}
 	
 	public void storeValue(Record entry)
 	{
 		if(!isNoColumn() && isLeaf())
-			((IntegerColumn) root.column).storeValue(entry, Long.valueOf(finalValueIndex));
+			((IntegerColumn) root.column).storeValue(entry, Long.valueOf(dictionary.getIndex(this))); //this = the selected leaf
 	}
 	
-	public ChoiceField lookupChoice(int valueIndex)
+	public ChoiceDictionary getDictionary()
 	{
-		return finalValueChoices.get(valueIndex);
-	}
-
-	@Override
-	public void setIn(CollectorUI ui)
-	{
-		ui.setChoice(this);
+		return dictionary;
 	}
 	
-	public String toString()
+	public static class ChoiceDictionary
 	{
-		return "ChoiceField " + id + (value != null ? " (value: " + value + ")" : " (no value set)");
+		
+		/* HashMap which maps Choices that are both "valued" (i.e. with non-null value String) AND
+		 * "selectable" (being either a leaf itself or the lowest "valued" ancestor of a "non-valued" leaf)
+		 * into indexes, which are used to store the value (i.e. the choice made) of the ChoiceField tree. */
+		private HashMap<ChoiceField, Integer> valuedToIdx;
+		
+		/* An (Array)List which allows choices to be looked up by index */
+		private List<ChoiceField> indexed;
+		
+		public ChoiceDictionary()
+		{
+			valuedToIdx = new HashMap<ChoiceField, Integer>();
+			indexed = new ArrayList<ChoiceField>();
+		}
+		
+		/**
+		 * <b>Note:</b> This method should only be called after the whole choice tree is parsed & constructed (i.e. from addColumns()).
+		 */
+		protected void initialise(ChoiceField root)
+		{
+			if(root.isRoot())
+				traverse(root);
+			else
+				throw new IllegalArgumentException("ChoiceDictionary can only be initialised from the root choice.");
+		}
+	
+		/**
+		 * Recursive method which implements a depth-first traversal that finds all leaves and stores them or their lowest valued ancestor in the dictionary.
+		 */
+		private void traverse(ChoiceField choice)
+		{
+			if(choice.isLeaf())
+			{
+				ChoiceField valuedChoice = choice.getLowestAncestorWithValue();
+				if(valuedChoice != null && !valuedToIdx.containsKey(valuedChoice))
+				{
+					valuedToIdx.put(valuedChoice, indexed.size());
+					indexed.add(valuedChoice);
+				}
+			}
+			else
+			{
+				for(ChoiceField child : choice.children) //Depth-first traversal
+					traverse(child); //recursive call
+			}
+		}
+		
+		public boolean isEmpty()
+		{
+			return indexed.isEmpty();
+		}
+		
+		public int size()
+		{
+			return indexed.size();
+		}
+		
+		public int getIndex(ChoiceField choice)
+		{
+			Integer idx = valuedToIdx.get(choice.getLowestAncestorWithValue());
+			if(idx != null)
+				return idx.intValue();
+			else
+				return NON_SELECTABLE_CHOICE_INDEX;
+		}
+		
+		public ChoiceField getChoice(int index)
+		{
+			return indexed.get(index);
+		}
+		
+		public String toCSV(String separator)
+		{
+			StringBuffer bff = new StringBuffer();
+			bff.append("INDEX" + separator + "VALUE" + separator + "IMG" + separator + "ID/PATH" + "\n");
+			int idx = 0;
+			for(ChoiceField choice : indexed)
+				bff.append(idx++ + separator + choice.value + separator + choice.imageLogicalPath + separator + choice.id + "\n");
+			return bff.toString();
+		}
+		
 	}
 	
 }
