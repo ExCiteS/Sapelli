@@ -22,7 +22,6 @@ import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.collector.ui.BaseActivity;
-import uk.ac.ucl.excites.collector.util.SDCard;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sender.DataSenderPreferences;
@@ -32,6 +31,7 @@ import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.storage.xml.RecordsExporter;
 import uk.ac.ucl.excites.storage.xml.RecordsImporter;
 import uk.ac.ucl.excites.transmission.Settings;
+import uk.ac.ucl.excites.util.DeviceControl;
 import uk.ac.ucl.excites.util.FileHelpers;
 import uk.ac.ucl.excites.util.TimeUtils;
 import android.app.Activity;
@@ -114,7 +114,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		super.onCreate(savedInstanceState);
 		
 		// Check if there is an SD Card
-		if(!SDCard.isExternalStorageWritable() || !FileHelpers.createFolder(((CollectorApp) getApplication()).getExcitesFolderPath()))
+		if(!DeviceControl.isExternalStorageWritable() || !FileHelpers.createFolder(((CollectorApp) getApplication()).getExcitesFolderPath()))
 		{ // Inform the user and close the application
 			errorDialog("ExCiteS needs write access to the external storage in order to function. Please insert an SD card and restart the application.", true).show();
 			return;
@@ -448,7 +448,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		try
 		{
 			// Check if there is an SD Card
-			if(SDCard.isExternalStorageWritable())
+			if(DeviceControl.isExternalStorageWritable())
 			{
 				// Use /mnt/sdcard/ExCiteS/ as the basePath:
 				ExCiteSFileLoader loader = new ExCiteSFileLoader(((CollectorApp) getApplication()).getExcitesFolderPath() + File.separator);

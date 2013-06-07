@@ -1,9 +1,7 @@
 package uk.ac.ucl.excites.collector;
 
 import java.io.File;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -28,9 +26,10 @@ import uk.ac.ucl.excites.collector.ui.CameraView;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.WaitingView;
-import uk.ac.ucl.excites.collector.util.SDCard;
+import uk.ac.ucl.excites.util.DeviceControl;
 import uk.ac.ucl.excites.util.Debug;
-import android.annotation.SuppressLint;
+import uk.ac.ucl.excites.util.TimeUtils;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -111,7 +110,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
 
 		// Check if there is an SD Card, otherwise inform the user and finish the activity
-		if(!SDCard.isExternalStorageWritable())
+		if(!DeviceControl.isExternalStorageWritable())
 		{ // show error (activity will be exited after used clicks OK in the dialog):
 			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
 			return;
@@ -417,7 +416,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		return list.size() > 0;
 	}
 
-	@SuppressLint("SimpleDateFormat")
 	@Override
 	protected void onPause()
 	{
@@ -443,11 +441,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
 			scheduledFuture = scheduleTaskExecutor.schedule(pause, TIMEOUT_MIN, TimeUnit.MINUTES);
 
-			Calendar calendar = Calendar.getInstance();
-			calendar.setTime(new Date());
-			calendar.add(Calendar.MINUTE, TIMEOUT_MIN);
-			String formattedDate = new SimpleDateFormat("HH:mm:ss.S").format(calendar.getTime());
-			Debug.d("Scheduled a timeout to take place at: " + formattedDate);
+			Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
 		// super:
 		super.onPause();
