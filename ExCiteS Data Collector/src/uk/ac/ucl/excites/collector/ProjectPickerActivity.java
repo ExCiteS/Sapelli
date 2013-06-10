@@ -428,8 +428,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	{
 		try
 		{
-			// Use the path where the xml file currently is as the basePath (img and snd folders are assumed to be in the same place), no subfolders are
-			// created:
+			// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
 			ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
 			Project parsedProject = parser.parseProject(xmlFile);
 			//Show parser warnings if needed:

@@ -24,7 +24,7 @@ import uk.ac.ucl.excites.util.FileHelpers;
  */
 public class ExCiteSFileLoader
 {
-
+	
 	static public final String EXCITES_FILE_EXTENSION = "excites";
 	static private final String PROJECT_FILE = "PROJECT.xml";
 
@@ -55,7 +55,7 @@ public class ExCiteSFileLoader
 		{
 			throw new Exception("Error on extracting or parsing " + PROJECT_FILE, e);
 		}
-		// Extract excites file contents to project path:
+		// Extract the content of the excites file to project path: 
 		try
 		{
 			unzip(excitesFile, p.getProjectFolderPath());
@@ -118,4 +118,5 @@ public class ExCiteSFileLoader
 			throw new IOException("Error on unzipping ExCiteS file", e);
 		}
 	}
+	
 }

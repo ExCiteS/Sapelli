@@ -16,6 +16,8 @@ import uk.ac.ucl.excites.util.FileWriter;
 public class Project
 {
 	
+	static public final String NO_MEDIA_FILE = ".nomedia"; //Info: http://www.makeuseof.com/tag/hide-private-picture-folders-gallery-android
+	
 	static public final String DEFAULT_VERSION = "0";
 	
 	static public final String IMAGE_FOLDER = "img";
@@ -45,7 +47,7 @@ public class Project
 			throw new IllegalArgumentException("Both a name and a valid path are required");
 		this.name = FileHelpers.makeValidFileName(name);
 		this.version = version;
-		//Path
+		// Path:
 		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
 			basePath += File.separatorChar;
 		this.projectPath = basePath;
@@ -54,10 +56,16 @@ public class Project
 			this.projectPath += this.name + File.separatorChar + "v" + version + File.separatorChar;
 			if(!FileHelpers.createFolder(projectPath))
 				throw new IllegalArgumentException("Could not create folder: " + projectPath);
-		}	
-		//Forms collection
+			// Create .nomedia file:
+			try
+			{
+				(new File(projectPath + NO_MEDIA_FILE)).createNewFile();
+			}
+			catch(IOException ignore) {}
+		}
+		// Forms collection:
 		this.forms = new ArrayList<Form>();
-		//Logging:
+		// Logging:
 		this.logging = DEFAULT_LOGGING;
 	}
 	
