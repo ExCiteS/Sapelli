@@ -4,7 +4,7 @@
 package uk.ac.ucl.excites.collector;
 
 /**
- * @author Julia
+ * @author Julia, mstevens
  * 
  */
 import java.io.BufferedReader;
@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 import uk.ac.ucl.excites.collector.database.DataAccess;
+import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.storage.model.Record;
@@ -33,16 +34,18 @@ import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class StatisticsActivity extends ExpandableListActivity
+public class StatisticsActivity extends ExpandableListActivity implements DataAccessClient
 {
 
 	private static final String KeyGROUP = "Project";
 	private static final String KeyCHILD_LABEL = "ChildLabel";
 	private static final String KeyCHILD = "FormOrLogChild";
 	
-	List<Project> projects;
-	PopupWindow popupWindow;
+	private List<Project> projects;
+	private PopupWindow popupWindow;
 
+	private DataAccess dao;
+	
 	private ArrayList<Map<String, String>> groupContent = new ArrayList<Map<String, String>>();
 	private ArrayList<ArrayList<Map<String, ?>>> childContent = new ArrayList<ArrayList<Map<String, ?>>>();
 
@@ -51,7 +54,17 @@ public class StatisticsActivity extends ExpandableListActivity
 
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_statistics);
-
+		
+		dao = ((CollectorApp) getApplication()).getDataAccess(this);
+	}
+	
+	@Override
+	protected void onDestroy()
+	{
+		// clean up:
+		((CollectorApp) getApplication()).discardDataAccess(this); //signal that the activity no longer needs the DAO
+		// super:
+		super.onDestroy();
 	}
 	
 	@Override
@@ -60,7 +73,6 @@ public class StatisticsActivity extends ExpandableListActivity
 		super.onResume();
 		
 		//Populate UI:
-		DataAccess dao = ((CollectorApp) getApplication()).getDatabaseInstance();
 		try
 		{
 			projects = new ArrayList<Project>(dao.retrieveProjects());

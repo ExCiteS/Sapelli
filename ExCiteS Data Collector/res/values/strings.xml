@@ -32,17 +32,6 @@
     <string name="export_records_menuitem">Export records</string>
     <string name="import_records_menuitem">Import records</string>
 
-    <string-array name="phones_array">
-        <item>Michalis</item>
-        <item>Giff Gaff 1</item>
-        <item>Giff Gaff 2</item>
-    </string-array>
-    <string-array name="phones_numbers_array">
-        <item>+447577144675</item>
-        <item>+447521576319</item>
-        <item>+447521576326</item>
-    </string-array>
-
     <string name="settings">Settings</string>
 
 </resources>

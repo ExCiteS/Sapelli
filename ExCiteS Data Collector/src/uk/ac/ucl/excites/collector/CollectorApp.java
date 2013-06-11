@@ -1,8 +1,11 @@
 package uk.ac.ucl.excites.collector;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 import uk.ac.ucl.excites.collector.database.DataAccess;
+import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.util.CrashReporter;
 import uk.ac.ucl.excites.storage.model.Record;
@@ -15,16 +18,11 @@ import android.os.Environment;
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
 import com.db4o.config.EmbeddedConfiguration;
-import com.db4o.ext.DatabaseFileLockedException;
-import com.db4o.ext.DatabaseReadOnlyException;
-import com.db4o.ext.Db4oIOException;
-import com.db4o.ext.IncompatibleFileFormatException;
-import com.db4o.ext.OldFormatException;
 
 /**
  * Application App to keep the db4o object throughout the lifecycle of the Collector
  * 
- * @author Michalis Vitos
+ * @author Michalis Vitos, mstevens
  * 
  */
 public class CollectorApp extends Application
@@ -39,6 +37,8 @@ public class CollectorApp extends Application
 	private String excitesFolderPath;
 	private String dumpFolderPath;
 
+	private Set<DataAccessClient> daoClients;
+	
 	@Override
 	public void onConfigurationChanged(Configuration newConfig)
 	{
@@ -51,6 +51,9 @@ public class CollectorApp extends Application
 	{
 		super.onCreate();
 		Debug.d("Called!");
+	
+		// Db clients:
+		daoClients = new HashSet<DataAccessClient>();
 		
 		// Paths:
 		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + EXCITES_FOLDER;
@@ -58,27 +61,8 @@ public class CollectorApp extends Application
 		
 		// Set up a CrashReporter to the ExCiteS/crash Folder
 		Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(dumpFolderPath, getResources().getString(R.string.app_name)));
-
-		String dbFileName = getDatabasePath();
-		try
-		{
-			EmbeddedConfiguration dbConfig = Db4oEmbedded.newConfiguration();
-			dbConfig.common().updateDepth(DataAccess.UPDATE_DEPTH);
-			dbConfig.common().exceptionsOnNotStorable(true);
-			dbConfig.common().objectClass(Record.class).cascadeOnActivate(true);
-			dbConfig.common().objectClass(Record.class).cascadeOnUpdate(true);
-			dbConfig.common().objectClass(Transmission.class).cascadeOnActivate(true);
-			dbConfig.common().objectClass(Transmission.class).cascadeOnUpdate(true);
-			dbConfig.common().objectClass(Project.class).cascadeOnActivate(true);
-			dbConfig.common().objectClass(Project.class).cascadeOnUpdate(true);
-			openDB(dbFileName, dbConfig); // open the database! (throws various exceptions)
-		}
-		catch(Exception e)
-		{
-			Debug.e("Unable to open database.", e);
-		}
 	}
-	
+
 	/**
 	 * @return the excitesFolderPath
 	 */
@@ -115,26 +99,78 @@ public class CollectorApp extends Application
 	/**
 	 * (Re)Opens the database
 	 */
-	private void openDB(String dbFileName, EmbeddedConfiguration config) throws Db4oIOException, DatabaseFileLockedException, IncompatibleFileFormatException, OldFormatException, DatabaseReadOnlyException
+	private boolean openDB()
 	{
-		if(db != null)
-		{
-			Debug.i("Database is already open.");
-			return;
+		try
+		{		
+			if(db != null)
+			{
+				Debug.i("Database is already open.");
+				return true;
+			}
+			// Configure the db:
+			EmbeddedConfiguration dbConfig = Db4oEmbedded.newConfiguration();
+			dbConfig.common().updateDepth(DataAccess.UPDATE_DEPTH);
+			dbConfig.common().exceptionsOnNotStorable(true);
+			dbConfig.common().objectClass(Record.class).cascadeOnActivate(true);
+			dbConfig.common().objectClass(Record.class).cascadeOnUpdate(true);
+			dbConfig.common().objectClass(Transmission.class).cascadeOnActivate(true);
+			dbConfig.common().objectClass(Transmission.class).cascadeOnUpdate(true);
+			dbConfig.common().objectClass(Project.class).cascadeOnActivate(true);
+			dbConfig.common().objectClass(Project.class).cascadeOnUpdate(true);
+			// Open the db:
+			db = Db4oEmbedded.openFile(dbConfig, getDatabasePath()); // (throws various exceptions)
+			Debug.i("Opened new database connection in file: " + getDatabasePath());
+			return true;
 		}
-		db = Db4oEmbedded.openFile(config, dbFileName);
-		Debug.i("Opened new database connection in file: " + dbFileName);
+		catch(Exception e)
+		{
+			Debug.e("Unable to open database.", e);
+			db = null;
+			return false;
+		}		
 	}
 
-	public DataAccess getDatabaseInstance()
+	/**
+	 * Called by a DataAccessClient to request a DataAccess object
+	 * 
+	 * @param client
+	 * @return
+	 */
+	public DataAccess getDataAccess(DataAccessClient client)
 	{
-		DataAccess dao = new DataAccess(db);
-		return dao;
+		if(db == null)
+		{
+			if(!openDB())
+				return null;
+		}
+		daoClients.add(client);
+		return new DataAccess(db);
+	}
+	
+	/**
+	 * Called by a DataAccessClient to signal it will no longer use its DataAccess object 
+	 * 
+	 * @param client
+	 */
+	public void discardDataAccess(DataAccessClient client)
+	{
+		daoClients.remove(client);
+		if(daoClients.isEmpty() && db != null)
+		{
+			db.close();
+			db = null;
+			Debug.i("Closed database connection");
+		}
 	}
 
+	/**
+	 * Always store the db to the internal storage of the Android device
+	 * 
+	 * @return
+	 */
 	public String getDatabasePath()
 	{
-		// Always store the db to the internal storage of the Android device
 		return getFilesDir().getAbsolutePath() + File.separator + DATABASE_NAME;
 	}
 	
@@ -143,18 +179,5 @@ public class CollectorApp extends Application
 		db.commit();
 		db.ext().backup(filePath);
 	}
-	
-	// TODO close?
-	// public void closeDB()
-	// {
-	// db.close();
-	// db = null;
-	// System.out.println(" closed database connection");
-	// }
-	//
-	// public boolean isOpen()
-	// {
-	// return db != null;
-	// }
 
 }

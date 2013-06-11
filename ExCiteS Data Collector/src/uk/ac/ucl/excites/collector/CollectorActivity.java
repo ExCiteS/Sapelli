@@ -9,6 +9,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.collector.database.DataAccess;
+import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
 import uk.ac.ucl.excites.collector.project.model.CancelField;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
@@ -51,7 +52,7 @@ import android.widget.LinearLayout;
  * 
  * @author mstevens, julia, Michalis Vitos
  */
-public class CollectorActivity extends BaseActivity implements CollectorUI
+public class CollectorActivity extends BaseActivity implements CollectorUI, DataAccessClient
 {
 
 	// STATICS--------------------------------------------------------
@@ -158,7 +159,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 		Debug.d("extras: " + extras);
 
 		// Get DataAccess object
-		dao = ((CollectorApp) getApplication()).getDatabaseInstance(); // will be open
+		dao = ((CollectorApp) getApplication()).getDataAccess(this); // will be open
 
 		// Get Project object:
 		project = dao.retrieveProject(projectName, projectVersion);
@@ -497,6 +498,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI
 			scheduledFuture.cancel(true);
 		if(controller != null)
 			controller.cancelAndStop();
+		((CollectorApp) getApplication()).discardDataAccess(this); //signal that the activity no longer needs the DAO
 		// super:
 		super.onDestroy();
 	}

@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.collector.database.DataAccess;
+import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -68,7 +69,7 @@ import android.widget.Toast;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMenuItemClickListener
+public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMenuItemClickListener, DataAccessClient
 {
 
 	// STATICS--------------------------------------------------------
@@ -121,7 +122,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		}
 
 		// DataAccess instance:
-		dao = ((CollectorApp) getApplication()).getDatabaseInstance();
+		dao = ((CollectorApp) getApplication()).getDataAccess(this);
 		
 		// Set-up UI...
 		setTitle("ExCiteS Project Picker");
@@ -170,6 +171,15 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		{
 			ServiceChecker.startService(this);
 		}
+	}
+	
+	@Override
+	protected void onDestroy()
+	{
+		// clean up:
+		((CollectorApp) getApplication()).discardDataAccess(this); //signal that the activity no longer needs the DAO
+		// super:
+		super.onDestroy();
 	}
 
 	@Override
@@ -793,7 +803,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		if(dao != null)
 		{
 			// Update project list:
-			populateProjectList(); //will open & close DB
+			populateProjectList();
 		}
 	}
 

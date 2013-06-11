@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import uk.ac.ucl.excites.collector.CollectorApp;
 import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.database.DataAccess;
+import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.sender.dropbox.DropboxSync;
@@ -52,7 +53,7 @@ import android.util.Log;
  * @author Michalis Vitos, mstevens
  * 
  */
-public class DataSenderService extends Service implements TransmissionSender
+public class DataSenderService extends Service implements TransmissionSender, DataAccessClient
 {
 
 	// Statics-------------------------------------------------------
@@ -84,17 +85,6 @@ public class DataSenderService extends Service implements TransmissionSender
 		// Creates a thread pool that can schedule commands to run after a given
 		// delay, or to execute periodically.
 		scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
-
-		// DataAccess instance:
-		dao = ((CollectorApp) getApplication()).getDatabaseInstance();
-		
-		// ID generator for SMSTransmissions:
-		smsTransmissionID = dao.retrieveTransmissionID();
-		if(smsTransmissionID == null)
-		{
-			smsTransmissionID = new SMSTransmissionID();
-			dao.store(smsTransmissionID);
-		}
 		
 		// Folder observers:
 		folderObservers = new ArrayList<DropboxSync>();
@@ -106,12 +96,24 @@ public class DataSenderService extends Service implements TransmissionSender
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId)
 	{
+	
+		setServiceForeground(this);
+		
+		// DataAccess instance:
+		dao = ((CollectorApp) getApplication()).getDataAccess(this);
+		
+		// ID generator for SMSTransmissions:
+		smsTransmissionID = dao.retrieveTransmissionID();
+		if(smsTransmissionID == null)
+		{
+			smsTransmissionID = new SMSTransmissionID();
+			dao.store(smsTransmissionID);
+		}
+		
 		// Get the preferences
 		final int timeSchedule = DataSenderPreferences.getTimeSchedule(this);
 		boolean dropboxUpload = DataSenderPreferences.getDropboxUpload(this);
 		boolean smsUpload = DataSenderPreferences.getSMSUpload(this);
-		
-		setServiceForeground(this);
 		
 		boolean projectWithSMSEnabled = false;
 
@@ -203,6 +205,8 @@ public class DataSenderService extends Service implements TransmissionSender
 		if(Constants.DEBUG_LOG)
 			Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
 		android.os.Process.killProcess(pid);
+		
+		((CollectorApp) getApplication()).discardDataAccess(this); //signal that the service no longer needs the DAO
 	}
 	
 	private class SendingTask implements Runnable
