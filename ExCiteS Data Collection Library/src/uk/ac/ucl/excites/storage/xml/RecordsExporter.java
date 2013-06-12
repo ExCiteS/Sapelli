@@ -50,39 +50,49 @@ public class RecordsExporter
 		writer.close();
 	}
 	
-	public void exportAll() throws Exception
+	public int exportAll() throws Exception
 	{
 		FileWriter writer = openWriter("ALL");
-		exportRecords(dao.retrieveRecords(), writer);
+		int count = exportRecords(dao.retrieveRecords(), writer);
 		closeWriter(writer);
+		return count;
 	}
 	
-	public void export(List<Record> records) throws Exception
+	public int export(List<Record> records) throws Exception
 	{
 		FileWriter writer = openWriter("Selection");
-		exportRecords(records, writer);
+		int count = exportRecords(records, writer);
 		closeWriter(writer);
+		return count;
 	}
 	
-	public void export(List<Schema> schemas, String name) throws Exception
+	public int export(List<Schema> schemas, String name) throws Exception
 	{
 		FileWriter writer = openWriter(name);
+		int count = 0;
 		for(Schema s : schemas)
-			exportRecords(dao.retrieveRecords(s), writer);
+			count += exportRecords(dao.retrieveRecords(s), writer);
 		closeWriter(writer);
+		return count;
 	}
 	
-	public void export(Schema s) throws Exception
+	public int export(Schema s) throws Exception
 	{
 		FileWriter writer = openWriter(s.getName() + "_" + s.getID() + "_v" + s.getVersion());
-		exportRecords(dao.retrieveRecords(s), writer);
+		int count = exportRecords(dao.retrieveRecords(s), writer);
 		closeWriter(writer);
+		return count;
 	}
 	
-	private void exportRecords(List<Record> records, FileWriter writer)
+	private int exportRecords(List<Record> records, FileWriter writer)
 	{
+		int count = 0;
 		for(Record r : records)
+		{
 			writer.writeLine(r.toXML(1));
+			count++;
+		}
+		return count;
 	}
 	
 }
