@@ -32,6 +32,8 @@ local.properties
 #.externalToolBuilders/
 
 # Locally stored "Eclipse launch configurations"
-*.launch
+#*.launch
 
 /Other Dependencies/Android FileChooser/lint.xml
+/ExCiteS Data Collector/*.excites
+/ExCiteS Data Collector/res/raw/demo.excites

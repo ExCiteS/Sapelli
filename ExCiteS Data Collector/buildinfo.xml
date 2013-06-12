@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project name="ExCiteS Data Collector - Build info generation" default="GenerateBuildInfo" xmlns:ac="antlib:net.sf.antcontrib">
+	<!-- Author: mstevens -->
+
+	<taskdef resource="net/sf/antcontrib/antlib.xml" uri="antlib:net.sf.antcontrib"/><!-- required for for/if/etc. -->	
+    
+    <target name="-settings">
+        
+        <!-- Change these if needed -->
+        <property name="package" value="uk.ac.ucl.excites.collector"/>
+        <property name="classname" value="BuildInfo"/>
+		
+        <!-- Don't touch these: -->
+		<property environment="env"/>
+		<property name="home" location="."/>
+		<property name="project-dir" location="${basedir}"/>
+		<loadproperties srcFile="${project-dir}${file.separator}project.properties" />
+    	<xmlproperty file="${project-dir}${file.separator}AndroidManifest.xml" prefix="mani" collapseAttributes="true"/>
+    	<property name="appVersionName" value="${mani.manifest.android:versionName}"/>
+    	<property name="appVersionCode" value="${mani.manifest.android:versionCode}"/>
+		<property name="gen-dir" location="${project-dir}${file.separator}gen"/>
+		<property name="raw-res-dir" location="${project-dir}${file.separator}res${file.separator}raw"/>
+		<loadresource property="package-path">
+		    <propertyresource name="package"/>
+		    <filterchain>
+		        <tokenfilter>
+		            <replacestring from="." to="${file.separator}"/>
+		        </tokenfilter>
+		    </filterchain>
+		</loadresource>
+		<property name="output-dir" location="${gen-dir}${file.separator}${package-path}"/>
+    	<condition property="output-dir-not-there">
+    	    <not>
+    	    	<available file="${output-dir}" type="dir"/>
+    	    </not>
+    	</condition>
+    	<property name="file-path" location="${output-dir}${file.separator}${classname}.java"/>
+    	<property name="demo-project-filename" value="demo.excites"/>
+	</target>
+		
+	<target name="-git.revision" description="Store git revision in ${repository-version}">
+	    <exec executable="git" outputproperty="git-revision" failifexecutionfails="false" errorproperty="">
+	        <arg value="describe"/>
+	        <arg value="--always"/>
+	        <arg value="HEAD"/>
+	    </exec>
+	    <condition property="repository-version" value="${git-revision}" else="unknown">
+	        <and>
+	            <isset property="git-revision"/>
+	            <length string="${git-revision}" trim="yes" length="0" when="greater"/>
+	        </and>
+	    </condition>
+	    <echo>Last git commit hash: ${repository-version}</echo>
+	</target>
+
+	<target name="-git.changes" description="Check if there are changes w.r.t. the last commit in the given ${repository-path}">
+	    <echo>Checking for changes in: ${repository-path}</echo>
+	    <ac:var name="git-changes" unset="true"/>
+		<exec executable="git" resultproperty="git-changes" failifexecutionfails="false" errorproperty="">
+	        <arg value="diff-index"/>
+	        <arg value="--quiet"/>
+	        <arg value="HEAD"/>
+	    	<arg value='"${repository-path}"'/>
+	    </exec>
+		<ac:var name="repository-path-changes" unset="true"/>
+		<condition property="repository-path-changes" value="true" else="false">
+	        <and>
+	            <isset property="git-changes"/>
+	        	<equals arg1="${git-changes}" arg2="1"/>
+	        </and>
+	    </condition>
+	    <echo>Changes since last commit?: ${repository-path-changes}</echo>
+	</target>
+	
+	<target name="-create-dir" if="output-dir-not-there">
+		<echo>Making output directory...</echo>
+		<mkdir dir="${output-dir}"/>
+	</target>
+	
+	<target name="-git" depends="-git.revision">
+		<ac:if>
+			<ac:not>
+				<equals arg1="${repository-version}" arg2="unknown"/>
+			</ac:not>
+			<ac:then>
+		        <!-- first checks the project itself and then (if needed) loops over the android.library.reference.* properties which are loaded from project.properties -->
+		        <script language="javascript">
+		   			//Check project itself:
+		   			project.setProperty("repository-path", ".");
+		   			project.executeTarget("-git.changes");
+		            //Check libraries (as long as we do not find changes):
+					i = 1;
+					while(project.getProperty("repository-path-changes") != "true")
+					{
+						libpath = project.getProperty("android.library.reference." + i++);
+						if(libpath != null)
+						{
+							project.setProperty("repository-path", libpath);
+							project.executeTarget("-git.changes");
+						}
+						else
+							break;
+					}
+					project.setProperty("repository-changes", project.getProperty("repository-path-changes"));
+				</script>
+			</ac:then>
+			<ac:else>
+				<property name="repository-changes" value="false"/>
+			</ac:else>
+		</ac:if>
+	</target>
+	
+	<target name="git-check" depends="-settings,-git">
+		<echo>Last git commit hash: ${repository-version}</echo>
+		<echo>Changes since last commit?: ${repository-changes}</echo>
+	</target>
+	
+	<target name="-demo">
+		<ac:if>
+			<isset property="demo"/>
+			<then>
+			    <!-- Copy project file into resources -->
+			    <copy file="${demo}" tofile="${raw-res-dir}/${demo-project-filename}" overwrite="true"/>
+			    <!-- Set demo-build flag -->
+			    <property name="demo-build" value="true"/>
+			</then>
+			<else>
+			    <property name="demo-build" value="false"/>
+			</else>
+		</ac:if>
+	</target>
+	
+	<target name="GenerateBuildInfo" depends="-settings,-create-dir,-git,-demo">
+		<tstamp>
+			<format property="TIMESTAMP" pattern="yyyy-MM-dd HH:mm:ss z" locale="ENGLISH, UK"/>
+		</tstamp>
+		<echo>Generating ${classname} class...</echo>
+		<echo>	User: ${user.name}</echo>
+		<echo>	Build timestamp: ${TIMESTAMP}</echo>
+		<echo>	App version (code): ${appVersionName} (${appVersionCode})</echo>
+		<echo>	Last git commit hash: ${repository-version}</echo>
+		<echo>	Changes since last commit?: ${repository-changes}</echo>
+		<echo>	Demo build?: ${demo-build}</echo>
+		<!-- Generate the class: -->
+		<echo file="${file-path}">//Automatically generated file, do not edit!
+
+package ${package};
+			
+public class ${classname}
+{
+
+	public static final String USERNAME = "${user.name}";
+	public static final String TIMESTAMP = "${TIMESTAMP}";
+	public static final String VERSION_NAME = "${appVersionName}"; // as in manifest, also available through: getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+	public static final int VERSION_CODE = ${appVersionCode}; // as in manifest, also available through: getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+	public static final String LAST_COMMIT_HASH = "${repository-version}";
+	public static final boolean CHANGES_SINCE_LAST_COMMIT = ${repository-changes};
+	public static final boolean DEMO_BUILD = ${demo-build};
+	
+	public static String printVersion()
+	{
+		return "v" + VERSION_NAME + " (Version-code: " + VERSION_CODE + "; Demo-build: " + DEMO_BUILD + ")";
+	}
+	
+	public static String printInfo(boolean breaklines)
+	{
+		return	printVersion() + (breaklines ? '\n' : ';') +
+				"Built by " + USERNAME  + (breaklines ? '\n' : ';') +
+				"On " + TIMESTAMP + (breaklines ? '\n' : ';') +
+				"Using git revision " + LAST_COMMIT_HASH + " with" + (CHANGES_SINCE_LAST_COMMIT ? "" : "out") + " changes";
+	}
+			
+}</echo>
+		<echo>${classname} class generated (${file-path}).</echo>
+	</target>
+	
+	<!-- doesn't seem to work, but can be achieved in the builder settings within Eclipse -->
+	<target name="-refresh-eclipse" depends="-settings">
+		<echo>Refreshing generated sources folder in Eclipse...</echo>
+		<eclipse.refreshLocal resource="${gen-dir}" depth="infinite"/>
+	</target>
+	
+</project>

@@ -30,12 +30,15 @@ public class CollectorApp extends Application
 	
 	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
 	static private final String DATABASE_NAME = "ExCiteS.db4o";
+	static private final String DEMO_PREFIX = "Demo_";
+	static private final String PROJECT_FOLDER = "Projects" + File.separator;
+	static private final String TEMP_FOLDER = "Temp" + File.separator;
+	static private final String DOWNLOAD_FOLDER = "Downloads" + File.separator;
 	static private final String DUMP_FOLDER = "Dumps" + File.separator;
 
 	static private volatile ObjectContainer db;
 	
 	private String excitesFolderPath;
-	private String dumpFolderPath;
 
 	private Set<DataAccessClient> daoClients;
 	
@@ -50,17 +53,16 @@ public class CollectorApp extends Application
 	public void onCreate()
 	{
 		super.onCreate();
-		Debug.d("Called!");
+		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.printInfo(true));
 	
 		// Db clients:
 		daoClients = new HashSet<DataAccessClient>();
 		
 		// Paths:
 		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + EXCITES_FOLDER;
-		dumpFolderPath =  excitesFolderPath + DUMP_FOLDER;
 		
 		// Set up a CrashReporter to the ExCiteS/crash Folder
-		Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(dumpFolderPath, getResources().getString(R.string.app_name)));
+		Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name)));
 	}
 
 	/**
@@ -71,12 +73,24 @@ public class CollectorApp extends Application
 		return excitesFolderPath;
 	}
 
-	/**
-	 * @return the dumpFolderPath
-	 */
+	public String getDownloadFolderPath()
+	{
+		return excitesFolderPath + DOWNLOAD_FOLDER;
+	}
+	
+	public String getTempFolderPath()
+	{
+		return excitesFolderPath + TEMP_FOLDER;
+	}
+	
+	public String getProjectFolderPath()
+	{
+		return excitesFolderPath + PROJECT_FOLDER;
+	}
+	
 	public String getDumpFolderPath()
 	{
-		return dumpFolderPath;
+		return excitesFolderPath + DUMP_FOLDER;
 	}
 
 	@Override
@@ -171,7 +185,7 @@ public class CollectorApp extends Application
 	 */
 	public String getDatabasePath()
 	{
-		return getFilesDir().getAbsolutePath() + File.separator + DATABASE_NAME;
+		return getFilesDir().getAbsolutePath() + File.separator + (BuildInfo.DEMO_BUILD ? DEMO_PREFIX : "") + DATABASE_NAME;
 	}
 	
 	public void backupDatabase(String filePath)

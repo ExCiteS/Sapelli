@@ -23,6 +23,18 @@ import com.db4o.query.Predicate;
  * @author mstevens, julia, Michalis Vitos
  * 
  */
+/**
+ * @author mstevens
+ *
+ */
+/**
+ * @author mstevens
+ *
+ */
+/**
+ * @author mstevens
+ *
+ */
 public final class DataAccess
 {
 
@@ -118,6 +130,18 @@ public final class DataAccess
 		for(Record r : result)
 			db.activate(r, ACTIVATION_DEPTH);
 		return result;
+	}
+	
+	/**
+	 * Deletes *ALL* records.
+	 * USE WITH CARE!
+	 */
+	public void deleteAllRecords()
+	{
+		List<Record> result = db.query(Record.class);
+		for(Record r : result)
+			db.delete(r);
+		db.commit();
 	}
 	
 	/**

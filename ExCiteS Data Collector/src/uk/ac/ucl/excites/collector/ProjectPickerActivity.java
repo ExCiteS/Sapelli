@@ -76,7 +76,6 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	static private final String TAG = "ProjectPickerActivity";
 
 	static private final String XML_FILE_EXTENSION = "xml";
-	static private final String DOWNLOADS_FOLDER = "Downloads" + File.separatorChar;
 	static private final String DB4O_DUMP_NAME = "DatabaseDump";
 	static private final String DB4O_DUMP_EXTENSION = "db4o";
 
@@ -123,53 +122,96 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 
 		// DataAccess instance:
 		dao = ((CollectorApp) getApplication()).getDataAccess(this);
-		
-		// Set-up UI...
-		setTitle("ExCiteS Project Picker");
-		// Hide soft keyboard on create
-		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-		setContentView(R.layout.activity_projectpicker);
-		// Get View Elements
-		enterURL = (EditText) findViewById(R.id.EnterURL);
-		projectList = (ListView) findViewById(R.id.ProjectsList);
-		runBtn = (Button) findViewById(R.id.RunProjectButton);
-		removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
 
-		// get scrolling right
-		findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
+		// Only if not in demo mode...
+		if(!BuildInfo.DEMO_BUILD)
 		{
-			@Override
-			public boolean onTouch(View v, MotionEvent event)
+			// Set-up UI...
+			setTitle("ExCiteS Project Picker");
+			// Hide soft keyboard on create
+			getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+			setContentView(R.layout.activity_projectpicker);
+			// Get View Elements
+			enterURL = (EditText) findViewById(R.id.EnterURL);
+			projectList = (ListView) findViewById(R.id.ProjectsList);
+			runBtn = (Button) findViewById(R.id.RunProjectButton);
+			removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
+	
+			// get scrolling right
+			findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
 			{
-				projectList.getParent().requestDisallowInterceptTouchEvent(false);
-				return false;
-			}
-		});
-		projectList.setOnTouchListener(new View.OnTouchListener()
-		{
-			public boolean onTouch(View v, MotionEvent event)
+				@Override
+				public boolean onTouch(View v, MotionEvent event)
+				{
+					projectList.getParent().requestDisallowInterceptTouchEvent(false);
+					return false;
+				}
+			});
+			projectList.setOnTouchListener(new View.OnTouchListener()
 			{
-				// Disallow the touch request for parent scroll on touch of child view
-				v.getParent().requestDisallowInterceptTouchEvent(true);
-				return false;
+				public boolean onTouch(View v, MotionEvent event)
+				{
+					// Disallow the touch request for parent scroll on touch of child view
+					v.getParent().requestDisallowInterceptTouchEvent(true);
+					return false;
+				}
+			});
+	
+			// Check the Preferences
+			if(DataSenderPreferences.getTimeSchedule(this) == 1)
+			{
+				DataSenderPreferences.printPreferences(this);
+				Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG).show();
+	
+				Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
+				startActivity(settingsActivity);
 			}
-		});
-
-		// Check the Preferences
-		if(DataSenderPreferences.getTimeSchedule(this) == 1)
-		{
-			DataSenderPreferences.printPreferences(this);
-			Toast t = Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG);
-			t.show();
-
-			Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
-			startActivity(settingsActivity);
+	
+			// Start the DataSenderService
+			if(DataSenderPreferences.getSenderEnabled(this))
+			{
+				ServiceChecker.startService(this);
+			}	
 		}
-
-		// Start the DataSenderService
-		if(DataSenderPreferences.getSenderEnabled(this))
+	}
+	
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
+		if(dao != null)
 		{
-			ServiceChecker.startService(this);
+			if(BuildInfo.DEMO_BUILD)
+				demoMode();
+			else
+			{
+				// Update project list:
+				populateProjectList();
+			}
+		}
+	}
+	
+	private void demoMode()
+	{
+		try
+		{
+			List<Project> projects = dao.retrieveProjects();
+			Project p = null;
+			if(projects.isEmpty())
+			{	// Use /mnt/sdcard/ExCiteS/ as the basePath:
+				ExCiteSFileLoader loader = new ExCiteSFileLoader(((CollectorApp) getApplication()).getProjectFolderPath(), ((CollectorApp) getApplication()).getTempFolderPath());
+				p = loader.load(getResources().openRawResource(getResources().getIdentifier("demo", "raw", getApplicationContext().getPackageName())));
+				storeProject(p);
+			}
+			else
+				p = projects.get(0);
+			//Run the project
+			runProjectActivity(p.getName(), p.getVersion());
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Error loading/storing/launching demo project", e);
+			errorDialog("Could not load demo project.", true).show();
 		}
 	}
 	
@@ -451,27 +493,17 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			return null;
 		}
 	}
-
+	
 	private Project processExcitesFile(File excitesFile)
 	{
 		try
 		{
-			// Check if there is an SD Card
-			if(DeviceControl.isExternalStorageWritable())
-			{
-				// Use /mnt/sdcard/ExCiteS/ as the basePath:
-				ExCiteSFileLoader loader = new ExCiteSFileLoader(((CollectorApp) getApplication()).getExcitesFolderPath() + File.separator);
-				Project loadedProject = loader.load(excitesFile);
-				//Show parser warnings if needed:
-				showParserWarnings(loader.getParserWarnings());
-				return loadedProject;
-			}
-			else
-			{
-				// Inform the user and close the application
-				errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
-				return null;
-			}
+			// Use /mnt/sdcard/ExCiteS/ as the basePath:
+			ExCiteSFileLoader loader = new ExCiteSFileLoader(((CollectorApp) getApplication()).getProjectFolderPath(), ((CollectorApp) getApplication()).getTempFolderPath());
+			Project loadedProject = loader.load(excitesFile);
+			//Show parser warnings if needed:
+			showParserWarnings(loader.getParserWarnings());
+			return loadedProject;
 		}
 		catch(Exception e)
 		{
@@ -540,6 +572,13 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		
 		// Store the project object:
 		storeProject(project);
+		
+		// Update project list:
+		populateProjectList();
+		selectProjectInList(project); // select the new project
+		
+		// Restart the DataSenderService to start monitoring the new project
+		ServiceChecker.restartActiveDataSender(this);
 	}
 
 	private void storeProject(Project p)
@@ -559,13 +598,6 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			errorDialog("Could not store project: " + e.getLocalizedMessage(), false).show();
 			return;
 		}
-
-		// Update project list:
-		populateProjectList();
-		selectProjectInList(p); // select the new project
-		
-		// Restart the DataSenderService to start monitoring the new project
-		ServiceChecker.restartActiveDataSender(this);
 	}
 
 	public void scanQR(View view)
@@ -796,17 +828,6 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			encryptionDialog.dismiss();
 	}
 
-	@Override
-	protected void onResume()
-	{
-		super.onResume();
-		if(dao != null)
-		{
-			// Update project list:
-			populateProjectList();
-		}
-	}
-
 	/**
 	 * Background Async Task to download file
 	 * 
@@ -836,10 +857,9 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		public DownloadFileFromURL(String downloadUrl, String filename)
 		{
 			startTime = System.currentTimeMillis();
-
 			this.downloadUrl = downloadUrl;
-			// Download file in folder /Download/timestamp-filename
-			downloadFolder = new File(((CollectorApp) getApplication()).getExcitesFolderPath() + DOWNLOADS_FOLDER);
+			// Download file in folder /Downloads/timestamp-filename
+			downloadFolder = new File(((CollectorApp) getApplication()).getDownloadFolderPath());
 			FileHelpers.createFolder(downloadFolder);
 			downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 

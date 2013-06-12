@@ -28,71 +28,126 @@ public class ExCiteSFileLoader
 	static public final String EXCITES_FILE_EXTENSION = "excites";
 	static private final String PROJECT_FILE = "PROJECT.xml";
 
+	private String tempFolderPath;
 	private ProjectParser parser;
 	
 	/**
 	 * @param basePath
 	 * @throws IOException 
 	 */
-	public ExCiteSFileLoader(String basePath) throws IOException
+	public ExCiteSFileLoader(String projectsFolderPath, String tempFolderPath) throws IOException
 	{
-		if(!FileHelpers.createFolder(basePath))
-			throw new IOException("Base path (" + basePath + ") does not exist and could not be created.");
-		parser = new ProjectParser(basePath, true);
+		this.tempFolderPath = FileHelpers.ensureFolderPath(tempFolderPath);
+		if(!FileHelpers.createFolder(tempFolderPath))
+			throw new IOException("Temp folder (" + this.tempFolderPath + ") does not exist and could not be created.");
+		String projPath = FileHelpers.ensureFolderPath(projectsFolderPath);
+		if(!FileHelpers.createFolder(projPath))
+			throw new IOException("Projects folder (" + projPath + ") does not exist and could not be created.");
+		this.parser = new ProjectParser(projPath, true);
 	}
 
+	/**
+	 * Extract the given excites file (provided as a File object) and parses the PROJECT.xml; returns the resulting Project object.
+	 * 
+	 * @param excitesFile
+	 * @return the loaded Project
+	 * @throws Exception
+	 */
 	public Project load(File excitesFile) throws Exception
 	{
 		if(excitesFile == null || !excitesFile.exists() || excitesFile.length() == 0)
 			throw new IllegalArgumentException("Invalid excites file");
+		return load(new FileInputStream(excitesFile));
+	}
+	
+	/**
+	 * Extract the given excites file (provided as an InputStream) and parses the PROJECT.xml; returns the resulting Project object.
+	 * 
+	 * @param excitesFileStream
+	 * @return the loaded Project
+	 * @throws Exception
+	 */
+	public Project load(InputStream excitesFileStream) throws Exception
+	{
 		Project p = null;
+		String extractFolderPath = tempFolderPath + System.currentTimeMillis() + File.separatorChar;
+		// Extract the content of the excites file to a new subfolder of the temp folder:
+		try
+		{
+			FileHelpers.createFolder(extractFolderPath);
+			unzip(excitesFileStream, extractFolderPath);
+		}
+		catch(Exception e)
+		{
+			throw new Exception("Error on extracting contents of excites file.", e);
+		}
 		// Parse PROJECT.xml:
 		try
 		{	
-			p = parser.parseProject(getInputStream(excitesFile, PROJECT_FILE));
+			p = parser.parseProject(new File(extractFolderPath + PROJECT_FILE));
 		}
 		catch(Exception e)
 		{
-			throw new Exception("Error on extracting or parsing " + PROJECT_FILE, e);
+			throw new Exception("Error on parsing " + PROJECT_FILE, e);
 		}
-		// Extract the content of the excites file to project path: 
+		// Create move extracted files to project folder:
 		try
 		{
-			unzip(excitesFile, p.getProjectFolderPath());
+			File extractFolder = new File(extractFolderPath);
+			//Move files:
+			for(File f : extractFolder.listFiles())
+				f.renameTo(new File(p.getProjectFolderPath() + f.getName()));
+			//Delete extract folder:
+			extractFolder.delete();
 		}
 		catch(Exception e)
 		{
-			throw new Exception("Error on extracting contents of " + excitesFile.getName(), e);
+			throw new Exception("Error on moving extracted files to project folder.", e);
 		}
 		return p;
 	}
-	
-	public List<String> getParserWarnings()
+
+	/**
+	 * Parses the PROJECT.xml present in the given excites file (provided as a File object), without extracting the contents to storage; returns the resulting Project object.
+	 * 
+	 * @param excitesFileStream
+	 * @return the loaded Project
+	 * @throws Exception
+	 */
+	public Project loadWithoutExtract(File excitesFile) throws Exception
 	{
-		return parser.getWarnings();
+		if(excitesFile == null || !excitesFile.exists() || excitesFile.length() == 0)
+			throw new IllegalArgumentException("Invalid excites file");
+		return loadWithoutExtract(new FileInputStream(excitesFile));
 	}
 
-	private InputStream getInputStream(File zipFile, String filename) throws IOException
+	/**
+	 * Parses the PROJECT.xml present in the given excites file (provided as an InputStream), without extracting the contents to storage; returns the resulting Project object.
+	 * 
+	 * @param excitesFileStream
+	 * @return the loaded Project
+	 * @throws Exception
+	 */
+	public Project loadWithoutExtract(InputStream excitesFileStream) throws Exception
 	{
-		ZipInputStream zin = new ZipInputStream(new FileInputStream(zipFile));
-		ZipEntry ze = null;
-		while((ze = zin.getNextEntry()) != null)
-		{
-			if(ze.getName().equalsIgnoreCase(filename))
-				return zin; // stream is now positioned to read the indicated file
+		try
+		{	// Parse PROJECT.xml:
+			return parser.parseProject(getInputStreamForFileInZip(excitesFileStream, PROJECT_FILE));
 		}
-		throw new IOException(filename + " not found in " + zipFile.getName());
+		catch(Exception e)
+		{
+			throw new Exception("Error on parsing " + PROJECT_FILE, e);
+		}
 	}
-
-	private void unzip(File zipFile, String extractionPath) throws IOException
+	
+	private void unzip(InputStream zipFileStream, String extractionPath) throws IOException
 	{
 		try
 		{
-			ZipInputStream zin = new ZipInputStream(new FileInputStream(zipFile));
+			ZipInputStream zin = new ZipInputStream(zipFileStream);
 			ZipEntry ze = null;
 			while((ze = zin.getNextEntry()) != null)
 			{
-				//System.out.println("Extracting: " + ze.getName());
 				if(ze.isDirectory())
 				{
 					if(!FileHelpers.createFolder(extractionPath + ze.getName()))
@@ -117,6 +172,23 @@ public class ExCiteSFileLoader
 		{
 			throw new IOException("Error on unzipping ExCiteS file", e);
 		}
+	}
+	
+	private InputStream getInputStreamForFileInZip(InputStream zipFileStream, String filename) throws IOException
+	{
+		ZipInputStream zin = new ZipInputStream(zipFileStream);
+		ZipEntry ze = null;
+		while((ze = zin.getNextEntry()) != null)
+		{
+			if(ze.getName().equalsIgnoreCase(filename))
+				return zin; // stream is now positioned to read the indicated file
+		}
+		throw new IOException(filename + " not found in archive.");
+	}
+	
+	public List<String> getParserWarnings()
+	{
+		return parser.getWarnings();
 	}
 	
 }

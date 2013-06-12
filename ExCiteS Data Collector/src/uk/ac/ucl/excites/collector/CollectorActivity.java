@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.collector.ui.CameraView;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.WaitingView;
+import uk.ac.ucl.excites.storage.xml.RecordsExporter;
 import uk.ac.ucl.excites.util.DeviceControl;
 import uk.ac.ucl.excites.util.Debug;
 import uk.ac.ucl.excites.util.TimeUtils;
@@ -156,8 +157,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 			projectVersion = extras.getString(PARAMETER_PROJECT_VERSION);
 		}
 
-		Debug.d("extras: " + extras);
-
 		// Get DataAccess object
 		dao = ((CollectorApp) getApplication()).getDataAccess(this); // will be open
 
@@ -174,6 +173,10 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 
 		// Start project:
 		controller.startProject();
+		
+		// Show demo disclaimer if needed:
+		if(BuildInfo.DEMO_BUILD)
+			infoDialog("Disclaimer", "This is ExCiteS Data Collector " + BuildInfo.printVersion() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.").show();
 	}
 
 	/**
@@ -192,11 +195,34 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 		case KeyEvent.KEYCODE_DPAD_LEFT:
 			return true;
 		case KeyEvent.KEYCODE_VOLUME_DOWN:
+			if(BuildInfo.DEMO_BUILD)
+				infoDialog("Exported " + exportRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".").show();
 			return true;
 		case KeyEvent.KEYCODE_VOLUME_UP:
 			return true;
 		}
 		return super.onKeyDown(keyCode, event);
+	}
+	
+	private int exportRecords(boolean delete)
+	{
+		int count = 0;
+		if(dao != null && project != null)
+		{
+			Log.d(TAG, "Exporting records...");
+			try
+			{
+				RecordsExporter exporter = new RecordsExporter(project.getDataFolderPath(), dao);
+				count = exporter.exportAll();
+				if(delete)
+					dao.deleteAllRecords();
+			}
+			catch(Exception e)
+			{
+				Log.e(TAG, "Error upon exporting records", e);
+			}
+		}
+		return count;
 	}
 
 	/**
@@ -491,14 +517,15 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 	@Override
 	protected void onDestroy()
 	{
-		// clean up:
+		// Clean up:
 		if(fieldView != null)
 			fieldView.cancel();
 		if(scheduledFuture != null)
 			scheduledFuture.cancel(true);
 		if(controller != null)
 			controller.cancelAndStop();
-		((CollectorApp) getApplication()).discardDataAccess(this); //signal that the activity no longer needs the DAO
+		// Signal that the activity no longer needs the DAO:
+		((CollectorApp) getApplication()).discardDataAccess(this);
 		// super:
 		super.onDestroy();
 	}
