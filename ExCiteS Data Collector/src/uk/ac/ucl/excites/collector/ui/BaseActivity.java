@@ -67,11 +67,23 @@ public abstract class BaseActivity extends Activity
 	 */
 	protected AlertDialog infoDialog(String message)
 	{
-		AlertDialog warning = new AlertDialog.Builder(this).setTitle("Info").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
+		return infoDialog("Info", message);
+	}
+	
+	/**
+	 * dialog showing info
+	 * 
+	 * @param title
+	 * @param message
+	 * @return the dialog
+	 */
+	protected AlertDialog infoDialog(String title, String message)
+	{
+		AlertDialog info = new AlertDialog.Builder(this).setTitle(title).setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
 		{
 			public void onClick(DialogInterface dialog, int whichButton) { /*does nothing*/ }
 		}).create();
-		return warning;
+		return info;
 	}
 	
 }
