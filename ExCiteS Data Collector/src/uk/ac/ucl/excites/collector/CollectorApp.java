@@ -142,9 +142,9 @@ public class CollectorApp extends Application
 		if(db == null)
 		{
 			if(!openDB())
-				return null;
+				return null; //failed to open db
 		}
-		daoClients.add(client);
+		daoClients.add(client); //add to set of clients currently using the db
 		return new DataAccess(db);
 	}
 	
@@ -155,8 +155,8 @@ public class CollectorApp extends Application
 	 */
 	public void discardDataAccess(DataAccessClient client)
 	{
-		daoClients.remove(client);
-		if(daoClients.isEmpty() && db != null)
+		daoClients.remove(client); //remove client
+		if(daoClients.isEmpty() && db != null) //close the db if it is no longer in use
 		{
 			db.close();
 			db = null;
