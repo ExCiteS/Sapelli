@@ -66,7 +66,18 @@ public final class FileHelpers
 
 	static public boolean isFolderPath(String fullPath)
 	{
-		return isValidPath(fullPath) && fullPath.charAt(fullPath.length() - 1) == getDirectorySeparator().charAt(0);
+		return isValidPath(fullPath) && fullPath.charAt(fullPath.length() - 1) == File.separatorChar;
+	}
+	
+	/**
+	 * Ensures that the path is a folder path (adding / or \ if needed, but does not check if the folder exists)
+	 * 
+	 * @param path
+	 * @return
+	 */
+	static public String ensureFolderPath(String path)
+	{
+		return path + (path.charAt(path.length() - 1) == File.separatorChar ? "" : File.separatorChar); 
 	}
 
 	static public boolean isFilePath(String fullPath)
@@ -238,11 +249,6 @@ public final class FileHelpers
 		int lastIndex = filePath.lastIndexOf("/");
 		String result = filePath.substring(0, lastIndex + 1);
 		return result;
-	}
-
-	static public String getDirectorySeparator()
-	{
-		return File.separator;
 	}
 
 	/**
