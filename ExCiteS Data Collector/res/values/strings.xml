@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
+	<!-- xmlns:tools="http://schemas.android.com/tools" tools:locale="en" -->
+    
     <string name="app_name">ExCiteS Data Collector</string>
     <string name="dummy_content">DUMMY\nCONTENT</string>
     <string name="dummy_button">Dummy Button</string>

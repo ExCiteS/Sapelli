@@ -180,4 +180,14 @@ public class ${classname}
 		<eclipse.refreshLocal resource="${gen-dir}" depth="infinite"/>
 	</target>
 	
+	<target name="-clean-demo">
+		<ac:if>
+			<isset property="demo"/>
+			<then>
+			    <!-- Delete project file into resources -->
+			    <delete file="${raw-res-dir}/${demo-project-filename}" failonerror="false"/>
+			</then>
+		</ac:if>
+	</target>
+	
 </project>
