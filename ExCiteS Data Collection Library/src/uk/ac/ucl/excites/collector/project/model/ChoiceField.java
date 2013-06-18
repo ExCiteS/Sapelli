@@ -239,10 +239,10 @@ public class ChoiceField extends Field
 			return this; //return self
 	}
 	
-	public void storeValue(Record entry)
+	public void storeValue(Record record)
 	{
 		if(!isNoColumn() && isLeaf())
-			((IntegerColumn) root.column).storeValue(entry, Long.valueOf(dictionary.getIndex(this))); //this = the selected leaf
+			((IntegerColumn) root.column).storeValue(record, Long.valueOf(dictionary.getIndex(this))); //this = the selected leaf
 	}
 	
 	public ChoiceDictionary getDictionary()
