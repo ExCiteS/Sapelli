@@ -93,7 +93,7 @@ public class RecordsImporter extends XMLParser
 			int schemaVersion = Integer.parseInt(readRequiredStringAttribute(Record.TAG_RECORD, attributes, Record.ATTRIBUTE_FORM_SCHEMA_VERSION));
 			Schema schema = dao.retrieveSchema(schemaID, schemaVersion);
 			if(schema == null)
-				warnings.add("Record skipping because schema with ID " + schemaID + " and version " + schemaVersion + " is unknown, please load the appropriate project.");
+				warnings.add("Record skipped because schema with ID " + schemaID + " and version " + schemaVersion + " is unknown, please load the appropriate project.");
 			else
 				currentRecord = new Record(schema);
 		}
