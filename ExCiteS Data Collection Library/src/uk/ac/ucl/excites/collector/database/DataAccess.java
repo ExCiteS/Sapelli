@@ -198,8 +198,25 @@ public final class DataAccess
 	 */
 	public void store(Project project) throws DuplicateException
 	{
+		// Check for project duplicates:
 		if(retrieveProject(project.getName(), project.getVersion()) != null)
 			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
+		// Check for schema duplicates:
+		for(Form f : project.getForms())
+		{
+			Schema existingSchema = retrieveSchema(f.getSchemaID(), f.getSchemaVersion());
+			if(existingSchema != null)
+			{	// the form uses a schema (ID/version) which is already known
+				try
+				{	// try to use the existing schema on the form
+					f.setSchema(existingSchema);
+				}
+				catch(IllegalArgumentException iae)
+				{	// existing schema was refused, it does not match with the schema defined by the form itself
+					throw new DuplicateException("There is already a project/form with schema ID " + f.getSchemaID() + " and version " + f.getSchemaVersion() + " and the schemas are not compatible.");
+				}
+			}
+		}
 		storeObject(project);
 	}
 	
@@ -260,13 +277,13 @@ public final class DataAccess
 	}
 	
 	/**
-	 * Retrieve a form by its schemaID & version
+	 * Retrieve all forms that use/define a schema with the provided ID & version
 	 * 
 	 * @param schemaID
 	 * @param schemaVersion
 	 * @return
 	 */
-	public Form retrieveForm(final int schemaID, final int schemaVersion)
+	public List<Form> retrieveForms(final int schemaID, final int schemaVersion)
 	{
 		ObjectSet<Form> result = db.query(new Predicate<Form>()
 		{
@@ -277,14 +294,9 @@ public final class DataAccess
 				return form.getSchemaID() == schemaID && form.getSchemaVersion() == schemaVersion;
 			}
 		});
-		if(result.hasNext())
-		{
-			Form f = result.next();
+		for(Form f : result)
 			db.activate(f, ACTIVATION_DEPTH);
-			return f;
-		}
-		else
-			return null;
+		return result;
 	}
 	
 	/**

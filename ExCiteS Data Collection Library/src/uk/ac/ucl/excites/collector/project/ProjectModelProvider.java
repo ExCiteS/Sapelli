@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.collector.project;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.collector.database.DataAccess;
@@ -42,11 +43,15 @@ public class ProjectModelProvider implements ModelProvider
 	@Override
 	public Settings getSettingsFor(Schema schema)
 	{
-		Form form = dao.retrieveForm(schema.getID(), schema.getVersion());
-		if(form != null)
+		/*TODO FIX THIS
+		 * This is buggy/hacky! Because schema's can be shared by multiple forms (and no schema ID/version duplicates are allowed)
+		 * we cannot safely determine transmission settings based on the schema id/version.
+		 */
+		List<Form> forms = dao.retrieveForms(schema.getID(), schema.getVersion());
+		if(!forms.isEmpty())
 		{
-			if(form.getProject() != null)
-				return form.getProject().getTransmissionSettings();
+			if(forms.get(0)/*HACK!*/.getProject() != null)
+				return forms.get(0).getProject().getTransmissionSettings();
 			else
 				return null;
 		}

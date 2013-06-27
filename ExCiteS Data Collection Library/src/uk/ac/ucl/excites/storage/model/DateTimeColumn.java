@@ -55,7 +55,7 @@ public class DateTimeColumn extends Column<DateTime>
 	 */
 	static public DateTimeColumn Century21(String name, boolean optional)
 	{
-		return new DateTimeColumn(name, new DateTime(2000, 01, 01, 00, 00, 00), new DateTime(2100, 01, 01, 00, 00, 00), true, true, false, optional);
+		return new DateTimeColumn(name, new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC), new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC), true, true, false, optional);
 	}
 	
 	/**
@@ -68,7 +68,7 @@ public class DateTimeColumn extends Column<DateTime>
 	 */
 	static public DateTimeColumn Century21NoMS(String name, boolean optional)
 	{
-		return new DateTimeColumn(name, new DateTime(2000, 01, 01, 00, 00, 00), new DateTime(2100, 01, 01, 00, 00, 00), false, true, false, optional);
+		return new DateTimeColumn(name, new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC), new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC), false, true, false, optional);
 	}
 	
 	/**
@@ -83,14 +83,15 @@ public class DateTimeColumn extends Column<DateTime>
 	 */
 	static public DateTimeColumn Compact(String name, boolean optional)
 	{
-		return new DateTimeColumn(name, new DateTime(2008, 01, 01, 00, 00, 00), 30 /*bits*/, false, false, false, optional);
+		return new DateTimeColumn(name, new DateTime(2008, 01, 01, 00, 00, 00, DateTimeZone.UTC), 30 /*bits*/, false, false, false, optional);
 	}
 	
 	protected IntegerRangeMapping timeMapping;
 	protected boolean keepMS;
 	protected boolean keepLocalTimezone;
-	protected DateTimeFormatter formatter;
 	protected boolean strict;
+	
+	protected DateTimeFormatter formatter;
 
 	/**
 	 * @param name
@@ -207,6 +208,18 @@ public class DateTimeColumn extends Column<DateTime>
 	protected String toString(DateTime value)
 	{
 		return (keepLocalTimezone ? formatter.withZone(value.getZone()) : formatter.withZoneUTC()).print(value);
+	}
+
+	@Override
+	protected boolean equalRestrictions(Column<DateTime> otherColumn)
+	{
+		if(otherColumn instanceof DateTimeColumn)
+		{
+			DateTimeColumn other = (DateTimeColumn) otherColumn;
+			return this.timeMapping.equals(other.timeMapping) && this.keepLocalTimezone == other.keepLocalTimezone && this.keepMS == other.keepMS && this.strict == other.strict;
+		}
+		else
+			return false;
 	}
 	
 }

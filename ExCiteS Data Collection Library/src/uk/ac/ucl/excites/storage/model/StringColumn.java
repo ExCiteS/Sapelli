@@ -27,8 +27,9 @@ public class StringColumn extends Column<String>
 	
 	//DYNAMIC
 	private int maxLengthBytes;
-	private IntegerRangeMapping sizeField;
 	private Charset charset;
+	
+	private IntegerRangeMapping sizeField;
 	
 	public StringColumn(String name, boolean optional)
 	{
@@ -136,6 +137,18 @@ public class StringColumn extends Column<String>
 	protected String toString(String value)
 	{
 		return value;
+	}
+	
+	@Override
+	protected boolean equalRestrictions(Column<String> otherColumn)
+	{
+		if(otherColumn instanceof StringColumn)
+		{
+			StringColumn other = (StringColumn) otherColumn;
+			return this.maxLengthBytes == other.maxLengthBytes && this.charset.equals(other.charset);
+		}
+		else
+			return false;
 	}
 	
 }

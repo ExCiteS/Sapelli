@@ -78,4 +78,10 @@ public class BooleanColumn extends Column<Boolean>
 		return value.toString();
 	}
 
+	@Override
+	protected boolean equalRestrictions(Column<Boolean> otherColumn)
+	{
+		return (otherColumn instanceof BooleanColumn);		
+	}
+
 }

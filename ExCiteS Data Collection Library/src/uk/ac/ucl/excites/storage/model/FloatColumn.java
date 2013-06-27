@@ -65,4 +65,10 @@ public class FloatColumn extends Column<Float>
 		return value.toString();
 	}
 
+	@Override
+	protected boolean equalRestrictions(Column<Float> otherColumn)
+	{
+		return (otherColumn instanceof FloatColumn);		
+	}
+	
 }

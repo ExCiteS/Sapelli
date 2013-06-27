@@ -425,6 +425,19 @@ public class Form
 		}
 		return schema;
 	}
+	
+	/**
+	 * Override the schema object with another one, if compatible
+	 * 
+	 * @param newSchema
+	 */
+	public void setSchema(Schema newSchema)
+	{
+		if(getSchema().equals(newSchema, true, true)) // check if the schema is identical/equivalent to the one we have/need 
+			this.schema = newSchema; // we accept the existing one
+		else
+			throw new IllegalArgumentException("The provived schema is not compatible with this form!");
+	}
 
 	public Record newEntry(long deviceID)
 	{

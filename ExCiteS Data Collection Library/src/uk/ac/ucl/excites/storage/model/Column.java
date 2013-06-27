@@ -288,4 +288,44 @@ public abstract class Column<T>
 	 */
 	protected abstract int _getMinimumSize();
 	
+	/**
+	 * Equality check, compares optionalness, type and size/content restrictions but not the column name
+	 * 
+	 * @param obj object to compare this one with
+	 * @return whether or not the given Object is an identical Column (except for its name)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj)
+	{
+		return equals(obj, false); // do not check name by default
+	}
+	
+	/**
+	 * Equality check, compares optionalness, type and size/content restrictions, AND if checkName is true also the column name
+	 * 
+	 * @param obj object to compare this one with
+	 * @param checkName whether or not to compare the column name
+	 * @return whether or not the given Object is an identical/equivalent Column
+	 */
+	@SuppressWarnings("unchecked")
+	public boolean equals(Object obj, boolean checkName)
+	{
+		if(this.getClass().isInstance(obj))
+		{
+			Column<T> other = (Column<T>) obj;
+			if(this.optional != other.optional)
+				return false;
+			// Check names:
+			if(checkName && !this.name.equals(other.name))
+				return false;
+			// Check restrictions (size/content):
+			return equalRestrictions(other);
+		}
+		else
+			return false;
+	}
+	
+	protected abstract boolean equalRestrictions(Column<T> otherColumn);
+	
 }

@@ -169,5 +169,19 @@ public class IntegerColumn extends Column<Long>
 	{
 		return value.toString();
 	}
+
+	@Override
+	protected boolean equalRestrictions(Column<Long> otherColumn)
+	{
+		if(otherColumn instanceof IntegerColumn)
+		{
+			IntegerColumn other = (IntegerColumn) otherColumn;
+			return	this.size == other.size &&
+					this.signed == other.signed &&
+					(rangeMapping == null ? other.rangeMapping == null : this.rangeMapping.equals(other.rangeMapping));
+		}
+		else
+			return false;
+	}
 	
 }

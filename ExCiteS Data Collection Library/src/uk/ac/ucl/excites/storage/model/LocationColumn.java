@@ -184,4 +184,21 @@ public class LocationColumn extends Column<Location>
 				(storeAccuracy ? (1 + Float.SIZE) /*Acc (w/ presence bit)*/ : 0);			
 	}
 
+	@Override
+	protected boolean equalRestrictions(Column<Location> otherColumn)
+	{
+		if(otherColumn instanceof LocationColumn)
+		{
+			LocationColumn other = (LocationColumn) otherColumn;
+			return 	this.doublePrecision == other.doublePrecision &&
+					this.storeProvider == other.storeProvider &&
+					this.storeAltitude == other.storeAltitude &&
+					this.storeBearing == other.storeBearing &&
+					this.storeSpeed == other.storeSpeed &&
+					this.storeAccuracy == other.storeAccuracy;
+		}
+		else
+			return false;
+	}
+
 }

@@ -4,20 +4,16 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
+import uk.ac.ucl.excites.collector.database.DB4OConnector;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.database.DataAccessClient;
-import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.util.CrashReporter;
-import uk.ac.ucl.excites.storage.model.Record;
-import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.util.Debug;
 import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;
 
-import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
-import com.db4o.config.EmbeddedConfiguration;
 
 /**
  * Application App to keep the db4o object throughout the lifecycle of the Collector
@@ -122,18 +118,8 @@ public class CollectorApp extends Application
 				Debug.i("Database is already open.");
 				return true;
 			}
-			// Configure the db:
-			EmbeddedConfiguration dbConfig = Db4oEmbedded.newConfiguration();
-			dbConfig.common().updateDepth(DataAccess.UPDATE_DEPTH);
-			dbConfig.common().exceptionsOnNotStorable(true);
-			dbConfig.common().objectClass(Record.class).cascadeOnActivate(true);
-			dbConfig.common().objectClass(Record.class).cascadeOnUpdate(true);
-			dbConfig.common().objectClass(Transmission.class).cascadeOnActivate(true);
-			dbConfig.common().objectClass(Transmission.class).cascadeOnUpdate(true);
-			dbConfig.common().objectClass(Project.class).cascadeOnActivate(true);
-			dbConfig.common().objectClass(Project.class).cascadeOnUpdate(true);
 			// Open the db:
-			db = Db4oEmbedded.openFile(dbConfig, getDatabasePath()); // (throws various exceptions)
+			db = DB4OConnector.open(getDatabasePath());
 			Debug.i("Opened new database connection in file: " + getDatabasePath());
 			return true;
 		}

@@ -86,4 +86,18 @@ public class OrientationColumn extends Column<Orientation>
 		return _getMinimumSize(); //size is fixed
 	}
 
+	@Override
+	protected boolean equalRestrictions(Column<Orientation> otherColumn)
+	{
+		if(otherColumn instanceof OrientationColumn)
+		{
+			OrientationColumn other = (OrientationColumn) otherColumn;
+			return 	this.storeAzimuth == other.storeAzimuth &&
+					this.storePitch == other.storePitch &&
+					this.storeRoll == other.storeRoll;
+		}
+		else
+			return false;
+	}
+	
 }

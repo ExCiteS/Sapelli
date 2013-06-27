@@ -65,4 +65,10 @@ public class DoubleColumn extends Column<Double>
 		return value.toString();
 	}
 
+	@Override
+	protected boolean equalRestrictions(Column<Double> otherColumn)
+	{
+		return (otherColumn instanceof DoubleColumn);		
+	}
+	
 }

@@ -163,4 +163,16 @@ public class IntegerRangeMapping
 		return "[" + loBound + ", " + hiBound + "]";
 	}
 	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(obj instanceof IntegerRangeMapping)
+		{
+			IntegerRangeMapping other = (IntegerRangeMapping) obj;
+			return this.size == other.size && this.loBound == other.loBound && this.hiBound == other.hiBound;
+		}
+		else
+			return false;
+	}
+	
 }
