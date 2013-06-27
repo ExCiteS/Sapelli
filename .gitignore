@@ -37,3 +37,4 @@ local.properties
 /Other Dependencies/Android FileChooser/lint.xml
 /ExCiteS Data Collector/*.excites
 /ExCiteS Data Collector/res/raw/demo.excites
+/ExCiteS Data Collector/ant.properties
