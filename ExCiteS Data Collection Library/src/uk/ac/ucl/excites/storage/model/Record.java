@@ -56,7 +56,7 @@ public class Record
 	public void setSchema(Schema newSchema)
 	{
 		if(schema.equals(newSchema, true, true)) // check if the schema is identical/equivalent to the one we have/need 
-			this.schema = newSchema; // we accept the existing one
+			this.schema = newSchema; // we accept the new one
 		else
 			throw new IllegalArgumentException("The provived schema is not compatible with this record!");
 	}
