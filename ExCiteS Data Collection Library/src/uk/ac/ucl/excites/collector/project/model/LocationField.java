@@ -312,13 +312,13 @@ public class LocationField extends Field implements Timeoutable
 				return false; //not accurate enough
 		}
 		//this location is good enough or it is the best we could get, so store it:
-		((LocationColumn) column).storeValue(record, location);
+		((LocationColumn) form.getColumnFor(this)).storeValue(record, location);
 		return true;
 	}
 	
 	public Location retrieveLocation(Record entry)
 	{
-		return ((LocationColumn) column).retrieveValue(entry);
+		return ((LocationColumn) form.getColumnFor(this)).retrieveValue(entry);
 	}
 		
 	@Override

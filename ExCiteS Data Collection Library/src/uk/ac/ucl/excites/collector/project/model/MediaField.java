@@ -123,7 +123,7 @@ public abstract class MediaField extends Field
 	
 	public int getCount(Record record)
 	{
-		Long currentCount = ((IntegerColumn) column).retrieveValue(record);
+		Long currentCount = ((IntegerColumn) form.getColumnFor(this)).retrieveValue(record);
 		if(currentCount == null)
 			return 0;
 		return currentCount.intValue();
@@ -139,7 +139,7 @@ public abstract class MediaField extends Field
 		int currentCount = getCount(record);	
 		if(currentCount >= max)
 			throw new IllegalStateException("Maximum # of attachments (" + max + ") reached.");
-		((IntegerColumn) column).storeValue(record, Long.valueOf(++currentCount));
+		((IntegerColumn) form.getColumnFor(this)).storeValue(record, Long.valueOf(++currentCount));
 	}
 
 	public File getNewTempFile(Record record) throws IOException

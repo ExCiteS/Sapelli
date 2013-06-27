@@ -84,7 +84,7 @@ public class OrientationField extends Field
 
 	public void storeValue(Record record, Orientation orientation)
 	{
-		((OrientationColumn) column).storeValue(record, orientation);
+		((OrientationColumn) form.getColumnFor(this)).storeValue(record, orientation);
 	}
 	
 	@Override

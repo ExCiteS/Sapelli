@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
@@ -451,7 +452,12 @@ public class Form
 
 		return record;
 	}
-
+	
+	public Column<?> getColumnFor(Field field)
+	{
+		return getSchema().getColumn(field.getID());
+	}
+	
 	public void finish(Record record)
 	{
 		if(storeEndTime)

@@ -30,7 +30,6 @@ public abstract class Field
 	protected String id;
 	protected Form form;
 	protected Field jump;
-	protected Column<?> column;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected Optionalness optional = DEFAULT_OPTIONAL;
 	protected boolean noColumn = DEFAULT_NO_COLUMN;
@@ -165,14 +164,14 @@ public abstract class Field
 
 	public Column<?> getColumn()
 	{
-		if(!noColumn && this.column == null)
-			column = createColumn();
-		return column;
+		if(!noColumn)
+			return createColumn();
+		return null;
 	}
 	
 	/**
 	 * Returns a new Column object capable of storing values for this field
-	 * It is assumed that the field.id is used as the column name.
+	 * Important: it is assumed that the field.id is used as the column name.
 	 * 
 	 * @return
 	 */
