@@ -98,7 +98,7 @@ public class ProjectController implements LocationListener, OrientationListener
 				logger = new Logger(project.getLogFolder().getAbsolutePath(), LOG_PREFIX);
 
 				// Log the start of the project
-				logger.addLine("PROJECT_START", project.getName());
+				logger.addLine("PROJECT_START", project.toString());
 				logger.addBlankLine();
 			}
 			catch(IOException e)
@@ -154,7 +154,7 @@ public class ProjectController implements LocationListener, OrientationListener
 		if(logger != null)
 		{
 			formStartTime = System.currentTimeMillis();
-			logger.addLine("FORM_START", currentForm.getName());
+			logger.addLine("FORM_START", currentForm.getName() + " (Schema ID: " + currentForm.getSchemaID() + "; version: " + currentForm.getSchemaVersion() + ")");
 		}
 		
 		// Begin filling out the form at the start field:
