@@ -51,6 +51,16 @@ public class IntegerRangeMapping
 	}
 	
 	/**
+	 * Copy constructor
+	 */
+	public IntegerRangeMapping(IntegerRangeMapping another)
+	{
+		this.size = another.size;
+		this.loBound = another.loBound;
+		this.hiBound = another.hiBound;
+	}
+	
+	/**
 	 * @return the number of bits needed to store values in this range
 	 */
 	public int getSize()
