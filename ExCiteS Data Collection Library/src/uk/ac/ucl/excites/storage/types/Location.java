@@ -199,6 +199,25 @@ public class Location
 			return 0l;
 		return time;
 	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(obj instanceof Location)
+		{
+			Location other = (Location) obj;
+			return	this.lat == other.lat &&
+					this.lon == other.lon &&
+					this.provider == other.provider &&
+					(this.alt == null ? other.alt == null : this.alt.equals(other.alt)) &&
+					(this.bearing == null ? other.bearing == null : this.bearing.equals(other.bearing)) &&
+					(this.speed == null ? other.speed == null : this.speed.equals(other.speed)) &&
+					(this.acc == null ? other.acc == null : this.acc.equals(other.acc)) &&
+					(this.time == null ? other.time == null : this.time.equals(other.time));
+		}
+		else
+			return false;
+	}
 
 	public String toString()
 	{

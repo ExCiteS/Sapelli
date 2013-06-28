@@ -92,6 +92,20 @@ public class Orientation
 	{
 		return roll != null;
 	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(obj instanceof Orientation)
+		{
+			Orientation other = (Orientation) obj;
+			return	(this.azimuth == null ? other.azimuth == null : this.azimuth.equals(other.azimuth)) &&
+					(this.pitch == null ? other.pitch == null : this.pitch.equals(other.pitch)) &&
+					(this.roll == null ? other.roll == null : this.roll.equals(other.roll));
+		}
+		else
+			return false;
+	}
 	
 	public String toString()
 	{

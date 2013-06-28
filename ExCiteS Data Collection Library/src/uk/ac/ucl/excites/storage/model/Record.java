@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.storage.model;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -55,7 +56,17 @@ public class Record
 	 */
 	public void setSchema(Schema newSchema)
 	{
-		if(schema.equals(newSchema, true, true)) // check if the schema is identical/equivalent to the one we have/need 
+		setSchema(newSchema, false);
+	}
+	
+	/**
+	 * Override the schema object with another one, if compatible (unless forced)
+	 * 
+	 * @param newSchema
+	 */
+	public void setSchema(Schema newSchema, boolean force)
+	{
+		if(force || schema.equals(newSchema, true, true)) // check if the schema is identical/equivalent to the one we have/need 
 			this.schema = newSchema; // we accept the new one
 		else
 			throw new IllegalArgumentException("The provived schema is not compatible with this record!");
@@ -192,6 +203,47 @@ public class Record
 	}
 	
 	@Override
+    public int hashCode()
+	{
+		try
+		{
+			return Arrays.hashCode(this.toBytes());
+		}
+		catch(IOException ioe)
+		{
+			ioe.printStackTrace(System.err);
+			return super.hashCode();
+		}
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(obj instanceof Record)
+		{
+			Record other = (Record) obj;
+			if(this.schema != other.schema) // or should we use equals() here?
+				return false;
+			// Compare values for each column (using values as if decoded from binary stream):
+			for(Column<?> c : schema.getColumns())
+			{
+				Object v1 = c.retrieveValueAsStoredBinary(this);
+				Object v2 = c.retrieveValueAsStoredBinary(other);
+				if(v1 != null)
+				{
+					if(!v1.equals(v2))
+						return false;
+				}
+				else if(v2 != null)
+					return false;
+			}
+			return true;
+		}
+		else
+			return false;
+	}
+	
+	@Override
 	public String toString()
 	{
 		StringBuffer bff = new StringBuffer();
@@ -218,6 +270,38 @@ public class Record
 		}
 		bldr.append(StringUtils.addTabsFront("</" + TAG_RECORD + ">", tabs));
 		return bldr.toString();
+	}
+	
+	public byte[] toBytes() throws IOException
+	{
+		BitOutputStream out = null;
+		try
+		{
+			//Output stream:
+			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
+			out = new BitOutputStream(rawOut);
+				
+			//Write record:
+			this.writeToBitStream(out, new HashSet<Column<?>>());
+			
+			//Flush & close the stream and get bytes:
+			out.flush();
+			out.close();
+			return rawOut.toByteArray();
+		}
+		catch(Exception e)
+		{
+			throw new IOException("Error on encoding record.", e);
+		}
+		finally
+		{
+			try
+			{
+				if(out != null)
+					out.close();
+			}
+			catch(Exception ignore) {}
+		}
 	}
 	
 }
