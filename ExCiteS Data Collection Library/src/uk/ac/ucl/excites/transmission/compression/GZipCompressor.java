@@ -11,6 +11,14 @@ import org.apache.commons.io.IOUtils;
 
 import uk.ac.ucl.excites.transmission.compression.CompressorFactory.CompressionMode;
 
+/**
+ * GZIP compressor.
+ * Based on Java SE implementation (java.util.zip).
+ * 
+ * @author mstevens
+ * @see <a href="http://en.wikipedia.org/wiki/Gzip">http://en.wikipedia.org/wiki/Gzip</a>
+ * @see <a href="http://docs.oracle.com/javase/6/docs/api/java/util/zip/package-summary.html">http://docs.oracle.com/javase/6/docs/api/java/util/zip/package-summary.html</a>
+ */
 public class GZipCompressor extends Compressor
 {
 

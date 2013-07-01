@@ -5,6 +5,8 @@ import java.io.IOException;
 import uk.ac.ucl.excites.transmission.compression.CompressorFactory.CompressionMode;
 
 /**
+ * Dummy compressor (leaves data unchanged)
+ * 
  * @author mstevens
  *
  */

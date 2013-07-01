@@ -14,6 +14,14 @@ import org.tukaani.xz.UnsupportedOptionsException;
 import uk.ac.ucl.excites.transmission.compression.Compressor;
 import uk.ac.ucl.excites.transmission.compression.CompressorFactory.CompressionMode;
 
+/**
+ * LZMA2 compressor.
+ * Based on the "XZ for Java" library (public domain).
+ * 
+ * @author mstevens
+ * @see <a href="http://en.wikipedia.org/wiki/LZMA#LZMA2_format">http://en.wikipedia.org/wiki/LZMA#LZMA2_format</a>
+ * @see <a href="http://tukaani.org/xz/java.html">http://tukaani.org/xz/java.html</a>
+ */
 public class LZMA2Compressor extends Compressor
 {
 

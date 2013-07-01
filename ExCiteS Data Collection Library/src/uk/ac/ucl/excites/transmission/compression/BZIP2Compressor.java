@@ -13,6 +13,14 @@ import org.itadaki.bzip2.BZip2OutputStream;
 import uk.ac.ucl.excites.transmission.compression.Compressor;
 import uk.ac.ucl.excites.transmission.compression.CompressorFactory.CompressionMode;
 
+/**
+ * BZIP2 compressor.
+ * Based on the jbzip2 library (MIT licensed).
+ * 
+ * @author mstevens
+ * @see <a href="http://en.wikipedia.org/wiki/Bzip2">http://en.wikipedia.org/wiki/Bzip2</a>
+ * @see <a href="http://code.google.com/p/jbzip2">http://code.google.com/p/jbzip2</a>
+ */
 public class BZIP2Compressor extends Compressor
 {
 	
