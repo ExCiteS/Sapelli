@@ -17,12 +17,12 @@ public class CompressorFactory
 	{
 		switch(mode)
 		{
-			case NONE	: return new DummyCompressor();
-			case GZIP	: return new GZipCompressor();
-			case LZMA2	: return new LZMA2Compressor();
-			case BZIP2	: return new BZIP2Compressor();
-			case DEFLATE : return new DeflateCompressor();
-			default		: return new DummyCompressor();
+			case NONE		: return new DummyCompressor();
+			case GZIP		: return new GZipCompressor();
+			case LZMA2		: return new LZMA2Compressor();
+			case BZIP2		: return new BZIP2Compressor();
+			case DEFLATE	: return new DeflateCompressor();
+			default			: return new DummyCompressor();
 		}
 	}
 
