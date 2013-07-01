@@ -167,7 +167,7 @@ public class Record
 		}
 		catch(Exception e)
 		{
-			throw new IOException("Error on attempting to read record", e);
+			throw new IOException("Error on attempting to read record. Read so far: " + this.toString(), e);
 		}
 	}
 	
@@ -247,8 +247,9 @@ public class Record
 	public String toString()
 	{
 		StringBuffer bff = new StringBuffer();
+		bff.append("SchemaID: " + schema.getID() + "|" + "SchemaVersion: " + schema.getVersion());
 		for(Column<?> c : schema.getColumns())
-			bff.append(c.getName() + ": " + c.retrieveValueAsString(this) + "|");
+			bff.append("|" + c.getName() + ": " + c.retrieveValueAsString(this));
 		return bff.toString();
 	}
 	
