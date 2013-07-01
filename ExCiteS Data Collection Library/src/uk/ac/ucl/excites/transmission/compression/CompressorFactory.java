@@ -9,7 +9,8 @@ public class CompressorFactory
 		/*HUFFMAN,*/
 		GZIP,
 		LZMA2,
-		BZIP2
+		BZIP2,
+		DEFLATE
 	}
 	
 	static public Compressor getCompressor(CompressionMode mode)
@@ -20,6 +21,7 @@ public class CompressorFactory
 			case GZIP	: return new GZipCompressor();
 			case LZMA2	: return new LZMA2Compressor();
 			case BZIP2	: return new BZIP2Compressor();
+			case DEFLATE : return new DeflateCompressor();
 			default		: return new DummyCompressor();
 		}
 	}
