@@ -5,6 +5,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
 
@@ -186,12 +187,24 @@ public class Schema implements Comparable<Schema>
 	 */
 	public int getMinimumSize()
 	{
+		return getMinimumSize(null);
+	}
+	
+	/**
+	 * Returns the minimum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * 
+	 * @param columns to ignore the total
+	 * @return
+	 */
+	public int getMinimumSize(Set<Column<?>> skipColumns)
+	{
 		int total = 0;
 		for(Column<?> c : columns)
-			total += c.getMinimumSize();
+			if(skipColumns == null || !skipColumns.contains(c))
+				total += c.getMinimumSize();
 		return total;
 	}
-
+	
 	/**
 	 * Returns the maximum effective number of bits a record of this schema takes up when written to a binary representation.
 	 * 
@@ -199,9 +212,21 @@ public class Schema implements Comparable<Schema>
 	 */
 	public int getMaximumSize()
 	{
+		return getMaximumSize(null);
+	}
+
+	/**
+	 * Returns the maximum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * 
+	 * @param columns to ignore the total
+	 * @return
+	 */
+	public int getMaximumSize(Set<Column<?>> skipColumns)
+	{
 		int total = 0;
 		for(Column<?> c : columns)
-			total += c.getMaximumSize();
+			if(skipColumns == null || !skipColumns.contains(c))
+				total += c.getMaximumSize();
 		return total;
 	}
 	

@@ -17,6 +17,7 @@ import uk.ac.ucl.excites.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.transmission.DecodeException;
 import uk.ac.ucl.excites.transmission.ModelProvider;
 import uk.ac.ucl.excites.transmission.TransmissionSender;
 import uk.ac.ucl.excites.transmission.Settings;
@@ -70,7 +71,7 @@ public abstract class SMSTransmission extends Transmission
 		this.id = id;
 		
 		this.receiver = receiver;
-		this.parts = new TreeSet<Message>(new Message.MessageComparator());
+		this.parts = new TreeSet<Message>();
 	}
 	
 	/**
@@ -82,7 +83,7 @@ public abstract class SMSTransmission extends Transmission
 	public SMSTransmission(ModelProvider modelProvider)
 	{
 		super(modelProvider);
-		this.parts = new TreeSet<Message>(new Message.MessageComparator());
+		this.parts = new TreeSet<Message>();
 	}
 	
 	@Override
@@ -162,9 +163,14 @@ public abstract class SMSTransmission extends Transmission
 		return parts;
 	}
 	
-	public int getTotalParts()
+	public int getCurrentNumberOfParts()
 	{
 		return parts.size();
+	}
+	
+	public int getTotalNumberOfParts()
+	{
+		return parts.first().getTotalParts(); // Do not use parts.size() because that is not correct for incomplete transmissions on the receiving side
 	}
 	
 	/**
@@ -177,6 +183,54 @@ public abstract class SMSTransmission extends Transmission
 		if(parts.isEmpty())
 			return false;
 		return (parts.first().getTotalParts() == parts.size());
+	}
+	
+	public void send(TransmissionSender transmissionSender) throws Exception
+	{
+		//Some checks:
+		if(isSent())
+		{
+			System.out.println("All parts of this SMSTransmission have already been sent.");
+			return;
+		}
+		if(records.isEmpty())
+			throw new IllegalStateException("Transmission has no records. Add at least 1 record before sending the transmission .");
+		if(transmissionSender == null)
+			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
+		
+		//Prepare messages:
+		prepareMessages();
+		
+		//Send unsent messages one by one:
+		for(Message m : parts)
+			if(!m.isSent())
+				m.send(transmissionSender.getSMSService());
+	}
+	
+	public void receive() throws IllegalStateException, IOException, DecodeException
+	{
+		receive(null);
+	}
+	
+	public void receive(Schema schemaToUse) throws IllegalStateException, IOException, DecodeException
+	{
+		//Some checks:
+		if(isReceived())
+		{
+			System.out.println("This SMSTransmission has already been received.");
+			return;
+		}
+		if(parts.isEmpty())
+			throw new IllegalStateException("No messages to decode.");
+		if(!isComplete())
+			throw new IllegalStateException("Transmission is incomplete, " + (parts.first().getTotalParts() - parts.size()) + " parts missing.");
+		
+		//Read messages:
+		readMessages(schemaToUse);
+		
+		//On successful reading of messages:
+		if(!records.isEmpty())
+			receivedAt = new DateTime(); //= now	
 	}
 	
 	protected void prepareMessages() throws IOException, TransmissionCapacityExceededException
@@ -230,7 +284,13 @@ public abstract class SMSTransmission extends Transmission
 		}
 	}
 	
-	protected void readMessages() throws IOException
+	/**
+	 * @param schemaToUse - can be null
+	 * @throws IllegalStateException
+	 * @throws IOException
+	 * @throws DecodeException
+	 */
+	protected void readMessages(Schema schemaToUse) throws IllegalStateException, IOException, DecodeException
 	{
 		BitInputStream in = null;
 		try
@@ -242,14 +302,18 @@ public abstract class SMSTransmission extends Transmission
 			ByteArrayInputStream rawIn = new ByteArrayInputStream(data);
 			in = new BitInputStream(rawIn);
 			
-			// Read schema ID & version
+			// Read schema ID & version:
 			int schemaID = (int) Schema.SCHEMA_ID_FIELD.read(in);
 			int schemaVersion = (int) Schema.SCHEMA_VERSION_FIELD.read(in);
+			if(schemaToUse != null)
+				System.out.println("Using provided schema (ID: " + schemaToUse.getID() + "; version: " + schemaToUse.getVersion() + ") instead of the one indicated by the transmission (ID: " + schemaID + "; version: " + schemaVersion + ").");
 			
-			// Look-up schema, settings & columns to factor out:
-			schema = modelProvider.getSchema(schemaID, schemaVersion);
+			// Look-up schema unless one was provided:
+			schema = (schemaToUse == null ? modelProvider.getSchema(schemaID, schemaVersion) : schemaToUse);
 			if(schema == null)
-				throw new IllegalStateException("Cannot decode message because schema (id: " + schemaID + "; version: " + schemaVersion + ") is unknown");
+				throw new IllegalStateException("Cannot decode message because schema (ID: " + schemaID + "; version: " + schemaVersion + ") is unknown");
+			
+			// Look-up settings & columns to factor out:
 			settings = modelProvider.getSettingsFor(schema);
 			setColumnsToFactorOut(modelProvider.getFactoredOutColumnsFor(schema));
 			
@@ -267,10 +331,6 @@ public abstract class SMSTransmission extends Transmission
 			//System.out.println("Hash: " + BinaryHelpers.toHexadecimealString(Hashing.getSHA256Hash(data)));
 			decodeRecords(data);
 		}
-		catch(Exception e)
-		{
-			throw new IOException("Error on reading messages.", e);
-		}
 		finally
 		{
 			try
@@ -280,49 +340,6 @@ public abstract class SMSTransmission extends Transmission
 			}
 			catch(Exception ignore) {}
 		}
-	}
-
-	public void send(TransmissionSender sender) throws Exception
-	{
-		//Some checks:
-		if(isSent())
-		{
-			System.out.println("All parts of this SMSTransmission have already been sent.");
-			return;
-		}
-		if(records.isEmpty())
-			throw new IllegalStateException("Transmission has no records. Add at least 1 record before sending the transmission .");
-		if(sender == null)
-			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
-		
-		//Prepare messages:
-		prepareMessages();
-		
-		//Send unsent messages one by one:
-		for(Message m : parts)
-			if(!m.isSent())
-				m.send(sender.getSMSService());
-	}
-	
-	public void receive() throws Exception
-	{
-		//Some checks:
-		if(isReceived())
-		{
-			System.out.println("This SMSTransmission has already been received.");
-			return;
-		}
-		if(parts.isEmpty())
-			throw new IllegalStateException("No messages to decode.");
-		if(!isComplete())
-			throw new IllegalStateException("Transmission is incomplete, " + (parts.first().getTotalParts() - parts.size()) + " parts missing.");
-		
-		//Read messages:
-		readMessages();
-		
-		//On successful reading of messages:
-		if(!records.isEmpty())
-			receivedAt = new DateTime(); //= now
 	}
 	
 	protected byte[] encodeRecords() throws IOException
@@ -362,9 +379,10 @@ public abstract class SMSTransmission extends Transmission
 		}
 	}
 	
-	protected void decodeRecords(byte[] data) throws IOException
+	protected void decodeRecords(byte[] data) throws DecodeException
 	{
 		BitInputStream in = null;
+		Record r = null;
 		try
 		{
 			//Input stream:
@@ -376,10 +394,9 @@ public abstract class SMSTransmission extends Transmission
 				factoredOutValues.put(c, c.readValue(in));
 			
 			//Read records:
-			int minimumRecordSize = schema.getMinimumSize();
-			while(in.bitsAvailable() >= minimumRecordSize)
+			while(in.bitsAvailable() >= schema.getMinimumSize(columnsToFactorOut))
 			{
-				Record r = new Record(schema);
+				r = new Record(schema);
 				r.readFromBitStream(in, columnsToFactorOut);
 				//Set factored out values:
 				for(Column<?> c : columnsToFactorOut)
@@ -389,7 +406,10 @@ public abstract class SMSTransmission extends Transmission
 		}
 		catch(Exception e)
 		{
-			throw new IOException("Error on decoding records.", e);
+			DecodeException de = new DecodeException("Error on decoding records.", e, schema, records); //pass schema used for decoding and records decoded so far 
+			de.addRecord(r); //add last (partially decoded) record (will be ignored if null)
+			records.clear(); //remove partially decoded records
+			throw de;
 		}
 		finally
 		{
@@ -416,14 +436,14 @@ public abstract class SMSTransmission extends Transmission
 		return decompressedData;
 	}
 
-	protected byte[] encrypt(byte[] data)
+	protected byte[] encrypt(byte[] data) throws IOException
 	{
 		//TODO encryption
 		
 		return data;
 	}
 	
-	protected byte[] decrypt(byte[] data)
+	protected byte[] decrypt(byte[] data) throws IOException
 	{
 		//TODO decryption
 		
@@ -532,6 +552,16 @@ public abstract class SMSTransmission extends Transmission
 	public float getCompressionRatio()
 	{
 		return compressionRatio;
+	}
+	
+	public SMSAgent getReceiver()
+	{
+		return receiver;
+	}
+	
+	public SMSAgent getSender()
+	{
+		return sender;
 	}
 	
 }

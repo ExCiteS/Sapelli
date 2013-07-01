@@ -56,7 +56,7 @@ public class BinaryMessage extends Message
 	}
 	
 	/**
-	 * To be called on the receiving side.
+	 * To be called on the receiving side (msg received *now*)
 	 * 
 	 * @param sender
 	 * @param data
@@ -64,7 +64,20 @@ public class BinaryMessage extends Message
 	 */
 	public BinaryMessage(SMSAgent sender, byte[] data) throws Exception
 	{
-		super(sender, new DateTime() /*received NOW*/);
+		this(sender, data, new DateTime() /*received NOW*/);
+	}
+	
+	/**
+	 * To be called on the receiving side.
+	 * 
+	 * @param sender
+	 * @param data
+	 * @param receivedAt
+	 * @throws Exception
+	 */
+	public BinaryMessage(SMSAgent sender, byte[] data, DateTime receivedAt) throws Exception
+	{
+		super(sender, receivedAt);
 		//read data:
 		BitInputStream in = null;
 		try
@@ -95,8 +108,13 @@ public class BinaryMessage extends Message
 		}
 	}
 
+	/**
+	 * Called by receiver
+	 * 
+	 * @return
+	 */
 	@Override
-	protected byte[] getPayload()
+	public byte[] getPayload()
 	{
 		return payload;
 	}

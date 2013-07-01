@@ -131,4 +131,9 @@ public abstract class Transmission
 		return receivedAt != null;
 	}
 	
+	public Schema getSchema()
+	{
+		return schema;
+	}
+	
 }

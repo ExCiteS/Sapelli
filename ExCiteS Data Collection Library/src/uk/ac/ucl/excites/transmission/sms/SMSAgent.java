@@ -26,6 +26,12 @@ public class SMSAgent
 	}
 	
 	@Override
+	public int hashCode()
+	{
+		return phoneNumber.hashCode();
+	}
+	
+	@Override
 	public boolean equals(Object o)
 	{
 		if(o instanceof SMSAgent)

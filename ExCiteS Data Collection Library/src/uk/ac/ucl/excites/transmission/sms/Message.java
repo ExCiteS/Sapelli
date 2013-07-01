@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.transmission.sms;
 
+import java.util.Arrays;
 import java.util.Comparator;
 
 import org.joda.time.DateTime;
@@ -8,7 +9,7 @@ import org.joda.time.DateTime;
  * @author mstevens
  *
  */
-public abstract class Message
+public abstract class Message implements Comparable<Message>
 {
 	
 	protected SMSAgent sender;
@@ -52,7 +53,7 @@ public abstract class Message
 		this.receivedAt = receivedAt;
 	}
 		
-	protected abstract byte[] getPayload();
+	public abstract byte[] getPayload();
 	
 	public abstract void send(SMSService smsService);
 	
@@ -144,7 +145,65 @@ public abstract class Message
 	{
 		return transmission;
 	}
+		
+	@Override
+	public int compareTo(Message another)
+	{
+		return this.getPartNumber() - another.getPartNumber();
+	}
 	
+
+	/**
+	 * hashCode() method
+	 * Ignores transmission (but not transmissionID), sentAt, deliveredAt & receivedAt
+	 * 
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + (sender == null ? 0 : sender.hashCode());
+		hash = 31 * hash + (receiver == null ? 0 : receiver.hashCode());
+		hash = 31 * hash + transmissionID;
+		hash = 31 * hash + partNumber;
+		hash = 31 * hash + totalParts;
+		hash = 31 * hash + Arrays.hashCode(getPayload());
+		return hash;
+	}
+	
+	/**
+	 * equals() method
+	 * Ignores transmission (but not transmissionID), sentAt, deliveredAt & receivedAt
+	 * 
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(obj instanceof Message)
+		{
+			Message another = (Message) obj;
+			return	(this.sender == null ? another.sender == null : this.sender.equals(another.sender)) &&
+					(this.receiver == null ? another.receiver == null : this.receiver.equals(another.receiver)) &&
+					this.transmissionID == another.transmissionID &&
+					this.partNumber == another.partNumber &&
+					this.totalParts == another.totalParts &&
+					Arrays.equals(this.getPayload(), another.getPayload());
+		}
+		return false;
+	}
+	
+	/**
+	 * MessageComparator class.
+	 * 
+	 * Note:
+	 * 	This class is no longer used because Message now implements Comparable<Message>.
+	 * 	However for the time being we should not remove the comparator class because that breaks compatibility with old DB4LO dumps.
+	 * 
+	 * @deprecated
+	 * @author mstevens
+	 */
 	public static class MessageComparator implements Comparator<Message>
 	{
 

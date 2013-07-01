@@ -38,14 +38,28 @@ public class TextMessage extends Message
 	}
 
 	/**
+	 * To be called on the receiving side (msg received *now*)
+	 * 
+	 * @param sender
+	 * @param data
+	 * @throws Exception
+	 */
+	public TextMessage(SMSAgent sender, String text) throws Exception
+	{
+		this(sender, text, new DateTime() /*received NOW*/);
+	}
+	
+	/**
 	 * To be called on the receiving side.
 	 * 
 	 * @param sender
-	 * @param text
+	 * @param data
+	 * @param receivedAt
+	 * @throws Exception
 	 */
-	public TextMessage(SMSAgent sender, String text)
+	public TextMessage(SMSAgent sender, String text, DateTime receivedAt) throws Exception
 	{
-		super(sender, new DateTime() /*received NOW*/);
+		super(sender, receivedAt);
 		this.content = text;
 	}
 	

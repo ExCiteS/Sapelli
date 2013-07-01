@@ -11,6 +11,7 @@ import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Transmission;
+import uk.ac.ucl.excites.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmissionID;
 
@@ -341,29 +342,30 @@ public final class DataAccess
 	}
 	
 	/**
-	 * Retrieve SMSTransmission by id
+	 * Retrieve incomplete SMSTransmission by sender & id
 	 * 
+	 * @param sender
 	 * @param id
 	 * @return
 	 */
-	public SMSTransmission retrieveSMSTransmission(final int id)
+	public SMSTransmission retrieveIncompleteSMSTransmission(final SMSAgent sender, final int id)
 	{
 		@SuppressWarnings("serial")
 		ObjectSet<SMSTransmission> result = db.query(new Predicate<SMSTransmission>()
 		{
 			public boolean match(SMSTransmission t)
 			{
-				return t.getID() == id;
+				return !t.isComplete() && t.getSender().equals(sender) && t.getID() == id ;
 			}
 		});
-		if(result.isEmpty())
-			return null;
-		else
+		if(result.hasNext())
 		{
-			SMSTransmission t = result.get(0);
+			SMSTransmission t = result.next();
 			db.activate(t, ACTIVATION_DEPTH);
 			return t;
-		}		
+		}
+		else
+			return null;
 	}
 	
 	/**
