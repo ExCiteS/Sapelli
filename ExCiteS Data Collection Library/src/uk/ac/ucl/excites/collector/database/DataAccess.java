@@ -214,7 +214,7 @@ public final class DataAccess
 				}
 				catch(IllegalArgumentException iae)
 				{	// existing schema was refused, it does not match with the schema defined by the form itself
-					throw new DuplicateException("There is already a project/form with schema ID " + f.getSchemaID() + " and version " + f.getSchemaVersion() + " and the schemas are not compatible.");
+					throw new DuplicateException("There is already a project/form (or saved records) with schema ID " + f.getSchemaID() + " and version " + f.getSchemaVersion() + " and the schemas are not compatible.");
 				}
 			}
 		}

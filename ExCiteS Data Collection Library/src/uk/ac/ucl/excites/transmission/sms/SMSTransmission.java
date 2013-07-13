@@ -6,6 +6,7 @@ package uk.ac.ucl.excites.transmission.sms;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -91,25 +92,30 @@ public abstract class SMSTransmission extends Transmission
 	{
 		if(!record.isFilled())
 			return false;
-		if(records.isEmpty())
-		{	//Store "factored out" values:
-			for(Column<?> c : columnsToFactorOut)
-				factoredOutValues.put(c, c.retrieveValue(record));
-		}
-		else
-		{	//Check if factored out values are the same
-			for(Column<?> c : columnsToFactorOut)
+		if(columnsToFactorOut != null)
+		{
+			if(records.isEmpty())
 			{
-				Object rValue = c.retrieveValue(record);
-				if(factoredOutValues.get(c) == null)
+				factoredOutValues = new HashMap<Column<?>, Object>();
+				//Store "factored out" values:
+				for(Column<?> c : columnsToFactorOut)
+					factoredOutValues.put(c, c.retrieveValue(record));
+			}
+			else
+			{	//Check if factored out values are the same
+				for(Column<?> c : columnsToFactorOut)
 				{
-					if(rValue != null)
-						throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
-				}
-				else
-				{
-					if(rValue == null || !rValue.equals(factoredOutValues.get(c)))
-						throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
+					Object rValue = c.retrieveValue(record);
+					if(factoredOutValues.get(c) == null)
+					{
+						if(rValue != null)
+							throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
+					}
+					else
+					{
+						if(rValue == null || !rValue.equals(factoredOutValues.get(c)))
+							throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
+					}
 				}
 			}
 		}
@@ -155,7 +161,10 @@ public abstract class SMSTransmission extends Transmission
 				throw new IllegalArgumentException("This message originates from another sender.");
 		}
 		if(!parts.contains(msg)) //check for duplicates
+		{
 			parts.add(msg);
+			msg.setTransmission(this);
+		}
 	}
 	
 	public SortedSet<Message> getParts()
@@ -209,24 +218,30 @@ public abstract class SMSTransmission extends Transmission
 	
 	public void receive() throws IllegalStateException, IOException, DecodeException
 	{
-		receive(null);
+		receive(null, null);
 	}
 	
-	public void receive(Schema schemaToUse) throws IllegalStateException, IOException, DecodeException
+	public void receive(Schema schemaToUse, Settings settingsToUse) throws IllegalStateException, IOException, DecodeException
 	{
 		//Some checks:
 		if(isReceived())
 		{
-			System.out.println("This SMSTransmission has already been received.");
-			return;
+			if(schema == schemaToUse && settings == settingsToUse)
+			{
+				System.out.println("This SMSTransmission has already been received.");
+				return;
+			}
+			else
+				records.clear(); //Re-receiving with other schema/settings, so clear records
 		}
+		
 		if(parts.isEmpty())
 			throw new IllegalStateException("No messages to decode.");
 		if(!isComplete())
 			throw new IllegalStateException("Transmission is incomplete, " + (parts.first().getTotalParts() - parts.size()) + " parts missing.");
 		
 		//Read messages:
-		readMessages(schemaToUse);
+		readMessages(schemaToUse, settingsToUse);
 		
 		//On successful reading of messages:
 		if(!records.isEmpty())
@@ -248,7 +263,7 @@ public abstract class SMSTransmission extends Transmission
 			
 			// Encrypt records
 			data = encrypt(data);
-		
+			
 			// Output stream:
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
 			out = new BitOutputStream(rawOut);
@@ -286,11 +301,12 @@ public abstract class SMSTransmission extends Transmission
 	
 	/**
 	 * @param schemaToUse - can be null
+	 * @param settingsToUse - can be null
 	 * @throws IllegalStateException
 	 * @throws IOException
 	 * @throws DecodeException
 	 */
-	protected void readMessages(Schema schemaToUse) throws IllegalStateException, IOException, DecodeException
+	protected void readMessages(Schema schemaToUse, Settings settingsToUse) throws IllegalStateException, IOException, DecodeException
 	{
 		BitInputStream in = null;
 		try
@@ -305,8 +321,8 @@ public abstract class SMSTransmission extends Transmission
 			// Read schema ID & version:
 			int schemaID = (int) Schema.SCHEMA_ID_FIELD.read(in);
 			int schemaVersion = (int) Schema.SCHEMA_VERSION_FIELD.read(in);
-			if(schemaToUse != null)
-				System.out.println("Using provided schema (ID: " + schemaToUse.getID() + "; version: " + schemaToUse.getVersion() + ") instead of the one indicated by the transmission (ID: " + schemaID + "; version: " + schemaVersion + ").");
+			//if(schemaToUse != null)
+			//	System.out.println("Using provided schema (ID: " + schemaToUse.getID() + "; version: " + schemaToUse.getVersion() + ") instead of the one indicated by the transmission (ID: " + schemaID + "; version: " + schemaVersion + ").");
 			
 			// Look-up schema unless one was provided:
 			schema = (schemaToUse == null ? modelProvider.getSchema(schemaID, schemaVersion) : schemaToUse);
@@ -314,7 +330,7 @@ public abstract class SMSTransmission extends Transmission
 				throw new IllegalStateException("Cannot decode message because schema (ID: " + schemaID + "; version: " + schemaVersion + ") is unknown");
 			
 			// Look-up settings & columns to factor out:
-			settings = modelProvider.getSettingsFor(schema);
+			settings = (settingsToUse == null ? modelProvider.getSettingsFor(schema) : settingsToUse);
 			setColumnsToFactorOut(modelProvider.getFactoredOutColumnsFor(schema));
 			
 			// Read encrypted, compressed & encoded records:
@@ -352,8 +368,9 @@ public abstract class SMSTransmission extends Transmission
 			out = new BitOutputStream(rawOut);
 			
 			//Write factored out values:
-			for(Column<?> c : columnsToFactorOut)
-				c.writeObject(factoredOutValues.get(c), out);
+			if(columnsToFactorOut != null)
+				for(Column<?> c : columnsToFactorOut)
+					c.writeObject(factoredOutValues.get(c), out);
 			
 			//Write records:
 			for(Record r : records)
@@ -390,8 +407,12 @@ public abstract class SMSTransmission extends Transmission
 			in = new BitInputStream(rawIn);
 			
 			//Read factored out values:
-			for(Column<?> c : columnsToFactorOut)
-				factoredOutValues.put(c, c.readValue(in));
+			if(columnsToFactorOut != null)
+			{
+				factoredOutValues = new HashMap<Column<?>, Object>();
+				for(Column<?> c : columnsToFactorOut)
+					factoredOutValues.put(c, c.readValue(in));
+			}
 			
 			//Read records:
 			while(in.bitsAvailable() >= schema.getMinimumSize(columnsToFactorOut))
@@ -399,8 +420,9 @@ public abstract class SMSTransmission extends Transmission
 				r = new Record(schema);
 				r.readFromBitStream(in, columnsToFactorOut);
 				//Set factored out values:
-				for(Column<?> c : columnsToFactorOut)
-					c.storeObject(r, factoredOutValues.get(c));
+				if(columnsToFactorOut != null)
+					for(Column<?> c : columnsToFactorOut)
+						c.storeObject(r, factoredOutValues.get(c));
 				records.add(r);
 			}
 		}

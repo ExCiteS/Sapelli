@@ -6,7 +6,6 @@ package uk.ac.ucl.excites.storage.model;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 
 import uk.ac.ucl.excites.storage.io.BitInputStream;
@@ -38,7 +37,21 @@ public class Record
 		if(!schema.isSealed())
 			throw new IllegalStateException("Schema must be sealed before records based on it can be created!");
 		this.schema = schema;
-		values = new Object[schema.getColumns().size()];
+		values = new Object[schema.getNumberOfColumns()];
+	}
+	
+	/**
+	 * Copy contructor
+	 * 
+	 * @param another
+	 */
+	public Record(Record another)
+	{
+		this(another.schema);
+		
+		//(Deep) copy of values:
+		for(Column<?> c : this.schema.getColumns())
+			setValue(c, c.retrieveValueCopy(another));
 	}
 	
 	/**
@@ -53,8 +66,9 @@ public class Record
 	 * Override the schema object with another one, if compatible
 	 * 
 	 * @param newSchema
+	 * @throws IllegalArgumentException - when the new schema is incompatible with the old one
 	 */
-	public void setSchema(Schema newSchema)
+	public void setSchema(Schema newSchema) throws IllegalArgumentException
 	{
 		setSchema(newSchema, false);
 	}
@@ -63,13 +77,23 @@ public class Record
 	 * Override the schema object with another one, if compatible (unless forced)
 	 * 
 	 * @param newSchema
+	 * @param force - if true the old and new schema are *not* compared, but the number of columns of the new schema must *always* match the number of values!
+	 * @throws IndexOutOfBoundsException - when the new schema has a different number of columns than the number of values in the record
+	 * @throws IllegalArgumentException - when the new schema is incompatible with the old one
 	 */
-	public void setSchema(Schema newSchema, boolean force)
+	public void setSchema(Schema newSchema, boolean force) throws IndexOutOfBoundsException, IllegalArgumentException
 	{
-		if(force || schema.equals(newSchema, true, true)) // check if the schema is identical/equivalent to the one we have/need 
-			this.schema = newSchema; // we accept the new one
+		if(force)
+		{		
+			if(newSchema.getNumberOfColumns() != values.length)
+				throw new IndexOutOfBoundsException("The new schema has a different number of columns than the number of values in this record!");
+		}
 		else
-			throw new IllegalArgumentException("The provived schema is not compatible with this record!");
+		{
+			if(!schema.equals(newSchema, true, true)) //also checkes number of columns
+				throw new IllegalArgumentException("The provived schema is not compatible with this record!");
+		}
+		this.schema = newSchema; // we accept the new one
 	}
 	
 	public Transmission getTransmission()
@@ -122,8 +146,8 @@ public class Record
 	{
 		if(values == null || values.length == 0)
 			throw new IllegalArgumentException("No values provided.");
-		if(values.length != schema.getColumns().size())
-			throw new IllegalArgumentException("Mismatch between number of values provided (" + values.length + ") and the number of columns in the schema (" + schema.getColumns().size() + "). Please remember to put null for empty optional columns.");
+		if(values.length != schema.getNumberOfColumns())
+			throw new IllegalArgumentException("Mismatch between number of values provided (" + values.length + ") and the number of columns in the schema (" + schema.getNumberOfColumns() + "). Please remember to put null for empty optional columns.");
 		int c = 0;
 		for(String v : values)
 		{
@@ -148,7 +172,7 @@ public class Record
 		try
 		{	//write fields:
 			for(Column<?> c : schema.getColumns())
-				if(!skipColumns.contains(c))
+				if(skipColumns == null || !skipColumns.contains(c))
 					c.retrieveAndWriteValue(this, bitStream);
 		}
 		catch(Exception e)
@@ -162,7 +186,7 @@ public class Record
 		try
 		{	//read fields:
 			for(Column<?> c : schema.getColumns())
-				if(!skipColumns.contains(c))
+				if(skipColumns == null || !skipColumns.contains(c))
 					c.readAndStoreValue(this, bitStream); 
 		}
 		catch(Exception e)
@@ -182,7 +206,7 @@ public class Record
 		try
 		{
 			out = new BitOutputStream(new ByteArrayOutputStream());
-			this.writeToBitStream(out, new HashSet<Column<?>>());
+			this.writeToBitStream(out, null);
 			return out.getNumberOfBitsWritten();
 		}
 		catch(IOException e)
@@ -207,7 +231,10 @@ public class Record
 	{
 		try
 		{
-			return Arrays.hashCode(this.toBytes());
+			int hash = 1;
+			hash = 31 * hash + schema.hashCode();
+			hash = 31 * hash + Arrays.hashCode(this.toBytes());
+			return hash;
 		}
 		catch(IOException ioe)
 		{
@@ -219,16 +246,29 @@ public class Record
 	@Override
 	public boolean equals(Object obj)
 	{
+		return equals(obj, true);
+	}
+	
+	public boolean equals(Object obj, boolean checkSchema)
+	{
 		if(obj instanceof Record)
 		{
 			Record other = (Record) obj;
-			if(this.schema != other.schema) // or should we use equals() here?
-				return false;
+			if(checkSchema)
+			{	// Check if records have the same schema (object)
+				if(this.schema != other.schema) // we could also use equals() here, but in principle we do not story duplicate schemas
+					return false;
+			}
+			else
+			{	// Only check if the number of columns matches (to avoid out or range errors below):
+				if(this.schema.getNumberOfColumns() != other.schema.getNumberOfColumns())
+					return false;
+			}
 			// Compare values for each column (using values as if decoded from binary stream):
-			for(Column<?> c : schema.getColumns())
+			for(int i = 0; i < this.schema.getNumberOfColumns(); i++)
 			{
-				Object v1 = c.retrieveValueAsStoredBinary(this);
-				Object v2 = c.retrieveValueAsStoredBinary(other);
+				Object v1 = this.schema.getColumn(i).retrieveValueAsStoredBinary(this);
+				Object v2 = other.schema.getColumn(i).retrieveValueAsStoredBinary(other);
 				if(v1 != null)
 				{
 					if(!v1.equals(v2))
@@ -283,7 +323,7 @@ public class Record
 			out = new BitOutputStream(rawOut);
 				
 			//Write record:
-			this.writeToBitStream(out, new HashSet<Column<?>>());
+			this.writeToBitStream(out, null);
 			
 			//Flush & close the stream and get bytes:
 			out.flush();

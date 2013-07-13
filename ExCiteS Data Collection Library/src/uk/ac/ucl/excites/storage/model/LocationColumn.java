@@ -36,7 +36,7 @@ public class LocationColumn extends Column<Location>
 	 */
 	public LocationColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeBearing, boolean storeSpeed, boolean storeAccuracy, boolean storeProvider)
 	{
-		super(name, optional);
+		super(Location.class, name, optional);
 		this.doublePrecision = doublePrecision;
 		this.storeAltitude = storeAltitude;
 		this.storeBearing = storeBearing;
@@ -145,7 +145,7 @@ public class LocationColumn extends Column<Location>
 		Float acc = (storeAccuracy && bitStream.readBit() ? bitStream.readFloat() : null);
 		//Provider:
 		int provider = (storeProvider ? (int) Location.ProviderRange().read(bitStream) : Location.PROVIDER_UNKNOWN);
-		return new Location(lat, lon, provider, alt, bea, spe, acc, null /*we never store time (for now)*/);
+		return new Location(provider, lat, lon, alt, bea, spe, acc, null /*we never store time (for now)*/);
 	}
 
 	@Override
@@ -199,6 +199,12 @@ public class LocationColumn extends Column<Location>
 		}
 		else
 			return false;
+	}
+
+	@Override
+	protected Location copy(Location value)
+	{
+		return new Location(value);
 	}
 
 }

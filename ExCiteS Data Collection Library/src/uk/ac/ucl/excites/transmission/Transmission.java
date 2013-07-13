@@ -4,8 +4,6 @@
 package uk.ac.ucl.excites.transmission;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -77,21 +75,18 @@ public abstract class Transmission
 	
 	private Transmission()
 	{
-		this.factoredOutValues = new HashMap<Column<?>, Object>();
 		this.records = new ArrayList<Record>();
 	}
 	
 	protected void setColumnsToFactorOut(Set<Column<?>> columnsToFactorOut)
 	{
-		if(columnsToFactorOut == null)
-			columnsToFactorOut = new HashSet<Column<?>>();
-		else
+		if(columnsToFactorOut != null)
 		{
 			for(Column<?> c : columnsToFactorOut)
 				if(schema.getColumnIndex(c) == Schema.UNKNOWN_COLUMN_INDEX)
 					throw new IllegalArgumentException(c.toString() + " does not belong to the given schema.");
 		}
-		this.columnsToFactorOut = columnsToFactorOut;
+		this.columnsToFactorOut = columnsToFactorOut; //may be null
 	}
 	
 	public abstract boolean addRecord(Record record) throws Exception;
@@ -134,6 +129,11 @@ public abstract class Transmission
 	public Schema getSchema()
 	{
 		return schema;
+	}
+	
+	public Settings getSettings()
+	{
+		return settings;
 	}
 	
 }

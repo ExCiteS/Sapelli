@@ -22,7 +22,7 @@ public class Location
 	static public final int PROVIDER_UNKNOWN = 0;
 	static public final int PROVIDER_GPS = 1;
 	static public final int PROVIDER_NETWORK = 2;
-	static public final int PROVIDER_MANUAL = 3; //e.g. pinpointed on map, coordinates entered in text fields, etc.
+	static public final int PROVIDER_MANUAL = 3; //e.g. pin-pointed on map, coordinates entered in text fields, etc.
 	
 	static public String GetProviderName(int provider)
 	{
@@ -41,14 +41,29 @@ public class Location
 		return new IntegerRangeMapping(PROVIDER_UNKNOWN, PROVIDER_MANUAL);
 	}
 	
+	/**
+	 * Warning (2013-07-13): Serialisation format produced by {@link Location#toString()} changed!<br/>
+	 * &nbsp;&nbsp;&nbsp; provider moved to front, whereas it used to come between lon and alt.<br/>
+	 * &nbsp;&nbsp;&nbsp; Old format is still supported for parsing.
+	 * 
+	 * @param text to parse
+	 * @return parsed Location object
+	 * @throws ParseException
+	 */
 	static public Location Parse(String text) throws ParseException
 	{
 		String[] parts = text.trim().split("\\" + SEPARATOR);
 		if(parts.length < 3)
 			throw new ParseException("Not a valid location: " + text, 0);
-		return new Location(Double.parseDouble(parts[0]),
-							Double.parseDouble(parts[1]),
-							Integer.parseInt(parts[2]),
+		
+		//Check for old serialisation format:
+		boolean oldFormat = false;
+		if(parts[0].indexOf('.') != -1) //first part is a floating point value (i.e. it is lat, as in the old format)
+			oldFormat = true;
+		
+		return new Location(Integer.parseInt(parts[oldFormat ? 2 : 0]),
+							Double.parseDouble(parts[oldFormat ? 0 : 1]),
+							Double.parseDouble(parts[oldFormat ? 1 : 2]),
 							(parts.length > 3 && !parts[3].isEmpty() ? Double.valueOf(parts[3]) : null),
 							(parts.length > 4 && !parts[4].isEmpty() ? Float.valueOf(parts[4]) : null),
 							(parts.length > 5 && !parts[5].isEmpty() ? Float.valueOf(parts[5]) : null),
@@ -57,9 +72,9 @@ public class Location
 	}
 	
 	//Dynamic--------------------------------------------------------
+	protected int provider;
 	protected double lat;
 	protected double lon;
-	protected int provider;
 	protected Double alt;
 	protected Float bearing;
 	protected Float speed;
@@ -72,30 +87,55 @@ public class Location
 	 */
 	public Location(double lat, double lon)
 	{
-		this(lat, lon, PROVIDER_UNKNOWN, null, null, null, null, null);
+		this(PROVIDER_UNKNOWN, lat, lon, null, null, null, null, null);
 	}
 	
 	/**
+	 * @param provider
 	 * @param lat
 	 * @param lon
-	 * @param provider
 	 * @param alt
 	 * @param bearing
 	 * @param speed
 	 * @param acc
 	 * @param time
 	 */
-	public Location(double lat, double lon, int provider, Double alt, Float bearing, Float speed, Float acc, Long time)
+	public Location(int provider, double lat, double lon, Double alt, Float bearing, Float speed, Float acc, Long time)
 	{
+		this.provider = provider;
 		this.lat = lat;
 		this.lon = lon;
-		this.provider = provider;
 		//optional (these can be null):
 		this.alt = alt;
 		this.bearing = bearing;
 		this.speed = speed;
 		this.acc = acc;
 		this.time = time;
+	}
+	
+	/**
+	 * Copy constructor
+	 * 
+	 * @param another
+	 */
+	public Location(Location another)
+	{
+		this.provider = another.provider;
+		this.lat = another.lat;
+		this.lon = another.lon;
+		this.alt = another.alt; 
+		this.bearing = another.bearing;
+		this.speed = another.speed;
+		this.acc = another.acc;
+		this.time = another.time;
+	}
+	
+	/**
+	 * @return the provider
+	 */
+	public int getProvider()
+	{
+		return provider;
 	}
 	
 	/**
@@ -177,14 +217,6 @@ public class Location
 		return acc;
 	}
 	
-	/**
-	 * @return the provider
-	 */
-	public int getProvider()
-	{
-		return provider;
-	}
-	
 	public boolean hasTime()
 	{
 		return time != null;
@@ -201,14 +233,29 @@ public class Location
 	}
 	
 	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + provider;
+		hash = 31 * hash + Double.valueOf(lat).hashCode();
+		hash = 31 * hash + Double.valueOf(lon).hashCode();
+		hash = 31 * hash + (alt == null ? 0 : alt.hashCode());
+		hash = 31 * hash + (bearing == null ? 0 : bearing.hashCode());
+		hash = 31 * hash + (speed == null ? 0 : speed.hashCode());
+		hash = 31 * hash + (acc == null ? 0 : acc.hashCode());
+		hash = 31 * hash + (time == null ? 0 : time.hashCode());
+		return hash;
+	}
+	
+	@Override
 	public boolean equals(Object obj)
 	{
 		if(obj instanceof Location)
 		{
 			Location other = (Location) obj;
-			return	this.lat == other.lat &&
+			return	this.provider == other.provider &&
+					this.lat == other.lat &&
 					this.lon == other.lon &&
-					this.provider == other.provider &&
 					(this.alt == null ? other.alt == null : this.alt.equals(other.alt)) &&
 					(this.bearing == null ? other.bearing == null : this.bearing.equals(other.bearing)) &&
 					(this.speed == null ? other.speed == null : this.speed.equals(other.speed)) &&
@@ -219,11 +266,18 @@ public class Location
 			return false;
 	}
 
+	/**
+	 * Warning (2013-07-13): Serialisation format changed!<br/>
+	 * 	&nbsp;&nbsp;&nbsp; provider moved to front, whereas it used to come between lon and alt.<br/>
+	 * 	&nbsp;&nbsp;&nbsp; Old format is still supported in {@link Location#Parse(String)}
+	 * 
+	 * @see java.lang.Object#toString()
+	 */
 	public String toString()
 	{
-		return 	Double.toString(lat) + SEPARATOR +
+		return 	Integer.toString(provider) + SEPARATOR +
+				Double.toString(lat) + SEPARATOR +
 				Double.toString(lon) + SEPARATOR +
-				Integer.toString(provider) + SEPARATOR +
 				(alt != null ? alt.toString() : "") + SEPARATOR +
 				(bearing != null ? bearing.toString() : "") + SEPARATOR +
 				(speed != null ? speed.toString() : "") + SEPARATOR +

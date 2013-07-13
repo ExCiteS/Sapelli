@@ -37,9 +37,9 @@ public final class LocationUtils
 			provider = Location.PROVIDER_GPS;
 		else if(LocationManager.NETWORK_PROVIDER.equals(androidLocation.getProvider()))
 			provider = Location.PROVIDER_NETWORK;
-		return new Location(androidLocation.getLatitude(),
+		return new Location(provider,
+							androidLocation.getLatitude(),
 							androidLocation.getLongitude(),
-							provider,
 							(androidLocation.hasAltitude() ? androidLocation.getAltitude() : null),
 							(androidLocation.hasBearing() ? androidLocation.getBearing() : null),
 							(androidLocation.hasSpeed() ? androidLocation.getSpeed() : null),

@@ -11,12 +11,14 @@ import uk.ac.ucl.excites.storage.io.BitOutputStream;
 public abstract class Column<T>
 {
 	
+	private Class<T> type;
 	private Schema schema; // the schema this column belongs to
 	private String name;
 	protected boolean optional;
 	
-	public Column(String name, boolean optional)
+	public Column(Class<T> type, String name, boolean optional)
 	{
+		this.type = type;
 		this.name = name;
 		this.optional = optional;
 	}
@@ -169,7 +171,7 @@ public abstract class Column<T>
 	 */
 	protected abstract void validate(T value) throws IllegalArgumentException;
 	
-	public T retrieveValueAsStoredBinary(Record record)
+	public T getValueAsStoredBinary(T value)
 	{
 		BitOutputStream out = null;
 		BitInputStream in = null;
@@ -180,7 +182,7 @@ public abstract class Column<T>
 			out = new BitOutputStream(rawOut);
 	
 			//Write value:
-			retrieveAndWriteValue(record, out);
+			writeValue(value, out);
 			
 			// Flush, close & get bytes:
 			out.flush();
@@ -211,6 +213,11 @@ public abstract class Column<T>
 		}
 	}
 	
+	public T retrieveValueAsStoredBinary(Record record)
+	{
+		return getValueAsStoredBinary(retrieveValue(record));
+	}
+	
 	/**
 	 * @return the name
 	 */
@@ -229,8 +236,31 @@ public abstract class Column<T>
 
 	public String toString()
 	{
-		return "Column [" + name + "]";
+		return	getTypeString() + "Column [" +
+				name + "; "
+				+ (optional ? "optional" : "required") + "; "
+				+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits]";
 	}
+	
+	protected String getTypeString()
+	{
+		//Note: the null check is necessary for compatibility with data in old DB4O databases
+		return (type != null ? type.getSimpleName() : "");
+	}
+	
+	public T retrieveValueCopy(Record record)
+	{
+		T value = retrieveValue(record);
+		return (value == null ? null : copy(value));
+	}
+	
+	/**
+	 * Returns a (deep, depending on necessity) copy of the value
+	 * 
+	 * @param value - assumed to be non-null!
+	 * @return
+	 */
+	protected abstract T copy(T value);
 	
 	/**
 	 * @return whether or not the size taken up by binary stored values for this column varies at run-time (i.e. depending on input)

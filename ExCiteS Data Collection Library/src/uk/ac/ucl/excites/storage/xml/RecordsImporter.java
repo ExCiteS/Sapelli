@@ -31,10 +31,10 @@ import uk.ac.ucl.excites.util.XMLParser;
 public class RecordsImporter extends XMLParser
 {
 
-	private DataAccess dao;
-	private Record currentRecord;
-	private Column<?> currentColumn;
-	private List<Record> records;
+	protected DataAccess dao;
+	protected Record currentRecord;
+	protected Column<?> currentColumn;
+	protected List<Record> records;
 
 	public RecordsImporter(DataAccess dao)
 	{

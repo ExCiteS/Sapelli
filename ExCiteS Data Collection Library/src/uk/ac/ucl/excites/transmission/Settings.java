@@ -87,6 +87,31 @@ public class Settings
 		smsIntroductionSent = false;
 		smsApprovedSenders = new ArrayList<SMSAgent>();
 	}
+
+	/**
+	 * Copy contructor
+	 * 
+	 * @param another
+	 */
+	public Settings(Settings another)
+	{
+		compressionMode = another.compressionMode;
+		encrypt = another.encrypt;
+		encryptionKey = another.encryptionKey;
+		encryptionSalt = another.encryptionSalt;
+		encryptionKeyHash = another.encryptionKeyHash;
+		dropboxUpload = another.dropboxUpload;
+		dropboxAllowMobileData = another.dropboxAllowMobileData;
+		dropboxAllowRoaming = another.dropboxAllowRoaming;
+		httpUpload = another.httpUpload;
+		httpAllowMobileData = another.httpAllowMobileData;
+		httpAllowRoaming = another.httpAllowRoaming;
+		smsUpload = another.smsUpload;
+		smsAllowRoaming = another.smsAllowRoaming;
+		smsMode = another.smsMode;
+		smsIntroductionSent = another.smsIntroductionSent;
+		smsApprovedSenders = new ArrayList<SMSAgent>(another.smsApprovedSenders);
+	}
 	
 	/**
 	 * @return the compressionMode

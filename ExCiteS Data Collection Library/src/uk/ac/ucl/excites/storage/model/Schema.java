@@ -81,7 +81,14 @@ public class Schema implements Comparable<Schema>
 
 	public Column getColumn(int index)
 	{
-		return columns.get(index);
+		try
+		{
+			return columns.get(index);
+		}
+		catch(IndexOutOfBoundsException iobe)
+		{
+			return null;
+		}
 	}
 
 	public Column getColumn(String name)
@@ -156,6 +163,11 @@ public class Schema implements Comparable<Schema>
 	public String getDescription()
 	{
 		return description;
+	}
+	
+	public int getNumberOfColumns()
+	{
+		return columns.size();
 	}
 
 	/**
@@ -294,6 +306,21 @@ public class Schema implements Comparable<Schema>
 		}
 		else
 			return false;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "Schema [ID: " + id + "; version: " + version + "; name: " + name + "]";
+	}
+	
+	public String getSpecification()
+	{
+		StringBuffer bff = new StringBuffer();
+		bff.append(toString() + ":");
+		for(Column<?> c : columns)
+			bff.append("\n\t- " + c.toString());
+		return bff.toString();
 	}
 
 }

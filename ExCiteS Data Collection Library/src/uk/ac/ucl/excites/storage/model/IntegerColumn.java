@@ -51,7 +51,7 @@ public class IntegerColumn extends Column<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, boolean signed, int sizeBits)
 	{
-		super(name, optional);
+		super(Long.class, name, optional);
 		if(sizeBits < 1 || sizeBits > 64)
 			throw new IllegalArgumentException("Invalid size (" + sizeBits + "). Size must be between 1 and 64 bits.");
 		this.size = sizeBits;
@@ -68,7 +68,7 @@ public class IntegerColumn extends Column<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, long minLogicalValue, long maxLogicalValue)
 	{
-		super(name, optional);
+		super(Long.class, name, optional);
 		this.rangeMapping = new IntegerRangeMapping(minLogicalValue, maxLogicalValue);
 		this.size = rangeMapping.getSize();
 		this.signed = false;
@@ -182,6 +182,23 @@ public class IntegerColumn extends Column<Long>
 		}
 		else
 			return false;
+	}
+
+	@Override
+	protected Long copy(Long value)
+	{
+		return Long.valueOf(value);
+	}
+	
+	/**
+	 * Even though the type is actually Long we have called this column an "IntegerColumn" because the size can vary (so values are not necessarily 64bit longs) 
+	 * 
+	 * @see uk.ac.ucl.excites.storage.model.Column#getTypeString()
+	 */
+	@Override
+	protected String getTypeString()
+	{
+		return Integer.class.getSimpleName();
 	}
 	
 }

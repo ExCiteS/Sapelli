@@ -15,7 +15,7 @@ public class FloatColumn extends Column<Float>
 	
 	public FloatColumn(String name, boolean optional)
 	{
-		super(name, optional);
+		super(Float.class, name, optional);
 	}
 
 	/**
@@ -69,6 +69,12 @@ public class FloatColumn extends Column<Float>
 	protected boolean equalRestrictions(Column<Float> otherColumn)
 	{
 		return (otherColumn instanceof FloatColumn);		
+	}
+
+	@Override
+	protected Float copy(Float value)
+	{
+		return Float.valueOf(value);
 	}
 	
 }

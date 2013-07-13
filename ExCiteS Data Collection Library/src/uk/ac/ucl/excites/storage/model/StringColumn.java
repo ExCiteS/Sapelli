@@ -54,7 +54,7 @@ public class StringColumn extends Column<String>
 	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset)
 	{
-		super(name, optional);
+		super(String.class, name, optional);
 		this.maxLengthBytes = maxLengthBytes; //TODO check on value
 		this.charset = charset;
 		this.sizeField = new IntegerRangeMapping(1, maxLengthBytes); //we don't store the empty string so effective size is always at least 1 byte
@@ -149,6 +149,12 @@ public class StringColumn extends Column<String>
 		}
 		else
 			return false;
+	}
+
+	@Override
+	protected String copy(String value)
+	{
+		return new String(value);
 	}
 	
 }

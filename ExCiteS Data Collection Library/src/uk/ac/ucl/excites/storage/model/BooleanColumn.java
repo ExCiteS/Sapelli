@@ -20,7 +20,7 @@ public class BooleanColumn extends Column<Boolean>
 	 */
 	public BooleanColumn(String name, boolean optional)
 	{
-		super(name, optional);
+		super(Boolean.class, name, optional);
 	}
 
 	/**
@@ -82,6 +82,12 @@ public class BooleanColumn extends Column<Boolean>
 	protected boolean equalRestrictions(Column<Boolean> otherColumn)
 	{
 		return (otherColumn instanceof BooleanColumn);		
+	}
+
+	@Override
+	protected Boolean copy(Boolean value)
+	{
+		return Boolean.valueOf(value);
 	}
 
 }

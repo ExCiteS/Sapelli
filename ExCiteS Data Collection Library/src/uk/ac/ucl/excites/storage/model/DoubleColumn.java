@@ -15,7 +15,7 @@ public class DoubleColumn extends Column<Double>
 	
 	public DoubleColumn(String name, boolean optional)
 	{
-		super(name, optional);
+		super(Double.class, name, optional);
 	}
 
 	/**
@@ -69,6 +69,12 @@ public class DoubleColumn extends Column<Double>
 	protected boolean equalRestrictions(Column<Double> otherColumn)
 	{
 		return (otherColumn instanceof DoubleColumn);		
+	}
+
+	@Override
+	protected Double copy(Double value)
+	{
+		return Double.valueOf(value);
 	}
 	
 }

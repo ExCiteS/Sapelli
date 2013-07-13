@@ -134,10 +134,10 @@ public class ServerDataReceiver extends HttpServlet
 //			}
 //			else
 //			{
-//				logToCsvLine(smsLog, "Transmission is incomplete, it has " + transmission.getParts().size() + "/" + sms.getTotalParts() + " parts.");
+//				logToCsvLine(smsLog, "Transmission is incomplete, it has " + transmission.getParts().size() + "/" + transmission.getTotalParts() + " parts.");
 //				logToCsvLine(smsLog, "  Messages received so far:");
 //				for(Message m : transmission.getParts())
-//					logToCsvLine(smsLog, "    - message" + m.getPartNumber() + "/" + m.getTotalParts());
+//					logToCsvLine(smsLog, "    - message " + m.getPartNumber() + "/" + m.getTotalParts());
 //			}
 //			dao.store(transmission); //!!!
 //			dao.commit();

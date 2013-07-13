@@ -4,7 +4,6 @@
 package uk.ac.ucl.excites.storage.model;
 
 import java.io.IOException;
-import java.text.ParseException;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -14,7 +13,6 @@ import org.joda.time.format.ISODateTimeFormat;
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.util.TimeUtils;
 
 /**
  * A column to store DateTime objects (cfr: http://joda-time.sourceforge.net)
@@ -27,6 +25,9 @@ public class DateTimeColumn extends Column<DateTime>
 	
 	static private final int QUARTER_OF_AN_HOUR_MS = 15 /*minutes*/ * 60 /*seconds*/ * 1000 /*milliseconds*/;
 	static private final int TIMEZONE_QH_OFFSET_SIZE = 7; //bits
+	
+	static private final DateTimeFormatter ISO_WITH_MS_FORMATTER = ISODateTimeFormat.dateTime();
+	static private final DateTimeFormatter ISO_WITHOUT_MS_FORMATTER = ISODateTimeFormat.dateTimeNoMillis();
 	
 	/**
 	 * Returns a DateTimeColumn that can hold Java-style timestamps, i.e. signed 64 bit integers representing
@@ -90,8 +91,6 @@ public class DateTimeColumn extends Column<DateTime>
 	protected boolean keepMS;
 	protected boolean keepLocalTimezone;
 	protected boolean strict;
-	
-	protected DateTimeFormatter formatter;
 
 	/**
 	 * @param name
@@ -135,20 +134,31 @@ public class DateTimeColumn extends Column<DateTime>
 	
 	private DateTimeColumn(String name, IntegerRangeMapping timeMapping, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional)
 	{
-		super(name, optional);
+		super(DateTime.class, name, optional);
 		this.timeMapping = timeMapping;
 		this.keepMS = keepMS;
 		this.keepLocalTimezone = keepLocalTimezone;
-		this.formatter = keepMS ? ISODateTimeFormat.dateTime() : ISODateTimeFormat.dateTimeNoMillis();
 		this.strict = strictHighBound;
 	}
 	
 	@Override
-	protected DateTime parse(String value) throws ParseException, IllegalArgumentException
+	protected DateTime parse(String value) throws IllegalArgumentException
+	{
+		try
+		{
+			return parse(value, ISO_WITH_MS_FORMATTER);
+		}
+		catch(IllegalArgumentException iae)
+		{
+			return parse(value, ISO_WITHOUT_MS_FORMATTER); //for compatibility with old XML exports which used ISO without milliseconds if the keepMS=false
+		}
+	}
+
+	protected DateTime parse(String value, DateTimeFormatter formatter) throws IllegalArgumentException
 	{
 		return (keepLocalTimezone ? formatter.withOffsetParsed() : formatter).parseDateTime(value);
 	}
-
+	
 	@Override
 	protected void write(DateTime value, BitOutputStream bitStream) throws IOException
 	{
@@ -168,6 +178,7 @@ public class DateTimeColumn extends Column<DateTime>
 	@Override
 	protected void validate(DateTime value) throws IllegalArgumentException
 	{
+		DateTimeFormatter formatter = keepMS ? ISO_WITH_MS_FORMATTER : ISO_WITHOUT_MS_FORMATTER;
 		if(!timeMapping.inRange(Math.round(value.getMillis() / (keepMS ? 1 : 1000d)), strict))
 			throw new IllegalArgumentException("The given DateTime (" + formatter.print(value) + ") is outside the allowed range (from " + formatter.print(getLowBound()) + " to " + formatter.print(getHighBound()) + ").");
 	}
@@ -194,20 +205,40 @@ public class DateTimeColumn extends Column<DateTime>
 		return new DateTime(timeMapping.getHighBound(strict) * (keepMS ? 1 : 1000));
 	}
 	
+	/**
+	 * Note (2013-07-13):
+	 * 	Implementation used to be:
+	 * 		return value.getZone().toTimeZone().getRawOffset() / QUARTER_OF_AN_HOUR_MS;
+	 *  But that is incorrect during summer time!
+	 *  The current implementation could be shortened by using only Joda-time's DateTimeZone and no longer also the native TimeZone, like so
+	 * 		return value.getZone().getOffset(value.getMillis()) / QUARTER_OF_AN_HOUR_MS;
+	 * 	However that causes weird crashes in Joda-time (probably due to a bug in the library).
+	 * 
+	 * @param value
+	 * @return
+	 */
 	protected int getTimeZoneOffsetQH(DateTime value)
 	{
-		return value.getZone().toTimeZone().getRawOffset() / QUARTER_OF_AN_HOUR_MS;
+		return value.getZone().toTimeZone().getOffset(value.getMillis()) / QUARTER_OF_AN_HOUR_MS;
 	}
 	
+	/**
+	 * Note (2013-07-13):
+	 * 	Implementation used to be: return DateTimeZone.forTimeZone(uk.ac.ucl.excites.util.TimeUtils.getTimeZone(quarterHourOffset * QUARTER_OF_AN_HOUR_MS));
+	 * Seems to make no difference w.r.t. offset (although we do not get "named" zones this way, but the names could have been wrong anyway, due to DST)
+	 * 
+	 * @param quarterHourOffset
+	 * @return
+	 */
 	protected DateTimeZone getDateTimeZoneFor(int quarterHourOffset)
 	{
-		return DateTimeZone.forTimeZone(TimeUtils.getTimeZone(quarterHourOffset * QUARTER_OF_AN_HOUR_MS));
+		return DateTimeZone.forOffsetMillis(quarterHourOffset * QUARTER_OF_AN_HOUR_MS);
 	}
 
 	@Override
 	protected String toString(DateTime value)
 	{
-		return (keepLocalTimezone ? formatter.withZone(value.getZone()) : formatter.withZoneUTC()).print(value);
+		return (keepLocalTimezone ? ISO_WITH_MS_FORMATTER.withZone(value.getZone()) : ISO_WITH_MS_FORMATTER.withZoneUTC()).print(value); // always keep milliseconds in XML!
 	}
 
 	@Override
@@ -220,6 +251,12 @@ public class DateTimeColumn extends Column<DateTime>
 		}
 		else
 			return false;
+	}
+
+	@Override
+	protected DateTime copy(DateTime value)
+	{
+		return new DateTime(value);
 	}
 	
 }

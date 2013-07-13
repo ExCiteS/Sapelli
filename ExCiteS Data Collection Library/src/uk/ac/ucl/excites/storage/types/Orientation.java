@@ -40,6 +40,18 @@ public class Orientation
 	}
 
 	/**
+	 * Copy constructor
+	 * 
+	 * @param another
+	 */
+	public Orientation(Orientation another)
+	{
+		this.azimuth = another.azimuth;
+		this.pitch = another.pitch;
+		this.roll = another.roll;
+	}
+	
+	/**
 	 * Rotation around the Z axis: 0° to 360°.
 	 * 0° means the top of the device is pointing to magnetic North
 	 * 
@@ -93,6 +105,16 @@ public class Orientation
 		return roll != null;
 	}
 
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + (azimuth == null ? 0 : azimuth.hashCode());
+		hash = 31 * hash + (pitch == null ? 0 : pitch.hashCode());
+		hash = 31 * hash + (roll == null ? 0 : roll.hashCode());
+		return hash;
+	}
+	
 	@Override
 	public boolean equals(Object obj)
 	{
