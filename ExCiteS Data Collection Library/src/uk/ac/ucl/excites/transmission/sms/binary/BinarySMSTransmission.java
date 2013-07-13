@@ -67,7 +67,7 @@ public class BinarySMSTransmission extends SMSTransmission
 	{
 		parts.clear();  //!!! clear previously generated messages
 		if(data.length > MAX_PAYLOAD_SIZE)
-			throw new TransmissionCapacityExceededException("MaxPayloadSize (" + MAX_PAYLOAD_SIZE + "), exceeded by " + (data.length - MAX_PAYLOAD_SIZE) + " bytes");
+			throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_SIZE + "), exceeded by " + (data.length - MAX_PAYLOAD_SIZE) + " bytes");
 		int numberOfParts = (data.length / BinaryMessage.MAX_PAYLOAD_SIZE_BYTES) + ((data.length % BinaryMessage.MAX_PAYLOAD_SIZE_BYTES) > 0 ? 1 : 0);
 		int b = 0;
 		while(b < data.length)

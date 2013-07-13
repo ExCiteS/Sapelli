@@ -3,10 +3,12 @@ package uk.ac.ucl.excites.transmission.http;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.commons.codec.binary.Base64;
+import org.joda.time.DateTime;
+
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.BinaryTransmission;
-import uk.ac.ucl.excites.transmission.DecodeException;
 import uk.ac.ucl.excites.transmission.ModelProvider;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.transmission.TransmissionSender;
@@ -15,8 +17,12 @@ import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException
 public class HTTPTransmission extends BinaryTransmission
 {
 	
+	public static final int MAX_BODY_SIZE = 4096; //TODO determine a good value
+	
 	private String serverURL;
-
+	private String body = null;
+	
+	
 	/**
 	 * To be called on the sending side.
 	 * 
@@ -48,38 +54,38 @@ public class HTTPTransmission extends BinaryTransmission
 	 * 
 	 * @param modelProvider
 	 */
-	public HTTPTransmission(ModelProvider modelProvider)
+	public HTTPTransmission(DateTime receivedAt, ModelProvider modelProvider)
 	{
 		super(modelProvider);
+		setReceivedAt(receivedAt);
 	}
 	
 	@Override
 	protected void sendPayload(TransmissionSender transmissionSender) throws Exception
 	{
 		//HTTPClient client = sender.getHTTPClient();
-		
-		// TODO Auto-generated method stub
+		// TODO HTTP sending
 	}
-
-	@Override
-	protected void readPayload(Schema schemaToUse, Settings settingsToUse) throws IllegalStateException, IOException, DecodeException
+	
+	public void setBody(String body)
 	{
-		// TODO Auto-generated method stub
-		
+		this.body = body;
 	}
 
 	@Override
 	protected void serialise(byte[] data) throws TransmissionCapacityExceededException
 	{
-		// TODO Auto-generated method stub
-		
+		String serialisedData = Base64.encodeBase64String(data);
+		if(serialisedData.length() > MAX_BODY_SIZE)
+			throw new TransmissionCapacityExceededException("Maximum body size (" + MAX_BODY_SIZE + "), exceeded by " + (serialisedData.length() - MAX_BODY_SIZE) + " characters");
 	}
 
 	@Override
 	protected byte[] deserialise() throws IOException
 	{
-		// TODO Auto-generated method stub
-		return null;
+		if(body == null || body.isEmpty())
+			throw new IllegalStateException("Transmission body is not set or empty.");
+		return Base64.decodeBase64(body);
 	}
 	
 }
