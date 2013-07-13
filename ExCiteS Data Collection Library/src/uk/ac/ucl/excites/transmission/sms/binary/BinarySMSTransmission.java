@@ -22,6 +22,7 @@ public class BinarySMSTransmission extends SMSTransmission
 {
 	
 	public static final int MAX_TRANSMISSION_PARTS = 16;
+	public static final int MAX_PAYLOAD_SIZE = MAX_TRANSMISSION_PARTS * BinaryMessage.MAX_PAYLOAD_SIZE_BYTES;
 	
 	/**
 	 * To be called on the sending side.
@@ -62,11 +63,11 @@ public class BinarySMSTransmission extends SMSTransmission
 	}
 	
 	@Override
-	protected void serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException
+	protected void serialise(byte[] data) throws TransmissionCapacityExceededException
 	{
-		int maxPayloadSize = MAX_TRANSMISSION_PARTS * BinaryMessage.MAX_PAYLOAD_SIZE_BYTES;
-		if(data.length > maxPayloadSize)
-			throw new TransmissionCapacityExceededException("MaxPayloadSize (" + maxPayloadSize + "), exceeded by " + (data.length - maxPayloadSize) + " bytes");
+		parts.clear();  //!!! clear previously generated messages
+		if(data.length > MAX_PAYLOAD_SIZE)
+			throw new TransmissionCapacityExceededException("MaxPayloadSize (" + MAX_PAYLOAD_SIZE + "), exceeded by " + (data.length - MAX_PAYLOAD_SIZE) + " bytes");
 		int numberOfParts = (data.length / BinaryMessage.MAX_PAYLOAD_SIZE_BYTES) + ((data.length % BinaryMessage.MAX_PAYLOAD_SIZE_BYTES) > 0 ? 1 : 0);
 		int b = 0;
 		while(b < data.length)
@@ -79,7 +80,7 @@ public class BinarySMSTransmission extends SMSTransmission
 	}
 
 	@Override
-	protected byte[] mergeAndDeserialise() throws IOException
+	protected byte[] deserialise() throws IOException
 	{
 		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
 		for(Message part : parts)

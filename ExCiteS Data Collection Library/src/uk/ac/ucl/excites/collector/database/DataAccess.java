@@ -167,26 +167,24 @@ public final class DataAccess
 		return result;
 	}
 	
-	public List<Record> retrieveRecordsWithoutTransmission(Schema schema)
-	{
-		return retrieveRecords(schema, null); //will return records without a transmission
-	}
-	
 	/**
-	 * Retrieve Records of a given Schema which are associated with a given transmission
+	 * Retrieve unsent records of a given Schema
 	 * 
 	 * @param schema
+	 * @param sendingAttemptTimeoutMinutes - amout of time to waiting after the sending attempt until we can considering it failed (because sent=false)
 	 * @return
 	 */
-	public List<Record> retrieveRecords(final Schema schema, final Transmission transmission)
+	public List<Record> retrieveUnsentRecords(final Schema schema, final int sendingAttemptTimeoutMinutes)
 	{
 		ObjectSet<Record> result = db.query(new Predicate<Record>()
 		{
 			private static final long serialVersionUID = 1L;
 			
-			public boolean match(Record record)
+			public boolean match(Record r)
 			{
-				return record.getSchema() == schema && record.getTransmission() == transmission;
+				return	r.getSchema() == schema &&
+						!r.isSent() &&
+						(r.getSendingAttemptedAt() == null || r.getSendingAttemptedAt().plusMinutes(sendingAttemptTimeoutMinutes).isBeforeNow());
 			}
 		});
 		for(Record r : result)

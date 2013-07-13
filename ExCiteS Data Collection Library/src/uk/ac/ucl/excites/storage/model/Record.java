@@ -8,9 +8,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Set;
 
+import org.joda.time.DateTime;
+
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
-import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.util.StringUtils;
 import uk.ac.ucl.excites.util.XMLUtils;
 
@@ -28,7 +29,10 @@ public class Record
 	
 	protected Schema schema;
 	protected Object[] values;
-	protected Transmission transmission = null;
+	
+	protected boolean exported = false;
+	protected boolean sent = false;
+	protected DateTime sendingAttemptedAt = null;
 	
 	public Record(Schema schema)
 	{
@@ -94,16 +98,6 @@ public class Record
 				throw new IllegalArgumentException("The provived schema is not compatible with this record!");
 		}
 		this.schema = newSchema; // we accept the new one
-	}
-	
-	public Transmission getTransmission()
-	{
-		return transmission;
-	}
-	
-	public void setTransmission(Transmission transmission)
-	{
-		this.transmission = transmission;
 	}
 	
 	protected void setValue(Column<?> column, Object value)
@@ -226,6 +220,54 @@ public class Record
 		}
 	}
 	
+	/**
+	 * @return the exported
+	 */
+	public boolean isExported()
+	{
+		return exported;
+	}
+
+	/**
+	 * @param exported the exported to set
+	 */
+	public void setExported(boolean exported)
+	{
+		this.exported = exported;
+	}
+
+	/**
+	 * @return the sent
+	 */
+	public boolean isSent()
+	{
+		return sent;
+	}
+
+	/**
+	 * @param sent the sent to set
+	 */
+	public void setSent(boolean sent)
+	{
+		this.sent = sent;
+	}
+
+	/**
+	 * @return the sendingAttemptedAt - if sent=true this is the timestamp of the last (successful) attempt 
+	 */
+	public DateTime getSendingAttemptedAt()
+	{
+		return sendingAttemptedAt;
+	}
+
+	/**
+	 * @param sendingAttemptedAt the sendingAttemptedAt to set
+	 */
+	public void setSendingAttemptedAt(DateTime sendingAttemptedAt)
+	{
+		this.sendingAttemptedAt = sendingAttemptedAt;
+	}
+
 	@Override
     public int hashCode()
 	{

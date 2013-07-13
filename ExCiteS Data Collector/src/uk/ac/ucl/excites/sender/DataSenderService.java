@@ -62,6 +62,7 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 	private static final long POST_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
 	private static final long PRE_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
 	private static final long INTERVAL_BETWEEN_SMS_SENDING = 2 * 1000;
+	private static final int RECORD_SENDING_ATTEMPT_TIMEOUT_MIN = 20; 
 	
 	// Dynamics------------------------------------------------------
 	private SignalMonitor gsmMonitor;
@@ -275,7 +276,7 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 					{		
 						Schema schema = f.getSchema();
 						
-						List<Record> records = new ArrayList<Record>(dao.retrieveRecordsWithoutTransmission(schema));
+						List<Record> records = new ArrayList<Record>(dao.retrieveUnsentRecords(schema, RECORD_SENDING_ATTEMPT_TIMEOUT_MIN));
 						Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version " + p.getVersion() + ").");
 						
 						if(records.isEmpty())

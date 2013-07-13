@@ -99,6 +99,12 @@ public abstract class Message implements Comparable<Message>
 		return sentAt;
 	}
 	
+	public void sentCallback()
+	{
+		sentAt = new DateTime(); //= now
+		transmission.partSent(this);
+	}
+	
 	public boolean isReceived()
 	{
 		return (receivedAt != null);
@@ -107,12 +113,6 @@ public abstract class Message implements Comparable<Message>
 	public DateTime getReceivedAt()
 	{
 		return receivedAt;
-	}
-	
-	public void sentCallback()
-	{
-		sentAt = new DateTime(); //= now
-		transmission.partSent(this);
 	}
 	
 	public boolean isDelivered()
@@ -152,7 +152,6 @@ public abstract class Message implements Comparable<Message>
 		return this.getPartNumber() - another.getPartNumber();
 	}
 	
-
 	/**
 	 * hashCode() method
 	 * Ignores transmission (but not transmissionID), sentAt, deliveredAt & receivedAt

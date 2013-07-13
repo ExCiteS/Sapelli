@@ -59,15 +59,16 @@ public class TextSMSTransmission extends SMSTransmission
 	}
 	
 	@Override
-	protected void serialiseAndSplit(byte[] data) throws TransmissionCapacityExceededException
+	protected void serialise(byte[] data) throws TransmissionCapacityExceededException
 	{
-		//TODO<
+		parts.clear();  //!!! clear previously generated messages
+		//TODO
 	}
 
 	@Override
-	protected byte[] mergeAndDeserialise()
+	protected byte[] deserialise()
 	{
-		// TODO
+		//TODO
 		return null;
 	}
 
