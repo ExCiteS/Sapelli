@@ -47,7 +47,7 @@ public class BZIP2Compressor extends Compressor
         ByteArrayOutputStream out = new ByteArrayOutputStream();   
         try
         {
-        	InputStream in = new BZip2InputStream (new ByteArrayInputStream(compressedData), false);
+        	InputStream in = new BZip2InputStream(new ByteArrayInputStream(compressedData), false);
             IOUtils.copy(in, out);
             in.close();
         }
