@@ -5,7 +5,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.zip.Deflater;
-import java.util.zip.DeflaterInputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 import java.util.zip.DeflaterOutputStream;
 
 import org.apache.commons.io.IOUtils;
@@ -23,17 +24,13 @@ import uk.ac.ucl.excites.transmission.compression.CompressorFactory.CompressionM
 public class DeflateCompressor extends Compressor
 {
 	
-	private Deflater deflater;
-	
-	public DeflateCompressor()
-	{
-		this.deflater = new Deflater(Deflater.BEST_COMPRESSION, true); // best compression & no header
-	}
+	static private final boolean NO_HEADER = true;
 
 	@Override
 	public byte[] compress(byte[] data) throws IOException
 	{
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION, NO_HEADER); // best compression & no header
         try
         {
         	DeflaterOutputStream deflateOutputStream = new DeflaterOutputStream(byteArrayOutputStream, deflater);
@@ -51,9 +48,10 @@ public class DeflateCompressor extends Compressor
 	public byte[] decompress(byte[] compressedData) throws IOException
 	{
         ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Inflater inflater = new Inflater(NO_HEADER);
         try
         {
-        	InputStream in = new DeflaterInputStream(new ByteArrayInputStream(compressedData), deflater);
+        	InputStream in = new InflaterInputStream(new ByteArrayInputStream(compressedData), inflater);
             IOUtils.copy(in, out);
             in.close();
         }
