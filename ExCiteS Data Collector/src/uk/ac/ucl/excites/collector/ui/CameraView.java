@@ -13,6 +13,7 @@ import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.ui.images.FileImage;
 import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
 import uk.ac.ucl.excites.collector.ui.images.ResourceImage;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -20,6 +21,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
+import android.os.AsyncTask;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -34,16 +36,18 @@ import android.widget.ViewSwitcher;
 
 /**
  * Built-in camera view
- *
-  * To do's:
- * 	- TODO Fix white "blocks" briefly appearing where the button(s) should be when view is loaded for 2nd time
  * 
- * @author mstevens
+ * To do's: - TODO Fix white "blocks" briefly appearing where the button(s) should be when view is loaded for 2nd time
+ * 
+ * @author mstevens, Michalis Vitos
  */
 public class CameraView extends ViewSwitcher implements FieldView, AdapterView.OnItemClickListener, PictureCallback
 {
 
 	static private final String TAG = "CameraView";
+	static private final int PREVIEW_SIZE = 1024;
+
+	private Context context;
 
 	private ProjectController controller;
 	private Project project;
@@ -58,12 +62,15 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 	private RelativeLayout.LayoutParams buttonParams;
 
 	private volatile boolean handlingClick;
-	
+
 	private byte[] reviewPhotoData;
+	private HandleImage handleImage;
 
 	public CameraView(Context context)
 	{
 		super(context);
+
+		this.context = context;
 
 		// Capture UI:
 		captureLayout = new RelativeLayout(context);
@@ -93,7 +100,7 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 		this.project = controller.getProject();
 		this.photoField = (PhotoField) field;
 		this.handlingClick = false;
-		
+
 		// Camera controller & camera selection:
 		cameraController = new CameraController(photoField.isUseFrontFacingCamera());
 		if(!cameraController.foundCamera())
@@ -107,14 +114,14 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 		}
 		// Set flash mode:
 		cameraController.setFlashMode(photoField.getFlashMode());
-		
+
 		// Set-up surface holder:
 		SurfaceHolder holder = captureView.getHolder();
 		holder.addCallback(cameraController);
 		holder.setKeepScreenOn(true);
 		// !!! Deprecated but cameraController preview crashes without it (at least on the XCover/Gingerbread):
 		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-		
+
 		// Buttons
 		captureLayout.addView(new CaptureButtonView(getContext()), buttonParams);
 		reviewLayout.addView(new ReviewButtonView(getContext()), buttonParams);
@@ -124,35 +131,27 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 	public void onPictureTaken(byte[] data, Camera camera)
 	{
 		this.reviewPhotoData = data;
-		Bitmap picture = BitmapFactory.decodeByteArray(data, 0, data.length);
-		Matrix bitmapMatrix = new Matrix();
-		bitmapMatrix.postRotate(90);
-		// Display rotated picture:
-		reviewView.setImageBitmap(Bitmap.createBitmap(picture, 0, 0, picture.getWidth(), picture.getHeight(), bitmapMatrix, false));
-		//TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
-		
-		//Switch to review mode:
-		showNext();
-		handlingClick = false;
+
+		handleImage = new HandleImage(data);
+		handleImage.execute();
 	}
 
 	@Override
 	public void onItemClick(AdapterView<?> parent, View v, int position, long id)
 	{
-		if(!handlingClick) //only handle one click at the time
+		if(!handlingClick) // only handle one click at the time
 		{
 			handlingClick = true;
 			if(getCurrentView() == captureLayout)
-			{ 	// in Capture mode --> there is (currently) only one button here: the one to take a photo
+			{ // in Capture mode --> there is (currently) only one button here: the one to take a photo
 				cameraController.takePicture(this);
-				cameraController.stopPreview();
 			}
 			else
-			{	// in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
+			{ // in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
 				if(position == 0)
-				{ 	// photo approved
+				{ // photo approved
 					try
-					{	// Save photo to file:
+					{ // Save photo to file:
 						File photoFile = photoField.getNewTempFile(controller.getCurrentRecord());
 						FileOutputStream fos = new FileOutputStream(photoFile);
 						fos.write(reviewPhotoData);
@@ -169,9 +168,10 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 						cameraController.close();
 					}
 				}
-				else //if(position == 1)
-				{	// photo discarded
-					showNext(); //switch back to capture mode
+				else
+				// if(position == 1)
+				{ // photo discarded
+					showNext(); // switch back to capture mode
 					cameraController.startPreview();
 					handlingClick = false;
 				}
@@ -191,7 +191,7 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 	{
 		cameraController.close();
 	}
-	
+
 	/**
 	 * @author mstevens
 	 */
@@ -221,7 +221,6 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 			else
 				imageAdapter.addImage(new ResourceImage(R.drawable.take_photo));
 		}
-
 	}
 
 	/**
@@ -312,6 +311,73 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 
 		protected abstract void addButtons();
 
+	}
+
+	/**
+	 * AsyncTask to handle the Captured Images
+	 * 
+	 * @author Michalis Vitos
+	 * 
+	 */
+	public class HandleImage extends AsyncTask<Void, Void, Void>
+	{
+		private ProgressDialog dialog;
+		private byte[] data;
+
+		public HandleImage(byte[] data)
+		{
+			this.data = data;
+		}
+
+		@Override
+		protected void onPreExecute()
+		{
+			dialog = new ProgressDialog(context);
+			dialog.setCancelable(false);
+			dialog.show();
+		}
+
+		@Override
+		protected Void doInBackground(Void... params)
+		{
+			Bitmap picture = BitmapFactory.decodeByteArray(data, 0, data.length);
+
+			// Display rotated picture:
+			reviewView.setImageBitmap(scaleAndRoatate(picture));
+			picture.recycle();
+			// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
+
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result)
+		{
+			// Switch to review mode:
+			showNext();
+			handlingClick = false;
+
+			cameraController.stopPreview();
+			// Close the dialog
+			dialog.cancel();
+		}
+
+		protected Bitmap scaleAndRoatate(Bitmap picture)
+		{
+			// Find the Aspect Ratio
+			Float width = Float.valueOf(picture.getWidth());
+			Float height = Float.valueOf(picture.getHeight());
+			Float ratio = width / height;
+
+			// Scale
+			picture = Bitmap.createScaledBitmap(picture, (int) (PREVIEW_SIZE * ratio), PREVIEW_SIZE, false);
+
+			// Rotate
+			Matrix bitmapMatrix = new Matrix();
+			bitmapMatrix.postRotate(90);
+
+			return Bitmap.createBitmap(picture, 0, 0, picture.getWidth(), picture.getHeight(), bitmapMatrix, false);
+		}
 	}
 
 }
