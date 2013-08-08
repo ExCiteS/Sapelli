@@ -343,7 +343,7 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 			Bitmap picture = BitmapFactory.decodeByteArray(data, 0, data.length);
 
 			// Display rotated picture:
-			reviewView.setImageBitmap(scaleAndRoatate(picture));
+			reviewView.setImageBitmap(scaleAndRotate(picture));
 			picture.recycle();
 			// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
 
@@ -362,7 +362,7 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 			dialog.cancel();
 		}
 
-		protected Bitmap scaleAndRoatate(Bitmap picture)
+		protected Bitmap scaleAndRotate(Bitmap picture)
 		{
 			// Find the Aspect Ratio
 			Float width = Float.valueOf(picture.getWidth());
