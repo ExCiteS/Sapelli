@@ -30,6 +30,8 @@ public class Record
 	protected Schema schema;
 	protected Object[] values;
 	
+	protected String exportComment;
+	
 	protected boolean exported = false;
 	protected boolean sent = false;
 	protected DateTime sendingAttemptedAt = null;
@@ -353,6 +355,13 @@ public class Record
 		}
 		bldr.append(StringUtils.addTabsFront("</" + TAG_RECORD + ">", tabs));
 		return bldr.toString();
+	}
+	
+	public String toCSVLine(String separator)
+	{
+		//TODO csv export
+		
+		return "";
 	}
 	
 	public byte[] toBytes() throws IOException

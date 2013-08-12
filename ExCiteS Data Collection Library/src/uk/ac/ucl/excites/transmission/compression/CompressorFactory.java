@@ -14,7 +14,7 @@ public class CompressorFactory
 	static final DecimalFormat RATIO_FORMAT = new DecimalFormat("##.00");
 	
 	static public enum CompressionMode
-	{
+	{	//Changing the order of the enum seems to cause problems (possibly only when using old DB4O databases), so don't
 		NONE,
 		GZIP,
 		LZMA2,
@@ -81,6 +81,7 @@ public class CompressorFactory
 	
 	static public CompressionResult ApplyBestCompression(byte[] data, CompressionMode[] modes)
 	{
+		//TODO make this multi-threaded?
 		CompressionResult best = null;		
 		try
 		{

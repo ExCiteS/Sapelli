@@ -16,6 +16,8 @@ public final class TimeUtils
 {
 
 	private static DateTimeFormatter FileTimestampFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HHmmss");
+	
+	private static DateTimeFormatter PrettyTimestampFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm:ss");
 
 	private TimeUtils() {}
 
@@ -78,5 +80,10 @@ public final class TimeUtils
 	static public String getTimestampForFileName(long timestamp)
 	{
 		return FileTimestampFormatter.print(timestamp);
+	}
+
+	static public String getPrettyTimestamp(long timestamp)
+	{
+		return PrettyTimestampFormatter.print(timestamp);
 	}
 }
