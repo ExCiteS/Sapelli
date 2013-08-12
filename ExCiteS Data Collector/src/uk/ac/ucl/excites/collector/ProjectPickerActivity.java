@@ -62,6 +62,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 
@@ -107,6 +108,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	private MenuItem createShortcutItem;
 	private MenuItem removeShortcutItem;
 	private Dialog encryptionDialog;
+	private TextView version;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -136,7 +138,11 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			projectList = (ListView) findViewById(R.id.ProjectsList);
 			runBtn = (Button) findViewById(R.id.RunProjectButton);
 			removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
-	
+			version = (TextView) findViewById(R.id.version);
+
+			// Write down the version
+			version.setText(BuildInfo.printInfo(true));
+
 			// get scrolling right
 			findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
 			{
