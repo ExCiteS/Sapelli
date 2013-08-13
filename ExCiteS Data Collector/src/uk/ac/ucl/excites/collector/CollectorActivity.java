@@ -76,7 +76,8 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 	private static final int TIMEOUT_MIN = 5; // timeout after 5 minutes
 
 	// DYNAMICS-------------------------------------------------------
-
+	private CollectorApp app;
+	
 	// UI
 	private LinearLayout rootLayout;
 	private ButtonView buttonView;
@@ -109,9 +110,13 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 		// Retrieve the tmpPhotoLocation for the saved state
 		if(savedInstanceState != null && savedInstanceState.containsKey(TEMP_PHOTO_PATH_KEY))
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
-
-		// Check if we can read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
-		if(!CollectorApp.isCardAssesible())
+		
+		// Check if we can access read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
+		try
+		{
+			app.getExcitesFolder(); //throws IllegalStateException if not accessible or not create-able
+		}
+		catch(IllegalStateException ise)
 		{	// Inform the user and close the application
 			showErrorDialog("ExCiteS needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
 			return;
@@ -157,7 +162,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 		}
 
 		// Get DataAccess object
-		dao = ((CollectorApp) getApplication()).getDataAccess(this); // will be open
+		dao = app.getDataAccess(this); // will be open
 
 		// Get Project object:
 		project = dao.retrieveProject(projectName, projectVersion);
@@ -524,7 +529,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 		if(controller != null)
 			controller.cancelAndStop();
 		// Signal that the activity no longer needs the DAO:
-		((CollectorApp) getApplication()).discardDataAccess(this);
+		app.discardDataAccess(this);
 		// super:
 		super.onDestroy();
 	}

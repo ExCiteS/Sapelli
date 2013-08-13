@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.ui;
 
+import uk.ac.ucl.excites.collector.CollectorApp;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -18,11 +19,15 @@ import android.os.Bundle;
  */
 public abstract class BaseActivity extends Activity
 {
+	
+	protected CollectorApp app;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+		
+		app = (CollectorApp) getApplication();
 	}
 	
 	/**

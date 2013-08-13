@@ -68,17 +68,17 @@ public class CollectorApp extends Application
 	 */
 	public File getExcitesFolder()
 	{
+		if(!isCardAccessible())
+			throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
 		if(!excitesFolder.exists())
 		{
-			if(!isCardAssesible())
-				throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
 			if(!excitesFolder.mkdirs())
 				throw new IllegalStateException("Cannot create ExCiteS folder");
 		}
 		return excitesFolder;
 	}
 	
-	static public boolean isCardAssesible()
+	static public boolean isCardAccessible()
 	{
 		if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState())) //uses Environement2 library!
 			return true;
