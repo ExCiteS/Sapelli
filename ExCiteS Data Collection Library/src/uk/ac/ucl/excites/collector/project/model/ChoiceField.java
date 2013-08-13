@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.collector.project.model;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -7,6 +8,7 @@ import java.util.List;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.util.CollectionUtils;
 
 
 /**
@@ -20,14 +22,16 @@ public class ChoiceField extends Field
 	static public final int NON_LEAF_VALUE_INDEX = -1;
 	static public final int NON_SELECTABLE_CHOICE_INDEX = -1;
 	static public final int DEFAULT_NUM_COLS = 2;
+	static public final int DEFAULT_NUM_ROWS = 2;
+	static public final String DEFAULT_ALT_TEXT = "?";
 	
 	private ChoiceField parent;
 	private ChoiceField root;
 	private List<ChoiceField> children;
-	private String imageLogicalPath;
+	private String imageRelativePath;
 	private int cols;
 	private int rows;
-	private String alt;
+	private String altText;
 	private String value;
 	private ChoiceDictionary dictionary;
 	
@@ -64,35 +68,46 @@ public class ChoiceField extends Field
 	}
 
 	/**
-	 * @return the imageLogicalPath
+	 * @return the imageRelativePath
 	 */
-	public String getImageLogicalPath()
+	public String getImageRelativePath()
 	{
-		return imageLogicalPath;
+		return imageRelativePath;
 	}
 
 	/**
-	 * @param imageLogicalPath the imageLogicalPath to set
+	 * @param imageRelativePath the imageRelativePath to set
 	 */
-	public void setImageLogicalPath(String imageLogicalPath)
+	public void setImageRelativePath(String imageRelativePath)
 	{
-		this.imageLogicalPath = imageLogicalPath;
+		this.imageRelativePath = imageRelativePath;
+	}
+	
+	public boolean hasImage()
+	{
+		return imageRelativePath != null;
 	}
 
 	/**
-	 * @return the alt
+	 * @return the altText
 	 */
-	public String getAlt()
+	public String getAltText()
 	{
-		return alt;
+		if(altText != null)
+			return altText;
+		if(imageRelativePath != null)
+			return imageRelativePath;
+		if(value != null)
+			return value;
+		return DEFAULT_ALT_TEXT;
 	}
 
 	/**
-	 * @param alt the alt to set
+	 * @param altText the altText to set
 	 */
-	public void setAlt(String alt)
+	public void setAltText(String altText)
 	{
-		this.alt = alt;
+		this.altText = altText;
 	}
 	
 	/**
@@ -190,6 +205,17 @@ public class ChoiceField extends Field
 	public void setIn(CollectorUI ui)
 	{
 		ui.setChoice(this);
+	}
+	
+	@Override
+	public List<File> getFiles(Project project)
+	{
+		List<File> paths = new ArrayList<File>();
+		if(hasImage())
+			CollectionUtils.addIgnoreNull(paths, project.getImageFile(imageRelativePath));
+		for(ChoiceField child : children)
+			CollectionUtils.addAllIgnoreNull(paths, child.getFiles(project));
+		return paths;
 	}
 	
 	public String toString()
@@ -329,7 +355,7 @@ public class ChoiceField extends Field
 			bff.append("INDEX" + separator + "VALUE" + separator + "IMG" + separator + "ID/PATH" + "\n");
 			int idx = 0;
 			for(ChoiceField choice : indexed)
-				bff.append(idx++ + separator + choice.value + separator + choice.imageLogicalPath + separator + choice.id + "\n");
+				bff.append(idx++ + separator + choice.value + separator + choice.imageRelativePath + separator + choice.id + "\n");
 			return bff.toString();
 		}
 		

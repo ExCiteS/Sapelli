@@ -3,6 +3,9 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
+import java.io.File;
+import java.util.List;
+
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.storage.model.Column;
 
@@ -37,6 +40,12 @@ public class CancelField extends Field
 	public void setIn(CollectorUI ui)
 	{
 		ui.setCancelField(this);
+	}
+
+	@Override
+	public List<File> getFiles(Project project)
+	{
+		return null;
 	}
 
 }

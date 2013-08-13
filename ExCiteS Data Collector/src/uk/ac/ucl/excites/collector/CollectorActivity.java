@@ -28,7 +28,6 @@ import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.WaitingView;
 import uk.ac.ucl.excites.storage.xml.RecordsExporter;
-import uk.ac.ucl.excites.util.DeviceControl;
 import uk.ac.ucl.excites.util.Debug;
 import uk.ac.ucl.excites.util.TimeUtils;
 
@@ -111,10 +110,10 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 		if(savedInstanceState != null && savedInstanceState.containsKey(TEMP_PHOTO_PATH_KEY))
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
 
-		// Check if there is an SD Card, otherwise inform the user and finish the activity
-		if(!DeviceControl.isExternalStorageWritable())
-		{ // show error (activity will be exited after used clicks OK in the dialog):
-			errorDialog("ExCiteS needs an SD card in order to function. Please insert one and restart the application.", true).show();
+		// Check if we can read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
+		if(!CollectorApp.isCardAssesible())
+		{	// Inform the user and close the application
+			showErrorDialog("ExCiteS needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
 			return;
 		}
 
@@ -164,7 +163,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 		project = dao.retrieveProject(projectName, projectVersion);
 		if(project == null)
 		{ // show error (activity will be exited after used clicks OK in the dialog):
-			errorDialog("Could not find project: " + projectName + " (version " + projectVersion + ").", true).show();
+			showErrorDialog("Could not find project: " + projectName + " (version " + projectVersion + ").", true);
 			return;
 		}
 
@@ -176,7 +175,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 		
 		// Show demo disclaimer if needed:
 		if(BuildInfo.DEMO_BUILD)
-			infoDialog("Disclaimer", "This is ExCiteS Data Collector " + BuildInfo.printVersion() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.").show();
+			showInfoDialog("Disclaimer", "This is ExCiteS Data Collector " + BuildInfo.printVersion() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
 	}
 
 	/**
@@ -196,7 +195,7 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 			return true;
 		case KeyEvent.KEYCODE_VOLUME_DOWN:
 			if(BuildInfo.DEMO_BUILD)
-				infoDialog("Exported " + exportRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".").show();
+				showInfoDialog("Exported " + exportRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".");
 			return true;
 		case KeyEvent.KEYCODE_VOLUME_UP:
 			return true;

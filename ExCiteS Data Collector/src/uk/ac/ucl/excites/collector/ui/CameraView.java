@@ -10,9 +10,11 @@ import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.ui.images.FileImage;
-import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
-import uk.ac.ucl.excites.collector.ui.images.ResourceImage;
+import uk.ac.ucl.excites.collector.ui.picker.ImageFileItem;
+import uk.ac.ucl.excites.collector.ui.picker.PickerAdapter;
+import uk.ac.ucl.excites.collector.ui.picker.PickerView;
+import uk.ac.ucl.excites.collector.ui.picker.ImageResourceItem;
+import uk.ac.ucl.excites.util.FileHelpers;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -215,11 +217,11 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 			// Note: for now there is only the capture button, we might add other features (flash, zooming, etc.) later
 
 			// Capture button:
-			String captureImg = photoField.getCaptureButtonImageLogicalPath();
-			if(captureImg != null && !captureImg.isEmpty())
-				imageAdapter.addImage(new FileImage(project, captureImg));
+			File captureImgFile = project.getImageFile(photoField.getCaptureButtonImageRelativePath());
+			if(FileHelpers.isReadableFile(captureImgFile))
+				pickerAdapter.addItem(new ImageFileItem(captureImgFile));
 			else
-				imageAdapter.addImage(new ResourceImage(R.drawable.take_photo));
+				pickerAdapter.addItem(new ImageResourceItem(R.drawable.take_photo));
 		}
 	}
 
@@ -244,17 +246,17 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 		protected void addButtons()
 		{
 			// Approve button:
-			String approveImg = photoField.getApproveButtonImageLogicalPath();
-			if(approveImg != null && !approveImg.isEmpty())
-				imageAdapter.addImage(new FileImage(project, approveImg));
+			File approveImgFile = project.getImageFile(photoField.getApproveButtonImageRelativePath());
+			if(FileHelpers.isReadableFile(approveImgFile))
+				pickerAdapter.addItem(new ImageFileItem(approveImgFile));
 			else
-				imageAdapter.addImage(new ResourceImage(R.drawable.accept));
+				pickerAdapter.addItem(new ImageResourceItem(R.drawable.accept));
 			// Discard button:
-			String discardImg = photoField.getDiscardButtonImageLogicalPath();
-			if(discardImg != null && !discardImg.isEmpty())
-				imageAdapter.addImage(new FileImage(project, discardImg));
+			File discardImgFile = project.getImageFile(photoField.getDiscardButtonImageRelativePath());
+			if(FileHelpers.isReadableFile(discardImgFile))
+				pickerAdapter.addItem(new ImageFileItem(discardImgFile));
 			else
-				imageAdapter.addImage(new ResourceImage(R.drawable.delete));
+				pickerAdapter.addItem(new ImageResourceItem(R.drawable.delete));
 		}
 
 	}
@@ -286,25 +288,25 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 			setNumColumns(getNumberOfColumns());
 
 			// Images/buttons:
-			imageAdapter = new ImageAdapter(super.getContext());
+			pickerAdapter = new PickerAdapter(super.getContext());
 			addButtons();
 
 			// Button dimensions:
-			imageAdapter.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-			imageAdapter.setImageWidth(buttonSize);
-			imageAdapter.setImageHeight(buttonSize);
+			pickerAdapter.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+			pickerAdapter.setItemWidth(buttonSize);
+			pickerAdapter.setItemHeight(buttonSize);
 			// Button background colour:
 			try
 			{
-				imageAdapter.setBackgroundColor(Color.parseColor(controller.getCurrentForm().getButtonBackgroundColor()));
+				pickerAdapter.setBackgroundColor(Color.parseColor(controller.getCurrentForm().getButtonBackgroundColor()));
 			}
 			catch(IllegalArgumentException iae)
 			{
 				Log.w(CameraView.TAG, "Unable to parse colour: " + controller.getCurrentForm().getButtonBackgroundColor());
-				imageAdapter.setBackgroundColor(Color.parseColor(Form.DEFAULT_BUTTON_BACKGROUND_COLOR)); // light gray
+				pickerAdapter.setBackgroundColor(Color.parseColor(Form.DEFAULT_BUTTON_BACKGROUND_COLOR)); // light gray
 			}
 			// And finally:
-			setAdapter(imageAdapter);
+			setAdapter(pickerAdapter);
 		}
 
 		protected abstract int getNumberOfColumns();

@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.net.Uri;
-import android.os.Environment;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.util.Log;
@@ -89,34 +88,4 @@ public final class DeviceControl
 		}
 	}
 	
-	/**
-	 * Checks if external storage is available for read and write
-	 * 
-	 * @return
-	 */
-	public static boolean isExternalStorageWritable()
-	{
-		String state = Environment.getExternalStorageState();
-		if(Environment.MEDIA_MOUNTED.equals(state))
-		{
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Checks if external storage is available to at least read
-	 * 
-	 * @return
-	 */
-	public static boolean isExternalStorageReadable()
-	{
-		String state = Environment.getExternalStorageState();
-		if(Environment.MEDIA_MOUNTED.equals(state) || Environment.MEDIA_MOUNTED_READ_ONLY.equals(state))
-		{
-			return true;
-		}
-		return false;
-	}
-		
 }

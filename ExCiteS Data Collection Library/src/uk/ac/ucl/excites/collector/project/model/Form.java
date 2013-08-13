@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -13,6 +14,7 @@ import uk.ac.ucl.excites.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.util.CollectionUtils;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -58,7 +60,7 @@ public class Form
 	private final List<LocationField> locationFields;
 
 	// Android shortcut:
-	private String shortcutImageLogicalPath;
+	private String shortcutImageRelativePath;
 
 	// Timestamps
 	private boolean storeEndTime;
@@ -66,15 +68,15 @@ public class Form
 	// End action:
 	private int endAction;
 	private boolean vibrateOnEnd;
-	private String endSoundPath;
+	private String endSoundRelativePath;
 
 	// Buttons:
 	private boolean showBack = DEFAULT_SHOW_BACK;
 	private boolean showCancel = DEFAULT_SHOW_CANCEL;
 	private boolean showForward = DEFAULT_SHOW_FORWARD;
-	private String backButtonImageLogicalPath;
-	private String cancelButtonImageLogicalPath;
-	private String forwardButtonImageLogicalPath;
+	private String backButtonImageRelativePath;
+	private String cancelButtonImageRelativePath;
+	private String forwardButtonImageRelativePath;
 	private String buttonBackgroundColor;
 
 	public Form(Project project, String name, int schemaID)
@@ -171,20 +173,20 @@ public class Form
 	}
 
 	/**
-	 * @return the shortcutImageLogicalPath
+	 * @return the shortcutImageRelativePath
 	 */
-	public String getShortcutImageLogicalPath()
+	public String getShortcutImageRelativePath()
 	{
-		return shortcutImageLogicalPath;
+		return shortcutImageRelativePath;
 	}
 
 	/**
-	 * @param shortcutImageLogicalPath
-	 *            the shortcutImageLogicalPath to set
+	 * @param shortcutImageRelativePath
+	 *            the shortcutImageRelativePath to set
 	 */
-	public void setShortcutImageLogicalPath(String shortcutImageLogicalPath)
+	public void setShortcutImageRelativePath(String shortcutImageRelativePath)
 	{
-		this.shortcutImageLogicalPath = shortcutImageLogicalPath;
+		this.shortcutImageRelativePath = shortcutImageRelativePath;
 	}
 
 	/**
@@ -239,51 +241,51 @@ public class Form
 	}
 
 	/**
-	 * @return the backButtonImageLogicalPath
+	 * @return the backButtonImageRelativePath
 	 */
-	public String getBackButtonImageLogicalPath()
+	public String getBackButtonImageRelativePath()
 	{
-		return backButtonImageLogicalPath;
+		return backButtonImageRelativePath;
 	}
 
 	/**
-	 * @param backButtonImageLogicalPath the backButtonImageLogicalPath to set
+	 * @param backButtonImageRelativePath the backButtonImageRelativePath to set
 	 */
-	public void setBackButtonImageLogicalPath(String backButtonImageLogicalPath)
+	public void setBackButtonImageRelativePath(String backButtonImageRelativePath)
 	{
-		this.backButtonImageLogicalPath = backButtonImageLogicalPath;
+		this.backButtonImageRelativePath = backButtonImageRelativePath;
 	}
 
 	/**
-	 * @return the cancelButtonImageLogicalPath
+	 * @return the cancelButtonImageRelativePath
 	 */
-	public String getCancelButtonImageLogicalPath()
+	public String getCancelButtonImageRelativePath()
 	{
-		return cancelButtonImageLogicalPath;
+		return cancelButtonImageRelativePath;
 	}
 
 	/**
-	 * @param cancelButtonImageLogicalPath the cancelButtonImageLogicalPath to set
+	 * @param cancelButtonImageRelativePath the cancelButtonImageRelativePath to set
 	 */
-	public void setCancelButtonImageLogicalPath(String cancelButtonImageLogicalPath)
+	public void setCancelButtonImageRelativePath(String cancelButtonImageRelativePath)
 	{
-		this.cancelButtonImageLogicalPath = cancelButtonImageLogicalPath;
+		this.cancelButtonImageRelativePath = cancelButtonImageRelativePath;
 	}
 
 	/**
-	 * @return the forwardButtonImageLogicalPath
+	 * @return the forwardButtonImageRelativePath
 	 */
-	public String getForwardButtonImageLogicalPath()
+	public String getForwardButtonImageRelativePath()
 	{
-		return forwardButtonImageLogicalPath;
+		return forwardButtonImageRelativePath;
 	}
 
 	/**
-	 * @param forwardButtonImageLogicalPath the forwardButtonImageLogicalPath to set
+	 * @param forwardButtonImageRelativePath the forwardButtonImageRelativePath to set
 	 */
-	public void setForwardButtonImageLogicalPath(String forwardButtonImageLogicalPath)
+	public void setForwardButtonImageRelativePath(String forwardButtonImageRelativePath)
 	{
-		this.forwardButtonImageLogicalPath = forwardButtonImageLogicalPath;
+		this.forwardButtonImageRelativePath = forwardButtonImageRelativePath;
 	}
 
 	/**
@@ -372,20 +374,20 @@ public class Form
 	}
 
 	/**
-	 * @return the endSoundPath
+	 * @return the endSoundRelativePath
 	 */
-	public String getEndSoundPath()
+	public String getEndSoundRelativePath()
 	{
-		return endSoundPath;
+		return endSoundRelativePath;
 	}
 
 	/**
 	 * Set the end sound
-	 * @param endSoundPath
+	 * @param endSoundRelativePath
 	 */
-	public void setEndSoundPath(String endSoundPath)
+	public void setEndSoundRelativePath(String endSoundRelativePath)
 	{
-		this.endSoundPath = endSoundPath;
+		this.endSoundRelativePath = endSoundRelativePath;
 	}
 
 	/**
@@ -477,6 +479,20 @@ public class Form
 		if(warnings == null)
 			return new ArrayList<String>(); //leave this.warnings null
 		return warnings;
+	}
+	
+	public List<File> getFiles(Project project)
+	{
+		List<File> paths = new ArrayList<File>();
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(backButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(cancelButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(forwardButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(shortcutImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getSoundFile(endSoundRelativePath));
+		//Add paths for fields:
+		for(Field field : fields)
+			CollectionUtils.addAllIgnoreNull(paths, field.getFiles(project));
+		return paths;
 	}
 
 }

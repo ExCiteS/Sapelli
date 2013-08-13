@@ -26,64 +26,57 @@ public abstract class BaseActivity extends Activity
 	}
 	
 	/**
-	 * dialog shown when erroneous user interaction is detected
+	 * Show dialog with error message
 	 * 
 	 * @param message
-	 * @return the dialog
 	 */
-	protected AlertDialog errorDialog(String message, final boolean exitOnOK)
+	protected void showErrorDialog(String message, final boolean exitOnOK)
 	{
-		AlertDialog error = new AlertDialog.Builder(this).setTitle("Error").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
+		new AlertDialog.Builder(this).setTitle("Error").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
 		{
 			public void onClick(DialogInterface dialog, int whichButton)
 			{
 				if(exitOnOK)
 					finish();
 			}
-		}).create();
-		return error;
+		}).create().show();
 	}
 	
 	/**
-	 * dialog showing warnings
+	 * Show dialog with warning message
 	 * 
 	 * @param message
-	 * @return the dialog
 	 */
-	protected AlertDialog warningDialog(String message)
+	protected void showWarningDialog(String message)
 	{
-		AlertDialog warning = new AlertDialog.Builder(this).setTitle("Warning").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
+		new AlertDialog.Builder(this).setTitle("Warning").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
 		{
 			public void onClick(DialogInterface dialog, int whichButton) { /*does nothing*/ }
-		}).create();
-		return warning;
+		}).create().show();
 	}
 	
 	/**
-	 * dialog showing info
+	 * Show dialog with info message
 	 * 
 	 * @param message
-	 * @return the dialog
 	 */
-	protected AlertDialog infoDialog(String message)
+	protected void showInfoDialog(String message)
 	{
-		return infoDialog("Info", message);
+		showInfoDialog("Info", message);
 	}
 	
 	/**
-	 * dialog showing info
+	 * Show dialog with info message
 	 * 
 	 * @param title
 	 * @param message
-	 * @return the dialog
 	 */
-	protected AlertDialog infoDialog(String title, String message)
+	protected void showInfoDialog(String title, String message)
 	{
-		AlertDialog info = new AlertDialog.Builder(this).setTitle(title).setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
+		new AlertDialog.Builder(this).setTitle(title).setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
 		{
 			public void onClick(DialogInterface dialog, int whichButton) { /*does nothing*/ }
-		}).create();
-		return info;
+		}).create().show();
 	}
 	
 }

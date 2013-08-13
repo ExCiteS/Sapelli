@@ -11,10 +11,12 @@ import uk.ac.ucl.excites.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.ui.images.FileImage;
-import uk.ac.ucl.excites.collector.ui.images.Image;
-import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
-import uk.ac.ucl.excites.collector.ui.images.ResourceImage;
+import uk.ac.ucl.excites.collector.ui.picker.ImageFileItem;
+import uk.ac.ucl.excites.collector.ui.picker.Item;
+import uk.ac.ucl.excites.collector.ui.picker.PickerAdapter;
+import uk.ac.ucl.excites.collector.ui.picker.PickerView;
+import uk.ac.ucl.excites.collector.ui.picker.ImageResourceItem;
+import uk.ac.ucl.excites.util.FileHelpers;
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
@@ -32,8 +34,8 @@ public class AudioView extends PickerView implements FieldView
 
 	private File audioFile;
 	private AudioRecorder audioRecorder;
-	private Image startImage;
-	private Image stopImage;
+	private Item startImage;
+	private Item stopImage;
 
 	public AudioView(Context context)
 	{
@@ -62,28 +64,30 @@ public class AudioView extends PickerView implements FieldView
 		setNumColumns(1);
 
 		// Adapter & images:
-		imageAdapter = new ImageAdapter(super.getContext());
+		pickerAdapter = new PickerAdapter(super.getContext());
 		// Start rec image:
-		if(audioField.getStartRecImageLogicalPath() != null)
-			startImage = new FileImage(project, audioField.getStartRecImageLogicalPath());
+		File startRecImageFile = project.getImageFile(audioField.getStartRecImageRelativePath());
+		if(FileHelpers.isReadableFile(startRecImageFile))
+			startImage = new ImageFileItem(startRecImageFile);
 		else
-			startImage = new ResourceImage(R.drawable.start_audio_rec);
+			startImage = new ImageResourceItem(R.drawable.start_audio_rec);
 		// Stop rec image:
-		if(audioField.getStopRecImageLogicalPath() != null)
-			stopImage = new FileImage(project, audioField.getStopRecImageLogicalPath());
+		File stopRecImageFile = project.getImageFile(audioField.getStopRecImageRelativePath());
+		if(FileHelpers.isReadableFile(stopRecImageFile))
+			stopImage = new ImageFileItem(stopRecImageFile);
 		else
-			stopImage = new ResourceImage(R.drawable.stop_audio_rec);
-		imageAdapter.addImage(startImage); // show start button
-		imageAdapter.addImage(stopImage); // show stop button
+			stopImage = new ImageResourceItem(R.drawable.stop_audio_rec);
+		pickerAdapter.addItem(startImage); // show start button
+		pickerAdapter.addItem(stopImage); // show stop button
 
 		// Set image dimensions when view dimensions are known:
 		getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
 		{
 			public boolean onPreDraw()
 			{
-				imageAdapter.setImageWidth(LayoutParams.MATCH_PARENT);
-				imageAdapter.setImageHeight((getHeight() - PickerView.SPACING) / imageAdapter.getCount());
-				setAdapter(imageAdapter);
+				pickerAdapter.setItemWidth(LayoutParams.MATCH_PARENT);
+				pickerAdapter.setItemHeight((getHeight() - PickerView.SPACING) / pickerAdapter.getCount());
+				setAdapter(pickerAdapter);
 
 				getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
 				return false;
@@ -123,8 +127,8 @@ public class AudioView extends PickerView implements FieldView
 						return; // !!!
 					}
 					// Switch buttons:
-					imageAdapter.makeInvisible(0);
-					setAdapter(imageAdapter);
+					pickerAdapter.makeInvisible(0);
+					setAdapter(pickerAdapter);
 				}
 			}
 		});
