@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordsExport>
+	<Record schema-id="123" schema-version="1">
+		<StartTime>2013-04-25T08:42:52+01:00</StartTime>
+		<DeviceID>2378406261</DeviceID>
+		<Observation>1</Observation><!-- = Tube -->
+		<SeeHearTold>3</SeeHearTold><!-- = BeenTold -->
+		<Photos>1</Photos>
+		<AudioRecs>2</AudioRecs>
+		<Location>1.598028321750462;16.694647427648306;1;413.5;0.0;0.0;15.0;1366875891000</Location>
+	</Record>
+	<!-- ... -->
+</RecordsExport>
