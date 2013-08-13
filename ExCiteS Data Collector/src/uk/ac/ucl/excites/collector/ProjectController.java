@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.collector.geo.OrientationSensor;
@@ -24,6 +25,7 @@ import uk.ac.ucl.excites.collector.project.model.MediaField;
 import uk.ac.ucl.excites.collector.project.model.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
+import uk.ac.ucl.excites.collector.ui.InterfaceDelay;
 import uk.ac.ucl.excites.collector.util.DeviceID;
 import uk.ac.ucl.excites.collector.util.LocationUtils;
 import uk.ac.ucl.excites.storage.model.Record;

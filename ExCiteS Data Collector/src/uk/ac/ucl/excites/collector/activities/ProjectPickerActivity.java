@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.collector;
+package uk.ac.ucl.excites.collector.activities;
 
 import group.pals.android.lib.ui.filechooser.FileChooserActivity;
 import group.pals.android.lib.ui.filechooser.io.localfile.LocalFile;
@@ -15,6 +15,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import uk.ac.ucl.excites.collector.BuildInfo;
+import uk.ac.ucl.excites.collector.R;
+import uk.ac.ucl.excites.collector.R.drawable;
+import uk.ac.ucl.excites.collector.R.id;
+import uk.ac.ucl.excites.collector.R.layout;
+import uk.ac.ucl.excites.collector.R.menu;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
@@ -22,7 +28,6 @@ import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
-import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sender.DataSenderPreferences;

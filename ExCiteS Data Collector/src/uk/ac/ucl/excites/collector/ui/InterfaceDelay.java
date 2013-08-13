@@ -1,5 +1,6 @@
-package uk.ac.ucl.excites.collector;
+package uk.ac.ucl.excites.collector.ui;
 
+import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import android.app.ProgressDialog;
 import android.os.AsyncTask;

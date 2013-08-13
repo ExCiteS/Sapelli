@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.collector.ui;
+package uk.ac.ucl.excites.collector.activities;
 
 import uk.ac.ucl.excites.collector.CollectorApp;
 import android.app.Activity;

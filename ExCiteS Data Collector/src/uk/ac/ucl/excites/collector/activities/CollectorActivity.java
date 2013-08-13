@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.collector;
+package uk.ac.ucl.excites.collector.activities;
 
 import java.io.File;
 import java.util.Calendar;
@@ -8,6 +8,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import uk.ac.ucl.excites.collector.BuildInfo;
+import uk.ac.ucl.excites.collector.CollectorApp;
+import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
@@ -21,7 +24,6 @@ import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.ui.AudioView;
-import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.ui.ButtonView;
 import uk.ac.ucl.excites.collector.ui.CameraView;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
