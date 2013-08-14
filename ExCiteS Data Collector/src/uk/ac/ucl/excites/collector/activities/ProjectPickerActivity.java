@@ -17,10 +17,6 @@ import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.collector.BuildInfo;
 import uk.ac.ucl.excites.collector.R;
-import uk.ac.ucl.excites.collector.R.drawable;
-import uk.ac.ucl.excites.collector.R.id;
-import uk.ac.ucl.excites.collector.R.layout;
-import uk.ac.ucl.excites.collector.R.menu;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
@@ -512,7 +508,6 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	{
 		try
 		{
-			// Use /mnt/sdcard/ExCiteS/ as the basePath:
 			ExCiteSFileLoader loader = new ExCiteSFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
 			Project loadedProject = loader.load(excitesFile);
 			// Show parser warnings if needed:
