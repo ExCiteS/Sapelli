@@ -280,7 +280,7 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 			// Layout:
 			setBackgroundColor(Color.TRANSPARENT);
 			setGravity(Gravity.CENTER);
-			setPadding(0, 0, 0, SPACING);
+			setPadding(0, 0, 0, getSpacingInDp(context));
 
 			// Columns
 			setNumColumns(getNumberOfColumns());

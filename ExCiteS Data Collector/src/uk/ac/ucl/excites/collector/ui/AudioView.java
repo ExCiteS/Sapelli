@@ -34,10 +34,12 @@ public class AudioView extends PickerView implements FieldView
 	private AudioRecorder audioRecorder;
 	private Image startImage;
 	private Image stopImage;
+	private Context context;
 
 	public AudioView(Context context)
 	{
 		super(context);
+		this.context = context;
 	}
 
 	@Override
@@ -82,7 +84,7 @@ public class AudioView extends PickerView implements FieldView
 			public boolean onPreDraw()
 			{
 				imageAdapter.setImageWidth(LayoutParams.MATCH_PARENT);
-				imageAdapter.setImageHeight((getHeight() - PickerView.SPACING) / imageAdapter.getCount());
+				imageAdapter.setImageHeight((getHeight() - PickerView.getSpacingInDp(context)) / imageAdapter.getCount());
 				setAdapter(imageAdapter);
 
 				getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop

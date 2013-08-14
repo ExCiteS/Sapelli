@@ -3,19 +3,21 @@
  */
 package uk.ac.ucl.excites.collector.ui;
 
+import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
+import uk.ac.ucl.excites.collector.util.UiUtilites;
 import android.content.Context;
 import android.graphics.Color;
 import android.widget.GridView;
 
 /**
- * @author Julia
- *
+ * @author Julia, Michalis Vitos
+ * 
  */
 public abstract class PickerView extends GridView
 {
 
-	static protected final int SPACING = 10;
+	private static final int SPACING = 8; // in dp
 	
 	protected ImageAdapter imageAdapter;
 	
@@ -25,8 +27,26 @@ public abstract class PickerView extends GridView
 		
 		// UI set-up:
 		setBackgroundColor(Color.BLACK);
-		setHorizontalSpacing(SPACING);
-		setVerticalSpacing(SPACING);
+		setHorizontalSpacing(getSpacingInDp(context));
+		setVerticalSpacing(getSpacingInDp(context));
+		// This is needed to hide the border when an picker item is pressed and to calculate the borders more appropriately
+		setSelector(R.drawable.picker_view_selector);
+	}
+
+	/**
+	 * @return the spacing
+	 */
+	public static int getSpacingInPx()
+	{
+		return SPACING;
+	}
+
+	/**
+	 * @return the spacing
+	 */
+	public static int getSpacingInDp(Context context)
+	{
+		return UiUtilites.dpToPx(context, SPACING);
 	}
 
 }
