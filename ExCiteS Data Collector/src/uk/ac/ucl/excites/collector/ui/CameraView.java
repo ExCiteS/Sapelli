@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.R;
+import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.media.CameraController;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Form;
@@ -139,47 +140,63 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 	}
 
 	@Override
-	public void onItemClick(AdapterView<?> parent, View v, int position, long id)
+	public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 	{
-		if(!handlingClick) // only handle one click at the time
+		// Check if the UI is waiting for animation, if it does do nothing
+		if(!CollectorActivity.isWaitingForUIAnimation())
 		{
-			handlingClick = true;
-			if(getCurrentView() == captureLayout)
-			{ // in Capture mode --> there is (currently) only one button here: the one to take a photo
-				cameraController.takePicture(this);
-			}
-			else
-			{ // in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
-				if(position == 0)
-				{ // photo approved
-					try
-					{ // Save photo to file:
-						File photoFile = photoField.getNewTempFile(controller.getCurrentRecord());
-						FileOutputStream fos = new FileOutputStream(photoFile);
-						fos.write(reviewPhotoData);
-						fos.close();
-						controller.mediaDone(photoFile);
-					}
-					catch(Exception e)
+			// Run the animation
+			Runnable task = new Runnable()
+			{
+				public void run()
+				{
+					if(!handlingClick) // only handle one click at the time
 					{
-						Log.e(TAG, "Could not save photo.", e);
-						controller.mediaDone(null);
-					}
-					finally
-					{
-						cameraController.close();
+						handlingClick = true;
+						if(getCurrentView() == captureLayout)
+						{ // in Capture mode --> there is (currently) only one button here: the one to take a photo
+							cameraController.takePicture(CameraView.this);
+						}
+						else
+						{ // in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
+							if(position == 0)
+							{ // photo approved
+								try
+								{ // Save photo to file:
+									File photoFile = photoField.getNewTempFile(controller.getCurrentRecord());
+									FileOutputStream fos = new FileOutputStream(photoFile);
+									fos.write(reviewPhotoData);
+									fos.close();
+									controller.mediaDone(photoFile);
+								}
+								catch(Exception e)
+								{
+									Log.e(TAG, "Could not save photo.", e);
+									controller.mediaDone(null);
+								}
+								finally
+								{
+									cameraController.close();
+								}
+							}
+							else
+							// if(position == 1)
+							{ // photo discarded
+								showNext(); // switch back to capture mode
+								cameraController.startPreview();
+								handlingClick = false;
+							}
+							reviewPhotoData = null;
+						}
 					}
 				}
-				else
-				// if(position == 1)
-				{ // photo discarded
-					showNext(); // switch back to capture mode
-					cameraController.startPreview();
-					handlingClick = false;
-				}
-				reviewPhotoData = null;
-			}
+			};
+
+			Animator animator = new Animator(task, v);
+			animator.execute();
+
 		}
+		// else: ignore the click
 	}
 
 	@Override
