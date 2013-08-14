@@ -1,6 +1,7 @@
 
 package uk.ac.ucl.excites.collector.ui;
 
+import uk.ac.ucl.excites.collector.CollectorActivity;
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.project.model.Form;
@@ -15,7 +16,6 @@ import android.graphics.Color;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
-import android.view.animation.AnimationUtils;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 
@@ -144,24 +144,43 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	}
 	
 	@Override
-	public void onItemClick(AdapterView<?> parent, View v, int position, long id)
+	public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 	{
-		v.startAnimation(AnimationUtils.loadAnimation(getContext(), R.layout.image_click_animation));
-
-		if(buttonsEnabled)
+		// Check if the UI is waiting for animation, if it does do nothing
+		if(!CollectorActivity.isWaitingForUIAnimation())
 		{
-			if(position >= positionToButton.length)
-				return;
-			//else:
-			switch(positionToButton[position])
+			Debug.d("ChoiceView is clicked and NOT waiting for UI, the pressed code is executed.");
+
+			// Run the animation
+			Runnable task = new Runnable()
 			{
-				case BUTTON_TYPE_BACK		: controller.goBack(); break;
-				case BUTTON_TYPE_CANCEL		: controller.cancelAndRestartForm(); break;
-				case BUTTON_TYPE_FORWARD	: controller.goForward(true); break;
-				default : return;
-			}
+				public void run()
+				{
+					if(buttonsEnabled)
+					{
+						if(position >= positionToButton.length)
+							return;
+						//else:
+						switch(positionToButton[position])
+						{
+							case BUTTON_TYPE_BACK		: controller.goBack(); break;
+							case BUTTON_TYPE_CANCEL		: controller.cancelAndRestartForm(); break;
+							case BUTTON_TYPE_FORWARD	: controller.goForward(true); break;
+							default : return;
+						}
+					}
+					//else: ignore the click
+				}
+			};
+
+			Animator animator = new Animator(task, v);
+			animator.execute();
+
 		}
-		//else: ignore the click
+		else
+		{
+			Debug.d("ChoiceView is clicked but is waiting for UI.");
+		}
 	}
 
 }

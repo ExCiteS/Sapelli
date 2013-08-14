@@ -28,10 +28,9 @@ import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.WaitingView;
 import uk.ac.ucl.excites.storage.xml.RecordsExporter;
-import uk.ac.ucl.excites.util.DeviceControl;
 import uk.ac.ucl.excites.util.Debug;
+import uk.ac.ucl.excites.util.DeviceControl;
 import uk.ac.ucl.excites.util.TimeUtils;
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -75,6 +74,9 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 	static public final int RETURN_AUDIO_CAPTURE = 3;
 
 	private static final int TIMEOUT_MIN = 5; // timeout after 5 minutes
+
+	private static boolean waitForUIflag = false;
+	public static final int UI_ANIMATION_DELAY = 400;
 
 	// DYNAMICS-------------------------------------------------------
 
@@ -239,6 +241,22 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 			return true;
 		}
 		return super.onKeyUp(keyCode, event);
+	}
+
+	/**
+	 * @return the waitForUIflag
+	 */
+	public static boolean isWaitingForUIAnimation()
+	{
+		return waitForUIflag;
+	}
+
+	/**
+	 * @param set the wait for UI
+	 */
+	public static void waiteForUIAnimation(boolean wait)
+	{
+		CollectorActivity.waitForUIflag = wait;
 	}
 
 	/**

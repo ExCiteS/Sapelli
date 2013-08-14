@@ -276,11 +276,7 @@ public class ProjectController implements LocationListener, OrientationListener
 			}
 		}
 
-		// TODO Add a delay tag to the XML and load it from there
-		// TODO Maybe add the above code to the AsyncTask
-		// Update GUI (will also handle EndField & CancelField):
-		InterfaceDelay ui = new InterfaceDelay(700, activity, currentField);
-		ui.execute();
+		activity.setField(currentField);
 	}
 
 	public ButtonsState getButtonsState()
