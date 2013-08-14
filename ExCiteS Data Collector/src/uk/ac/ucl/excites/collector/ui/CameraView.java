@@ -11,9 +11,9 @@ import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.ui.picker.ImageFileItem;
+import uk.ac.ucl.excites.collector.ui.picker.ImageResourceItem;
 import uk.ac.ucl.excites.collector.ui.picker.PickerAdapter;
 import uk.ac.ucl.excites.collector.ui.picker.PickerView;
-import uk.ac.ucl.excites.collector.ui.picker.ImageResourceItem;
 import uk.ac.ucl.excites.util.FileHelpers;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -134,7 +134,7 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 	{
 		this.reviewPhotoData = data;
 
-		handleImage = new HandleImage(data);
+		handleImage = new HandleImage(data, reviewView);
 		handleImage.execute();
 	}
 
@@ -321,14 +321,16 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 	 * @author Michalis Vitos
 	 * 
 	 */
-	public class HandleImage extends AsyncTask<Void, Void, Void>
+	public class HandleImage extends AsyncTask<Void, Void, Bitmap>
 	{
 		private ProgressDialog dialog;
 		private byte[] data;
+		private ImageView reviewView;
 
-		public HandleImage(byte[] data)
+		public HandleImage(byte[] data, ImageView reviewView)
 		{
 			this.data = data;
+			this.reviewView = reviewView;
 		}
 
 		@Override
@@ -340,21 +342,18 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 		}
 
 		@Override
-		protected Void doInBackground(Void... params)
+		protected Bitmap doInBackground(Void... params)
 		{
 			Bitmap picture = BitmapFactory.decodeByteArray(data, 0, data.length);
-
-			// Display rotated picture:
-			reviewView.setImageBitmap(scaleAndRotate(picture));
-			picture.recycle();
-			// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
-
-			return null;
+			return scaleAndRotate(picture);
 		}
 
 		@Override
-		protected void onPostExecute(Void result)
+		protected void onPostExecute(Bitmap picture)
 		{
+			// Display rotated picture
+			reviewView.setImageBitmap(picture);
+
 			// Switch to review mode:
 			showNext();
 			handlingClick = false;
@@ -366,6 +365,8 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 
 		protected Bitmap scaleAndRotate(Bitmap picture)
 		{
+			// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
+
 			// Find the Aspect Ratio
 			Float width = Float.valueOf(picture.getWidth());
 			Float height = Float.valueOf(picture.getHeight());
