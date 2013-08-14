@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.collector.BuildInfo;
+import uk.ac.ucl.excites.collector.CollectorApp;
 import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.database.DataAccessClient;
@@ -71,11 +72,11 @@ import android.widget.Toast;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMenuItemClickListener, DataAccessClient
+public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnMenuItemClickListener, DataAccessClient
 {
 
 	// STATICS--------------------------------------------------------
-	static private final String TAG = "ProjectPickerActivity";
+	static private final String TAG = "ProjectManagerActivity";
 
 	static private final String XML_FILE_EXTENSION = "xml";
 	static private final String DB4O_DUMP_NAME = "DatabaseDump";
@@ -115,7 +116,8 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-
+		app = (CollectorApp) getApplication();		
+		
 		// Check if we can access read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
@@ -452,7 +454,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			return;
 		removeShortcutFor(p);
 		dao.delete(p);
-		populateProjectList(); // populate will close DB
+		populateProjectList();
 
 		// Restart the DataSenderService to stop monitoring the deleted project
 		ServiceChecker.restartActiveDataSender(this);
@@ -878,7 +880,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 
 			// instantiate it within the onCreate method
-			progressDialog = new ProgressDialog(ProjectPickerActivity.this);
+			progressDialog = new ProgressDialog(ProjectManagerActivity.this);
 			progressDialog.setMessage("Downloading...");
 			progressDialog.setIndeterminate(false);
 			progressDialog.setMax(100);
@@ -915,7 +917,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		@Override
 		protected Boolean doInBackground(Void... voids)
 		{
-			if(isOnline(ProjectPickerActivity.this))
+			if(isOnline(ProjectManagerActivity.this))
 			{
 				int count;
 				try
