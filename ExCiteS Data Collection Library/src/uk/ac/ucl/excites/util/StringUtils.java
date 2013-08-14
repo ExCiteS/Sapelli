@@ -4,6 +4,8 @@
 package uk.ac.ucl.excites.util;
 
 import java.nio.charset.Charset;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author mstevens
@@ -44,6 +46,19 @@ public final class StringUtils
 		for(int t = 0; t < tabs; t++)
 			bff.append('\t');
 		bff.append(string);
+		return bff.toString();
+	}
+	
+	static public String join(List<String> parts, String separator)
+	{
+		if(parts == null)
+			return null;
+		if(parts.isEmpty())
+			return "";
+		Iterator<String> i = parts.iterator();
+		StringBuffer bff = new StringBuffer(i.next());
+		while(i.hasNext())
+			bff.append(separator + i.next());
 		return bff.toString();
 	}
 	

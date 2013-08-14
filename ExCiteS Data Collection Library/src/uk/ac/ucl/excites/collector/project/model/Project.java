@@ -126,6 +126,28 @@ public class Project
 	}
 	
 	/**
+	 * @param imageFileRelativePath
+	 * @return file object, or null if the given path was null or empty
+	 */
+	public File getImageFile(String imageFileRelativePath)
+	{
+		if(imageFileRelativePath == null || imageFileRelativePath.isEmpty())
+			return null;
+		return new File(getImageFolderPath() + imageFileRelativePath);
+	}
+	
+	/**
+	 * @param soundFileRelativePath
+	 * @return file object, or null if the given path was null or empty
+	 */
+	public File getSoundFile(String soundFileRelativePath)
+	{
+		if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
+			return null;
+		return new File(getSoundFolderPath() + soundFileRelativePath);
+	}
+	
+	/**
 	 * @return File object pointing to the data folder for this project
 	 * @throws IOException - when the folder cannot be created or is not writable
 	 */
@@ -211,6 +233,19 @@ public class Project
 	}
 	
 	/**
+	 * @return a list of files (as paths relative to the project path) that are referred to by (forms of) this project but which could not be found or accessed   
+	 */
+	public List<String> checkForInvalidFiles()
+	{
+		List<String> invalidFiles = new ArrayList<String>();
+		for(Form form : forms)
+			for(File file : form.getFiles(this))
+				if(!file.isFile() || !file.exists() || !file.canRead())
+					invalidFiles.add(file.getAbsolutePath().substring(projectPath.length()));
+		return invalidFiles;
+	}
+	
+	/**
 	 * For now this only generates CSV files that document the indexed values for ChoiceFields
 	 * 
 	 * @throws IOException
@@ -218,7 +253,6 @@ public class Project
 	public void generateDocumentation() throws IOException
 	{
 		File docsFolder = getDocsFolder();
-
 		for(Form form : forms)
 		{
 			for(Field field : form.getFields())
@@ -232,7 +266,6 @@ public class Project
 				}
 			}
 		}
-		
 	}
 	
 }

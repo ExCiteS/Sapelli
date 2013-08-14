@@ -3,6 +3,8 @@ package uk.ac.ucl.excites.transmission.compression;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 
@@ -11,7 +13,7 @@ import java.util.Arrays;
 public class CompressorFactory
 {
 	
-	static final DecimalFormat RATIO_FORMAT = new DecimalFormat("##.00");
+	static public final DecimalFormat RATIO_FORMAT = new DecimalFormat("##.00");
 	
 	static public enum CompressionMode
 	{	//Changing the order of the enum seems to cause problems (possibly only when using old DB4O databases), so don't
@@ -74,15 +76,20 @@ public class CompressorFactory
 		}
 	}
 
-	static public CompressionResult ApplyBestCompression(byte[] data)
+	static public CompressorResult ApplyBestCompression(byte[] data)
 	{
 		return ApplyBestCompression(data, CompressorFactory.CompressionMode.values()); // will try all modes
 	}
 	
-	static public CompressionResult ApplyBestCompression(byte[] data, CompressionMode[] modes)
+	private static final int NUM_CORES = Runtime.getRuntime().availableProcessors();
+	
+	static public CompressorResult ApplyBestCompression(byte[] data, CompressionMode[] modes)
 	{
 		//TODO make this multi-threaded?
-		CompressionResult best = null;		
+		//CompressorResult[] results = new CompressorResult[modes.length];
+		//ExecutorService executor = Executors.newFixedThreadPool(NUM_CORES);
+		
+		CompressorResult best = null;
 		try
 		{
 			for(CompressionMode mode : modes)
@@ -91,8 +98,8 @@ public class CompressorFactory
 				byte[] compressedData = compressor.compress(data);
 				if(Arrays.equals(data, compressor.decompress(compressedData)))
 				{
-					if(best == null || compressedData.length < best.compressedData.length)
-						best = new CompressionResult(mode, compressedData, compressedData.length / (float) data.length);
+					if(best == null || compressedData.length < best.getCompressedData().length)
+						best = new CompressorResult(mode, compressedData, compressedData.length / (float) data.length);
 				}
 				else
 					System.err.println(mode + ": DECOMPRESSED DATA DOES NOT MATCH INPUT DATA!");
@@ -102,58 +109,7 @@ public class CompressorFactory
 		{
 			e.printStackTrace(System.err);
 		}
-		return best != null ? best : new CompressionResult(CompressionMode.NONE, data, 1.0f);
+		return best != null ? best : new CompressorResult(CompressionMode.NONE, data, 1.0f);
 	}
 	
-	static public class CompressionResult
-	{
-		
-		private CompressionMode mode;
-		private byte[] compressedData;
-		private float ratio;
-		
-		/**
-		 * @param mode
-		 * @param compressedData
-		 * @param ratio
-		 */
-		public CompressionResult(CompressionMode mode, byte[] compressedData, float ratio)
-		{
-			this.mode = mode;
-			this.compressedData = compressedData;
-			this.ratio = ratio;
-		}
-
-		/**
-		 * @return the mode
-		 */
-		public CompressionMode getMode()
-		{
-			return mode;
-		}
-
-		/**
-		 * @return the compressedData
-		 */
-		public byte[] getCompressedData()
-		{
-			return compressedData;
-		}
-
-		/**
-		 * @return the ratio
-		 */
-		public float getRatio()
-		{
-			return ratio;
-		}
-		
-		@Override
-		public String toString()
-		{
-			return mode + "-compressed data is " + compressedData.length + " bytes long (" + RATIO_FORMAT.format(ratio * 100.0f) + " %)"; 
-		}
-		
-	}
-
 }

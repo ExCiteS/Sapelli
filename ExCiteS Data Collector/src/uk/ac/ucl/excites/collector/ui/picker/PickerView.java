@@ -1,10 +1,9 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.collector.ui;
+package uk.ac.ucl.excites.collector.ui.picker;
 
 import uk.ac.ucl.excites.collector.R;
-import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
 import uk.ac.ucl.excites.collector.util.UiUtilites;
 import android.content.Context;
 import android.graphics.Color;
@@ -19,7 +18,7 @@ public abstract class PickerView extends GridView
 
 	private static final int SPACING = 8; // in dp
 	
-	protected ImageAdapter imageAdapter;
+	protected PickerAdapter pickerAdapter;
 	
 	public PickerView(Context context)
 	{

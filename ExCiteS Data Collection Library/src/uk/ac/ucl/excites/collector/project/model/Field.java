@@ -1,5 +1,8 @@
 package uk.ac.ucl.excites.collector.project.model;
 
+import java.io.File;
+import java.util.List;
+
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.storage.model.Column;
 
@@ -206,5 +209,7 @@ public abstract class Field
 	}
 
 	public abstract void setIn(CollectorUI ui);
+	
+	public abstract List<File> getFiles(Project project);
 	
 }

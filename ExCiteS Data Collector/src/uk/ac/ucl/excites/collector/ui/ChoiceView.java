@@ -1,13 +1,18 @@
 package uk.ac.ucl.excites.collector.ui;
 
-import uk.ac.ucl.excites.collector.CollectorActivity;
+import java.io.File;
+
 import uk.ac.ucl.excites.collector.ProjectController;
+import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.Field;
-import uk.ac.ucl.excites.collector.ui.images.FileImage;
-import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
-import uk.ac.ucl.excites.collector.ui.images.PlaceholderImage;
+import uk.ac.ucl.excites.collector.ui.picker.ImageFileItem;
+import uk.ac.ucl.excites.collector.ui.picker.PickerAdapter;
+import uk.ac.ucl.excites.collector.ui.picker.PickerView;
+import uk.ac.ucl.excites.collector.ui.picker.PlaceholderItem;
+import uk.ac.ucl.excites.collector.ui.picker.TextItem;
 import uk.ac.ucl.excites.util.Debug;
+import uk.ac.ucl.excites.util.FileHelpers;
 import android.content.Context;
 import android.view.View;
 import android.view.ViewTreeObserver.OnPreDrawListener;
@@ -44,17 +49,21 @@ public class ChoiceView extends PickerView implements FieldView
 		setNumColumns(choice.getCols());
 
 		// Adapter & images:
-		imageAdapter = new ImageAdapter(getContext());
+		pickerAdapter = new PickerAdapter(getContext());
 		boolean atLeastOneEnabledChild = false;
 		for(ChoiceField child : choice.getChildren())
 		{
 			if(controller.isFieldEndabled(child))
 			{
-				imageAdapter.addImage(new FileImage(controller.getProject(), child.getImageLogicalPath()));
+				File imageFile = controller.getProject().getImageFile(child.getImageRelativePath());
+				if(FileHelpers.isReadableFile(imageFile))
+					pickerAdapter.addItem(new ImageFileItem(imageFile));
+				else
+					pickerAdapter.addItem(new TextItem(child.getAltText())); //render alt text instead of image
 				atLeastOneEnabledChild = true;
 			}
 			else
-				imageAdapter.addImage(new PlaceholderImage()); // show blank space instead of image for disabled choices
+				pickerAdapter.addItem(new PlaceholderItem()); // show blank space instead of image for disabled choices
 		}
 		if(!atLeastOneEnabledChild)
 		{ // all children are disabled
@@ -67,10 +76,10 @@ public class ChoiceView extends PickerView implements FieldView
 		{
 			public boolean onPreDraw()
 			{
-				imageAdapter.setImageWidth((getWidth() - ((choice.getCols() - 1) * getSpacingInDp(context))) / choice.getCols());
-				imageAdapter.setImageHeight((getHeight() - ((choice.getRows() - 1) * getSpacingInDp(context))) / choice.getRows());
-				setAdapter(imageAdapter);
-
+				pickerAdapter.setItemWidth((getWidth() - ((choice.getCols() - 1) * getSpacingInDp(context))) / choice.getCols());
+				pickerAdapter.setItemHeight((getHeight() - ((choice.getRows() - 1) * getSpacingInDp(context))) / choice.getRows());
+				setAdapter(pickerAdapter);
+				
 				getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
 				return false;
 			}

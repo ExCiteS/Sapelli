@@ -15,6 +15,8 @@ import android.os.Environment;
 
 import com.db4o.ObjectContainer;
 
+import de.jockels.open.Environment2;
+
 /**
  * Application App to keep the db4o object throughout the lifecycle of the Collector
  * 
@@ -34,7 +36,7 @@ public class CollectorApp extends Application
 
 	static private volatile ObjectContainer db;
 	
-	private String excitesFolderPath;
+	private File excitesFolder;
 
 	private Set<DataAccessClient> daoClients;
 	
@@ -54,39 +56,53 @@ public class CollectorApp extends Application
 		// Db clients:
 		daoClients = new HashSet<DataAccessClient>();
 		
-		// Paths:
-		excitesFolderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + EXCITES_FOLDER;
+		// Paths (uses Environment2 library to get the path of the actual SD card if there is one, if not it gets the path of the emulated SD card/internal mass storage):
+		excitesFolder = new File(Environment2.getCardDirectory().getAbsolutePath() + File.separator + EXCITES_FOLDER);
 		
 		// Set up a CrashReporter to the ExCiteS/crash Folder
 		Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name)));
 	}
 
 	/**
-	 * @return the excitesFolderPath
+	 * @return creates the excites folder on the filesystem, and returns it as a File object
 	 */
-	public String getExcitesFolderPath()
+	public File getExcitesFolder()
 	{
-		return excitesFolderPath;
+		if(!isCardAccessible())
+			throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
+		if(!excitesFolder.exists())
+		{
+			if(!excitesFolder.mkdirs())
+				throw new IllegalStateException("Cannot create ExCiteS folder");
+		}
+		return excitesFolder;
+	}
+	
+	static public boolean isCardAccessible()
+	{
+		if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState())) //uses Environement2 library!
+			return true;
+		return false;
 	}
 
 	public String getDownloadFolderPath()
 	{
-		return excitesFolderPath + DOWNLOAD_FOLDER;
+		return getExcitesFolder().getAbsolutePath() + File.separator + DOWNLOAD_FOLDER;
 	}
 	
 	public String getTempFolderPath()
 	{
-		return excitesFolderPath + TEMP_FOLDER;
+		return getExcitesFolder().getAbsolutePath() + File.separator + TEMP_FOLDER;
 	}
 	
 	public String getProjectFolderPath()
 	{
-		return excitesFolderPath + PROJECT_FOLDER;
+		return getExcitesFolder().getAbsolutePath() + File.separator + PROJECT_FOLDER;
 	}
 	
 	public String getDumpFolderPath()
 	{
-		return excitesFolderPath + DUMP_FOLDER;
+		return getExcitesFolder().getAbsolutePath() + File.separator + DUMP_FOLDER;
 	}
 
 	@Override

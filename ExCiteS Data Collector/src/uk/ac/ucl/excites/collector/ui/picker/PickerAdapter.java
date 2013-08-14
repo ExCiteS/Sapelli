@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.collector.ui.images;
+package uk.ac.ucl.excites.collector.ui.picker;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,30 +16,30 @@ import android.widget.ImageView.ScaleType;
  * @author Julia, mstevens
  *
  */
-public class ImageAdapter extends BaseAdapter
+public class PickerAdapter extends BaseAdapter
 {
 
 	static private final int PADDING = 2; // pixels
 	static private final int DEFAULT_BACKGROUND_COLOR = Color.WHITE;
-	static private final int DEFAULT_IMAGE_HEIGHT = 140;
-	static private final int DEFAULT_IMAGE_WIDTH = 140;
+	static private final int DEFAULT_ITEM_HEIGHT = 140;
+	static private final int DEFAULT_ITEM_WIDTH = 140;
 	static private final ScaleType DEFAULT_SCALE_TYPE = ScaleType.CENTER_INSIDE;
 	
 	private Context context;
-	private int imageWidth;
-	private int imageHeight;
+	private int itemWidth;
+	private int itemHeight;
 	private ScaleType scaleType;
 	private int backgroundColor;
-	private List<Image> images;
+	private List<Item> items;
 	
-	public ImageAdapter(Context localContext)
+	public PickerAdapter(Context localContext)
 	{
 		this.context = localContext;
-		this.imageHeight = DEFAULT_IMAGE_HEIGHT;
-		this.imageWidth = DEFAULT_IMAGE_WIDTH;
+		this.itemHeight = DEFAULT_ITEM_HEIGHT;
+		this.itemWidth = DEFAULT_ITEM_WIDTH;
 		this.scaleType = DEFAULT_SCALE_TYPE;
 		this.backgroundColor = DEFAULT_BACKGROUND_COLOR;
-		this.images = new ArrayList<Image>();
+		this.items = new ArrayList<Item>();
 	}
 	
 	/**
@@ -51,19 +51,19 @@ public class ImageAdapter extends BaseAdapter
 	}
 	
 	/**
-	 * @param imageHeight the imageHeight to set
+	 * @param itemHeight the itemHeight to set
 	 */
-	public void setImageHeight(int imageHeight)
+	public void setItemHeight(int itemHeight)
 	{
-		this.imageHeight = imageHeight;
+		this.itemHeight = itemHeight;
 	}
 
 	/**
-	 * @param imageWidth the imageWidth to set
+	 * @param itemWidth the itemWidth to set
 	 */
-	public void setImageWidth(int imageWidth)
+	public void setItemWidth(int itemWidth)
 	{
-		this.imageWidth = imageWidth;
+		this.itemWidth = itemWidth;
 	}
 	
 	/**
@@ -74,24 +74,29 @@ public class ImageAdapter extends BaseAdapter
 		this.scaleType = scaleType;
 	}
 
-	public void addImage(Image image)
+	public void addItem(Item item)
 	{
-		images.add(image);
+		items.add(item);
 	}
 	
 	public void clear()
 	{
-		images.clear();
+		items.clear();
 	}
 
 	public int getCount()
 	{
-		return images.size();
+		return items.size();
 	}
 
-	public Image getItem(int position)
+	public Item getItem(int position)
 	{
-		return images.get(position);
+		return items.get(position);
+	}
+	
+	public List<Item> getItems()
+	{
+		return items;
 	}
 
 	public long getItemId(int position)
@@ -104,23 +109,22 @@ public class ImageAdapter extends BaseAdapter
 	 */
 	public View getView(int position, View convertView, ViewGroup parent)
 	{
-		ImageView imageView;
-		if(convertView == null)
-		{
-			imageView = new ImageView(context);
-			imageView.setBackgroundColor(backgroundColor);
-
-			Image img = images.get(position);
-			img.setIn(imageView); //sets the image (if it is not invisible)
-			imageView.setScaleType(scaleType);
-			imageView.setLayoutParams(new GridView.LayoutParams(imageWidth, imageHeight));
-			imageView.setPadding(PADDING, PADDING, PADDING, PADDING);
-		}
+		if(convertView != null)
+			return convertView;
 		else
 		{
-			imageView = (ImageView) convertView;
+			Item item = items.get(position);
+			View view = item.getView(context);
+			if(!item.isVisible())
+				view.setVisibility(View.INVISIBLE);
+			view.setBackgroundColor(backgroundColor);
+			view.setLayoutParams(new GridView.LayoutParams(itemWidth, itemHeight));
+			view.setPadding(PADDING, PADDING, PADDING, PADDING);
+			//Set scaling type for imageviews (type check/cast is not very OO, but acceptable):
+			if(view instanceof ImageView)
+				((ImageView) view).setScaleType(scaleType);
+			return view;
 		}
-		return imageView;
 	}
 
 	public void makeInvisible(int position)

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.collector.geo.OrientationSensor;
@@ -29,6 +30,7 @@ import uk.ac.ucl.excites.collector.util.LocationUtils;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.types.Orientation;
 import uk.ac.ucl.excites.util.DeviceControl;
+import uk.ac.ucl.excites.util.FileHelpers;
 import uk.ac.ucl.excites.util.Logger;
 import android.content.Context;
 import android.location.Location;
@@ -404,10 +406,9 @@ public class ProjectController implements LocationListener, OrientationListener
 		if(currentForm.isVibrateOnEnd())
 			DeviceControl.vibrate(activity, VIBRATION_DURATION_MS);
 		// Play sound
-		String endSound = currentForm.getEndSoundPath();
-		if(endSound != null && !endSound.isEmpty())
-			DeviceControl.playSoundFile(activity, new File(project.getSoundFolderPath() + endSound));
-
+		File endSoundFile = project.getSoundFile(currentForm.getEndSoundRelativePath());
+		if(FileHelpers.isReadableFile(endSoundFile))
+			DeviceControl.playSoundFile(activity, endSoundFile);
 		// End action:
 		switch(currentForm.getEndAction())
 		{

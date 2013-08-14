@@ -1,6 +1,6 @@
 package uk.ac.ucl.excites.collector.ui;
 
-import uk.ac.ucl.excites.collector.CollectorActivity;
+import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import android.os.AsyncTask;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
@@ -9,6 +9,8 @@ import android.view.animation.AnimationSet;
 import android.view.animation.ScaleAnimation;
 
 /**
+ * 
+ * 
  * @author Michalis Vitos
  * 
  */
@@ -18,9 +20,9 @@ public class Animator extends AsyncTask<Void, Void, Void>
 	private Runnable runnableTask;
 	private View view;
 
-	public Animator(Runnable task, View view)
+	public Animator(Runnable taskAfterAnimation, View view)
 	{
-		this(CollectorActivity.UI_ANIMATION_DELAY, task, view);
+		this(CollectorActivity.UI_ANIMATION_DELAY, taskAfterAnimation, view);
 	}
 
 	public Animator(long delay, Runnable task, View view)
@@ -74,4 +76,5 @@ public class Animator extends AsyncTask<Void, Void, Void>
 		// Release the UI
 		CollectorActivity.waiteForUIAnimation(false);
 	}
+
 }

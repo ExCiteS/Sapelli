@@ -3,7 +3,12 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
+import uk.ac.ucl.excites.util.CollectionUtils;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -20,39 +25,39 @@ public class AudioField extends MediaField
 		super(form, id);
 	}
 
-	private String startRecImageLogicalPath;
-	private String stopRecImageLogicalPath;
+	private String startRecImageRelativePath;
+	private String stopRecImageRelativePath;
 	
 	/**
-	 * @return the startRecImageLogicalPath
+	 * @return the startRecImageRelativePath
 	 */
-	public String getStartRecImageLogicalPath()
+	public String getStartRecImageRelativePath()
 	{
-		return startRecImageLogicalPath;
+		return startRecImageRelativePath;
 	}
 
 	/**
-	 * @param startRecImageLogicalPath the startRecImageLogicalPath to set
+	 * @param startRecImageRelativePath the startRecImageRelativePath to set
 	 */
-	public void setStartRecImageLogicalPath(String startRecImageLogicalPath)
+	public void setStartRecImageRelativePath(String startRecImageRelativePath)
 	{
-		this.startRecImageLogicalPath = startRecImageLogicalPath;
+		this.startRecImageRelativePath = startRecImageRelativePath;
 	}
 
 	/**
-	 * @return the stopRecImageLogicalPath
+	 * @return the stopRecImageRelativePath
 	 */
-	public String getStopRecImageLogicalPath()
+	public String getStopRecImageRelativePath()
 	{
-		return stopRecImageLogicalPath;
+		return stopRecImageRelativePath;
 	}
 
 	/**
-	 * @param stopRecImageLogicalPath the stopRecImageLogicalPath to set
+	 * @param stopRecImageRelativePath the stopRecImageRelativePath to set
 	 */
-	public void setStopRecImageLogicalPath(String stopRecImageLogicalPath)
+	public void setStopRecImageRelativePath(String stopRecImageRelativePath)
 	{
-		this.stopRecImageLogicalPath = stopRecImageLogicalPath;
+		this.stopRecImageRelativePath = stopRecImageRelativePath;
 	}
 
 	@Override
@@ -75,6 +80,15 @@ public class AudioField extends MediaField
 		//else if //...
 		else
 			return EXTENSION_3GPP; //or the default
+	}
+	
+	@Override
+	public List<File> getFiles(Project project)
+	{
+		List<File> paths = new ArrayList<File>();
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(startRecImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(stopRecImageRelativePath));
+		return paths;
 	}
 	
 }

@@ -1,16 +1,19 @@
 
 package uk.ac.ucl.excites.collector.ui;
 
-import uk.ac.ucl.excites.collector.CollectorActivity;
+import java.io.File;
+
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.R;
+import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
-import uk.ac.ucl.excites.collector.ui.images.FileImage;
-import uk.ac.ucl.excites.collector.ui.images.ImageAdapter;
-import uk.ac.ucl.excites.collector.ui.images.ResourceImage;
-import uk.ac.ucl.excites.util.Debug;
+import uk.ac.ucl.excites.collector.ui.picker.ImageFileItem;
+import uk.ac.ucl.excites.collector.ui.picker.ImageResourceItem;
+import uk.ac.ucl.excites.collector.ui.picker.PickerAdapter;
+import uk.ac.ucl.excites.collector.ui.picker.PickerView;
+import uk.ac.ucl.excites.util.FileHelpers;
 import android.content.Context;
 import android.graphics.Color;
 import android.util.Log;
@@ -90,58 +93,58 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 				setPadding(0, 0, 0, getSpacingInDp(context));
 				
 				// Adapter & images
-				imageAdapter = new ImageAdapter(super.getContext());
+				pickerAdapter = new PickerAdapter(super.getContext());
 				int p = 0;
 				//	Add buttons:
 				if(currentState.isBackShown())
 				{
-					String bckImg = form.getBackButtonImageLogicalPath(); 
-					if(bckImg != null && !bckImg.isEmpty())
-						imageAdapter.addImage(new FileImage(project, bckImg));
+					File bckImgFile = project.getImageFile(form.getBackButtonImageRelativePath());
+					if(FileHelpers.isReadableFile(bckImgFile))
+						pickerAdapter.addItem(new ImageFileItem(bckImgFile));
 					else
-						imageAdapter.addImage(new ResourceImage(R.drawable.button_back));
+						pickerAdapter.addItem(new ImageResourceItem(R.drawable.button_back));
 					positionToButton[p++] = BUTTON_TYPE_BACK;
 				}
 				if(currentState.isCancelShown())
 				{
-					String cncImg = form.getCancelButtonImageLogicalPath(); 
-					if(cncImg != null && !cncImg.isEmpty())
-						imageAdapter.addImage(new FileImage(project, cncImg));
+					File cncImgFile = project.getImageFile(form.getCancelButtonImageRelativePath());
+					if(FileHelpers.isReadableFile(cncImgFile))
+						pickerAdapter.addItem(new ImageFileItem(cncImgFile));
 					else
-						imageAdapter.addImage(new ResourceImage(R.drawable.button_delete));
+						pickerAdapter.addItem(new ImageResourceItem(R.drawable.button_delete));
 					positionToButton[p++] = BUTTON_TYPE_CANCEL;
 				}
 				if(currentState.isForwardShown())
 				{
-					String fwdImg = form.getForwardButtonImageLogicalPath(); 
-					if(fwdImg != null && !fwdImg.isEmpty())
-						imageAdapter.addImage(new FileImage(project, fwdImg));
+					File fwdImgFile = project.getImageFile(form.getForwardButtonImageRelativePath());
+					if(FileHelpers.isReadableFile(fwdImgFile))
+						pickerAdapter.addItem(new ImageFileItem(fwdImgFile));
 					else
-						imageAdapter.addImage(new ResourceImage(R.drawable.button_forward));
+						pickerAdapter.addItem(new ImageResourceItem(R.drawable.button_forward));
 					positionToButton[p++] = BUTTON_TYPE_FORWARD;
 				}
 				//  Button dimensions:
-				imageAdapter.setScaleType(ImageView.ScaleType.CENTER);
-				imageAdapter.setImageWidth(LayoutParams.MATCH_PARENT);
-				imageAdapter.setImageHeight((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, BUTTON_HEIGHT, getResources().getDisplayMetrics()));
+				pickerAdapter.setScaleType(ImageView.ScaleType.CENTER);
+				pickerAdapter.setItemWidth(LayoutParams.MATCH_PARENT);
+				pickerAdapter.setItemHeight((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, BUTTON_HEIGHT, getResources().getDisplayMetrics()));
 				//  Button background colour:
 				try
 				{
-					imageAdapter.setBackgroundColor(Color.parseColor(form.getButtonBackgroundColor()));
+					pickerAdapter.setBackgroundColor(Color.parseColor(form.getButtonBackgroundColor()));
 				}
 				catch(IllegalArgumentException iae)
 				{
 					Log.w(TAG, "Unable to parse colour: " + form.getButtonBackgroundColor());
-					imageAdapter.setBackgroundColor(Color.parseColor(Form.DEFAULT_BUTTON_BACKGROUND_COLOR)); //light gray
+					pickerAdapter.setBackgroundColor(Color.parseColor(Form.DEFAULT_BUTTON_BACKGROUND_COLOR)); //light gray
 				}
 			}
 			else
 			{	//No...
-				imageAdapter = null;
+				pickerAdapter = null;
 				setPadding(0, 0, 0, 0); //collapse view
 			}
 			//And finally:
-			setAdapter(imageAdapter); //(no problem if imageAdapter is null)
+			setAdapter(pickerAdapter); //(no problem if pickerAdapter is null)
 		}
 	}
 	
@@ -151,8 +154,6 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 		// Check if the UI is waiting for animation, if it does do nothing
 		if(!CollectorActivity.isWaitingForUIAnimation())
 		{
-			Debug.d("ChoiceView is clicked and NOT waiting for UI, the pressed code is executed.");
-
 			// Run the animation
 			Runnable task = new Runnable()
 			{
@@ -171,18 +172,14 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 							default : return;
 						}
 					}
-					//else: ignore the click
+					// else: ignore the click
 				}
 			};
 
 			Animator animator = new Animator(task, v);
 			animator.execute();
-
 		}
-		else
-		{
-			Debug.d("ChoiceView is clicked but is waiting for UI.");
-		}
+		// else: ignore the click
 	}
 
 }

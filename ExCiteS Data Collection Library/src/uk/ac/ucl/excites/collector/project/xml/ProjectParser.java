@@ -234,21 +234,21 @@ public class ProjectParser extends XMLParser
 			currentForm = new Form(project, name, schemaID, schemaVersion);
 			project.addForm(currentForm);
 			// Shortcut image:
-			currentForm.setShortcutImageLogicalPath(readStringAttribute(attributes, ATTRIBUTE_FORM_SHORTCUT_IMAGE, null));
+			currentForm.setShortcutImageRelativePath(readStringAttribute(attributes, ATTRIBUTE_FORM_SHORTCUT_IMAGE, null));
 			// Store end time?:
 			currentForm.setStoreEndTime(readBooleanAttribute(attributes, "storeEndTime", Form.END_TIME_DEFAULT));
 			// Sound end vibration at the end of the form:
 			// Get the sound path
-			currentForm.setEndSoundPath(readStringAttribute(attributes, ATTRIBUTE_FORM_END_SOUND, null));
+			currentForm.setEndSoundRelativePath(readStringAttribute(attributes, ATTRIBUTE_FORM_END_SOUND, null));
 			currentForm.setVibrateOnEnd(readBooleanAttribute(attributes, "endVibrate", Form.DEFAULT_VIBRATE));
 			// Which buttons are allowed to show:
 			currentForm.setShowBack(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_BACK, Form.DEFAULT_SHOW_BACK));
 			currentForm.setShowCancel(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_CANCEL, Form.DEFAULT_SHOW_CANCEL));
 			currentForm.setShowForward(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_FORWARD, Form.DEFAULT_SHOW_FORWARD));
 			// Button images:
-			currentForm.setBackButtonImageLogicalPath(attributes.getValue("backButtonImg"));
-			currentForm.setCancelButtonImageLogicalPath(attributes.getValue("cancelButtonImg"));
-			currentForm.setForwardButtonImageLogicalPath(attributes.getValue("forwardButtonImg"));
+			currentForm.setBackButtonImageRelativePath(attributes.getValue("backButtonImg"));
+			currentForm.setCancelButtonImageRelativePath(attributes.getValue("cancelButtonImg"));
+			currentForm.setForwardButtonImageRelativePath(attributes.getValue("forwardButtonImg"));
 			// Button background colour:
 			currentForm.setButtonBackgroundColor(readStringAttribute(attributes, "buttonBackgroundColor", Form.DEFAULT_BUTTON_BACKGROUND_COLOR));
 			// Start field:
@@ -266,10 +266,11 @@ public class ProjectParser extends XMLParser
 			currentChoice.setNoColumn(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
 			// Other attributes:
 			if(attributes.getValue("img") != null)
-				currentChoice.setImageLogicalPath(attributes.getValue("img"));
+				currentChoice.setImageRelativePath(attributes.getValue("img"));
+			if(attributes.getValue("alt") != null)
+				currentChoice.setAltText(attributes.getValue("alt"));
 			currentChoice.setCols(readIntegerAttribute(attributes, "cols", ChoiceField.DEFAULT_NUM_COLS));
-			if(attributes.getValue("rows") != null)
-				currentChoice.setRows(Integer.parseInt(attributes.getValue("rows")));
+			currentChoice.setRows(readIntegerAttribute(attributes, "rows", ChoiceField.DEFAULT_NUM_ROWS));
 		}
 		// <Location>
 		else if(qName.equals("Location"))
@@ -279,14 +280,14 @@ public class ProjectParser extends XMLParser
 
 			// Type:
 			String type = attributes.getValue("type");
-			if(type != null)
-				warnings.add("Unknown Location type (" + type + ").");
-			else if("Any".equalsIgnoreCase(type))
+			if("Any".equalsIgnoreCase(type))
 				locField.setType(LocationField.TYPE_ANY);
 			else if("GPS".equalsIgnoreCase(type))
 				locField.setType(LocationField.TYPE_GPS);
 			else if("Network".equalsIgnoreCase(type))
 				locField.setType(LocationField.TYPE_GPS);
+			else if(type != null) // unrecognised location type
+				warnings.add("Unknown Location type (" + type + ").");
 			// Operating settings:
 			locField.setStartWithForm(readBooleanAttribute(attributes, "startWithForm", LocationField.DEFAULT_START_WITH_FORM));
 			locField.setWaitAtField(readBooleanAttribute(attributes, "waitAtField", LocationField.DEFAULT_WAIT_AT_FIELD));
@@ -326,9 +327,9 @@ public class ProjectParser extends XMLParser
 			}
 			photoField.setFlashMode(flash);
 			// Custom buttons (only used when useNativeApp=false):
-			photoField.setCaptureButtonImageLogicalPath(attributes.getValue("captureImg"));
-			photoField.setApproveButtonImageLogicalPath(attributes.getValue("approveImg"));
-			photoField.setDiscardButtonImageLogicalPath(attributes.getValue("discardImg"));
+			photoField.setCaptureButtonImageRelativePath(attributes.getValue("captureImg"));
+			photoField.setApproveButtonImageRelativePath(attributes.getValue("approveImg"));
+			photoField.setDiscardButtonImageRelativePath(attributes.getValue("discardImg"));
 		}
 		// <Audio>
 		else if(qName.equals(TAG_AUDIO))
@@ -336,8 +337,8 @@ public class ProjectParser extends XMLParser
 			AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 			newField(audioField, attributes);
 			mediaAttachmentAttributes(audioField, attributes);
-			audioField.setStartRecImageLogicalPath(attributes.getValue("startRecImg"));
-			audioField.setStopRecImageLogicalPath(attributes.getValue("stopRecImg"));
+			audioField.setStartRecImageRelativePath(attributes.getValue("startRecImg"));
+			audioField.setStopRecImageRelativePath(attributes.getValue("stopRecImg"));
 		}
 		// <Orientation>
 		else if(qName.equals(TAG_ORIENTATION))

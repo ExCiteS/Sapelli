@@ -43,19 +43,18 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
         <activity
-            android:name="uk.ac.ucl.excites.collector.ProjectPickerActivity"
+            android:name="uk.ac.ucl.excites.collector.activities.ProjectManagerActivity"
             android:icon="@drawable/excites_icon"
             android:label="@string/app_name"
             android:launchMode="singleTask"
             android:theme="@android:style/Theme.NoTitleBar" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
-            android:name="uk.ac.ucl.excites.collector.CollectorActivity"
+            android:name="uk.ac.ucl.excites.collector.activities.CollectorActivity"
             android:launchMode="singleTask"
             android:theme="@android:style/Theme.NoTitleBar" >
             <intent-filter>
@@ -74,7 +73,7 @@
         <activity android:name="uk.ac.ucl.excites.sender.dropbox.DropboxLogin" >
         </activity>
         <activity
-            android:name="uk.ac.ucl.excites.collector.StatisticsActivity"
+            android:name="uk.ac.ucl.excites.collector.activities.StatisticsActivity"
             android:theme="@android:style/Theme.NoTitleBar" >
         </activity>
         <activity

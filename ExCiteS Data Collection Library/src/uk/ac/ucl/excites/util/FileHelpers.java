@@ -215,7 +215,7 @@ public final class FileHelpers
 	 * Attempts to create the necessary (containing) folder(s) for a given path
 	 * 
 	 * @param folderPath
-	 * @return success (whether the directory exists now)
+	 * @return success (whether the directory exists now, or existed already)
 	 */
 	public static boolean createFolder(File folder)
 	{
@@ -249,6 +249,18 @@ public final class FileHelpers
 		int lastIndex = filePath.lastIndexOf("/");
 		String result = filePath.substring(0, lastIndex + 1);
 		return result;
+	}
+	
+	/**
+	 * @param file
+	 * @return the extension of a file represented by a File object, returns the separator char (/ or \) in case of a directory
+	 */
+	static public String getFileExtension(File file)
+	{
+		if(file.isFile())
+			return getFileExtension(file.getAbsolutePath());
+		else
+			return File.separator;
 	}
 
 	/**
@@ -288,6 +300,15 @@ public final class FileHelpers
 		int lastIndex = filePath.lastIndexOf("/");
 		String result = filePath.substring(lastIndex + 1, filePath.length());
 		return result;
+	}
+	
+	/**
+	 * @param file
+	 * @return true if the file object is not null and represents an existing, readable file, false otherwise
+	 */
+	static public boolean isReadableFile(File file)
+	{
+		return file != null && file.exists() && file.isFile() && file.canRead();
 	}
 
 }

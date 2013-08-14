@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.collector;
+package uk.ac.ucl.excites.collector.activities;
 
 import group.pals.android.lib.ui.filechooser.FileChooserActivity;
 import group.pals.android.lib.ui.filechooser.io.localfile.LocalFile;
@@ -15,6 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import uk.ac.ucl.excites.collector.BuildInfo;
+import uk.ac.ucl.excites.collector.CollectorApp;
+import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
@@ -22,7 +25,6 @@ import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
-import uk.ac.ucl.excites.collector.ui.BaseActivity;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sender.DataSenderPreferences;
@@ -32,8 +34,8 @@ import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.storage.xml.RecordsExporter;
 import uk.ac.ucl.excites.storage.xml.RecordsImporter;
 import uk.ac.ucl.excites.transmission.Settings;
-import uk.ac.ucl.excites.util.DeviceControl;
 import uk.ac.ucl.excites.util.FileHelpers;
+import uk.ac.ucl.excites.util.StringUtils;
 import uk.ac.ucl.excites.util.TimeUtils;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -70,11 +72,11 @@ import android.widget.Toast;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMenuItemClickListener, DataAccessClient
+public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnMenuItemClickListener, DataAccessClient
 {
 
 	// STATICS--------------------------------------------------------
-	static private final String TAG = "ProjectPickerActivity";
+	static private final String TAG = "ProjectManagerActivity";
 
 	static private final String XML_FILE_EXTENSION = "xml";
 	static private final String DB4O_DUMP_NAME = "DatabaseDump";
@@ -114,16 +116,21 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-
-		// Check if there is an SD Card
-		if(!DeviceControl.isExternalStorageWritable() || !FileHelpers.createFolder(((CollectorApp) getApplication()).getExcitesFolderPath()))
-		{ // Inform the user and close the application
-			errorDialog("ExCiteS needs write access to the external storage in order to function. Please insert an SD card and restart the application.", true).show();
+		app = (CollectorApp) getApplication();		
+		
+		// Check if we can access read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
+		try
+		{
+			app.getExcitesFolder(); //throws IllegalStateException if not accessible or not create-able
+		}
+		catch(IllegalStateException ise)
+		{	// Inform the user and close the application
+			showErrorDialog("ExCiteS needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
 			return;
 		}
 
 		// DataAccess instance:
-		dao = ((CollectorApp) getApplication()).getDataAccess(this);
+		dao = app.getDataAccess(this);
 
 		// Only if not in demo mode...
 		if(!BuildInfo.DEMO_BUILD)
@@ -205,7 +212,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			Project p = null;
 			if(projects.isEmpty())
 			{ // Use /mnt/sdcard/ExCiteS/ as the basePath:
-				ExCiteSFileLoader loader = new ExCiteSFileLoader(((CollectorApp) getApplication()).getProjectFolderPath(), ((CollectorApp) getApplication()).getTempFolderPath());
+				ExCiteSFileLoader loader = new ExCiteSFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
 				p = loader.load(getResources().openRawResource(getResources().getIdentifier("demo", "raw", getApplicationContext().getPackageName())));
 				storeProject(p);
 			}
@@ -217,7 +224,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		catch(Exception e)
 		{
 			Log.e(TAG, "Error loading/storing/launching demo project", e);
-			errorDialog("Could not load demo project.", true).show();
+			showErrorDialog("Could not load demo project.", true);
 		}
 	}
 
@@ -225,7 +232,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	protected void onDestroy()
 	{
 		// clean up:
-		((CollectorApp) getApplication()).discardDataAccess(this); // signal that the activity no longer needs the DAO
+		app.discardDataAccess(this); // signal that the activity no longer needs the DAO
 		// super:
 		super.onDestroy();
 	}
@@ -295,7 +302,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	public boolean exportRecords(MenuItem item)
 	{
 		// TODO make async
-		final RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao);
+		final RecordsExporter exporter = new RecordsExporter(app.getDumpFolderPath(), dao);
 		final Project p = getSelectedProject();
 		if(p != null)
 		{
@@ -315,7 +322,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 							}
 							catch(Exception e)
 							{
-								errorDialog("Could not export records: " + e.getMessage(), false);
+								showErrorDialog("Could not export records: " + e.getMessage(), false);
 								Log.e(TAG, "Could not export records", e);
 							}
 						}
@@ -331,7 +338,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 							}
 							catch(Exception e)
 							{
-								errorDialog("Could not export records: " + e.getMessage(), false);
+								showErrorDialog("Could not export records: " + e.getMessage(), false);
 								Log.e(TAG, "Could not export records", e);
 							}
 						}
@@ -345,7 +352,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			}
 			catch(Exception e)
 			{
-				errorDialog("Could not export records: " + e.getMessage(), false);
+				showErrorDialog("Could not export records: " + e.getMessage(), false);
 				Log.e(TAG, "Could not export records", e);
 			}
 		return true;
@@ -364,10 +371,10 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 
 	public boolean copyDBtoSD(MenuItem item)
 	{
-		String exportFolderPath = ((CollectorApp) getApplication()).getDumpFolderPath();
+		String exportFolderPath = app.getDumpFolderPath();
 		if(!FileHelpers.createFolder(exportFolderPath))
 			throw new IllegalArgumentException("Export folder (" + exportFolderPath + ") does not exist and could not be created!");
-		((CollectorApp) getApplication()).backupDatabase(exportFolderPath + DB4O_DUMP_NAME + "_" + TimeUtils.getTimestampForFileName() + "." + DB4O_DUMP_EXTENSION);
+		app.backupDatabase(exportFolderPath + DB4O_DUMP_NAME + "_" + TimeUtils.getTimestampForFileName() + "." + DB4O_DUMP_EXTENSION);
 		return true;
 	}
 
@@ -426,7 +433,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		Project p = getSelectedProject();
 		if(p == null)
 		{
-			errorDialog("Please select a project", false).show();
+			showErrorDialog("Please select a project", false);
 			return;
 		}
 		runProjectActivity(p.getName(), p.getVersion());
@@ -447,7 +454,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			return;
 		removeShortcutFor(p);
 		dao.delete(p);
-		populateProjectList(); // populate will close DB
+		populateProjectList();
 
 		// Restart the DataSenderService to stop monitoring the deleted project
 		ServiceChecker.restartActiveDataSender(this);
@@ -459,7 +466,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		String path = enterURL.getText().toString().trim();
 		if(path.isEmpty())
 		{
-			errorDialog("Please select an XML or ExCiteS file", false).show();
+			showErrorDialog("Please select an XML or ExCiteS file", false);
 			return;
 		}
 		enterURL.setText(""); // clear field
@@ -503,8 +510,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	{
 		try
 		{
-			// Use /mnt/sdcard/ExCiteS/ as the basePath:
-			ExCiteSFileLoader loader = new ExCiteSFileLoader(((CollectorApp) getApplication()).getProjectFolderPath(), ((CollectorApp) getApplication()).getTempFolderPath());
+			ExCiteSFileLoader loader = new ExCiteSFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
 			Project loadedProject = loader.load(excitesFile);
 			// Show parser warnings if needed:
 			showParserWarnings(loader.getParserWarnings());
@@ -524,19 +530,24 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			String msg = "Parsing issues:\n";
 			for(String warning : warnings)
 				msg += warning + "\n";
-			warningDialog(msg).show();
+			showWarningDialog(msg);
 		}
 	}
 
 	private void addProject(final Project project, String sourcePathOrURL)
 	{
-		// Check if we have a project object:
+		// Check if we have a project object
 		if(project == null)
 		{
-			errorDialog("Invalid xml or excites file: " + sourcePathOrURL, false).show();
+			showErrorDialog("Invalid xml or excites file: " + sourcePathOrURL, false);
 			return;
 		}
 
+		// Check file dependencies
+		List<String> invalidFiles = project.checkForInvalidFiles();
+		if(!invalidFiles.isEmpty())
+			showWarningDialog("The following files could not be found or read in the project path (" + project.getProjectFolderPath() + "): " + StringUtils.join(invalidFiles, ", "));
+		
 		// Generate documentation
 		try
 		{
@@ -544,7 +555,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		}
 		catch(IOException e)
 		{
-			errorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
+			showErrorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
 		}
 
 		// Encryption Check
@@ -594,13 +605,13 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		}
 		catch(DuplicateException de)
 		{
-			errorDialog(de.getLocalizedMessage(), false).show();
+			showErrorDialog(de.getLocalizedMessage(), false);
 			return;
 		}
 		catch(Exception e) // any other exception
 		{
 			Log.e(TAG, "Could not store project.", e);
-			errorDialog("Could not store project: " + e.getLocalizedMessage(), false).show();
+			showErrorDialog("Could not store project: " + e.getLocalizedMessage(), false);
 			return;
 		}
 	}
@@ -622,7 +633,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		// Check if the user has selected a project from the list
 		if(projectList.getCheckedItemPosition() == -1)
 		{
-			errorDialog("Please select a project", false).show();
+			showErrorDialog("Please select a project", false);
 			return;
 		}
 
@@ -637,16 +648,11 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 
 		// Set up the icon
 		Drawable iconResource = null;
-		String shortcutFullPath = null;
-		String shortcutLogicalPath = selectedProject.getForms().get(0).getShortcutImageLogicalPath();
-
-		if(shortcutLogicalPath == null || shortcutLogicalPath.isEmpty())
-			iconResource = getResources().getDrawable(R.drawable.excites_icon);
+		File shortcutImageFile = selectedProject.getImageFile(selectedProject.getForms().get(0).getShortcutImageRelativePath()); //use shortcut of first form (for now)
+		if(FileHelpers.isReadableFile(shortcutImageFile))
+			iconResource = Drawable.createFromPath(shortcutImageFile.getAbsolutePath());
 		else
-		{
-			iconResource = Drawable.createFromPath(selectedProject.getImageFolderPath() + shortcutLogicalPath);
-			shortcutFullPath = selectedProject.getImageFolderPath() + shortcutLogicalPath;
-		}
+			iconResource = getResources().getDrawable(R.drawable.excites_icon);
 
 		// Get the standard size (both width and height) of an application icon from the system
 		final int MAX_ICON_SIZE = (int) getResources().getDimension(android.R.dimen.app_icon_size);
@@ -662,9 +668,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
 		// Resize the icon according to the default size
 		if((bitmap != null) && ((bitmap.getWidth() > MAX_ICON_SIZE) || (bitmap.getHeight() > MAX_ICON_SIZE)))
-		{
 			bitmap = Bitmap.createScaledBitmap(bitmap, MAX_ICON_SIZE, MAX_ICON_SIZE, true);
-		}
 		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmap);
 		// Do not allow duplicate shortcuts
 		shortcutIntent.putExtra("duplicate", false);
@@ -677,7 +681,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		launcherIntent.setAction(CUSTOM_INSTALL_SHORTCUT_ACTION);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
-		launcherIntent.putExtra(SHORTCUT_PROJECT_ICON, shortcutFullPath);
+		launcherIntent.putExtra(SHORTCUT_PROJECT_ICON, FileHelpers.isReadableFile(shortcutImageFile) ? shortcutImageFile.getAbsolutePath() : null); //launcher will use default ExCiteS icon when path is null
 		sendBroadcast(launcherIntent);
 	}
 
@@ -691,7 +695,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		// Check if the user has selected a project from the list
 		if(projectList.getCheckedItemPosition() == -1)
 		{
-			errorDialog("Please select a project", false).show();
+			showErrorDialog("Please select a project", false);
 			return;
 		}
 		removeShortcutFor(getSelectedProject());
@@ -776,17 +780,17 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 						/*//TEST CODE (export again to compare with imported file):
 						RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao);
 						exporter.export(records);*/
-
-						// Store the records:
-						// for(Record r : records)
-						// dao.store(r); //TODO avoid duplicates!
-
-						// User feedback:
-						infoDialog("Succesfully imported " + records.size() + " records.").show(); // TODO report skipped duplicates
+	
+						//Store the records:
+						//for(Record r : records)
+						//	dao.store(r); //TODO avoid duplicates!
+						
+						//User feedback:
+						showInfoDialog("Succesfully imported " + records.size() + " records."); //TODO report skipped duplicates
 					}
 					catch(Exception e)
 					{
-						errorDialog("Error upon importing records: " + e.getMessage(), false).show();
+						showErrorDialog("Error upon importing records: " + e.getMessage(), false);
 					}
 				}
 				break;
@@ -812,7 +816,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 	public void removeDialog(View view)
 	{
 		if(projectList.getCheckedItemPosition() == -1)
-			errorDialog("Please select a project", false).show();
+			showErrorDialog("Please select a project", false);
 		else
 		{
 			AlertDialog removeDialogBox = new AlertDialog.Builder(this).setMessage("Are you sure that you want to remove the project?")
@@ -871,12 +875,12 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			startTime = System.currentTimeMillis();
 			this.downloadUrl = downloadUrl;
 			// Download file in folder /Downloads/timestamp-filename
-			downloadFolder = new File(((CollectorApp) getApplication()).getDownloadFolderPath());
+			downloadFolder = new File(app.getDownloadFolderPath());
 			FileHelpers.createFolder(downloadFolder);
 			downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 
 			// instantiate it within the onCreate method
-			progressDialog = new ProgressDialog(ProjectPickerActivity.this);
+			progressDialog = new ProgressDialog(ProjectManagerActivity.this);
 			progressDialog.setMessage("Downloading...");
 			progressDialog.setIndeterminate(false);
 			progressDialog.setMax(100);
@@ -913,7 +917,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 		@Override
 		protected Boolean doInBackground(Void... voids)
 		{
-			if(isOnline(ProjectPickerActivity.this))
+			if(isOnline(ProjectManagerActivity.this))
 			{
 				int count;
 				try
@@ -991,7 +995,7 @@ public class ProjectPickerActivity extends BaseActivity implements MenuItem.OnMe
 			}
 			else
 			{
-				errorDialog("Download error. Please check if you are connected to the Internet.", false).show();
+				showErrorDialog("Download error. Please check if you are connected to the Internet.", false);
 				// Delete the downloaded file
 				downloadFile.delete();
 			}
