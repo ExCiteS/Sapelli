@@ -9,7 +9,8 @@ import android.view.animation.AnimationSet;
 import android.view.animation.ScaleAnimation;
 
 /**
- * 
+ * AsyncTask Class that blocks the UI thread for {@link Animator#delay} milliseconds and executes the animation to the {@link Animator#view}. After the end of
+ * the delay and the animation is over, the {@link Animator#runnableTask} will be run.
  * 
  * @author Michalis Vitos
  * 
@@ -17,7 +18,7 @@ import android.view.animation.ScaleAnimation;
 public class Animator extends AsyncTask<Void, Void, Void>
 {
 	private long delay;
-	private Runnable runnableTask;
+	private Runnable taskAfterAnimation;
 	private View view;
 
 	public Animator(Runnable taskAfterAnimation, View view)
@@ -25,10 +26,10 @@ public class Animator extends AsyncTask<Void, Void, Void>
 		this(CollectorActivity.UI_ANIMATION_DELAY, taskAfterAnimation, view);
 	}
 
-	public Animator(long delay, Runnable task, View view)
+	public Animator(long delay, Runnable taskAfterAnimation, View view)
 	{
 		this.delay = delay;
-		this.runnableTask = task;
+		this.taskAfterAnimation = taskAfterAnimation;
 		this.view = view;
 	}
 
@@ -59,11 +60,14 @@ public class Animator extends AsyncTask<Void, Void, Void>
 	@Override
 	protected Void doInBackground(Void... params)
 	{
-		try
+		if(delay > 0)
 		{
-			Thread.sleep(delay);
+			try
+			{
+				Thread.sleep(delay);
+			}
+			catch(InterruptedException ignore) {}
 		}
-		catch(InterruptedException ignore) {}
 		return null;
 	}
 
@@ -71,7 +75,7 @@ public class Animator extends AsyncTask<Void, Void, Void>
 	protected void onPostExecute(Void result)
 	{
 		// Run the task
-		runnableTask.run();
+		taskAfterAnimation.run();
 
 		// Release the UI
 		CollectorActivity.waiteForUIAnimation(false);
