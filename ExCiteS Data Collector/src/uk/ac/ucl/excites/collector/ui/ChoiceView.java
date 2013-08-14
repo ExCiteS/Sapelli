@@ -11,7 +11,6 @@ import uk.ac.ucl.excites.collector.ui.picker.PickerAdapter;
 import uk.ac.ucl.excites.collector.ui.picker.PickerView;
 import uk.ac.ucl.excites.collector.ui.picker.PlaceholderItem;
 import uk.ac.ucl.excites.collector.ui.picker.TextItem;
-import uk.ac.ucl.excites.util.Debug;
 import uk.ac.ucl.excites.util.FileHelpers;
 import android.content.Context;
 import android.view.View;
@@ -93,8 +92,6 @@ public class ChoiceView extends PickerView implements FieldView
 				// Check if the UI is waiting for animation, if it does do nothing
 				if(!CollectorActivity.isWaitingForUIAnimation())
 				{
-					Debug.d("ChoiceView is clicked and NOT waiting for UI, the pressed code is executed.");
-
 					// Run the animation
 					Runnable task = new Runnable()
 					{
@@ -110,10 +107,7 @@ public class ChoiceView extends PickerView implements FieldView
 					animator.execute();
 
 				}
-				else
-				{
-					Debug.d("ChoiceView is clicked but is waiting for UI.");
-				}
+				// else: ignore the click
 			}
 		});
 
