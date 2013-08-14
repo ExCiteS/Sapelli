@@ -28,7 +28,6 @@ import uk.ac.ucl.excites.collector.ui.ButtonView;
 import uk.ac.ucl.excites.collector.ui.CameraView;
 import uk.ac.ucl.excites.collector.ui.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.FieldView;
-import uk.ac.ucl.excites.collector.ui.UIHelpers;
 import uk.ac.ucl.excites.collector.ui.WaitingView;
 import uk.ac.ucl.excites.storage.xml.RecordsExporter;
 import uk.ac.ucl.excites.util.Debug;
@@ -146,15 +145,6 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 		
 		// Load the project
 		loadProject();
-		
-		//Debug:
-		Log.d("Metrics", "Screen density: " + UIHelpers.GetScreenDensity(this) + " dpi");
-		Log.d("Metrics", "2 px = " + UIHelpers.convertPxToDip(this, 2) + " dip");
-		Log.d("Metrics", "155 px = " + UIHelpers.convertPxToDip(this, 155) + " dip");
-		Log.d("Metrics", "135 px = " + UIHelpers.convertPxToDip(this, 135) + " dip");
-		Log.d("Metrics", "2 dip = " + UIHelpers.convertDipToPx(this, 2) + " px");
-		Log.d("Metrics", "155 dip = " + UIHelpers.convertDipToPx(this, 155) + " px");
-		Log.d("Metrics", "135 dip = " + UIHelpers.convertDipToPx(this, 135) + " px");
 	}
 
 	private void loadProject()
