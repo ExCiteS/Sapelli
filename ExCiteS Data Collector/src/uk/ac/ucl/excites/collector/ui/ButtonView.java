@@ -41,7 +41,6 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	private ProjectController controller;
 	private ButtonsState currentState;
 	private int[] positionToButton;
-	private Context context;
 	
 	/**
 	 * @param context
@@ -51,7 +50,6 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 		super(context);
 		buttonsEnabled = true;
 		setOnItemClickListener(this);
-		this.context = context;
 	}
 	
 	public void disable()
@@ -90,7 +88,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 				setNumColumns(positionToButton.length);
 				
 				// Padding
-				setPadding(0, 0, 0, getSpacingInDp(context));
+				setPadding(0, 0, 0, getSpacingInDp(getContext()));
 				
 				// Adapter & images
 				pickerAdapter = new PickerAdapter(super.getContext());

@@ -23,12 +23,10 @@ import android.widget.AdapterView;
  */
 public class ChoiceView extends PickerView implements FieldView
 {
-	private Context context;
 
 	public ChoiceView(Context context)
 	{
 		super(context);
-		this.context = context;
 	}
 
 	@Override
@@ -75,8 +73,8 @@ public class ChoiceView extends PickerView implements FieldView
 		{
 			public boolean onPreDraw()
 			{
-				pickerAdapter.setItemWidth((getWidth() - ((choice.getCols() - 1) * getSpacingInDp(context))) / choice.getCols());
-				pickerAdapter.setItemHeight((getHeight() - ((choice.getRows() - 1) * getSpacingInDp(context))) / choice.getRows());
+				pickerAdapter.setItemWidth((getWidth() - ((choice.getCols() - 1) * getSpacingInDp(getContext()))) / choice.getCols());
+				pickerAdapter.setItemHeight((getHeight() - ((choice.getRows() - 1) * getSpacingInDp(getContext()))) / choice.getRows());
 				setAdapter(pickerAdapter);
 				
 				getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
