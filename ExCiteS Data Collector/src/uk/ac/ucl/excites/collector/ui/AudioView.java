@@ -7,16 +7,17 @@ import java.io.File;
 
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.R;
+import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.ui.picker.ImageFileItem;
 import uk.ac.ucl.excites.collector.ui.picker.ImageResourceItem;
+import uk.ac.ucl.excites.collector.ui.picker.Item;
 import uk.ac.ucl.excites.collector.ui.picker.PickerAdapter;
 import uk.ac.ucl.excites.collector.ui.picker.PickerView;
 import uk.ac.ucl.excites.util.FileHelpers;
-import uk.ac.ucl.excites.collector.ui.picker.Item;
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
@@ -98,38 +99,54 @@ public class AudioView extends PickerView implements FieldView
 		setOnItemClickListener(new OnItemClickListener()
 		{
 			@Override
-			public void onItemClick(AdapterView<?> parent, View v, int position, long id)
+			public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 			{
-				if(position == 1) // crossed microphone
+				// Check if the UI is waiting for animation, if it does do nothing
+				if(!CollectorActivity.isWaitingForUIAnimation())
 				{
-					if(audioRecorder == null)
+					// Run the animation
+					Runnable task = new Runnable()
 					{
-						controller.goForward(true);
-					}
+						public void run()
+						{
+							if(position == 1) // crossed microphone
+							{
+								if(audioRecorder == null)
+								{
+									controller.goForward(true);
+								}
 
-					else
-					{ // Stop button clicked
-						stopRecording();
-						controller.mediaDone(audioFile);
-					}
+								else
+								{ // Stop button clicked
+									stopRecording();
+									controller.mediaDone(audioFile);
+								}
+							}
+							else
+							{
+								try
+								{
+									audioRecorder = new AudioRecorder(audioFile);
+									audioRecorder.start();
+								}
+								catch(Exception e)
+								{
+									Log.e(TAG, "Could not start audio recording.", e);
+									controller.mediaDone(null);
+									return; // !!!
+								}
+								// Switch buttons:
+								pickerAdapter.makeInvisible(0);
+								setAdapter(pickerAdapter);
+							}
+						}
+					};
+
+					Animator animator = new Animator(task, v);
+					animator.execute();
+
 				}
-				else
-				{
-					try
-					{
-						audioRecorder = new AudioRecorder(audioFile);
-						audioRecorder.start();
-					}
-					catch(Exception e)
-					{
-						Log.e(TAG, "Could not start audio recording.", e);
-						controller.mediaDone(null);
-						return; // !!!
-					}
-					// Switch buttons:
-					pickerAdapter.makeInvisible(0);
-					setAdapter(pickerAdapter);
-				}
+				// else: ignore the click
 			}
 		});
 	}
