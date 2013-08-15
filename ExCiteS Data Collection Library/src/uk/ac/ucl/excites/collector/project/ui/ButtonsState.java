@@ -30,6 +30,11 @@ public class ButtonsState
 	{
 		return (backShown ? 1 : 0) + (cancelShown ? 1 : 0) + (forwardShown ? 1 : 0);
 	}
+	
+	public boolean isAnyButtonShown()
+	{
+		return backShown || cancelShown || forwardShown;
+	}
 
 	/**
 	 * @return the backShown

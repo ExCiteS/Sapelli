@@ -14,7 +14,6 @@ import uk.ac.ucl.excites.collector.ui.picker.TextItem;
 import uk.ac.ucl.excites.util.FileHelpers;
 import android.content.Context;
 import android.view.View;
-import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.widget.AdapterView;
 
 /**
@@ -63,24 +62,17 @@ public class ChoiceView extends PickerView implements FieldView
 				pickerAdapter.addItem(new PlaceholderItem()); // show blank space instead of image for disabled choices
 		}
 		if(!atLeastOneEnabledChild)
-		{ // all children are disabled
+		{	// all children are disabled
 			controller.goForward(false); // skip this field
 			return;
 		}
-
-		// Set image dimensions when view dimensions are known:
-		getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
-		{
-			public boolean onPreDraw()
-			{
-				pickerAdapter.setItemWidth((getWidth() - ((choice.getCols() - 1) * getSpacingInDp(getContext()))) / choice.getCols());
-				pickerAdapter.setItemHeight((getHeight() - ((choice.getRows() - 1) * getSpacingInDp(getContext()))) / choice.getRows());
-				setAdapter(pickerAdapter);
-				
-				getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
-				return false;
-			}
-		});
+		
+		// Set image dimensions:
+		pickerAdapter.setItemWidthPx(dimensions.getIconWidthPx(choice.getCols()));
+		pickerAdapter.setItemHeightPx(dimensions.getIconHeightPx(choice.getRows(), controller.getButtonsState().isAnyButtonShown()));
+		
+		// Set adapter:
+		setAdapter(pickerAdapter);
 
 		setOnItemClickListener(new OnItemClickListener()
 		{

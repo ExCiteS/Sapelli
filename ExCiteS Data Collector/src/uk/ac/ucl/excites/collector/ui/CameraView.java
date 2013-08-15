@@ -15,6 +15,7 @@ import uk.ac.ucl.excites.collector.ui.picker.ImageFileItem;
 import uk.ac.ucl.excites.collector.ui.picker.ImageResourceItem;
 import uk.ac.ucl.excites.collector.ui.picker.PickerAdapter;
 import uk.ac.ucl.excites.collector.ui.picker.PickerView;
+import uk.ac.ucl.excites.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.util.FileHelpers;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -26,7 +27,6 @@ import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
 import android.os.AsyncTask;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -284,9 +284,9 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 	private abstract class CameraButtonView extends PickerView
 	{
 
-		static public final float BUTTON_HEIGHT = 64;
+		static public final float BUTTON_HEIGHT_DIP = 64;
 
-		private int buttonSize = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, BUTTON_HEIGHT, getResources().getDisplayMetrics());
+		private int buttonSize;
 
 		/**
 		 * @param context
@@ -294,12 +294,15 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 		public CameraButtonView(Context context)
 		{
 			super(context);
+			
+			this.buttonSize = ScreenMetrics.ConvertDipToPx(context, BUTTON_HEIGHT_DIP);
+					
 			setOnItemClickListener(CameraView.this);
 
 			// Layout:
 			setBackgroundColor(Color.TRANSPARENT);
 			setGravity(Gravity.CENTER);
-			setPadding(0, 0, 0, getSpacingInDp(context));
+			setPadding(0, 0, 0, dimensions.getSpacingPx());
 
 			// Columns
 			setNumColumns(getNumberOfColumns());
@@ -310,8 +313,8 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 
 			// Button dimensions:
 			pickerAdapter.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-			pickerAdapter.setItemWidth(buttonSize);
-			pickerAdapter.setItemHeight(buttonSize);
+			pickerAdapter.setItemWidthPx(buttonSize);
+			pickerAdapter.setItemHeightPx(buttonSize);
 			// Button background colour:
 			try
 			{

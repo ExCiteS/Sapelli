@@ -17,7 +17,6 @@ import uk.ac.ucl.excites.util.FileHelpers;
 import android.content.Context;
 import android.graphics.Color;
 import android.util.Log;
-import android.util.TypedValue;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ImageView;
@@ -31,8 +30,6 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	
 	static private final String TAG = "ButtonView";
 	
-	static public final float BUTTON_HEIGHT = 65;
-
 	static public final int BUTTON_TYPE_BACK = -1;
 	static public final int BUTTON_TYPE_CANCEL = 0;
 	static public final int BUTTON_TYPE_FORWARD = 1;
@@ -76,10 +73,12 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 		if(currentState == null || !currentState.equals(newState))
 		{	//Yes...
 			currentState = newState;
-			positionToButton = new int[currentState.getNumberOfButtonsShown()];
 			
-			if(positionToButton.length >  0) //are there buttons to show?
+			if(currentState.isAnyButtonShown()) //are there buttons to show?
 			{	//Yes...
+				// Update position mapping:
+				positionToButton = new int[currentState.getNumberOfButtonsShown()];
+				
 				// Local variables:
 				Project project = controller.getProject();
 				Form form = controller.getCurrentForm();
@@ -87,8 +86,8 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 				// Columns
 				setNumColumns(positionToButton.length);
 				
-				// Padding
-				setPadding(0, 0, 0, getSpacingInDp(getContext()));
+				// Bottom padding (to put spacing between buttons and view underneath):
+				setPadding(0, 0, 0, dimensions.getSpacingPx());
 				
 				// Adapter & images
 				pickerAdapter = new PickerAdapter(super.getContext());
@@ -123,8 +122,8 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 				}
 				//  Button dimensions:
 				pickerAdapter.setScaleType(ImageView.ScaleType.CENTER);
-				pickerAdapter.setItemWidth(LayoutParams.MATCH_PARENT);
-				pickerAdapter.setItemHeight((int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, BUTTON_HEIGHT, getResources().getDisplayMetrics()));
+				pickerAdapter.setItemWidthPx(LayoutParams.MATCH_PARENT);
+				pickerAdapter.setItemHeightPx(dimensions.getButtonHeightPx());
 				//  Button background colour:
 				try
 				{

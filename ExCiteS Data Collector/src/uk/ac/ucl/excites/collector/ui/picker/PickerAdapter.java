@@ -19,26 +19,27 @@ import android.widget.ImageView.ScaleType;
 public class PickerAdapter extends BaseAdapter
 {
 
-	static private final int PADDING = 2; // pixels
 	static private final int DEFAULT_BACKGROUND_COLOR = Color.WHITE;
-	static private final int DEFAULT_ITEM_HEIGHT = 140;
-	static private final int DEFAULT_ITEM_WIDTH = 140;
+	static private final int DEFAULT_ITEM_HEIGHT_PX = 140;
+	static private final int DEFAULT_ITEM_WIDTH_PX = 140;
 	static private final ScaleType DEFAULT_SCALE_TYPE = ScaleType.CENTER_INSIDE;
 	
 	private Context context;
-	private int itemWidth;
-	private int itemHeight;
-	private ScaleType scaleType;
-	private int backgroundColor;
+	
+	private Dimensions dimensions; //only used to get padding
+	
+	// Clients (ChoiceView/AudioView/CameraView/ButtonView) must use setters to override these defaults:
+	private int itemWidthPx = DEFAULT_ITEM_WIDTH_PX;
+	private int itemHeightPx = DEFAULT_ITEM_HEIGHT_PX;
+	private ScaleType scaleType = DEFAULT_SCALE_TYPE;
+	private int backgroundColor = DEFAULT_BACKGROUND_COLOR;
+	
 	private List<Item> items;
 	
 	public PickerAdapter(Context localContext)
 	{
 		this.context = localContext;
-		this.itemHeight = DEFAULT_ITEM_HEIGHT;
-		this.itemWidth = DEFAULT_ITEM_WIDTH;
-		this.scaleType = DEFAULT_SCALE_TYPE;
-		this.backgroundColor = DEFAULT_BACKGROUND_COLOR;
+		this.dimensions = new Dimensions(context);
 		this.items = new ArrayList<Item>();
 	}
 	
@@ -51,21 +52,21 @@ public class PickerAdapter extends BaseAdapter
 	}
 	
 	/**
-	 * @param itemHeight the itemHeight to set
+	 * @param itemWidthPx the itemWidthPx to set
 	 */
-	public void setItemHeight(int itemHeight)
+	public void setItemWidthPx(int itemWidthPx)
 	{
-		this.itemHeight = itemHeight;
+		this.itemWidthPx = itemWidthPx;
 	}
 
 	/**
-	 * @param itemWidth the itemWidth to set
+	 * @param itemHeightPx the itemHeightPx to set
 	 */
-	public void setItemWidth(int itemWidth)
+	public void setItemHeightPx(int itemHeightPx)
 	{
-		this.itemWidth = itemWidth;
+		this.itemHeightPx = itemHeightPx;
 	}
-	
+
 	/**
 	 * @param scaleType the scaleType to set
 	 */
@@ -118,8 +119,9 @@ public class PickerAdapter extends BaseAdapter
 			if(!item.isVisible())
 				view.setVisibility(View.INVISIBLE);
 			view.setBackgroundColor(backgroundColor);
-			view.setLayoutParams(new GridView.LayoutParams(itemWidth, itemHeight));
-			view.setPadding(PADDING, PADDING, PADDING, PADDING);
+			view.setLayoutParams(new GridView.LayoutParams(itemWidthPx, itemHeightPx));
+			int paddingPx = dimensions.getPaddingPx();
+			view.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
 			//Set scaling type for imageviews (type check/cast is not very OO, but acceptable):
 			if(view instanceof ImageView)
 				((ImageView) view).setScaleType(scaleType);

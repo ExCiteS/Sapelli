@@ -21,7 +21,6 @@ import uk.ac.ucl.excites.util.FileHelpers;
 import android.content.Context;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewTreeObserver.OnPreDrawListener;
 import android.widget.AdapterView;
 
 /**
@@ -82,18 +81,9 @@ public class AudioView extends PickerView implements FieldView
 		pickerAdapter.addItem(startImage); // show start button
 		pickerAdapter.addItem(stopImage); // show stop button
 
-		// Set image dimensions when view dimensions are known:
-		getViewTreeObserver().addOnPreDrawListener(new OnPreDrawListener()
-		{
-			public boolean onPreDraw()
-			{
-				pickerAdapter.setItemWidth(LayoutParams.MATCH_PARENT);
-				pickerAdapter.setItemHeight((getHeight() - PickerView.getSpacingInDp(getContext())) / pickerAdapter.getCount());
-				setAdapter(pickerAdapter);
-				getViewTreeObserver().removeOnPreDrawListener(this); // avoid endless loop
-				return false;
-			}
-		});
+		pickerAdapter.setItemWidthPx(LayoutParams.MATCH_PARENT);
+		pickerAdapter.setItemHeightPx(dimensions.getIconHeightPx(2, controller.getButtonsState().isAnyButtonShown()));
+		setAdapter(pickerAdapter);
 
 		// Set click listener
 		setOnItemClickListener(new OnItemClickListener()
