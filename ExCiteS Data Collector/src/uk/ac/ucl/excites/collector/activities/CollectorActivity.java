@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.collector.ui.FieldView;
 import uk.ac.ucl.excites.collector.ui.WaitingView;
 import uk.ac.ucl.excites.storage.xml.RecordsExporter;
 import uk.ac.ucl.excites.util.Debug;
+import uk.ac.ucl.excites.util.FileHelpers;
 import uk.ac.ucl.excites.util.TimeUtils;
 import android.content.Context;
 import android.content.Intent;
@@ -173,8 +174,15 @@ public class CollectorActivity extends BaseActivity implements CollectorUI, Data
 		// Get Project object:
 		project = dao.retrieveProject(projectName, projectVersion);
 		if(project == null)
-		{ // show error (activity will be exited after used clicks OK in the dialog):
+		{	// show error (activity will be exited after used clicks OK in the dialog):
 			showErrorDialog("Could not find project: " + projectName + " (version " + projectVersion + ").", true);
+			return;
+		}
+		
+		// Check if project path is accessible:
+		if(!FileHelpers.isReadableWritableDirectory(new File(project.getProjectFolderPath())))
+		{	// show error (activity will be exited after used clicks OK in the dialog):
+			showErrorDialog("The file storage folder of this project resides at a path that is currently inaccessible (" + project.getProjectFolderPath() + "). You may need to reinsert your SD card, or remove and reload the project.", true);
 			return;
 		}
 

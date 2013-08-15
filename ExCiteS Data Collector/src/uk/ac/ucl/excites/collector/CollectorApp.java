@@ -12,6 +12,7 @@ import uk.ac.ucl.excites.util.Debug;
 import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;
+import android.util.Log;
 
 import com.db4o.ObjectContainer;
 
@@ -25,6 +26,8 @@ import de.jockels.open.Environment2;
  */
 public class CollectorApp extends Application
 {
+	
+	static private final String TAG = "CollectorApp";
 	
 	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
 	static private final String DATABASE_NAME = "ExCiteS.db4o";
@@ -60,7 +63,14 @@ public class CollectorApp extends Application
 		excitesFolder = new File(Environment2.getCardDirectory().getAbsolutePath() + File.separator + EXCITES_FOLDER);
 		
 		// Set up a CrashReporter to the ExCiteS/crash Folder
-		Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name)));
+		try
+		{
+			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name)));
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Could not set-up DefaultUncaughtExceptionHandler", e);
+		}
 	}
 
 	/**

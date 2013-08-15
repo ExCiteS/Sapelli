@@ -311,4 +311,13 @@ public final class FileHelpers
 		return file != null && file.exists() && file.isFile() && file.canRead();
 	}
 
+	/**
+	 * @param file
+	 * @return true if the file object is not null and represents an existing, read/writable directory, false otherwise
+	 */
+	static public boolean isReadableWritableDirectory(File directory)
+	{
+		return directory != null && directory.exists() && directory.isDirectory() && directory.canRead() && directory.canWrite();
+	}
+	
 }
