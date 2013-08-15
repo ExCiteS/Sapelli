@@ -15,8 +15,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import de.jockels.open.Environment2;
-
 import uk.ac.ucl.excites.collector.BuildInfo;
 import uk.ac.ucl.excites.collector.CollectorApp;
 import uk.ac.ucl.excites.collector.R;
@@ -391,7 +389,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 	{
 		Intent intent = new Intent(getBaseContext(), FileChooserActivity.class);
 		// Start from "/sdcard" (or equavalent)
-		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(Environment2.getCardDirectory().getPath()));
+		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(app.getStorageDirectory().getPath()));
 		// set file filter for .xml or .excites
 		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + "|" + ExCiteSFileLoader.EXCITES_FILE_EXTENSION + ")$");
 		startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);

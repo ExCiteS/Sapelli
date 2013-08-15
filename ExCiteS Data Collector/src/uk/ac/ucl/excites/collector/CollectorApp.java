@@ -9,6 +9,7 @@ import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.util.CrashReporter;
 import uk.ac.ucl.excites.util.Debug;
+import uk.ac.ucl.excites.util.FileHelpers;
 import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;
@@ -19,7 +20,7 @@ import com.db4o.ObjectContainer;
 import de.jockels.open.Environment2;
 
 /**
- * Application App to keep the db4o object throughout the lifecycle of the Collector
+ * Application App to keep the db4o object throughout the life-cycle of the Collector
  * 
  * @author Michalis Vitos, mstevens
  * 
@@ -59,8 +60,8 @@ public class CollectorApp extends Application
 		// Db clients:
 		daoClients = new HashSet<DataAccessClient>();
 		
-		// Paths (uses Environment2 library to get the path of the actual SD card if there is one, if not it gets the path of the emulated SD card/internal mass storage):
-		excitesFolder = new File(Environment2.getCardDirectory().getAbsolutePath() + File.separator + EXCITES_FOLDER);
+		// ExCiteS folder (created on SD card or internal mass storage): 
+		excitesFolder = new File(getStorageDirectory().getAbsolutePath() + File.separator + EXCITES_FOLDER);
 		
 		// Set up a CrashReporter to the ExCiteS/crash Folder
 		try
@@ -72,13 +73,37 @@ public class CollectorApp extends Application
 			Log.e(TAG, "Could not set-up DefaultUncaughtExceptionHandler", e);
 		}
 	}
+	
+	/**
+	 * Uses Environment2 library to get the path of the actual SD card if there is one,
+	 * if not it gets the path of the emulated SD card/internal mass storage
+	 * 
+	 * @return the directory as a file object
+	 */
+	public File getStorageDirectory()
+	{
+		return Environment2.getCardDirectory();
+	}
+	
+	/**
+	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on
+	 * an accessible (i.e. mounted) storage device
+	 * 
+	 * @return
+	 */
+	static public boolean isStorageMounted()
+	{
+		if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
+			return true;
+		return false;
+	}
 
 	/**
 	 * @return creates the excites folder on the filesystem, and returns it as a File object
 	 */
 	public File getExcitesFolder()
 	{
-		if(!isCardAccessible())
+		if(!isStorageMounted() || !FileHelpers.isReadableWritableDirectory(getStorageDirectory()))
 			throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
 		if(!excitesFolder.exists())
 		{
@@ -86,13 +111,6 @@ public class CollectorApp extends Application
 				throw new IllegalStateException("Cannot create ExCiteS folder");
 		}
 		return excitesFolder;
-	}
-	
-	static public boolean isCardAccessible()
-	{
-		if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState())) //uses Environement2 library!
-			return true;
-		return false;
 	}
 
 	public String getDownloadFolderPath()
