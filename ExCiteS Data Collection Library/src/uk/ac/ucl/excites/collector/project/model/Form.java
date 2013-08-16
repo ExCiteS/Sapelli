@@ -154,6 +154,20 @@ public class Form
 	{
 		return fields;
 	}
+	
+	/**
+	 * Find a field of the form by its ID 
+	 * 
+	 * @param fieldID
+	 * @return the field with the specified ID, or null if no such field exists in this form
+	 */
+	public Field getField(String fieldID)
+	{
+		for(Field f : fields)
+			if(f.getID().equals(fieldID))
+				return f;
+		return null;
+	}
 
 	/**
 	 * @return the start

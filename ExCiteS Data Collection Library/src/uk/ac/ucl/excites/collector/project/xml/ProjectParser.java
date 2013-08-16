@@ -378,6 +378,18 @@ public class ProjectParser extends XMLParser
 		// </Form>
 		else if(qName.equals(TAG_FORM))
 		{
+			// Resolve/set form start field:
+			Field startField = currentForm.getFields().get(0); // first field is the default start field
+			if(currentFormStartFieldId != null) // start field specified (by ID) in Form tag
+			{
+				Field specifiedStartField = currentForm.getField(currentFormStartFieldId);
+				if(specifiedStartField == null)
+					warnings.add("The specified start field (\"" + currentFormStartFieldId + "\") of form \"" + currentForm.getName() + "\" does not exist, using first field instead.");
+				else
+					startField = specifiedStartField;
+			}
+			currentForm.setStartField(startField);
+			
 			currentForm.initialiseStorage(); // generates Schema, Column & ValueDictionaries
 			warnings.addAll(currentForm.getWarnings());
 			currentForm = null;
@@ -457,14 +469,6 @@ public class ProjectParser extends XMLParser
 			//Store field & jumpToId:
 			fieldToJumpId.put(f, jumpToId);
 		}
-		// Resolve/set form start field:
-		if(currentFormStartFieldId == null)
-		{
-			if(currentForm.getStartField() == null) // no startID was specified and the start field is not set yet
-				currentForm.setStartField(f); // set first field of the form as start field
-		}
-		else if(currentFormStartFieldId.equals(f.getID()))
-			currentForm.setStartField(f);
 	}
 
 	private void resolveReferences()
