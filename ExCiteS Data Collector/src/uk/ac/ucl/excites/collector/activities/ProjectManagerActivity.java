@@ -470,25 +470,36 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 			return;
 		}
 		enterURL.setText(""); // clear field
+		
 		Project project = null;
-
-		// Download ExCiteS file if path is a URL
-		if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION) */)
-		{ // Extension check above is commented out to support "smart"/dynamic URLs
-			// Start async task to download the file:
-			(new DownloadFileFromURL(path, "Project")).execute(); // the task will also call processExcitesFile() and checkProject()
+		try
+		{
+			// Download ExCiteS file if path is a URL
+			if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION) */)
+			{ // Extension check above is commented out to support "smart"/dynamic URLs
+				// Start async task to download the file:
+				(new DownloadFileFromURL(path, "Project")).execute(); // the task will also call processExcitesFile() and checkProject()
+				return;
+			}
+			// Extract & parse a local ExCiteS file
+			else if(path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
+				project = processExcitesFile(new File(path));
+			else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
+				project = parseXML(new File(path));
+			// Add the project to the db & the list on the screen:
+		}
+		catch(Exception e)
+		{
+			showErrorDialog("Invalid xml or excites file: " + path + "\nError: " + e.getMessage() + (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
 			return;
 		}
-		// Extract & parse a local ExCiteS file
-		else if(path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
-			project = processExcitesFile(new File(path));
-		else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
-			project = parseXML(new File(path));
-		// Add the project to the db & the list on the screen:
-		addProject(project, path); // null check (with appropriate error) happens in addProject()
+		
+		//Add project
+		if(project != null) // check to be sure
+			addProject(project);
 	}
 
-	private Project parseXML(File xmlFile)
+	private Project parseXML(File xmlFile) throws Exception
 	{
 		try
 		{
@@ -502,11 +513,11 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		catch(Exception e)
 		{
 			Log.e(TAG, "XML file could not be parsed", e);
-			return null;
+			throw e;
 		}
 	}
 
-	private Project processExcitesFile(File excitesFile)
+	private Project processExcitesFile(File excitesFile) throws Exception
 	{
 		try
 		{
@@ -519,7 +530,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		catch(Exception e)
 		{
 			Log.e(TAG, "Could not load excites file", e);
-			return null;
+			throw e;
 		}
 	}
 
@@ -534,15 +545,8 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		}
 	}
 
-	private void addProject(final Project project, String sourcePathOrURL)
+	private void addProject(final Project project)
 	{
-		// Check if we have a project object
-		if(project == null)
-		{
-			showErrorDialog("Invalid xml or excites file: " + sourcePathOrURL, false);
-			return;
-		}
-
 		// Check file dependencies
 		List<String> invalidFiles = project.checkForInvalidFiles();
 		if(!invalidFiles.isEmpty())
@@ -979,13 +983,22 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		{
 			// Dismiss the dialog after the file was downloaded
 			progressDialog.dismiss();
-
 			if(downloadFinished)
 			{
+				Project project = null;
+				
 				// Process the file & add the project to the db & list on the screen
-				Project project = processExcitesFile(downloadFile);
-				addProject(project, downloadUrl); // will show error if project is null
-
+				try
+				{
+					project = processExcitesFile(downloadFile);
+					addProject(project); // will show error if project is null
+				}
+				catch(Exception e)
+				{
+					showErrorDialog("Invalid excites file: " + downloadUrl + "\nError: " + e.getMessage() + (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
+					return;
+				}
+				
 				// Handle temp file:
 				if(project != null)
 					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_'
