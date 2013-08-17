@@ -267,26 +267,28 @@ public final class FileHelpers
 	 * Returns the extension of the filePath. e.g. for "/my/path/myfile.raw" : "raw"
 	 * 
 	 * @param filePath
-	 * @return The extension of the filePath. e.g. for "/my/path/myfile.raw" : "raw"
+	 * @return The extension of the filePath. If there is no extension the empty String is returned.
 	 */
 	static public String getFileExtension(String filePath)
 	{
 		int lastIndex = filePath.lastIndexOf(".");
-		String result = filePath.substring(lastIndex + 1, filePath.length());
-		return result;
+		if(lastIndex == -1)
+			return "";
+		return filePath.substring(lastIndex + 1, filePath.length());
 	}
 
 	/**
 	 * Returns the filePath without its extension. e.g for "/my/path/myfile.raw" : "/my/path/myfile"
 	 * 
 	 * @param filePath
-	 * @return The filePath without its extension. e.g for "/my/path/myfile.raw" : "/my/path/myfile"
+	 * @return The filePath without its extension. If these is not extension the path is return as-is.
 	 */
 	static public String trimFileExtensionAndDot(String filePath)
 	{
 		int lastIndex = filePath.lastIndexOf(".");
-		String result = filePath.substring(0, lastIndex - 1);
-		return result;
+		if(lastIndex == -1)
+			return filePath;
+		return filePath.substring(0, lastIndex - 1);
 	}
 
 	/**
