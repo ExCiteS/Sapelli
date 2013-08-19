@@ -37,12 +37,13 @@
     	<property name="file-path" location="${output-dir}${file.separator}${classname}.java"/>
     	<property name="demo-project-filename" value="demo.excites"/>
 	</target>
-		
-	<target name="-git.revision" description="Store git revision in ${repository-version}">
+
+    <target name="-git.revision" description="Store git revision in ${repository-version}">
 	    <exec executable="git" outputproperty="git-revision" failifexecutionfails="false" errorproperty="">
-	        <arg value="describe"/>
-	        <arg value="--always"/>
-	        <arg value="HEAD"/>
+	        <arg value="log"/>
+	        <arg value="--pretty=format:%h"/>
+	        <arg value="-n"/>
+	        <arg value="1"/>
 	    </exec>
 	    <condition property="repository-version" value="${git-revision}" else="unknown">
 	        <and>
@@ -51,6 +52,21 @@
 	        </and>
 	    </condition>
 	    <echo>Last git commit hash: ${repository-version}</echo>
+	</target>
+    
+	<target name="-git.tag" description="Store git tag in ${repository-tag}">
+	    <exec executable="git" outputproperty="git-tag" failifexecutionfails="false" errorproperty="">
+	        <arg value="describe"/>
+	        <arg value="--always"/>
+	        <arg value="HEAD"/>
+	    </exec>
+	    <condition property="repository-tag" value="${git-tag}" else="unknown">
+	        <and>
+	            <isset property="git-tag"/>
+	            <length string="${git-tag}" trim="yes" length="0" when="greater"/>
+	        </and>
+	    </condition>
+	    <echo>Last git commit tag: ${repository-tag}</echo>
 	</target>
 
 	<target name="-git.changes" description="Check if there are changes w.r.t. the last commit in the given ${repository-path}">
@@ -77,7 +93,7 @@
 		<mkdir dir="${output-dir}"/>
 	</target>
 	
-	<target name="-git" depends="-git.revision">
+	<target name="-git" depends="-git.revision,-git.tag">
 		<ac:if>
 			<ac:not>
 				<equals arg1="${repository-version}" arg2="unknown"/>
@@ -139,6 +155,7 @@
 		<echo>	Build timestamp: ${TIMESTAMP}</echo>
 		<echo>	App version (code): ${appVersionName} (${appVersionCode})</echo>
 		<echo>	Last git commit hash: ${repository-version}</echo>
+		<echo>	Last git commit tag: ${repository-tag}</echo>
 		<echo>	Changes since last commit?: ${repository-changes}</echo>
 		<echo>	Demo build?: ${demo-build}</echo>
 		<!-- Generate the class: -->
@@ -154,6 +171,7 @@ public class ${classname}
 	public static final String VERSION_NAME = "${appVersionName}"; // as in manifest, also available through: getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
 	public static final int VERSION_CODE = ${appVersionCode}; // as in manifest, also available through: getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
 	public static final String LAST_COMMIT_HASH = "${repository-version}";
+	public static final String LAST_COMMIT_TAG = "${repository-tag}";
 	public static final boolean CHANGES_SINCE_LAST_COMMIT = ${repository-changes};
 	public static final boolean DEMO_BUILD = ${demo-build};
 	
