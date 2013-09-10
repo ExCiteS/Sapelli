@@ -1,0 +1,37 @@
+------------------------------------------------------
+ Compression tests results (summer 2013, by mstevens)
+------------------------------------------------------
+
+Using SMS transmissions received upto June.
+
+GZIP result is always exactly 18 bytes bigger than DEFLATE because GZIP _is_ DEFLATE but adds a 10-byte header and an 8-byte footer.
+
+When NONE is best (i.e. none of the compressors have a positive effect) then:
+ - DEFLATE result is 0 (4%), 1 (5%), 2 (34%), 3 (44%) or 5 (13%) bytes bigger than non-compressed data (% of tested cases)
+ - LZMA2 result is always 4 bytes bigger than non-compressed data
+ - LZMA2 is always betten than LZMA (LZMA result is between 3 & 12 bytes bigger)
+ --> LZMA2 seems to have a built-in mechanism to deal with non-compessable data, which is probably just stored as is, with the addition of a 4-byte "uncompressed" marker
+
+When the data _can_ be compressed (i.e. best is not NONE):
+ - BZIP2 performs terrible (don't know why)
+ - DEFLATE works better than LZMA/LZMA2 when payloads are small (< +/-290 bytes), LZMA(2) outperforms it for bigger payloads
+ - LZMA2 is never best overall
+ 	- LZMA2 outperforms LZMA in some cases (in which DEFLATE is best), but then the difference between NONE and LZMA2 is always 4 bytes
+   		--> This means the data was just not LZMA/LZMA2-compressable and LZMA2 falls back on the "uncompressed" header, while LZMA has no such trick
+ 	- when LZMA performs better than NONE (i.e. the data _is_ LZMA/LMZA2-compressable), LZMA2 is always 1 or 2 bytes bigger 
+   --> LZMA2 has an overhead of 1-2 bytes over LZMA in cases it can compress the data
+ 
+Conclusion on LZMA/LZMA2: There's no point in keeping LZMA2 support
+	Because:
+ 	- LZMA always outperforms LZMA2 when the data is LZMA/LZMA2-compressable.
+ 	- when the data is not (LZMA/LZMA2-)compressable we have our own "uncompressed" flag mechism which is more efficient than LZMA2 (2 bits vs. 4 bytes)
+ 	
+Overall conclusion:
+	We should support: NONE, DEFLATE & LZMA.
+	This requires a 2-bit compression mode flag. Leaving room for a possible forth compression mode to be added later.
+ 
+ 	Flag values:
+ 		00 : NONE (= uncompressed)
+		01 : DEFLATE
+ 		10 : LZMA
+ 		11 : ?
