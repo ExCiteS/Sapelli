@@ -12,14 +12,14 @@
 			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS Data Collection Library/libs/docs/commons-codec-1.8-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry exported="true" kind="lib" path="libs/joda-time-2.2.jar" sourcepath="libs/src/joda-time-2.2-sources.jar">
+	<classpathentry exported="true" kind="lib" path="libs/joda-time-2.3.jar" sourcepath="libs/src/joda-time-2.3-sources.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS Data Collection Library/libs/docs/joda-time-2.2-javadoc.jar!/"/>
+			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS Data Collection Library/libs/docs/joda-time-2.3-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry exported="true" kind="lib" path="libs/db4o-8.0.249.16098-core-java5.jar">
+	<classpathentry exported="true" kind="lib" path="libs/db4o-8.1.322.16154-core-java5.jar" sourcepath="libs/src/db4o-8.1.322.16154-core-java5-sources.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="http://community.versant.com/documentation/reference/db4o-8.0/java/api/"/>
+			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS Data Collection Library/libs/docs/db4o-8.1.322.16154-core-java5-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry exported="true" kind="lib" path="libs/jbzip2-0.9.1.jar"/>
