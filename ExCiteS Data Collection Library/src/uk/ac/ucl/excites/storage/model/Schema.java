@@ -322,5 +322,13 @@ public class Schema implements Comparable<Schema>
 			bff.append("\n\t- " + c.toString());
 		return bff.toString();
 	}
+	
+	public String toCSVHeader(String separator)
+	{
+		StringBuffer bff = new StringBuffer();
+		for(Column<?> c : columns)
+			bff.append(c.getName());
+		return bff.toString();
+	}
 
 }

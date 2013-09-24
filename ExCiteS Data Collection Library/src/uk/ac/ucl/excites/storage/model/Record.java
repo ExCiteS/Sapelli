@@ -357,11 +357,15 @@ public class Record
 		return bldr.toString();
 	}
 	
-	public String toCSVLine(String separator)
+	public String toCSVRow(String separator)
 	{
-		//TODO csv export
-		
-		return "";
+		StringBuilder bldr = new StringBuilder();
+		for(Column<?> c : schema.getColumns())
+		{
+			bldr.append(c.retrieveValueAsString(this));
+			bldr.append(separator);
+		}
+		return bldr.toString();
 	}
 	
 	public byte[] toBytes() throws IOException
