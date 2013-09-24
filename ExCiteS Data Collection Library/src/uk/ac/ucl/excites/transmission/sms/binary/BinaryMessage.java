@@ -33,11 +33,6 @@ public class BinaryMessage extends Message
 												PART_NUMBER_FIELD.getSize() /* Parts total */; 
 	public static final int MAX_PAYLOAD_SIZE_BYTES = MAX_TOTAL_SIZE_BYTES - BinaryHelpers.bytesNeeded(HEADER_SIZE_BITS);
 	
-	public static BinaryMessage GetDummyPart(SMSAgent sender, int transmissionID, int partNumber, int totalParts)
-	{
-		return new BinaryMessage(sender, transmissionID, partNumber, totalParts);
-	}
-	
 	//Dynamic
 	private byte[] payload;
 	
@@ -111,29 +106,6 @@ public class BinaryMessage extends Message
 			}
 			catch(Exception ignore) {}
 		}
-	}
-	
-	/**
-	 * Empty dummy part (to be called only by static GetDummyPart method)
-	 * 
-	 * @param sender
-	 * @param transmissionID
-	 * @param partNumber
-	 * @param totalParts
-	 * 
-	 * @see BinaryMessage#GetDummyPart(SMSAgent, int, int, int)
-	 */
-	private BinaryMessage(SMSAgent sender, int transmissionID, int partNumber, int totalParts)
-	{
-		super(sender, new DateTime() /*received NOW*/);
-		
-		//Header:
-		this.transmissionID = transmissionID;
-		this.partNumber = partNumber;
-		this.totalParts = totalParts;
-		
-		//Payload:
-		this.payload = new byte[0]; //payload is empty
 	}
 
 	/**
