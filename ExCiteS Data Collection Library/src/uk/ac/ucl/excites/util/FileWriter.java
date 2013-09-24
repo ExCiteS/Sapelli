@@ -15,12 +15,10 @@ import java.nio.charset.Charset;
 public class FileWriter
 {
 
-	protected String fullPath;
+	//protected String fullPath;
 	protected Charset charset; 
 
 	protected OutputStreamWriter writer = null;
-
-	protected File folder;
 
 	private File file = null;
 
@@ -48,9 +46,12 @@ public class FileWriter
 	 */
 	public FileWriter(String fullPath, Charset charset)
 	{
-		this.fullPath = fullPath;
+		if(fullPath == null)
+			throw new NullPointerException("fullPath cannot be null");
+		if(charset == null)
+			throw new NullPointerException("charSet cannot be null");
+		this.file = new File(fullPath);
 		this.charset = charset;
-		this.folder = FileHelpers.getFolder(FileHelpers.getFolderPath(fullPath));
 	}
 
 	public boolean isWritable()
@@ -127,7 +128,7 @@ public class FileWriter
 	 */
 	public String getFullPath()
 	{
-		return fullPath;
+		return file.getAbsolutePath();
 	}
 
 	@Override
@@ -138,35 +139,32 @@ public class FileWriter
 
 	public void open(int fileExistsStrategy, int fileDoesNotExistStrategy) throws IOException
 	{
-		if(fullPath == null)
-			throw new NullPointerException();
-		if(!FileHelpers.isFilePath(fullPath))
-			throw new IOException("Not a valid file path (" + fullPath + ")");
+		if(!FileHelpers.isFilePath(file.getAbsolutePath()))
+			throw new IOException("Not a valid file path (" + file.getAbsolutePath() + ")");
 		if(fileExistsStrategy < 0 || fileExistsStrategy > 4)
 			throw new IllegalArgumentException("Invalid file exists strategy");
 		if(fileDoesNotExistStrategy < 1 || fileDoesNotExistStrategy > 2)
 			throw new IllegalArgumentException("Invalid file does not exist strategy");
 		boolean seekToEOF = false;
-		if((new File(fullPath)).exists())
+		if(file.exists())
 		{ // file already exists
 			switch(fileExistsStrategy)
 			{
 			case (FileHelpers.FILE_EXISTS_STRATEGY_REPLACE):
 				break;
 			case (FileHelpers.FILE_EXISTS_STRATEGY_REJECT):
-				folder = null;
-				break;
+				throw new IOException("Could not open FileWriter, file already exists");
 			case (FileHelpers.FILE_EXISTS_STRATEGY_CREATE_RENAMED_FILE):
 				// find a filename that does not exist yet (by adding a counter):
-				String extension = FileHelpers.getFileExtension(fullPath);
-				String pathWithoutExtension = FileHelpers.trimFileExtensionAndDot(fullPath);
+				String extension = FileHelpers.getFileExtension(file);
+				String pathWithoutExtension = FileHelpers.trimFileExtensionAndDot(file.getAbsolutePath());
 				int i = 1; // counter
 				do
 				{
-					fullPath = pathWithoutExtension + "-" + i + "." + extension;
+					file = new File(pathWithoutExtension + "-" + i + "." + extension);
 					i++;
 				}
-				while((new File(fullPath)).exists()); // try until non-existing file found
+				while(file.exists()); // try until non-existing file found
 				break;
 			case (FileHelpers.FILE_EXISTS_STRATEGY_APPEND):
 				seekToEOF = true;
@@ -178,37 +176,28 @@ public class FileWriter
 			switch(fileDoesNotExistStrategy)
 			{
 			case (FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_REJECT):
-				folder = null;
-				break;
+				throw new IOException("Could not open FileWriter, file does not exist");
 			case (FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE):
-				folder.mkdirs(); // file will be created lower, but we need to make sure the folder is created here.
-				break;
+				file.getParentFile().mkdirs(); // file will be created lower, but we need to make sure the folder is created here.
+				file.createNewFile();
 			}
 		}
-		if(folder != null)
-		{
-			// Create file:
-			File file = new File(folder, FileHelpers.getFileName(fullPath));
+		
+		// Open file:
+		writer = new OutputStreamWriter(new FileOutputStream(file, seekToEOF), charset);
 
-			// Open file:
-			writer = new OutputStreamWriter(new FileOutputStream(file, seekToEOF), charset);
-		}
-		else
-			throw new IOException("Could not open FileWriter");
 	}
 
 	protected void _dispose()
 	{
 		file = null;
-		folder = null;
 	}
 
 	public void rename(String newName, int fileExistsStrategy) throws Exception
 	{ // TODO make sure the FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE is ok?
 		if(writer != null)
 			close();
-		fullPath = FileHelpers.getFolderPath(fullPath) + newName;
-		file.renameTo(new File(fullPath));
+		file.renameTo(new File(getContainingFolderPath() + newName));
 	}
 
 	public void delete() throws Exception
@@ -220,12 +209,12 @@ public class FileWriter
 
 	public String getContainingFolderPath()
 	{
-		return FileHelpers.getFolderPath(fullPath);
+		return FileHelpers.getFolderPath(file.getAbsolutePath());
 	}
 
 	public String getFileName()
 	{
-		return FileHelpers.getFileName(fullPath);
+		return FileHelpers.getFileName(file.getAbsolutePath());
 	}
 
 	public boolean fileExists()

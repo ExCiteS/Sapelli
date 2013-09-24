@@ -60,8 +60,8 @@ public final class FileHelpers
 	}
 
 	static public boolean isValidPath(String path)
-	{
-		return path.charAt(0) == '/';
+	{	//TODO fix this properly
+		return true; //Unix only: return path.charAt(0) == '/';
 	}
 
 	static public boolean isFolderPath(String fullPath)
