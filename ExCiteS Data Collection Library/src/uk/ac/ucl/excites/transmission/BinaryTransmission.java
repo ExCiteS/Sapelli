@@ -88,14 +88,15 @@ public abstract class BinaryTransmission extends Transmission
 	 * @throws IOException
 	 * @throws DecodeException
 	 */
-	protected void readPayload(Schema schemaToUse, Settings settingsToUse) throws IllegalStateException, IOException, DecodeException
+	@Override
+	protected void readPayload(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
 	{
 		BitInputStream in = null;
 		try
 		{
-			// Deserialise
+			// Deserialise payload:
 			byte[] data = deserialise();
-		
+			
 			// Input stream:
 			ByteArrayInputStream rawIn = new ByteArrayInputStream(data);
 			in = new BitInputStream(rawIn);

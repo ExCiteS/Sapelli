@@ -2,6 +2,7 @@ package uk.ac.ucl.excites.transmission.sms.binary;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.storage.model.Column;
@@ -55,11 +56,23 @@ public class BinarySMSTransmission extends SMSTransmission
 	 * To be called on the receiving side.
 	 * 
 	 * @param modelProvider
-	 * @param settings
+	 *
 	 */
 	public BinarySMSTransmission(ModelProvider modelProvider)
 	{
 		super(modelProvider);
+	}
+	
+	/**
+	 * To be called on the receiving side.
+	 * 
+	 * @param modelProvider
+	 * @param parts
+	 *
+	 */
+	public BinarySMSTransmission(ModelProvider modelProvider, List<Message> parts)
+	{
+		super(modelProvider, parts);
 	}
 	
 	@Override

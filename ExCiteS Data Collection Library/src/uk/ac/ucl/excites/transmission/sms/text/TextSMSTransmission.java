@@ -3,12 +3,14 @@
  */
 package uk.ac.ucl.excites.transmission.sms.text;
 
+import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.ModelProvider;
 import uk.ac.ucl.excites.transmission.Settings;
+import uk.ac.ucl.excites.transmission.sms.Message;
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException;
@@ -51,11 +53,22 @@ public class TextSMSTransmission extends SMSTransmission
 	 * To be called on the receiving side.
 	 * 
 	 * @param modelProvider
-	 * @param settings
 	 */
 	public TextSMSTransmission(ModelProvider modelProvider)
 	{
 		super(modelProvider);
+	}
+	
+	/**
+	 * To be called on the receiving side.
+	 * 
+	 * @param modelProvider
+	 * @param parts
+	 *
+	 */
+	public TextSMSTransmission(ModelProvider modelProvider, List<Message> parts)
+	{
+		super(modelProvider, parts);
 	}
 	
 	@Override

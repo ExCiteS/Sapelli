@@ -185,12 +185,12 @@ public abstract class Transmission
 	
 	protected abstract void sendPayload(TransmissionSender transmissionSender) throws Exception;
 	
-	public void read() throws IllegalStateException, IOException, DecodeException
+	public void read() throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
 	{
 		read(null, null);
 	}
 	
-	public void read(Schema schemaToUse, Settings settingsToUse) throws IllegalStateException, IOException, DecodeException
+	public void read(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
 	{
 		//Some checks:
 		if(!records.isEmpty())
@@ -204,12 +204,13 @@ public abstract class Transmission
 				records.clear(); //Re-receiving with other schema/settings, so clear records
 		}
 		
+		//Read payload:
 		readPayload(schemaToUse, settingsToUse);
 	}
 	
 	protected abstract void preparePayload() throws IOException, TransmissionCapacityExceededException;
 	
-	protected abstract void readPayload(Schema schemaToUse, Settings settingsToUse) throws IllegalStateException, IOException, DecodeException;
+	protected abstract void readPayload(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException;
 	
 	public boolean isFull()
 	{

@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.transmission.sms;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -17,6 +18,7 @@ import uk.ac.ucl.excites.transmission.DecodeException;
 import uk.ac.ucl.excites.transmission.ModelProvider;
 import uk.ac.ucl.excites.transmission.TransmissionSender;
 import uk.ac.ucl.excites.transmission.Settings;
+import uk.ac.ucl.excites.transmission.IncompleteTransmissionException;
 
 
 /**
@@ -72,8 +74,22 @@ public abstract class SMSTransmission extends BinaryTransmission
 	 */
 	public SMSTransmission(ModelProvider modelProvider)
 	{
+		this(modelProvider, null);
+	}
+	
+	/**
+	 * To be called on the receiving side.
+	 * 
+	 * @param modelProvider
+	 * @param parts
+	 */
+	public SMSTransmission(ModelProvider modelProvider, List<Message> parts)
+	{
 		super(modelProvider);
 		this.parts = new TreeSet<Message>();
+		if(parts != null)
+			for(Message m : parts)
+				addPart(m);
 	}
 	
 	/**
@@ -106,6 +122,19 @@ public abstract class SMSTransmission extends BinaryTransmission
 	public SortedSet<Message> getParts()
 	{
 		return parts;
+	}
+	
+	public Message getPart(int i)
+	{
+		for(Message part : parts)
+			if(part.getPartNumber() == i)
+				return part;
+		return null;
+	}
+	
+	public boolean hasPart(int i)
+	{
+		return getPart(i) != null;
 	}
 	
 	public int getCurrentNumberOfParts()
@@ -142,11 +171,11 @@ public abstract class SMSTransmission extends BinaryTransmission
 	}
 	
 	@Override
-	protected void readPayload(Schema schemaToUse, Settings settingsToUse) throws IllegalStateException, IOException, DecodeException
+	protected void readPayload(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
 	{
 		// First to a completeness check:
 		if(!isComplete())
-			throw new IllegalStateException("Transmission is incomplete, " + (parts.first().getTotalParts() - parts.size()) + " parts missing.");
+			throw new IncompleteTransmissionException(this);
 		
 		// Read messages:
 		super.readPayload(schemaToUse, settingsToUse);
