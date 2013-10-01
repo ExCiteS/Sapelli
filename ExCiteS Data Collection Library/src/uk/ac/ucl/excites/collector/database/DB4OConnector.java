@@ -18,12 +18,18 @@ import com.db4o.config.EmbeddedConfiguration;
 public final class DB4OConnector
 {
 	
-	private DB4OConnector() {} //this class should not be instatiated
+	private DB4OConnector() {} //this class should not be instantiated
 	
 	static public ObjectContainer open(String filepath) throws Exception
 	{
+		return open(filepath, false);
+	}
+	
+	static public ObjectContainer open(String filepath, boolean readOnly) throws Exception
+	{
 		// Configure the db:
 		EmbeddedConfiguration dbConfig = Db4oEmbedded.newConfiguration();
+		dbConfig.file().readOnly(readOnly);
 		dbConfig.common().updateDepth(DataAccess.UPDATE_DEPTH);
 		dbConfig.common().exceptionsOnNotStorable(true);
 		dbConfig.common().objectClass(Record.class).cascadeOnActivate(true);
