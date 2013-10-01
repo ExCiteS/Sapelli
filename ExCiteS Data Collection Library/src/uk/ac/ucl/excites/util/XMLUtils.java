@@ -54,6 +54,8 @@ public class XMLUtils
 	 */
 	static public String escapeCharacters(String input)
 	{
+		if(input == null)
+			return input;
 		input.replace("&", "&amp;");
 		input.replace("<", "&lt;");
 		input.replace(">", "&gt;");

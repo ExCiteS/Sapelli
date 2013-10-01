@@ -101,7 +101,7 @@ public class RecordsExporter
 			catch(Exception e)
 			{
 				e.printStackTrace(System.err);
-				writer.writeLine(XMLUtils.comment("Error on exporting record: " + XMLUtils.escapeCharacters(e.getMessage())));
+				writer.writeLine(XMLUtils.comment("Exception on exporting record: " + e.toString() + (e.getMessage() != null ? " [" + XMLUtils.escapeCharacters(e.getMessage()) + "]" : ""), 1));
 			}
 			count++;
 		}
