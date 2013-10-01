@@ -38,6 +38,7 @@ public class XMLUtils
 	 * tabs in front
 	 * 
 	 * @param text
+	 * @param tabs  number of tabs to insert before comment start
 	 * @return xml comment String
 	 */
 	static public String comment(String text, int tabs)
