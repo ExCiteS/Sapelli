@@ -58,15 +58,20 @@ public class RecordsExporter
 		return count;
 	}
 	
-	public int export(List<Record> records) throws Exception
+	public int exportRecords(List<Record> records) throws Exception
 	{
-		FileWriter writer = openWriter("Selection");
+		return exportRecords(records, "Selection");
+	}
+	
+	public int exportRecords(List<Record> records, String name) throws Exception
+	{
+		FileWriter writer = openWriter(name);
 		int count = exportRecords(records, writer);
 		closeWriter(writer);
 		return count;
 	}
 	
-	public int export(List<Schema> schemas, String name) throws Exception
+	public int exportRecordsOf(List<Schema> schemas, String name) throws Exception
 	{
 		FileWriter writer = openWriter(name);
 		int count = 0;
@@ -76,7 +81,7 @@ public class RecordsExporter
 		return count;
 	}
 	
-	public int export(Schema s) throws Exception
+	public int exportRecordsOf(Schema s) throws Exception
 	{
 		FileWriter writer = openWriter(s.getName() + "_" + s.getID() + "_v" + s.getVersion());
 		int count = exportRecords(dao.retrieveRecords(s), writer);
@@ -89,7 +94,15 @@ public class RecordsExporter
 		int count = 0;
 		for(Record r : records)
 		{
-			writer.writeLine(r.toXML(1));
+			try
+			{
+				writer.writeLine(r.toXML(1));
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace(System.err);
+				writer.writeLine(XMLUtils.comment("Error on exporting record: " + XMLUtils.escapeCharacters(e.getMessage())));
+			}
 			count++;
 		}
 		return count;

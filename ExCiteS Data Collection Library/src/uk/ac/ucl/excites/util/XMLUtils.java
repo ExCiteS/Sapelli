@@ -30,7 +30,19 @@ public class XMLUtils
 	 */
 	static public String comment(String text)
 	{
-		return "<!-- " + escapeCharacters(text) + " -->";
+		return comment(text, 0);
+	}
+	
+	/**
+	 * Returns an XML comment string with the given text and the given number of
+	 * tabs in front
+	 * 
+	 * @param text
+	 * @return xml comment String
+	 */
+	static public String comment(String text, int tabs)
+	{
+		return StringUtils.addTabsFront("<!-- " + escapeCharacters(text) + " -->", tabs);
 	}
 
 	/**
