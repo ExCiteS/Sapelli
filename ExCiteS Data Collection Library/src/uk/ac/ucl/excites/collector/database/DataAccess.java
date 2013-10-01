@@ -24,18 +24,6 @@ import com.db4o.query.Predicate;
  * @author mstevens, julia, Michalis Vitos
  * 
  */
-/**
- * @author mstevens
- *
- */
-/**
- * @author mstevens
- *
- */
-/**
- * @author mstevens
- *
- */
 public final class DataAccess
 {
 
