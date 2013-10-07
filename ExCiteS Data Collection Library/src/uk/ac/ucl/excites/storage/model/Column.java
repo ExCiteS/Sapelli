@@ -108,6 +108,17 @@ public abstract class Column<T>
 		return (T) record.getValue(this);
 	}
 	
+	/**
+	 * Checks whether a value for this column is set in the given record
+	 * 
+	 * @param record
+	 * @return whether or not a (non-null) value is set
+	 */
+	public boolean isValueSet(Record record)
+	{
+		return retrieveValue(record) != null;
+	}
+	
 	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException
 	{
 		writeValue(retrieveValue(record), bitStream);		
