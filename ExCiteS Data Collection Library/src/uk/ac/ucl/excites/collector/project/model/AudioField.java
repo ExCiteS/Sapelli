@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
+import uk.ac.ucl.excites.collector.project.ui.Controller;
+import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.util.CollectionUtils;
 
 /**
@@ -61,12 +63,6 @@ public class AudioField extends MediaField
 	}
 
 	@Override
-	public void setIn(CollectorUI ui)
-	{
-		ui.setAudio(this);
-	}
-
-	@Override
 	public String getMediaType()
 	{
 		return MEDIA_TYPE_3GPP; //TODO support for other types
@@ -90,5 +86,17 @@ public class AudioField extends MediaField
 		CollectionUtils.addIgnoreNull(paths, project.getImageFile(stopRecImageRelativePath));
 		return paths;
 	}
-	
+
+	@Override
+	public boolean enter(Controller controller)
+	{
+		return controller.enterAudioField(this);
+	}
+
+	@Override
+	public FieldUI createUI(CollectorUI collectorUI)
+	{
+		return collectorUI.createAudioUI(this);
+	}
+
 }

@@ -1,22 +1,27 @@
-package uk.ac.ucl.excites.collector.ui;
+package uk.ac.ucl.excites.collector.ui.fieldviews;
 
 import java.io.File;
 import java.io.FileOutputStream;
 
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.R;
-import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.media.CameraController;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.ui.picker.ImageFileItem;
-import uk.ac.ucl.excites.collector.ui.picker.ImageResourceItem;
+import uk.ac.ucl.excites.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.collector.ui.CollectorView;
+import uk.ac.ucl.excites.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.collector.ui.picker.PickerAdapter;
 import uk.ac.ucl.excites.collector.ui.picker.PickerView;
+import uk.ac.ucl.excites.collector.ui.picker.items.FileImageItem;
+import uk.ac.ucl.excites.collector.ui.picker.items.Item;
+import uk.ac.ucl.excites.collector.ui.picker.items.ResourceImageItem;
+import uk.ac.ucl.excites.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.util.FileHelpers;
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -40,17 +45,18 @@ import android.widget.ViewSwitcher;
 /**
  * Built-in camera view
  * 
- * To do's: - TODO Fix white "blocks" briefly appearing where the button(s) should be when view is loaded for 2nd time
+ * TODO Fix white "blocks" briefly appearing where the button(s) should be when view is loaded for 2nd time (on Android v2.x only?)
  * 
  * @author mstevens, Michalis Vitos
  */
-public class CameraView extends ViewSwitcher implements FieldView, AdapterView.OnItemClickListener, PictureCallback
+@SuppressLint("ViewConstructor")
+public class CameraView extends ViewSwitcher implements FieldUI, AdapterView.OnItemClickListener, PictureCallback
 {
 
 	static private final String TAG = "CameraView";
 	static private final int PREVIEW_SIZE = 1024;
-
-	private Context context;
+	
+	private CollectorView collectorView;
 
 	private ProjectController controller;
 	private Project project;
@@ -69,12 +75,15 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 	private byte[] reviewPhotoData;
 	private HandleImage handleImage;
 
-	public CameraView(Context context)
+	@SuppressWarnings("deprecation")
+	public CameraView(Context context, CollectorView collectorView, ProjectController controller, Field field)
 	{
 		super(context);
-
-		this.context = context;
-
+		this.collectorView = collectorView;
+		this.controller = controller;
+		this.project = controller.getProject();
+		this.photoField = (PhotoField) field;
+		
 		// Capture UI:
 		captureLayout = new RelativeLayout(context);
 		captureView = new SurfaceView(context);
@@ -93,17 +102,7 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 		// Layout parameters for the buttons:
 		buttonParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT); // You might want to tweak these to WRAP_CONTENT
 		buttonParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-	}
-
-	@Override
-	@SuppressWarnings("deprecation")
-	public void initialise(ProjectController controller, Field field)
-	{
-		this.controller = controller;
-		this.project = controller.getProject();
-		this.photoField = (PhotoField) field;
-		this.handlingClick = false;
-
+		
 		// Camera controller & camera selection:
 		cameraController = new CameraController(photoField.isUseFrontFacingCamera());
 		if(!cameraController.foundCamera())
@@ -131,6 +130,15 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 	}
 
 	@Override
+	public void update()
+	{
+		this.handlingClick = false;
+		// Switch back to capture layout if needed:
+		if(getCurrentView() == reviewLayout)
+			showPrevious();
+	}
+
+	@Override
 	public void onPictureTaken(byte[] data, Camera camera)
 	{
 		this.reviewPhotoData = data;
@@ -142,73 +150,67 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 	@Override
 	public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 	{
-		// Check if the UI is waiting for animation, if it does do nothing
-		if(!CollectorActivity.isWaitingForUIAnimation())
+		// Task to perform after animation has finished:
+		Runnable task = new Runnable()
 		{
-			// Run the animation
-			Runnable task = new Runnable()
+			public void run()
 			{
-				public void run()
+				if(!handlingClick) // only handle one click at the time
 				{
-					if(!handlingClick) // only handle one click at the time
-					{
-						handlingClick = true;
-						if(getCurrentView() == captureLayout)
-						{ // in Capture mode --> there is (currently) only one button here: the one to take a photo
-							cameraController.takePicture(CameraView.this);
+					handlingClick = true;
+					if(getCurrentView() == captureLayout)
+					{ // in Capture mode --> there is (currently) only one button here: the one to take a photo
+						cameraController.takePicture(CameraView.this);
+					}
+					else
+					{ // in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
+						if(position == 0)
+						{ // photo approved
+							try
+							{ // Save photo to file:
+								File photoFile = photoField.getNewTempFile(controller.getCurrentRecord());
+								FileOutputStream fos = new FileOutputStream(photoFile);
+								fos.write(reviewPhotoData);
+								fos.close();
+								controller.mediaDone(photoFile);
+							}
+							catch(Exception e)
+							{
+								Log.e(TAG, "Could not save photo.", e);
+								controller.mediaDone(null);
+							}
+							finally
+							{
+								cameraController.close();
+							}
 						}
 						else
-						{ // in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
-							if(position == 0)
-							{ // photo approved
-								try
-								{ // Save photo to file:
-									File photoFile = photoField.getNewTempFile(controller.getCurrentRecord());
-									FileOutputStream fos = new FileOutputStream(photoFile);
-									fos.write(reviewPhotoData);
-									fos.close();
-									controller.mediaDone(photoFile);
-								}
-								catch(Exception e)
-								{
-									Log.e(TAG, "Could not save photo.", e);
-									controller.mediaDone(null);
-								}
-								finally
-								{
-									cameraController.close();
-								}
-							}
-							else
-							// if(position == 1)
-							{ // photo discarded
-								showNext(); // switch back to capture mode
-								cameraController.startPreview();
-								handlingClick = false;
-							}
-							reviewPhotoData = null;
+						// if(position == 1)
+						{ // photo discarded
+							showNext(); // switch back to capture mode
+							cameraController.startPreview();
+							handlingClick = false;
 						}
+						reviewPhotoData = null;
 					}
 				}
-			};
+			}
+		};
 
-			Animator animator = new Animator(task, v);
-			animator.execute();
-
-		}
-		// else: ignore the click
+		// Run the "press" animation
+		(new PressAnimator(task, v, collectorView)).execute();
 	}
-
-	@Override
-	public View getView()
-	{
-		return this;
-	}
-
+	
 	@Override
 	public void cancel()
 	{
 		cameraController.close();
+	}	
+
+	@Override
+	public Field getField()
+	{
+		return photoField;
 	}
 
 	/**
@@ -228,17 +230,22 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 			return 1;
 		}
 
+		/**
+		 * Note: for now there is only the capture button, we might add other features (flash, zooming, etc.) later
+		 * 
+		 * @see uk.ac.ucl.excites.collector.ui.fieldviews.CameraView.CameraButtonView#addButtons()
+		 */
 		@Override
 		protected void addButtons()
 		{
-			// Note: for now there is only the capture button, we might add other features (flash, zooming, etc.) later
-
 			// Capture button:
+			Item captureButton = null;
 			File captureImgFile = project.getImageFile(photoField.getCaptureButtonImageRelativePath());
 			if(FileHelpers.isReadableFile(captureImgFile))
-				pickerAdapter.addItem(new ImageFileItem(captureImgFile));
+				captureButton = new FileImageItem(captureImgFile);
 			else
-				pickerAdapter.addItem(new ImageResourceItem(R.drawable.take_photo));
+				captureButton = new ResourceImageItem(getContext().getResources(), R.drawable.take_photo);
+			addButton(captureButton);
 		}
 	}
 
@@ -263,17 +270,22 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 		protected void addButtons()
 		{
 			// Approve button:
+			Item approveButton = null;
 			File approveImgFile = project.getImageFile(photoField.getApproveButtonImageRelativePath());
 			if(FileHelpers.isReadableFile(approveImgFile))
-				pickerAdapter.addItem(new ImageFileItem(approveImgFile));
+				approveButton = new FileImageItem(approveImgFile);
 			else
-				pickerAdapter.addItem(new ImageResourceItem(R.drawable.accept));
+				approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.accept);
+			addButton(approveButton);
+			
 			// Discard button:
+			Item discardButton = null;
 			File discardImgFile = project.getImageFile(photoField.getDiscardButtonImageRelativePath());
 			if(FileHelpers.isReadableFile(discardImgFile))
-				pickerAdapter.addItem(new ImageFileItem(discardImgFile));
+				discardButton = new FileImageItem(discardImgFile);
 			else
-				pickerAdapter.addItem(new ImageResourceItem(R.drawable.delete));
+				discardButton = new ResourceImageItem(getContext().getResources(), R.drawable.delete);
+			addButton(discardButton);
 		}
 
 	}
@@ -286,23 +298,23 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 
 		static public final float BUTTON_HEIGHT_DIP = 64;
 
-		private int buttonSize;
-
+		private int buttonSize; // width = height
+		private int buttonPadding;
+		private int buttonBackColor;
+		
 		/**
 		 * @param context
 		 */
 		public CameraButtonView(Context context)
 		{
 			super(context);
-			
-			this.buttonSize = ScreenMetrics.ConvertDipToPx(context, BUTTON_HEIGHT_DIP);
 					
 			setOnItemClickListener(CameraView.this);
 
 			// Layout:
 			setBackgroundColor(Color.TRANSPARENT);
 			setGravity(Gravity.CENTER);
-			setPadding(0, 0, 0, dimensions.getSpacingPx());
+			setPadding(0, 0, 0, CameraView.this.collectorView.getSpacingPx());
 
 			// Columns
 			setNumColumns(getNumberOfColumns());
@@ -311,22 +323,22 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 			pickerAdapter = new PickerAdapter(super.getContext());
 			addButtons();
 
-			// Button dimensions:
-			pickerAdapter.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-			pickerAdapter.setItemWidthPx(buttonSize);
-			pickerAdapter.setItemHeightPx(buttonSize);
-			// Button background colour:
-			try
-			{
-				pickerAdapter.setBackgroundColor(Color.parseColor(controller.getCurrentForm().getButtonBackgroundColor()));
-			}
-			catch(IllegalArgumentException iae)
-			{
-				Log.w(CameraView.TAG, "Unable to parse colour: " + controller.getCurrentForm().getButtonBackgroundColor());
-				pickerAdapter.setBackgroundColor(Color.parseColor(Form.DEFAULT_BUTTON_BACKGROUND_COLOR)); // light gray
-			}
+			// Button size, padding & background colour:
+			this.buttonSize = ScreenMetrics.ConvertDipToPx(context, BUTTON_HEIGHT_DIP);
+			this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, ChoiceView.PADDING_DIP);
+			this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
+			
 			// And finally:
 			setAdapter(pickerAdapter);
+		}
+		
+		protected void addButton(Item button)
+		{
+			button.setWidthPx(buttonSize);
+			button.setHeightPx(buttonSize);
+			button.setPaddingPx(buttonPadding);
+			button.setBackgroundColor(buttonBackColor);
+			pickerAdapter.addItem(button);
 		}
 
 		protected abstract int getNumberOfColumns();
@@ -356,7 +368,7 @@ public class CameraView extends ViewSwitcher implements FieldView, AdapterView.O
 		@Override
 		protected void onPreExecute()
 		{
-			dialog = new ProgressDialog(context);
+			dialog = new ProgressDialog(CameraView.this.getContext());
 			dialog.setCancelable(false);
 			dialog.show();
 		}

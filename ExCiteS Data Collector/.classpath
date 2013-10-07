@@ -7,5 +7,11 @@
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Android FileChooser"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/Environment2"/>
+	<classpathentry kind="lib" path="libs/svg-android-2.0.5-SNAPSHOT.jar" sourcepath="libs/src/svg-android-2.0.5-SNAPSHOT-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS%20Data%20Collector/libs/docs/svg-android-2.0.5-SNAPSHOT-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

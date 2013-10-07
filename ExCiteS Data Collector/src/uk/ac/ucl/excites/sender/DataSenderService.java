@@ -84,7 +84,7 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 		loggers = new HashMap<Project, Logger>();
 
 		// Creates a thread pool that can schedule commands to run after a given
-		// delay, or to execute periodically.
+		// duration, or to execute periodically.
 		scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
 		
 		// Folder observers:

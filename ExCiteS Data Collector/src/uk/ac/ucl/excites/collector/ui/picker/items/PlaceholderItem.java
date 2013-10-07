@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.collector.ui.picker;
+package uk.ac.ucl.excites.collector.ui.picker.items;
 
 import android.content.Context;
 import android.view.View;
@@ -18,7 +18,7 @@ public class PlaceholderItem extends Item
 	}
 
 	@Override
-	protected View getView(Context context)
+	protected View createView(Context context)
 	{
 		return new View(context);
 	}

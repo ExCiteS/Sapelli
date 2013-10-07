@@ -271,6 +271,8 @@ public class ProjectParser extends XMLParser
 				currentChoice.setAltText(attributes.getValue("alt"));
 			currentChoice.setCols(readIntegerAttribute(attributes, "cols", ChoiceField.DEFAULT_NUM_COLS));
 			currentChoice.setRows(readIntegerAttribute(attributes, "rows", ChoiceField.DEFAULT_NUM_ROWS));
+			currentChoice.setCrossed(readBooleanAttribute(attributes, "crossed", ChoiceField.DEFAULT_CROSSED));
+			currentChoice.setCrossColor(readStringAttribute(attributes, "crossColor", ChoiceField.DEFAULT_CROSS_COLOR));
 		}
 		// <Location>
 		else if(qName.equals("Location"))

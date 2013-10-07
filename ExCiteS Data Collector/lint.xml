@@ -2,5 +2,7 @@
 <lint>
     <issue id="DefaultLocale">
         <ignore path="src/uk/ac/ucl/excites/collector/activities/ProjectManagerActivity.java" />
+        <ignore path="src/uk/ac/ucl/excites/collector/ui/picker/items/FileImageItem.java" />
+        <ignore path="src/uk/ac/ucl/excites/collector/ui/picker/items/ResourceImageItem.java" />
     </issue>
 </lint>

@@ -1,14 +1,15 @@
-package uk.ac.ucl.excites.collector.ui;
+package uk.ac.ucl.excites.collector.ui.fieldviews;
 
 import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.util.Timeoutable;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.Gravity;
-import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 
@@ -16,14 +17,20 @@ import android.widget.ProgressBar;
  * @author Julia, mstevens
  *
  */
-public class WaitingView extends LinearLayout implements FieldView
+@SuppressLint("ViewConstructor")
+public class WaitingView extends LinearLayout implements FieldUI
 {
 
+	private final ProjectController controller;
+	private final Field field;
 	protected Timer timeoutCounter = null;
 	
-	public WaitingView(Context context)
+	
+	public WaitingView(Context context, ProjectController controller, Field field)
 	{
 		super(context);
+		this.controller = controller;
+		this.field = field;
 		
 		setGravity(Gravity.CENTER);
 		addView(new ProgressBar(context, null, android.R.attr.progressBarStyleLarge));
@@ -38,11 +45,13 @@ public class WaitingView extends LinearLayout implements FieldView
 	}
 
 	@Override
-	public void initialise(final ProjectController controller, final Field field)
+	public void update()
 	{
 		if(field instanceof Timeoutable)
 		{
-			//Start timeout counter
+			// Cancel previous counter:
+			cancel();
+			// Start timeout counter
 			timeoutCounter = new Timer();
 			timeoutCounter.schedule(new TimerTask()
 			{
@@ -55,11 +64,12 @@ public class WaitingView extends LinearLayout implements FieldView
 		}
 		//else: do nothing
 	}
+	
 
 	@Override
-	public View getView()
+	public Field getField()
 	{
-		return this;
+		return field;
 	}
 	
 }

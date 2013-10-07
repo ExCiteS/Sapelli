@@ -7,6 +7,8 @@ import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
+import uk.ac.ucl.excites.collector.project.ui.Controller;
+import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.Column;
 
 /**
@@ -37,15 +39,21 @@ public class EndField extends Field
 	}
 
 	@Override
-	public void setIn(CollectorUI ui)
-	{
-		ui.setEndField(this);
-	}
-
-	@Override
 	public List<File> getFiles(Project project)
 	{
 		return null;
+	}
+	
+	@Override
+	public boolean enter(Controller controller)
+	{
+		return controller.enterEndField(this);
+	}
+	
+	@Override
+	public FieldUI createUI(CollectorUI collectorUI)
+	{
+		return null; // there is not UI for this field
 	}
 
 }

@@ -318,7 +318,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 								schemas.add(f.getSchema());
 							try
 							{
-								exporter.export(schemas, p.toString());
+								exporter.exportRecordsOf(schemas, p.toString());
 							}
 							catch(Exception e)
 							{

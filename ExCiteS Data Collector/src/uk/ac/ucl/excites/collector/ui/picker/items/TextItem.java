@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.collector.ui.picker;
+package uk.ac.ucl.excites.collector.ui.picker.items;
 
 import uk.ac.ucl.excites.collector.ui.FontFitTextView;
 import android.content.Context;
@@ -25,7 +25,7 @@ public class TextItem extends Item
 	}
 	
 	@Override
-	protected View getView(Context context)
+	protected View createView(Context context)
 	{
 		TextView txtView = new FontFitTextView(context);
 		txtView.setTextColor(Color.BLACK);

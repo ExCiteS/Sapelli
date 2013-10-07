@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
+import uk.ac.ucl.excites.collector.project.ui.Controller;
+import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.util.CollectionUtils;
@@ -24,6 +26,8 @@ public class ChoiceField extends Field
 	static public final int DEFAULT_NUM_COLS = 2;
 	static public final int DEFAULT_NUM_ROWS = 2;
 	static public final String DEFAULT_ALT_TEXT = "?";
+	static public final boolean DEFAULT_CROSSED = false;
+	static public final String DEFAULT_CROSS_COLOR = "#A5FF0000"; // Red with 65% alpha
 	
 	private ChoiceField parent;
 	private ChoiceField root;
@@ -32,6 +36,8 @@ public class ChoiceField extends Field
 	private int cols;
 	private int rows;
 	private String altText;
+	private boolean crossed;
+	private String crossColor;
 	private String value;
 	private ChoiceDictionary dictionary;
 	
@@ -175,6 +181,38 @@ public class ChoiceField extends Field
 		this.rows = rows;
 	}
 	
+	/**
+	 * @return the crossed
+	 */
+	public boolean isCrossed()
+	{
+		return crossed;
+	}
+
+	/**
+	 * @param crossed the crossed to set
+	 */
+	public void setCrossed(boolean crossed)
+	{
+		this.crossed = crossed;
+	}
+
+	/**
+	 * @return the crossColor
+	 */
+	public String getCrossColor()
+	{
+		return crossColor;
+	}
+
+	/**
+	 * @param crossColor the crossColor to set
+	 */
+	public void setCrossColor(String crossColor)
+	{
+		this.crossColor = crossColor;
+	}
+
 	public boolean isLeaf()
 	{
 		return children.isEmpty();
@@ -200,13 +238,7 @@ public class ChoiceField extends Field
 	{
 		return root.optional;
 	}
-	
-	@Override
-	public void setIn(CollectorUI ui)
-	{
-		ui.setChoice(this);
-	}
-	
+
 	@Override
 	public List<File> getFiles(Project project)
 	{
@@ -274,6 +306,18 @@ public class ChoiceField extends Field
 	public ChoiceDictionary getDictionary()
 	{
 		return dictionary;
+	}
+	
+	@Override
+	public boolean enter(Controller controller)
+	{
+		return controller.enterChoiceField(this);
+	}
+	
+	@Override
+	public FieldUI createUI(CollectorUI collectorUI)
+	{
+		return collectorUI.createChoiceUI(this);
 	}
 	
 	public static class ChoiceDictionary

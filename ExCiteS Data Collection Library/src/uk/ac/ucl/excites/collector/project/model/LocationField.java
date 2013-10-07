@@ -7,6 +7,8 @@ import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
+import uk.ac.ucl.excites.collector.project.ui.Controller;
+import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.LocationColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.types.Location;
@@ -323,17 +325,23 @@ public class LocationField extends Field implements Timeoutable
 	{
 		return ((LocationColumn) form.getColumnFor(this)).retrieveValue(entry);
 	}
-		
-	@Override
-	public void setIn(CollectorUI ui)
-	{
-		ui.setLocation(this);
-	}
 
 	@Override
 	public List<File> getFiles(Project project)
 	{
 		return null;
+	}
+
+	@Override
+	public boolean enter(Controller controller)
+	{
+		return controller.enterLocationField(this);
+	}
+	
+	@Override
+	public FieldUI createUI(CollectorUI collectorUI)
+	{
+		return collectorUI.createLocationUI(this);
 	}
 	
 }

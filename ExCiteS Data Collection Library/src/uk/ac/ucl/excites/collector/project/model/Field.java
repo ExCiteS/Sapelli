@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
+import uk.ac.ucl.excites.collector.project.ui.Controller;
+import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.Column;
 
 /**
@@ -208,8 +210,14 @@ public abstract class Field
 		return form;
 	}
 
-	public abstract void setIn(CollectorUI ui);
-	
 	public abstract List<File> getFiles(Project project);
+	
+	/**
+	 * @param controller
+	 * @return whether or not a UI update is required after entering the field (this will be decided by the class implementating the Controller interface)
+	 */
+	public abstract boolean enter(Controller controller);
+	
+	public abstract FieldUI createUI(CollectorUI collectorUI);
 	
 }

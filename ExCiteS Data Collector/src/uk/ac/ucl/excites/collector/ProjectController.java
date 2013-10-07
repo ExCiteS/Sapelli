@@ -16,15 +16,20 @@ import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.collector.geo.OrientationSensor;
+import uk.ac.ucl.excites.collector.project.model.AudioField;
+import uk.ac.ucl.excites.collector.project.model.CancelField;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.MediaField;
 import uk.ac.ucl.excites.collector.project.model.OrientationField;
+import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
+import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.util.DeviceID;
 import uk.ac.ucl.excites.collector.util.LocationUtils;
 import uk.ac.ucl.excites.storage.model.Record;
@@ -43,7 +48,7 @@ import android.util.Log;
  * @author mstevens, Michalis Vitos, Julia
  * 
  */
-public class ProjectController implements LocationListener, OrientationListener
+public class ProjectController implements Controller, LocationListener, OrientationListener
 {
 
 	// STATICS--------------------------------------------------------
@@ -250,37 +255,88 @@ public class ProjectController implements LocationListener, OrientationListener
 			fieldHistory.add(currentField); // Add to history
 		// Entering next field...
 		currentField = nextField;
-		// Handle LocationField:
-		if(currentField instanceof LocationField)
-		{
-			LocationField lf = (LocationField) currentField;
-			if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(currentBestLocation)))
-				startLocationListener(lf); // start listening for a location
-			else
-			{ // we already have a (good enough) location
-				goForward(false); // skip the wait screen
-				return; // !!!
-			}
-		}
-		// Handle OrientationField:
-		else if(currentField instanceof OrientationField)
-		{
-			orientationSensor.start(this); // start listening for orientation updates
-			return; // !!! (orientation values will be received almost instantaneously, so we don't update the GUI
-		}
-		// Handle media fields:
-		else if(currentField instanceof MediaField)
-		{
-			if(((MediaField) currentField).isMaxReached(currentRecord))
-			{ // Maximum number of attachments for this field is reached:
-				goForward(false); // skip field
-				return; // !!!
-			}
-		}
+		
+		// Enter field and ...
+		if(currentField.enter(this))
+			activity.getCollectorView().setField(currentField); // ... update GUI if needed
+	}	
 
-		activity.setField(currentField);
+	@Override
+	public boolean enterChoiceField(ChoiceField cf)
+	{
+		// Deal with leaves (should never happen, but just in case...):
+		if(cf.isLeaf())
+			throw new IllegalStateException("Cannot enter a leaf choice (" + cf.toString() + ")");
+		// The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
+		for(ChoiceField child : cf.getChildren())
+			if(isFieldEndabled(child))
+				return true;
+		// This ChoiceField currently has no enabled children, so we should skip it:
+		goForward(false);
+		return false;
 	}
 
+	@Override
+	public boolean enterAudioField(AudioField af)
+	{
+		if(af.isMaxReached(currentRecord))
+		{ // Maximum number of attachments for this field is reached:
+			goForward(false); // skip field
+			return false;
+		}
+		return true;
+	}
+
+	@Override
+	public boolean enterPhotoField(PhotoField pf)
+	{
+		if(pf.isMaxReached(currentRecord))
+		{ // Maximum number of attachments for this field is reached:
+			goForward(false); // skip field
+			return false;
+		}
+		if(pf.isUseNativeApp())
+			activity.startCameraApp(); // Start native camera app of device
+		return !pf.isUseNativeApp();
+	}
+
+	@Override
+	public boolean enterLocationField(LocationField lf)
+	{
+		if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(currentBestLocation)))
+		{
+			startLocationListener(lf); // start listening for a location
+			return true;
+		}
+		else
+		{ // we already have a (good enough) location
+			goForward(false); // skip the wait screen
+			return false;
+		}
+	}
+
+	@Override
+	public boolean enterOrientationField(OrientationField of)
+	{
+		orientationSensor.start(this); // start listening for orientation updates
+		return false; // there is no UI needed for this (for now?) 
+	}
+
+	@Override
+	public boolean enterCancelField(CancelField cf)
+	{
+		cancelAndRestartForm();
+		return false;
+	}
+
+	@Override
+	public boolean enterEndField(EndField ef)
+	{
+		endForm();
+		return false;
+	}
+
+	@Override
 	public ButtonsState getButtonsState()
 	{
 		ButtonsState state = new ButtonsState(
@@ -529,5 +585,6 @@ public class ProjectController implements LocationListener, OrientationListener
 	{
 		return currentField;
 	}
+
 
 }

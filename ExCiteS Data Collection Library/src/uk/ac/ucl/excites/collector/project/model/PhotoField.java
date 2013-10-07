@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
+import uk.ac.ucl.excites.collector.project.ui.Controller;
+import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.util.CollectionUtils;
 
 /**
@@ -47,12 +49,6 @@ public class PhotoField extends MediaField
 		useNativeApp = DEFAULT_USE_NATIVE_APP;
 		useFrontFacingCamera = DEFAULT_USE_FRONT_FACING_CAMERA;
 		flashMode = DEFAULT_FLASH_MODE;
-	}
-
-	@Override
-	public void setIn(CollectorUI ui)
-	{
-		ui.setPhoto(this);
 	}
 
 	/**
@@ -171,6 +167,18 @@ public class PhotoField extends MediaField
 		CollectionUtils.addIgnoreNull(paths, project.getImageFile(approveButtonImageRelativePath));
 		CollectionUtils.addIgnoreNull(paths, project.getImageFile(discardButtonImageRelativePath));
 		return paths;
+	}
+
+	@Override
+	public boolean enter(Controller controller)
+	{
+		return controller.enterPhotoField(this);
+	}
+	
+	@Override
+	public FieldUI createUI(CollectorUI collectorUI)
+	{
+		return collectorUI.createPhotoUI(this);
 	}
 	
 }

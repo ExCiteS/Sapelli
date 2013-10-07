@@ -36,7 +36,7 @@ public class Project
 	private boolean logging;
 	private List<Form> forms;
 	
-	public Project(String name, String basePath) throws IOException
+	public Project(String name, String basePath)
 	{
 		this(name, DEFAULT_VERSION, basePath, false);
 	}
