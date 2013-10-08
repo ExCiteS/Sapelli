@@ -36,6 +36,7 @@ public class Form
 	public static final boolean DEFAULT_SHOW_CANCEL = true;
 	public static final boolean DEFAULT_SHOW_FORWARD = true;
 	public static final String DEFAULT_BUTTON_BACKGROUND_COLOR = "#E8E8E8"; //light gray
+	public static final boolean DEFAULT_ANIMATION = true;
 
 	public static final String COLUMN_TIMESTAMP_START = "StartTime";
 	public static final String COLUMN_TIMESTAMP_END = "EndTime";
@@ -62,6 +63,9 @@ public class Form
 	// Android shortcut:
 	private String shortcutImageRelativePath;
 
+	// Animation:
+	private boolean animation;
+	
 	// Timestamps
 	private boolean storeEndTime;
 
@@ -98,6 +102,7 @@ public class Form
 			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
 		this.fields = new ArrayList<Field>();
 		this.locationFields = new ArrayList<LocationField>();
+		this.animation = DEFAULT_ANIMATION;
 		this.buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
 		this.endAction = DEFAULT_END_ACTION;
 		this.vibrateOnEnd = DEFAULT_VIBRATE;
@@ -184,6 +189,22 @@ public class Form
 	public void setStartField(Field start)
 	{
 		this.start = start;
+	}
+
+	/**
+	 * @return the animation
+	 */
+	public boolean isAnimation()
+	{
+		return animation;
+	}
+
+	/**
+	 * @param animation the animation to set
+	 */
+	public void setAnimation(boolean animation)
+	{
+		this.animation = animation;
 	}
 
 	/**

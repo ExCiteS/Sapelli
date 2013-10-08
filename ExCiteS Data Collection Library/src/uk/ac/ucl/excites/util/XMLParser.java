@@ -17,8 +17,13 @@ import org.xml.sax.helpers.DefaultHandler;
 public abstract class XMLParser extends DefaultHandler
 {
 	
+	// Statics-------------------------------------------------------
+	static protected final String ENABLED = "enabled";
+	static protected final String DISABLED = "disabled";
+	
+	// Dynamics------------------------------------------------------
 	protected List<String> warnings;
-
+	
 	public XMLParser()
 	{
 		this.warnings = new ArrayList<String>();
@@ -44,11 +49,19 @@ public abstract class XMLParser extends DefaultHandler
 	protected boolean readBooleanAttribute(Attributes attributes, String attributeName, boolean defaultValue)
 	{
 		String text = attributes.getValue(attributeName);
-		if(text == null || text.isEmpty())
+		if(text == null)
 			return defaultValue;
-		else if(text.trim().equalsIgnoreCase(Boolean.TRUE.toString()))
+		//else
+		text = text.trim();
+		if(text.isEmpty())
+			return defaultValue;
+		else if(text.equalsIgnoreCase(Boolean.TRUE.toString()))
 			return Boolean.TRUE;
-		else if(text.trim().equalsIgnoreCase(Boolean.FALSE.toString()))
+		else if(text.equalsIgnoreCase(Boolean.FALSE.toString()))
+			return Boolean.FALSE;
+		else if(text.equalsIgnoreCase(ENABLED))
+			return Boolean.TRUE;
+		else if(text.equalsIgnoreCase(DISABLED))
 			return Boolean.FALSE;
 		else
 			return defaultValue;

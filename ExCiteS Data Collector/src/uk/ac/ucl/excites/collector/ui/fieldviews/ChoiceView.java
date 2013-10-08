@@ -133,7 +133,7 @@ public class ChoiceView extends PickerView implements FieldUI, AdapterView.OnIte
 	public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 	{
 		// Task to perform after animation has finished:
-		Runnable task = new Runnable()
+		Runnable action = new Runnable()
 		{
 			public void run()
 			{
@@ -143,8 +143,11 @@ public class ChoiceView extends PickerView implements FieldUI, AdapterView.OnIte
 			}
 		};
 
-		// Run the "press" animation
-		(new PressAnimator(task, v, collectorView)).execute();
+		// Execute the "press" animation if allowed, then perform the action: 
+		if(controller.getCurrentForm().isAnimation())
+			(new PressAnimator(action, v, collectorView)).execute(); //execute animation and the action afterwards
+		else
+			action.run(); //perform task now (animation is disabled)
 	}
 	
 	@Override

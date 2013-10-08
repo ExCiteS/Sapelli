@@ -74,6 +74,7 @@ public class ProjectParser extends XMLParser
 	static private final String ATTRIBUTE_FORM_START_FIELD = "startField";
 	static private final String ATTRIBUTE_FORM_END_SOUND = "endSound";
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
+	private static final String ATTRIBUTE_FORM_ANIMATION = "animation";
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
@@ -83,6 +84,7 @@ public class ProjectParser extends XMLParser
 	private static final String ATTRIBUTE_SHOW_FORWARD = "showForward";
 	private static final String ATTRIBUTE_SHOW_CANCEL = "showCancel";
 	private static final String ATTRIBUTE_SHOW_BACK = "showBack";
+	
 
 	// DYNAMICS-------------------------------------------------------
 	private final String basePath;
@@ -245,6 +247,8 @@ public class ProjectParser extends XMLParser
 			currentForm.setShowBack(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_BACK, Form.DEFAULT_SHOW_BACK));
 			currentForm.setShowCancel(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_CANCEL, Form.DEFAULT_SHOW_CANCEL));
 			currentForm.setShowForward(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_FORWARD, Form.DEFAULT_SHOW_FORWARD));
+			// Animation:
+			currentForm.setAnimation(readBooleanAttribute(attributes, ATTRIBUTE_FORM_ANIMATION, Form.DEFAULT_ANIMATION));
 			// Button images:
 			currentForm.setBackButtonImageRelativePath(attributes.getValue("backButtonImg"));
 			currentForm.setCancelButtonImageRelativePath(attributes.getValue("cancelButtonImg"));

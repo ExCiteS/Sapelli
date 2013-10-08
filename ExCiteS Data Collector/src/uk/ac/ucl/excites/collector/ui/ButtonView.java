@@ -213,30 +213,30 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	@Override
 	public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 	{
-		// Task to perform after animation has finished:
-		Runnable task = new Runnable()
+		// Are we allowed to trigger an action?
+		if(!buttonsEnabled || position < 0 || position >= positionToButton.length)
+			return; // ignore the click if buttons are disabled or invalid button was somehow pressed
+		
+		// Action triggered by click:
+		Runnable action = new Runnable()
 		{
 			public void run()
 			{
-				if(buttonsEnabled)
+				switch(positionToButton[position])
 				{
-					if(position >= positionToButton.length)
-						return;
-					//else:
-					switch(positionToButton[position])
-					{
-						case BUTTON_TYPE_BACK		: controller.goBack(); break;
-						case BUTTON_TYPE_CANCEL		: controller.cancelAndRestartForm(); break;
-						case BUTTON_TYPE_FORWARD	: controller.goForward(true); break;
-						default : return;
-					}
+					case BUTTON_TYPE_BACK		: controller.goBack(); break;
+					case BUTTON_TYPE_CANCEL		: controller.cancelAndRestartForm(); break;
+					case BUTTON_TYPE_FORWARD	: controller.goForward(true); break;
+					default : return;
 				}
-				// else: ignore the click
 			}
 		};
 
-		// Run the "press" animation
-		(new PressAnimator(task, v, collectorView)).execute();
+		// Execute the "press" animation if allowed, then perform the action: 
+		if(controller.getCurrentForm().isAnimation())
+			(new PressAnimator(action, v, collectorView)).execute(); //execute animation and the action afterwards
+		else
+			action.run(); //perform task now (animation is disabled)
 	}
 
 }
