@@ -71,13 +71,20 @@ public class ProjectParser extends XMLParser
 	static private final String ATTRIBUTE_FORM_NAME = "name";
 	static private final String ATTRIBUTE_FORM_SCHEMA_ID = "schema-id";
 	static private final String ATTRIBUTE_FORM_SCHEMA_VERSION = "schema-version";
+	private static final String ATTRIBUTE_FORM_STORE_END_TIME = "storeEndTime";
 	static private final String ATTRIBUTE_FORM_START_FIELD = "startField";
 	static private final String ATTRIBUTE_FORM_END_SOUND = "endSound";
+	private static final String ATTRIBUTE_FORM_END_VIBRATE = "endVibrate";
+	private static final String ATTRIBUTE_FORM_FORWARD_BUTTON_IMG = "forwardButtonImg";
+	private static final String ATTRIBUTE_FORM_CANCEL_BUTTON_IMG = "cancelButtonImg";
+	private static final String ATTRIBUTE_FORM_BACK_BUTTON_IMG = "backButtonImg";
+	static private final String ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR = "buttonBackgroundColor";
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
 	private static final String ATTRIBUTE_FORM_ANIMATION = "animation";
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
+	static private final String ATTRIBUTE_FIELD_BACKGROUND_COLOR = "backgroundColor";
 	static private final String ATTRIBUTE_FIELD_SKIP_ON_BACK = "skipOnBack";
 	private static final String ATTRIBUTE_CHOICE_VALUE = "value";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
@@ -238,11 +245,11 @@ public class ProjectParser extends XMLParser
 			// Shortcut image:
 			currentForm.setShortcutImageRelativePath(readStringAttribute(attributes, ATTRIBUTE_FORM_SHORTCUT_IMAGE, null));
 			// Store end time?:
-			currentForm.setStoreEndTime(readBooleanAttribute(attributes, "storeEndTime", Form.END_TIME_DEFAULT));
+			currentForm.setStoreEndTime(readBooleanAttribute(attributes, ATTRIBUTE_FORM_STORE_END_TIME, Form.END_TIME_DEFAULT));
 			// Sound end vibration at the end of the form:
 			// Get the sound path
 			currentForm.setEndSoundRelativePath(readStringAttribute(attributes, ATTRIBUTE_FORM_END_SOUND, null));
-			currentForm.setVibrateOnEnd(readBooleanAttribute(attributes, "endVibrate", Form.DEFAULT_VIBRATE));
+			currentForm.setVibrateOnEnd(readBooleanAttribute(attributes, ATTRIBUTE_FORM_END_VIBRATE, Form.DEFAULT_VIBRATE));
 			// Which buttons are allowed to show:
 			currentForm.setShowBack(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_BACK, Form.DEFAULT_SHOW_BACK));
 			currentForm.setShowCancel(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_CANCEL, Form.DEFAULT_SHOW_CANCEL));
@@ -250,11 +257,11 @@ public class ProjectParser extends XMLParser
 			// Animation:
 			currentForm.setAnimation(readBooleanAttribute(attributes, ATTRIBUTE_FORM_ANIMATION, Form.DEFAULT_ANIMATION));
 			// Button images:
-			currentForm.setBackButtonImageRelativePath(attributes.getValue("backButtonImg"));
-			currentForm.setCancelButtonImageRelativePath(attributes.getValue("cancelButtonImg"));
-			currentForm.setForwardButtonImageRelativePath(attributes.getValue("forwardButtonImg"));
+			currentForm.setBackButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_BACK_BUTTON_IMG));
+			currentForm.setCancelButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_CANCEL_BUTTON_IMG));
+			currentForm.setForwardButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_FORWARD_BUTTON_IMG));
 			// Button background colour:
-			currentForm.setButtonBackgroundColor(readStringAttribute(attributes, "buttonBackgroundColor", Form.DEFAULT_BUTTON_BACKGROUND_COLOR));
+			currentForm.setButtonBackgroundColor(readStringAttribute(attributes, ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR, Form.DEFAULT_BUTTON_BACKGROUND_COLOR));
 			// Start field:
 			if(attributes.getValue(ATTRIBUTE_FORM_START_FIELD) != null && !attributes.getValue(ATTRIBUTE_FORM_START_FIELD).isEmpty())
 				currentFormStartFieldId = attributes.getValue(ATTRIBUTE_FORM_START_FIELD);
@@ -424,7 +431,11 @@ public class ProjectParser extends XMLParser
 			setOptionalness(f, attributes);
 		}
 		rememberIDAndJump(f, attributes);
+		
 		// f.setSkipOnBack(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK));
+		
+		f.setBackgroundColor(readStringAttribute(attributes, ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR));
+		
 		// Which buttons are allowed to show:
 		f.setShowBack(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK));
 		f.setShowCancel(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));

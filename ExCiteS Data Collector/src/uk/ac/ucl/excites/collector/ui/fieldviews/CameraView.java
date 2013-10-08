@@ -248,6 +248,7 @@ public class CameraView extends ViewSwitcher implements FieldUI, AdapterView.OnI
 				captureButton = new FileImageItem(captureImgFile);
 			else
 				captureButton = new ResourceImageItem(getContext().getResources(), R.drawable.take_photo);
+			captureButton.setBackgroundColor(ColourHelpers.ParseColour(photoField.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 			addButton(captureButton);
 		}
 	}
@@ -279,6 +280,7 @@ public class CameraView extends ViewSwitcher implements FieldUI, AdapterView.OnI
 				approveButton = new FileImageItem(approveImgFile);
 			else
 				approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.accept);
+			approveButton.setBackgroundColor(ColourHelpers.ParseColour(photoField.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 			addButton(approveButton);
 			
 			// Discard button:
@@ -288,6 +290,7 @@ public class CameraView extends ViewSwitcher implements FieldUI, AdapterView.OnI
 				discardButton = new FileImageItem(discardImgFile);
 			else
 				discardButton = new ResourceImageItem(getContext().getResources(), R.drawable.delete);
+			discardButton.setBackgroundColor(ColourHelpers.ParseColour(photoField.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 			addButton(discardButton);
 		}
 

@@ -24,12 +24,14 @@ public abstract class Field
 	}
 	
 	//Defaults:
-	public static final boolean DEFAULT_SHOW_BACK = true;
-	public static final boolean DEFAULT_SHOW_CANCEL = true;
-	public static final boolean DEFAULT_SHOW_FORWARD = true;
+	static public final boolean DEFAULT_SHOW_BACK = true;
+	static public final boolean DEFAULT_SHOW_CANCEL = true;
+	static public final boolean DEFAULT_SHOW_FORWARD = true;
 	static public final boolean DEFAULT_ENABLED = true;
 	static public final Optionalness DEFAULT_OPTIONAL = Optionalness.NOT_IF_REACHED;
 	static public final boolean DEFAULT_NO_COLUMN = false;
+	public static final String DEFAULT_BACKGROUND_COLOR = "#FFFFFF"; //white
+	
 	
 	//Dynamics---------------------------------------------
 	protected String id;
@@ -38,6 +40,7 @@ public abstract class Field
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected Optionalness optional = DEFAULT_OPTIONAL;
 	protected boolean noColumn = DEFAULT_NO_COLUMN;
+	protected String backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	// Buttons:
 	private boolean showBack = DEFAULT_SHOW_BACK;
 	private boolean showCancel = DEFAULT_SHOW_CANCEL;
@@ -119,6 +122,22 @@ public abstract class Field
 		enabled = true;
 	}
 	
+	/**
+	 * @return the backgroundColor
+	 */
+	public String getBackgroundColor()
+	{
+		return backgroundColor;
+	}
+
+	/**
+	 * @param backgroundColor the backgroundColor to set
+	 */
+	public void setBackgroundColor(String backgroundColor)
+	{
+		this.backgroundColor = backgroundColor;
+	}
+
 	/**
 	 * @return the showBack
 	 */

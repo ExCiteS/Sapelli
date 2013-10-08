@@ -80,6 +80,7 @@ public class AudioView extends PickerView implements FieldUI, AdapterView.OnItem
 			startButton = new FileImageItem(startRecImageFile);
 		else
 			startButton = new ResourceImageItem(getContext().getResources(), R.drawable.start_audio_rec);
+		startButton.setBackgroundColor(ColourHelpers.ParseColour(audioField.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		addButton(startButton); // show start button
 		// Stop rec button:
 		Item stopButton = null;
@@ -88,6 +89,7 @@ public class AudioView extends PickerView implements FieldUI, AdapterView.OnItem
 			stopButton = new FileImageItem(stopRecImageFile);
 		else
 			stopButton = new ResourceImageItem(getContext().getResources(), R.drawable.stop_audio_rec);
+		stopButton.setBackgroundColor(ColourHelpers.ParseColour(audioField.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		addButton(stopButton); // show stop button
 
 		// Set click listener

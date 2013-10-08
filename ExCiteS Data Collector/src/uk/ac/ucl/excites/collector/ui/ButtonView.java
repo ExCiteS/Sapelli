@@ -13,6 +13,7 @@ import uk.ac.ucl.excites.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.collector.ui.picker.PickerAdapter;
 import uk.ac.ucl.excites.collector.ui.picker.PickerView;
 import uk.ac.ucl.excites.collector.ui.picker.items.*;
+import uk.ac.ucl.excites.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.util.FileHelpers;
 import android.annotation.SuppressLint;
@@ -100,15 +101,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 			Project project = controller.getProject();
 			
 			// Background colour:
-			try
-			{
-				backColor = Color.parseColor(currentForm.getButtonBackgroundColor());
-			}
-			catch(IllegalArgumentException iae)
-			{
-				Log.w(TAG, "Unable to parse colour: " + currentForm.getButtonBackgroundColor());
-				backColor = Color.parseColor(Form.DEFAULT_BUTTON_BACKGROUND_COLOR); //light gray
-			}
+			backColor = ColourHelpers.ParseColour(currentForm.getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR); //default is light gray		
 			
 			// Back button 
 			if(currentForm.isShowBack())

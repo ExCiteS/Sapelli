@@ -116,6 +116,9 @@ public class ChoiceView extends PickerView implements FieldUI, AdapterView.OnIte
 		item.setHeightPx(itemHeightPx);
 		item.setPaddingPx(itemPaddingPx);
 		
+		// Set background colour:
+		item.setBackgroundColor(ColourHelpers.ParseColour(child.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+		
 		return item;
 	}
 	
