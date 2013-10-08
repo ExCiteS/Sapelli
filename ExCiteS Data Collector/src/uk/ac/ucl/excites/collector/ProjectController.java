@@ -416,6 +416,10 @@ public class ProjectController implements Controller, LocationListener, Orientat
 			LocationField lf = (LocationField) currentField;
 			if(lf.retrieveLocation(currentRecord) == null && lf.isUseBestNonQualifyingLocationAfterTimeout())
 				lf.storeLocation(currentRecord, LocationUtils.getExCiteSLocation(currentBestLocation), true);
+			
+			// If still no location set (because either isUseBestNQLAT==false or currentBestLocation==null), and locationField is non-optional: cancel & exit!
+			if(lf.retrieveLocation(currentRecord) == null && lf.getOptional() != Optionalness.ALWAYS)
+				cancel(false); //TODO maybe also flash a red LED and/or show a message box			
 		}
 		// else if() //other fields with timeouts in the future?
 		// ...
