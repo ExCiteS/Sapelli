@@ -529,5 +529,10 @@ public class Form
 			CollectionUtils.addAllIgnoreNull(paths, field.getFiles(project));
 		return paths;
 	}
+	
+	public String toString()
+	{
+		return name;
+	}
 
 }
