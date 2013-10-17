@@ -393,6 +393,11 @@ public class ChoiceField extends Field
 			return indexed.get(index);
 		}
 		
+		public List<ChoiceField> getSelectableChoices()
+		{
+			return indexed;
+		}
+		
 		public String toCSV(String separator)
 		{
 			StringBuffer bff = new StringBuffer();
