@@ -252,7 +252,15 @@ public class ChoiceField extends Field
 	
 	public String toString()
 	{
-		return "ChoiceField " + id + (value != null ? " (value: " + value + ")" : " (no value set)");
+		return toString(false);
+	}
+	
+	public String toString(boolean printValue)
+	{
+		if(printValue)
+			return "ChoiceField " + id + (value != null ? " (value: " + value + ")" : " (no value set)");
+		else
+			return id;
 	}
 	
 	@Override
