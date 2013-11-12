@@ -85,6 +85,7 @@ public class IntegerColumn extends Column<Long>
 	 * from the range [minLogicalValue; maxLogicalValue] (inclusive).
 	 * 
 	 * @param name
+	 * @param optional
 	 * @param minLogicalValue
 	 * @param maxLogicalValue
 	 */
@@ -94,9 +95,10 @@ public class IntegerColumn extends Column<Long>
 	}
 	
 	/**
-	 * Creates an IntegerColumn that is just big enough to be able to store values accepted by the provided IntegerRangeMapping 
+	 * Creates an IntegerColumn that is just big enough to be able to store values accepted by the provided IntegerRangeMapping
 	 * 
 	 * @param name
+	 * @param optional
 	 * @param rangeMapping
 	 */
 	public IntegerColumn(String name, boolean optional, IntegerRangeMapping rangeMapping)
