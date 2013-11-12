@@ -28,26 +28,48 @@ public class IntegerColumn extends Column<Long>
 	private boolean signed;
 	private IntegerRangeMapping rangeMapping;
 	
+	/**
+	 * Creates an IntegerColumn with the default number of bits ({@value #DEFAULT_SIZE_BITS}) and the default signedness ({@value #DEFAULT_SIGNEDNESS})
+	 * 
+	 * @param name
+	 * @param optional
+	 */
+	public IntegerColumn(String name, boolean optional)
+	{
+		this(name, optional, DEFAULT_SIGNEDNESS, DEFAULT_SIZE_BITS);
+	}
+
+	/**
+	 * Creates an IntegerColumn of the specified size (in bits) and the default signedness ({@value #DEFAULT_SIGNEDNESS})
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param sizeBits	size in number of bits (minimum 1, maximum 64)
+	 */
 	public IntegerColumn(String name, boolean optional, int sizeBits)
 	{
 		this(name, optional, DEFAULT_SIGNEDNESS, sizeBits);
 	}
 	
-	public IntegerColumn(String name, boolean optional)
-	{
-		this(name, optional, DEFAULT_SIGNEDNESS, DEFAULT_SIZE_BITS);
-	}
-	
+	/**
+	 * Creates an IntegerColumn with the default number of bits ({@value #DEFAULT_SIZE_BITS}) and the specified signedness
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param signed
+	 */
 	public IntegerColumn(String name, boolean optional, boolean signed)
 	{
 		this(name, optional, signed, DEFAULT_SIZE_BITS);
 	}
 	
 	/**
+	 * Creates an IntegerColumn of the specified size (in bits) and the specified signedness
+	 * 
 	 * @param name
 	 * @param optional
 	 * @param signed
-	 * @param sizeBits size in number of bits (minimum 1, maximum 64)
+	 * @param sizeBits	size in number of bits (minimum 1, maximum 64)
 	 */
 	public IntegerColumn(String name, boolean optional, boolean signed, int sizeBits)
 	{
@@ -59,7 +81,7 @@ public class IntegerColumn extends Column<Long>
 	}
 
 	/**
-	 * Creates an IntegerColumn that is just big enough to be able to store any interger
+	 * Creates an IntegerColumn that is just big enough to be able to store any integer
 	 * from the range [minLogicalValue; maxLogicalValue] (inclusive).
 	 * 
 	 * @param name
@@ -68,8 +90,19 @@ public class IntegerColumn extends Column<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, long minLogicalValue, long maxLogicalValue)
 	{
+		this(name, optional, new IntegerRangeMapping(minLogicalValue, maxLogicalValue));
+	}
+	
+	/**
+	 * Creates an IntegerColumn that is just big enough to be able to store values accepted by the provided IntegerRangeMapping 
+	 * 
+	 * @param name
+	 * @param rangeMapping
+	 */
+	public IntegerColumn(String name, boolean optional, IntegerRangeMapping rangeMapping)
+	{
 		super(Long.class, name, optional);
-		this.rangeMapping = new IntegerRangeMapping(minLogicalValue, maxLogicalValue);
+		this.rangeMapping = rangeMapping;
 		this.size = rangeMapping.getSize();
 		this.signed = false;
 	}
