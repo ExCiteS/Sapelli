@@ -362,8 +362,9 @@ public class Record
 		StringBuilder bldr = new StringBuilder();
 		for(Column<?> c : schema.getColumns())
 		{
+			if(c != schema.getColumn(0))
+				bldr.append(separator);
 			bldr.append(c.retrieveValueAsString(this));
-			bldr.append(separator);
 		}
 		return bldr.toString();
 	}
