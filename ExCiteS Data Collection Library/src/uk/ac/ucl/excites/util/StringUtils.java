@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.util;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -47,6 +48,11 @@ public final class StringUtils
 			bff.append('\t');
 		bff.append(string);
 		return bff.toString();
+	}
+	
+	static public String join(String[] parts, String separator)
+	{
+		return join(Arrays.asList(parts), separator);
 	}
 	
 	static public String join(List<String> parts, String separator)
