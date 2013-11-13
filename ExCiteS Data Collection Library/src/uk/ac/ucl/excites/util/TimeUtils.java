@@ -2,11 +2,13 @@ package uk.ac.ucl.excites.util;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Locale;
 import java.util.TimeZone;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -15,9 +17,10 @@ import org.joda.time.format.DateTimeFormatter;
 public final class TimeUtils
 {
 
-	private static DateTimeFormatter FileTimestampFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HHmmss");
-	
-	private static DateTimeFormatter PrettyTimestampFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm:ss");
+	public static final DateTimeFormatter ISOWithMSFormatter = ISODateTimeFormat.dateTime();
+	public static final DateTimeFormatter ISOWithoutMSFormatter = ISODateTimeFormat.dateTimeNoMillis();
+	public static final DateTimeFormatter FileTimestampFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HHmmss");
+	public static final DateTimeFormatter PrettyTimestampFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm:ss");
 
 	private TimeUtils() {}
 
@@ -61,7 +64,7 @@ public final class TimeUtils
 
 	static public String formatTime(Calendar calendar, String format)
 	{
-		return new SimpleDateFormat(format).format(calendar.getTime());
+		return new SimpleDateFormat(format, Locale.getDefault()).format(calendar.getTime());
 	}
 
 	static public TimeZone getTimeZone(int rawOffset)
@@ -70,6 +73,14 @@ public final class TimeUtils
 		if(timeZoneIDs.length == 0)
 			throw new IllegalArgumentException("Could not fine a timezone for offset: " + rawOffset);
 		return TimeZone.getTimeZone(timeZoneIDs[0]);
+	}
+	
+	static public String getISOTimestamp(boolean withMS)
+	{
+		if(withMS)
+			return ISOWithMSFormatter.print(DateTime.now());
+		else
+			return ISOWithoutMSFormatter.print(DateTime.now());
 	}
 
 	static public String getTimestampForFileName()
