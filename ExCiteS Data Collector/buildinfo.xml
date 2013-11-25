@@ -38,6 +38,21 @@
     	<property name="demo-project-filename" value="demo.excites"/>
 	</target>
 
+    <target name="-git.branch" description="Store current git branch in ${repository-branch}">
+	    <exec executable="git" outputproperty="git-branch" failifexecutionfails="false" errorproperty="">
+	        <arg value="rev-parse"/>
+	        <arg value="--abbrev-ref"/>
+	        <arg value="HEAD"/>
+	    </exec>
+	    <condition property="repository-branch" value="${git-branch}" else="unknown">
+	        <and>
+	            <isset property="git-branch"/>
+	            <length string="${git-branch}" trim="yes" length="0" when="greater"/>
+	        </and>
+	    </condition>
+	    <echo>Active git branch: ${repository-branch}</echo>
+	</target>
+    
     <target name="-git.revision" description="Store git revision in ${repository-version}">
 	    <exec executable="git" outputproperty="git-revision" failifexecutionfails="false" errorproperty="">
 	        <arg value="log"/>
@@ -93,7 +108,7 @@
 		<mkdir dir="${output-dir}"/>
 	</target>
 	
-	<target name="-git" depends="-git.revision,-git.tag">
+	<target name="-git" depends="-git.branch,-git.revision,-git.tag">
 		<ac:if>
 			<ac:not>
 				<equals arg1="${repository-version}" arg2="unknown"/>
@@ -127,7 +142,9 @@
 	</target>
 	
 	<target name="git-check" depends="-settings,-git">
+	    <echo>Active git branch: ${repository-branch}</echo>
 		<echo>Last git commit hash: ${repository-version}</echo>
+		<echo>Last git commit tag: ${repository-tag}</echo>
 		<echo>Changes since last commit?: ${repository-changes}</echo>
 	</target>
 	
@@ -154,6 +171,7 @@
 		<echo>	User: ${user.name}</echo>
 		<echo>	Build timestamp: ${TIMESTAMP}</echo>
 		<echo>	App version (code): ${appVersionName} (${appVersionCode})</echo>
+		<echo>  Active git branch: ${repository-branch}</echo>
 		<echo>	Last git commit hash: ${repository-version}</echo>
 		<echo>	Last git commit tag: ${repository-tag}</echo>
 		<echo>	Changes since last commit?: ${repository-changes}</echo>
@@ -170,6 +188,7 @@ public class ${classname}
 	public static final String TIMESTAMP = "${TIMESTAMP}";
 	public static final String VERSION_NAME = "${appVersionName}"; // as in manifest, also available through: getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
 	public static final int VERSION_CODE = ${appVersionCode}; // as in manifest, also available through: getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+	public static final String BRANCH = "${repository-branch}";
 	public static final String LAST_COMMIT_HASH = "${repository-version}";
 	public static final String LAST_COMMIT_TAG = "${repository-tag}";
 	public static final boolean CHANGES_SINCE_LAST_COMMIT = ${repository-changes};
@@ -185,7 +204,7 @@ public class ${classname}
 		return	printVersion() + (breaklines ? '\n' : ';') +
 				"Built by " + USERNAME  + (breaklines ? '\n' : ';') +
 				"On " + TIMESTAMP + (breaklines ? '\n' : ';') +
-				"Using git revision " + LAST_COMMIT_HASH + " with" + (CHANGES_SINCE_LAST_COMMIT ? "" : "out") + " changes";
+				"Using git branch " + BRANCH + ", revision " + LAST_COMMIT_HASH + " with" + (CHANGES_SINCE_LAST_COMMIT ? "" : "out") + " changes";
 	}
 			
 }</echo>
