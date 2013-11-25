@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project name="ExCiteS Data Collector - Build info generation" default="GenerateBuildInfo" xmlns:ac="antlib:net.sf.antcontrib">
+<project name="Sapelli Data Collector - Build info generation" default="GenerateBuildInfo" xmlns:ac="antlib:net.sf.antcontrib">
 	<!-- Author: mstevens -->
 
 	<taskdef resource="net/sf/antcontrib/antlib.xml" uri="antlib:net.sf.antcontrib"/><!-- required for for/if/etc. -->	
