@@ -253,7 +253,7 @@ public class Aggregator
 		Collections.sort(schemas);
 		for(Schema s : schemas)
 		{
-			System.out.println("Schema ID " + s.getID() + ", version " + s.getVersion() + " is used by:");
+			System.out.println("Schema ID " + s.getID() + ", version " + s.getVersion() + " [Min size: " + s.getMinimumSize() + " bits; Max size: " + s.getMaximumSize() + " bits] is used by:");
 			List<Form> forms = new ArrayList<Form>(dao.retrieveForms(s.getID(), s.getVersion()));
 			Collections.sort(forms, new Comparator<Form>()
 			{
