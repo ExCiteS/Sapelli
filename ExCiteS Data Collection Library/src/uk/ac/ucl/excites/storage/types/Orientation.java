@@ -136,4 +136,11 @@ public class Orientation
 				(roll != null ? roll.toString() : "");
 	}
 	
+	static public String GetStringHeader(String prefix, String separator)
+	{
+		return 	prefix + "azimuth" + separator +
+				prefix + "pitch" + separator +
+				prefix + "roll";
+	}
+	
 }

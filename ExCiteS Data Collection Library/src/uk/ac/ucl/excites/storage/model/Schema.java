@@ -325,10 +325,14 @@ public class Schema implements Comparable<Schema>
 	
 	public String toCSVHeader(String separator)
 	{
-		StringBuffer bff = new StringBuffer();
+		StringBuilder bldr = new StringBuilder();
 		for(Column<?> c : columns)
-			bff.append(c.getName());
-		return bff.toString();
+		{
+			if(c != getColumn(0))
+				bldr.append(separator);
+			bldr.append(c.getCSVHeaderLabel(separator));
+		}
+		return bldr.toString();
 	}
 
 }

@@ -285,4 +285,16 @@ public class Location
 				(time != null ? time.toString() : "");
 	}
 	
+	static public String GetStringHeader(String prefix, String separator)
+	{
+		return 	prefix + "provider" + separator +
+				prefix + "lat" + separator +
+				prefix + "lon" + separator +
+				prefix + "alt" + separator +
+				prefix + "bearing" + separator +
+				prefix + "speed" + separator +
+				prefix + "acc" + separator +
+				prefix + "time";
+	}
+	
 }

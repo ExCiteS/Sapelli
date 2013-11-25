@@ -8,6 +8,11 @@ import java.text.ParseException;
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 
+/**
+ * @author mstevens
+ *
+ * @param <T>
+ */
 public abstract class Column<T>
 {
 	
@@ -368,5 +373,16 @@ public abstract class Column<T>
 	}
 	
 	protected abstract boolean equalRestrictions(Column<T> otherColumn);
+
+	/**
+	 * Can be overridden by subclasses
+	 * 
+	 * @param separator
+	 * @return
+	 */
+	public String getCSVHeaderLabel(String separator)
+	{
+		return name;
+	}
 	
 }

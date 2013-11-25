@@ -106,4 +106,10 @@ public class OrientationColumn extends Column<Orientation>
 		return new Orientation(value);
 	}
 	
+	@Override
+	public String getCSVHeaderLabel(String separator)
+	{
+		return Orientation.GetStringHeader(getName() + "-", separator);
+	}
+	
 }

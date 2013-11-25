@@ -364,7 +364,17 @@ public class Record
 		{
 			if(c != schema.getColumn(0))
 				bldr.append(separator);
-			bldr.append(c.retrieveValueAsString(this));
+			//VERY DIRTY HACK...
+			int parts = c.getCSVHeaderLabel(";").split(";").length; // number of expected "subcolumns"
+			String str = c.retrieveValueAsString(this);
+			if(str == null && parts > 1)
+			{
+				bldr.append("null");
+				for(int p = 1; p < parts; p++)
+					bldr.append(";null");
+			}
+			else
+				bldr.append(str);			
 		}
 		return bldr.toString();
 	}

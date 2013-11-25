@@ -206,5 +206,11 @@ public class LocationColumn extends Column<Location>
 	{
 		return new Location(value);
 	}
+	
+	@Override
+	public String getCSVHeaderLabel(String separator)
+	{
+		return Location.GetStringHeader(getName() + "-", separator);
+	}
 
 }
