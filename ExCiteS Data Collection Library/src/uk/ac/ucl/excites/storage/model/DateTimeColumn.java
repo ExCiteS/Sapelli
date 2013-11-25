@@ -8,11 +8,11 @@ import java.io.IOException;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.util.TimeUtils;
 
 /**
  * A column to store DateTime objects (cfr: http://joda-time.sourceforge.net)
@@ -25,9 +25,6 @@ public class DateTimeColumn extends Column<DateTime>
 	
 	static private final int QUARTER_OF_AN_HOUR_MS = 15 /*minutes*/ * 60 /*seconds*/ * 1000 /*milliseconds*/;
 	static private final int TIMEZONE_QH_OFFSET_SIZE = 7; //bits
-	
-	static private final DateTimeFormatter ISO_WITH_MS_FORMATTER = ISODateTimeFormat.dateTime();
-	static private final DateTimeFormatter ISO_WITHOUT_MS_FORMATTER = ISODateTimeFormat.dateTimeNoMillis();
 	
 	/**
 	 * Returns a DateTimeColumn that can hold Java-style timestamps, i.e. signed 64 bit integers representing
@@ -146,11 +143,11 @@ public class DateTimeColumn extends Column<DateTime>
 	{
 		try
 		{
-			return parse(value, ISO_WITH_MS_FORMATTER);
+			return parse(value, TimeUtils.ISOWithMSFormatter);
 		}
 		catch(IllegalArgumentException iae)
 		{
-			return parse(value, ISO_WITHOUT_MS_FORMATTER); //for compatibility with old XML exports which used ISO without milliseconds if the keepMS=false
+			return parse(value, TimeUtils.ISOWithoutMSFormatter); //for compatibility with old XML exports which used ISO without milliseconds if the keepMS=false
 		}
 	}
 
@@ -172,13 +169,12 @@ public class DateTimeColumn extends Column<DateTime>
 	{
 		long msSinceJavaEpoch = timeMapping.read(bitStream) * (keepMS ? 1 : 1000);
 		return new DateTime(msSinceJavaEpoch, keepLocalTimezone ? getDateTimeZoneFor((int) bitStream.readInteger(TIMEZONE_QH_OFFSET_SIZE, true)) : null);
-	}
-		
+	}		
 
 	@Override
 	protected void validate(DateTime value) throws IllegalArgumentException
 	{
-		DateTimeFormatter formatter = keepMS ? ISO_WITH_MS_FORMATTER : ISO_WITHOUT_MS_FORMATTER;
+		DateTimeFormatter formatter = keepMS ? TimeUtils.ISOWithMSFormatter : TimeUtils.ISOWithoutMSFormatter;
 		if(!timeMapping.inRange(Math.round(value.getMillis() / (keepMS ? 1 : 1000d)), strict))
 			throw new IllegalArgumentException("The given DateTime (" + formatter.print(value) + ") is outside the allowed range (from " + formatter.print(getLowBound()) + " to " + formatter.print(getHighBound()) + ").");
 	}
@@ -238,7 +234,7 @@ public class DateTimeColumn extends Column<DateTime>
 	@Override
 	protected String toString(DateTime value)
 	{
-		return (keepLocalTimezone ? ISO_WITH_MS_FORMATTER.withZone(value.getZone()) : ISO_WITH_MS_FORMATTER.withZoneUTC()).print(value); // always keep milliseconds in XML!
+		return (keepLocalTimezone ? TimeUtils.ISOWithMSFormatter.withZone(value.getZone()) : TimeUtils.ISOWithMSFormatter.withZoneUTC()).print(value); // always keep milliseconds in XML!
 	}
 
 	@Override
