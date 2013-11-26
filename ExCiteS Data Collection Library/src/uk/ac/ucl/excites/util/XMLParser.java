@@ -21,23 +21,23 @@ import org.xml.sax.helpers.DefaultHandler;
 
 /**
  * @author mstevens
- *
+ * 
  */
 public abstract class XMLParser extends DefaultHandler
 {
-	
+
 	// Statics-------------------------------------------------------
 	static protected final String ENABLED = "enabled";
 	static protected final String DISABLED = "disabled";
-	
+
 	// Dynamics------------------------------------------------------
 	protected List<String> warnings;
-	
+
 	public XMLParser()
 	{
 		this.warnings = new ArrayList<String>();
 	}
-	
+
 	protected InputStream open(File xmlFile) throws Exception
 	{
 		if(xmlFile == null || !xmlFile.exists() || xmlFile.length() == 0)
@@ -46,6 +46,11 @@ public abstract class XMLParser extends DefaultHandler
 	}
 
 	public void parse(InputStream input) throws Exception
+	{
+		parse(input, false);
+	}
+	
+	public void parse(InputStream input, boolean leaveOpen) throws Exception
 	{
 		if(input == null)
 			throw new IllegalArgumentException("Invalid input stream");
@@ -67,17 +72,20 @@ public abstract class XMLParser extends DefaultHandler
 		}
 		finally
 		{
-			try
+			if(!leaveOpen)
 			{
-				input.close();
-			}
-			catch(IOException ioe)
-			{
-				ioe.printStackTrace();
+				try
+				{
+					input.close();
+				}
+				catch(IOException ioe)
+				{
+					ioe.printStackTrace();
+				}
 			}
 		}
 	}
-	
+
 	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
 	{
 		String value = attributes.getValue(attributeName);
@@ -100,7 +108,7 @@ public abstract class XMLParser extends DefaultHandler
 		String text = attributes.getValue(attributeName);
 		if(text == null)
 			return defaultValue;
-		//else
+		//else:
 		text = text.trim();
 		if(text.isEmpty())
 			return defaultValue;
@@ -133,10 +141,10 @@ public abstract class XMLParser extends DefaultHandler
 		else
 			return Float.parseFloat(text.trim());
 	}
-	
+
 	public List<String> getWarnings()
 	{
 		return warnings;
 	}
-	
+
 }
