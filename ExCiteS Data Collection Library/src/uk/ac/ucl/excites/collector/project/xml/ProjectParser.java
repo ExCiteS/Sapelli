@@ -4,20 +4,13 @@
 package uk.ac.ucl.excites.collector.project.xml;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map.Entry;
 
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
 import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
 
 import uk.ac.ucl.excites.collector.project.model.AudioField;
 import uk.ac.ucl.excites.collector.project.model.CancelField;
@@ -115,46 +108,16 @@ public class ProjectParser extends XMLParser
 
 	public Project parseProject(File xmlFile) throws Exception
 	{
-		if(xmlFile == null || !xmlFile.exists() || xmlFile.length() == 0)
-			throw new IllegalArgumentException("Invalid xmlFile (" + (xmlFile == null ? "null" : xmlFile.getAbsolutePath()) + ")!");
-		return parseProject(new FileInputStream(xmlFile));
+		return parseProject(open(xmlFile));
 	}
 
 	public Project parseProject(InputStream input) throws Exception
 	{
-		if(input == null)
-			throw new IllegalArgumentException("Invalid input stream");
 		project = null;
 		fieldToJumpId = new HashMap<Field, String>();
 		idToField = new Hashtable<String, Field>();
-		warnings.clear();
 		mediaAttachToDisableId = new HashMap<MediaField, String>();
-		try
-		{
-			SAXParserFactory spf = SAXParserFactory.newInstance();
-			SAXParser sp = spf.newSAXParser();
-			XMLReader xr = sp.getXMLReader();
-			xr.setContentHandler(this);
-			xr.parse(new InputSource(input));
-		}
-		catch(Exception e)
-		{
-			System.err.println("XML Parsing Exception = " + e);
-			// e.printStackTrace(System.err);
-			// return null;
-			throw e;
-		}
-		finally
-		{
-			try
-			{
-				input.close();
-			}
-			catch(IOException ioe)
-			{
-				ioe.printStackTrace();
-			}
-		}
+		parse(input); //!!!
 		return project;
 	}
 
