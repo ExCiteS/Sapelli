@@ -4,19 +4,12 @@
 package uk.ac.ucl.excites.storage.xml;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
 
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.storage.model.Column;
@@ -44,36 +37,8 @@ public class RecordsImporter extends XMLParser
 
 	public List<Record> importFrom(File xmlFile) throws Exception
 	{
-		if(xmlFile == null || !xmlFile.exists() || xmlFile.length() == 0)
-			throw new IllegalArgumentException("Invalid xmlFile (" + (xmlFile == null ? "null" : xmlFile.getAbsolutePath()) + ")!");
-		InputStream input = new FileInputStream(xmlFile);
 		records = new ArrayList<Record>();
-		try
-		{
-			SAXParserFactory spf = SAXParserFactory.newInstance();
-			SAXParser sp = spf.newSAXParser();
-			XMLReader xr = sp.getXMLReader();
-			xr.setContentHandler(this);
-			xr.parse(new InputSource(input));
-		}
-		catch(Exception e)
-		{
-			System.err.println("XML Parsing Exception = " + e);
-			// e.printStackTrace(System.err);
-			// return null;
-			throw e;
-		}
-		finally
-		{
-			try
-			{
-				input.close();
-			}
-			catch(IOException ioe)
-			{
-				ioe.printStackTrace();
-			}
-		}
+		parse(open(xmlFile));
 		return records;
 	}
 
