@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.util;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.zip.CRC32;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -12,7 +13,7 @@ import org.xml.sax.SAXException;
 import uk.ac.ucl.excites.util.XMLParser;
 
 /**
- * Produces a hash code from an XML file or inputstream, it ignores white space and comments
+ * Computes hash codes from an XML file or inputstream, ignoring white space and comments
  * 
  * @author mstevens
  * 
@@ -22,28 +23,85 @@ public class XMLHasher extends XMLParser
 	
 	static private final int MULTIPLIER = 31;
 
-	private int hashCode;
-
-	public int getHashCode(File xmlFile) throws Exception
+	private int hashCode = 1;
+	private CRC32 crc = null;
+	
+	/**
+	 * Returns a signed 32bit hash code, computed in "Java-style" (i.e. similarly to {@link Object#hashCode()})
+	 * 
+	 * @param xmlFile
+	 * @return
+	 * @throws Exception
+	 */
+	public int getJavaHashCode(File xmlFile) throws Exception
 	{
-		return getHashCode(open(xmlFile), false);
+		return getJavaHashCode(open(xmlFile), false);
 	}
 
-	public int getHashCode(InputStream input, boolean leaveOpen) throws Exception
+	/**
+	 * Returns a signed 32bit hash code, computed in "Java-style" (i.e. similarly to {@link Object#hashCode()})
+	 * 
+	 * @param input
+	 * @param leaveOpen
+	 * @return
+	 * @throws Exception
+	 */
+	public int getJavaHashCode(InputStream input, boolean leaveOpen) throws Exception
 	{
-		hashCode = 1;
-		parse(input, leaveOpen);
-		return hashCode;
+		try
+		{
+			parse(input, leaveOpen);
+			return hashCode;
+		}
+		finally
+		{	//Reset:
+			hashCode = 1;
+		}
 	}
 	
-	private void update(int code)
+	/**
+	 * Returns an unsigned 32bit hash code, computed using CRC32
+	 * 
+	 * @param xmlFile
+	 * @return
+	 * @throws Exception
+	 */
+	public long getCRC32HashCode(File xmlFile) throws Exception
 	{
-		hashCode = MULTIPLIER * hashCode + code;
+		return getCRC32HashCode(open(xmlFile), false);
+	}
+
+	/**
+	 * Returns an unsigned 32bit hash code, computed using CRC32
+	 * 
+	 * @param input
+	 * @param leaveOpen
+	 * @return
+	 * @throws Exception
+	 */
+	public long getCRC32HashCode(InputStream input, boolean leaveOpen) throws Exception
+	{
+		try
+		{
+			crc = new CRC32();
+			parse(input, leaveOpen);
+			return crc.getValue();
+		}
+		finally
+		{	//Reset:
+			crc = null;
+		}
 	}
 	
-	private void update(Object obj)
+	private void update(String str)
 	{
-		update(obj != null ? obj.hashCode() : 0);
+		if(str != null)
+		{
+			if(crc == null)
+				hashCode = MULTIPLIER * hashCode + str.hashCode();
+			else
+				crc.update(str.getBytes());
+		}
 	}
 	
 	@Override
@@ -70,5 +128,15 @@ public class XMLHasher extends XMLParser
 	{
 		update(new String(ch, start, length));
 	}
+	
+	/*private void update(int code)
+	{
+		hashCode = MULTIPLIER * hashCode + code;
+	}
+	
+	private void update(Object obj)
+	{
+		update(obj != null ? obj.hashCode() : 0);
+	}*/
 
 }
