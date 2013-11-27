@@ -80,9 +80,14 @@ public abstract class XMLParser extends DefaultHandler
 	
 	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
 	{
+		return readRequiredStringAttribute(qName, attributes, attributeName, null);
+	}
+	
+	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName, String reason) throws SAXException
+	{
 		String value = attributes.getValue(attributeName);
 		if(value == null)
-			throw new SAXException(attributeName + " is missing, this is a required attribute of " + qName + ".");
+			throw new SAXException(attributeName + " is missing, this is a required attribute of " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
 		return value;
 	}
 
@@ -114,6 +119,20 @@ public abstract class XMLParser extends DefaultHandler
 			return Boolean.FALSE;
 		else
 			return defaultValue;
+	}
+	
+	protected int readRequiredIntegerAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
+	{
+		return readRequiredIntegerAttribute(qName, attributes, attributeName, null);
+	}
+	
+	protected int readRequiredIntegerAttribute(String qName, Attributes attributes, String attributeName, String reason) throws SAXException
+	{
+		String text = attributes.getValue(attributeName);
+		if(text == null || text.isEmpty())
+			throw new SAXException(attributeName + " is missing, this is a required attribute of " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
+		else
+			return Integer.parseInt(text.trim());
 	}
 
 	protected int readIntegerAttribute(Attributes attributes, String attributeName, int defaultValue)
