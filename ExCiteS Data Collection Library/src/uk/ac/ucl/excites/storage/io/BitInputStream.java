@@ -296,7 +296,7 @@ public final class BitInputStream extends InputStream
 		if(numberOfBits > 64)
 			throw new IllegalArgumentException("Cannot store more than 64 bits in a variable of type long; use readBigInteger() instead.");
 		if(numberOfBits == 64 && !signed)
-			throw new IllegalArgumentException("Cannot savely store unsigned values of more than 63 bits in a variable of type long; use readBigInteger() instead.");
+			throw new IllegalArgumentException("Cannot safely store unsigned values of more than 63 bits in a variable of type long; use readBigInteger() instead.");
 		return readBigInteger(numberOfBits, signed).longValue();
 	}
 	
