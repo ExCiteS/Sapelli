@@ -42,7 +42,7 @@ public final class BitInputStream extends InputStream
 	
 	/**
 	 * @return whether stream is at end (true) or not (false)
-	 * @throws IOException if an I/O error occurs
+	 * @throws IOException if the stream is closed or another I/O error occurs
 	 */
 	public boolean atEnd() throws IOException
 	{
@@ -69,7 +69,7 @@ public final class BitInputStream extends InputStream
 	 * or throws an EOFException if the end of stream is reached.
 	 * 
 	 * @return the bit that was read (true = 1; false = 0)
-	 * @throws IOException if an I/O error occurs
+	 * @throws IOException if the stream is closed or another I/O error occurs
 	 * @throws EOFException could not read 8 bits
 	 */
 	public boolean readBit() throws IOException, EOFException
@@ -79,29 +79,60 @@ public final class BitInputStream extends InputStream
 		numBitsRemaining--;
 		return ((currentByte >>> numBitsRemaining) & 1) == 1;
 	}
-	
+
 	/**
-	 * Reads a specified number of bits from the input stream
+	 * Reads exactly the specified number of bits from the input stream,
+	 * if not enough bits could be read an {@link EOFException} is thrown.
 	 * 
 	 * @param numberOfBits number of bits to be read
-	 * @return boolean array with the bits that were read
-	 * @throws IOException if an I/O error occurs
-	 * @throws EOFException could not read enough bits
+	 * @return boolean array (of lenth numberOfBits) with the bits that were read
+	 * @throws IOException if the stream is closed or another I/O error occurs
+	 * @throws EOFException could not read the requested amount of bits
 	 */
 	public boolean[] readBits(int numberOfBits) throws EOFException, IOException
 	{
-		boolean[] bits = new boolean[numberOfBits];
-		for(int i = 0; i < numberOfBits; i++)
-			bits[i] = readBit();
-		return bits;
+		return readBits(numberOfBits, true);
 	}
 	
 	/**
-	 * Read exactly one byte from the input and returns it
-	 * Throws an exception when less than 8 bits could be read
+	 * Reads a specified number of bits from the input stream.
 	 * 
-	 * @return the byte
-	 * @throws IOException if an I/O error occurs
+	 * If strict is true exactly numberOfBits bits must be read, if it is false 1 bit is enough.
+	 * When strict is false bits that cannot be read will be set to 0 (false), in up to 7 "less significant" positions.
+	 * 
+	 * @param numberOfBits  number of bits to be read
+	 * @param strict  whether we want exactly the requested number of bits to be read (true) or whether 1 is enough (false)
+	 * @return boolean array with the bits that were read
+	 * @throws IOException if the stream is closed or another I/O error occurs
+	 * @throws EOFException could not read enough bits (< numberOfBits when strict = true; 0 when strict = false)
+	 */
+	public boolean[] readBits(int numberOfBits, boolean strict) throws EOFException, IOException
+	{
+		if(numberOfBits < 0)
+			throw new IllegalArgumentException("numberOfBits cannot be negative");
+		boolean[] bits = new boolean[numberOfBits]; // all bits initialised to 0 (false)
+		int i = 0;
+		try
+		{
+			for(; i < numberOfBits; i++)
+				bits[i] = readBit();
+		}
+		catch(EOFException eof)
+		{
+			if(strict)
+				throw new EOFException("Could not read enough bits (requested: " + numberOfBits + "; available: " + i + ")");
+			else if(i == 0)
+				throw new EOFException("Could not read a single bit");
+		}
+		return bits;
+	}	
+	
+	/**
+	 * Read exactly one byte from the input and returns it.
+	 * Throws an {@link EOFException} when less than 8 bits could be read.
+	 * 
+	 * @return the byte that was read
+	 * @throws IOException if the stream is closed or another I/O error occurs
 	 * @throws EOFException could not read exactly 8 bits
 	 */
 	public byte readByte() throws IOException, EOFException
@@ -110,73 +141,62 @@ public final class BitInputStream extends InputStream
 	}
 	
 	/**
-	 * Reads a byte from the input
-	 * If strict is true exactly 8 bits must be read, if it is false one bit is enough
+	 * Reads a byte from the input.
+	 * The byte is assumed to be stored with MSB 0 bit order (i.e. the first bit read is the most significant one).
 	 * 
-	 * The byte is assumed to be stored with MSB 0 bit order (i.e. the first bit read is the most significant one)
+	 * If strict is true exactly 8 bits must be read, if it is false 1 bit is enough.
+	 * When strict is false bits that cannot be read will be set to 0, in up to 7 "less significant" positions.
 	 * 
 	 * @param strict whether we want 8 bits to be read (true) or whether 1 is enough (false)
 	 * @return the byte that was read
-	 * @throws IOException
+	 * @throws IOException if the stream is closed or another I/O error occurs
 	 * @throws EOFException could not read enough bits (< 8 when strict = true; 0 when strict = false)
 	 * @see <a href="http://en.wikipedia.org/wiki/Bit_numbering">http://en.wikipedia.org/wiki/Bit_numbering</a>
 	 */
 	public byte readByte(boolean strict) throws IOException, EOFException
 	{
-		if(closed)
-			throw new IOException("This stream is closed");
 		byte b = 0;
-		int i = 0;
-		try
-		{
-			for(; i < 8; i++)
-				if(readBit())
-					b |= 1 << (7 - i); //MSB is read first
-		}
-		catch(EOFException eof)
-		{
-			if(strict)
-				throw new EOFException("Could not read whole byte");
-			else if(i == 0)
-				throw new EOFException("Could not read a single bit");
-		}
+		boolean[] bits = readBits(8, strict); //throws EOFException
+		for(int i = 0; i < 8; i++)
+			if(bits[i])
+				b |= 1 << (7 - i); //MSB is read first
 		return b;
 	}
 	
 	/* (non-Javadoc)
 	 * @see java.io.InputStream#read(byte[])
 	 */
-	public int read(byte[] b) throws IOException
+	public int read(byte[] buffer) throws IOException
 	{
-		return read(b, 0, b.length);
+		return read(buffer, 0, buffer.length);
 	}
 	
 	/* (non-Javadoc)
 	 * @see java.io.InputStream#read(byte[], int, int)
 	 */
-	public int read(byte[] b, int off, int len) throws IOException
+	public int read(byte[] buffer, int byteOffset, int byteCount) throws IOException 
 	{
-		if(b == null)
-			throw new NullPointerException("Byte array cannot be null");
-		if(off < 0 || len < 0 || off + len > b.length)
-			throw new IndexOutOfBoundsException("Offset and/or length cause out of bounds exception");
 		if(closed)
 			throw new IOException("This stream is closed");
-		int i = off;
-		for(; i < len; i++)
+		if(buffer == null)
+			throw new NullPointerException("buffer cannot be null");
+		if(byteOffset < 0 || byteCount < 0 || byteOffset + byteCount > buffer.length)
+			throw new IndexOutOfBoundsException("byteOffset and/or byteCount cause out of bounds exception");
+		int i = 0;
+		for(; i < byteCount; i++)
 		{
 			try
 			{
-				b[i] = readByte(true);
+				buffer[i + byteOffset] = readByte(true);
 			}
 			catch(EOFException eof)
 			{
-				if(i == off)
+				if(i == 0)
 					return -1; //not a single byte could be read
 				break;
 			}
 		}
-		return i - off; //number of bytes read
+		return i; //number of bytes read
 	}
 	
 	/**
@@ -184,7 +204,7 @@ public final class BitInputStream extends InputStream
 	 * 
 	 * @param n number of bytes to read
 	 * @return array of the bytes that were read
-	 * @throws IOException if an I/O error occurs
+	 * @throws IOException if the stream is closed or another I/O error occurs
 	 * @throws EOFException could not read enough bytes
 	 */
 	public byte[] readBytes(int n) throws IOException, EOFException
@@ -193,24 +213,23 @@ public final class BitInputStream extends InputStream
 	}
 	
 	/**
-	 * Read n bytes from the input
+	 * Read n bytes from the input.
+	 * 
 	 * If strict = true it throws an EOFException if not enough bytes where available.
-	 * If strict = false it only throws an EOFException if not a single byte could be read
+	 * If strict = false it only throws an EOFException if not a single byte could be read.
 	 * 
 	 * @param n number of bytes to read
 	 * @param strict
 	 * @return array of the bytes that were read
-	 * @throws IOException if an I/O error occurs
+	 * @throws IOException if the stream is closed or another I/O error occurs
 	 * @throws EOFException could not read enough bytes (< n when strict = true; 0 when strict = false)
 	 */
 	public byte[] readBytes(int n, boolean strict) throws IOException, EOFException
 	{
 		if(n < 0)
 			throw new IllegalArgumentException("Byte count cannot be negative");
-		if(closed)
-			throw new IOException("This stream is closed");
 		byte[] bytes = new byte[n];
-		int bytesRead = read(bytes);
+		int bytesRead = read(bytes); //throws IOException (e.g. when stream is closed)
 		if(bytesRead < n && strict)
 			throw new EOFException("Could not read enough bytes");
 		if(bytesRead == -1)
@@ -221,7 +240,7 @@ public final class BitInputStream extends InputStream
 	/**
 	 * Reads the next byte of data from the input stream.
 	 *  
-	 * Has the same semantics as InputStream.read():
+	 * Has the same semantics as {@link java.io.InputStream#read()}:
 	 * 		the value byte is returned as an int in the range 0 to 255;
 	 * 		if no byte is available because the end of the stream has been reached, the value -1 is returned.
 	 * 
@@ -234,7 +253,7 @@ public final class BitInputStream extends InputStream
 	{
 		try
 		{
-			return (int) readInteger(Byte.SIZE, true);
+			return (int) readInteger(Byte.SIZE, false);
 		}
 		catch(EOFException eof)
 		{

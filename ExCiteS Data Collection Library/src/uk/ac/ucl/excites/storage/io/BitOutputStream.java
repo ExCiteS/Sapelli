@@ -142,9 +142,9 @@ public final class BitOutputStream extends OutputStream
 	}
 	
 	/**
-	 * Writes a (signed, 32bit) int to the output
+	 * Writes a (signed, 32bit) int to the output.
 	 * 
-	 * Warning: does not conform to semantics of OutputStream.write(int)!
+	 * Warning: does *not* conform to semantics of {@link java.io.OutputStream#write(int)}.
 	 * 
 	 * @param value integer value to write to the output
 	 * @throws IOException if an I/O error occurs
@@ -166,10 +166,10 @@ public final class BitOutputStream extends OutputStream
 	}
 	
 	/**
-	 * Writes an integer number (provided as a long value) of specified number of bits and with specified "signedness" to the output
+	 * Writes an integer number (provided as a long value) of specified number of bits and with specified "signedness" to the output.
 	 * 
-	 * Uses Two's Complement representation for signed values
-	 * Currently only supports big-endian byte order (and MSB 0 bit numbering), meaning the more significant bits (and bytes) are written first
+	 * Uses Two's Complement representation for signed values.
+	 * Currently only supports big-endian byte order (and MSB 0 bit numbering), meaning the more significant bits (and bytes) are written first.
 	 * 
 	 * @param value integer value to write to the output
 	 * @param numberOfBits number of bits to use
@@ -208,10 +208,10 @@ public final class BitOutputStream extends OutputStream
 	}
 	
 	/**
-	 * Writes an BigInteger number of specified number of bits and with specified "signedness" to the output
+	 * Writes an BigInteger number of specified number of bits and with specified "signedness" to the output.
 	 * 
-	 * Uses Two's Complement representation for signed values
-	 * Currently only supports big-endian byte order (and MSB 0 bit numbering), meaning the more significant bits (and bytes) are written first
+	 * Uses Two's Complement representation for signed values.
+	 * Currently only supports big-endian byte order (and MSB 0 bit numbering), meaning the more significant bits (and bytes) are written first.
 	 * 
 	 * @param value BigInteger value to write to the output
 	 * @param numberOfBits number of bits to use
