@@ -46,6 +46,8 @@ public final class BitInputStream extends InputStream
 	 */
 	public boolean atEnd() throws IOException
 	{
+		if(closed)
+			throw new IOException("This stream is closed");
 		if(isEndOfStream && numBitsRemaining == 0)
 			return true;
 		if(numBitsRemaining == 0)
@@ -72,9 +74,7 @@ public final class BitInputStream extends InputStream
 	 */
 	public boolean readBit() throws IOException, EOFException
 	{
-		if(closed)
-			throw new IOException("This stream is closed");
-		if(atEnd()) //also reads a new byte from underlying stream if needed!
+		if(atEnd()) //also reads a new byte from underlying stream if needed! (will also check for closedness)
 			throw new EOFException("End of stream reached");
 		numBitsRemaining--;
 		return ((currentByte >>> numBitsRemaining) & 1) == 1;
@@ -424,7 +424,7 @@ public final class BitInputStream extends InputStream
 	 * 
 	 * @return
 	 */
-	public int bitsAvailable()
+	public int bitsAvailable() throws IOException
 	{
 		try
 		{
@@ -444,6 +444,8 @@ public final class BitInputStream extends InputStream
 	 */
 	public int available() throws IOException
 	{
+		if(closed)
+			throw new IOException("This stream is closed");
 		return (numBitsRemaining == 8 ? 1 : 0) + input.available();
 	}
 	
@@ -461,6 +463,7 @@ public final class BitInputStream extends InputStream
 	public void	mark(int readlimit)
 	{
 		//does nothing (mark/reset behaviour is not supported)
+		//throw new IOException("Mark/reset not supported");
 	}
 
 	/* (non-Javadoc)
@@ -468,7 +471,10 @@ public final class BitInputStream extends InputStream
 	 */
 	public void reset() throws IOException
 	{
-		throw new IOException("Mark/reset not supported");
+		if(closed)
+			throw new IOException("This stream is closed");
+		//does nothing (mark/reset behaviour is not supported)
+		//throw new IOException("Mark/reset not supported");
 	}
 	
 	/* (non-Javadoc)
