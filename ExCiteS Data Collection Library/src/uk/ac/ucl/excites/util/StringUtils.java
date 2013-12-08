@@ -41,13 +41,29 @@ public final class StringUtils
 		return string.getBytes(UTF8).length;
 	}
 	
-	static public String addTabsFront(String string, int tabs)
+	static public String addVariableFrontPadding(String str, int desiredLength, char padding)
+	{
+		if(str == null)
+			return str;
+		StringBuffer bff = new StringBuffer();
+		for(int i = str.length(); i < desiredLength; i++)
+			bff.append(padding);
+		bff.append(str);
+		return bff.toString();
+	}
+	
+	static public String addFixedFrontPadding(String str, int paddingLength, char padding)
 	{
 		StringBuffer bff = new StringBuffer();
-		for(int t = 0; t < tabs; t++)
-			bff.append('\t');
-		bff.append(string);
+		for(int i = 0; i < paddingLength; i++)
+			bff.append(padding);
+		bff.append(str);
 		return bff.toString();
+	}
+	
+	static public String addTabsFront(String str, int tabs)
+	{
+		return addFixedFrontPadding(str, tabs, '\t');
 	}
 	
 	static public String join(String[] parts, String separator)
