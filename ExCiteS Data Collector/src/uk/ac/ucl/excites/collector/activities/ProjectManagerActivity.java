@@ -624,7 +624,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 	{
 		// Start the Intent to Scan a QR code
 		IntentIntegrator integrator = new IntentIntegrator(this);
-		integrator.initiateScan();
+		integrator.initiateScan(IntentIntegrator.QR_CODE_TYPES);
 	}
 
 	/**
