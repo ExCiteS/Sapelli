@@ -24,7 +24,19 @@ public class SMSSender implements SMSService
 	private static final String TAG = "SMSSender";
 	private static final String SMS_SENT = "SMS_SENT";
 	private static final String SMS_DELIVERED = "SMS_DELIVERED";
-	private static final short SMS_PORT = 2013;
+	
+	/**
+	 * The choice of port might affect the size of the UDH header Android uses (5 or 7 bytes).
+	 * <br/>
+	 * The current value ({@value #SMS_PORT}) would require 16 bits, and therefore a 7-byte UDH, but it could be that Android always uses the 7 byte header, even for 8-bit ports.
+	 * <br/><br/>
+	 * <b>TODO</b> test with 8-bit port, possibly we would gain bytes of usable content in every {@link BinaryMessage}.
+	 * 
+	 * @see BinaryMessage#MAX_TOTAL_SIZE_BYTES
+	 * @see BinaryMessage
+	 * @see <a href="http://en.wikipedia.org/wiki/User_Data_Header">User Data Header (UDH)</a>
+	 */
+	public static final short SMS_PORT = 2013;
 	
 	private static int MESSAGE_ID = 0;
 	
@@ -49,7 +61,7 @@ public class SMSSender implements SMSService
 		{
 			if(textSMS.isMultiPart())
 			{	// Send multiple SMSs:
-				ArrayList<String> parts = smsManager.divideMessage(textSMS.getText());
+				ArrayList<String> parts = smsManager.divideMessage(textSMS.getContent());
 				ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
 				ArrayList<PendingIntent> deliveryIntents = new ArrayList<PendingIntent>();
 				for(int p = 0; p < parts.size(); p++)
@@ -67,7 +79,7 @@ public class SMSSender implements SMSService
 			{	// Send single SMS:	
 				smsManager.sendTextMessage(	textSMS.getReceiver().getPhoneNumber(),
 											null,
-											textSMS.getText(),
+											textSMS.getContent(),
 											setupSentCallback(textSMS, MESSAGE_ID),
 											setupDeliveredCallback(textSMS, MESSAGE_ID));
 			}

@@ -16,12 +16,17 @@ import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException
 import uk.ac.ucl.excites.util.BinaryHelpers;
 
 /**
+ * A {@link Transmission} class which relies on series of up to 16 "binary" SMS messages, each represented by a {@link BinaryMessage}.
+ * 
  * @author mstevens
- *
+ * 
+ * @see BinaryMessage
+ * @see <a href="http://en.wikipedia.org/wiki/Short_Message_Service">SMS</a>
  */
 public class BinarySMSTransmission extends SMSTransmission
 {
 	
+	// Static
 	public static final int MAX_TRANSMISSION_PARTS = 16;
 	public static final int MAX_PAYLOAD_SIZE = MAX_TRANSMISSION_PARTS * BinaryMessage.MAX_PAYLOAD_SIZE_BYTES;
 	
@@ -80,8 +85,8 @@ public class BinarySMSTransmission extends SMSTransmission
 	{
 		parts.clear();  //!!! clear previously generated messages
 		if(data.length > MAX_PAYLOAD_SIZE)
-			throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_SIZE + "), exceeded by " + (data.length - MAX_PAYLOAD_SIZE) + " bytes");
-		int numberOfParts = (data.length / BinaryMessage.MAX_PAYLOAD_SIZE_BYTES) + ((data.length % BinaryMessage.MAX_PAYLOAD_SIZE_BYTES) > 0 ? 1 : 0);
+			throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_SIZE + " bytes), exceeded by " + (data.length - MAX_PAYLOAD_SIZE) + " bytes");
+		int numberOfParts = (data.length + (BinaryMessage.MAX_PAYLOAD_SIZE_BYTES - 1)) / BinaryMessage.MAX_PAYLOAD_SIZE_BYTES;
 		int b = 0;
 		while(b < data.length)
 		{

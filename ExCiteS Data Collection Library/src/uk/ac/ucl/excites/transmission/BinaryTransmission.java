@@ -253,7 +253,7 @@ public abstract class BinaryTransmission extends Transmission
 		return data;
 	}
 	
-	protected abstract void serialise(byte[] data) throws TransmissionCapacityExceededException;
+	protected abstract void serialise(byte[] data) throws TransmissionCapacityExceededException, IOException;
 	
 	protected abstract byte[] deserialise() throws IOException;
 

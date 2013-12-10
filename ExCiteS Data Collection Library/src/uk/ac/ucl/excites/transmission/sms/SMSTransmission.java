@@ -28,7 +28,7 @@ import uk.ac.ucl.excites.transmission.IncompleteTransmissionException;
 public abstract class SMSTransmission extends BinaryTransmission
 {
 
-	private Integer id = null;
+	private Integer id = null; // computed as a CRC16 hash over the transmission payload
 	
 	protected SMSAgent receiver;
 	protected SMSAgent sender;
@@ -45,7 +45,7 @@ public abstract class SMSTransmission extends BinaryTransmission
 	 * @param receiver
 	 * @param settings
 	 */
-	public SMSTransmission(Schema schema, int id, SMSAgent receiver, Settings settings)
+	public SMSTransmission(Schema schema, int id, SMSAgent receiver, Settings settings) //TODO remove id
 	{
 		this(schema, null, id, receiver, settings);
 	}
