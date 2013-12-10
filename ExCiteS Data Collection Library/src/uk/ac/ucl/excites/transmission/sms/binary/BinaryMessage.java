@@ -91,7 +91,7 @@ public class BinaryMessage extends Message
 			totalParts = (int) PART_NUMBER_FIELD.read(in);				//Total parts
 			
 			//Read payload:
-			payload = in.readBytes(data.length - BinaryHelpers.bytesNeeded(HEADER_SIZE_BITS), true);
+			payload = in.readBytes(data.length - BinaryHelpers.bytesNeeded(HEADER_SIZE_BITS));
 		}
 		catch(Exception e)
 		{
