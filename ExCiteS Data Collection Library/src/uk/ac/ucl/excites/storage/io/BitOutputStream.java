@@ -10,7 +10,7 @@ import java.nio.charset.Charset;
 /**
  * A stream where bits can be written to. Provides write methods for various (primitive) types.<br/>
  * <br/>
- * Based on original work by Nayuki Minase:<br/>
+ * Heavily modified/extended version of original work by Nayuki Minase:<br/>
  * 		- Source: <a href="https://github.com/nayuki/Huffman-Coding/blob/master/src/nayuki/huffmancoding/BitOutputStream.java">https://github.com/nayuki/Huffman-Coding/blob/master/src/nayuki/huffmancoding/BitOutputStream.java</a><br/>
  * 		- License: MIT License<br/>
  * 
