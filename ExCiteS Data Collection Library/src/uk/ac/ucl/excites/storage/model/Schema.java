@@ -10,63 +10,83 @@ import java.util.Set;
 import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
 
 /**
- * @author mstevens
+ * A Schema holds a set of ordered {@link Column}s
  * 
+ * @author mstevens
  */
 @SuppressWarnings("rawtypes")
-public class Schema implements Comparable<Schema>
+public class Schema
 {
 
-	public static final int DEFAULT_VERSION = 0;
-	public static final int UNKNOWN_COLUMN_INDEX = -1;
-
-	public static final int SCHEMA_ID_SIZE = 24;
-	public static final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE);
-	public static final int SCHEMA_VERSION_SIZE = 8;
-	public static final IntegerRangeMapping SCHEMA_VERSION_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_VERSION_SIZE);
-
-	private int id;
-	private int version;
+	// Statics------------------------------------------------------------
+	static public final int UNKNOWN_COLUMN_INDEX = -1;
+	
+	// Identification:
+	static public final int SCHEMA_USAGE_ID_SIZE = 32; //bits
+	static public final IntegerRangeMapping SCHEMA_USAGE_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_USAGE_ID_SIZE); // unsigned(!) 32 bit integer
+	static public final int SCHEMA_USAGE_SUB_ID_SIZE = 4; //bits
+	static public final IntegerRangeMapping SCHEMA_USAGE_SUB_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_USAGE_SUB_ID_SIZE); // unsigned(!) 4 bit integer
+	static public final int DEFAULT_USAGE_SUB_ID = 0;
+	static public final String ATTRIBUTE_USAGE_ID = "usageID";
+	static public final String ATTRIBUTE_USAGE_SUB_ID = "usageSubID";
+	static public final String ATTRIBUTE_SCHEMA_NAME = "schemaName";
+	
+	// v1.x-style identification (for backwards compatibility only):
+	//	Note: schemaID & schemaVersion are no longer stored in a Schema instance, instead a 1.x Project instance holds them (Project#id = schemaID & Project#schemaVersion = schemaVersion) 
+	static public final int V1X_SCHEMA_ID_SIZE = 24; //bits
+	static public final int V1X_SCHEMA_VERSION_SIZE = 8; //bits
+	static public final IntegerRangeMapping V1X_SCHEMA_VERSION_FIELD = IntegerRangeMapping.ForSize(0, V1X_SCHEMA_VERSION_SIZE);
+	static public final int V1X_DEFAULT_SCHEMA_VERSION = 0;
+	// 	Note the XML attributes below have inconsistent naming (for everything else we've been using CamelCase instead of dashes), won't fix because no longer used in v2.x
+	static public final String V1X_ATTRIBUTE_SCHEMA_ID = "schema-id";
+	static public final String V1X_ATTRIBUTE_SCHEMA_VERSION = "schema-version";
+	
+	// Dynamics-----------------------------------------------------------
+	private long usageID;
+	private int usageSubID;
 	private String name;
-	private String description;
 
 	private ArrayList<Column> columns;
 	private Map<String, Integer> columnNameToIndex;
-	// TODO Do more Googling to find if there is a HashMap data structure that can return the keys as an array or ArrayList (in insertion order)?
-	// In that case we don't need to have this separate arraylist
 
 	private boolean sealed = false;
-
-	public Schema(int id)
+	
+	public Schema(long usageID)
 	{
-		this(id, DEFAULT_VERSION, null);
+		this(usageID, DEFAULT_USAGE_SUB_ID, null);
 	}
 
-	public Schema(int id, String name)
+	public Schema(long usageID, String name)
 	{
-		this(id, DEFAULT_VERSION, name);
+		this(usageID, DEFAULT_USAGE_SUB_ID, name);
 	}
 
-	public Schema(int id, int version)
+	public Schema(long usageID, int usageSubID)
 	{
-		this(id, version, null);
+		this(usageID, usageSubID, null);
 	}
 
-	public Schema(int id, int version, String name)
+	public Schema(long usageID, int usageSubID, String name)
 	{
-		if(SCHEMA_ID_FIELD.fits(id))
-			this.id = id;
+		if(SCHEMA_USAGE_ID_FIELD.fits(usageID))
+			this.usageID = usageID;
 		else
-			throw new IllegalArgumentException("Invalid schema ID, valid values are " + SCHEMA_ID_FIELD.getLogicalRangeString() + ".");
-		if(SCHEMA_VERSION_FIELD.fits(version))
-			this.version = version;
+			throw new IllegalArgumentException("Invalid schema usageID value (" + usageID + "), valid values are " + SCHEMA_USAGE_ID_FIELD.getLogicalRangeString() + ".");
+		if(SCHEMA_USAGE_SUB_ID_FIELD.fits(usageSubID))
+			this.usageSubID = usageSubID;
 		else
-			throw new IllegalArgumentException("Invalid schema version, valid values are " + SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
-		this.name = (name == null ? "Schema_" + id + "_v" + version : name);
+			throw new IllegalArgumentException("Invalid schema usageSubID value (" + usageSubID + "), valid values are " + SCHEMA_USAGE_SUB_ID_FIELD.getLogicalRangeString() + ".");
+		this.name = (name == null || name.isEmpty() ? "Schema_UID:" + usageID + "_USID:" + usageSubID : name);
 		columnNameToIndex = new LinkedHashMap<String, Integer>();
 		columns = new ArrayList<Column>();
 	}
 
+	public void addColumns(List<Column<?>> columns)
+	{
+		for(Column c : columns)
+			addColumn(c);
+	}
+	
 	public void addColumn(Column column)
 	{
 		if(!sealed)
@@ -134,37 +154,29 @@ public class Schema implements Comparable<Schema>
 	}
 
 	/**
-	 * @return the id
-	 */
-	public int getID()
-	{
-		return id;
-	}
-
-	/**
-	 * @return the version
-	 */
-	public int getVersion()
-	{
-		return version;
-	}
-
-	/**
 	 * @return the name
 	 */
 	public String getName()
 	{
 		return name;
 	}
+	
+	/**
+	 * @return the usageID
+	 */
+	public long getUsageID()
+	{
+		return usageID;
+	}
 
 	/**
-	 * @return the description
+	 * @return the usageSubID
 	 */
-	public String getDescription()
+	public int getUsageSubID()
 	{
-		return description;
+		return usageSubID;
 	}
-	
+
 	public int getNumberOfColumns()
 	{
 		return columns.size();
@@ -243,20 +255,6 @@ public class Schema implements Comparable<Schema>
 	}
 	
 	/**
-	 * Compare method to sort schemata in order of ID and version (everything else is ignored)
-	 * 
-	 * @see java.lang.Comparable#compareTo(java.lang.Object)
-	 */
-	@Override
-	public int compareTo(Schema another)
-	{
-		int cmp = this.id - another.id;
-		if(cmp == 0)
-			cmp = this.version - another.version;
-		return cmp;
-	}
-	
-	/**
 	 * Check for equality based on schema ID & version (nothing else)
 	 * 
 	 * @param obj object to compare this one with
@@ -266,11 +264,11 @@ public class Schema implements Comparable<Schema>
 	@Override
 	public boolean equals(Object obj)
 	{
-		return equals(obj, false, false); // check only schema ID & version by default
+		return equals(obj, false, false); // check only usageID & usageSubID by default
 	}
 
 	/**
-	 * Check if the provided object is an identical/equivalent Schema. Schema ID & version are always checked, names and columns are optionally checked, descriptions are ignored. 
+	 * Check if the provided object is an identical/equivalent Schema. The usageID & usageSubID are always checked, names and columns are optionally checked, descriptions are ignored. 
 	 * 
 	 * @param obj object to compare this one with
 	 * @param checkNames whether or not to compare the names of the schemas and (if checkColumns is true) those of their columns
@@ -282,10 +280,10 @@ public class Schema implements Comparable<Schema>
 		if(obj instanceof Schema)
 		{
 			Schema other = (Schema) obj;
-			boolean idAndVersionMatch = (this.id == other.id) && (this.version == other.version);
-			//ID & version:
-			if(!(checkNames || checkColumns) || !idAndVersionMatch)
-				return idAndVersionMatch;
+			// Usage:
+			boolean usageMatch = (this.usageID == other.usageID) && (this.usageSubID == other.usageSubID);
+			if(!(checkNames || checkColumns) || !usageMatch)
+				return usageMatch;
 			// Name:
 			if(checkNames && !this.name.equals(other.name))
 				return false;
@@ -311,7 +309,7 @@ public class Schema implements Comparable<Schema>
 	@Override
 	public String toString()
 	{
-		return "Schema [ID: " + id + "; version: " + version + "; name: " + name + "]";
+		return "Schema " + name;
 	}
 	
 	public String getSpecification()

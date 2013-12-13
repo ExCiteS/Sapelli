@@ -13,7 +13,7 @@ import org.joda.time.DateTime;
 import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.util.StringUtils;
-import uk.ac.ucl.excites.util.XMLUtils;
+import uk.ac.ucl.excites.util.xml.XMLUtils;
 
 /**
  * @author mstevens
@@ -23,9 +23,6 @@ public class Record
 {
 	
 	static public final String TAG_RECORD = "Record";
-	
-	static public final String ATTRIBUTE_FORM_SCHEMA_ID = "schema-id";
-	static public final String ATTRIBUTE_FORM_SCHEMA_VERSION = "schema-version";
 	
 	protected Schema schema;
 	protected Object[] values;
@@ -331,7 +328,7 @@ public class Record
 	public String toString()
 	{
 		StringBuffer bff = new StringBuffer();
-		bff.append("SchemaID: " + schema.getID() + "|" + "SchemaVersion: " + schema.getVersion());
+		bff.append(schema.toString());
 		for(Column<?> c : schema.getColumns())
 			bff.append("|" + c.getName() + ": " + c.retrieveValueAsString(this));
 		return bff.toString();
@@ -339,9 +336,13 @@ public class Record
 	
 	public String toXML(int tabs)
 	{
-		//TODO transmission/sent
 		StringBuilder bldr = new StringBuilder();
-		bldr.append(StringUtils.addTabsFront("<" + TAG_RECORD + " " + ATTRIBUTE_FORM_SCHEMA_ID + "=\"" + schema.getID() + "\" " + ATTRIBUTE_FORM_SCHEMA_VERSION + "=\"" + schema.getVersion() + "\">\n", tabs));
+		bldr.append(StringUtils.addTabsFront(	"<" + TAG_RECORD + " " +
+												Schema.ATTRIBUTE_SCHEMA_NAME + "=\"" + XMLUtils.escapeCharacters(schema.getName()) + "\" " +
+												Schema.ATTRIBUTE_USAGE_ID + "=\"" + schema.getUsageID() + "\" " +
+												Schema.ATTRIBUTE_USAGE_SUB_ID + "=\"" + schema.getUsageSubID() + "\" " +
+												">\n", tabs));
+		//TODO transmission/sent
 		for(Column<?> c : schema.getColumns())
 		{
 			String columnName = XMLUtils.escapeCharacters(c.getName());

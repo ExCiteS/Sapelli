@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.collector.project.model;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
@@ -186,16 +187,29 @@ public abstract class Field
 		this.showForward = showForward;
 	}
 
-	public Column<?> getColumn()
+	public List<Column<?>> getColumns()
 	{
 		if(!noColumn)
-			return createColumn();
+			return createColumns();
 		return null;
 	}
 	
 	/**
+	 * Provided such that RelationField classes (which need to generate multiple columns) can override it
+	 * 
+	 * @return
+	 */
+	protected List<Column<?>> createColumns()
+	{
+		Column<?> singleCol = createColumn();
+		List<Column<?>> list = new ArrayList<Column<?>>();
+		list.add(singleCol);
+		return list;
+	}
+	
+	/**
 	 * Returns a new Column object capable of storing values for this field
-	 * Important: it is assumed that the field.id is used as the column name.
+	 * Important: there is typically only one column and in that case it is assumed that the field.id is used as the column name.
 	 * 
 	 * @return
 	 */
@@ -229,7 +243,16 @@ public abstract class Field
 		return form;
 	}
 
-	public abstract List<File> getFiles(Project project);
+	/**
+	 * To be overriden by Fields that use files (images, sounds, etc.) that are stored with the project
+	 * 
+	 * @param project
+	 * @return
+	 */
+	public List<File> getFiles(Project project)
+	{
+		return null;
+	}
 	
 	/**
 	 * @param controller

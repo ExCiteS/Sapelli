@@ -5,9 +5,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.transmission.Settings;
-import uk.ac.ucl.excites.util.FileHelpers;
-import uk.ac.ucl.excites.util.FileWriter;
+import uk.ac.ucl.excites.util.io.FileHelpers;
+import uk.ac.ucl.excites.util.io.FileWriter;
 
 /**
  * @author mstevens
@@ -16,10 +18,21 @@ import uk.ac.ucl.excites.util.FileWriter;
 public class Project
 {
 	
-	static public final String NO_MEDIA_FILE = ".nomedia"; //Info: http://www.makeuseof.com/tag/hide-private-picture-folders-gallery-android
+	//STATICS-------------------------------------------------------------	
+	static public final int PROJECT_ID_SIZE = Schema.V1X_SCHEMA_ID_SIZE; // = 24 bits (kept the same was the v1.x Schema#id, for backwards compatibility)
+	static public final IntegerRangeMapping PROJECT_ID_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_ID_SIZE); // unsigned 24bit integer (compatible with old schemaID)
 	
 	static public final String DEFAULT_VERSION = "0";
 	
+	static public final int PROJECT_HASH_SIZE = Schema.SCHEMA_USAGE_ID_SIZE; // = 32 bits
+	static public final IntegerRangeMapping PROJECT_HASH_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_HASH_SIZE); // unsigned(!) 32bit integer
+	
+	static public final int MAX_FORMS = ((int) Schema.SCHEMA_USAGE_SUB_ID_FIELD.getHighBound()) + 1; // = 15 + 1 = 16
+	
+	// Backwards compatibility:
+	static public final int PROJECT_ID_V1X_TEMP = -1;
+	
+	// Subfolders:
 	static public final String IMAGE_FOLDER = "img";
 	static public final String SOUND_FOLDER = "snd";
 	static public final String DATA_FOLDER = "data";
@@ -27,24 +40,53 @@ public class Project
 	static public final String LOG_FOLDER = "logs"; //subfolder of data/
 	static public final String DOCS_FOLDER = "docs";
 	
-	static public final boolean DEFAULT_LOGGING = false;
+	static public final String NO_MEDIA_FILE = ".nomedia"; //Info: http://www.makeuseof.com/tag/hide-private-picture-folders-gallery-android
 	
+	static public final boolean DEFAULT_LOGGING = false;	
+	
+	//DYNAMICS------------------------------------------------------------
+	private int id = Integer.MIN_VALUE; //don't init to 0 because that is an acceptable project id
+	private long hash;
 	private String name;
+	private String variant;
 	private String version;
+	
 	private String projectPath;
+	
 	private Settings transmissionSettings;
 	private boolean logging;
 	private List<Form> forms;
+	private Form startForm;
 	
-	public Project(String name, String basePath)
+	// For backwards compatibility:
+	private boolean v1xProject = false;
+	private int schemaVersion = -1;
+	
+	public Project(int id, long hash, String name, String basePath)
 	{
-		this(name, DEFAULT_VERSION, basePath, false);
+		this(id, hash, name, DEFAULT_VERSION, basePath, false);
 	}
 	
-	public Project(String name, String version, String basePath, boolean createSubfolder)
+	public Project(int id, long hash, String name, String version, String basePath, boolean createSubfolder)
 	{
 		if(name == null || name.isEmpty() || basePath == null || basePath.isEmpty())
 			throw new IllegalArgumentException("Both a name and a valid path are required");
+		
+		// Project id:
+		if(id == PROJECT_ID_V1X_TEMP)
+		{	//Backwards compatibility
+			this.id = id;
+			v1xProject = true;
+		}
+		else
+			setID(id); // checks if it fits in field
+		
+		// Project hash:
+		if(PROJECT_HASH_FIELD.fits(hash))
+			this.hash = hash;
+		else
+			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getLogicalRangeString() + ".");		
+		
 		this.name = FileHelpers.makeValidFileName(name);
 		this.version = version;
 		// Path:
@@ -69,9 +111,113 @@ public class Project
 		this.logging = DEFAULT_LOGGING;
 	}
 	
+	/**
+	 * Must be stay private!
+	 * 
+	 * @param id
+	 */
+	private void setID(int id)
+	{
+		if(PROJECT_ID_FIELD.fits(id))
+			this.id = id;
+		else
+			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getLogicalRangeString() + ".");
+	}
+	
+	/**
+	 * Backwards compatibility:
+	 * 	- project id will be set to schema id of 1st (and assumed only) form
+	 *  - schema version of that form will be stored in schemaVersion variable (to be able to parse old record export xml files)
+	 * 
+	 * @param schemaID
+	 * @param schemaVersion
+	 */
+	public void setSchema(int schemaID, int schemaVersion)
+	{
+		if(!v1xProject)
+			throw new IllegalStateException("Only allowed for v1.x projects (created with id=-1).");
+		setID(schemaID);
+		if(Schema.V1X_SCHEMA_VERSION_FIELD.fits(schemaVersion))
+			this.schemaVersion = schemaVersion;
+		else
+			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.V1X_SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
+	}
+	
+	/**
+	 * @return the id
+	 */
+	public int getID()
+	{
+		return id;
+	}
+
+	/**
+	 * @return the hash
+	 */
+	public long getHash()
+	{
+		return hash;
+	}
+
+	public String getName()
+	{
+		return name;
+	}
+	
+	/**
+	 * @return the variant
+	 */
+	public String getVariant()
+	{
+		return variant;
+	}
+
+	/**
+	 * @param variant the variant to set
+	 */
+	public void setVariant(String variant)
+	{
+		if(this.variant != null)
+			throw new IllegalStateException("Variant cannot be changed after it has been set.");
+		if(!"".equals(variant))
+			this.variant = variant;
+	}
+
+	public String getVersion()
+	{
+		return version;
+	}
+	
+	/**
+	 * @return the v1xProject
+	 */
+	public boolean isV1xProject()
+	{
+		return v1xProject;
+	}
+
+	/**
+	 * @return the schemaVersion
+	 */
+	public int getSchemaVersion()
+	{
+		if(!v1xProject)
+			throw new IllegalStateException("Only supported for v1.x projects.");
+		return schemaVersion;
+	}
+	
+	/**
+	 * Add a {@link Form} to the project
+	 * 
+	 * @param frm
+	 */
 	public void addForm(Form frm)
 	{
+		if(forms.size() >= MAX_FORMS)
+			throw new IllegalStateException("Project cannot hold more than " + MAX_FORMS + " forms.");
 		forms.add(frm);
+		if(forms.size() == 1) //first form becomes startForm by default
+			startForm = frm;
 	}
 	
 	public List<Form> getForms()
@@ -79,6 +225,49 @@ public class Project
 		return forms;
 	}
 	
+	/**
+	 * @param index
+	 * @return	the {@link Form} with the specified {@code index}, or {@code null} if the project has no such form. 
+	 */
+	public Form getForm(int index)
+	{
+		if(index >= 0 && index < forms.size())
+			return forms.get(index);
+		else
+			return null; //no such form
+	}
+	
+	/**
+	 * @param id
+	 * @return	the {@link Form} with the specified {@code id}, or {@code null} if the project has no such form.
+	 */
+	public Form getForm(String id)
+	{
+		for(Form f : forms)
+			if(f.getID().equals(id))
+				return f;
+		return null; //no such form
+	}
+	
+	/**
+	 * @return the startForm
+	 */
+	public Form getStartForm()
+	{
+		return startForm;
+	}
+
+	/**
+	 * @param startForm the startForm to set
+	 */
+	public void setStartForm(Form startForm)
+	{
+		if(forms.contains(startForm))
+			this.startForm = startForm;
+		else
+			throw new IllegalArgumentException("Unknown form.");
+	}
+
 	/**
 	 * @return the transmissionSettings
 	 */
@@ -93,16 +282,6 @@ public class Project
 	public void setTransmissionSettings(Settings transmissionSettings)
 	{
 		this.transmissionSettings = transmissionSettings;
-	}
-
-	public String getName()
-	{
-		return name;
-	}
-	
-	public String getVersion()
-	{
-		return version;
 	}
 	
 	public String getProjectFolderPath()
@@ -176,7 +355,7 @@ public class Project
 	
 	public String toString()
 	{
-		return name + (version != DEFAULT_VERSION ? " (v" + version + ")" : "");
+		return name + (variant != null ? (" " + variant) : "") + (version != DEFAULT_VERSION ? " (v" + version + ")" : "");
 	}
 	
 	private void checkFolder(File folder) throws IOException

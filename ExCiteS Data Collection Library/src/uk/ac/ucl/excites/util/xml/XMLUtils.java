@@ -1,5 +1,7 @@
 
-package uk.ac.ucl.excites.util;
+package uk.ac.ucl.excites.util.xml;
+
+import uk.ac.ucl.excites.util.StringUtils;
 
 
 /**

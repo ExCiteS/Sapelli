@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Sapelli-Collector-Project format="2" name="FPP DRC" variant="prototype" id="400" version="0.1" startForm="Entry">
+  <Configuration>
+    <Transmission>
+      <!-- TODO -->
+    </Transmission>
+    <Logging enabled="true"/>
+  </Configuration>
+  
+  <Form id="Entry" name="Community data" startField="Session" end="_LOOP" endVibrate="true" showBack="true" showCancel="true" storeEndTime="true">
+    
+    <!-- source="localCreate|localSelect|remoteQR|remoteBT|remoteSMS|remoteHTTP" ? -->
+    <!-- paged="true" by default -->
+    <BelongsTo id="SessionKey" form="Session" source="localCreate" hold="true" optional="false"/>
+  
+    <Choice id="Type" optional="false" rows="2" cols="1">
+      <Choice value="Waypoint" alt="Area delineation waypoint" img="Waypoint.png"/>
+      <Choice value="Resources/Sites" alt="Resources/Sites" img="Resources-Sites.png" rows="3" cols="1">
+        <Choice value="Farming" alt="Farming" img="Farming.png" rows="3" cols="1">
+          <Choice value="Annual farming" alt="Annual farming" img="Annual farming.png" rows="3" cols="2">
+            <Choice value="AF#1" alt="Annual farming #1 (placeholder)"/>
+            <Choice value="AF#2" alt="Annual farming #2 (placeholder)"/>
+            <Choice value="AF#3" alt="Annual farming #3 (placeholder)"/>
+            <Choice value="AF#4" alt="Annual farming #4 (placeholder)"/>
+            <Choice value="AF#5" alt="Annual farming #5 (placeholder)"/>
+            <Choice value="AF#6" alt="Annual farming #6 (placeholder)"/>
+          </Choice>
+          <Choice value="Perrenial farming" alt="Perrenial farming" img="Perrenial farming.png" rows="3" cols="2">
+            <Choice value="PF#1" alt="Perrenial farming #1 (placeholder)"/>
+            <Choice value="PF#2" alt="Perrenial farming #2 (placeholder)"/>
+            <Choice value="PF#3" alt="Perrenial farming #3 (placeholder)"/>
+            <Choice value="PF#4" alt="Perrenial farming #4 (placeholder)"/>
+            <Choice value="PF#5" alt="Perrenial farming #5 (placeholder)"/>
+            <Choice value="PF#6" alt="Perrenial farming #6 (placeholder)"/>
+          </Choice>
+          <Choice value="Livestock farming" alt="Livestock farming" img="Livestock farming.png" rows="3" cols="2">
+            <Choice value="LF#1" alt="Livestock farming #1 (placeholder)"/>
+            <Choice value="LF#2" alt="Livestock farming #2 (placeholder)"/>
+            <Choice value="LF#3" alt="Livestock farming #3 (placeholder)"/>
+            <Choice value="LF#4" alt="Livestock farming #4 (placeholder)"/>
+            <Choice value="LF#5" alt="Livestock farming #5 (placeholder)"/>
+            <Choice value="LF#6" alt="Livestock farming #6 (placeholder)"/>
+          </Choice>
+        </Choice>
+        <Choice value="Forest" alt="Forest" img="Forest.png" rows="2" cols="1">
+          <Choice value="Hunting" alt="Hunting" img="Hunting.png" rows="3" cols="2">
+            <Choice value="Hunt#1" alt="Hunting #1 (placeholder)"/>
+            <Choice value="Hunt#2" alt="Hunting #2 (placeholder)"/>
+            <Choice value="Hunt#3" alt="Hunting #3 (placeholder)"/>
+            <Choice value="Hunt#4" alt="Hunting #4 (placeholder)"/>
+            <Choice value="Hunt#5" alt="Hunting #5 (placeholder)"/>
+            <Choice value="Hunt#6" alt="Hunting #6 (placeholder)"/>
+          </Choice>
+          <Choice value="Gathering" alt="Gathering" img="Gathering.png" rows="3" cols="2">
+            <Choice value="Gather#1" alt="Gathering #1 (placeholder)"/>
+            <Choice value="Gather#2" alt="Gathering #2 (placeholder)"/>
+            <Choice value="Gather#3" alt="Gathering #3 (placeholder)"/>
+            <Choice value="Gather#4" alt="Gathering #4 (placeholder)"/>
+            <Choice value="Gather#5" alt="Gathering #5 (placeholder)"/>
+            <Choice value="Gather#6" alt="Gathering #6 (placeholder)"/>
+          </Choice>
+        </Choice>
+        <Choice value="People" alt="People" img="People.png" row="3" cols="2">
+          <Choice value="People#1" alt="People #1 (placeholder)"/>
+          <Choice value="People#2" alt="People #2 (placeholder)"/>
+          <Choice value="People#3" alt="People #3 (placeholder)"/>
+          <Choice value="People#4" alt="People #4 (placeholder)"/>
+          <Choice value="People#5" alt="People #5 (placeholder)"/>
+          <Choice value="People#6" alt="People #6 (placeholder)"/>
+        </Choice>
+      </Choice>
+    </Choice>
+
+    <Location id="Position"/>
+    
+  </Form>
+  
+  <!-- should editable be an attribute of the form of of belongsTo? -->  
+  
+  <Form id="Session" name="Community session" protectEdit="true" singlePage="true" protectEditMessage="..." end="_BACK">
+
+    <TextField id="Creator" label="Creator" maxLength="48" optional="false"/>
+
+    <ListSelection id="Community" label="Province;Community" optional="false">
+      <item value="Province 1" isDefault="true">
+        <item value="Community P1.1"/>
+        <item value="Community P1.2"/>
+        <item value="Community P1.3"/>
+        <item value="New P1 community (see comment)"/>
+      </item>
+      <item value="Province 2">
+        <item value="Community P2.1"/>
+        <item value="Community P2.2"/>
+        <item value="Community P2.3"/>
+        <item value="New P2 community (see comment)"/>
+      </item>
+    </ListSelection>
+
+    <Checkbox id="Operational" label="Operational session" defaultValue="true"/>
+
+    <Checkbox id="Testing" label="Testing session" defaultValue="false"/>
+
+    <Checkbox id="Training" label="Training session" defaultValue="false"/>
+
+    <TextField id="Comment" label="Comments" maxLength="1024" multiline="true" optional="true"/>
+
+    <Button id="Close" label="Close" jump="_END"/><!-- noColumn="true" is implied -->
+
+  </Form>
+  
+</Sapelli-Collector-Project>

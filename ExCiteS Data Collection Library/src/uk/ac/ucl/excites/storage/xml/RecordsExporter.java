@@ -5,14 +5,13 @@ package uk.ac.ucl.excites.storage.xml;
 
 import java.util.List;
 
-import uk.ac.ucl.excites.util.XMLUtils;
-
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
-import uk.ac.ucl.excites.util.FileHelpers;
-import uk.ac.ucl.excites.util.FileWriter;
 import uk.ac.ucl.excites.util.TimeUtils;
+import uk.ac.ucl.excites.util.io.FileHelpers;
+import uk.ac.ucl.excites.util.io.FileWriter;
+import uk.ac.ucl.excites.util.xml.XMLUtils;
 
 
 /**
@@ -41,6 +40,7 @@ public class RecordsExporter
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 		writer.writeLine(XMLUtils.header());
 		writer.writeLine("<" + TAG_RECORDS_EXPORT + ">");
+		//TODO add attributes: exportDateTime, comment, device(?)
 		return writer;
 	}
 	
@@ -83,7 +83,7 @@ public class RecordsExporter
 	
 	public int exportRecordsOf(Schema s) throws Exception
 	{
-		FileWriter writer = openWriter(s.getName() + "_" + s.getID() + "_v" + s.getVersion());
+		FileWriter writer = openWriter(s.getName());
 		int count = exportRecords(dao.retrieveRecords(s), writer);
 		closeWriter(writer);
 		return count;

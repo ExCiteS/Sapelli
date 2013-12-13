@@ -14,7 +14,7 @@ import java.util.zip.ZipInputStream;
 
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
-import uk.ac.ucl.excites.util.FileHelpers;
+import uk.ac.ucl.excites.util.io.FileHelpers;
 
 /**
  * Loader for .excites files (which are actually just renamed ZIP files)

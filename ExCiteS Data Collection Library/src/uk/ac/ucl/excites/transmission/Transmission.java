@@ -30,7 +30,7 @@ public abstract class Transmission
 	protected DateTime receivedAt = null; //used on receiving side, and TODO on sending side once we have acknowledgements working
 	
 	protected Settings settings;
-	protected ModelProvider modelProvider; //only used on the receiving side
+	protected TransmissionClient modelProvider; //only used on the receiving side
 	protected Schema schema;
 	protected Set<Column<?>> columnsToFactorOut;
 	protected Map<Column<?>, Object> factoredOutValues = null;
@@ -70,11 +70,11 @@ public abstract class Transmission
 	 * @param modelProvider
 	 * @param settings
 	 */
-	public Transmission(ModelProvider modelProvider)
+	public Transmission(TransmissionClient modelProvider)
 	{
 		this(); //!!!
 		if(modelProvider == null)
-			throw new NullPointerException("ModelProvider cannot be null on receiving side.");
+			throw new NullPointerException("TransmissionClient cannot be null on receiving side.");
 		this.modelProvider = modelProvider;
 	}
 	

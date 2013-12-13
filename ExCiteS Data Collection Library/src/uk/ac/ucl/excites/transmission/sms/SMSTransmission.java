@@ -15,7 +15,7 @@ import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.BinaryTransmission;
 import uk.ac.ucl.excites.transmission.DecodeException;
-import uk.ac.ucl.excites.transmission.ModelProvider;
+import uk.ac.ucl.excites.transmission.TransmissionClient;
 import uk.ac.ucl.excites.transmission.TransmissionSender;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.transmission.IncompleteTransmissionException;
@@ -72,7 +72,7 @@ public abstract class SMSTransmission extends BinaryTransmission
 	 * 
 	 * @param modelProvider
 	 */
-	public SMSTransmission(ModelProvider modelProvider)
+	public SMSTransmission(TransmissionClient modelProvider)
 	{
 		this(modelProvider, null);
 	}
@@ -83,7 +83,7 @@ public abstract class SMSTransmission extends BinaryTransmission
 	 * @param modelProvider
 	 * @param parts
 	 */
-	public SMSTransmission(ModelProvider modelProvider, List<Message> parts)
+	public SMSTransmission(TransmissionClient modelProvider, List<Message> parts)
 	{
 		super(modelProvider);
 		this.parts = new TreeSet<Message>();

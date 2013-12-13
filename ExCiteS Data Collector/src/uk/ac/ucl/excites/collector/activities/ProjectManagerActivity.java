@@ -20,6 +20,7 @@ import uk.ac.ucl.excites.collector.CollectorApp;
 import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.database.DataAccessClient;
+import uk.ac.ucl.excites.collector.project.SapelliProjectClient;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -34,9 +35,9 @@ import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.storage.xml.RecordsExporter;
 import uk.ac.ucl.excites.storage.xml.RecordsImporter;
 import uk.ac.ucl.excites.transmission.Settings;
-import uk.ac.ucl.excites.util.FileHelpers;
 import uk.ac.ucl.excites.util.StringUtils;
 import uk.ac.ucl.excites.util.TimeUtils;
+import uk.ac.ucl.excites.util.io.FileHelpers;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -775,7 +776,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 					try
 					{ // TODO make import & storage async
 						// Import:
-						RecordsImporter importer = new RecordsImporter(dao);
+						RecordsImporter importer = new RecordsImporter(new SapelliProjectClient(dao));
 						List<Record> records = importer.importFrom(files.get(0).getAbsoluteFile());
 
 						// Show parser warnings if needed:

@@ -9,7 +9,7 @@ import org.joda.time.DateTime;
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.BinaryTransmission;
-import uk.ac.ucl.excites.transmission.ModelProvider;
+import uk.ac.ucl.excites.transmission.TransmissionClient;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.transmission.TransmissionSender;
 import uk.ac.ucl.excites.transmission.util.TransmissionCapacityExceededException;
@@ -54,7 +54,7 @@ public class HTTPTransmission extends BinaryTransmission
 	 * 
 	 * @param modelProvider
 	 */
-	public HTTPTransmission(DateTime receivedAt, ModelProvider modelProvider)
+	public HTTPTransmission(DateTime receivedAt, TransmissionClient modelProvider)
 	{
 		super(modelProvider);
 		setReceivedAt(receivedAt);

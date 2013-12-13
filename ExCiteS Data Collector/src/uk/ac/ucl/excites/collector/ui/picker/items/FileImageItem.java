@@ -9,7 +9,8 @@ import java.io.FileInputStream;
 //import com.caverock.androidsvg.SVG;
 //import com.caverock.androidsvg.SVGImageView;
 
-import uk.ac.ucl.excites.util.FileHelpers;
+
+import uk.ac.ucl.excites.util.io.FileHelpers;
 
 import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGBuilder;

@@ -8,31 +8,33 @@ import java.util.ArrayList;
 import java.util.List;
 
 
+
+
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
-import uk.ac.ucl.excites.collector.database.DataAccess;
+import uk.ac.ucl.excites.storage.StorageClient;
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
-import uk.ac.ucl.excites.util.XMLParser;
+import uk.ac.ucl.excites.util.xml.DocumentParser;
 
 /**
  * @author mstevens
  * 
  */
-public class RecordsImporter extends XMLParser
+public class RecordsImporter extends DocumentParser
 {
 
-	protected DataAccess dao;
+	protected StorageClient client;
 	protected Record currentRecord;
 	protected Column<?> currentColumn;
 	protected List<Record> records;
 
-	public RecordsImporter(DataAccess dao)
+	public RecordsImporter(StorageClient client)
 	{
 		super();
-		this.dao = dao;
+		this.client = client;
 	}
 
 	public List<Record> importFrom(File xmlFile) throws Exception
@@ -54,27 +56,42 @@ public class RecordsImporter extends XMLParser
 		// <Record>
 		if(qName.equals(Record.TAG_RECORD))
 		{
-			int schemaID = Integer.parseInt(readRequiredStringAttribute(Record.TAG_RECORD, attributes, Record.ATTRIBUTE_FORM_SCHEMA_ID));
-			int schemaVersion = Integer.parseInt(readRequiredStringAttribute(Record.TAG_RECORD, attributes, Record.ATTRIBUTE_FORM_SCHEMA_VERSION));
-			Schema schema = dao.retrieveSchema(schemaID, schemaVersion);
-			if(schema == null)
-				warnings.add("Record skipped because schema with ID " + schemaID + " and version " + schemaVersion + " is unknown, please load the appropriate project.");
-			else
-				currentRecord = new Record(schema);
-		}
-		// TODO transmission? sent/received
-		/*else if(qName.equals("???"))
-		{
+			if(currentRecord != null)
+				throw new SAXException("Records cannot be nested!");
 			
-		}*/
+			Schema schema = null;
+			String schemaDescr = null;
+			if(attributes.getIndex(Schema.V1X_ATTRIBUTE_SCHEMA_ID) != -1)
+			{	//This file contains records exported by Sapelli v1.x
+				int schemaID = readRequiredIntegerAttribute(Record.TAG_RECORD, attributes, Schema.V1X_ATTRIBUTE_SCHEMA_ID, "because this is a v1.x record");
+				int schemaVersion = readIntegerAttribute(attributes, Schema.V1X_ATTRIBUTE_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION);
+				schema = client.getSchemaV1(schemaID, schemaVersion);
+				schemaDescr = "ID " + schemaID + " and version " + schemaVersion;
+			}
+			else
+			{
+				int usageID = readRequiredIntegerAttribute(Record.TAG_RECORD, attributes, Schema.ATTRIBUTE_USAGE_ID);
+				int usageSubID = readIntegerAttribute(attributes, Schema.ATTRIBUTE_USAGE_ID, Schema.DEFAULT_USAGE_SUB_ID);
+				schema = client.getSchema(usageID, usageSubID);
+				schemaDescr = "usageID " + usageID + " and usageSubID " + usageSubID;
+			}
+			if(schema == null)
+				addWarning("Record skipped because schema with " + schemaDescr + " is unknown, please load the appropriate project.");
+			else
+				currentRecord = client.getNewRecord(schema);
+			// TODO transmission? sent/received
+		}
 		// Record columns:
 		else if(currentRecord != null)
 		{
 			Schema s = currentRecord.getSchema();
 			currentColumn = s.getColumn(qName);
 			if(currentColumn == null)
-				warnings.add("Column " + qName + " does not exist in schema with ID " + s.getID() + " and version " + s.getVersion());
+				addWarning("Column " + qName + " does not exist in " + s.toString());
 		}
+		// <?>
+		else
+			addWarning("Ignored unrecognised or invalidly placed element \"" + qName + "\".");
 	}
 
 	@Override
@@ -88,7 +105,7 @@ public class RecordsImporter extends XMLParser
 			}
 			catch(Exception e)
 			{
-				warnings.add("Error upon parsing value (" + new String(ch, start, length) + "): " + e.getMessage());
+				addWarning("Error upon parsing value (" + new String(ch, start, length) + "): " + e.getMessage());
 			}
 		}
 	}

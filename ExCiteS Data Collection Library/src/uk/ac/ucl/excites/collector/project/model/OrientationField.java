@@ -1,15 +1,11 @@
 package uk.ac.ucl.excites.collector.project.model;
 
-import java.io.File;
-import java.util.List;
-
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.OrientationColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.types.Orientation;
-
 
 /**
  * @author mstevens
@@ -90,12 +86,6 @@ public class OrientationField extends Field
 	public void storeValue(Record record, Orientation orientation)
 	{
 		((OrientationColumn) form.getColumnFor(this)).storeValue(record, orientation);
-	}
-
-	@Override
-	public List<File> getFiles(Project project)
-	{
-		return null;
 	}
 
 	@Override

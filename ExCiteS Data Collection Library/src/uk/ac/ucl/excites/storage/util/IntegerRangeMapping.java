@@ -10,21 +10,28 @@ import uk.ac.ucl.excites.storage.io.BitInputStream;
 import uk.ac.ucl.excites.storage.io.BitOutputStream;
 
 /**
- * Helper class that maps values from an integer range [x, y],
+ * Helper class that maps values from an integer range [x, y] (inclusive!),
  * with x and y any signed 64 bit integers (i.e. longs), and x < y, onto
  * a range of positive (unsigned) (Big)integers [0, m]
  * 
  * The class computers a shift value to do the conversion as well
  * as the numbers of bits needed to store any value from [0, m]
  * 
- * Integers of [x, y] are called logical values (to be used by higher level program)
- * Integers of [0, m] are called raw values (to be used in binary storage)
+ * Integers of [x, y] are called logical values (to be used by higher level program),
+ * Integers of [0, m] are called raw values (to be used in underlying storage)
  * 
  * @author mstevens
  */
 public class IntegerRangeMapping
 {
 
+	/**
+	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = {@code loBound} and y = (2^{@code sizeBits} - 1) + {@code loBound}.
+	 * 
+	 * @param loBound
+	 * @param sizeBits
+	 * @return
+	 */
 	static public IntegerRangeMapping ForSize(long loBound, int sizeBits)
 	{
 		return new IntegerRangeMapping(loBound, BigInteger.valueOf((long) (Math.pow(2, sizeBits) - 1)).add(BigInteger.valueOf(loBound)).longValue());
@@ -34,11 +41,22 @@ public class IntegerRangeMapping
 	private long loBound = 0; //"shift" value
 	private long hiBound;
 	
+	/**
+	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = 0 and y = {@code hiBound}.
+	 * 
+	 * @param hiBound
+	 */
 	public IntegerRangeMapping(long hiBound)
 	{
 		this(0, hiBound);
 	}
 	
+	/**
+	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = {@code loBound} and y = {@code hiBound}.
+	 * 
+	 * @param loBound
+	 * @param hiBound
+	 */
 	public IntegerRangeMapping(long loBound, long hiBound)
 	{	
 		if(hiBound <= loBound)
@@ -52,6 +70,8 @@ public class IntegerRangeMapping
 	
 	/**
 	 * Copy constructor
+	 * 
+	 * @param another	a {@link IntegerRangeMapping} instance to be copied
 	 */
 	public IntegerRangeMapping(IntegerRangeMapping another)
 	{

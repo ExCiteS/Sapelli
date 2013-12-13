@@ -19,7 +19,7 @@ public abstract class BinaryTransmission extends Transmission
 
 	protected float compressionRatio = 1.0f;
 	
-	public BinaryTransmission(ModelProvider modelProvider)
+	public BinaryTransmission(TransmissionClient modelProvider)
 	{
 		super(modelProvider);
 	}
@@ -49,9 +49,9 @@ public abstract class BinaryTransmission extends Transmission
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
 			out = new BitOutputStream(rawOut);
 			
-			// Write schema ID & version:
-			Schema.SCHEMA_ID_FIELD.write(schema.getID(), out);
-			Schema.SCHEMA_VERSION_FIELD.write(schema.getVersion(), out);
+			// Write schema ID & version: //TODO write project hash + form idx
+			//Schema.SCHEMA_ID_FIELD.write(schema.getID(), out);
+			//Schema.SCHEMA_VERSION_FIELD.write(schema.getVersion(), out);
 			
 			// Write the encoded, compressed & encrypted records:
 			out.write(data);
@@ -101,9 +101,9 @@ public abstract class BinaryTransmission extends Transmission
 			ByteArrayInputStream rawIn = new ByteArrayInputStream(data);
 			in = new BitInputStream(rawIn);
 			
-			// Read schema ID & version:
-			int schemaID = (int) Schema.SCHEMA_ID_FIELD.read(in);
-			int schemaVersion = (int) Schema.SCHEMA_VERSION_FIELD.read(in);
+			// Read schema ID & version: //TODO project hash & form idx
+			int schemaID = 0; //(int) Schema.SCHEMA_ID_FIELD.read(in);
+			int schemaVersion = 0; //(int) Schema.SCHEMA_VERSION_FIELD.read(in);
 			//if(schemaToUse != null)
 			//	System.out.println("Using provided schema (ID: " + schemaToUse.getID() + "; version: " + schemaToUse.getVersion() + ") instead of the one indicated by the transmission (ID: " + schemaID + "; version: " + schemaVersion + ").");
 			

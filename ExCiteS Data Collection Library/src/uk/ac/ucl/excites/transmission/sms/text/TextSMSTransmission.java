@@ -8,7 +8,7 @@ import java.util.Set;
 
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
-import uk.ac.ucl.excites.transmission.ModelProvider;
+import uk.ac.ucl.excites.transmission.TransmissionClient;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.transmission.sms.Message;
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
@@ -54,7 +54,7 @@ public class TextSMSTransmission extends SMSTransmission
 	 * 
 	 * @param modelProvider
 	 */
-	public TextSMSTransmission(ModelProvider modelProvider)
+	public TextSMSTransmission(TransmissionClient modelProvider)
 	{
 		super(modelProvider);
 	}
@@ -66,7 +66,7 @@ public class TextSMSTransmission extends SMSTransmission
 	 * @param parts
 	 *
 	 */
-	public TextSMSTransmission(ModelProvider modelProvider, List<Message> parts)
+	public TextSMSTransmission(TransmissionClient modelProvider, List<Message> parts)
 	{
 		super(modelProvider, parts);
 	}

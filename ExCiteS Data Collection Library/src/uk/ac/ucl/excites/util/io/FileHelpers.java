@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.util;
+package uk.ac.ucl.excites.util.io;
 
 import java.io.File;
 import java.io.FileInputStream;

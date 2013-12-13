@@ -3,9 +3,6 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
-import java.io.File;
-import java.util.List;
-
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
@@ -324,12 +321,6 @@ public class LocationField extends Field implements Timeoutable
 	public Location retrieveLocation(Record entry)
 	{
 		return ((LocationColumn) form.getColumnFor(this)).retrieveValue(entry);
-	}
-
-	@Override
-	public List<File> getFiles(Project project)
-	{
-		return null;
 	}
 
 	@Override

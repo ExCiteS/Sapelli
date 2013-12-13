@@ -5,7 +5,6 @@ package uk.ac.ucl.excites.collector.database;
 
 import java.util.List;
 
-import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.storage.model.Record;
@@ -18,7 +17,6 @@ import uk.ac.ucl.excites.transmission.sms.SMSTransmissionID;
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
 import com.db4o.query.Predicate;
-
 
 /**
  * @author mstevens, julia, Michalis Vitos
@@ -44,52 +42,34 @@ public final class DataAccess
 	{
 		db.commit();
 	}
-
-	/**
-	 * @param schema
-	 */
-	public void store(Schema schema)
-	{
-		storeObject(schema);
-	}
-
-	/**
-	 * Retrieves all schemata
-	 * 
-	 * @return
-	 */
-	public List<Schema> retrieveSchemata()
-	{
-		List<Schema> result = db.query(Schema.class);
-		for(Schema s : result)
-			db.activate(s, ACTIVATION_DEPTH);
-		return result;
-	}
 	
 	/**
+	 * For backwards compatibility only
+	 * 
 	 * @param id
 	 * @param version
 	 * @return
 	 */
-	public Schema retrieveSchema(final int id, final int version)
+	public Project retrieveV1Project(final int schemaID, final int schemaVersion)
 	{
-		ObjectSet<Schema> result = db.query(new Predicate<Schema>()
+		@SuppressWarnings("serial")
+		ObjectSet<Project> result = db.query(new Predicate<Project>()
 		{
-			private static final long serialVersionUID = 1L;
-			
-			public boolean match(Schema schema)
+			public boolean match(Project project)
 			{
-				return schema.getID() == id && schema.getVersion() == version;
+				return 	project.isV1xProject() &&
+						project.getID() == schemaID &&
+						project.getSchemaVersion() == schemaVersion;
 			}
 		});
-		if(result.hasNext())
-		{
-			Schema s = result.next();
-			db.activate(s, ACTIVATION_DEPTH);
-			return s;
-		}
-		else
+		if(result.isEmpty())
 			return null;
+		else
+		{
+			Project p = result.get(0);
+			db.activate(p, ACTIVATION_DEPTH);
+			return p;
+		}
 	}
 	
 	/**
@@ -159,7 +139,7 @@ public final class DataAccess
 	 * Retrieve unsent records of a given Schema
 	 * 
 	 * @param schema
-	 * @param sendingAttemptTimeoutMinutes - amout of time to waiting after the sending attempt until we can considering it failed (because sent=false)
+	 * @param sendingAttemptTimeoutMinutes - amount of time to waiting after the sending attempt until we can considering it failed (because sent=false)
 	 * @return
 	 */
 	public List<Record> retrieveUnsentRecords(final Schema schema, final int sendingAttemptTimeoutMinutes)
@@ -186,24 +166,8 @@ public final class DataAccess
 	public void store(Project project) throws DuplicateException
 	{
 		// Check for project duplicates:
-		if(retrieveProject(project.getName(), project.getVersion()) != null)
+		if(retrieveProject(project.getName(), project.getVariant(), project.getVersion()) != null)
 			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
-		// Check for schema duplicates:
-		for(Form f : project.getForms())
-		{
-			Schema existingSchema = retrieveSchema(f.getSchemaID(), f.getSchemaVersion());
-			if(existingSchema != null)
-			{	// the form uses a schema (ID/version) which is already known
-				try
-				{	// try to use the existing schema on the form
-					f.setSchema(existingSchema);
-				}
-				catch(IllegalArgumentException iae)
-				{	// existing schema was refused, it does not match with the schema defined by the form itself
-					throw new DuplicateException("There is already a project/form (or saved records) with schema ID " + f.getSchemaID() + " and version " + f.getSchemaVersion() + " and the schemas are not compatible.");
-				}
-			}
-		}
 		storeObject(project);
 	}
 	
@@ -227,7 +191,7 @@ public final class DataAccess
 			db.activate(p, ACTIVATION_DEPTH);
 		return result;
 	}
-
+	
 	/**
 	 * Retrieves specific Project
 	 * 
@@ -235,12 +199,49 @@ public final class DataAccess
 	 */
 	public Project retrieveProject(final String name, final String version)
 	{
+		return retrieveProject(name, null, version);
+	}
+
+	/**
+	 * Retrieves specific Project
+	 * 
+	 * @return null if project was not found
+	 */
+	public Project retrieveProject(final String name, final String variant, final String version)
+	{
 		@SuppressWarnings("serial")
 		ObjectSet<Project> result = db.query(new Predicate<Project>()
 		{
 			public boolean match(Project project)
 			{
-				return project.getName().equalsIgnoreCase(name) && project.getVersion().equalsIgnoreCase(version);
+				return 	project.getName().equalsIgnoreCase(name) &&
+						(variant != null ? variant.equals(project.getVariant()) : true) &&
+						project.getVersion().equalsIgnoreCase(version);
+			}
+		});
+		if(result.isEmpty())
+			return null;
+		else
+		{
+			Project p = result.get(0);
+			db.activate(p, ACTIVATION_DEPTH);
+			return p;
+		}
+	}
+	
+	/**
+	 * Retrieves specific Project
+	 * 
+	 * @return null if project was not found
+	 */
+	public Project retrieveProject(final long projectHash)
+	{
+		@SuppressWarnings("serial")
+		ObjectSet<Project> result = db.query(new Predicate<Project>()
+		{
+			public boolean match(Project project)
+			{
+				return project.getHash() == projectHash;
 			}
 		});
 		if(result.isEmpty())
@@ -261,29 +262,6 @@ public final class DataAccess
 	public void delete(Project project)
 	{
 		deleteObject(project);
-	}
-	
-	/**
-	 * Retrieve all forms that use/define a schema with the provided ID & version
-	 * 
-	 * @param schemaID
-	 * @param schemaVersion
-	 * @return
-	 */
-	public List<Form> retrieveForms(final int schemaID, final int schemaVersion)
-	{
-		ObjectSet<Form> result = db.query(new Predicate<Form>()
-		{
-			private static final long serialVersionUID = 1L;
-			
-			public boolean match(Form form)
-			{
-				return form.getSchemaID() == schemaID && form.getSchemaVersion() == schemaVersion;
-			}
-		});
-		for(Form f : result)
-			db.activate(f, ACTIVATION_DEPTH);
-		return result;
 	}
 	
 	/**

@@ -18,7 +18,7 @@ import uk.ac.ucl.excites.collector.ui.picker.items.LayeredItem;
 import uk.ac.ucl.excites.collector.ui.picker.items.TextItem;
 import uk.ac.ucl.excites.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
-import uk.ac.ucl.excites.util.FileHelpers;
+import uk.ac.ucl.excites.util.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;

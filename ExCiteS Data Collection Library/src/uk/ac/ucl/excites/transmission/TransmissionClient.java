@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.transmission;
 
 import java.util.Set;
 
+import uk.ac.ucl.excites.storage.StorageClient;
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.Schema;
 
@@ -12,11 +13,10 @@ import uk.ac.ucl.excites.storage.model.Schema;
  * @author mstevens
  *
  */
-public interface ModelProvider
+public interface TransmissionClient extends StorageClient
 {
 
-	public Schema getSchema(int id, int version);
-	
+	//TODO replace by: public EncryptionSettings getEncryptionSettings(int usageID, int usageSubID) ... 
 	public Settings getSettingsFor(Schema schema);
 	
 	public Set<Column<?>> getFactoredOutColumnsFor(Schema schema);

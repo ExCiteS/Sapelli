@@ -14,6 +14,7 @@ import uk.ac.ucl.excites.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
+import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.util.CollectionUtils;
 
 /**
@@ -24,6 +25,12 @@ public class Form
 {
 
 	// Statics--------------------------------------------------------
+	/**
+	 * Allowed form indexes: 0 to {@link Project#MAX_FORMS} - 1
+	 */
+	public static final IntegerRangeMapping FORM_INDEX_FIELD = new IntegerRangeMapping(0, Project.MAX_FORMS - 1);
+	public static final int FORM_INDEX_SIZE = FORM_INDEX_FIELD.getSize(); //bits
+	
 	public static final boolean END_TIME_DEFAULT = false;
 
 	public static final int END_ACTION_LOOP = 0;
@@ -48,10 +55,9 @@ public class Form
 
 	// Dynamics-------------------------------------------------------
 	private final Project project;
-	private final int schemaID;
-	private final int schemaVersion;
+	private final int index;
 	private Schema schema;
-	private final String name;
+	private final String id;
 
 	private transient List<String> warnings;
 	
@@ -64,53 +70,44 @@ public class Form
 	private String shortcutImageRelativePath;
 
 	// Animation:
-	private boolean animation;
+	private boolean animation = DEFAULT_ANIMATION;
 	
 	// Timestamps
 	private boolean storeEndTime;
 
 	// End action:
-	private int endAction;
-	private boolean vibrateOnEnd;
+	private int endAction = DEFAULT_END_ACTION;
+	private boolean vibrateOnEnd = DEFAULT_VIBRATE;
 	private String endSoundRelativePath;
 
 	// Buttons:
 	private boolean showBack = DEFAULT_SHOW_BACK;
 	private boolean showCancel = DEFAULT_SHOW_CANCEL;
 	private boolean showForward = DEFAULT_SHOW_FORWARD;
+	private String buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
 	private String backButtonImageRelativePath;
 	private String cancelButtonImageRelativePath;
 	private String forwardButtonImageRelativePath;
-	private String buttonBackgroundColor;
-
-	public Form(Project project, String name, int schemaID)
-	{
-		this(project, name, schemaID, Schema.DEFAULT_VERSION);
-	}
-
-	public Form(Project project, String name, int schemaID, int schemaVersion)
+	
+	public Form(Project project, String id)
 	{
 		this.project = project;
-		this.name = name;
-		if(Schema.SCHEMA_ID_FIELD.fits(schemaID))
-			this.schemaID = schemaID;
-		else
-			throw new IllegalArgumentException("Invalid schema ID, valid values are " + Schema.SCHEMA_ID_FIELD.getLogicalRangeString() + ".");
-		if(Schema.SCHEMA_VERSION_FIELD.fits(schemaVersion))
-			this.schemaVersion = schemaVersion;
-		else
-			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
+		this.id = id;
+		
 		this.fields = new ArrayList<Field>();
 		this.locationFields = new ArrayList<LocationField>();
-		this.animation = DEFAULT_ANIMATION;
-		this.buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
-		this.endAction = DEFAULT_END_ACTION;
-		this.vibrateOnEnd = DEFAULT_VIBRATE;
+		
+		// Set Form index & add it to the Project:
+		if(FORM_INDEX_FIELD.fits(project.getForms().size()))
+			this.index = project.getForms().size();
+		else
+			throw new IllegalArgumentException("Invalid form index, valid values are " + FORM_INDEX_FIELD.getLogicalRangeString() + " (up to " + Project.MAX_FORMS + " forms per project).");
+		project.addForm(this); //!!!
 	}
 
 	public void initialiseStorage()
 	{
-		getSchema(); //this will also trigger all Column and ValueDictionaries to be created/initialised
+		getSchema(); //this will also trigger all Columns to be created/initialised
 	}
 
 	/**
@@ -150,9 +147,24 @@ public class Form
 		return next; // use jump as next
 	}
 
+	/**
+	 * Returns the Form ID
+	 * 
+	 * @return
+	 */
+	public String getID()
+	{
+		return id;
+	}
+	
+	/**
+	 * Returns the Form ID (method kept for backwards compatibility)
+	 * 
+	 * @return
+	 */
 	public String getName()
 	{
-		return name;
+		return getID();
 	}
 
 	public List<Field> getFields()
@@ -426,19 +438,11 @@ public class Form
 	}
 
 	/**
-	 * @return the schemaID
+	 * @return the index
 	 */
-	public int getSchemaID()
+	public int getIndex()
 	{
-		return schemaID;
-	}
-
-	/**
-	 * @return the schemaVersion
-	 */
-	public int getSchemaVersion()
-	{
-		return schemaVersion;
+		return index;
 	}
 
 	public Schema getSchema()
@@ -446,7 +450,12 @@ public class Form
 		if(schema == null)
 		{
 			//create new one:
-			schema = new Schema(schemaID, schemaVersion, name);
+			schema = new Schema(project.getHash(), /* Project#hash becomes Schema#usageID */
+								this.index,
+								project.getName() +
+								(project.getVariant() != null ? '_' + project.getVariant() : "") +
+								"_v" + project.getVersion() +
+								":" + id /* = form "name"*/);
 			// Internal-use columns:
 			// Timestamp column(s):
 			schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_START, false));
@@ -457,7 +466,7 @@ public class Form
 			// Columns for user-defined fields:
 			for(Field f : fields)
 				if(!f.isNoColumn())
-					schema.addColumn(f.getColumn());
+					schema.addColumns(f.getColumns());
 			// Seal & store the schema:
 			schema.seal();
 		}
@@ -469,13 +478,13 @@ public class Form
 	 * 
 	 * @param newSchema
 	 */
-	public void setSchema(Schema newSchema)
+	/*public void setSchema(Schema newSchema)
 	{
 		if(getSchema().equals(newSchema, true, true)) // check if the schema is identical/equivalent to the one we have/need 
 			this.schema = newSchema; // we accept the new one
 		else
 			throw new IllegalArgumentException("The provived schema is not compatible with this form!");
-	}
+	}*/
 
 	public Record newEntry(long deviceID)
 	{
@@ -532,7 +541,34 @@ public class Form
 	
 	public String toString()
 	{
-		return name;
+		return id;
+	}
+	
+	/**
+	 * A Form.Page groups together fields to be displayed together
+	 * 
+	 * @author mstevens
+	 */
+	public class Page
+	{
+		
+		private final List<Field> fields;
+		
+		public Page()
+		{
+			this.fields = new ArrayList<Field>();
+		}
+		
+		public void addField(Field field)
+		{
+			this.fields.add(field);
+		}
+		
+		public List<Field> getFields()
+		{
+			return fields;
+		}
+		
 	}
 
 }

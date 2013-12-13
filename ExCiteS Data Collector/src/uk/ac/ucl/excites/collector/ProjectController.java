@@ -35,8 +35,8 @@ import uk.ac.ucl.excites.collector.util.LocationUtils;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.types.Orientation;
 import uk.ac.ucl.excites.util.DeviceControl;
-import uk.ac.ucl.excites.util.FileHelpers;
 import uk.ac.ucl.excites.util.Logger;
+import uk.ac.ucl.excites.util.io.FileHelpers;
 import android.content.Context;
 import android.location.Location;
 import android.location.LocationListener;
@@ -161,7 +161,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		if(logger != null)
 		{
 			formStartTime = System.currentTimeMillis();
-			logger.addLine("FORM_START", currentForm.getName() + " (Schema ID: " + currentForm.getSchemaID() + "; version: " + currentForm.getSchemaVersion() + ")");
+			logger.addLine("FORM_START", currentForm.getName() + " (index: " + currentForm.getIndex() + ")");
 		}
 		
 		// Begin filling out the form at the start field:
@@ -589,6 +589,5 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	{
 		return currentField;
 	}
-
 
 }
