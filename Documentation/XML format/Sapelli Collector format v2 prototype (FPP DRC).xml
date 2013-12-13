@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <Sapelli-Collector-Project format="2" name="FPP DRC" variant="prototype" id="400" version="0.1" startForm="Entry">
   <Configuration>
     <Transmission>
@@ -7,7 +7,7 @@
     <Logging enabled="true"/>
   </Configuration>
   
-  <Form id="Entry" name="Community data" startField="Session" end="_LOOP" endVibrate="true" showBack="true" showCancel="true" storeEndTime="true">
+  <Form id="Entry" name="Community data" startField="SessionKey" end="_LOOP" endVibrate="true" showBack="true" showCancel="true" storeEndTime="true">
     
     <!-- source="localCreate|localSelect|remoteQR|remoteBT|remoteSMS|remoteHTTP" ? -->
     <!-- paged="true" by default -->
