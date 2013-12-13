@@ -76,8 +76,9 @@
   </Form>
   
   <!-- should editable be an attribute of the form of of belongsTo? -->  
+  <!-- should hold be an attribute of the form of of belongsTo? -->
   
-  <Form id="Session" name="Community session" protectEdit="true" singlePage="true" protectEditMessage="..." end="_BACK">
+  <Form id="Session" name="Community session" protectEdit="true" singlePage="true" protectEditMessage="..." end="_BACK" storeEndTime="true">
 
     <TextField id="Creator" label="Creator" maxLength="48" optional="false"/>
 
@@ -104,7 +105,7 @@
 
     <TextField id="Comment" label="Comments" maxLength="1024" multiline="true" optional="true"/>
 
-    <Button id="Close" label="Close" jump="_END"/><!-- noColumn="true" is implied -->
+    <Button id="Close" label="Close" jump="_END|_RELEASE"/><!-- noColumn="true" is implied -->
 
   </Form>
   

@@ -17,7 +17,6 @@ public class ListSelectionField extends Field
 
 	private String[] labels;
 	
-	
 	/**
 	 * @param form
 	 * @param id

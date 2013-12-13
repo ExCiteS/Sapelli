@@ -28,8 +28,8 @@ public class Record
 	protected Object[] values;
 	
 	protected String exportComment;
-	
 	protected boolean exported = false;
+	
 	protected boolean sent = false;
 	protected DateTime sendingAttemptedAt = null;
 	

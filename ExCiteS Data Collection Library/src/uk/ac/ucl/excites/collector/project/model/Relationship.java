@@ -19,7 +19,8 @@ import uk.ac.ucl.excites.storage.model.Column;
  */
 public class Relationship extends Field
 {
-	
+
+	//STATICS -------------------------------------------------------
 	static public enum Type
 	{
 		/**
@@ -53,8 +54,12 @@ public class Relationship extends Field
 		
 	}
 	
+	static public final boolean DEFAULT_HOLD_FOREIGN_RECORD = false;
+	
+	// Dynamics------------------------------------------------------
 	private Form relatedForm;
 	private Type type;
+	private boolean holdForeignRecord;
 
 	/**
 	 * @param form
@@ -95,6 +100,22 @@ public class Relationship extends Field
 	public Type getType()
 	{
 		return type;
+	}
+
+	/**
+	 * @return the holdForeignRecord
+	 */
+	public boolean isHoldForeignRecord()
+	{
+		return holdForeignRecord;
+	}
+
+	/**
+	 * @param holdForeignRecord the holdForeignRecord to set
+	 */
+	public void setHoldForeignRecord(boolean holdForeignRecord)
+	{
+		this.holdForeignRecord = holdForeignRecord;
 	}
 
 	/* (non-Javadoc)
