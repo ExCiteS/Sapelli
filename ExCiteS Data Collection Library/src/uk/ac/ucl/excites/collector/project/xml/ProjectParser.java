@@ -51,7 +51,7 @@ public class ProjectParser extends DocumentParser
 	static public final Format DEFAULT_FORMAT = Format.v2_x;
 	
 	// Tags:
-	static private final String TAG_PROJECT = "Sapelli-Collector-Project";
+	static private final String TAG_PROJECT = "SapelliCollectorProject";
 	static private final String TAG_PROJECT_V1X = "ExCiteS-Collector-Project";
 
 	// Attributes:

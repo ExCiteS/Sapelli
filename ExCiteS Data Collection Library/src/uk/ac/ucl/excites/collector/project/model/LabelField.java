@@ -12,19 +12,31 @@ import uk.ac.ucl.excites.storage.model.Column;
  * @author mstevens
  *
  */
-public class Button extends Field
+public class LabelField extends Field
 {
 
-	private String label;
+	static public final String ID_PREFIX = "lbl";
+	
+	private String text;
+	
+	/**
+	 * @param form
+	 * @param text
+	 */
+	public LabelField(Form form, String text)
+	{
+		this(form, null, text);
+	}
 	
 	/**
 	 * @param form
 	 * @param id
+	 * @param text
 	 */
-	public Button(Form form, String label, String id)
+	public LabelField(Form form, String id, String text)
 	{	
-		super(form, (id == null || id.isEmpty() ? label : id));
-		this.label = label;
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + text.trim().replaceAll("\\s+","_") : id));
+		this.text = text;
 		this.noColumn = true;
 	}
 
@@ -38,11 +50,11 @@ public class Button extends Field
 	}
 	
 	/**
-	 * @return the label
+	 * @return the text
 	 */
-	public String getLabel()
+	public String getText()
 	{
-		return label;
+		return text;
 	}
 
 	/* (non-Javadoc)
@@ -67,7 +79,7 @@ public class Button extends Field
 	
 	public void setNoColumn(boolean noColumn)
 	{
-		throw new UnsupportedOperationException("setNoColumn is unsupported on Buttons since they never have columns.");
+		throw new UnsupportedOperationException("setNoColumn is unsupported on LabelFields since they never have columns.");
 	}
 
 }

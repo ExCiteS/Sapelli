@@ -12,20 +12,32 @@ import uk.ac.ucl.excites.storage.model.Column;
  * @author mstevens
  *
  */
-public class ListSelectionField extends Field
+public class ButtonField extends Field
 {
 
-	private int depth;
-	private String[] labels;
+	static public final String ID_PREFIX = "btn";
+	
+	private String label;
+	
+	/**
+	 * @param form
+	 * @param label
+	 */
+	public ButtonField(Form form, String label)
+	{
+		this(form, null, label);
+	}
 	
 	/**
 	 * @param form
 	 * @param id
+	 * @param label
 	 */
-	public ListSelectionField(Form form, String id)
-	{
-		super(form, id);
-		// TODO Auto-generated constructor stub
+	public ButtonField(Form form, String id, String label)
+	{	
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + label.trim().replaceAll("\\s+","_") : id));
+		this.label = label;
+		this.noColumn = true;
 	}
 
 	/* (non-Javadoc)
@@ -34,8 +46,15 @@ public class ListSelectionField extends Field
 	@Override
 	protected Column<?> createColumn()
 	{
-		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	/**
+	 * @return the label
+	 */
+	public String getLabel()
+	{
+		return label;
 	}
 
 	/* (non-Javadoc)
@@ -56,6 +75,11 @@ public class ListSelectionField extends Field
 	{
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	public void setNoColumn(boolean noColumn)
+	{
+		throw new UnsupportedOperationException("setNoColumn is unsupported on ButtonFields since they never have columns.");
 	}
 
 }

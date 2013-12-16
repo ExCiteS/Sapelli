@@ -11,11 +11,13 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.collector.project.model.AudioField;
+import uk.ac.ucl.excites.collector.project.model.ButtonField;
 import uk.ac.ucl.excites.collector.project.model.CancelField;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.LabelField;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.MediaField;
 import uk.ac.ucl.excites.collector.project.model.OrientationField;
@@ -44,6 +46,8 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_ORIENTATION = "Orientation";
 	static private final String TAG_BELONGS_TO = "BelongsTo";
 	static private final String TAG_LINKS_TO = "LinksTo";
+	static private final String TAG_BUTTON = "ButtonField";
+	static private final String TAG_LABEL = "LabelField";
 	
 	//ATTRIBUTES
 	static private final String ATTRIBUTE_FORM_NAME = "name";
@@ -63,6 +67,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
+	static private final String ATTRIBUTE_FIELD_LABEL = "label";
 	static private final String ATTRIBUTE_FIELD_BACKGROUND_COLOR = "backgroundColor";
 	static private final String ATTRIBUTE_FIELD_SKIP_ON_BACK = "skipOnBack";
 	static private final String ATTRIBUTE_CHOICE_VALUE = "value";
@@ -71,6 +76,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_SHOW_CANCEL = "showCancel";
 	static private final String ATTRIBUTE_SHOW_BACK = "showBack";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "currentForm";
+	static private final String ATTRIBUTE_LABEL_TEXT = "text";
 	
 	// DYNAMICS-------------------------------------------------------
 	private ProjectParser projectParser;
@@ -137,11 +143,11 @@ public class FormParser extends SubtreeParser
 			currentForm.setShowForward(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_FORWARD, Form.DEFAULT_SHOW_FORWARD));
 			// Animation:
 			currentForm.setAnimation(readBooleanAttribute(attributes, ATTRIBUTE_FORM_ANIMATION, Form.DEFAULT_ANIMATION));
-			// Button images:
+			// ButtonField images:
 			currentForm.setBackButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_BACK_BUTTON_IMG));
 			currentForm.setCancelButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_CANCEL_BUTTON_IMG));
 			currentForm.setForwardButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_FORWARD_BUTTON_IMG));
-			// Button background colour:
+			// ButtonField background colour:
 			currentForm.setButtonBackgroundColor(readStringAttribute(attributes, ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR, Form.DEFAULT_BUTTON_BACKGROUND_COLOR));
 			// Start field:
 			if(attributes.getValue(ATTRIBUTE_FORM_START_FIELD) != null && !attributes.getValue(ATTRIBUTE_FORM_START_FIELD).isEmpty())
@@ -262,8 +268,20 @@ public class FormParser extends SubtreeParser
 				newField(linksTo, attributes);
 				projectParser.addRelationship(linksTo, readRequiredStringAttribute(qName, attributes, ATTRIBUTE_RELATIONSHIP_FORM));
 			}
+			// <ButtonField>
+			else if(qName.equals(TAG_BUTTON))
+			{
+				ButtonField btn = new ButtonField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_BUTTON, attributes, ATTRIBUTE_FIELD_LABEL));
+				newField(btn, attributes);
+			}
+			// <LabelField>
+			else if(qName.equals(TAG_LABEL))
+			{
+				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, attributes, ATTRIBUTE_LABEL_TEXT));
+				newField(lbl, attributes);
+			}
 			// Add future field types here...
-			// TODO Button, TextField, Checkbox, etc.
+			// TODO TextField, Checkbox, etc.
 			// <?> in <Form>
 			else
 			{
@@ -292,7 +310,7 @@ public class FormParser extends SubtreeParser
 		}
 		rememberIDAndJump(f, attributes);
 		
-		// f.setSkipOnBack(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK)); //TODO
+		// f.setSkipOnBack(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK)); //TODO skip on back?
 		f.setBackgroundColor(readStringAttribute(attributes, ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR));
 		
 		// Which buttons are allowed to show:

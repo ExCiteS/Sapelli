@@ -1,5 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Sapelli-Collector-Project format="2" name="FPP DRC" variant="prototype" id="400" version="0.1" startForm="Entry">
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<SapelliCollectorProject format="2" name="FPP DRC" variant="prototype" id="400" version="0.1" startForm="Entry">
   <Configuration>
     <Transmission>
       <!-- TODO -->
@@ -75,10 +75,12 @@
     
   </Form>
   
-  <!-- should editable be an attribute of the form of of belongsTo? -->  
-  <!-- should hold be an attribute of the form of of belongsTo? -->
+  <!-- should 'editable' be an attribute of the form of of belongsTo? -->  
+  <!-- should 'hold' be an attribute of the form of of belongsTo? -->
   
   <Form id="Session" name="Community session" protectEdit="true" singlePage="true" protectEditMessage="..." end="_BACK" storeEndTime="true">
+
+
 
     <TextField id="Creator" label="Creator" maxLength="48" optional="false"/>
 
@@ -105,8 +107,8 @@
 
     <TextField id="Comment" label="Comments" maxLength="1024" multiline="true" optional="true"/>
 
-    <Button id="Close" label="Close" jump="_END|_RELEASE"/><!-- noColumn="true" is implied -->
+    <Button id="Close" label="Close Session" jump="_END|_RELEASE"/><!-- noColumn="true" is implied -->
 
   </Form>
   
-</Sapelli-Collector-Project>
+</SapelliCollectorProject>
