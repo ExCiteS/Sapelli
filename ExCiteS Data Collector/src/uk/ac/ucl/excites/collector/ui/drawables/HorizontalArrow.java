@@ -15,25 +15,33 @@ import android.graphics.drawable.Drawable;
 /**
  * Draws a horizontal arrow (pointing left or right), which fits exactly in the bounds of the canvas
  * 
- * @author mstevens
+ * @author mstevens, Michalis Vitos
  */
 public class HorizontalArrow extends Drawable
 {
 	
 	static public final int DEFAULT_COLOUR = Color.BLACK;
+	static public final boolean DEFAULT_FILL_WIDTH = false;
 
 	private int colour;
 	private boolean leftPointing = true;
-	
-	public HorizontalArrow(int colour, boolean leftPointing)
-	{
-		this.colour = colour;
-		this.leftPointing = leftPointing;
-	}
+	private boolean fillWidth = DEFAULT_FILL_WIDTH;
 	
 	public HorizontalArrow(boolean leftPointing)
 	{
-		this(DEFAULT_COLOUR, false);
+		this(DEFAULT_COLOUR, false, DEFAULT_FILL_WIDTH);
+	}
+	
+	public HorizontalArrow(int colour, boolean leftPointing)
+	{
+		this(colour, leftPointing, DEFAULT_FILL_WIDTH);
+	}
+	
+	public HorizontalArrow(int colour, boolean leftPointing, boolean fillWidth)
+	{
+		this.colour = colour;
+		this.leftPointing = leftPointing;
+		this.fillWidth = fillWidth;
 	}
 	
 	@Override
@@ -41,7 +49,7 @@ public class HorizontalArrow extends Drawable
 	{
 		// Canvas bounding box:
 		Rect bounds = getBounds();
-		float quarterHeight = (bounds.height() / 4.0f);
+		float quarterHeight = bounds.height() / 4.0f;
 		
 		//Log.d("Arrow", "Bound: " + bounds.left + ", " + bounds.bottom + ", " + bounds.right + ", " + bounds.top);
 		
@@ -61,20 +69,31 @@ public class HorizontalArrow extends Drawable
 		arrowPaint.setColor(colour);
 		
 		// Altitude of the equilateral triangle which forms the arrow head:
-		float altitude = (float) (Math.sqrt(3.0) * bounds.height() / 2.0);
-		
-		// Find the middle of the bounds
-		float middle = bounds.width() / 2;
+		float altitude = (float) (Math.sqrt(3.0) * bounds.height() / 2.0d);
 
 		// Draw arrow:
 		Path arrow = new Path();
-		arrow.moveTo(leftPointing ? middle - altitude : middle + altitude, bounds.exactCenterY());
-		arrow.lineTo(middle, bounds.top);
-		arrow.lineTo(middle, bounds.top + quarterHeight);
-		arrow.lineTo(leftPointing ? middle + altitude : middle - altitude, bounds.top + quarterHeight);
-		arrow.lineTo(leftPointing ? middle + altitude : middle - altitude, bounds.bottom - quarterHeight);
-		arrow.lineTo(middle, bounds.bottom - quarterHeight);
-		arrow.lineTo(middle, bounds.bottom);
+		if(fillWidth)
+		{
+			arrow.moveTo(leftPointing ? bounds.left : bounds.right, bounds.exactCenterY());
+			arrow.lineTo(leftPointing ? bounds.left + altitude : bounds.right - altitude, bounds.top);
+			arrow.lineTo(leftPointing ? bounds.left + altitude : bounds.right - altitude, bounds.top + quarterHeight);
+			arrow.lineTo(leftPointing ? bounds.right : bounds.left, bounds.top + quarterHeight);
+			arrow.lineTo(leftPointing ? bounds.right : bounds.left, bounds.bottom - quarterHeight);
+			arrow.lineTo(leftPointing ? bounds.left + altitude : bounds.right - altitude, bounds.bottom - quarterHeight);
+			arrow.lineTo(leftPointing ? bounds.left + altitude : bounds.right - altitude, bounds.bottom);
+		}
+		else
+		{
+			float middle = bounds.width() / 2.0f; // find the middle of the bounds
+			arrow.moveTo(leftPointing ? middle - altitude : middle + altitude, bounds.exactCenterY());
+			arrow.lineTo(middle, bounds.top);
+			arrow.lineTo(middle, bounds.top + quarterHeight);
+			arrow.lineTo(leftPointing ? middle + altitude : middle - altitude, bounds.top + quarterHeight);
+			arrow.lineTo(leftPointing ? middle + altitude : middle - altitude, bounds.bottom - quarterHeight);
+			arrow.lineTo(middle, bounds.bottom - quarterHeight);
+			arrow.lineTo(middle, bounds.bottom);
+		}
 		arrow.close();
 		canvas.drawPath(arrow, arrowPaint);
 	}
