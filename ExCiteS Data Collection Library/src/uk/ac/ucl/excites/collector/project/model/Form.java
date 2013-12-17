@@ -451,7 +451,7 @@ public class Form
 		{
 			//create new one:
 			schema = new Schema(project.getHash(), /* Project#hash becomes Schema#usageID */
-								this.index,
+								this.index, /* Form#index becomes Schema#usageSubID */
 								project.getName() +
 								(project.getVariant() != null ? '_' + project.getVariant() : "") +
 								"_v" + project.getVersion() +
