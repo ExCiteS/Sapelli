@@ -170,7 +170,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 
 	public void cancelAndRestartForm()
 	{
-		// cancel button pressed
+		// Cancel button pressed
 		if(logger != null)
 			logger.addLine("CANCEL_BUTTON", currentField.getID());
 		
@@ -178,7 +178,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	}
 
 	public void cancelAndStop()
-	{		
+	{
 		cancel(false);
 	}
 
@@ -188,21 +188,19 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		for(File attachment : currentMediaAttachments)
 			if(attachment.exists())
 				attachment.delete();
-		//restart or stop:
+		
+		// Restart or stop:
 		if(restart)
-		{
-			// Restart the form:
-			startForm(currentForm);
-		}
+			startForm(currentForm); // restart the form
 		else
-		{
+		{	//Stop:
 			stopLocationListener(); // stop GPS!
 			currentMediaAttachments.clear();
 			fieldHistory.clear();
 			currentForm = null;
 			currentField = null;
 			currentRecord = null;
-			// close log file:
+			// Close log file:
 			if(logger != null)
 			{
 				logger.addFinalLine("PROJECT_END", project.getName());
@@ -325,7 +323,12 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	@Override
 	public boolean enterCancelField(CancelField cf)
 	{
-		cancelAndRestartForm();
+		// Logging:
+		if(logger != null)
+			logger.addLine("FORM_CANCEL", currentForm.getName(), Long.toString((System.currentTimeMillis() - formStartTime) / 1000) + " seconds");
+		
+		// Restart:
+		cancel(true); // cancel & restart
 		return false;
 	}
 
@@ -442,7 +445,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		Log.d(TAG, "Stored record:");
 		Log.d(TAG, currentRecord.toString());
 
-		// logging:
+		// Log record:
 		if(logger != null)
 		{
 			logger.addLine("RECORD", currentRecord.toString());
@@ -469,15 +472,17 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		File endSoundFile = project.getSoundFile(currentForm.getEndSoundRelativePath());
 		if(FileHelpers.isReadableFile(endSoundFile))
 			DeviceControl.playSoundFile(activity, endSoundFile);
+		
 		// End action:
 		switch(currentForm.getEndAction())
 		{
-		case Form.END_ACTION_LOOP:
-			startForm(currentForm);
-			break;
-		case Form.END_ACTION_EXIT:
-			activity.finish();
-			break; // leaves the application!
+			case Form.END_ACTION_LOOP:
+				startForm(currentForm);
+				break;
+			case Form.END_ACTION_EXIT:
+				cancel(false); // cancel & don't restart
+				activity.finish(); // leave the application
+				break;
 		}
 	}
 
