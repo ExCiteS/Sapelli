@@ -13,7 +13,7 @@
     <!-- paged="true" by default -->
     <BelongsTo id="SessionKey" form="Session" source="localCreate" hold="true" optional="false"/>
   
-    <Choice id="Type" optional="false" rows="2" cols="1">
+    <Choice id="Type" optional="false" rows="2" cols="1" showRelationship="SessionKey">
       <Choice value="Waypoint" alt="Area delineation waypoint" img="Waypoint.png"/>
       <Choice value="Resources/Sites" alt="Resources/Sites" img="Resources-Sites.png" rows="3" cols="1">
         <Choice value="Farming" alt="Farming" img="Farming.png" rows="3" cols="1">
@@ -75,14 +75,19 @@
     
   </Form>
   
-  <!-- should 'editable' be an attribute of the form of of belongsTo? -->  
-  <!-- should 'hold' be an attribute of the form of of belongsTo? -->
+  <!-- should 'editable' be an attribute of the form of of belongsTo? -> probably NOT -->
+  <!-- edit protection: here? -->
+  <!-- should 'hold' be an attribute of the form of of belongsTo? -> probably YES -->
+  <!-- end: accept form names? -->
   
-  <Form id="Session" name="Community session" protectEdit="true" singlePage="true" protectEditMessage="..." end="_BACK" storeEndTime="true">
+  <Form id="Session" name="Community session" protectEdit="true" editable="true" singlePage="true" protectEditMessage="..." storeEndTime="true" end="BACK">
+    <!-- allow form names as end action? (e.g. end="Entry") -> better not... -->
+  
+    <MessageBox text="Press ... within 5 seconds to access the Session form" showOnCreate="false" showOnEdit="true" cancelKey="BACK" okayKey="VOLUME_DOWN" cancel="_BACK" okay=""/>
 
+    <Label text="Session"/><!-- noColumn="true" is implied -->
 
-
-    <TextField id="Creator" label="Creator" maxLength="48" optional="false"/>
+    <TextField id="Creator" label="Creator" minLength="2" maxLength="48" optional="false"/>
 
     <ListSelection id="Community" label="Province;Community" optional="false">
       <item value="Province 1" isDefault="true">
@@ -107,7 +112,16 @@
 
     <TextField id="Comment" label="Comments" maxLength="1024" multiline="true" optional="true"/>
 
-    <Button id="Close" label="Close Session" jump="_END|_RELEASE"/><!-- noColumn="true" is implied -->
+    <Button id="Open" label="Start Session" disableOnEdit="true" jump="_STORE"/>
+    <!-- Alternatives:
+        jump="LinkToSession"
+        formJump="Session" (implicit linkTo?)
+        jump="_BACK" (meaniung "_BACK" is a 'special jump' and not an endAction)
+         -->
+    
+    <Button id="Close" label="Close Session" disableOnCreate="true" jump="_END+RELEASE"/><!-- noColumn="true" is implied -->
+    
+    <!-- <LinkTo id="LinkToSession" form="Entry"/> -->
 
   </Form>
   
