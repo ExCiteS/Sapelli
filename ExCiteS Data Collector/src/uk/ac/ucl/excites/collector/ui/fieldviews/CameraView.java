@@ -327,13 +327,15 @@ public class CameraView extends ViewSwitcher implements FieldUI, AdapterView.OnI
 
 			// Images/buttons:
 			pickerAdapter = new PickerAdapter(super.getContext());
-			addButtons();
 
 			// Button size, padding & background colour:
 			this.buttonSize = ScreenMetrics.ConvertDipToPx(context, BUTTON_HEIGHT_DIP);
 			this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, ChoiceView.PADDING_DIP);
 			this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
 			
+			// The addButtons() should be called after the button parameters (size, padding etc.) have been setup
+			addButtons();
+
 			// And finally:
 			setAdapter(pickerAdapter);
 		}
