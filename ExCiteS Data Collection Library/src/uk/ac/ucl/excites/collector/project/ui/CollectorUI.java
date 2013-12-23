@@ -12,6 +12,8 @@ public interface CollectorUI
 	public FieldUI createAudioUI(AudioField af);
 
 	public FieldUI createLocationUI(LocationField lf);
+	
+	public FieldUI createLabelUI(LabelField lf);
 
 	public void setField(Field currentField);
 

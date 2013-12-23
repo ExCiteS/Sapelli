@@ -63,7 +63,6 @@ public class LabelField extends Field
 	@Override
 	public boolean enter(Controller controller)
 	{
-		// TODO Auto-generated method stub
 		return false;
 	}
 
@@ -73,8 +72,7 @@ public class LabelField extends Field
 	@Override
 	public FieldUI createUI(CollectorUI collectorUI)
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return collectorUI.createLabelUI(this);
 	}
 	
 	public void setNoColumn(boolean noColumn)

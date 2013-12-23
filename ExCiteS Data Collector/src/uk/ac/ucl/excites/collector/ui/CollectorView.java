@@ -7,6 +7,7 @@ import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.LabelField;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
@@ -14,6 +15,7 @@ import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.collector.ui.fieldviews.AudioView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.CameraView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.ChoiceView;
+import uk.ac.ucl.excites.collector.ui.fieldviews.LabelView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.WaitingView;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
@@ -141,6 +143,12 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	public FieldUI createLocationUI(LocationField lf)
 	{
 		return new WaitingView(activity, controller, lf);
+	}
+
+	@Override
+	public FieldUI createLabelUI(LabelField lf)
+	{
+		return new LabelView(activity, lf);
 	}
 	
 	public void cancelCurrentField()
