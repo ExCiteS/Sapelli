@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
@@ -334,7 +335,7 @@ public class ChoiceField extends Field
 		/* HashMap which maps Choices that are both "valued" (i.e. with non-null value String) AND
 		 * "selectable" (being either a leaf itself or the lowest "valued" ancestor of a "non-valued" leaf)
 		 * into indexes, which are used to store the value (i.e. the choice made) of the ChoiceField tree. */
-		private HashMap<ChoiceField, Integer> valuedToIdx;
+		private Map<ChoiceField, Integer> valuedToIdx;
 		
 		/* An (Array)List which allows choices to be looked up by index */
 		private List<ChoiceField> indexed;
