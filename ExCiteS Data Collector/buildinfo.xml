@@ -7,7 +7,6 @@
     <target name="-settings">
         
         <!-- Change these if needed -->
-        <property name="package" value="uk.ac.ucl.excites.collector"/>
         <property name="classname" value="BuildInfo"/>
 		
         <!-- Don't touch these: -->
@@ -18,6 +17,7 @@
     	<xmlproperty file="${project-dir}${file.separator}AndroidManifest.xml" prefix="mani" collapseAttributes="true"/>
     	<property name="appVersionName" value="${mani.manifest.android:versionName}"/>
     	<property name="appVersionCode" value="${mani.manifest.android:versionCode}"/>
+    	<property name="package" value="${mani.manifest.package}"/>
 		<property name="gen-dir" location="${project-dir}${file.separator}gen"/>
 		<property name="raw-res-dir" location="${project-dir}${file.separator}res${file.separator}raw"/>
 		<loadresource property="package-path">
