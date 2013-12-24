@@ -7,6 +7,7 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.Thread.UncaughtExceptionHandler;
 
+import uk.ac.ucl.excites.collector.BuildInfo;
 import uk.ac.ucl.excites.util.TimeUtils;
 import uk.ac.ucl.excites.util.io.FileHelpers;
 
@@ -42,6 +43,10 @@ public class CrashReporter implements UncaughtExceptionHandler
 		e.printStackTrace(printWriter);
 		String stacktrace = result.toString();
 		printWriter.close();
+
+		// Add build information to the stacktrace
+		stacktrace = BuildInfo.printInfo(true) + "\n\n" + stacktrace;
+
 		String filename = namePrefix + "_" + TimeUtils.getTimestampForFileName() + ".stacktrace";
 		if(localPath != null)
 			writeToFile(stacktrace, filename);
