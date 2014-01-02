@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.collector.project.model.MediaField;
 import uk.ac.ucl.excites.collector.project.model.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.model.EditTextField;
 import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.util.DeviceID;
@@ -332,6 +333,13 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		return false;
 	}
 
+	@Override
+	public boolean enterTextField(EditTextField tf)
+	{
+		// 
+		return true;
+	}
+	
 	@Override
 	public boolean enterEndField(EndField ef)
 	{

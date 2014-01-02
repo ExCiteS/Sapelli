@@ -10,11 +10,13 @@ import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.LabelField;
 import uk.ac.ucl.excites.collector.project.model.LocationField;
 import uk.ac.ucl.excites.collector.project.model.PhotoField;
+import uk.ac.ucl.excites.collector.project.model.EditTextField;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.collector.ui.fieldviews.AudioView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.CameraView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.ChoiceView;
+import uk.ac.ucl.excites.collector.ui.fieldviews.EditTextView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.LabelView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.WaitingView;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
@@ -151,11 +153,19 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		return new LabelView(activity, lf);
 	}
 	
+	@Override
+	public FieldUI createTextFieldUI(EditTextField tf) {
+
+		return new EditTextView(activity, tf);
+	}
+	
 	public void cancelCurrentField()
 	{
 		if(fieldUI != null)
 			fieldUI.cancel();
 	}
+	
+
 	
 	/**
 	 * Removes the view corresponding to the given field from the cache, ensuring a new view will be constructed next time the field is entered
@@ -239,5 +249,7 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		int heightPx = (ScreenMetrics.GetScreenHeight(activity) - (buttonsShowing ? (buttonView.getButtonHeightPx() + getSpacingPx()) : 0) - ((numRows - 1) * getSpacingPx())) / numRows;
 		return Math.max(heightPx, 0); //avoid negative pixel counts
 	}
+
+
 	
 }

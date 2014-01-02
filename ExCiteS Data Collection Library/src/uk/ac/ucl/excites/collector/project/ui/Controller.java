@@ -48,8 +48,16 @@ public interface Controller
 	public boolean enterEndField(EndField ef);
 	
 	/**
+	 * @param tf  the TextField
+	 * @return whether or not a UI update is required after entering the field
+	 */
+	public boolean enterTextField(EditTextField tf);
+	
+	/**
 	 * @return the current ButtonState
 	 */
 	public ButtonsState getButtonsState();
+
+
 	
 }

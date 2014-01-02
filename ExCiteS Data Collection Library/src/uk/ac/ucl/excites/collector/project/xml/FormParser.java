@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.collector.project.model.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.model.Relationship;
+import uk.ac.ucl.excites.collector.project.model.EditTextField;
 import uk.ac.ucl.excites.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.util.xml.SubtreeParser;
@@ -48,6 +49,7 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_LINKS_TO = "LinksTo";
 	static private final String TAG_BUTTON = "ButtonField";
 	static private final String TAG_LABEL = "LabelField";
+	static private final String TAG_TEXTFIELD = "TextField";
 	
 	//ATTRIBUTES
 	static private final String ATTRIBUTE_FORM_NAME = "name";
@@ -77,6 +79,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_SHOW_BACK = "showBack";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "currentForm";
 	static private final String ATTRIBUTE_LABEL_TEXT = "text";
+
 	
 	// DYNAMICS-------------------------------------------------------
 	private ProjectParser projectParser;
@@ -280,8 +283,17 @@ public class FormParser extends SubtreeParser
 				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, attributes, ATTRIBUTE_LABEL_TEXT));
 				newField(lbl, attributes);
 			}
+			else if(qName.equals(TAG_TEXTFIELD))
+			{
+				EditTextField txtField = new EditTextField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_TEXTFIELD, attributes, ATTRIBUTE_FIELD_LABEL));
+				txtField.setMaxLength(readIntegerAttribute(attributes, "maxLength", EditTextField.DEFAULT_MAX_LENGTH));
+				txtField.setMinLength(readIntegerAttribute(attributes, "minLength", EditTextField.DEFAULT_MIN_LENGTH));
+				txtField.setMultiline(readBooleanAttribute(attributes, "multiline", EditTextField.DEFAULT_MULTILINE));
+				txtField.setInitialValue(readStringAttribute(attributes, "initValue", EditTextField.DEFAULT_INITIAL_VALUE));
+				newField(txtField, attributes);
+			}
 			// Add future field types here...
-			// TODO TextField, Checkbox, etc.
+			// TODO Checkbox, etc.
 			// <?> in <Form>
 			else
 			{
