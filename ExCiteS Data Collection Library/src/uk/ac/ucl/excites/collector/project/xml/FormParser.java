@@ -13,6 +13,7 @@ import org.xml.sax.SAXException;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
 import uk.ac.ucl.excites.collector.project.model.ButtonField;
 import uk.ac.ucl.excites.collector.project.model.CancelField;
+import uk.ac.ucl.excites.collector.project.model.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
@@ -50,6 +51,7 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_BUTTON = "ButtonField";
 	static private final String TAG_LABEL = "LabelField";
 	static private final String TAG_TEXTFIELD = "TextField";
+	static private final String TAG_CHECKBOX = "Checkbox";
 	
 	//ATTRIBUTES
 	static private final String ATTRIBUTE_FORM_NAME = "name";
@@ -79,6 +81,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_SHOW_BACK = "showBack";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "currentForm";
 	static private final String ATTRIBUTE_LABEL_TEXT = "text";
+
 
 	
 	// DYNAMICS-------------------------------------------------------
@@ -292,9 +295,13 @@ public class FormParser extends SubtreeParser
 				txtField.setInitialValue(readStringAttribute(attributes, "initValue", EditTextField.DEFAULT_INITIAL_VALUE));
 				newField(txtField, attributes);
 			}
+			else if(qName.equals(TAG_CHECKBOX)){
+				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_CHECKBOX, attributes, ATTRIBUTE_FIELD_LABEL));
+				chbxField.setValue(readBooleanAttribute(attributes, "defaultValue", CheckBoxField.DEFAULT_VALUE));
+				newField(chbxField, attributes);
+			}
 			// Add future field types here...
-			// TODO Checkbox, etc.
-			// <?> in <Form>
+			// <?> in <Form>	
 			else
 			{
 				addWarning("Ignored unrecognised or invalidly placed element called \"" + qName + "\" occuring within <" + TAG_FORM + ">.");

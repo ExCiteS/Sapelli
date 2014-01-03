@@ -54,9 +54,17 @@ public interface Controller
 	public boolean enterTextField(EditTextField tf);
 	
 	/**
+	 * @param tf  the CheckBoxField
+	 * @return whether or not a UI update is required after entering the field
+	 */
+	public boolean enterCheckBoxField(CheckBoxField cbf);
+	
+	/**
 	 * @return the current ButtonState
 	 */
 	public ButtonsState getButtonsState();
+
+	
 
 
 	

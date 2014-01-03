@@ -16,7 +16,11 @@ public interface CollectorUI
 	public FieldUI createLabelUI(LabelField lf);
 	
 	public FieldUI createTextFieldUI(EditTextField tf);
+	
+	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf);
 
 	public void setField(Field currentField);
+
+	
 
 }

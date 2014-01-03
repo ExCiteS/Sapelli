@@ -76,6 +76,7 @@ public class EditTextView extends LinearLayout implements FieldUI {
 
 
 	// for now called from TextChangedListener (later on forward??)
+	// TODO: Check whet
 	public void setText(boolean valid){
 		if(valid)
 		field.setText(editText.getText().toString());

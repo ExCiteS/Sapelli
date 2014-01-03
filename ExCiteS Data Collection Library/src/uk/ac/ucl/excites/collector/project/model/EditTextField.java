@@ -3,17 +3,10 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
-import java.nio.charset.Charset;
-
-import org.apache.commons.codec.CharEncoding;
-
-import uk.ac.ucl.excites.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.Column;
-import uk.ac.ucl.excites.storage.model.IntegerColumn;
-import uk.ac.ucl.excites.storage.model.LocationColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.StringColumn;
 
@@ -24,8 +17,8 @@ import uk.ac.ucl.excites.storage.model.StringColumn;
 public class EditTextField extends Field {
 
 	static public final String ID_PREFIX = "txt";
-	private String label;
-	private String text;
+	
+	
 
 	// Defaults
 	public static final int DEFAULT_MIN_LENGTH = 0; // minimum length of 0 if
@@ -36,12 +29,14 @@ public class EditTextField extends Field {
 															// default
 	public static final String DEFAULT_INITIAL_VALUE = ""; // no initial value
 															// by default
-
+	
+	private String label;
+	
 	// Dynamics
 	private int maxLength;
 	private int minLength;
 	private boolean multiline;
-	private String initValue;
+	private String value;
 
 	/**
 	 * @param form
@@ -56,7 +51,7 @@ public class EditTextField extends Field {
 		maxLength = DEFAULT_MAX_LENGTH;
 		minLength = DEFAULT_MIN_LENGTH;
 		multiline = DEFAULT_MULTILINE;
-		initValue = DEFAULT_INITIAL_VALUE;
+		value = DEFAULT_INITIAL_VALUE;
 	}
 
 	/**
@@ -91,7 +86,7 @@ public class EditTextField extends Field {
 	 * @return the initValue
 	 */
 	public String getInitialValue() {
-		return initValue;
+		return value;
 	}
 
 	/*
@@ -108,7 +103,7 @@ public class EditTextField extends Field {
 	public void storeValue(Record record)
 	{
 		if(!isNoColumn())
-			((StringColumn) form.getColumnFor(this)).storeValue(record, text); 
+			((StringColumn) form.getColumnFor(this)).storeValue(record, value); 
 	}
 
 	/*
@@ -143,12 +138,12 @@ public class EditTextField extends Field {
 	}
 
 	public void setInitialValue(String initValue) {
-		this.initValue = initValue;
+		this.value = initValue;
 
 	}
 	
 	public void setText(String text) {
-		this.text = text;
+		this.value = text;
 	}
 
 }

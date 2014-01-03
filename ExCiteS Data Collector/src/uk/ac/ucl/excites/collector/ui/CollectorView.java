@@ -5,6 +5,7 @@ import java.util.HashMap;
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
+import uk.ac.ucl.excites.collector.project.model.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.LabelField;
@@ -15,6 +16,7 @@ import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.collector.ui.fieldviews.AudioView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.CameraView;
+import uk.ac.ucl.excites.collector.ui.fieldviews.CheckBoxView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.EditTextView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.LabelView;
@@ -159,6 +161,12 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		return new EditTextView(activity, tf);
 	}
 	
+	@Override
+	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf) {
+
+		return new CheckBoxView(activity, cbf);
+	}
+	
 	public void cancelCurrentField()
 	{
 		if(fieldUI != null)
@@ -249,6 +257,8 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		int heightPx = (ScreenMetrics.GetScreenHeight(activity) - (buttonsShowing ? (buttonView.getButtonHeightPx() + getSpacingPx()) : 0) - ((numRows - 1) * getSpacingPx())) / numRows;
 		return Math.max(heightPx, 0); //avoid negative pixel counts
 	}
+
+
 
 
 	

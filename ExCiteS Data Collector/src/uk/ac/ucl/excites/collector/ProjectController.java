@@ -18,6 +18,7 @@ import uk.ac.ucl.excites.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.collector.project.model.AudioField;
 import uk.ac.ucl.excites.collector.project.model.CancelField;
+import uk.ac.ucl.excites.collector.project.model.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.EndField;
 import uk.ac.ucl.excites.collector.project.model.Field;
@@ -336,7 +337,12 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	@Override
 	public boolean enterTextField(EditTextField tf)
 	{
-		// 
+		return true;
+	}
+	
+	@Override
+	public boolean enterCheckBoxField(CheckBoxField cbf) {
+		
 		return true;
 	}
 	
@@ -602,5 +608,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	{
 		return currentField;
 	}
+
+
 
 }
