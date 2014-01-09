@@ -119,14 +119,9 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		super.onCreate(savedInstanceState);
 		app = (CollectorApp) getApplication();
 
-		// Check if the Device has a valid DeviceID
-		DeviceID deviceID = new DeviceID(this);
-		if(!deviceID.hasDeviceID())
-		{
-			// TODO What should we do if there is not a valid DeviceID?
-			// Terminate the app?
-		}
-		
+		// Initialise the DeviceID to store a valid ID in preferences
+		new DeviceID(this);
+
 		// Check if we can access read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
