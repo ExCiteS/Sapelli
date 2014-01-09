@@ -80,8 +80,16 @@ public final class StringUtils
 		Iterator<String> i = parts.iterator();
 		StringBuffer bff = new StringBuffer(i.next());
 		while(i.hasNext())
-			bff.append(separator + i.next());
+		{
+			bff.append(separator);
+			bff.append(i.next());
+		}
 		return bff.toString();
+	}
+	
+	static public String replaceWhitespace(String str, String replacement)
+	{
+		return str.replaceAll("\\s+", replacement);
 	}
 	
 }
