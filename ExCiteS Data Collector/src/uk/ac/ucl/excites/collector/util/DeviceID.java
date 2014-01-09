@@ -426,15 +426,7 @@ public class DeviceID
 	public boolean hasDeviceID()
 	{
 		final String collectInfo = collectInfo();
-
-		if(collectInfo != null && !collectInfo.isEmpty())
-		{
-			return true;
-		}
-		else
-		{
-			return false;
-		}
+		return(collectInfo != null && !collectInfo.isEmpty());
 	}
 
 	/**
