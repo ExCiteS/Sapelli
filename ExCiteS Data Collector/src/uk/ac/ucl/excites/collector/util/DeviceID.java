@@ -5,6 +5,7 @@ import java.util.zip.CRC32;
 
 import uk.ac.ucl.excites.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.util.Debug;
+import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -12,51 +13,122 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Build;
+import android.os.SystemClock;
 import android.provider.Settings.Secure;
 import android.telephony.TelephonyManager;
-
 
 /**
  * Class that provides various ways to uniquely (or as unique as possible) identify an Android device<br/>
  * 
- * Based on: <a href="http://www.pocketmagic.net/2011/02/android-unique-device-id/#.USeA7KXvh8H">http://www.pocketmagic.net/2011/02/android-unique-device-id/#.USeA7KXvh8H</a>
+ * Based on: <a
+ * href="http://www.pocketmagic.net/2011/02/android-unique-device-id/#.USeA7KXvh8H">http://www.pocketmagic.net/2011/02/android-unique-device-id/#.USeA7KXvh8H
+ * </a>
  * 
  * @author mstevens, Michalis Vitos
  */
-public class DeviceID
+public class DeviceID extends AsyncTask<Void, Void, Void>
 {
 
 	// Statics
 	private static final long PRIME = 1125899906842597L;
 	private static final char SEPARATOR = '|';
-	private WifiManager wifiManager;
-	private BluetoothAdapter bluetoothAdapter;
-	private SharedPreferences preferences;
+
+	private static final int WAITING_TIME_PER_STEP = 250; // ms
+	private static final int MAX_STEPS = 40; // Max waiting time: 40*250 = 10 sec
+
+	// Preferences
+	public static final String PREFERENCES = "DEVICEID_PREFERENCES";
+	private static final String PREF_DEVICE_ID = "DEVICEID_ID";
+	private static final String PREF_IMEI = "DEVICEID_IMEI";
+	private static final String PREF_WIFI_MAC = "DEVICEID_WIFI_MAC";
+	private static final String PREF_BLUETOOTH_MAC = "DEVICEID_BLUETOOTH_MAC";
+	private static final String PREF_ANDROID_ID = "DEVICEID_ANDROID_ID";
+	private static final String PREF_HARWARE_SERIAL = "DEVICEID_HARWARE_SERIAL";
 
 	// Dynamics
 	private Context context;
-
-	public static final String PREFERENCES = "DEVICEID_PREFERENCES";
-	private static final String PREF_DEVICEID_INFO = "DEVICEID_INFO";
-	private static final String PREF_WIFI_MAC = "DEVICEID_WIFI_MAC";
-	private static final String PREF_BLUETOOTH_MAC = "DEVICEID_BLUETOOTH_MAC";
+	private ProgressDialog progress;
+	private WifiManager wifiManager;
+	private BluetoothAdapter bluetoothAdapter;
+	private SharedPreferences preferences;
+	private BroadcastReceiver wiFiBroadcastReceiver;
+	private BroadcastReceiver bluetoothBroadcastReceiver;
 
 	public DeviceID(Context context)
 	{
 		this.context = context;
-
-		wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-		bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 		preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
 
-		// Register for broadcasts on WiFi Manager state change
-		IntentFilter wifiFilter = new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION);
-		context.registerReceiver(WiFiReceiver, wifiFilter);
+		// Debug
+		printPreferences();
 
-		// Register for broadcasts on BluetoothAdapter state change
-		IntentFilter bluetoothFilter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
-		context.registerReceiver(BluetoothReceiver, bluetoothFilter);
+		// Check if the app has a device ID, if not run the AsyncTask
+		if(getDeviceID() == null)
+		{
+			wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+			bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+			execute();
+		}
+	}
+
+	@Override
+	protected void onPreExecute()
+	{
+		progress = new ProgressDialog(context);
+		progress.setMessage("Loading");
+		progress.setCancelable(false);
+		progress.show();
+	}
+
+	@Override
+	protected Void doInBackground(Void... params)
+	{
+		initialise();
+
+		int counter = 0;
+
+		// Wait until the app finds the Wifi and Bluetooth addresses of the device
+		while(counter < MAX_STEPS)
+		{
+			counter++;
+
+			if(((wifiManager != null) && (retrieveWiFiMACAddress() == null)) || ((bluetoothAdapter != null) && (retrieveBluetoothMACAddress() == null)))
+				SystemClock.sleep(WAITING_TIME_PER_STEP); // Wait for the initialisation
+			else
+				break;
+		}
+
+		return null;
+	}
+
+	@Override
+	protected void onPostExecute(Void result)
+	{
+		// Compute and save the Device ID
+		computeDeviceID();
+
+		// Debug
+		printPreferences();
+
+		progress.dismiss();
+	}
+
+	/**
+	 * Initialise the various elements that are used as a device ID
+	 */
+	private void initialise()
+	{
+		Debug.d("The Device ID is being initialised.");
+
+		// Call the functions to initialise IMEI, Wi-Fi MAC
+		// Bluetooth MAC, Android ID and Hardware Serial Number
+		saveIMEI();
+		saveWiFiAddress();
+		saveBluetoothAddress();
+		saveAndroidID();
+		saveHardwareSerialNumber();
 	}
 
 	public String getDeviceInfo()
@@ -68,73 +140,53 @@ public class DeviceID
 	}
 
 	/**
-	 * Returns the hardware serial number
+	 * Find and save the IMEI to the preferences
 	 * 
-	 * @return the hardware serial number (if available, null otherwise)
+	 * @param imei
 	 */
-	public String getHardwareSerialNumber()
+	private void saveIMEI()
 	{
-		return Build.SERIAL;
-	}
-
-	/**
-	 * Returns the IMEI code of the device
-	 * 
-	 * Requires android.permission.READ_PHONE_STATE
-	 * 
-	 * @return the imei (can be null)
-	 */
-	public String getIMEI()
-	{
-		// IMEI
 		TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+
 		if(tm != null)
-			return tm.getDeviceId();
-		return null;
+		{
+			SharedPreferences.Editor editor = preferences.edit();
+			editor.putString(PREF_IMEI, tm.getDeviceId());
+			editor.commit();
+		}
 	}
 
 	/**
-	 * Returns the Android ID (if available)
+	 * Retrieve IMEI from the preferences
 	 * 
-	 * @return the AndroidID (can be null)
+	 * @return IMEI or null
 	 */
-	public String getAndroidID()
+	public String retrieveIMEI()
 	{
-		return Secure.getString(context.getContentResolver(), Secure.ANDROID_ID);
+		return preferences.getString(PREF_IMEI, null);
 	}
 
 	/**
-	 * Returns the MAC address of the Wi-Fi NIC. The method will attempt to enable the WiFi, get the MAC address and disable again the adapter.
+	 * Find and save the MAC address of the Wi-Fi NIC. The method will attempt to enable the WiFi, get the MAC address and disable again the adapter.
 	 * 
 	 * Requires android.permission.ACCESS_WIFI_STATE
-	 * 
-	 * @return the mac address (can be null)
 	 */
-	public String getWiFiMACAddress()
+	private void saveWiFiAddress()
 	{
-		// Firstly check if the address exists in the preferences
-		String wifiAddress = preferences.getString(PREF_WIFI_MAC, null);
-
-		if(wifiAddress != null)
+		if(wifiManager != null && wifiManager.isWifiEnabled())
 		{
-			return wifiAddress;
-		}
-		// else if the WiFi Manager exists and is on, try to get the address
-		else if(wifiManager != null && wifiManager.isWifiEnabled())
-		{
-			wifiAddress = wifiManager.getConnectionInfo().getMacAddress();
+			String wifiAddress = wifiManager.getConnectionInfo().getMacAddress();
 			// Save WiFi Address to preferences
 			saveWiFiAddress(wifiAddress);
-
-			return wifiAddress;
 		}
-		// Finally, try to enable the WiFi Adapter and wait for the broadcast receiver
+		// Try to enable the WiFi Adapter and wait for the broadcast receiver
 		else if(wifiManager != null)
 		{
+			setWifiBroadcastReceiver();
 			wifiManager.setWifiEnabled(true);
 		}
-		return null;
 	}
+
 
 	/**
 	 * Save the WiFi MAC Address to the preferences
@@ -151,75 +203,79 @@ public class DeviceID
 	/**
 	 * Broadcast receiver to handle WiFi states
 	 */
-	private BroadcastReceiver WiFiReceiver = new BroadcastReceiver()
+	private void setWifiBroadcastReceiver()
 	{
-		@Override
-		public void onReceive(Context context, Intent intent)
+		wiFiBroadcastReceiver = new BroadcastReceiver()
 		{
-			int extraWifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN);
-
-			switch(extraWifiState)
+			@Override
+			public void onReceive(Context context, Intent intent)
 			{
-			case WifiManager.WIFI_STATE_DISABLED:
-				Debug.d("WiFi Disabled");
-				// Unregister the Broadcast Receiver
-				context.unregisterReceiver(this);
-				break;
-			case WifiManager.WIFI_STATE_DISABLING:
-				Debug.d("WiFi Disabling");
-				break;
-			case WifiManager.WIFI_STATE_ENABLED:
-				Debug.d("WiFi Enabled");
-
-				String wifiAddress = wifiManager.getConnectionInfo().getMacAddress();
-
-				saveWiFiAddress(wifiAddress);
-
-				// Try to disable WiFi
-				wifiManager.setWifiEnabled(false);
-
-				break;
-			case WifiManager.WIFI_STATE_ENABLING:
-				Debug.d("WiFi Enabling");
-				break;
-			case WifiManager.WIFI_STATE_UNKNOWN:
-				Debug.d("WiFi Unknown");
-				break;
+				int extraWifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, WifiManager.WIFI_STATE_UNKNOWN);
+	
+				switch(extraWifiState)
+				{
+				case WifiManager.WIFI_STATE_DISABLED:
+					Debug.d("WiFi Disabled");
+					break;
+				case WifiManager.WIFI_STATE_DISABLING:
+					Debug.d("WiFi Disabling");
+					break;
+				case WifiManager.WIFI_STATE_ENABLED:
+					Debug.d("WiFi Enabled");
+	
+					saveWiFiAddress(wifiManager.getConnectionInfo().getMacAddress());
+	
+					// Try to disable WiFi
+					wifiManager.setWifiEnabled(false);
+	
+					// Unregister the Broadcast Receiver
+					context.unregisterReceiver(this);
+					break;
+				case WifiManager.WIFI_STATE_ENABLING:
+					Debug.d("WiFi Enabling");
+					break;
+				case WifiManager.WIFI_STATE_UNKNOWN:
+					Debug.d("WiFi Unknown");
+					break;
+				}
 			}
-		}
-	};
+		};
+	
+		// Register for broadcasts on WiFi Manager state change
+		IntentFilter wifiFilter = new IntentFilter(WifiManager.WIFI_STATE_CHANGED_ACTION);
+		context.registerReceiver(wiFiBroadcastReceiver, wifiFilter);
+	}
 
 	/**
-	 * Returns the MAC address of the Bluetooth NIC. The method will attempt to enable the Bluetooth, get the address and disable again the adapter.
+	 * Retrieve the WiFi address from the preferences
+	 * 
+	 * @return the address or null
+	 */
+	public String retrieveWiFiMACAddress()
+	{
+		return preferences.getString(PREF_WIFI_MAC, null);
+	}
+
+	/**
+	 * Find and save the MAC address of the Bluetooth NIC. The method will attempt to enable the Bluetooth, get the address and disable again the adapter.
 	 * 
 	 * Requires android.permission.BLUETOOTH
 	 * 
-	 * @return the mac address (can be null)
 	 */
-	public String getBluetoothMACAddress()
+	private void saveBluetoothAddress()
 	{
-		// Firstly check if the address exists in the preferences
-		String bluetoothAddress = preferences.getString(PREF_BLUETOOTH_MAC, null);
-
-		if(bluetoothAddress != null)
+		if(bluetoothAdapter != null && bluetoothAdapter.isEnabled())
 		{
-			return bluetoothAddress;
-		}
-		// else if the Bluetooth Adapter exists and is on, try to get the address
-		else if(bluetoothAdapter != null && bluetoothAdapter.isEnabled())
-		{
-			bluetoothAddress = bluetoothAdapter.getAddress();
+			String bluetoothAddress = bluetoothAdapter.getAddress();
 			// Save Bluetooth Address to preferences
-			saveBluetoothAdress(bluetoothAddress);
-
-			return bluetoothAddress;
+			saveBluetoothAddress(bluetoothAddress);
 		}
-		// Finally, try to enable the Bluetooth Adapter and wait for the broadcast receiver
+		// Try to enable the Bluetooth Adapter and wait for the broadcast receiver
 		else if(wifiManager != null)
 		{
+			setBluetoothBroadcastReceiver();
 			bluetoothAdapter.enable();
 		}
-		return null;
 	}
 
 	/**
@@ -227,7 +283,7 @@ public class DeviceID
 	 * 
 	 * @param bluetoothAddress
 	 */
-	private void saveBluetoothAdress(String bluetoothAddress)
+	private void saveBluetoothAddress(String bluetoothAddress)
 	{
 		SharedPreferences.Editor editor = preferences.edit();
 		editor.putString(PREF_BLUETOOTH_MAC, bluetoothAddress);
@@ -237,121 +293,133 @@ public class DeviceID
 	/**
 	 * Broadcast receiver to handle Bluetooth states
 	 */
-	private final BroadcastReceiver BluetoothReceiver = new BroadcastReceiver()
+	private void setBluetoothBroadcastReceiver()
 	{
-		@Override
-		public void onReceive(Context context, Intent intent)
+		bluetoothBroadcastReceiver = new BroadcastReceiver()
 		{
-			final String action = intent.getAction();
-
-			if(action.equals(BluetoothAdapter.ACTION_STATE_CHANGED))
+			@Override
+			public void onReceive(Context context, Intent intent)
 			{
-				final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
-				switch(state)
+				final String action = intent.getAction();
+	
+				if(action.equals(BluetoothAdapter.ACTION_STATE_CHANGED))
 				{
-				case BluetoothAdapter.STATE_OFF:
-					Debug.d("Bluetooth off");
-					// Unregister the Broadcast Receiver
-					context.unregisterReceiver(this);
-					break;
-				case BluetoothAdapter.STATE_TURNING_OFF:
-					Debug.d("Turning Bluetooth off...");
-					break;
-				case BluetoothAdapter.STATE_ON:
-
-					Debug.d("Bluetooth on");
-					String bluetoothAddress = bluetoothAdapter.getAddress();
-
-					saveBluetoothAdress(bluetoothAddress);
-
-					// Try to disable Bluetooth
-					bluetoothAdapter.disable();
-
-					break;
-				case BluetoothAdapter.STATE_TURNING_ON:
-					Debug.d("Turning Bluetooth on...");
-					break;
+					final int state = intent.getIntExtra(BluetoothAdapter.EXTRA_STATE, BluetoothAdapter.ERROR);
+					switch(state)
+					{
+					case BluetoothAdapter.STATE_OFF:
+						Debug.d("Bluetooth off");
+						break;
+					case BluetoothAdapter.STATE_TURNING_OFF:
+						Debug.d("Turning Bluetooth off...");
+						break;
+					case BluetoothAdapter.STATE_ON:
+	
+						Debug.d("Bluetooth on");
+	
+						saveBluetoothAddress(bluetoothAdapter.getAddress());
+	
+						// Try to disable Bluetooth
+						bluetoothAdapter.disable();
+	
+						// Unregister the Broadcast Receiver
+						context.unregisterReceiver(this);
+	
+						break;
+					case BluetoothAdapter.STATE_TURNING_ON:
+						Debug.d("Turning Bluetooth on...");
+						break;
+					}
 				}
 			}
-		}
-	};
+		};
+	
+		// Register for broadcasts on BluetoothAdapter state change
+		IntentFilter bluetoothFilter = new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED);
+		context.registerReceiver(bluetoothBroadcastReceiver, bluetoothFilter);
+	}
 
 	/**
-	 * A method to return a valid device ID by with some fallback mechanisms. <br/>
-	 * <br/>
-	 * At the beginning the method tries to return the IMEI (or MEID, ESN, IMSI) if the device is a mobile. If it fails: <br/>
-	 * Then returns the MAC address of the Wi-Fi NIC. If the Wi-Fi is off, it will turn it on without any user interaction and save the NIC address to the
-	 * preferences for future reference. If it fails:<br/>
-	 * Then returns the MAC address of the Bluetooth NIC. If the Bluetooth is off, it will turn it on without any user interaction and save the NIC address to
-	 * the preferences for future reference. If it fails:<br/>
-	 * Then returns the Android ID and if it fails:<br/>
-	 * Finally it returns the Hardware Serial Number
+	 * Retrieve the Bluetooth Address from the preferences
 	 * 
-	 * @return a deviceID or null if none of them works
+	 * @return the address or null
 	 */
-	private String collectInfo()
+	public String retrieveBluetoothMACAddress()
 	{
-		final String retrieveInfo = retrieveInfo();
-		if(retrieveInfo != null && !retrieveInfo.isEmpty())
-		{
-			return retrieveInfo;
-		}
-		else
-		{
-			String IMEI = getIMEI();
+		return preferences.getString(PREF_BLUETOOTH_MAC, null);
+	}
 
-			if(IMEI != null && !IMEI.isEmpty())
-			{
-				saveInfo(IMEI);
-				return IMEI;
-			}
+	/**
+	 * Find and save the Android ID to the preferences
+	 */
+	private void saveAndroidID()
+	{
+		SharedPreferences.Editor editor = preferences.edit();
+		editor.putString(PREF_ANDROID_ID, Secure.getString(context.getContentResolver(), Secure.ANDROID_ID));
+		editor.commit();
+	}
 
-			String wiFiMACAddress = getWiFiMACAddress();
+	/**
+	 * Retrieve the Android ID
+	 * 
+	 * @return AndroidID or null
+	 */
+	public String retrieveAndroidID()
+	{
+		return preferences.getString(PREF_ANDROID_ID, null);
+	}
 
-			if(wiFiMACAddress != null && !wiFiMACAddress.isEmpty())
-			{
-				saveInfo(wiFiMACAddress);
-				return wiFiMACAddress;
-			}
+	/**
+	 * Find and save the hardware serial number to the preferences
+	 */
+	private void saveHardwareSerialNumber()
+	{
+		SharedPreferences.Editor editor = preferences.edit();
+		editor.putString(PREF_HARWARE_SERIAL, Build.SERIAL);
+		editor.commit();
+	}
 
-			String bluetoothMACAddress = getBluetoothMACAddress();
+	/**
+	 * Retrieve the Hardware Serial Number
+	 * 
+	 * @return serial number or null
+	 */
+	public String retrieveHardwareSerialNumber()
+	{
+		return preferences.getString(PREF_HARWARE_SERIAL, null);
+	}
 
-			if(bluetoothMACAddress != null && !bluetoothMACAddress.isEmpty())
-			{
-				saveInfo(bluetoothMACAddress);
-				return bluetoothMACAddress;
-			}
+	/**
+	 * A method to compute and store a valid device ID
+	 */
+	private void computeDeviceID()
+	{
+		String deviceId = null;
 
-			String androidID = getAndroidID();
+		if(retrieveIMEI() != null)
+			deviceId = retrieveIMEI();
+		else if(retrieveWiFiMACAddress() != null)
+			deviceId = retrieveWiFiMACAddress();
+		else if(retrieveBluetoothMACAddress() != null)
+			deviceId = retrieveBluetoothMACAddress();
+		else if(retrieveAndroidID() != null)
+			deviceId = retrieveAndroidID();
+		else if(retrieveHardwareSerialNumber() != null)
+			deviceId = retrieveHardwareSerialNumber();
 
-			if(androidID != null && !androidID.isEmpty())
-			{
-				saveInfo(androidID);
-				return androidID;
-			}
-
-			String hardwareSerialNumber = getHardwareSerialNumber();
-
-			if(hardwareSerialNumber != null && !hardwareSerialNumber.isEmpty())
-			{
-				saveInfo(hardwareSerialNumber);
-				return hardwareSerialNumber;
-			}
-		}
-
-		return null;
+		saveDeviceID(deviceId);
 	}
 
 	/**
 	 * Save Collected Info to the preferences
 	 * 
-	 * @param collectedInfo
+	 * @param deviceID
 	 */
-	private void saveInfo(String collectedInfo)
+	private void saveDeviceID(String deviceID)
 	{
 		SharedPreferences.Editor editor = preferences.edit();
 
-		editor.putString(PREF_DEVICEID_INFO, collectedInfo);
+		editor.putString(PREF_DEVICE_ID, deviceID);
 		editor.commit();
 	}
 
@@ -360,9 +428,9 @@ public class DeviceID
 	 * 
 	 * @return
 	 */
-	private String retrieveInfo()
+	private String getDeviceID()
 	{
-		return preferences.getString(PREF_DEVICEID_INFO, null); // the default value is 0
+		return preferences.getString(PREF_DEVICE_ID, null);
 	}
 
 	/**
@@ -379,15 +447,14 @@ public class DeviceID
 	/**
 	 * Returns a 64 bit String hash code based on assembled device information
 	 * 
-	 * Implementation adapted from String.hashCode()
-	 * See: http://stackoverflow.com/a/1660613/1084488
+	 * Implementation adapted from String.hashCode() See: http://stackoverflow.com/a/1660613/1084488
 	 * 
 	 * @return the hash code
 	 * @see java.lang.String#hashCode()
 	 */
 	public long getLongHash()
 	{
-		String info = collectInfo();
+		String info = getDeviceID();
 		long hash = PRIME;
 		for(char c : info.toCharArray())
 			hash = 31 * hash + c;
@@ -403,7 +470,7 @@ public class DeviceID
 	public long getCRC32Hash()
 	{
 		CRC32 crc32 = new CRC32();
-		crc32.update(collectInfo().getBytes());
+		crc32.update(getDeviceID().getBytes());
 		return crc32.getValue();
 	}
 
@@ -415,32 +482,21 @@ public class DeviceID
 	 */
 	public BigInteger getMD5Hash()
 	{
-		return Hashing.getMD5Hash(collectInfo().getBytes());
+		return Hashing.getMD5Hash(getDeviceID().getBytes());
 	}
 
 	/**
-	 * Checks if the device returns a valid DeviceID
-	 * 
-	 * @return
+	 * Print the Preferences for debugging
 	 */
-	public boolean hasDeviceID()
+	public void printPreferences()
 	{
-		final String collectInfo = collectInfo();
-		return(collectInfo != null && !collectInfo.isEmpty());
-	}
-
-	/**
-	 * Print the Device Info for debugging
-	 */
-	public void printDeviceInfo()
-	{
-		Debug.d("getDeviceInfo(): " + getDeviceInfo());
-		Debug.d("collectInfo(): " + collectInfo());
-		Debug.d("getHardwareSerialNumber(): " + getHardwareSerialNumber());
-		Debug.d("getIMEI(): " + getIMEI());
-		Debug.d("getAndroidID(): " + getAndroidID());
-		Debug.d("getWiFiMACAddress(): " + getWiFiMACAddress());
-		Debug.d("getBluetoothMACAddress(): " + getBluetoothMACAddress());
-		Debug.d("getCRC32Hash(): " + getCRC32Hash());
+		Debug.d("------------------------------------");
+		Debug.d("retrieveIMEI(): " + retrieveIMEI());
+		Debug.d("retrieveWiFiMACAddress(): " + retrieveWiFiMACAddress());
+		Debug.d("retrieveBluetoothMACAddress(): " + retrieveBluetoothMACAddress());
+		Debug.d("retrieveAndroidID(): " + retrieveAndroidID());
+		Debug.d("retrieveHardwareSerialNumber(): " + retrieveHardwareSerialNumber());
+		Debug.d("getDeviceID(): " + getDeviceID());
+		Debug.d("------------------------------------");
 	}
 }
