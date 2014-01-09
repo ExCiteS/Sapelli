@@ -6,6 +6,7 @@ package uk.ac.ucl.excites.collector.ui.fieldviews;
 import uk.ac.ucl.excites.collector.project.model.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.collector.util.ScreenMetrics;
 import android.content.Context;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
@@ -24,17 +25,16 @@ public class CheckBoxView extends LinearLayout implements FieldUI{
 		super(context);
 		this.field = field;
 		
-		setOrientation(LinearLayout.VERTICAL);
-		LayoutParams fullWidth = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-		
-		TextView label = new TextView(context);
-		label.setText(field.getLabel());
-		label.setLayoutParams(fullWidth);
-		addView(label);
-		
+		setOrientation(LinearLayout.HORIZONTAL);
 		chbx = new CheckBox(context);
 		chbx.setChecked(field.getValue());
 		addView(chbx);
+		
+		TextView label = new TextView(context);
+		label.setText(field.getLabel());
+		addView(label);
+		
+		
 	}
 	
 	// TODO: not called yet
