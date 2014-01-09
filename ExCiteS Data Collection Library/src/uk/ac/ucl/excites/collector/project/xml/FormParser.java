@@ -10,21 +10,23 @@ import java.util.Map.Entry;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
-import uk.ac.ucl.excites.collector.project.model.AudioField;
-import uk.ac.ucl.excites.collector.project.model.ButtonField;
-import uk.ac.ucl.excites.collector.project.model.CancelField;
-import uk.ac.ucl.excites.collector.project.model.ChoiceField;
-import uk.ac.ucl.excites.collector.project.model.EndField;
-import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Form;
-import uk.ac.ucl.excites.collector.project.model.LabelField;
-import uk.ac.ucl.excites.collector.project.model.LocationField;
-import uk.ac.ucl.excites.collector.project.model.MediaField;
-import uk.ac.ucl.excites.collector.project.model.OrientationField;
-import uk.ac.ucl.excites.collector.project.model.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.model.Relationship;
-import uk.ac.ucl.excites.collector.project.model.Field.Optionalness;
+import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
+import uk.ac.ucl.excites.collector.project.model.fields.ButtonField;
+import uk.ac.ucl.excites.collector.project.model.fields.CancelField;
+import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.fields.EndField;
+import uk.ac.ucl.excites.collector.project.model.fields.Field;
+import uk.ac.ucl.excites.collector.project.model.fields.LabelField;
+import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
+import uk.ac.ucl.excites.collector.project.model.fields.MediaField;
+import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
+import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
+import uk.ac.ucl.excites.collector.project.model.fields.Relationship;
+import uk.ac.ucl.excites.collector.project.model.fields.Field.Optionalness;
+import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
+import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListItem;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.util.xml.SubtreeParser;
 
@@ -48,6 +50,8 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_LINKS_TO = "LinksTo";
 	static private final String TAG_BUTTON = "ButtonField";
 	static private final String TAG_LABEL = "LabelField";
+	static private final String TAG_MULTILIST = "MultiList";
+	static private final String TAG_LISTITEM = "ListItem";
 	
 	//ATTRIBUTES
 	static private final String ATTRIBUTE_FORM_NAME = "name";
@@ -68,22 +72,26 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
 	static private final String ATTRIBUTE_FIELD_LABEL = "label";
+	static private final String ATTRIBUTE_FIELD_LABELS = "labels";
 	static private final String ATTRIBUTE_FIELD_BACKGROUND_COLOR = "backgroundColor";
 	static private final String ATTRIBUTE_FIELD_SKIP_ON_BACK = "skipOnBack";
-	static private final String ATTRIBUTE_CHOICE_VALUE = "value";
+	static private final String ATTRIBUTE_FIELD_VALUE = "value";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
 	static private final String ATTRIBUTE_SHOW_FORWARD = "showForward";
 	static private final String ATTRIBUTE_SHOW_CANCEL = "showCancel";
 	static private final String ATTRIBUTE_SHOW_BACK = "showBack";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "currentForm";
 	static private final String ATTRIBUTE_LABEL_TEXT = "text";
+	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
+	
 	
 	// DYNAMICS-------------------------------------------------------
 	private ProjectParser projectParser;
 	private Project project;
 	private Form currentForm;
 	private String formStartFieldId;
-	private ChoiceField currentChoice;	
+	private ChoiceField currentChoice;
+	private MultiListItem currentListItem;
 	private HashMap<Field, String> fieldToJumpId;
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaField, String> mediaAttachToDisableId;
@@ -118,37 +126,37 @@ public class FormParser extends SubtreeParser
 			String id;
 			if(projectParser.getFormat() == ProjectParser.Format.v1_x)
 			{	//backwards compatibility
-				id = readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_NAME);
+				id = readRequiredStringAttribute(TAG_FORM, ATTRIBUTE_FORM_NAME, attributes);
 				if(project.getForms().isEmpty()) //only for 1st, and assumed only, currentForm
 				{
-					int schemaID = Integer.parseInt(readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_SCHEMA_ID, "because this is a v1.x project"));
-					int schemaVersion = readIntegerAttribute(attributes, ATTRIBUTE_FORM_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION);
+					int schemaID = Integer.parseInt(readRequiredStringAttribute(TAG_FORM, ATTRIBUTE_FORM_SCHEMA_ID, "because this is a v1.x project", attributes));
+					int schemaVersion = readIntegerAttribute(ATTRIBUTE_FORM_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION, attributes);
 					project.setSchema(schemaID, schemaVersion); //schemaID will be used as projectID
 				}
 			}
 			else
-				id = readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_ID);
+				id = readRequiredStringAttribute(TAG_FORM, ATTRIBUTE_FORM_ID, attributes);
 			currentForm = new Form(project, id); // the form will add itself to the project and take the next available index
 			// Shortcut image:
-			currentForm.setShortcutImageRelativePath(readStringAttribute(attributes, ATTRIBUTE_FORM_SHORTCUT_IMAGE, null));
+			currentForm.setShortcutImageRelativePath(readStringAttribute(ATTRIBUTE_FORM_SHORTCUT_IMAGE, null, attributes));
 			// Store end time?:
-			currentForm.setStoreEndTime(readBooleanAttribute(attributes, ATTRIBUTE_FORM_STORE_END_TIME, Form.END_TIME_DEFAULT));
+			currentForm.setStoreEndTime(readBooleanAttribute(ATTRIBUTE_FORM_STORE_END_TIME, Form.END_TIME_DEFAULT, attributes));
 			// Sound end vibration at the end of the currentForm:
 			// Get the sound path
-			currentForm.setEndSoundRelativePath(readStringAttribute(attributes, ATTRIBUTE_FORM_END_SOUND, null));
-			currentForm.setVibrateOnEnd(readBooleanAttribute(attributes, ATTRIBUTE_FORM_END_VIBRATE, Form.DEFAULT_VIBRATE));
+			currentForm.setEndSoundRelativePath(readStringAttribute(ATTRIBUTE_FORM_END_SOUND, null, attributes));
+			currentForm.setVibrateOnEnd(readBooleanAttribute(ATTRIBUTE_FORM_END_VIBRATE, Form.DEFAULT_VIBRATE, attributes));
 			// Which buttons are allowed to show:
-			currentForm.setShowBack(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_BACK, Form.DEFAULT_SHOW_BACK));
-			currentForm.setShowCancel(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_CANCEL, Form.DEFAULT_SHOW_CANCEL));
-			currentForm.setShowForward(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_FORWARD, Form.DEFAULT_SHOW_FORWARD));
+			currentForm.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Form.DEFAULT_SHOW_BACK, attributes));
+			currentForm.setShowCancel(readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Form.DEFAULT_SHOW_CANCEL, attributes));
+			currentForm.setShowForward(readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Form.DEFAULT_SHOW_FORWARD, attributes));
 			// Animation:
-			currentForm.setAnimation(readBooleanAttribute(attributes, ATTRIBUTE_FORM_ANIMATION, Form.DEFAULT_ANIMATION));
+			currentForm.setAnimation(readBooleanAttribute(ATTRIBUTE_FORM_ANIMATION, Form.DEFAULT_ANIMATION, attributes));
 			// ButtonField images:
 			currentForm.setBackButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_BACK_BUTTON_IMG));
 			currentForm.setCancelButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_CANCEL_BUTTON_IMG));
 			currentForm.setForwardButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_FORWARD_BUTTON_IMG));
 			// ButtonField background colour:
-			currentForm.setButtonBackgroundColor(readStringAttribute(attributes, ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR, Form.DEFAULT_BUTTON_BACKGROUND_COLOR));
+			currentForm.setButtonBackgroundColor(readStringAttribute(ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR, Form.DEFAULT_BUTTON_BACKGROUND_COLOR, attributes));
 			// Start field:
 			if(attributes.getValue(ATTRIBUTE_FORM_START_FIELD) != null && !attributes.getValue(ATTRIBUTE_FORM_START_FIELD).isEmpty())
 				formStartFieldId = attributes.getValue(ATTRIBUTE_FORM_START_FIELD);
@@ -164,19 +172,19 @@ public class FormParser extends SubtreeParser
 			// <Choice>
 			if(qName.equals(TAG_CHOICE))
 			{
-				currentChoice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getValue(ATTRIBUTE_CHOICE_VALUE), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
+				currentChoice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getValue(ATTRIBUTE_FIELD_VALUE), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
 				newField(currentChoice, attributes);
 				// No column:
-				currentChoice.setNoColumn(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
+				currentChoice.setNoColumn(readBooleanAttribute(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN, attributes));
 				// Other attributes:
 				if(attributes.getValue("img") != null)
 					currentChoice.setImageRelativePath(attributes.getValue("img"));
 				if(attributes.getValue("alt") != null)
 					currentChoice.setAltText(attributes.getValue("alt"));
-				currentChoice.setCols(readIntegerAttribute(attributes, "cols", ChoiceField.DEFAULT_NUM_COLS));
-				currentChoice.setRows(readIntegerAttribute(attributes, "rows", ChoiceField.DEFAULT_NUM_ROWS));
-				currentChoice.setCrossed(readBooleanAttribute(attributes, "crossed", ChoiceField.DEFAULT_CROSSED));
-				currentChoice.setCrossColor(readStringAttribute(attributes, "crossColor", ChoiceField.DEFAULT_CROSS_COLOR));
+				currentChoice.setCols(readIntegerAttribute("cols", ChoiceField.DEFAULT_NUM_COLS, attributes));
+				currentChoice.setRows(readIntegerAttribute("rows", ChoiceField.DEFAULT_NUM_ROWS, attributes));
+				currentChoice.setCrossed(readBooleanAttribute("crossed", ChoiceField.DEFAULT_CROSSED, attributes));
+				currentChoice.setCrossColor(readStringAttribute("crossColor", ChoiceField.DEFAULT_CROSS_COLOR, attributes));
 			}
 			// <Location>
 			else if(qName.equals("Location"))
@@ -194,20 +202,19 @@ public class FormParser extends SubtreeParser
 				else if(type != null) // unrecognised location type
 					addWarning("Unknown Location type (" + type + ").");
 				// Operating settings:
-				locField.setStartWithForm(readBooleanAttribute(attributes, "startWithForm", LocationField.DEFAULT_START_WITH_FORM));
-				locField.setWaitAtField(readBooleanAttribute(attributes, "waitAtField", LocationField.DEFAULT_WAIT_AT_FIELD));
-				locField.setTimeoutS(readIntegerAttribute(attributes, "timeout", LocationField.DEFAULT_TIMEOUT_S));
-				locField.setMaxAgeS(readIntegerAttribute(attributes, "maxAge", LocationField.DEFAULT_MAX_AGE_S));
-				locField.setMaxAccuracyRadius(readFloatAttribute(attributes, "maxAccuracyRadius", LocationField.DEFAULT_MAX_ACCURACY_RADIUS));
-				locField.setUseBestNonQualifyingLocationAfterTimeout(readBooleanAttribute(attributes, "useBestKnownLocationOnTimeout",
-						LocationField.DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT));
+				locField.setStartWithForm(readBooleanAttribute("startWithForm", LocationField.DEFAULT_START_WITH_FORM, attributes));
+				locField.setWaitAtField(readBooleanAttribute("waitAtField", LocationField.DEFAULT_WAIT_AT_FIELD, attributes));
+				locField.setTimeoutS(readIntegerAttribute("timeout", LocationField.DEFAULT_TIMEOUT_S, attributes));
+				locField.setMaxAgeS(readIntegerAttribute("maxAge", LocationField.DEFAULT_MAX_AGE_S, attributes));
+				locField.setMaxAccuracyRadius(readFloatAttribute("maxAccuracyRadius", LocationField.DEFAULT_MAX_ACCURACY_RADIUS, attributes));
+				locField.setUseBestNonQualifyingLocationAfterTimeout(readBooleanAttribute("useBestKnownLocationOnTimeout", LocationField.DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT, attributes));
 				// Storage settings:
-				locField.setDoublePrecision(readBooleanAttribute(attributes, "doublePrecision", LocationField.DEFAULT_DOUBLE_PRECISION));
-				locField.setStoreAltitude(readBooleanAttribute(attributes, "storeAltitude", LocationField.DEFAULT_STORE_ALTITUDE));
-				locField.setStoreBearing(readBooleanAttribute(attributes, "storeBearing", LocationField.DEFAULT_STORE_BEARING));
-				locField.setStoreSpeed(readBooleanAttribute(attributes, "storeSpeed", LocationField.DEFAULT_STORE_SPEED));
-				locField.setStoreAccuracy(readBooleanAttribute(attributes, "storeAccuracy", LocationField.DEFAULT_STORE_ACCURACY));
-				locField.setStoreProvider(readBooleanAttribute(attributes, "storeProvider", LocationField.DEFAULT_STORE_PROVIDER));
+				locField.setDoublePrecision(readBooleanAttribute("doublePrecision", LocationField.DEFAULT_DOUBLE_PRECISION, attributes));
+				locField.setStoreAltitude(readBooleanAttribute("storeAltitude", LocationField.DEFAULT_STORE_ALTITUDE, attributes));
+				locField.setStoreBearing(readBooleanAttribute("storeBearing", LocationField.DEFAULT_STORE_BEARING, attributes));
+				locField.setStoreSpeed(readBooleanAttribute("storeSpeed", LocationField.DEFAULT_STORE_SPEED, attributes));
+				locField.setStoreAccuracy(readBooleanAttribute("storeAccuracy", LocationField.DEFAULT_STORE_ACCURACY, attributes));
+				locField.setStoreProvider(readBooleanAttribute("storeProvider", LocationField.DEFAULT_STORE_PROVIDER, attributes));
 			}
 			// <Photo>
 			else if(qName.equals(TAG_PHOTO))
@@ -215,9 +222,9 @@ public class FormParser extends SubtreeParser
 				PhotoField photoField = new PhotoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 				newField(photoField, attributes);
 				mediaAttachmentAttributes(photoField, attributes);
-				photoField.setUseNativeApp(readBooleanAttribute(attributes, "useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP));
+				photoField.setUseNativeApp(readBooleanAttribute("useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP, attributes));
 				// Camera options (only used when useNativeApp=false):
-				photoField.setUseFrontFacingCamera(readBooleanAttribute(attributes, "useFrontCamera", PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA));
+				photoField.setUseFrontFacingCamera(readBooleanAttribute("useFrontCamera", PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA, attributes));
 				String flashText = attributes.getValue("flash");
 				PhotoField.FlashMode flash = PhotoField.DEFAULT_FLASH_MODE;
 				if(flashText != null && !flashText.isEmpty())
@@ -250,42 +257,66 @@ public class FormParser extends SubtreeParser
 			{
 				OrientationField orField = new OrientationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 				newField(orField, attributes);
-				orField.setStoreAzimuth(readBooleanAttribute(attributes, "storeAzimuth", OrientationField.DEFAULT_STORE_AZIMUTH));
-				orField.setStoreAzimuth(readBooleanAttribute(attributes, "storePitch", OrientationField.DEFAULT_STORE_PITCH));
-				orField.setStoreAzimuth(readBooleanAttribute(attributes, "storeRoll", OrientationField.DEFAULT_STORE_ROLL));
+				orField.setStoreAzimuth(readBooleanAttribute("storeAzimuth", OrientationField.DEFAULT_STORE_AZIMUTH, attributes));
+				orField.setStoreAzimuth(readBooleanAttribute("storePitch", OrientationField.DEFAULT_STORE_PITCH, attributes));
+				orField.setStoreAzimuth(readBooleanAttribute("storeRoll", OrientationField.DEFAULT_STORE_ROLL, attributes));
 			}
 			// <BelongsTo>
 			else if(qName.equals(TAG_BELONGS_TO))
 			{
 				Relationship belongsTo = new Relationship(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), Relationship.Type.MANY_TO_ONE);
 				newField(belongsTo, attributes);
-				projectParser.addRelationship(belongsTo, readRequiredStringAttribute(qName, attributes, ATTRIBUTE_RELATIONSHIP_FORM));
+				projectParser.addRelationship(belongsTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes));
 			}
 			// <LinksTo>
 			else if(qName.equals(TAG_LINKS_TO))
 			{
 				Relationship linksTo = new Relationship(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), Relationship.Type.LINK);
 				newField(linksTo, attributes);
-				projectParser.addRelationship(linksTo, readRequiredStringAttribute(qName, attributes, ATTRIBUTE_RELATIONSHIP_FORM));
+				projectParser.addRelationship(linksTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes));
 			}
 			// <ButtonField>
 			else if(qName.equals(TAG_BUTTON))
 			{
-				ButtonField btn = new ButtonField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_BUTTON, attributes, ATTRIBUTE_FIELD_LABEL));
+				ButtonField btn = new ButtonField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_BUTTON, ATTRIBUTE_FIELD_LABEL, attributes));
 				newField(btn, attributes);
 			}
 			// <LabelField>
 			else if(qName.equals(TAG_LABEL))
 			{
-				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, attributes, ATTRIBUTE_LABEL_TEXT));
+				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, ATTRIBUTE_LABEL_TEXT, attributes));
 				newField(lbl, attributes);
+			}
+			// <MultiList>
+			else if(qName.equals(TAG_MULTILIST))
+			{
+				MultiListField ml = new MultiListField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, attributes, ATTRIBUTE_FIELD_LABELS, ATTRIBUTE_FIELD_LABEL));
+				newField(ml, attributes);
+				currentListItem = ml.getItemsRoot();
+			}
+			// <ListItem> (contained within <MultiList> or TODO)
+			else if(qName.equals(TAG_LISTITEM))
+			{
+				if(currentListItem != null)
+				{
+					currentListItem = new MultiListItem(currentListItem, readRequiredStringAttribute(TAG_LISTITEM, ATTRIBUTE_FIELD_VALUE, attributes));
+					if(readBooleanAttribute(ATTRIBUTE_LISTITEM_DEFAULT, false, attributes))
+					{
+						if(currentListItem.getParent().getDefaultChild() == null)
+							currentListItem.getParent().setDefaultChild(currentListItem);
+						else
+							addWarning("More than 1 item marked as default within one of the (sub)lists of MultiListField " + currentListItem.getField().getID() + ", using 1st item marked as defaut as the default for the list.");
+					}
+				}
+				else
+					addWarning("Ignored <" + TAG_LISTITEM + "> element occuring outside <" + TAG_MULTILIST + ">.");
 			}
 			// Add future field types here...
 			// TODO TextField, Checkbox, etc.
 			// <?> in <Form>
 			else
 			{
-				addWarning("Ignored unrecognised or invalidly placed element called \"" + qName + "\" occuring within <" + TAG_FORM + ">.");
+				addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within <" + TAG_FORM + ">.");
 			}
 		}
 		// <?> outside of <Form> (shouldn't happen)
@@ -311,12 +342,12 @@ public class FormParser extends SubtreeParser
 		rememberIDAndJump(f, attributes);
 		
 		// f.setSkipOnBack(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK)); //TODO skip on back?
-		f.setBackgroundColor(readStringAttribute(attributes, ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR));
+		f.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes));
 		
 		// Which buttons are allowed to show:
-		f.setShowBack(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK));
-		f.setShowCancel(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));
-		f.setShowForward(readBooleanAttribute(attributes, ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
+		f.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK, attributes));
+		f.setShowCancel(readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL, attributes));
+		f.setShowForward(readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD, attributes));
 	}
 
 	protected void setOptionalness(Field field, Attributes attributes)
@@ -336,7 +367,7 @@ public class FormParser extends SubtreeParser
 	private void mediaAttachmentAttributes(MediaField ma, Attributes attributes)
 	{
 		setOptionalness(ma, attributes);
-		ma.setMax(readIntegerAttribute(attributes, "max", MediaField.DEFAULT_MAX));
+		ma.setMax(readIntegerAttribute("max", MediaField.DEFAULT_MAX, attributes));
 		if(attributes.getValue(ATTRIBUTE_DISABLE_FIELD) != null)
 			mediaAttachToDisableId.put(ma, attributes.getValue(ATTRIBUTE_DISABLE_FIELD).trim());
 	}
@@ -373,8 +404,15 @@ public class FormParser extends SubtreeParser
 		if(qName.equals(TAG_CHOICE))
 		{
 			if(currentChoice.isRoot() && currentChoice.isLeaf())
-				throw new SAXException("Root choices need at least 1 child (but 2 children probably makes more sense).");
-			currentChoice = currentChoice.getParent();
+				throw new SAXException("Root choices need at least 1 child (but 2 or more children probably makes more sense).");
+			currentChoice = currentChoice.getParent(); // parent becomes currentChoice
+		}
+		// </ListItem> or </MultiList>
+		else if(qName.equals(TAG_LISTITEM) || qName.equals(TAG_MULTILIST))
+		{
+			if(currentListItem.isRoot() && currentListItem.isLeaf())
+				throw new SAXException("A " + TAG_MULTILIST + " needs at least 1 ListItem (but 2 or more probably makes more sense).");
+			currentListItem = currentListItem.getParent(); // parent becomes currentListItem
 		}
 		// </Form>
 		else if(qName.equals(TAG_FORM))

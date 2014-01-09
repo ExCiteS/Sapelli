@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.transmission.Settings;

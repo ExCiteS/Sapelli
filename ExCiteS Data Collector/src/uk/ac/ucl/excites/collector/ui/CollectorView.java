@@ -4,18 +4,20 @@ import java.util.HashMap;
 
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.activities.CollectorActivity;
-import uk.ac.ucl.excites.collector.project.model.AudioField;
-import uk.ac.ucl.excites.collector.project.model.ChoiceField;
-import uk.ac.ucl.excites.collector.project.model.Field;
-import uk.ac.ucl.excites.collector.project.model.LabelField;
-import uk.ac.ucl.excites.collector.project.model.LocationField;
-import uk.ac.ucl.excites.collector.project.model.PhotoField;
+import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
+import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.fields.Field;
+import uk.ac.ucl.excites.collector.project.model.fields.LabelField;
+import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
+import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
+import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.collector.ui.fieldviews.AudioView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.CameraView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.LabelView;
+import uk.ac.ucl.excites.collector.ui.fieldviews.MultiListView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.WaitingView;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
@@ -150,6 +152,12 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	{
 		return new LabelView(activity, lf);
 	}
+
+	@Override
+	public FieldUI createMultiListUI(MultiListField mlf)
+	{
+		return new MultiListView(activity, mlf);
+	}
 	
 	public void cancelCurrentField()
 	{
@@ -239,5 +247,5 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		int heightPx = (ScreenMetrics.GetScreenHeight(activity) - (buttonsShowing ? (buttonView.getButtonHeightPx() + getSpacingPx()) : 0) - ((numRows - 1) * getSpacingPx())) / numRows;
 		return Math.max(heightPx, 0); //avoid negative pixel counts
 	}
-	
+
 }

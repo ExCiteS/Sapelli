@@ -14,28 +14,28 @@
 		<property name="home" location="."/>
 		<property name="project-dir" location="${basedir}"/>
 		<loadproperties srcFile="${project-dir}${file.separator}project.properties" />
-    	<xmlproperty file="${project-dir}${file.separator}AndroidManifest.xml" prefix="mani" collapseAttributes="true"/>
-    	<property name="appVersionName" value="${mani.manifest.android:versionName}"/>
-    	<property name="appVersionCode" value="${mani.manifest.android:versionCode}"/>
-    	<property name="package" value="${mani.manifest.package}"/>
+		<xmlproperty file="${project-dir}${file.separator}AndroidManifest.xml" prefix="mani" collapseAttributes="true"/>
+		<property name="appVersionName" value="${mani.manifest.android:versionName}"/>
+		<property name="appVersionCode" value="${mani.manifest.android:versionCode}"/>
+		<property name="package" value="${mani.manifest.package}"/>
 		<property name="gen-dir" location="${project-dir}${file.separator}gen"/>
 		<property name="raw-res-dir" location="${project-dir}${file.separator}res${file.separator}raw"/>
 		<loadresource property="package-path">
-		    <propertyresource name="package"/>
-		    <filterchain>
-		        <tokenfilter>
-		            <replacestring from="." to="${file.separator}"/>
-		        </tokenfilter>
-		    </filterchain>
+			<propertyresource name="package"/>
+			<filterchain>
+				<tokenfilter>
+					<replacestring from="." to="${file.separator}"/>
+				</tokenfilter>
+			</filterchain>
 		</loadresource>
 		<property name="output-dir" location="${gen-dir}${file.separator}${package-path}"/>
-    	<condition property="output-dir-not-there">
-    	    <not>
-    	    	<available file="${output-dir}" type="dir"/>
-    	    </not>
-    	</condition>
-    	<property name="file-path" location="${output-dir}${file.separator}${classname}.java"/>
-    	<property name="demo-project-filename" value="demo.excites"/>
+		<condition property="output-dir-not-there">
+			<not>
+				<available file="${output-dir}" type="dir"/>
+			</not>
+		</condition>
+		<property name="file-path" location="${output-dir}${file.separator}${classname}.java"/>
+		<property name="demo-project-filename" value="demo.excites"/>
 	</target>
 
     <target name="-git.branch" description="Store current git branch in ${repository-branch}">

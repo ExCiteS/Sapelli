@@ -9,6 +9,9 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.collector.project.model.fields.EndField;
+import uk.ac.ucl.excites.collector.project.model.fields.Field;
+import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.storage.model.Column;
 import uk.ac.ucl.excites.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
@@ -511,7 +514,7 @@ public class Form
 			((DateTimeColumn) schema.getColumn(COLUMN_TIMESTAMP_END)).storeValue(record, new DateTime() /*= now*/);
 	}
 	
-	protected void addWarning(String warning)
+	public void addWarning(String warning)
 	{
 		if(warnings == null)
 			warnings = new ArrayList<String>();

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.collector.project.model;
+package uk.ac.ucl.excites.collector.project.model.fields;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.collector.project.data.FormEntry;
+import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.util.BinaryHelpers;

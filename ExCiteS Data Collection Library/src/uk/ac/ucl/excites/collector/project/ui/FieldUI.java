@@ -1,6 +1,6 @@
 package uk.ac.ucl.excites.collector.project.ui;
 
-import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.fields.Field;
 
 public interface FieldUI
 {

@@ -4,7 +4,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.collector.ProjectController;
-import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.util.Timeoutable;
 import android.annotation.SuppressLint;

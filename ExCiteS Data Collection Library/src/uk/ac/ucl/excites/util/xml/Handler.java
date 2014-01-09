@@ -13,6 +13,8 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import uk.ac.ucl.excites.util.StringUtils;
+
 /**
  * @author mstevens
  *
@@ -86,17 +88,11 @@ public abstract class Handler extends DefaultHandler
 		if(activeSubtreeParser != null)
 			activeSubtreeParser.parseStartElement(uri, localName, qName, attributes);
 		// Try delegating to subtree parser with matching root element:
-		else
-		{
-			SubtreeParser subtreeParser = subtreeParsers.get(qName);
-			if(subtreeParser != null)
-			{
-				subtreeParser.parseStartElement(uri, localName, qName, attributes); //delegate to subtree parser with mathing root element, it will activate itself if successful
-				return; //!!!
-			}
-		}
+		else if(subtreeParsers.containsKey(qName))
+			subtreeParsers.get(qName).parseStartElement(uri, localName, qName, attributes); //delegate to subtree parser with matching root element, it will activate itself if successful
 		// Handle locally:
-		this.parseStartElement(uri, localName, qName, attributes);
+		else
+			this.parseStartElement(uri, localName, qName, attributes);
 	}
 	
 	/**
@@ -161,79 +157,296 @@ public abstract class Handler extends DefaultHandler
 		super.characters(ch, start, length);
 	}
 
-	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
+	/**
+	 * Read a required String attribute with name {@code attributeName} in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * 
+	 * @param qName
+	 * @param attributeName
+	 * @param attributes
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 */
+	protected String readRequiredStringAttribute(String qName, String attributeName, Attributes attributes) throws SAXException
 	{
-		return readRequiredStringAttribute(qName, attributes, attributeName, null);
+		return readRequiredStringAttribute(qName, attributeName, null, attributes);
+	}
+
+	/**
+	 * Read a required String attribute with a name from {@code attributeNames} (tried in order, first existing attribute wins) in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * 
+	 * @param qName
+	 * @param attributes
+	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 */
+	protected String readRequiredStringAttribute(String qName, Attributes attributes, String... attributeNames) throws SAXException
+	{
+		return readRequiredStringAttribute(qName, null, attributes, attributeNames);
 	}
 	
-	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName, String reason) throws SAXException
+	/**
+	 * Read a required String attribute with name {@code attributeName} in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * The {@code reason} explains why the attribute is required.
+	 * 
+	 * @param qName
+	 * @param attributeName
+	 * @param reason
+	 * @param attributes
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 */
+	protected String readRequiredStringAttribute(String qName, String attributeName, String reason, Attributes attributes) throws SAXException
 	{
-		String value = attributes.getValue(attributeName);
-		if(value == null)
-			throw new SAXException(attributeName + " is missing, this is a required attribute of " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
-		return value;
+		return readRequiredStringAttribute(qName, reason, attributes, attributeName);
+	}
+	
+	/**
+	 * Read a required String attribute with a name from {@code attributeNames} (tried in order, first existing attribute wins) in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * The {@code reason} explains why the attribute is required.
+	 * 
+	 * @param qName
+	 * @param reason
+	 * @param attributes
+	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 */
+	protected String readRequiredStringAttribute(String qName, String reason, Attributes attributes, String... attributeNames) throws SAXException
+	{
+		for(String attributeName : attributeNames)
+		{
+			String value = attributes.getValue(attributeName);
+			if(value != null)
+				return value;
+			//else :  there is no attribute with the attributeName, try next alternative
+		}
+		throw new SAXException("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
+	}
+	
+	/**
+	 * Read an optional String attribute with name {@code attributeName}, using the passed {@code attributes} collection.
+	 * When no such attribute exists the {@code defaultValue} is returned.
+	 * 
+	 * @param attributeName
+	 * @param defaultValue
+	 * @param attributes
+	 * @return
+	 */
+	protected String readStringAttribute(String attributeName, String defaultValue, Attributes attributes)
+	{
+		return readStringAttribute(defaultValue, attributes, attributeName);
+	}
+	
+	protected String readStringAttribute(String defaultValue, Attributes attributes, String... attributeNames)
+	{
+		for(String attributeName : attributeNames)
+		{
+			String value = attributes.getValue(attributeName);
+			if(value != null)
+				return value;
+			//else :  there is no attribute with the attributeName, try next alternative
+		}
+		return defaultValue;
 	}
 
-	protected String readStringAttribute(Attributes attributes, String attributeName, String defaultValue)
+	/**
+	 * Read an optional boolean attribute with name {@code attributeName}, using the passed {@code attributes} collection.
+	 * When no such attribute exists the {@code defaultValue} is returned.
+	 * 
+	 * @param attributeName
+	 * @param defaultValue
+	 * @param attributes
+	 * @return
+	 */
+	protected boolean readBooleanAttribute(String attributeName, boolean defaultValue, Attributes attributes)
 	{
-		String text = attributes.getValue(attributeName);
-		if(text == null || text.isEmpty())
-			return defaultValue;
-		else
-			return text;
+		return readBooleanAttribute(defaultValue, attributes, attributeName);
+	}
+	
+	/**
+	 * Read an optional boolean attribute with a name from {@code attributeNames} (tried in order, first existing attribute wins), using the passed {@code attributes} collection.
+	 * When no such attribute exists the {@code defaultValue} is returned.
+	 * 
+	 * @param defaultValue
+	 * @param attributes
+	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @return
+	 */
+	protected boolean readBooleanAttribute(boolean defaultValue, Attributes attributes, String... attributeNames)
+	{
+		for(String attributeName : attributeNames)
+		{
+			String strVal = attributes.getValue(attributeName);
+			if(strVal == null)
+				continue; // there is no attribute with the attributeName, try next alternative
+			else
+			{
+				strVal = strVal.trim();
+				if(strVal.isEmpty())
+					return defaultValue;
+				else if(strVal.equalsIgnoreCase(Boolean.TRUE.toString()))
+					return Boolean.TRUE;
+				else if(strVal.equalsIgnoreCase(Boolean.FALSE.toString()))
+					return Boolean.FALSE;
+				else if(strVal.equalsIgnoreCase(ENABLED))
+					return Boolean.TRUE;
+				else if(strVal.equalsIgnoreCase(DISABLED))
+					return Boolean.FALSE;
+				else
+					return defaultValue;				
+			}
+		}
+		return defaultValue;
 	}
 
-	protected boolean readBooleanAttribute(Attributes attributes, String attributeName, boolean defaultValue)
+	/**
+	 * Read a required integer attribute with name {@code attributeName} in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * 
+	 * @param qName
+	 * @param attributeName
+	 * @param attributes
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 */
+	protected int readRequiredIntegerAttribute(String qName, String attributeName, Attributes attributes) throws SAXException
 	{
-		String text = attributes.getValue(attributeName);
-		if(text == null)
-			return defaultValue;
-		//else:
-		text = text.trim();
-		if(text.isEmpty())
-			return defaultValue;
-		else if(text.equalsIgnoreCase(Boolean.TRUE.toString()))
-			return Boolean.TRUE;
-		else if(text.equalsIgnoreCase(Boolean.FALSE.toString()))
-			return Boolean.FALSE;
-		else if(text.equalsIgnoreCase(ENABLED))
-			return Boolean.TRUE;
-		else if(text.equalsIgnoreCase(DISABLED))
-			return Boolean.FALSE;
-		else
-			return defaultValue;
+		return readRequiredIntegerAttribute(qName, attributeName, null, attributes);
+	}
+	
+	/**
+	 * Read a required integer attribute with a name from {@code attributeNames} (tried in order, first existing attribute wins) in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * 
+	 * @param qName
+	 * @param attributes
+	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 */
+	protected int readRequiredIntegerAttribute(String qName, Attributes attributes, String... attributeNames) throws SAXException
+	{
+		return readRequiredIntegerAttribute(qName, null, attributes, attributeNames);
+	}
+	
+	/**
+	 * Read a required integer attribute with name {@code attributeName} in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * The {@code reason} explains why the attribute is required.
+	 * 
+	 * @param qName
+	 * @param attributeName
+	 * @param reason
+	 * @param attributes
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 */
+	protected int readRequiredIntegerAttribute(String qName, String attributeName, String reason, Attributes attributes) throws SAXException
+	{
+		return readRequiredIntegerAttribute(qName, reason, attributes, attributeName);
+	}
+	
+	/**
+	 * Read a required integer attribute with a name from {@code attributeNames} (tried in order, first existing attribute wins) in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * The {@code reason} explains why the attribute is required.
+	 * 
+	 * @param qName
+	 * @param reason
+	 * @param attributes
+	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 */
+	protected int readRequiredIntegerAttribute(String qName, String reason, Attributes attributes, String... attributeNames) throws SAXException
+	{
+		for(String attributeName : attributeNames)
+		{
+			String strVal = attributes.getValue(attributeName);
+			if(strVal != null)
+				return Integer.parseInt(strVal.trim());
+			//else :  there is no attribute with the attributeName, try next alternative
+		}
+		throw new SAXException("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
+	}
+	
+	/**
+	 * Read an optional integer attribute with name {@code attributeName}, using the passed {@code attributes} collection.
+	 * When no such attribute exists the {@code defaultValue} is returned.
+	 * 
+	 * @param attributeName
+	 * @param defaultValue
+	 * @param attributes
+	 * @return
+	 */
+	protected int readIntegerAttribute(String attributeName, int defaultValue, Attributes attributes)
+	{
+		return readIntegerAttribute(defaultValue, attributes, attributeName);
 	}
 
-	protected int readRequiredIntegerAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
+	/**
+	 * Read an optional integer attribute with a name from {@code attributeNames} (tried in order, first existing attribute wins), using the passed {@code attributes} collection.
+	 * When no such attribute exists the {@code defaultValue} is returned.
+	 * 
+	 * @param defaultValue
+	 * @param attributes
+	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @return
+	 */
+	protected int readIntegerAttribute(int defaultValue, Attributes attributes, String... attributeNames)
 	{
-		return readRequiredIntegerAttribute(qName, attributes, attributeName, null);
+		for(String attributeName : attributeNames)
+		{
+			String strVal = attributes.getValue(attributeName);
+			if(strVal == null)
+				continue; // there is no attribute with the attributeName, try next alternative
+			else
+			{
+				if(strVal.trim().isEmpty())
+					return defaultValue;
+				else
+					return Integer.parseInt(strVal.trim());
+			}
+		}
+		return defaultValue;
 	}
 
-	protected int readRequiredIntegerAttribute(String qName, Attributes attributes, String attributeName, String reason) throws SAXException
+	/**
+	 * Read an optional float attribute with name {@code attributeName}, using the passed {@code attributes} collection.
+	 * When no such attribute exists the {@code defaultValue} is returned.
+	 * 
+	 * @param attributeName
+	 * @param defaultValue
+	 * @param attributes
+	 * @return
+	 */
+	protected float readFloatAttribute(String attributeName, float defaultValue, Attributes attributes)
 	{
-		String text = attributes.getValue(attributeName);
-		if(text == null || text.isEmpty())
-			throw new SAXException(attributeName + " is missing, this is a required attribute of " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
-		else
-			return Integer.parseInt(text.trim());
+		return readFloatAttribute(defaultValue, attributes, attributeName);
 	}
-
-	protected int readIntegerAttribute(Attributes attributes, String attributeName, int defaultValue)
+	
+	/**
+	 * Read an optional float attribute with a name from {@code attributeNames} (tried in order, first existing attribute wins), using the passed {@code attributes} collection.
+	 * When no such attribute exists the {@code defaultValue} is returned.
+	 * 
+	 * @param defaultValue
+	 * @param attributes
+	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @return
+	 */
+	protected float readFloatAttribute(float defaultValue, Attributes attributes, String... attributeNames)
 	{
-		String text = attributes.getValue(attributeName);
-		if(text == null || text.isEmpty())
-			return defaultValue;
-		else
-			return Integer.parseInt(text.trim());
-	}
-
-	protected float readFloatAttribute(Attributes attributes, String attributeName, float defaultValue)
-	{
-		String text = attributes.getValue(attributeName);
-		if(text == null || text.isEmpty())
-			return defaultValue;
-		else
-			return Float.parseFloat(text.trim());
+		for(String attributeName : attributeNames)
+		{
+			String strVal = attributes.getValue(attributeName);
+			if(strVal == null)
+				continue; // there is no attribute with the attributeName, try next alternative
+			else
+			{
+				if(strVal.trim().isEmpty())
+					return defaultValue;
+				else
+					return Float.parseFloat(strVal.trim());
+			}
+		}
+		return defaultValue;
 	}
 
 	protected void addWarning(String warning)

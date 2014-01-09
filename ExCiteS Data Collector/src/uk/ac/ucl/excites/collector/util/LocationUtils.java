@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import android.location.LocationManager;
-import uk.ac.ucl.excites.collector.project.model.LocationField;
+import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.storage.types.Location;
 
 /**

@@ -13,7 +13,7 @@ import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.model.Relationship;
+import uk.ac.ucl.excites.collector.project.model.fields.Relationship;
 import uk.ac.ucl.excites.transmission.Settings;
 import uk.ac.ucl.excites.util.io.UnclosableBufferedInputStream;
 import uk.ac.ucl.excites.util.xml.DocumentParser;
@@ -131,7 +131,7 @@ public class ProjectParser extends DocumentParser
 				}
 				
 				// Detect format version...
-				int formatVersion = readIntegerAttribute(attributes, ATTRIBUTE_PROJECT_FORMAT, qName.equals(TAG_PROJECT_V1X) ? Format.v1_x.ordinal() : DEFAULT_FORMAT.ordinal()); //default: v1.x for ExCiteS tag, DEFAULT_FORMAT for Sapelli tag. 
+				int formatVersion = readIntegerAttribute(ATTRIBUTE_PROJECT_FORMAT, qName.equals(TAG_PROJECT_V1X) ? Format.v1_x.ordinal() : DEFAULT_FORMAT.ordinal(), attributes); //default: v1.x for ExCiteS tag, DEFAULT_FORMAT for Sapelli tag. 
 				// 	too low:
 				if(formatVersion < LOWEST_SUPPORTED_FORMAT.ordinal())
 					throw new SAXException("Unsupported format version: " + formatVersion);
@@ -148,25 +148,26 @@ public class ProjectParser extends DocumentParser
 				// Project...
 				project = new Project(	(format == Format.v1_x) ?
 											Project.PROJECT_ID_V1X_TEMP : // for format = 1 we set a temp id value (will be replaced by Form:schema-id) 
-											readRequiredIntegerAttribute(qName, attributes, ATTRIBUTE_PROJECT_ID, "because format is >= 2"), // id is required for format >= 2
+											readRequiredIntegerAttribute(qName, ATTRIBUTE_PROJECT_ID, "because format is >= 2", attributes), // id is required for format >= 2
 										projectHash,
-										readRequiredStringAttribute(TAG_PROJECT, attributes, ATTRIBUTE_PROJECT_NAME),
-										readStringAttribute(attributes, ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION),
+										readRequiredStringAttribute(TAG_PROJECT, ATTRIBUTE_PROJECT_NAME, attributes),
+										readStringAttribute(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, attributes),
 										basePath,
 										createProjectFolder);
 				
 				// Set variant:
-				project.setVariant(readStringAttribute(attributes, ATTRIBUTE_PROJECT_VARIANT, null));
+				project.setVariant(readStringAttribute(ATTRIBUTE_PROJECT_VARIANT, null, attributes));
 				
 				// Read startForm ID:
-				startFormID = readStringAttribute(attributes, ATTRIBUTE_PROJECT_START_FORM, null);
+				startFormID = readStringAttribute(ATTRIBUTE_PROJECT_START_FORM, null, attributes);
 				
 				// Add subtree parsers:
 				addSubtreeParser(new ConfigurationParser(this, project));
 				addSubtreeParser(new FormParser(this, project, format));
-			}	
+			}
 			// <?>
-			addWarning("Ignored unrecognised or invalidly placed/repeated element called \"" + qName + "\".");
+			else
+				addWarning("Ignored unrecognised or invalidly placed/repeated element <" + qName + ">.");
 		}
 		catch(SAXException se)
 		{
@@ -174,7 +175,7 @@ public class ProjectParser extends DocumentParser
 		}
 		catch(Exception e)
 		{
-			throw new SAXException("Error while parsing element \"" + qName + "\": " + e.getMessage(), e);
+			throw new SAXException("Error while parsing element <" + qName + ">: " + e.getMessage(), e);
 		}
 	}
 

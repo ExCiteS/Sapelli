@@ -1,9 +1,11 @@
-package uk.ac.ucl.excites.collector.project.model;
+package uk.ac.ucl.excites.collector.project.model.fields;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;

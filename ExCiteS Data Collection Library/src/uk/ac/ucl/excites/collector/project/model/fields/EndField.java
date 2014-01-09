@@ -1,8 +1,9 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.collector.project.model;
+package uk.ac.ucl.excites.collector.project.model.fields;
 
+import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;

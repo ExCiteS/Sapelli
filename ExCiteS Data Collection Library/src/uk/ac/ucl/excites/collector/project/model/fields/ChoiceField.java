@@ -1,11 +1,14 @@
-package uk.ac.ucl.excites.collector.project.model;
+package uk.ac.ucl.excites.collector.project.model.fields;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
+import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.model.dictionary.Dictionary;
+import uk.ac.ucl.excites.collector.project.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
@@ -19,11 +22,9 @@ import uk.ac.ucl.excites.util.CollectionUtils;
  * 
  * @author mstevens
  */
-public class ChoiceField extends Field
+public class ChoiceField extends Field implements DictionaryItem
 {
 	
-	static public final int NON_LEAF_VALUE_INDEX = -1;
-	static public final int NON_SELECTABLE_CHOICE_INDEX = -1;
 	static public final int DEFAULT_NUM_COLS = 2;
 	static public final int DEFAULT_NUM_ROWS = 2;
 	static public final String DEFAULT_ALT_TEXT = "?";
@@ -309,7 +310,7 @@ public class ChoiceField extends Field
 	public void storeValue(Record record)
 	{
 		if(!isNoColumn() && isLeaf())
-			((IntegerColumn) form.getColumnFor(root)).storeValue(record, Long.valueOf(dictionary.getIndex(this))); //this = the selected leaf
+			((IntegerColumn) form.getColumnFor(root)).storeValue(record, Long.valueOf(dictionary.lookupIndex(this))); //this = the selected leaf
 	}
 	
 	public ChoiceDictionary getDictionary()
@@ -329,22 +330,25 @@ public class ChoiceField extends Field
 		return collectorUI.createChoiceUI(this);
 	}
 	
-	public static class ChoiceDictionary
+	@Override
+	public List<String> getDocExtras()
 	{
-		
-		/* HashMap which maps Choices that are both "valued" (i.e. with non-null value String) AND
-		 * "selectable" (being either a leaf itself or the lowest "valued" ancestor of a "non-valued" leaf)
-		 * into indexes, which are used to store the value (i.e. the choice made) of the ChoiceField tree. */
-		private Map<ChoiceField, Integer> valuedToIdx;
-		
-		/* An (Array)List which allows choices to be looked up by index */
-		private List<ChoiceField> indexed;
-		
-		public ChoiceDictionary()
-		{
-			valuedToIdx = new HashMap<ChoiceField, Integer>();
-			indexed = new ArrayList<ChoiceField>();
-		}
+		return Arrays.asList(this.imageRelativePath, this.id);
+	}
+	
+	/**
+	 * A Dictionary for ChoiceFields.
+	 * 
+	 * Holds a (Hash)Map (itemToIndex) which maps ChoiceFields that are both "valued" (i.e. with non-null value String) AND
+	 * "selectable" (being either a leaf itself or the lowest "valued" ancestor of a "non-valued" leaf) to indexes,
+	 * which are used to store the value (i.e. the choice made) of the ChoiceField tree.
+	 * 
+	 * Also holds an (Array)List which allows choices to be looked up by index.
+	 *
+	 * @author mstevens
+	 */
+	public static class ChoiceDictionary extends Dictionary<ChoiceField>
+	{
 		
 		/**
 		 * <b>Note:</b> This method should only be called after the whole choice tree is parsed & constructed (i.e. from addColumns()).
@@ -365,9 +369,9 @@ public class ChoiceField extends Field
 			if(choice.isLeaf())
 			{
 				ChoiceField valuedChoice = choice.getLowestAncestorWithValue();
-				if(valuedChoice != null && !valuedToIdx.containsKey(valuedChoice))
+				if(valuedChoice != null && !itemToIndex.containsKey(valuedChoice))
 				{
-					valuedToIdx.put(valuedChoice, indexed.size());
+					itemToIndex.put(valuedChoice, indexed.size());
 					indexed.add(valuedChoice);
 				}
 			}
@@ -378,45 +382,15 @@ public class ChoiceField extends Field
 			}
 		}
 		
-		public boolean isEmpty()
+		@Override
+		protected List<String> getDocHeaders()
 		{
-			return indexed.isEmpty();
+			List<String> hdrs = super.getDocHeaders();
+			hdrs.add("IMG");
+			hdrs.add("ID/PATH");
+			return hdrs;
 		}
-		
-		public int size()
-		{
-			return indexed.size();
-		}
-		
-		public int getIndex(ChoiceField choice)
-		{
-			Integer idx = valuedToIdx.get(choice.getLowestAncestorWithValue());
-			if(idx != null)
-				return idx.intValue();
-			else
-				return NON_SELECTABLE_CHOICE_INDEX;
-		}
-		
-		public ChoiceField getChoice(int index)
-		{
-			return indexed.get(index);
-		}
-		
-		public List<ChoiceField> getSelectableChoices()
-		{
-			return indexed;
-		}
-		
-		public String toCSV(String separator)
-		{
-			StringBuffer bff = new StringBuffer();
-			bff.append("INDEX" + separator + "VALUE" + separator + "IMG" + separator + "ID/PATH" + "\n");
-			int idx = 0;
-			for(ChoiceField choice : indexed)
-				bff.append(idx++ + separator + choice.value + separator + choice.imageRelativePath + separator + choice.id + "\n");
-			return bff.toString();
-		}
-		
+				
 	}
 	
 }

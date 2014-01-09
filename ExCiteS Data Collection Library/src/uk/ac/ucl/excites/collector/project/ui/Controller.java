@@ -1,6 +1,13 @@
 package uk.ac.ucl.excites.collector.project.ui;
 
 import uk.ac.ucl.excites.collector.project.model.*;
+import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
+import uk.ac.ucl.excites.collector.project.model.fields.CancelField;
+import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.fields.EndField;
+import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
+import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
+import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
 
 public interface Controller
 {

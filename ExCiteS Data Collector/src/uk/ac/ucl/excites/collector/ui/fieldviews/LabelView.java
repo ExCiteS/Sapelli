@@ -1,7 +1,6 @@
 package uk.ac.ucl.excites.collector.ui.fieldviews;
 
-import uk.ac.ucl.excites.collector.project.model.Field;
-import uk.ac.ucl.excites.collector.project.model.LabelField;
+import uk.ac.ucl.excites.collector.project.model.fields.LabelField;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -30,7 +29,7 @@ public class LabelView extends LinearLayout implements FieldUI
 	}
 
 	@Override
-	public Field getField()
+	public LabelField getField()
 	{
 		return field;
 	}

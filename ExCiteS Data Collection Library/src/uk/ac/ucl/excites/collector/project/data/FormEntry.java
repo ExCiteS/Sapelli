@@ -5,9 +5,9 @@ package uk.ac.ucl.excites.collector.project.data;
 
 import org.joda.time.DateTime;
 
-import uk.ac.ucl.excites.collector.project.model.Field;
 import uk.ac.ucl.excites.collector.project.model.Form;
-import uk.ac.ucl.excites.collector.project.model.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
@@ -104,7 +104,7 @@ public class FormEntry implements Comparable<FormEntry>
 			throw new IllegalArgumentException("Field \"" + rootChoiceField.getID() + "\" has no column.");
 		Long choiceIdx = (Long) schema.getColumn(rootChoiceField.getID()).retrieveValue(record);
 		if(choiceIdx != null)
-			return rootChoiceField.getDictionary().getChoice(choiceIdx.intValue());
+			return rootChoiceField.getDictionary().lookupItem(choiceIdx.intValue());
 		else
 			return null;
 	}

@@ -63,15 +63,15 @@ public class RecordsImporter extends DocumentParser
 			String schemaDescr = null;
 			if(attributes.getIndex(Schema.V1X_ATTRIBUTE_SCHEMA_ID) != -1)
 			{	//This file contains records exported by Sapelli v1.x
-				int schemaID = readRequiredIntegerAttribute(Record.TAG_RECORD, attributes, Schema.V1X_ATTRIBUTE_SCHEMA_ID, "because this is a v1.x record");
-				int schemaVersion = readIntegerAttribute(attributes, Schema.V1X_ATTRIBUTE_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION);
+				int schemaID = readRequiredIntegerAttribute(Record.TAG_RECORD, Schema.V1X_ATTRIBUTE_SCHEMA_ID, "because this is a v1.x record", attributes);
+				int schemaVersion = readIntegerAttribute(Schema.V1X_ATTRIBUTE_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION, attributes);
 				schema = client.getSchemaV1(schemaID, schemaVersion);
 				schemaDescr = "ID " + schemaID + " and version " + schemaVersion;
 			}
 			else
 			{
-				int usageID = readRequiredIntegerAttribute(Record.TAG_RECORD, attributes, Schema.ATTRIBUTE_USAGE_ID);
-				int usageSubID = readIntegerAttribute(attributes, Schema.ATTRIBUTE_USAGE_ID, Schema.DEFAULT_USAGE_SUB_ID);
+				int usageID = readRequiredIntegerAttribute(Record.TAG_RECORD, Schema.ATTRIBUTE_USAGE_ID, attributes);
+				int usageSubID = readIntegerAttribute(Schema.ATTRIBUTE_USAGE_ID, Schema.DEFAULT_USAGE_SUB_ID, attributes);
 				schema = client.getSchema(usageID, usageSubID);
 				schemaDescr = "usageID " + usageID + " and usageSubID " + usageSubID;
 			}

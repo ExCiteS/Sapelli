@@ -3,8 +3,8 @@ package uk.ac.ucl.excites.collector.ui.fieldviews;
 import java.io.File;
 
 import uk.ac.ucl.excites.collector.ProjectController;
-import uk.ac.ucl.excites.collector.project.model.ChoiceField;
-import uk.ac.ucl.excites.collector.project.model.Field;
+import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.collector.ui.CollectorView;
 import uk.ac.ucl.excites.collector.ui.animation.PressAnimator;
@@ -68,7 +68,7 @@ public class ChoiceView extends PickerView implements FieldUI, AdapterView.OnIte
 		// Number of columns:
 		setNumColumns(choice.getCols());
 		
-		// Item size & padding:
+		// DictionaryItem size & padding:
 		itemWidthPx = collectorView.getIconWidthPx(choice.getCols());
 		itemHeightPx = collectorView.getIconHeightPx(choice.getRows(), controller.getButtonsState().isAnyButtonShown());
 		itemPaddingPx = ScreenMetrics.ConvertDipToPx(getContext(), PADDING_DIP);
@@ -85,7 +85,7 @@ public class ChoiceView extends PickerView implements FieldUI, AdapterView.OnIte
 	}
 	
 	/**
-	 * Creates an Item object responding to the provided child ChoiceField
+	 * Creates an DictionaryItem object responding to the provided child ChoiceField
 	 * 
 	 * Note: if we add colSpan/rowSpan support the right itemWidth/Height would need to be computed here (e.g.: for rowSpan=2 the itemWidth becomes (itemWidth*2)+spacingPx)
 	 * 

@@ -7,6 +7,16 @@
     <Logging enabled="true"/>
   </Configuration>
   
+  <Strings>
+    <Locale id="en" default="true">
+      <string name="test1">one two three</string>
+    </Locale>
+    
+    <Locale id="fr">
+      <string name="test1">un deux trois</string>
+    </Locale>
+  </Strings>
+  
   <Form id="Entry" name="Community data" startField="SessionKey" end="_LOOP" endVibrate="true" showBack="true" showCancel="true" storeEndTime="true">
     
     <!-- source="localCreate|localSelect|remoteQR|remoteBT|remoteSMS|remoteHTTP" ? -->
@@ -89,20 +99,20 @@
 
     <TextField id="Creator" label="Creator" minLength="2" maxLength="48" optional="false"/>
 
-    <ListSelection id="Community" label="Province;Community" optional="false">
-      <item value="Province 1" isDefault="true">
-        <item value="Community P1.1"/>
-        <item value="Community P1.2"/>
-        <item value="Community P1.3"/>
-        <item value="New P1 community (see comment)"/>
-      </item>
-      <item value="Province 2">
-        <item value="Community P2.1"/>
-        <item value="Community P2.2"/>
-        <item value="Community P2.3"/>
-        <item value="New P2 community (see comment)"/>
-      </item>
-    </ListSelection>
+    <MultiList id="Community" label="Province;Community" optional="false">
+      <ListItem value="Province 1" default="true">
+        <ListItem value="Community P1.1"/>
+        <ListItem value="Community P1.2"/>
+        <ListItem value="Community P1.3"/>
+        <ListItem value="New P1 community (see comment)"/>
+      </ListItem>
+      <ListItem value="Province 2">
+        <ListItem value="Community P2.1"/>
+        <ListItem value="Community P2.2"/>
+        <ListItem value="Community P2.3"/>
+        <ListItem value="New P2 community (see comment)"/>
+      </ListItem>
+    </MultiList>
 
     <Checkbox id="Operational" label="Operational session" defaultValue="true"/>
 

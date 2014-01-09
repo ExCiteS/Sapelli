@@ -58,10 +58,10 @@ public class ConfigurationParser extends SubtreeParser
 			// <Logging>
 			if(qName.equals(TAG_LOGGING))
 			{
-				project.setLogging(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Project.DEFAULT_LOGGING));
+				project.setLogging(readBooleanAttribute(ATTRIBUTE_ENABLED, Project.DEFAULT_LOGGING, attributes));
 			}
 			// <Transmission>
-			if(qName.equals(TAG_TRANSMISSION))
+			else if(qName.equals(TAG_TRANSMISSION))
 			{
 				if(project.getTransmissionSettings() != null)
 					throw new SAXException("There can be only one <" + TAG_TRANSMISSION + "> tag.");
@@ -73,46 +73,46 @@ public class ConfigurationParser extends SubtreeParser
 			{
 				if(transmissionSettings == null)
 					throw new SAXException("<" + TAG_DROPBOX_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
-				transmissionSettings.setDropboxUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_DROPBOX_UPLOAD));
-				transmissionSettings.setDropboxAllowMobileData(readBooleanAttribute(attributes, ATTRIBUTE_MOBILE_DATA, Settings.DEFAULT_DROPBOX_ALLOW_MOBILE_DATA));
-				transmissionSettings.setDropboxAllowRoaming(readBooleanAttribute(attributes, ATTRIBUTE_ROAMING, Settings.DEFAULT_DROPBOX_ALLOW_ROAMING));
+				transmissionSettings.setDropboxUpload(readBooleanAttribute(ATTRIBUTE_ENABLED, Settings.DEFAULT_DROPBOX_UPLOAD, attributes));
+				transmissionSettings.setDropboxAllowMobileData(readBooleanAttribute(ATTRIBUTE_MOBILE_DATA, Settings.DEFAULT_DROPBOX_ALLOW_MOBILE_DATA, attributes));
+				transmissionSettings.setDropboxAllowRoaming(readBooleanAttribute(ATTRIBUTE_ROAMING, Settings.DEFAULT_DROPBOX_ALLOW_ROAMING, attributes));
 			}
 			// <HTTPUpload>
 			else if(qName.equals(TAG_HTTP_UPLOAD))
 			{
 				if(transmissionSettings == null)
 					throw new SAXException("<" + TAG_HTTP_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
-				transmissionSettings.setHTTPUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_HTTP_UPLOAD));
+				transmissionSettings.setHTTPUpload(readBooleanAttribute(ATTRIBUTE_ENABLED, Settings.DEFAULT_HTTP_UPLOAD, attributes));
 				String server = attributes.getValue("server");
 				if(server != null && !server.isEmpty())
 					transmissionSettings.setServerAddress(server);
-				transmissionSettings.setHTTPAllowMobileData(readBooleanAttribute(attributes, ATTRIBUTE_MOBILE_DATA, Settings.DEFAULT_HTTP_ALLOW_MOBILE_DATA));
-				transmissionSettings.setHTTPAllowRoaming(readBooleanAttribute(attributes, ATTRIBUTE_ROAMING, Settings.DEFAULT_HTTP_ALLOW_ROAMING));
+				transmissionSettings.setHTTPAllowMobileData(readBooleanAttribute(ATTRIBUTE_MOBILE_DATA, Settings.DEFAULT_HTTP_ALLOW_MOBILE_DATA, attributes));
+				transmissionSettings.setHTTPAllowRoaming(readBooleanAttribute(ATTRIBUTE_ROAMING, Settings.DEFAULT_HTTP_ALLOW_ROAMING, attributes));
 			}
 			// <SMSUpload>
 			else if(qName.equals(TAG_SMS_UPLOAD))
 			{
 				if(transmissionSettings == null)
 					throw new SAXException("<" + TAG_SMS_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
-				transmissionSettings.setSMSUpload(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_SMS_UPLOAD));
+				transmissionSettings.setSMSUpload(readBooleanAttribute(ATTRIBUTE_ENABLED, Settings.DEFAULT_SMS_UPLOAD, attributes));
 				String relay = attributes.getValue("relay");
 				if(relay != null && !relay.isEmpty())
 					transmissionSettings.setSMSRelay(new SMSAgent(relay));
-				transmissionSettings.setSMSAllowRoaming(readBooleanAttribute(attributes, ATTRIBUTE_ROAMING, Settings.DEFAULT_SMS_ALLOW_ROAMING));
+				transmissionSettings.setSMSAllowRoaming(readBooleanAttribute(ATTRIBUTE_ROAMING, Settings.DEFAULT_SMS_ALLOW_ROAMING, attributes));
 			}
 			// <Encryption>
 			else if(qName.equals(TAG_ENCRYPTION))
 			{
 				if(transmissionSettings == null)
 					throw new SAXException("<" + TAG_ENCRYPTION + "> should only appear in <" + TAG_TRANSMISSION + ">.");
-				transmissionSettings.setEncrypt(readBooleanAttribute(attributes, ATTRIBUTE_ENABLED, Settings.DEFAULT_ENCRYPT));
+				transmissionSettings.setEncrypt(readBooleanAttribute(ATTRIBUTE_ENABLED, Settings.DEFAULT_ENCRYPT, attributes));
 			}
 			// Add future configuration elements here...
 			
 			// <?> in <Configuration>
 			else
 			{
-				addWarning("Ignored unrecognised or invalidly placed element called \"" + qName + "\" occuring within <" + TAG_CONFIGURATION + ">.");
+				addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within <" + TAG_CONFIGURATION + ">.");
 			}
 		}
 		// <?> outside of <Configuration> (shouldn't happen)

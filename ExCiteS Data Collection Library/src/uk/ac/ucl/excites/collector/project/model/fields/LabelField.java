@@ -1,12 +1,14 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.collector.project.model;
+package uk.ac.ucl.excites.collector.project.model.fields;
 
+import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.Column;
+import uk.ac.ucl.excites.util.StringUtils;
 
 /**
  * @author mstevens
@@ -35,7 +37,7 @@ public class LabelField extends Field
 	 */
 	public LabelField(Form form, String id, String text)
 	{	
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + text.trim().replaceAll("\\s+","_") : id));
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + StringUtils.replaceWhitespace(text.trim(), "_") : id));
 		this.text = text;
 		this.noColumn = true;
 	}
