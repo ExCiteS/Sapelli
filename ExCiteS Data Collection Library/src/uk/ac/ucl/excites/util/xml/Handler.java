@@ -137,11 +137,6 @@ public abstract class Handler extends DefaultHandler
 		super.endElement(uri, localName, qName);
 	}
 
-	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
-	{
-		return readRequiredStringAttribute(qName, attributes, attributeName, null);
-	}
-	
 	@Override
 	public void characters(char ch[], int start, int length) throws SAXException
 	{
@@ -166,6 +161,11 @@ public abstract class Handler extends DefaultHandler
 		super.characters(ch, start, length);
 	}
 
+	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName) throws SAXException
+	{
+		return readRequiredStringAttribute(qName, attributes, attributeName, null);
+	}
+	
 	protected String readRequiredStringAttribute(String qName, Attributes attributes, String attributeName, String reason) throws SAXException
 	{
 		String value = attributes.getValue(attributeName);
