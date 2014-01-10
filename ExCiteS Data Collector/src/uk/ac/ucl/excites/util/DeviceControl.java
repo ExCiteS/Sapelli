@@ -24,7 +24,7 @@ public final class DeviceControl
 	{}
 	
 	/**
-	 * Check to see if the phone is in AiroplaneMode
+	 * Check to see if the phone is in AirplaneMode
 	 * 
 	 * @return true if it is
 	 */
