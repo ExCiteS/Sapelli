@@ -375,7 +375,11 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 	private void saveHardwareSerialNumber()
 	{
 		SharedPreferences.Editor editor = preferences.edit();
-		editor.putString(PREF_HARWARE_SERIAL, Build.SERIAL);
+		final String serial = Build.SERIAL;
+		if(serial.equalsIgnoreCase("unknown"))
+			editor.putString(PREF_HARWARE_SERIAL, null);
+		else
+			editor.putString(PREF_HARWARE_SERIAL, serial);
 		editor.commit();
 	}
 
