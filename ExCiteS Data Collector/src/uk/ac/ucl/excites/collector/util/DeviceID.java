@@ -5,6 +5,7 @@ import java.util.zip.CRC32;
 
 import uk.ac.ucl.excites.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.util.Debug;
+import uk.ac.ucl.excites.util.DeviceControl;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
@@ -55,6 +56,7 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 	private SharedPreferences preferences;
 	private BroadcastReceiver wiFiBroadcastReceiver;
 	private BroadcastReceiver bluetoothBroadcastReceiver;
+	private boolean inAirplaneMode = false;
 
 	public DeviceID(Context context)
 	{
@@ -85,6 +87,21 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 	@Override
 	protected Void doInBackground(Void... params)
 	{
+		// Check if in flight mode, otherwise IMEI and Bluetooth do not work on same devices i.e. Samsung Xcover
+		if(DeviceControl.inAirplaneMode(context))
+		{
+			inAirplaneMode = true;
+			DeviceControl.toggleAirplaneMode(context);
+
+			int counter = 0;
+
+			while(DeviceControl.inAirplaneMode(context) && counter < MAX_STEPS)
+			{
+				counter++;
+				SystemClock.sleep(100); // Wait for the phone to get off AirplaneMode
+			}
+		}
+
 		initialise();
 
 		int counter = 0;
@@ -108,6 +125,10 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 	{
 		// Compute and save the Device ID
 		computeDeviceID();
+
+		// Get the phone back in AirplaneMode
+		if(inAirplaneMode)
+			DeviceControl.toggleAirplaneMode(context);
 
 		// Debug
 		printPreferences();
