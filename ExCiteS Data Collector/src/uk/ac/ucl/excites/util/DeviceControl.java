@@ -2,11 +2,13 @@ package uk.ac.ucl.excites.util;
 
 import java.io.File;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.util.Log;
@@ -28,22 +30,31 @@ public final class DeviceControl
 	 * 
 	 * @return true if it is
 	 */
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	@SuppressWarnings("deprecation")
 	public static boolean inAirplaneMode(Context context)
 	{
-		return Settings.System.getInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, 0) == 1;
+		if(Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1)
+			return Settings.System.getInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, 0) != 0;
+		else
+			return Settings.Global.getInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, 0) != 0;
 	}
 
 	/**
 	 * Toggle thought the AirplaneMode
 	 */
+	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	@SuppressWarnings("deprecation")
 	public static void toggleAirplaneMode(Context context)
 	{
 		boolean isInAirplaneMode = inAirplaneMode(context);
 		try
-		{	// If airplane mode is on, value 0, else value is 1
-			Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, isInAirplaneMode ? 0 : 1);
+		{
+			// If airplane mode is on, value 0, else value is 1
+			if(Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1)
+				Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, isInAirplaneMode ? 0 : 1);
+			else
+				Settings.Global.putInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, isInAirplaneMode ? 0 : 1);
 
 			// Reload when the mode is changed each time by sending Intent
 			Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
