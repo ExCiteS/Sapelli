@@ -1,9 +1,10 @@
 package uk.ac.ucl.excites.collector.project.ui;
 
-import uk.ac.ucl.excites.collector.project.model.*;
 import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
 import uk.ac.ucl.excites.collector.project.model.fields.CancelField;
+import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
 import uk.ac.ucl.excites.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
@@ -41,6 +42,18 @@ public interface Controller
 	 * @return whether or not a UI update is required after entering the field
 	 */
 	public boolean enterOrientationField(OrientationField of);
+	
+	/**
+	 * @param tf  the EditTextField
+	 * @return whether or not a UI update is required after entering the field
+	 */
+	public boolean enterTextField(EditTextField tf);
+	
+	/**
+	 * @param tf  the CheckBoxField
+	 * @return whether or not a UI update is required after entering the field
+	 */
+	public boolean enterCheckBoxField(CheckBoxField cbf);
 	
 	/**
 	 * @param cf  the CancelField

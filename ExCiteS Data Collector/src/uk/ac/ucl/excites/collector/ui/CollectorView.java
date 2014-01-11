@@ -5,7 +5,9 @@ import java.util.HashMap;
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
+import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
 import uk.ac.ucl.excites.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.collector.project.model.fields.LabelField;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
@@ -15,7 +17,9 @@ import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.collector.ui.fieldviews.AudioView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.CameraView;
+import uk.ac.ucl.excites.collector.ui.fieldviews.CheckBoxView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.ChoiceView;
+import uk.ac.ucl.excites.collector.ui.fieldviews.EditTextView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.LabelView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.MultiListView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.WaitingView;
@@ -159,11 +163,25 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		return new MultiListView(activity, mlf);
 	}
 	
+	@Override
+	public FieldUI createTextFieldUI(EditTextField tf) {
+
+		return new EditTextView(activity, tf);
+	}
+	
+	@Override
+	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf) {
+
+		return new CheckBoxView(activity, cbf);
+	}
+	
 	public void cancelCurrentField()
 	{
 		if(fieldUI != null)
 			fieldUI.cancel();
 	}
+	
+
 	
 	/**
 	 * Removes the view corresponding to the given field from the cache, ensuring a new view will be constructed next time the field is entered

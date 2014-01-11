@@ -15,16 +15,18 @@ import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
 import uk.ac.ucl.excites.collector.project.model.fields.ButtonField;
 import uk.ac.ucl.excites.collector.project.model.fields.CancelField;
+import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
 import uk.ac.ucl.excites.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.collector.project.model.fields.Field;
+import uk.ac.ucl.excites.collector.project.model.fields.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.model.fields.LabelField;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.fields.Relationship;
-import uk.ac.ucl.excites.collector.project.model.fields.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
 import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListItem;
 import uk.ac.ucl.excites.storage.model.Schema;
@@ -50,6 +52,8 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_LINKS_TO = "LinksTo";
 	static private final String TAG_BUTTON = "ButtonField";
 	static private final String TAG_LABEL = "LabelField";
+	static private final String TAG_TEXTFIELD = "EditTextField";
+	static private final String TAG_CHECKBOX = "Checkbox";
 	static private final String TAG_MULTILIST = "MultiList";
 	static private final String TAG_LISTITEM = "ListItem";
 	
@@ -76,12 +80,17 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_BACKGROUND_COLOR = "backgroundColor";
 	static private final String ATTRIBUTE_FIELD_SKIP_ON_BACK = "skipOnBack";
 	static private final String ATTRIBUTE_FIELD_VALUE = "value";
+	static private final String ATTRIBUTE_FIELD_DEFAULTVALUE = "defaultValue";
+	static private final String ATTRIBUTE_FIELD_INITVALUE = "initValue";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
 	static private final String ATTRIBUTE_SHOW_FORWARD = "showForward";
 	static private final String ATTRIBUTE_SHOW_CANCEL = "showCancel";
 	static private final String ATTRIBUTE_SHOW_BACK = "showBack";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "currentForm";
 	static private final String ATTRIBUTE_LABEL_TEXT = "text";
+	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
+	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
+	static private final String ATTRIBUTE_TEXT_MULTILINE = "multiLine";
 	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
 	
 	
@@ -287,6 +296,21 @@ public class FormParser extends SubtreeParser
 				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, ATTRIBUTE_LABEL_TEXT, attributes));
 				newField(lbl, attributes);
 			}
+			else if(qName.equals(TAG_TEXTFIELD))
+			{
+				EditTextField txtField = new EditTextField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_TEXTFIELD, attributes, ATTRIBUTE_FIELD_LABEL));
+				txtField.setMinLength(readIntegerAttribute(ATTRIBUTE_TEXT_MINLENGTH, EditTextField.DEFAULT_MIN_LENGTH, attributes));
+				txtField.setMaxLength(readIntegerAttribute(ATTRIBUTE_TEXT_MAXLENGTH, EditTextField.DEFAULT_MAX_LENGTH, attributes));
+				txtField.setMultiline(readBooleanAttribute(ATTRIBUTE_TEXT_MULTILINE, EditTextField.DEFAULT_MULTILINE, attributes));
+				txtField.setInitialValue(readStringAttribute(EditTextField.DEFAULT_VALUE, attributes, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
+				newField(txtField, attributes);
+			}
+			else if(qName.equals(TAG_CHECKBOX))
+			{
+				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_CHECKBOX, attributes, ATTRIBUTE_FIELD_LABEL));
+				chbxField.setValue(readBooleanAttribute(ATTRIBUTE_FIELD_DEFAULTVALUE, CheckBoxField.DEFAULT_VALUE, attributes));
+				newField(chbxField, attributes);
+			}
 			// <MultiList>
 			else if(qName.equals(TAG_MULTILIST))
 			{
@@ -312,8 +336,7 @@ public class FormParser extends SubtreeParser
 					addWarning("Ignored <" + TAG_LISTITEM + "> element occuring outside <" + TAG_MULTILIST + ">.");
 			}
 			// Add future field types here...
-			// TODO TextField, Checkbox, etc.
-			// <?> in <Form>
+			// <?> in <Form>	
 			else
 			{
 				addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within <" + TAG_FORM + ">.");

@@ -16,18 +16,20 @@ import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.collector.geo.OrientationSensor;
+import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
 import uk.ac.ucl.excites.collector.project.model.fields.CancelField;
+import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
+import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
 import uk.ac.ucl.excites.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.collector.project.model.fields.Field;
+import uk.ac.ucl.excites.collector.project.model.fields.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
-import uk.ac.ucl.excites.collector.project.model.fields.Field.Optionalness;
-import uk.ac.ucl.excites.collector.project.model.Form;
-import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.util.DeviceID;
@@ -333,6 +335,18 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	}
 
 	@Override
+	public boolean enterTextField(EditTextField tf)
+	{
+		return true;
+	}
+	
+	@Override
+	public boolean enterCheckBoxField(CheckBoxField cbf) {
+		
+		return true;
+	}
+	
+	@Override
 	public boolean enterEndField(EndField ef)
 	{
 		endForm();
@@ -594,5 +608,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	{
 		return currentField;
 	}
+
+
 
 }
