@@ -120,9 +120,6 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		super.onCreate(savedInstanceState);
 		app = (CollectorApp) getApplication();
 
-		// Initialise the DeviceID to store a valid ID in preferences
-		new DeviceID(this);
-
 		// Check if we can access read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
@@ -197,6 +194,10 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 	protected void onResume()
 	{
 		super.onResume();
+
+		// Check if there is a valid ID in preferences
+		new DeviceID(this);
+
 		if(dao != null)
 		{
 			if(BuildInfo.DEMO_BUILD)

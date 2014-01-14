@@ -6,10 +6,12 @@ import java.util.zip.CRC32;
 import uk.ac.ucl.excites.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.util.Debug;
 import uk.ac.ucl.excites.util.DeviceControl;
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -29,7 +31,7 @@ import android.telephony.TelephonyManager;
  * 
  * @author mstevens, Michalis Vitos
  */
-public class DeviceID extends AsyncTask<Void, Void, Void>
+public class DeviceID extends AsyncTask<Void, Void, Integer>
 {
 
 	// Statics
@@ -38,6 +40,10 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 
 	private static final int WAITING_TIME_PER_STEP = 250; // ms
 	private static final int MAX_STEPS = 40; // Max waiting time: 40*250 = 10 sec
+
+	// AsyncTask Result Codes
+	private static final int RESULT_OK = 0;
+	private static final int RESULT_AIRPLANE_MODE = -1;
 
 	// Preferences
 	public static final String PREFERENCES = "DEVICEID_PREFERENCES";
@@ -67,7 +73,7 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 		printPreferences();
 
 		// Check if the app has a device ID, if not run the AsyncTask
-		if(getDeviceID() == null)
+		if(getRawID() == null)
 		{
 			wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
 			bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -85,20 +91,28 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 	}
 
 	@Override
-	protected Void doInBackground(Void... params)
+	protected Integer doInBackground(Void... params)
 	{
 		// Check if in flight mode, otherwise IMEI and Bluetooth do not work on same devices i.e. Samsung Xcover
 		if(DeviceControl.inAirplaneMode(context))
 		{
 			inAirplaneMode = true;
-			DeviceControl.toggleAirplaneMode(context);
 
-			int counter = 0;
-
-			while(DeviceControl.inAirplaneMode(context) && counter < MAX_STEPS)
+			if(DeviceControl.canToogleAirplaneMode())
 			{
-				counter++;
-				SystemClock.sleep(100); // Wait for the phone to get off AirplaneMode
+				DeviceControl.toggleAirplaneMode(context);
+
+				int counter = 0;
+
+				while(DeviceControl.inAirplaneMode(context) && counter < MAX_STEPS)
+				{
+					counter++;
+					SystemClock.sleep(WAITING_TIME_PER_STEP); // Wait for the phone to get off AirplaneMode
+				}
+			}
+			else
+			{
+				return RESULT_AIRPLANE_MODE;
 			}
 		}
 
@@ -117,23 +131,55 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 				break;
 		}
 
-		return null;
+		return RESULT_OK;
 	}
 
 	@Override
-	protected void onPostExecute(Void result)
+	protected void onPostExecute(Integer result)
 	{
-		// Compute and save the Device ID
-		computeDeviceID();
+		progress.dismiss();
 
-		// Get the phone back in AirplaneMode
-		if(inAirplaneMode)
-			DeviceControl.toggleAirplaneMode(context);
+		switch(result)
+		{
+			case RESULT_OK:
+				// Compute and save the Device ID
+				computeDeviceID();
+	
+				// Get the phone back in AirplaneMode
+				if(inAirplaneMode)
+					DeviceControl.toggleAirplaneMode(context);
+
+				break;
+	
+			case RESULT_AIRPLANE_MODE:
+				showAirplaneDialog(context);
+				break;
+		}
 
 		// Debug
 		printPreferences();
+	}
 
-		progress.dismiss();
+	/**
+	 * @param context
+	 */
+	private void showAirplaneDialog(final Context context)
+	{
+		AlertDialog.Builder builder = new AlertDialog.Builder(context); // TODO multilang
+		builder.setMessage("In order for the Sapelli to be initialised for first use, please take your device out of Airplane Mode.").setCancelable(false)
+				.setPositiveButton("OK", new DialogInterface.OnClickListener()
+		{
+			public void onClick(DialogInterface dialog, int id)
+			{
+				// Close the app by going to HOME
+				Intent intent = new Intent(Intent.ACTION_MAIN);
+				intent.addCategory(Intent.CATEGORY_HOME);
+				intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+				context.startActivity(intent);
+			}
+		});
+		AlertDialog alert = builder.create();
+		alert.show();
 	}
 
 	/**
@@ -397,7 +443,7 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 	{
 		SharedPreferences.Editor editor = preferences.edit();
 		final String serial = Build.SERIAL;
-		if(serial.equalsIgnoreCase("unknown"))
+		if("unknown".equalsIgnoreCase(serial))
 			editor.putString(PREF_HARWARE_SERIAL, null);
 		else
 			editor.putString(PREF_HARWARE_SERIAL, serial);
@@ -453,7 +499,7 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 	 * 
 	 * @return
 	 */
-	private String getDeviceID()
+	public String getRawID()
 	{
 		return preferences.getString(PREF_DEVICE_ID, null);
 	}
@@ -479,7 +525,7 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 	 */
 	public long getLongHash()
 	{
-		String info = getDeviceID();
+		String info = getRawID();
 		long hash = PRIME;
 		for(char c : info.toCharArray())
 			hash = 31 * hash + c;
@@ -495,7 +541,7 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 	public long getCRC32Hash()
 	{
 		CRC32 crc32 = new CRC32();
-		crc32.update(getDeviceID().getBytes());
+		crc32.update(getRawID().getBytes());
 		return crc32.getValue();
 	}
 
@@ -507,7 +553,7 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 	 */
 	public BigInteger getMD5Hash()
 	{
-		return Hashing.getMD5Hash(getDeviceID().getBytes());
+		return Hashing.getMD5Hash(getRawID().getBytes());
 	}
 
 	/**
@@ -521,7 +567,7 @@ public class DeviceID extends AsyncTask<Void, Void, Void>
 		Debug.d("retrieveBluetoothMACAddress(): " + retrieveBluetoothMACAddress());
 		Debug.d("retrieveAndroidID(): " + retrieveAndroidID());
 		Debug.d("retrieveHardwareSerialNumber(): " + retrieveHardwareSerialNumber());
-		Debug.d("getDeviceID(): " + getDeviceID());
+		Debug.d("getDeviceID(): " + getRawID());
 		Debug.d("------------------------------------");
 	}
 }
