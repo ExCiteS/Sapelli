@@ -69,6 +69,11 @@ public final class DeviceControl
 		}
 	}
 	
+	public static boolean canToogleAirplaneMode()
+	{
+		return (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) ? true : false;
+	}
+
 	public static void vibrate(Context context, int durationMS)
 	{
 		Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
