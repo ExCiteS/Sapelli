@@ -44,6 +44,7 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
+import android.content.res.AssetManager;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -77,11 +78,13 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 
 	// STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectManagerActivity";
-
+	
 	static private final String XML_FILE_EXTENSION = "xml";
 	static private final String DB4O_DUMP_NAME = "DatabaseDump";
 	static private final String DB4O_DUMP_EXTENSION = "db4o";
 
+	static private final String DEMO_PROJECT = "demo.excites";
+	
 	// SHORTCUT ACTIONS
 	private static final String DEFAULT_INSTALL_SHORTCUT_ACTION = "com.android.launcher.action.INSTALL_SHORTCUT";
 	private static final String CUSTOM_INSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.INSTALL_SHORTCUT";
@@ -211,9 +214,9 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 			List<Project> projects = dao.retrieveProjects();
 			Project p = null;
 			if(projects.isEmpty())
-			{ // Use /mnt/sdcard/ExCiteS/ as the basePath:
+			{	// Use /mnt/sdcard/ExCiteS/ as the basePath:
 				ExCiteSFileLoader loader = new ExCiteSFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
-				p = loader.load(getResources().openRawResource(getResources().getIdentifier("demo", "raw", getApplicationContext().getPackageName())));
+				p = loader.load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
 				storeProject(p);
 			}
 			else

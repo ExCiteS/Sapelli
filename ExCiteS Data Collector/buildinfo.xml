@@ -19,7 +19,7 @@
     	<property name="appVersionCode" value="${mani.manifest.android:versionCode}"/>
     	<property name="package" value="${mani.manifest.package}"/>
 		<property name="gen-dir" location="${project-dir}${file.separator}gen"/>
-		<property name="raw-res-dir" location="${project-dir}${file.separator}res${file.separator}raw"/>
+		<property name="assets-dir" location="${project-dir}${file.separator}assets"/>
 		<loadresource property="package-path">
 		    <propertyresource name="package"/>
 		    <filterchain>
@@ -153,7 +153,7 @@
 			<isset property="demo"/>
 			<then>
 			    <!-- Copy project file into resources -->
-			    <copy file="${demo}" tofile="${raw-res-dir}/${demo-project-filename}" overwrite="true"/>
+			    <copy file="${demo}" tofile="${assets-dir}/${demo-project-filename}" overwrite="true"/>
 			    <!-- Set demo-build flag -->
 			    <property name="demo-build" value="true"/>
 			</then>
@@ -222,7 +222,7 @@ public class ${classname}
 			<isset property="demo"/>
 			<then>
 			    <!-- Delete project file into resources -->
-			    <delete file="${raw-res-dir}/${demo-project-filename}" failonerror="false"/>
+			    <delete file="${assets-dir}/${demo-project-filename}" failonerror="false"/>
 			</then>
 		</ac:if>
 	</target>
