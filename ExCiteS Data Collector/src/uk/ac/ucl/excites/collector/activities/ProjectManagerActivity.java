@@ -25,6 +25,7 @@ import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
+import uk.ac.ucl.excites.collector.util.DeviceID;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sender.DataSenderPreferences;
@@ -119,8 +120,8 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		app = (CollectorApp) getApplication();		
-		
+		app = (CollectorApp) getApplication();
+
 		// Check if we can access read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
@@ -195,6 +196,10 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 	protected void onResume()
 	{
 		super.onResume();
+
+		// Check if there is a valid ID in preferences
+		new DeviceID(this);
+
 		if(dao != null)
 		{
 			if(BuildInfo.DEMO_BUILD)
