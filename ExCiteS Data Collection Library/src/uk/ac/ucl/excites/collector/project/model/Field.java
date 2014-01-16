@@ -232,11 +232,24 @@ public abstract class Field
 	public abstract List<File> getFiles(Project project);
 	
 	/**
+	 * Called to signals that the user is entering the field. This allows any required initialisation behaviour to be carried out.
+	 * The returned boolean indicates whether or not a UI update is required after entering the field.
+	 * 
+	 *  This method uses double-dispatch: the actual Field-type-specific behaviour will be defined in the class implementing the Controller interface.
+	 * 
 	 * @param controller
-	 * @return whether or not a UI update is required after entering the field (this will be decided by the class implementating the Controller interface)
+	 * @return whether or not a UI update is required after entering the field)
 	 */
 	public abstract boolean enter(Controller controller);
 	
+	/**
+	 * Returns a FieldUI object to represent this Field.
+	 * 
+	 * This method uses double-dispatch: the actual FieldUI object will be instantiated by the class implementing the CollectorUI interface.
+	 * 
+	 * @param collectorUI
+	 * @return
+	 */
 	public abstract FieldUI createUI(CollectorUI collectorUI);
 	
 }
