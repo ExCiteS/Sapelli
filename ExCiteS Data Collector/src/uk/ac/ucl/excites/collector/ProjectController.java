@@ -67,7 +67,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	private DataAccess dao;
 	private CollectorActivity activity;
 
-	private long deviceID; // 32 bit _unsigned_ CRC32 hashcode
+	private long deviceIDHash; // 32 bit _unsigned_ CRC32 hashcode
 
 	private Form currentForm;
 	private Field currentField;
@@ -90,11 +90,20 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		this.dao = dao;
 		this.activity = activity;
 
+		// Get Device ID (as a CRC32 hash):
+		try
+		{
+			deviceIDHash = DeviceID.GetInstance(activity).getIDAsCRC32Hash();
+		}
+		catch(IllegalStateException ise)
+		{
+			activity.showErrorDialog("DeviceID has not be initialised!", true);
+		}
+		
 		fieldHistory = new Stack<Field>();
 		tempDisabledFields = new HashSet<Field>();
 		currentMediaAttachments = new ArrayList<File>();
-		deviceID = (new DeviceID(activity)).getCRC32Hash();
-
+		
 		orientationSensor = new OrientationSensor(activity);
 	}
 
@@ -150,7 +159,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		currentField = null;
 
 		// Create new currentRecord:
-		currentRecord = currentForm.newEntry(deviceID);
+		currentRecord = currentForm.newEntry(deviceIDHash);
 		
 		// Location...
 		List<LocationField> lfStartWithForm = currentForm.getLocationFields(true);
@@ -608,7 +617,5 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	{
 		return currentField;
 	}
-
-
 
 }

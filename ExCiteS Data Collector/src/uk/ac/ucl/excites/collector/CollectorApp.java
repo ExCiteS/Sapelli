@@ -55,7 +55,7 @@ public class CollectorApp extends Application
 	public void onCreate()
 	{
 		super.onCreate();
-		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.printInfo(true));
+		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.getAllInfo());
 	
 		// Db clients:
 		daoClients = new HashSet<DataAccessClient>();
