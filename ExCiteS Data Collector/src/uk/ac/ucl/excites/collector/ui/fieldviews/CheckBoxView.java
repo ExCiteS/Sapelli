@@ -10,10 +10,9 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.widget.CheckBox;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
 /**
- * @author Julia
+ * @author Julia, mstevens
  * 
  */
 @SuppressLint("ViewConstructor")
@@ -30,40 +29,27 @@ public class CheckBoxView extends LinearLayout implements FieldUI
 
 		setOrientation(LinearLayout.HORIZONTAL);
 		chbx = new CheckBox(context);
+		chbx.setText(field.getLabel());
 		chbx.setChecked(field.getValue());
 		addView(chbx);
-
-		TextView label = new TextView(context);
-		label.setText(field.getLabel());
-		addView(label);
-
-	}
-
-	// TODO: not called yet
-	public void setValue()
-	{
-		field.setValue(chbx.isChecked());
 	}
 
 	@Override
 	public Field getField()
 	{
-		// TODO Auto-generated method stub
 		return field;
 	}
 
 	@Override
 	public void update()
 	{
-		// TODO Auto-generated method stub
-
+		// TODO
 	}
 
 	@Override
 	public void cancel()
 	{
-		// TODO Auto-generated method stub
-
+		// does nothing
 	}
 
 }
