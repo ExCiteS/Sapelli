@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import uk.ac.ucl.excites.collector.BuildInfo;
 import uk.ac.ucl.excites.collector.CollectorApp;
 import uk.ac.ucl.excites.collector.ProjectController;
+import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.model.Project;
@@ -164,7 +165,7 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		
 		// Show demo disclaimer if needed:
 		if(BuildInfo.DEMO_BUILD)
-			showInfoDialog("Disclaimer", "This is ExCiteS Data Collector " + BuildInfo.printVersion() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
+			showInfoDialog("Disclaimer", "This is " + getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
 	}
 
 	/**
