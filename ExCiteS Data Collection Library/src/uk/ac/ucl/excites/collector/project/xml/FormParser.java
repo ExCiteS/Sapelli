@@ -95,7 +95,6 @@ public class FormParser extends SubtreeParser
 	
 	
 	// DYNAMICS-------------------------------------------------------
-	private ProjectParser projectParser;
 	private Project project;
 	private Form currentForm;
 	private String formStartFieldId;
@@ -109,7 +108,6 @@ public class FormParser extends SubtreeParser
 	{
 		super(projectParser, TAG_FORM);
 		reset(); //!!!
-		this.projectParser = projectParser;
 		this.project = projectParser.getProject();
 	}
 
@@ -133,7 +131,7 @@ public class FormParser extends SubtreeParser
 				throw new SAXException("Forms cannot be nested!");
 			
 			String id;
-			if(projectParser.getFormat() == ProjectParser.Format.v1_x)
+			if(((ProjectParser) owner).getFormat() == ProjectParser.Format.v1_x)
 			{	//backwards compatibility
 				id = readRequiredStringAttribute(TAG_FORM, ATTRIBUTE_FORM_NAME, attributes);
 				if(project.getForms().isEmpty()) //only for 1st, and assumed only, currentForm
@@ -275,14 +273,14 @@ public class FormParser extends SubtreeParser
 			{
 				Relationship belongsTo = new Relationship(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), Relationship.Type.MANY_TO_ONE);
 				newField(belongsTo, attributes);
-				projectParser.addRelationship(belongsTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes));
+				((ProjectParser) owner).addRelationship(belongsTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes));
 			}
 			// <LinksTo>
 			else if(qName.equals(TAG_LINKS_TO))
 			{
 				Relationship linksTo = new Relationship(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), Relationship.Type.LINK);
 				newField(linksTo, attributes);
-				projectParser.addRelationship(linksTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes));
+				((ProjectParser) owner).addRelationship(linksTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes));
 			}
 			// <ButtonField>
 			else if(qName.equals(TAG_BUTTON))

@@ -10,7 +10,7 @@ package uk.ac.ucl.excites.util.xml;
 public abstract class SubtreeParser extends Handler
 {
 
-	private final Handler owner;
+	protected final Handler owner;
 	private final String rootElementQName;
 	
 	public SubtreeParser(Handler owner, String rootElementQName)
