@@ -8,7 +8,7 @@
         android:minSdkVersion="9"
         android:targetSdkVersion="9" />
     
-     <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
+    <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -40,15 +40,15 @@
     <application
         android:name="uk.ac.ucl.excites.collector.CollectorApp"
         android:allowBackup="true"
-        android:icon="@drawable/excites_icon"
+        android:icon="@drawable/ic_excites_gray"
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
         <activity
             android:name="uk.ac.ucl.excites.collector.activities.ProjectManagerActivity"
-            android:icon="@drawable/excites_icon"
+            android:icon="@drawable/ic_excites_gray"
             android:label="@string/app_name"
             android:launchMode="singleTask"
-            android:theme="@android:style/Theme.NoTitleBar" >
+            android:theme="@android:style/Theme.Light" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -57,7 +57,7 @@
         <activity
             android:name="uk.ac.ucl.excites.collector.activities.CollectorActivity"
             android:launchMode="singleTask"
-            android:theme="@android:style/Theme.NoTitleBar" >
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
@@ -69,7 +69,7 @@
         </activity>
         <activity
             android:name="uk.ac.ucl.excites.sender.DataSenderPreferences"
-            android:icon="@drawable/sender" >
+            android:icon="@drawable/ic_sender" >
         </activity>
         <activity android:name="uk.ac.ucl.excites.sender.dropbox.DropboxLogin" >
         </activity>
@@ -102,7 +102,7 @@
 
         <service
             android:name="uk.ac.ucl.excites.sender.DataSenderService"
-            android:icon="@drawable/excites_icon"
+            android:icon="@drawable/ic_excites_gray"
             android:label="@string/service_name" >
         </service>
         <service android:name="group.pals.android.lib.ui.filechooser.services.LocalFileProvider" />

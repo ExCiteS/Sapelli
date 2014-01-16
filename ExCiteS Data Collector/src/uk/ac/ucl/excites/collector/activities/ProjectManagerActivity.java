@@ -115,7 +115,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 	private MenuItem createShortcutItem;
 	private MenuItem removeShortcutItem;
 	private Dialog encryptionDialog;
-	private TextView version;
+	private TextView infoLbl;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -130,7 +130,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		}
 		catch(IllegalStateException ise)
 		{	// Inform the user and close the application
-			showErrorDialog("ExCiteS needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
+			showErrorDialog(getString(R.string.app_name) + " needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
 			return;
 		}
 
@@ -141,16 +141,16 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		if(!BuildInfo.DEMO_BUILD)
 		{
 			// Set-up UI...
-			setTitle("ExCiteS Project Picker");
+			setTitle(getString(R.string.app_name) + ' ' + getString(R.string.project_manager));
 			// Hide soft keyboard on create
 			getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-			setContentView(R.layout.activity_projectpicker);
+			setContentView(R.layout.activity_projectmanager);
 			// Get View Elements
 			enterURL = (EditText) findViewById(R.id.EnterURL);
 			projectList = (ListView) findViewById(R.id.ProjectsList);
 			runBtn = (Button) findViewById(R.id.RunProjectButton);
 			removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
-			version = (TextView) findViewById(R.id.version);
+			infoLbl = (TextView) findViewById(R.id.info);
 
 			// get scrolling right
 			findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
@@ -215,8 +215,9 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 	@Override
 	public void initialisationSuccess(DeviceID deviceID)
 	{
-		version.setText(getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".\n" +
+		infoLbl.setText(getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".\n" +
 						BuildInfo.getBuildInfo() + ".\n\n" +
+						getString(R.string.by_ucl_excites) + "\n\n" +
 						"Device ID (CRC32): " + deviceID.getIDAsCRC32Hash() + '.');
 	}
 
@@ -679,7 +680,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		if(FileHelpers.isReadableFile(shortcutImageFile))
 			iconResource = Drawable.createFromPath(shortcutImageFile.getAbsolutePath());
 		else
-			iconResource = getResources().getDrawable(R.drawable.excites_icon);
+			iconResource = getResources().getDrawable(R.drawable.ic_excites_gray);
 
 		// Get the standard size (both width and height) of an application icon from the system
 		final int MAX_ICON_SIZE = (int) getResources().getDimension(android.R.dimen.app_icon_size);
