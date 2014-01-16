@@ -13,15 +13,18 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
- * @author Julia
+ * @author Julia, mstevens
  * 
  */
 @SuppressLint("ViewConstructor")
 public class EditTextView extends LinearLayout implements FieldUI
 {
+	
+	static private final LayoutParams FULL_WIDTH = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
 
 	private EditTextField field;
 	private EditText editText;
+	private TextView errorMsg;
 
 	public EditTextView(final Context context, final EditTextField field)
 	{
@@ -29,15 +32,16 @@ public class EditTextView extends LinearLayout implements FieldUI
 		this.field = field;
 
 		setOrientation(LinearLayout.VERTICAL);
-		LayoutParams fullWidth = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
 
+		// Label:
 		TextView label = new TextView(context);
 		label.setText(field.getLabel());
-		label.setLayoutParams(fullWidth);
+		label.setLayoutParams(FULL_WIDTH);
 		addView(label);
 
+		// Textbox:
 		editText = new EditText(context);
-		editText.setLayoutParams(fullWidth);
+		editText.setLayoutParams(FULL_WIDTH);
 		editText.setText(field.getInitialValue());
 		if(field.isMultiline() == true)
 			editText.setSingleLine(false);
@@ -45,43 +49,17 @@ public class EditTextView extends LinearLayout implements FieldUI
 			editText.setSingleLine(true);
 		addView(editText);
 
-		final TextView errorMsg = new TextView(context);
-		errorMsg.setLayoutParams(fullWidth);
+		// Error msg:
+		errorMsg = new TextView(context);
+		errorMsg.setLayoutParams(FULL_WIDTH);
 		errorMsg.setTextColor(Color.RED);
 		addView(errorMsg);
 
-		editText.addTextChangedListener(new TextValidator(editText)
-		{
-			@Override
-			public void validate(TextView textView, String text)
-			{
-				if(text.length() < field.getMinLength())
-				{
-					setText(false);
-					errorMsg.setText("Minimum length of " + field.getMinLength() + " characters not reached.");
-					// TODO disable forward
-				}
-				else if(text.length() > field.getMaxLength())
-				{
-					setText(false);
-					errorMsg.setText("Maximum length of " + field.getMaxLength() + " characters exceeded.");
-
-					// TODO disable forward
-				}
-				else
-				{
-					errorMsg.setText("");
-					setText(true);
-					// TODO enable forward
-				}
-
-			}
-		});
-
+		editText.addTextChangedListener(new TextValidator(editText));
 	}
 
 	// for now called from TextChangedListener (later on forward??)
-	// TODO: Check whet
+	// TODO: Check width
 	public void setText(boolean valid)
 	{
 		if(valid)
@@ -121,7 +99,7 @@ public class EditTextView extends LinearLayout implements FieldUI
 		// does nothing
 	}
 
-	public abstract class TextValidator implements TextWatcher
+	public class TextValidator implements TextWatcher
 	{
 		private TextView textView;
 
@@ -129,14 +107,32 @@ public class EditTextView extends LinearLayout implements FieldUI
 		{
 			this.textView = textView;
 		}
-
-		public abstract void validate(TextView textView, String text);
-
+		
 		@Override
 		final public void afterTextChanged(Editable s)
 		{
 			String text = textView.getText().toString();
-			validate(textView, text);
+			// Too short:
+			if(text.length() < field.getMinLength())
+			{
+				setText(false);
+				errorMsg.setText("Minimum length of " + field.getMinLength() + " characters not reached."); //TODO multilang
+				// TODO disable forward
+			}
+			// To long:
+			else if(text.length() > field.getMaxLength())
+			{
+				setText(false);
+				errorMsg.setText("Maximum length of " + field.getMaxLength() + " characters exceeded."); //TODO multilang
+				// TODO disable forward
+			}
+			// OK:
+			else
+			{
+				errorMsg.setText("");
+				setText(true);
+				// TODO enable forward
+			}
 		}
 
 		@Override
