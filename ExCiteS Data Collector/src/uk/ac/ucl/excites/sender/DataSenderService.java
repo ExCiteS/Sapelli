@@ -438,7 +438,7 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 		PendingIntent pendIntent = PendingIntent.getActivity(mContext, 0, mIntent, 0);
 
 		// This constructor is deprecated. Use Notification.Builder instead
-		Notification mNotification = new Notification(R.drawable.sender, getString(R.string.title_activity_main), System.currentTimeMillis());
+		Notification mNotification = new Notification(R.drawable.ic_sender, getString(R.string.title_activity_main), System.currentTimeMillis());
 
 		// This method is deprecated. Use Notification.Builder instead.
 		mNotification.setLatestEventInfo(this, getString(R.string.title_activity_main), getString(R.string.notification), pendIntent); //TODO remove use of deprecated method 
