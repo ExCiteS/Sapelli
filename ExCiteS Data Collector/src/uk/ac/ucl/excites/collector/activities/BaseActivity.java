@@ -33,7 +33,7 @@ public abstract class BaseActivity extends Activity
 	 * 
 	 * @param message
 	 */
-	protected void showErrorDialog(String message, final boolean exitOnOK)
+	public void showErrorDialog(String message, final boolean exitOnOK)
 	{
 		new AlertDialog.Builder(this).setTitle("Error").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
 		{
@@ -50,7 +50,7 @@ public abstract class BaseActivity extends Activity
 	 * 
 	 * @param message
 	 */
-	protected void showWarningDialog(String message)
+	public void showWarningDialog(String message)
 	{
 		new AlertDialog.Builder(this).setTitle("Warning").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
 		{
@@ -63,7 +63,7 @@ public abstract class BaseActivity extends Activity
 	 * 
 	 * @param message
 	 */
-	protected void showInfoDialog(String message)
+	public void showInfoDialog(String message)
 	{
 		showInfoDialog("Info", message);
 	}
@@ -74,7 +74,7 @@ public abstract class BaseActivity extends Activity
 	 * @param title
 	 * @param message
 	 */
-	protected void showInfoDialog(String title, String message)
+	public void showInfoDialog(String title, String message)
 	{
 		new AlertDialog.Builder(this).setTitle(title).setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
 		{
