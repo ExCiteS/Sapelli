@@ -69,7 +69,7 @@
         </activity>
         <activity
             android:name="uk.ac.ucl.excites.sender.DataSenderPreferences"
-            android:icon="@drawable/sender" >
+            android:icon="@drawable/ic_sender" >
         </activity>
         <activity android:name="uk.ac.ucl.excites.sender.dropbox.DropboxLogin" >
         </activity>

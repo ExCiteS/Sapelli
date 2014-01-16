@@ -184,27 +184,32 @@ package ${package};
 public class ${classname}
 {
 
-	public static final String USERNAME = "${user.name}";
-	public static final String TIMESTAMP = "${TIMESTAMP}";
+	// Version info:
 	public static final String VERSION_NAME = "${appVersionName}"; // as in manifest, also available through: getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
 	public static final int VERSION_CODE = ${appVersionCode}; // as in manifest, also available through: getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+	public static final boolean DEMO_BUILD = ${demo-build};
+	
+	// Build info:
+	public static final String USERNAME = "${user.name}";
+	public static final String TIMESTAMP = "${TIMESTAMP}";
 	public static final String BRANCH = "${repository-branch}";
 	public static final String LAST_COMMIT_HASH = "${repository-version}";
 	public static final String LAST_COMMIT_TAG = "${repository-tag}";
 	public static final boolean CHANGES_SINCE_LAST_COMMIT = ${repository-changes};
-	public static final boolean DEMO_BUILD = ${demo-build};
 	
-	public static String printVersion()
+	public static String getVersionInfo()
 	{
-		return "v" + VERSION_NAME + " (Version-code: " + VERSION_CODE + "; Demo-build: " + DEMO_BUILD + ")";
+		return "v" + VERSION_NAME + " (version-code: " + VERSION_CODE + (DEMO_BUILD ? "; demo-build" : "") + ")";
 	}
 	
-	public static String printInfo(boolean breaklines)
+	public static String getBuildInfo()
 	{
-		return	printVersion() + (breaklines ? '\n' : ';') +
-				"Built by " + USERNAME  + (breaklines ? '\n' : ';') +
-				"On " + TIMESTAMP + (breaklines ? '\n' : ';') +
-				"Using git branch " + BRANCH + ", revision " + LAST_COMMIT_HASH + " with" + (CHANGES_SINCE_LAST_COMMIT ? "" : "out") + " changes";
+		return	"Built by " + USERNAME  + " on " + TIMESTAMP + " using " + BRANCH + " branch, revision " + LAST_COMMIT_HASH + " with" + (CHANGES_SINCE_LAST_COMMIT ? "" : "out") + " changes";
+	}
+	
+	public static String getAllInfo()
+	{
+		return getVersionInfo() + '\n' + getBuildInfo();
 	}
 			
 }</echo>

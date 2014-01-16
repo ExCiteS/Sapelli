@@ -74,7 +74,7 @@ import android.widget.Toast;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnMenuItemClickListener, DataAccessClient
+public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnMenuItemClickListener, DataAccessClient, DeviceID.InitialisationCallback
 {
 
 	// STATICS--------------------------------------------------------
@@ -151,9 +151,6 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 			removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
 			version = (TextView) findViewById(R.id.version);
 
-			// Write down the version
-			version.setText(BuildInfo.printInfo(true));
-
 			// get scrolling right
 			findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
 			{
@@ -196,20 +193,37 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 	protected void onResume()
 	{
 		super.onResume();
+		
+		// Initialise DeviceID:
+		DeviceID.Initialise(this, this); // will post a callback upon completion (success/failure)
 
-		// Check if there is a valid ID in preferences
-		new DeviceID(this);
-
-		if(dao != null)
+		// Check database connection:
+		if(dao == null)
 		{
-			if(BuildInfo.DEMO_BUILD)
-				demoMode();
-			else
-			{
-				// Update project list:
-				populateProjectList();
-			}
+			showErrorDialog("Could not establish database connection", true);
+			return;
 		}
+		
+		// And finally...
+		if(BuildInfo.DEMO_BUILD)
+			demoMode();
+		else
+			populateProjectList(); 	// Update project list
+	}
+	
+	@Override
+	public void initialisationSuccess(DeviceID deviceID)
+	{
+		version.setText(getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".\n" +
+						BuildInfo.getBuildInfo() + ".\n\n" +
+						"Device ID (CRC32): " + deviceID.getIDAsCRC32Hash() + '.');
+	}
+
+	@Override
+	public void initialisationFailure(DeviceID deviceID)
+	{
+		deviceID.printInfo();
+		showErrorDialog("Sapelli was unable to generate a unique identifier for your device.", true);
 	}
 
 	private void demoMode()
