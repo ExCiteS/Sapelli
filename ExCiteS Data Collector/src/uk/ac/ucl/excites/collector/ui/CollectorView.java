@@ -5,6 +5,7 @@ import java.util.HashMap;
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
+import uk.ac.ucl.excites.collector.project.model.fields.ButtonField;
 import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
@@ -16,6 +17,7 @@ import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.collector.ui.fieldviews.AudioView;
+import uk.ac.ucl.excites.collector.ui.fieldviews.ButtonView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.CameraView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.CheckBoxView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.ChoiceView;
@@ -50,7 +52,7 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	private ProjectController controller;
 	
 	// UI elements:
-	private ButtonView buttonView;
+	private ControlsView buttonView;
 	private FieldUI fieldUI;
 	private HashMap<Field, FieldUI> viewCache;
 	
@@ -66,7 +68,7 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		this.setBackgroundColor(Color.BLACK);
 		
 		// Set-up buttonView:
-		buttonView = new ButtonView(activity, this);
+		buttonView = new ControlsView(activity, this);
 		buttonView.setId(BUTTONS_VIEW_ID);
 		this.addView(buttonView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 	}
@@ -156,6 +158,12 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	{
 		return new LabelView(activity, lf);
 	}
+	
+	@Override
+	public FieldUI createButtonUI(ButtonField bf)
+	{
+		return new ButtonView(activity, bf);
+	}
 
 	@Override
 	public FieldUI createMultiListUI(MultiListField mlf)
@@ -180,8 +188,6 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		if(fieldUI != null)
 			fieldUI.cancel();
 	}
-	
-
 	
 	/**
 	 * Removes the view corresponding to the given field from the cache, ensuring a new view will be constructed next time the field is entered

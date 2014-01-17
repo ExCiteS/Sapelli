@@ -30,7 +30,8 @@ import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
-import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
+import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
+import uk.ac.ucl.excites.collector.project.ui.ControlsState;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.util.DeviceID;
 import uk.ac.ucl.excites.collector.util.LocationUtils;
@@ -100,10 +101,12 @@ public class ProjectController implements Controller, LocationListener, Orientat
 			activity.showErrorDialog("DeviceID has not be initialised!", true);
 		}
 		
+		// Collections:
 		fieldHistory = new Stack<Field>();
 		tempDisabledFields = new HashSet<Field>();
 		currentMediaAttachments = new ArrayList<File>();
 		
+		// Sensors:
 		orientationSensor = new OrientationSensor(activity);
 	}
 
@@ -124,7 +127,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 				Log.e(TAG, "Logger construction error", e);
 			}
 		}
-		startForm(0); // For now projects have only one form
+		startForm(project.getStartForm()); // start with startForm (which is the first parsed form by default)
 	}
 
 	public void startForm(String formName)
@@ -332,6 +335,24 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	}
 
 	@Override
+	public boolean enterTextField(EditTextField tf)
+	{
+		return true;
+	}
+	
+	@Override
+	public boolean enterCheckBoxField(CheckBoxField cbf)
+	{	
+		return true;
+	}
+	
+	@Override
+	public boolean enterMultiListField(MultiListField mlf)
+	{
+		return true;
+	}
+
+	@Override
 	public boolean enterCancelField(CancelField cf)
 	{
 		// Logging:
@@ -342,18 +363,6 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		cancel(true); // cancel & restart
 		return false;
 	}
-
-	@Override
-	public boolean enterTextField(EditTextField tf)
-	{
-		return true;
-	}
-	
-	@Override
-	public boolean enterCheckBoxField(CheckBoxField cbf) {
-		
-		return true;
-	}
 	
 	@Override
 	public boolean enterEndField(EndField ef)
@@ -363,9 +372,9 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	}
 
 	@Override
-	public ButtonsState getButtonsState()
+	public ControlsState getButtonsState()
 	{
-		ButtonsState state = new ButtonsState(
+		ControlsState state = new ControlsState(
 				currentForm.isShowBack()	&& currentField.isShowBack()	&& !fieldHistory.empty(),
 				currentForm.isShowCancel()	&& currentField.isShowCancel()	&& !fieldHistory.empty(),
 				currentForm.isShowForward()	&& currentField.isShowForward()	&& currentField.getOptional() == Optionalness.ALWAYS);

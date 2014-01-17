@@ -38,10 +38,10 @@ public class ConfigurationParser extends SubtreeParser
 	private Project project;
 	private Settings transmissionSettings;
 
-	public ConfigurationParser(ProjectParser projectParser, Project project)
+	public ConfigurationParser(ProjectParser projectParser)
 	{
 		super(projectParser, TAG_CONFIGURATION);
-		this.project = project;
+		this.project = projectParser.getProject();
 	}
 
 	@Override
@@ -140,7 +140,7 @@ public class ConfigurationParser extends SubtreeParser
 	@Override
 	protected void reset()
 	{
-		// does nothing
+		// does nothing (this SubTreeParser is single use anyway)
 	}
 
 	@Override

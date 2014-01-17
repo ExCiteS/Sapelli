@@ -680,7 +680,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		if(FileHelpers.isReadableFile(shortcutImageFile))
 			iconResource = Drawable.createFromPath(shortcutImageFile.getAbsolutePath());
 		else
-			iconResource = getResources().getDrawable(R.drawable.ic_excites_gray);
+			iconResource = getResources().getDrawable(R.drawable.ic_excites_grey);
 
 		// Get the standard size (both width and height) of an application icon from the system
 		final int MAX_ICON_SIZE = (int) getResources().getDimension(android.R.dimen.app_icon_size);

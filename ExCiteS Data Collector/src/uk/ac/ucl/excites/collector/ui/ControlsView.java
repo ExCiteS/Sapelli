@@ -6,7 +6,7 @@ import java.io.File;
 import uk.ac.ucl.excites.collector.*;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
+import uk.ac.ucl.excites.collector.project.ui.ControlsState;
 import uk.ac.ucl.excites.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.collector.ui.drawables.HorizontalArrow;
@@ -29,11 +29,11 @@ import android.widget.AdapterView;
  * 
  */
 @SuppressLint("ViewConstructor")
-public class ButtonView extends PickerView implements AdapterView.OnItemClickListener
+public class ControlsView extends PickerView implements AdapterView.OnItemClickListener
 {
 	
 	// Statics-------------------------------------------------------
-	static private final String TAG = "ButtonView";
+	static private final String TAG = "ControlsView";
 	
 	static public final float BUTTON_HEIGHT_DIP = 60.0f;
 	
@@ -48,10 +48,10 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	// Dynamics------------------------------------------------------
 	private CollectorView collectorView;
 	
-	private boolean buttonsEnabled;
+	private boolean enabled;
 	private ProjectController controller;
 	private Form currentForm;
-	private ButtonsState currentState;
+	private ControlsState currentState;
 	
 	private int backColor;
 	
@@ -64,12 +64,12 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	/**
 	 * @param context
 	 */	
-	public ButtonView(Context context, CollectorView collectorView)
+	public ControlsView(Context context, CollectorView collectorView)
 	{
 		super(context);
 		this.collectorView = collectorView;
 		
-		buttonsEnabled = true;
+		enabled = true;
 		setOnItemClickListener(this);
 		
 		// Adapter (setAdapter() is called from update())
@@ -82,12 +82,12 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	
 	public void disable()
 	{
-		buttonsEnabled = false;
+		enabled = false;
 	}
 	
 	public void enable()
 	{
-		buttonsEnabled = true;
+		enabled = true;
 	}
 
 	public void update(ProjectController controller)
@@ -123,7 +123,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 		}
 		
 		// Update state if needed...
-		ButtonsState newState = controller.getButtonsState();
+		ControlsState newState = controller.getButtonsState();
 		if(newState == null)
 		{
 			Log.w(TAG, "Received invalid (null) ButtonState.");
@@ -207,7 +207,7 @@ public class ButtonView extends PickerView implements AdapterView.OnItemClickLis
 	public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 	{
 		// Are we allowed to trigger an action?
-		if(!buttonsEnabled || position < 0 || position >= positionToButton.length)
+		if(!enabled || position < 0 || position >= positionToButton.length)
 			return; // ignore the click if buttons are disabled or invalid button was somehow pressed
 		
 		// Action triggered by click:

@@ -9,6 +9,7 @@ import uk.ac.ucl.excites.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
+import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
 
 public interface Controller
 {
@@ -56,6 +57,12 @@ public interface Controller
 	public boolean enterCheckBoxField(CheckBoxField cbf);
 	
 	/**
+	 * @param mlf  the MultiListField
+	 * @return whether or not a UI update is required after entering the field
+	 */
+	public boolean enterMultiListField(MultiListField mlf);
+	
+	/**
 	 * @param cf  the CancelField
 	 * @return whether or not a UI update is required after entering the field
 	 */
@@ -70,6 +77,6 @@ public interface Controller
 	/**
 	 * @return the current ButtonState
 	 */
-	public ButtonsState getButtonsState();
+	public ControlsState getButtonsState();
 	
 }

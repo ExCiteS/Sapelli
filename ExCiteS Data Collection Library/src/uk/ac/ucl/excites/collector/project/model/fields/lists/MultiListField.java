@@ -20,10 +20,12 @@ public class MultiListField extends Field
 {
 
 	static public final String UNKNOWN_LABEL_PREFIX = "Level "; //TODO multilang
+	static public final boolean DEFAULT_PRESELECT = true;
 	static public final String LABEL_SEPARATOR = ";";
 	
 	private String[] labels;
 	private MultiListItem itemsRoot;
+	private boolean preSelect = DEFAULT_PRESELECT;
 	private Dictionary<MultiListItem> values;
 	
 	/**
@@ -45,7 +47,7 @@ public class MultiListField extends Field
 	
 	public String getLabel(int level)
 	{
-		if(level <= 0)
+		if(level < 0)
 			throw new IndexOutOfBoundsException("Level cannot be negative!");
 		else if(level < labels.length)
 			return labels[level];
@@ -58,6 +60,22 @@ public class MultiListField extends Field
 		return labels;
 	}
 	
+	/**
+	 * @return the preSelect
+	 */
+	public boolean isPreSelect()
+	{
+		return preSelect;
+	}
+
+	/**
+	 * @param preSelect the preSelect to set
+	 */
+	public void setPreSelect(boolean preSelect)
+	{
+		this.preSelect = preSelect;
+	}
+
 	public MultiListItem getItemsRoot()
 	{
 		return itemsRoot;
@@ -99,8 +117,7 @@ public class MultiListField extends Field
 	@Override
 	public boolean enter(Controller controller)
 	{
-		// TODO Auto-generated method stub
-		return false;
+		return controller.enterMultiListField(this);
 	}
 
 	/* (non-Javadoc)

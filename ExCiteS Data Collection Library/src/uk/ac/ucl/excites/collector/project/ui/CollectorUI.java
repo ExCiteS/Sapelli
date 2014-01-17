@@ -15,6 +15,8 @@ public interface CollectorUI
 	public FieldUI createLocationUI(LocationField lf);
 	
 	public FieldUI createLabelUI(LabelField lf);
+	
+	public FieldUI createButtonUI(ButtonField bf);
 
 	public FieldUI createTextFieldUI(EditTextField tf);
 	

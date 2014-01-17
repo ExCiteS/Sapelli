@@ -7,7 +7,7 @@ package uk.ac.ucl.excites.collector.project.ui;
  * @author mstevens
  *
  */
-public class ButtonsState
+public class ControlsState
 {
 	
 	private boolean backShown;
@@ -19,7 +19,7 @@ public class ButtonsState
 	 * @param cancelShown
 	 * @param forwardShown
 	 */
-	public ButtonsState(boolean backShown, boolean cancelShown, boolean forwardShown)
+	public ControlsState(boolean backShown, boolean cancelShown, boolean forwardShown)
 	{
 		this.backShown = backShown;
 		this.cancelShown = cancelShown;
@@ -63,9 +63,9 @@ public class ButtonsState
 	@Override
 	public boolean equals(Object o)
 	{
-		if(!(o instanceof ButtonsState))
+		if(!(o instanceof ControlsState))
 			return false;
-		ButtonsState another = (ButtonsState) o;
+		ControlsState another = (ControlsState) o;
 		return backShown == another.backShown && cancelShown == another.cancelShown && forwardShown == another.forwardShown;
 	}
 	

@@ -7,15 +7,23 @@ import uk.ac.ucl.excites.collector.project.model.dictionary.DictionaryItem;
 
 public class MultiListItem implements DictionaryItem
 {
+	
+	static public final int NO_DEFAULT_ITEM_SET_IDX = -1; 
 
+	static public MultiListItem GetDummyItem(MultiListField field, String value)
+	{
+		MultiListItem dummy = new MultiListItem(field);
+		dummy.value = value;
+		return dummy;
+	}
+	
 	private MultiListField field;
 	private MultiListItem parent;
-	private int level;
 	
 	private String value;
 	
 	private List<MultiListItem> children = new ArrayList<MultiListItem>();;
-	private MultiListItem defaultChild;
+	private int defaultChildIdx = NO_DEFAULT_ITEM_SET_IDX;
 
 	/**
 	 * Only for root item held directly by MultiListField
@@ -25,9 +33,8 @@ public class MultiListItem implements DictionaryItem
 	/*package*/ MultiListItem(MultiListField field)
 	{
 		this.field = field;
-		this.level = 0;
 		// parent & value stay null
-		// children initialised above
+		// children list initialised above
 	}
 	
 	public MultiListItem(MultiListItem parent, String value)
@@ -35,17 +42,21 @@ public class MultiListItem implements DictionaryItem
 		if(parent == null)
 			throw new IllegalArgumentException("Parent cannot be null");
 		this.parent = parent;
-		parent.addChild(this);
-		this.level = parent.level++;
+		parent.addChild(this); //!!!
 		this.field = parent.field;
 		this.value = value;
-		// children initialised above
+		// children list initialised above
 	}
 	
 	/**
 	 * @return the value
 	 */
 	public String getValue()
+	{
+		return value;
+	}
+	
+	public String toString()
 	{
 		return value;
 	}
@@ -75,11 +86,6 @@ public class MultiListItem implements DictionaryItem
 	{
 		return parent == null;
 	}
-
-	public int getLevel()
-	{
-		return level;
-	}
 	
 	/**
 	 * @return the children
@@ -99,7 +105,18 @@ public class MultiListItem implements DictionaryItem
 	 */
 	public MultiListItem getDefaultChild()
 	{
-		return defaultChild;
+		if(defaultChildIdx == NO_DEFAULT_ITEM_SET_IDX)
+			return null;
+		else
+			return children.get(defaultChildIdx);
+	}
+	
+	/**
+	 * @return the index of the defaultChild
+	 */
+	public int getDefaultChildIndex()
+	{
+		return defaultChildIdx;
 	}
 
 	/**
@@ -107,7 +124,10 @@ public class MultiListItem implements DictionaryItem
 	 */
 	public void setDefaultChild(MultiListItem defaultChild)
 	{
-		this.defaultChild = defaultChild;
+		int idx = children.indexOf(defaultChild);
+		if(idx == -1)
+			throw new IllegalArgumentException("Unknown child: " + defaultChild.toString());
+		this.defaultChildIdx = idx;
 	}
 
 	@Override

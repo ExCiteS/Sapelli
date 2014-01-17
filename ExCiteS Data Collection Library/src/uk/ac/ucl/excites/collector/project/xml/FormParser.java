@@ -50,12 +50,13 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_ORIENTATION = "Orientation";
 	static private final String TAG_BELONGS_TO = "BelongsTo";
 	static private final String TAG_LINKS_TO = "LinksTo";
-	static private final String TAG_BUTTON = "ButtonField";
-	static private final String TAG_LABEL = "LabelField";
-	static private final String TAG_TEXTFIELD = "EditTextField";
-	static private final String TAG_CHECKBOX = "Checkbox";
+	static private final String TAG_BUTTON = "Button";
+	static private final String TAG_LABEL = "Label";
+	static private final String TAG_TEXTFIELD = "Text";
+	static private final String TAG_CHECKBOX = "Check";
+	static private final String TAG_LIST = "List";
 	static private final String TAG_MULTILIST = "MultiList";
-	static private final String TAG_LISTITEM = "ListItem";
+	static private final String TAG_LISTITEM = "Item";
 	
 	//ATTRIBUTES
 	static private final String ATTRIBUTE_FORM_NAME = "name";
@@ -91,6 +92,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
 	static private final String ATTRIBUTE_TEXT_MULTILINE = "multiLine";
+	static private final String ATTRIBUTE_LIST_PRESELECT = "preSelectDefault";
 	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
 	
 	
@@ -104,7 +106,7 @@ public class FormParser extends SubtreeParser
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaField, String> mediaAttachToDisableId;
 
-	public FormParser(ProjectParser projectParser, Project project, ProjectParser.Format format)
+	public FormParser(ProjectParser projectParser)
 	{
 		super(projectParser, TAG_FORM);
 		reset(); //!!!
@@ -282,18 +284,19 @@ public class FormParser extends SubtreeParser
 				newField(linksTo, attributes);
 				((ProjectParser) owner).addRelationship(linksTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes));
 			}
-			// <ButtonField>
+			// <Button>
 			else if(qName.equals(TAG_BUTTON))
 			{
 				ButtonField btn = new ButtonField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_BUTTON, ATTRIBUTE_FIELD_LABEL, attributes));
 				newField(btn, attributes);
 			}
-			// <LabelField>
+			// <Label>
 			else if(qName.equals(TAG_LABEL))
 			{
 				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, ATTRIBUTE_LABEL_TEXT, attributes));
 				newField(lbl, attributes);
 			}
+			// <Textbox>
 			else if(qName.equals(TAG_TEXTFIELD))
 			{
 				EditTextField txtField = new EditTextField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_TEXTFIELD, attributes, ATTRIBUTE_FIELD_LABEL));
@@ -303,20 +306,22 @@ public class FormParser extends SubtreeParser
 				txtField.setInitialValue(readStringAttribute(EditTextField.DEFAULT_VALUE, attributes, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
 				newField(txtField, attributes);
 			}
+			// <Checkbox>
 			else if(qName.equals(TAG_CHECKBOX))
 			{
 				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_CHECKBOX, attributes, ATTRIBUTE_FIELD_LABEL));
 				chbxField.setValue(readBooleanAttribute(ATTRIBUTE_FIELD_DEFAULTVALUE, CheckBoxField.DEFAULT_VALUE, attributes));
 				newField(chbxField, attributes);
 			}
-			// <MultiList>
-			else if(qName.equals(TAG_MULTILIST))
+			// <List> or <MultiList> (these are in fact just synonyms, but we added both to avoid confusing novice form designers with terminoly that refers to a multi-level list when they only need a flat list)  
+			else if(qName.equals(TAG_LIST) || qName.equals(TAG_MULTILIST))
 			{
 				MultiListField ml = new MultiListField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, attributes, ATTRIBUTE_FIELD_LABELS, ATTRIBUTE_FIELD_LABEL));
+				ml.setPreSelect(readBooleanAttribute(ATTRIBUTE_LIST_PRESELECT, MultiListField.DEFAULT_PRESELECT, attributes));
 				newField(ml, attributes);
 				currentListItem = ml.getItemsRoot();
 			}
-			// <ListItem> (contained within <MultiList> or TODO)
+			// <Item> (contained within <List> or <MultiList>, and maybe other things later)
 			else if(qName.equals(TAG_LISTITEM))
 			{
 				if(currentListItem != null)
@@ -330,8 +335,9 @@ public class FormParser extends SubtreeParser
 							addWarning("More than 1 item marked as default within one of the (sub)lists of MultiListField " + currentListItem.getField().getID() + ", using 1st item marked as defaut as the default for the list.");
 					}
 				}
+				//else if(otherListItemContainingField != null) { /* ... */ }
 				else
-					addWarning("Ignored <" + TAG_LISTITEM + "> element occuring outside <" + TAG_MULTILIST + ">.");
+					addWarning("Ignored <" + TAG_LISTITEM + "> element occuring outside <" + TAG_LIST + "> or  <" + TAG_MULTILIST + ">.");
 			}
 			// Add future field types here...
 			// <?> in <Form>	
@@ -426,14 +432,16 @@ public class FormParser extends SubtreeParser
 		{
 			if(currentChoice.isRoot() && currentChoice.isLeaf())
 				throw new SAXException("Root choices need at least 1 child (but 2 or more children probably makes more sense).");
-			currentChoice = currentChoice.getParent(); // parent becomes currentChoice
+			currentChoice = currentChoice.getParent(); // parent (possibly null in case of root) becomes currentChoice
 		}
-		// </ListItem> or </MultiList>
-		else if(qName.equals(TAG_LISTITEM) || qName.equals(TAG_MULTILIST))
+		// </Item>, </List> or </MultiList>
+		else if(qName.equals(TAG_LISTITEM) || qName.equals(TAG_LIST) || qName.equals(TAG_MULTILIST))
 		{
 			if(currentListItem.isRoot() && currentListItem.isLeaf())
-				throw new SAXException("A " + TAG_MULTILIST + " needs at least 1 ListItem (but 2 or more probably makes more sense).");
-			currentListItem = currentListItem.getParent(); // parent becomes currentListItem
+				throw new SAXException("A list needs at least 1 <Item> (but 2 or more probably makes more sense).");
+			if(!currentListItem.isLeaf() && currentListItem.getDefaultChild() == null)
+				currentListItem.setDefaultChild(currentListItem.getChildren().get(0)); // first child become default
+			currentListItem = currentListItem.getParent(); // parent (possibly null in case of root) becomes currentListItem
 		}
 		// </Form>
 		else if(qName.equals(TAG_FORM))

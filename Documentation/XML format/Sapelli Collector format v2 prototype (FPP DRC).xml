@@ -93,45 +93,51 @@
   <Form id="Session" name="Community session" protectEdit="true" editable="true" singlePage="true" protectEditMessage="..." storeEndTime="true" end="BACK">
     <!-- allow form names as end action? (e.g. end="Entry") -> better not... -->
   
-    <MessageBox text="Press ... within 5 seconds to access the Session form" showOnCreate="false" showOnEdit="true" cancelKey="BACK" okayKey="VOLUME_DOWN" cancel="_BACK" okay=""/>
+    <Alert text="Press ... within 5 seconds to access the Session form" showOnCreate="false" showOnEdit="true" timeout="5" onTimeout="_BACK">
+      <Action visible="false" label="" key="VOLUME_DOWN" jump="_SKIP"/>
+      <Action visible="false" label="" key="BACK" jump="_BACK"/>
+    </Alert>
 
     <Label text="Session"/><!-- noColumn="true" is implied -->
 
-    <TextField id="Creator" label="Creator" minLength="2" maxLength="48" optional="false"/>
+    <Text id="Creator" label="Creator" minLength="2" maxLength="48" optional="false"/>
 
-    <MultiList id="Community" label="Province;Community" optional="false">
-      <ListItem value="Province 1" default="true">
-        <ListItem value="Community P1.1"/>
-        <ListItem value="Community P1.2"/>
-        <ListItem value="Community P1.3"/>
-        <ListItem value="New P1 community (see comment)"/>
-      </ListItem>
-      <ListItem value="Province 2">
-        <ListItem value="Community P2.1"/>
-        <ListItem value="Community P2.2"/>
-        <ListItem value="Community P2.3"/>
-        <ListItem value="New P2 community (see comment)"/>
-      </ListItem>
+    <MultiList id="Community" label="Province:;Community:" optional="false" preSelectDefault="false">
+      <Item value="Province 1">
+        <Item value="Community P1.1"/>
+        <Item value="Community P1.2"/>
+        <Item value="Community P1.3"/>
+        <Item value="New P1 community (see comment)"/>
+      </Item>
+      <Item value="Province 2">
+        <Item value="Community P2.1"/>
+        <Item value="Community P2.2"/>
+        <Item value="Community P2.3"/>
+        <Item value="Community P2.4"/>
+        <Item value="Community P2.5"/>
+        <Item value="Community P2.6"/>
+        <Item value="Community P2.7"/>
+        <Item value="Community P2.8"/>
+        <Item value="New P2 community (see comment)"/>
+      </Item>
     </MultiList>
 
-    <Checkbox id="Operational" label="Operational session" defaultValue="true"/>
+    <Check id="Operational" label="Operational session" defaultValue="true"/>
 
-    <Checkbox id="Testing" label="Testing session" defaultValue="false"/>
+    <Check id="Testing" label="Testing session" defaultValue="false"/>
 
-    <Checkbox id="Training" label="Training session" defaultValue="false"/>
+    <Check id="Training" label="Training session" defaultValue="false"/>
 
-    <TextField id="Comment" label="Comments" maxLength="1024" multiline="true" optional="true"/>
+    <Text id="Comment" label="Comments" maxLength="1024" multiline="true" optional="true"/>
 
-    <Button id="Open" label="Start Session" disableOnEdit="true" jump="_STORE"/>
+    <Button id="Open" label="Start Session" disableOnEdit="true" jump="_STORE|_BACK"/>
     <!-- Alternatives:
-        jump="LinkToSession"
-        formJump="Session" (implicit linkTo?)
-        jump="_BACK" (meaniung "_BACK" is a 'special jump' and not an endAction)
+        jump="_BACK" (meaning "_BACK" is a 'special jump' and not an endAction)
          -->
     
     <Button id="Close" label="Close Session" disableOnCreate="true" jump="_END+RELEASE"/><!-- noColumn="true" is implied -->
     
-    <!-- <LinkTo id="LinkToSession" form="Entry"/> -->
+    <!-- <LinkTo id="LinkToSession" form="Entry"/> --> <!-- formJump="Session" (implicit linkTo?) -->
 
   </Form>
   

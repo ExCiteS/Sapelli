@@ -52,6 +52,12 @@ public abstract class Handler extends DefaultHandler
 		subtreeParsers.remove(rootQName);
 	}
 	
+	public void clearSubtreeParsers()
+	{
+		subtreeParsers.clear();
+		activeSubtreeParser = null;
+	}
+	
 	public void activateSubtreeParser(SubtreeParser subtreeParser)
 	{
 		if(subtreeParsers.get(subtreeParser.getRootElementQName()) == null)

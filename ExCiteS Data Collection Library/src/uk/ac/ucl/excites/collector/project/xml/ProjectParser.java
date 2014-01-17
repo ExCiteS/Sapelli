@@ -68,9 +68,8 @@ public class ProjectParser extends DocumentParser
 	private final boolean createProjectFolder;
 	
 	private Format format = DEFAULT_FORMAT;
-	
 	private Project project;
-	private long projectHash = -1;
+	private long projectHash;
 	private String startFormID;
 	private HashMap<Relationship, String> relationshipToFormID;
 
@@ -89,10 +88,14 @@ public class ProjectParser extends DocumentParser
 
 	public Project parseProject(InputStream input) throws Exception
 	{
+		// (Re)Initialise:
+		format = DEFAULT_FORMAT;
 		project = null;
+		projectHash = -1;
+		startFormID = null;
 		relationshipToFormID.clear();
 		
-		// Get XML hash...
+		// Get XML hash:
 		UnclosableBufferedInputStream ubInput = new UnclosableBufferedInputStream(input); // decorate stream to avoid it from being closed and to ensure we can use mark/reset
 		ubInput.mark(Integer.MAX_VALUE);
 		projectHash = (new XMLHasher()).getCRC32HashCode(ubInput);
@@ -162,8 +165,8 @@ public class ProjectParser extends DocumentParser
 				startFormID = readStringAttribute(ATTRIBUTE_PROJECT_START_FORM, null, attributes);
 				
 				// Add subtree parsers:
-				addSubtreeParser(new ConfigurationParser(this, project));
-				addSubtreeParser(new FormParser(this, project, format));
+				addSubtreeParser(new ConfigurationParser(this));
+				addSubtreeParser(new FormParser(this));
 			}
 			// <?>
 			else
@@ -184,7 +187,9 @@ public class ProjectParser extends DocumentParser
 	{
 		// </Sapelli-Collector-Project>, or </ExCiteS-Collector-Project> (for backwards compatibility)
 		if(qName.equals(TAG_PROJECT) || qName.equals(TAG_PROJECT_V1X))
-		{			if(project.getTransmissionSettings() == null)
+		{
+			clearSubtreeParsers();
+						if(project.getTransmissionSettings() == null)
 			{
 				project.setTransmissionSettings(new Settings());
 				addWarning("No transmission settings found, defaults are used");
@@ -223,7 +228,7 @@ public class ProjectParser extends DocumentParser
 	/**
 	 * @return the format
 	 */
-	public Format getFormat()
+	protected Format getFormat()
 	{
 		return format;
 	}
@@ -231,7 +236,7 @@ public class ProjectParser extends DocumentParser
 	/**
 	 * @return the project
 	 */
-	public Project getProject()
+	protected Project getProject()
 	{
 		return project;
 	}
@@ -242,7 +247,7 @@ public class ProjectParser extends DocumentParser
 	 * @param relationship
 	 * @param formID
 	 */
-	public void addRelationship(Relationship relationship, String formID)
+	protected void addRelationship(Relationship relationship, String formID)
 	{
 		relationshipToFormID.put(relationship, formID);
 	}
