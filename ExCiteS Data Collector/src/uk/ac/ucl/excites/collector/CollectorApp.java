@@ -189,7 +189,7 @@ public class CollectorApp extends Application
 				return null; //failed to open db
 		}
 		daoClients.add(client); //add to set of clients currently using the db
-		return new DataAccess(db);
+		return new DataAccess(db, getBaseContext());
 	}
 	
 	/**

@@ -3,16 +3,22 @@
  */
 package uk.ac.ucl.excites.collector.database;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
+import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.transmission.Transmission;
 import uk.ac.ucl.excites.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.sms.SMSTransmissionID;
+import android.content.Context;
+import android.content.SharedPreferences;
 
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
@@ -29,13 +35,22 @@ public final class DataAccess
 	static protected final String TAG = "DATA ACCESS";
 	static public final int ACTIVATION_DEPTH = 40;
 	static public final int UPDATE_DEPTH = 40;
-
+	static private final String PROJECT_FILE = "PROJECT.xml";
+
+	// Preferences
+	private static final String PREFERENCES = "PROJECT_PREFERENCES";
+	private static final String PREF_PROJECT = "PROJECT_";
+
 	// Dynamics---------------------------------------------
 	private ObjectContainer db;
+	private SharedPreferences preferences;
+	private Context context;
 	
-	public DataAccess(ObjectContainer db)
+	public DataAccess(ObjectContainer db, Context context)
 	{
+		this.context = context;
 		this.db = db;
+		this.preferences = this.context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE);
 	}
 	
 	public void commit()
@@ -168,17 +183,12 @@ public final class DataAccess
 		// Check for project duplicates:
 		if(retrieveProject(project.getName(), project.getVariant(), project.getVersion()) != null)
 			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
-		storeObject(project);
+
+		SharedPreferences.Editor editor = preferences.edit();
+		editor.putString(PREF_PROJECT + project.getHash() + "_PATH", project.getProjectFolderPath());
+		editor.commit();
 	}
 	
-	/**
-	 * @param project
-	 */
-	public void update(Project project)
-	{
-		storeObject(project);
-	}
-
 	/**
 	 * Retrieves all projects
 	 * 
@@ -186,10 +196,13 @@ public final class DataAccess
 	 */
 	public List<Project> retrieveProjects()
 	{
-		final List<Project> result = db.queryByExample(Project.class);
-		for(Project p : result)
-			db.activate(p, ACTIVATION_DEPTH);
-		return result;
+		List<Project> projects = new ArrayList<Project>();
+		Map<String, ?> keys = preferences.getAll();
+
+		for(Map.Entry<String, ?> entry : keys.entrySet())
+			projects.add(parseProject(entry.getValue().toString()));
+
+		return projects;
 	}
 	
 	/**
@@ -209,24 +222,16 @@ public final class DataAccess
 	 */
 	public Project retrieveProject(final String name, final String variant, final String version)
 	{
-		@SuppressWarnings("serial")
-		ObjectSet<Project> result = db.query(new Predicate<Project>()
+		List<Project> projects = retrieveProjects();
+		
+		for(Project project : projects)
 		{
-			public boolean match(Project project)
-			{
-				return 	project.getName().equalsIgnoreCase(name) &&
-						(variant != null ? variant.equals(project.getVariant()) : true) &&
-						project.getVersion().equalsIgnoreCase(version);
-			}
-		});
-		if(result.isEmpty())
-			return null;
-		else
-		{
-			Project p = result.get(0);
-			db.activate(p, ACTIVATION_DEPTH);
-			return p;
+			if( project.getName().equalsIgnoreCase(name) && (variant != null ? variant.equals(project.getVariant()) : true)
+			    && project.getVersion().equalsIgnoreCase(version))
+				return project;
 		}
+		
+		return null;
 	}
 	
 	/**
@@ -236,22 +241,31 @@ public final class DataAccess
 	 */
 	public Project retrieveProject(final long projectHash)
 	{
-		@SuppressWarnings("serial")
-		ObjectSet<Project> result = db.query(new Predicate<Project>()
+		List<Project> projects = retrieveProjects();
+
+		for(Project project : projects)
 		{
-			public boolean match(Project project)
-			{
-				return project.getHash() == projectHash;
-			}
-		});
-		if(result.isEmpty())
-			return null;
-		else
-		{
-			Project p = result.get(0);
-			db.activate(p, ACTIVATION_DEPTH);
-			return p;
+			if(project.getHash() == projectHash)
+				return project;
 		}
+
+		return null;
+	}
+
+	private Project parseProject(String file)
+	{
+		File xmlFile = new File(file.toString() + PROJECT_FILE);
+		// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
+		ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
+		try
+		{
+			return parser.parseProject(xmlFile);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	/**
@@ -261,9 +275,28 @@ public final class DataAccess
 	 */
 	public void delete(Project project)
 	{
-		deleteObject(project);
+		List<Project> projects = retrieveProjects();
+
+		for(Project p : projects)
+		{
+			if(equals(project, p))
+				preferences.edit().remove(PREF_PROJECT + project.getHash() + "_PATH").commit();
+		}
 	}
 	
+	private boolean equals(Project first, Project second)
+	{
+		// if the two objects are equal in reference, they are equal
+		if(first == second)
+			return true;
+		else if(first.getName().equals(second.getName())
+				&& (((first.getVariant() != null) && (second.getVariant() != null)) ? first.getVariant().equals(second.getVariant()) : true)
+				&& first.getVersion().equals(second.getVersion()))
+			return true;
+		else
+			return false;
+	}
+
 	/**
 	 * @param transmission
 	 */
