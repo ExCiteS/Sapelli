@@ -3,7 +3,7 @@
     android:id="@+id/StatisticsView"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="@color/gray" >
+    android:background="@color/white" >
 
     <TextView
         android:id="@+id/textView1"
