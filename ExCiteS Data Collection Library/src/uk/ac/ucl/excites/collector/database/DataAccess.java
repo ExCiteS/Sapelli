@@ -170,14 +170,6 @@ public final class DataAccess
 			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
 		storeObject(project);
 	}
-	
-	/**
-	 * @param project
-	 */
-	public void update(Project project)
-	{
-		storeObject(project);
-	}
 
 	/**
 	 * Retrieves all projects
