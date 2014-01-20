@@ -152,4 +152,11 @@ public class EditTextField extends Field
 		this.value = text;
 	}
 
+	@Override
+	public void leave(FieldUI ui, Controller controller)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
 }

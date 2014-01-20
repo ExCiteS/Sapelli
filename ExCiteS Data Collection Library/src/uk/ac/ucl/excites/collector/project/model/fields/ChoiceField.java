@@ -392,5 +392,11 @@ public class ChoiceField extends Field implements DictionaryItem
 		}
 				
 	}
+
+	@Override
+	public void leave(FieldUI ui, Controller controller)
+	{
+		controller.leaveChoiceField(ui, this);
+	}
 	
 }

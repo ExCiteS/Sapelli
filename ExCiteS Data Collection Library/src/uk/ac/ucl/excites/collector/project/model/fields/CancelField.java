@@ -48,4 +48,11 @@ public class CancelField extends Field
 		return null; // there is not UI for this field
 	}
 
+	@Override
+	public void leave(FieldUI ui, Controller controller)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
 }

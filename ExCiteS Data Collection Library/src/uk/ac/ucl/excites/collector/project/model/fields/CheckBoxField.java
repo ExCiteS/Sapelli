@@ -101,4 +101,10 @@ public class CheckBoxField extends Field
 		return collectorUI.createCheckBoxFieldUI(this);
 	}
 
+	@Override
+	public void leave(FieldUI ui, Controller controller)
+	{
+		// does nothing
+	}
+
 }

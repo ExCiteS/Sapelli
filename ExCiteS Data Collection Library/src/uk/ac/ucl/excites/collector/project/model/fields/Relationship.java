@@ -170,4 +170,11 @@ public class Relationship extends Field
 		return null;
 	}
 
+	@Override
+	public void leave(FieldUI ui, Controller controller)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
 }

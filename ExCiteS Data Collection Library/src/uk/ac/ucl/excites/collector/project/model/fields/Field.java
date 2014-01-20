@@ -257,7 +257,7 @@ public abstract class Field
 	}
 	
 	/**
-	 * Called to signals that the user is entering the field. This allows any required initialisation behaviour to be carried out.
+	 * Called to signal that the user is entering the field. This allows any required initialisation behaviour to be carried out.
 	 * The returned boolean indicates whether or not a UI update is required after entering the field.
 	 * 
 	 *  This method uses double-dispatch: the actual Field-type-specific behaviour will be defined in the class implementing the Controller interface.
@@ -266,6 +266,8 @@ public abstract class Field
 	 * @return whether or not a UI update is required after entering the field)
 	 */
 	public abstract boolean enter(Controller controller);
+	
+	public abstract void leave(FieldUI ui, Controller controller);
 	
 	/**
 	 * Returns a FieldUI object to represent this Field.

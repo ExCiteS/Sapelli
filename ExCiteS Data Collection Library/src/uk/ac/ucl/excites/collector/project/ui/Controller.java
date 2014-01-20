@@ -1,12 +1,12 @@
 package uk.ac.ucl.excites.collector.project.ui;
 
-import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
 import uk.ac.ucl.excites.collector.project.model.fields.CancelField;
 import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
 import uk.ac.ucl.excites.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
+import uk.ac.ucl.excites.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
@@ -19,12 +19,24 @@ public interface Controller
 	 * @return whether or not a UI update is required after entering the field
 	 */
 	public boolean enterChoiceField(ChoiceField cf);
+
+	/**
+	 * @param ui	the FieldUI
+	 * @param cf  the ChoiceField
+	 */
+	public void leaveChoiceField(FieldUI ui, ChoiceField cf);
 	
 	/**
-	 * @param af  the AudioField
+	 * @param af  the MediaField
 	 * @return whether or not a UI update is required after entering the field
 	 */
-	public boolean enterAudioField(AudioField af);
+	public boolean enterMediaField(MediaField af);
+	
+	/**
+	 * @param ui	the FieldUI
+	 * @param af  the MediaField
+	 */
+	public void leaveMediaField(FieldUI ui, MediaField mf);
 	
 	/**
 	 * @param pf  the PhotoField

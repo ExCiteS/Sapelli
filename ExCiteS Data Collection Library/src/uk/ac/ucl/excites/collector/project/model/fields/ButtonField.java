@@ -84,4 +84,11 @@ public class ButtonField extends Field
 		throw new UnsupportedOperationException("setNoColumn is unsupported on ButtonFields since they never have columns.");
 	}
 
+	@Override
+	public void leave(FieldUI ui, Controller controller)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
 }

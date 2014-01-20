@@ -18,7 +18,6 @@ import uk.ac.ucl.excites.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
 import uk.ac.ucl.excites.collector.project.model.fields.CancelField;
 import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
@@ -31,8 +30,9 @@ import uk.ac.ucl.excites.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
 import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
-import uk.ac.ucl.excites.collector.project.ui.ControlsState;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
+import uk.ac.ucl.excites.collector.project.ui.ControlsState;
+import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.collector.util.DeviceID;
 import uk.ac.ucl.excites.collector.util.LocationUtils;
 import uk.ac.ucl.excites.storage.model.Record;
@@ -289,9 +289,9 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	}
 
 	@Override
-	public boolean enterAudioField(AudioField af)
+	public boolean enterMediaField(MediaField mf)
 	{
-		if(af.isMaxReached(currentRecord))
+		if(mf.isMaxReached(currentRecord))
 		{ // Maximum number of attachments for this field is reached:
 			goForward(false); // skip field
 			return false;
@@ -302,11 +302,8 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	@Override
 	public boolean enterPhotoField(PhotoField pf)
 	{
-		if(pf.isMaxReached(currentRecord))
-		{ // Maximum number of attachments for this field is reached:
-			goForward(false); // skip field
+		if(!enterMediaField(pf))
 			return false;
-		}
 		if(pf.isUseNativeApp())
 			activity.startCameraApp(); // Start native camera app of device
 		return !pf.isUseNativeApp();
@@ -387,12 +384,8 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		return field.isEnabled() && !tempDisabledFields.contains(field);
 	}
 
-	/**
-	 * To be called from ChoiceView
-	 * 
-	 * @param chosenChild
-	 */
-	public void choiceMade(ChoiceField chosenChild)
+	@Override
+	public void leaveChoiceField(FieldUI ui, ChoiceField chosenChild)
 	{
 		// Note: chosenChild is not the currentField! The currentField (also a ChoiceField) is its parent.
 		if(chosenChild.isLeaf())
@@ -411,6 +404,12 @@ public class ProjectController implements Controller, LocationListener, Orientat
 			goTo(chosenChild); // chosenChild becomes the new currentField (we go one level down in the choice tree)
 	}
 
+	@Override
+	public void leaveMediaField(FieldUI ui, MediaField mf)
+	{
+		//TODO how to get the File? (this method should replace mediaDone)
+	}
+	
 	public void mediaDone(File mediaAttachment)
 	{
 		MediaField ma = (MediaField) currentField;
