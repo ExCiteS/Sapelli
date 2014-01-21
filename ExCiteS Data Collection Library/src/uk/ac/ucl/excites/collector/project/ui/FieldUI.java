@@ -11,4 +11,8 @@ public interface FieldUI
 	
 	public void cancel();
 	
+	//public boolean isValid(Record record);
+	
+	//public void storeValue(Record record);
+	
 }

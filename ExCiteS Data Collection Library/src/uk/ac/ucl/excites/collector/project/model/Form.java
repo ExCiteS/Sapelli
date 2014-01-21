@@ -36,11 +36,17 @@ public class Form
 	
 	public static final boolean END_TIME_DEFAULT = false;
 
-	public static final int END_ACTION_LOOP = 0;
-	public static final int END_ACTION_EXIT = 1;
-	// public static final int END_ACTION_NEXT_FORM = 2;
-	public static final int DEFAULT_END_ACTION = END_ACTION_LOOP;
-
+	// Where to go next:
+	static public enum Next
+	{
+		LOOPFORM,
+		EXITAPP,
+		PREVFORM
+	}
+	public static final Next DEFAULT_NEXT = Next.LOOPFORM;
+	public static final String V1X_NEXT_LOOP = "_LOOP";
+	public static final String V1X_NEXT_EXIT = "_EXIT";
+	
 	public static final boolean DEFAULT_VIBRATE = true;
 	public static final boolean DEFAULT_SHOW_BACK = true;
 	public static final boolean DEFAULT_SHOW_CANCEL = true;
@@ -68,7 +74,7 @@ public class Form
 	private Field start;
 	private final List<Field> fields;
 	private final List<LocationField> locationFields;
-
+	
 	// Android shortcut:
 	private String shortcutImageRelativePath;
 
@@ -79,9 +85,9 @@ public class Form
 	private boolean storeEndTime;
 
 	// End action:
-	private int endAction = DEFAULT_END_ACTION;
-	private boolean vibrateOnEnd = DEFAULT_VIBRATE;
-	private String endSoundRelativePath;
+	private Next next = DEFAULT_NEXT;
+	private boolean vibrateOnSave = DEFAULT_VIBRATE;
+	private String saveSoundRelativePath;
 
 	// Buttons:
 	private boolean showBack = DEFAULT_SHOW_BACK;
@@ -146,7 +152,7 @@ public class Form
 			if(currentIndex + 1 < fields.size())
 				next = fields.get(currentIndex + 1); // go to next field in the form
 			else
-				next = new EndField(this); // current field is the last of the form, go to end
+				next = new EndField(this, true); // current field is the last of the form, go to default EndField
 		return next; // use jump as next
 	}
 
@@ -390,54 +396,66 @@ public class Form
 	}
 
 	/**
-	 * @return the endAction
+	 * @return the next
 	 */
-	public int getEndAction()
+	public Next getNext()
 	{
-		return endAction;
+		return next;
 	}
 
 	/**
-	 * @param endAction
-	 *            the endAction to set
+	 * @param next the next to set
+	 * @throws IllegalArgumentException	when the nextStr is not recognised
 	 */
-	public void setEndAction(int endAction)
+	public void setNext(String nextStr) throws IllegalArgumentException
 	{
-		this.endAction = endAction;
+		try
+		{
+			this.next = Next.valueOf(nextStr);
+		}
+		catch(IllegalArgumentException iae)
+		{
+			if(V1X_NEXT_LOOP.equalsIgnoreCase(nextStr))
+				this.next = Next.LOOPFORM;
+			else if(V1X_NEXT_EXIT.equalsIgnoreCase(nextStr))
+				this.next = Next.EXITAPP;
+			else
+				throw iae;
+		}
 	}
 
 	/**
-	 * @return the vibrateOnEnd
+	 * @return the vibrateOnSave
 	 */
-	public boolean isVibrateOnEnd()
+	public boolean isVibrateOnSave()
 	{
-		return vibrateOnEnd;
+		return vibrateOnSave;
 	}
 
 	/**
-	 * @param vibrateOnEnd
+	 * @param vibrateOnSave
 	 *
 	 */
-	public void setVibrateOnEnd(boolean vibrateOnEnd)
+	public void setVibrateOnSave(boolean vibrateOnSave)
 	{
-		this.vibrateOnEnd = vibrateOnEnd;
+		this.vibrateOnSave = vibrateOnSave;
 	}
 
 	/**
-	 * @return the endSoundRelativePath
+	 * @return the saveSoundRelativePath
 	 */
-	public String getEndSoundRelativePath()
+	public String getSaveSoundRelativePath()
 	{
-		return endSoundRelativePath;
+		return saveSoundRelativePath;
 	}
 
 	/**
-	 * Set the end sound
-	 * @param endSoundRelativePath
+	 * Set the save sound
+	 * @param saveSoundRelativePath
 	 */
-	public void setEndSoundRelativePath(String endSoundRelativePath)
+	public void setSaveSoundRelativePath(String saveSoundRelativePath)
 	{
-		this.endSoundRelativePath = endSoundRelativePath;
+		this.saveSoundRelativePath = saveSoundRelativePath;
 	}
 
 	/**
@@ -535,7 +553,7 @@ public class Form
 		CollectionUtils.addIgnoreNull(paths, project.getImageFile(cancelButtonImageRelativePath));
 		CollectionUtils.addIgnoreNull(paths, project.getImageFile(forwardButtonImageRelativePath));
 		CollectionUtils.addIgnoreNull(paths, project.getImageFile(shortcutImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getSoundFile(endSoundRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getSoundFile(saveSoundRelativePath));
 		//Add paths for fields:
 		for(Field field : fields)
 			CollectionUtils.addAllIgnoreNull(paths, field.getFiles(project));

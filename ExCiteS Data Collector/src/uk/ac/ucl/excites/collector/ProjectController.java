@@ -17,8 +17,8 @@ import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.model.Form.Next;
 import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.model.fields.CancelField;
 import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
@@ -188,39 +188,12 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		if(logger != null)
 			logger.addLine("CANCEL_BUTTON", currentField.getID());
 		
-		cancel(true);
+		goTo(new EndField(currentForm, false, Next.LOOPFORM));
 	}
 
 	public void cancelAndStop()
 	{
-		cancel(false);
-	}
-
-	private void cancel(boolean restart)
-	{
-		// Delete any attachments:
-		for(File attachment : currentMediaAttachments)
-			if(attachment.exists())
-				attachment.delete();
-		
-		// Restart or stop:
-		if(restart)
-			startForm(currentForm); // restart the form
-		else
-		{	//Stop:
-			stopLocationListener(); // stop GPS!
-			currentMediaAttachments.clear();
-			fieldHistory.clear();
-			currentForm = null;
-			currentField = null;
-			currentRecord = null;
-			// Close log file:
-			if(logger != null)
-			{
-				logger.addFinalLine("PROJECT_END", project.getName());
-				logger = null;
-			}
-		}
+		goTo(new EndField(currentForm, false, Next.EXITAPP));
 	}
 
 	public void goForward(boolean requestedByUser)
@@ -262,7 +235,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		if(logger != null)
 			logger.addLine("REACHED", nextField.getID());
 
-		// Leafing current field...
+		// Leaving current field...
 		if(currentField != null && currentField != nextField)
 			fieldHistory.add(currentField); // Add to history
 		// Entering next field...
@@ -348,24 +321,97 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	{
 		return true;
 	}
-
-	@Override
-	public boolean enterCancelField(CancelField cf)
-	{
-		// Logging:
-		if(logger != null)
-			logger.addLine("FORM_CANCEL", currentForm.getName(), Long.toString((System.currentTimeMillis() - formStartTime) / 1000) + " seconds");
-		
-		// Restart:
-		cancel(true); // cancel & restart
-		return false;
-	}
 	
 	@Override
 	public boolean enterEndField(EndField ef)
 	{
-		endForm();
-		return false;
+		// Logging:
+		if(logger != null)
+			logger.addLine("FORM_END", ef.getID(), currentForm.getName(), Long.toString((System.currentTimeMillis() - formStartTime) / 1000) + " seconds");
+		
+		if(ef.isSave())
+			saveRecordAndAttachments();
+		else
+			discardAttachments();
+		logger.addBlankLine();
+		
+		// Next action:
+		switch(ef.getNext())
+		{
+			case LOOPFORM:
+				startForm(currentForm);
+				break;
+			case EXITAPP:
+				exit();
+				break;
+			case PREVFORM:
+				//TODO
+				break;
+		}		
+		
+		return false; // no UI update needed
+	}
+	
+	private void saveRecordAndAttachments()
+	{
+		// Finalise the currentRecord:
+		currentForm.finish(currentRecord); // sets end-time if necessary
+
+		// Store currentRecord
+		dao.store(currentRecord);
+		
+		Log.d(TAG, "Stored record:");
+		Log.d(TAG, currentRecord.toString());
+
+		// Log record:
+		if(logger != null)
+			logger.addLine("RECORD", currentRecord.toString());
+
+		// Move attachments from temp to data folder:
+		try
+		{
+			File dataFolder = project.getDataFolder();
+			for(File attachment : currentMediaAttachments)
+				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
+		}
+		catch(IOException ioe)
+		{
+			Log.w(TAG, "Error on moving attachements to data folder.");
+		}
+
+		// Signal the successful storage of the currentRecord
+		// Vibration
+		if(currentForm.isVibrateOnSave())
+			DeviceControl.vibrate(activity, VIBRATION_DURATION_MS);
+		// Play sound
+		File endSoundFile = project.getSoundFile(currentForm.getSaveSoundRelativePath());
+		if(FileHelpers.isReadableFile(endSoundFile))
+			DeviceControl.playSoundFile(activity, endSoundFile);		
+	}
+	
+	private void discardAttachments()
+	{
+		// Delete any attachments:
+		for(File attachment : currentMediaAttachments)
+			if(attachment.exists())
+				attachment.delete();
+		currentMediaAttachments.clear();
+	}
+	
+	private void exit()
+	{
+		// stop GPS!
+		stopLocationListener();
+		
+		// Close log file:
+		if(logger != null)
+		{
+			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currentForm.getID());
+			logger = null;
+		}
+		
+		// leave the activity:
+		activity.finish();
 	}
 
 	@Override
@@ -453,68 +499,17 @@ public class ProjectController implements Controller, LocationListener, Orientat
 			
 			// If still no location set (because either isUseBestNQLAT==false or currentBestLocation==null), and locationField is non-optional: cancel & exit!
 			if(lf.retrieveLocation(currentRecord) == null && lf.getOptional() != Optionalness.ALWAYS)
-				cancel(false); //TODO maybe also flash a red LED and/or show a message box			
+			{
+				logger.addLine("NO QUALIFYING LOCATION OBTAINED", currentField.getID());
+				 //TODO show a message box!
+				goTo(new EndField(currentForm, false, Next.LOOPFORM)); // TODO better to exit?
+				return;
+			}
 		}
 		// else if() //other fields with timeouts in the future?
 		// ...
 		// Continue:
 		goForward(false);
-	}
-
-	public void endForm()
-	{
-		// Logging:
-		if(logger != null)
-			logger.addLine("FORM_END", currentForm.getName(), Long.toString((System.currentTimeMillis() - formStartTime) / 1000) + " seconds");
-		
-		// Finalise the currentRecord:
-		currentForm.finish(currentRecord); // sets end-time if necessary
-
-		// Store currentRecord
-		dao.store(currentRecord);
-		
-		Log.d(TAG, "Stored record:");
-		Log.d(TAG, currentRecord.toString());
-
-		// Log record:
-		if(logger != null)
-		{
-			logger.addLine("RECORD", currentRecord.toString());
-			logger.addBlankLine();
-		}
-
-		// Move attachments from temp to data folder:
-		try
-		{
-			File dataFolder = project.getDataFolder();
-			for(File attachment : currentMediaAttachments)
-				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
-		}
-		catch(IOException ioe)
-		{
-			Log.w(TAG, "Error on moving attachements to data folder.");
-		}
-
-		// Signal the successful storage of the currentRecord
-		// Vibration
-		if(currentForm.isVibrateOnEnd())
-			DeviceControl.vibrate(activity, VIBRATION_DURATION_MS);
-		// Play sound
-		File endSoundFile = project.getSoundFile(currentForm.getEndSoundRelativePath());
-		if(FileHelpers.isReadableFile(endSoundFile))
-			DeviceControl.playSoundFile(activity, endSoundFile);
-		
-		// End action:
-		switch(currentForm.getEndAction())
-		{
-			case Form.END_ACTION_LOOP:
-				startForm(currentForm);
-				break;
-			case Form.END_ACTION_EXIT:
-				cancel(false); // cancel & don't restart
-				activity.finish(); // leave the application
-				break;
-		}
 	}
 
 	public void onOrientationChanged(Orientation orientation)

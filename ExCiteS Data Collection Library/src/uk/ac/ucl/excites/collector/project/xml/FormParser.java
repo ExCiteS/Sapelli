@@ -14,7 +14,6 @@ import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
 import uk.ac.ucl.excites.collector.project.model.fields.ButtonField;
-import uk.ac.ucl.excites.collector.project.model.fields.CancelField;
 import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
@@ -65,8 +64,12 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FORM_SCHEMA_VERSION = Schema.V1X_ATTRIBUTE_SCHEMA_VERSION;
 	static private final String ATTRIBUTE_FORM_STORE_END_TIME = "storeEndTime";
 	static private final String ATTRIBUTE_FORM_START_FIELD = "startField";
-	static private final String ATTRIBUTE_FORM_END_SOUND = "endSound";
-	static private final String ATTRIBUTE_FORM_END_VIBRATE = "endVibrate";
+	static private final String ATTRIBUTE_FORM_END = "end"; // 1.x compatibility
+	static private final String ATTRIBUTE_FORM_NEXT = "next";
+	static private final String ATTRIBUTE_FORM_END_SOUND = "endSound"; // 1.x compatibility
+	static private final String ATTRIBUTE_FORM_SAVE_SOUND = "saveSound";
+	static private final String ATTRIBUTE_FORM_END_VIBRATE = "endVibrate"; // 1.x compatibility
+	static private final String ATTRIBUTE_FORM_SAVE_VIBRATE = "saveVibrate";
 	static private final String ATTRIBUTE_FORM_FORWARD_BUTTON_IMG = "forwardButtonImg";
 	static private final String ATTRIBUTE_FORM_CANCEL_BUTTON_IMG = "cancelButtonImg";
 	static private final String ATTRIBUTE_FORM_BACK_BUTTON_IMG = "backButtonImg";
@@ -132,28 +135,29 @@ public class FormParser extends SubtreeParser
 			if(currentForm != null)
 				throw new SAXException("Forms cannot be nested!");
 			
-			String id;
+			String id = readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_ID, TAG_FORM, ATTRIBUTE_FORM_NAME); // "name" is v1.x syntax but still accepted in v2.0 (yet "id" is preferred)
 			if(((ProjectParser) owner).getFormat() == ProjectParser.Format.v1_x)
-			{	//backwards compatibility
-				id = readRequiredStringAttribute(TAG_FORM, ATTRIBUTE_FORM_NAME, attributes);
-				if(project.getForms().isEmpty()) //only for 1st, and assumed only, currentForm
+			{	// Backwards compatibility
+				if(project.getForms().isEmpty()) // only for 1st, and assumed only, currentForm
 				{
 					int schemaID = Integer.parseInt(readRequiredStringAttribute(TAG_FORM, ATTRIBUTE_FORM_SCHEMA_ID, "because this is a v1.x project", attributes));
 					int schemaVersion = readIntegerAttribute(ATTRIBUTE_FORM_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION, attributes);
 					project.setSchema(schemaID, schemaVersion); //schemaID will be used as projectID
 				}
+				else
+					throw new SAXException("Only single-Form v1.x projects are supported");
 			}
-			else
-				id = readRequiredStringAttribute(TAG_FORM, ATTRIBUTE_FORM_ID, attributes);
 			currentForm = new Form(project, id); // the form will add itself to the project and take the next available index
 			// Shortcut image:
 			currentForm.setShortcutImageRelativePath(readStringAttribute(ATTRIBUTE_FORM_SHORTCUT_IMAGE, null, attributes));
+			// Next/end:
+			currentForm.setNext(readStringAttribute(Form.DEFAULT_NEXT.name(), attributes, ATTRIBUTE_FORM_NEXT, ATTRIBUTE_FORM_END));
 			// Store end time?:
 			currentForm.setStoreEndTime(readBooleanAttribute(ATTRIBUTE_FORM_STORE_END_TIME, Form.END_TIME_DEFAULT, attributes));
 			// Sound end vibration at the end of the currentForm:
 			// Get the sound path
-			currentForm.setEndSoundRelativePath(readStringAttribute(ATTRIBUTE_FORM_END_SOUND, null, attributes));
-			currentForm.setVibrateOnEnd(readBooleanAttribute(ATTRIBUTE_FORM_END_VIBRATE, Form.DEFAULT_VIBRATE, attributes));
+			currentForm.setSaveSoundRelativePath(readStringAttribute(null, attributes, ATTRIBUTE_FORM_SAVE_SOUND, ATTRIBUTE_FORM_END_SOUND));
+			currentForm.setVibrateOnSave(readBooleanAttribute(Form.DEFAULT_VIBRATE, attributes, ATTRIBUTE_FORM_SAVE_VIBRATE, ATTRIBUTE_FORM_END_VIBRATE));
 			// Which buttons are allowed to show:
 			currentForm.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Form.DEFAULT_SHOW_BACK, attributes));
 			currentForm.setShowCancel(readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Form.DEFAULT_SHOW_CANCEL, attributes));
@@ -358,15 +362,34 @@ public class FormParser extends SubtreeParser
 	 * 
 	 * @param f
 	 * @param attributes
+	 * @throws SAXException 
 	 */
-	private void newField(Field f, Attributes attributes)
+	private void newField(Field f, Attributes attributes) throws SAXException
 	{
 		if(f.isRoot())
 		{
 			currentForm.addField(f);
 			setOptionalness(f, attributes);
 		}
-		rememberIDAndJump(f, attributes);
+		
+		// Warn about IDs starting with '_':
+		if(f.getID().startsWith("_"))
+		{
+			// For really stupid cases ;-):
+			for(EndField ef : EndField.GetEndFields(currentForm))
+				if(ef.getID().equals(f.getID()))
+					throw new SAXException(f.getID() + " is a reserved ID, don't use it for user-defined fields.");
+			addWarning("Please avoid field IDs starting with '_' (" + f.getID() + ")."); 
+		}
+		
+		// Remember ID of field itself:
+		if(idToField.get(f.getID()) != null)
+			addWarning("Duplicate field ID: " + f.getID() + " (possibly based on value)!");
+		idToField.put(f.getID(), f);
+		
+		// Remember jumps (always "intra-Form"):
+		if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
+			fieldToJumpId.put(f, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim());
 		
 		// f.setSkipOnBack(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK)); //TODO skip on back?
 		f.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes));
@@ -397,31 +420,6 @@ public class FormParser extends SubtreeParser
 		ma.setMax(readIntegerAttribute("max", MediaField.DEFAULT_MAX, attributes));
 		if(attributes.getValue(ATTRIBUTE_DISABLE_FIELD) != null)
 			mediaAttachToDisableId.put(ma, attributes.getValue(ATTRIBUTE_DISABLE_FIELD).trim());
-	}
-	
-	private void rememberIDAndJump(Field f, Attributes attributes)
-	{
-		// Remember ID of field itself:
-		if(f.getID() != null)
-		{
-			if(idToField.get(f.getID()) != null)
-				addWarning("Duplicate field ID: " + f.getID() + " (possibly based on value)!");
-			idToField.put(f.getID(), f);
-		}
-		
-		// Remember intra-currentForm jumps:
-		if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
-		{
-			String jumpToId = attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim();
-			//make _END currentForm-specific:
-			if(jumpToId.equalsIgnoreCase(EndField.ID))
-				jumpToId = EndField.ID(f.getForm());
-			//make _CANCEL currentForm-specific:
-			if(jumpToId.equalsIgnoreCase(CancelField.ID))
-				jumpToId = CancelField.ID(f.getForm());
-			//Store field & jumpToId:
-			fieldToJumpId.put(f, jumpToId);
-		}
 	}
 	
 	@Override
@@ -459,10 +457,8 @@ public class FormParser extends SubtreeParser
 			currentForm.setStartField(startField);
 			
 			// Create an EndField and an CancelField instance such that _END and _CANCEL jumps can be resolved (these don't need to be added as actual fields)
-			EndField endF = new EndField(currentForm);
-			idToField.put(endF.getID(), endF);
-			CancelField cancelF = new CancelField(currentForm);
-			idToField.put(cancelF.getID(), cancelF);
+			for(EndField endF : EndField.GetEndFields(currentForm))
+				idToField.put(endF.getID(), endF);
 			
 			// Resolve jumps...
 			for(Entry<Field, String> jump : fieldToJumpId.entrySet())

@@ -1,6 +1,5 @@
 package uk.ac.ucl.excites.collector.project.ui;
 
-import uk.ac.ucl.excites.collector.project.model.fields.CancelField;
 import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
@@ -73,12 +72,6 @@ public interface Controller
 	 * @return whether or not a UI update is required after entering the field
 	 */
 	public boolean enterMultiListField(MultiListField mlf);
-	
-	/**
-	 * @param cf  the CancelField
-	 * @return whether or not a UI update is required after entering the field
-	 */
-	public boolean enterCancelField(CancelField cf);
 	
 	/**
 	 * @param ef  the EndField

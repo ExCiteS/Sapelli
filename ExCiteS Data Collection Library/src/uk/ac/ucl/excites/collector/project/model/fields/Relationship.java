@@ -84,7 +84,7 @@ public class Relationship extends Field
 	public void setRelatedForm(Form relatedForm)
 	{
 		if(relatedForm == form)
-			throw new IllegalArgumentException("A form cannot be related to itself!");
+			throw new IllegalArgumentException("A form cannot be related to itself!"); //TODO why not? e.g. person-person relationship
 		this.relatedForm = relatedForm;
 	}
 
