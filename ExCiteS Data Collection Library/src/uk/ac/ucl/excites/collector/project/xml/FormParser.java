@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.collector.project.model.fields.LabelField;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
+import uk.ac.ucl.excites.collector.project.model.fields.Page;
 import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.fields.Relationship;
 import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
@@ -56,6 +57,7 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_LIST = "List";
 	static private final String TAG_MULTILIST = "MultiList";
 	static private final String TAG_LISTITEM = "Item";
+	static private final String TAG_PAGE = "Page";
 	
 	//ATTRIBUTES
 	static private final String ATTRIBUTE_FORM_NAME = "name";
@@ -76,6 +78,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR = "buttonBackgroundColor";
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
 	static private final String ATTRIBUTE_FORM_ANIMATION = "animation";
+	static private final String ATTRIBUTE_FORM_SINGLE_PAGE = "singlePage";
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
@@ -105,6 +108,7 @@ public class FormParser extends SubtreeParser
 	private String formStartFieldId;
 	private ChoiceField currentChoice;
 	private MultiListItem currentListItem;
+	private Page currentPage;
 	private HashMap<Field, String> fieldToJumpId;
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaField, String> mediaAttachToDisableId;
@@ -170,6 +174,12 @@ public class FormParser extends SubtreeParser
 			currentForm.setForwardButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_FORWARD_BUTTON_IMG));
 			// ButtonField background colour:
 			currentForm.setButtonBackgroundColor(readStringAttribute(ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR, Form.DEFAULT_BUTTON_BACKGROUND_COLOR, attributes));
+			// Single page form (all fields will be added to a single page):
+			if(readBooleanAttribute(Form.DEFAULT_SINGLE_PAGE, attributes, ATTRIBUTE_FORM_SINGLE_PAGE))
+			{
+				currentPage = new Page(currentForm, readStringAttribute(currentForm.getID() + "_page", attributes, ATTRIBUTE_FIELD_ID));
+				newField(currentPage, attributes);
+			}
 			// Start field:
 			if(attributes.getValue(ATTRIBUTE_FORM_START_FIELD) != null && !attributes.getValue(ATTRIBUTE_FORM_START_FIELD).isEmpty())
 				formStartFieldId = attributes.getValue(ATTRIBUTE_FORM_START_FIELD);
@@ -343,6 +353,14 @@ public class FormParser extends SubtreeParser
 				else
 					addWarning("Ignored <" + TAG_LISTITEM + "> element occuring outside <" + TAG_LIST + "> or  <" + TAG_MULTILIST + ">.");
 			}
+			// <Page> (Field composite)
+			else if(qName.equals(TAG_PAGE))
+			{
+				if(currentPage != null)
+					throw new SAXException("Nested <Page> elements are not allowed.");
+				currentPage = new Page(currentForm, readStringAttribute(currentForm.getID() + "_" + currentForm.getFields().size(), attributes, ATTRIBUTE_FIELD_ID));
+				newField(currentPage, attributes);
+			}
 			// Add future field types here...
 			// <?> in <Form>	
 			else
@@ -368,7 +386,11 @@ public class FormParser extends SubtreeParser
 	{
 		if(f.isRoot())
 		{
-			currentForm.addField(f);
+			if(currentPage == null)
+				currentForm.addField(f);
+			else
+				currentPage.addField(f);
+			
 			setOptionalness(f, attributes);
 		}
 		
@@ -441,9 +463,17 @@ public class FormParser extends SubtreeParser
 				currentListItem.setDefaultChild(currentListItem.getChildren().get(0)); // first child become default
 			currentListItem = currentListItem.getParent(); // parent (possibly null in case of root) becomes currentListItem
 		}
+		// </Page>
+		else if(qName.equals(TAG_PAGE))
+		{
+			currentPage = null;
+		}
 		// </Form>
 		else if(qName.equals(TAG_FORM))
 		{
+			// in case of a singePage form:
+			currentPage = null;
+			
 			// Resolve/set currentForm start field:
 			Field startField = currentForm.getFields().get(0); // first field is the default start field
 			if(formStartFieldId != null) // start field specified (by ID) in Form tag

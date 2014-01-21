@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.collector.project.model.fields.Field.Optionalness;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
+import uk.ac.ucl.excites.collector.project.model.fields.Page;
 import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
@@ -319,6 +320,15 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	@Override
 	public boolean enterMultiListField(MultiListField mlf)
 	{
+		return true;
+	}
+	
+	@Override
+	public boolean enterPage(Page page)
+	{
+		// TODO does this work?
+		//for(Field f : page.getFields())
+		//	f.enter(this);
 		return true;
 	}
 	

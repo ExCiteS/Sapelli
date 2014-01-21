@@ -7,6 +7,7 @@ import uk.ac.ucl.excites.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
+import uk.ac.ucl.excites.collector.project.model.fields.Page;
 import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
 
@@ -72,6 +73,12 @@ public interface Controller
 	 * @return whether or not a UI update is required after entering the field
 	 */
 	public boolean enterMultiListField(MultiListField mlf);
+
+	/**
+	 * @param page	the Page
+	 * @return whether or not a UI update is required after entering the field
+	 */
+	public boolean enterPage(Page page);
 	
 	/**
 	 * @param ef  the EndField

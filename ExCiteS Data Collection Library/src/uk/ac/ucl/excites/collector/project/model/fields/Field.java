@@ -203,9 +203,8 @@ public abstract class Field
 	 */
 	protected List<Column<?>> createColumns()
 	{
-		Column<?> singleCol = createColumn();
 		List<Column<?>> list = new ArrayList<Column<?>>();
-		list.add(singleCol);
+		list.add(createColumn());
 		return list;
 	}
 	

@@ -47,6 +47,7 @@ public class Form
 	public static final String V1X_NEXT_LOOP = "_LOOP";
 	public static final String V1X_NEXT_EXIT = "_EXIT";
 	
+	public static final boolean DEFAULT_SINGLE_PAGE = false;
 	public static final boolean DEFAULT_VIBRATE = true;
 	public static final boolean DEFAULT_SHOW_BACK = true;
 	public static final boolean DEFAULT_SHOW_CANCEL = true;
@@ -563,33 +564,6 @@ public class Form
 	public String toString()
 	{
 		return id;
-	}
-	
-	/**
-	 * A Form.Page groups together fields to be displayed together
-	 * 
-	 * @author mstevens
-	 */
-	public class Page
-	{
-		
-		private final List<Field> fields;
-		
-		public Page()
-		{
-			this.fields = new ArrayList<Field>();
-		}
-		
-		public void addField(Field field)
-		{
-			this.fields.add(field);
-		}
-		
-		public List<Field> getFields()
-		{
-			return fields;
-		}
-		
 	}
 
 }

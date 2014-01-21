@@ -23,6 +23,8 @@ public interface CollectorUI
 	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf);
 
 	public FieldUI createMultiListUI(MultiListField mlf);
+	
+	public FieldUI createPageUI(Page page);
 
 	public void setField(Field currentField);
 
