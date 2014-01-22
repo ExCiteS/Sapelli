@@ -91,13 +91,11 @@ public class EditTextView extends LinearLayout implements FieldUI
 	@Override
 	public void update(Record record)
 	{
-		String init = EditTextField.DEFAULT_INITIAL_VALUE;
 		StringColumn col = getColumn();
 		if(col.retrieveValue(record) != null)
-			init = col.retrieveValue(record);
+			editText.setText(col.retrieveValue(record));
 		else
-			init = field.getInitialValue();
-		editText.setText(init);
+			editText.setText(field.getInitialValue());
 	}
 	
 	/*

@@ -9,7 +9,6 @@ import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.BooleanColumn;
 import uk.ac.ucl.excites.storage.model.Column;
-import uk.ac.ucl.excites.storage.model.Record;
 
 /**
  * @author Julia
@@ -70,12 +69,6 @@ public class CheckBoxField extends Field
 	protected Column<?> createColumn()
 	{
 		return new BooleanColumn(id, optional != Optionalness.NEVER);
-	}
-
-	public void storeValue(Record record)
-	{
-		if(!isNoColumn())
-			((BooleanColumn) form.getColumnFor(this)).storeValue(record, initialValue);
 	}
 
 	/*

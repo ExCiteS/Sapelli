@@ -177,7 +177,7 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	@Override
 	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf)
 	{
-		return new CheckBoxView(activity, cbf);
+		return new CheckBoxView(activity, controller, cbf);
 	}
 	
 	@Override

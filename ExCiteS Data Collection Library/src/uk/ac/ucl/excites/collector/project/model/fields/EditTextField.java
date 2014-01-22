@@ -8,7 +8,6 @@ import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.Column;
-import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.StringColumn;
 
 /**
