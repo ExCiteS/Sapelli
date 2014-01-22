@@ -66,7 +66,7 @@ public class ButtonField extends Field
 	public void setColumn(ButtonColumn column)
 	{
 		this.column = column;
-		this.noColumn = (this.column != ButtonColumn.NONE); 
+		this.noColumn = (this.column == ButtonColumn.NONE); 
 	}
 	
 	public void setNoColumn(boolean noColumn)
