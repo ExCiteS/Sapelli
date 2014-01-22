@@ -177,7 +177,7 @@ public class FormParser extends SubtreeParser
 			// Single page form (all fields will be added to a single page):
 			if(readBooleanAttribute(Form.DEFAULT_SINGLE_PAGE, attributes, ATTRIBUTE_FORM_SINGLE_PAGE))
 			{
-				currentPage = new Page(currentForm, readStringAttribute(currentForm.getID() + "_page", attributes, ATTRIBUTE_FIELD_ID));
+				currentPage = new Page(currentForm, currentForm.getID() + "_page");
 				newField(currentPage, attributes);
 			}
 			// Start field:
