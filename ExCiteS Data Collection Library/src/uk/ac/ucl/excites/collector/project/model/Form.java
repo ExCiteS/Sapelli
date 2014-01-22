@@ -57,10 +57,7 @@ public class Form
 	public static final String COLUMN_TIMESTAMP_START = "StartTime";
 	public static final String COLUMN_TIMESTAMP_END = "EndTime";
 	public static final String COLUMN_DEVICE_ID = "DeviceID";
-	// public static final String COLUMN_USER = "User";
-	public static final String COLUMN_SENT_AT = "SentAt";
-	public static final String COLUMN_RECEIVED_AT = "ReceivedAt";
-	public static final String COLUMN_TRANSMISSION_TYPE = "TransmissionType";
+	
 
 	// Dynamics-------------------------------------------------------
 	private final Project project;
@@ -411,18 +408,19 @@ public class Form
 	public void setNext(String nextStr) throws IllegalArgumentException
 	{
 		if(nextStr == null)
-			return; //default next will be used
+			return; //default next will be used^
 		if(nextStr.startsWith("_"))
 			nextStr = nextStr.substring(1);
+		nextStr = nextStr.toUpperCase();
 		try
 		{
-			this.next = Next.valueOf(nextStr.toUpperCase());
+			this.next = Next.valueOf(nextStr);
 		}
 		catch(IllegalArgumentException iae)
 		{
-			if(V1X_NEXT_LOOP.equalsIgnoreCase(nextStr))
+			if(V1X_NEXT_LOOP.equals(nextStr))
 				this.next = Next.LOOPFORM;
-			else if(V1X_NEXT_EXIT.equalsIgnoreCase(nextStr))
+			else if(V1X_NEXT_EXIT.equals(nextStr))
 				this.next = Next.EXITAPP;
 			else
 				throw iae;
