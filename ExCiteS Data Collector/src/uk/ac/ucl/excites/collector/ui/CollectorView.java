@@ -165,12 +165,6 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	{
 		return new ButtonView(activity, bf);
 	}
-
-	@Override
-	public FieldUI createMultiListUI(MultiListField mlf)
-	{
-		return new MultiListView(activity, mlf);
-	}
 	
 	@Override
 	public FieldUI createTextFieldUI(EditTextField tf) {
@@ -182,6 +176,25 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf) {
 
 		return new CheckBoxView(activity, cbf);
+	}
+	
+	@Override
+	public FieldUI createMultiListUI(MultiListField mlf)
+	{
+		return new MultiListView(activity, mlf);
+	}
+
+	@Override
+	public FieldUI createButtonFieldUI(ButtonField bf)
+	{
+		return new ButtonView(activity, bf);
+	}
+	
+	@Override
+	public FieldUI createPageUI(Page page)
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 	public void cancelCurrentField()
@@ -271,13 +284,6 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	{
 		int heightPx = (ScreenMetrics.GetScreenHeight(activity) - (buttonsShowing ? (buttonView.getButtonHeightPx() + getSpacingPx()) : 0) - ((numRows - 1) * getSpacingPx())) / numRows;
 		return Math.max(heightPx, 0); //avoid negative pixel counts
-	}
-
-	@Override
-	public FieldUI createPageUI(Page page)
-	{
-		// TODO Auto-generated method stub
-		return null;
 	}
 
 }

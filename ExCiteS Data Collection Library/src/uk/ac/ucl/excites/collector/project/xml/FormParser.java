@@ -47,6 +47,7 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_CHOICE = "Choice";
 	static private final String TAG_AUDIO = "Audio";
 	static private final String TAG_PHOTO = "Photo";
+	static private final String TAG_LOCATION = "Location";
 	static private final String TAG_ORIENTATION = "Orientation";
 	static private final String TAG_BELONGS_TO = "BelongsTo";
 	static private final String TAG_LINKS_TO = "LinksTo";
@@ -100,6 +101,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_TEXT_MULTILINE = "multiLine";
 	static private final String ATTRIBUTE_LIST_PRESELECT = "preSelectDefault";
 	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
+	static private final String ATTRIBUTE_BUTTON_COLUMN = "column";
 	
 	
 	// DYNAMICS-------------------------------------------------------
@@ -155,7 +157,14 @@ public class FormParser extends SubtreeParser
 			// Shortcut image:
 			currentForm.setShortcutImageRelativePath(readStringAttribute(ATTRIBUTE_FORM_SHORTCUT_IMAGE, null, attributes));
 			// Next/end:
-			currentForm.setNext(readStringAttribute(Form.DEFAULT_NEXT.name(), attributes, ATTRIBUTE_FORM_NEXT, ATTRIBUTE_FORM_END));
+			try
+			{
+				currentForm.setNext(readStringAttribute(Form.DEFAULT_NEXT.name(), attributes, ATTRIBUTE_FORM_NEXT, ATTRIBUTE_FORM_END));
+			}
+			catch(IllegalArgumentException iae)
+			{
+				throw new SAXException("Invalid '" + ATTRIBUTE_FORM_NEXT + "' attribute value on <" + TAG_FORM + ">.", iae);
+			}
 			// Store end time?:
 			currentForm.setStoreEndTime(readBooleanAttribute(ATTRIBUTE_FORM_STORE_END_TIME, Form.END_TIME_DEFAULT, attributes));
 			// Sound end vibration at the end of the currentForm:
@@ -210,7 +219,7 @@ public class FormParser extends SubtreeParser
 				currentChoice.setCrossColor(readStringAttribute("crossColor", ChoiceField.DEFAULT_CROSS_COLOR, attributes));
 			}
 			// <Location>
-			else if(qName.equals("Location"))
+			else if(qName.equals(TAG_LOCATION))
 			{
 				LocationField locField = new LocationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 				newField(locField, attributes);
@@ -303,6 +312,14 @@ public class FormParser extends SubtreeParser
 			{
 				ButtonField btn = new ButtonField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_BUTTON, ATTRIBUTE_FIELD_LABEL, attributes));
 				newField(btn, attributes);
+				try
+				{
+					btn.setColumn(readStringAttribute(ButtonField.ButtonColumn.NONE.name(), attributes, ATTRIBUTE_BUTTON_COLUMN));
+				}
+				catch(IllegalArgumentException iae)
+				{
+					throw new SAXException("Invalid '" + ATTRIBUTE_BUTTON_COLUMN + "' attribute value on <" + TAG_BUTTON + ">.", iae);
+				}
 			}
 			// <Label>
 			else if(qName.equals(TAG_LABEL))

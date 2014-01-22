@@ -3,23 +3,38 @@
  */
 package uk.ac.ucl.excites.collector.project.model.fields;
 
+import android.annotation.SuppressLint;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.storage.model.BooleanColumn;
 import uk.ac.ucl.excites.storage.model.Column;
+import uk.ac.ucl.excites.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.util.StringUtils;
 
 /**
+ * A Field that represents an on-screen button, it can optionally have either Boolean- or DateTime column.
+ * 
  * @author mstevens
- *
  */
 public class ButtonField extends Field
 {
-
-	static public final String ID_PREFIX = "btn";
 	
+	// Statics --------------------------------------------
+	static public enum ButtonColumn
+	{
+		NONE,
+		BOOLEAN,
+		DATETIME
+	}
+	
+	static public final String ID_PREFIX = "btn";
+	static public final ButtonColumn DEFAULT_COLUMN = ButtonColumn.NONE;
+	
+	// Dynamics -------------------------------------------
 	private String label;
+	private ButtonColumn column;
 	
 	/**
 	 * @param form
@@ -39,16 +54,38 @@ public class ButtonField extends Field
 	{	
 		super(form, (id == null || id.isEmpty() ? ID_PREFIX + StringUtils.replaceWhitespace(label.trim(), "_") : id));
 		this.label = label;
-		this.noColumn = true;
+		setColumn(DEFAULT_COLUMN);
 	}
 
+	@SuppressLint("DefaultLocale")
+	public void setColumn(String column) throws IllegalArgumentException
+	{
+		setColumn(ButtonColumn.valueOf(column.toUpperCase()));
+	}
+	
+	public void setColumn(ButtonColumn column)
+	{
+		this.column = column;
+		this.noColumn = (this.column != ButtonColumn.NONE); 
+	}
+	
+	public void setNoColumn(boolean noColumn)
+	{
+		throw new UnsupportedOperationException("setNoColumn() is unsupported on ButtonFields, use setColumn() instead.");
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
 	 */
 	@Override
 	protected Column<?> createColumn()
 	{
-		return null;
+		switch(column)
+		{
+			case BOOLEAN : return new BooleanColumn(id, optional != Optionalness.NEVER);
+			case DATETIME : return DateTimeColumn.Century21NoMS(id, optional != Optionalness.NEVER);
+			/* case NONE */ default : return null;
+		}
 	}
 	
 	/**
@@ -65,8 +102,7 @@ public class ButtonField extends Field
 	@Override
 	public boolean enter(Controller controller)
 	{
-		// TODO Auto-generated method stub
-		return false;
+		return controller.enterButtonField(this);
 	}
 
 	/* (non-Javadoc)
@@ -75,20 +111,13 @@ public class ButtonField extends Field
 	@Override
 	public FieldUI createUI(CollectorUI collectorUI)
 	{
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	public void setNoColumn(boolean noColumn)
-	{
-		throw new UnsupportedOperationException("setNoColumn is unsupported on ButtonFields since they never have columns.");
+		return collectorUI.createButtonFieldUI(this);
 	}
 
 	@Override
 	public void leave(FieldUI ui, Controller controller)
 	{
-		// TODO Auto-generated method stub
-		
+		// TODO Auto-generated method stub		
 	}
 
 }

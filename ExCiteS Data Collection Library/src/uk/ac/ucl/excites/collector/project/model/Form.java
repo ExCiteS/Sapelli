@@ -3,12 +3,11 @@
  */
 package uk.ac.ucl.excites.collector.project.model;
 
+import android.annotation.SuppressLint;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
@@ -408,11 +407,12 @@ public class Form
 	 * @param next the next to set
 	 * @throws IllegalArgumentException	when the nextStr is not recognised
 	 */
+	@SuppressLint("DefaultLocale")
 	public void setNext(String nextStr) throws IllegalArgumentException
 	{
 		try
 		{
-			this.next = Next.valueOf(nextStr);
+			this.next = Next.valueOf(nextStr.toUpperCase());
 		}
 		catch(IllegalArgumentException iae)
 		{

@@ -19,6 +19,7 @@ import uk.ac.ucl.excites.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Form.Next;
 import uk.ac.ucl.excites.collector.project.model.Project;
+import uk.ac.ucl.excites.collector.project.model.fields.ButtonField;
 import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
@@ -314,6 +315,12 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	@Override
 	public boolean enterCheckBoxField(CheckBoxField cbf)
 	{	
+		return true;
+	}
+	
+	@Override
+	public boolean enterButtonField(ButtonField bf)
+	{
 		return true;
 	}
 	

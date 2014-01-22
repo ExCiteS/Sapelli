@@ -21,7 +21,7 @@ import uk.ac.ucl.excites.storage.model.Column;
 public class Page extends Field
 {
 	
-	private List<Field> fields;
+	private final List<Field> fields;
 
 	public Page(Form form, String id)
 	{

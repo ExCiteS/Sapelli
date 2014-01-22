@@ -92,7 +92,7 @@
   <!-- should 'hold' be an attribute of the form of of belongsTo? -> probably YES -->
   <!-- end: accept form names? -->
   
-  <Form id="Session" name="Community session" protectEdit="true" editable="true" singlePage="true" protectEditMessage="..." storeEndTime="true" end="BACK">
+  <Form id="Session" name="Community session" editable="true" singlePage="true" storeEndTime="true" end="BACK">
     <!-- allow form names as end action? (e.g. end="Entry") -> better not... -->
   
     <Alert text="Press ... within 5 seconds to access the Session form" showOnCreate="false" showOnEdit="true" timeout="5" onTimeout="_BACK">
@@ -132,14 +132,10 @@
 
     <Text id="Comment" label="Comments" maxLength="1024" multiline="true" optional="true"/>
 
-    <Button id="Open" label="Start Session" disableOnEdit="true" action="_STORE|_BACK"/>
-    <!-- Alternatives:
-        jump="_BACK" (meaning "_BACK" is a 'special jump' and not an endAction)
-         -->
+    <Button label="Start Session" disableOnEdit="true" action="_SAVE+PREVFORM"/>
     
-    <Button id="closed" label="Close Session" disableOnCreate="true" action="_END+RELEASE"/><!-- noColumn="true" is implied -->
-    
-    <!-- <LinkTo id="LinkToSession" form="Entry"/> --> <!-- formJump="Session" (implicit linkTo?) -->
+    <Button id="closed" label="Close Session" disableOnCreate="true" column="boolean" action="_SAVE+PREVFORM"/>
+  
 
   </Form>
   
