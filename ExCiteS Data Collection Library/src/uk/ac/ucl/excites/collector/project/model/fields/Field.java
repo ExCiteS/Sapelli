@@ -10,6 +10,7 @@ import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.Column;
+import uk.ac.ucl.excites.util.CollectionUtils;
 
 /**
  * @author mstevens
@@ -203,9 +204,9 @@ public abstract class Field
 	 */
 	protected List<Column<?>> createColumns()
 	{
-		List<Column<?>> list = new ArrayList<Column<?>>();
-		list.add(createColumn());
-		return list;
+		List<Column<?>> cols = new ArrayList<Column<?>>();
+		CollectionUtils.addIgnoreNull(cols,createColumn());
+		return cols;
 	}
 	
 	/**

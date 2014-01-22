@@ -6,6 +6,7 @@ import java.util.TimerTask;
 import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.util.Timeoutable;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -45,7 +46,13 @@ public class WaitingView extends LinearLayout implements FieldUI
 	}
 
 	@Override
-	public void update()
+	public Field getField()
+	{
+		return field;
+	}
+
+	@Override
+	public void update(Record record)
 	{
 		if(field instanceof Timeoutable)
 		{
@@ -64,12 +71,19 @@ public class WaitingView extends LinearLayout implements FieldUI
 		}
 		//else: do nothing
 	}
-	
 
 	@Override
-	public Field getField()
+	public boolean isValid(Record record)
 	{
-		return field;
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void storeValue(Record record)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 	
 }

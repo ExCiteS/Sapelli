@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.collector.ui.fieldviews;
 import uk.ac.ucl.excites.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.storage.model.Record;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
@@ -76,18 +77,7 @@ public class EditTextView extends LinearLayout implements FieldUI
 	{
 		return field;
 	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see uk.ac.ucl.excites.collector.project.ui.FieldUI#update()
-	 */
-	@Override
-	public void update()
-	{
-		// does nothing
-	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -144,6 +134,27 @@ public class EditTextView extends LinearLayout implements FieldUI
 		final public void onTextChanged(CharSequence s, int start, int before, int count)
 		{ /* Don't care */
 		}
+	}
+
+	@Override
+	public void update(Record record)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean isValid(Record record)
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void storeValue(Record record)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 }

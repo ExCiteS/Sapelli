@@ -6,6 +6,7 @@ package uk.ac.ucl.excites.collector.ui.fieldviews;
 import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.storage.model.Record;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.widget.CheckBox;
@@ -41,7 +42,7 @@ public class CheckBoxView extends LinearLayout implements FieldUI
 	}
 
 	@Override
-	public void update()
+	public void update(Record record)
 	{
 		// TODO
 	}
@@ -50,6 +51,20 @@ public class CheckBoxView extends LinearLayout implements FieldUI
 	public void cancel()
 	{
 		// does nothing
+	}
+
+	@Override
+	public boolean isValid(Record record)
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void storeValue(Record record)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 }

@@ -82,6 +82,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FORM_SINGLE_PAGE = "singlePage";
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
+	private static final String ATTRIBUTE_FIELD_OPTIONAL = "optional";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
 	static private final String ATTRIBUTE_FIELD_LABEL = "label";
 	static private final String ATTRIBUTE_FIELD_LABELS = "labels";
@@ -168,8 +169,7 @@ public class FormParser extends SubtreeParser
 			// Store end time?:
 			currentForm.setStoreEndTime(readBooleanAttribute(ATTRIBUTE_FORM_STORE_END_TIME, Form.END_TIME_DEFAULT, attributes));
 			// Sound end vibration at the end of the currentForm:
-			// Get the sound path
-			currentForm.setSaveSoundRelativePath(readStringAttribute(null, attributes, ATTRIBUTE_FORM_SAVE_SOUND, ATTRIBUTE_FORM_END_SOUND));
+			currentForm.setSaveSoundRelativePath(readStringAttribute(null, attributes, ATTRIBUTE_FORM_SAVE_SOUND, ATTRIBUTE_FORM_END_SOUND)); // Get the sound path
 			currentForm.setVibrateOnSave(readBooleanAttribute(Form.DEFAULT_VIBRATE, attributes, ATTRIBUTE_FORM_SAVE_VIBRATE, ATTRIBUTE_FORM_END_VIBRATE));
 			// Which buttons are allowed to show:
 			currentForm.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Form.DEFAULT_SHOW_BACK, attributes));
@@ -185,10 +185,7 @@ public class FormParser extends SubtreeParser
 			currentForm.setButtonBackgroundColor(readStringAttribute(ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR, Form.DEFAULT_BUTTON_BACKGROUND_COLOR, attributes));
 			// Single page form (all fields will be added to a single page):
 			if(readBooleanAttribute(Form.DEFAULT_SINGLE_PAGE, attributes, ATTRIBUTE_FORM_SINGLE_PAGE))
-			{
-				currentPage = new Page(currentForm, currentForm.getID() + "_page");
-				newField(currentPage, attributes);
-			}
+				newPage(null);
 			// Start field:
 			if(attributes.getValue(ATTRIBUTE_FORM_START_FIELD) != null && !attributes.getValue(ATTRIBUTE_FORM_START_FIELD).isEmpty())
 				formStartFieldId = attributes.getValue(ATTRIBUTE_FORM_START_FIELD);
@@ -373,10 +370,7 @@ public class FormParser extends SubtreeParser
 			// <Page> (Field composite)
 			else if(qName.equals(TAG_PAGE))
 			{
-				if(currentPage != null)
-					throw new SAXException("Nested <Page> elements are not allowed.");
-				currentPage = new Page(currentForm, readStringAttribute(currentForm.getID() + "_" + currentForm.getFields().size(), attributes, ATTRIBUTE_FIELD_ID));
-				newField(currentPage, attributes);
+				newPage(attributes);
 			}
 			// Add future field types here...
 			// <?> in <Form>	
@@ -393,24 +387,30 @@ public class FormParser extends SubtreeParser
 	}
 	
 	/**
-	 * Adds field to current currentForm, sets optionalness, remembers id & jump
+	 * @param attributes	may be null for implicit pages (i.e. the one for a singlePage form)
+	 * @throws SAXException
+	 */
+	private void newPage(Attributes attributes) throws SAXException
+	{
+		if(currentPage != null)
+			throw new SAXException("Nested <Page> elements are not allowed.");
+		Page newPage = new Page(currentForm,
+								attributes == null ?
+									currentForm.getID() + "_page" :
+									readStringAttribute(currentForm.getID() + "_" + currentForm.getFields().size(), attributes, ATTRIBUTE_FIELD_ID));
+		newField(newPage, attributes);
+		currentPage = newPage; //!!! the newPage helper variable avoids that newField() adds the page to itselfs instead of the form!
+	}
+	
+	/**
+	 * Adds field to current currentForm or currentPage, sets optionalness, remembers id & jump & reads various Field attributes
 	 * 
-	 * @param f
-	 * @param attributes
-	 * @throws SAXException 
+	 * @param f		the Field object
+	 * @param attributes	may be null for implicit fields (fields that are inserted by the parser but do not explicitly appear in the XML, e.g. the Page for a singlePage form) 
+	 * @throws SAXException
 	 */
 	private void newField(Field f, Attributes attributes) throws SAXException
 	{
-		if(f.isRoot())
-		{
-			if(currentPage == null)
-				currentForm.addField(f);
-			else
-				currentPage.addField(f);
-			
-			setOptionalness(f, attributes);
-		}
-		
 		// Warn about IDs starting with '_':
 		if(f.getID().startsWith("_"))
 		{
@@ -421,35 +421,54 @@ public class FormParser extends SubtreeParser
 			addWarning("Please avoid field IDs starting with '_' (" + f.getID() + ")."); 
 		}
 		
-		// Remember ID of field itself:
-		if(idToField.get(f.getID()) != null)
-			addWarning("Duplicate field ID: " + f.getID() + " (possibly based on value)!");
-		idToField.put(f.getID(), f);
+		// If the field is a root field: add it to the form or page, remember its ID, and set its optionalness:
+		if(f.isRoot())
+		{
+			if(currentPage == null)
+				currentForm.addField(f);
+			else
+				currentPage.addField(f);
+			
+			// Remember ID of field itself (such that it can be jumped to):
+			if(idToField.put(f.getID(), f) != null)
+				throw new SAXException("Duplicate field ID: " + f.getID() + " in Form '" + currentForm.getID() + "'!");
+			
+			// Set optionalness:
+			if(attributes != null)
+				setOptionalness(f, attributes);
+		}
 		
-		// Remember jumps (always "intra-Form"):
-		if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
-			fieldToJumpId.put(f, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim());
-		
-		// f.setSkipOnBack(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK)); //TODO skip on back?
-		f.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes));
-		
-		// Which buttons are allowed to show:
-		f.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK, attributes));
-		f.setShowCancel(readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL, attributes));
-		f.setShowForward(readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD, attributes));
+		// Read various optional Field attributes: 
+		if(attributes != null)
+		{
+			// Remember jumps (always "intra-Form"):
+			if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
+				fieldToJumpId.put(f, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim());
+			
+			// f.setSkipOnBack(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK)); //TODO skip on back?
+			f.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes));
+			
+			// Which buttons are allowed to show:
+			f.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK, attributes));
+			f.setShowCancel(readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL, attributes));
+			f.setShowForward(readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD, attributes));
+		}
 	}
 
 	protected void setOptionalness(Field field, Attributes attributes)
 	{
-		String optText = attributes.getValue("optional");
+		String optText = attributes.getValue(ATTRIBUTE_FIELD_OPTIONAL);
 		Optionalness opt = Field.DEFAULT_OPTIONAL;
-		if(optText != null && !optText.isEmpty())
-			if(optText.trim().equalsIgnoreCase("always") || optText.trim().equalsIgnoreCase("true"))
+		if(optText != null && !optText.trim().isEmpty())
+		{	
+			optText = optText.trim();
+			if("always".equalsIgnoreCase(optText) || "true".equalsIgnoreCase(optText))
 				opt = Optionalness.ALWAYS;
-			else if(optText.trim().equalsIgnoreCase("notIfReached"))
+			else if("notIfReached".equalsIgnoreCase(optText))
 				opt = Optionalness.NOT_IF_REACHED;
-			else if(optText.trim().equalsIgnoreCase("never") || optText.trim().equalsIgnoreCase("false"))
+			else if("never".equalsIgnoreCase(optText) || "false".equalsIgnoreCase(optText))
 				opt = Optionalness.NEVER;
+		}
 		field.setOptional(opt);
 	}
 	
@@ -493,7 +512,7 @@ public class FormParser extends SubtreeParser
 			
 			// Resolve/set currentForm start field:
 			Field startField = currentForm.getFields().get(0); // first field is the default start field
-			if(formStartFieldId != null) // start field specified (by ID) in Form tag
+			if(formStartFieldId != null) // try with field specified by ID in <Form startField="..."> (may be null)
 			{
 				Field specifiedStartField = currentForm.getField(formStartFieldId);
 				if(specifiedStartField == null)
@@ -501,7 +520,7 @@ public class FormParser extends SubtreeParser
 				else
 					startField = specifiedStartField;
 			}
-			currentForm.setStartField(startField);
+			currentForm.setStartField(startField);		
 			
 			// Create an EndField and an CancelField instance such that _END and _CANCEL jumps can be resolved (these don't need to be added as actual fields)
 			for(EndField endF : EndField.GetEndFields(currentForm))

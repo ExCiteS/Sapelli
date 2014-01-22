@@ -11,6 +11,7 @@ import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.Column;
+import uk.ac.ucl.excites.util.CollectionUtils;
 
 /**
  * A Page of a {@link Form}.
@@ -53,7 +54,7 @@ public class Page extends Field
 	{
 		List<Column<?>> columns = new ArrayList<Column<?>>(); 
 		for(Field f : fields)
-			columns.addAll(f.createColumns());
+			CollectionUtils.addAllIgnoreNull(columns, f.createColumns());
 		return columns;
 	}
 	

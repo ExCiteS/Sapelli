@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.collector.ui.fieldviews;
 import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
 import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListItem;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.storage.model.Record;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.Gravity;
@@ -96,10 +97,26 @@ public class MultiListView extends LinearLayout implements FieldUI
 		return field;
 	}
 
+
 	@Override
-	public void update()
+	public void update(Record record)
 	{
 		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public boolean isValid(Record record)
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void storeValue(Record record)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override

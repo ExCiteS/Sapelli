@@ -18,6 +18,7 @@ import uk.ac.ucl.excites.collector.ui.picker.items.LayeredItem;
 import uk.ac.ucl.excites.collector.ui.picker.items.TextItem;
 import uk.ac.ucl.excites.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
+import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.util.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -121,17 +122,7 @@ public class ChoiceView extends PickerView implements FieldUI, AdapterView.OnIte
 		
 		return item;
 	}
-	
-	@Override
-	public void update()
-	{
-		// Update visibility:
-		int c = 0;
-		for(ChoiceField child : choice.getChildren())
-			pickerAdapter.getItem(c++).setVisibility(controller.isFieldEndabled(child));
-		setAdapter(pickerAdapter);
-	}
-	
+
 	@Override
 	public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 	{
@@ -169,6 +160,30 @@ public class ChoiceView extends PickerView implements FieldUI, AdapterView.OnIte
 	public Field getField()
 	{
 		return choice;
+	}
+
+	@Override
+	public void update(Record record)
+	{
+		// Update visibility:
+		int c = 0;
+		for(ChoiceField child : choice.getChildren())
+			pickerAdapter.getItem(c++).setVisibility(controller.isFieldEndabled(child));
+		setAdapter(pickerAdapter);
+	}
+
+	@Override
+	public boolean isValid(Record record)
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void storeValue(Record record)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 }

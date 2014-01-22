@@ -43,8 +43,8 @@ public class Form
 		PREVFORM
 	}
 	public static final Next DEFAULT_NEXT = Next.LOOPFORM;
-	public static final String V1X_NEXT_LOOP = "_LOOP";
-	public static final String V1X_NEXT_EXIT = "_EXIT";
+	public static final String V1X_NEXT_LOOP = "LOOP";
+	public static final String V1X_NEXT_EXIT = "EXIT";
 	
 	public static final boolean DEFAULT_SINGLE_PAGE = false;
 	public static final boolean DEFAULT_VIBRATE = true;
@@ -410,6 +410,10 @@ public class Form
 	@SuppressLint("DefaultLocale")
 	public void setNext(String nextStr) throws IllegalArgumentException
 	{
+		if(nextStr == null)
+			return; //default next will be used
+		if(nextStr.startsWith("_"))
+			nextStr = nextStr.substring(1);
 		try
 		{
 			this.next = Next.valueOf(nextStr.toUpperCase());

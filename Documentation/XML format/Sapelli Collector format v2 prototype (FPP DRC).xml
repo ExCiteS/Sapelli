@@ -102,7 +102,7 @@
 
     <Label text="Session"/><!-- noColumn="true" is implied -->
 
-    <Text id="Creator" label="Creator" minLength="2" maxLength="48" optional="false"/>
+    <Text id="Creator:" label="Creator" minLength="2" maxLength="48" optional="false"/>
 
     <MultiList id="Community" label="Province:;Community:" optional="false" preSelectDefault="false">
       <Item value="Province 1">
@@ -130,13 +130,12 @@
 
     <Check id="Training" label="Training session" defaultValue="false"/>
 
-    <Text id="Comment" label="Comments" maxLength="1024" multiline="true" optional="true"/>
+    <Text id="Comment:" label="Comments" maxLength="1024" multiline="true" optional="true"/>
 
     <Button label="Start Session" disableOnEdit="true" action="_SAVE+PREVFORM"/>
     
     <Button id="closed" label="Close Session" disableOnCreate="true" column="boolean" action="_SAVE+PREVFORM"/>
   
-
   </Form>
   
 </SapelliCollectorProject>
