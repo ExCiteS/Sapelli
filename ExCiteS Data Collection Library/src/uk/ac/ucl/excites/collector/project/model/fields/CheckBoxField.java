@@ -19,11 +19,11 @@ public class CheckBoxField extends Field
 {
 
 	static public final String ID_PREFIX = "chbx";
+	
+	static public final boolean DEFAULT_INITIAL_VALUE = false; // not ticked by default
+	
 	private String label;
-	private boolean value;
-
-	// Defaults
-	public static final boolean DEFAULT_VALUE = false; // not ticked by default
+	private boolean initialValue;
 
 	/**
 	 * @param form
@@ -34,7 +34,7 @@ public class CheckBoxField extends Field
 	{
 		super(form, (id == null || id.isEmpty() ? ID_PREFIX + label.trim().replaceAll("\\s+", "_") : id));
 		this.label = label;
-		this.value = DEFAULT_VALUE;
+		this.initialValue = DEFAULT_INITIAL_VALUE;
 	}
 
 	/**
@@ -46,20 +46,19 @@ public class CheckBoxField extends Field
 	}
 
 	/**
-	 * @return the value
+	 * @return the initialValue
 	 */
-	public boolean getValue()
+	public boolean getInitialValue()
 	{
-		return value;
+		return initialValue;
 	}
-
+	
 	/**
-	 * @param value
-	 *            the value to set
+	 * @param initialValue the initialValue to set
 	 */
-	public void setValue(boolean value)
+	public void setInitialValue(boolean initialValue)
 	{
-		this.value = value;
+		this.initialValue = initialValue;
 	}
 
 	/*
@@ -76,7 +75,7 @@ public class CheckBoxField extends Field
 	public void storeValue(Record record)
 	{
 		if(!isNoColumn())
-			((BooleanColumn) form.getColumnFor(this)).storeValue(record, value);
+			((BooleanColumn) form.getColumnFor(this)).storeValue(record, initialValue);
 	}
 
 	/*

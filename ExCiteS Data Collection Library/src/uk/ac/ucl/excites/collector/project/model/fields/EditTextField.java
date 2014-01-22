@@ -24,14 +24,14 @@ public class EditTextField extends Field
 	public static final int DEFAULT_MIN_LENGTH = 0; // minimum length of 0 if not set
 	public static final int DEFAULT_MAX_LENGTH = 100; // maximum length of 100 if not set
 	public static final boolean DEFAULT_MULTILINE = false; // single-line by default
-	public static final String DEFAULT_VALUE = ""; // empty String is the default/initial value
+	public static final String DEFAULT_INITIAL_VALUE = ""; // empty String is the default/initial initialValue
 
 	// Dynamics
 	private int maxLength;
 	private int minLength;
 	private boolean multiline;
 	private String label;
-	private String value;
+	private String initialValue;
 	
 	
 	/**
@@ -47,7 +47,7 @@ public class EditTextField extends Field
 		maxLength = DEFAULT_MAX_LENGTH;
 		minLength = DEFAULT_MIN_LENGTH;
 		multiline = DEFAULT_MULTILINE;
-		value = DEFAULT_VALUE;
+		initialValue = DEFAULT_INITIAL_VALUE;
 	}
 
 	/**
@@ -87,7 +87,7 @@ public class EditTextField extends Field
 	 */
 	public String getInitialValue()
 	{
-		return value;
+		return initialValue;
 	}
 
 	/*
@@ -99,12 +99,6 @@ public class EditTextField extends Field
 	protected Column<?> createColumn()
 	{
 		return new StringColumn(id, optional != Optionalness.NEVER, getMaxLength()); // String encoding? define charset??
-	}
-
-	public void storeValue(Record record)
-	{
-		if(!isNoColumn())
-			((StringColumn) form.getColumnFor(this)).storeValue(record, value);
 	}
 
 	/*
@@ -138,18 +132,11 @@ public class EditTextField extends Field
 	public void setMultiline(boolean multiline)
 	{
 		this.multiline = multiline;
-
 	}
 
 	public void setInitialValue(String initValue)
 	{
-		this.value = initValue;
-
-	}
-
-	public void setText(String text)
-	{
-		this.value = text;
+		this.initialValue = initValue;
 	}
 
 	@Override

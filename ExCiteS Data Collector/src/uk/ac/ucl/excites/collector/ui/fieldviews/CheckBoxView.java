@@ -31,7 +31,7 @@ public class CheckBoxView extends LinearLayout implements FieldUI
 		setOrientation(LinearLayout.HORIZONTAL);
 		chbx = new CheckBox(context);
 		chbx.setText(field.getLabel());
-		chbx.setChecked(field.getValue());
+		chbx.setChecked(field.getInitialValue());
 		addView(chbx);
 	}
 

@@ -432,11 +432,11 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	}
 
 	@Override
-	public ControlsState getButtonsState()
+	public ControlsState getControlsState()
 	{
 		ControlsState state = new ControlsState(
 				currentForm.isShowBack()	&& currentField.isShowBack()	&& !fieldHistory.empty(),
-				currentForm.isShowCancel()	&& currentField.isShowCancel()	&& !fieldHistory.empty(),
+				currentForm.isShowCancel()	&& currentField.isShowCancel()	&& (!fieldHistory.empty() || currentField instanceof Page),
 				currentForm.isShowForward()	&& currentField.isShowForward()	&& currentField.getOptional() == Optionalness.ALWAYS);
 		// Note: these paths may be null (in which case built-in defaults must be used)
 		return state;

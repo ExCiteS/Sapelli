@@ -331,14 +331,14 @@ public class FormParser extends SubtreeParser
 				txtField.setMinLength(readIntegerAttribute(ATTRIBUTE_TEXT_MINLENGTH, EditTextField.DEFAULT_MIN_LENGTH, attributes));
 				txtField.setMaxLength(readIntegerAttribute(ATTRIBUTE_TEXT_MAXLENGTH, EditTextField.DEFAULT_MAX_LENGTH, attributes));
 				txtField.setMultiline(readBooleanAttribute(ATTRIBUTE_TEXT_MULTILINE, EditTextField.DEFAULT_MULTILINE, attributes));
-				txtField.setInitialValue(readStringAttribute(EditTextField.DEFAULT_VALUE, attributes, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
+				txtField.setInitialValue(readStringAttribute(EditTextField.DEFAULT_INITIAL_VALUE, attributes, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
 				newField(txtField, attributes);
 			}
 			// <Checkbox>
 			else if(qName.equals(TAG_CHECKBOX))
 			{
 				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_CHECKBOX, attributes, ATTRIBUTE_FIELD_LABEL));
-				chbxField.setValue(readBooleanAttribute(ATTRIBUTE_FIELD_DEFAULTVALUE, CheckBoxField.DEFAULT_VALUE, attributes));
+				chbxField.setInitialValue(readBooleanAttribute(ATTRIBUTE_FIELD_DEFAULTVALUE, CheckBoxField.DEFAULT_INITIAL_VALUE, attributes));
 				newField(chbxField, attributes);
 			}
 			// <List> or <MultiList> (these are in fact just synonyms, but we added both to avoid confusing novice form designers with terminoly that refers to a multi-level list when they only need a flat list)  

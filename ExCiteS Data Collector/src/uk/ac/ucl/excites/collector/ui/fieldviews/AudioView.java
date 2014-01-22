@@ -68,7 +68,7 @@ public class AudioView extends PickerView implements FieldUI, AdapterView.OnItem
 		setNumColumns(1);
 
 		// Button size, padding & background colour:
-		this.buttonHeight = collectorView.getIconHeightPx(2, controller.getButtonsState().isAnyButtonShown());
+		this.buttonHeight = collectorView.getIconHeightPx(2, controller.getControlsState().isAnyButtonShown());
 		this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, ChoiceView.PADDING_DIP);
 		this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
 		

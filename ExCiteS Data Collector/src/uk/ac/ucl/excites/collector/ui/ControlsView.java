@@ -123,7 +123,7 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 		}
 		
 		// Update state if needed...
-		ControlsState newState = controller.getButtonsState();
+		ControlsState newState = controller.getControlsState();
 		if(newState == null)
 		{
 			Log.w(TAG, "Received invalid (null) ButtonState.");

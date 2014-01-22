@@ -96,6 +96,6 @@ public interface Controller
 	/**
 	 * @return the current ButtonState
 	 */
-	public ControlsState getButtonsState();
+	public ControlsState getControlsState();
 	
 }

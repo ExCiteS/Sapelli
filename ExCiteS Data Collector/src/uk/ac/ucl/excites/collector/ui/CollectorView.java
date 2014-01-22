@@ -169,14 +169,14 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	}
 	
 	@Override
-	public FieldUI createTextFieldUI(EditTextField tf) {
-
-		return new EditTextView(activity, tf);
+	public FieldUI createTextFieldUI(EditTextField tf)
+	{
+		return new EditTextView(activity, controller, tf);
 	}
 	
 	@Override
-	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf) {
-
+	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf)
+	{
 		return new CheckBoxView(activity, cbf);
 	}
 	
