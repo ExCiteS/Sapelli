@@ -1,6 +1,5 @@
 package uk.ac.ucl.excites.collector.ui;
 
-import java.util.Currency;
 import java.util.HashMap;
 
 import uk.ac.ucl.excites.collector.ProjectController;
