@@ -267,8 +267,6 @@ public abstract class Field
 	 */
 	public abstract boolean enter(Controller controller);
 	
-	public abstract void leave(FieldUI ui, Controller controller);
-	
 	/**
 	 * Returns a FieldUI object to represent this Field.
 	 * 

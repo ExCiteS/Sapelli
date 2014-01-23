@@ -335,12 +335,4 @@ public class LocationField extends Field implements Timeoutable
 	{
 		return collectorUI.createLocationUI(this);
 	}
-
-	@Override
-	public void leave(FieldUI ui, Controller controller)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-	
 }

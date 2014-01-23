@@ -20,24 +20,12 @@ public interface Controller
 	 * @return whether or not a UI update is required after entering the field
 	 */
 	public boolean enterChoiceField(ChoiceField cf);
-
-	/**
-	 * @param ui	the FieldUI
-	 * @param cf  the ChoiceField
-	 */
-	public void leaveChoiceField(FieldUI ui, ChoiceField cf);
 	
 	/**
 	 * @param af  the MediaField
 	 * @return whether or not a UI update is required after entering the field
 	 */
 	public boolean enterMediaField(MediaField af);
-	
-	/**
-	 * @param ui	the FieldUI
-	 * @param af  the MediaField
-	 */
-	public void leaveMediaField(FieldUI ui, MediaField mf);
 	
 	/**
 	 * @param pf  the PhotoField

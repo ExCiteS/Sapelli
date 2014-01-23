@@ -447,8 +447,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		return field.isEnabled() && !tempDisabledFields.contains(field);
 	}
 
-	@Override
-	public void leaveChoiceField(FieldUI ui, ChoiceField chosenChild)
+	public void choiceMade(ChoiceField chosenChild)
 	{
 		// Note: chosenChild is not the currentField! The currentField (also a ChoiceField) is its parent.
 		if(chosenChild.isLeaf())
@@ -467,12 +466,6 @@ public class ProjectController implements Controller, LocationListener, Orientat
 			goTo(chosenChild); // chosenChild becomes the new currentField (we go one level down in the choice tree)
 	}
 
-	@Override
-	public void leaveMediaField(FieldUI ui, MediaField mf)
-	{
-		//TODO how to get the File? (this method should replace mediaDone)
-	}
-	
 	public void mediaDone(File mediaAttachment)
 	{
 		MediaField ma = (MediaField) currentField;

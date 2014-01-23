@@ -74,12 +74,6 @@ public class Page extends Field
 	}
 
 	@Override
-	public void leave(FieldUI ui, Controller controller)
-	{
-		// TODO Auto-generated method stub
-	}
-
-	@Override
 	public FieldUI createUI(CollectorUI collectorUI)
 	{
 		return collectorUI.createPageUI(this);

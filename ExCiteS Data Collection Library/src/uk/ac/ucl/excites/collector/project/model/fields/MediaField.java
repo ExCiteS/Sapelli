@@ -3,17 +3,15 @@
  */
 package uk.ac.ucl.excites.collector.project.model.fields;
 
+import android.annotation.SuppressLint;
 import java.io.File;
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.collector.project.data.FormEntry;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
-import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.transmission.crypto.Hashing;
@@ -189,12 +187,6 @@ public abstract class MediaField extends Field
 	public boolean enter(Controller controller)
 	{
 		return controller.enterMediaField(this);
-	}
-	
-	@Override
-	public void leave(FieldUI ui, Controller controller)
-	{
-		controller.leaveMediaField(ui, this);
 	}
 	
 }

@@ -114,10 +114,4 @@ public class ButtonField extends Field
 		return collectorUI.createButtonFieldUI(this);
 	}
 
-	@Override
-	public void leave(FieldUI ui, Controller controller)
-	{
-		// TODO Auto-generated method stub		
-	}
-
 }

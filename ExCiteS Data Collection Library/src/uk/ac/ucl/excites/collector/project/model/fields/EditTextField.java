@@ -138,11 +138,4 @@ public class EditTextField extends Field
 		this.initialValue = initValue;
 	}
 
-	@Override
-	public void leave(FieldUI ui, Controller controller)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
 }

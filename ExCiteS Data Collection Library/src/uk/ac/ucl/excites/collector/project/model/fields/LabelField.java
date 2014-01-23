@@ -81,11 +81,5 @@ public class LabelField extends Field
 	{
 		throw new UnsupportedOperationException("setNoColumn is unsupported on LabelFields since they never have columns.");
 	}
-
-	@Override
-	public void leave(FieldUI ui, Controller controller)
-	{
-		// does nothing
-	}
-
+	
 }

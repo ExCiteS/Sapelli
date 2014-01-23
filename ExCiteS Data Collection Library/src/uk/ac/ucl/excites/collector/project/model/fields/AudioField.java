@@ -95,11 +95,4 @@ public class AudioField extends MediaField
 		return collectorUI.createAudioUI(this);
 	}
 
-	@Override
-	public void leave(FieldUI ui, Controller controller)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
 }

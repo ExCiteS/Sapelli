@@ -133,7 +133,7 @@ public class ChoiceView extends PickerView implements FieldUI, AdapterView.OnIte
 			{
 				ChoiceField chosenChild = ChoiceView.this.choice.getChildren().get(position);
 				if(ChoiceView.this.controller.isFieldEndabled(chosenChild))
-					chosenChild.leave(ChoiceView.this, controller);
+					ChoiceView.this.controller.choiceMade(chosenChild); // pass the chosen child
 			}
 		};
 
