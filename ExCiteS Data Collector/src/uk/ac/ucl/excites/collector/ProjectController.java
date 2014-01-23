@@ -454,7 +454,25 @@ public class ProjectController implements Controller, LocationListener, Orientat
 			
 			// If still no location set (because either isUseBestNQLAT==false or currentBestLocation==null), and locationField is non-optional: cancel & exit!
 			if(lf.retrieveLocation(currentRecord) == null && lf.getOptional() != Optionalness.ALWAYS)
-				cancel(false); //TODO maybe also flash a red LED and/or show a message box			
+			{
+				activity.runOnUiThread(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						activity.showErrorDialog("Cannot get GPS signal. Please, make sure your GPS receiver is enabled.", true, new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								cancel(false); // TODO maybe also flash a red LED and/or show a message box
+							}
+						});
+					}
+				});
+
+				return;
+			}
 		}
 		// else if() //other fields with timeouts in the future?
 		// ...
