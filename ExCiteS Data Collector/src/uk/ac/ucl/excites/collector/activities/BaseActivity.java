@@ -46,6 +46,24 @@ public abstract class BaseActivity extends Activity
 	}
 	
 	/**
+	 * Show dialog with error message
+	 * 
+	 * @param message
+	 */
+	public void showErrorDialog(String message, final boolean exitOnOK, final Runnable task)
+	{
+		new AlertDialog.Builder(this).setTitle("Error").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
+		{
+			public void onClick(DialogInterface dialog, int whichButton)
+			{
+				task.run();
+				if(exitOnOK)
+					finish();
+			}
+		}).create().show();
+	}
+
+	/**
 	 * Show dialog with warning message
 	 * 
 	 * @param message
