@@ -19,13 +19,14 @@ import uk.ac.ucl.excites.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.collector.ui.picker.PickerAdapter;
 import uk.ac.ucl.excites.collector.ui.picker.PickerView;
 import uk.ac.ucl.excites.collector.ui.picker.items.FileImageItem;
-import uk.ac.ucl.excites.collector.ui.picker.items.ResourceImageItem;
 import uk.ac.ucl.excites.collector.ui.picker.items.Item;
+import uk.ac.ucl.excites.collector.ui.picker.items.ResourceImageItem;
 import uk.ac.ucl.excites.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.util.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Color;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -62,6 +63,12 @@ public class AudioView extends PickerView implements FieldUI, AdapterView.OnItem
 		this.controller = controller;
 		this.audioField = field;
 		Project project = controller.getProject();
+
+		// UI set-up:
+		setBackgroundColor(Color.BLACK);
+		int spacingPx = collectorView.getSpacingPx();
+		setHorizontalSpacing(spacingPx);
+		setVerticalSpacing(spacingPx);
 
 		// Columns:
 		setNumColumns(1);
