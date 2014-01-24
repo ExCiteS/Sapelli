@@ -18,10 +18,12 @@
   </Strings>
   
   <Form id="Entry" name="Community data" startField="SessionKey" end="_LOOP" endVibrate="true" showBack="true" showCancel="true" storeEndTime="true">
-    
+        
     <!-- source="localCreate|localSelect|remoteQR|remoteBT|remoteSMS|remoteHTTP" ? -->
     <!-- paged="true" by default -->
-    <BelongsTo id="SessionKey" form="Session" source="localCreate" hold="true" optional="false"/>
+    <BelongsTo id="SessionKey" form="Session" source="localCreate" hold="true" optional="false" updateStartTimeUponLeave="true" saveBeforeFormChange="false">
+      <Constraint column="closed" equals="false"/>
+    </BelongsTo>
   
     <Choice id="Type" optional="false" rows="2" cols="1" showRelationship="SessionKey">
       <Choice value="Waypoint" alt="Area delineation waypoint" img="Waypoint.png"/>
@@ -90,17 +92,17 @@
   <!-- should 'hold' be an attribute of the form of of belongsTo? -> probably YES -->
   <!-- end: accept form names? -->
   
-  <Form id="Session" name="Community session" protectEdit="true" editable="true" singlePage="true" protectEditMessage="..." storeEndTime="true" end="BACK">
+  <Form id="Session" name="Community session" editable="true" singlePage="true" storeEndTime="true" end="BACK">
     <!-- allow form names as end action? (e.g. end="Entry") -> better not... -->
   
     <Alert text="Press ... within 5 seconds to access the Session form" showOnCreate="false" showOnEdit="true" timeout="5" onTimeout="_BACK">
-      <Action visible="false" label="" key="VOLUME_DOWN" jump="_SKIP"/>
-      <Action visible="false" label="" key="BACK" jump="_BACK"/>
+      <Option visible="false" label="" key="VOLUME_DOWN" action="" jump=""/>
+      <Option visible="false" label="" key="BACK" action="" jump="_BACK"/>
     </Alert>
 
     <Label text="Session"/><!-- noColumn="true" is implied -->
 
-    <Text id="Creator" label="Creator" minLength="2" maxLength="48" optional="false"/>
+    <Text id="Creator:" label="Creator" minLength="2" maxLength="48" optional="false"/>
 
     <MultiList id="Community" label="Province:;Community:" optional="false" preSelectDefault="false">
       <Item value="Province 1">
@@ -128,17 +130,12 @@
 
     <Check id="Training" label="Training session" defaultValue="false"/>
 
-    <Text id="Comment" label="Comments" maxLength="1024" multiline="true" optional="true"/>
+    <Text id="Comment:" label="Comments" maxLength="1024" multiline="true" optional="true"/>
 
-    <Button id="Open" label="Start Session" disableOnEdit="true" jump="_STORE|_BACK"/>
-    <!-- Alternatives:
-        jump="_BACK" (meaning "_BACK" is a 'special jump' and not an endAction)
-         -->
+    <Button label="Start Session" disableOnEdit="true" action="_SAVE+PREVFORM"/>
     
-    <Button id="Close" label="Close Session" disableOnCreate="true" jump="_END+RELEASE"/><!-- noColumn="true" is implied -->
-    
-    <!-- <LinkTo id="LinkToSession" form="Entry"/> --> <!-- formJump="Session" (implicit linkTo?) -->
-
+    <Button id="closed" label="Close Session" disableOnCreate="true" column="boolean" action="_SAVE+PREVFORM"/>
+  
   </Form>
   
 </SapelliCollectorProject>

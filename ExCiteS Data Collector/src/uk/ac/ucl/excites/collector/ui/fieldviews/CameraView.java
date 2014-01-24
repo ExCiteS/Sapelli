@@ -20,6 +20,7 @@ import uk.ac.ucl.excites.collector.ui.picker.items.Item;
 import uk.ac.ucl.excites.collector.ui.picker.items.ResourceImageItem;
 import uk.ac.ucl.excites.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
+import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.util.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
@@ -130,15 +131,6 @@ public class CameraView extends ViewSwitcher implements FieldUI, AdapterView.OnI
 	}
 
 	@Override
-	public void update()
-	{
-		this.handlingClick = false;
-		// Switch back to capture layout if needed:
-		if(getCurrentView() == reviewLayout)
-			showPrevious();
-	}
-
-	@Override
 	public void onPictureTaken(byte[] data, Camera camera)
 	{
 		this.reviewPhotoData = data;
@@ -208,7 +200,30 @@ public class CameraView extends ViewSwitcher implements FieldUI, AdapterView.OnI
 	public void cancel()
 	{
 		cameraController.close();
-	}	
+	}
+
+	@Override
+	public void update(Record record)
+	{
+		this.handlingClick = false;
+		// Switch back to capture layout if needed:
+		if(getCurrentView() == reviewLayout)
+			showPrevious();
+	}
+
+	@Override
+	public boolean isValid(Record record)
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void storeValue(Record record)
+	{
+		// TODO Auto-generated method stub
+		
+	}
 
 	@Override
 	public Field getField()

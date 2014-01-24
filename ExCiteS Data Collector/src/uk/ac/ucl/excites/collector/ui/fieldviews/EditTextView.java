@@ -1,8 +1,11 @@
 package uk.ac.ucl.excites.collector.ui.fieldviews;
 
-import uk.ac.ucl.excites.collector.project.model.fields.Field;
+import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
+import uk.ac.ucl.excites.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.storage.model.StringColumn;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
@@ -22,13 +25,15 @@ public class EditTextView extends LinearLayout implements FieldUI
 	
 	static private final LayoutParams FULL_WIDTH = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
 
+	private ProjectController controller;
 	private EditTextField field;
 	private EditText editText;
 	private TextView errorMsg;
 
-	public EditTextView(final Context context, final EditTextField field)
+	public EditTextView(final Context context, final ProjectController controller, final EditTextField field)
 	{
 		super(context);
+		this.controller = controller;
 		this.field = field;
 
 		setOrientation(LinearLayout.VERTICAL);
@@ -42,7 +47,6 @@ public class EditTextView extends LinearLayout implements FieldUI
 		// Textbox:
 		editText = new EditText(context);
 		editText.setLayoutParams(FULL_WIDTH);
-		editText.setText(field.getInitialValue());
 		if(field.isMultiline() == true)
 			editText.setSingleLine(false);
 		else
@@ -53,19 +57,26 @@ public class EditTextView extends LinearLayout implements FieldUI
 		errorMsg = new TextView(context);
 		errorMsg.setLayoutParams(FULL_WIDTH);
 		errorMsg.setTextColor(Color.RED);
+		errorMsg.setVisibility(GONE);
 		addView(errorMsg);
 
-		editText.addTextChangedListener(new TextValidator(editText));
-	}
+		editText.addTextChangedListener(new TextWatcher()
+		{
+			
+			@Override
+			final public void afterTextChanged(Editable s)
+			{
+				isValid(controller.getCurrentRecord());
+			}
 
-	// for now called from TextChangedListener (later on forward??)
-	// TODO: Check width
-	public void setText(boolean valid)
-	{
-		if(valid)
-			field.setText(editText.getText().toString());
-	}
+			@Override
+			final public void beforeTextChanged(CharSequence s, int start, int count, int after) { /* Don't care */ }
 
+			@Override
+			final public void onTextChanged(CharSequence s, int start, int before, int count) { /* Don't care */ }
+		});
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -76,18 +87,17 @@ public class EditTextView extends LinearLayout implements FieldUI
 	{
 		return field;
 	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see uk.ac.ucl.excites.collector.project.ui.FieldUI#update()
-	 */
+	
 	@Override
-	public void update()
+	public void update(Record record)
 	{
-		// does nothing
+		StringColumn col = getColumn();
+		if(col.retrieveValue(record) != null)
+			editText.setText(col.retrieveValue(record));
+		else
+			editText.setText(field.getInitialValue());
 	}
-
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -99,51 +109,40 @@ public class EditTextView extends LinearLayout implements FieldUI
 		// does nothing
 	}
 
-	public class TextValidator implements TextWatcher
+	private StringColumn getColumn()
 	{
-		private TextView textView;
-
-		public TextValidator(TextView textView)
+		return (StringColumn) controller.getCurrentForm().getColumnFor(field);
+	}
+	
+	@Override
+	public boolean isValid(Record record)
+	{
+		String text = editText.getText().toString();
+		boolean valid = true;
+		// Too short:
+		if(text.length() < field.getMinLength())
 		{
-			this.textView = textView;
+			errorMsg.setText("Minimum length of " + field.getMinLength() + " characters not reached."); //TODO multilang
+			valid = false;
 		}
-		
-		@Override
-		final public void afterTextChanged(Editable s)
+		// Too long:
+		else if(text.length() > field.getMaxLength())
 		{
-			String text = textView.getText().toString();
-			// Too short:
-			if(text.length() < field.getMinLength())
-			{
-				setText(false);
-				errorMsg.setText("Minimum length of " + field.getMinLength() + " characters not reached."); //TODO multilang
-				// TODO disable forward
-			}
-			// To long:
-			else if(text.length() > field.getMaxLength())
-			{
-				setText(false);
-				errorMsg.setText("Maximum length of " + field.getMaxLength() + " characters exceeded."); //TODO multilang
-				// TODO disable forward
-			}
-			// OK:
-			else
-			{
-				errorMsg.setText("");
-				setText(true);
-				// TODO enable forward
-			}
+			errorMsg.setText("Maximum length of " + field.getMaxLength() + " characters exceeded."); //TODO multilang
+			valid = false;
 		}
+		// OK:
+		if(valid)
+			errorMsg.setText("");
 
-		@Override
-		final public void beforeTextChanged(CharSequence s, int start, int count, int after)
-		{ /* Don't care */
-		}
+		errorMsg.setVisibility(valid ? GONE : VISIBLE);
+		return valid;
+	}
 
-		@Override
-		final public void onTextChanged(CharSequence s, int start, int before, int count)
-		{ /* Don't care */
-		}
+	public void storeValue(Record record)
+	{
+		if(isValid(record) && !field.isNoColumn())
+			getColumn().storeValue(record, editText.getText().toString());
 	}
 
 }

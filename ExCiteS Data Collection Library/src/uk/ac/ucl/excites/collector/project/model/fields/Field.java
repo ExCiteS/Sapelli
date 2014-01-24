@@ -10,6 +10,7 @@ import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.storage.model.Column;
+import uk.ac.ucl.excites.util.CollectionUtils;
 
 /**
  * @author mstevens
@@ -203,10 +204,9 @@ public abstract class Field
 	 */
 	protected List<Column<?>> createColumns()
 	{
-		Column<?> singleCol = createColumn();
-		List<Column<?>> list = new ArrayList<Column<?>>();
-		list.add(singleCol);
-		return list;
+		List<Column<?>> cols = new ArrayList<Column<?>>();
+		CollectionUtils.addIgnoreNull(cols,createColumn());
+		return cols;
 	}
 	
 	/**
@@ -257,7 +257,7 @@ public abstract class Field
 	}
 	
 	/**
-	 * Called to signals that the user is entering the field. This allows any required initialisation behaviour to be carried out.
+	 * Called to signal that the user is entering the field. This allows any required initialisation behaviour to be carried out.
 	 * The returned boolean indicates whether or not a UI update is required after entering the field.
 	 * 
 	 *  This method uses double-dispatch: the actual Field-type-specific behaviour will be defined in the class implementing the Controller interface.

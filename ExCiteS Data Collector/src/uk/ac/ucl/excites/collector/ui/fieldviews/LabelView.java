@@ -2,6 +2,7 @@ package uk.ac.ucl.excites.collector.ui.fieldviews;
 
 import uk.ac.ucl.excites.collector.project.model.fields.LabelField;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.storage.model.Record;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.widget.LinearLayout;
@@ -35,15 +36,29 @@ public class LabelView extends LinearLayout implements FieldUI
 	}
 
 	@Override
-	public void update()
+	public void cancel()
+	{
+		// does nothing		
+	}
+
+	@Override
+	public void update(Record record)
 	{
 		// does nothing
 	}
 
 	@Override
-	public void cancel()
+	public boolean isValid(Record record)
 	{
-		// does nothing		
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void storeValue(Record record)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 }

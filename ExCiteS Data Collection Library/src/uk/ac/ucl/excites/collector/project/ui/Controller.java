@@ -1,13 +1,14 @@
 package uk.ac.ucl.excites.collector.project.ui;
 
-import uk.ac.ucl.excites.collector.project.model.fields.AudioField;
-import uk.ac.ucl.excites.collector.project.model.fields.CancelField;
+import uk.ac.ucl.excites.collector.project.model.fields.ButtonField;
 import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
 import uk.ac.ucl.excites.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
+import uk.ac.ucl.excites.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.collector.project.model.fields.OrientationField;
+import uk.ac.ucl.excites.collector.project.model.fields.Page;
 import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
 
@@ -21,10 +22,10 @@ public interface Controller
 	public boolean enterChoiceField(ChoiceField cf);
 	
 	/**
-	 * @param af  the AudioField
+	 * @param af  the MediaField
 	 * @return whether or not a UI update is required after entering the field
 	 */
-	public boolean enterAudioField(AudioField af);
+	public boolean enterMediaField(MediaField af);
 	
 	/**
 	 * @param pf  the PhotoField
@@ -61,12 +62,18 @@ public interface Controller
 	 * @return whether or not a UI update is required after entering the field
 	 */
 	public boolean enterMultiListField(MultiListField mlf);
-	
+
 	/**
-	 * @param cf  the CancelField
+	 * @param bf  the ButtonField
 	 * @return whether or not a UI update is required after entering the field
 	 */
-	public boolean enterCancelField(CancelField cf);
+	public boolean enterButtonField(ButtonField bf);
+	
+	/**
+	 * @param page	the Page
+	 * @return whether or not a UI update is required after entering the field
+	 */
+	public boolean enterPage(Page page);
 	
 	/**
 	 * @param ef  the EndField
@@ -77,6 +84,6 @@ public interface Controller
 	/**
 	 * @return the current ButtonState
 	 */
-	public ControlsState getButtonsState();
+	public ControlsState getControlsState();
 	
 }

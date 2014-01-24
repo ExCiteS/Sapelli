@@ -12,6 +12,7 @@ import uk.ac.ucl.excites.collector.project.model.fields.EditTextField;
 import uk.ac.ucl.excites.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.collector.project.model.fields.LabelField;
 import uk.ac.ucl.excites.collector.project.model.fields.LocationField;
+import uk.ac.ucl.excites.collector.project.model.fields.Page;
 import uk.ac.ucl.excites.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
@@ -24,6 +25,7 @@ import uk.ac.ucl.excites.collector.ui.fieldviews.ChoiceView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.EditTextView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.LabelView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.MultiListView;
+import uk.ac.ucl.excites.collector.ui.fieldviews.PageView;
 import uk.ac.ucl.excites.collector.ui.fieldviews.WaitingView;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
@@ -52,7 +54,7 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	private ProjectController controller;
 	
 	// UI elements:
-	private ControlsView buttonView;
+	private ControlsView controlsView;
 	private FieldUI fieldUI;
 	private HashMap<Field, FieldUI> viewCache;
 	
@@ -67,10 +69,10 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		this.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		this.setBackgroundColor(Color.BLACK);
 		
-		// Set-up buttonView:
-		buttonView = new ControlsView(activity, this);
-		buttonView.setId(BUTTONS_VIEW_ID);
-		this.addView(buttonView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		// Set-up controlsView:
+		controlsView = new ControlsView(activity, this);
+		controlsView.setId(BUTTONS_VIEW_ID);
+		this.addView(controlsView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 	}
 
 	/**
@@ -84,10 +86,10 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		activity.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		
 		// Briefly disable the buttons:
-		buttonView.disable();
+		controlsView.disable();
 		
 		// Update buttons
-		buttonView.update(controller);
+		controlsView.update(controller);
 		
 		// Remove current view if there is one and it does not represent the same field:
 		if(fieldUI != null && fieldUI.getField() != field)
@@ -114,11 +116,11 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		}
 
 		// Update & (re-)enable the view (even if new!):
-		fieldUI.update();
+		fieldUI.update(controller.getCurrentRecord());
 		((View) fieldUI).setEnabled(true);
 			
 		// Re-enable the buttons
-		buttonView.enable();
+		controlsView.enable();
 	}
 
 	/**
@@ -164,23 +166,35 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	{
 		return new ButtonView(activity, bf);
 	}
-
+	
+	@Override
+	public FieldUI createTextFieldUI(EditTextField tf)
+	{
+		return new EditTextView(activity, controller, tf);
+	}
+	
+	@Override
+	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf)
+	{
+		return new CheckBoxView(activity, controller, cbf);
+	}
+	
 	@Override
 	public FieldUI createMultiListUI(MultiListField mlf)
 	{
 		return new MultiListView(activity, mlf);
 	}
-	
-	@Override
-	public FieldUI createTextFieldUI(EditTextField tf) {
 
-		return new EditTextView(activity, tf);
+	@Override
+	public FieldUI createButtonFieldUI(ButtonField bf)
+	{
+		return new ButtonView(activity, bf);
 	}
 	
 	@Override
-	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf) {
-
-		return new CheckBoxView(activity, cbf);
+	public FieldUI createPageUI(Page page)
+	{
+		return new PageView(activity, this, page);
 	}
 	
 	public void cancelCurrentField()
@@ -208,7 +222,7 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	public void setEnabled(boolean enabled)
 	{
 		super.setEnabled(enabled);
-		buttonView.setEnabled(enabled);
+		controlsView.setEnabled(enabled);
 		if(fieldUI != null)
 			((View) fieldUI).setEnabled(enabled);
 	}
@@ -268,7 +282,7 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	
 	public int getIconHeightPx(int numRows, boolean buttonsShowing)
 	{
-		int heightPx = (ScreenMetrics.GetScreenHeight(activity) - (buttonsShowing ? (buttonView.getButtonHeightPx() + getSpacingPx()) : 0) - ((numRows - 1) * getSpacingPx())) / numRows;
+		int heightPx = (ScreenMetrics.GetScreenHeight(activity) - (buttonsShowing ? (controlsView.getButtonHeightPx() + getSpacingPx()) : 0) - ((numRows - 1) * getSpacingPx())) / numRows;
 		return Math.max(heightPx, 0); //avoid negative pixel counts
 	}
 

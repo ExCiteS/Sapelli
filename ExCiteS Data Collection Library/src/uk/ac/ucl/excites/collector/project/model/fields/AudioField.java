@@ -90,12 +90,6 @@ public class AudioField extends MediaField
 	}
 
 	@Override
-	public boolean enter(Controller controller)
-	{
-		return controller.enterAudioField(this);
-	}
-
-	@Override
 	public FieldUI createUI(CollectorUI collectorUI)
 	{
 		return collectorUI.createAudioUI(this);

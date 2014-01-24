@@ -3,20 +3,20 @@
  */
 package uk.ac.ucl.excites.collector.project.model.fields;
 
+import android.annotation.SuppressLint;
 import java.io.File;
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.collector.project.data.FormEntry;
 import uk.ac.ucl.excites.collector.project.model.Form;
+import uk.ac.ucl.excites.collector.project.ui.Controller;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.util.BinaryHelpers;
 import uk.ac.ucl.excites.util.ROT13;
-import uk.ac.ucl.excites.transmission.crypto.Hashing;
 
 /**
  * @author mstevens
@@ -181,6 +181,12 @@ public abstract class MediaField extends Field
 		else
 			// No match, return filename as-is:
 			return filename;
+	}
+	
+	@Override
+	public boolean enter(Controller controller)
+	{
+		return controller.enterMediaField(this);
 	}
 	
 }

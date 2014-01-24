@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.collector.ui.fieldviews;
 
 import uk.ac.ucl.excites.collector.project.model.fields.ButtonField;
 import uk.ac.ucl.excites.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.storage.model.Record;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.View;
@@ -46,7 +47,7 @@ public class ButtonView extends Button implements FieldUI, OnClickListener
 	 * @see uk.ac.ucl.excites.collector.project.ui.FieldUI#update()
 	 */
 	@Override
-	public void update()
+	public void update(Record record)
 	{
 		// does nothing
 	}
@@ -64,6 +65,20 @@ public class ButtonView extends Button implements FieldUI, OnClickListener
 	public void onClick(View v)
 	{
 		// TODO carry out the button jump
+	}
+
+	@Override
+	public boolean isValid(Record record)
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void storeValue(Record record)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 }

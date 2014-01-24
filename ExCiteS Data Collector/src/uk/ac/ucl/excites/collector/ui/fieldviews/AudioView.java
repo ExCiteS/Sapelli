@@ -23,6 +23,7 @@ import uk.ac.ucl.excites.collector.ui.picker.items.Item;
 import uk.ac.ucl.excites.collector.ui.picker.items.ResourceImageItem;
 import uk.ac.ucl.excites.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
+import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.util.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -74,7 +75,7 @@ public class AudioView extends PickerView implements FieldUI, AdapterView.OnItem
 		setNumColumns(1);
 
 		// Button size, padding & background colour:
-		this.buttonHeight = collectorView.getIconHeightPx(2, controller.getButtonsState().isAnyButtonShown());
+		this.buttonHeight = collectorView.getIconHeightPx(2, controller.getControlsState().isAnyButtonShown());
 		this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, ChoiceView.PADDING_DIP);
 		this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
 		
@@ -113,7 +114,7 @@ public class AudioView extends PickerView implements FieldUI, AdapterView.OnItem
 	}
 	
 	@Override
-	public void update()
+	public void update(Record record)
 	{
 		// Make start button visible
 		pickerAdapter.getItem(BUTTON_INDEX_START).setVisibility(true);
@@ -212,6 +213,20 @@ public class AudioView extends PickerView implements FieldUI, AdapterView.OnItem
 	public Field getField()
 	{
 		return audioField;
+	}
+
+	@Override
+	public boolean isValid(Record record)
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void storeValue(Record record)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 }

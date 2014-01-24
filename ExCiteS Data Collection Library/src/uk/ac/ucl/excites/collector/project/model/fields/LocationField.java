@@ -335,5 +335,4 @@ public class LocationField extends Field implements Timeoutable
 	{
 		return collectorUI.createLocationUI(this);
 	}
-	
 }
