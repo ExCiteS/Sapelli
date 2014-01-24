@@ -14,9 +14,7 @@ import uk.ac.ucl.excites.collector.project.data.FormEntry;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.storage.model.Record;
-import uk.ac.ucl.excites.util.BinaryHelpers;
 import uk.ac.ucl.excites.util.ROT13;
-import uk.ac.ucl.excites.transmission.crypto.Hashing;
 
 /**
  * @author mstevens
@@ -155,15 +153,17 @@ public abstract class MediaField extends Field
 		FormEntry entry = new FormEntry(form, record);
 		//Elements:
 		DateTime dt = entry.getStartTime(true);
+		String time = dt.toString().replace(":", ".");
 		long deviceID = entry.getDeviceID();
 		int fieldIdx = form.getFieldIndex(this);
 		String mediaType = getMediaType();
+
 		//Assemble:
-		String message = dt.toString() + Long.toString(deviceID) + Integer.toString(fieldIdx) + mediaType + Integer.toString(attachmentNumber);
+		String message = time + " - DeviceID " + Long.toString(deviceID) + " - FieldIdx " + Integer.toString(fieldIdx) + " - #"
+				+ Integer.toString(attachmentNumber + 1);
+
 		//Return MD5 hash as hexadecimal String:
-		return 	BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(message.getBytes()).toByteArray(), 16) +
-				(obfuscatedExtension ? 	"_" + ROT13.rot13NumRot5(getFileExtension()).toUpperCase() :
-										"." + getFileExtension());
+		return message + "." + getFileExtension();
 	}
 	
 	public static String getNonObfuscatedFilename(String filename)
