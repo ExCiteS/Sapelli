@@ -37,6 +37,7 @@ public class Form
 	public static final boolean DEFAULT_SHOW_FORWARD = true;
 	public static final String DEFAULT_BUTTON_BACKGROUND_COLOR = "#E8E8E8"; //light gray
 	public static final boolean DEFAULT_ANIMATION = true;
+	public static final boolean DEFAULT_OBFUSCATE_MEDIA_FILES = false;
 
 	public static final String COLUMN_TIMESTAMP_START = "StartTime";
 	public static final String COLUMN_TIMESTAMP_END = "EndTime";
@@ -66,6 +67,9 @@ public class Form
 	// Animation:
 	private boolean animation;
 	
+	// Obfuscate Media Files:
+	private boolean obfuscateMediaFiles;
+
 	// Timestamps
 	private boolean storeEndTime;
 
@@ -205,6 +209,23 @@ public class Form
 	public void setAnimation(boolean animation)
 	{
 		this.animation = animation;
+	}
+
+	/**
+	 * @return the obfuscateMediaFiles
+	 */
+	public boolean isObfuscateMediaFiles()
+	{
+		return obfuscateMediaFiles;
+	}
+
+	/**
+	 * @param obfuscateMediaFiles
+	 *            the obfuscateMediaFiles to set
+	 */
+	public void setObfuscateMediaFiles(boolean obfuscateMediaFiles)
+	{
+		this.obfuscateMediaFiles = obfuscateMediaFiles;
 	}
 
 	/**
