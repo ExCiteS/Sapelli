@@ -79,6 +79,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR = "buttonBackgroundColor";
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
 	static private final String ATTRIBUTE_FORM_ANIMATION = "animation";
+	static private final String ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES = "obfuscateMediaFiles";
 	static private final String ATTRIBUTE_FORM_SINGLE_PAGE = "singlePage";
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
@@ -177,6 +178,8 @@ public class FormParser extends SubtreeParser
 			currentForm.setShowForward(readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Form.DEFAULT_SHOW_FORWARD, attributes));
 			// Animation:
 			currentForm.setAnimation(readBooleanAttribute(ATTRIBUTE_FORM_ANIMATION, Form.DEFAULT_ANIMATION, attributes));
+			// Obfuscate Media Files:
+			currentForm.setObfuscateMediaFiles(readBooleanAttribute(ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES, Form.DEFAULT_OBFUSCATE_MEDIA_FILES, attributes));
 			// ButtonField images:
 			currentForm.setBackButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_BACK_BUTTON_IMG));
 			currentForm.setCancelButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_CANCEL_BUTTON_IMG));

@@ -3,12 +3,13 @@
  */
 package uk.ac.ucl.excites.collector.project.model.fields;
 
-import android.annotation.SuppressLint;
 import java.io.File;
 import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import org.joda.time.DateTime;
+
 import uk.ac.ucl.excites.collector.project.data.FormEntry;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
@@ -19,7 +20,7 @@ import uk.ac.ucl.excites.util.BinaryHelpers;
 import uk.ac.ucl.excites.util.ROT13;
 
 /**
- * @author mstevens
+ * @author mstevens, Michalis Vitos
  *
  */
 public abstract class MediaField extends Field
@@ -153,17 +154,27 @@ public abstract class MediaField extends Field
 	public String generateFilename(Record record, int attachmentNumber, boolean obfuscatedExtension)
 	{
 		FormEntry entry = new FormEntry(form, record);
-		//Elements:
+		// Elements:
 		DateTime dt = entry.getStartTime(true);
+		String time = dt.toString().replace(":", "."); // : is not allowed as a filename char
 		long deviceID = entry.getDeviceID();
-		int fieldIdx = form.getFieldIndex(this);
-		String mediaType = getMediaType();
-		//Assemble:
-		String message = dt.toString() + Long.toString(deviceID) + Integer.toString(fieldIdx) + mediaType + Integer.toString(attachmentNumber);
-		//Return MD5 hash as hexadecimal String:
-		return 	BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(message.getBytes()).toByteArray(), 16) +
-				(obfuscatedExtension ? 	"_" + ROT13.rot13NumRot5(getFileExtension()).toUpperCase() :
-										"." + getFileExtension());
+		// Assemble:
+		// FieldID_DeviceID_time_attachmentNumber
+		String filename = this.getID() + "_" + Long.toString(deviceID) + "_" + time + "_#" + Integer.toString(attachmentNumber);
+
+		if(form.isObfuscateMediaFiles())
+		{
+			// Return MD5 hash as hexadecimal String:
+			filename = BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(filename.getBytes()).toByteArray(), 16);
+			// Add the extension
+			filename += (obfuscatedExtension ? "_" + ROT13.rot13NumRot5(getFileExtension()).toUpperCase() : "." + getFileExtension());
+		}
+		else
+		{
+			filename += "." + getFileExtension();
+		}
+
+		return filename;
 	}
 	
 	public static String getNonObfuscatedFilename(String filename)
