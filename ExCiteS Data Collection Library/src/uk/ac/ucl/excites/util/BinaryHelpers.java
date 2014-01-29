@@ -41,10 +41,15 @@ public final class BinaryHelpers
 	{
 		return toHexadecimealString(data, length, true);
 	}
+	
+	static public String toHexadecimealString(byte[] data, boolean uppercase)
+	{
+		return toHexadecimealString(data, data.length, uppercase);
+	}
 
 	static public String toHexadecimealString(byte[] data)
 	{
-		return toHexadecimealString(data, data.length, true);
+		return toHexadecimealString(data, true);
 	}
 
 	static public String toBinaryString(byte b)
