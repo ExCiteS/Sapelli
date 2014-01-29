@@ -114,7 +114,7 @@ public class DropboxSync extends RecursiveFileObserver
 	private void uploadFile(File fileToUpload)
 	{
 		// Get the non Obfuscated filename and the extension
-		final String nonObfuscatedFilename = MediaField.getNonObfuscatedFilename(fileToUpload.getName());
+		final String nonObfuscatedFilename = MediaField.UndoExtensionObfuscation(fileToUpload.getName());
 		final String fileExtension = FileHelpers.getFileExtension(nonObfuscatedFilename);
 
 		Debug.d("The file is: " + nonObfuscatedFilename + " and its filename is: " + fileExtension);
