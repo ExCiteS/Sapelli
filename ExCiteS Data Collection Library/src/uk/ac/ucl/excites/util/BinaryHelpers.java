@@ -22,8 +22,8 @@ public final class BinaryHelpers
 			to = array.length;
 		return Arrays.copyOfRange(array, offset, to);
 	}
-	
-	static public String toHexadecimealString(byte[] data, int length)
+
+	static public String toHexadecimealString(byte[] data, int length, boolean uppercase)
 	{
 		StringBuffer bff = new StringBuffer();
 		//zero padding:
@@ -31,13 +31,18 @@ public final class BinaryHelpers
 			bff.append("00");
 		//the bytes:
 		for(byte b : data)
-			bff.append(String.format("%02X", b));
+			bff.append(String.format("%02" + (uppercase ? "X" : "x"), b));
 		return bff.toString();
 	}
 	
+	static public String toHexadecimealString(byte[] data, int length)
+	{
+		return toHexadecimealString(data, length, true);
+	}
+
 	static public String toHexadecimealString(byte[] data)
 	{
-		return toHexadecimealString(data, data.length);
+		return toHexadecimealString(data, data.length, true);
 	}
 		
 	static public String toBinaryString(byte b)
