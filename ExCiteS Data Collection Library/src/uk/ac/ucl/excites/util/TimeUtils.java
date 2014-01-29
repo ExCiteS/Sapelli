@@ -83,18 +83,50 @@ public final class TimeUtils
 			return ISOWithoutMSFormatter.print(DateTime.now());
 	}
 
+	static public String getISOTimestamp(DateTime dateTime, boolean withMS)
+	{
+		if(withMS)
+			return ISOWithMSFormatter.print(dateTime);
+		else
+			return ISOWithoutMSFormatter.print(dateTime);
+	}
+	
+	static public String getISOTimestamp(long timestamp, boolean withMS)
+	{
+		if(withMS)
+			return ISOWithMSFormatter.print(timestamp);
+		else
+			return ISOWithoutMSFormatter.print(timestamp);
+	}
+
 	static public String getTimestampForFileName()
 	{
 		return FileTimestampFormatter.print(DateTime.now());
 	}
 
+	static public String getTimestampForFileName(DateTime dateTime)
+	{
+		return FileTimestampFormatter.print(dateTime);
+	}
+	
 	static public String getTimestampForFileName(long timestamp)
 	{
 		return FileTimestampFormatter.print(timestamp);
 	}
 
+	static public String getPrettyTimestamp()
+	{
+		return PrettyTimestampFormatter.print(DateTime.now());
+	}
+	
+	static public String getPrettyTimestamp(DateTime dateTime)
+	{
+		return PrettyTimestampFormatter.print(dateTime);
+	}
+	
 	static public String getPrettyTimestamp(long timestamp)
 	{
 		return PrettyTimestampFormatter.print(timestamp);
 	}
+	
 }
