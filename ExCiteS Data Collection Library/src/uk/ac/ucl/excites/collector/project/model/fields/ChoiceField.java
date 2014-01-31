@@ -25,7 +25,7 @@ import uk.ac.ucl.excites.util.CollectionUtils;
 public class ChoiceField extends Field implements DictionaryItem
 {
 	
-	static public final int DEFAULT_NUM_COLS = 2;
+	static public final int DEFAULT_NUM_COLS = 1;
 	static public final int DEFAULT_NUM_ROWS = 2;
 	static public final String DEFAULT_ALT_TEXT = "?";
 	static public final boolean DEFAULT_CROSSED = false;
