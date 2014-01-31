@@ -349,7 +349,10 @@ public class ProjectController implements Controller, LocationListener, Orientat
 			saveRecordAndAttachments();
 		else
 			discardAttachments();
-		logger.addBlankLine();
+		
+		// Insert blank line in log:
+		if(logger != null)
+			logger.addBlankLine();
 		
 		// Next action:
 		switch(ef.getNext())
