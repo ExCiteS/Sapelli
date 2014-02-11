@@ -37,9 +37,13 @@ public class ExCiteSFileLoader
 	 */
 	public ExCiteSFileLoader(String projectsFolderPath, String tempFolderPath) throws IOException
 	{
+		// Create the temp folder
 		this.tempFolderPath = FileHelpers.ensureFolderPath(tempFolderPath);
 		if(!FileHelpers.createFolder(tempFolderPath))
 			throw new IOException("Temp folder (" + this.tempFolderPath + ") does not exist and could not be created.");
+		// Create .nomedia file:
+		(new File(tempFolderPath + Project.NO_MEDIA_FILE)).createNewFile();
+		// Create the project folder
 		String projPath = FileHelpers.ensureFolderPath(projectsFolderPath);
 		if(!FileHelpers.createFolder(projPath))
 			throw new IOException("Projects folder (" + projPath + ") does not exist and could not be created.");
