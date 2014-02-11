@@ -99,7 +99,7 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		// Check if we can access read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
-			app.getExcitesFolder(); //throws IllegalStateException if not accessible or not create-able
+			app.getSapelliFolder(); //throws IllegalStateException if not accessible or not create-able
 		}
 		catch(IllegalStateException ise)
 		{	// Inform the user and close the application

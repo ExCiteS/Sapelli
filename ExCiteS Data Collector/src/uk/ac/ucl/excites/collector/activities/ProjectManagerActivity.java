@@ -126,7 +126,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		// Check if we can access read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
-			app.getExcitesFolder(); //throws IllegalStateException if not accessible or not create-able
+			app.getSapelliFolder(); //throws IllegalStateException if not accessible or not create-able
 		}
 		catch(IllegalStateException ise)
 		{	// Inform the user and close the application
@@ -235,7 +235,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 			List<Project> projects = dao.retrieveProjects();
 			Project p = null;
 			if(projects.isEmpty())
-			{	// Use /mnt/sdcard/ExCiteS/ as the basePath:
+			{ // Use /mnt/sdcard/Sapelli/ as the basePath:
 				SapelliFileLoader loader = new SapelliFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
 				p = loader.load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
 				storeProject(p);
@@ -387,7 +387,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		Intent intent = new Intent(getBaseContext(), FileChooserActivity.class);
 		// Start from "/sdcard"
 		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(Environment.getExternalStorageDirectory().getPath()));
-		// set file filter for .xml or .excites
+		// set file filter for .xml
 		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + ")$");
 		startActivityForResult(intent, RETURN_BROWSE_FOR_RECORD_IMPORT);
 		return true;
@@ -504,11 +504,11 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		Project project = null;
 		try
 		{
-			// Download ExCiteS file if path is a URL
-			if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION) */)
+			// Download Sapelli file if path is a URL
+			if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(SapelliFileLoader.EXCITES_FILE_EXTENSION) */)
 			{ // Extension check above is commented out to support "smart"/dynamic URLs
 				// Start async task to download the file:
-				(new DownloadFileFromURL(path, "Project")).execute(); // the task will also call processExcitesFile() and checkProject()
+				(new DownloadFileFromURL(path, "Project")).execute(); // the task will also call processSapelliFile() and checkProject()
 				return;
 			}
 			else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
@@ -525,7 +525,8 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		}
 		catch(Exception e)
 		{
-			showErrorDialog("Invalid xml or excites file: " + path + "\nError: " + e.getMessage() + (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
+			showErrorDialog("Invalid xml or Sapelli file: " + path + "\nError: " + e.getMessage()
+					+ (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
 			return;
 		}
 		
@@ -552,19 +553,19 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		}
 	}
 
-	private Project processSapelliFile(File excitesFile) throws Exception
+	private Project processSapelliFile(File sapelliFile) throws Exception
 	{
 		try
 		{
 			SapelliFileLoader loader = new SapelliFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
-			Project loadedProject = loader.load(excitesFile);
+			Project loadedProject = loader.load(sapelliFile);
 			// Show parser warnings if needed:
 			showParserWarnings(loader.getParserWarnings());
 			return loadedProject;
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "Could not load excites file", e);
+			Log.e(TAG, "Could not load Sapelli file", e);
 			throw e;
 		}
 	}
@@ -1030,14 +1031,15 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 				}
 				catch(Exception e)
 				{
-					showErrorDialog("Invalid excites file: " + downloadUrl + "\nError: " + e.getMessage() + (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
+					showErrorDialog("Invalid Sapelli file: " + downloadUrl + "\nError: " + e.getMessage()
+							+ (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
 					return;
 				}
 				
 				// Handle temp file:
 				if(project != null)
 					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_'
-							+ (startTime / 1000) + ".excites"));
+							+ (startTime / 1000) + ".sapelli"));
 				else
 					downloadFile.delete();
 			}

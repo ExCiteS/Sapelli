@@ -151,7 +151,7 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 			{
 				try
 				{
-					DropboxSync observer = new DropboxSync(getApplicationContext(), p.getDataFolder(), ((CollectorApp) getApplication()).getExcitesFolder().getAbsolutePath()); 
+					DropboxSync observer = new DropboxSync(getApplicationContext(), p.getDataFolder(), ((CollectorApp) getApplication()).getSapelliFolder().getAbsolutePath()); 
 					folderObservers.add(observer);
 					observer.startWatching();
 				}

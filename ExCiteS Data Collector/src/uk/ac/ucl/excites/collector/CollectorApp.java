@@ -30,8 +30,8 @@ public class CollectorApp extends Application
 	
 	static private final String TAG = "CollectorApp";
 	
-	static private final String EXCITES_FOLDER = "ExCiteS" + File.separatorChar;
-	static private final String DATABASE_NAME = "ExCiteS.db4o";
+	static private final String SAPELLI_FOLDER = "Sapelli" + File.separatorChar;
+	static private final String DATABASE_NAME = "Sapelli.db4o";
 	static private final String DEMO_PREFIX = "Demo_";
 	static private final String PROJECT_FOLDER = "Projects" + File.separator;
 	static private final String TEMP_FOLDER = "Temp" + File.separator;
@@ -40,7 +40,7 @@ public class CollectorApp extends Application
 
 	static private volatile ObjectContainer db;
 	
-	private File excitesFolder;
+	private File sapelliFolder;
 
 	private Set<DataAccessClient> daoClients;
 	
@@ -60,10 +60,10 @@ public class CollectorApp extends Application
 		// Db clients:
 		daoClients = new HashSet<DataAccessClient>();
 		
-		// ExCiteS folder (created on SD card or internal mass storage): 
-		excitesFolder = new File(getStorageDirectory().getAbsolutePath() + File.separator + EXCITES_FOLDER);
+		// Sapelli folder (created on SD card or internal mass storage):
+		sapelliFolder = new File(getStorageDirectory().getAbsolutePath() + File.separator + SAPELLI_FOLDER);
 		
-		// Set up a CrashReporter to the ExCiteS/crash Folder
+		// Set up a CrashReporter to the Sapelli/crash Folder
 		try
 		{
 			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name)));
@@ -99,38 +99,38 @@ public class CollectorApp extends Application
 	}
 
 	/**
-	 * @return creates the excites folder on the filesystem, and returns it as a File object
+	 * @return creates the Sapelli folder on the filesystem, and returns it as a File object
 	 */
-	public File getExcitesFolder()
+	public File getSapelliFolder()
 	{
 		if(!isStorageMounted() || !FileHelpers.isReadableWritableDirectory(getStorageDirectory()))
 			throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
-		if(!excitesFolder.exists())
+		if(!sapelliFolder.exists())
 		{
-			if(!excitesFolder.mkdirs())
-				throw new IllegalStateException("Cannot create ExCiteS folder");
+			if(!sapelliFolder.mkdirs())
+				throw new IllegalStateException("Cannot create Sapelli folder");
 		}
-		return excitesFolder;
+		return sapelliFolder;
 	}
 
 	public String getDownloadFolderPath()
 	{
-		return getExcitesFolder().getAbsolutePath() + File.separator + DOWNLOAD_FOLDER;
+		return getSapelliFolder().getAbsolutePath() + File.separator + DOWNLOAD_FOLDER;
 	}
 	
 	public String getTempFolderPath()
 	{
-		return getExcitesFolder().getAbsolutePath() + File.separator + TEMP_FOLDER;
+		return getSapelliFolder().getAbsolutePath() + File.separator + TEMP_FOLDER;
 	}
 	
 	public String getProjectFolderPath()
 	{
-		return getExcitesFolder().getAbsolutePath() + File.separator + PROJECT_FOLDER;
+		return getSapelliFolder().getAbsolutePath() + File.separator + PROJECT_FOLDER;
 	}
 	
 	public String getDumpFolderPath()
 	{
-		return getExcitesFolder().getAbsolutePath() + File.separator + DUMP_FOLDER;
+		return getSapelliFolder().getAbsolutePath() + File.separator + DUMP_FOLDER;
 	}
 
 	@Override
