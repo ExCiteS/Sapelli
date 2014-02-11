@@ -46,8 +46,8 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
-import android.content.res.AssetManager;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -414,8 +414,14 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		Intent intent = new Intent(getBaseContext(), FileChooserActivity.class);
 		// Start from "/sdcard" (or equavalent)
 		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(app.getStorageDirectory().getPath()));
-		// set file filter for .xml or .excites
-		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + "|" + SapelliFileLoader.EXCITES_FILE_EXTENSION + ")$");
+		// set file filter for .xml or sapelli file extensions
+		String regexFilenameFilter = "^.*\\.(" + XML_FILE_EXTENSION;
+		for(String extention : SapelliFileLoader.SAPELLI_FILE_EXTENSIONS)
+		{
+			regexFilenameFilter += "|" + extention;
+		}
+		regexFilenameFilter += ")$";
+		intent.putExtra(FileChooserActivity._RegexFilenameFilter, regexFilenameFilter);
 		startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
 	}
 
@@ -490,7 +496,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		String path = enterURL.getText().toString().trim();
 		if(path.isEmpty())
 		{
-			showErrorDialog("Please select an XML or ExCiteS file", false);
+			showErrorDialog("Please select an XML or Sapelli file", false);
 			return;
 		}
 		enterURL.setText(""); // clear field
@@ -505,12 +511,17 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 				(new DownloadFileFromURL(path, "Project")).execute(); // the task will also call processExcitesFile() and checkProject()
 				return;
 			}
-			// Extract & parse a local ExCiteS file
-			else if(path.toLowerCase().endsWith(SapelliFileLoader.EXCITES_FILE_EXTENSION))
-				project = processExcitesFile(new File(path));
 			else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
 				project = parseXML(new File(path));
-			// Add the project to the db & the list on the screen:
+			else
+			{
+				// Extract & parse a local Sapelli file
+				for(String extention : SapelliFileLoader.SAPELLI_FILE_EXTENSIONS)
+				{
+					if(path.toLowerCase().endsWith(extention))
+						project = processSapelliFile(new File(path));
+				}
+			}
 		}
 		catch(Exception e)
 		{
@@ -541,7 +552,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		}
 	}
 
-	private Project processExcitesFile(File excitesFile) throws Exception
+	private Project processSapelliFile(File excitesFile) throws Exception
 	{
 		try
 		{
@@ -1014,7 +1025,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 				// Process the file & add the project to the db & list on the screen
 				try
 				{
-					project = processExcitesFile(downloadFile);
+					project = processSapelliFile(downloadFile);
 					addProject(project); // will show error if project is null
 				}
 				catch(Exception e)

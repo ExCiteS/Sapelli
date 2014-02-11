@@ -25,7 +25,7 @@ import uk.ac.ucl.excites.util.io.FileHelpers;
 public class SapelliFileLoader
 {
 	
-	static public final String EXCITES_FILE_EXTENSION = "excites";
+	static public final String[] SAPELLI_FILE_EXTENSIONS = { "excites", "sapelli", "sap" };
 	static private final String PROJECT_FILE = "PROJECT.xml";
 
 	private String tempFolderPath;
