@@ -21,7 +21,7 @@ import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.SapelliProjectClient;
-import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
+import uk.ac.ucl.excites.collector.project.io.SapelliFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
@@ -236,7 +236,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 			Project p = null;
 			if(projects.isEmpty())
 			{	// Use /mnt/sdcard/ExCiteS/ as the basePath:
-				ExCiteSFileLoader loader = new ExCiteSFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
+				SapelliFileLoader loader = new SapelliFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
 				p = loader.load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
 				storeProject(p);
 			}
@@ -415,7 +415,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		// Start from "/sdcard" (or equavalent)
 		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(app.getStorageDirectory().getPath()));
 		// set file filter for .xml or .excites
-		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + "|" + ExCiteSFileLoader.EXCITES_FILE_EXTENSION + ")$");
+		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + "|" + SapelliFileLoader.EXCITES_FILE_EXTENSION + ")$");
 		startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
 	}
 
@@ -506,7 +506,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 				return;
 			}
 			// Extract & parse a local ExCiteS file
-			else if(path.toLowerCase().endsWith(ExCiteSFileLoader.EXCITES_FILE_EXTENSION))
+			else if(path.toLowerCase().endsWith(SapelliFileLoader.EXCITES_FILE_EXTENSION))
 				project = processExcitesFile(new File(path));
 			else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
 				project = parseXML(new File(path));
@@ -545,7 +545,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 	{
 		try
 		{
-			ExCiteSFileLoader loader = new ExCiteSFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
+			SapelliFileLoader loader = new SapelliFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
 			Project loadedProject = loader.load(excitesFile);
 			// Show parser warnings if needed:
 			showParserWarnings(loader.getParserWarnings());

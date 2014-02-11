@@ -19,10 +19,10 @@ import uk.ac.ucl.excites.util.io.FileHelpers;
 /**
  * Loader for .excites files (which are actually just renamed ZIP files)
  * 
- * @author mstevens
+ * @author mstevens, Michalis Vitos
  * 
  */
-public class ExCiteSFileLoader
+public class SapelliFileLoader
 {
 	
 	static public final String EXCITES_FILE_EXTENSION = "excites";
@@ -35,7 +35,7 @@ public class ExCiteSFileLoader
 	 * @param basePath
 	 * @throws IOException 
 	 */
-	public ExCiteSFileLoader(String projectsFolderPath, String tempFolderPath) throws IOException
+	public SapelliFileLoader(String projectsFolderPath, String tempFolderPath) throws IOException
 	{
 		// Create the temp folder
 		this.tempFolderPath = FileHelpers.ensureFolderPath(tempFolderPath);
