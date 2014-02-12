@@ -3,9 +3,9 @@
  */
 package uk.ac.ucl.excites.collector.ui.fieldviews;
 
-import uk.ac.ucl.excites.collector.project.model.fields.ButtonField;
-import uk.ac.ucl.excites.collector.project.ui.FieldUI;
-import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ButtonField;
+import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.View;

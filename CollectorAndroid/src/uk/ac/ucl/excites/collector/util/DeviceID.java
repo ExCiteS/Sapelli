@@ -3,7 +3,7 @@ package uk.ac.ucl.excites.collector.util;
 import java.math.BigInteger;
 import java.util.zip.CRC32;
 
-import uk.ac.ucl.excites.transmission.crypto.Hashing;
+import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.util.Debug;
 import uk.ac.ucl.excites.util.DeviceControl;
 import android.annotation.SuppressLint;

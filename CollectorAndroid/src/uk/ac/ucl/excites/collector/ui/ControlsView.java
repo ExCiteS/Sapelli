@@ -3,10 +3,7 @@ package uk.ac.ucl.excites.collector.ui;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.collector.*;
-import uk.ac.ucl.excites.collector.project.model.Form;
-import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.ui.ControlsState;
+import uk.ac.ucl.excites.collector.ProjectController;
 import uk.ac.ucl.excites.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.collector.ui.drawables.HorizontalArrow;
@@ -15,7 +12,11 @@ import uk.ac.ucl.excites.collector.ui.picker.PickerView;
 import uk.ac.ucl.excites.collector.ui.picker.items.*;
 import uk.ac.ucl.excites.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.collector.util.ScreenMetrics;
-import uk.ac.ucl.excites.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.collector.*;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.project.ui.ControlsState;
+import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;

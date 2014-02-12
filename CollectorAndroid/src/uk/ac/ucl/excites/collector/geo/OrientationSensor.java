@@ -3,7 +3,7 @@
  */
 package uk.ac.ucl.excites.collector.geo;
 
-import uk.ac.ucl.excites.storage.types.Orientation;
+import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;

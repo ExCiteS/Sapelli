@@ -1,9 +1,9 @@
 package uk.ac.ucl.excites.collector.ui.fieldviews;
 
-import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListField;
-import uk.ac.ucl.excites.collector.project.model.fields.lists.MultiListItem;
-import uk.ac.ucl.excites.collector.project.ui.FieldUI;
-import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.lists.MultiListField;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.lists.MultiListItem;
+import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.Gravity;
@@ -26,7 +26,7 @@ public class MultiListView extends LinearLayout implements FieldUI
 {
 
 	static private final LayoutParams FULL_WIDTH = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-	static private final String PLEASE_SELECT = "— Please select —"; //TODO multilang
+	static private final String PLEASE_SELECT = "ï¿½ Please select ï¿½"; //TODO multilang
 	
 	private MultiListField field;
 		

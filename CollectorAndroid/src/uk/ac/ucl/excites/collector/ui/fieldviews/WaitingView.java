@@ -4,10 +4,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.collector.ProjectController;
-import uk.ac.ucl.excites.collector.project.model.fields.Field;
-import uk.ac.ucl.excites.collector.project.ui.FieldUI;
-import uk.ac.ucl.excites.storage.model.Record;
-import uk.ac.ucl.excites.util.Timeoutable;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
+import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.util.Timeoutable;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.Gravity;

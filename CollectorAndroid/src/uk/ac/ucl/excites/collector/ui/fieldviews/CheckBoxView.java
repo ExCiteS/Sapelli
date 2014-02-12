@@ -4,11 +4,11 @@
 package uk.ac.ucl.excites.collector.ui.fieldviews;
 
 import uk.ac.ucl.excites.collector.ProjectController;
-import uk.ac.ucl.excites.collector.project.model.fields.CheckBoxField;
-import uk.ac.ucl.excites.collector.project.model.fields.Field;
-import uk.ac.ucl.excites.collector.project.ui.FieldUI;
-import uk.ac.ucl.excites.storage.model.BooleanColumn;
-import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.CheckBoxField;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
+import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.storage.model.BooleanColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.widget.CheckBox;

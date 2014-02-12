@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee" xmlns="http://java.sun.com/xml/ns/javaee" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" id="WebApp_ID" version="2.5">
-  <display-name>ExCiteS_Data_Server</display-name>
+  <display-name>Sapelli_Data_Server</display-name>
   <context-param>
     <param-name>DB4O_FILENAME</param-name>
-    <param-value>ExCiteS.db4o</param-value>
+    <param-value>Sapelli.db4o</param-value>
   </context-param>
   <listener>
-    <listener-class>uk.ac.uk.excites.server.db.Db4oServletListener</listener-class>
+    <listener-class>uk.ac.uk.excites.sapelli.server.db.Db4oServletListener</listener-class>
   </listener>
   <welcome-file-list>
     <welcome-file>index.html</welcome-file>
@@ -20,7 +20,7 @@
     <description></description>
     <display-name>ServerDataReceiver</display-name>
     <servlet-name>ServerDataReceiver</servlet-name>
-    <servlet-class>uk.ac.uk.excites.server.ServerDataReceiver</servlet-class>
+    <servlet-class>uk.ac.uk.excites.sapelli.server.ServerDataReceiver</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>ServerDataReceiver</servlet-name>
@@ -31,7 +31,7 @@
     <description>Class to upload Projects</description>
     <display-name>ProjectUpload</display-name>
     <servlet-name>ProjectUpload</servlet-name>
-    <servlet-class>uk.ac.uk.excites.server.ProjectUpload</servlet-class>
+    <servlet-class>uk.ac.uk.excites.sapelli.server.ProjectUpload</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>ProjectUpload</servlet-name>
@@ -42,11 +42,11 @@
     <description></description>
     <display-name>AccessManager</display-name>
     <servlet-name>AccessManager</servlet-name>
-    <servlet-class>uk.ac.uk.excites.server.util.AccessManager</servlet-class>
+    <servlet-class>uk.ac.uk.excites.sapelli.server.util.AccessManager</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>AccessManager</servlet-name>
     <url-pattern>/AccessManager</url-pattern>
-    <url-pattern>/ExCiteS_Storage/*</url-pattern>
+    <url-pattern>/Sapelli_Storage/*</url-pattern>
   </servlet-mapping>
 </web-app>
