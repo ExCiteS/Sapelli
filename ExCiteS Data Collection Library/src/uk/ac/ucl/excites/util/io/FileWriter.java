@@ -139,8 +139,6 @@ public class FileWriter
 
 	public void open(int fileExistsStrategy, int fileDoesNotExistStrategy) throws IOException
 	{
-		if(!file.isFile())
-			throw new IOException("Not a valid file path (" + file.getAbsolutePath() + ")");
 		if(fileExistsStrategy < 0 || fileExistsStrategy > 4)
 			throw new IllegalArgumentException("Invalid file exists strategy");
 		if(fileDoesNotExistStrategy < 1 || fileDoesNotExistStrategy > 2)
