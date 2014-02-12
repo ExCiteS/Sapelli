@@ -21,7 +21,8 @@ import uk.ac.ucl.excites.collector.R;
 import uk.ac.ucl.excites.collector.database.DataAccess;
 import uk.ac.ucl.excites.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.collector.project.SapelliProjectClient;
-import uk.ac.ucl.excites.collector.project.io.SapelliFileLoader;
+import uk.ac.ucl.excites.collector.project.io.ProjectLoader;
+import uk.ac.ucl.excites.collector.project.io.ProjectLoaderClient;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
@@ -75,7 +76,7 @@ import android.widget.Toast;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnMenuItemClickListener, DataAccessClient, DeviceID.InitialisationCallback
+public class ProjectManagerActivity extends BaseActivity implements ProjectLoaderClient, DataAccessClient, DeviceID.InitialisationCallback, MenuItem.OnMenuItemClickListener
 {
 
 	// STATICS--------------------------------------------------------
@@ -236,7 +237,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 			Project p = null;
 			if(projects.isEmpty())
 			{ // Use /mnt/sdcard/Sapelli/ as the basePath:
-				SapelliFileLoader loader = new SapelliFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
+				ProjectLoader loader = new ProjectLoader(this, app.getProjectFolderPath(), app.getTempFolderPath());
 				p = loader.load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
 				storeProject(p);
 			}
@@ -416,7 +417,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(app.getStorageDirectory().getPath()));
 		// set file filter for .xml or sapelli file extensions
 		String regexFilenameFilter = "^.*\\.(" + XML_FILE_EXTENSION;
-		for(String extention : SapelliFileLoader.SAPELLI_FILE_EXTENSIONS)
+		for(String extention : ProjectLoader.SAPELLI_FILE_EXTENSIONS)
 		{
 			regexFilenameFilter += "|" + extention;
 		}
@@ -505,9 +506,8 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		try
 		{
 			// Download Sapelli file if path is a URL
-			if(Pattern.matches(Patterns.WEB_URL.toString(), path) /* && path.toLowerCase().endsWith(SapelliFileLoader.EXCITES_FILE_EXTENSION) */)
-			{ // Extension check above is commented out to support "smart"/dynamic URLs
-				// Start async task to download the file:
+			if(Pattern.matches(Patterns.WEB_URL.toString(), path)) // We don't check the extension to support "smart"/dynamic URLs
+			{	// Start async task to download the file:
 				(new DownloadFileFromURL(path, "Project")).execute(); // the task will also call processSapelliFile() and checkProject()
 				return;
 			}
@@ -516,17 +516,17 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 			else
 			{
 				// Extract & parse a local Sapelli file
-				for(String extention : SapelliFileLoader.SAPELLI_FILE_EXTENSIONS)
-				{
+				for(String extention : ProjectLoader.SAPELLI_FILE_EXTENSIONS)
 					if(path.toLowerCase().endsWith(extention))
+					{
 						project = processSapelliFile(new File(path));
-				}
+						break;
+					}	
 			}
 		}
 		catch(Exception e)
 		{
-			showErrorDialog("Invalid xml or Sapelli file: " + path + "\nError: " + e.getMessage()
-					+ (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
+			showErrorDialog("Invalid XML or Sapelli file: " + path + "\nError: " + e.getMessage() + (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
 			return;
 		}
 		
@@ -557,7 +557,7 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 	{
 		try
 		{
-			SapelliFileLoader loader = new SapelliFileLoader(app.getProjectFolderPath(), app.getTempFolderPath());
+			ProjectLoader loader = new ProjectLoader(this, app.getProjectFolderPath(), app.getTempFolderPath());
 			Project loadedProject = loader.load(sapelliFile);
 			// Show parser warnings if needed:
 			showParserWarnings(loader.getParserWarnings());
@@ -597,34 +597,10 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 		{
 			showErrorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
 		}
-
+		
 		// Encryption Check
 		if(project.getTransmissionSettings().isEncrypt())
-		{
-			// encryptionDialog = new AlertDialog.Builder(this);
-			AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
-			builder.setTitle("Project Encryption");
-			builder.setMessage("This project requires a password in order to encrypt and transmit the data. Please provide a password:");
-
-			// Set an EditText view to get user input
-			final EditText input = new EditText(this);
-			builder.setView(input);
-
-			builder.setPositiveButton("Ok", new DialogInterface.OnClickListener()
-			{
-				public void onClick(DialogInterface dialog, int whichButton)
-				{
-					if(input.getText().toString().equals(""))
-						project.getTransmissionSettings().setPassword(Settings.DEFAULT_PASSWORD); // Set the Default Password
-					else
-						project.getTransmissionSettings().setPassword(input.getText().toString()); // Set the Password
-				}
-			});
-
-			encryptionDialog = builder.create();
-			encryptionDialog.show();
-		}
+			requestEncryptionKey(project);
 
 		// Store the project object:
 		storeProject(project);
@@ -654,6 +630,37 @@ public class ProjectManagerActivity extends BaseActivity implements MenuItem.OnM
 			showErrorDialog("Could not store project: " + e.getLocalizedMessage(), false);
 			return;
 		}
+	}
+	
+	@Override
+	public boolean isDuplicateProject(Project loadProject)
+	{
+		// TODO Auto-generated method stub
+		return false;
+	}
+	
+	private void requestEncryptionKey(final Project project)
+	{
+		// encryptionDialog = new AlertDialog.Builder(this);
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setTitle("Project Encryption");
+		builder.setMessage("This project requires a password in order to encrypt and transmit the data. Please provide a password:");
+		
+		// Set an EditText view to get user input
+		final EditText input = new EditText(this);
+		builder.setView(input);
+
+		builder.setPositiveButton("Ok", new DialogInterface.OnClickListener()
+		{
+			public void onClick(DialogInterface dialog, int whichButton)
+			{
+				String inputStr = input.getText().toString();
+				project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? 	Settings.DEFAULT_PASSWORD /*Set the Default Password*/ :
+																					inputStr);
+			}
+		});
+		encryptionDialog = builder.create();
+		encryptionDialog.show();
 	}
 
 	public void scanQR(View view)

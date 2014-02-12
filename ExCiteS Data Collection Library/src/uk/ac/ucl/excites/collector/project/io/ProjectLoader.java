@@ -20,21 +20,23 @@ import uk.ac.ucl.excites.util.io.Unzipper;
  * @author mstevens, Michalis Vitos
  * 
  */
-public class SapelliFileLoader
+public class ProjectLoader
 {
 	
 	static public final String[] SAPELLI_FILE_EXTENSIONS = { "excites", "sapelli", "sap" };
 	static private final String PROJECT_FILE = "PROJECT.xml";
 
+	private ProjectLoaderClient client;
 	private String tempFolderPath;
 	private ProjectParser parser;
 	
 	/**
 	 * @param basePath
-	 * @throws IOException 
+	 * @throws IOException
 	 */
-	public SapelliFileLoader(String projectsFolderPath, String tempFolderPath) throws IOException
+	public ProjectLoader(ProjectLoaderClient client, String projectsFolderPath, String tempFolderPath) throws IOException
 	{
+		this.client = client;
 		// Create the temp folder
 		this.tempFolderPath = FileHelpers.ensureFolderPath(tempFolderPath);
 		if(!FileHelpers.createFolder(tempFolderPath))
