@@ -1,8 +1,8 @@
 package uk.ac.ucl.excites.relay;
 
 import java.io.File;
-
 import uk.ac.ucl.excites.relay.util.CrashReporter;
+import uk.ac.ucl.excites.sapelli.relay.R;
 import android.app.Application;
 import android.os.Environment;
 

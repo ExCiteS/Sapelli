@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.relay;
 
 import uk.ac.ucl.excites.relay.sms.SmsDatabaseSQLite;
+import uk.ac.ucl.excites.sapelli.relay.R;
 import android.app.Activity;
 import android.os.Bundle;
 import android.webkit.WebView;

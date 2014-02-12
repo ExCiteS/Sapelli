@@ -3,11 +3,11 @@ package uk.ac.ucl.excites.relay;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-
 import uk.ac.ucl.excites.relay.sms.SmsDatabaseSQLite;
 import uk.ac.ucl.excites.relay.util.Debug;
 import uk.ac.ucl.excites.relay.util.UIHelper;
 import uk.ac.ucl.excites.relay.util.Utilities;
+import uk.ac.ucl.excites.sapelli.relay.R;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;

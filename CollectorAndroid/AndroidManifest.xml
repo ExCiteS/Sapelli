@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="uk.ac.ucl.excites.collector"
+    package="uk.ac.ucl.excites.sapelli.collector"
     android:versionCode="10"
     android:versionName="2.0" >
 
@@ -38,13 +38,13 @@
     <uses-feature android:name="android.hardware.camera.flash" />
 
     <application
-        android:name="uk.ac.ucl.excites.collector.CollectorApp"
+        android:name="uk.ac.ucl.excites.sapelli.collector.CollectorApp"
         android:allowBackup="true"
         android:icon="@drawable/ic_excites_grey"
         android:label="@string/app_name"
         android:theme="@style/AppTheme">
         <activity
-            android:name="uk.ac.ucl.excites.collector.activities.ProjectManagerActivity"
+            android:name="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity"
             android:icon="@drawable/ic_excites_grey"
             android:label="@string/app_name"
             android:launchMode="singleTask"
@@ -55,7 +55,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="uk.ac.ucl.excites.collector.activities.CollectorActivity"
+            android:name="uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity"
             android:launchMode="singleTask"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
             <intent-filter>
@@ -63,22 +63,22 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="uk.ac.ucl.excites.sender.DataSenderActivity"
+            android:name="uk.ac.ucl.excites.sapelli.sender.DataSenderActivity"
             android:exported="true"
             android:label="@string/title_activity_main" >
         </activity>
         <activity
-            android:name="uk.ac.ucl.excites.sender.DataSenderPreferences"
+            android:name="uk.ac.ucl.excites.sapelli.sender.DataSenderPreferences"
             android:icon="@drawable/ic_sender" >
         </activity>
-        <activity android:name="uk.ac.ucl.excites.sender.dropbox.DropboxLogin" >
+        <activity android:name="uk.ac.ucl.excites.sapelli.sender.dropbox.DropboxLogin" >
         </activity>
         <activity
-            android:name="uk.ac.ucl.excites.collector.activities.StatisticsActivity"
+            android:name="uk.ac.ucl.excites.sapelli.collector.activities.StatisticsActivity"
             android:theme="@android:style/Theme.NoTitleBar" >
         </activity>
         <activity
-            android:name="uk.ac.ucl.excites.sender.dropbox.DropboxAuthentication"
+            android:name="uk.ac.ucl.excites.sapelli.sender.dropbox.DropboxAuthentication"
             android:label="@string/title_activity_dropbox" >
         </activity>
         <activity
@@ -101,7 +101,7 @@
         </activity>
 
         <service
-            android:name="uk.ac.ucl.excites.sender.DataSenderService"
+            android:name="uk.ac.ucl.excites.sapelli.sender.DataSenderService"
             android:icon="@drawable/ic_excites_grey"
             android:label="@string/service_name" >
         </service>
@@ -114,7 +114,7 @@
         </service>
 
         <receiver
-            android:name="uk.ac.ucl.excites.sender.BootReceiver"
+            android:name="uk.ac.ucl.excites.sapelli.sender.BootReceiver"
             android:exported="true" >
             <intent-filter android:priority="9999999999" >
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

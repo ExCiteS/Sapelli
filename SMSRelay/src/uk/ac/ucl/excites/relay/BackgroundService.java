@@ -11,7 +11,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
@@ -20,13 +19,13 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
-
 import uk.ac.ucl.excites.relay.sms.SmsDatabaseSQLite;
 import uk.ac.ucl.excites.relay.sms.SmsObject;
 import uk.ac.ucl.excites.relay.util.BinaryHelpers;
 import uk.ac.ucl.excites.relay.util.Debug;
 import uk.ac.ucl.excites.relay.util.Hashing;
 import uk.ac.ucl.excites.relay.util.Utilities;
+import uk.ac.ucl.excites.sapelli.relay.R;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.PendingIntent;
