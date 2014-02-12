@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>ExCiteS Data Collection Tomcat Library</name>
+	<name>Tomcat Library</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -31,13 +31,17 @@
 		<link>
 			<name>src</name>
 			<type>2</type>
-			<locationURI>REPO_LOC/ExCiteS%20Data%20Collection%20Library/src</locationURI>
+			<locationURI>REPO_LOC1/ExCiteS%20Data%20Collection%20Library/src</locationURI>
 		</link>
 	</linkedResources>
 	<variableList>
 		<variable>
 			<name>REPO_LOC</name>
 			<value>$%7BPARENT-1-PROJECT_LOC%7D</value>
+		</variable>
+		<variable>
+			<name>REPO_LOC1</name>
+			<value>$%7BPARENT-1-ECLIPSE_HOME%7D/git/_Sapelli_</value>
 		</variable>
 	</variableList>
 </projectDescription>
