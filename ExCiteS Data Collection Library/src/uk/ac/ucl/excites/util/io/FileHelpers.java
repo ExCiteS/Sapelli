@@ -57,16 +57,6 @@ public final class FileHelpers
 			return false;
 		return true;
 	}
-
-	static public boolean isValidPath(String path)
-	{	//TODO fix this properly
-		return true; //Unix only: return path.charAt(0) == '/';
-	}
-
-	static public boolean isFolderPath(String fullPath)
-	{
-		return isValidPath(fullPath) && fullPath.charAt(fullPath.length() - 1) == File.separatorChar;
-	}
 	
 	/**
 	 * Ensures that the path is a folder path (adding / or \ if needed, but does not check if the folder exists)
@@ -77,11 +67,6 @@ public final class FileHelpers
 	static public String ensureFolderPath(String path)
 	{
 		return path + (path.charAt(path.length() - 1) == File.separatorChar ? "" : File.separatorChar); 
-	}
-
-	static public boolean isFilePath(String fullPath)
-	{
-		return isValidPath(fullPath) && !isFolderPath(fullPath);
 	}
 
 	static public String makeValidFileName(String filename)
