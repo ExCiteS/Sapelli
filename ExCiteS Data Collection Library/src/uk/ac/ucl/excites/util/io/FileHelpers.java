@@ -215,13 +215,14 @@ public final class FileHelpers
 	{
 		if(!srcFolder.exists())
 			throw new IllegalArgumentException("Source directory does not exist");
-		if(!srcFolder.isDirectory())
+		if( !srcFolder.isDirectory())
 			throw new IllegalArgumentException("Source is not a directory, call moveFile() instead");
-		if(!dstFolder.isDirectory())
-			throw new IllegalArgumentException("Destination is not a directory, call moveFile() instead");
 		
 		// Create destination if needed:
-		createFolder(dstFolder);
+		if(!dstFolder.exists())
+			createFolder(dstFolder);
+		else if(!dstFolder.isDirectory())
+			throw new IllegalArgumentException("Destination exists but is not a directory!");
 		
 		// Move contents (recursive calls will happen for subdirectories):
 		for(File source : srcFolder.listFiles())
@@ -288,13 +289,13 @@ public final class FileHelpers
 	 * Attempts to create the necessary (containing) folder(s) for a given path
 	 * 
 	 * @param folderPath
-	 * @return success (whether the directory exists now, or existed already)
+	 * @return success, i.e. whether the folder now (as a directory, *not* as a file), or existed already
 	 */
 	public static boolean createFolder(File folder)
 	{
-		if(!folder.exists() || !folder.isDirectory())
+		if(!folder.exists())
 			return folder.mkdirs();
-		return true;
+		return folder.isDirectory();
 	}
 
 	/**
