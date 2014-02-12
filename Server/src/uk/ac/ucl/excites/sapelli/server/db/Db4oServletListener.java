@@ -1,4 +1,4 @@
-package uk.ac.uk.excites.sapelli.server.db;
+package uk.ac.ucl.excites.sapelli.server.db;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
@@ -6,7 +6,7 @@ import javax.servlet.ServletContextListener;
 import javax.servlet.ServletRequestEvent;
 import javax.servlet.ServletRequestListener;
 
-import uk.ac.uk.excites.sapelli.server.ProjectUpload;
+import uk.ac.ucl.excites.sapelli.server.ProjectUpload;
 
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectServer;

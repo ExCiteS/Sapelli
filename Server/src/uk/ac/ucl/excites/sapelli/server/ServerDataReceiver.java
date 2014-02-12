@@ -1,4 +1,4 @@
-package uk.ac.uk.excites.sapelli.server;
+package uk.ac.ucl.excites.sapelli.server;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -15,6 +15,7 @@ import org.apache.commons.codec.binary.Base64;
 
 import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.db.ProjectModelProvider;
+import uk.ac.ucl.excites.sapelli.server.db.DataAccessHelper;
 import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.transmission.sms.Message;
@@ -23,7 +24,6 @@ import uk.ac.ucl.excites.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.transmission.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.transmission.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.util.BinaryHelpers;
-import uk.ac.uk.excites.sapelli.server.db.DataAccessHelper;
 
 /**
  * Servlet implementation to Receive SMS Transmitions from Relay

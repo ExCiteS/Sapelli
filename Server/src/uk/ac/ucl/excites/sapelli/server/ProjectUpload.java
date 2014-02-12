@@ -1,4 +1,4 @@
-package uk.ac.uk.excites.sapelli.server;
+package uk.ac.ucl.excites.sapelli.server;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,9 +22,9 @@ import uk.ac.ucl.excites.collector.project.db.DataAccess;
 import uk.ac.ucl.excites.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.util.DuplicateException;
+import uk.ac.ucl.excites.sapelli.server.db.DataAccessHelper;
+import uk.ac.ucl.excites.sapelli.server.util.Utilities;
 import uk.ac.ucl.excites.util.FileHelpers;
-import uk.ac.uk.excites.sapelli.server.db.DataAccessHelper;
-import uk.ac.uk.excites.sapelli.server.util.Utilities;
 
 /**
  * Servlet implementation class ProjectUpload

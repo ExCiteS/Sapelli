@@ -1,4 +1,4 @@
-package uk.ac.uk.excites.sapelli.server.db;
+package uk.ac.ucl.excites.sapelli.server.db;
 
 import javax.servlet.http.HttpServletRequest;
 

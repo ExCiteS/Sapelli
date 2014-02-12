@@ -1,4 +1,4 @@
-package uk.ac.uk.excites.sapelli.server.util;
+package uk.ac.ucl.excites.sapelli.server.util;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
