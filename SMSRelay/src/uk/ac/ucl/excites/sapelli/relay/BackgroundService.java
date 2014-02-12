@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.relay;
+package uk.ac.ucl.excites.sapelli.relay;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,6 +11,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ClientProtocolException;
@@ -19,13 +20,14 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
-import uk.ac.ucl.excites.relay.sms.SmsDatabaseSQLite;
-import uk.ac.ucl.excites.relay.sms.SmsObject;
-import uk.ac.ucl.excites.relay.util.BinaryHelpers;
-import uk.ac.ucl.excites.relay.util.Debug;
-import uk.ac.ucl.excites.relay.util.Hashing;
-import uk.ac.ucl.excites.relay.util.Utilities;
+
 import uk.ac.ucl.excites.sapelli.relay.R;
+import uk.ac.ucl.excites.sapelli.relay.sms.SmsDatabaseSQLite;
+import uk.ac.ucl.excites.sapelli.relay.sms.SmsObject;
+import uk.ac.ucl.excites.sapelli.relay.util.BinaryHelpers;
+import uk.ac.ucl.excites.sapelli.relay.util.Debug;
+import uk.ac.ucl.excites.sapelli.relay.util.Hashing;
+import uk.ac.ucl.excites.sapelli.relay.util.Utilities;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.PendingIntent;
@@ -347,10 +349,10 @@ public class BackgroundService extends Service
 		PendingIntent pendIntent = PendingIntent.getActivity(mContext, 0, mIntent, 0);
 
 		// This constructor is deprecated. Use Notification.Builder instead
-		Notification mNotification = new Notification(R.drawable.ic_launcher, getString(R.string.title_activity_main), System.currentTimeMillis());
+		Notification mNotification = new Notification(R.drawable.ic_launcher, getString(R.string.app_name), System.currentTimeMillis());
 
 		// This method is deprecated. Use Notification.Builder instead.
-		mNotification.setLatestEventInfo(this, getString(R.string.title_activity_main), getString(R.string.notification), pendIntent);
+		mNotification.setLatestEventInfo(this, getString(R.string.app_name), getString(R.string.notification), pendIntent);
 
 		mNotification.flags |= Notification.FLAG_NO_CLEAR;
 		startForeground(myID, mNotification);

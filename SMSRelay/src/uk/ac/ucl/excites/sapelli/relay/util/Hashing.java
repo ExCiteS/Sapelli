@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.relay.util;
+package uk.ac.ucl.excites.sapelli.relay.util;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;

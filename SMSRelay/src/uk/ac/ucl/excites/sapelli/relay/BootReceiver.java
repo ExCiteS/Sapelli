@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.relay;
+package uk.ac.ucl.excites.sapelli.relay;
 
 import java.util.Calendar;
 
