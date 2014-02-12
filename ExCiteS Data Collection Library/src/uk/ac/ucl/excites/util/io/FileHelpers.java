@@ -2,7 +2,6 @@ package uk.ac.ucl.excites.util.io;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -103,64 +102,7 @@ public final class FileHelpers
 		}
 		return filename;
 	}
-
-	/**
-	 * Method to Copy a file
-	 * 
-	 * @param srcFilepath
-	 * @param dstFilepath
-	 * @throws IOException
-	 */
-	public static void copyFile(String srcFilepath, String dstFilepath)
-	{
-		copyFile(new File(srcFilepath), new File(dstFilepath));
-	}
-
-	public static void copyFile(File srcFile, File dstFile)
-	{
-		InputStream inputStream;
-		try
-		{
-			inputStream = new FileInputStream(srcFile);
-			copyFile(inputStream, dstFile);
-		}
-		catch(FileNotFoundException e)
-		{
-			System.err.println("FileIO error: " + e.getLocalizedMessage());
-			e.printStackTrace();
-		}
-	}
-
-	public static void copyFile(InputStream input, File dstFile)
-	{
-		try
-		{
-			// Get the parent directory
-			File parentDir = new File(dstFile.getParentFile().getAbsolutePath());
-			parentDir.mkdirs();
-
-			if(!dstFile.exists())
-				dstFile.createNewFile();
-
-			OutputStream out = new FileOutputStream(dstFile);
-
-			// Transfer bytes from in to out
-			byte[] buf = new byte[1024];
-			int len;
-			while((len = input.read(buf)) > 0)
-			{
-				out.write(buf, 0, len);
-			}
-			input.close();
-			out.close();
-		}
-		catch(IOException e)
-		{
-			System.err.println("FileIO error: " + e.getLocalizedMessage());
-			e.printStackTrace();
-		}
-	}
-
+	
 	/**
 	 * Delete a file
 	 * 
@@ -173,31 +115,177 @@ public final class FileHelpers
 	}
 
 	/**
-	 * Move a file
+	 * Copies a file. If the destination exists it is overwritten.
+	 * 
+	 * @param srcFilePath
+	 * @param dstFilePath
+	 * @throws IOException
+	 */
+	public static void copyFile(String srcFilePath, String dstFilePath) throws IOException
+	{
+		copyFile(new File(srcFilePath), new File(dstFilePath));
+	}
+
+	/**
+	 * Copies a file. If the destination exists it is overwritten.
+	 * 
+	 * @param srcFile
+	 * @param dstFile
+	 * @throws IOException
+	 */
+	public static void copyFile(File srcFile, File dstFile) throws IOException
+	{
+		InputStream in = null;
+		OutputStream out = null;
+		try
+		{
+			in = new FileInputStream(srcFile);
+			// Get the parent directory
+			File parentDir = new File(dstFile.getParentFile().getAbsolutePath());
+			parentDir.mkdirs();
+
+			// Create file if it doesn't exist (if it exists it will be overwritten)
+			if(!dstFile.exists())
+				dstFile.createNewFile();
+
+			out = new FileOutputStream(dstFile);
+
+			// Transfer bytes from in to out
+			byte[] buf = new byte[1024];
+			int len;
+			while((len = in.read(buf)) > 0)
+				out.write(buf, 0, len);
+			in.close();
+			out.close();
+		}
+		catch(Exception e)
+		{
+			try
+			{
+				if(in != null)
+					in.close();
+				if(out != null)
+					out.close();
+			}
+			catch(Exception ignore) {}
+			throw new IOException("Error on copying file", e);
+		}
+	}
+
+	/**
+	 * Move a file. If the destination exists it is overwritten.
 	 * 
 	 * @param srcFilepath
 	 * @param dstFilepath
+	 * @throws IOException
+	 * @throws IllegalArgumentException
 	 */
-	public static void moveFile(String srcFilepath, String dstFilepath)
+	public static void moveFile(String srcFilepath, String dstFilepath) throws IOException, IllegalArgumentException
 	{
-		try
+		moveFile(new File(srcFilepath), new File(dstFilepath));
+	}
+	
+	/**
+	 * Move a file. If the destination exists it is overwritten.
+	 * 
+	 * @param srcFile
+	 * @param dstFile
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
+	public static void moveFile(File srcFile, File dstFile) throws IOException, IllegalArgumentException
+	{
+		if(srcFile.equals(dstFile))
+			throw new IllegalArgumentException("Source and destination files must be different.");
+		if(!srcFile.renameTo(dstFile))
 		{
-			File from = new File(srcFilepath);
-			File to = new File(dstFilepath);
-			if(!from.equals(to))
-				throw new IllegalArgumentException("Source and destination files must be different.");
-			if(!from.renameTo(to))
-			{
-				copyFile(from, to);
-				if(!from.delete())
-					throw new IOException("Unable to delete " + from);
-			}
+			copyFile(srcFile, dstFile);
+			if(!srcFile.delete())
+				throw new IOException("Unable to delete " + srcFile.getAbsolutePath());
 		}
-		catch(IOException e)
-		{
-			System.err.println("FileIO error: " + e.getLocalizedMessage());
-			e.printStackTrace();
-		}
+	}
+	
+	/**
+	 * Moves a directory. Files that already exist in the destination directory are overwritten.
+	 * 
+	 * @param srcPath
+	 * @param dstPath
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
+	public static void moveDirectory(String srcPath, String dstPath) throws IOException, IllegalArgumentException
+	{
+		moveDirectory(new File(srcPath), new File(dstPath));
+	}
+	
+	/**
+	 * Moves a directory. Files that already exist in the destination directory are overwritten. Files that exist in the distination directory but not in the source are left alone.
+	 * 
+	 * @param srcFolder
+	 * @param dstFolder
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
+	public static void moveDirectory(File srcFolder, File dstFolder) throws IOException, IllegalArgumentException
+	{
+		if(!srcFolder.exists())
+			throw new IllegalArgumentException("Source directory does not exist");
+		if(!srcFolder.isDirectory())
+			throw new IllegalArgumentException("Source is not a directory, call moveFile() instead");
+		if(!dstFolder.isDirectory())
+			throw new IllegalArgumentException("Destination is not a directory, call moveFile() instead");
+		
+		// Create destination if needed:
+		createFolder(dstFolder);
+		
+		// Move contents (recursive calls will happen for subdirectories):
+		for(File source : srcFolder.listFiles())
+			moveFileOrDirectory(source, new File(dstFolder.getAbsolutePath() + File.separator + source.getName()));
+		
+		// Check if srcFolder is empty:
+		if(!isFolderEmpty(srcFolder))
+			throw new IOException("Some contents may not have been moved or copied.");
+		
+		// Delete srcFolder:
+		if(!srcFolder.delete())
+			throw new IOException("Could not delete srcFolder, ");
+	}
+	
+	/**
+	 * Move a file or directory. Existing files are overwritten.
+	 * 
+	 * @param srcPath
+	 * @param dstPath
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
+	public static void moveFileOrDirectory(String srcPath, String dstPath) throws IOException, IllegalArgumentException
+	{
+		moveFileOrDirectory(new File(srcPath), new File(dstPath));
+	}
+	
+	/**
+	 * Move a file or directory
+	 * 
+	 * @param source
+	 * @param destination
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
+	public static void moveFileOrDirectory(File source, File destination) throws IOException, IllegalArgumentException
+	{
+		if(source.isDirectory())
+			moveDirectory(source, destination);
+		else
+			moveFile(source, destination);
+	}
+	
+	public static boolean isFolderEmpty(File directory)
+	{
+		if(!directory.isDirectory())
+			throw new IllegalArgumentException("File is not a directory");
+		File[] contents = directory.listFiles();
+		return contents == null || contents.length == 0;
 	}
 
 	/**
@@ -222,20 +310,6 @@ public final class FileHelpers
 		if(!folder.exists() || !folder.isDirectory())
 			return folder.mkdirs();
 		return true;
-	}
-
-	/**
-	 * This function returns a folder, defined by the folderPath String (e.g. "/my/data/folder/") It will not create it if it doesn't already exists.
-	 * 
-	 * @param folderPath
-	 * @return
-	 */
-	static public File getFolder(String folderPath)
-	{
-		if(!isFolderPath(folderPath))
-			return null;
-		File folder = new File(folderPath);
-		return folder;
 	}
 
 	/**

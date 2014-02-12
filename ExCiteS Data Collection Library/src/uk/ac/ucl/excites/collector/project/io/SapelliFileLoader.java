@@ -5,19 +5,17 @@ package uk.ac.ucl.excites.collector.project.io;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.util.io.FileHelpers;
+import uk.ac.ucl.excites.util.io.Unzipper;
 
 /**
- * Loader for .excites files (which are actually just renamed ZIP files)
+ * Loader for .sapelli (or .excites or .sap) files, which are actually just renamed ZIP files
  * 
  * @author mstevens, Michalis Vitos
  * 
@@ -51,7 +49,7 @@ public class SapelliFileLoader
 	}
 
 	/**
-	 * Extract the given excites file (provided as a File object) and parses the PROJECT.xml; returns the resulting Project object.
+	 * Extract the given sapelli file (provided as a File object) and parses the PROJECT.xml; returns the resulting Project object.
 	 * 
 	 * @param excitesFile
 	 * @return the loaded Project
@@ -65,7 +63,7 @@ public class SapelliFileLoader
 	}
 	
 	/**
-	 * Extract the given excites file (provided as an InputStream) and parses the PROJECT.xml; returns the resulting Project object.
+	 * Extract the given sapelli file (provided as an InputStream) and parses the PROJECT.xml; returns the resulting Project object.
 	 * 
 	 * @param excitesFileStream
 	 * @return the loaded Project
@@ -79,7 +77,7 @@ public class SapelliFileLoader
 		try
 		{
 			FileHelpers.createFolder(extractFolderPath);
-			unzip(excitesFileStream, extractFolderPath);
+			Unzipper.unzip(excitesFileStream, extractFolderPath);
 		}
 		catch(Exception e)
 		{
@@ -97,12 +95,7 @@ public class SapelliFileLoader
 		// Create move extracted files to project folder:
 		try
 		{
-			File extractFolder = new File(extractFolderPath);
-			//Move files:
-			for(File f : extractFolder.listFiles())
-				f.renameTo(new File(p.getProjectFolderPath() + f.getName()));
-			//Delete extract folder:
-			extractFolder.delete();
+			FileHelpers.moveDirectory(new File(extractFolderPath), new File(p.getProjectFolderPath()));
 		}
 		catch(Exception e)
 		{
@@ -112,82 +105,36 @@ public class SapelliFileLoader
 	}
 
 	/**
-	 * Parses the PROJECT.xml present in the given excites file (provided as a File object), without extracting the contents to storage; returns the resulting Project object.
+	 * Parses the PROJECT.xml present in the given sapelli file (provided as a File object), without extracting the contents to storage; returns the resulting Project object.
 	 * 
-	 * @param excitesFileStream
+	 * @param sapelliFile
 	 * @return the loaded Project
 	 * @throws Exception
 	 */
-	public Project loadWithoutExtract(File excitesFile) throws Exception
+	public Project loadWithoutExtract(File sapelliFile) throws Exception
 	{
-		if(excitesFile == null || !excitesFile.exists() || excitesFile.length() == 0)
+		if(sapelliFile == null || !sapelliFile.exists() || sapelliFile.length() == 0)
 			throw new IllegalArgumentException("Invalid excites file");
-		return loadWithoutExtract(new FileInputStream(excitesFile));
+		return loadWithoutExtract(new FileInputStream(sapelliFile));
 	}
 
 	/**
-	 * Parses the PROJECT.xml present in the given excites file (provided as an InputStream), without extracting the contents to storage; returns the resulting Project object.
+	 * Parses the PROJECT.xml present in the given sapelli file (provided as an InputStream), without extracting the contents to storage; returns the resulting Project object.
 	 * 
-	 * @param excitesFileStream
+	 * @param sapelliFileStream
 	 * @return the loaded Project
 	 * @throws Exception
 	 */
-	public Project loadWithoutExtract(InputStream excitesFileStream) throws Exception
+	public Project loadWithoutExtract(InputStream sapelliFileStream) throws Exception
 	{
 		try
 		{	// Parse PROJECT.xml:
-			return parser.parseProject(getInputStreamForFileInZip(excitesFileStream, PROJECT_FILE));
+			return parser.parseProject(Unzipper.getInputStreamForFileInZip(sapelliFileStream, PROJECT_FILE));
 		}
 		catch(Exception e)
 		{
 			throw new Exception("Error on parsing " + PROJECT_FILE, e);
 		}
-	}
-	
-	private void unzip(InputStream zipFileStream, String extractionPath) throws IOException
-	{
-		try
-		{
-			ZipInputStream zin = new ZipInputStream(zipFileStream);
-			ZipEntry ze = null;
-			while((ze = zin.getNextEntry()) != null)
-			{
-				if(ze.isDirectory())
-				{
-					if(!FileHelpers.createFolder(extractionPath + ze.getName()))
-					{
-						zin.close();
-						throw new IOException("Could not create folder: " + extractionPath + ze.getName());
-					}
-				}
-				else
-				{
-					FileOutputStream fout = new FileOutputStream(extractionPath + ze.getName(), false);
-					byte[] buffer = new byte[4096];
-					for(int c = zin.read(buffer); c != -1; c = zin.read(buffer))
-						fout.write(buffer, 0, c);
-					fout.close();
-				}
-				zin.closeEntry();
-			}
-			zin.close();
-		}
-		catch(Exception e)
-		{
-			throw new IOException("Error on unzipping ExCiteS file", e);
-		}
-	}
-	
-	private InputStream getInputStreamForFileInZip(InputStream zipFileStream, String filename) throws IOException
-	{
-		ZipInputStream zin = new ZipInputStream(zipFileStream);
-		ZipEntry ze = null;
-		while((ze = zin.getNextEntry()) != null)
-		{
-			if(ze.getName().equalsIgnoreCase(filename))
-				return zin; // stream is now positioned to read the indicated file
-		}
-		throw new IOException(filename + " not found in archive.");
 	}
 	
 	public List<String> getParserWarnings()
