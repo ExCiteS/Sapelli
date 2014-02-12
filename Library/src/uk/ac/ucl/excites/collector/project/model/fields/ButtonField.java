@@ -3,7 +3,6 @@
  */
 package uk.ac.ucl.excites.collector.project.model.fields;
 
-import android.annotation.SuppressLint;
 import uk.ac.ucl.excites.collector.project.model.Form;
 import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.collector.project.ui.Controller;
@@ -57,7 +56,6 @@ public class ButtonField extends Field
 		setColumn(DEFAULT_COLUMN);
 	}
 
-	@SuppressLint("DefaultLocale")
 	public void setColumn(String column) throws IllegalArgumentException
 	{
 		setColumn(ButtonColumn.valueOf(column.toUpperCase()));

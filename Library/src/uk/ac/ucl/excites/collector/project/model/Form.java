@@ -19,7 +19,6 @@ import uk.ac.ucl.excites.storage.model.Record;
 import uk.ac.ucl.excites.storage.model.Schema;
 import uk.ac.ucl.excites.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.util.CollectionUtils;
-import android.annotation.SuppressLint;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -427,7 +426,6 @@ public class Form
 	 * @param next the next to set
 	 * @throws IllegalArgumentException	when the nextStr is not recognised
 	 */
-	@SuppressLint("DefaultLocale")
 	public void setNext(String nextStr) throws IllegalArgumentException
 	{
 		if(nextStr == null)
