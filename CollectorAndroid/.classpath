@@ -2,16 +2,16 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Library"/>
-	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
-	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Android FileChooser"/>
-	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Environment2"/>
-	<classpathentry kind="lib" path="libs/svg-android-2.0.5-SNAPSHOT.jar" sourcepath="libs/src/svg-android-2.0.5-SNAPSHOT-sources.jar">
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Android FileChooser"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Environment2"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Sapelli Library"/>
+	<classpathentry exported="true" kind="lib" path="libs/svg-android-2.0.5-SNAPSHOT.jar" sourcepath="libs/src/svg-android-2.0.5-SNAPSHOT-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="jar:platform:/resource/ExCiteS%20Data%20Collector/libs/docs/svg-android-2.0.5-SNAPSHOT-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
+	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
