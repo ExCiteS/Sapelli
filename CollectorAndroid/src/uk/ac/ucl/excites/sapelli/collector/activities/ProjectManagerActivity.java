@@ -124,7 +124,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		super.onCreate(savedInstanceState);
 		app = (CollectorApp) getApplication();
 
-		// Check if we can access read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
+		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
 			app.getSapelliFolder(); //throws IllegalStateException if not accessible or not create-able
@@ -722,13 +722,13 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		sendBroadcast(shortcutIntent);
 
 		// ================================================================================
-		// Create an Intent to work with the ExCiteS Launcher
+		// Create an Intent to work with the Sapelli Launcher
 		// ================================================================================
 		Intent launcherIntent = new Intent();
 		launcherIntent.setAction(CUSTOM_INSTALL_SHORTCUT_ACTION);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
 		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
-		launcherIntent.putExtra(SHORTCUT_PROJECT_ICON, FileHelpers.isReadableFile(shortcutImageFile) ? shortcutImageFile.getAbsolutePath() : null); //launcher will use default ExCiteS icon when path is null
+		launcherIntent.putExtra(SHORTCUT_PROJECT_ICON, FileHelpers.isReadableFile(shortcutImageFile) ? shortcutImageFile.getAbsolutePath() : null); //launcher will use default Sapelli icon when path is null
 		sendBroadcast(launcherIntent);
 	}
 
@@ -766,7 +766,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		sendBroadcast(shortcutIntent);
 
 		// ================================================================================
-		// Remove a shortcut from the ExCiteS Launcher
+		// Remove a shortcut from the Sapelli Launcher
 		// ================================================================================
 		Intent launcherIntent = new Intent();
 		launcherIntent.setAction(CUSTOM_UNISTALL_SHORTCUT_ACTION);

@@ -96,14 +96,14 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		if(savedInstanceState != null && savedInstanceState.containsKey(TEMP_PHOTO_PATH_KEY))
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
 		
-		// Check if we can access read/write to the ExCiteS folder (created on the SD card or internal mass storage if there is no physical SD card):
+		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
 			app.getSapelliFolder(); //throws IllegalStateException if not accessible or not create-able
 		}
 		catch(IllegalStateException ise)
 		{	// Inform the user and close the application
-			showErrorDialog("ExCiteS needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
+			showErrorDialog("Sapelli needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
 			return;
 		}
 

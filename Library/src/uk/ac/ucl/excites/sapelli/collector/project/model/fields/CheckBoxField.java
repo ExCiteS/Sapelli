@@ -74,7 +74,7 @@ public class CheckBoxField extends Field
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#enter(uk.ac.ucl.excites .collector.project.ui.Controller)
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.project.ui.Controller)
 	 */
 	@Override
 	public boolean enter(Controller controller)
@@ -85,7 +85,7 @@ public class CheckBoxField extends Field
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createUI(uk.ac.ucl.excites .collector.project.ui.CollectorUI)
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createUI(uk.ac.ucl.excites.sapelli.collector.project.ui.CollectorUI)
 	 */
 	@Override
 	public FieldUI createUI(CollectorUI collectorUI)

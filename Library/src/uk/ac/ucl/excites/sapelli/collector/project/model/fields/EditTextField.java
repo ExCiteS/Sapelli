@@ -103,7 +103,7 @@ public class EditTextField extends Field
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#enter(uk.ac.ucl.excites .collector.project.ui.Controller)
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.project.ui.Controller)
 	 */
 	@Override
 	public boolean enter(Controller controller)

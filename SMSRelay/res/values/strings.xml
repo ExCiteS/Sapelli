@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">ExCiteS Relay Service</string>
+    <string name="app_name">Sapelli SMS Relay</string>
     <string name="menu_settings">Settings</string>
     <string name="menu_log">Log</string>
     <string name="menu_backup">Back up DB</string>
     <string name="menu_about">About</string>
     <string name="menu_exit">Exit</string>
-    <string name="title_activity_main">ExCiteS Relay Service</string>
+    <string name="title_activity_main">Sapelli SMS Relay</string>
     <string name="service_name">excitesbackgroundservice</string>
     <string name="start_service">Start Service</string>
     <string name="stop_service">Stop Service</string>
