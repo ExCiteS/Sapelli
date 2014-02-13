@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.relay;
+package uk.ac.ucl.excites.sapelli.relay;
 
 import android.app.Activity;
 import android.os.Bundle;

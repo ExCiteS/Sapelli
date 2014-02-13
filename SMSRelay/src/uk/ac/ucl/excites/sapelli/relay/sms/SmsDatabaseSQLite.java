@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.relay.sms;
+package uk.ac.ucl.excites.sapelli.relay.sms;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -7,8 +7,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
-import uk.ac.ucl.excites.relay.util.Debug;
-import uk.ac.ucl.excites.relay.util.FileHelpers;
+import uk.ac.ucl.excites.sapelli.relay.util.Debug;
+import uk.ac.ucl.excites.sapelli.relay.util.FileHelpers;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;

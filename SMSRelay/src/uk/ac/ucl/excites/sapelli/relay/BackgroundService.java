@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.relay;
+package uk.ac.ucl.excites.sapelli.relay;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,12 +21,12 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 
-import uk.ac.ucl.excites.relay.sms.SmsDatabaseSQLite;
-import uk.ac.ucl.excites.relay.sms.SmsObject;
-import uk.ac.ucl.excites.relay.util.BinaryHelpers;
-import uk.ac.ucl.excites.relay.util.Debug;
-import uk.ac.ucl.excites.relay.util.Hashing;
-import uk.ac.ucl.excites.relay.util.Utilities;
+import uk.ac.ucl.excites.sapelli.relay.sms.SmsDatabaseSQLite;
+import uk.ac.ucl.excites.sapelli.relay.sms.SmsObject;
+import uk.ac.ucl.excites.sapelli.relay.util.BinaryHelpers;
+import uk.ac.ucl.excites.sapelli.relay.util.Debug;
+import uk.ac.ucl.excites.sapelli.relay.util.Hashing;
+import uk.ac.ucl.excites.sapelli.relay.util.Utilities;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.PendingIntent;

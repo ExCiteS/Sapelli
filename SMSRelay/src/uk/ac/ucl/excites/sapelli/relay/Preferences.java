@@ -1,8 +1,8 @@
-package uk.ac.ucl.excites.relay;
+package uk.ac.ucl.excites.sapelli.relay;
 
 import java.util.regex.Pattern;
 
-import uk.ac.ucl.excites.relay.util.Debug;
+import uk.ac.ucl.excites.sapelli.relay.util.Debug;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;

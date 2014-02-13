@@ -1,12 +1,11 @@
-package uk.ac.ucl.excites.relay.util;
+package uk.ac.ucl.excites.sapelli.relay.util;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.net.URLConnection;
 
-import uk.ac.ucl.excites.relay.Preferences;
-
+import uk.ac.ucl.excites.sapelli.relay.Preferences;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningServiceInfo;
 import android.app.Application;

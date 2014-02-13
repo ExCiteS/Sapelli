@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.relay.sms;
+package uk.ac.ucl.excites.sapelli.relay.sms;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
