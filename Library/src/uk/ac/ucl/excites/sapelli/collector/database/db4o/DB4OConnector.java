@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.collector.database;
+package uk.ac.ucl.excites.sapelli.collector.database.db4o;
 
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -30,7 +30,7 @@ public final class DB4OConnector
 		// Configure the db:
 		EmbeddedConfiguration dbConfig = Db4oEmbedded.newConfiguration();
 		dbConfig.file().readOnly(readOnly);
-		dbConfig.common().updateDepth(DataAccess.UPDATE_DEPTH);
+		dbConfig.common().updateDepth(DB4ODataAccess.UPDATE_DEPTH);
 		dbConfig.common().exceptionsOnNotStorable(true);
 		dbConfig.common().objectClass(Record.class).cascadeOnActivate(true);
 		dbConfig.common().objectClass(Record.class).cascadeOnUpdate(true);
