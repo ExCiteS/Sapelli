@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>ExCiteS Data Collection Tomcat Library</name>
+	<name>Sapelli Tomcat Library</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -31,7 +31,7 @@
 		<link>
 			<name>src</name>
 			<type>2</type>
-			<locationURI>REPO_LOC/ExCiteS%20Data%20Collection%20Library/src</locationURI>
+			<locationURI>REPO_LOC/Library/src</locationURI>
 		</link>
 	</linkedResources>
 	<variableList>

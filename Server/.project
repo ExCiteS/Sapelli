@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>ExCiteS Data Server</name>
+	<name>Sapelli Server</name>
 	<comment></comment>
 	<projects>
-		<project>ExCiteS Data Collection Tomcat Library</project>
+		<project>Sapelli Tomcat Library</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
