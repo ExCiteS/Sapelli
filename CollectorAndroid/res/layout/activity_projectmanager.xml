@@ -103,7 +103,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight=".75"
                     android:inputType="textUri"
-                    android:textSize="@dimen/afc_10dp" />
+                    android:textSize="10dp" />
 
                 <Button
                     android:id="@+id/BrowseButton"
