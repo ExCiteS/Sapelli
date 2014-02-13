@@ -1,6 +1,5 @@
 package uk.ac.ucl.excites.sapelli.transmission.sms;
 
-import java.util.Arrays;
 import java.util.Comparator;
 
 import org.joda.time.DateTime;
@@ -52,8 +51,6 @@ public abstract class Message implements Comparable<Message>
 		this.sender = sender;
 		this.receivedAt = receivedAt;
 	}
-		
-	public abstract byte[] getPayload();
 	
 	public abstract void send(SMSService smsService);
 	
@@ -152,6 +149,8 @@ public abstract class Message implements Comparable<Message>
 		return this.getPartNumber() - another.getPartNumber();
 	}
 	
+	protected abstract int getPayloadHashCode();
+	
 	/**
 	 * hashCode() method
 	 * Ignores transmission (but not transmissionID), sentAt, deliveredAt & receivedAt
@@ -167,7 +166,7 @@ public abstract class Message implements Comparable<Message>
 		hash = 31 * hash + transmissionID;
 		hash = 31 * hash + partNumber;
 		hash = 31 * hash + totalParts;
-		hash = 31 * hash + Arrays.hashCode(getPayload());
+		hash = 31 * hash + getPayloadHashCode();
 		return hash;
 	}
 	
@@ -188,7 +187,7 @@ public abstract class Message implements Comparable<Message>
 					this.transmissionID == another.transmissionID &&
 					this.partNumber == another.partNumber &&
 					this.totalParts == another.totalParts &&
-					Arrays.equals(this.getPayload(), another.getPayload());
+					this.getPayloadHashCode() == another.getPayloadHashCode();
 		}
 		return false;
 	}
