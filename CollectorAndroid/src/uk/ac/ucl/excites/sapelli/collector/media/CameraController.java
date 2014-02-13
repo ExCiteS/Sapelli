@@ -2,8 +2,8 @@ package uk.ac.ucl.excites.sapelli.collector.media;
 
 import java.util.List;
 
-import uk.ac.ucl.excites.collector.project.model.PhotoField;
-import uk.ac.ucl.excites.collector.project.model.PhotoField.FlashMode;
+import uk.ac.ucl.excites.sapelli.collector.project.model.PhotoField;
+import uk.ac.ucl.excites.sapelli.collector.project.model.PhotoField.FlashMode;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;

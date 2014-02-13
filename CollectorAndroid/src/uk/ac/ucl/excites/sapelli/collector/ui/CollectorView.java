@@ -2,15 +2,15 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import java.util.HashMap;
 
-import uk.ac.ucl.excites.collector.project.model.AudioField;
-import uk.ac.ucl.excites.collector.project.model.ChoiceField;
-import uk.ac.ucl.excites.collector.project.model.Field;
-import uk.ac.ucl.excites.collector.project.model.LocationField;
-import uk.ac.ucl.excites.collector.project.model.PhotoField;
-import uk.ac.ucl.excites.collector.project.ui.CollectorUI;
-import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ProjectController;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
+import uk.ac.ucl.excites.sapelli.collector.project.model.AudioField;
+import uk.ac.ucl.excites.sapelli.collector.project.model.ChoiceField;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.project.model.LocationField;
+import uk.ac.ucl.excites.sapelli.collector.project.model.PhotoField;
+import uk.ac.ucl.excites.sapelli.collector.project.ui.CollectorUI;
+import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.AudioView;
 import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.CameraView;
 import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.ChoiceView;

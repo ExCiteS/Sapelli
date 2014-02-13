@@ -3,19 +3,21 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.collector.project.model.Form;
-import uk.ac.ucl.excites.collector.project.model.Project;
-import uk.ac.ucl.excites.collector.project.ui.ButtonsState;
-import uk.ac.ucl.excites.sapelli.collector.*;
+import uk.ac.ucl.excites.sapelli.collector.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.project.ui.ButtonsState;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.*;
+import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.DrawableItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
-import uk.ac.ucl.excites.util.FileHelpers;
+import uk.ac.ucl.excites.sapelli.util.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;

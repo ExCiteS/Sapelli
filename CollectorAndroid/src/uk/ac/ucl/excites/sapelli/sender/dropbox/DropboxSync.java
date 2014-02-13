@@ -2,10 +2,10 @@ package uk.ac.ucl.excites.sapelli.sender.dropbox;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.collector.project.model.MediaField;
+import uk.ac.ucl.excites.sapelli.collector.project.model.MediaField;
 import uk.ac.ucl.excites.sapelli.sender.util.RecursiveFileObserver;
 import uk.ac.ucl.excites.sapelli.util.Debug;
-import uk.ac.ucl.excites.util.FileHelpers;
+import uk.ac.ucl.excites.sapelli.util.FileHelpers;
 import android.content.Context;
 import android.os.FileObserver;
 

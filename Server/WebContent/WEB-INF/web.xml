@@ -6,7 +6,7 @@
     <param-value>Sapelli.db4o</param-value>
   </context-param>
   <listener>
-    <listener-class>uk.ac.uk.excites.server.db.Db4oServletListener</listener-class>
+    <listener-class>uk.ac.ucl.excites.sapelli.server.db.Db4oServletListener</listener-class>
   </listener>
   <welcome-file-list>
     <welcome-file>index.html</welcome-file>
@@ -20,7 +20,7 @@
     <description></description>
     <display-name>ServerDataReceiver</display-name>
     <servlet-name>ServerDataReceiver</servlet-name>
-    <servlet-class>uk.ac.uk.excites.server.ServerDataReceiver</servlet-class>
+    <servlet-class>uk.ac.ucl.excites.sapelli.server.ServerDataReceiver</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>ServerDataReceiver</servlet-name>
@@ -31,7 +31,7 @@
     <description>Class to upload Projects</description>
     <display-name>ProjectUpload</display-name>
     <servlet-name>ProjectUpload</servlet-name>
-    <servlet-class>uk.ac.uk.excites.server.ProjectUpload</servlet-class>
+    <servlet-class>uk.ac.ucl.excites.sapelli.server.ProjectUpload</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>ProjectUpload</servlet-name>
@@ -43,7 +43,7 @@
     <description></description>
     <display-name>AccessManager</display-name>
     <servlet-name>AccessManager</servlet-name>
-    <servlet-class>uk.ac.uk.excites.server.util.AccessManager</servlet-class>
+    <servlet-class>uk.ac.ucl.excites.sapelli.server.util.AccessManager</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>AccessManager</servlet-name>

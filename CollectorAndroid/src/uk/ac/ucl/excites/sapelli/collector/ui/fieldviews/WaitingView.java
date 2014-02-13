@@ -3,10 +3,10 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import uk.ac.ucl.excites.collector.project.model.Field;
-import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ProjectController;
-import uk.ac.ucl.excites.util.Timeoutable;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.util.Timeoutable;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.view.Gravity;

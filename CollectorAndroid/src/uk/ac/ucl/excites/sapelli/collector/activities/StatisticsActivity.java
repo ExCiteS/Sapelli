@@ -17,13 +17,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import uk.ac.ucl.excites.collector.database.DataAccess;
-import uk.ac.ucl.excites.collector.database.DataAccessClient;
-import uk.ac.ucl.excites.collector.project.model.Form;
-import uk.ac.ucl.excites.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
+import uk.ac.ucl.excites.sapelli.collector.database.DataAccessClient;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.app.ExpandableListActivity;
 import android.os.Bundle;
 import android.view.Gravity;

@@ -4,13 +4,12 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
-import uk.ac.ucl.excites.collector.database.DB4OConnector;
-import uk.ac.ucl.excites.collector.database.DataAccess;
-import uk.ac.ucl.excites.collector.database.DataAccessClient;
-import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.database.DB4OConnector;
+import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
+import uk.ac.ucl.excites.sapelli.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
 import uk.ac.ucl.excites.sapelli.util.Debug;
-import uk.ac.ucl.excites.util.FileHelpers;
+import uk.ac.ucl.excites.sapelli.util.FileHelpers;
 import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;

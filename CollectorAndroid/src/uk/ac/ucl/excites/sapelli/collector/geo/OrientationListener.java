@@ -1,6 +1,6 @@
 package uk.ac.ucl.excites.sapelli.collector.geo;
 
-import uk.ac.ucl.excites.storage.types.Orientation;
+import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 
 /**
  * @author mstevens

@@ -2,10 +2,10 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.collector.project.model.ChoiceField;
-import uk.ac.ucl.excites.collector.project.model.Field;
-import uk.ac.ucl.excites.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.project.model.ChoiceField;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
@@ -18,7 +18,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.LayeredItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.TextItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
-import uk.ac.ucl.excites.util.FileHelpers;
+import uk.ac.ucl.excites.sapelli.util.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
