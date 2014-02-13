@@ -31,13 +31,17 @@
 		<link>
 			<name>src</name>
 			<type>2</type>
-			<locationURI>REPO_LOC/Library/src</locationURI>
+			<locationURI>REPO_LOC1/Library/src</locationURI>
 		</link>
 	</linkedResources>
 	<variableList>
 		<variable>
 			<name>REPO_LOC</name>
 			<value>$%7BPARENT-1-PROJECT_LOC%7D</value>
+		</variable>
+		<variable>
+			<name>REPO_LOC1</name>
+			<value>$%7BPARENT-3-REPO_LOC%7D/Documents/Werk/UCL-ExCiteS/Dev/Git%20repos/sapelli</value>
 		</variable>
 	</variableList>
 </projectDescription>
