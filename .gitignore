@@ -20,6 +20,7 @@ tmp/**
 temp/**
 *.tmp
 *.bak
+~$*.docx
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -34,9 +35,8 @@ local.properties
 # Locally stored "Eclipse launch configurations"
 #*.launch
 
-/Other Dependencies/Android FileChooser/lint.xml
-/ExCiteS Data Collector/*.excites
-/ExCiteS Data Collector/res/raw/demo.excites
-/ExCiteS Data Collector/ant.properties
-/ExCiteS Data Collector/assets/demo.excites
-~$*.docx
+/Dependencies/Android FileChooser/lint.xml
+/CollectorAndroid/*.excites
+/CollectorAndroid/res/raw/demo.excites
+/CollectorAndroid/ant.properties
+/CollectorAndroid/assets/demo.excites
