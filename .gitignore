@@ -36,7 +36,7 @@ local.properties
 #*.launch
 
 /Dependencies/Android FileChooser/lint.xml
-/Collector/*.excites
-/Collector/res/raw/demo.excites
-/Collector/ant.properties
-/Collector/assets/demo.excites
+/CollectorAndroid/*.excites
+/CollectorAndroid/res/raw/demo.excites
+/CollectorAndroid/ant.properties
+/CollectorAndroid/assets/demo.excites
