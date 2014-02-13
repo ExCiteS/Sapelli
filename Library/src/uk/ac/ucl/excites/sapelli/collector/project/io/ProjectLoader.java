@@ -53,37 +53,37 @@ public class ProjectLoader
 	/**
 	 * Extract the given sapelli file (provided as a File object) and parses the PROJECT.xml; returns the resulting Project object.
 	 * 
-	 * @param excitesFile
+	 * @param sapelliFile
 	 * @return the loaded Project
 	 * @throws Exception
 	 */
-	public Project load(File excitesFile) throws Exception
+	public Project load(File sapelliFile) throws Exception
 	{
-		if(excitesFile == null || !excitesFile.exists() || excitesFile.length() == 0)
-			throw new IllegalArgumentException("Invalid excites file");
-		return load(new FileInputStream(excitesFile));
+		if(sapelliFile == null || !sapelliFile.exists() || sapelliFile.length() == 0)
+			throw new IllegalArgumentException("Invalid Sapelli file");
+		return load(new FileInputStream(sapelliFile));
 	}
 	
 	/**
 	 * Extract the given sapelli file (provided as an InputStream) and parses the PROJECT.xml; returns the resulting Project object.
 	 * 
-	 * @param excitesFileStream
+	 * @param sapelliFileStream
 	 * @return the loaded Project
 	 * @throws Exception
 	 */
-	public Project load(InputStream excitesFileStream) throws Exception
+	public Project load(InputStream sapelliFileStream) throws Exception
 	{
 		Project p = null;
 		String extractFolderPath = tempFolderPath + System.currentTimeMillis() + File.separatorChar;
-		// Extract the content of the excites file to a new subfolder of the temp folder:
+		// Extract the content of the Sapelli file to a new subfolder of the temp folder:
 		try
 		{
 			FileHelpers.createFolder(extractFolderPath);
-			Unzipper.unzip(excitesFileStream, extractFolderPath);
+			Unzipper.unzip(sapelliFileStream, extractFolderPath);
 		}
 		catch(Exception e)
 		{
-			throw new Exception("Error on extracting contents of excites file.", e);
+			throw new Exception("Error on extracting contents of Sapelli file.", e);
 		}
 		// Parse PROJECT.xml:
 		try
@@ -116,7 +116,7 @@ public class ProjectLoader
 	public Project loadWithoutExtract(File sapelliFile) throws Exception
 	{
 		if(sapelliFile == null || !sapelliFile.exists() || sapelliFile.length() == 0)
-			throw new IllegalArgumentException("Invalid excites file");
+			throw new IllegalArgumentException("Invalid Sapelli file");
 		return loadWithoutExtract(new FileInputStream(sapelliFile));
 	}
 
