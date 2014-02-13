@@ -203,13 +203,12 @@ public class TextSMSTransmission extends SMSTransmission
 	 * To be called on the sending side.
 	 * 
 	 * @param schema
-	 * @param id
 	 * @param receiver
 	 * @param settings
 	 */
-	public TextSMSTransmission(Schema schema, int id, SMSAgent receiver, Settings settings)
+	public TextSMSTransmission(Schema schema, SMSAgent receiver, Settings settings)
 	{
-		super(schema, null, id, receiver, settings);
+		super(schema, null, receiver, settings);
 	}
 
 	/**
@@ -217,13 +216,12 @@ public class TextSMSTransmission extends SMSTransmission
 	 * 
 	 * @param schema
 	 * @param columnsToFactorOut
-	 * @param id
 	 * @param receiver
 	 * @param settings
 	 */
-	public TextSMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, int id, SMSAgent receiver, Settings settings)
+	public TextSMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, SMSAgent receiver, Settings settings)
 	{
-		super(schema, columnsToFactorOut, id, receiver, settings);
+		super(schema, columnsToFactorOut, receiver, settings);
 	}
 
 	/**

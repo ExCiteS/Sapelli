@@ -11,12 +11,18 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory;
+import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 public abstract class BinaryTransmission extends Transmission
 {
 
+	static public final int TRANSMISSION_ID_SIZE = 16; // bits
+	static public final IntegerRangeMapping TRANSMISSION_ID_FIELD = IntegerRangeMapping.ForSize(0, TRANSMISSION_ID_SIZE); // unsigned(!) 16 bit integer
+	
+	protected Integer id = null; // computed as a CRC16 hash over the transmission payload (unsigned 16 bit int)
 	protected float compressionRatio = 1.0f;
 	
 	public BinaryTransmission(TransmissionClient modelProvider)
@@ -33,36 +39,46 @@ public abstract class BinaryTransmission extends Transmission
 	{
 		BitOutputStream out = null;
 		try
-		{
-			// Encode records
-			byte[] data = encodeRecords(); //can throw IOException
-			//System.out.println("Encoded records to: " + data.length + " bytes");
-			//System.out.println("Hash: " + BinaryHelpers.toHexadecimealString(Hashing.getSHA256Hash(data)));
-			
-			// Compress records
-			data = compress(data);
-			
-			// Encrypt records
-			data = encrypt(data);
-			
+		{			
 			// Output stream:
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
 			out = new BitOutputStream(rawOut);
 			
-			// Write schema ID & version: //TODO write project hash + form idx
-			//Schema.SCHEMA_ID_FIELD.write(schema.getID(), out);
-			//Schema.SCHEMA_VERSION_FIELD.write(schema.getVersion(), out);
+			// Write Schema Usage ID (= Project hash):
+			Schema.SCHEMA_USAGE_ID_FIELD.write(schema.getUsageID(), out); // 32 bits
+			
+			// Write flags
+			out.write(false); // Encryption flag //TODO make dynamic
+			// TODO write Compression flag (2 bits)
+			out.write(false); // Multi-form flag //TODO make dynamic
+			
+			// Write Schema Usage Sub-ID (= Form index):
+			Schema.SCHEMA_USAGE_SUB_ID_FIELD.write(schema.getUsageSubID(), out); // 4 bits
+			
+			// Encode records
+			byte[] recordBytes = encodeRecords(); //can throw IOException
+			//System.out.println("Encoded records to: " + data.length + " bytes");
+			//System.out.println("Hash: " + BinaryHelpers.toHexadecimealString(Hashing.getSHA256Hash(data)));
+			
+			// Compress records
+			recordBytes = compress(recordBytes);
+			
+			// Encrypt records
+			recordBytes = encrypt(recordBytes);
 			
 			// Write the encoded, compressed & encrypted records:
-			out.write(data);
+			out.write(recordBytes);
 			
-			// Flush & close the stream and get bytes:
+			// Flush & close the stream and get payload bytes:
 			out.flush();
 			out.close();
-			data = rawOut.toByteArray();
+			byte[] payloadBytes = rawOut.toByteArray();
+			
+			// Compute transmission ID (= CRC16 hash over payload):
+			id = Hashing.getCRC16Hash(payloadBytes);
 	
 			// Serialise
-			serialise(data); //can throw TransmissionCapacityExceededException
+			serialise(payloadBytes); //can throw TransmissionCapacityExceededException
 		}
 		catch(IOException e)
 		{
@@ -95,40 +111,52 @@ public abstract class BinaryTransmission extends Transmission
 		try
 		{
 			// Deserialise payload:
-			byte[] data = deserialise();
+			byte[] payloadBytes = deserialise();
+			
+			// Verify payload hash:
+			if(this.id != Hashing.getCRC16Hash(payloadBytes))
+				throw new IncompleteTransmissionException(this, "Payload hash mismatch");
 			
 			// Input stream:
-			ByteArrayInputStream rawIn = new ByteArrayInputStream(data);
+			ByteArrayInputStream rawIn = new ByteArrayInputStream(payloadBytes);
 			in = new BitInputStream(rawIn);
 			
-			// Read schema ID & version: //TODO project hash & form idx
-			int schemaID = 0; //(int) Schema.SCHEMA_ID_FIELD.read(in);
-			int schemaVersion = 0; //(int) Schema.SCHEMA_VERSION_FIELD.read(in);
-			//if(schemaToUse != null)
-			//	System.out.println("Using provided schema (ID: " + schemaToUse.getID() + "; version: " + schemaToUse.getVersion() + ") instead of the one indicated by the transmission (ID: " + schemaID + "; version: " + schemaVersion + ").");
+			// Read Schema Usage ID (= Project hash):
+			int schemaUsageID = (int) Schema.SCHEMA_USAGE_ID_FIELD.read(in); // 32 bits
+
+			// Read flags
+			boolean encrypted = in.readBit(); // Encryption flag //TODO make use of this to decrypt or not			
+			// TODO read Compression flag (2 bits)
+			boolean multiform = in.readBit(); // TODO use this
+			
+			// Read Schema Usage Sub-ID (= Form index):
+			int schemaUsageSubID = (int) Schema.SCHEMA_USAGE_SUB_ID_FIELD.read(in); // 4 bits
+			
+			if(schemaToUse != null)
+				System.out.println("Using provided schema (Usage ID: " + schemaToUse.getUsageID() + "; Usage Sub-ID: " + schemaToUse.getUsageSubID() + ") instead of the one indicated by the transmission (Usage ID: " + schemaUsageID + "; Usage Sub-ID: " + schemaUsageSubID + ").");
 			
 			// Look-up schema unless one was provided:
-			schema = (schemaToUse == null ? modelProvider.getSchema(schemaID, schemaVersion) : schemaToUse);
+			schema = (schemaToUse == null ? modelProvider.getSchema(schemaUsageID, schemaUsageSubID) : schemaToUse);
 			if(schema == null)
-				throw new IllegalStateException("Cannot decode message because schema (ID: " + schemaID + "; version: " + schemaVersion + ") is unknown");
+				throw new IllegalStateException("Cannot decode message because schema (Usage ID: " + schemaUsageID + "; Usage Sub-ID: " + schemaUsageSubID + ") is unknown");
 			
 			// Look-up settings & columns to factor out:
 			settings = (settingsToUse == null ? modelProvider.getSettingsFor(schema) : settingsToUse);
 			setColumnsToFactorOut(modelProvider.getFactoredOutColumnsFor(schema));
 			
 			// Read encrypted, compressed & encoded records:
-			data = in.readBytes(in.available());
+			payloadBytes = in.readBytes(in.available());
 			
 			// Decrypt records
-			data = decrypt(data);
+			payloadBytes = decrypt(payloadBytes);
 			
 			// Decompress records
-			data = decompress(data);
+			payloadBytes = decompress(payloadBytes);
 			
 			// Decode records
 			//System.out.println("Decoding records from: " + data.length + " bytes");
 			//System.out.println("Hash: " + BinaryHelpers.toHexadecimealString(Hashing.getSHA256Hash(data)));
-			decodeRecords(data);
+			decodeRecords(payloadBytes);
 		}
 		finally
 		{
@@ -257,6 +285,13 @@ public abstract class BinaryTransmission extends Transmission
 	
 	protected abstract byte[] deserialise() throws IOException;
 
+	public int getID()
+	{	
+		if(id == null)
+			throw new NullPointerException("Transmission ID has not been set.");
+		return id.intValue();
+	}
+	
 	public float getCompressionRatio()
 	{
 		return compressionRatio;

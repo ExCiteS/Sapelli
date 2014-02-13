@@ -12,7 +12,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmissionID;
 
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
@@ -324,22 +323,6 @@ public final class DataAccess
 			return null;
 	}
 	
-	/**
-	 * @param id
-	 */
-	public void store(SMSTransmissionID id)
-	{
-		storeObject(id);
-	}
-	
-	public SMSTransmissionID retrieveTransmissionID()
-	{
-		List<SMSTransmissionID> result = db.query(SMSTransmissionID.class);
-		if(result.isEmpty())
-			return null;
-		return result.get(0);
-	}
-
 	public void storeObject(Object obj)
 	{
 		storeObject(obj, true);

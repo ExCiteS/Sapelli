@@ -13,11 +13,11 @@ import org.joda.time.DateTime;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.transmission.BinaryTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSService;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmissionID;
 import uk.ac.ucl.excites.sapelli.util.BinaryHelpers;
 
 /**
@@ -55,7 +55,7 @@ public class BinaryMessage extends Message
 	
 	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, BinarySMSTransmission.MAX_TRANSMISSION_PARTS);
 	
-	public static final int HEADER_SIZE_BITS =	SMSTransmissionID.FIELD.getSize() /* Transmission ID */ + //TODO change this for 16bit field (CRC16)
+	public static final int HEADER_SIZE_BITS =	BinaryTransmission.TRANSMISSION_ID_FIELD.getSize() /* Transmission ID */ +
 												PART_NUMBER_FIELD.getSize() /* Part number */ +
 												PART_NUMBER_FIELD.getSize() /* Parts total */; 
 	
@@ -114,7 +114,7 @@ public class BinaryMessage extends Message
 			in = new BitInputStream(new ByteArrayInputStream(data));
 			
 			//Read header:
-			transmissionID = (int) SMSTransmissionID.FIELD.read(in);	//Transmission ID
+			transmissionID = (int) BinaryTransmission.TRANSMISSION_ID_FIELD.read(in);	//Transmission ID
 			partNumber = (int) PART_NUMBER_FIELD.read(in);				//Part number
 			totalParts = (int) PART_NUMBER_FIELD.read(in);				//Total parts
 			
@@ -163,7 +163,7 @@ public class BinaryMessage extends Message
 			out = new BitOutputStream(rawOut);
 	
 			//Write header:
-			SMSTransmissionID.FIELD.write(transmission.getID(), out);	//Transmission ID
+			BinaryTransmission.TRANSMISSION_ID_FIELD.write(transmission.getID(), out);	//Transmission ID
 			PART_NUMBER_FIELD.write(partNumber, out);				//Part number
 			PART_NUMBER_FIELD.write(totalParts, out);				//Total parts
 			

@@ -27,7 +27,7 @@ public class Project
 	static public final String DEFAULT_VERSION = "0";
 	
 	static public final int PROJECT_HASH_SIZE = Schema.SCHEMA_USAGE_ID_SIZE; // = 32 bits
-	static public final IntegerRangeMapping PROJECT_HASH_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_HASH_SIZE); // unsigned(!) 32bit integer
+	static public final IntegerRangeMapping PROJECT_HASH_FIELD = Schema.SCHEMA_USAGE_ID_FIELD; // unsigned(!) 32bit integer
 	
 	static public final int MAX_FORMS = ((int) Schema.SCHEMA_USAGE_SUB_ID_FIELD.getHighBound()) + 1; // = 15 + 1 = 16
 	

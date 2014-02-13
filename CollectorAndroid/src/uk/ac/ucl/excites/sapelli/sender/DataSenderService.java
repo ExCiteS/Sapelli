@@ -32,7 +32,6 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionSender;
 import uk.ac.ucl.excites.sapelli.transmission.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSService;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmissionID;
 import uk.ac.ucl.excites.sapelli.transmission.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.sapelli.util.Debug;
@@ -68,7 +67,6 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 	private SignalMonitor gsmMonitor;
 	private List<DropboxSync> folderObservers;
 	private SMSSender smsSender;
-	private SMSTransmissionID smsTransmissionID;
 	private int startMode = START_STICKY; // indicates how to behave if the service is killed
 	private boolean allowRebind; // indicates whether onRebind should be used
 	private DataAccess dao;
@@ -102,15 +100,7 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 		
 		// DataAccess instance:
 		dao = ((CollectorApp) getApplication()).getDataAccess(this);
-		
-		// ID generator for SMSTransmissions:
-		smsTransmissionID = dao.retrieveTransmissionID();
-		if(smsTransmissionID == null)
-		{
-			smsTransmissionID = new SMSTransmissionID();
-			dao.store(smsTransmissionID);
-		}
-		
+				
 		// Get the preferences
 		final int timeSchedule = DataSenderPreferences.getTimeSchedule(this);
 		boolean dropboxUpload = DataSenderPreferences.getDropboxUpload(this);
@@ -399,12 +389,9 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 			SMSTransmission t = null;
 			switch(settings.getSMSMode())
 			{
-				case BINARY : t = new BinarySMSTransmission(schema, factorOut, smsTransmissionID.getNewID(), settings.getSMSRelay(), settings); break;
-				case TEXT : t = new TextSMSTransmission(schema, factorOut, smsTransmissionID.getNewID(), settings.getSMSRelay(), settings); break;
+				case BINARY : t = new BinarySMSTransmission(schema, factorOut, settings.getSMSRelay(), settings); break;
+				case TEXT : t = new TextSMSTransmission(schema, factorOut, settings.getSMSRelay(), settings); break;
 			}
-			
-			// Update SMSTransmissionID:
-			dao.store(smsTransmissionID);
 			
 			// Add as many records as possible:
 			while(records.hasNext() && !t.isFull())

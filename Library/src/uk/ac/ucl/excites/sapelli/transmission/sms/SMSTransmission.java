@@ -27,8 +27,6 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionSender;
  */
 public abstract class SMSTransmission extends BinaryTransmission
 {
-
-	private Integer id = null; // computed as a CRC16 hash over the transmission payload
 	
 	protected SMSAgent receiver;
 	protected SMSAgent sender;
@@ -41,13 +39,12 @@ public abstract class SMSTransmission extends BinaryTransmission
 	 * To be called on the sending side.
 	 * 
 	 * @param schema
-	 * @param id
 	 * @param receiver
 	 * @param settings
 	 */
-	public SMSTransmission(Schema schema, int id, SMSAgent receiver, Settings settings) //TODO remove id
+	public SMSTransmission(Schema schema, SMSAgent receiver, Settings settings)
 	{
-		this(schema, null, id, receiver, settings);
+		this(schema, null, receiver, settings);
 	}
 	
 	/**
@@ -55,14 +52,12 @@ public abstract class SMSTransmission extends BinaryTransmission
 	 * 
 	 * @param schema
 	 * @param columnsToFactorOut
-	 * @param id
 	 * @param receiver
 	 * @param settings
 	 */
-	public SMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, int id, SMSAgent receiver, Settings settings)
+	public SMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, SMSAgent receiver, Settings settings)
 	{
 		super(schema, columnsToFactorOut, settings);
-		this.id = id;
 		this.receiver = receiver;
 		this.parts = new TreeSet<Message>();
 	}
@@ -179,13 +174,6 @@ public abstract class SMSTransmission extends BinaryTransmission
 		
 		// Read messages:
 		super.readPayload(schemaToUse, settingsToUse);
-	}
-	
-	public int getID()
-	{	
-		if(id == null)
-			throw new NullPointerException("Transmission ID has not been set.");
-		return id.intValue();
 	}
 
 	public void resend(int partNumber)
