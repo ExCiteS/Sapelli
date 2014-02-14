@@ -87,14 +87,14 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 	static private final String DEMO_PROJECT = "demo.excites";
 	
-	// SHORTCUT ACTIONS
+	// SHORTCUT INTENT ACTIONS
 	private static final String DEFAULT_INSTALL_SHORTCUT_ACTION = "com.android.launcher.action.INSTALL_SHORTCUT";
 	private static final String DEFAULT_UNINSTALL_SHORTCUT_ACTION = "com.android.launcher.action.UNINSTALL_SHORTCUT";
 	private static final String SAPELLI_LAUNCHER_INSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.sapelli.launcher.INSTALL_SHORTCUT";
 	private static final String SAPELLI_LAUNCHER_UNINSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.sapelli.launcher.UNINSTALL_SHORTCUT";
 
-	// SHORTCUT INTENT PARAMETER FOR SAPELLI LAUNCHER:
-	private static final String SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH = Intent.EXTRA_SHORTCUT_ICON + "_PATH";
+	// SHORTCUT INTENT PARAMETER FOR SAPELLI LAUNCHER
+	private static final String SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH = "uk.ac.ucl.excites.sapelli.launcher.shortcut.ICON_PATH";
 	
 	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
 	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
