@@ -7,7 +7,7 @@
     <uses-sdk
         android:minSdkVersion="9"
         android:targetSdkVersion="9" />
-    
+
     <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
@@ -29,7 +29,7 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />   
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
 
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.front" />
@@ -42,7 +42,7 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_excites_grey"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme">
+        android:theme="@style/AppTheme" >
         <activity
             android:name="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity"
             android:icon="@drawable/ic_excites_grey"
@@ -51,6 +51,7 @@
             android:theme="@android:style/Theme.Light" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -81,9 +82,6 @@
             android:name="uk.ac.ucl.excites.sapelli.sender.dropbox.DropboxAuthentication"
             android:label="@string/title_activity_dropbox" >
         </activity>
-        <activity
-            android:name="group.pals.android.lib.ui.filechooser.FileChooserActivity"
-            android:configChanges="orientation|screenSize|keyboard|keyboardHidden" />
         <activity android:name="com.dropbox.sync.android.DbxAuthActivity" />
         <activity
             android:name="com.dropbox.client2.android.AuthActivity"
@@ -99,13 +97,27 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.ipaulpro.afilechooser.FileChooserActivity"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@drawable/ic_excites_grey"
+            android:label="File Manager" >
+            <intent-filter>
+                <action android:name="android.intent.action.GET_CONTENT" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.OPENABLE" />
+
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
 
         <service
             android:name="uk.ac.ucl.excites.sapelli.sender.DataSenderService"
             android:icon="@drawable/ic_excites_grey"
             android:label="@string/service_name" >
         </service>
-        <service android:name="group.pals.android.lib.ui.filechooser.services.LocalFileProvider" />
         <service
             android:name="com.dropbox.sync.android.DbxSyncService"
             android:enabled="true"
