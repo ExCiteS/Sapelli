@@ -2,7 +2,6 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Android FileChooser"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Environment2"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Sapelli Library"/>
 	<classpathentry exported="true" kind="lib" path="libs/svg-android-2.0.5-SNAPSHOT.jar" sourcepath="libs/src/svg-android-2.0.5-SNAPSHOT-sources.jar">

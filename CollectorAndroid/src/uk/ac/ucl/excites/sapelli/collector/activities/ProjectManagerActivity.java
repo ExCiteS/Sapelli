@@ -1,8 +1,5 @@
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
-import group.pals.android.lib.ui.filechooser.FileChooserActivity;
-import group.pals.android.lib.ui.filechooser.io.localfile.LocalFile;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -44,6 +41,7 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
@@ -54,10 +52,9 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Parcelable;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.Menu;
@@ -71,6 +68,8 @@ import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.ipaulpro.afilechooser.utils.FileUtils;
 
 /**
  * @author Julia, Michalis Vitos, mstevens
@@ -385,12 +384,16 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 	public boolean importRecords(MenuItem item)
 	{
-		Intent intent = new Intent(getBaseContext(), FileChooserActivity.class);
-		// Start from "/sdcard"
-		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(Environment.getExternalStorageDirectory().getPath()));
-		// set file filter for .xml
-		intent.putExtra(FileChooserActivity._RegexFilenameFilter, "^.*\\.(" + XML_FILE_EXTENSION + ")$");
-		startActivityForResult(intent, RETURN_BROWSE_FOR_RECORD_IMPORT);
+		// Use the GET_CONTENT intent from the utility class
+		Intent target = FileUtils.createGetContentIntent();
+		// Create the chooser Intent
+		Intent intent = Intent.createChooser(target, "Choose an XML file");
+		try
+		{
+			startActivityForResult(intent, RETURN_BROWSE_FOR_RECORD_IMPORT);
+		}
+		catch(ActivityNotFoundException e){}
+
 		return true;
 	}
 
@@ -412,18 +415,15 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 	public void browse(View view)
 	{
-		Intent intent = new Intent(getBaseContext(), FileChooserActivity.class);
-		// Start from "/sdcard" (or equavalent)
-		intent.putExtra(FileChooserActivity._Rootpath, (Parcelable) new LocalFile(app.getStorageDirectory().getPath()));
-		// set file filter for .xml or sapelli file extensions
-		String regexFilenameFilter = "^.*\\.(" + XML_FILE_EXTENSION;
-		for(String extention : ProjectLoader.SAPELLI_FILE_EXTENSIONS)
+		// Use the GET_CONTENT intent from the utility class
+		Intent target = FileUtils.createGetContentIntent();
+		// Create the chooser Intent
+		Intent intent = Intent.createChooser(target, "Choose a sapelli file");
+		try
 		{
-			regexFilenameFilter += "|" + extention;
+			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
 		}
-		regexFilenameFilter += ")$";
-		intent.putExtra(FileChooserActivity._RegexFilenameFilter, regexFilenameFilter);
-		startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
+		catch(ActivityNotFoundException e){}
 	}
 
 	/**
@@ -509,11 +509,13 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			{
 				// Extract & parse a local Sapelli file
 				for(String extention : ProjectLoader.SAPELLI_FILE_EXTENSIONS)
+				{
 					if(path.toLowerCase().endsWith(extention))
 					{
 						project = processSapelliFile(new File(path));
 						break;
-					}	
+					}
+				}
 			}
 		}
 		catch(Exception e)
@@ -525,6 +527,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		//Add project
 		if(project != null) // check to be sure
 			addProject(project);
+		else
+			showErrorDialog("Please choose a valid XML or Sapelli file", false);
 	}
 
 	private Project parseXML(File xmlFile) throws Exception
@@ -780,36 +784,47 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	protected void onActivityResult(int requestCode, int resultCode, Intent data)
 	{
 		super.onActivityResult(requestCode, resultCode, data);
+
+		Uri uri = null;
+		String path = null;
+
 		if(resultCode == Activity.RESULT_OK)
 			switch(requestCode)
 			{
 			// File browse dialog for project loading:
 			case RETURN_BROWSE_FOR_PROJECT_LOAD:
-				// Get the result file path
-				// A list of files will always return, if selection mode is single, the list contains one file
-				@SuppressWarnings("unchecked")
-				List<LocalFile> projFiles = (List<LocalFile>) data.getSerializableExtra(FileChooserActivity._Results);
-				if(!projFiles.isEmpty())
+
+				uri = data.getData();
+
+				// Get the File path from the Uri
+				path = FileUtils.getPath(this, uri);
+
+				// Alternatively, use FileUtils.getFile(Context, Uri)
+				if(path != null && FileUtils.isLocal(path))
 				{
-					String fileSource = projFiles.get(0).getAbsoluteFile().toString();
-					enterURL.setText(fileSource);
+					enterURL.setText(path);
 					// Move the cursor to the end
-					enterURL.setSelection(fileSource.length());
+					enterURL.setSelection(path.length());
 				}
+
 				break;
+
 			// File browse dialog for record importing:
 			case RETURN_BROWSE_FOR_RECORD_IMPORT:
-				// Get the result file path
-				// A list of files will always return, if selection mode is single, the list contains one file
-				@SuppressWarnings("unchecked")
-				List<LocalFile> files = (List<LocalFile>) data.getSerializableExtra(FileChooserActivity._Results);
-				if(!files.isEmpty())
+
+				uri = data.getData();
+
+				// Get the File path from the Uri
+				path = FileUtils.getPath(this, uri);
+
+				// Alternatively, use FileUtils.getFile(Context, Uri)
+				if(path != null && FileUtils.isLocal(path))
 				{
 					try
 					{ // TODO make import & storage async
 						// Import:
 						RecordsImporter importer = new RecordsImporter(new SapelliProjectClient(dao));
-						List<Record> records = importer.importFrom(files.get(0).getAbsoluteFile());
+						List<Record> records = importer.importFrom((new File(path)).getAbsoluteFile());
 
 						// Show parser warnings if needed:
 						showParserWarnings(importer.getWarnings());
@@ -830,6 +845,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						showErrorDialog("Error upon importing records: " + e.getMessage(), false);
 					}
 				}
+
 				break;
 			// QR Reader
 			case IntentIntegrator.REQUEST_CODE:
