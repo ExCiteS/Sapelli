@@ -449,5 +449,21 @@ public class Project
 		}
 	}
 	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof Project)
+		{
+			Project other = (Project) obj;
+			return 	this.name.equals(other.name)
+					&& (this.variant == null ? other.variant == null : variant.equals(other.variant))
+					&& this.version.equals(other.version);			
+		}
+		else
+			return false;
+	}
+	
 }
 

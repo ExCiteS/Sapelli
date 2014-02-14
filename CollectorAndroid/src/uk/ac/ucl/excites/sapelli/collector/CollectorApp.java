@@ -4,9 +4,11 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
-import uk.ac.ucl.excites.sapelli.collector.database.DB4OConnector;
+import uk.ac.ucl.excites.sapelli.collector.database.DB4OPrefDataAccess;
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccessClient;
+import uk.ac.ucl.excites.sapelli.collector.database.db4o.DB4OConnector;
+import uk.ac.ucl.excites.sapelli.collector.database.db4o.DB4ODataAccess;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
@@ -33,12 +35,15 @@ public class CollectorApp extends Application
 	static private final String SAPELLI_FOLDER = "Sapelli" + File.separatorChar;
 	static private final String DATABASE_NAME = "Sapelli.db4o";
 	static private final String DEMO_PREFIX = "Demo_";
+	
+	static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
+	
 	static private final String PROJECT_FOLDER = "Projects" + File.separator;
 	static private final String TEMP_FOLDER = "Temp" + File.separator;
 	static private final String DOWNLOAD_FOLDER = "Downloads" + File.separator;
 	static private final String DUMP_FOLDER = "Dumps" + File.separator;
 
-	static private volatile ObjectContainer db;
+	static private volatile ObjectContainer db4oObjectContainer;
 	
 	private File sapelliFolder;
 
@@ -151,31 +156,6 @@ public class CollectorApp extends Application
 	}
 
 	/**
-	 * (Re)Opens the database
-	 */
-	private boolean openDB()
-	{
-		try
-		{		
-			if(db != null)
-			{
-				Debug.i("Database is already open.");
-				return true;
-			}
-			// Open the db:
-			db = DB4OConnector.open(getDatabasePath());
-			Debug.i("Opened new database connection in file: " + getDatabasePath());
-			return true;
-		}
-		catch(Exception e)
-		{
-			Debug.e("Unable to open database.", e);
-			db = null;
-			return false;
-		}		
-	}
-
-	/**
 	 * Called by a DataAccessClient to request a DataAccess object
 	 * 
 	 * @param client
@@ -183,13 +163,21 @@ public class CollectorApp extends Application
 	 */
 	public DataAccess getDataAccess(DataAccessClient client)
 	{
-		if(db == null)
-		{
-			if(!openDB())
+		if(db4oObjectContainer == null)
+		{	// Open the db:
+			try
+			{
+				db4oObjectContainer = DB4OConnector.open(getDatabasePath());
+				Debug.i("Opened DB4O database connection to file: " + getDatabasePath());
+			}
+			catch(Exception e)
+			{
+				Debug.e("Unable to open DB4O database.", e);
 				return null; //failed to open db
+			}
 		}
 		daoClients.add(client); //add to set of clients currently using the db
-		return new DataAccess(db);
+		return USE_PREFS_FOR_PROJECT_STORAGE ? new DB4OPrefDataAccess(db4oObjectContainer, this) : new DB4ODataAccess(db4oObjectContainer);
 	}
 	
 	/**
@@ -200,11 +188,11 @@ public class CollectorApp extends Application
 	public void discardDataAccess(DataAccessClient client)
 	{
 		daoClients.remove(client); //remove client
-		if(daoClients.isEmpty() && db != null) //close the db if it is no longer in use
+		if(daoClients.isEmpty() && db4oObjectContainer != null) //close the db if it is no longer in use
 		{
-			db.close();
-			db = null;
-			Debug.i("Closed database connection");
+			db4oObjectContainer.close();
+			db4oObjectContainer = null;
+			Debug.i("Closed DB4O database connection");
 		}
 	}
 
@@ -220,8 +208,8 @@ public class CollectorApp extends Application
 	
 	public void backupDatabase(String filePath)
 	{
-		db.commit();
-		db.ext().backup(filePath);
+		db4oObjectContainer.commit();
+		db4oObjectContainer.ext().backup(filePath);
 	}
 
 }

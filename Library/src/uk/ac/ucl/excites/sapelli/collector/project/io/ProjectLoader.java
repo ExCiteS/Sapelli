@@ -24,7 +24,7 @@ public class ProjectLoader
 {
 	
 	static public final String[] SAPELLI_FILE_EXTENSIONS = { "excites", "sapelli", "sap" };
-	static private final String PROJECT_FILE = "PROJECT.xml";
+	static public final String PROJECT_FILE = "PROJECT.xml";
 
 	private ProjectLoaderClient client;
 	private String tempFolderPath;
