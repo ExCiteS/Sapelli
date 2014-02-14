@@ -90,13 +90,13 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	
 	// SHORTCUT ACTIONS
 	private static final String DEFAULT_INSTALL_SHORTCUT_ACTION = "com.android.launcher.action.INSTALL_SHORTCUT";
-	private static final String CUSTOM_INSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.INSTALL_SHORTCUT";
-	private static final String DEFAULT_UNISTALL_SHORTCUT_ACTION = "com.android.launcher.action.UNINSTALL_SHORTCUT";
-	private static final String CUSTOM_UNISTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.launcher.UNINSTALL_SHORTCUT";
-	public static final String SHORTCUT_PROJECT_NAME = "Shortcut_Project_Name";
-	public static final String SHORTCUT_PROJECT_VERSION = "Shortcut_Project_Version";
-	public static final String SHORTCUT_PROJECT_ICON = "Shortcut_Project_Icon";
+	private static final String DEFAULT_UNINSTALL_SHORTCUT_ACTION = "com.android.launcher.action.UNINSTALL_SHORTCUT";
+	private static final String SAPELLI_LAUNCHER_INSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.sapelli.launcher.INSTALL_SHORTCUT";
+	private static final String SAPELLI_LAUNCHER_UNINSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.sapelli.launcher.UNINSTALL_SHORTCUT";
 
+	// SHORTCUT INTENT PARAMETER FOR SAPELLI LAUNCHER:
+	private static final String SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH = Intent.EXTRA_SHORTCUT_ICON + "_PATH";
+	
 	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
 	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
 
@@ -244,7 +244,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			else
 				p = projects.get(0);
 			// Run the project
-			runProjectActivity(p.getName(), p.getVersion());
+			startActivity(getProjectRunIntent(p));
 		}
 		catch(Exception e)
 		{
@@ -328,7 +328,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		// TODO make async
 		final RecordsExporter exporter = new RecordsExporter(app.getDumpFolderPath(), dao);
-		final Project p = getSelectedProject();
+		final Project p = getSelectedProject(false);
 		if(p != null)
 		{
 			AlertDialog dialog = new AlertDialog.Builder(this)
@@ -452,38 +452,30 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	}
 
 	@SuppressWarnings("unchecked")
-	protected Project getSelectedProject()
+	protected Project getSelectedProject(boolean errorIfNull)
 	{
 		if(projectList.getCheckedItemPosition() == -1)
+		{
+			if(errorIfNull)
+				showErrorDialog("Please select a project", false); // TODO multilang
 			return null;
+		}
 		return ((ArrayAdapter<Project>) projectList.getAdapter()).getItem(projectList.getCheckedItemPosition());
 	}
 
 	public void runProject(View view)
 	{
-		Project p = getSelectedProject();
-		if(p == null)
-		{
-			showErrorDialog("Please select a project", false);
-			return;
-		}
-		runProjectActivity(p.getName(), p.getVersion());
-	}
-
-	public void runProjectActivity(String projectName, String projectVersion)
-	{
-		Intent i = new Intent(this, CollectorActivity.class);
-		i.putExtra(CollectorActivity.PARAMETER_PROJECT_NAME, projectName);
-		i.putExtra(CollectorActivity.PARAMETER_PROJECT_VERSION, projectVersion);
-		startActivity(i);
+		Project p = getSelectedProject(true);
+		if(p != null)
+			startActivity(getProjectRunIntent(p));
 	}
 
 	private void removeProject()
 	{
-		Project p = getSelectedProject();
+		Project p = getSelectedProject(false);
 		if(p == null)
 			return;
-		removeShortcutFor(p);
+		removeShortcut(p);
 		dao.delete(p);
 		populateProjectList();
 
@@ -670,120 +662,118 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		integrator.initiateScan(IntentIntegrator.QR_CODE_TYPES);
 	}
 
+	private Intent getProjectRunIntent(Project project)
+	{
+		Intent i = new Intent(getApplicationContext(), CollectorActivity.class);
+		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, project.getHash());
+		i.setAction(Intent.ACTION_MAIN);
+		return i;
+	}
+	
 	/**
-	 * Create a shortcut
+	 * Remove a shortcut
 	 * 
-	 * @param view
 	 */
 	public void createShortcut()
 	{
-		// Check if the user has selected a project from the list
-		if(projectList.getCheckedItemPosition() == -1)
-		{
-			showErrorDialog("Please select a project", false);
-			return;
-		}
-
 		// Get the selected project
-		Project selectedProject = getSelectedProject();
-
-		// Set the shortcut intent
-		Intent projectIntent = new Intent(getApplicationContext(), CollectorActivity.class);
-		projectIntent.putExtra(SHORTCUT_PROJECT_NAME, selectedProject.getName());
-		projectIntent.putExtra(SHORTCUT_PROJECT_VERSION, selectedProject.getVersion());
-		projectIntent.setAction(Intent.ACTION_MAIN);
-
-		// Set up the icon
-		Drawable iconResource = null;
-		File shortcutImageFile = selectedProject.getImageFile(selectedProject.getForms().get(0).getShortcutImageRelativePath()); //use shortcut of first form (for now)
-		if(FileHelpers.isReadableFile(shortcutImageFile))
-			iconResource = Drawable.createFromPath(shortcutImageFile.getAbsolutePath());
-		else
-			iconResource = getResources().getDrawable(R.drawable.ic_excites_grey);
-
-		// Get the standard size (both width and height) of an application icon from the system
-		final int MAX_ICON_SIZE = (int) getResources().getDimension(android.R.dimen.app_icon_size);
-		final BitmapDrawable bitmapDrawable = (BitmapDrawable) iconResource;
-		Bitmap bitmap = bitmapDrawable.getBitmap();
-
-		// ================================================================================
-		// Create a shortcut to the standard Android Home Launcher
-		// ================================================================================
-		Intent shortcutIntent = new Intent();
-		shortcutIntent.setAction(DEFAULT_INSTALL_SHORTCUT_ACTION);
-		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
-		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
-		// Resize the icon according to the default size
-		if((bitmap != null) && ((bitmap.getWidth() > MAX_ICON_SIZE) || (bitmap.getHeight() > MAX_ICON_SIZE)))
-			bitmap = Bitmap.createScaledBitmap(bitmap, MAX_ICON_SIZE, MAX_ICON_SIZE, true);
-		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, bitmap);
-		// Do not allow duplicate shortcuts
-		shortcutIntent.putExtra("duplicate", false);
-		sendBroadcast(shortcutIntent);
-
-		// ================================================================================
-		// Create an Intent to work with the Sapelli Launcher
-		// ================================================================================
-		Intent launcherIntent = new Intent();
-		launcherIntent.setAction(CUSTOM_INSTALL_SHORTCUT_ACTION);
-		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
-		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(selectedProject));
-		launcherIntent.putExtra(SHORTCUT_PROJECT_ICON, FileHelpers.isReadableFile(shortcutImageFile) ? shortcutImageFile.getAbsolutePath() : null); //launcher will use default Sapelli icon when path is null
-		sendBroadcast(launcherIntent);
+		Project selectedProject = getSelectedProject(true);
+		if(selectedProject != null)
+			createShortcut(selectedProject);
+	}
+	
+	/**
+	 * Create a shortcut
+	 * 
+	 * @param project
+	 */
+	public void createShortcut(Project project)
+	{
+		// Icon image file:
+		File shortcutImageFile = project.getImageFile(project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
+		
+		//-----------------------------------------------------
+		// Create a shortcut in standard Android Home Launcher
+		//-----------------------------------------------------
+		Intent androidLauncherIntent = getShortcutCreationIntent(project, false);
+		// Get up icon bitmap:
+		Drawable iconResource = FileHelpers.isReadableFile(shortcutImageFile) ?	Drawable.createFromPath(shortcutImageFile.getAbsolutePath()) : getResources().getDrawable(R.drawable.ic_excites_grey);
+		Bitmap icon = ((BitmapDrawable) iconResource).getBitmap();
+		// Resize the icon bitmap according to the default size:
+		int maxIconSize = (int) getResources().getDimension(android.R.dimen.app_icon_size); // Get standard system icon size
+		if(icon.getWidth() > maxIconSize || icon.getHeight() > maxIconSize)
+			icon = Bitmap.createScaledBitmap(icon, maxIconSize, maxIconSize, true); //TODO make this keep aspect ratio?
+		// Set up shortcut icon:
+		androidLauncherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, icon);
+		// Fire the intent:
+		sendBroadcast(androidLauncherIntent);
+		//-----------------------------------------------------
+		
+		//-----------------------------------------------------
+		// Create an shortcut in the Sapelli Launcher
+		//-----------------------------------------------------
+		Intent sapelliLauncherIntent = getShortcutCreationIntent(project, true);
+		// Set up shortcut icon path:
+		sapelliLauncherIntent.putExtra(SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH, FileHelpers.isReadableFile(shortcutImageFile) ? shortcutImageFile.getAbsolutePath() : null); // launcher will use default Sapelli icon when path is null
+		// Fire the intent:
+		sendBroadcast(sapelliLauncherIntent);		
+		//-----------------------------------------------------
+	}
+	
+	private Intent getShortcutCreationIntent(Project projectToRun, boolean sapelliLauncher)
+	{
+		Intent shortcutCreationIntent = new Intent();
+		
+		// Action:
+		shortcutCreationIntent.setAction(sapelliLauncher ? SAPELLI_LAUNCHER_INSTALL_SHORTCUT_ACTION : DEFAULT_INSTALL_SHORTCUT_ACTION);
+		// Shortcut intent:
+		shortcutCreationIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, getProjectRunIntent(projectToRun));
+		// Shortcut name:
+		shortcutCreationIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, projectToRun.toString());
+		// 	Do not allow duplicate shortcuts:
+		if(!sapelliLauncher)
+			shortcutCreationIntent.putExtra("duplicate", false); // only needed for Android Home Launcher (although Sapelli Launcher would just ignore it)
+		
+		return shortcutCreationIntent;
 	}
 
 	/**
 	 * Remove a shortcut
 	 * 
-	 * @param view
 	 */
 	public void removeShortcut()
 	{
-		// Check if the user has selected a project from the list
-		if(projectList.getCheckedItemPosition() == -1)
-		{
-			showErrorDialog("Please select a project", false);
-			return;
-		}
-		removeShortcutFor(getSelectedProject());
+		// Get the selected project
+		Project selectedProject = getSelectedProject(true);
+		if(selectedProject != null)
+			removeShortcut(selectedProject);
 	}
-
-	private void removeShortcutFor(Project project)
-	{
-		// Deleting shortcut
-		Intent projectIntent = new Intent(getApplicationContext(), CollectorActivity.class);
-		projectIntent.putExtra(SHORTCUT_PROJECT_NAME, project.getName());
-		projectIntent.putExtra(SHORTCUT_PROJECT_VERSION, project.getVersion());
-		projectIntent.setAction(Intent.ACTION_MAIN);
-
-		// ================================================================================
-		// Remove a shortcut from the standard Android Home Launcher
-		// ================================================================================
-		Intent shortcutIntent = new Intent();
-		shortcutIntent.setAction(DEFAULT_UNISTALL_SHORTCUT_ACTION);
-		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
-		shortcutIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(project));
-		sendBroadcast(shortcutIntent);
-
-		// ================================================================================
-		// Remove a shortcut from the Sapelli Launcher
-		// ================================================================================
-		Intent launcherIntent = new Intent();
-		launcherIntent.setAction(CUSTOM_UNISTALL_SHORTCUT_ACTION);
-		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, projectIntent);
-		launcherIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, getShortcutName(project));
-		sendBroadcast(launcherIntent);
-	}
-
+	
 	/**
-	 * Return a name to be used for the creation / removal of shortcuts
+	 * Remove a shortcut
 	 * 
-	 * @param project
-	 * @return
+	 * @parem project
 	 */
-	public static String getShortcutName(Project project)
+	public void removeShortcut(Project project)
 	{
-		return project.getName() + " v" + project.getVersion();
+		// Remove a shortcut from the standard Android Home Launcher
+		sendBroadcast(getShortcutRemovalIntent(project, false));
+		// Remove a shortcut from the Sapelli Launcher
+		sendBroadcast(getShortcutRemovalIntent(project, true));
+	}
+
+	private Intent getShortcutRemovalIntent(Project project, boolean sapelliLauncher)
+	{		
+		Intent shortcutRemovalIntent = new Intent();
+		
+		// Action:
+		shortcutRemovalIntent.setAction(sapelliLauncher ? SAPELLI_LAUNCHER_UNINSTALL_SHORTCUT_ACTION : DEFAULT_UNINSTALL_SHORTCUT_ACTION);
+		// Shortcut intent:
+		shortcutRemovalIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, getProjectRunIntent(project));
+		// Shortcut name:
+		shortcutRemovalIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, project.toString());
+		
+		return shortcutRemovalIntent;
 	}
 
 	@Override

@@ -46,9 +46,9 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 	// STATICS--------------------------------------------------------
 	static private final String TAG = "CollectorActivity";
 
-	static public final String PARAMETER_PROJECT_NAME = "Project_name";
-	static public final String PARAMETER_PROJECT_VERSION = "Project_version";
-
+	// INTENT PARAMETER:
+	public static final String INTENT_PARAM_PROJECT_HASH = "Project_Hash"; // used on "direct" intents (coming from ProjectManagerActivity) & shortcut intents
+	
 	static private final String TEMP_PHOTO_PREFIX = "tmpPhoto";
 	static private final String TEMP_PHOTO_SUFFIX = ".tmp";
 	static private final String TEMP_PHOTO_PATH_KEY = "tmpPhotoPath";
@@ -73,10 +73,6 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 
 	// Temp location to save a photo
 	private File tmpPhotoFile;
-
-	// Project Info
-	private String projectName;
-	private String projectVersion;
 
 	// Timeout:
 	protected boolean pausedForActivityResult = false;
@@ -122,30 +118,25 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 
 	private void loadProject()
 	{
-		// Get extra info and check if there is a shortcut info there
+		Long projectHash = null;
+		// Get project hash from extras (the key is the same for both call-by-intent & call-by-shortcut scenarios):
 		Bundle extras = getIntent().getExtras();
-		if(extras != null && extras.containsKey(ProjectManagerActivity.SHORTCUT_PROJECT_NAME))
+		if(extras != null && extras.containsKey(INTENT_PARAM_PROJECT_HASH))
+			projectHash =  extras.getLong(INTENT_PARAM_PROJECT_HASH);
+		else
 		{
-			// Get the shortcut name and version
-			projectName = extras.getString(ProjectManagerActivity.SHORTCUT_PROJECT_NAME);
-			projectVersion = extras.getString(ProjectManagerActivity.SHORTCUT_PROJECT_VERSION);
-			if(projectVersion == null)
-				projectVersion = Project.DEFAULT_VERSION;
+			showErrorDialog("CollectorActivity started without '" + INTENT_PARAM_PROJECT_HASH + "' intent parameter, don't know which project to load!", true);
+			return;
 		}
-		else if(extras.containsKey(PARAMETER_PROJECT_NAME))
-		{
-			projectName = extras.getString(PARAMETER_PROJECT_NAME);
-			projectVersion = extras.getString(PARAMETER_PROJECT_VERSION);
-		}
-
+		
 		// Get DataAccess object
 		dao = app.getDataAccess(this); // will be open
-
+		
 		// Get Project object:
-		project = dao.retrieveProject(projectName, projectVersion);
+		project = dao.retrieveProject(projectHash);
 		if(project == null)
 		{	// show error (activity will be exited after used clicks OK in the dialog):
-			showErrorDialog("Could not find project: " + projectName + " (version " + projectVersion + ").", true);
+			showErrorDialog("Could not find project with hash: " + projectHash, true);
 			return;
 		}
 		
