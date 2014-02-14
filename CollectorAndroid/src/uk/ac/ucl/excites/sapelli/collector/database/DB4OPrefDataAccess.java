@@ -13,10 +13,13 @@ import uk.ac.ucl.excites.sapelli.collector.project.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.project.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.project.xml.ProjectParser;
+import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
 import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.db4o.ObjectContainer;
+import com.db4o.ObjectSet;
+import com.db4o.query.Predicate;
 
 /**
  * Subclass of DB4ODataAccess in which project storage uses Android SharePreferences (+ reparsing XML) to store Projects (instead of DB4O object storage)
@@ -67,7 +70,7 @@ public class DB4OPrefDataAccess extends DB4ODataAccess
 		List<Project> projects = new ArrayList<Project>();
 		for(Map.Entry<String, ?> entry : preferences.getAll().entrySet())
 			if(entry.getKey().startsWith(PREF_PROJECT_PREFIX) && entry.getKey().endsWith(PREF_PROJECT_PATH_POSTFIX))
-				projects.add(parseProject(entry.getValue().toString()));
+				CollectionUtils.addIgnoreNull(projects, parseProject(entry.getValue().toString()));
 		return projects;
 	}
 	
@@ -76,6 +79,7 @@ public class DB4OPrefDataAccess extends DB4ODataAccess
 	 * 
 	 * @return null if project was not found
 	 */
+	@Override
 	public Project retrieveProject(final String name, final String variant, final String version)
 	{
 		List<Project> projects = retrieveProjects();
@@ -94,6 +98,7 @@ public class DB4OPrefDataAccess extends DB4ODataAccess
 	 * 
 	 * @return null if project was not found
 	 */
+	@Override
 	public Project retrieveProject(final long projectHash)
 	{
 		String folderPath = preferences.getString(getProjectPathPrefKey(projectHash), null);
@@ -102,12 +107,26 @@ public class DB4OPrefDataAccess extends DB4ODataAccess
 		else
 			return null;
 	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.database.IDataAccess#retrieveV1Project(int, int)
+	 */
+	@Override
+	public Project retrieveV1Project(final int schemaID, final int schemaVersion)
+	{
+		List<Project> projects = retrieveProjects();
+		for(Project project : projects)
+			if(project.isV1xProject() && project.getID() == schemaID && project.getSchemaVersion() == schemaVersion)
+				return project;
+		return null;
+	}
 
 	/**
 	 * Delete specific project
 	 * 
 	 * @return
 	 */
+	@Override
 	public void delete(Project project)
 	{
 		preferences.edit().remove(getProjectPathPrefKey(project)).commit();
