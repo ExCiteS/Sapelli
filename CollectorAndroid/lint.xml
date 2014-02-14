@@ -4,5 +4,7 @@
         <ignore path="src/uk/ac/ucl/excites/collector/activities/ProjectManagerActivity.java" />
         <ignore path="src/uk/ac/ucl/excites/collector/ui/picker/items/FileImageItem.java" />
         <ignore path="src/uk/ac/ucl/excites/collector/ui/picker/items/ResourceImageItem.java" />
+        <ignore path="src/uk/ac/ucl/excites/sapelli/collector/activities/ProjectManagerActivity.java" />
+        <ignore path="src/uk/ac/ucl/excites/sapelli/collector/ui/picker/items/FileImageItem.java" />
     </issue>
 </lint>

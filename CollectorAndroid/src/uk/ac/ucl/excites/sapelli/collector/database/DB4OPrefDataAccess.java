@@ -18,8 +18,6 @@ import android.content.Context;
 import android.content.SharedPreferences;
 
 import com.db4o.ObjectContainer;
-import com.db4o.ObjectSet;
-import com.db4o.query.Predicate;
 
 /**
  * Subclass of DB4ODataAccess in which project storage uses Android SharePreferences (+ reparsing XML) to store Projects (instead of DB4O object storage)
