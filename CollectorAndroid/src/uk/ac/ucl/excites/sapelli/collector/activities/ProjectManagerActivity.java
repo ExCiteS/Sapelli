@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.project.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
+import uk.ac.ucl.excites.sapelli.launcher.receivers.ShortcutReceiver;
 import uk.ac.ucl.excites.sapelli.sender.DataSenderPreferences;
 import uk.ac.ucl.excites.sapelli.sender.util.ServiceChecker;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -90,11 +91,11 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	// SHORTCUT INTENT ACTIONS
 	private static final String DEFAULT_INSTALL_SHORTCUT_ACTION = "com.android.launcher.action.INSTALL_SHORTCUT";
 	private static final String DEFAULT_UNINSTALL_SHORTCUT_ACTION = "com.android.launcher.action.UNINSTALL_SHORTCUT";
-	private static final String SAPELLI_LAUNCHER_INSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.sapelli.launcher.INSTALL_SHORTCUT";
-	private static final String SAPELLI_LAUNCHER_UNINSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.sapelli.launcher.UNINSTALL_SHORTCUT";
+	private static final String SAPELLI_LAUNCHER_INSTALL_SHORTCUT_ACTION = ShortcutReceiver.SAPELLI_LAUNCHER_INSTALL_SHORTCUT_ACTION;
+	private static final String SAPELLI_LAUNCHER_UNINSTALL_SHORTCUT_ACTION = ShortcutReceiver.SAPELLI_LAUNCHER_UNINSTALL_SHORTCUT_ACTION;
 
 	// SHORTCUT INTENT PARAMETER FOR SAPELLI LAUNCHER
-	private static final String SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH = "uk.ac.ucl.excites.sapelli.launcher.shortcut.ICON_PATH";
+	private static final String SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH = ShortcutReceiver.SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH;
 	
 	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
 	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
