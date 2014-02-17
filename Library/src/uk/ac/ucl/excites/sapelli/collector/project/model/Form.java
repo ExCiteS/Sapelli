@@ -192,7 +192,7 @@ public class Form
 	public Field getField(String fieldID)
 	{
 		for(Field f : fields)
-			if(f.getID().equals(fieldID))
+			if(f.getID().equalsIgnoreCase(fieldID)) // field IDs are treated as case insensitive
 				return f;
 		return null;
 	}
@@ -429,10 +429,10 @@ public class Form
 	public void setNext(String nextStr) throws IllegalArgumentException
 	{
 		if(nextStr == null)
-			return; //default next will be used^
+			return; //default next will be used
 		if(nextStr.startsWith("_"))
-			nextStr = nextStr.substring(1);
-		nextStr = nextStr.toUpperCase();
+			nextStr = nextStr.substring(1); //Strip off leading '_'
+		nextStr = nextStr.toUpperCase(); //Make upper case
 		try
 		{
 			this.next = Next.valueOf(nextStr);

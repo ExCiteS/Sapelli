@@ -246,7 +246,7 @@ public class Project
 	public Form getForm(String id)
 	{
 		for(Form f : forms)
-			if(f.getID().equals(id))
+			if(f.getID().equalsIgnoreCase(id)) // form IDs are treated as case insensitive
 				return f;
 		return null; //no such form
 	}

@@ -52,7 +52,7 @@ public class MultiListField extends Field
 		else if(level < labels.length)
 			return labels[level];
 		else
-			return UNKNOWN_LABEL_PREFIX + level;
+			return labels[0].isEmpty() ? "" : UNKNOWN_LABEL_PREFIX + level;
 	}
 	
 	public String[] getLabels()

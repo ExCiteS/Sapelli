@@ -27,19 +27,19 @@ public class EndField extends Field
 	static public List<EndField> GetEndFields(Form form)
 	{
 		List<EndField> efs = new ArrayList<EndField>();
+
 		// v2.x "End jumps":
 		for(Next nxt : Next.values())
 		{
 			efs.add(new EndField(form, true, nxt));
 			efs.add(new EndField(form, false, nxt));	
 		}
-		
 		// v1.x compatibility:
 		// 	Form default _END:
 		efs.add(new EndField(form, true));
 		// 	_CANCEL:
 		efs.add(new EndField(form, false));
-		
+
 		return efs;
 	}
 	

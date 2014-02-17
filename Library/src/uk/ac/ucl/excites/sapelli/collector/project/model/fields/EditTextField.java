@@ -9,6 +9,7 @@ import uk.ac.ucl.excites.sapelli.collector.project.ui.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.StringColumn;
+import uk.ac.ucl.excites.sapelli.util.StringUtils;
 
 /**
  * @author Julia
@@ -40,7 +41,7 @@ public class EditTextField extends Field
 	 */
 	public EditTextField(Form form, String id, String label)
 	{
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + label.trim().replaceAll("\\s+", "_") : id));
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id));
 		this.label = label;
 
 		maxLength = DEFAULT_MAX_LENGTH;

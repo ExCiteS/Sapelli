@@ -83,8 +83,10 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FORM_SINGLE_PAGE = "singlePage";
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
-	private static final String ATTRIBUTE_FIELD_OPTIONAL = "optional";
+	static private final String ATTRIBUTE_FIELD_OPTIONAL = "optional";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
+	static private final String ATTRIBUTE_FIELD_ALT = "alt";
+	static private final String ATTRIBUTE_FIELD_IMG = "img";
 	static private final String ATTRIBUTE_FIELD_LABEL = "label";
 	static private final String ATTRIBUTE_FIELD_LABELS = "labels";
 	static private final String ATTRIBUTE_FIELD_BACKGROUND_COLOR = "backgroundColor";
@@ -96,7 +98,9 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_SHOW_FORWARD = "showForward";
 	static private final String ATTRIBUTE_SHOW_CANCEL = "showCancel";
 	static private final String ATTRIBUTE_SHOW_BACK = "showBack";
-	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "currentForm";
+	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
+	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
+	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
 	static private final String ATTRIBUTE_LABEL_TEXT = "text";
 	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
@@ -143,25 +147,25 @@ public class FormParser extends SubtreeParser
 			if(currentForm != null)
 				throw new SAXException("Forms cannot be nested!");
 			
-			String id = readRequiredStringAttribute(TAG_FORM, attributes, ATTRIBUTE_FORM_ID, TAG_FORM, ATTRIBUTE_FORM_NAME); // "name" is v1.x syntax but still accepted in v2.0 (yet "id" is preferred)
+			String id = readRequiredStringAttribute(TAG_FORM, attributes, true, false, ATTRIBUTE_FORM_ID, ATTRIBUTE_FORM_NAME); // "name" is v1.x syntax but still accepted in v2.0 (yet "id" is preferred)
 			if(((ProjectParser) owner).getFormat() == ProjectParser.Format.v1_x)
 			{	// Backwards compatibility
 				if(project.getForms().isEmpty()) // only for 1st, and assumed only, currentForm
 				{
-					int schemaID = Integer.parseInt(readRequiredStringAttribute(TAG_FORM, ATTRIBUTE_FORM_SCHEMA_ID, "because this is a v1.x project", attributes));
+					int schemaID = readRequiredIntegerAttribute(TAG_FORM, ATTRIBUTE_FORM_SCHEMA_ID, "because this is a v1.x project", attributes);
 					int schemaVersion = readIntegerAttribute(ATTRIBUTE_FORM_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION, attributes);
 					project.setSchema(schemaID, schemaVersion); //schemaID will be used as projectID
 				}
 				else
 					throw new SAXException("Only single-Form v1.x projects are supported");
 			}
-			currentForm = new Form(project, id); // the form will add itself to the project and take the next available index
+			currentForm = new Form(project, id); // the form will add itself to the project and take the next available form index
 			// Shortcut image:
-			currentForm.setShortcutImageRelativePath(readStringAttribute(ATTRIBUTE_FORM_SHORTCUT_IMAGE, null, attributes));
+			currentForm.setShortcutImageRelativePath(readStringAttribute(ATTRIBUTE_FORM_SHORTCUT_IMAGE, null, attributes, false, false));
 			// Next/end:
 			try
 			{
-				currentForm.setNext(readStringAttribute(Form.DEFAULT_NEXT.name(), attributes, ATTRIBUTE_FORM_NEXT, ATTRIBUTE_FORM_END));
+				currentForm.setNext(readStringAttribute(Form.DEFAULT_NEXT.name(), attributes, true, false, ATTRIBUTE_FORM_NEXT, ATTRIBUTE_FORM_END));
 			}
 			catch(IllegalArgumentException iae)
 			{
@@ -170,7 +174,7 @@ public class FormParser extends SubtreeParser
 			// Store end time?:
 			currentForm.setStoreEndTime(readBooleanAttribute(ATTRIBUTE_FORM_STORE_END_TIME, Form.END_TIME_DEFAULT, attributes));
 			// Sound end vibration at the end of the currentForm:
-			currentForm.setSaveSoundRelativePath(readStringAttribute(null, attributes, ATTRIBUTE_FORM_SAVE_SOUND, ATTRIBUTE_FORM_END_SOUND)); // Get the sound path
+			currentForm.setSaveSoundRelativePath(readStringAttribute(null, attributes, false, false, ATTRIBUTE_FORM_SAVE_SOUND, ATTRIBUTE_FORM_END_SOUND)); // Get the sound path
 			currentForm.setVibrateOnSave(readBooleanAttribute(Form.DEFAULT_VIBRATE, attributes, ATTRIBUTE_FORM_SAVE_VIBRATE, ATTRIBUTE_FORM_END_VIBRATE));
 			// Which buttons are allowed to show:
 			currentForm.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Form.DEFAULT_SHOW_BACK, attributes));
@@ -180,20 +184,17 @@ public class FormParser extends SubtreeParser
 			currentForm.setAnimation(readBooleanAttribute(ATTRIBUTE_FORM_ANIMATION, Form.DEFAULT_ANIMATION, attributes));
 			// Obfuscate Media Files:
 			currentForm.setObfuscateMediaFiles(readBooleanAttribute(ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES, Form.DEFAULT_OBFUSCATE_MEDIA_FILES, attributes));
-			// ButtonField images:
-			currentForm.setBackButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_BACK_BUTTON_IMG));
-			currentForm.setCancelButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_CANCEL_BUTTON_IMG));
-			currentForm.setForwardButtonImageRelativePath(attributes.getValue(ATTRIBUTE_FORM_FORWARD_BUTTON_IMG));
+			// Control button images:
+			currentForm.setBackButtonImageRelativePath(readStringAttribute(ATTRIBUTE_FORM_BACK_BUTTON_IMG, null, attributes, false, false));
+			currentForm.setCancelButtonImageRelativePath(readStringAttribute(ATTRIBUTE_FORM_CANCEL_BUTTON_IMG, null, attributes, false, false));
+			currentForm.setForwardButtonImageRelativePath(readStringAttribute(ATTRIBUTE_FORM_FORWARD_BUTTON_IMG, null, attributes, false, false));
 			// ButtonField background colour:
-			currentForm.setButtonBackgroundColor(readStringAttribute(ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR, Form.DEFAULT_BUTTON_BACKGROUND_COLOR, attributes));
+			currentForm.setButtonBackgroundColor(readStringAttribute(ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR, Form.DEFAULT_BUTTON_BACKGROUND_COLOR, attributes, true, false));
 			// Single page form (all fields will be added to a single page):
 			if(readBooleanAttribute(Form.DEFAULT_SINGLE_PAGE, attributes, ATTRIBUTE_FORM_SINGLE_PAGE))
 				newPage(null);
 			// Start field:
-			if(attributes.getValue(ATTRIBUTE_FORM_START_FIELD) != null && !attributes.getValue(ATTRIBUTE_FORM_START_FIELD).isEmpty())
-				formStartFieldId = attributes.getValue(ATTRIBUTE_FORM_START_FIELD);
-			else
-				addWarning("No startField attribute, will use first field");
+			formStartFieldId = readStringAttribute(ATTRIBUTE_FORM_START_FIELD, null, attributes, true, false);
 			
 			//Activate this subtree parser:
 			activate(); //!!!
@@ -209,14 +210,12 @@ public class FormParser extends SubtreeParser
 				// No column:
 				currentChoice.setNoColumn(readBooleanAttribute(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN, attributes));
 				// Other attributes:
-				if(attributes.getValue("img") != null)
-					currentChoice.setImageRelativePath(attributes.getValue("img"));
-				if(attributes.getValue("alt") != null)
-					currentChoice.setAltText(attributes.getValue("alt"));
-				currentChoice.setCols(readIntegerAttribute("cols", ChoiceField.DEFAULT_NUM_COLS, attributes));
-				currentChoice.setRows(readIntegerAttribute("rows", ChoiceField.DEFAULT_NUM_ROWS, attributes));
+				currentChoice.setImageRelativePath(readStringAttribute(ATTRIBUTE_FIELD_IMG, null, attributes, false, false));
+				currentChoice.setAltText(readStringAttribute(ATTRIBUTE_FIELD_ALT, null, attributes, false, false));
+				currentChoice.setCols(readIntegerAttribute(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS, attributes));
+				currentChoice.setRows(readIntegerAttribute(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS, attributes));
 				currentChoice.setCrossed(readBooleanAttribute("crossed", ChoiceField.DEFAULT_CROSSED, attributes));
-				currentChoice.setCrossColor(readStringAttribute("crossColor", ChoiceField.DEFAULT_CROSS_COLOR, attributes));
+				currentChoice.setCrossColor(readStringAttribute("crossColor", ChoiceField.DEFAULT_CROSS_COLOR, attributes, true, false));
 			}
 			// <Location>
 			else if(qName.equals(TAG_LOCATION))
@@ -271,9 +270,9 @@ public class FormParser extends SubtreeParser
 				}
 				photoField.setFlashMode(flash);
 				// Custom buttons (only used when useNativeApp=false):
-				photoField.setCaptureButtonImageRelativePath(attributes.getValue("captureImg"));
-				photoField.setApproveButtonImageRelativePath(attributes.getValue("approveImg"));
-				photoField.setDiscardButtonImageRelativePath(attributes.getValue("discardImg"));
+				photoField.setCaptureButtonImageRelativePath(readStringAttribute("captureImg", null, attributes, false, false));
+				photoField.setApproveButtonImageRelativePath(readStringAttribute("approveImg", null, attributes, false, false));
+				photoField.setDiscardButtonImageRelativePath(readStringAttribute("discardImg", null, attributes, false, false));
 			}
 			// <Audio>
 			else if(qName.equals(TAG_AUDIO))
@@ -281,8 +280,8 @@ public class FormParser extends SubtreeParser
 				AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
 				newField(audioField, attributes);
 				mediaAttachmentAttributes(audioField, attributes);
-				audioField.setStartRecImageRelativePath(attributes.getValue("startRecImg"));
-				audioField.setStopRecImageRelativePath(attributes.getValue("stopRecImg"));
+				audioField.setStartRecImageRelativePath(readStringAttribute("startRecImg", null, attributes, false, false));
+				audioField.setStopRecImageRelativePath(readStringAttribute("stopRecImg", null, attributes, false, false));
 			}
 			// <Orientation>
 			else if(qName.equals(TAG_ORIENTATION))
@@ -298,23 +297,23 @@ public class FormParser extends SubtreeParser
 			{
 				Relationship belongsTo = new Relationship(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), Relationship.Type.MANY_TO_ONE);
 				newField(belongsTo, attributes);
-				((ProjectParser) owner).addRelationship(belongsTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes));
+				((ProjectParser) owner).addRelationship(belongsTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes, true, false));
 			}
 			// <LinksTo>
 			else if(qName.equals(TAG_LINKS_TO))
 			{
 				Relationship linksTo = new Relationship(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), Relationship.Type.LINK);
 				newField(linksTo, attributes);
-				((ProjectParser) owner).addRelationship(linksTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes));
+				((ProjectParser) owner).addRelationship(linksTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes, true, false));
 			}
 			// <Button>
 			else if(qName.equals(TAG_BUTTON))
 			{
-				ButtonField btn = new ButtonField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_BUTTON, ATTRIBUTE_FIELD_LABEL, attributes));
+				ButtonField btn = new ButtonField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_BUTTON, ATTRIBUTE_FIELD_LABEL, attributes, false, true));
 				newField(btn, attributes);
 				try
 				{
-					btn.setColumn(readStringAttribute(ButtonField.ButtonColumn.NONE.name(), attributes, ATTRIBUTE_BUTTON_COLUMN));
+					btn.setColumn(readStringAttribute(ATTRIBUTE_BUTTON_COLUMN, ButtonField.ButtonColumn.NONE.name(), attributes, true, false));
 				}
 				catch(IllegalArgumentException iae)
 				{
@@ -324,30 +323,30 @@ public class FormParser extends SubtreeParser
 			// <Label>
 			else if(qName.equals(TAG_LABEL))
 			{
-				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, ATTRIBUTE_LABEL_TEXT, attributes));
+				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, ATTRIBUTE_LABEL_TEXT, attributes, false, true));
 				newField(lbl, attributes);
 			}
 			// <Textbox>
 			else if(qName.equals(TAG_TEXTFIELD))
 			{
-				EditTextField txtField = new EditTextField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_TEXTFIELD, attributes, ATTRIBUTE_FIELD_LABEL));
+				EditTextField txtField = new EditTextField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_TEXTFIELD, ATTRIBUTE_FIELD_LABEL, attributes, false, true));
 				txtField.setMinLength(readIntegerAttribute(ATTRIBUTE_TEXT_MINLENGTH, EditTextField.DEFAULT_MIN_LENGTH, attributes));
 				txtField.setMaxLength(readIntegerAttribute(ATTRIBUTE_TEXT_MAXLENGTH, EditTextField.DEFAULT_MAX_LENGTH, attributes));
 				txtField.setMultiline(readBooleanAttribute(ATTRIBUTE_TEXT_MULTILINE, EditTextField.DEFAULT_MULTILINE, attributes));
-				txtField.setInitialValue(readStringAttribute(EditTextField.DEFAULT_INITIAL_VALUE, attributes, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
+				txtField.setInitialValue(readStringAttribute(EditTextField.DEFAULT_INITIAL_VALUE, attributes, false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
 				newField(txtField, attributes);
 			}
 			// <Checkbox>
 			else if(qName.equals(TAG_CHECKBOX))
 			{
-				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_CHECKBOX, attributes, ATTRIBUTE_FIELD_LABEL));
+				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_CHECKBOX, ATTRIBUTE_FIELD_LABEL, attributes, false, true));
 				chbxField.setInitialValue(readBooleanAttribute(ATTRIBUTE_FIELD_DEFAULTVALUE, CheckBoxField.DEFAULT_INITIAL_VALUE, attributes));
 				newField(chbxField, attributes);
 			}
 			// <List> or <MultiList> (these are in fact just synonyms, but we added both to avoid confusing novice form designers with terminoly that refers to a multi-level list when they only need a flat list)  
 			else if(qName.equals(TAG_LIST) || qName.equals(TAG_MULTILIST))
 			{
-				MultiListField ml = new MultiListField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, attributes, ATTRIBUTE_FIELD_LABELS, ATTRIBUTE_FIELD_LABEL));
+				MultiListField ml = new MultiListField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, attributes, false, true, ATTRIBUTE_FIELD_LABELS, ATTRIBUTE_FIELD_LABEL));
 				ml.setPreSelect(readBooleanAttribute(ATTRIBUTE_LIST_PRESELECT, MultiListField.DEFAULT_PRESELECT, attributes));
 				newField(ml, attributes);
 				currentListItem = ml.getItemsRoot();
@@ -357,7 +356,7 @@ public class FormParser extends SubtreeParser
 			{
 				if(currentListItem != null)
 				{
-					currentListItem = new MultiListItem(currentListItem, readRequiredStringAttribute(TAG_LISTITEM, ATTRIBUTE_FIELD_VALUE, attributes));
+					currentListItem = new MultiListItem(currentListItem, readRequiredStringAttribute(TAG_LISTITEM, ATTRIBUTE_FIELD_VALUE, attributes, false, true));
 					if(readBooleanAttribute(ATTRIBUTE_LISTITEM_DEFAULT, false, attributes))
 					{
 						if(currentListItem.getParent().getDefaultChild() == null)
@@ -400,7 +399,7 @@ public class FormParser extends SubtreeParser
 		Page newPage = new Page(currentForm,
 								attributes == null ?
 									currentForm.getID() + "_page" :
-									readStringAttribute(currentForm.getID() + "_" + currentForm.getFields().size(), attributes, ATTRIBUTE_FIELD_ID));
+									readStringAttribute(currentForm.getID() + "_" + currentForm.getFields().size(), attributes, true, false, ATTRIBUTE_FIELD_ID));
 		newField(newPage, attributes);
 		currentPage = newPage; //!!! the newPage helper variable avoids that newField() adds the page to itselfs instead of the form!
 	}
@@ -432,9 +431,9 @@ public class FormParser extends SubtreeParser
 			else
 				currentPage.addField(f);
 			
-			// Remember ID of field itself (such that it can be jumped to):
-			if(idToField.put(f.getID(), f) != null)
-				throw new SAXException("Duplicate field ID: " + f.getID() + " in Form '" + currentForm.getID() + "'!");
+			// Remember ID (upper cased, for case insensitivity) of field itself, such that it can be jumped to:
+			if(idToField.put(f.getID().toUpperCase(), f) != null)
+				throw new SAXException("Duplicate field ID '" + f.getID() + "' in Form '" + currentForm.getID() + "'! (Note: field and form IDs are case insensitive)");
 			
 			// Set optionalness:
 			if(attributes != null)
@@ -446,10 +445,10 @@ public class FormParser extends SubtreeParser
 		{
 			// Remember jumps (always "intra-Form"):
 			if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
-				fieldToJumpId.put(f, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim());
+				fieldToJumpId.put(f, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // upper cased, for case insensitivity
 			
 			// f.setSkipOnBack(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK)); //TODO skip on back?
-			f.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes));
+			f.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes, true, false));
 			
 			// Which buttons are allowed to show:
 			f.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK, attributes));
@@ -480,7 +479,7 @@ public class FormParser extends SubtreeParser
 		setOptionalness(ma, attributes);
 		ma.setMax(readIntegerAttribute("max", MediaField.DEFAULT_MAX, attributes));
 		if(attributes.getValue(ATTRIBUTE_DISABLE_FIELD) != null)
-			mediaAttachToDisableId.put(ma, attributes.getValue(ATTRIBUTE_DISABLE_FIELD).trim());
+			mediaAttachToDisableId.put(ma, attributes.getValue(ATTRIBUTE_DISABLE_FIELD).trim().toUpperCase()); // upper cased, for case insensitivity
 	}
 	
 	@Override
@@ -517,26 +516,26 @@ public class FormParser extends SubtreeParser
 			Field startField = currentForm.getFields().get(0); // first field is the default start field
 			if(formStartFieldId != null) // try with field specified by ID in <Form startField="..."> (may be null)
 			{
-				Field specifiedStartField = currentForm.getField(formStartFieldId);
-				if(specifiedStartField == null)
+				Field specifiedStartField = currentForm.getField(formStartFieldId); // uses equalsIgnoreCase()
+				if(specifiedStartField == null) //TODO throw exception instead
 					addWarning("The specified start field (\"" + formStartFieldId + "\") of currentForm \"" + currentForm.getName() + "\" does not exist, using first field instead.");
 				else
 					startField = specifiedStartField;
 			}
 			currentForm.setStartField(startField);		
 			
-			// Create an EndField and an CancelField instance such that _END and _CANCEL jumps can be resolved (these don't need to be added as actual fields)
+			// Add EndField instances (these don't need to be added as actual fields)
 			for(EndField endF : EndField.GetEndFields(currentForm))
-				idToField.put(endF.getID(), endF);
+				idToField.put(endF.getID().toUpperCase(), endF); // upper cased, for case insensitivity (they should already be upper case, but just in case...)
 			
 			// Resolve jumps...
 			for(Entry<Field, String> jump : fieldToJumpId.entrySet())
 			{
 				Field target = idToField.get(jump.getValue());
 				if(target == null)
-					addWarning("Cannot resolve jump ID " + jump.getValue());
+					addWarning("Cannot resolve jump ID '" + jump.getValue() +  "' (case insensitive).");
 				else
-					jump.getKey().setJump(target);
+					jump.getKey().setJump(target); // set jump pointer (to a field object)
 			}
 			
 			// Resolve disabling of Choices by MediaAttachments...
@@ -544,7 +543,7 @@ public class FormParser extends SubtreeParser
 			{
 				Field target = idToField.get(disable.getValue());
 				if(target == null)
-					addWarning("Cannot resolve disable field ID " + disable.getValue());
+					addWarning("Cannot resolve disable field ID '" + disable.getValue() +  "' (case insensitive).");
 				else
 					disable.getKey().setDisableChoice((ChoiceField) target);
 			}

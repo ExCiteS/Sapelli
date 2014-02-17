@@ -9,6 +9,7 @@ import uk.ac.ucl.excites.sapelli.collector.project.ui.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.util.StringUtils;
 
 /**
  * @author Julia
@@ -31,7 +32,7 @@ public class CheckBoxField extends Field
 	 */
 	public CheckBoxField(Form form, String id, String label)
 	{
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + label.trim().replaceAll("\\s+", "_") : id));
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id));
 		this.label = label;
 		this.initialValue = DEFAULT_INITIAL_VALUE;
 	}

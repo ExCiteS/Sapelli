@@ -169,12 +169,14 @@ public abstract class Handler extends DefaultHandler
 	 * @param qName
 	 * @param attributeName
 	 * @param attributes
+	 * @param trim
+	 * @param allowEmpty
 	 * @return
 	 * @throws SAXException	when no matching attribute is found
 	 */
-	protected String readRequiredStringAttribute(String qName, String attributeName, Attributes attributes) throws SAXException
+	protected String readRequiredStringAttribute(String qName, String attributeName, Attributes attributes, boolean trim, boolean allowEmpty) throws SAXException
 	{
-		return readRequiredStringAttribute(qName, attributeName, null, attributes);
+		return readRequiredStringAttribute(qName, attributeName, null, attributes, trim, allowEmpty);
 	}
 
 	/**
@@ -182,13 +184,15 @@ public abstract class Handler extends DefaultHandler
 	 * 
 	 * @param qName
 	 * @param attributes
+	 * @param trim
+	 * @param allowEmpty
 	 * @param attributeNames	alternative attribute names ("synonyms")
 	 * @return
 	 * @throws SAXException	when no matching attribute is found
 	 */
-	protected String readRequiredStringAttribute(String qName, Attributes attributes, String... attributeNames) throws SAXException
+	protected String readRequiredStringAttribute(String qName, Attributes attributes, boolean trim, boolean allowEmpty, String... attributeNames) throws SAXException
 	{
-		return readRequiredStringAttribute(qName, null, attributes, attributeNames);
+		return readRequiredStringAttribute(qName, null, attributes, trim, allowEmpty, attributeNames);
 	}
 	
 	/**
@@ -199,12 +203,14 @@ public abstract class Handler extends DefaultHandler
 	 * @param attributeName
 	 * @param reason
 	 * @param attributes
+	 * @param trim
+	 * @param allowEmpty
 	 * @return
 	 * @throws SAXException	when no matching attribute is found
 	 */
-	protected String readRequiredStringAttribute(String qName, String attributeName, String reason, Attributes attributes) throws SAXException
+	protected String readRequiredStringAttribute(String qName, String attributeName, String reason, Attributes attributes, boolean trim, boolean allowEmpty) throws SAXException
 	{
-		return readRequiredStringAttribute(qName, reason, attributes, attributeName);
+		return readRequiredStringAttribute(qName, reason, attributes, trim, allowEmpty, attributeName);
 	}
 	
 	/**
@@ -214,20 +220,27 @@ public abstract class Handler extends DefaultHandler
 	 * @param qName
 	 * @param reason
 	 * @param attributes
+	 * @param trim
+	 * @param allowEmpty
 	 * @param attributeNames	alternative attribute names ("synonyms")
 	 * @return
 	 * @throws SAXException	when no matching attribute is found
 	 */
-	protected String readRequiredStringAttribute(String qName, String reason, Attributes attributes, String... attributeNames) throws SAXException
+	protected String readRequiredStringAttribute(String qName, String reason, Attributes attributes, boolean trim, boolean allowEmpty, String... attributeNames) throws SAXException
 	{
 		for(String attributeName : attributeNames)
 		{
 			String value = attributes.getValue(attributeName);
 			if(value != null)
-				return value;
+			{
+				if(allowEmpty || !"".equals(trim ? value.trim() : value))
+					return trim ? value.trim() : value;
+				else
+					throw new SAXException("Required attribute " + attributeName + " on tag <" + qName + "> is present but has an empty value."); // don't try next alternative because attribute was present
+			}
 			//else :  there is no attribute with the attributeName, try next alternative
 		}
-		throw new SAXException("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
+		throw new SAXException("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag <" + qName + ">" + (reason != null ? " (" + reason + ")" : "") + ".");
 	}
 	
 	/**
@@ -237,20 +250,38 @@ public abstract class Handler extends DefaultHandler
 	 * @param attributeName
 	 * @param defaultValue
 	 * @param attributes
+	 * @param trim
+	 * @param allowEmpty
 	 * @return
 	 */
-	protected String readStringAttribute(String attributeName, String defaultValue, Attributes attributes)
+	protected String readStringAttribute(String attributeName, String defaultValue, Attributes attributes, boolean trim, boolean allowEmpty)
 	{
-		return readStringAttribute(defaultValue, attributes, attributeName);
+		return readStringAttribute(defaultValue, attributes, trim, allowEmpty, attributeName);
 	}
 	
-	protected String readStringAttribute(String defaultValue, Attributes attributes, String... attributeNames)
+	/**
+	 * Read an optional String attribute with name from {@code attributeNames} (tried in order, first existing attribute wins), using the passed {@code attributes} collection.
+	 * When no such attribute exists the {@code defaultValue} is returned.
+	 * 
+	 * @param defaultValue
+	 * @param attributes
+	 * @param trim
+	 * @param allowEmpty
+	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @return
+	 */
+	protected String readStringAttribute(String defaultValue, Attributes attributes, boolean trim, boolean allowEmpty, String... attributeNames)
 	{
 		for(String attributeName : attributeNames)
 		{
 			String value = attributes.getValue(attributeName);
 			if(value != null)
-				return value;
+			{
+				if(allowEmpty || !"".equals(trim ? value.trim() : value))
+					return trim ? value.trim() : value;
+				else
+					return defaultValue; // attribute is present but empty -> don't try next alternative and return defaultValue
+			}
 			//else :  there is no attribute with the attributeName, try next alternative
 		}
 		return defaultValue;
@@ -314,8 +345,9 @@ public abstract class Handler extends DefaultHandler
 	 * @param attributes
 	 * @return
 	 * @throws SAXException	when no matching attribute is found
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	protected int readRequiredIntegerAttribute(String qName, String attributeName, Attributes attributes) throws SAXException
+	protected int readRequiredIntegerAttribute(String qName, String attributeName, Attributes attributes) throws SAXException, NumberFormatException
 	{
 		return readRequiredIntegerAttribute(qName, attributeName, null, attributes);
 	}
@@ -328,8 +360,9 @@ public abstract class Handler extends DefaultHandler
 	 * @param attributeNames	alternative attribute names ("synonyms")
 	 * @return
 	 * @throws SAXException	when no matching attribute is found
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	protected int readRequiredIntegerAttribute(String qName, Attributes attributes, String... attributeNames) throws SAXException
+	protected int readRequiredIntegerAttribute(String qName, Attributes attributes, String... attributeNames) throws SAXException, NumberFormatException
 	{
 		return readRequiredIntegerAttribute(qName, null, attributes, attributeNames);
 	}
@@ -344,8 +377,9 @@ public abstract class Handler extends DefaultHandler
 	 * @param attributes
 	 * @return
 	 * @throws SAXException	when no matching attribute is found
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	protected int readRequiredIntegerAttribute(String qName, String attributeName, String reason, Attributes attributes) throws SAXException
+	protected int readRequiredIntegerAttribute(String qName, String attributeName, String reason, Attributes attributes) throws SAXException, NumberFormatException
 	{
 		return readRequiredIntegerAttribute(qName, reason, attributes, attributeName);
 	}
@@ -360,14 +394,15 @@ public abstract class Handler extends DefaultHandler
 	 * @param attributeNames	alternative attribute names ("synonyms")
 	 * @return
 	 * @throws SAXException	when no matching attribute is found
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 */
-	protected int readRequiredIntegerAttribute(String qName, String reason, Attributes attributes, String... attributeNames) throws SAXException
+	protected int readRequiredIntegerAttribute(String qName, String reason, Attributes attributes, String... attributeNames) throws SAXException, NumberFormatException
 	{
 		for(String attributeName : attributeNames)
 		{
 			String strVal = attributes.getValue(attributeName);
 			if(strVal != null)
-				return Integer.parseInt(strVal.trim());
+				return Integer.parseInt(strVal.trim()); // throws NumberFormatException
 			//else :  there is no attribute with the attributeName, try next alternative
 		}
 		throw new SAXException("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
@@ -380,9 +415,10 @@ public abstract class Handler extends DefaultHandler
 	 * @param attributeName
 	 * @param defaultValue
 	 * @param attributes
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 * @return
 	 */
-	protected int readIntegerAttribute(String attributeName, int defaultValue, Attributes attributes)
+	protected int readIntegerAttribute(String attributeName, int defaultValue, Attributes attributes) throws NumberFormatException
 	{
 		return readIntegerAttribute(defaultValue, attributes, attributeName);
 	}
@@ -394,9 +430,10 @@ public abstract class Handler extends DefaultHandler
 	 * @param defaultValue
 	 * @param attributes
 	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 * @return
 	 */
-	protected int readIntegerAttribute(int defaultValue, Attributes attributes, String... attributeNames)
+	protected int readIntegerAttribute(int defaultValue, Attributes attributes, String... attributeNames) throws NumberFormatException
 	{
 		for(String attributeName : attributeNames)
 		{
@@ -408,7 +445,7 @@ public abstract class Handler extends DefaultHandler
 				if(strVal.trim().isEmpty())
 					return defaultValue;
 				else
-					return Integer.parseInt(strVal.trim());
+					return Integer.parseInt(strVal.trim()); // throws NumberFormatException
 			}
 		}
 		return defaultValue;
@@ -421,9 +458,10 @@ public abstract class Handler extends DefaultHandler
 	 * @param attributeName
 	 * @param defaultValue
 	 * @param attributes
+	 * @throws NumberFormatException when the attribute value string does not hold a valid float (e.g. because it is empty)
 	 * @return
 	 */
-	protected float readFloatAttribute(String attributeName, float defaultValue, Attributes attributes)
+	protected float readFloatAttribute(String attributeName, float defaultValue, Attributes attributes) throws NumberFormatException
 	{
 		return readFloatAttribute(defaultValue, attributes, attributeName);
 	}
@@ -435,9 +473,10 @@ public abstract class Handler extends DefaultHandler
 	 * @param defaultValue
 	 * @param attributes
 	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @throws NumberFormatException when the attribute value string does not hold a valid float (e.g. because it is empty)
 	 * @return
 	 */
-	protected float readFloatAttribute(float defaultValue, Attributes attributes, String... attributeNames)
+	protected float readFloatAttribute(float defaultValue, Attributes attributes, String... attributeNames) throws NumberFormatException
 	{
 		for(String attributeName : attributeNames)
 		{
@@ -449,7 +488,7 @@ public abstract class Handler extends DefaultHandler
 				if(strVal.trim().isEmpty())
 					return defaultValue;
 				else
-					return Float.parseFloat(strVal.trim());
+					return Float.parseFloat(strVal.trim()); // throws NumberFormatException
 			}
 		}
 		return defaultValue;

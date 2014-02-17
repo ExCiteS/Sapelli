@@ -153,16 +153,16 @@ public class ProjectParser extends DocumentParser
 											Project.PROJECT_ID_V1X_TEMP : // for format = 1 we set a temp id value (will be replaced by Form:schema-id) 
 											readRequiredIntegerAttribute(qName, ATTRIBUTE_PROJECT_ID, "because format is >= 2", attributes), // id is required for format >= 2
 										projectHash,
-										readRequiredStringAttribute(TAG_PROJECT, ATTRIBUTE_PROJECT_NAME, attributes),
-										readStringAttribute(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, attributes),
+										readRequiredStringAttribute(TAG_PROJECT, ATTRIBUTE_PROJECT_NAME, attributes, true, false),
+										readStringAttribute(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, attributes, true, false),
 										basePath,
 										createProjectFolder);
 				
 				// Set variant:
-				project.setVariant(readStringAttribute(ATTRIBUTE_PROJECT_VARIANT, null, attributes));
+				project.setVariant(readStringAttribute(ATTRIBUTE_PROJECT_VARIANT, null, attributes, true, false));
 				
 				// Read startForm ID:
-				startFormID = readStringAttribute(ATTRIBUTE_PROJECT_START_FORM, null, attributes);
+				startFormID = readStringAttribute(ATTRIBUTE_PROJECT_START_FORM, null, attributes, true, false); 
 				
 				// Add subtree parsers:
 				addSubtreeParser(new ConfigurationParser(this));
@@ -200,7 +200,7 @@ public class ProjectParser extends DocumentParser
 			else
 			{
 				// Resolve startForm
-				Form startForm = project.getForm(startFormID); //will return null if startFormID is null or there is no form with that name
+				Form startForm = project.getForm(startFormID); // will return null if startFormID is null or there is no form with that name, uses equalsIgnoreCase()
 				if(startForm != null)
 					project.setStartForm(startForm);
 				//else: first form of project will remain the startForm
@@ -209,7 +209,7 @@ public class ProjectParser extends DocumentParser
 				for(Entry<Relationship, String> entry : relationshipToFormID.entrySet())
 				{
 					Relationship rel = entry.getKey();
-					Form relatedForm = project.getForm(entry.getValue());
+					Form relatedForm = project.getForm(entry.getValue()); // uses equalsIgnoreCase()
 					if(relatedForm == null)
 						throw new SAXException("Relationship \"" + rel.getID() + "\" in form \"" + rel.getForm().getID() + "\" refers to unknown related form \"" + entry.getValue() + "\".");
 					rel.setRelatedForm(relatedForm);

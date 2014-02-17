@@ -52,7 +52,7 @@ public abstract class Field
 	
 	public Field(Form form, String id)
 	{
-		if(id == null || id.isEmpty())
+		if(id == null || id.trim().isEmpty())
 			throw new NullPointerException("ID cannot be null or empty.");
 		this.id = id.trim();
 		this.form = form;

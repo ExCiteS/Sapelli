@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <lint>
     <issue id="DefaultLocale">
+        <ignore path="src/uk/ac/ucl/excites/sapelli/collector/project/model/fields/ButtonField.java" />
         <ignore path="src/uk/ac/ucl/excites/sapelli/collector/project/model/fields/MediaField.java" />
         <ignore path="src/uk/ac/ucl/excites/sapelli/collector/project/model/fields/OrientationField.java" />
+        <ignore path="src/uk/ac/ucl/excites/sapelli/collector/project/model/Form.java" />
+        <ignore path="src/uk/ac/ucl/excites/sapelli/collector/project/xml/FormParser.java" />
+        <ignore path="src/uk/ac/ucl/excites/sapelli/collector/project/xml/ProjectParser.java" />
     </issue>
 </lint>

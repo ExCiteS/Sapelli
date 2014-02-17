@@ -37,7 +37,7 @@ public class LabelField extends Field
 	 */
 	public LabelField(Form form, String id, String text)
 	{	
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + StringUtils.replaceWhitespace(text.trim(), "_") : id));
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (text.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(text.trim(), "_")) : id));
 		this.text = text;
 		this.noColumn = true;
 	}

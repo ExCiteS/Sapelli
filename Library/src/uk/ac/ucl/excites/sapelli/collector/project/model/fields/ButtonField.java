@@ -51,7 +51,7 @@ public class ButtonField extends Field
 	 */
 	public ButtonField(Form form, String id, String label)
 	{	
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + StringUtils.replaceWhitespace(label.trim(), "_") : id));
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id));
 		this.label = label;
 		setColumn(DEFAULT_COLUMN);
 	}
