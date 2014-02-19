@@ -1,2 +1,2 @@
-adb pull /mnt/sdcard/000_ExCiteS/File.apk File_here.apk
+adb pull /mnt/sdcard/000-Sapelli/File.apk File_here.apk
 pause
