@@ -57,12 +57,12 @@ public class EndField extends Field
 	
 	/**
 	 * Creates the default EndField for the form, which will always save the record and then to the next behaviour specified by the form's "next"
-	 * For v1.x compatiblity only
+	 * For v1.x compatibility only
 	 * 
 	 * @param form
 	 * @param end	whether this is an _END field (true) or an _CANCEL field (false)
 	 */
-	public EndField(Form form, boolean end)
+	private EndField(Form form, boolean end)
 	{
 		super(form, end ? END : CANCEL);
 		this.next = end ? form.getNext() : Next.LOOPFORM;

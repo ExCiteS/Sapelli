@@ -150,14 +150,14 @@ public class Form
 		if(currentIndex < 0)
 			throw new IllegalArgumentException("The current field is not part of this form.");
 		// Check for jump field (possibly the one of a parent in case of ChoiceField):
-		Field next = current.getJump();
-		if(next == null)
+		Field nextF = current.getJump();
+		if(nextF == null)
 			// No jump is set, check for field below current one:
 			if(currentIndex + 1 < fields.size())
-				next = fields.get(currentIndex + 1); // go to next field in the form
+				nextF = fields.get(currentIndex + 1); // go to next field in the form
 			else
-				next = new EndField(this, true); // current field is the last of the form, go to default EndField
-		return next; // use jump as next
+				nextF = new EndField(this, true, next); // current field is the last of the form, go to the form's "next", but save the record first
+		return nextF; // use jump as next
 	}
 
 	/**
