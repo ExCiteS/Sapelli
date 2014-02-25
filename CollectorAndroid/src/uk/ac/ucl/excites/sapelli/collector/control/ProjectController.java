@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.collector;
+package uk.ac.ucl.excites.sapelli.collector.control;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,7 +32,6 @@ import uk.ac.ucl.excites.sapelli.collector.project.model.fields.OrientationField
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.lists.MultiListField;
-import uk.ac.ucl.excites.sapelli.collector.project.ui.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.ControlsState;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
@@ -52,7 +51,7 @@ import android.util.Log;
  * @author mstevens, Michalis Vitos, Julia
  * 
  */
-public class ProjectController implements Controller, LocationListener, OrientationListener
+public class ProjectController extends Controller implements LocationListener, OrientationListener
 {
 
 	// STATICS--------------------------------------------------------
@@ -71,6 +70,9 @@ public class ProjectController implements Controller, LocationListener, Orientat
 
 	private long deviceIDHash; // 32 bit _unsigned_ CRC32 hashcode
 
+	private Stack<FormSession> formHistory;
+	private FormSession currentFormSession;
+	
 	private Form currentForm;
 	private Field currentField;
 	private Set<Field> tempDisabledFields;
@@ -103,6 +105,7 @@ public class ProjectController implements Controller, LocationListener, Orientat
 		}
 		
 		// Collections:
+		formHistory = new Stack<FormSession>();
 		fieldHistory = new Stack<Field>();
 		tempDisabledFields = new HashSet<Field>();
 		currentMediaAttachments = new ArrayList<File>();
@@ -373,6 +376,9 @@ public class ProjectController implements Controller, LocationListener, Orientat
 	
 	private void saveRecordAndAttachments()
 	{
+		if(!currentForm.isProducesRecords()) //!!!
+			return;
+		
 		// Finalise the currentRecord:
 		currentForm.finish(currentRecord); // sets end-time if necessary
 

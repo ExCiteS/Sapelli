@@ -3,11 +3,11 @@
  */
 package uk.ac.ucl.excites.sapelli.collector.project.model.fields.lists;
 
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.dictionary.Dictionary;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.project.ui.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.IntegerColumn;
 

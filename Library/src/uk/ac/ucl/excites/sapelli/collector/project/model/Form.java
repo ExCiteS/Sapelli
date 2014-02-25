@@ -65,6 +65,7 @@ public class Form
 	// Dynamics-------------------------------------------------------
 	private final Project project;
 	private final int index;
+	private boolean producesRecords = true;
 	private Schema schema;
 	private final String id;
 
@@ -491,8 +492,29 @@ public class Form
 		return index;
 	}
 
+	/**
+	 * @return the producesRecords
+	 */
+	public boolean isProducesRecords()
+	{
+		if(producesRecords)
+			getSchema(); // make sure getSchema() is at least called once
+		return producesRecords;
+	}
+
+	/**
+	 * The returned Schema object will contain all columns defined by fields in the form, plus the implicitly added key
+	 * columns (StartTime & DeviceID) and optional EndTime column. However, those implicit columns are only added if
+	 * at least 1 user-defined field has a column. If there are no user-defined fields with columns then no implicit
+	 * columns are added and then the whole schema is pointless, therefore in that case this method will return null
+	 * instead of a columnless Schema object and the {@link #producesRecords} variable will be set to {@code false}. 
+	 * 
+	 * @return
+	 */
 	public Schema getSchema()
 	{
+		if(!producesRecords)
+			return null;
 		if(schema == null)
 		{
 			//create new one:
@@ -528,12 +550,19 @@ public class Form
 			
 			// Columns for user-defined fields:
 			if(hasUserDefinedColumns)
+			{
 				for(Field f : fields)
 					if(!f.isNoColumn())
 						schema.addColumns(f.getColumns());
-			
-			// Seal & store the schema:
-			schema.seal();
+				
+				// Seal & store the schema:
+				schema.seal();
+			}
+			else // same as: if(schema.getColumns().isEmpty()) 
+			{
+				producesRecords = false; // this will avoid that we try to generate a schema again
+				schema = null;
+			}			
 		}
 		return schema;
 	}
@@ -553,20 +582,28 @@ public class Form
 
 	public Record newEntry(long deviceID)
 	{
-		Record record = new Record(getSchema()); //call getSchema() once to make sure the schema (and columns) are initialised
-
-		// Set current time as start timestamp
-		((DateTimeColumn) schema.getColumn(COLUMN_TIMESTAMP_START)).storeValue(record, new DateTime() /*= now*/);
-
-		// Set deviceID
-		((IntegerColumn) schema.getColumn(COLUMN_DEVICE_ID)).storeValue(record, deviceID);
-
-		return record;
+		if(isProducesRecords())
+		{
+			Record record = new Record(getSchema());
+	
+			// Set current time as start timestamp
+			((DateTimeColumn) schema.getColumn(COLUMN_TIMESTAMP_START)).storeValue(record, new DateTime() /*= now*/);
+	
+			// Set deviceID
+			((IntegerColumn) schema.getColumn(COLUMN_DEVICE_ID)).storeValue(record, deviceID);
+	
+			return record;
+		}
+		else
+			return null;
 	}
 	
 	public Column<?> getColumnFor(Field field)
 	{
-		return getSchema().getColumn(field.getID());
+		if(isProducesRecords())
+			return getSchema().getColumn(field.getID());
+		else
+			return null;
 	}
 	
 	public void finish(Record record)

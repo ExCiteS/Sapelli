@@ -2,8 +2,8 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import java.util.HashMap;
 
-import uk.ac.ucl.excites.sapelli.collector.ProjectController;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
+import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.CheckBoxField;

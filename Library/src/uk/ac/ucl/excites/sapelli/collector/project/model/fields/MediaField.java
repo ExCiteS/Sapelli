@@ -8,9 +8,9 @@ import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.data.FormEntry;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.project.ui.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.xml.FormParser;
 import uk.ac.ucl.excites.sapelli.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;

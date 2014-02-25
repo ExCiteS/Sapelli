@@ -6,8 +6,8 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 import java.io.File;
 import java.io.IOException;
 
-import uk.ac.ucl.excites.sapelli.collector.ProjectController;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;

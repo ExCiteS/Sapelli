@@ -5,12 +5,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.project.model.dictionary.Dictionary;
 import uk.ac.ucl.excites.sapelli.collector.project.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.project.ui.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;

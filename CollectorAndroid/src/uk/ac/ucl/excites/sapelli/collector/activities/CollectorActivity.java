@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 import uk.ac.ucl.excites.sapelli.R;
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;

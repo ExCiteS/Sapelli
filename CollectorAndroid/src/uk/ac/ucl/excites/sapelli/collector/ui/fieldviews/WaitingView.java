@@ -3,7 +3,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import uk.ac.ucl.excites.sapelli.collector.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
