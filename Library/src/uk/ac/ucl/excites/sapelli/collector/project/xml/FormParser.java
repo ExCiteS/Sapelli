@@ -407,37 +407,51 @@ public class FormParser extends SubtreeParser
 	/**
 	 * Adds field to current currentForm or currentPage, sets optionalness, remembers id & jump & reads various Field attributes
 	 * 
-	 * @param f		the Field object
+	 * @param field		the Field object
 	 * @param attributes	may be null for implicit fields (fields that are inserted by the parser but do not explicitly appear in the XML, e.g. the Page for a singlePage form) 
 	 * @throws SAXException
 	 */
-	private void newField(Field f, Attributes attributes) throws SAXException
+	private void newField(Field field, Attributes attributes) throws SAXException
 	{
 		// Warn about IDs starting with '_':
-		if(f.getID().startsWith("_"))
+		if(field.getID().startsWith("_"))
 		{
 			// For really stupid cases ;-):
 			for(EndField ef : EndField.GetEndFields(currentForm))
-				if(ef.getID().equals(f.getID()))
-					throw new SAXException(f.getID() + " is a reserved ID, don't use it for user-defined fields.");
-			addWarning("Please avoid field IDs starting with '_' (" + f.getID() + ")."); 
+				if(ef.getID().equals(field.getID()))
+					throw new SAXException(field.getID() + " is a reserved ID, don't use it for user-defined fields.");
+			addWarning("Please avoid field IDs starting with '_' (" + field.getID() + ")."); 
 		}
 		
 		// If the field is a root field: add it to the form or page, remember its ID, and set its optionalness:
-		if(f.isRoot())
+		if(field.isRoot())
 		{
 			if(currentPage == null)
-				currentForm.addField(f);
+				currentForm.addField(field);
 			else
-				currentPage.addField(f);
+				currentPage.addField(field);
 			
 			// Remember ID (upper cased, for case insensitivity) of field itself, such that it can be jumped to:
-			if(idToField.put(f.getID().toUpperCase(), f) != null)
-				throw new SAXException("Duplicate field ID '" + f.getID() + "' in Form '" + currentForm.getID() + "'! (Note: field and form IDs are case insensitive)");
+			if(idToField.put(field.getID().toUpperCase(), field) != null)
+				throw new SAXException("Duplicate field ID '" + field.getID() + "' in Form '" + currentForm.getID() + "'! (Note: field and form IDs are case insensitive)");
 			
 			// Set optionalness:
 			if(attributes != null)
-				setOptionalness(f, attributes);
+			{
+				String optText = attributes.getValue(ATTRIBUTE_FIELD_OPTIONAL);
+				Optionalness opt = currentPage == null ? Field.DEFAULT_OPTIONAL : currentPage.getOptional(); // use default optionalness or that of the containing page
+				if(optText != null && !optText.trim().isEmpty())
+				{	
+					optText = optText.trim();
+					if("always".equalsIgnoreCase(optText) || Boolean.TRUE.toString().equalsIgnoreCase(optText))
+						opt = Optionalness.ALWAYS;
+					else if("notIfReached".equalsIgnoreCase(optText))
+						opt = Optionalness.NOT_IF_REACHED;
+					else if("never".equalsIgnoreCase(optText) || Boolean.FALSE.toString().equalsIgnoreCase(optText))
+						opt = Optionalness.NEVER;
+				}
+				field.setOptional(opt);				
+			}
 		}
 		
 		// Read various optional Field attributes: 
@@ -445,41 +459,36 @@ public class FormParser extends SubtreeParser
 		{
 			// Remember jumps (always "intra-Form"):
 			if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
-				fieldToJumpId.put(f, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // upper cased, for case insensitivity
+				fieldToJumpId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // upper cased, for case insensitivity
 			
 			// f.setSkipOnBack(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK)); //TODO skip on back?
-			f.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes, true, false));
+			field.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes, true, false));
 			
 			// Which buttons are allowed to show:
-			f.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK, attributes));
-			f.setShowCancel(readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL, attributes));
-			f.setShowForward(readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD, attributes));
+			field.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK, attributes));
+			field.setShowCancel(readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL, attributes));
+			field.setShowForward(readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD, attributes));
 		}
-	}
-
-	protected void setOptionalness(Field field, Attributes attributes)
-	{
-		String optText = attributes.getValue(ATTRIBUTE_FIELD_OPTIONAL);
-		Optionalness opt = Field.DEFAULT_OPTIONAL;
-		if(optText != null && !optText.trim().isEmpty())
-		{	
-			optText = optText.trim();
-			if("always".equalsIgnoreCase(optText) || "true".equalsIgnoreCase(optText))
-				opt = Optionalness.ALWAYS;
-			else if("notIfReached".equalsIgnoreCase(optText))
-				opt = Optionalness.NOT_IF_REACHED;
-			else if("never".equalsIgnoreCase(optText) || "false".equalsIgnoreCase(optText))
-				opt = Optionalness.NEVER;
-		}
-		field.setOptional(opt);
 	}
 	
 	private void mediaAttachmentAttributes(MediaField ma, Attributes attributes)
 	{
-		setOptionalness(ma, attributes);
 		ma.setMax(readIntegerAttribute("max", MediaField.DEFAULT_MAX, attributes));
 		if(attributes.getValue(ATTRIBUTE_DISABLE_FIELD) != null)
 			mediaAttachToDisableId.put(ma, attributes.getValue(ATTRIBUTE_DISABLE_FIELD).trim().toUpperCase()); // upper cased, for case insensitivity
+	}
+	
+	protected void closePage()
+	{
+		/*
+		 * The 'optional' attribute of a page is only used to inherit from by contained fields (see newField()),
+		 * at runtime it doesn't have meaning in itself because whether or not a page can be skipped or left is
+		 * to be decided based on the optionalness and acquired values of the contained fields.
+		 * Because of this the optionalness of the page is reset to ALWAYS after all contained fields are parsed.
+		 */
+		if(currentPage != null)
+			currentPage.setOptional(Optionalness.ALWAYS); 
+		currentPage = null;
 	}
 	
 	@Override
@@ -504,13 +513,13 @@ public class FormParser extends SubtreeParser
 		// </Page>
 		else if(qName.equals(TAG_PAGE))
 		{
-			currentPage = null;
+			closePage();
 		}
 		// </Form>
 		else if(qName.equals(TAG_FORM))
 		{
 			// in case of a singePage form:
-			currentPage = null;
+			closePage();
 			
 			// Resolve/set currentForm start field:
 			Field startField = currentForm.getFields().get(0); // first field is the default start field
