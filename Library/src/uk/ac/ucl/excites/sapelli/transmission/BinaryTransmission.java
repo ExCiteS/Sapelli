@@ -136,13 +136,13 @@ public abstract class BinaryTransmission extends Transmission
 				System.out.println("Using provided schema (Usage ID: " + schemaToUse.getUsageID() + "; Usage Sub-ID: " + schemaToUse.getUsageSubID() + ") instead of the one indicated by the transmission (Usage ID: " + schemaUsageID + "; Usage Sub-ID: " + schemaUsageSubID + ").");
 			
 			// Look-up schema unless one was provided:
-			schema = (schemaToUse == null ? modelProvider.getSchema(schemaUsageID, schemaUsageSubID) : schemaToUse);
+			schema = (schemaToUse == null ? client.getSchema(schemaUsageID, schemaUsageSubID) : schemaToUse);
 			if(schema == null)
 				throw new IllegalStateException("Cannot decode message because schema (Usage ID: " + schemaUsageID + "; Usage Sub-ID: " + schemaUsageSubID + ") is unknown");
 			
 			// Look-up settings & columns to factor out:
-			settings = (settingsToUse == null ? modelProvider.getSettingsFor(schema) : settingsToUse);
-			setColumnsToFactorOut(modelProvider.getFactoredOutColumnsFor(schema));
+			settings = (settingsToUse == null ? client.getSettingsFor(schema) : settingsToUse);
+			setColumnsToFactorOut(client.getFactoredOutColumnsFor(schema));
 			
 			// Read encrypted, compressed & encoded records:
 			payloadBytes = in.readBytes(in.available());
@@ -228,7 +228,7 @@ public abstract class BinaryTransmission extends Transmission
 			//Read records:
 			while(in.bitsAvailable() >= schema.getMinimumSize(columnsToFactorOut))
 			{
-				r = new Record(schema);
+				r = client.getNewRecord(schema);
 				r.readFromBitStream(in, columnsToFactorOut);
 				//Set factored out values:
 				if(columnsToFactorOut != null)

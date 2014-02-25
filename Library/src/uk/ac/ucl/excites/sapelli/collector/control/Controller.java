@@ -9,27 +9,22 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
+import uk.ac.ucl.excites.sapelli.collector.project.data.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form.Next;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ChoiceField;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EditTextField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.PhotoField;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.lists.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.ControlsState;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.util.Logger;
 import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
 
@@ -313,7 +308,7 @@ public abstract class Controller
 	
 	public boolean enterBelongsTo(Relationship rel)
 	{
-		Record foreignRecord = null;
+		CollectorRecord foreignRecord = null;
 		
 		// Try to obtain foreign record from previous form:
 		if(prevFormSession != null)
@@ -326,7 +321,7 @@ public abstract class Controller
 			}
 		}
 		// Try to obtain foreign record by database query:
-		if(foreignRecord == null && rel.isHoldForeignRecord())
+		if(rel.isHoldForeignRecord() && foreignRecord == null)
 		{
 			//foreignRecord = dao.retrieve(/* last record of related form */);
 		}
@@ -475,7 +470,7 @@ public abstract class Controller
 	/**
 	 * @return the currentRecord
 	 */
-	public Record getCurrentRecord()
+	public CollectorRecord getCurrentRecord()
 	{
 		return currFormSession.record;
 	}
@@ -532,10 +527,10 @@ public abstract class Controller
 		
 		static public FormSession Create(Form form, long deviceIDHash)
 		{
-			return new FormSession(form, Mode.CREATE, form.isProducesRecords() ? form.newEntry(deviceIDHash) : null);
+			return new FormSession(form, Mode.CREATE, form.isProducesRecords() ? form.newRecord(deviceIDHash) : null);
 		}
 		
-		static public FormSession Edit(Form form, Record record)
+		static public FormSession Edit(Form form, CollectorRecord record)
 		{
 			return new FormSession(form, Mode.EDIT, record);
 		}
@@ -543,7 +538,7 @@ public abstract class Controller
 		//Dynamic
 		Form form;
 		Mode mode;
-		Record record;
+		CollectorRecord record;
 		Stack<Field> fieldHistory;
 		Field currField = null;
 		Set<Field> tempDisabledFields;
@@ -555,7 +550,7 @@ public abstract class Controller
 		 * @param mode
 		 * @param record
 		 */
-		private FormSession(Form form, Mode mode, Record record)
+		private FormSession(Form form, Mode mode, CollectorRecord record)
 		{
 			this.form = form;
 			this.mode = mode;

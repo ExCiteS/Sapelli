@@ -25,7 +25,7 @@ public interface StorageClient
 	 * @param schemaVersion
 	 * @return	a matching {@link Schema} instance, or {@code null} if not found
 	 */
-	public Schema getSchemaV1(int schemaID, int schemaVersion); 
+	public Schema getSchemaV1(int schemaID, int schemaVersion);
 	
 	/**
 	 * Returns a newly created {@link Record} for the given {@link Schema}.

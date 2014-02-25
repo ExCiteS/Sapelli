@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.collector.project.data.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.LocationField;
@@ -577,14 +578,14 @@ public class Form
 		if(getSchema().equals(newSchema, true, true)) // check if the schema is identical/equivalent to the one we have/need 
 			this.schema = newSchema; // we accept the new one
 		else
-			throw new IllegalArgumentException("The provived schema is not compatible with this form!");
+			throw new IllegalArgumentException("The provided schema is not compatible with this form!");
 	}*/
 
-	public Record newEntry(long deviceID)
+	public CollectorRecord newRecord(long deviceID)
 	{
 		if(isProducesRecords())
 		{
-			Record record = new Record(getSchema());
+			CollectorRecord record = new CollectorRecord(this);
 	
 			// Set current time as start timestamp
 			((DateTimeColumn) schema.getColumn(COLUMN_TIMESTAMP_START)).storeValue(record, new DateTime() /*= now*/);

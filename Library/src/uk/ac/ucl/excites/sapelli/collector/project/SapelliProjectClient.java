@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
+import uk.ac.ucl.excites.sapelli.collector.project.data.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -48,12 +49,23 @@ public class SapelliProjectClient implements TransmissionClient
 		else
 			return null;
 	}
-
+	
 	@Override
 	public Record getNewRecord(Schema schema)
 	{
-		//TODO start using FormRecord instead!
-		return new Record(schema);
+		Project proj = dao.retrieveProject(schema.getUsageID()); //usageID = Project#hash
+		if(proj != null)
+		{
+			Form frm = proj.getForm(schema.getUsageSubID()); //usageSubID = Form#index
+			if(frm != null)
+			{
+				if(frm.isProducesRecords())
+					return new CollectorRecord(frm); // CollectorRecord instance
+				else
+					return null;
+			}
+		}
+		return new Record(schema); // plain Record instance
 	}
 
 	/* (non-Javadoc)

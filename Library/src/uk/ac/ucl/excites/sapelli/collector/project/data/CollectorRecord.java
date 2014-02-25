@@ -11,28 +11,24 @@ import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 
 /**
- * Simple wrapper around Record to make Form-specific columns/values more easily accessible
+ * Subclass of Record to represent records create by the Sapelli Collector
  * 
  * @author mstevens
- *
  */
-public class FormEntry implements Comparable<FormEntry>
+public class CollectorRecord extends Record implements Comparable<CollectorRecord>
 {
 
 	private Form form;
-	private Record record;
-	private Schema schema;
 	
-	public FormEntry(Form form, Record record)
-	{
-		if(!record.getSchema().equals(form.getSchema()))
-			throw new IllegalArgumentException("Schema mismatch!");
+	/**
+	 * @param form
+	 */
+	public CollectorRecord(Form form)
+	{	
+		super(form.getSchema());
 		this.form = form;
-		this.record = record;
-		this.schema = form.getSchema();
 	}
 	
 	public DateTime getStartTime()
@@ -44,22 +40,22 @@ public class FormEntry implements Comparable<FormEntry>
 	{
 		DateTimeColumn dtCol = (DateTimeColumn) schema.getColumn(Form.COLUMN_TIMESTAMP_START);
 		if(asStoredBinary)
-			return dtCol.retrieveValueAsStoredBinary(record);
+			return dtCol.retrieveValueAsStoredBinary(this);
 		else
-			return dtCol.retrieveValue(record);
+			return dtCol.retrieveValue(this);
 	}
 	
 	public DateTime getEndTime()
 	{
 		if(form.isStoreEndTime())
-			return ((DateTimeColumn) schema.getColumn(Form.COLUMN_TIMESTAMP_END)).retrieveValue(record);
+			return ((DateTimeColumn) schema.getColumn(Form.COLUMN_TIMESTAMP_END)).retrieveValue(this);
 		else
 			return null;
 	}
 	
 	public long getDeviceID()
 	{
-		return ((IntegerColumn) schema.getColumn(Form.COLUMN_DEVICE_ID)).retrieveValue(record);
+		return ((IntegerColumn) schema.getColumn(Form.COLUMN_DEVICE_ID)).retrieveValue(this);
 	}
 	
 	/**
@@ -102,7 +98,7 @@ public class FormEntry implements Comparable<FormEntry>
 	{
 		if(rootChoiceField.isNoColumn())
 			throw new IllegalArgumentException("Field \"" + rootChoiceField.getID() + "\" has no column.");
-		Long choiceIdx = (Long) schema.getColumn(rootChoiceField.getID()).retrieveValue(record);
+		Long choiceIdx = (Long) schema.getColumn(rootChoiceField.getID()).retrieveValue(this);
 		if(choiceIdx != null)
 			return rootChoiceField.getDictionary().lookupItem(choiceIdx.intValue());
 		else
@@ -115,7 +111,7 @@ public class FormEntry implements Comparable<FormEntry>
 	 * @see java.lang.Comparable#compareTo(java.lang.Object)
 	 */
 	@Override
-	public int compareTo(FormEntry another)
+	public int compareTo(CollectorRecord another)
 	{
 		return this.getStartTime().compareTo(another.getStartTime());
 	}
@@ -126,22 +122,6 @@ public class FormEntry implements Comparable<FormEntry>
 	public Form getForm()
 	{
 		return form;
-	}
-
-	/**
-	 * @return the record
-	 */
-	public Record getRecord()
-	{
-		return record;
-	}
-
-	/**
-	 * @return the schema
-	 */
-	public Schema getSchema()
-	{
-		return schema;
 	}
 	
 //	/**
