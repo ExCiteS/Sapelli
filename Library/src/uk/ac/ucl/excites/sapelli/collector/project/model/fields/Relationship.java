@@ -70,8 +70,10 @@ public class Relationship extends Field
 	public Relationship(Form form, String id, Type type)
 	{
 		super(form, id);
+		if(type == Type.ONE_TO_ONE)
+			throw new IllegalArgumentException("One-to-one relationships are not yet implemented."); //TODO implemented One-to-one relationships (still needs XML syntax)
 		if(type == Type.MANY_TO_MANY)
-			throw new IllegalArgumentException("Many-to-many relationships are not yet implemented.");
+			throw new IllegalArgumentException("Many-to-many relationships are not yet implemented."); //TODO implemented Many-to-many relationships (still needs XML syntax)
 		this.type = type; 
 		noColumn = (type == Type.LINK ? true : false);
 	}
@@ -156,7 +158,19 @@ public class Relationship extends Field
 	@Override
 	public boolean enter(Controller controller)
 	{
-		return controller.enterRelationship(this);
+		switch(type)
+		{
+			case LINK:
+				return controller.enterLinksTo(this);
+			case ONE_TO_ONE:
+				return false; //TODO
+			case MANY_TO_ONE:
+				return controller.enterBelongsTo(this);
+			case MANY_TO_MANY:
+				return false; //TODO
+			default :
+				return false;
+		}
 	}
 
 	/* (non-Javadoc)

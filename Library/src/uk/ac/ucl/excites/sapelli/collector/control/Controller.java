@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import org.joda.time.DateTime;
+
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form.Next;
@@ -302,26 +304,45 @@ public abstract class Controller
 		return true;
 	}
 	
-	public boolean enterRelationship(Relationship rel)
+	public boolean enterLinksTo(Relationship rel)
 	{
-		switch(rel.getType())
+	
+		
+		return false;
+	}
+	
+	public boolean enterBelongsTo(Relationship rel)
+	{
+		Record foreignRecord = null;
+		
+		// Try to obtain foreign record from previous form:
+		if(prevFormSession != null)
 		{
-			case LINK:
-				//TODO
-				break;
-			case ONE_TO_ONE:
-				//TODO
-				break;
-			case MANY_TO_ONE:
-				//TODO
-				break;
-			case MANY_TO_MANY:
-				throw new IllegalStateException("Many-to-many relationships are not yet implemented.");
+			if(prevFormSession.form == rel.getRelatedForm()) // we have come back from the related form
+				foreignRecord = prevFormSession.record;
+			else if(rel.isHoldForeignRecord() && prevFormSession.form == currFormSession.form) // we have looped within the same form & we are allowed to hold on to the ref
+			{
+				//foreignRecord = dao.retrieveRecord(/* key taken from prevFormSession.record */);
+			}
+		}
+		// Try to obtain foreign record by database query:
+		if(foreignRecord == null && rel.isHoldForeignRecord())
+		{
+			//foreignRecord = dao.retrieve(/* last record of related form */);
 		}
 		
-		//TODO upon coming back ...
+		//TODO Check if the foreignRecord meets the constraints:
+		//	make it null if it doesn't
 		
-		return true;
+		if(foreignRecord != null)
+		{	
+			//TODO Refer to foreign record from current record
+			goForward(false);
+		}
+		else
+			openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); ; // Open related from to create a new foreign record
+		
+		return false;
 	}
 	
 	/**
