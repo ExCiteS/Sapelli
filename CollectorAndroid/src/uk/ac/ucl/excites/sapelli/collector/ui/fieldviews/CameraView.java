@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
@@ -59,7 +59,7 @@ public class CameraView extends ViewSwitcher implements FieldUI, AdapterView.OnI
 	
 	private CollectorView collectorView;
 
-	private ProjectController controller;
+	private CollectorController controller;
 	private Project project;
 	private PhotoField photoField;
 
@@ -77,7 +77,7 @@ public class CameraView extends ViewSwitcher implements FieldUI, AdapterView.OnI
 	private HandleImage handleImage;
 
 	@SuppressWarnings("deprecation")
-	public CameraView(Context context, CollectorView collectorView, ProjectController controller, Field field)
+	public CameraView(Context context, CollectorView collectorView, CollectorController controller, Field field)
 	{
 		super(context);
 		this.collectorView = collectorView;

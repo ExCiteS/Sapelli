@@ -1,6 +1,6 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 
-import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EditTextField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
@@ -25,12 +25,12 @@ public class EditTextView extends LinearLayout implements FieldUI
 	
 	static private final LayoutParams FULL_WIDTH = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
 
-	private ProjectController controller;
+	private Controller controller;
 	private EditTextField field;
 	private EditText editText;
 	private TextView errorMsg;
 
-	public EditTextView(final Context context, final ProjectController controller, final EditTextField field)
+	public EditTextView(final Context context, final Controller controller, final EditTextField field)
 	{
 		super(context);
 		this.controller = controller;

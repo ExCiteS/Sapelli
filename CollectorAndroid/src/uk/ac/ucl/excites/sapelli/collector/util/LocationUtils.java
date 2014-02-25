@@ -28,7 +28,7 @@ public final class LocationUtils
 	 * @param androidLocation
 	 * @return
 	 */
-	static public Location getExCiteSLocation(android.location.Location androidLocation)
+	static public Location getSapelliLocation(android.location.Location androidLocation)
 	{
 		if(androidLocation == null)
 			return null;

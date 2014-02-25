@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 import uk.ac.ucl.excites.sapelli.R;
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
@@ -69,7 +69,7 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 	// Dynamic fields:
 	private DataAccess dao;
 	private Project project;
-	private ProjectController controller;
+	private CollectorController controller;
 
 	// Temp location to save a photo
 	private File tmpPhotoFile;
@@ -148,7 +148,7 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		}
 
 		// Set-up controller:
-		controller = new ProjectController(project, dao, this);
+		controller = new CollectorController(project, dao, this);
 		collectorView.setController(controller); // !!!
 		
 		// Start project:

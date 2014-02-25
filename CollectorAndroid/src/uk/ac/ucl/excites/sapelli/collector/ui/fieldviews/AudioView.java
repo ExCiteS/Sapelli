@@ -7,7 +7,7 @@ import java.io.File;
 import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
@@ -47,7 +47,7 @@ public class AudioView extends PickerView implements FieldUI, AdapterView.OnItem
 
 	private CollectorView collectorView;
 	
-	private final ProjectController controller;
+	private final CollectorController controller;
 	private final AudioField audioField;
 	
 	private File audioFile;
@@ -57,7 +57,7 @@ public class AudioView extends PickerView implements FieldUI, AdapterView.OnItem
 	private int buttonPadding;
 	private int buttonBackColor;
 
-	public AudioView(Context context, CollectorView collectorView, final ProjectController controller, AudioField field)
+	public AudioView(Context context, CollectorView collectorView, final CollectorController controller, AudioField field)
 	{
 		super(context);
 		this.collectorView = collectorView;

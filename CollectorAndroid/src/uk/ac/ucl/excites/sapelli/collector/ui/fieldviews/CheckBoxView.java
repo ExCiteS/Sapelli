@@ -3,7 +3,7 @@
  */
 package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 
-import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
@@ -22,11 +22,11 @@ import android.widget.LinearLayout;
 public class CheckBoxView extends LinearLayout implements FieldUI
 {
 
-	private ProjectController controller;
+	private Controller controller;
 	private CheckBoxField field;
 	private CheckBox chbx;
 
-	public CheckBoxView(Context context, ProjectController controller, CheckBoxField field)
+	public CheckBoxView(Context context, Controller controller, CheckBoxField field)
 	{
 		super(context);
 		this.controller = controller;

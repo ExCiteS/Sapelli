@@ -3,7 +3,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
-import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.CheckBoxField;
@@ -51,7 +51,7 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	static public final float SPACING_DIP = 8.0f;
 	
 	private CollectorActivity activity;
-	private ProjectController controller;
+	private CollectorController controller;
 	
 	// UI elements:
 	private ControlsView controlsView;
@@ -126,7 +126,7 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	/**
 	 * @param controller the controller to set
 	 */
-	public void setController(ProjectController controller)
+	public void setController(CollectorController controller)
 	{
 		this.controller = controller;
 	}

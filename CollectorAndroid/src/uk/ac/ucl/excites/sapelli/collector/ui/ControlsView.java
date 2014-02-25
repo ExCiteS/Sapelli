@@ -4,7 +4,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.*;
-import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.ControlsState;
@@ -50,7 +50,7 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 	private CollectorView collectorView;
 	
 	private boolean enabled;
-	private ProjectController controller;
+	private Controller controller;
 	private Form currentForm;
 	private ControlsState currentState;
 	
@@ -91,7 +91,7 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 		enabled = true;
 	}
 
-	public void update(ProjectController controller)
+	public void update(Controller controller)
 	{
 		this.controller = controller;
 		

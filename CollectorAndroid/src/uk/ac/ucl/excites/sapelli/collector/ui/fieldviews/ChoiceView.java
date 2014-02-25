@@ -2,7 +2,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
@@ -48,10 +48,10 @@ public class ChoiceView extends PickerView implements FieldUI, AdapterView.OnIte
 	
 	private CollectorView collectorView;
 	
-	private final ProjectController controller;
+	private final CollectorController controller;
 	private final ChoiceField choice;
 	
-	public ChoiceView(Context context, CollectorView collectorView, ProjectController controller, ChoiceField choice)
+	public ChoiceView(Context context, CollectorView collectorView, CollectorController controller, ChoiceField choice)
 	{
 		super(context);
 		if(choice.isLeaf()) // just in case...

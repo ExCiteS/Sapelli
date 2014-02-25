@@ -3,7 +3,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import uk.ac.ucl.excites.sapelli.collector.control.ProjectController;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -22,12 +22,12 @@ import android.widget.ProgressBar;
 public class WaitingView extends LinearLayout implements FieldUI
 {
 
-	private final ProjectController controller;
+	private final CollectorController controller;
 	private final Field field;
 	protected Timer timeoutCounter = null;
 	
 	
-	public WaitingView(Context context, ProjectController controller, Field field)
+	public WaitingView(Context context, CollectorController controller, Field field)
 	{
 		super(context);
 		this.controller = controller;

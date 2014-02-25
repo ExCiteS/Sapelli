@@ -6,7 +6,6 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
-import uk.ac.ucl.excites.sapelli.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.util.io.FileWriter;
 
@@ -34,7 +33,7 @@ public class Logger
 		}
 		catch(Exception e)
 		{
-			Debug.e(e);
+			e.printStackTrace(System.err);
 		}
 	}
 
