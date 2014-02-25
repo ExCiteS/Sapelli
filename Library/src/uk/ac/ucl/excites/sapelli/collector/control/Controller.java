@@ -14,7 +14,6 @@ import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form.Next;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ButtonField;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EditTextField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EndField;
@@ -25,31 +24,35 @@ import uk.ac.ucl.excites.sapelli.collector.project.model.fields.OrientationField
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field.Optionalness;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.lists.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.ControlsState;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.util.Logger;
 import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
 
+/**
+ * Abstract Controller class
+ * 
+ * @author mstevens, Michalis Vitos, Julia
+ */
 public abstract class Controller
 {
 	
+	// STATICS-------------------------------------------------------
 	private static final String LOG_PREFIX = "Collector_";
 	public static final int VIBRATION_DURATION_MS = 600;
 	
+	// DYNAMICS------------------------------------------------------
 	protected Project project;
 	protected DataAccess dao;
-	protected long deviceIDHash;
-	protected Stack<FormSession> formHistory;
-	private FormSession currentFormSession;
-	protected Form currentForm;
-	protected Field currentField;
-	protected Set<Field> tempDisabledFields;
-	protected Stack<Field> fieldHistory;
-	protected Record currentRecord;
-	protected List<File> currentMediaAttachments;
-	protected long formStartTime;
 	protected Logger logger;
+	
+	protected long deviceIDHash; //to be initialised by subclasses
+	
+	protected Stack<FormSession> formHistory;
+	protected FormSession currFormSession;
+	protected FormSession prevFormSession; 
 	
 	public Controller(Project project, DataAccess dao)
 	{
@@ -58,9 +61,6 @@ public abstract class Controller
 		
 		// Collections:
 		formHistory = new Stack<FormSession>();
-		fieldHistory = new Stack<Field>();
-		tempDisabledFields = new HashSet<Field>();
-		currentMediaAttachments = new ArrayList<File>();	
 	}
 
 	public void startProject()
@@ -80,85 +80,60 @@ public abstract class Controller
 				ioe.printStackTrace(System.err);
 			}
 		}
-		startForm(project.getStartForm()); // start with startForm (which is the first parsed form by default)
+		
+		// Clear/reset:
+		currFormSession = null;
+		formHistory.clear();
+		
+		openFormSession(FormSession.Create(project.getStartForm(), deviceIDHash)); // open a Create-mode session for the startForm (which is the first parsed form by default)
 	}
 
-	public void startForm(String formName)
+	public void openFormSession(FormSession formSession)
 	{
-		// Find form with the given name:
-		Form form = null;
-		for(Form f : project.getForms())
-			if(f.getName().equals(formName))
-			{
-				form = f;
-				break;
-			}
-		if(form != null)
-			startForm(form);
-		else
-			throw new IllegalArgumentException("Form " + formName + " could not be found in this project.");
-	}
-
-	public void startForm(int formIndex)
-	{
-		startForm(project.getForms().get(formIndex));
-	}
-
-	public void startForm(Form form)
-	{
-		currentForm = form;
-	
-		// Clear stuff:
-		fieldHistory.clear();
-		tempDisabledFields.clear();
-		currentMediaAttachments.clear();
-		currentField = null;
-	
-		// Create new currentRecord:
-		currentRecord = currentForm.newEntry(deviceIDHash);
+		prevFormSession = currFormSession; // remember previous formSession
+		currFormSession = formSession;
+		if(formHistory.peek() != currFormSession) // add to history unless still in the same session
+			formHistory.add(currFormSession);
 		
 		// Location...
-		List<LocationField> lfStartWithForm = currentForm.getLocationFields(true);
+		List<LocationField> lfStartWithForm = currFormSession.form.getLocationFields(true);
 		if(!lfStartWithForm.isEmpty())
 			startLocationListener(lfStartWithForm); // start listening for location updates
 		else
 			stopLocationListener(); // stop listening for location updates (if we were still listening for another form for example)
 	
 		// log start form
-		if(logger != null)
-		{
-			formStartTime = System.currentTimeMillis();
-			logger.addLine("FORM_START", currentForm.getName() + " (index: " + currentForm.getIndex() + ")");
-		}
+		if(logger != null)			
+			logger.addLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getIndex() + ")");
 		
 		// Begin filling out the form at the start field:
-		goTo(currentForm.getStartField());
+		goTo(currFormSession.form.getStartField());
 	}
 
 	public void cancelAndRestartForm()
 	{
 		// Cancel button pressed
 		if(logger != null)
-			logger.addLine("CANCEL_BUTTON", currentField.getID());
+			logger.addLine("CANCEL_BUTTON", currFormSession.currField.getID());
 		
-		goTo(new EndField(currentForm, false, Next.LOOPFORM));
+		goTo(new EndField(currFormSession.form, false, Next.LOOPFORM));
 	}
 
 	public void cancelAndStop()
 	{
-		goTo(new EndField(currentForm, false, Next.EXITAPP));
+		goTo(new EndField(currFormSession.form, false, Next.EXITAPP));
 	}
 
 	public void goForward(boolean requestedByUser)
 	{
 		// log interaction:
 		if(requestedByUser && logger != null)
-			logger.addLine("FORWARD_BUTTON", currentField.getID());
+			logger.addLine("FORWARD_BUTTON", currFormSession.currField.getID());
 	
-		if(currentField != null)
-			goTo(currentForm.getNextField(currentField));
+		if(currFormSession.currField != null)
+			goTo(currFormSession.form.getNextField(currFormSession.currField));
 		else
-			startForm(currentForm); // this shouldn't happen really...
+			openFormSession(currFormSession); // this shouldn't happen really...
 	}
 	
 	/**
@@ -167,29 +142,29 @@ public abstract class Controller
 	public ControlsState getControlsState()
 	{
 		ControlsState state = new ControlsState(
-				currentForm.isShowBack()	&& currentField.isShowBack()	&& !fieldHistory.empty(),
-				currentForm.isShowCancel()	&& currentField.isShowCancel()	&& (!fieldHistory.empty() || currentField instanceof Page),
-				currentForm.isShowForward()	&& currentField.isShowForward()	&& currentField.getOptional() == Optionalness.ALWAYS);
+				currFormSession.form.isShowBack()		&& currFormSession.currField.isShowBack()		&& !currFormSession.fieldHistory.empty(),
+				currFormSession.form.isShowCancel()		&& currFormSession.currField.isShowCancel()		&& (!currFormSession.fieldHistory.empty() || currFormSession.currField instanceof Page),
+				currFormSession.form.isShowForward()	&& currFormSession.currField.isShowForward()	&& currFormSession.currField.getOptional() == Optionalness.ALWAYS);
 		// Note: these paths may be null (in which case built-in defaults must be used)
 		return state;
 	}
 
 	public void goBack()
 	{
-		if(!fieldHistory.isEmpty())
+		if(!currFormSession.fieldHistory.isEmpty())
 		{
 			// log interaction:
 			if(logger != null)
-				logger.addLine("BACK_BUTTON", currentField.getID());
+				logger.addLine("BACK_BUTTON", currFormSession.currField.getID());
 	
-			currentField = null; // !!! otherwise we create loops
-			final Field previousField = fieldHistory.pop();
+			currFormSession.currField = null; // !!! otherwise we create loops
+			final Field previousField = currFormSession.fieldHistory.pop();
 	
-			// TODO Maybe there is a better way of handling back buttons
+			// TODO Maybe there is a better way of handling back buttons (TODO yes there is!)
 			if(previousField instanceof LocationField)
-				goTo(fieldHistory.pop()); // Move two fields backwards
-			else if(currentField instanceof OrientationField)
-				goTo(fieldHistory.pop()); // Move two fields backwards
+				goTo(currFormSession.fieldHistory.pop()); // Move two fields backwards
+			else if(currFormSession.currField instanceof OrientationField)
+				goTo(currFormSession.fieldHistory.pop()); // Move two fields backwards
 			else
 				goTo(previousField);
 		}
@@ -202,36 +177,36 @@ public abstract class Controller
 			logger.addLine("REACHED", nextField.getID());
 	
 		// Leaving current field...
-		if(currentField != null && currentField != nextField)
-			fieldHistory.add(currentField); // Add to history
+		if(currFormSession.currField != null && currFormSession.currField != nextField)
+			currFormSession.fieldHistory.add(currFormSession.currField); // Add to history
 		// Entering next field...
-		currentField = nextField;
+		currFormSession.currField = nextField;
 		
 		// Enter field and ...
-		if(currentField.enter(this))
-			displayField(currentField);
+		if(currFormSession.currField.enter(this))
+			displayField(currFormSession.currField);
 	}
 
 	protected void saveRecordAndAttachments()
 	{
-		if(!currentForm.isProducesRecords()) //!!!
+		if(!currFormSession.form.isProducesRecords()) //!!!
 			return;
 		
 		// Finalise the currentRecord:
-		currentForm.finish(currentRecord); // sets end-time if necessary
+		currFormSession.form.finish(currFormSession.record); // sets end-time if necessary
 	
 		// Store currentRecord
-		dao.store(currentRecord);
+		dao.store(currFormSession.record);
 	
 		// Log record:
 		if(logger != null)
-			logger.addLine("RECORD", currentRecord.toString());
+			logger.addLine("RECORD", currFormSession.record.toString());
 	
 		// Move attachments from temp to data folder:
 		try
 		{
 			File dataFolder = project.getDataFolder();
-			for(File attachment : currentMediaAttachments)
+			for(File attachment : currFormSession.mediaAttachments)
 				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
 		}
 		catch(IOException ioe)
@@ -241,10 +216,10 @@ public abstract class Controller
 	
 		// Signal the successful storage of the currentRecord
 		// Vibration
-		if(currentForm.isVibrateOnSave())
+		if(currFormSession.form.isVibrateOnSave())
 			vibrate(VIBRATION_DURATION_MS);
 		// Play sound
-		File endSoundFile = project.getSoundFile(currentForm.getSaveSoundRelativePath());
+		File endSoundFile = project.getSoundFile(currFormSession.form.getSaveSoundRelativePath());
 		if(FileHelpers.isReadableFile(endSoundFile))
 			playSound(endSoundFile);		
 	}
@@ -252,10 +227,10 @@ public abstract class Controller
 	protected void discardAttachments()
 	{
 		// Delete any attachments:
-		for(File attachment : currentMediaAttachments)
+		for(File attachment : currFormSession.mediaAttachments)
 			if(attachment.exists())
 				attachment.delete();
-		currentMediaAttachments.clear();
+		currFormSession.mediaAttachments.clear();
 	}
 	
 	/**
@@ -282,7 +257,7 @@ public abstract class Controller
 	 */
 	public boolean enterMediaField(MediaField mf)
 	{
-		if(mf.isMaxReached(currentRecord))
+		if(mf.isMaxReached(currFormSession.record))
 		{ // Maximum number of attachments for this field is reached:
 			goForward(false); // skip field
 			return false;
@@ -318,15 +293,6 @@ public abstract class Controller
 	}
 	
 	/**
-	 * @param page	the CheckBoxField
-	 * @return whether or not a UI update is required after entering the field
-	 */
-	public boolean enterCheckBoxField(CheckBoxField cbf)
-	{	
-		return true;
-	}
-	
-	/**
 	 * @param page	the ButtonField
 	 * @return whether or not a UI update is required after entering the field
 	 */
@@ -353,6 +319,31 @@ public abstract class Controller
 		// TODO does this work?
 		//for(Field f : page.getFields())
 		//	f.enter(this);
+		
+		//TODO startWithPage location
+		
+		return true;
+	}
+	
+	public boolean enterRelationship(Relationship rel)
+	{
+		switch(rel.getType())
+		{
+			case LINK:
+				//TODO
+				break;
+			case ONE_TO_ONE:
+				//TODO
+				break;
+			case MANY_TO_ONE:
+				//TODO
+				break;
+			case MANY_TO_MANY:
+				throw new IllegalStateException("Many-to-many relationships are not yet implemented.");
+		}
+		
+		//TODO upon coming back ...
+		
 		return true;
 	}
 	
@@ -364,7 +355,7 @@ public abstract class Controller
 	{
 		// Logging:
 		if(logger != null)
-			logger.addLine("FORM_END", ef.getID(), currentForm.getName(), Long.toString((System.currentTimeMillis() - formStartTime) / 1000) + " seconds");
+			logger.addLine("FORM_END", ef.getID(), currFormSession.form.getName(), Long.toString((System.currentTimeMillis() - currFormSession.startTime) / 1000) + " seconds");
 		
 		if(ef.isSave())
 			saveRecordAndAttachments();
@@ -379,10 +370,11 @@ public abstract class Controller
 		switch(ef.getNext())
 		{
 			case LOOPFORM:
-				startForm(currentForm);
+				formHistory.pop(); //!!!
+				openFormSession(FormSession.Create(currFormSession.form, deviceIDHash));
 				break;
 			case LOOPPROJ:
-				//TODO LOOPPROJ implementation
+				startProject(); // formHistory & currFormSession will be cleared
 				break;
 			case PREVFORM:
 				//TODO PREVFORM implementation
@@ -397,7 +389,7 @@ public abstract class Controller
 	
 	public boolean isFieldEndabled(Field field)
 	{
-		return field.isEnabled() && !tempDisabledFields.contains(field);
+		return field.isEnabled() && !currFormSession.tempDisabledFields.contains(field);
 	}
 
 	public void choiceMade(ChoiceField chosenChild)
@@ -407,9 +399,9 @@ public abstract class Controller
 		{
 			// Store value
 			if(!chosenChild.getRoot().isNoColumn())
-				chosenChild.storeValue(currentRecord);
+				chosenChild.storeValue(currFormSession.record);
 			// Go to next field
-			goTo(currentForm.getNextField(chosenChild));
+			goTo(currFormSession.form.getNextField(chosenChild));
 			/*
 			 * We cannot use goForward() here because then we would first need to make the chosenChild the currentField, in which case it would end up in the
 			 * fieldHistory which does not make sense because a leaf choice cannot be displayed on its own.
@@ -421,22 +413,22 @@ public abstract class Controller
 
 	public void mediaDone(File mediaAttachment)
 	{
-		MediaField ma = (MediaField) currentField;
+		MediaField ma = (MediaField) currFormSession.currField;
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
 			if(logger != null)
-				logger.addLine("ATTACHMENT", currentField.getID(), mediaAttachment.getName());
+				logger.addLine("ATTACHMENT", currFormSession.currField.getID(), mediaAttachment.getName());
 			
-			ma.incrementCount(currentRecord); // Store/increase number of pictures/recordings taken
-			if(ma.isMaxReached(currentRecord) && ma.getDisableChoice() != null)
-				tempDisabledFields.add(ma.getDisableChoice()); // disable the choice that makes the MA accessible
-			currentMediaAttachments.add(mediaAttachment);
+			ma.incrementCount(currFormSession.record); // Store/increase number of pictures/recordings taken
+			if(ma.isMaxReached(currFormSession.record) && ma.getDisableChoice() != null)
+				currFormSession.tempDisabledFields.add(ma.getDisableChoice()); // disable the choice that makes the MA accessible
+			currFormSession.mediaAttachments.add(mediaAttachment);
 			goForward(false); // goto next/jump field
 		}
 		else
 		{
 			if(logger != null)
-				logger.addLine("ATTACHMENT", currentField.getID(), "NONE");
+				logger.addLine("ATTACHMENT", currFormSession.currField.getID(), "NONE");
 			
 			if(ma.getOptional() != Optionalness.ALWAYS)
 				// at least one attachment is required:
@@ -454,7 +446,7 @@ public abstract class Controller
 		// Close log file:
 		if(logger != null)
 		{
-			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currentForm.getID());
+			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.getID());
 			logger = null;
 		}
 		
@@ -466,7 +458,7 @@ public abstract class Controller
 	 */
 	public Form getCurrentForm()
 	{
-		return currentForm;
+		return currFormSession.form;
 	}
 
 	/**
@@ -482,7 +474,7 @@ public abstract class Controller
 	 */
 	public Record getCurrentRecord()
 	{
-		return currentRecord;
+		return currFormSession.record;
 	}
 
 	/**
@@ -490,7 +482,7 @@ public abstract class Controller
 	 */
 	public Field getCurrentField()
 	{
-		return currentField;
+		return currFormSession.currField;
 	}
 	
 	protected void startLocationListener(LocationField locField)
@@ -509,5 +501,58 @@ public abstract class Controller
 	protected abstract void playSound(File soundFile);
 	
 	protected abstract void exitApp();
+	
+	/**
+	 * Helper class which holds all state variables needed to manage an open "form session"
+	 * 
+	 * @author mstevens
+	 */
+	static protected class FormSession
+	{
+
+		public static enum Mode
+		{
+			CREATE,
+			EDIT,
+			//SELECT
+		}
+		
+		static public FormSession Create(Form form, long deviceIDHash)
+		{
+			return new FormSession(form, Mode.CREATE, form.isProducesRecords() ? form.newEntry(deviceIDHash) : null);
+		}
+		
+		static public FormSession Edit(Form form, Record record)
+		{
+			return new FormSession(form, Mode.EDIT, record);
+		}
+		
+		//Dynamic
+		Form form;
+		Mode mode;
+		Record record;
+		Stack<Field> fieldHistory;
+		Field currField;
+		Set<Field> tempDisabledFields;
+		List<File> mediaAttachments;	
+		long startTime;
+		
+		/**
+		 * @param form
+		 * @param mode
+		 * @param record
+		 */
+		private FormSession(Form form, Mode mode, Record record)
+		{
+			this.form = form;
+			this.mode = mode;
+			this.record = record;
+			this.fieldHistory = new Stack<Field>();
+			this.tempDisabledFields = new HashSet<Field>();
+			this.mediaAttachments = new ArrayList<File>();
+			this.startTime = System.currentTimeMillis();
+		}
+		
+	}
 	
 }

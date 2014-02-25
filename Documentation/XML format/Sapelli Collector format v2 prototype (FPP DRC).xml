@@ -92,12 +92,12 @@
   <!-- should 'hold' be an attribute of the form of of belongsTo? -> probably YES -->
   <!-- end: accept form names? -->
   
-  <Form id="Session" name="Community session" editable="true" singlePage="true" storeEndTime="true" end="BACK">
+  <Form id="Session" name="Community session" editable="true" singlePage="true" storeEndTime="true" next="PREVFORM">
     <!-- allow form names as end action? (e.g. end="Entry") -> better not... -->
   
     <Alert text="Press ... within 5 seconds to access the Session form" showOnCreate="false" showOnEdit="true" timeout="5" onTimeout="_BACK">
-      <Option visible="false" label="" key="VOLUME_DOWN" action="" jump=""/>
-      <Option visible="false" label="" key="BACK" action="" jump="_BACK"/>
+      <Option visible="false" label="" key="VOLUME_DOWN" jump=""/>
+      <Option visible="false" label="" key="BACK" jump="_PREVFORM"/>
     </Alert>
 
     <Label text="Session"/><!-- noColumn="true" is implied -->
@@ -132,9 +132,9 @@
 
     <Text id="Comment:" label="Comments" maxLength="1024" multiline="true" optional="true"/>
 
-    <Button label="Start Session" disableOnEdit="true" action="_SAVE+PREVFORM"/>
+    <Button label="Start Session" disableOnEdit="true" jump="_SAVE+PREVFORM"/>
     
-    <Button id="closed" label="Close Session" disableOnCreate="true" column="boolean" action="_SAVE+PREVFORM"/>
+    <Button id="closed" label="Close Session" disableOnCreate="true" column="boolean" jump="_SAVE+PREVFORM"/>
   
   </Form>
   

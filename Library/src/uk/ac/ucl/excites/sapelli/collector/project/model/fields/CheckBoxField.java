@@ -80,7 +80,7 @@ public class CheckBoxField extends Field
 	@Override
 	public boolean enter(Controller controller)
 	{
-		return controller.enterCheckBoxField(this);
+		return true;
 	}
 
 	/*

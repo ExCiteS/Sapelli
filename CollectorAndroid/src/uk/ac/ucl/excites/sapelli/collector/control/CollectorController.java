@@ -38,11 +38,12 @@ import android.util.Log;
 public class CollectorController extends Controller implements LocationListener, OrientationListener
 {
 
-	// STATICS--------------------------------------------------------
-	public static final String TAG = "ProjectController";
+	// STATICS-------------------------------------------------------
+	public static final String TAG = "CollectorController";
 	public static final int LOCATION_LISTENER_UPDATE_MIN_TIME_MS = 15 * 1000;// 15 seconds
 	public static final int LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M = 5; // 5 meters
 
+	// DYNAMICS------------------------------------------------------
 	public CollectorActivity activity;
 
 	private LocationManager locationManager;
@@ -78,7 +79,7 @@ public class CollectorController extends Controller implements LocationListener,
 	@Override
 	public boolean enterLocationField(LocationField lf)
 	{
-		if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currentRecord, LocationUtils.getSapelliLocation(currentBestLocation)))
+		if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(currentBestLocation)))
 		{
 			startLocationListener(lf); // start listening for a location
 			return true;
@@ -105,41 +106,41 @@ public class CollectorController extends Controller implements LocationListener,
 		super.saveRecordAndAttachments(); //!!!
 	
 		// Also print the record on Android Log:
-		if(currentForm.isProducesRecords())
+		if(currFormSession.form.isProducesRecords())
 		{
 			Log.d(TAG, "Stored record:");
-			Log.d(TAG, currentRecord.toString());
+			Log.d(TAG, currFormSession.record.toString());
 		}
 	}
 
 	public void timeout(Field field)
 	{
-		if(field != currentField)
+		if(field != currFormSession.currField)
 			return; // this shouldn't happen really
 		//Log:
 		if(logger != null)
-			logger.addLine("TIMEOUT", currentField.getID());
+			logger.addLine("TIMEOUT", currFormSession.currField.getID());
 		// Handle location field
-		if(currentField instanceof LocationField)
+		if(currFormSession.currField instanceof LocationField)
 		{
-			LocationField lf = (LocationField) currentField;
-			if(lf.retrieveLocation(currentRecord) == null && lf.isUseBestNonQualifyingLocationAfterTimeout())
-				lf.storeLocation(currentRecord, LocationUtils.getSapelliLocation(currentBestLocation), true);
+			LocationField lf = (LocationField) currFormSession.currField;
+			if(lf.retrieveLocation(currFormSession.record) == null && lf.isUseBestNonQualifyingLocationAfterTimeout())
+				lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(currentBestLocation), true);
 			
 			// If still no location set (because either isUseBestNQLAT==false or currentBestLocation==null), and locationField is non-optional: cancel & exit!
-			if(lf.retrieveLocation(currentRecord) == null && lf.getOptional() != Optionalness.ALWAYS)
+			if(lf.retrieveLocation(currFormSession.record) == null && lf.getOptional() != Optionalness.ALWAYS)
 			{
 				activity.runOnUiThread(new Runnable()
 				{
 					@Override
 					public void run()
 					{
-						activity.showErrorDialog("Cannot get GPS signal and location is mandatory for field '" + currentField.getID() + "'. Please, make sure your GPS receiver is enabled.", true, new Runnable()
+						activity.showErrorDialog("Cannot get GPS signal and location is mandatory for field '" + currFormSession.currField.getID() + "'. Please, make sure your GPS receiver is enabled.", true, new Runnable()
 						{
 							@Override
 							public void run()
 							{
-								goTo(new EndField(currentForm, false, Next.EXITAPP));
+								goTo(new EndField(currFormSession.form, false, Next.EXITAPP));
 							}
 						});
 					}
@@ -155,9 +156,9 @@ public class CollectorController extends Controller implements LocationListener,
 
 	public void onOrientationChanged(Orientation orientation)
 	{
-		if(currentField instanceof OrientationField)
+		if(currFormSession.currField instanceof OrientationField)
 		{
-			((OrientationField) currentField).storeValue(currentRecord, orientation);
+			((OrientationField) currFormSession.currField).storeValue(currFormSession.record, orientation);
 			orientationSensor.stop(); // stop listening for updates
 			goForward(false);
 		}
@@ -192,13 +193,13 @@ public class CollectorController extends Controller implements LocationListener,
 		{
 			currentBestLocation = location;
 			// check if we can/need to use the location now:
-			if(currentField instanceof LocationField)
-			{ // user is currently waiting for a location for the currentField
-				LocationField lf = (LocationField) currentField;
+			if(currFormSession.currField instanceof LocationField)
+			{ // user is currently waiting for a location for the currFormSession.currField
+				LocationField lf = (LocationField) currFormSession.currField;
 				// try to store location:
-				if(lf.storeLocation(currentRecord, LocationUtils.getSapelliLocation(location)))
+				if(lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(location)))
 				{ // location successfully stored:
-					if(currentForm.getLocationFields(true).isEmpty())
+					if(currFormSession.form.getLocationFields(true).isEmpty())
 						stopLocationListener(); // there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)
 					goForward(false); // continue (will leave waiting screen & stop the timeout timer)
 				}
@@ -226,9 +227,9 @@ public class CollectorController extends Controller implements LocationListener,
 	}
 	
 	@Override
-	protected void displayField(Field currentField)
+	protected void displayField(Field field)
 	{
-		activity.getCollectorView().setField(currentField);
+		activity.getCollectorView().setField(field);
 	}
 	
 	@Override

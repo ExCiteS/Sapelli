@@ -156,8 +156,7 @@ public class Relationship extends Field
 	@Override
 	public boolean enter(Controller controller)
 	{
-		// TODO Auto-generated method stub
-		return false;
+		return controller.enterRelationship(this);
 	}
 
 	/* (non-Javadoc)
