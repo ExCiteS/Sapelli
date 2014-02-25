@@ -40,8 +40,9 @@ public class Form
 	static public enum Next
 	{
 		LOOPFORM,
-		EXITAPP,
-		PREVFORM
+		LOOPPROJ,
+		PREVFORM,
+		EXITAPP
 	}
 	public static final Next DEFAULT_NEXT = Next.LOOPFORM;
 	public static final String V1X_NEXT_LOOP = "LOOP";
@@ -501,17 +502,36 @@ public class Form
 								(project.getVariant() != null ? '_' + project.getVariant() : "") +
 								"_v" + project.getVersion() +
 								":" + id /* = form "name"*/);
-			// Internal-use columns:
-			// Timestamp column(s):
-			schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_START, false));
-			if(storeEndTime)
-				schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_END, false));
-			// Device ID column:
-			schema.addColumn(new IntegerColumn(COLUMN_DEVICE_ID, false, false, 32));
-			// Columns for user-defined fields:
+			
+			/* Add "key" columns
+			 * 	StartTime & DeviceID together form the primary key of our records.
+			 * 	These columns are implicitly added, together with EndTime if the
+			 * 	appropriate attribute was set, *BUT* only if there is at least one
+			 * 	user-defined field _with_ a column.
+			 */
+			boolean hasUserDefinedColumns = false;
 			for(Field f : fields)
 				if(!f.isNoColumn())
-					schema.addColumns(f.getColumns());
+				{
+					hasUserDefinedColumns = true;
+					break;
+				}
+			if(hasUserDefinedColumns)
+			{
+				// Timestamp column(s):
+				schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_START, false));
+				if(storeEndTime)
+					schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_END, false));
+				// Device ID column:
+				schema.addColumn(new IntegerColumn(COLUMN_DEVICE_ID, false, false, 32));
+			}
+			
+			// Columns for user-defined fields:
+			if(hasUserDefinedColumns)
+				for(Field f : fields)
+					if(!f.isNoColumn())
+						schema.addColumns(f.getColumns());
+			
 			// Seal & store the schema:
 			schema.seal();
 		}
