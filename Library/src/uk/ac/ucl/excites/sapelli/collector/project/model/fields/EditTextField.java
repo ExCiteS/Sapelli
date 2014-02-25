@@ -109,7 +109,7 @@ public class EditTextField extends Field
 	@Override
 	public boolean enter(Controller controller)
 	{
-		return controller.enterTextField(this);
+		return true;
 	}
 
 	@Override

@@ -249,5 +249,11 @@ public class CollectorController extends Controller implements LocationListener,
 	{		
 		activity.finish();
 	}
+
+	@Override
+	protected void showError(String errorMsg, boolean exit)
+	{
+		activity.showErrorDialog(errorMsg, exit);
+	}
 	
 }

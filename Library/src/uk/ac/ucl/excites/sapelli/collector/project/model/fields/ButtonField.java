@@ -100,7 +100,7 @@ public class ButtonField extends Field
 	@Override
 	public boolean enter(Controller controller)
 	{
-		return controller.enterButtonField(this);
+		return true;
 	}
 
 	/* (non-Javadoc)

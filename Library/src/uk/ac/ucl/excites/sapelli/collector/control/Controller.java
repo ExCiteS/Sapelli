@@ -85,7 +85,8 @@ public abstract class Controller
 		currFormSession = null;
 		formHistory.clear();
 		
-		openFormSession(FormSession.Create(project.getStartForm(), deviceIDHash)); // open a Create-mode session for the startForm (which is the first parsed form by default)
+		// Open a Create-mode session for the startForm:
+		openFormSession(FormSession.Create(project.getStartForm(), deviceIDHash));
 	}
 
 	public void openFormSession(FormSession formSession)
@@ -102,12 +103,15 @@ public abstract class Controller
 		else
 			stopLocationListener(); // stop listening for location updates (if we were still listening for another form for example)
 	
-		// log start form
+		// Log start form
 		if(logger != null)			
 			logger.addLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getIndex() + ")");
 		
-		// Begin filling out the form at the start field:
-		goTo(currFormSession.form.getStartField());
+		// Go to field...
+		if(currFormSession.currField == null)
+			goTo(currFormSession.form.getStartField()); // begin filling out the form at the start field
+		else
+			goTo(currFormSession.currField); // continue where we left off
 	}
 
 	public void cancelAndRestartForm()
@@ -284,33 +288,6 @@ public abstract class Controller
 	public abstract boolean enterOrientationField(OrientationField of);
 	
 	/**
-	 * @param page	the EditTextField
-	 * @return whether or not a UI update is required after entering the field
-	 */
-	public boolean enterTextField(EditTextField tf)
-	{
-		return true;
-	}
-	
-	/**
-	 * @param page	the ButtonField
-	 * @return whether or not a UI update is required after entering the field
-	 */
-	public boolean enterButtonField(ButtonField bf)
-	{
-		return true;
-	}
-	
-	/**
-	 * @param page	the MultiListField
-	 * @return whether or not a UI update is required after entering the field
-	 */
-	public boolean enterMultiListField(MultiListField mlf)
-	{
-		return true;
-	}
-	
-	/**
 	 * @param page	the Page
 	 * @return whether or not a UI update is required after entering the field
 	 */
@@ -357,6 +334,7 @@ public abstract class Controller
 		if(logger != null)
 			logger.addLine("FORM_END", ef.getID(), currFormSession.form.getName(), Long.toString((System.currentTimeMillis() - currFormSession.startTime) / 1000) + " seconds");
 		
+		// Save or discard:
 		if(ef.isSave())
 			saveRecordAndAttachments();
 		else
@@ -366,18 +344,22 @@ public abstract class Controller
 		if(logger != null)
 			logger.addBlankLine();
 		
-		// Next action:
+		// Go to "next":
 		switch(ef.getNext())
 		{
 			case LOOPFORM:
-				formHistory.pop(); //!!!
+				formHistory.pop();
 				openFormSession(FormSession.Create(currFormSession.form, deviceIDHash));
 				break;
 			case LOOPPROJ:
 				startProject(); // formHistory & currFormSession will be cleared
 				break;
 			case PREVFORM:
-				//TODO PREVFORM implementation
+				formHistory.pop();
+				if(!formHistory.isEmpty())
+					openFormSession(formHistory.pop()); // re-open previous form 
+				else
+					showError("Invalid state: no previous form to return to!", true); //TODO multilang
 				break;
 			case EXITAPP:
 				exit();
@@ -476,6 +458,14 @@ public abstract class Controller
 	{
 		return currFormSession.record;
 	}
+	
+	/**
+	 * @return the mode of the currently open form
+	 */
+	public FormSession.Mode getCurrentFormMode()
+	{
+		return currFormSession.mode;
+	}
 
 	/**
 	 * @return the currentField
@@ -499,6 +489,8 @@ public abstract class Controller
 	protected abstract void vibrate(int durationMS);
 	
 	protected abstract void playSound(File soundFile);
+	
+	protected abstract void showError(String errorMsg, boolean exit);
 	
 	protected abstract void exitApp();
 	
@@ -532,7 +524,7 @@ public abstract class Controller
 		Mode mode;
 		Record record;
 		Stack<Field> fieldHistory;
-		Field currField;
+		Field currField = null;
 		Set<Field> tempDisabledFields;
 		List<File> mediaAttachments;	
 		long startTime;

@@ -117,7 +117,7 @@ public class MultiListField extends Field
 	@Override
 	public boolean enter(Controller controller)
 	{
-		return controller.enterMultiListField(this);
+		return true;
 	}
 
 	/* (non-Javadoc)
