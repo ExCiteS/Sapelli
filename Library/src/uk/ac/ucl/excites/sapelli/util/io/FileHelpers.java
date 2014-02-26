@@ -71,21 +71,27 @@ public final class FileHelpers
 
 	static public String makeValidFileName(String filename)
 	{
-		if(filename != null)
+		if(filename == null)
+			return null;
+		char[] chars = filename.toCharArray();
+		for(int c = 0; c < chars.length; c++)
 		{
-			filename = filename.replace('*', '+');
-			filename = filename.replace('?', '_');
-			filename = filename.replace('<', '(');
-			filename = filename.replace('>', ')');
-			filename = filename.replace(':', '-');
-			filename = filename.replace('"', '\'');
-			filename = filename.replace('\\', '_');
-			filename = filename.replace('/', '_');
-			filename = filename.replace('|', ';');
-			filename = filename.replace('\n', '_');
-			filename = filename.replace('\t', '_');
+			switch(chars[c])
+			{
+				case '*': chars[c] = '+'; break;
+				case '?': chars[c] = '_'; break;
+				case '<': chars[c] = '('; break;
+				case '>': chars[c] = ')'; break;
+				case ':': chars[c] = '-'; break;
+				case '"': chars[c] = '\''; break;
+				case '\\': chars[c] = '_'; break;
+				case '/': chars[c] = '_'; break;
+				case '|': chars[c] = ';'; break;
+				case '\n': chars[c] = '_'; break;
+				case '\t': chars[c] = '_'; break;
+			}
 		}
-		return filename;
+		return new String(chars);
 	}
 	
 	/**
