@@ -33,28 +33,25 @@ public final class FileHelpers
 
 	static public boolean isValidFileName(String filename)
 	{
-		if(filename.contains("*"))
+		if(filename == null)
 			return false;
-		if(filename.contains("?"))
-			return false;
-		if(filename.contains("<"))
-			return false;
-		if(filename.contains(">"))
-			return false;
-		if(filename.contains(":"))
-			return false;
-		if(filename.contains("\""))
-			return false;
-		if(filename.contains("\\"))
-			return false;
-		if(filename.contains("/"))
-			return false;
-		if(filename.contains("|"))
-			return false;
-		if(filename.contains("\n"))
-			return false;
-		if(filename.contains("\t"))
-			return false;
+		for(char c : filename.toCharArray())
+		{
+			switch(c)
+			{
+				case '*': 
+				case '?': 
+				case '<': 
+				case '>': 
+				case ':': 
+				case '"': 
+				case '\\': 
+				case '/': 
+				case '|': 
+				case '\n': 
+				case '\t': return false;
+			}
+		}
 		return true;
 	}
 	
