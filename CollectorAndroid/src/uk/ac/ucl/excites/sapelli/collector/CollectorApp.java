@@ -45,6 +45,31 @@ public class CollectorApp extends Application
 
 	static private volatile ObjectContainer db4oObjectContainer;
 	
+	/**
+	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on
+	 * an accessible (i.e. mounted) storage device
+	 * 
+	 * @return
+	 */
+	static public boolean isStorageMounted()
+	{
+		if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
+			return true;
+		return false;
+	}
+	
+	/**
+	 * Returns a prefix to be used on storage identifiers (DB4O filenames, SharedPref's names, etc.) when in demo mode
+	 * (if not in demo mode the prefix is empty).
+	 * The goal is to separate demo-mode storage from non-demo-mode installations and previous demo installations.
+	 * 
+	 * @return
+	 */
+	static public String getDemoPrefix()
+	{
+		return (BuildInfo.DEMO_BUILD ? DEMO_PREFIX + FileHelpers.makeValidFileName(BuildInfo.TIMESTAMP) : "");
+	}
+	
 	private File sapelliFolder;
 
 	private Set<DataAccessClient> daoClients;
@@ -88,19 +113,6 @@ public class CollectorApp extends Application
 	public File getStorageDirectory()
 	{
 		return Environment2.getCardDirectory();
-	}
-	
-	/**
-	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on
-	 * an accessible (i.e. mounted) storage device
-	 * 
-	 * @return
-	 */
-	static public boolean isStorageMounted()
-	{
-		if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
-			return true;
-		return false;
 	}
 
 	/**
@@ -164,11 +176,12 @@ public class CollectorApp extends Application
 	public DataAccess getDataAccess(DataAccessClient client)
 	{
 		if(db4oObjectContainer == null)
-		{	// Open the db:
+		{	// Open connection to the db4o file:
 			try
-			{
-				db4oObjectContainer = DB4OConnector.open(getDatabasePath());
-				Debug.i("Opened DB4O database connection to file: " + getDatabasePath());
+			{	// We always store the db to the internal storage of the Android device
+				String db4oFilePath = getFilesDir().getAbsolutePath() + File.separator + getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_NAME;
+				db4oObjectContainer = DB4OConnector.open(db4oFilePath);
+				Debug.i("Opened DB4O database connection to file: " + db4oFilePath);
 			}
 			catch(Exception e)
 			{
@@ -194,16 +207,6 @@ public class CollectorApp extends Application
 			db4oObjectContainer = null;
 			Debug.i("Closed DB4O database connection");
 		}
-	}
-
-	/**
-	 * Always store the db to the internal storage of the Android device
-	 * 
-	 * @return
-	 */
-	public String getDatabasePath()
-	{
-		return getFilesDir().getAbsolutePath() + File.separator + (BuildInfo.DEMO_BUILD ? DEMO_PREFIX : "") + DATABASE_NAME;
 	}
 	
 	public void backupDatabase(String filePath)

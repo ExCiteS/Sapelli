@@ -26,7 +26,7 @@ public class DB4ODataAccess implements DataAccess
 {
 
 	// Statics----------------------------------------------
-	static protected final String TAG = "DATA ACCESS";
+	static protected final String TAG = "DB4ODataAccess";
 	static public final int ACTIVATION_DEPTH = 40;
 	static public final int UPDATE_DEPTH = 40;
 

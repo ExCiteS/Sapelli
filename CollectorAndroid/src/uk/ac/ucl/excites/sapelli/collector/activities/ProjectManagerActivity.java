@@ -235,13 +235,13 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			List<Project> projects = dao.retrieveProjects();
 			Project p = null;
 			if(projects.isEmpty())
-			{ // Use /mnt/sdcard/Sapelli/ as the basePath:
+			{	// Use /mnt/sdcard/Sapelli/ as the basePath:
 				ProjectLoader loader = new ProjectLoader(this, app.getProjectFolderPath(), app.getTempFolderPath());
 				p = loader.load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
 				storeProject(p);
 			}
 			else
-				p = projects.get(0);
+				p = projects.get(0); // Assumption: there is only one stored project in demo mode
 			// Run the project
 			startActivity(getProjectRunIntent(p));
 		}
