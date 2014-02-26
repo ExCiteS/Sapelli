@@ -91,7 +91,7 @@ public abstract class Controller
 		prevFormSession = currFormSession; // remember previous formSession
 		currFormSession = formSession;
 		if(!formHistory.isEmpty() && formHistory.peek() != currFormSession) // add to history unless still in the same session
-			formHistory.add(currFormSession);
+			formHistory.push(currFormSession);
 		
 		// Location...
 		List<LocationField> lfStartWithForm = currFormSession.form.getLocationFields(true);
@@ -136,19 +136,6 @@ public abstract class Controller
 		else
 			openFormSession(currFormSession); // this shouldn't happen really...
 	}
-	
-	/**
-	 * @return the current ButtonState
-	 */
-	public ControlsState getControlsState()
-	{
-		ControlsState state = new ControlsState(
-				currFormSession.form.isShowBack()		&& currFormSession.currField.isShowBack()		&& !currFormSession.fieldHistory.empty(),
-				currFormSession.form.isShowCancel()		&& currFormSession.currField.isShowCancel()		&& (!currFormSession.fieldHistory.empty() || currFormSession.currField instanceof Page),
-				currFormSession.form.isShowForward()	&& currFormSession.currField.isShowForward()	&& currFormSession.currField.getOptional() == Optionalness.ALWAYS);
-		// Note: these paths may be null (in which case built-in defaults must be used)
-		return state;
-	}
 
 	public void goBack()
 	{
@@ -188,6 +175,19 @@ public abstract class Controller
 			displayField(currFormSession.currField);
 	}
 
+	/**
+	 * @return the current ButtonState
+	 */
+	public ControlsState getControlsState()
+	{
+		ControlsState state = new ControlsState(
+				currFormSession.form.isShowBack()		&& currFormSession.currField.isShowBack()		&& !currFormSession.fieldHistory.empty(),
+				currFormSession.form.isShowCancel()		&& currFormSession.currField.isShowCancel()		&& (!currFormSession.fieldHistory.empty() || currFormSession.currField instanceof Page),
+				currFormSession.form.isShowForward()	&& currFormSession.currField.isShowForward()	&& currFormSession.currField.getOptional() == Optionalness.ALWAYS);
+		// Note: these paths may be null (in which case built-in defaults must be used)
+		return state;
+	}
+	
 	protected void saveRecordAndAttachments()
 	{
 		if(!currFormSession.form.isProducesRecords()) //!!!
