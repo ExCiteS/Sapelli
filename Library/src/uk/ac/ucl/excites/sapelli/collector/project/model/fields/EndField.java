@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form.Next;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.CollectorUI;

@@ -1,7 +1,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.lists.MultiListField;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.lists.MultiListItem;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.MultiListField;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.MultiListField.MultiListItem;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.annotation.SuppressLint;

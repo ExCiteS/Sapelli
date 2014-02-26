@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
@@ -54,7 +55,7 @@ public class Page extends Field
 	{
 		List<Column<?>> columns = new ArrayList<Column<?>>(); 
 		for(Field f : fields)
-			CollectionUtils.addAllIgnoreNull(columns, f.createColumns());
+			CollectionUtils.addAllIgnoreNull(columns, f.getColumns());
 		return columns;
 	}
 	

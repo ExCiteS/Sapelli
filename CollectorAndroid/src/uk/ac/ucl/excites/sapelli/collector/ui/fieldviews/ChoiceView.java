@@ -3,8 +3,8 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ChoiceField;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;

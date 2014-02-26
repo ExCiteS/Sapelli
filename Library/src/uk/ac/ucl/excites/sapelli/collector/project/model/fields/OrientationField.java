@@ -1,11 +1,12 @@
 package uk.ac.ucl.excites.sapelli.collector.project.model.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
-import uk.ac.ucl.excites.sapelli.storage.model.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 
 /**

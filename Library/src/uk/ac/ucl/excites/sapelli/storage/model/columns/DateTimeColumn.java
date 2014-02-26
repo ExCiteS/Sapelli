@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.storage.model;
+package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
 import java.io.IOException;
 
@@ -11,6 +11,7 @@ import org.joda.time.format.DateTimeFormatter;
 
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.util.TimeUtils;
 

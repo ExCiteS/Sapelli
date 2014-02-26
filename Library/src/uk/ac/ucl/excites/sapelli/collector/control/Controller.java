@@ -11,13 +11,13 @@ import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.project.data.CollectorRecord;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form.Next;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EndField;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.OrientationField;

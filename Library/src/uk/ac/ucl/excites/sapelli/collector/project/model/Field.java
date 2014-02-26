@@ -1,12 +1,10 @@
-package uk.ac.ucl.excites.sapelli.collector.project.model.fields;
+package uk.ac.ucl.excites.sapelli.collector.project.model;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -205,7 +203,7 @@ public abstract class Field
 	protected List<Column<?>> createColumns()
 	{
 		List<Column<?>> cols = new ArrayList<Column<?>>();
-		CollectionUtils.addIgnoreNull(cols,createColumn());
+		CollectionUtils.addIgnoreNull(cols, createColumn());
 		return cols;
 	}
 	

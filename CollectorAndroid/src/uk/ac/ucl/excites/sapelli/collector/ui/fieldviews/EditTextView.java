@@ -1,11 +1,11 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EditTextField;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;

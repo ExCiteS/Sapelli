@@ -1,6 +1,5 @@
 package uk.ac.ucl.excites.sapelli.collector.project.model;
 
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 
 /**
  * @author mstevens
