@@ -14,7 +14,7 @@ import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
  * @author mstevens
  *
  */
-public abstract class Field
+public abstract class Field implements JumpSource
 {
 	
 	//Statics----------------------------------------------

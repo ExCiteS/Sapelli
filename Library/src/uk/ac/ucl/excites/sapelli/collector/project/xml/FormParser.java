@@ -11,9 +11,10 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Field.Optionalness;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.project.model.JumpSource;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.CheckBoxField;
@@ -24,11 +25,11 @@ import uk.ac.ucl.excites.sapelli.collector.project.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.MultiListField;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.MultiListField.MultiListItem;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.MultiListField.MultiListItem;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.util.xml.SubtreeParser;
 
@@ -117,7 +118,7 @@ public class FormParser extends SubtreeParser
 	private ChoiceField currentChoice;
 	private MultiListItem currentListItem;
 	private Page currentPage;
-	private HashMap<Field, String> fieldToJumpId;
+	private HashMap<JumpSource, String> fieldToJumpId;
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaField, String> mediaAttachToDisableId;
 
@@ -133,7 +134,7 @@ public class FormParser extends SubtreeParser
 	{
 		currentForm = null;
 		formStartFieldId = null;
-		fieldToJumpId = new HashMap<Field, String>();
+		fieldToJumpId = new HashMap<JumpSource, String>();
 		idToField = new Hashtable<String, Field>();
 		mediaAttachToDisableId = new HashMap<MediaField, String>();
 	}
@@ -538,7 +539,7 @@ public class FormParser extends SubtreeParser
 				idToField.put(endF.getID().toUpperCase(), endF); // upper cased, for case insensitivity (they should already be upper case, but just in case...)
 			
 			// Resolve jumps...
-			for(Entry<Field, String> jump : fieldToJumpId.entrySet())
+			for(Entry<JumpSource, String> jump : fieldToJumpId.entrySet())
 			{
 				Field target = idToField.get(jump.getValue());
 				if(target == null)

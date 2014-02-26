@@ -92,49 +92,53 @@
   <!-- should 'hold' be an attribute of the form of of belongsTo? -> probably YES -->
   <!-- end: accept form names? -->
   
-  <Form id="Session" name="Community session" editable="true" singlePage="true" storeEndTime="true" next="PREVFORM">
-    <!-- allow form names as end action? (e.g. end="Entry") -> better not... -->
-  
-    <Alert text="Press ... within 5 seconds to access the Session form" showOnCreate="false" showOnEdit="true" timeout="5" onTimeout="_BACK">
-      <Option visible="false" label="" key="VOLUME_DOWN" jump=""/>
-      <Option visible="false" label="" key="BACK" jump="_PREVFORM"/>
-    </Alert>
+  <Form id="Session" name="Community session" editable="true" storeEndTime="true" next="PREVFORM">
 
-    <Label text="Session"/><!-- noColumn="true" is implied -->
-
-    <Text id="Creator:" label="Creator" minLength="2" maxLength="48" optional="false"/>
-
-    <MultiList id="Community" label="Province:;Community:" optional="false" preSelectDefault="false">
-      <Item value="Province 1">
-        <Item value="Community P1.1"/>
-        <Item value="Community P1.2"/>
-        <Item value="Community P1.3"/>
-        <Item value="New P1 community (see comment)"/>
-      </Item>
-      <Item value="Province 2">
-        <Item value="Community P2.1"/>
-        <Item value="Community P2.2"/>
-        <Item value="Community P2.3"/>
-        <Item value="Community P2.4"/>
-        <Item value="Community P2.5"/>
-        <Item value="Community P2.6"/>
-        <Item value="Community P2.7"/>
-        <Item value="Community P2.8"/>
-        <Item value="New P2 community (see comment)"/>
-      </Item>
-    </MultiList>
-
-    <Check id="Operational" label="Operational session" defaultValue="true"/>
-
-    <Check id="Testing" label="Testing session" defaultValue="false"/>
-
-    <Check id="Training" label="Training session" defaultValue="false"/>
-
-    <Text id="Comment:" label="Comments" maxLength="1024" multiline="true" optional="true"/>
-
-    <Button label="Start Session" disableOnEdit="true" jump="_SAVE+PREVFORM"/>
+    <Page skipOnBack="true" showOnCreate="false" showOnEdit="true">
+       <Label text="Press ... within 5 seconds to access the Session form"/>
+       <Trigger key="VOLUME_DOWN" jump="SessionPage"/>
+       <Trigger fixedTimer="5" jump="_PREVFORM"/>
+    </Page>
     
-    <Button id="closed" label="Close Session" disableOnCreate="true" column="boolean" jump="_SAVE+PREVFORM"/>
+    <Page id="SessionPage">
+
+      <Label text="Session"/><!-- noColumn="true" is implied -->
+
+      <Text id="Creator:" label="Creator" minLength="2" maxLength="48" optional="false"/>
+
+      <MultiList id="Community" label="Province:;Community:" optional="false" preSelectDefault="false">
+        <Item value="Province 1">
+          <Item value="Community P1.1"/>
+          <Item value="Community P1.2"/>
+          <Item value="Community P1.3"/>
+          <Item value="New P1 community (see comment)"/>
+        </Item>
+        <Item value="Province 2">
+          <Item value="Community P2.1"/>
+          <Item value="Community P2.2"/>
+          <Item value="Community P2.3"/>
+          <Item value="Community P2.4"/>
+          <Item value="Community P2.5"/>
+          <Item value="Community P2.6"/>
+          <Item value="Community P2.7"/>
+          <Item value="Community P2.8"/>
+          <Item value="New P2 community (see comment)"/>
+        </Item>
+      </MultiList>
+
+      <Check id="Operational" label="Operational session" defaultValue="true"/>
+
+      <Check id="Testing" label="Testing session" defaultValue="false"/>
+
+      <Check id="Training" label="Training session" defaultValue="false"/>
+
+      <Text id="Comment:" label="Comments" maxLength="1024" multiline="true" optional="true"/>
+
+      <Button label="Start Session" disableOnEdit="true" jump="_SAVE+PREVFORM"/>
+      
+      <Button id="closed" label="Close Session" disableOnCreate="true" column="boolean" jump="_SAVE+PREVFORM"/>
+  
+    </Page>
   
   </Form>
   
