@@ -90,7 +90,7 @@ public abstract class Controller
 	{
 		prevFormSession = currFormSession; // remember previous formSession
 		currFormSession = formSession;
-		if(formHistory.peek() != currFormSession) // add to history unless still in the same session
+		if(!formHistory.isEmpty() && formHistory.peek() != currFormSession) // add to history unless still in the same session
 			formHistory.add(currFormSession);
 		
 		// Location...
