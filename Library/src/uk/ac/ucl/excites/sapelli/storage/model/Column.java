@@ -357,6 +357,8 @@ public abstract class Column<T>
 	@SuppressWarnings("unchecked")
 	public boolean equals(Object obj, boolean checkName)
 	{
+		if(this == obj) // compare pointers first
+			return true;
 		if(this.getClass().isInstance(obj))
 		{
 			Column<T> other = (Column<T>) obj;
