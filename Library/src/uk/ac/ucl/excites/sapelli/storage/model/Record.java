@@ -101,12 +101,12 @@ public class Record
 	
 	protected void setValue(Column<?> column, Object value)
 	{
-		setValue(schema.getColumnIndex(column), value);
+		setValue(schema.getColumnPosition(column), value);
 	}
 
 	protected void setValue(String columnName, Object value)
 	{
-		setValue(schema.getColumnIndex(columnName), value);
+		setValue(schema.getColumnPosition(columnName), value);
 	}
 	
 	protected void setValue(int columnIndex, Object value)
@@ -116,12 +116,12 @@ public class Record
 
 	protected Object getValue(Column<?> column)
 	{
-		return getValue(schema.getColumnIndex(column));
+		return getValue(schema.getColumnPosition(column));
 	}
 	
 	protected Object getValue(String columnName)
 	{
-		return getValue(schema.getColumnIndex(columnName));
+		return getValue(schema.getColumnPosition(columnName));
 	}
 	
 	protected Object getValue(int columnIndex)

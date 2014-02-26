@@ -5,12 +5,12 @@ package uk.ac.ucl.excites.sapelli.collector.project.data;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ChoiceField;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
-import uk.ac.ucl.excites.sapelli.storage.model.DateTimeColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 
 /**
  * Subclass of Record to represent records create by the Sapelli Collector

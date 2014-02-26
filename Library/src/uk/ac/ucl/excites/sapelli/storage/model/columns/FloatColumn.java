@@ -1,9 +1,10 @@
-package uk.ac.ucl.excites.sapelli.storage.model;
+package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
 import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 
 /**
  * A column for 32 bit floating point numbers (floats)

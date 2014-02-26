@@ -1,16 +1,16 @@
 package uk.ac.ucl.excites.sapelli.collector.project.ui;
 
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EditTextField;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.LocationField;
+import uk.ac.ucl.excites.sapelli.collector.project.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.PhotoField;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.lists.MultiListField;
 
 public interface CollectorUI
 {

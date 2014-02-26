@@ -11,13 +11,13 @@ import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.collector.project.data.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EndField;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.DateTimeColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
 
@@ -504,11 +504,12 @@ public class Form
 	}
 
 	/**
-	 * The returned Schema object will contain all columns defined by fields in the form, plus the implicitly added key
-	 * columns (StartTime & DeviceID) and optional EndTime column. However, those implicit columns are only added if
-	 * at least 1 user-defined field has a column. If there are no user-defined fields with columns then no implicit
-	 * columns are added and then the whole schema is pointless, therefore in that case this method will return null
-	 * instead of a columnless Schema object and the {@link #producesRecords} variable will be set to {@code false}. 
+	 * The returned Schema object will contain all columns defined by fields in the form, plus the implicitly added
+	 * columns (StartTime & DeviceID, which together are used as the primary key, and the optional EndTime). However,
+	 * those implicit columns are only added if at least 1 user-defined field has a column. If there are no user-defined
+	 * fields with columns then no implicit columns are added and then the whole schema is pointless, therefore in that
+	 * case this method will return null instead of a columnless Schema object and the {@link #producesRecords} variable
+	 * will be set to {@code false}. 
 	 * 
 	 * @return
 	 */
@@ -517,53 +518,53 @@ public class Form
 		if(!producesRecords)
 			return null;
 		if(schema == null)
-		{
-			//create new one:
-			schema = new Schema(project.getHash(), /* Project#hash becomes Schema#usageID */
-								this.index, /* Form#index becomes Schema#usageSubID */
-								project.getName() +
-								(project.getVariant() != null ? '_' + project.getVariant() : "") +
-								"_v" + project.getVersion() +
-								":" + id /* = form "name"*/);
-			
-			/* Add "key" columns
-			 * 	StartTime & DeviceID together form the primary key of our records.
-			 * 	These columns are implicitly added, together with EndTime if the
-			 * 	appropriate attribute was set, *BUT* only if there is at least one
-			 * 	user-defined field _with_ a column.
-			 */
-			boolean hasUserDefinedColumns = false;
+		{	
+			// Generate columns for user-defined fields:
+			List<Column<?>> userDefinedColumns = new ArrayList<Column<?>>();
 			for(Field f : fields)
 				if(!f.isNoColumn())
-				{
-					hasUserDefinedColumns = true;
-					break;
-				}
-			if(hasUserDefinedColumns)
+					userDefinedColumns.addAll(f.getColumns());
+	
+			// Check if there are user-defined columns at all, if not we don't need to generate a schema at all...
+			if(userDefinedColumns.isEmpty())
 			{
-				// Timestamp column(s):
-				schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_START, false));
+				producesRecords = false; // this will avoid that we try to generate a schema again
+				// this.schema stays null
+			}
+			else
+			{	
+				// Create new Schema:
+				schema = new Schema(project.getHash(),	/* Project#hash becomes Schema#usageID */
+									this.index, 		/* Form#index becomes Schema#usageSubID */
+									project.getName() +
+									(project.getVariant() != null ? '_' + project.getVariant() : "") +
+									"_v" + project.getVersion() +
+									":" + id /* = form "name"*/);
+				
+				/* Add implicit columns
+				 * 	StartTime & DeviceID together form the primary key of our records.
+				 * 	These columns are implicitly added, together with EndTime if the
+				 * 	appropriate attribute was set, *BUT* only if there is at least one
+				 * 	user-defined field _with_ a column.
+				 */
+				// StartTime column:
+				DateTimeColumn startTimeCol = DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_START, false);		
+				schema.addColumn(startTimeCol);
+				// EndTime column:
 				if(storeEndTime)
 					schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_END, false));
 				// Device ID column:
-				schema.addColumn(new IntegerColumn(COLUMN_DEVICE_ID, false, false, 32));
-			}
-			
-			// Columns for user-defined fields:
-			if(hasUserDefinedColumns)
-			{
-				for(Field f : fields)
-					if(!f.isNoColumn())
-						schema.addColumns(f.getColumns());
+				IntegerColumn deviceIDCol = new IntegerColumn(COLUMN_DEVICE_ID, false, false, 32);
+				schema.addColumn(deviceIDCol);
+				// Add primary key on StartTime & DeviceID:
+				schema.addIndex(new Index(COLUMN_TIMESTAMP_START + COLUMN_DEVICE_ID, true, startTimeCol, deviceIDCol), true);
 				
-				// Seal & store the schema:
+				// Add user-defined columns
+				schema.addColumns(userDefinedColumns);
+				
+				// Seal the schema:
 				schema.seal();
 			}
-			else // same as: if(schema.getColumns().isEmpty()) 
-			{
-				producesRecords = false; // this will avoid that we try to generate a schema again
-				schema = null;
-			}			
 		}
 		return schema;
 	}

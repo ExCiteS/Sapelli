@@ -88,7 +88,7 @@ public abstract class Transmission
 		if(columnsToFactorOut != null)
 		{
 			for(Column<?> c : columnsToFactorOut)
-				if(schema.getColumnIndex(c) == Schema.UNKNOWN_COLUMN_INDEX)
+				if(schema.getColumnPosition(c) == Schema.UNKNOWN_COLUMN_POSITION)
 					throw new IllegalArgumentException(c.toString() + " does not belong to the given schema.");
 		}
 		this.columnsToFactorOut = columnsToFactorOut; //may be null

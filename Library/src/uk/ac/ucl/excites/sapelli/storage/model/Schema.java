@@ -19,7 +19,7 @@ public class Schema
 {
 
 	// Statics------------------------------------------------------------
-	static public final int UNKNOWN_COLUMN_INDEX = -1;
+	static public final int UNKNOWN_COLUMN_POSITION = -1;
 	
 	// Identification:
 	static public final int SCHEMA_USAGE_ID_SIZE = 32; //bits
@@ -46,8 +46,10 @@ public class Schema
 	private int usageSubID;
 	private String name;
 
-	private ArrayList<Column> columns;
-	private Map<String, Integer> columnNameToIndex;
+	private List<Column> columns;
+	private Map<String, Integer> columnNameToPosition;
+	private List<Index> indexes;
+	private Index primaryKey;
 
 	private boolean sealed = false;
 	
@@ -77,7 +79,7 @@ public class Schema
 		else
 			throw new IllegalArgumentException("Invalid schema usageSubID value (" + usageSubID + "), valid values are " + SCHEMA_USAGE_SUB_ID_FIELD.getLogicalRangeString() + ".");
 		this.name = (name == null || name.isEmpty() ? "Schema_UID:" + usageID + "_USID:" + usageSubID : name);
-		columnNameToIndex = new LinkedHashMap<String, Integer>();
+		columnNameToPosition = new LinkedHashMap<String, Integer>();
 		columns = new ArrayList<Column>();
 	}
 
@@ -91,7 +93,7 @@ public class Schema
 	{
 		if(!sealed)
 		{
-			columnNameToIndex.put(column.getName(), columns.size());
+			columnNameToPosition.put(column.getName(), columns.size());
 			columns.add(column);
 			column.setSchema(this);
 		}
@@ -99,11 +101,11 @@ public class Schema
 			throw new IllegalStateException("Cannot extend a sealed schema!");
 	}
 
-	public Column getColumn(int index)
+	public Column getColumn(int position)
 	{
 		try
 		{
-			return columns.get(index);
+			return columns.get(position);
 		}
 		catch(IndexOutOfBoundsException iobe)
 		{
@@ -111,9 +113,13 @@ public class Schema
 		}
 	}
 
+	/**
+	 * @param name
+	 * @return	the {@link Column} instance with this name, or {@code null} if the Schema contains no such column
+	 */
 	public Column getColumn(String name)
 	{
-		Integer idx = columnNameToIndex.get(name);
+		Integer idx = columnNameToPosition.get(name);
 		if(idx == null)
 			return null;
 		return columns.get(idx);
@@ -124,17 +130,67 @@ public class Schema
 		return columns;
 	}
 
-	public int getColumnIndex(String name)
+	/**
+	 * @param name
+	 * @return	the position of the {@link Column} instance with this name, or {@link #UNKNOWN_COLUMN_POSITION} if the Schema contains no such column
+	 */
+	public int getColumnPosition(String name)
 	{
-		Integer idx = columnNameToIndex.get(name);
+		Integer idx = columnNameToPosition.get(name);
 		if(idx == null)
-			return UNKNOWN_COLUMN_INDEX;
+			return UNKNOWN_COLUMN_POSITION;
 		return idx.intValue();
 	}
 
-	public int getColumnIndex(Column column)
+	/**
+	 * @param column
+	 * @return	the position of the given {@link Column} instance within this Schema, or {@link #UNKNOWN_COLUMN_POSITION} if the Schema contains no such column
+	 */
+	public int getColumnPosition(Column column)
 	{
-		return columnNameToIndex.get(column.getName());
+		return getColumnPosition(column.getName());
+	}
+	
+	/**
+	 * 
+	 * @param column
+	 * @return	whether or not this Schema contains the given Column
+	 */
+	public boolean containsColumn(Column column)
+	{
+		Column myColumn = getColumn(column.getName());
+		return myColumn != null && myColumn.equals(column);
+	}
+	
+	/**
+	 * Add an {@link Index} to the Schema, which may or may not be used as the primary key.
+	 * In case it is to be used as the primary key the index needs to be unique and should consist only of non-optional (i.e. non-nullable) columns.
+	 * 
+	 * Note: for now we allow indexes to be added and a primary key to be set after the schema has been sealed. However this may change in the future.
+	 * 
+	 * @param index
+	 * @param useAsPrimaryKey
+	 */
+	public void addIndex(Index index, boolean useAsPrimaryKey)
+	{
+		if(index == null)
+			throw new IllegalArgumentException("Index cannot be null!");
+		// Check if the indexed columns are columns of this Schema instance:
+		for(Column idxCol : index.getColumns())
+			if(!containsColumn(idxCol))
+				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before Indexes are added.");
+		if(useAsPrimaryKey)
+		{
+			if(primaryKey != null)
+				throw new IllegalStateException("This Schema already has a primary key (there can be only 1)!");
+			if(!index.isUnique())
+				throw new IllegalArgumentException("An Index needs to be unique to serve as the primary key!");
+			for(Column idxCol : index.getColumns())
+				if(idxCol.isOptional())
+					throw new IllegalArgumentException("An primary key index cannot contain optional (i.e. nullable) columns!");
+			primaryKey = index; // set the index as primary key
+		}
+		indexes.add(index); // add to the indexes
 	}
 
 	/**

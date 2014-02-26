@@ -10,10 +10,11 @@ import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.data.CollectorRecord;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.xml.FormParser;
-import uk.ac.ucl.excites.sapelli.storage.model.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.util.ROT13;
