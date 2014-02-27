@@ -147,11 +147,8 @@ public abstract class Controller
 	
 			currFormSession.currField = null; // !!! otherwise we create loops
 			final Field previousField = currFormSession.fieldHistory.pop();
-	
-			// TODO Maybe there is a better way of handling back buttons (TODO yes there is!)
-			if(previousField instanceof LocationField)
-				goTo(currFormSession.fieldHistory.pop()); // Move two fields backwards
-			else if(currFormSession.currField instanceof OrientationField)
+			
+			if(previousField.isSkipOnBack())
 				goTo(currFormSession.fieldHistory.pop()); // Move two fields backwards
 			else
 				goTo(previousField);

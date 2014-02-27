@@ -118,7 +118,7 @@ public class FormParser extends SubtreeParser
 	private ChoiceField currentChoice;
 	private MultiListItem currentListItem;
 	private Page currentPage;
-	private HashMap<JumpSource, String> fieldToJumpId;
+	private HashMap<JumpSource, String> jumpSourceToJumpTargetId;
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaField, String> mediaAttachToDisableId;
 
@@ -134,7 +134,7 @@ public class FormParser extends SubtreeParser
 	{
 		currentForm = null;
 		formStartFieldId = null;
-		fieldToJumpId = new HashMap<JumpSource, String>();
+		jumpSourceToJumpTargetId = new HashMap<JumpSource, String>();
 		idToField = new Hashtable<String, Field>();
 		mediaAttachToDisableId = new HashMap<MediaField, String>();
 	}
@@ -460,9 +460,12 @@ public class FormParser extends SubtreeParser
 		{
 			// Remember jumps (always "intra-Form"):
 			if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
-				fieldToJumpId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // upper cased, for case insensitivity
+				jumpSourceToJumpTargetId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // upper cased, for case insensitivity
 			
-			// f.setSkipOnBack(readBooleanAttribute(attributes, ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK)); //TODO skip on back?
+			// Skip on back:
+			field.setSkipOnBack(readBooleanAttribute(ATTRIBUTE_FIELD_SKIP_ON_BACK, field.isSkipOnBack(), attributes));
+			
+			// Background colour:
 			field.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes, true, false));
 			
 			// Which buttons are allowed to show:
@@ -539,7 +542,7 @@ public class FormParser extends SubtreeParser
 				idToField.put(endF.getID().toUpperCase(), endF); // upper cased, for case insensitivity (they should already be upper case, but just in case...)
 			
 			// Resolve jumps...
-			for(Entry<JumpSource, String> jump : fieldToJumpId.entrySet())
+			for(Entry<JumpSource, String> jump : jumpSourceToJumpTargetId.entrySet())
 			{
 				Field target = idToField.get(jump.getValue());
 				if(target == null)

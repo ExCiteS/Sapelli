@@ -14,6 +14,10 @@ import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
  * @author mstevens
  *
  */
+/**
+ * @author mstevens
+ *
+ */
 public abstract class Field implements JumpSource
 {
 	
@@ -30,9 +34,10 @@ public abstract class Field implements JumpSource
 	static public final boolean DEFAULT_SHOW_CANCEL = true;
 	static public final boolean DEFAULT_SHOW_FORWARD = true;
 	static public final boolean DEFAULT_ENABLED = true;
+	static private final boolean DEFAULT_SKIP_ON_BACK = false;
 	static public final Optionalness DEFAULT_OPTIONAL = Optionalness.NOT_IF_REACHED;
 	static public final boolean DEFAULT_NO_COLUMN = false;
-	public static final String DEFAULT_BACKGROUND_COLOR = "#FFFFFF"; //white
+	static public final String DEFAULT_BACKGROUND_COLOR = "#FFFFFF"; //white
 	
 	
 	//Dynamics---------------------------------------------
@@ -40,6 +45,7 @@ public abstract class Field implements JumpSource
 	protected Form form;
 	protected Field jump;
 	protected boolean enabled = DEFAULT_ENABLED;
+	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	protected Optionalness optional = DEFAULT_OPTIONAL;
 	protected boolean noColumn = DEFAULT_NO_COLUMN;
 	protected String backgroundColor = DEFAULT_BACKGROUND_COLOR;
@@ -94,6 +100,22 @@ public abstract class Field implements JumpSource
 	public void setOptional(Optionalness optionalness)
 	{
 		this.optional = optionalness;
+	}
+
+	/**
+	 * @return the skipOnBack
+	 */
+	public boolean isSkipOnBack()
+	{
+		return skipOnBack;
+	}
+
+	/**
+	 * @param skipOnBack the skipOnBack to set
+	 */
+	public void setSkipOnBack(boolean skipOnBack)
+	{
+		this.skipOnBack = skipOnBack;
 	}
 
 	public void setJump(Field target)

@@ -21,26 +21,26 @@ public class LocationField extends Field implements Timeoutable
 {
 	
 	//Statics----------------------------------------------
-	public static final int TYPE_ANY = 0;
-	public static final int TYPE_GPS = 1;
-	public static final int TYPE_NETWORK = 2;
-	//public static final int TYPE_PASSIVE = 3;
+	static public final int TYPE_ANY = 0;
+	static public final int TYPE_GPS = 1;
+	static public final int TYPE_NETWORK = 2;
+	//static public final int TYPE_PASSIVE = 3;
 	
 	//Defaults:
-	public static final int DEFAULT_TYPE = TYPE_GPS; 				//use GPS
-	public static final boolean DEFAULT_START_WITH_FORM = true;		//start listening for locations at the start of the form
-	public static final boolean DEFAULT_WAIT_AT_FIELD = false;		//do not wait for a new(er) location when at the field
-	public static final int DEFAULT_TIMEOUT_S = 5 * 60; 			//use timeout of 5 minutes (300 seconds)
-	public static final int DEFAULT_MAX_AGE_S = 10 * 60;			//use max age of 10 minutes (600 seconds)
-	public static final float DEFAULT_MAX_ACCURACY_RADIUS = 75;		//use a maximum acceptably accuracy radius of 75m (small is better) 
-	public static final boolean DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT = true;		//take the best known location (even though it does not meet type/age/accuracy requirements) if timeout passes
-	public static final boolean DEFAULT_DOUBLE_PRECISION = false; 	//use 32 bit floats for lat, lon & alt
-	public static final boolean DEFAULT_STORE_ALTITUDE = true;		//store altitude
-	public static final boolean DEFAULT_STORE_BEARING = false;		//do not store bearing
-	public static final boolean DEFAULT_STORE_SPEED = false;		//do not store speed
-	public static final boolean DEFAULT_STORE_ACCURACY = true;		//store accuracy
-	public static final boolean DEFAULT_STORE_PROVIDER = false;		//do not store provider
-	
+	static public final int DEFAULT_TYPE = TYPE_GPS; 				// use GPS by default
+	static public final boolean DEFAULT_START_WITH_FORM = true;		// start listening for locations at the start of the form
+	static public final boolean DEFAULT_WAIT_AT_FIELD = false;		// do not wait for a new(er) location when at the field
+	static public final int DEFAULT_TIMEOUT_S = 5 * 60; 			// use timeout of 5 minutes (300 seconds)
+	static public final int DEFAULT_MAX_AGE_S = 10 * 60;			// use max age of 10 minutes (600 seconds)
+	static public final float DEFAULT_MAX_ACCURACY_RADIUS = 75;		// use a maximum acceptably accuracy radius of 75m (small is better) 
+	static public final boolean DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT = true;		// take the best known location (even though it does not meet type/age/accuracy requirements) if timeout passes
+	static public final boolean DEFAULT_DOUBLE_PRECISION = false; 	// use 32 bit floats for lat, lon & alt
+	static public final boolean DEFAULT_STORE_ALTITUDE = true;		// store altitude
+	static public final boolean DEFAULT_STORE_BEARING = false;		// do not store bearing
+	static public final boolean DEFAULT_STORE_SPEED = false;		// do not store speed
+	static public final boolean DEFAULT_STORE_ACCURACY = true;		// store accuracy
+	static public final boolean DEFAULT_STORE_PROVIDER = false;		// do not store provider
+	static private final boolean DEFAULT_SKIP_ON_BACK = true;		// unlike other fields locationfields are skipped on back by default
 	
 	//Dynamics---------------------------------------------
 	private int type;
@@ -72,6 +72,7 @@ public class LocationField extends Field implements Timeoutable
 		this.storeSpeed = DEFAULT_STORE_SPEED;
 		this.storeAccuracy = DEFAULT_STORE_ACCURACY;
 		this.storeProvider = DEFAULT_STORE_PROVIDER;
+		this.skipOnBack = DEFAULT_SKIP_ON_BACK;
 	}
 	
 	/**
