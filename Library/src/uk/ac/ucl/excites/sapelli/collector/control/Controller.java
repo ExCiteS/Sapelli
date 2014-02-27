@@ -130,7 +130,10 @@ public abstract class Controller
 	public void goForward(boolean requestedByUser)
 	{
 		if(handlingGoBackRequest && !requestedByUser)
+		{
 			goBack(false); // if we are currently handling a user *back* request and this is an automatic *forward* request, then we should be back instead of forward!
+			return;
+		}
 		
 		// Log interaction:
 		if(requestedByUser && logger != null)
