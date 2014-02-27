@@ -20,7 +20,6 @@ public class OrientationField extends Field
 	static public final boolean DEFAULT_STORE_AZIMUTH = true; 
 	static public final boolean DEFAULT_STORE_PITCH = true;
 	static public final boolean DEFAULT_STORE_ROLL = true;
-	static private final boolean DEFAULT_SKIP_ON_BACK = true;		// unlike other fields orientationfields are skipped on back by default
 	
 	//Dynamics:
 	private boolean storeAzimuth = DEFAULT_STORE_AZIMUTH;
@@ -30,7 +29,6 @@ public class OrientationField extends Field
 	public OrientationField(Form form, String id)
 	{
 		super(form, id);
-		this.skipOnBack = DEFAULT_SKIP_ON_BACK;
 	}
 
 	/**

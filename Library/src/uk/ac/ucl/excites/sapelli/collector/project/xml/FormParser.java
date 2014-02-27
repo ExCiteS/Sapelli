@@ -463,7 +463,7 @@ public class FormParser extends SubtreeParser
 				jumpSourceToJumpTargetId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // upper cased, for case insensitivity
 			
 			// Skip on back:
-			field.setSkipOnBack(readBooleanAttribute(ATTRIBUTE_FIELD_SKIP_ON_BACK, field.isSkipOnBack(), attributes));
+			field.setSkipOnBack(readBooleanAttribute(ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK, attributes));
 			
 			// Background colour:
 			field.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes, true, false));

@@ -3,7 +3,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.*;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
@@ -218,7 +217,7 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 			{
 				switch(positionToButton[position])
 				{
-					case BUTTON_TYPE_BACK		: controller.goBack(); break;
+					case BUTTON_TYPE_BACK		: controller.goBack(true); break;
 					case BUTTON_TYPE_CANCEL		: controller.cancelAndRestartForm(); break;
 					case BUTTON_TYPE_FORWARD	: controller.goForward(true); break;
 					default : return;

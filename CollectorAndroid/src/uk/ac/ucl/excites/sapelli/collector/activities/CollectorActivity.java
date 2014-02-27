@@ -168,7 +168,7 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		switch(keyCode)
 		{
 		case KeyEvent.KEYCODE_BACK:
-			controller.goBack(); // TODO maybe make this optional?
+			controller.goBack(true); // TODO maybe make this optional?
 			return true;
 		case KeyEvent.KEYCODE_DPAD_RIGHT:
 			return true;

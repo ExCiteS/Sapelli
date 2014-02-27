@@ -85,7 +85,7 @@ public class CollectorController extends Controller implements LocationListener,
 			return true;
 		}
 		else
-		{ // we already have a (good enough) location
+		{	// we already have a (good enough) location
 			goForward(false); // skip the wait screen
 			return false;
 		}
@@ -194,7 +194,7 @@ public class CollectorController extends Controller implements LocationListener,
 			currentBestLocation = location;
 			// check if we can/need to use the location now:
 			if(currFormSession.currField instanceof LocationField)
-			{ // user is currently waiting for a location for the currFormSession.currField
+			{	// user is currently waiting for a location for the currFormSession.currField
 				LocationField lf = (LocationField) currFormSession.currField;
 				// try to store location:
 				if(lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(location)))

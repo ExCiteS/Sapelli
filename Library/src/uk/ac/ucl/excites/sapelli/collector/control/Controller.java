@@ -51,6 +51,8 @@ public abstract class Controller
 	protected FormSession currFormSession;
 	protected FormSession prevFormSession; 
 	
+	protected boolean handlingGoBackRequest = false;
+	
 	public Controller(Project project, DataAccess dao)
 	{
 		this.project = project;
@@ -127,7 +129,10 @@ public abstract class Controller
 
 	public void goForward(boolean requestedByUser)
 	{
-		// log interaction:
+		if(handlingGoBackRequest && !requestedByUser)
+			goBack(false); // if we are currently handling a user *back* request and this is an automatic *forward* request, then we should be back instead of forward!
+		
+		// Log interaction:
 		if(requestedByUser && logger != null)
 			logger.addLine("FORWARD_BUTTON", currFormSession.currField.getID());
 	
@@ -137,22 +142,28 @@ public abstract class Controller
 			openFormSession(currFormSession); // this shouldn't happen really...
 	}
 
-	public void goBack()
+	public void goBack(boolean requestedByUser)
 	{
-		if(!currFormSession.fieldHistory.isEmpty())
+		if(requestedByUser)
 		{
+			handlingGoBackRequest = true; // Do *not* replace this by: handlingGoBackRequest = requestedByUser
+		
 			// log interaction:
 			if(logger != null)
 				logger.addLine("BACK_BUTTON", currFormSession.currField.getID());
-	
+		}
+		
+		if(!currFormSession.fieldHistory.isEmpty())
+		{
 			currFormSession.currField = null; // !!! otherwise we create loops
-			final Field previousField = currFormSession.fieldHistory.pop();
-			
+			Field previousField = currFormSession.fieldHistory.pop();
 			if(previousField.isSkipOnBack())
 				goTo(currFormSession.fieldHistory.pop()); // Move two fields backwards
 			else
 				goTo(previousField);
 		}
+		
+		handlingGoBackRequest = false;
 	}
 
 	public synchronized void goTo(Field nextField)
@@ -329,6 +340,7 @@ public abstract class Controller
 		if(foreignRecord != null)
 		{	
 			//TODO Refer to foreign record from current record
+			
 			goForward(false);
 		}
 		else

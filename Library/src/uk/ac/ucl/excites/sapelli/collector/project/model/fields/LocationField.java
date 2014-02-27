@@ -40,7 +40,6 @@ public class LocationField extends Field implements Timeoutable
 	static public final boolean DEFAULT_STORE_SPEED = false;		// do not store speed
 	static public final boolean DEFAULT_STORE_ACCURACY = true;		// store accuracy
 	static public final boolean DEFAULT_STORE_PROVIDER = false;		// do not store provider
-	static private final boolean DEFAULT_SKIP_ON_BACK = true;		// unlike other fields locationfields are skipped on back by default
 	
 	//Dynamics---------------------------------------------
 	private int type;
@@ -72,7 +71,6 @@ public class LocationField extends Field implements Timeoutable
 		this.storeSpeed = DEFAULT_STORE_SPEED;
 		this.storeAccuracy = DEFAULT_STORE_ACCURACY;
 		this.storeProvider = DEFAULT_STORE_PROVIDER;
-		this.skipOnBack = DEFAULT_SKIP_ON_BACK;
 	}
 	
 	/**
@@ -300,23 +298,23 @@ public class LocationField extends Field implements Timeoutable
 	
 	public boolean storeLocation(Record record, Location location, boolean bestWeCouldGet)
 	{	
-		//Null check:
+		// Null check:
 		if(location == null)
 			return false;
 		if(!bestWeCouldGet)
 		{
-			//Time check:
+			// Time check:
 			long ageMS = System.currentTimeMillis() - location.getTime();
 			if(ageMS > maxAgeS * 1000)
 				return false; //location is too old
-			//Provider type check:
+			// Provider type check:
 			if(type == LocationField.TYPE_GPS && location.getProvider() != Location.PROVIDER_GPS)
 				return false;
-			//Accuracy check:
+			// Accuracy check:
 			if(location.getAccuracy() > maxAccuracyRadius)
 				return false; //not accurate enough
 		}
-		//this location is good enough or it is the best we could get, so store it:
+		// This location is good enough or it is the best we could get, so store it:
 		((LocationColumn) form.getColumnFor(this)).storeValue(record, location);
 		return true;
 	}

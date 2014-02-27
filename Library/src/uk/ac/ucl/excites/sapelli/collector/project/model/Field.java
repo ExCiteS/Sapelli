@@ -34,7 +34,7 @@ public abstract class Field implements JumpSource
 	static public final boolean DEFAULT_SHOW_CANCEL = true;
 	static public final boolean DEFAULT_SHOW_FORWARD = true;
 	static public final boolean DEFAULT_ENABLED = true;
-	static private final boolean DEFAULT_SKIP_ON_BACK = false;
+	static public final boolean DEFAULT_SKIP_ON_BACK = false;
 	static public final Optionalness DEFAULT_OPTIONAL = Optionalness.NOT_IF_REACHED;
 	static public final boolean DEFAULT_NO_COLUMN = false;
 	static public final String DEFAULT_BACKGROUND_COLOR = "#FFFFFF"; //white
