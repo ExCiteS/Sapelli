@@ -13,7 +13,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 
 /**
- * Draws a horizontal arrow (pointing left or right), which fits exactly in the bounds of the canvas
+ * Draws a horizontal arrow (pointing left or right), which fits exactly in the vertical, and optionally also the horizontal bounds of the canvas
  * 
  * @author mstevens, Michalis Vitos
  */
@@ -24,12 +24,12 @@ public class HorizontalArrow extends Drawable
 	static public final boolean DEFAULT_FILL_WIDTH = false;
 
 	private int colour;
-	private boolean leftPointing = true;
+	private boolean leftPointing;
 	private boolean fillWidth = DEFAULT_FILL_WIDTH;
 	
 	public HorizontalArrow(boolean leftPointing)
 	{
-		this(DEFAULT_COLOUR, false, DEFAULT_FILL_WIDTH);
+		this(DEFAULT_COLOUR, leftPointing, DEFAULT_FILL_WIDTH);
 	}
 	
 	public HorizontalArrow(int colour, boolean leftPointing)
@@ -69,7 +69,7 @@ public class HorizontalArrow extends Drawable
 		arrowPaint.setColor(colour);
 		
 		// Altitude of the equilateral triangle which forms the arrow head:
-		float altitude = (float) (Math.sqrt(3.0) * bounds.height() / 2.0d);
+		float altitude = (float) (Math.sqrt(3.0) * bounds.height() / 2.0f);
 
 		// Draw arrow:
 		Path arrow = new Path();
