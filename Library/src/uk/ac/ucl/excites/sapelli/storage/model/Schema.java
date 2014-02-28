@@ -81,6 +81,7 @@ public class Schema
 		this.name = (name == null || name.isEmpty() ? "Schema_UID:" + usageID + "_USID:" + usageSubID : name);
 		columnNameToPosition = new LinkedHashMap<String, Integer>();
 		columns = new ArrayList<Column>();
+		indexes = new ArrayList<Index>();
 	}
 
 	public void addColumns(List<Column<?>> columns)
