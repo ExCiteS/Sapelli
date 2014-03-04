@@ -12,10 +12,11 @@ import java.util.Stack;
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.project.data.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Field.Optionalness;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form.Next;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.LocationField;
@@ -106,6 +107,11 @@ public abstract class Controller
 		if(logger != null)			
 			logger.addLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getIndex() + ")");
 		
+		// Setup the triggers
+		final List<Trigger> triggers = currFormSession.form.getTriggers();
+		if(!triggers.isEmpty())
+			setTriggers(triggers);
+
 		// Go to field...
 		if(currFormSession.currField == null)
 			goTo(currFormSession.form.getStartField()); // begin filling out the form at the start field
@@ -305,8 +311,13 @@ public abstract class Controller
 		//for(Field f : page.getFields())
 		//	f.enter(this);
 		
-		//TODO startWithPage location
+		// TODO startWithPage location
 		
+		// Setup the triggers
+		final List<Trigger> triggers = page.getTriggers();
+		if(!triggers.isEmpty())
+			setTriggers(triggers);
+
 		return true;
 	}
 	
@@ -397,6 +408,40 @@ public abstract class Controller
 		return false; // no UI update needed
 	}
 	
+	public boolean enterTrigger(Trigger trigger)
+	{
+		final String key = trigger.getKey();
+		final int fixedTimer= trigger.getFixedTimer();
+		
+		if(key != null)
+		{
+			// TODO Setup onKey Listeners
+			System.out.println("Setup onKey Listeners to jump at: " + trigger.getJump().getID());
+
+			// Log start form
+			if(logger != null)
+				logger.addLine("TRIGGER", "Set up key trigger on " + key + " pressed");
+		}
+		
+		if(fixedTimer > 0)
+		{
+			// TODO Setup Timer Listeners
+			System.out.println("Setup Timer Listeners to jump at: " + trigger.getJump().getID());
+
+			// Log start form
+			if(logger != null)
+				logger.addLine("TRIGGER", "Set up time trigger in " + fixedTimer + " seconds");
+		}
+
+		return true;
+	}
+
+	private void setTriggers(List<Trigger> triggers)
+	{
+		for(Trigger trigger : triggers)
+			enterTrigger(trigger);
+	}
+
 	public boolean isFieldEndabled(Field field)
 	{
 		return field.isEnabled() && !currFormSession.tempDisabledFields.contains(field);

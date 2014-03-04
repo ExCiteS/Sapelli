@@ -76,6 +76,7 @@ public class Form
 	private Field start;
 	private final List<Field> fields;
 	private final List<LocationField> locationFields;
+	private final List<Trigger> triggers;
 	
 	// Android shortcut:
 	private String shortcutImageRelativePath;
@@ -110,6 +111,7 @@ public class Form
 		
 		this.fields = new ArrayList<Field>();
 		this.locationFields = new ArrayList<LocationField>();
+		this.triggers = new ArrayList<Trigger>();
 		
 		// Set Form index & add it to the Project:
 		if(FORM_INDEX_FIELD.fits(project.getForms().size()))
@@ -215,6 +217,19 @@ public class Form
 	public void setStartField(Field start)
 	{
 		this.start = start;
+	}
+
+	public void addTrigger(Trigger trigger)
+	{
+		triggers.add(trigger);
+	}
+
+	/**
+	 * @return the triggers
+	 */
+	public List<Trigger> getTriggers()
+	{
+		return triggers;
 	}
 
 	/**
