@@ -1,6 +1,3 @@
-/**
- * 
- */
 package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 
 import uk.ac.ucl.excites.sapelli.collector.project.model.Field;

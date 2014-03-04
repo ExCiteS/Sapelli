@@ -14,10 +14,6 @@ import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
  * @author mstevens
  *
  */
-/**
- * @author mstevens
- *
- */
 public abstract class Field implements JumpSource
 {
 	
