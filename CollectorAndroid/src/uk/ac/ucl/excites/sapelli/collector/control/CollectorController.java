@@ -12,9 +12,9 @@ import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form.Next;
-import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.LocationField;
@@ -151,7 +151,14 @@ public class CollectorController extends Controller implements LocationListener,
 		// else if() //other fields with timeouts in the future?
 		// ...
 		// Continue:
-		goForward(false);
+		activity.runOnUiThread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				goForward(false);
+			}
+		});
 	}
 
 	public void onOrientationChanged(Orientation orientation)
