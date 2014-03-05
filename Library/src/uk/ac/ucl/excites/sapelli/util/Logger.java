@@ -65,19 +65,6 @@ public class Logger
 	/**
 	 * Adds the final line to the Logger
 	 * 
-	 * @see Logger#addLine(String)
-	 * @param line
-	 */
-	public void addFinalLine(String line)
-	{
-		addLine(line);
-		addBlankLine();
-		close();
-	}
-
-	/**
-	 * Adds the final line to the Logger
-	 * 
 	 * @see Logger#addLine(String...)
 	 * @param fields
 	 */

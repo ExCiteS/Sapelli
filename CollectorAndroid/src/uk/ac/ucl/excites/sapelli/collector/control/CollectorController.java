@@ -118,8 +118,7 @@ public class CollectorController extends Controller implements LocationListener,
 		if(field != currFormSession.currField)
 			return; // this shouldn't happen really
 		//Log:
-		if(logger != null)
-			logger.addLine("TIMEOUT", currFormSession.currField.getID());
+		addLogLine("TIMEOUT", currFormSession.currField.getID());
 		// Handle location field
 		if(currFormSession.currField instanceof LocationField)
 		{

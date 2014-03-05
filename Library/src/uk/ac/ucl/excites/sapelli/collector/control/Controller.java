@@ -51,7 +51,7 @@ public abstract class Controller
 	protected FormSession currFormSession;
 	protected FormSession prevFormSession; 
 	
-	protected boolean handlingGoBackRequest = false;
+	protected boolean handlingUserGoBackRequest = false;
 	
 	public Controller(Project project, DataAccess dao)
 	{
@@ -81,6 +81,7 @@ public abstract class Controller
 		}
 		
 		// Clear/reset:
+		prevFormSession = null;
 		currFormSession = null;
 		formHistory.clear();
 		
@@ -90,11 +91,14 @@ public abstract class Controller
 
 	public void openFormSession(FormSession formSession)
 	{
-		prevFormSession = currFormSession; // remember previous formSession
+		// Deal with current form:
+		if(currFormSession != null && currFormSession.form != formSession.form)
+		{
+			prevFormSession = currFormSession; // remember previous formSession
+			formHistory.push(currFormSession); // add to form history	
+		}
 		currFormSession = formSession;
-		if(!formHistory.isEmpty() && formHistory.peek() != currFormSession) // add to history unless still in the same session
-			formHistory.push(currFormSession);
-		
+				
 		// Location...
 		List<LocationField> lfStartWithForm = currFormSession.form.getLocationFields(true);
 		if(!lfStartWithForm.isEmpty())
@@ -103,8 +107,7 @@ public abstract class Controller
 			stopLocationListener(); // stop listening for location updates (if we were still listening for another form for example)
 	
 		// Log start form
-		if(logger != null)			
-			logger.addLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getIndex() + ")");
+		addLogLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getIndex() + ")");
 		
 		// Go to field...
 		if(currFormSession.currField == null)
@@ -112,32 +115,49 @@ public abstract class Controller
 		else
 			goTo(currFormSession.currField); // continue where we left off
 	}
-
+	
 	public void cancelAndRestartForm()
 	{
 		// Cancel button pressed
-		if(logger != null)
-			logger.addLine("CANCEL_BUTTON", currFormSession.currField.getID());
+		addLogLine("CANCEL_BUTTON", currFormSession.currField.getID());
 		
-		goTo(new EndField(currFormSession.form, false, Next.LOOPFORM));
+		goTo(new EndField(currFormSession.form, false, Next.LOOPFORM)); // loop without saving first
 	}
 
 	public void cancelAndStop()
 	{
-		goTo(new EndField(currFormSession.form, false, Next.EXITAPP));
+		goTo(new EndField(currFormSession.form, false, Next.EXITAPP)); // exit without saving first
+	}
+	
+	public boolean goToPreviousForm()
+	{
+		if(formHistory.empty())
+			return false;
+		//else:
+		prevFormSession = currFormSession; // remember previous formSession
+		currFormSession = null; // make currentFormSession null such that it is not added to the formHistory stack
+		openFormSession(formHistory.pop()); // re-open previous form
+		return true;
 	}
 
+	/**
+	 * Go forward to next field
+	 * 
+	 * TODO validation
+	 * 
+	 * @param requestedByUser
+	 */
 	public void goForward(boolean requestedByUser)
 	{
-		if(handlingGoBackRequest && !requestedByUser)
+		if(handlingUserGoBackRequest && !requestedByUser)
 		{
 			goBack(false); // if we are currently handling a user *back* request and this is an automatic *forward* request, then we should be back instead of forward!
 			return;
 		}
 		
 		// Log interaction:
-		if(requestedByUser && logger != null)
-			logger.addLine("FORWARD_BUTTON", currFormSession.currField.getID());
+		if(requestedByUser)
+			addLogLine("FORWARD_BUTTON", currFormSession.currField.getID());
 	
 		if(currFormSession.currField != null)
 			goTo(currFormSession.form.getNextField(currFormSession.currField));
@@ -145,35 +165,46 @@ public abstract class Controller
 			openFormSession(currFormSession); // this shouldn't happen really...
 	}
 
+	/**
+	 * Go back to previous field or form
+	 * 
+	 * TODO validation
+	 * 
+	 * @param requestedByUser
+	 */
 	public void goBack(boolean requestedByUser)
 	{
 		if(requestedByUser)
-		{
-			handlingGoBackRequest = true; // Do *not* replace this by: handlingGoBackRequest = requestedByUser
+		{	// Remember we are handling a user initiated goBack request, this will turn subsequently triggered automatic goForward requests into goBack requests!
+			handlingUserGoBackRequest = true; // Do *not* replace this by: handlingGoBackRequest = requestedByUser
 		
 			// log interaction:
-			if(logger != null)
-				logger.addLine("BACK_BUTTON", currFormSession.currField.getID());
+			addLogLine("BACK_BUTTON", currFormSession.currField.getID());
 		}
 		
+		// Try to go to previous field...
 		if(!currFormSession.fieldHistory.isEmpty())
 		{
 			currFormSession.currField = null; // !!! otherwise we create loops
 			Field previousField = currFormSession.fieldHistory.pop();
 			if(previousField.isSkipOnBack())
-				goTo(currFormSession.fieldHistory.pop()); // Move two fields backwards
+				goBack(false); // Move two steps backwards
 			else
 				goTo(previousField);
 		}
+		else
+			// Try to go to previous form...
+			goToPreviousForm();
 		
-		handlingGoBackRequest = false;
+		// Reset user go back request flag:
+		if(requestedByUser)
+			handlingUserGoBackRequest = false;
 	}
-
+	
 	public synchronized void goTo(Field nextField)
 	{
 		// log interaction
-		if(logger != null)
-			logger.addLine("REACHED", nextField.getID());
+		addLogLine("REACHED", nextField.getID());
 	
 		// Leaving current field...
 		if(currFormSession.currField != null && currFormSession.currField != nextField)
@@ -211,8 +242,7 @@ public abstract class Controller
 		dao.store(currFormSession.record);
 	
 		// Log record:
-		if(logger != null)
-			logger.addLine("RECORD", currFormSession.record.toString());
+		addLogLine("RECORD", currFormSession.record.toString());
 	
 		// Move attachments from temp to data folder:
 		try
@@ -359,8 +389,7 @@ public abstract class Controller
 	public boolean enterEndField(EndField ef)
 	{
 		// Logging:
-		if(logger != null)
-			logger.addLine("FORM_END", ef.getID(), currFormSession.form.getName(), Long.toString((System.currentTimeMillis() - currFormSession.startTime) / 1000) + " seconds");
+		addLogLine("FORM_END", ef.getID(), currFormSession.form.getName(), Long.toString((System.currentTimeMillis() - currFormSession.startTime) / 1000) + " seconds");
 		
 		// Save or discard:
 		if(ef.isSave())
@@ -369,25 +398,23 @@ public abstract class Controller
 			discardAttachments();
 		
 		// Insert blank line in log:
-		if(logger != null)
-			logger.addBlankLine();
+		addBlankLogLine();
 		
 		// Go to "next":
 		switch(ef.getNext())
 		{
 			case LOOPFORM:
-				formHistory.pop();
 				openFormSession(FormSession.Create(currFormSession.form, deviceIDHash));
 				break;
 			case LOOPPROJ:
 				startProject(); // formHistory & currFormSession will be cleared
 				break;
 			case PREVFORM:
-				formHistory.pop();
-				if(!formHistory.isEmpty())
-					openFormSession(formHistory.pop()); // re-open previous form 
-				else
-					showError("Invalid state: no previous form to return to!", true); //TODO multilang
+				if(!goToPreviousForm()) // try to re-open previous form
+				{	// there is no previous form (this shouldn't really happen...):
+					showError("Invalid state: no previous form to return to!", false); //TODO multilang
+					startProject(); // restart project instead
+				}
 				break;
 			case EXITAPP:
 				exit();
@@ -426,8 +453,7 @@ public abstract class Controller
 		MediaField ma = (MediaField) currFormSession.currField;
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
-			if(logger != null)
-				logger.addLine("ATTACHMENT", currFormSession.currField.getID(), mediaAttachment.getName());
+			addLogLine("ATTACHMENT", currFormSession.currField.getID(), mediaAttachment.getName());
 			
 			ma.incrementCount(currFormSession.record); // Store/increase number of pictures/recordings taken
 			if(ma.isMaxReached(currFormSession.record) && ma.getDisableChoice() != null)
@@ -437,8 +463,7 @@ public abstract class Controller
 		}
 		else
 		{
-			if(logger != null)
-				logger.addLine("ATTACHMENT", currFormSession.currField.getID(), "NONE");
+			addLogLine("ATTACHMENT", currFormSession.currField.getID(), "NONE");
 			
 			if(ma.getOptional() != Optionalness.ALWAYS)
 				// at least one attachment is required:
@@ -506,6 +531,18 @@ public abstract class Controller
 	protected void startLocationListener(LocationField locField)
 	{
 		startLocationListener(Arrays.asList(locField));
+	}
+	
+	protected void addLogLine(String... fields)
+	{
+		if(logger != null)
+			logger.addLine(fields);
+	}
+	
+	protected void addBlankLogLine()
+	{
+		if(logger != null)
+			logger.addBlankLine();
 	}
 
 	public abstract void startLocationListener(List<LocationField> locFields);
