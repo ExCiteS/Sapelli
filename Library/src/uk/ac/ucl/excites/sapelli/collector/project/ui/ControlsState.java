@@ -5,69 +5,129 @@ package uk.ac.ucl.excites.sapelli.collector.project.ui;
 
 
 /**
+ * State of the control buttons
+ * 
  * @author mstevens
- *
  */
 public class ControlsState
 {
 	
-	private boolean backShown;
-	private boolean cancelShown;
-	private boolean forwardShown;
+	static public enum Control
+	{
+		BACK,
+		UP,
+		CANCEL,
+		FORWARD
+	}
 	
+	static public enum State
+	{
+		HIDDEN,
+		SHOWN_DISABLED, // "grayed out"
+		SHOWN_ENABLED
+	}
+	
+	private State[] controlStates;
+
 	/**
+	 * For backwards compatibility until we change the Controller
+	 * 
 	 * @param backShown
 	 * @param cancelShown
 	 * @param forwardShown
 	 */
 	public ControlsState(boolean backShown, boolean cancelShown, boolean forwardShown)
 	{
-		this.backShown = backShown;
-		this.cancelShown = cancelShown;
-		this.forwardShown = forwardShown;
+		this(	backShown? State.SHOWN_ENABLED : State.HIDDEN,
+				State.HIDDEN,
+				cancelShown? State.SHOWN_ENABLED : State.HIDDEN,
+				forwardShown? State.SHOWN_ENABLED : State.HIDDEN);
+	}
+	
+	/**
+	 * @param back
+	 * @param up
+	 * @param cancel
+	 * @param forward
+	 */
+	public ControlsState(State back, State up, State cancel, State forward)
+	{
+		controlStates = new State[Control.values().length];
+		controlStates[Control.BACK.ordinal()] = back;
+		controlStates[Control.UP.ordinal()] = up;
+		controlStates[Control.CANCEL.ordinal()] = cancel;
+		controlStates[Control.FORWARD.ordinal()] = forward;
 	}
 
 	public int getNumberOfButtonsShown()
 	{
-		return (backShown ? 1 : 0) + (cancelShown ? 1 : 0) + (forwardShown ? 1 : 0);
+		int count = 0;
+		for(State s : controlStates)
+			if(s != State.HIDDEN)
+				count++;
+		return count;
 	}
 	
 	public boolean isAnyButtonShown()
 	{
-		return backShown || cancelShown || forwardShown;
+		for(State s : controlStates)
+			if(s != State.HIDDEN)
+				return true;
+		return false;
+	}
+	
+	/**
+	 * @return the back
+	 */
+	public State getBack()
+	{
+		return controlStates[Control.BACK.ordinal()];
 	}
 
 	/**
-	 * @return the backShown
+	 * @return the up
 	 */
-	public boolean isBackShown()
+	public State getUp()
 	{
-		return backShown;
+		return controlStates[Control.UP.ordinal()];
 	}
 
 	/**
-	 * @return the cancelShown
+	 * @return the cancel
 	 */
-	public boolean isCancelShown()
+	public State getCancel()
 	{
-		return cancelShown;
+		return controlStates[Control.CANCEL.ordinal()];
 	}
 
 	/**
-	 * @return the forwardShown
+	 * @return the forward
 	 */
-	public boolean isForwardShown()
+	public State getForward()
 	{
-		return forwardShown;
+		return controlStates[Control.FORWARD.ordinal()];
+	}
+
+	/**
+	 * @return the controlStates
+	 */
+	public State getState(Control control)
+	{
+		return controlStates[control.ordinal()];
 	}
 
 	@Override
 	public boolean equals(Object o)
 	{
+		if(this == o)
+			return true;
 		if(!(o instanceof ControlsState))
 			return false;
 		ControlsState another = (ControlsState) o;
-		return backShown == another.backShown && cancelShown == another.cancelShown && forwardShown == another.forwardShown;
+		for(int c = 0; c < controlStates.length; c++)
+			if(this.controlStates[c] != another.controlStates[c])
+				return false;
+		return true;
 	}
 	
 }

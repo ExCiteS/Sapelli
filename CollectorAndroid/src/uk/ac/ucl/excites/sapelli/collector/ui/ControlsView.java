@@ -7,6 +7,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.ControlsState;
+import uk.ac.ucl.excites.sapelli.collector.project.ui.ControlsState.State;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
@@ -39,10 +40,6 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 	
 	static public final float PADDING_DIP = 6.0f;
 	
-	static public final int BUTTON_TYPE_BACK = -1;
-	static public final int BUTTON_TYPE_CANCEL = 0;
-	static public final int BUTTON_TYPE_FORWARD = 1;
-	
 	static public final int FOREGROUND_COLOR = Color.BLACK;
 	
 	// Dynamics------------------------------------------------------
@@ -55,11 +52,11 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 	
 	private int backColor;
 	
-	private Item backButton;
-	private Item cancelButton;
-	private Item forwardButton;
+	private ButtonItem backButton;
+	private ButtonItem cancelButton;
+	private ButtonItem forwardButton;
 	
-	private int[] positionToButton;
+	private ControlsState.Control[] shownControls;
 	
 	/**
 	 * @param context
@@ -100,24 +97,24 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 			currentForm = controller.getCurrentForm();
 			Project project = controller.getProject();
 			
-			// Background colour:
+			// Background colour
 			backColor = ColourHelpers.ParseColour(currentForm.getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR); //default is light gray		
 			
-			// Back button 
+			// Back button
 			if(currentForm.isShowBack())
-				backButton = createButton(project.getImageFile(currentForm.getBackButtonImageRelativePath()), new HorizontalArrow(FOREGROUND_COLOR, true));
+				backButton = new ButtonItem(project.getImageFile(currentForm.getBackButtonImageRelativePath()), new HorizontalArrow(FOREGROUND_COLOR, true));
 			else
 				backButton = null;
 			
-			// Cancel button 
+			// Cancel button
 			if(currentForm.isShowCancel())
-				cancelButton = createButton(project.getImageFile(currentForm.getCancelButtonImageRelativePath()), new SaltireCross(FOREGROUND_COLOR));
+				cancelButton = new ButtonItem(project.getImageFile(currentForm.getCancelButtonImageRelativePath()), new SaltireCross(FOREGROUND_COLOR));
 			else
 				cancelButton = null;
 			
-			// Forward button 
+			// Forward button
 			if(currentForm.isShowForward())
-				forwardButton = createButton(project.getImageFile(currentForm.getForwardButtonImageRelativePath()), new HorizontalArrow(FOREGROUND_COLOR, false));
+				forwardButton = new ButtonItem(project.getImageFile(currentForm.getForwardButtonImageRelativePath()), new HorizontalArrow(FOREGROUND_COLOR, false));
 			else
 				forwardButton = null;
 		}
@@ -136,28 +133,31 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 			if(currentState.isAnyButtonShown()) //are there buttons to show?
 			{	//Yes...
 				// Update position mapping:
-				positionToButton = new int[currentState.getNumberOfButtonsShown()];
+				shownControls = new ControlsState.Control[currentState.getNumberOfButtonsShown()];
 				
 				// Columns
-				setNumColumns(positionToButton.length);
+				setNumColumns(shownControls.length);
 				
 				pickerAdapter.clear();
 				int p = 0;
 				//	Add buttons:
-				if(currentState.isBackShown())
+				if(currentState.getBack() != State.HIDDEN)
 				{
 					pickerAdapter.addItem(backButton);
-					positionToButton[p++] = BUTTON_TYPE_BACK;
+					backButton.setGrayedOut(currentState.getBack() == State.SHOWN_DISABLED);
+					shownControls[p++] = ControlsState.Control.BACK;
 				}
-				if(currentState.isCancelShown())
+				if(currentState.getCancel() != State.HIDDEN)
 				{
 					pickerAdapter.addItem(cancelButton);
-					positionToButton[p++] = BUTTON_TYPE_CANCEL;
+					cancelButton.setGrayedOut(currentState.getCancel() == State.SHOWN_DISABLED);
+					shownControls[p++] = ControlsState.Control.CANCEL;
 				}
-				if(currentState.isForwardShown())
+				if(currentState.getForward() != State.HIDDEN)
 				{
 					pickerAdapter.addItem(forwardButton);
-					positionToButton[p++] = BUTTON_TYPE_FORWARD;
+					forwardButton.setGrayedOut(currentState.getForward() == State.SHOWN_DISABLED);
+					shownControls[p++] = ControlsState.Control.FORWARD;
 				}
 				
 				// Set adapter:
@@ -173,31 +173,7 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 			}
 		}
 	}
-	
-	private Item createButton(File imgFile, Drawable drawable)
-	{
-		Item button = null;
 
-		// Button image:
-		if(FileHelpers.isReadableFile(imgFile))
-			button = new FileImageItem(imgFile);
-		else
-			button = new DrawableItem(drawable);
-		
-		/* Unused -- replaced by Drawable buttons (arrow & cross)
-		// Resource image (e.g. R.drawable.button_back_svg, .button_back, .button_delete_svg, .button_delete, .button_forward_svg, .button_forward)
-		button = new ResourceImageItem(getContext().getResources(), R.drawable.button_back_svg);
-		*/
-		
-		// Button size, padding & color:
-		button.setWidthPx(LayoutParams.MATCH_PARENT);
-		button.setHeightPx(getButtonHeightPx());
-		button.setPaddingPx(ScreenMetrics.ConvertDipToPx(getContext(), PADDING_DIP));
-		button.setBackgroundColor(backColor);
-		
-		return button;
-	}
-	
 	public int getButtonHeightPx()
 	{
 		return ScreenMetrics.ConvertDipToPx(getContext(), BUTTON_HEIGHT_DIP);
@@ -207,7 +183,7 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 	public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 	{
 		// Are we allowed to trigger an action?
-		if(!enabled || position < 0 || position >= positionToButton.length)
+		if(!enabled || position < 0 || position >= shownControls.length)
 			return; // ignore the click if buttons are disabled or invalid button was somehow pressed
 		
 		// Action triggered by click:
@@ -215,11 +191,11 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 		{
 			public void run()
 			{
-				switch(positionToButton[position])
+				switch(shownControls[position])
 				{
-					case BUTTON_TYPE_BACK		: controller.goBack(true); break;
-					case BUTTON_TYPE_CANCEL		: controller.cancelAndRestartForm(); break;
-					case BUTTON_TYPE_FORWARD	: controller.goForward(true); break;
+					case BACK		: controller.goBack(true); break;
+					case CANCEL		: controller.cancelAndRestartForm(); break;
+					case FORWARD	: controller.goForward(true); break;
 					default : return;
 				}
 			}
@@ -230,6 +206,49 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 			(new PressAnimator(action, v, collectorView)).execute(); //execute animation and the action afterwards
 		else
 			action.run(); //perform task now (animation is disabled)
+	}
+	
+	public class ButtonItem extends LayeredItem
+	{
+	
+		private final int semiTransparentWhite = Color.parseColor("#80FFFFFF");
+		
+		// Overlay to gray-out disabled (but shown) buttons
+		private Item grayOutOverlay;
+	
+		public ButtonItem(File imgFile, Drawable drawable)
+		{
+			this.setWidthPx(LayoutParams.MATCH_PARENT);
+			this.setHeightPx(getButtonHeightPx());
+			this.setBackgroundColor(backColor);
+			this.setPaddingPx(0);
+			
+			// the actual button:
+			Item button = null;
+			if(FileHelpers.isReadableFile(imgFile))
+				button = new FileImageItem(imgFile);
+			else
+				button = new DrawableItem(drawable);
+			/* Unused -- replaced by Drawable buttons (arrow & cross)
+			// Resource image (e.g. R.drawable.button_back_svg, .button_back, .button_delete_svg, .button_delete, .button_forward_svg, .button_forward)
+			button = new ResourceImageItem(getContext().getResources(), R.drawable.button_back_svg); */
+			button.setPaddingPx(ScreenMetrics.ConvertDipToPx(getContext(), PADDING_DIP));
+
+			// the overlay
+			grayOutOverlay = new EmptyItem();
+			grayOutOverlay.setPaddingPx(0);
+			setGrayedOut(false);
+			
+			// add the layers:
+			this.addLayer(button, true);
+			this.addLayer(grayOutOverlay, false);
+		}
+		
+		public void setGrayedOut(boolean grayedOut)
+		{
+			grayOutOverlay.setBackgroundColor(grayedOut ? semiTransparentWhite : Color.TRANSPARENT);
+		}
+		
 	}
 
 }
