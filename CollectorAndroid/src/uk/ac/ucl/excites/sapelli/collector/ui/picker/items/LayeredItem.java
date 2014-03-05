@@ -33,7 +33,19 @@ public class LayeredItem extends Item
 	 */
 	public void addLayer(Item item)
 	{
-		item.setBackgroundColor(Color.TRANSPARENT);
+		addLayer(item, true); // make background transparent by default
+	}
+	
+	/**
+	 * Add a layer, newly added layers will be rendered on top of previously added ones 
+	 * 
+	 * @param item
+	 * @param transparentBackground	whether or not to make the layer's background transparent
+	 */
+	public void addLayer(Item item, boolean transparentBackground)
+	{
+		if(transparentBackground)
+			item.setBackgroundColor(Color.TRANSPARENT);
 		layers.add(item);
 	}
 	
