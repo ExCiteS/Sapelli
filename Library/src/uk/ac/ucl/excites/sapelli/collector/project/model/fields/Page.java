@@ -9,6 +9,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -24,11 +25,13 @@ public class Page extends Field
 {
 	
 	private final List<Field> fields;
+	private final List<Trigger> triggers;
 
 	public Page(Form form, String id)
 	{
 		super(form, id);
 		fields = new ArrayList<Field>();
+		triggers = new ArrayList<Trigger>();
 	}
 	
 	public void addField(Field field)
@@ -41,6 +44,19 @@ public class Page extends Field
 		return fields;
 	}
 	
+	public void addTrigger(Trigger trigger)
+	{
+		triggers.add(trigger);
+	}
+
+	/**
+	 * @return the triggers
+	 */
+	public List<Trigger> getTriggers()
+	{
+		return triggers;
+	}
+
 	@Override
 	public boolean isNoColumn()
 	{
