@@ -12,9 +12,12 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 public class Trigger implements JumpSource
 {
 
+	// Statics----------------------------------------------
+	static public final int NO_TIMEOUT = -1;
+	
 	// Dynamics---------------------------------------------
 	protected String key;
-	protected int fixedTimer;
+	protected int fixedTimer = NO_TIMEOUT;
 	protected Field jump;
 
 	public Trigger()
@@ -52,6 +55,8 @@ public class Trigger implements JumpSource
 	 */
 	public void setFixedTimer(int fixedTimer)
 	{
+		if(fixedTimer != NO_TIMEOUT && fixedTimer < 0)
+			throw new IllegalArgumentException("Invalid timer duration: " + fixedTimer);
 		this.fixedTimer = fixedTimer;
 	}
 

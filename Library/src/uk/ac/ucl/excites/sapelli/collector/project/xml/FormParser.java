@@ -385,11 +385,9 @@ public class FormParser extends SubtreeParser
 				Trigger trigger = new Trigger();
 
 				// Parse the attributes
-				if(attributes.getValue(ATTRIBUTE_TRIGGER_KEY) != null)
-					trigger.setKey(readStringAttribute(ATTRIBUTE_TRIGGER_KEY, null, attributes, true, true));
-				if(attributes.getValue(ATTRIBUTE_TRIGGER_FIXED_TIMER) != null)
-					trigger.setFixedTimer(Integer.valueOf(readStringAttribute(ATTRIBUTE_TRIGGER_FIXED_TIMER, null, attributes, true, true)));
-				// TODO: is this still valid? Remember jumps (always "intra-Form"):
+				trigger.setKey(readStringAttribute(ATTRIBUTE_TRIGGER_KEY, null, attributes, true, false));
+				trigger.setFixedTimer(readIntegerAttribute(ATTRIBUTE_TRIGGER_FIXED_TIMER, Trigger.NO_TIMEOUT, attributes));
+				// Remember jump (always "intra-Form"):
 				if(attributes.getValue(ATTRIBUTE_TRIGGER_JUMP) != null)
 					jumpSourceToJumpTargetId.put(trigger, attributes.getValue(ATTRIBUTE_TRIGGER_JUMP).trim().toUpperCase()); // upper cased, for insensitivity
 				
