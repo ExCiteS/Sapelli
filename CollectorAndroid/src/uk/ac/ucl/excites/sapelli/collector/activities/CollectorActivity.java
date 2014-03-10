@@ -456,7 +456,14 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 			@Override
 			public void run()
 			{
-				controller.fireTrigger(trigger);
+				CollectorActivity.this.runOnUiThread(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						controller.fireTrigger(trigger);
+					}
+				});
 			}
 		};		
 		fixedTimerTriggerFutures.put(trigger, scheduleTaskExecutor.schedule(fireTrigger, trigger.getFixedTimer(), TimeUnit.SECONDS));

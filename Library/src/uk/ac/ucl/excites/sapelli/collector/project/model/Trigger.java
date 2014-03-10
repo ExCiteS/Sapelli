@@ -15,6 +15,7 @@ public class Trigger implements JumpSource
 
 	// Statics----------------------------------------------
 	static public final int NO_TIMEOUT = -1;
+	static public String KEY_SEPARATOR = "\\|";
 	
 	static public enum Key
 	{

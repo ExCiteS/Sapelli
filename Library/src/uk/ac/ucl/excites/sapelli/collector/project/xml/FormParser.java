@@ -388,7 +388,7 @@ public class FormParser extends SubtreeParser
 				// Parse the attributes
 				String keys = readStringAttribute(null, attributes, true, false, ATTRIBUTE_TRIGGER_KEY, ATTRIBUTE_TRIGGER_KEYS);
 				if(keys != null)
-					for(String k : keys.split("|"))
+					for(String k : keys.split(Trigger.KEY_SEPARATOR))
 					{
 						try
 						{
