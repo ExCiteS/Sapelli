@@ -209,6 +209,12 @@ public abstract class Controller
 	
 	public synchronized void goTo(Field nextField)
 	{
+		if(nextField == null)
+		{	
+			addLogLine("NULL_FIELD");
+			return;
+		}
+		
 		// log interaction
 		addLogLine("REACHED", nextField.getID());
 	
