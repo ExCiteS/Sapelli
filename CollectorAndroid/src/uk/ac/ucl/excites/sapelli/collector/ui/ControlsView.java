@@ -4,9 +4,9 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.project.ui.ControlsState;
+import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.ui.ControlsState;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;

@@ -4,8 +4,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.util.Timeoutable;
 import android.annotation.SuppressLint;

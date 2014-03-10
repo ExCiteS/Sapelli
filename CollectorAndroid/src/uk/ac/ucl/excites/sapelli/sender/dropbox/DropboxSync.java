@@ -2,7 +2,7 @@ package uk.ac.ucl.excites.sapelli.sender.dropbox;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.MediaField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.sender.util.RecursiveFileObserver;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;

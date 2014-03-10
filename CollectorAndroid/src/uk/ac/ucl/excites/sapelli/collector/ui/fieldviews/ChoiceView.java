@@ -3,10 +3,10 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.project.model.fields.ChoiceField;
-import uk.ac.ucl.excites.sapelli.collector.project.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerAdapter;

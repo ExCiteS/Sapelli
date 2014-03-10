@@ -2,8 +2,8 @@ package uk.ac.ucl.excites.sapelli.collector.database;
 
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.project.util.DuplicateException;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;

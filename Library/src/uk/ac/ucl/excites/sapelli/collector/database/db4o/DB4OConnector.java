@@ -3,7 +3,7 @@
  */
 package uk.ac.ucl.excites.sapelli.collector.database.db4o;
 
-import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 

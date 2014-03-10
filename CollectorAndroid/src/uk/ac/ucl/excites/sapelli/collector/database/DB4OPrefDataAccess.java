@@ -12,10 +12,10 @@ import java.util.Map;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.database.db4o.DB4ODataAccess;
-import uk.ac.ucl.excites.sapelli.collector.project.io.ProjectLoader;
-import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.project.util.DuplicateException;
-import uk.ac.ucl.excites.sapelli.collector.project.xml.ProjectParser;
+import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
+import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
