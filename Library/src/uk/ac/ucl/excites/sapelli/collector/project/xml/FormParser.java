@@ -94,6 +94,8 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_LABELS = "labels";
 	static private final String ATTRIBUTE_FIELD_BACKGROUND_COLOR = "backgroundColor";
 	static private final String ATTRIBUTE_FIELD_SKIP_ON_BACK = "skipOnBack";
+	static private final String ATTRIBUTE_FIELD_SHOW_ON_CREATE = "showOnCreate";
+	static private final String ATTRIBUTE_FIELD_SHOW_ON_EDIT = "showOnEdit";
 	static private final String ATTRIBUTE_FIELD_VALUE = "value";
 	static private final String ATTRIBUTE_FIELD_DEFAULTVALUE = "defaultValue";
 	static private final String ATTRIBUTE_FIELD_INITVALUE = "initValue";
@@ -499,6 +501,10 @@ public class FormParser extends SubtreeParser
 			
 			// Skip on back:
 			field.setSkipOnBack(readBooleanAttribute(ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK, attributes));
+			
+			// Show on create/edit:
+			field.setShowOnCreate(readBooleanAttribute(ATTRIBUTE_FIELD_SHOW_ON_CREATE, Field.DEFAULT_SHOW_ON_CREATE, attributes));
+			field.setShowOnEdit(readBooleanAttribute(ATTRIBUTE_FIELD_SHOW_ON_EDIT, Field.DEFAULT_SHOW_ON_EDIT, attributes));
 			
 			// Background colour:
 			field.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes, true, false));

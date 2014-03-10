@@ -14,6 +14,10 @@ import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
  * @author mstevens
  *
  */
+/**
+ * @author mstevens
+ *
+ */
 public abstract class Field implements JumpSource
 {
 	
@@ -31,6 +35,8 @@ public abstract class Field implements JumpSource
 	static public final boolean DEFAULT_SHOW_FORWARD = true;
 	static public final boolean DEFAULT_ENABLED = true;
 	static public final boolean DEFAULT_SKIP_ON_BACK = false;
+	static public final boolean DEFAULT_SHOW_ON_CREATE = true;
+	static public final boolean DEFAULT_SHOW_ON_EDIT = true;
 	static public final Optionalness DEFAULT_OPTIONAL = Optionalness.NOT_IF_REACHED;
 	static public final boolean DEFAULT_NO_COLUMN = false;
 	static public final String DEFAULT_BACKGROUND_COLOR = "#FFFFFF"; //white
@@ -42,9 +48,12 @@ public abstract class Field implements JumpSource
 	protected Field jump;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
+	protected boolean showOnCreate = DEFAULT_SHOW_ON_CREATE;
+	protected boolean showOnEdit = DEFAULT_SHOW_ON_EDIT;
 	protected Optionalness optional = DEFAULT_OPTIONAL;
 	protected boolean noColumn = DEFAULT_NO_COLUMN;
 	protected String backgroundColor = DEFAULT_BACKGROUND_COLOR;
+	
 	// Buttons:
 	private boolean showBack = DEFAULT_SHOW_BACK;
 	private boolean showCancel = DEFAULT_SHOW_CANCEL;
@@ -112,6 +121,38 @@ public abstract class Field implements JumpSource
 	public void setSkipOnBack(boolean skipOnBack)
 	{
 		this.skipOnBack = skipOnBack;
+	}
+	
+	/**
+	 * @return the showOnCreate
+	 */
+	public boolean isShowOnCreate()
+	{
+		return showOnCreate;
+	}
+
+	/**
+	 * @param showOnCreate the showOnCreate to set
+	 */
+	public void setShowOnCreate(boolean showOnCreate)
+	{
+		this.showOnCreate = showOnCreate;
+	}
+
+	/**
+	 * @return the showOnEdit
+	 */
+	public boolean isShowOnEdit()
+	{
+		return showOnEdit;
+	}
+
+	/**
+	 * @param showOnEdit the showOnEdit to set
+	 */
+	public void setShowOnEdit(boolean showOnEdit)
+	{
+		this.showOnEdit = showOnEdit;
 	}
 
 	public void setJump(Field target)

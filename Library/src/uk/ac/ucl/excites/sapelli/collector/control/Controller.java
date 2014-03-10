@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.project.data.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
@@ -214,12 +215,20 @@ public abstract class Controller
 		// Leaving current field...
 		if(currFormSession.currField != null && currFormSession.currField != nextField)
 			currFormSession.fieldHistory.add(currFormSession.currField); // Add to history
-		// Entering next field...
+		// Next field become current field...
 		currFormSession.currField = nextField;
 		
-		// Enter field and ...
+		// Skip the field if it is not meant to be shown on create/edit...
+		if(	(currFormSession.mode == Mode.CREATE && !currFormSession.currField.isShowOnCreate()) ||
+			(currFormSession.mode == Mode.EDIT && !currFormSession.currField.isShowOnEdit()))
+		{
+			goForward(false);
+			return;
+		}
+		
+		// Entering new current field field...
 		if(currFormSession.currField.enter(this))
-			displayField(currFormSession.currField);
+			displayField(currFormSession.currField); // update UI if needed
 	}
 
 	/**

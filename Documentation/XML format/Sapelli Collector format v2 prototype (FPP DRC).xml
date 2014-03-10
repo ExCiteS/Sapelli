@@ -134,9 +134,9 @@
 
       <Text id="Comment:" label="Comments" maxLength="1024" multiline="true" optional="true"/>
 
-      <Button label="Start Session" disableOnEdit="true" jump="_SAVE+PREVFORM"/>
+      <Button label="Start Session" showOnEdit="false" jump="_SAVE+PREVFORM"/>
       
-      <Button id="closed" label="Close Session" disableOnCreate="true" column="boolean" jump="_SAVE+PREVFORM"/>
+      <Button id="closed" label="Close Session" showOnCreate="false" column="boolean" jump="_SAVE+PREVFORM"/>
   
     </Page>
   

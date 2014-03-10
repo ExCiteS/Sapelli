@@ -42,6 +42,7 @@ public class PageView extends ScrollView implements FieldUI
 		int paddingPx = ScreenMetrics.ConvertDipToPx(context, CHILD_PADDING);
 		for(Field f : page.getFields())
 		{
+			//TODO showOnCreate/showOnEdit
 			View child = (View) f.createUI(collectorView);
 			child.setPadding(0, 0, 0, paddingPx);
 			container.addView(child);
