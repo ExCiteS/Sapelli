@@ -112,6 +112,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
 	static private final String ATTRIBUTE_BUTTON_COLUMN = "column";
 	static private final String ATTRIBUTE_TRIGGER_KEY = "key";
+	static private final String ATTRIBUTE_TRIGGER_KEYS = "keys";
 	static private final String ATTRIBUTE_TRIGGER_FIXED_TIMER = "fixedTimer";
 	static private final String ATTRIBUTE_TRIGGER_JUMP = "jump";
 	
@@ -379,16 +380,27 @@ public class FormParser extends SubtreeParser
 			{
 				newPage(attributes);
 			}
-			// <Trigger> (JumpSource composite)
+			// <Trigger>
 			else if(qName.equals(TAG_TRIGGER))
 			{
 				Trigger trigger = new Trigger();
-
+				
 				// Parse the attributes
-				trigger.setKey(readStringAttribute(ATTRIBUTE_TRIGGER_KEY, null, attributes, true, false));
+				String keys = readStringAttribute(null, attributes, true, false, ATTRIBUTE_TRIGGER_KEY, ATTRIBUTE_TRIGGER_KEYS);
+				if(keys != null)
+					for(String k : keys.split("|"))
+					{
+						try
+						{
+							trigger.addKey(Trigger.Key.valueOf(k.toUpperCase()));
+						}
+						catch(Exception e)
+						{
+							addWarning("Unrecognised Trigger key: " + k);
+						}
+					}
 				trigger.setFixedTimer(readIntegerAttribute(ATTRIBUTE_TRIGGER_FIXED_TIMER, Trigger.NO_TIMEOUT, attributes));
-				// Remember jump (always "intra-Form"):
-				if(attributes.getValue(ATTRIBUTE_TRIGGER_JUMP) != null)
+				if(attributes.getValue(ATTRIBUTE_TRIGGER_JUMP) != null) // Remember jump (always "intra-Form")
 					jumpSourceToJumpTargetId.put(trigger, attributes.getValue(ATTRIBUTE_TRIGGER_JUMP).trim().toUpperCase()); // upper cased, for insensitivity
 				
 				// Add the trigger to the current Page
@@ -397,7 +409,6 @@ public class FormParser extends SubtreeParser
 				// else add the triggers to the Form
 				else
 					currentForm.addTrigger(trigger);
-
 			}
 			// Add future field types here...
 			// <?> in <Form>	

@@ -97,6 +97,7 @@ public abstract class Controller
 		{
 			prevFormSession = currFormSession; // remember previous formSession
 			formHistory.push(currFormSession); // add to form history
+			disableTriggers(currFormSession.form.getTriggers()); // disable triggers
 		}
 		currFormSession = formSession;
 				
@@ -111,7 +112,7 @@ public abstract class Controller
 		addLogLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getIndex() + ")");
 		
 		// Setup the triggers
-		setTriggers(currFormSession.form.getTriggers());
+		setupTriggers(currFormSession.form.getTriggers());
 
 		// Go to field...
 		if(currFormSession.currField == null)
@@ -342,7 +343,7 @@ public abstract class Controller
 		// TODO startWithPage location
 		
 		// Setup the triggers
-		setTriggers(page.getTriggers());
+		setupTriggers(page.getTriggers());
 
 		return true;
 	}
@@ -430,39 +431,34 @@ public abstract class Controller
 		
 		return false; // no UI update needed
 	}
-	
-	public boolean enterTrigger(Trigger trigger)
-	{
-		final String key = trigger.getKey();
-		final int fixedTimer= trigger.getFixedTimer();
-		
-		if(key != null)
-		{
-			// TODO Setup onKey Listeners
-			System.out.println("Setup onKey Listeners to jump at: " + trigger.getJump().getID());
 
-			// Log start form
-			if(logger != null)
-				logger.addLine("TRIGGER", "Set up key trigger on " + key + " pressed");
-		}
-		
-		if(fixedTimer > 0)
-		{
-			// TODO Setup Timer Listeners
-			System.out.println("Setup Timer Listeners to jump at: " + trigger.getJump().getID());
-
-			// Log start form
-			if(logger != null)
-				logger.addLine("TRIGGER", "Set up time trigger in " + fixedTimer + " seconds");
-		}
-
-		return true;
-	}
-
-	private void setTriggers(List<Trigger> triggers)
+	private void setupTriggers(List<Trigger> triggers)
 	{
 		for(Trigger trigger : triggers)
-			enterTrigger(trigger);
+			setupTrigger(trigger);
+	}
+	
+	/**
+	 * @param triggers
+	 * 
+	 * TODO not yet called when leaving a page that has triggers!
+	 */
+	private void disableTriggers(List<Trigger> triggers)
+	{
+		for(Trigger trigger : triggers)
+			disableTrigger(trigger);
+	}
+	
+	protected abstract void setupTrigger(Trigger trigger);
+	
+	protected abstract void disableTrigger(Trigger trigger);
+	
+	public void fireTrigger(Trigger trigger)
+	{
+		if(trigger.getJump() == null)
+			return;
+		addLogLine("TRIGGER", "Fired, jumping to: " + trigger.getJump().getID());
+		goTo(trigger.getJump());
 	}
 
 	public boolean isFieldEndabled(Field field)
@@ -516,6 +512,10 @@ public abstract class Controller
 	
 	protected void exit()
 	{
+		// cancel (timer) triggers:
+		if(currFormSession.form != null)
+			disableTriggers(currFormSession.form.getTriggers());
+		
 		// stop GPS!
 		stopLocationListener();
 		

@@ -16,6 +16,7 @@ import uk.ac.ucl.excites.sapelli.collector.project.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form.Next;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.OrientationField;
@@ -23,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
+import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.content.Context;
 import android.location.Location;
@@ -260,6 +262,42 @@ public class CollectorController extends Controller implements LocationListener,
 	protected void showError(String errorMsg, boolean exit)
 	{
 		activity.showErrorDialog(errorMsg, exit);
+	}
+
+	@Override
+	protected void setupTrigger(Trigger trigger)
+	{
+		// Key press trigger:
+		if(!trigger.getKeys().isEmpty())
+		{
+			activity.setupKeyPressTrigger(trigger);
+			addLogLine("TRIGGER", "Set-up key press trigger, firing on pressing of " + CollectionUtils.allToString(trigger.getKeys(), false));
+		}		
+		// Fixed timer trigger:
+		if(trigger.getFixedTimer() != Trigger.NO_TIMEOUT)
+		{
+			if(logger != null)
+				logger.addLine("TRIGGER", "Set-up fixed timer trigger, firing in " + trigger.getFixedTimer() + " seconds");			
+			activity.setupTimerTrigger(trigger);
+		}
+	}
+	
+	@Override
+	protected void disableTrigger(Trigger trigger)
+	{
+		// Key press trigger:
+		if(!trigger.getKeys().isEmpty())
+		{
+			activity.disableKeyPressTrigger(trigger);
+			addLogLine("TRIGGER", "Disabled key press trigger, firing on pressing of " + CollectionUtils.allToString(trigger.getKeys(), false));
+		}
+		// Fixed timer trigger:
+		if(trigger.getFixedTimer() != Trigger.NO_TIMEOUT)
+		{
+			if(logger != null)
+				logger.addLine("TRIGGER", "Disabled fixed timer trigger");
+			activity.disableTimerTrigger(trigger);
+		}	
 	}
 	
 }

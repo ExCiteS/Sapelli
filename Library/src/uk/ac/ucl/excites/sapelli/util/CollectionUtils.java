@@ -49,4 +49,27 @@ public final class CollectionUtils
 		return changed;
 	}
 	
+	/**
+	 * Returns a pretty-printed version of the collection. 
+	 * Items will be toString()'ed and separated by commas.
+	 * The collection can be optionally delimited by "[]".
+	 * 
+	 * @param collection
+	 * @param dilimit
+	 * @return
+	 */
+	public static String allToString(final Collection<?> collection, boolean delimit)
+	{
+		boolean first = true;
+		StringBuilder bldr = new StringBuilder(delimit ? "[" : "");
+		for(Object o : collection)
+		{
+			bldr.append((first ? "" : ", ") + o.toString());
+			first = false;
+		}
+		if(delimit)
+			bldr.append(']');
+		return bldr.toString();
+	}
+	
 }

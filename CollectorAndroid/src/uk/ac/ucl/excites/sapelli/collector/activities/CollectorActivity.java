@@ -1,8 +1,11 @@
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -15,6 +18,8 @@ import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.database.DataAccessClient;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Trigger;
+import uk.ac.ucl.excites.sapelli.collector.project.model.Trigger.Key;
 import uk.ac.ucl.excites.sapelli.collector.project.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.project.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -31,6 +36,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.util.SparseArray;
 import android.view.KeyEvent;
 import android.view.Window;
 import android.view.WindowManager;
@@ -62,11 +68,7 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 	
 	// DYNAMICS-------------------------------------------------------
 	private CollectorApp app;
-	
-	// UI
-	private CollectorView collectorView;
 
-	// Dynamic fields:
 	private DataAccess dao;
 	private Project project;
 	private CollectorController controller;
@@ -74,13 +76,18 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 	// Temp location to save a photo
 	private File tmpPhotoFile;
 
-	// Timeout:
+	// Timeouts, futures & triggers:
 	protected boolean pausedForActivityResult = false;
 	protected boolean timedOut = false;
-
 	private ScheduledExecutorService scheduleTaskExecutor;
-	private ScheduledFuture<?> scheduledFuture;
-
+	private ScheduledFuture<?> exitFuture;
+	private Map<Trigger,ScheduledFuture<?>> fixedTimerTriggerFutures;
+	private List<Trigger> keyPressTriggers;
+	private SparseArray<Trigger> keyCodeToTrigger = null;
+	
+	// UI
+	private CollectorView collectorView;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -103,6 +110,14 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 			return;
 		}
 
+		// Scheduling...
+		scheduleTaskExecutor = Executors.newScheduledThreadPool(4); // Creates a thread pool that can schedule commands to run after a given duration, or to execute periodically.
+		fixedTimerTriggerFutures = new HashMap<Trigger, ScheduledFuture<?>>();
+		
+		// Key press triggers
+		keyPressTriggers = new ArrayList<Trigger>();
+		keyCodeToTrigger = new SparseArray<Trigger>();
+		
 		// UI setup:
 		requestWindowFeature(Window.FEATURE_NO_TITLE); // Remove title
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // Lock the orientation
@@ -165,6 +180,15 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
+		// Check triggers...
+		Trigger t = keyCodeToTrigger.get(keyCode);
+		if(t != null)
+		{
+			controller.fireTrigger(t);
+			return true;
+		}
+
+		// Handle non-trigger firing events...
 		switch(keyCode)
 		{
 		case KeyEvent.KEYCODE_BACK:
@@ -181,6 +205,8 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		case KeyEvent.KEYCODE_VOLUME_UP:
 			return true;
 		}
+		
+		// Pass to super...
 		return super.onKeyDown(keyCode, event);
 	}
 	
@@ -339,7 +365,8 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		if(!pausedForActivityResult)
 		{
 			timedOut = false;
-			Runnable pause = new Runnable()
+			cancelExitFuture(); // just in case...
+			Runnable exitTask = new Runnable()
 			{
 				@Override
 				public void run()
@@ -350,16 +377,21 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 					Log.i(TAG, "Time-out reached");
 				}
 			};
-
-			// Creates a thread pool that can schedule commands to run after a given
-			// duration, or to execute periodically.
-			scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
-			scheduledFuture = scheduleTaskExecutor.schedule(pause, TIMEOUT_MIN, TimeUnit.MINUTES);
+			exitFuture = scheduleTaskExecutor.schedule(exitTask, TIMEOUT_MIN, TimeUnit.MINUTES);
 
 			Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
 		// super:
 		super.onPause();
+	}
+	
+	private void cancelExitFuture()
+	{
+		if(exitFuture != null)
+		{
+			exitFuture.cancel(true);
+			exitFuture = null;
+		}
 	}
 
 	@Override
@@ -380,11 +412,7 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 				timedOut = false;
 			}
 			else
-			{ 	
-				// cancel timer if needed:
-				if(scheduledFuture != null)
-					scheduledFuture.cancel(true);
-			}
+				cancelExitFuture(); // cancel exit timer if needed
 		}
 	}
 
@@ -394,7 +422,7 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		super.onNewIntent(intent);
 		// Change the current intent
 		setIntent(intent);
-
+		
 		if(controller != null)
 			controller.cancelAndStop();
 		
@@ -407,8 +435,7 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 	{
 		// Clean up:
 		collectorView.cancelCurrentField();
-		if(scheduledFuture != null)
-			scheduledFuture.cancel(true);
+		cancelExitFuture(); // cancel exit timer if needed
 		if(controller != null)
 			controller.cancelAndStop();
 		// Signal that the activity no longer needs the DAO:
@@ -422,4 +449,66 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		return collectorView;
 	}
 
+	public void setupTimerTrigger(final Trigger trigger)
+	{
+		Runnable fireTrigger = new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				controller.fireTrigger(trigger);
+			}
+		};		
+		fixedTimerTriggerFutures.put(trigger, scheduleTaskExecutor.schedule(fireTrigger, trigger.getFixedTimer(), TimeUnit.SECONDS));
+	}
+	
+	public void disableTimerTrigger(Trigger trigger)
+	{
+		ScheduledFuture<?> future = fixedTimerTriggerFutures.remove(trigger);
+		if(future != null)
+			future.cancel(false);
+	}
+	
+	public void setupKeyPressTrigger(Trigger trigger)
+	{
+		keyPressTriggers.add(trigger);
+		refreshTriggerKeyCodes(); // Refresh the key code mappings
+	}
+	
+	public void disableKeyPressTrigger(Trigger trigger)
+	{
+		keyPressTriggers.remove(trigger);
+		refreshTriggerKeyCodes(); // Refresh the key code mappings
+	}
+	
+	/**
+	 * Note:
+	 * The reason we refresh the whole keyCodeToTrigger hash map must be refreshed after every setup/disable of a
+	 * key press trigger is that a page-trigger may be listening to the same key as a form-trigger, in which case the
+	 * former should take preference over the later. But if the page-trigger is disabled the form-trigger should
+	 * become active again. This should work because page-triggers will always come after the form-triggers in the
+	 * keyPressTriggers list.
+	 */
+	protected void refreshTriggerKeyCodes()
+	{
+		keyCodeToTrigger.clear();
+		for(Trigger t : keyPressTriggers)
+			for(Key k : t.getKeys())
+			{
+				int keyCode = -1;
+				switch(k) // map Trigger.Key enum values onto the KEYCODE's of Android's KeyEvent class 
+				{
+					case BACK : keyCode = KeyEvent.KEYCODE_BACK; break;
+					case SEARCH : keyCode = KeyEvent.KEYCODE_SEARCH; break;
+					case HOME : keyCode = KeyEvent.KEYCODE_HOME; break;
+					case VOLUME_DOWN : keyCode = KeyEvent.KEYCODE_VOLUME_DOWN; break;
+					//case VOLUME_MUTE : keyCode = KeyEvent.KEYCODE_VOLUME_MUTE; break;
+					case VOLUME_UP : keyCode = KeyEvent.KEYCODE_VOLUME_UP; break;
+					default: break;
+				}
+				if(keyCode != -1)
+					keyCodeToTrigger.put(keyCode, t);
+			}
+	}
+	
 }

@@ -3,10 +3,11 @@
  */
 package uk.ac.ucl.excites.sapelli.collector.project.model;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * @author Michalis Vitos
+ * @author Michalis Vitos, mstevens
  *
  */
 public class Trigger implements JumpSource
@@ -15,30 +16,38 @@ public class Trigger implements JumpSource
 	// Statics----------------------------------------------
 	static public final int NO_TIMEOUT = -1;
 	
+	static public enum Key
+	{
+		BACK,
+		SEARCH,
+		HOME,
+		VOLUME_DOWN,
+		VOLUME_MUTE,
+		VOLUME_UP,
+		// more later?
+	}
+	
 	// Dynamics---------------------------------------------
-	protected String key;
+	protected List<Key> keys;
 	protected int fixedTimer = NO_TIMEOUT;
 	protected Field jump;
 
 	public Trigger()
 	{
+		keys = new ArrayList<Trigger.Key>();
 	}
 
 	/**
-	 * @return the key
+	 * @return the keys
 	 */
-	public String getKey()
+	public List<Key> getKeys()
 	{
-		return key;
+		return keys;
 	}
-
-	/**
-	 * @param key
-	 *            the key to set
-	 */
-	public void setKey(String key)
+	
+	public void addKey(Key key)
 	{
-		this.key = key;
+		this.keys.add(key);
 	}
 
 	/**
@@ -77,8 +86,4 @@ public class Trigger implements JumpSource
 		this.jump = target;
 	}
 
-	public boolean enter(Controller controller)
-	{
-		return controller.enterTrigger(this);
-	}
 }
