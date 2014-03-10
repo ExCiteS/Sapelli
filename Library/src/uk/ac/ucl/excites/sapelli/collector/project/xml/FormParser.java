@@ -384,23 +384,20 @@ public class FormParser extends SubtreeParser
 			{
 				Trigger trigger = new Trigger();
 
-				// Parse the attricutes
-				if(attributes != null)
-				{
-					if(attributes.getValue(ATTRIBUTE_TRIGGER_KEY) != null)
-						trigger.setKey(readStringAttribute(ATTRIBUTE_TRIGGER_KEY, null, attributes, true, true));
-					if(attributes.getValue(ATTRIBUTE_TRIGGER_FIXED_TIMER) != null)
-						trigger.setFixedTimer(Integer.valueOf(readStringAttribute(ATTRIBUTE_TRIGGER_FIXED_TIMER, null, attributes, true, true)));
-					// TODO: is this still valid? Remember jumps (always "intra-Form"):
-					if(attributes.getValue(ATTRIBUTE_TRIGGER_JUMP) != null)
-						jumpSourceToJumpTargetId.put(trigger, attributes.getValue(ATTRIBUTE_TRIGGER_JUMP).trim().toUpperCase()); // upper cased, for insensitivity
-				}
-
-				// Add the trigger to the Page
+				// Parse the attributes
+				if(attributes.getValue(ATTRIBUTE_TRIGGER_KEY) != null)
+					trigger.setKey(readStringAttribute(ATTRIBUTE_TRIGGER_KEY, null, attributes, true, true));
+				if(attributes.getValue(ATTRIBUTE_TRIGGER_FIXED_TIMER) != null)
+					trigger.setFixedTimer(Integer.valueOf(readStringAttribute(ATTRIBUTE_TRIGGER_FIXED_TIMER, null, attributes, true, true)));
+				// TODO: is this still valid? Remember jumps (always "intra-Form"):
+				if(attributes.getValue(ATTRIBUTE_TRIGGER_JUMP) != null)
+					jumpSourceToJumpTargetId.put(trigger, attributes.getValue(ATTRIBUTE_TRIGGER_JUMP).trim().toUpperCase()); // upper cased, for insensitivity
+				
+				// Add the trigger to the current Page
 				if(currentPage != null)
 					currentPage.addTrigger(trigger);
 				// else add the triggers to the Form
-				else if(currentForm != null)
+				else
 					currentForm.addTrigger(trigger);
 
 			}

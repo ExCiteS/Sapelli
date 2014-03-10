@@ -96,7 +96,7 @@ public abstract class Controller
 		if(currFormSession != null && currFormSession.form != formSession.form)
 		{
 			prevFormSession = currFormSession; // remember previous formSession
-			formHistory.push(currFormSession); // add to form history	
+			formHistory.push(currFormSession); // add to form history
 		}
 		currFormSession = formSession;
 				
@@ -111,9 +111,7 @@ public abstract class Controller
 		addLogLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getIndex() + ")");
 		
 		// Setup the triggers
-		final List<Trigger> triggers = currFormSession.form.getTriggers();
-		if(!triggers.isEmpty())
-			setTriggers(triggers);
+		setTriggers(currFormSession.form.getTriggers());
 
 		// Go to field...
 		if(currFormSession.currField == null)
@@ -344,9 +342,7 @@ public abstract class Controller
 		// TODO startWithPage location
 		
 		// Setup the triggers
-		final List<Trigger> triggers = page.getTriggers();
-		if(!triggers.isEmpty())
-			setTriggers(triggers);
+		setTriggers(page.getTriggers());
 
 		return true;
 	}
