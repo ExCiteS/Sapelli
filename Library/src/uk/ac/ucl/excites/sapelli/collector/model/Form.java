@@ -616,7 +616,7 @@ public class Form
 	
 	public Column<?> getColumnFor(Field field)
 	{
-		if(isProducesRecords())
+		if(isProducesRecords() && !field.isNoColumn())
 			return getSchema().getColumn(field.getID());
 		else
 			return null;
