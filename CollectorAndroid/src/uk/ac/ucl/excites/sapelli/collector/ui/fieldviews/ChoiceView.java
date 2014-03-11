@@ -69,7 +69,7 @@ public class ChoiceView extends PickerView implements FieldUI, AdapterView.OnIte
 		// Number of columns:
 		setNumColumns(choice.getCols());
 		
-		// DictionaryItem size & padding:
+		// Item size & padding:
 		itemWidthPx = collectorView.getIconWidthPx(choice.getCols());
 		itemHeightPx = collectorView.getIconHeightPx(choice.getRows(), controller.getControlsState().isAnyButtonShown());
 		itemPaddingPx = ScreenMetrics.ConvertDipToPx(getContext(), PADDING_DIP);
