@@ -195,6 +195,22 @@ public class Schema
 	}
 
 	/**
+	 * @return the indexes
+	 */
+	public List<Index> getIndexes()
+	{
+		return indexes;
+	}
+
+	/**
+	 * @return the primaryKey
+	 */
+	public Index getPrimaryKey()
+	{
+		return primaryKey;
+	}
+
+	/**
 	 * @return the sealed
 	 */
 	public boolean isSealed()
