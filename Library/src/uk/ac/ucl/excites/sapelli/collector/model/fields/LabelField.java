@@ -20,8 +20,6 @@ public class LabelField extends Field
 
 	static public final String ID_PREFIX = "lbl";
 	
-	private String text;
-	
 	/**
 	 * @param form
 	 * @param text
@@ -38,8 +36,7 @@ public class LabelField extends Field
 	 */
 	public LabelField(Form form, String id, String text)
 	{	
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (text.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(text.trim(), "_")) : id));
-		this.text = text;
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (text.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(text.trim(), "_")) : id), text);
 		this.noColumn = true;
 	}
 
@@ -50,14 +47,6 @@ public class LabelField extends Field
 	protected Column<?> createColumn()
 	{
 		return null;
-	}
-	
-	/**
-	 * @return the text
-	 */
-	public String getText()
-	{
-		return text;
 	}
 
 	/* (non-Javadoc)

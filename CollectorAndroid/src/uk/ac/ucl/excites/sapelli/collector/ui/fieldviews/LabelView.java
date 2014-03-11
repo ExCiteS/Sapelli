@@ -25,7 +25,7 @@ public class LabelView extends LinearLayout implements FieldUI
 		this.field = field;
 		
 		TextView label = new TextView(context);
-		label.setText(field.getText());
+		label.setText(field.getLabel());
 		addView(label);
 	}
 

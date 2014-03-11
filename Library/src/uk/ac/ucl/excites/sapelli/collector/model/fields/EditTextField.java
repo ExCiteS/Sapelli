@@ -31,7 +31,6 @@ public class EditTextField extends Field
 	private int maxLength;
 	private int minLength;
 	private boolean multiline;
-	private String label;
 	private String initialValue;
 	
 	
@@ -42,21 +41,11 @@ public class EditTextField extends Field
 	 */
 	public EditTextField(Form form, String id, String label)
 	{
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id));
-		this.label = label;
-
-		maxLength = DEFAULT_MAX_LENGTH;
-		minLength = DEFAULT_MIN_LENGTH;
-		multiline = DEFAULT_MULTILINE;
-		initialValue = DEFAULT_INITIAL_VALUE;
-	}
-
-	/**
-	 * @return the label
-	 */
-	public String getLabel()
-	{
-		return label;
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id), label);
+		this.maxLength = DEFAULT_MAX_LENGTH;
+		this.minLength = DEFAULT_MIN_LENGTH;
+		this.multiline = DEFAULT_MULTILINE;
+		this.initialValue = DEFAULT_INITIAL_VALUE;
 	}
 
 	/**

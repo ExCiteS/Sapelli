@@ -23,7 +23,6 @@ public class CheckBoxField extends Field
 	
 	static public final boolean DEFAULT_INITIAL_VALUE = false; // not ticked by default
 	
-	private String label;
 	private boolean initialValue;
 
 	/**
@@ -33,17 +32,8 @@ public class CheckBoxField extends Field
 	 */
 	public CheckBoxField(Form form, String id, String label)
 	{
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id));
-		this.label = label;
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id), label);
 		this.initialValue = DEFAULT_INITIAL_VALUE;
-	}
-
-	/**
-	 * @return the label
-	 */
-	public String getLabel()
-	{
-		return label;
 	}
 
 	/**

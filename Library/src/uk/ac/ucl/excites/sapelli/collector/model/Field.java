@@ -44,6 +44,7 @@ public abstract class Field implements JumpSource
 	
 	//Dynamics---------------------------------------------
 	protected String id;
+	protected String label;
 	protected Form form;
 	protected Field jump;
 	protected boolean enabled = DEFAULT_ENABLED;
@@ -61,10 +62,16 @@ public abstract class Field implements JumpSource
 	
 	public Field(Form form, String id)
 	{
+		this(form, id, null);
+	}
+	
+	public Field(Form form, String id, String label)
+	{
 		if(id == null || id.trim().isEmpty())
 			throw new NullPointerException("ID cannot be null or empty.");
-		this.id = id.trim();
 		this.form = form;
+		this.id = id.trim();
+		this.label = label;
 	}
 	
 	/**
@@ -73,6 +80,14 @@ public abstract class Field implements JumpSource
 	public String getID()
 	{
 		return id;
+	}
+	
+	/**
+	 * @return the label
+	 */
+	public String getLabel()
+	{
+		return label;
 	}
 	
 	/**

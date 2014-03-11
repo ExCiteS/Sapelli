@@ -33,7 +33,6 @@ public class ButtonField extends Field
 	static public final ButtonColumn DEFAULT_COLUMN = ButtonColumn.NONE;
 	
 	// Dynamics -------------------------------------------
-	private String label;
 	private ButtonColumn column;
 	
 	/**
@@ -52,8 +51,7 @@ public class ButtonField extends Field
 	 */
 	public ButtonField(Form form, String id, String label)
 	{	
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id));
-		this.label = label;
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id), label);
 		setColumn(DEFAULT_COLUMN);
 	}
 
@@ -85,14 +83,6 @@ public class ButtonField extends Field
 			case DATETIME : return DateTimeColumn.Century21NoMS(id, optional != Optionalness.NEVER);
 			/* case NONE */ default : return null;
 		}
-	}
-	
-	/**
-	 * @return the label
-	 */
-	public String getLabel()
-	{
-		return label;
 	}
 
 	/* (non-Javadoc)

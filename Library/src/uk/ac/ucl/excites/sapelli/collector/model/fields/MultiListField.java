@@ -44,6 +44,7 @@ public class MultiListField extends Field
 		this.values = new Dictionary<MultiListItem>();
 	}
 	
+	@Override
 	public String getLabel()
 	{
 		return getLabel(0);
