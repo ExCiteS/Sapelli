@@ -214,9 +214,6 @@ public abstract class Controller
 			addLogLine("NULL_FIELD");
 			return;
 		}
-		
-		// log interaction
-		addLogLine("REACHED", nextField.getID());
 	
 		// Leaving current field...
 		if(currFormSession.currField != null && currFormSession.currField != nextField)
@@ -228,13 +225,15 @@ public abstract class Controller
 		if(	(currFormSession.mode == Mode.CREATE && !currFormSession.currField.isShowOnCreate()) ||
 			(currFormSession.mode == Mode.EDIT && !currFormSession.currField.isShowOnEdit()))
 		{
+			addLogLine("SKIPPING", currFormSession.currField.getID());
 			goForward(false);
 			return;
 		}
 		
 		// Entering new current field field...
+		addLogLine("REACHED", currFormSession.currField.getID());
 		if(currFormSession.currField.enter(this))
-			displayField(currFormSession.currField); // update UI if needed
+			displayField(currFormSession.currField); // update UI if needed		
 	}
 
 	/**
