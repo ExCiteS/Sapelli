@@ -16,8 +16,9 @@ import uk.ac.ucl.excites.sapelli.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.util.xml.XMLUtils;
 
 /**
+ * A class representing records of a certain Schema
+ * 
  * @author mstevens
- *
  */
 public class Record
 {
@@ -99,19 +100,22 @@ public class Record
 		this.schema = newSchema; // we accept the new one
 	}
 	
+	/**
+	 * To be called from {@link Column#storeValue(Record, Object)}
+	 * 
+	 * @param column
+	 * @param value
+	 */
 	protected void setValue(Column<?> column, Object value)
 	{
 		setValue(schema.getColumnPosition(column), value);
 	}
-
-	protected void setValue(String columnName, Object value)
-	{
-		setValue(schema.getColumnPosition(columnName), value);
-	}
 	
-	protected void setValue(int columnIndex, Object value)
+	private void setValue(int columnPosition, Object value)
 	{
-		values[columnIndex] = value;
+		if(columnPosition == Schema.UNKNOWN_COLUMN_POSITION)
+			throw new IllegalArgumentException("Invalid column position (" + columnPosition + ")!");
+		values[columnPosition] = value;
 	}
 
 	protected Object getValue(Column<?> column)
