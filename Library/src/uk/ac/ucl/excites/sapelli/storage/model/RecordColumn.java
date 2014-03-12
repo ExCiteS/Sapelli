@@ -5,9 +5,13 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
 
 /**
  * A composite column, consisting of a set of "subcolumns" as specified by a Schema
@@ -20,11 +24,19 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	static public final String DEFAULT_SUBVALUE_SEPARATOR = "#";
 	
 	protected Schema schema;
+	protected Set<Column<?>> skipColumns;
 
 	public RecordColumn(Class<R> type, String name, Schema schema, boolean optional)
 	{
+		this(type, name, schema, null, optional);
+	}
+	
+	public RecordColumn(Class<R> type, String name, Schema schema, List<Column<?>> skipColumns, boolean optional)
+	{
 		super(type, name, optional);
 		this.schema = schema;
+		this.skipColumns = new TreeSet<Column<?>>();
+		CollectionUtils.addAllIgnoreNull(this.skipColumns, skipColumns);
 	}
 	
 	/**
@@ -47,11 +59,12 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	{
 		String[] parts = recordStr.split(getSubvalueSeparator());
 		R record = getNewRecord();
-		if(parts.length != schema.getNumberOfColumns())
+		if(parts.length != (schema.getNumberOfColumns() - skipColumns.size()))
 			throw new IllegalArgumentException("Mismatch in number of subvalues, got " + parts.length + ", expecting " + schema.getNumberOfColumns() + ".");
 		int p = 0;
 		for(Column<?> subCol : schema.getColumns())
-			subCol.parseAndStoreValue(record, parts[p++]);
+			if(!skipColumns.contains(subCol))
+				subCol.parseAndStoreValue(record, parts[p++]);
 		return record;
 	}
 
@@ -68,13 +81,16 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 		boolean first = true;
 		for(Column<?> subCol : schema.getColumns())
 		{
-			String subValueString = subCol.retrieveValueAsString(record);
-			if(first)
+			if(!skipColumns.contains(subCol))
 			{
-				bldr.append(getSubvalueSeparator());
-				first = false;
+				String subValueString = subCol.retrieveValueAsString(record);
+				if(first)
+				{
+					bldr.append(getSubvalueSeparator());
+					first = false;
+				}
+				bldr.append(subValueString == null ? "" : subValueString);
 			}
-			bldr.append(subValueString == null ? "" : subValueString);
 		}
 		return bldr.toString();
 	}
@@ -83,7 +99,8 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	protected void write(R record, BitOutputStream bitStream) throws IOException
 	{
 		for(Column<?> subCol : schema.getColumns())
-			subCol.writeObject(subCol.retrieveValue(record), bitStream); // will also write optional bit of the subcolumn if it is optional
+			if(!skipColumns.contains(subCol))
+				subCol.writeObject(subCol.retrieveValue(record), bitStream); // will also write optional bit of the subcolumn if it is optional
 	}
 	
 	protected abstract R getNewRecord();
@@ -93,7 +110,8 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	{
 		R record = getNewRecord();
 		for(Column<?> subCol : schema.getColumns())
-			subCol.storeObject(record, subCol.readValue(bitStream));
+			if(!skipColumns.contains(subCol))
+				subCol.storeObject(record, subCol.readValue(bitStream));
 		return record;
 	}
 
@@ -101,7 +119,8 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	protected void validate(R record) throws IllegalArgumentException
 	{
 		for(Column<?> subCol : schema.getColumns())
-			subCol.validateObject(subCol.retrieveValue(record));
+			if(!skipColumns.contains(subCol))
+				subCol.validateObject(subCol.retrieveValue(record));
 	}
 
 	/* (non-Javadoc)
@@ -110,7 +129,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	@Override
 	protected int _getMaximumSize()
 	{
-		return schema.getMaximumSize();
+		return schema.getMaximumSize(skipColumns);
 	}
 
 	/* (non-Javadoc)
@@ -119,7 +138,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	@Override
 	protected int _getMinimumSize()
 	{
-		return schema.getMinimumSize();
+		return schema.getMinimumSize(skipColumns);
 	}
 
 }
