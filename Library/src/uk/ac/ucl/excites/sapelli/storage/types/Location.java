@@ -8,7 +8,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 /**
  * A pure-Java (i.e. framework independent) Location class<br/>
  * 
- * It holds latitude and longitude as 64 bit doubles, and an interger indicating the source (providor) of the location.<br/>
+ * It holds latitude and longitude as 64 bit doubles, and an integer indicating the source (provider) of the location.<br/>
  * Optionally it can also hold altitude (as double) and bearing, speed & accuracy (all as 32 bit floats).
  * 
  * @author mstevens
