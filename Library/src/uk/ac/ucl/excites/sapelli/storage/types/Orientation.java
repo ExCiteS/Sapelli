@@ -1,31 +1,29 @@
 package uk.ac.ucl.excites.sapelli.storage.types;
 
-import java.text.ParseException;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 
 /**
  * @author mstevens
  *
  */
-public class Orientation
+public class Orientation extends Record
 {
 	
 	//Statics----------------------------------------------
-	static final private String SEPARATOR = ";";
-	
-	static public Orientation Parse(String text) throws ParseException
+	// Schema & columns
+	static final public Schema SCHEMA = new Schema(Schema.ReservedUsageIDs.ORIENTATION_SCHEMA.ordinal(), Schema.ReservedUsageIDs.ORIENTATION_SCHEMA.name());
+	static final public FloatColumn COLUMN_AZIMUTH = new FloatColumn("Azimuth", true);
+	static final public FloatColumn COLUMN_PITCH = new FloatColumn("Pitch", true);
+	static final public FloatColumn COLUMN_ROLL = new FloatColumn("Roll", true);
+	static
 	{
-		String[] parts = text.trim().split("\\" + SEPARATOR);
-		if(parts.length != 3)
-			throw new ParseException("Not a valid orientation: " + text, 0);
-		return new Orientation(	(!parts[0].isEmpty() ? Float.valueOf(parts[0]) : null),
-								(!parts[1].isEmpty() ? Float.valueOf(parts[1]) : null),
-								(!parts[2].isEmpty() ? Float.valueOf(parts[2]) : null));
+		SCHEMA.addColumn(COLUMN_AZIMUTH);
+		SCHEMA.addColumn(COLUMN_PITCH);
+		SCHEMA.addColumn(COLUMN_ROLL);
+		SCHEMA.seal();
 	}
-	
-	//Dynamics---------------------------------------------
-	private Float azimuth;
-	private Float pitch;
-	private Float roll;
 	
 	/**
 	 * @param azimuth
@@ -34,9 +32,15 @@ public class Orientation
 	 */
 	public Orientation(Float azimuth, Float pitch, Float roll)
 	{
-		this.azimuth = azimuth;
-		this.pitch = pitch;
-		this.roll = roll;
+		super(SCHEMA);
+		setValue(COLUMN_AZIMUTH, azimuth);
+		setValue(COLUMN_PITCH, pitch);
+		setValue(COLUMN_ROLL, roll);
+	}
+	
+	public Orientation()
+	{
+		super(SCHEMA);
 	}
 
 	/**
@@ -46,94 +50,63 @@ public class Orientation
 	 */
 	public Orientation(Orientation another)
 	{
-		this.azimuth = another.azimuth;
-		this.pitch = another.pitch;
-		this.roll = another.roll;
+		super(another);
+	}
+	
+	private float getPart(FloatColumn column)
+	{
+		Float value = (Float) getValue(column);
+		if(value == null)
+			return 0.0f;
+		return value;
 	}
 	
 	/**
-	 * Rotation around the Z axis: 0� to 360�.
-	 * 0� means the top of the device is pointing to magnetic North
+	 * Rotation around the Z axis: 0 to 360 degrees.
+	 * 0 degrees means the top of the device is pointing to magnetic North
 	 * 
 	 * @return the azimuth
 	 */
 	public float getAzimuth()
 	{
-		if(azimuth == null)
-			return 0.0f;
-		return azimuth;
+		return getPart(COLUMN_AZIMUTH);
 	}
 
 	public boolean hasAzimuth()
 	{
-		return azimuth != null;
+		return getValue(COLUMN_AZIMUTH) != null;
 	}
 	
 	/**
-	 * Rotation around the X axis: -90� to 90�.
-	 * 90� mean the device is pointed to the ground, -90� means it is pointed to the sky.
+	 * Rotation around the X axis: -90 to 90 degrees.
+	 * 90 degrees means the device is pointed to the ground, -90 degrees means it is pointed to the sky.
 	 * 
 	 * @return the pitch
 	 */
 	public float getPitch()
 	{
-		if(pitch == null)
-			return 0.0f;
-		return pitch;
+		return getPart(COLUMN_PITCH);
 	}
 
 	public boolean hasPitch()
 	{
-		return pitch != null;
+		return getValue(COLUMN_PITCH) != null;
 	}
 	
 	/**
-	 * Rotation around the Y axis: -180� to 180�.
-	 * 0� means the device is lying on its back (screen facing upwards), (-)180� means it is lying on its "face" (screen facing downwards).
+	 * Rotation around the Y axis: -180 to 180 degrees.
+	 * 0 degrees means the device is lying on its back (screen facing upwards), (-)180 degrees means it is lying on its "face" (screen facing downwards).
 	 * 
 	 * @return the roll
 	 */
 	public float getRoll()
 	{
-		if(roll == null)
-			return 0.0f;
-		return roll;
+		return getPart(COLUMN_ROLL);
 	}
 	
 	public boolean hasRoll()
 	{
-		return roll != null;
-	}
-
-	@Override
-	public int hashCode()
-	{
-		int hash = 1;
-		hash = 31 * hash + (azimuth == null ? 0 : azimuth.hashCode());
-		hash = 31 * hash + (pitch == null ? 0 : pitch.hashCode());
-		hash = 31 * hash + (roll == null ? 0 : roll.hashCode());
-		return hash;
-	}
-	
-	@Override
-	public boolean equals(Object obj)
-	{
-		if(obj instanceof Orientation)
-		{
-			Orientation other = (Orientation) obj;
-			return	(this.azimuth == null ? other.azimuth == null : this.azimuth.equals(other.azimuth)) &&
-					(this.pitch == null ? other.pitch == null : this.pitch.equals(other.pitch)) &&
-					(this.roll == null ? other.roll == null : this.roll.equals(other.roll));
-		}
-		else
-			return false;
-	}
-	
-	public String toString()
-	{
-		return	(azimuth != null ? azimuth.toString() : "") + SEPARATOR +
-				(pitch != null ? pitch.toString() : "") + SEPARATOR +
-				(roll != null ? roll.toString() : "");
+		return getValue(COLUMN_ROLL) != null;
 	}
 	
 }

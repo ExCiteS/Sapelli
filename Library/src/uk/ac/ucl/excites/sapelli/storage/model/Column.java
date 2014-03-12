@@ -263,10 +263,9 @@ public abstract class Column<T>
 				+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits]";
 	}
 	
-	protected String getTypeString()
+	public String getTypeString()
 	{
-		//Note: the null check is necessary for compatibility with data in old DB4O databases
-		return (type != null ? type.getSimpleName() : "");
+		return type.getSimpleName();
 	}
 	
 	public T retrieveValueCopy(Record record)

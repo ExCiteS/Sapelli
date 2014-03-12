@@ -241,7 +241,7 @@ public class IntegerColumn extends Column<Long>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#getTypeString()
 	 */
 	@Override
-	protected String getTypeString()
+	public String getTypeString()
 	{
 		return Integer.class.getSimpleName();
 	}

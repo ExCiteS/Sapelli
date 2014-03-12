@@ -3,7 +3,6 @@
  */
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
@@ -34,7 +33,7 @@ public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 	}
 
 	@Override
-	public Column<ForeignKey> copy()
+	public ForeignKeyColumn copy()
 	{
 		return new ForeignKeyColumn(name, schema, optional);
 	}
@@ -43,12 +42,6 @@ public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 	protected ForeignKey getNewRecord()
 	{
 		return new ForeignKey((Index) schema); // don't remove the cast!
-	}
-	
-	@Override
-	protected boolean equalRestrictions(Column<ForeignKey> otherColumn)
-	{
-		return schema.equals(((ForeignKeyColumn) otherColumn));
 	}
 
 	@Override

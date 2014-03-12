@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.text.ParseException;
 import java.util.Arrays;
 import java.util.Set;
 
@@ -23,8 +24,11 @@ import uk.ac.ucl.excites.sapelli.util.xml.XMLUtils;
 public class Record
 {
 	
+	// Statics-------------------------------------------------------
 	static public final String TAG_RECORD = "Record";
+	static final private char SERIALISATION_SEPARATOR = ';';
 	
+	// Dynamics------------------------------------------------------
 	protected Schema schema;
 	protected Object[] values;
 	
@@ -131,26 +135,6 @@ public class Record
 	protected Object getValue(int columnIndex)
 	{
 		return values[columnIndex];
-	}
-	
-	/**
-	 * Sets values, provided as strings (which can be empty or null for the optional columns only), in order of the columns
-	 * 
-	 * @param values
-	 * @throws Exception
-	 */
-	public void setParsedValues(String... values) throws Exception
-	{
-		if(values == null || values.length == 0)
-			throw new IllegalArgumentException("No values provided.");
-		if(values.length != schema.getNumberOfColumns())
-			throw new IllegalArgumentException("Mismatch between number of values provided (" + values.length + ") and the number of columns in the schema (" + schema.getNumberOfColumns() + "). Please remember to put null for empty optional columns.");
-		int c = 0;
-		for(String v : values)
-		{
-			schema.getColumn(c).parseAndStoreValue(this, v);
-			c++;
-		}
 	}
 	
 	public boolean isFilled()
@@ -336,6 +320,75 @@ public class Record
 		for(Column<?> c : schema.getColumns())
 			bff.append("|" + c.getName() + ": " + c.retrieveValueAsString(this));
 		return bff.toString();
+	}
+	
+	/**
+	 * Serialise a the Record to a String
+	 * 
+	 * @return
+	 */
+	public String serialise()
+	{
+		return serialise(null);
+	}
+	
+	/**
+	 * Serialise a the Record to a String
+	 * 
+	 * @param skipColumns
+	 * @return
+	 * 
+	 * TODO escaping!
+	 */
+	public String serialise(Set<Column<?>> skipColumns)
+	{
+		StringBuilder bldr = new StringBuilder();
+		boolean first = true;
+		for(Column<?> col : schema.getColumns())
+		{
+			if(skipColumns == null || !skipColumns.contains(col))
+			{
+				String subValueString = col.retrieveValueAsString(this);
+				if(first)
+				{
+					bldr.append(SERIALISATION_SEPARATOR);
+					first = false;
+				}
+				bldr.append(subValueString == null ? "" : subValueString);
+			}
+		}
+		return bldr.toString();
+	}
+	
+	/**
+	 * Deserialise the values of a Record from a String
+	 * 
+	 * @param serialisedRecord
+	 * @throws Exception
+	 */
+	public void parse(String serialisedRecord) throws Exception
+	{
+		parse(serialisedRecord, null);
+	}
+	
+	/**
+	 * Deserialise the values of a Record from a String
+	 * 
+	 * @param serialisedRecord
+	 * @param skipColumns
+	 * @throws Exception
+	 * 
+	 * TODO escaping!
+	 */
+	public void parse(String serialisedRecord, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
+	{
+		String[] parts = serialisedRecord.split("\\" + SERIALISATION_SEPARATOR);
+		if(parts.length != values.length)
+			throw new IllegalArgumentException("Mismatch between number of serialised values (" + parts.length + ") and the number of columns in the schema (" + values.length + ").");
+		int p = 0;
+		for(Column<?> col : schema.getColumns())
+			if(skipColumns == null || !skipColumns.contains(col))
+				col.parseAndStoreValue(this, parts[p++]);
 	}
 	
 	public String toXML(int tabs)

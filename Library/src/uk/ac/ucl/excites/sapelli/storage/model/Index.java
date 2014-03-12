@@ -16,7 +16,7 @@ public class Index extends Schema
 	
 	public Index(String name, boolean unique, Column<?>... columns)
 	{
-		super(ReservedUsageIDs.INDEX_SCHEMA.ordinal(), DEFAULT_USAGE_SUB_ID, name);
+		super(ReservedUsageIDs.INDEX_SCHEMA.ordinal(), name);
 		this.unique = unique;
 		
 		// Add columns:
