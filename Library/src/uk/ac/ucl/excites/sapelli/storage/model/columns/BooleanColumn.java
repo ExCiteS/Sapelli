@@ -23,7 +23,13 @@ public class BooleanColumn extends Column<Boolean>
 	{
 		super(Boolean.class, name, optional);
 	}
-
+	
+	@Override
+	public BooleanColumn copy()
+	{
+		return new BooleanColumn(name, optional);
+	}
+	
 	/**
 	 * @param value the String to parse (can be expected to be neither null nor "")
 	 * @return the parsed value

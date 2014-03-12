@@ -140,6 +140,12 @@ public class DateTimeColumn extends Column<DateTime>
 	}
 	
 	@Override
+	public DateTimeColumn copy()
+	{
+		return new DateTimeColumn(name, timeMapping, keepMS, keepLocalTimezone, strict, optional);
+	}
+	
+	@Override
 	protected DateTime parse(String value) throws IllegalArgumentException
 	{
 		try

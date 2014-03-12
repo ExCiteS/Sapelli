@@ -110,6 +110,15 @@ public class IntegerColumn extends Column<Long>
 		this.signed = false;
 	}
 	
+	@Override
+	public IntegerColumn copy()
+	{
+		if(rangeMapping == null)
+			return new IntegerColumn(name, optional, signed, size);
+		else
+			return new IntegerColumn(name, optional, rangeMapping);
+	}
+	
 	/**
 	 * @param value the String to parse (can be expected to be neither null nor "")
 	 * @return the parsed value

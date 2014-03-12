@@ -17,6 +17,12 @@ public class DoubleColumn extends Column<Double>
 	public DoubleColumn(String name, boolean optional)
 	{
 		super(Double.class, name, optional);
+	}	
+
+	@Override
+	public DoubleColumn copy()
+	{
+		return new DoubleColumn(name, optional);
 	}
 
 	/**

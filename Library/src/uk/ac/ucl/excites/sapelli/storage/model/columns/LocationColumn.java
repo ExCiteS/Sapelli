@@ -46,6 +46,12 @@ public class LocationColumn extends Column<Location>
 		this.storeProvider = storeProvider;
 	}
 
+	@Override
+	public LocationColumn copy()
+	{
+		return new LocationColumn(name, optional, doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, storeProvider);
+	}
+
 	/**
 	 * @param value the String to parse (can be expected to be neither null nor "")
 	 * @return the parsed value

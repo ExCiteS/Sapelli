@@ -22,10 +22,15 @@ public abstract class Column<T>
 		this.optional = optional;
 	}
 	
-	public void parseAndStoreValue(Record record, String value) throws Exception
+	/**
+	 * @return a copy of this Column
+	 */
+	public abstract Column<T> copy();
+	
+	public void parseAndStoreValue(Record record, String value) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		T parsedValue;
-		if(value == null || value.equals("")) //empty String is treated as null
+		if(value == null || value.isEmpty()) //empty String is treated as null
 			parsedValue = null;
 		else
 			parsedValue = parse(value);
@@ -38,7 +43,7 @@ public abstract class Column<T>
 	 * @throws ParseException
 	 * @throws IllegalArgumentException
 	 */
-	protected abstract T parse(String value) throws ParseException, IllegalArgumentException;
+	protected abstract T parse(String value) throws ParseException, IllegalArgumentException, NullPointerException;
 	
 	/**
 	 * @param record
@@ -70,7 +75,7 @@ public abstract class Column<T>
 		}
 		else
 		{
-			validate(value); //throws exception if invalid
+			validate(value); //throws IllegalArgumentException if invalid
 			record.setValue(this, value);
 		}
 	}
@@ -111,18 +116,18 @@ public abstract class Column<T>
 		return retrieveValue(record) != null;
 	}
 	
-	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException
+	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException, IllegalArgumentException
 	{
 		writeValue(retrieveValue(record), bitStream);		
 	}
 
 	@SuppressWarnings("unchecked")
-	public void writeObject(Object value, BitOutputStream bitStream) throws IOException
+	public void writeObject(Object value, BitOutputStream bitStream) throws IOException, IllegalArgumentException
 	{
 		writeValue((T) value, bitStream);
 	}
 	
-	public void writeValue(T value, BitOutputStream bitStream) throws IOException
+	public void writeValue(T value, BitOutputStream bitStream) throws IOException, IllegalArgumentException
 	{
 		if(optional)
 			bitStream.write(value != null); //write "presence"-bit
@@ -133,19 +138,19 @@ public abstract class Column<T>
 		}
 		if(value != null)
 		{
-			validate(value); //just in case...
+			validate(value); //just in case, throws IllegalArgumentException if invalid
 			write(value, bitStream); //handled by subclass
 		}
 	}
 	
 	protected abstract void write(T value, BitOutputStream bitStream) throws IOException;
 	
-	public final void readAndStoreValue(Record record, BitInputStream bitStream) throws Exception
+	public final void readAndStoreValue(Record record, BitInputStream bitStream) throws IOException, IllegalArgumentException, NullPointerException
 	{
 		storeValue(record, readValue(bitStream));
 	}
 	
-	public final T readValue(BitInputStream bitStream) throws IOException
+	public final T readValue(BitInputStream bitStream) throws IOException, IllegalArgumentException
 	{
 		T value = null;
 		if(!optional || bitStream.readBit()) //in case of optional column: only read value if "presence"-bit is true
@@ -153,7 +158,7 @@ public abstract class Column<T>
 			value = read(bitStream);
 			if(value == null)
 				throw new IOException(optional ? "Read null value even though presence-bit was set to true!" : "Non-optional value is null!");
-			validate(value); //throws exception if invalid
+			validate(value); //throws IllegalArgumentException if invalid
 		}
 		return value;
 	}
@@ -168,9 +173,22 @@ public abstract class Column<T>
 	/**
 	 * Perform checks on potential value (e.g.: not too big for size restrictions, no invalid content, etc.) 
 	 * Argument is assumed to be non-null! Hence, null checks should happen before any call of this method.
-	 * Throws an IllegalArgumentException in case of invalid value
 	 * 
 	 * @param value
+	 * @throws IllegalArgumentException	in case of invalid value
+	 */
+	@SuppressWarnings("unchecked")
+	public void validateObject(Object value) throws IllegalArgumentException
+	{
+		validate((T) value);
+	}
+	
+	/**
+	 * Perform checks on potential value (e.g.: not too big for size restrictions, no invalid content, etc.) 
+	 * Argument is assumed to be non-null! Hence, null checks should happen before any call of this method.
+	 * 
+	 * @param value
+	 * @throws IllegalArgumentException	in case of invalid value
 	 */
 	protected abstract void validate(T value) throws IllegalArgumentException;
 	

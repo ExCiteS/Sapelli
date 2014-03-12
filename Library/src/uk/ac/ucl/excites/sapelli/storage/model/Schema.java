@@ -30,6 +30,13 @@ public class Schema
 	static public final String ATTRIBUTE_USAGE_ID = "usageID";
 	static public final String ATTRIBUTE_USAGE_SUB_ID = "usageSubID";
 	static public final String ATTRIBUTE_SCHEMA_NAME = "schemaName";
+	static public enum ReservedUsageIDs
+	{
+		INDEX_SCHEMA,		/* 0 */
+		LOCATION_SCHEMA,	/* 1 */
+		ORIENTATION_SCHEMA	/* 2 */
+		// more later?
+	}
 	
 	// v1.x-style identification (for backwards compatibility only):
 	//	Note: schemaID & schemaVersion are no longer stored in a Schema instance, instead a 1.x Project instance holds them (Project#id = schemaID & Project#schemaVersion = schemaVersion) 
@@ -42,13 +49,13 @@ public class Schema
 	static public final String V1X_ATTRIBUTE_SCHEMA_VERSION = "schema-version";
 	
 	// Dynamics-----------------------------------------------------------
-	private long usageID;
-	private int usageSubID;
-	private String name;
+	protected final long usageID;
+	protected final int usageSubID;
+	protected final String name;
 
-	private List<Column> columns;
-	private Map<String, Integer> columnNameToPosition;
-	private List<Index> indexes;
+	private final List<Column> columns;
+	private final Map<String, Integer> columnNameToPosition;
+	private final List<Index> indexes;
 	private Index primaryKey;
 
 	private boolean sealed = false;
@@ -166,13 +173,15 @@ public class Schema
 	 * Add an {@link Index} to the Schema, which may or may not be used as the primary key.
 	 * In case it is to be used as the primary key the index needs to be unique and should consist only of non-optional (i.e. non-nullable) columns.
 	 * 
-	 * Note: for now we allow indexes to be added and a primary key to be set after the schema has been sealed. However this may change in the future.
+	 * Note: adding a primary key index is not allowed after the Schema has been sealed, adding normal indexes is allowed.
 	 * 
 	 * @param index
 	 * @param useAsPrimaryKey
 	 */
 	public void addIndex(Index index, boolean useAsPrimaryKey)
 	{
+		if(sealed && useAsPrimaryKey)
+			throw new IllegalStateException("Cannot set the primary key of a sealed schema (adding normal indexes is allowed)!");
 		if(index == null)
 			throw new IllegalArgumentException("Index cannot be null!");
 		// Check if the indexed columns are columns of this Schema instance:
@@ -379,6 +388,7 @@ public class Schema
 				while(myCols.hasNext() /* && otherCols.hasNext() */)
 					if(!myCols.next().equals(otherCols.next(), checkNames))
 						return false;
+				//TODO compare indexes?
 			}
 			return true;
 		}

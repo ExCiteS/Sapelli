@@ -22,15 +22,18 @@ public class OrientationColumn extends Column<Orientation>
 	private boolean storePitch;
 	private boolean storeRoll;
 	
-	/**
-	 * 
-	 */
 	public OrientationColumn(String name, boolean optional, boolean storeAzimuth, boolean storePitch, boolean storeRoll)
 	{
 		super(Orientation.class, name, optional);
 		this.storeAzimuth = storeAzimuth;
 		this.storePitch = storePitch;
 		this.storeRoll = storeRoll;
+	}
+	
+	@Override
+	public OrientationColumn copy()
+	{
+		return new OrientationColumn(name, optional, storeAzimuth, storePitch, storeRoll);
 	}
 
 	@Override

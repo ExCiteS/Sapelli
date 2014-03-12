@@ -61,6 +61,12 @@ public class StringColumn extends Column<String>
 		this.sizeField = new IntegerRangeMapping(1, maxLengthBytes); //we don't store the empty string so effective size is always at least 1 byte
 	}
 	
+	@Override
+	public StringColumn copy()
+	{
+		return new StringColumn(name, optional, maxLengthBytes, charset);
+	}
+	
 	/**
 	 * @param value the String to parse (can be expected to be neither null nor "")
 	 * @return the parsed value

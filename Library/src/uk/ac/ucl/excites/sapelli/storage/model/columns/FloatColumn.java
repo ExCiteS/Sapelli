@@ -18,6 +18,12 @@ public class FloatColumn extends Column<Float>
 	{
 		super(Float.class, name, optional);
 	}
+	
+	@Override
+	public FloatColumn copy()
+	{
+		return new FloatColumn(name, optional);
+	}
 
 	/**
 	 * @param value the String to parse (can be expected to be neither null nor "")

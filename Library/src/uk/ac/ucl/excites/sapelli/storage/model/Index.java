@@ -3,42 +3,26 @@
  */
 package uk.ac.ucl.excites.sapelli.storage.model;
 
-import java.util.List;
-import java.util.Arrays;
-
 /**
- * Class representing a database index spanning one or more columns
+ * Class representing a database index spanning one or more columns.
+ * Implemented as a subclass of {@link Schema}.
  * 
  * @author mstevens
  */
-public class Index
+public class Index extends Schema
 {
 
-	private String name;
-	private List<Column<?>> columns;
 	private boolean unique;
 	
 	public Index(String name, boolean unique, Column<?>... columns)
 	{
-		this.name = name;
+		super(ReservedUsageIDs.INDEX_SCHEMA.ordinal(), DEFAULT_USAGE_SUB_ID, name);
 		this.unique = unique;
-		this.columns = Arrays.asList(columns);
-	}
-
-	/**
-	 * @return the name
-	 */
-	public String getName()
-	{
-		return name;
-	}
-
-	/**
-	 * @return the columns
-	 */
-	public List<Column<?>> getColumns()
-	{
-		return columns;
+		
+		// Add columns:
+		for(Column<?> iCol : columns)
+			addColumn(iCol); // Note: the columns are not copied, just shared! (columns don't "know" their Schema(s) anyway)
+		seal();
 	}
 
 	/**
@@ -47,6 +31,18 @@ public class Index
 	public boolean isUnique()
 	{
 		return unique;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return "Index " + name;
+	}
+	
+	@Override
+	public void addIndex(Index index, boolean useAsPrimaryKey)
+	{
+		throw new UnsupportedOperationException("Cannot add indexes to an index");
 	}
 	
 }
