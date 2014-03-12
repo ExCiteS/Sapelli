@@ -96,7 +96,6 @@ public class Schema
 		{
 			columnNameToPosition.put(column.getName(), columns.size());
 			columns.add(column);
-			column.setSchema(this);
 		}
 		else
 			throw new IllegalStateException("Cannot extend a sealed schema!");
@@ -208,6 +207,14 @@ public class Schema
 	public Index getPrimaryKey()
 	{
 		return primaryKey;
+	}
+	
+	/**
+	 * @return	whether or not the Schema has a primary key
+	 */
+	public boolean hasPrimaryKey()
+	{
+		return primaryKey != null;
 	}
 
 	/**

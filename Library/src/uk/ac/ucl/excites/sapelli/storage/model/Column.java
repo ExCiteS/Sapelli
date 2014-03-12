@@ -12,8 +12,7 @@ public abstract class Column<T>
 {
 	
 	private Class<T> type;
-	private Schema schema; // the schema this column belongs to
-	private String name;
+	protected String name;
 	protected boolean optional;
 	
 	public Column(Class<T> type, String name, boolean optional)
@@ -21,13 +20,6 @@ public abstract class Column<T>
 		this.type = type;
 		this.name = name;
 		this.optional = optional;
-	}
-	
-	protected void setSchema(Schema schema)
-	{
-		if(this.schema != null)
-			throw new IllegalStateException("Cannot reassociate column to another schema");
-		this.schema = schema;
 	}
 	
 	public void parseAndStoreValue(Record record, String value) throws Exception
@@ -68,7 +60,7 @@ public abstract class Column<T>
 	 */
 	public void storeValue(Record record, T value) throws IllegalArgumentException, NullPointerException
 	{
-		if(!record.getSchema().equals(this.schema))
+		if(!record.getSchema().containsColumn(this))
 			throw new IllegalArgumentException("Schema mismatch.");
 		if(value == null)
 		{
@@ -103,7 +95,7 @@ public abstract class Column<T>
 	@SuppressWarnings("unchecked")
 	public T retrieveValue(Record record)
 	{
-		if(!record.getSchema().equals(this.schema))
+		if(!record.getSchema().containsColumn(this))
 			throw new IllegalArgumentException("Schema mismatch.");
 		return (T) record.getValue(this);
 	}
