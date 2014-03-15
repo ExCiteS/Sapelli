@@ -5,8 +5,10 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 
 /**
+ * A class representing 3-dimensional (device) orientation.
+ * Implemented as a Record subclass. 
+ * 
  * @author mstevens
- *
  */
 public class Orientation extends Record
 {
@@ -14,11 +16,11 @@ public class Orientation extends Record
 	//Statics----------------------------------------------
 	// Schema & columns
 	static final public Schema SCHEMA = new Schema(Schema.ReservedUsageIDs.ORIENTATION_SCHEMA.ordinal(), Schema.ReservedUsageIDs.ORIENTATION_SCHEMA.name());
-	static final public FloatColumn COLUMN_AZIMUTH = new FloatColumn("Azimuth", true);
-	static final public FloatColumn COLUMN_PITCH = new FloatColumn("Pitch", true);
-	static final public FloatColumn COLUMN_ROLL = new FloatColumn("Roll", true);
+	static final public FloatColumn COLUMN_AZIMUTH = new FloatColumn("Azimuth", true, false);	// optional 32 bit float
+	static final public FloatColumn COLUMN_PITCH = new FloatColumn("Pitch", true, false);		// optional 32 bit float
+	static final public FloatColumn COLUMN_ROLL = new FloatColumn("Roll", true, false);			// optional 32 bit float
 	static
-	{
+	{	// Add columns to Schema & seal it:
 		SCHEMA.addColumn(COLUMN_AZIMUTH);
 		SCHEMA.addColumn(COLUMN_PITCH);
 		SCHEMA.addColumn(COLUMN_ROLL);
@@ -33,11 +35,14 @@ public class Orientation extends Record
 	public Orientation(Float azimuth, Float pitch, Float roll)
 	{
 		super(SCHEMA);
-		setValue(COLUMN_AZIMUTH, azimuth);
-		setValue(COLUMN_PITCH, pitch);
-		setValue(COLUMN_ROLL, roll);
+		COLUMN_AZIMUTH.storeValue(this, azimuth);
+		COLUMN_PITCH.storeValue(this, pitch);
+		COLUMN_ROLL.storeValue(this, roll);
 	}
 	
+	/**
+	 * Only to be used by  {@link OrientationColumn#getNewRecord()}
+	 */
 	public Orientation()
 	{
 		super(SCHEMA);
@@ -53,14 +58,6 @@ public class Orientation extends Record
 		super(another);
 	}
 	
-	private float getPart(FloatColumn column)
-	{
-		Float value = (Float) getValue(column);
-		if(value == null)
-			return 0.0f;
-		return value;
-	}
-	
 	/**
 	 * Rotation around the Z axis: 0 to 360 degrees.
 	 * 0 degrees means the top of the device is pointing to magnetic North
@@ -69,7 +66,7 @@ public class Orientation extends Record
 	 */
 	public float getAzimuth()
 	{
-		return getPart(COLUMN_AZIMUTH);
+		return COLUMN_AZIMUTH.getPrimitiveFloat(this, 0.0f);
 	}
 
 	public boolean hasAzimuth()
@@ -85,7 +82,7 @@ public class Orientation extends Record
 	 */
 	public float getPitch()
 	{
-		return getPart(COLUMN_PITCH);
+		return COLUMN_PITCH.getPrimitiveFloat(this, 0.0f);
 	}
 
 	public boolean hasPitch()
@@ -101,7 +98,7 @@ public class Orientation extends Record
 	 */
 	public float getRoll()
 	{
-		return getPart(COLUMN_ROLL);
+		return COLUMN_ROLL.getPrimitiveFloat(this, 0.0f);
 	}
 	
 	public boolean hasRoll()

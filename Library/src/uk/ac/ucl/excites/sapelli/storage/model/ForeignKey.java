@@ -1,5 +1,9 @@
 package uk.ac.ucl.excites.sapelli.storage.model;
 
+/**
+ * @author mstevens
+ *
+ */
 public class ForeignKey extends Record
 {
 	

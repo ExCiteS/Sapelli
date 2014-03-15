@@ -288,7 +288,7 @@ public class LocationField extends Field implements Timeoutable
 	@Override
 	protected LocationColumn createColumn()
 	{
-		return new LocationColumn(id, (optional != Optionalness.NEVER), doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, storeProvider);
+		return new LocationColumn(id, (optional != Optionalness.NEVER), doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, false, storeProvider); // we never store time (for now)
 	}
 	
 	public boolean storeLocation(Record record, Location location)
@@ -304,7 +304,7 @@ public class LocationField extends Field implements Timeoutable
 		if(!bestWeCouldGet)
 		{
 			// Time check:
-			long ageMS = System.currentTimeMillis() - location.getTime();
+			long ageMS = System.currentTimeMillis() - location.getTime().getMillis();
 			if(ageMS > maxAgeS * 1000)
 				return false; //location is too old
 			// Provider type check:

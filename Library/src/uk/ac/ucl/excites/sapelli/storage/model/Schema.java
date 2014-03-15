@@ -161,7 +161,7 @@ public class Schema
 	/**
 	 * 
 	 * @param column
-	 * @return	whether or not this Schema contains the given Column
+	 * @return	whether or not this Schema contains the given Column or an exact equivalent of it
 	 */
 	public boolean containsColumn(Column column)
 	{
@@ -386,7 +386,7 @@ public class Schema
 				Iterator<Column> myCols = columns.iterator();
 				Iterator<Column> otherCols = other.columns.iterator();
 				while(myCols.hasNext() /* && otherCols.hasNext() */)
-					if(!myCols.next().equals(otherCols.next(), checkNames))
+					if(!myCols.next().equals(otherCols.next(), checkNames, true))
 						return false;
 				//TODO compare indexes?
 			}
@@ -407,7 +407,7 @@ public class Schema
 		StringBuffer bff = new StringBuffer();
 		bff.append(toString() + ":");
 		for(Column<?> c : columns)
-			bff.append("\n\t- " + c.toString());
+			bff.append("\n\t- " + c.getSpecification());
 		return bff.toString();
 	}
 	

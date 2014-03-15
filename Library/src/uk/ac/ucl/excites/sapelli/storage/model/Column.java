@@ -11,9 +11,9 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 public abstract class Column<T>
 {
 	
-	private Class<T> type;
-	protected String name;
-	protected boolean optional;
+	private final Class<T> type;
+	protected final String name;
+	protected final boolean optional;
 	
 	public Column(Class<T> type, String name, boolean optional)
 	{
@@ -257,15 +257,25 @@ public abstract class Column<T>
 
 	public String toString()
 	{
-		return	getTypeString() + "Column [" +
-				name + "; "
-				+ (optional ? "optional" : "required") + "; "
-				+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits]";
+		return	getTypeString() + "Column";
+	}
+	
+	public String getSpecification()
+	{
+		return toString() + " [" +
+		    				name + "; "
+		    				+ (optional ? "optional" : "required") + "; "
+		    				+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits]";
 	}
 	
 	public String getTypeString()
 	{
 		return type.getSimpleName();
+	}
+	
+	public Class<T> getType()
+	{
+		return type;
 	}
 	
 	public T retrieveValueCopy(Record record)
@@ -348,7 +358,7 @@ public abstract class Column<T>
 	@Override
 	public boolean equals(Object obj)
 	{
-		return equals(obj, false); // do not check name by default
+		return equals(obj, false, true); // do not check name by default, but do check restrictions by default
 	}
 	
 	/**
@@ -356,10 +366,11 @@ public abstract class Column<T>
 	 * 
 	 * @param obj object to compare this one with
 	 * @param checkName whether or not to compare the column name
+	 * @param whether or not to check the restrictions
 	 * @return whether or not the given Object is an identical/equivalent Column
 	 */
 	@SuppressWarnings("unchecked")
-	public boolean equals(Object obj, boolean checkName)
+	public boolean equals(Object obj, boolean checkName, boolean checkRestrictions)
 	{
 		if(this == obj) // compare pointers first
 			return true;
@@ -372,7 +383,7 @@ public abstract class Column<T>
 			if(checkName && !this.name.equals(other.name))
 				return false;
 			// Check restrictions (size/content):
-			return equalRestrictions(other);
+			return !checkRestrictions || equalRestrictions(other);
 		}
 		else
 			return false;

@@ -36,10 +36,25 @@ public class OrientationColumn extends RecordColumn<Orientation>
 		return new Orientation();
 	}
 	
+	public boolean isStoreAzimuth()
+	{
+		return !skipColumns.contains(Orientation.COLUMN_AZIMUTH);
+	}
+	
+	public boolean isStorePitch()
+	{
+		return !skipColumns.contains(Orientation.COLUMN_PITCH);
+	}
+	
+	public boolean isStoreRoll()
+	{
+		return !skipColumns.contains(Orientation.COLUMN_ROLL);
+	}
+	
 	@Override
 	public OrientationColumn copy()
 	{
-		return new OrientationColumn(name, optional, !skipColumns.contains(Orientation.COLUMN_AZIMUTH), !skipColumns.contains(Orientation.COLUMN_PITCH), !skipColumns.contains(Orientation.COLUMN_ROLL));
+		return new OrientationColumn(name, optional, isStoreAzimuth(), isStorePitch(), isStoreRoll());
 	}
 	
 }

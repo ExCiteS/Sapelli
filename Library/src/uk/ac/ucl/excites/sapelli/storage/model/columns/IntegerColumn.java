@@ -9,6 +9,7 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 
 /**
@@ -117,6 +118,46 @@ public class IntegerColumn extends Column<Long>
 			return new IntegerColumn(name, optional, signed, size);
 		else
 			return new IntegerColumn(name, optional, rangeMapping);
+	}
+	
+	/**
+	 * Integer version of {@link IntegerColumn#storeValue(Record, Long)}
+	 * 
+	 * @param record
+	 * @param value
+	 * @throws IllegalArgumentException
+	 * @throws NullPointerException
+	 */
+	public void storeValue(Record record, Integer value) throws IllegalArgumentException, NullPointerException
+	{
+		Long longValue = (value != null ? Long.valueOf(value.intValue()) : null);
+		storeValue(record, longValue);
+	}
+	
+	/**
+	 * @param record
+	 * @param nullReplacement
+	 * @return
+	 */
+	public long getPrimitiveLong(Record record, long nullReplacement)
+	{
+		Long longValue = retrieveValue(record);
+		if(longValue == null)
+			return nullReplacement;
+		return longValue.longValue();
+	}
+	
+	/**
+	 * @param record
+	 * @param nullReplacement
+	 * @return
+	 */
+	public int getPrimitiveInt(Record record, int nullReplacement)
+	{
+		Long longValue = retrieveValue(record);
+		if(longValue == null)
+			return nullReplacement;
+		return longValue.intValue();
 	}
 	
 	/**

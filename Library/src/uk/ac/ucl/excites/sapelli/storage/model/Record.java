@@ -27,6 +27,8 @@ public class Record
 	// Statics-------------------------------------------------------
 	static public final String TAG_RECORD = "Record";
 	static final private char SERIALISATION_SEPARATOR = ';';
+	static final private char SERIALISATION_SEPARATOR_ESCAPE = ':';
+	static final private char SERIALISATION_SEPARATOR_ESCAPE_PREFIX = '/';
 	
 	// Dynamics------------------------------------------------------
 	protected Schema schema;
@@ -98,7 +100,7 @@ public class Record
 		}
 		else
 		{
-			if(!schema.equals(newSchema, true, true)) //also checkes number of columns
+			if(!schema.equals(newSchema, true, true)) // also checks number of columns
 				throw new IllegalArgumentException("The provived schema is not compatible with this record!");
 		}
 		this.schema = newSchema; // we accept the new one
@@ -337,8 +339,6 @@ public class Record
 	 * 
 	 * @param skipColumns
 	 * @return
-	 * 
-	 * TODO escaping!
 	 */
 	public String serialise(Set<Column<?>> skipColumns)
 	{
@@ -346,15 +346,16 @@ public class Record
 		boolean first = true;
 		for(Column<?> col : schema.getColumns())
 		{
+			// Separator:
+			if(first)
+				first = false;
+			else
+				bldr.append(SERIALISATION_SEPARATOR);
+			// Value:
 			if(skipColumns == null || !skipColumns.contains(col))
 			{
 				String subValueString = col.retrieveValueAsString(this);
-				if(first)
-				{
-					bldr.append(SERIALISATION_SEPARATOR);
-					first = false;
-				}
-				bldr.append(subValueString == null ? "" : subValueString);
+				bldr.append(subValueString == null ? "" : StringUtils.escape(subValueString, SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
 			}
 		}
 		return bldr.toString();
@@ -377,8 +378,6 @@ public class Record
 	 * @param serialisedRecord
 	 * @param skipColumns
 	 * @throws Exception
-	 * 
-	 * TODO escaping!
 	 */
 	public void parse(String serialisedRecord, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
@@ -387,8 +386,11 @@ public class Record
 			throw new IllegalArgumentException("Mismatch between number of serialised values (" + parts.length + ") and the number of columns in the schema (" + values.length + ").");
 		int p = 0;
 		for(Column<?> col : schema.getColumns())
+		{
 			if(skipColumns == null || !skipColumns.contains(col))
-				col.parseAndStoreValue(this, parts[p++]);
+				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
+			p++;
+		}
 	}
 	
 	public String toXML(int tabs)
