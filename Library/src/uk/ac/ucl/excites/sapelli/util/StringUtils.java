@@ -92,4 +92,65 @@ public final class StringUtils
 		return str.replaceAll("\\s+", replacement);
 	}
 	
+	/**
+	 * Simple escaping method to clear Strings of a single to-be-avoided char
+	 * 
+	 * @param str
+	 * @param avoid
+	 * @param replacement
+	 * @param prefix
+	 * @return
+	 */
+	static public String escape(String str, char avoid, char replacement, char prefix)
+	{
+		StringBuilder bldr = new StringBuilder();
+		for(char c : str.toCharArray())
+			if(c == avoid)
+			{	// avoid --> prefix + replacement
+				bldr.append(prefix);
+				bldr.append(replacement);
+			}
+			else
+			{
+				bldr.append(c);
+				if(c == prefix)
+					bldr.append(prefix); // prefix --> prefix + prefix
+			}
+		return bldr.toString();
+	}
+	
+	/**
+	 * Simple de-escaping method which reverses the work of {@link #escape(String, char, char, char)}
+	 * 
+	 * @param str
+	 * @param avoid
+	 * @param replacement
+	 * @param prefix
+	 * @return
+	 */
+	static public String deescape(String str, char avoid, char replacement, char prefix)
+	{
+		StringBuilder bldr = new StringBuilder();
+		boolean prevPrefix = false;
+		for(char c : str.toCharArray())
+		{
+			if(prevPrefix)
+			{
+				if(c == replacement)
+					bldr.append(avoid); // prefix + replacement --> avoid
+				else
+					bldr.append(prefix); // prefix + prefix --> prefix
+				prevPrefix = false;
+			}
+			else
+			{
+				if(c == prefix)
+					prevPrefix = true;
+				else
+					bldr.append(c);
+			}				
+		}
+		return bldr.toString();
+	}
+	
 }
