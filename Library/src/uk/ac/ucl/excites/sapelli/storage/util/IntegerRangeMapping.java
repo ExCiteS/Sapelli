@@ -34,8 +34,8 @@ public class IntegerRangeMapping
 	 */
 	static public IntegerRangeMapping ForSize(long loBound, int sizeBits)
 	{
-		if(sizeBits > 64)
-			throw new IllegalArgumentException("Max size is 64 bits, given " + sizeBits);
+		if(sizeBits > Long.SIZE)
+			throw new IllegalArgumentException("Maximum size is " + Long.SIZE + "bits, requested size was " + sizeBits + " bits.");
 		return new IntegerRangeMapping(loBound, BigInteger.valueOf(2).pow(sizeBits).add(BigInteger.valueOf(-1)).add(BigInteger.valueOf(loBound)).longValue());
 	}
 	
