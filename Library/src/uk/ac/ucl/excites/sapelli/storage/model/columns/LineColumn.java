@@ -7,11 +7,11 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Line;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
-import uk.ac.ucl.excites.sapelli.storage.types.Polygon;
 
 /**
+ * A column for {@link Line}s, implemented as a {@link ListColumn} subclass.
+ * 
  * @author mstevens
- *
  */
 public class LineColumn extends ListColumn<Location>
 {
@@ -25,7 +25,7 @@ public class LineColumn extends ListColumn<Location>
 	
 	private LineColumn(String name, Column<Location> locationCol, boolean optional)
 	{
-		super(name, locationCol, optional, Line.MIN_POINTS, GetMaxLengthForSizeFieldSize(Polygon.MIN_POINTS, SIZE_FIELD_BITS));
+		super(name, locationCol, optional, Line.MIN_POINTS, GetMaxLengthForSizeFieldSize(Line.MIN_POINTS, SIZE_FIELD_BITS));
 	}
 	
 	@Override

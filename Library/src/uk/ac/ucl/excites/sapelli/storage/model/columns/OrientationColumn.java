@@ -7,8 +7,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 
 /**
+ * A column for {@link Orientation}s, implemented as a {@link RecordColumn} subclass.
+ * 
  * @author mstevens
- *
  */
 public class OrientationColumn extends RecordColumn<Orientation>
 {

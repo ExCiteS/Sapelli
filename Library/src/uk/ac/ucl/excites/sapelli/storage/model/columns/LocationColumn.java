@@ -7,7 +7,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
- * 
+ * A column for {@link Location}s, implemented as a {@link RecordColumn} subclass.
  * 
  * @author mstevens
  */
@@ -41,7 +41,8 @@ public class LocationColumn extends RecordColumn<Location>
 			addSkipColumn(Location.COLUMN_TIME);
 		if(!storeProvider)
 			addSkipColumn(Location.COLUMN_PROVIDER);
-		// "Swap columns": use 64-bit columns when storing/retrieving lat/lon/alt values in the Location objects:
+		/* "Swap columns": use 64-bit columns when storing/retrieving lat/lon/alt values in
+			Location objects (which internally always use double precision for lat/lon/alt) */
 		if(!doublePrecision)
 		{
 			addRecordColumn(Location.COLUMN_LATITUDE_32, Location.COLUMN_LATITUDE);

@@ -13,6 +13,8 @@ import java.util.List;
 
 
 
+
+
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
@@ -20,6 +22,8 @@ import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.Location;
 import uk.ac.ucl.excites.sapelli.util.xml.DocumentParser;
 
 /**
@@ -31,6 +35,7 @@ public class RecordsImporter extends DocumentParser
 
 	protected StorageClient client;
 	protected Record currentRecord;
+	protected boolean v1xRecord;
 	protected Column<?> currentColumn;
 	protected List<Record> records;
 
@@ -70,6 +75,7 @@ public class RecordsImporter extends DocumentParser
 				int schemaVersion = readIntegerAttribute(Schema.V1X_ATTRIBUTE_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION, attributes);
 				schema = client.getSchemaV1(schemaID, schemaVersion);
 				schemaDescr = "ID " + schemaID + " and version " + schemaVersion;
+				v1xRecord = true;
 			}
 			else
 			{
@@ -77,6 +83,7 @@ public class RecordsImporter extends DocumentParser
 				int usageSubID = readIntegerAttribute(Schema.ATTRIBUTE_USAGE_ID, Schema.DEFAULT_USAGE_SUB_ID, attributes);
 				schema = client.getSchema(usageID, usageSubID);
 				schemaDescr = "usageID " + usageID + " and usageSubID " + usageSubID;
+				v1xRecord = false;
 			}
 			if(schema == null)
 				addWarning("Record skipped because schema with " + schemaDescr + " is unknown, please load the appropriate project.");
@@ -104,7 +111,12 @@ public class RecordsImporter extends DocumentParser
 		{
 			try
 			{
-				currentColumn.parseAndStoreValue(currentRecord, new String(ch, start, length));
+				String valueString = new String(ch, start, length);
+				if(v1xRecord && currentColumn instanceof LocationColumn)
+					// Backwards compatibility with old location formats:
+					currentColumn.storeObject(currentRecord, Location.parseV1X(valueString));
+				else
+					currentColumn.parseAndStoreValue(currentRecord, valueString);
 			}
 			catch(Exception e)
 			{

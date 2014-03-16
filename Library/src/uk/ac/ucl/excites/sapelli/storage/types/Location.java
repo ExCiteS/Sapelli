@@ -1,5 +1,7 @@
 package uk.ac.ucl.excites.sapelli.storage.types;
 
+import java.text.ParseException;
+
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -14,8 +16,8 @@ import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
  * A pure-Java (i.e. framework independent) Location class.
  * Implemented as a Record subclass.
  * 
- * It holds latitude and longitude as 64 bit doubles of the location and an integer indicating the source (provider).<br/>
- * Optionally it can also hold altitude (as double), and bearing, speed & accuracy (all as 32 bit floats), 
+ * It holds latitude and longitude as doubles of the location and an integer indicating the source (provider).<br/>
+ * Optionally it can also hold altitude (as double), and bearing, speed & accuracy (all as floats), 
  * 
  * @author mstevens
  */
@@ -24,6 +26,8 @@ public class Location extends Record
 
 	//Static---------------------------------------------------------
 
+	static final private char V1X_SEPARATOR = ';';
+	
 	// Provider
 	static public final int PROVIDER_UNKNOWN = 0;
 	static public final int PROVIDER_GPS = 1;
@@ -107,7 +111,7 @@ public class Location extends Record
 	 */
 	public Location(double lat, double lon, Double alt, Float bearing, Float speed, Float acc, Long time, int provider)
 	{
-		this(lat, lon, alt, bearing, speed, acc, new DateTime(time), provider);
+		this(lat, lon, alt, bearing, speed, acc, (time != null ? new DateTime(time) : null), provider);
 	}
 	
 	/**
@@ -247,6 +251,41 @@ public class Location extends Record
 	{
 		// no need for null check here, the column is non-optional and the value is always set at construction time
 		return COLUMN_PROVIDER.retrieveValue(this).intValue();
+	}
+
+	/**
+	 * This method supports parsing Locations from 2 v1.x formats, one from before and
+	 * one from after 2013-07-13.
+	 * 
+	 * Formats overview:
+	 * 	- Pre-2013-07-13 v1.x format:	LAT;LON;PROV;ALT;BEAR;SPD;ACC;TIME
+	 * 	- Post-2013-07-13 v1.x format:	PROV;LAT;LON;ALT;BEAR;SPD;ACC;TIME
+	 * 	- v2.x format:					LAT;LON;ALT;BEAR;SPD;ACC;TIME;PROV
+	 * 
+	 * @param valueString to parse
+	 * @return parsed Location object
+	 * @throws ParseException
+	 */
+	public static Location parseV1X(String valueString) throws ParseException
+	{
+		String[] parts = valueString.trim().split("\\" + V1X_SEPARATOR);
+		if(parts.length < 3)
+			throw new ParseException("Not a valid v1.x location: " + valueString, 0);
+		
+		//Check for Pre-2013-07-13 old serialisation format:
+		boolean oldFormat = false;
+		if(parts[0].indexOf('.') != -1) //first part is a floating point value (i.e. it is lat, as in the old format)
+			oldFormat = true;
+		
+		// Construct new location object:
+		return new Location(Double.parseDouble(parts[oldFormat ? 0 : 1]),
+							Double.parseDouble(parts[oldFormat ? 1 : 2]),
+							(parts.length > 3 && !parts[3].isEmpty() ? Double.valueOf(parts[3]) : null),
+							(parts.length > 4 && !parts[4].isEmpty() ? Float.valueOf(parts[4]) : null),
+							(parts.length > 5 && !parts[5].isEmpty() ? Float.valueOf(parts[5]) : null),
+							(parts.length > 6 && !parts[6].isEmpty() ? Float.valueOf(parts[6]) : null),
+							(parts.length > 7 && !parts[7].isEmpty() ? Long.valueOf(parts[7]) : null),
+							Integer.parseInt(parts[oldFormat ? 2 : 0]));
 	}
 	
 }

@@ -9,8 +9,9 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
 import uk.ac.ucl.excites.sapelli.storage.types.Polygon;
 
 /**
+ * A column for {@link Polygon}s, implemented as a {@link ListColumn} subclass.
+ * 
  * @author mstevens
- *
  */
 public class PolygonColumn extends ListColumn<Location>
 {
