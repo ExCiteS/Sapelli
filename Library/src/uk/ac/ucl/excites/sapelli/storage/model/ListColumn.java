@@ -19,6 +19,7 @@ import uk.ac.ucl.excites.sapelli.util.StringUtils;
 public abstract class ListColumn<T> extends Column<List<T>>
 {
 	
+	static public final int DEFAULT_MINIMUM_LENGTH = 0; // list items
 	static public final char SERIALISATION_SEPARATOR = ',';
 	static public final char SERIALISATION_SEPARATOR_ESCAPE = '.';
 	static public final char SERIALISATION_SEPARATOR_ESCAPE_PREFIX = '/';
@@ -30,6 +31,11 @@ public abstract class ListColumn<T> extends Column<List<T>>
 	
 	private final IntegerRangeMapping sizeField;
 	protected final Column<T> singleColumn;
+	
+	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength)
+	{
+		this(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, maxLength);
+	}
 	
 	@SuppressWarnings("unchecked")
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength)
