@@ -354,8 +354,8 @@ public class Record
 			// Value:
 			if(skipColumns == null || !skipColumns.contains(col))
 			{
-				String subValueString = col.retrieveValueAsString(this);
-				bldr.append(subValueString == null ? "" : StringUtils.escape(subValueString, SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
+				String valueString = col.retrieveValueAsString(this);
+				bldr.append(valueString == null ? "" : StringUtils.escape(valueString, SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
 			}
 		}
 		return bldr.toString();
