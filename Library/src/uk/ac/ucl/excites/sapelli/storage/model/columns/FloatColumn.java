@@ -5,6 +5,7 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -153,6 +154,12 @@ public class FloatColumn extends Column<Double>
 	public String getTypeString()
 	{
 		return Float.class.getSimpleName();
+	}
+	
+	@Override
+	public void accept(ColumnVisitor visitor)
+	{
+		visitor.visit(this);
 	}
 	
 }

@@ -10,6 +10,7 @@ import java.text.ParseException;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.util.StringUtils;
 
@@ -157,6 +158,12 @@ public class StringColumn extends Column<String>
 	protected String copy(String value)
 	{
 		return new String(value);
+	}
+
+	@Override
+	public void accept(ColumnVisitor visitor)
+	{
+		visitor.visit(this);
 	}
 	
 }

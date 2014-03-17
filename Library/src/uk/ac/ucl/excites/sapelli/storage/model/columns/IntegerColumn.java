@@ -9,6 +9,7 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 
@@ -285,6 +286,12 @@ public class IntegerColumn extends Column<Long>
 	public String getTypeString()
 	{
 		return Integer.class.getSimpleName();
+	}
+
+	@Override
+	public void accept(ColumnVisitor visitor)
+	{
+		visitor.visit(this);
 	}
 	
 }

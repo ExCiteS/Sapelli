@@ -6,6 +6,7 @@ package uk.ac.ucl.excites.sapelli.storage.model.columns;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 
 /**
@@ -30,6 +31,12 @@ public class IntegerListColumn extends ListColumn<Long>
 	protected List<Long> getNewList(int minimumCapacity)
 	{
 		return new ArrayList<Long>(minimumCapacity);
+	}
+
+	@Override
+	public void accept(ColumnVisitor visitor)
+	{
+		visitor.visit(this);
 	}
 
 }

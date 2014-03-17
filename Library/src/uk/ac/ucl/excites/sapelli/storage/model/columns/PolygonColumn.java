@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 import uk.ac.ucl.excites.sapelli.storage.types.Polygon;
@@ -44,6 +45,12 @@ public class PolygonColumn extends ListColumn<Location>
 	public String getTypeString()
 	{
 		return Polygon.class.getSimpleName();
+	}
+
+	@Override
+	public void accept(ColumnVisitor visitor)
+	{
+		visitor.visit(this);
 	}
 
 }

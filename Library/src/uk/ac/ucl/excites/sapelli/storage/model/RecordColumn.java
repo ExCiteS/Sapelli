@@ -53,6 +53,8 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	public RecordColumn(Class<R> type, String name, Schema schema, boolean optional, boolean fullSerialisation)
 	{
 		super(type, name, optional);
+		if(schema == null)
+			throw new NullPointerException("RecordColumn needs a non-null schema to specify its subcolumns.");
 		this.schema = schema;
 		this.skipColumns = new HashSet<Column<?>>();
 		this.fullSerialisation = fullSerialisation;
@@ -200,6 +202,30 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 					CollectionUtils.equals(this.swapColumns, other.swapColumns);
 		}
 		return false;
+	}
+	
+	/**
+	 * Default {@link Column#accept(ColumnVisitor)} implementation.
+	 * It is recommended that subclasses override this to check whether the visitor doesn't require custom treatment of specific kinds of RecordColumns (e.g. LocationColumn)
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#accept(uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor)
+	 */
+	@Override
+	public void accept(ColumnVisitor visitor)
+	{
+		accept(visitor, true);
+	}
+
+	protected void accept(ColumnVisitor visitor, boolean fullTraverse)
+	{
+		// Enter record column:
+		visitor.enter(this);
+		// Traverse subcolumns:
+		for(Column<?> subCol : schema.getColumns())
+			if(fullTraverse || !skipColumns.contains(subCol))
+				subCol.accept(visitor);
+		// Leave record column:
+		visitor.leave(this);
 	}
 
 }

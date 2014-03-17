@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Line;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
@@ -44,6 +45,12 @@ public class LineColumn extends ListColumn<Location>
 	public String getTypeString()
 	{
 		return Line.class.getSimpleName();
+	}
+
+	@Override
+	public void accept(ColumnVisitor visitor)
+	{
+		visitor.visit(this);
 	}
 
 }

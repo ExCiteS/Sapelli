@@ -89,6 +89,12 @@ public abstract class Column<T>
 			return null;
 	}
 	
+	@SuppressWarnings("unchecked")
+	public String objectToString(Object value)
+	{
+		return toString((T) value);
+	}
+	
 	protected abstract String toString(T value); 
 	
 	/**
@@ -390,5 +396,7 @@ public abstract class Column<T>
 	}
 	
 	protected abstract boolean equalRestrictions(Column<T> otherColumn);
+	
+	public abstract void accept(ColumnVisitor visitor);
 	
 }

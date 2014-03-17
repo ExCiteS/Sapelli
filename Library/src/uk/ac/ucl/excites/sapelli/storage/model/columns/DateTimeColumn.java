@@ -12,6 +12,7 @@ import org.joda.time.format.DateTimeFormatter;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.util.TimeUtils;
 
@@ -260,6 +261,12 @@ public class DateTimeColumn extends Column<DateTime>
 	protected DateTime copy(DateTime value)
 	{
 		return new DateTime(value);
+	}
+
+	@Override
+	public void accept(ColumnVisitor visitor)
+	{
+		visitor.visit(this);
 	}
 	
 }

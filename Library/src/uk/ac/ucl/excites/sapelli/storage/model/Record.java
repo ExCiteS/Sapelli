@@ -7,6 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Set;
 
 import org.joda.time.DateTime;
@@ -286,8 +287,8 @@ public class Record
 		{
 			Record other = (Record) obj;
 			if(checkSchema)
-			{	// Check if records have the same schema (object)
-				if(this.schema != other.schema) // we could also use equals() here, but in principle we do not story duplicate schemas
+			{	// Check if records have the same (or 100% equivalent) schema
+				if(this.schema.equals(other.schema))
 					return false;
 			}
 			else
@@ -296,22 +297,36 @@ public class Record
 					return false;
 			}
 			// Compare values for each column (using values as if decoded from binary stream):
-			for(int i = 0; i < this.schema.getNumberOfColumns(); i++)
-			{
-				Object v1 = this.schema.getColumn(i).retrieveValueAsStoredBinary(this);
-				Object v2 = other.schema.getColumn(i).retrieveValueAsStoredBinary(other);
-				if(v1 != null)
-				{
-					if(!v1.equals(v2))
-						return false;
-				}
-				else if(v2 != null)
-					return false;
-			}
-			return true;
+			return hasEqualValues(other, true);
 		}
 		else
 			return false;
+	}
+	
+	public boolean hasEqualValues(Record other, boolean asStoredBinary)
+	{
+		return hasEqualValues(other, this.schema.getColumns(), asStoredBinary); // compare all columns
+	}
+	
+	/**
+	 * Compare the values of this records with those of another, across the given list of columns.
+	 * This and the other record as assumed to have schemata that are the same or at least each contain the given columns (or equivalents).
+	 * 
+	 * @param other
+	 * @param columns
+	 * @param asStoredBinary
+	 * @return
+	 */
+	@SuppressWarnings("rawtypes")
+	public boolean hasEqualValues(Record other, List<Column> columns, boolean asStoredBinary)
+	{
+		for(Column c : columns)
+		{
+			if(!EqualValues(asStoredBinary ? c.retrieveValueAsStoredBinary(this) : c.retrieveValue(this),
+							asStoredBinary ? c.retrieveValueAsStoredBinary(other) : c.retrieveValue(other)))
+				return false;
+		}
+		return true;
 	}
 	
 	@Override
@@ -459,6 +474,21 @@ public class Record
 			}
 			catch(Exception ignore) {}
 		}
+	}
+	
+	/**
+	 * Helper method to compare 2 potentially null objects
+	 * 
+	 * @param value1
+	 * @param value2
+	 * @return
+	 */
+	static public boolean EqualValues(Object value1, Object value2)
+	{
+		if(value1 != null)
+			return value1.equals(value2);
+		else
+			return value2 == null;
 	}
 	
 }

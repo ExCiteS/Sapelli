@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 
@@ -56,6 +57,15 @@ public class OrientationColumn extends RecordColumn<Orientation>
 	public OrientationColumn copy()
 	{
 		return new OrientationColumn(name, optional, isStoreAzimuth(), isStorePitch(), isStoreRoll());
+	}
+	
+	@Override
+	public void accept(ColumnVisitor visitor)
+	{
+		if(visitor.isOrientationSelfTraversalAllowed())
+			super.accept(visitor, !visitor.isSkippingNonBinaryStoredOrientationColumnsAllowed());
+		else
+			visitor.visit(this);
 	}
 	
 }

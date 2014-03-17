@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
+import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
@@ -116,6 +117,15 @@ public class LocationColumn extends RecordColumn<Location>
 	protected Location copy(Location value)
 	{
 		return new Location(value);
+	}
+
+	@Override
+	public void accept(ColumnVisitor visitor)
+	{
+		if(visitor.isLocationSelfTraversalAllowed())
+			super.accept(visitor, !visitor.isSkippingNonBinaryStoredLocationColumnsAllowed());
+		else
+			visitor.visit(this);
 	}
 
 }
