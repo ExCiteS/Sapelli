@@ -37,14 +37,14 @@ public final class LocationUtils
 			provider = Location.PROVIDER_GPS;
 		else if(LocationManager.NETWORK_PROVIDER.equals(androidLocation.getProvider()))
 			provider = Location.PROVIDER_NETWORK;
-		return new Location(provider,
-							androidLocation.getLatitude(),
+		return new Location(androidLocation.getLatitude(),
 							androidLocation.getLongitude(),
 							(androidLocation.hasAltitude() ? androidLocation.getAltitude() : null),
 							(androidLocation.hasBearing() ? androidLocation.getBearing() : null),
 							(androidLocation.hasSpeed() ? androidLocation.getSpeed() : null),
 							(androidLocation.hasAccuracy() ? androidLocation.getAccuracy() : null),
-							androidLocation.getTime());
+							androidLocation.getTime(),
+							provider);
 	}
 
 	static public List<String> getProvider(LocationManager locManager, LocationField locField)
