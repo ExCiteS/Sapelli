@@ -112,7 +112,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#parse(java.lang.String)
 	 */
 	@Override
-	protected R parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
+	public R parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		return parse(recordStr, fullSerialisation);
 	}

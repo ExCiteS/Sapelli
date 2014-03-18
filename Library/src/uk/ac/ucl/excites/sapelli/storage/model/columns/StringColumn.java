@@ -11,6 +11,7 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.util.StringUtils;
 
@@ -19,7 +20,7 @@ import uk.ac.ucl.excites.sapelli.util.StringUtils;
  * 
  * @author mstevens
  */
-public class StringColumn extends Column<String>
+public class StringColumn extends ComparatorColumn<String>
 {
 	
 	//STATIC--------------------------------------------------------- 
@@ -101,7 +102,7 @@ public class StringColumn extends Column<String>
 	 * @return the parsed value
 	 */
 	@Override
-	protected String parse(String value) throws ParseException
+	public String parse(String value) throws ParseException
 	{
 		if(!value.startsWith(SERIALISATION_QUOTE))
 			throw new ParseException("String is not delimited by " + SERIALISATION_QUOTE + "s", 0);
@@ -201,6 +202,12 @@ public class StringColumn extends Column<String>
 	public void accept(ColumnVisitor visitor)
 	{
 		visitor.visit(this);
+	}
+
+	@Override
+	protected int compareNonNull(String lhs, String rhs)
+	{
+		return lhs.compareTo(rhs);
 	}
 	
 }

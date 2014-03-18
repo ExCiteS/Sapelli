@@ -10,6 +10,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.queries.CompositeSelectionQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.EqualitySelectionQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.QueryBuilder;
+import uk.ac.ucl.excites.sapelli.storage.queries.RuleSelectionQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SchemaSelectionQuery;
 import uk.ac.ucl.excites.sapelli.util.StringUtils;
 
@@ -60,7 +61,7 @@ public class SQLWhereClauseBuilder implements QueryBuilder
 	public String toString()
 	{
 		if(!parts.isEmpty())
-			return StringUtils.join(parts, " AND ");
+			return "WHERE " + StringUtils.join(parts, " AND ");
 		else
 			return "";
 	}
@@ -69,6 +70,13 @@ public class SQLWhereClauseBuilder implements QueryBuilder
 	public boolean isCompsitesSelfTraversalAllowed()
 	{
 		return true;
+	}
+
+	@Override
+	public void visit(RuleSelectionQuery ruleQuery)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 }

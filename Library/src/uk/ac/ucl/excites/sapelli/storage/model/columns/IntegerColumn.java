@@ -1,8 +1,7 @@
-package uk.ac.ucl.excites.sapelli.storage.model.columns;
 /**
  * 
  */
-
+package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
 import java.io.IOException;
 
@@ -10,16 +9,16 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 
 /**
- * A column for integers up to 64 bits
+ * A column for integers with configurable size up to 64 bits
  * 
  * @author mstevens
- *
  */
-public class IntegerColumn extends Column<Long>
+public class IntegerColumn extends ComparatorColumn<Long>
 {
 	
 	//STATICS
@@ -167,7 +166,7 @@ public class IntegerColumn extends Column<Long>
 	 * @throws NumberFormatException
 	 */
 	@Override
-	protected Long parse(String value) throws NumberFormatException
+	public Long parse(String value) throws NumberFormatException
 	{
 		return Long.valueOf(value);
 	}
@@ -292,6 +291,12 @@ public class IntegerColumn extends Column<Long>
 	public void accept(ColumnVisitor visitor)
 	{
 		visitor.visit(this);
+	}
+
+	@Override
+	protected int compareNonNull(Long lhs, Long rhs)
+	{
+		return lhs.compareTo(rhs);
 	}
 	
 }

@@ -49,7 +49,7 @@ public abstract class ListColumn<T> extends Column<List<T>>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#parse(java.lang.String)
 	 */
 	@Override
-	protected List<T> parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
+	public List<T> parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		String[] parts = recordStr.split("\\" + SERIALISATION_SEPARATOR);
 		List<T> values = getNewList(parts.length);

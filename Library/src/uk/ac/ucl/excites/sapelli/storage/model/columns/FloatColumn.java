@@ -6,6 +6,7 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -13,7 +14,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
  * 
  * @author mstevens
  */
-public class FloatColumn extends Column<Double>
+public class FloatColumn extends ComparatorColumn<Double>
 {	
 	
 	static public final boolean DEFAULT_DOUBLE_PRECISION = false; // 32 bit (float) by default
@@ -83,7 +84,7 @@ public class FloatColumn extends Column<Double>
 	 * @throws NumberFormatException
 	 */
 	@Override
-	protected Double parse(String value) throws NumberFormatException
+	public Double parse(String value) throws NumberFormatException
 	{
 		return Double.valueOf(value);
 	}
@@ -160,6 +161,12 @@ public class FloatColumn extends Column<Double>
 	public void accept(ColumnVisitor visitor)
 	{
 		visitor.visit(this);
+	}
+
+	@Override
+	protected int compareNonNull(Double lhs, Double rhs)
+	{
+		return lhs.compareTo(rhs);
 	}
 	
 }

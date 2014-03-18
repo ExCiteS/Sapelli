@@ -8,6 +8,12 @@ import java.text.ParseException;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 
+/**
+ * Abstract class representing database schema/table column of generic type {@code T}.  
+ * 
+ * @param <T>
+ * @author mstevens
+ */
 public abstract class Column<T>
 {
 	
@@ -38,12 +44,12 @@ public abstract class Column<T>
 	}
 	
 	/**
-	 * @param value the String to parse (can be expected to be neither null nor "")
+	 * @param value the String to parse, is expected to be neither null nor ""!
 	 * @return the parsed value
 	 * @throws ParseException
 	 * @throws IllegalArgumentException
 	 */
-	protected abstract T parse(String value) throws ParseException, IllegalArgumentException, NullPointerException;
+	public abstract T parse(String value) throws ParseException, IllegalArgumentException, NullPointerException;
 	
 	/**
 	 * @param record

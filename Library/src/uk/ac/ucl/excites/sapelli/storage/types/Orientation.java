@@ -41,7 +41,7 @@ public class Orientation extends Record
 	}
 	
 	/**
-	 * Only to be used by  {@link OrientationColumn#getNewRecord()}
+	 * Only to be used by {@link OrientationColumn#getNewRecord()}
 	 */
 	public Orientation()
 	{

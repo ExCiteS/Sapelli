@@ -16,6 +16,8 @@ public interface QueryBuilder
 	
 	public void visit(CompositeSelectionQuery composityQuery);
 	
+	public void visit(RuleSelectionQuery ruleQuery);
+	
 	public boolean isCompsitesSelfTraversalAllowed();
 
 }

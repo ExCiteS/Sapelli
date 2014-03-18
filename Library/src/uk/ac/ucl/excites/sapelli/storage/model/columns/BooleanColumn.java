@@ -9,12 +9,13 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 
 /**
  * @author mstevens
  *
  */
-public class BooleanColumn extends Column<Boolean>
+public class BooleanColumn extends ComparatorColumn<Boolean>
 {
 
 	/**
@@ -36,7 +37,7 @@ public class BooleanColumn extends Column<Boolean>
 	 * @return the parsed value
 	 */
 	@Override
-	protected Boolean parse(String value)
+	public Boolean parse(String value)
 	{
 		return Boolean.valueOf(value);
 	}
@@ -102,6 +103,12 @@ public class BooleanColumn extends Column<Boolean>
 	public void accept(ColumnVisitor visitor)
 	{
 		visitor.visit(this);
+	}
+
+	@Override
+	protected int compareNonNull(Boolean lhs, Boolean rhs)
+	{
+		return lhs.compareTo(rhs);
 	}
 
 }

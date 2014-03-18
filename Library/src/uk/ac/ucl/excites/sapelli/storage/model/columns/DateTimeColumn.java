@@ -13,6 +13,7 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.util.TimeUtils;
 
@@ -22,7 +23,7 @@ import uk.ac.ucl.excites.sapelli.util.TimeUtils;
  * 
  * @author mstevens
  */
-public class DateTimeColumn extends Column<DateTime>
+public class DateTimeColumn extends ComparatorColumn<DateTime>
 {
 	
 	static private final int QUARTER_OF_AN_HOUR_MS = 15 /*minutes*/ * 60 /*seconds*/ * 1000 /*milliseconds*/;
@@ -147,7 +148,7 @@ public class DateTimeColumn extends Column<DateTime>
 	}
 	
 	@Override
-	protected DateTime parse(String value) throws IllegalArgumentException
+	public DateTime parse(String value) throws IllegalArgumentException
 	{
 		try
 		{
@@ -267,6 +268,12 @@ public class DateTimeColumn extends Column<DateTime>
 	public void accept(ColumnVisitor visitor)
 	{
 		visitor.visit(this);
+	}
+
+	@Override
+	protected int compareNonNull(DateTime lhs, DateTime rhs)
+	{
+		return lhs.compareTo(rhs);
 	}
 	
 }
