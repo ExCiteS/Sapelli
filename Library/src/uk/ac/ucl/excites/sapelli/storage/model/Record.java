@@ -127,27 +127,34 @@ public class Record
 
 	protected Object getValue(Column<?> column)
 	{
-		return getValue(schema.getColumnPosition(column));
+		return getValue(column.getName());
 	}
 	
 	protected Object getValue(String columnName)
 	{
-		return getValue(schema.getColumnPosition(columnName));
+		int position = schema.getColumnPosition(columnName);
+		if(position == Schema.UNKNOWN_COLUMN_POSITION)
+			throw new IllegalArgumentException("The schema of this record has no column with name \"" + columnName + "\".");
+		return getValue(position);
 	}
 	
-	protected Object getValue(int columnIndex)
+	protected Object getValue(int columnPosition)
 	{
-		return values[columnIndex];
+		if(columnPosition == Schema.UNKNOWN_COLUMN_POSITION)
+			throw new IllegalArgumentException("There is no column at position " + columnPosition);
+		return values[columnPosition];
+	}
+	
+	public boolean isValueSet(Column<?> column)
+	{
+		return getValue(column) != null;
 	}
 	
 	public boolean isFilled()
 	{
 		for(Column<?> c : schema.getColumns())
-		{
-			Object v = getValue(c);
-			if(v == null && !c.isOptional())
+			if(!isValueSet(c) && !c.isOptional())
 				return false; //null value in non-optional column	
-		}		
 		return true;
 	}
 	
