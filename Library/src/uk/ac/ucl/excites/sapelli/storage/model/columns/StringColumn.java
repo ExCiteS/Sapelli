@@ -22,24 +22,51 @@ import uk.ac.ucl.excites.sapelli.util.StringUtils;
 public class StringColumn extends Column<String>
 {
 	
-	//STATIC 
+	//STATIC--------------------------------------------------------- 
 	private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
-	private static final int DEFAULT_MAX_LENGTH = 256; //bytes
+	private static final int DEFAULT_MAX_LENGTH_BYTES = 256; //bytes
 	private static final String SERIALISATION_QUOTE = "'";
 	
-	//DYNAMIC
-	private Charset charset;	
-	private IntegerRangeMapping sizeField;
-	
-	public StringColumn(String name, boolean optional)
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars)
 	{
-		this(name, optional, DEFAULT_MAX_LENGTH, DEFAULT_CHARSET);
+		return ForCharacterCount(name, optional, maxLengthChars, DEFAULT_CHARSET);
 	}
 	
 	/**
 	 * @param name
 	 * @param optional
-	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can be
+	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
+	 * @param charset the charset to use to encode/decode Strings to/from bytes
+	 * @return
+	 */
+	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, Charset charset)
+	{
+		return new StringColumn(name, optional, (int) Math.ceil(maxLengthChars * charset.newEncoder().maxBytesPerChar()), charset);
+	}
+	
+	//DYNAMIC--------------------------------------------------------
+	private Charset charset;	
+	private IntegerRangeMapping sizeField;
+	
+	/**
+	 * @param name
+	 * @param optional
+	 */
+	public StringColumn(String name, boolean optional)
+	{
+		this(name, optional, DEFAULT_MAX_LENGTH_BYTES, DEFAULT_CHARSET);
+	}
+	
+	/**
+	 * @param name
+	 * @param optional
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
 	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes)
 	{
@@ -49,7 +76,7 @@ public class StringColumn extends Column<String>
 	/**
 	 * @param name
 	 * @param optional
-	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can be
+	 * @param maxLengthBytes the maximum length (measured in bytes, not chars!) a String stored in this column can have
 	 * @param charset the charset to use to encode/decode Strings to/from bytes
 	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset)
@@ -140,6 +167,16 @@ public class StringColumn extends Column<String>
 	public int getMaximumBytes()
 	{
 		return (int) sizeField.getHighBound();
+	}
+	
+	/**
+	 * Worst case scenario is assumed in which every char needs to maximum number of bytes
+	 * 
+	 * @return
+	 */
+	public int getMaximumChars()
+	{
+		return (int) Math.floor(getMaximumBytes() / charset.newEncoder().maxBytesPerChar()); 
 	}
 	
 	@Override
