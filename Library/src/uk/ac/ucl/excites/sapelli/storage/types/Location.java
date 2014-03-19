@@ -268,6 +268,11 @@ public class Location extends Record
 	 */
 	public static Location parseV1X(String valueString) throws ParseException
 	{
+		// Null & empty check:
+		if(valueString == null || valueString.isEmpty())
+			return null;
+		
+		// Split up in parts:
 		String[] parts = valueString.trim().split("\\" + V1X_SEPARATOR);
 		if(parts.length < 3)
 			throw new ParseException("Not a valid v1.x location: " + valueString, 0);
