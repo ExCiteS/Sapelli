@@ -450,6 +450,120 @@ public abstract class Handler extends DefaultHandler
 		}
 		return defaultValue;
 	}
+	
+	/**
+	 * Read a required long attribute with name {@code attributeName} in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * 
+	 * @param qName
+	 * @param attributeName
+	 * @param attributes
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
+	 */
+	protected long readRequiredLongAttribute(String qName, String attributeName, Attributes attributes) throws SAXException, NumberFormatException
+	{
+		return readRequiredLongAttribute(qName, attributeName, null, attributes);
+	}
+	
+	/**
+	 * Read a required long attribute with a name from {@code attributeNames} (tried in order, first existing attribute wins) in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * 
+	 * @param qName
+	 * @param attributes
+	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
+	 */
+	protected long readRequiredLongAttribute(String qName, Attributes attributes, String... attributeNames) throws SAXException, NumberFormatException
+	{
+		return readRequiredLongAttribute(qName, null, attributes, attributeNames);
+	}
+	
+	/**
+	 * Read a required long attribute with name {@code attributeName} in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * The {@code reason} explains why the attribute is required.
+	 * 
+	 * @param qName
+	 * @param attributeName
+	 * @param reason
+	 * @param attributes
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
+	 */
+	protected long readRequiredLongAttribute(String qName, String attributeName, String reason, Attributes attributes) throws SAXException, NumberFormatException
+	{
+		return readRequiredLongAttribute(qName, reason, attributes, attributeName);
+	}
+	
+	/**
+	 * Read a required long attribute with a name from {@code attributeNames} (tried in order, first existing attribute wins) in a tag with {@code qName}, using the passed {@code attributes} collection.
+	 * The {@code reason} explains why the attribute is required.
+	 * 
+	 * @param qName
+	 * @param reason
+	 * @param attributes
+	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @return
+	 * @throws SAXException	when no matching attribute is found
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
+	 */
+	protected long readRequiredLongAttribute(String qName, String reason, Attributes attributes, String... attributeNames) throws SAXException, NumberFormatException
+	{
+		for(String attributeName : attributeNames)
+		{
+			String strVal = attributes.getValue(attributeName);
+			if(strVal != null)
+				return Long.parseLong(strVal.trim()); // throws NumberFormatException
+			//else :  there is no attribute with the attributeName, try next alternative
+		}
+		throw new SAXException("There is no attribute with name " + StringUtils.join(attributeNames, " or ") + ", this is required for tag " + qName + (reason != null ? " (" + reason + ")" : "") + ".");
+	}
+	
+	/**
+	 * Read an optional long attribute with name {@code attributeName}, using the passed {@code attributes} collection.
+	 * When no such attribute exists the {@code defaultValue} is returned.
+	 * 
+	 * @param attributeName
+	 * @param defaultValue
+	 * @param attributes
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
+	 * @return
+	 */
+	protected long readLongAttribute(String attributeName, long defaultValue, Attributes attributes) throws NumberFormatException
+	{
+		return readLongAttribute(defaultValue, attributes, attributeName);
+	}
+
+	/**
+	 * Read an optional long attribute with a name from {@code attributeNames} (tried in order, first existing attribute wins), using the passed {@code attributes} collection.
+	 * When no such attribute exists the {@code defaultValue} is returned.
+	 * 
+	 * @param defaultValue
+	 * @param attributes
+	 * @param attributeNames	alternative attribute names ("synonyms")
+	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
+	 * @return
+	 */
+	protected long readLongAttribute(long defaultValue, Attributes attributes, String... attributeNames) throws NumberFormatException
+	{
+		for(String attributeName : attributeNames)
+		{
+			String strVal = attributes.getValue(attributeName);
+			if(strVal == null)
+				continue; // there is no attribute with the attributeName, try next alternative
+			else
+			{
+				if(strVal.trim().isEmpty())
+					return defaultValue;
+				else
+					return Long.parseLong(strVal.trim()); // throws NumberFormatException
+			}
+		}
+		return defaultValue;
+	}
 
 	/**
 	 * Read an optional float attribute with name {@code attributeName}, using the passed {@code attributes} collection.
