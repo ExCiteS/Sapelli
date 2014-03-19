@@ -1,6 +1,9 @@
 
 package uk.ac.ucl.excites.sapelli.util.xml;
 
+import org.apache.xerces.util.XML11Char;
+import org.apache.xerces.util.XMLChar;
+
 import uk.ac.ucl.excites.sapelli.util.StringUtils;
 
 
@@ -12,15 +15,15 @@ import uk.ac.ucl.excites.sapelli.util.StringUtils;
  */
 public class XMLUtils
 {
-
-	static public String header(String encoding)
+	
+	static public String header(String encoding, boolean v11)
 	{
-		return "<?xml version=\"1.0\" encoding=\"" + encoding + "\"?>";
+		return "<?xml version=\"1." + (v11 ? "1" : "0") + "\" encoding=\"" + encoding + "\"?>";
 	}
 	
 	static public String header()
 	{
-		return header("UTF-8");
+		return header("UTF-8", false);
 	}
 	
 	/**
@@ -65,6 +68,25 @@ public class XMLUtils
 		input.replace("\"", "&quot;");
 		input.replace("'", "&apos;");
 		return input;
+	}
+	
+	/**
+	 * Uses {@link XMLChar} & {@link XML11Char}, taken from Apache Xerces2 Java Parser (currently included code files are taken from v2.11.0),
+	 * which is licensed under Apache License, Version 2.0.
+	 * 
+	 * TODO we are including the whole Xerces2-j library just for this one method, possibly proguard clears out unused classes but we need to double check this.
+	 * 
+	 * @param tagName
+	 * @param v11
+	 * @return
+	 * 
+	 * @see <a href="https://xerces.apache.org/xerces2-j/javadocs/xerces2/org/apache/xerces/util/XMLChar.html#isValidName(java.lang.String)">org.apache.xerces.util.XMLChar#isValidName(java.lang.String)</a>
+	 * @see <a href="https://xerces.apache.org/xerces2-j/javadocs/xerces2/org/apache/xerces/util/XML11Char.html#isValidName(java.lang.String)">org.apache.xerces.util.XML11Char#isXML11ValidName(java.lang.String)</a>
+	 * 
+	 */
+	static public boolean isValidName(String tagName, boolean v11)
+	{
+		return v11 ? XML11Char.isXML11ValidName(tagName) : XMLChar.isValidName(tagName);
 	}
 	
 }
