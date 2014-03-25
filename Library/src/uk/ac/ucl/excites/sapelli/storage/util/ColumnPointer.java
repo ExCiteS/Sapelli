@@ -248,7 +248,15 @@ public class ColumnPointer implements Comparator<Record>
 	{
 		if(!(getColumn() instanceof ComparatorColumn))
 			throw new IllegalStateException("This ColumnPointer does not point to a ComparatorColumn");
-		return ((ComparatorColumn) getColumn()).compare(getRecord(lhs, false), getRecord(rhs, false));
+		
+		// Get sub records:
+		lhs = getRecord(lhs, false);
+		rhs = getRecord(rhs, false);
+		
+		// Compare:
+		return lhs == null ?
+				(rhs == null ? 0 : Integer.MIN_VALUE) :
+				(rhs == null ? Integer.MAX_VALUE : ((ComparatorColumn) getColumn()).compare(lhs, rhs));		
 	}
 
 }
