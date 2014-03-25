@@ -12,8 +12,9 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 
 /**
+ * Interface for Record storage back-ends
+ * 
  * @author mstevens
- *
  */
 public abstract class RecordAccess
 {
