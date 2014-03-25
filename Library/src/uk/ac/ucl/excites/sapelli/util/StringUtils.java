@@ -153,4 +153,13 @@ public final class StringUtils
 		return bldr.toString();
 	}
 	
+	static public int countOccurances(String haystack, char needle)
+	{
+		int count = 0;
+		for(char c : haystack.toCharArray())
+			if(c == needle)
+				count++;
+		return count;
+	}
+	
 }
