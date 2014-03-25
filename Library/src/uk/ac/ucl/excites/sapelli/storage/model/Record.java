@@ -12,10 +12,9 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
-import uk.ac.ucl.excites.sapelli.util.StringUtils;
-import uk.ac.ucl.excites.sapelli.util.xml.XMLUtils;
 
 /**
  * A class representing records of a certain Schema
@@ -413,30 +412,6 @@ public class Record
 				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
 			p++;
 		}
-	}
-	
-	public String toXML(int tabs)
-	{
-		StringBuilder bldr = new StringBuilder();
-		bldr.append(StringUtils.addTabsFront(	"<" + TAG_RECORD + " " +
-												Schema.ATTRIBUTE_SCHEMA_NAME + "=\"" + XMLUtils.escapeCharacters(schema.getName()) + "\" " +
-												Schema.ATTRIBUTE_USAGE_ID + "=\"" + schema.getUsageID() + "\" " +
-												Schema.ATTRIBUTE_USAGE_SUB_ID + "=\"" + schema.getUsageSubID() + "\" " +
-												">\n", tabs));
-		//TODO transmission/sent
-		for(Column<?> c : schema.getColumns())
-		{
-			String columnName = XMLUtils.escapeCharacters(c.getName());
-			String valueStr = c.retrieveValueAsString(this);
-			if(valueStr != null)
-				bldr.append(StringUtils.addTabsFront("<" + columnName + ">" + XMLUtils.escapeCharacters(valueStr) + "</" + columnName + ">\n", tabs + 1));
-			else
-			{
-				bldr.append(StringUtils.addTabsFront(XMLUtils.comment(columnName + " is null") + "\n", tabs + 1));
-			}
-		}
-		bldr.append(StringUtils.addTabsFront("</" + TAG_RECORD + ">", tabs));
-		return bldr.toString();
 	}
 	
 	public String toCSVRow(String separator)

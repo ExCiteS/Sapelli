@@ -5,9 +5,9 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * A column for 32 bit (float) or 64 bit (double) floating point numbers
@@ -127,7 +127,7 @@ public class FloatColumn extends ComparatorColumn<Double>
 	}
 
 	@Override
-	protected String toString(Double value)
+	public String toString(Double value)
 	{
 		return value.toString();
 	}
@@ -164,7 +164,7 @@ public class FloatColumn extends ComparatorColumn<Double>
 	}
 
 	@Override
-	protected int compareNonNull(Double lhs, Double rhs)
+	protected int compareNonNullValues(Double lhs, Double rhs)
 	{
 		return lhs.compareTo(rhs);
 	}

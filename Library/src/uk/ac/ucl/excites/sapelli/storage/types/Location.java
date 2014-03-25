@@ -49,7 +49,7 @@ public class Location extends Record
 	
 	// Schema(s) & columns
 	//	Default Schema (used for Location instances), which uses 64 bit floats (doubles) for latitude, longitude & altitude:
-	static final public Schema SCHEMA = new Schema(Schema.ReservedUsageIDs.LOCATION_SCHEMA.ordinal(), Schema.ReservedUsageIDs.LOCATION_SCHEMA.name());
+	static final public Schema SCHEMA = new Schema(Schema.ReservedIDs.LOCATION_SCHEMA.ordinal(), Schema.ReservedIDs.LOCATION_SCHEMA.name());
 	static final public FloatColumn COLUMN_LATITUDE = new FloatColumn("Latitude", false, true);					// non-optional 64 bit float
 	static final public FloatColumn COLUMN_LONGITUDE = new FloatColumn("Longitude", false, true);				// non-optional 64 bit float
 	static final public FloatColumn COLUMN_ALTITUDE = new FloatColumn("Altitude", true, true);					// optional 64 bit float
@@ -69,23 +69,6 @@ public class Location extends Record
 		SCHEMA.addColumn(COLUMN_TIME);
 		SCHEMA.addColumn(COLUMN_PROVIDER);
 		SCHEMA.seal();
-	}
-	//	Alternative Schema (used for in LocationColumn when doublePrecision=false), which uses 32 bit floats for latitude, longitude & altitude:
-	static final public Schema SCHEMA_32 = new Schema(Schema.ReservedUsageIDs.LOCATION_SCHEMA.ordinal(), Schema.ReservedUsageIDs.LOCATION_SCHEMA.name());
-	static final public FloatColumn COLUMN_LATITUDE_32 = new FloatColumn(COLUMN_LATITUDE.getName(), false, false);		// non-optional 32 bit float
-	static final public FloatColumn COLUMN_LONGITUDE_32 = new FloatColumn(COLUMN_LONGITUDE.getName(), false, false);	// non-optional 32 bit float
-	static final public FloatColumn COLUMN_ALTITUDE_32 = new FloatColumn(COLUMN_ALTITUDE.getName(), true, false);		// optional 32 bit float
-	static
-	{	// Add columns to default Schema & seal it:
-		SCHEMA_32.addColumn(COLUMN_LATITUDE_32);
-		SCHEMA_32.addColumn(COLUMN_LONGITUDE_32);
-		SCHEMA_32.addColumn(COLUMN_ALTITUDE_32);
-		SCHEMA_32.addColumn(COLUMN_BEARING);
-		SCHEMA_32.addColumn(COLUMN_SPEED);
-		SCHEMA_32.addColumn(COLUMN_ACCURACY);
-		SCHEMA_32.addColumn(COLUMN_TIME);
-		SCHEMA_32.addColumn(COLUMN_PROVIDER);
-		SCHEMA_32.seal();
 	}
 	
 	//Dynamic--------------------------------------------------------

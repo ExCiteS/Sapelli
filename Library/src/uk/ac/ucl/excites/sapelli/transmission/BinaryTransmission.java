@@ -22,7 +22,10 @@ public abstract class BinaryTransmission extends Transmission
 	static public final int TRANSMISSION_ID_SIZE = 16; // bits
 	static public final IntegerRangeMapping TRANSMISSION_ID_FIELD = IntegerRangeMapping.ForSize(0, TRANSMISSION_ID_SIZE); // unsigned(!) 16 bit integer
 	
-	protected Integer id = null; // computed as a CRC16 hash over the transmission payload (unsigned 16 bit int)
+	static public final int COMPRESSION_FLAG_SIZE = 2; // bits
+	static public final IntegerRangeMapping COMPRESSION_FLAG_FIELD = IntegerRangeMapping.ForSize(0, COMPRESSION_FLAG_SIZE); // TODO use enum values? 
+	
+	protected Integer id = null; // Transmission ID: computed as a CRC16 hash over the transmission payload (unsigned 16 bit int)
 	protected float compressionRatio = 1.0f;
 	
 	public BinaryTransmission(TransmissionClient modelProvider)
@@ -44,16 +47,17 @@ public abstract class BinaryTransmission extends Transmission
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
 			out = new BitOutputStream(rawOut);
 			
-			// Write Schema Usage ID (= Project hash):
-			Schema.SCHEMA_USAGE_ID_FIELD.write(schema.getUsageID(), out); // 32 bits
+			// Write Schema ID:
+			Schema.SCHEMA_ID_FIELD.write(schema.getID(), out); // 36 bits, we are not on a byte boundary now.
 			
-			// Write flags
+			// Write flags:
+			// 	Encryption flag (1 bit):
 			out.write(false); // Encryption flag //TODO make dynamic
-			// TODO write Compression flag (2 bits)
+			//	Compression flag (2 bits):
+			COMPRESSION_FLAG_FIELD.write(0, out); //TODO make dynamic
+			//	Multiform flag (1 bit):
 			out.write(false); // Multi-form flag //TODO make dynamic
-			
-			// Write Schema Usage Sub-ID (= Form index):
-			Schema.SCHEMA_USAGE_SUB_ID_FIELD.write(schema.getUsageSubID(), out); // 4 bits
+			// Done writing flags, totalling 4 bits, we are now back on a byte boundary.
 			
 			// Encode records
 			byte[] recordBytes = encodeRecords(); //can throw IOException
@@ -61,10 +65,10 @@ public abstract class BinaryTransmission extends Transmission
 			//System.out.println("Hash: " + BinaryHelpers.toHexadecimealString(Hashing.getSHA256Hash(data)));
 			
 			// Compress records
-			recordBytes = compress(recordBytes);
+			recordBytes = compress(recordBytes); // TODO make dynamic (will need to be moved before compression flag writing!)
 			
 			// Encrypt records
-			recordBytes = encrypt(recordBytes);
+			recordBytes = encrypt(recordBytes); // TODO make dynamic
 			
 			// Write the encoded, compressed & encrypted records:
 			out.write(recordBytes);
@@ -121,24 +125,30 @@ public abstract class BinaryTransmission extends Transmission
 			ByteArrayInputStream rawIn = new ByteArrayInputStream(payloadBytes);
 			in = new BitInputStream(rawIn);
 			
-			// Read Schema Usage ID (= Project hash):
-			int schemaUsageID = (int) Schema.SCHEMA_USAGE_ID_FIELD.read(in); // 32 bits
+			// Read Schema ID:
+			long schemaID = Schema.SCHEMA_ID_FIELD.read(in); // 36 bits, we are not on a byte boundary now.
 
-			// Read flags
-			boolean encrypted = in.readBit(); // Encryption flag //TODO make use of this to decrypt or not			
-			// TODO read Compression flag (2 bits)
+			// Read flags:
+			// 	Encryption flag (1 bit):
+			boolean encrypted = in.readBit();
+			//	Compression flag (2 bits):
+			int compressionMode = (int) COMPRESSION_FLAG_FIELD.read(in);
+			//	Multiform flag (1 bit):
 			boolean multiform = in.readBit(); // TODO use this
-			
-			// Read Schema Usage Sub-ID (= Form index):
-			int schemaUsageSubID = (int) Schema.SCHEMA_USAGE_SUB_ID_FIELD.read(in); // 4 bits
-			
-			if(schemaToUse != null)
-				System.out.println("Using provided schema (Usage ID: " + schemaToUse.getUsageID() + "; Usage Sub-ID: " + schemaToUse.getUsageSubID() + ") instead of the one indicated by the transmission (Usage ID: " + schemaUsageID + "; Usage Sub-ID: " + schemaUsageSubID + ").");
+			// Done reading flags, totalling 4 bits, we are now back on a byte boundary. 
 			
 			// Look-up schema unless one was provided:
-			schema = (schemaToUse == null ? client.getSchema(schemaUsageID, schemaUsageSubID) : schemaToUse);
-			if(schema == null)
-				throw new IllegalStateException("Cannot decode message because schema (Usage ID: " + schemaUsageID + "; Usage Sub-ID: " + schemaUsageSubID + ") is unknown");
+			if(schemaToUse == null)
+			{
+				schema = client.getSchema(schemaID);
+				if(schema == null)
+					throw new IllegalStateException("Cannot decode message because schema (ID: " + schemaID + ") is unknown");
+			}
+			else
+			{
+				schema = schemaToUse;
+				System.out.println("Using provided schema (ID: " + schemaToUse.getID() + ") instead of the one indicated by the transmission (ID: " + schemaID + ").");
+			}
 			
 			// Look-up settings & columns to factor out:
 			settings = (settingsToUse == null ? client.getSettingsFor(schema) : settingsToUse);
@@ -148,10 +158,10 @@ public abstract class BinaryTransmission extends Transmission
 			payloadBytes = in.readBytes(in.available());
 			
 			// Decrypt records
-			payloadBytes = decrypt(payloadBytes);
+			payloadBytes = decrypt(payloadBytes); //TODO make use of encrypted flag to decrypt or not	
 			
 			// Decompress records
-			payloadBytes = decompress(payloadBytes);
+			payloadBytes = decompress(payloadBytes); // TODO use Compression flag!
 			
 			// Decode records
 			//System.out.println("Decoding records from: " + data.length + " bytes");

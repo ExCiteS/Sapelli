@@ -3,9 +3,9 @@
  */
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
-import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * A column for {@link Location}s, implemented as a {@link RecordColumn} subclass.
@@ -14,11 +14,20 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
  */
 public class LocationColumn extends RecordColumn<Location>
 {
+
+	//Static---------------------------------------------------------
+	
+	//	Alternative latitude, longitude & altitude columns using 32 instead of 64 bits (used when doublePrecision=false):
+	static final private FloatColumn COLUMN_LATITUDE_32 = new FloatColumn(Location.COLUMN_LATITUDE.getName(), false, false);	// non-optional 32 bit float
+	static final private FloatColumn COLUMN_LONGITUDE_32 = new FloatColumn(Location.COLUMN_LONGITUDE.getName(), false, false);	// non-optional 32 bit float
+	static final private FloatColumn COLUMN_ALTITUDE_32 = new FloatColumn(Location.COLUMN_ALTITUDE.getName(), true, false);		// optional 32 bit float
+		
+	//Dynamic--------------------------------------------------------
 	
 	/**
 	 * @param name
 	 * @param optional
-	 * @param doublePrecision
+	 * @param doublePrecision whether or not to store lat/lon/alt as 64 bit (true) or 32 bit (false) values, this only affects binary storage, 64 bits values are used anywhere else
 	 * @param storeAltitude
 	 * @param storeBearing
 	 * @param storeSpeed
@@ -28,10 +37,10 @@ public class LocationColumn extends RecordColumn<Location>
 	 */
 	public LocationColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeBearing, boolean storeSpeed, boolean storeAccuracy, boolean storeTime, boolean storeProvider)
 	{
-		super(Location.class, name, doublePrecision ? Location.SCHEMA : Location.SCHEMA_32, optional);
+		super(Location.class, name, Location.SCHEMA, optional);
 		// "Skip columns": skip the things we don't want to store binary:
 		if(!storeAltitude)
-			addSkipColumn(doublePrecision ? Location.COLUMN_ALTITUDE : Location.COLUMN_ALTITUDE_32);
+			addSkipColumn(Location.COLUMN_ALTITUDE);
 		if(!storeBearing)
 			addSkipColumn(Location.COLUMN_BEARING);
 		if(!storeSpeed)
@@ -42,13 +51,11 @@ public class LocationColumn extends RecordColumn<Location>
 			addSkipColumn(Location.COLUMN_TIME);
 		if(!storeProvider)
 			addSkipColumn(Location.COLUMN_PROVIDER);
-		/* "Swap columns": use 64-bit columns when storing/retrieving lat/lon/alt values in
-			Location objects (which internally always use double precision for lat/lon/alt) */
 		if(!doublePrecision)
-		{
-			addRecordColumn(Location.COLUMN_LATITUDE_32, Location.COLUMN_LATITUDE);
-			addRecordColumn(Location.COLUMN_LONGITUDE_32, Location.COLUMN_LONGITUDE);
-			addRecordColumn(Location.COLUMN_ALTITUDE_32, Location.COLUMN_ALTITUDE);
+		{	// Use 32 bit float columns for binary storage of lat, lon & alt values:
+			addBinaryColumn(Location.COLUMN_LATITUDE, COLUMN_LATITUDE_32);
+			addBinaryColumn(Location.COLUMN_LONGITUDE, COLUMN_LONGITUDE_32);
+			addBinaryColumn(Location.COLUMN_ALTITUDE, COLUMN_ALTITUDE_32);
 		}
 	}
 
@@ -67,19 +74,19 @@ public class LocationColumn extends RecordColumn<Location>
 	}
 	
 	@Override
-	protected Location getNewRecord()
+	public Location getNewRecord()
 	{
 		return new Location();
 	}
 	
 	public boolean isDoublePrecision()
 	{
-		return schema.containsColumn(Location.COLUMN_LATITUDE); // rather than COLUMN_LATITUDE_32
+		return getBinaryColumn(Location.COLUMN_LATITUDE) == Location.COLUMN_LATITUDE; // (and not == COLUMN_LATITUDE_32)
 	}
 	
 	public boolean isStoreAltitude()
 	{
-		return !skipColumns.contains(isDoublePrecision() ? Location.COLUMN_ALTITUDE : Location.COLUMN_ALTITUDE_32);
+		return !skipColumns.contains(Location.COLUMN_ALTITUDE);
 	}
 	
 	public boolean isStoreBearing()
@@ -127,5 +134,5 @@ public class LocationColumn extends RecordColumn<Location>
 		else
 			visitor.visit(this);
 	}
-
+	
 }

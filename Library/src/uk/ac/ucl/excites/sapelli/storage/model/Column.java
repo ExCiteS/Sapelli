@@ -5,8 +5,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.ParseException;
 
+import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
+import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * Abstract class representing database schema/table column of generic type {@code T}.  
@@ -17,12 +20,21 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 public abstract class Column<T>
 {
 	
+	// STATICS-------------------------------------------------------
+	static public boolean IsValidName(String name)
+	{
+		return name.indexOf(RecordColumn.QUALIFIED_NAME_SEPARATOR) == -1 && XMLUtils.isValidName(name, XMLRecordsExporter.USES_XML_VERSION_11);
+	}
+	
+	// DYNAMICS------------------------------------------------------
 	private final Class<T> type;
 	protected final String name;
 	protected final boolean optional;
 	
 	public Column(Class<T> type, String name, boolean optional)
 	{
+		if(!IsValidName(name))
+			throw new IllegalArgumentException("Invalid column name: " + name);
 		this.type = type;
 		this.name = name;
 		this.optional = optional;
@@ -76,7 +88,7 @@ public abstract class Column<T>
 		if(value == null)
 		{
 			if(!optional)
-				throw new NullPointerException("Cannot set null value for non-optional column!");
+				throw new NullPointerException("Cannot set null value for non-optional column " + getName() + "!");
 			//else: don't store anything (value is null but column is optional)
 		}
 		else
@@ -95,13 +107,21 @@ public abstract class Column<T>
 			return null;
 	}
 	
+	/**
+	 * @param value assumed to be non-null!
+	 * @return
+	 */
 	@SuppressWarnings("unchecked")
 	public String objectToString(Object value)
 	{
 		return toString((T) value);
 	}
 	
-	protected abstract String toString(T value); 
+	/**
+	 * @param value assumed to be non-null!
+	 * @return
+	 */
+	public abstract String toString(T value); 
 	
 	/**
 	 * Retrieves previously stored value for this column at a given record and casts it to the relevant native type (T)

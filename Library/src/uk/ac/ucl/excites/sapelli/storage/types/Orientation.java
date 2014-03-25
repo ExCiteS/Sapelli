@@ -15,7 +15,7 @@ public class Orientation extends Record
 	
 	//Statics----------------------------------------------
 	// Schema & columns
-	static final public Schema SCHEMA = new Schema(Schema.ReservedUsageIDs.ORIENTATION_SCHEMA.ordinal(), Schema.ReservedUsageIDs.ORIENTATION_SCHEMA.name());
+	static final public Schema SCHEMA = new Schema(Schema.ReservedIDs.ORIENTATION_SCHEMA.ordinal(), Schema.ReservedIDs.ORIENTATION_SCHEMA.name());
 	static final public FloatColumn COLUMN_AZIMUTH = new FloatColumn("Azimuth", true, false);	// optional 32 bit float
 	static final public FloatColumn COLUMN_PITCH = new FloatColumn("Pitch", true, false);		// optional 32 bit float
 	static final public FloatColumn COLUMN_ROLL = new FloatColumn("Roll", true, false);			// optional 32 bit float

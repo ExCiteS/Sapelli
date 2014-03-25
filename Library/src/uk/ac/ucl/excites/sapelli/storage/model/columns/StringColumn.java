@@ -7,13 +7,13 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * A column for Strings
@@ -117,7 +117,7 @@ public class StringColumn extends ComparatorColumn<String>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#toString(java.lang.Object)
 	 */
 	@Override
-	protected String toString(String value)
+	public String toString(String value)
 	{
 		return SERIALISATION_QUOTE + value + SERIALISATION_QUOTE; // surround with quotes
 	}
@@ -205,7 +205,7 @@ public class StringColumn extends ComparatorColumn<String>
 	}
 
 	@Override
-	protected int compareNonNull(String lhs, String rhs)
+	protected int compareNonNullValues(String lhs, String rhs)
 	{
 		return lhs.compareTo(rhs);
 	}

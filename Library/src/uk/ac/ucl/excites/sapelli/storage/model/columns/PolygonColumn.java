@@ -4,17 +4,17 @@
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 import uk.ac.ucl.excites.sapelli.storage.types.Polygon;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * A column for {@link Polygon}s, implemented as a {@link ListColumn} subclass.
  * 
  * @author mstevens
  */
-public class PolygonColumn extends ListColumn<Location>
+public class PolygonColumn extends ListColumn<Polygon, Location>
 {
 	
 	static public final int SIZE_FIELD_BITS = 16;

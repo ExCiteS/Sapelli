@@ -10,6 +10,7 @@ import java.util.Arrays;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
@@ -18,7 +19,6 @@ import uk.ac.ucl.excites.sapelli.transmission.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSService;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
-import uk.ac.ucl.excites.sapelli.util.BinaryHelpers;
 
 /**
  * Binary SMS message

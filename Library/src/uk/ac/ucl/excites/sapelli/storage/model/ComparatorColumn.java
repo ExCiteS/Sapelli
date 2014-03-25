@@ -11,7 +11,7 @@ import java.util.Comparator;
  * @param <T>
  * @author mstevens
  */
-public abstract class ComparatorColumn<T> extends Column<T> implements Comparator<T>
+public abstract class ComparatorColumn<T> extends Column<T> implements Comparator<Record>
 {
 
 	public ComparatorColumn(Class<T> type, String name, boolean optional)
@@ -19,20 +19,33 @@ public abstract class ComparatorColumn<T> extends Column<T> implements Comparato
 		super(type, name, optional);
 	}
 	
+	@Override
+	public int compare(Record lhs, Record rhs)
+	{
+		return compareValues(retrieveValue(lhs), retrieveValue(rhs));
+	}
+	
+	/**
+	 * Alias for {@link #compare(Record, Record)}
+	 * 
+	 * @param record1
+	 * @param record2
+	 * @return
+	 */
 	public int retrieveAndCompareValues(Record record1, Record record2)
 	{
-		return compare(retrieveValue(record1), retrieveValue(record2));
+		return compare(record1, record2);
 	}
 	
 	public int retrieveAndCompareToValue(Record record, T value)
 	{
-		return compare(retrieveValue(record), value);
+		return compareValues(retrieveValue(record), value);
 	}
 	
 	@SuppressWarnings("unchecked")
 	public int retrieveAndCompareToObject(Record record, Object value)
 	{
-		return compare(retrieveValue(record), (T) value);
+		return compareValues(retrieveValue(record), (T) value);
 	}
 	
 	/**
@@ -42,12 +55,11 @@ public abstract class ComparatorColumn<T> extends Column<T> implements Comparato
 	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
 	 * @see <a href="http://stackoverflow.com/a/128220/1084488">http://stackoverflow.com/a/128220/1084488</a>
 	 */
-	@Override
-	public int compare(T lhs, T rhs)
+	public int compareValues(T lhs, T rhs)
 	{
 		return lhs == null ?
 				(rhs == null ? 0 : Integer.MIN_VALUE) :
-				(rhs == null ? Integer.MAX_VALUE : compareNonNull(lhs, rhs));
+				(rhs == null ? Integer.MAX_VALUE : compareNonNullValues(lhs, rhs));
 	}
 	
 	/**
@@ -57,6 +69,18 @@ public abstract class ComparatorColumn<T> extends Column<T> implements Comparato
 	 * @param rhs right-hand side value, guaranteed non-null
 	 * @return comparison result
 	 */
-	protected abstract int compareNonNull(T lhs, T rhs);
+	protected abstract int compareNonNullValues(T lhs, T rhs);
+	
+	public Comparator<T> getValueComparator()
+	{
+		return new Comparator<T>()
+		{
+			@Override
+			public int compare(T lhs, T rhs)
+			{
+				return compareValues(lhs, rhs);
+			}
+		};
+	}
 
 }

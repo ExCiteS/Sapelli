@@ -6,14 +6,14 @@ package uk.ac.ucl.excites.sapelli.storage.model.columns;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * @author mstevens
  *
  */
-public class IntegerListColumn extends ListColumn<Long>
+public class IntegerListColumn extends ListColumn<List<Long>, Long>
 {
 
 	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional, int minLength, int maxLength)

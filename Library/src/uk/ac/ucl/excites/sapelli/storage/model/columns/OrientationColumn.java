@@ -3,9 +3,9 @@
  */
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
-import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * A column for {@link Orientation}s, implemented as a {@link RecordColumn} subclass.
@@ -33,7 +33,7 @@ public class OrientationColumn extends RecordColumn<Orientation>
 	}
 
 	@Override
-	protected Orientation getNewRecord()
+	public Orientation getNewRecord()
 	{
 		return new Orientation();
 	}

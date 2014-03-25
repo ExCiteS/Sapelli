@@ -8,8 +8,8 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * @author mstevens
@@ -82,7 +82,7 @@ public class BooleanColumn extends ComparatorColumn<Boolean>
 	}
 
 	@Override
-	protected String toString(Boolean value)
+	public String toString(Boolean value)
 	{
 		return value.toString();
 	}
@@ -106,7 +106,7 @@ public class BooleanColumn extends ComparatorColumn<Boolean>
 	}
 
 	@Override
-	protected int compareNonNull(Boolean lhs, Boolean rhs)
+	protected int compareNonNullValues(Boolean lhs, Boolean rhs)
 	{
 		return lhs.compareTo(rhs);
 	}

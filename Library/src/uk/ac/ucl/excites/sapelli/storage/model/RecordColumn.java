@@ -10,9 +10,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
-import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * A composite column, consisting of a set of "subcolumns" as specified by a Schema
@@ -22,18 +23,18 @@ import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
  * be applied upon serialisation/deserialisation to/from String, but the default
  * behaviour is to include them.
  * 
- * The "swap columns" mechanism allows to deal with the situation in which (some) columns
- * of the Schema used for Record instances are not the same as those in the Schema used by
- * the RecordColumn instance to hold its subcolumns. Currently only used in {@link LocationColumn}.
+ * The "swap columns" mechanism allows to deal with the situation in which we want to use a
+ * (slightly) different column for binary storage. Currently only used in {@link LocationColumn}.
  * 
  * @author mstevens
  */
 public abstract class RecordColumn<R extends Record> extends Column<R>
 {
 
+	static public final char QUALIFIED_NAME_SEPARATOR = '.';
 	static public final boolean DEFAULT_FULL_SERIALISATION = true; // don't skip columns upon (de)serialisation by default
 	
-	protected final Schema schema;
+	private final Schema schema;
 	protected final Set<Column<?>> skipColumns;
 	protected final boolean fullSerialisation;
 	private final Map<Column<?>, Column<?>> swapColumns;
@@ -75,37 +76,37 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	}
 	
 	/**
-	 * Specify a column instance to be used instead of one of the subcolumns
-	 * when storing/retrieving values from records.
-	 * The recordColumn must be other same content type as the subColumn,
+	 * Specify a column instance to be used instead of one of the schemaColumns
+	 * when reading/writing from/to binary storage.
+	 * The binaryColumn must be other same content type as the schemaColumn,
 	 * but no names, optionality or other other restrictions are checked.
 	 * Use with care!
 	 * 
-	 * @param subColumn
-	 * @param recordColumn
+	 * @param schemaColumn
+	 * @param binaryColumn
 	 */
-	protected void addRecordColumn(Column<?> subColumn, Column<?> recordColumn)
+	protected void addBinaryColumn(Column<?> schemaColumn, Column<?> binaryColumn)
 	{
-		if(!schema.containsColumn(subColumn))
+		if(!schema.containsColumn(schemaColumn))
 			throw new IllegalArgumentException("Unknown subColumn");
-		if(!subColumn.getType().equals(recordColumn.getType()))
+		if(!schemaColumn.getType().equals(binaryColumn.getType()))
 			throw new IllegalArgumentException("Column type mismatch!");
-		swapColumns.put(subColumn, recordColumn);
+		swapColumns.put(schemaColumn, binaryColumn);
 	}
 	
 	/**
-	 * Get column to store/retrieve values in record objects.
-	 * This is the given subColumn itself, unless a "recordColumn" has been registered for it.
+	 * Get column to use when store/retrieve values in binary form.
+	 * This is typically the given schemaColumn itself, unless a "binaryColumn" has been registered for it.
 	 * 
-	 * @param subColumn
+	 * @param schemaColumn
 	 * @return
 	 */
-	private Column<?> getRecordColumn(Column<?> subColumn)
+	protected Column<?> getBinaryColumn(Column<?> schemaColumn)
 	{
-		if(swapColumns.containsKey(subColumn))
-			return swapColumns.get(subColumn);
+		if(swapColumns.containsKey(schemaColumn))
+			return swapColumns.get(schemaColumn);
 		else
-			return subColumn;
+			return schemaColumn;
 	}
 	
 	/* (non-Javadoc)
@@ -128,7 +129,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#toString(java.lang.Object)
 	 */
 	@Override
-	protected String toString(R record)
+	public String toString(R record)
 	{
 		return toString(record, fullSerialisation);
 	}
@@ -143,10 +144,13 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	{
 		for(Column<?> subCol : schema.getColumns())
 			if(!skipColumns.contains(subCol))
-				subCol.writeObject(getRecordColumn(subCol).retrieveValue(record), bitStream); // will also write optional bit of the subcolumn if it is optional
+				getBinaryColumn(subCol).writeObject(subCol.retrieveValue(record), bitStream); // will also write optional bit of the subcolumn if it is optional
 	}
 	
-	protected abstract R getNewRecord();
+	/**
+	 * @return new "subrecord" instance
+	 */
+	public abstract R getNewRecord();
 
 	@Override
 	protected R read(BitInputStream bitStream) throws IOException
@@ -154,7 +158,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 		R record = getNewRecord();
 		for(Column<?> subCol : schema.getColumns())
 			if(!skipColumns.contains(subCol))
-				getRecordColumn(subCol).storeObject(record, subCol.readValue(bitStream));
+				subCol.storeObject(record, getBinaryColumn(subCol).readValue(bitStream));
 		return record;
 	}
 
@@ -208,7 +212,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	 * Default {@link Column#accept(ColumnVisitor)} implementation.
 	 * It is recommended that subclasses override this to check whether the visitor doesn't require custom treatment of specific kinds of RecordColumns (e.g. LocationColumn)
 	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#accept(uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#accept(uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor)
 	 */
 	@Override
 	public void accept(ColumnVisitor visitor)
@@ -226,6 +230,14 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 				subCol.accept(visitor);
 		// Leave record column:
 		visitor.leave(this);
+	}
+	
+	/**
+	 * @return the schema
+	 */
+	public Schema getSchema()
+	{
+		return schema;
 	}
 
 }

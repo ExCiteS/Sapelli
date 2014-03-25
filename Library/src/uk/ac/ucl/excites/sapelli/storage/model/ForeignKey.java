@@ -1,9 +1,10 @@
 package uk.ac.ucl.excites.sapelli.storage.model;
 
-import uk.ac.ucl.excites.sapelli.storage.queries.CompositeSelectionQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.EqualitySelectionQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.SchemaSelectionQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.SelectionQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 
 /**
  * Class representing a foreign key, used to reference a record of another ("foreign") schema.
@@ -71,16 +72,16 @@ public class ForeignKey extends Record
 		return foreignSchema;
 	}
 	
-	public SelectionQuery getSelectionQuery()
+	public SingleRecordQuery getForeignRecordQuery()
 	{
 		if(!isFilled())
 			throw new IllegalStateException("All values of the key must be set before a query can be created!");
-		// Query for key parts:
-		EqualitySelectionQuery eqQuery = new EqualitySelectionQuery();
+		// Match for key parts:
+		AndConstraint andConstraint = new AndConstraint();
 		for(Column<?> keyPartCol : getIndex().getColumns())
-			eqQuery.addColumnValue(keyPartCol, keyPartCol.retrieveValue(this));
-		// Combine with schema checking query:
-		return new CompositeSelectionQuery(new SchemaSelectionQuery(foreignSchema), eqQuery);
+			andConstraint.addConstraint(new EqualityConstraint(keyPartCol, keyPartCol.retrieveValue(this)));
+		// Single record query:
+		return new FirstRecordQuery(new RecordsQuery(foreignSchema, andConstraint));
 	}
 	
 }

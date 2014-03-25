@@ -8,10 +8,10 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * A column for integers with configurable size up to 64 bits
@@ -251,7 +251,7 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	}
 
 	@Override
-	protected String toString(Long value)
+	public String toString(Long value)
 	{
 		return value.toString();
 	}
@@ -294,7 +294,7 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	}
 
 	@Override
-	protected int compareNonNull(Long lhs, Long rhs)
+	protected int compareNonNullValues(Long lhs, Long rhs)
 	{
 		return lhs.compareTo(rhs);
 	}

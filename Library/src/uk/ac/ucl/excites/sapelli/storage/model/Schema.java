@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * A Schema holds a set of ordered {@link Column}s
@@ -22,15 +23,12 @@ public class Schema
 	static public final int UNKNOWN_COLUMN_POSITION = -1;
 	
 	// Identification:
-	static public final int SCHEMA_USAGE_ID_SIZE = 32; //bits
-	static public final IntegerRangeMapping SCHEMA_USAGE_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_USAGE_ID_SIZE); // unsigned(!) 32 bit integer
-	static public final int SCHEMA_USAGE_SUB_ID_SIZE = 4; //bits
-	static public final IntegerRangeMapping SCHEMA_USAGE_SUB_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_USAGE_SUB_ID_SIZE); // unsigned(!) 4 bit integer
-	static public final int DEFAULT_USAGE_SUB_ID = 0;
-	static public final String ATTRIBUTE_USAGE_ID = "usageID";
-	static public final String ATTRIBUTE_USAGE_SUB_ID = "usageSubID";
+	static public final int SCHEMA_ID_SIZE = 36; //bits
+	static public final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE); // unsigned(!) 36 bit integer
+	
+	static public final String ATTRIBUTE_SCHEMA_ID = "schemaID";
 	static public final String ATTRIBUTE_SCHEMA_NAME = "schemaName";
-	static public enum ReservedUsageIDs
+	static public enum ReservedIDs
 	{
 		INDEX_SCHEMA,		/* 0 */
 		LOCATION_SCHEMA,	/* 1 */
@@ -49,8 +47,7 @@ public class Schema
 	static public final String V1X_ATTRIBUTE_SCHEMA_VERSION = "schema-version";
 	
 	// Dynamics-----------------------------------------------------------
-	protected final long usageID;
-	protected final int usageSubID;
+	protected final long id;
 	protected final String name;
 
 	private final List<Column> columns;
@@ -60,32 +57,18 @@ public class Schema
 
 	private boolean sealed = false;
 	
-	public Schema(long usageID)
+	public Schema(long id)
 	{
-		this(usageID, DEFAULT_USAGE_SUB_ID, null);
+		this(id, null);
 	}
 
-	public Schema(long usageID, String name)
+	public Schema(long id, String name)
 	{
-		this(usageID, DEFAULT_USAGE_SUB_ID, name);
-	}
-
-	public Schema(long usageID, int usageSubID)
-	{
-		this(usageID, usageSubID, null);
-	}
-
-	public Schema(long usageID, int usageSubID, String name)
-	{
-		if(SCHEMA_USAGE_ID_FIELD.fits(usageID))
-			this.usageID = usageID;
+		if(SCHEMA_ID_FIELD.fits(id))
+			this.id = id;
 		else
-			throw new IllegalArgumentException("Invalid schema usageID value (" + usageID + "), valid values are " + SCHEMA_USAGE_ID_FIELD.getLogicalRangeString() + ".");
-		if(SCHEMA_USAGE_SUB_ID_FIELD.fits(usageSubID))
-			this.usageSubID = usageSubID;
-		else
-			throw new IllegalArgumentException("Invalid schema usageSubID value (" + usageSubID + "), valid values are " + SCHEMA_USAGE_SUB_ID_FIELD.getLogicalRangeString() + ".");
-		this.name = (name == null || name.isEmpty() ? "Schema_UID:" + usageID + "_USID:" + usageSubID : name);
+			throw new IllegalArgumentException("Invalid schema ID value (" + id + "), valid values are " + SCHEMA_ID_FIELD.getLogicalRangeString() + ".");
+		this.name = (name == null || name.isEmpty() ? "Schema_ID" + id : name);
 		columnNameToPosition = new LinkedHashMap<String, Integer>();
 		columns = new ArrayList<Column>();
 		indexes = new ArrayList<Index>();
@@ -99,13 +82,13 @@ public class Schema
 	
 	public void addColumn(Column column)
 	{
-		if(!sealed)
-		{
-			columnNameToPosition.put(column.getName(), columns.size());
-			columns.add(column);
-		}
-		else
+		if(sealed)
 			throw new IllegalStateException("Cannot extend a sealed schema!");
+		if(containsColumn(column.getName()))
+			throw new IllegalArgumentException("The schema already contains a column with name \"" + column.getName() + "\"!");
+		// Add the column:
+		columnNameToPosition.put(column.getName(), columns.size());
+		columns.add(column);
 	}
 
 	public Column getColumn(int position)
@@ -126,10 +109,10 @@ public class Schema
 	 */
 	public Column getColumn(String name)
 	{
-		Integer idx = columnNameToPosition.get(name);
-		if(idx == null)
+		Integer pos = columnNameToPosition.get(name);
+		if(pos == null)
 			return null;
-		return columns.get(idx);
+		return columns.get(pos);
 	}
 
 	public List<Column> getColumns()
@@ -156,6 +139,15 @@ public class Schema
 	public int getColumnPosition(Column column)
 	{
 		return getColumnPosition(column.getName());
+	}
+	
+	/**
+	 * @param name
+	 * @return
+	 */
+	public boolean containsColumn(String name)
+	{
+		return columnNameToPosition.containsKey(name);
 	}
 	
 	/**
@@ -251,19 +243,11 @@ public class Schema
 	}
 	
 	/**
-	 * @return the usageID
+	 * @return the id
 	 */
-	public long getUsageID()
+	public long getID()
 	{
-		return usageID;
-	}
-
-	/**
-	 * @return the usageSubID
-	 */
-	public int getUsageSubID()
-	{
-		return usageSubID;
+		return id;
 	}
 
 	public int getNumberOfColumns()
@@ -306,7 +290,7 @@ public class Schema
 	/**
 	 * Returns the minimum effective number of bits a record of this schema takes up when written to a binary representation.
 	 * 
-	 * @param columns to ignore the total
+	 * @param skipColumns columns to ignore the total
 	 * @return
 	 */
 	public int getMinimumSize(Set<Column<?>> skipColumns)
@@ -331,7 +315,7 @@ public class Schema
 	/**
 	 * Returns the maximum effective number of bits a record of this schema takes up when written to a binary representation.
 	 * 
-	 * @param columns to ignore the total
+	 * @param skipColumns columns to ignore the total
 	 * @return
 	 */
 	public int getMaximumSize(Set<Column<?>> skipColumns)
@@ -366,13 +350,15 @@ public class Schema
 	 */
 	public boolean equals(Object obj, boolean checkNames, boolean checkColumns)
 	{
+		if(this == obj) // compare pointers first
+			return true;
 		if(obj instanceof Schema)
 		{
 			Schema other = (Schema) obj;
-			// Usage:
-			boolean usageMatch = (this.usageID == other.usageID) && (this.usageSubID == other.usageSubID);
-			if(!(checkNames || checkColumns) || !usageMatch)
-				return usageMatch;
+			// ID:
+			boolean idMatch = (this.id == other.id);
+			if(!(checkNames || checkColumns) || !idMatch)
+				return idMatch;
 			// Name:
 			if(checkNames && !this.name.equals(other.name))
 				return false;
@@ -409,6 +395,18 @@ public class Schema
 		for(Column<?> c : columns)
 			bff.append("\n\t- " + c.getSpecification());
 		return bff.toString();
+	}
+	
+	public void accept(ColumnVisitor visitor)
+	{
+		accept(visitor, null);
+	}
+	
+	public void accept(ColumnVisitor visitor, Set<Column<?>> skipColumns)
+	{
+		for(Column<?> c : columns)
+			if(skipColumns == null || !skipColumns.contains(c))
+				c.accept(visitor);
 	}
 	
 	public String toCSVHeader(String separator)

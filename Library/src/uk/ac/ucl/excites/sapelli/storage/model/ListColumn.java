@@ -7,16 +7,16 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.util.StringUtils;
 
 /**
  * @author mstevens
  *
  */
-public abstract class ListColumn<T> extends Column<List<T>>
+public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 {
 	
 	static public final int DEFAULT_MINIMUM_LENGTH = 0; // list items
@@ -31,7 +31,7 @@ public abstract class ListColumn<T> extends Column<List<T>>
 	
 	private final IntegerRangeMapping sizeField;
 	protected final Column<T> singleColumn;
-	
+
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength)
 	{
 		this(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, maxLength);
@@ -40,19 +40,21 @@ public abstract class ListColumn<T> extends Column<List<T>>
 	@SuppressWarnings("unchecked")
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength)
 	{
-		super((Class<List<T>>)(Class<?>)List.class, name, optional);
+		super((Class<L>) List.class, name, optional);
 		this.singleColumn = singleColumn;
 		this.sizeField = new IntegerRangeMapping(minLength, maxLength);
 	}
+	
+	protected abstract L getNewList(int minimumCapacity);
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#parse(java.lang.String)
 	 */
 	@Override
-	public List<T> parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
+	public L parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		String[] parts = recordStr.split("\\" + SERIALISATION_SEPARATOR);
-		List<T> values = getNewList(parts.length);
+		L values = getNewList(parts.length);
 		for(String v : parts)
 			values.add(singleColumn.parse(StringUtils.deescape(v, SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX)));
 		return values;
@@ -62,7 +64,7 @@ public abstract class ListColumn<T> extends Column<List<T>>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#toString(java.lang.Object)
 	 */
 	@Override
-	protected String toString(List<T> values)
+	public String toString(L values)
 	{
 		StringBuilder bldr = new StringBuilder();
 		boolean first = true;
@@ -80,8 +82,12 @@ public abstract class ListColumn<T> extends Column<List<T>>
 		return bldr.toString();
 	}
 
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#write(java.lang.Object, uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream)
+	 */
 	@Override
-	protected void write(List<T> values, BitOutputStream bitStream) throws IOException
+	protected void write(L values, BitOutputStream bitStream) throws IOException
 	{
 		// Write size:
 		sizeField.write(values.size(), bitStream);
@@ -89,23 +95,24 @@ public abstract class ListColumn<T> extends Column<List<T>>
 		for(T value : values)
 			singleColumn.writeValue(value, bitStream);
 	}
-	
-	protected abstract List<T> getNewList(int minimumCapacity);
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#read(uk.ac.ucl.excites.sapelli.storage.io.BitInputStream)
+	 */
 	@Override
-	protected List<T> read(BitInputStream bitStream) throws IOException
+	protected L read(BitInputStream bitStream) throws IOException
 	{
 		// Read size:
 		int size = (int) sizeField.read(bitStream);
 		// Read values:
-		List<T> values = getNewList(size);
+		L values = getNewList(size);
 		for(int i = 0; i < size; i++)
 			values.add(singleColumn.readValue(bitStream));
 		return values;
 	}
-
+	
 	@Override
-	protected void validate(List<T> values) throws IllegalArgumentException
+	protected void validate(L values) throws IllegalArgumentException
 	{
 		if(values.size() < sizeField.getLowBound())
 			throw new IllegalArgumentException(getTypeString() + " does not contain enough " + singleColumn.getTypeString() + "s, minimum is " + sizeField.getLowBound() + ", given value has " + values.size() + ".");
@@ -114,9 +121,9 @@ public abstract class ListColumn<T> extends Column<List<T>>
 	}
 
 	@Override
-	protected List<T> copy(List<T> values)
+	protected L copy(L values)
 	{
-		List<T> copy = getNewList(values.size());
+		L copy = getNewList(values.size());
 		for(T value : values)
 			copy.add(singleColumn.copy(value));
 		return copy;
@@ -134,13 +141,25 @@ public abstract class ListColumn<T> extends Column<List<T>>
 		return sizeField.getSize() + (getMinimumLength() * singleColumn.getMinimumSize());
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#equalRestrictions(uk.ac.ucl.excites.sapelli.storage.model.Column)
+	 */
 	@Override
-	protected boolean equalRestrictions(Column<List<T>> otherColumn)
+	protected boolean equalRestrictions(Column<L> otherColumn)
 	{
 		if(otherColumn instanceof ListColumn)
 		{
-			ListColumn<T> other = (ListColumn<T>) otherColumn;
-			return this.singleColumn.equals(other.singleColumn) && this.sizeField.getHighBound() == other.sizeField.getHighBound();
+			try
+			{
+				@SuppressWarnings("unchecked")
+				ListColumn<L, T> other = (ListColumn<L, T>) otherColumn;
+				return this.singleColumn.equals(other.singleColumn) && this.sizeField.equals(other.sizeField);
+			}
+			catch(ClassCastException cce)
+			{
+				cce.printStackTrace(System.err);
+				return false;
+			}
 		}
 		return false;
 	}

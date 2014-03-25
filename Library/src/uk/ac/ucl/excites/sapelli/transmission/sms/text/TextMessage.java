@@ -5,12 +5,12 @@ package uk.ac.ucl.excites.sapelli.transmission.sms.text;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSService;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
-import uk.ac.ucl.excites.sapelli.util.BinaryHelpers;
 
 /**
  * Textual SMS message in which data in encoding as 7-bit characters using the default GSM 03.38 alphabet.
@@ -97,15 +97,15 @@ public class TextMessage extends Message
 		long[] headerParts = new long[HEADER_CHARS];
 		for(int h = 0; h < HEADER_CHARS; h++)
 		{
-			// Read header char:
+			// Read header char (7 bits):
 			int c = TextSMSTransmission.GSM_0338_REVERSE_CHAR_TABLE.get(content.charAt(h));
 			// Check separator bit:
 			if(c >> (TextSMSTransmission.BITS_PER_CHAR - 1) != HEADER_SEPARATOR_BIT)
 				throw new Exception("Invalid message (illegal header).");
-			// Strip away the separator bit:
+			// Strip away the separator bit and store remaining 6 bit header part:
 			headerParts[h] = c - (HEADER_SEPARATOR_BIT << (TextSMSTransmission.BITS_PER_CHAR - 1));
 		}
-		// Reassemble 24bit header value:
+		// Reassemble 24 bit header value out of 4 * 6 bit parts:
 		int header = (int) BinaryHelpers.mergeLong(headerParts, TextSMSTransmission.BITS_PER_CHAR - 1);
 		// Read header fields:
 		transmissionID = (header >> (PART_NUMBER_FIELD.getSize() * 2));

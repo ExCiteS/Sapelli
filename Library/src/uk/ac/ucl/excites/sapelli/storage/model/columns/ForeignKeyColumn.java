@@ -3,10 +3,10 @@
  */
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
-import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * A composite column holding columns that store the parts of a foreign key
@@ -37,7 +37,7 @@ public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 	}
 
 	@Override
-	protected ForeignKey getNewRecord()
+	public ForeignKey getNewRecord()
 	{
 		return new ForeignKey(foreignSchema);
 	}
@@ -51,7 +51,7 @@ public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 	@Override
 	public void accept(ColumnVisitor visitor)
 	{
-		if(visitor.isLocationSelfTraversalAllowed())
+		if(visitor.isForeignKeySelfTraversalAllowed())
 			super.accept(visitor, true);
 		else
 			visitor.visit(this);

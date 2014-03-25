@@ -9,13 +9,13 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.util.TimeUtils;
+import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * A column to store DateTime objects (cfr: http://joda-time.sourceforge.net)
@@ -241,7 +241,7 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	}
 
 	@Override
-	protected String toString(DateTime value)
+	public String toString(DateTime value)
 	{
 		return (keepLocalTimezone ? TimeUtils.ISOWithMSFormatter.withZone(value.getZone()) : TimeUtils.ISOWithMSFormatter.withZoneUTC()).print(value); // always keep milliseconds in XML!
 	}
@@ -271,7 +271,7 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	}
 
 	@Override
-	protected int compareNonNull(DateTime lhs, DateTime rhs)
+	protected int compareNonNullValues(DateTime lhs, DateTime rhs)
 	{
 		return lhs.compareTo(rhs);
 	}

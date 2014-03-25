@@ -14,11 +14,10 @@ public interface StorageClient
 {
 
 	/**
-	 * @param usageID
-	 * @param usageSubID
+	 * @param id
 	 * @return	a matching {@link Schema} instance, or {@code null} if not found
 	 */
-	public Schema getSchema(long usageID, int usageSubID);
+	public Schema getSchema(long id);
 	
 	/**
 	 * @param schemaID

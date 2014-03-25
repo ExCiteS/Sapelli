@@ -1,0 +1,46 @@
+/**
+ * 
+ */
+package uk.ac.ucl.excites.sapelli.shared.db.db4o;
+
+import uk.ac.ucl.excites.sapelli.collector.db.db4o.DB4ODataAccess;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.transmission.Transmission;
+
+import com.db4o.Db4oEmbedded;
+import com.db4o.ObjectContainer;
+import com.db4o.config.EmbeddedConfiguration;
+
+/**
+ * @author mstevens
+ *
+ */
+public final class DB4OConnector
+{
+	
+	private DB4OConnector() {} //this class should not be instantiated
+	
+	static public ObjectContainer open(String filepath) throws Exception
+	{
+		return open(filepath, false);
+	}
+	
+	static public ObjectContainer open(String filepath, boolean readOnly) throws Exception
+	{
+		// Configure the db:
+		EmbeddedConfiguration dbConfig = Db4oEmbedded.newConfiguration();
+		dbConfig.file().readOnly(readOnly);
+		dbConfig.common().updateDepth(DB4ODataAccess.UPDATE_DEPTH);
+		dbConfig.common().exceptionsOnNotStorable(true);
+		dbConfig.common().objectClass(Record.class).cascadeOnActivate(true);
+		dbConfig.common().objectClass(Record.class).cascadeOnUpdate(true);
+		dbConfig.common().objectClass(Transmission.class).cascadeOnActivate(true);
+		dbConfig.common().objectClass(Transmission.class).cascadeOnUpdate(true);
+		dbConfig.common().objectClass(Project.class).cascadeOnActivate(true);
+		dbConfig.common().objectClass(Project.class).cascadeOnUpdate(true);
+		// Open the db:
+		return Db4oEmbedded.openFile(dbConfig, filepath); // (throws various exceptions)		
+	}
+
+}
