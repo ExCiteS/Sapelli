@@ -7,12 +7,12 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.db.DataAccess;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
+import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
@@ -56,7 +56,6 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser
 	
 	// DYNAMICS------------------------------------------------------
 	private File exportFolder;
-	private DataAccess dao;
 	private CompositeMode compositeMode;
 	
 	private FileWriter writer = null;
@@ -64,17 +63,16 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser
 	
 	private Record currentRecord;
 	
-	public XMLRecordsExporter(String exportFolderPath, DataAccess dao, CompositeMode compositeMode)
+	public XMLRecordsExporter(String exportFolderPath, CompositeMode compositeMode)
 	{
-		this(new File(exportFolderPath), dao, compositeMode);
+		this(new File(exportFolderPath), compositeMode);
 	}
 	
-	public XMLRecordsExporter(File exportFolder, DataAccess dao, CompositeMode compositeMode)
+	public XMLRecordsExporter(File exportFolder, CompositeMode compositeMode)
 	{
 		if(!FileHelpers.createFolder(exportFolder))
 			throw new IllegalArgumentException("Export folder (" + exportFolder + ") does not exist and could not be created!");
 		this.exportFolder = exportFolder;
-		this.dao = dao;
 		this.compositeMode = compositeMode;
 		this.currentRecord = null;
 	}
@@ -87,59 +85,23 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser
 		writer.writeLine(XMLUtils.header(utf8.displayName(), USES_XML_VERSION_11));
 		writer.writeLine("<" + TAG_RECORDS_EXPORT + ">");
 		//TODO add attributes: exportDateTime, comment, device(?)
-		tabs = 1;
 	}
 	
 	private void closeWriter()
 	{
 		writer.writeLine("</" + TAG_RECORDS_EXPORT + ">");
-		writer.close();
+		writer.dispose(); // also closes
+		writer = null;
 	}
 	
-	public int exportAll() throws Exception
-	{
-		openWriter("ALL");
-		int count = export(dao.retrieveRecords());
-		closeWriter();
-		return count;
-	}
-	
-	public int exportRecords(List<Record> records) throws Exception
-	{
-		return exportRecords(records, "Selection");
-	}
-	
-	public int exportRecords(List<Record> records, String name) throws Exception
+	public ExportResult export(List<Record> records, String name) throws Exception
 	{
 		openWriter(name);
-		int count = export(records);
-		closeWriter();
-		return count;
-	}
-	
-	public int exportRecordsOf(List<Schema> schemas, String name) throws Exception
-	{
-		openWriter(name);
-		int count = 0;
-		for(Schema s : schemas)
-			count += export(dao.retrieveRecords(s));
-		closeWriter();
-		return count;
-	}
-	
-	public int exportRecordsOf(Schema s) throws Exception
-	{
-		openWriter(s.getName());
-		int count = export(dao.retrieveRecords(s));
-		closeWriter();
-		return count;
-	}
-	
-	private int export(List<Record> records)
-	{
+		tabs = 1;
 		int count = 0;
 		for(Record r : records)
 		{
+			writer.openTransaction(); // output will be buffered
 			try
 			{				
 				//Open tag:
@@ -147,42 +109,40 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser
 						Schema.ATTRIBUTE_SCHEMA_NAME + "=\"" + XMLUtils.escapeCharacters(r.getSchema().getName()) + "\" " +
 						Schema.ATTRIBUTE_SCHEMA_ID + "=\"" + r.getSchema().getID() + "\"" +
 						">", tabs));
-					//TODO transmission/sent
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace(System.err);
-				writer.writeLine(XMLUtils.comment("Exception on exporting record: " + e.toString() + (e.getMessage() != null ? " [" + e.getMessage() + "]" : ""), tabs));
-				continue;
-			}
+						//TODO transmission/sent
 			
-			// Indent: 
-			tabs++;
+				// Indent: 
+				tabs++;
 			
-			// Traverse columns:			
-			try
-			{
+				// Traverse columns:
 				currentRecord = r;
 				traverse(r.getSchema());
+			
+				// Unindent:
+				tabs--;
+			
+				//Close tag:
+				writer.writeLine(StringUtils.addTabsFront("</" + Record.TAG_RECORD + ">", tabs));
+			
 			}
 			catch(Exception e)
 			{
 				e.printStackTrace(System.err);
-				writer.writeLine(XMLUtils.comment("Exception on exporting record column values: " + e.toString() + (e.getMessage() != null ? " [" + e.getMessage() + "]" : ""), tabs));
-				tabs = 2;
+				writer.rollbackTransaction(); // !!!
+				tabs = 1;
+				writer.writeLine(XMLUtils.comment("Exception on exporting record: " + e.toString() + (e.getMessage() != null ? " [" + e.getMessage() + "]" : ""), tabs));
+				continue; // !!!
 			}
 			
-			// Unindent:
-			tabs--;
-			
-			//Close tag:
-			writer.writeLine(StringUtils.addTabsFront("</" + Record.TAG_RECORD + ">", tabs));
-			
+			writer.commitTransaction(); // write out buffer
 			count++;
 		}
-		return count;
+		
+		ExportResult result = new ExportResult(count, writer.getFullPath());
+		closeWriter();
+		return result;
 	}
-	
+
 	@Override
 	public void enter(RecordColumn<?> recordCol)
 	{
@@ -270,20 +230,6 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser
 	public boolean isSkippingNonBinaryStoredOrientationColumnsAllowed()
 	{
 		return false;
-	}
-	
-	public String getFilePath()
-	{
-		if(writer != null)
-			return writer.getFullPath();
-		return null;
-	}
-	
-	public String getFileName()
-	{
-		if(writer != null)
-			return writer.getFileName();
-		return null;
 	}
 	
 }
