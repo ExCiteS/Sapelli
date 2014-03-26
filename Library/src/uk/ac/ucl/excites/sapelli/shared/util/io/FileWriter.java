@@ -62,6 +62,7 @@ public class FileWriter
 
 	public void close()
 	{
+		rollbackTransaction(); // rollback any non-committed transaction
 		if(writer != null)
 		{
 			try
@@ -116,13 +117,13 @@ public class FileWriter
 		write(stringToWrite + "\n");
 	}
 	
-	public void startTransaction()
+	public void openTransaction()
 	{
 		if(transactionBuffer == null) // we currently only support a single open transaction at the time
 			transactionBuffer = new StringBuffer();
 	}
 	
-	public void closeTransaction()
+	public void commitTransaction()
 	{
 		if(transactionBuffer != null)
 		{
