@@ -15,6 +15,8 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 public class ForeignKey extends Record
 {
 	
+	static private final long serialVersionUID = 2L;
+	
 	private Schema foreignSchema;
 	
 	/**
@@ -82,6 +84,14 @@ public class ForeignKey extends Record
 			andConstraint.addConstraint(new EqualityConstraint(keyPartCol, keyPartCol.retrieveValue(this)));
 		// Single record query:
 		return new FirstRecordQuery(new RecordsQuery(foreignSchema, andConstraint));
+	}
+	
+	@Override
+    public int hashCode()
+	{
+		int hash = super.hashCode();
+		hash = 31 * hash + foreignSchema.hashCode();
+		return hash;
 	}
 	
 }

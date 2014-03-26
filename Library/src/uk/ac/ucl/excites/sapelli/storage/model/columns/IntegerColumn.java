@@ -22,6 +22,8 @@ public class IntegerColumn extends ComparatorColumn<Long>
 {
 	
 	//STATICS
+	private static final long serialVersionUID = 2L;
+	
 	private static final boolean DEFAULT_SIGNEDNESS = true; //use signed integers by default
 	private static final int DEFAULT_SIZE_BITS = 32; //use 32 bit integers by default
 	
@@ -297,6 +299,16 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	protected int compareNonNullValues(Long lhs, Long rhs)
 	{
 		return lhs.compareTo(rhs);
+	}
+	
+	@Override
+    public int hashCode()
+	{
+		int hash = super.hashCode();
+		hash = 31 * hash + size;
+		hash = 31 * hash + (signed ? 0 : 1);
+		hash = 31 * hash + (rangeMapping == null ? 0 : rangeMapping.hashCode());
+		return hash;
 	}
 	
 }

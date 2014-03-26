@@ -12,6 +12,8 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 public class Index extends Schema
 {
 
+	static private final long serialVersionUID = 2L;
+	
 	private boolean unique;
 	
 	public Index(String name, boolean unique, Column<?>... columns)
@@ -43,6 +45,14 @@ public class Index extends Schema
 	public void addIndex(Index index, boolean useAsPrimaryKey)
 	{
 		throw new UnsupportedOperationException("Cannot add indexes to an index");
+	}
+	
+	@Override
+    public int hashCode()
+	{
+		int hash = super.hashCode();
+		hash = 31 * hash + (unique ? 0 : 1);
+		return hash;
 	}
 	
 }

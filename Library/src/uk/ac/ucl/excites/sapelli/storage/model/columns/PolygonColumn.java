@@ -17,6 +17,8 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public class PolygonColumn extends ListColumn<Polygon, Location>
 {
 	
+	static private final long serialVersionUID = 2L;
+	
 	static public final int SIZE_FIELD_BITS = 16;
 
 	public PolygonColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeAccuracy, boolean storeTime, boolean storeProvider)

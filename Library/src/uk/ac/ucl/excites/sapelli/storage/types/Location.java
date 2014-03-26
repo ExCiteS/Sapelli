@@ -25,6 +25,7 @@ public class Location extends Record
 {
 
 	//Static---------------------------------------------------------
+	static private final long serialVersionUID = 2L;
 
 	static final private char V1X_SEPARATOR = ';';
 	

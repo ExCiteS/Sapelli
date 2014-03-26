@@ -14,6 +14,8 @@ public class Orientation extends Record
 {
 	
 	//Statics----------------------------------------------
+	static private final long serialVersionUID = 2L;
+	
 	// Schema & columns
 	static final public Schema SCHEMA = new Schema(Schema.ReservedIDs.ORIENTATION_SCHEMA.ordinal(), Schema.ReservedIDs.ORIENTATION_SCHEMA.name());
 	static final public FloatColumn COLUMN_AZIMUTH = new FloatColumn("Azimuth", true, false);	// optional 32 bit float

@@ -15,6 +15,8 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public class OrientationColumn extends RecordColumn<Orientation>
 {
 	
+	static private final long serialVersionUID = 2L;
+	
 	public OrientationColumn(String name, boolean optional, boolean storeAzimuth, boolean storePitch, boolean storeRoll)
 	{
 		super(Orientation.class, name, Orientation.SCHEMA, optional);

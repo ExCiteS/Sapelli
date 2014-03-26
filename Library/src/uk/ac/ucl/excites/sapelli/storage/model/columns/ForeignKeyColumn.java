@@ -15,6 +15,8 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  */
 public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 {
+	
+	static private final long serialVersionUID = 2L;
 
 	private Schema foreignSchema;
 	
@@ -55,6 +57,14 @@ public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 			super.accept(visitor, true);
 		else
 			visitor.visit(this);
+	}
+	
+	@Override
+    public int hashCode()
+	{
+		int hash = super.hashCode();
+		hash = 31 * hash + foreignSchema.hashCode();
+		return hash;
 	}
 
 }

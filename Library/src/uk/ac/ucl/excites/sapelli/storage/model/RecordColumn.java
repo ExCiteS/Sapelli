@@ -10,9 +10,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -30,6 +30,8 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  */
 public abstract class RecordColumn<R extends Record> extends Column<R>
 {
+	
+	static private final long serialVersionUID = 2L;
 
 	static public final char QUALIFIED_NAME_SEPARATOR = '.';
 	static public final boolean DEFAULT_FULL_SERIALISATION = true; // don't skip columns upon (de)serialisation by default
@@ -202,12 +204,23 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 		{
 			RecordColumn<R> other = (RecordColumn<R>) otherColumn;
 			return	this.schema.equals(other.schema) &&
-					CollectionUtils.equals(this.skipColumns, other.skipColumns) &&
-					CollectionUtils.equals(this.swapColumns, other.swapColumns);
+					this.skipColumns.equals(other.skipColumns) &&
+					this.swapColumns.equals(other.swapColumns);
 		}
 		return false;
 	}
 	
+	@Override
+    public int hashCode()
+	{
+		int hash = super.hashCode();
+		hash = 31 * hash + schema.hashCode();
+		hash = 31 * hash + skipColumns.hashCode();
+		hash = 31 * hash + (fullSerialisation ? 0 : 1);
+		hash = 31 * hash + swapColumns.hashCode();
+		return hash;
+	}
+
 	/**
 	 * Default {@link Column#accept(ColumnVisitor)} implementation.
 	 * It is recommended that subclasses override this to check whether the visitor doesn't require custom treatment of specific kinds of RecordColumns (e.g. LocationColumn)

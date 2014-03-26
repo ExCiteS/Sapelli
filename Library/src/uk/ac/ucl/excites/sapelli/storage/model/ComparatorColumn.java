@@ -13,6 +13,8 @@ import java.util.Comparator;
  */
 public abstract class ComparatorColumn<T> extends Column<T> implements Comparator<Record>
 {
+	
+	static private final long serialVersionUID = 2L;
 
 	public ComparatorColumn(Class<T> type, String name, boolean optional)
 	{

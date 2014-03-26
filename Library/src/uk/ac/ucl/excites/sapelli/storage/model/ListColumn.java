@@ -19,6 +19,8 @@ import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 {
 	
+	static private final long serialVersionUID = 2L;
+	
 	static public final int DEFAULT_MINIMUM_LENGTH = 0; // list items
 	static public final char SERIALISATION_SEPARATOR = ',';
 	static public final char SERIALISATION_SEPARATOR_ESCAPE = '.';
@@ -184,6 +186,15 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	public String getTypeString()
 	{
 		return singleColumn.getTypeString() + List.class.getSimpleName();
+	}
+	
+	@Override
+    public int hashCode()
+	{
+		int hash = super.hashCode();
+		hash = 31 * hash + sizeField.hashCode();
+		hash = 31 * hash + singleColumn.hashCode();
+		return hash;
 	}
 
 }

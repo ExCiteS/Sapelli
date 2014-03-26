@@ -18,6 +18,8 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public class BooleanColumn extends ComparatorColumn<Boolean>
 {
 
+	static private final long serialVersionUID = 2L;
+	
 	/**
 	 * @param name
 	 */

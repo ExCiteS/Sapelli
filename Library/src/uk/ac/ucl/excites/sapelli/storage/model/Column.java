@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.text.ParseException;
 
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
@@ -17,10 +18,12 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * @param <T>
  * @author mstevens
  */
-public abstract class Column<T>
+public abstract class Column<T> implements Serializable
 {
 	
 	// STATICS-------------------------------------------------------
+	private static final long serialVersionUID = 2L;
+	
 	static public boolean IsValidName(String name)
 	{
 		return name.indexOf(RecordColumn.QUALIFIED_NAME_SEPARATOR) == -1 && XMLUtils.isValidName(name, XMLRecordsExporter.USES_XML_VERSION_11);
@@ -424,5 +427,15 @@ public abstract class Column<T>
 	protected abstract boolean equalRestrictions(Column<T> otherColumn);
 	
 	public abstract void accept(ColumnVisitor visitor);
+	
+	@Override
+    public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + type.hashCode();
+		hash = 31 * hash + name.hashCode();
+		hash = 31 * hash + (optional ? 0 : 1);
+		return hash;
+	}
 	
 }

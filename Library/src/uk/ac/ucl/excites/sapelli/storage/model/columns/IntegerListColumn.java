@@ -16,6 +16,8 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public class IntegerListColumn extends ListColumn<List<Long>, Long>
 {
 
+	static private final long serialVersionUID = 2L;
+	
 	public IntegerListColumn(String name, IntegerColumn singleColumn, boolean optional, int minLength, int maxLength)
 	{
 		super(name, singleColumn, optional, minLength, maxLength);

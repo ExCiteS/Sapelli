@@ -17,7 +17,7 @@ import java.util.ArrayList;
 public class Polygon extends ArrayList<Location>
 {
 	
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
 
 	public static final int MIN_POINTS = 3;
 	

@@ -23,10 +23,12 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public class StringColumn extends ComparatorColumn<String>
 {
 	
-	//STATIC--------------------------------------------------------- 
-	private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
-	private static final int DEFAULT_MAX_LENGTH_BYTES = 256; //bytes
-	private static final String SERIALISATION_QUOTE = "'";
+	//STATIC---------------------------------------------------------
+	static private final long serialVersionUID = 2L;
+	
+	static private final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
+	static private final int DEFAULT_MAX_LENGTH_BYTES = 256; //bytes
+	static private final String SERIALISATION_QUOTE = "'";
 	
 	/**
 	 * @param name
@@ -208,6 +210,15 @@ public class StringColumn extends ComparatorColumn<String>
 	protected int compareNonNullValues(String lhs, String rhs)
 	{
 		return lhs.compareTo(rhs);
+	}
+	
+	@Override
+    public int hashCode()
+	{
+		int hash = super.hashCode();
+		hash = 31 * hash + charset.hashCode();
+		hash = 31 * hash + sizeField.hashCode();
+		return hash;
 	}
 	
 }

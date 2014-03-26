@@ -26,6 +26,8 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public class DateTimeColumn extends ComparatorColumn<DateTime>
 {
 	
+	static private final long serialVersionUID = 2L;
+	
 	static private final int QUARTER_OF_AN_HOUR_MS = 15 /*minutes*/ * 60 /*seconds*/ * 1000 /*milliseconds*/;
 	static private final int TIMEZONE_QH_OFFSET_SIZE = 7; //bits
 	
@@ -274,6 +276,17 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	protected int compareNonNullValues(DateTime lhs, DateTime rhs)
 	{
 		return lhs.compareTo(rhs);
+	}
+
+	@Override
+    public int hashCode()
+	{
+		int hash = super.hashCode();
+		hash = 31 * hash + (timeMapping == null ? 0 : timeMapping.hashCode());
+		hash = 31 * hash + (keepMS ? 0 : 1);
+		hash = 31 * hash + (keepLocalTimezone ? 0 : 1);
+		hash = 31 * hash + (strict ? 0 : 1);
+		return hash;
 	}
 	
 }

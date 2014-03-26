@@ -17,6 +17,8 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public class FloatColumn extends ComparatorColumn<Double>
 {	
 	
+	static private final long serialVersionUID = 2L;
+	
 	static public final boolean DEFAULT_DOUBLE_PRECISION = false; // 32 bit (float) by default
 	
 	private boolean doublePrecision;
@@ -167,6 +169,14 @@ public class FloatColumn extends ComparatorColumn<Double>
 	protected int compareNonNullValues(Double lhs, Double rhs)
 	{
 		return lhs.compareTo(rhs);
+	}
+	
+	@Override
+    public int hashCode()
+	{
+		int hash = super.hashCode();
+		hash = 31 * hash + (doublePrecision ? 0 : 1);
+		return hash;
 	}
 	
 }

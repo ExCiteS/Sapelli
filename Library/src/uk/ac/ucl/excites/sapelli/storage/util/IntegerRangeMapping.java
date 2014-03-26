@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.sapelli.storage.util;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.math.BigInteger;
 
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
@@ -22,9 +23,11 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
  * 
  * @author mstevens
  */
-public class IntegerRangeMapping
+public class IntegerRangeMapping implements Serializable
 {
 
+	private static final long serialVersionUID = 2L;
+	
 	/**
 	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = {@code loBound} and y = (2^{@code sizeBits} - 1) + {@code loBound}.
 	 * 
@@ -205,6 +208,16 @@ public class IntegerRangeMapping
 		}
 		else
 			return false;
+	}
+	
+	@Override
+    public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + size;
+		hash = 31 * hash + (int)(loBound ^ (loBound >>> 32));
+		hash = 31 * hash + (int)(hiBound ^ (hiBound >>> 32));
+		return hash;
 	}
 	
 }

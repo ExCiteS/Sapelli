@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.Serializable;
 import java.text.ParseException;
 import java.util.Arrays;
 import java.util.List;
@@ -21,10 +22,12 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
  * 
  * @author mstevens
  */
-public class Record
+public class Record implements Serializable
 {
 	
 	// Statics-------------------------------------------------------
+	static private final long serialVersionUID = 2L;
+	
 	static public final String TAG_RECORD = "Record";
 	static final private char SERIALISATION_SEPARATOR = ';';
 	static final private char SERIALISATION_SEPARATOR_ESCAPE = ':';
@@ -412,18 +415,6 @@ public class Record
 				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
 			p++;
 		}
-	}
-	
-	public String toCSVRow(String separator)
-	{
-		StringBuilder bldr = new StringBuilder();
-		for(Column<?> c : schema.getColumns())
-		{
-			if(c != schema.getColumn(0))
-				bldr.append(separator);
-			bldr.append(c.retrieveValueAsString(this));
-		}
-		return bldr.toString();
 	}
 	
 	public byte[] toBytes() throws IOException

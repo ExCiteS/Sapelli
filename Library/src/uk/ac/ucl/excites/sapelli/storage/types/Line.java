@@ -13,8 +13,8 @@ import java.util.ArrayList;
 public class Line extends ArrayList<Location>
 {
 	
-	private static final long serialVersionUID = 1L;
-
+	static private final long serialVersionUID = 2L;
+	
 	public static final int MIN_POINTS = 2;
 	
 	public Line()

@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.sapelli.storage.model;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -16,8 +17,10 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * @author mstevens
  */
 @SuppressWarnings("rawtypes")
-public class Schema
+public class Schema implements Serializable
 {
+
+	private static final long serialVersionUID = 2L;
 
 	// Statics------------------------------------------------------------
 	static public final int UNKNOWN_COLUMN_POSITION = -1;
@@ -383,6 +386,19 @@ public class Schema
 	}
 	
 	@Override
+    public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + (int)(id ^ (id >>> 32));
+		hash = 31 * hash + (name == null ? 0 : name.hashCode());
+		hash = 31 * hash + columns.hashCode();
+		hash = 31 * hash + indexes.hashCode();
+		hash = 31 * hash + (primaryKey == null ? 0 : primaryKey.hashCode());
+		hash = 31 * hash + (sealed ? 0 : 1);
+		return hash;
+	}
+	
+	@Override
 	public String toString()
 	{
 		return "Schema " + name;
@@ -407,14 +423,6 @@ public class Schema
 		for(Column<?> c : columns)
 			if(skipColumns == null || !skipColumns.contains(c))
 				c.accept(visitor);
-	}
-	
-	public String toCSVHeader(String separator)
-	{
-		StringBuffer bff = new StringBuffer();
-		for(Column<?> c : columns)
-			bff.append(c.getName());
-		return bff.toString();
 	}
 
 }
