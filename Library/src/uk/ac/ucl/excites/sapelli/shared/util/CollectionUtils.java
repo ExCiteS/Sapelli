@@ -74,34 +74,4 @@ public final class CollectionUtils
 		return bldr.toString();
 	}
 	
-	/**
-	 * Equality check of set contents
-	 * 
-	 * @param set1
-	 * @param set2
-	 * @return
-	 */
-	public static <O> boolean equals(Set<O> set1, Set<O> set2)
-	{
-		return set1.size() == set2.size() && set1.containsAll(set2);
-	}
-	
-	/**
-	 * Equality check of map contents
-	 * Note: values are only compared by pointers (==)
-	 * 
-	 * @param map1
-	 * @param map2
-	 * @return
-	 */
-	public static <K, V> boolean equals(Map<K, V> map1, Map<K, V> map2)
-	{
-		if(map1.size() != map2.size())
-			return false;
-		for(K key : map1.keySet())
-			if(map1.get(key) != map2.get(key))
-				return false;
-		return true;
-	}
-	
 }
