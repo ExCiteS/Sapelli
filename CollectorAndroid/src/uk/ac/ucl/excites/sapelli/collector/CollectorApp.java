@@ -1,24 +1,25 @@
 package uk.ac.ucl.excites.sapelli.collector;
 
 import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import uk.ac.ucl.excites.sapelli.collector.database.DB4OPrefDataAccess;
-import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
-import uk.ac.ucl.excites.sapelli.collector.database.DataAccessClient;
-import uk.ac.ucl.excites.sapelli.collector.database.db4o.DB4OConnector;
-import uk.ac.ucl.excites.sapelli.collector.database.db4o.DB4ODataAccess;
+import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.db.db4o.DB4OProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
+import uk.ac.ucl.excites.sapelli.shared.db.Store;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.db4o.DB4ORecordStore;
 import uk.ac.ucl.excites.sapelli.util.Debug;
-import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
 import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;
 import android.util.Log;
-
-import com.db4o.ObjectContainer;
-
 import de.jockels.open.Environment2;
 
 /**
@@ -29,7 +30,8 @@ import de.jockels.open.Environment2;
  */
 public class CollectorApp extends Application
 {
-	
+
+	// STATICS------------------------------------------------------------
 	static private final String TAG = "CollectorApp";
 	
 	static private final String SAPELLI_FOLDER = "Sapelli" + File.separatorChar;
@@ -42,8 +44,6 @@ public class CollectorApp extends Application
 	static private final String TEMP_FOLDER = "Temp" + File.separator;
 	static private final String DOWNLOAD_FOLDER = "Downloads" + File.separator;
 	static private final String DUMP_FOLDER = "Dumps" + File.separator;
-
-	static private volatile ObjectContainer db4oObjectContainer;
 	
 	/**
 	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on
@@ -70,16 +70,13 @@ public class CollectorApp extends Application
 		return (BuildInfo.DEMO_BUILD ? DEMO_PREFIX + FileHelpers.makeValidFileName(BuildInfo.TIMESTAMP) : "");
 	}
 	
+	// DYNAMICS-----------------------------------------------------------
 	private File sapelliFolder;
-
-	private Set<DataAccessClient> daoClients;
 	
-	@Override
-	public void onConfigurationChanged(Configuration newConfig)
-	{
-		super.onConfigurationChanged(newConfig);
-		// Debug.d(newConfig.toString());
-	}
+	private ProjectStore projectStore = null;
+	private RecordStore recordStore = null;
+	//private TransmissionStore transmissionStore = null; 
+	private Map<Store, List<StoreClient>> storeClients;
 
 	@Override
 	public void onCreate()
@@ -87,8 +84,8 @@ public class CollectorApp extends Application
 		super.onCreate();
 		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.getAllInfo());
 	
-		// Db clients:
-		daoClients = new HashSet<DataAccessClient>();
+		// Store clients:
+		storeClients = new HashMap<Store, List<StoreClient>>();
 		
 		// Sapelli folder (created on SD card or internal mass storage):
 		sapelliFolder = new File(getStorageDirectory().getAbsolutePath() + File.separator + SAPELLI_FOLDER);
@@ -102,6 +99,13 @@ public class CollectorApp extends Application
 		{
 			Log.e(TAG, "Could not set-up DefaultUncaughtExceptionHandler", e);
 		}
+	}
+	
+	@Override
+	public void onConfigurationChanged(Configuration newConfig)
+	{
+		super.onConfigurationChanged(newConfig);
+		// Debug.d(newConfig.toString());
 	}
 	
 	/**
@@ -168,51 +172,75 @@ public class CollectorApp extends Application
 	}
 
 	/**
-	 * Called by a DataAccessClient to request a DataAccess object
+	 * Called by a StoreClient to request a ProjectStore object
 	 * 
 	 * @param client
 	 * @return
+	 * @throws Exception
 	 */
-	public DataAccess getDataAccess(DataAccessClient client)
+	public ProjectStore getProjectStore(StoreClient client) throws Exception
 	{
-		if(db4oObjectContainer == null)
-		{	// Open connection to the db4o file:
-			try
-			{	// We always store the db to the internal storage of the Android device
-				String db4oFilePath = getFilesDir().getAbsolutePath() + File.separator + getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_NAME;
-				db4oObjectContainer = DB4OConnector.open(db4oFilePath);
-				Debug.i("Opened DB4O database connection to file: " + db4oFilePath);
-			}
-			catch(Exception e)
-			{
-				Debug.e("Unable to open DB4O database.", e);
-				return null; //failed to open db
-			}
+		if(projectStore == null)
+		{
+			projectStore = USE_PREFS_FOR_PROJECT_STORAGE ? new PrefProjectStore(this) : new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_NAME);
+			storeClients.put(projectStore, new ArrayList<StoreClient>());
 		}
-		daoClients.add(client); //add to set of clients currently using the db
-		return USE_PREFS_FOR_PROJECT_STORAGE ? new DB4OPrefDataAccess(db4oObjectContainer, this) : new DB4ODataAccess(db4oObjectContainer);
+		storeClients.get(projectStore).add(client); //add to set of clients currently using the projectStore
+		return projectStore;
+	}
+	
+	/**
+	 * @param client
+	 * @return
+	 */
+	public RecordStore getRecordStore(StoreClient client) throws Exception
+	{
+		if(recordStore == null)
+		{
+			recordStore = new DB4ORecordStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_NAME);
+			storeClients.put(recordStore, new ArrayList<StoreClient>());
+		}
+		storeClients.get(recordStore).add(client); //add to set of clients currently using the projectStore
+		return recordStore;
 	}
 	
 	/**
 	 * Called by a DataAccessClient to signal it will no longer use its DataAccess object 
 	 * 
+	 * @param store
 	 * @param client
 	 */
-	public void discardDataAccess(DataAccessClient client)
+	public void discardStoreUsage(Store store, StoreClient client)
 	{
-		daoClients.remove(client); //remove client
-		if(daoClients.isEmpty() && db4oObjectContainer != null) //close the db if it is no longer in use
+		if(store == null)
+			return;
+		
+		// Remove client for this store:
+		storeClients.get(store).remove(client);
+		
+		// Finalise if no longer used by other clients:
+		if(storeClients.get(store).isEmpty())
 		{
-			db4oObjectContainer.close();
-			db4oObjectContainer = null;
-			Debug.i("Closed DB4O database connection");
+			store.finalise();
+			storeClients.remove(store); // remove empty list
+
+			//Slightly dirty but acceptable:
+			if(store == projectStore)
+				projectStore = null;
+			else if(store == recordStore)
+				recordStore = null;
+			//else if(store == transmissionStore)
+			//	transmissionStore = null;
 		}
 	}
 	
-	public void backupDatabase(String filePath)
+	public void backupStores() throws Exception
 	{
-		db4oObjectContainer.commit();
-		db4oObjectContainer.ext().backup(filePath);
+		File exportFolder = new File(getDumpFolderPath());
+		if(!FileHelpers.createFolder(exportFolder))
+			throw new Exception("Export folder (" + exportFolder.getAbsolutePath() + ") does not exist and could not be created!");
+		for(Store store : storeClients.keySet())
+			store.backup(exportFolder);
 	}
 
 }

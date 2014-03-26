@@ -5,7 +5,7 @@ package uk.ac.ucl.excites.sapelli.storage.db;
 
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
@@ -14,25 +14,20 @@ import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 /**
  * Interface for Record storage back-ends
  * 
+ * TODO explicit retrieval (and maybe storage) or Schema instances
+ * 
  * @author mstevens
  */
-public abstract class RecordAccess
+public abstract class RecordStore implements Store
 {
-	
-	protected final StorageClient client;
-	
-	public RecordAccess(StorageClient client)
-	{
-		this.client = client;
-	}
 
 	/**
-	 * @param record - the record to store
+	 * @param record - the record to store or update
 	 */
 	public abstract void store(Record record);
 
 	/**
-	 * @param records - the records to store
+	 * @param records - the records to store or update
 	 */
 	public abstract void store(List<Record> records);
 	
@@ -46,7 +41,7 @@ public abstract class RecordAccess
 	 * 
 	 * @return
 	 */
-	public List<Record> retrieveRecords()
+	public List<Record> retrieveAllRecords()
 	{
 		return retrieveRecords(new RecordsQuery());
 	}

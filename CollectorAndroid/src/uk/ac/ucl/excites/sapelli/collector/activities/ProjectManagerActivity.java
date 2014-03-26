@@ -15,12 +15,10 @@ import java.util.regex.Pattern;
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.SapelliProjectClient;
-import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
-import uk.ac.ucl.excites.sapelli.collector.database.DataAccessClient;
+import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderClient;
-import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
@@ -29,14 +27,15 @@ import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.sender.DataSenderPreferences;
 import uk.ac.ucl.excites.sapelli.sender.util.ServiceChecker;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper;
+import uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper.Format;
+import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
+import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.xml.RecordsExporter;
-import uk.ac.ucl.excites.sapelli.storage.xml.RecordsImporter;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
-import uk.ac.ucl.excites.sapelli.util.StringUtils;
-import uk.ac.ucl.excites.sapelli.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -44,7 +43,6 @@ import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
@@ -75,15 +73,13 @@ import com.ipaulpro.afilechooser.utils.FileUtils;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends BaseActivity implements ProjectLoaderClient, DataAccessClient, DeviceID.InitialisationCallback, MenuItem.OnMenuItemClickListener
+public class ProjectManagerActivity extends BaseActivity implements ProjectLoaderClient, StoreClient, DeviceID.InitialisationCallback, MenuItem.OnMenuItemClickListener
 {
 
 	// STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectManagerActivity";
 	
 	static private final String XML_FILE_EXTENSION = "xml";
-	static private final String DB4O_DUMP_NAME = "DatabaseDump";
-	static private final String DB4O_DUMP_EXTENSION = "db4o";
 
 	static private final String DEMO_PROJECT = "demo.excites";
 	
@@ -100,7 +96,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
 
 	// DYNAMICS-------------------------------------------------------
-	private DataAccess dao;
+	private ProjectStore projectStore;
 
 	// UI
 	private EditText enterURL;
@@ -111,7 +107,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	private MenuItem exportRecordsItem;
 	private MenuItem importRecordsItem;
 	private MenuItem copyDBItem;
-	private MenuItem statisticsItem;
 	private MenuItem createShortcutItem;
 	private MenuItem removeShortcutItem;
 	private Dialog encryptionDialog;
@@ -134,59 +129,68 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			return;
 		}
 
-		// DataAccess instance:
-		dao = app.getDataAccess(this);
-
-		// Only if not in demo mode...
-		if(!BuildInfo.DEMO_BUILD)
+		// Get ProjectStore instance:
+		try
 		{
-			// Set-up UI...
-			setTitle(getString(R.string.app_name) + ' ' + getString(R.string.project_manager));
-			// Hide soft keyboard on create
-			getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-			setContentView(R.layout.activity_projectmanager);
-			// Get View Elements
-			enterURL = (EditText) findViewById(R.id.EnterURL);
-			projectList = (ListView) findViewById(R.id.ProjectsList);
-			runBtn = (Button) findViewById(R.id.RunProjectButton);
-			removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
-			infoLbl = (TextView) findViewById(R.id.info);
+			projectStore = app.getProjectStore(this);
+		}
+		catch(Exception e)
+		{
+			showErrorDialog("Could not open ProjectStore: " + e.getLocalizedMessage(), true);
+			return;
+		}
+		
+		if(BuildInfo.DEMO_BUILD)
+			return;
+		//else ...
+		// Only if not in demo mode:			
+		
+		// Set-up UI...
+		setTitle(getString(R.string.app_name) + ' ' + getString(R.string.project_manager));
+		// Hide soft keyboard on create
+		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+		setContentView(R.layout.activity_projectmanager);
+		// Get View Elements
+		enterURL = (EditText) findViewById(R.id.EnterURL);
+		projectList = (ListView) findViewById(R.id.ProjectsList);
+		runBtn = (Button) findViewById(R.id.RunProjectButton);
+		removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
+		infoLbl = (TextView) findViewById(R.id.info);
 
-			// get scrolling right
-			findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
+		// get scrolling right
+		findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
+		{
+			@Override
+			public boolean onTouch(View v, MotionEvent event)
 			{
-				@Override
-				public boolean onTouch(View v, MotionEvent event)
-				{
-					projectList.getParent().requestDisallowInterceptTouchEvent(false);
-					return false;
-				}
-			});
-			projectList.setOnTouchListener(new View.OnTouchListener()
-			{
-				public boolean onTouch(View v, MotionEvent event)
-				{
-					// Disallow the touch request for parent scroll on touch of child view
-					v.getParent().requestDisallowInterceptTouchEvent(true);
-					return false;
-				}
-			});
-
-			// Check the Preferences
-			if(DataSenderPreferences.getTimeSchedule(this) == 1)
-			{
-				DataSenderPreferences.printPreferences(this);
-				Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG).show();
-
-				Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
-				startActivity(settingsActivity);
+				projectList.getParent().requestDisallowInterceptTouchEvent(false);
+				return false;
 			}
-
-			// Start the DataSenderService
-			if(DataSenderPreferences.getSenderEnabled(this))
+		});
+		projectList.setOnTouchListener(new View.OnTouchListener()
+		{
+			public boolean onTouch(View v, MotionEvent event)
 			{
-				ServiceChecker.startService(this);
+				// Disallow the touch request for parent scroll on touch of child view
+				v.getParent().requestDisallowInterceptTouchEvent(true);
+				return false;
 			}
+		});
+
+		// Check the Preferences
+		if(DataSenderPreferences.getTimeSchedule(this) == 1)
+		{
+			DataSenderPreferences.printPreferences(this);
+			Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG).show();
+
+			Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
+			startActivity(settingsActivity);
+		}
+
+		// Start the DataSenderService
+		if(DataSenderPreferences.getSenderEnabled(this)) //TODO make this optional
+		{
+			ServiceChecker.startService(this);
 		}
 	}
 
@@ -199,7 +203,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		DeviceID.Initialise(this, this); // will post a callback upon completion (success/failure)
 
 		// Check database connection:
-		if(dao == null)
+		if(projectStore == null)
 		{
 			showErrorDialog("Could not establish database connection", true);
 			return;
@@ -232,7 +236,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		try
 		{
-			List<Project> projects = dao.retrieveProjects();
+			List<Project> projects = projectStore.retrieveProjects();
 			Project p = null;
 			if(projects.isEmpty())
 			{	// Use /mnt/sdcard/Sapelli/ as the basePath:
@@ -256,7 +260,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	protected void onDestroy()
 	{
 		// clean up:
-		app.discardDataAccess(this); // signal that the activity no longer needs the DAO
+		app.discardStoreUsage(projectStore, this); // signal that the activity no longer needs the DAO
 		// super:
 		super.onDestroy();
 	}
@@ -279,9 +283,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		copyDBItem = menu.findItem(R.id.copy_db_menuitem);
 		if(copyDBItem != null)
 			copyDBItem.setOnMenuItemClickListener(this);
-		statisticsItem = menu.findItem(R.id.statistics_menuitem);
-		if(statisticsItem != null)
-			statisticsItem.setOnMenuItemClickListener(this);
 		createShortcutItem = menu.findItem(R.id.create_shortcut);
 		if(createShortcutItem != null)
 			createShortcutItem.setOnMenuItemClickListener(this);
@@ -302,8 +303,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			return importRecords(item);
 		else if(item == copyDBItem)
 			return copyDBtoSD(item);
-		else if(item == statisticsItem)
-			return showStatistics(item);
 		else if(item == createShortcutItem)
 		{
 			createShortcut();
@@ -325,60 +324,73 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 	public boolean exportRecords(MenuItem item)
 	{
-		// TODO make async
-		final RecordsExporter exporter = new RecordsExporter(app.getDumpFolderPath(), dao);
-		final Project p = getSelectedProject(false);
-		if(p != null)
+		final Project selectedProject = getSelectedProject(false);
+		
+		/* TODO show dialog with following options:
+		 * 
+		 * Source selection (spinner):
+		 * 	- all records of forms of currently selected project [default, but only shown if selectedProject != null]
+		 *  - all records of any forms/schema [default if selectedProject == null]
+		 * 
+		 * Date range:
+		 *  - [optional after TIME_X --> checkbox + date/time picket
+		 *  - [optional] before TIME_Y --> checkbox + date/time picket
+		 * 
+		 * Output format (spinner)
+		 *  - XML [default]
+		 *  - CSV
+		 *  
+		 *  If XML selected above, show spinner for composite mode selection:
+		 *   - As String
+		 *   - As flat tags [default]
+		 *   - As nested tags
+		 * 
+		 * OK + CANCEL buttons
+		 */
+		
+		final ExImportHelper.Format exportFormat = Format.XML; //TODO determine from dialog input
+		
+		/* Query for records based on dialog input */
+		final List<Record> exportSelection = null; //TODO
+		
+		/* Generate name for selection, based on dialog input */
+		final String exportSelectionDescription = "selection"; //TODO
+		
+		/* Export (asynchronous) */
+		new Thread(new Runnable()
 		{
-			AlertDialog dialog = new AlertDialog.Builder(this)
-			.setMessage("Do you want to export the records of the selected project [" + p.toString() + "], or of all projects (including deleted ones)?")
-			.setPositiveButton("Selected", new OnClickListener()
+			public void run()
+			{
+				ExportResult result = null;
+				try
+				{
+					result = ExImportHelper.exportRecords(new File(app.getDumpFolderPath()), exportSelection, exportSelectionDescription, exportFormat);
+				}
+				catch(final Exception e)
+				{
+					ProjectManagerActivity.this.runOnUiThread(new Runnable()
 					{
-						@Override
-						public void onClick(DialogInterface dialog, int which)
+						public void run()
 						{
-							ArrayList<Schema> schemas = new ArrayList<Schema>();
-							for(Form f : p.getForms())
-								schemas.add(f.getSchema());
-							try
-							{
-								exporter.exportRecordsOf(schemas, p.toString());
-							}
-							catch(Exception e)
-							{
-								showErrorDialog("Could not export records: " + e.getMessage(), false);
-								Log.e(TAG, "Could not export records", e);
-							}
+							ProjectManagerActivity.this.showErrorDialog("Error (" + e.toString() + " during record export: " + e.getMessage(), false);
 						}
-			})
-			.setNegativeButton("All", new OnClickListener()
-			{
-				@Override
-						public void onClick(DialogInterface dialog, int which)
+					});
+					return;
+				}
+				if(result != null)
+				{
+					final ExportResult res = result; 
+					ProjectManagerActivity.this.runOnUiThread(new Runnable()
+					{
+						public void run()
 						{
-							try
-							{
-								exporter.exportAll();
-							}
-							catch(Exception e)
-							{
-								showErrorDialog("Could not export records: " + e.getMessage(), false);
-								Log.e(TAG, "Could not export records", e);
-							}
+							ProjectManagerActivity.this.showInfoDialog("Data export", "Successfully exported " + res.getNumberedOfExportedRecords() + " records to: " + res.getDestination() + "."); //TODO multilang
 						}
-					}).create();
-			dialog.show();
-		}
-		else
-			try
-			{
-				exporter.exportAll();
+					});
+				}
 			}
-			catch(Exception e)
-			{
-				showErrorDialog("Could not export records: " + e.getMessage(), false);
-				Log.e(TAG, "Could not export records", e);
-			}
+		});
+		
 		return true;
 	}
 
@@ -399,20 +411,17 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 	public boolean copyDBtoSD(MenuItem item)
 	{
-		String exportFolderPath = app.getDumpFolderPath();
-		if(!FileHelpers.createFolder(exportFolderPath))
-			throw new IllegalArgumentException("Export folder (" + exportFolderPath + ") does not exist and could not be created!");
-		app.backupDatabase(exportFolderPath + DB4O_DUMP_NAME + "_" + TimeUtils.getTimestampForFileName() + "." + DB4O_DUMP_EXTENSION);
+		try
+		{
+			app.backupStores();
+		}
+		catch(Exception e)
+		{
+			showErrorDialog("Failed to backup database(s): " + e.getLocalizedMessage(), false);
+		}
 		return true;
 	}
-
-	public boolean showStatistics(MenuItem item)
-	{
-		Intent intent = new Intent(getBaseContext(), StatisticsActivity.class);
-		startActivity(intent);
-		return true;
-	}
-
+	
 	public void browse(View view)
 	{
 		// Use the GET_CONTENT intent from the utility class
@@ -431,7 +440,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	 */
 	public void populateProjectList()
 	{
-		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list_item, android.R.id.text1, new ArrayList<Project>(dao.retrieveProjects())));
+		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list_item, android.R.id.text1, new ArrayList<Project>(projectStore.retrieveProjects())));
 		if(!projectList.getAdapter().isEmpty())
 		{
 			runBtn.setEnabled(true);
@@ -476,7 +485,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		if(p == null)
 			return;
 		removeShortcut(p);
-		dao.delete(p);
+		projectStore.delete(p);
 		populateProjectList();
 
 		// Restart the DataSenderService to stop monitoring the deleted project
@@ -613,7 +622,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		try
 		{
-			dao.store(p);
+			projectStore.store(p);
 		}
 		catch(DuplicateException de)
 		{
@@ -823,7 +832,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 					try
 					{ // TODO make import & storage async
 						// Import:
-						RecordsImporter importer = new RecordsImporter(new SapelliProjectClient(dao));
+						XMLRecordsImporter importer = new XMLRecordsImporter(new SapelliCollectorClient(projectStore));
 						List<Record> records = importer.importFrom((new File(path)).getAbsoluteFile());
 
 						// Show parser warnings if needed:

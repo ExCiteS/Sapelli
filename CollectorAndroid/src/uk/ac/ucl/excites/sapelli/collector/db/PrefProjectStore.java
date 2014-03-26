@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.collector.database;
+package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.collector.database.db4o.DB4ODataAccess;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
@@ -20,14 +19,12 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
 
-import com.db4o.ObjectContainer;
-
 /**
- * Subclass of DB4ODataAccess in which project storage uses a combination of Android SharedPreferences, a cache and re-parsing XML to store and retrieve Projects (instead of DB4O object storage)
+ * Project storage back-end using Android SharedPreferences, a cache and re-parsing of project XML files
  * 
  * @author Michalis Vitos, mstevens
  */
-public class DB4OPrefDataAccess extends DB4ODataAccess
+public class PrefProjectStore extends ProjectStore
 {
 	
 	// Statics----------------------------------------------
@@ -41,9 +38,8 @@ public class DB4OPrefDataAccess extends DB4ODataAccess
 	private SharedPreferences preferences;
 	private HashMap<Long,Project> projectCache;
 
-	public DB4OPrefDataAccess(ObjectContainer db, Context context)
+	public PrefProjectStore(Context context)
 	{
-		super(db);
 		this.context = context;
 		this.preferences = this.context.getSharedPreferences(CollectorApp.getDemoPrefix() /*will be "" if not in demo mode*/ + PREFERENCES_NAME, Context.MODE_PRIVATE);
 	}
@@ -139,6 +135,12 @@ public class DB4OPrefDataAccess extends DB4ODataAccess
 		
 		// Project not found:
 		return null;
+	}
+	
+	@Override
+	public Project retrieveProject(String name, String version)
+	{
+		return retrieveProject(name, null, version);
 	}
 
 	/**
@@ -241,6 +243,18 @@ public class DB4OPrefDataAccess extends DB4ODataAccess
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	@Override
+	public void finalise()
+	{
+		// does nothing
+	}
+
+	@Override
+	public void backup(File destinationFolder)
+	{
+		// TODO backup
 	}
 
 }

@@ -6,7 +6,7 @@ package uk.ac.ucl.excites.sapelli.collector;
 import java.util.HashSet;
 import java.util.Set;
 
-import uk.ac.ucl.excites.sapelli.collector.db.DataAccess;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -46,17 +46,17 @@ public class SapelliCollectorClient implements TransmissionClient
 	}
 		
 	// DYNAMICS------------------------------------------------------
-	private DataAccess dao;
+	private ProjectStore projectStore;
 	
-	public SapelliCollectorClient(DataAccess dao)
+	public SapelliCollectorClient(ProjectStore projectStore)
 	{
-		this.dao = dao;
+		this.projectStore = projectStore;
 	}
 	
 	@Override
 	public Schema getSchema(long schemaID)
 	{
-		Project p = dao.retrieveProject(GetProjectHash(schemaID));
+		Project p = projectStore.retrieveProject(GetProjectHash(schemaID));
 		if(p != null)
 			return p.getForm(GetFormIndex(schemaID)).getSchema();
 		else
@@ -66,7 +66,7 @@ public class SapelliCollectorClient implements TransmissionClient
 	@Override
 	public Schema getSchemaV1(int schemaID, int schemaVersion)
 	{
-		Project p = dao.retrieveV1Project(schemaID, schemaVersion);
+		Project p = projectStore.retrieveV1Project(schemaID, schemaVersion);
 		if(p != null)
 			return p.getForm(0).getSchema(); // return schema of the first (and assumed only) form
 		else
@@ -76,7 +76,7 @@ public class SapelliCollectorClient implements TransmissionClient
 	@Override
 	public Record getNewRecord(Schema schema)
 	{
-		Project proj = dao.retrieveProject(GetProjectHash(schema.getID()));
+		Project proj = projectStore.retrieveProject(GetProjectHash(schema.getID()));
 		if(proj != null)
 		{
 			Form frm = proj.getForm(GetFormIndex(schema.getID()));

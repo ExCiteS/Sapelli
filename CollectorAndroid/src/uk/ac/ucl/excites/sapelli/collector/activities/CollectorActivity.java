@@ -15,18 +15,18 @@ import uk.ac.ucl.excites.sapelli.R;
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
-import uk.ac.ucl.excites.sapelli.collector.database.DataAccessClient;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
-import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.storage.xml.RecordsExporter;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper.Format;
 import uk.ac.ucl.excites.sapelli.util.Debug;
-import uk.ac.ucl.excites.sapelli.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -46,7 +46,7 @@ import android.view.WindowManager;
  * 
  * @author mstevens, julia, Michalis Vitos
  */
-public class CollectorActivity extends BaseActivity implements DataAccessClient
+public class CollectorActivity extends BaseActivity implements StoreClient
 {
 
 	// STATICS--------------------------------------------------------
@@ -69,7 +69,8 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 	// DYNAMICS-------------------------------------------------------
 	private CollectorApp app;
 
-	private DataAccess dao;
+	private ProjectStore projectStore;
+	private RecordStore recordStore;
 	private Project project;
 	private CollectorController controller;
 
@@ -144,11 +145,20 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 			return;
 		}
 		
-		// Get DataAccess object
-		dao = app.getDataAccess(this); // will be open
+		// Get project- & recordstore objects:
+		try
+		{
+			projectStore = app.getProjectStore(this);
+			recordStore = app.getRecordStore(this);
+		}
+		catch(Exception e)
+		{
+			showErrorDialog("Could not open Project- or RecordStore: " + e.getLocalizedMessage(), true);
+			return;
+		}
 		
 		// Get Project object:
-		project = dao.retrieveProject(projectHash);
+		project = projectStore.retrieveProject(projectHash);
 		if(project == null)
 		{	// show error (activity will be exited after used clicks OK in the dialog):
 			showErrorDialog("Could not find project with hash: " + projectHash, true);
@@ -163,7 +173,7 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		}
 
 		// Set-up controller:
-		controller = new CollectorController(project, dao, this);
+		controller = new CollectorController(project, collectorView, recordStore, this);
 		collectorView.setController(controller); // !!!
 		
 		// Start project:
@@ -200,7 +210,7 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 			return true;
 		case KeyEvent.KEYCODE_VOLUME_DOWN:
 			if(BuildInfo.DEMO_BUILD)
-				showInfoDialog("Exported " + exportRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".");
+				showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".");
 			return true;
 		case KeyEvent.KEYCODE_VOLUME_UP:
 			return true;
@@ -210,18 +220,17 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		return super.onKeyDown(keyCode, event);
 	}
 	
-	private int exportRecords(boolean delete)
+	private int exportDemoRecords(boolean delete)
 	{
 		int count = 0;
-		if(dao != null && project != null)
+		if(recordStore != null && project != null)
 		{
 			Log.d(TAG, "Exporting records...");
 			try
 			{
-				RecordsExporter exporter = new RecordsExporter(project.getDataFolderPath(), dao);
-				count = exporter.exportAll();
+				uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper.exportRecords(project.getDataFolder(), recordStore.retrieveAllRecords(), "DemoRecords", Format.XML);
 				if(delete)
-					dao.deleteAllRecords();
+					recordStore.deleteAllRecords();
 			}
 			catch(Exception e)
 			{
@@ -438,15 +447,11 @@ public class CollectorActivity extends BaseActivity implements DataAccessClient
 		cancelExitFuture(); // cancel exit timer if needed
 		if(controller != null)
 			controller.cancelAndStop();
-		// Signal that the activity no longer needs the DAO:
-		app.discardDataAccess(this);
+		// Signal that the activity no longer needs the Store objects:
+		app.discardStoreUsage(projectStore, this);
+		app.discardStoreUsage(recordStore, this);
 		// super:
 		super.onDestroy();
-	}
-
-	public CollectorUI getCollectorView()
-	{
-		return collectorView;
 	}
 
 	public void setupTimerTrigger(final Trigger trigger)

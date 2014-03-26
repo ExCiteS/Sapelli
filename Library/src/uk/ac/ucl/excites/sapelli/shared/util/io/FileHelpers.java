@@ -292,7 +292,7 @@ public final class FileHelpers
 	 * Attempts to create the necessary (containing) folder(s) for a given path
 	 * 
 	 * @param folderPath
-	 * @return success, i.e. whether the folder now (as a directory, *not* as a file), or existed already
+	 * @return success, i.e. whether the folder exists now (as a directory, *not* as a file), or existed already
 	 */
 	public static boolean createFolder(File folder)
 	{

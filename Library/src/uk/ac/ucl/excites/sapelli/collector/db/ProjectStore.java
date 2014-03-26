@@ -4,13 +4,14 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
+import uk.ac.ucl.excites.sapelli.shared.db.Store;
 
 /**
  * Interface for Project storage back-ends
  * 
  * @author mstevens
  */
-public interface ProjectAccess
+public abstract class ProjectStore implements Store
 {
 
 	/**
@@ -39,7 +40,10 @@ public interface ProjectAccess
 	 * 
 	 * @return null if project was not found
 	 */
-	public abstract Project retrieveProject(String name, String version);
+	public Project retrieveProject(final String name, final String version)
+	{
+		return retrieveProject(name, null, version);
+	}
 
 	/**
 	 * Retrieves specific Project

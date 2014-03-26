@@ -13,6 +13,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
+import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
@@ -26,7 +27,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
  * 
  * @author mstevens
  */
-public class XMLRecordsExporter extends SimpleSchemaTraverser
+public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporter
 {
 
 	// STATICS-------------------------------------------------------
@@ -53,6 +54,8 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser
 		 */
 		As_nested_tags
 	}
+	
+	static public CompositeMode DEFAULT_COMPOSITE_MODE = CompositeMode.As_flat_tags;
 	
 	// DYNAMICS------------------------------------------------------
 	private File exportFolder;
@@ -94,6 +97,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser
 		writer = null;
 	}
 	
+	@Override
 	public ExportResult export(List<Record> records, String name) throws Exception
 	{
 		openWriter(name);
