@@ -14,7 +14,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 /**
  * Interface for Record storage back-ends
  * 
- * TODO explicit retrieval (and maybe storage) or Schema instances
+ * TODO explicit retrieval (and implicit storage) or Schema instances
  * 
  * @author mstevens
  */
