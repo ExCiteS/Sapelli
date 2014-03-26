@@ -19,6 +19,7 @@ public class FileWriter
 	protected Charset charset; 
 
 	protected OutputStreamWriter writer = null;
+	protected StringBuffer transactionBuffer = null; 
 
 	private File file = null;
 
@@ -85,24 +86,16 @@ public class FileWriter
 
 	public void write(char charToWrite)
 	{
-		if(writer != null)
-		{
-			try
-			{
-				writer.write(charToWrite);
-				writer.flush();
-			}
-			catch(Exception e)
-			{
-				
-				close();
-			}
-		}
+		write(new String(new char[] { charToWrite }));
 	}
 
 	public void write(String stringToWrite)
 	{
-		if(writer != null)
+		if(transactionBuffer != null)
+		{	// we are in transaction mode: buffer output
+			transactionBuffer.append(stringToWrite);
+		}
+		else if(writer != null)
 		{
 			try
 			{
@@ -121,6 +114,27 @@ public class FileWriter
 	public void writeLine(String stringToWrite)
 	{
 		write(stringToWrite + "\n");
+	}
+	
+	public void startTransaction()
+	{
+		if(transactionBuffer == null) // we currently only support a single open transaction at the time
+			transactionBuffer = new StringBuffer();
+	}
+	
+	public void closeTransaction()
+	{
+		if(transactionBuffer != null)
+		{
+			String output = transactionBuffer.toString();
+			transactionBuffer = null;
+			write(output);
+		}
+	}
+	
+	public void rollbackTransaction()
+	{
+		transactionBuffer = null; // discard transactionBuffer and its contents!
 	}
 
 	/**
