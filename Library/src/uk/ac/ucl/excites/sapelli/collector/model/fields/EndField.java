@@ -7,11 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.Next;
-import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 
 /**
@@ -19,7 +16,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
  * 
  * @author mstevens
  */
-public class EndField extends Field
+public class EndField extends UILessField
 {
 	// Backwards compatibility with v1.x projects:
 	static public final String END = "_END";
@@ -92,16 +89,13 @@ public class EndField extends Field
 		return null;
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
+	 */
 	@Override
-	public boolean enter(Controller controller)
+	public boolean enter(Controller controller, boolean onPage)
 	{
 		return controller.enterEndField(this);
-	}
-	
-	@Override
-	public FieldUI createUI(CollectorUI collectorUI)
-	{
-		return null; // there is not UI for this field
 	}
 
 }

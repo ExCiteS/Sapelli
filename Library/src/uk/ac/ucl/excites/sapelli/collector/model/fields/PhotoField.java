@@ -7,12 +7,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
-import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.PhotoUI;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -37,7 +36,6 @@ public class PhotoField extends MediaField
 	static public final FlashMode DEFAULT_FLASH_MODE = FlashMode.AUTO;
 	
 	//DYNAMICS-------------------------------------------------------
-	private boolean useNativeApp;
 	private boolean useFrontFacingCamera;
 	private FlashMode flashMode;
 	
@@ -83,22 +81,6 @@ public class PhotoField extends MediaField
 	public void setFlashMode(FlashMode flashMode)
 	{
 		this.flashMode = flashMode;
-	}
-
-	/**
-	 * @return the useNativeApp
-	 */
-	public boolean isUseNativeApp()
-	{
-		return useNativeApp;
-	}
-
-	/**
-	 * @param useNativeApp the useNativeApp to set
-	 */
-	public void setUseNativeApp(boolean useNativeApp)
-	{
-		this.useNativeApp = useNativeApp;
 	}
 
 	/**
@@ -170,15 +152,9 @@ public class PhotoField extends MediaField
 		CollectionUtils.addIgnoreNull(paths, project.getImageFile(discardButtonImageRelativePath));
 		return paths;
 	}
-
-	@Override
-	public boolean enter(Controller controller)
-	{
-		return controller.enterPhotoField(this);
-	}
 	
 	@Override
-	public FieldUI createUI(CollectorUI collectorUI)
+	public <V> PhotoUI<V> createUI(CollectorUI<V> collectorUI)
 	{
 		return collectorUI.createPhotoUI(this);
 	}

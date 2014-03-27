@@ -10,8 +10,8 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
-import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AudioUI;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -20,12 +20,14 @@ import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
 public class AudioField extends MediaField
 {
 
+	static public final boolean DEFAULT_USE_NATIVE_APP = false;
 	private static final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
 	private static final String EXTENSION_3GPP = "3gp";
 
 	public AudioField(Form form, String id)
 	{
 		super(form, id);
+		useNativeApp = DEFAULT_USE_NATIVE_APP;
 	}
 
 	private String startRecImageRelativePath;
@@ -89,7 +91,7 @@ public class AudioField extends MediaField
 	}
 
 	@Override
-	public FieldUI createUI(CollectorUI collectorUI)
+	public <V> AudioUI<V> createUI(CollectorUI<V> collectorUI)
 	{
 		return collectorUI.createAudioUI(this);
 	}

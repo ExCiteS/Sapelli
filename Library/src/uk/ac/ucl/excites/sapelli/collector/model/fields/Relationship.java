@@ -4,23 +4,20 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 
 /**
  * Field that represents relationship with another Form
  * 
  * @author mstevens
  */
-public class Relationship extends Field
+public class Relationship extends UILessField
 {
 
 	//STATICS -------------------------------------------------------
@@ -39,7 +36,7 @@ public class Relationship extends Field
 		 * A 1:1 relationship between this form (holder of of the Relationship object) and another {@code relatedForm}.
 		 * The consequence is that a new record of the {@code relatedForm} will be created for every instance of this form (unless the relationship is optional). 
 		 */
-		ONE_TO_ONE,
+		//ONE_TO_ONE,
 		
 		/**
 		 * A N:1 relationship between this form (holder of of the Relationship object) and another {@code relatedForm}.
@@ -53,7 +50,7 @@ public class Relationship extends Field
 		 * Currently not implemented.
 		 * TODO Support for N:M cardinality (will require some kind of "cross table")
 		 */
-		MANY_TO_MANY
+		//MANY_TO_MANY
 		
 	}
 	
@@ -71,12 +68,12 @@ public class Relationship extends Field
 	public Relationship(Form form, String id, Type type)
 	{
 		super(form, id);
-		if(type == Type.ONE_TO_ONE)
+		/*if(type == Type.ONE_TO_ONE)
 			throw new IllegalArgumentException("One-to-one relationships are not yet implemented."); //TODO implemented One-to-one relationships (still needs XML syntax)
 		if(type == Type.MANY_TO_MANY)
-			throw new IllegalArgumentException("Many-to-many relationships are not yet implemented."); //TODO implemented Many-to-many relationships (still needs XML syntax)
+			throw new IllegalArgumentException("Many-to-many relationships are not yet implemented."); //TODO implemented Many-to-many relationships (still needs XML syntax) */
 		this.type = type; 
-		noColumn = (type == Type.LINK ? true : false);
+		noColumn = (type == Type.LINK);
 	}
 	
 	public void setNoColumn(boolean noColumn)
@@ -88,6 +85,12 @@ public class Relationship extends Field
 	{
 		if(relatedForm == form)
 			throw new IllegalArgumentException("A form cannot be related to itself!"); //TODO why not? e.g. person-person relationship
+		if(type == Type.MANY_TO_ONE && !relatedForm.isProducesRecords())
+		{
+			type = Type.LINK;
+			noColumn = true;
+			form.addWarning("Related form does not produce records, changed <BelongsTo> to <Link>");
+		}
 		this.relatedForm = relatedForm;
 	}
 
@@ -124,23 +127,12 @@ public class Relationship extends Field
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumns()
-	 */
-	@Override
-	protected List<Column<?>> createColumns()
-	{
-		List<Column<?>> list = new ArrayList<Column<?>>();
-		//TODO add columns
-		return list;
-	}
-	
-	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
 	 */
 	@Override
 	protected Column<?> createColumn()
 	{
-		throw new UnsupportedOperationException("Relationship fields require multiple columns, call createColumns() instead.");
+		return new ForeignKeyColumn(id, relatedForm.getSchema(), (optional != Optionalness.NEVER));
 	}
 
 	/* (non-Javadoc)
@@ -154,34 +146,26 @@ public class Relationship extends Field
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#enter(uk.ac.ucl.excites.collector.project.ui.Controller)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
 	 */
 	@Override
-	public boolean enter(Controller controller)
+	public boolean enter(Controller controller, boolean withPage)
 	{
-		switch(type)
-		{
-			case LINK:
-				return controller.enterLinksTo(this);
-			case ONE_TO_ONE:
-				return false; //TODO
-			case MANY_TO_ONE:
-				return controller.enterBelongsTo(this);
-			case MANY_TO_MANY:
-				return false; //TODO
-			default :
-				return false;
-		}
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createUI(uk.ac.ucl.excites.collector.project.ui.CollectorUI)
-	 */
-	@Override
-	public FieldUI createUI(CollectorUI collectorUI)
-	{
-		// TODO Auto-generated method stub
-		return null;
+		if(!withPage)
+			switch(type)
+			{
+				case LINK:
+					return controller.enterLinksTo(this);
+				//case ONE_TO_ONE:
+				//	return false; //TODO
+				case MANY_TO_ONE:
+					return controller.enterBelongsTo(this);
+				//case MANY_TO_MANY:
+				//	return false; //TODO
+				default :
+					return false;
+			}
+		return true;
 	}
 
 }

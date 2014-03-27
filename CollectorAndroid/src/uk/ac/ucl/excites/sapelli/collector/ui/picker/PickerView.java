@@ -23,5 +23,10 @@ public abstract class PickerView extends GridView
 		// This is needed to hide the border when an picker item is pressed and to calculate the borders more appropriately
 		setSelector(R.drawable.picker_view_selector);
 	}
+	
+	public PickerAdapter getAdapter()
+	{
+		return pickerAdapter;
+	}
 
 }

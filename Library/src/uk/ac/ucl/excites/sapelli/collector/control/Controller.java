@@ -10,25 +10,26 @@ import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
-import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.Next;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
-import uk.ac.ucl.excites.sapelli.collector.model.Form.Next;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
+import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsState;
-import uk.ac.ucl.excites.sapelli.util.Logger;
-import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.Logger;
+import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
  * Abstract Controller class
@@ -44,7 +45,8 @@ public abstract class Controller
 	
 	// DYNAMICS------------------------------------------------------
 	protected Project project;
-	protected DataAccess dao;
+	protected CollectorUI<?> ui;
+	protected RecordStore recordStore;
 	protected Logger logger;
 	
 	protected long deviceIDHash; //to be initialised by subclasses
@@ -55,10 +57,11 @@ public abstract class Controller
 	
 	protected boolean handlingUserGoBackRequest = false;
 	
-	public Controller(Project project, DataAccess dao)
+	public Controller(Project project, CollectorUI<?> ui, RecordStore recordStore)
 	{
 		this.project = project;
-		this.dao = dao;
+		this.ui = ui;
+		this.recordStore = recordStore;
 		
 		// Collections:
 		formHistory = new Stack<FormSession>();
@@ -149,8 +152,6 @@ public abstract class Controller
 	/**
 	 * Go forward to next field
 	 * 
-	 * TODO validation
-	 * 
 	 * @param requestedByUser
 	 */
 	public void goForward(boolean requestedByUser)
@@ -174,8 +175,6 @@ public abstract class Controller
 	/**
 	 * Go back to previous field or form
 	 * 
-	 * TODO validation
-	 * 
 	 * @param requestedByUser
 	 */
 	public void goBack(boolean requestedByUser)
@@ -192,6 +191,7 @@ public abstract class Controller
 		if(!currFormSession.fieldHistory.isEmpty())
 		{
 			currFormSession.currField = null; // !!! otherwise we create loops
+			currFormSession.currFieldDisplayed = false;
 			Field previousField = currFormSession.fieldHistory.pop();
 			if(previousField.isSkipOnBack())
 				goBack(false); // Move two steps backwards
@@ -209,19 +209,32 @@ public abstract class Controller
 	
 	public synchronized void goTo(Field nextField)
 	{
+		// Null check...
 		if(nextField == null)
 		{	
 			addLogLine("NULL_FIELD");
 			return;
 		}
 	
-		// Leaving current field...
-		if(currFormSession.currField != null && currFormSession.currField != nextField)
-			currFormSession.fieldHistory.add(currFormSession.currField); // Add to history
-		// Next field become current field...
+		// Deal with current field...
+		if(currFormSession.currField != null)
+		{
+			// Check if we are allowed to leave the current field...	
+			if(currFormSession.currFieldDisplayed && !ui.getCurrentFieldUI().leave(currFormSession.record)) // leave() will call isValid() on fieldUIs that need this
+			{
+				addLogLine("STAY", "Not allowed to leave field " + currFormSession.currField.getID());
+				return; // not allowed to leave
+			}
+			
+			// Add current field to history if it is not the same as the next field...
+			if(currFormSession.currField != nextField)
+				currFormSession.fieldHistory.add(currFormSession.currField);
+		}
+		
+		// 	Next field becomes the (new) current field...
 		currFormSession.currField = nextField;
 		
-		// Skip the field if it is not meant to be shown on create/edit...
+		// Skip the new current field if it is not meant to be shown on create/edit...
 		if(	(currFormSession.mode == Mode.CREATE && !currFormSession.currField.isShowOnCreate()) ||
 			(currFormSession.mode == Mode.EDIT && !currFormSession.currField.isShowOnEdit()))
 		{
@@ -230,10 +243,23 @@ public abstract class Controller
 			return;
 		}
 		
-		// Entering new current field field...
+		// Entering new current field...
 		addLogLine("REACHED", currFormSession.currField.getID());
-		if(currFormSession.currField.enter(this))
-			displayField(currFormSession.currField); // update UI if needed		
+		if(currFormSession.currField.enter(this, false))
+		{	// update UI if needed
+			ui.setField(currFormSession.currField);
+			currFormSession.currFieldDisplayed = true;
+		}
+		else
+			currFormSession.currFieldDisplayed = false;
+	}
+	
+	public void goToFromPage(Field fieldOnPage)
+	{
+
+		//TODO skip validation (allowing to temporarily leave the page), what with control flow ("back" should go back to page and "next" as well)? (probably this needs a custom method on the controller instead)
+		goTo(fieldOnPage);
+		
 	}
 
 	/**
@@ -246,6 +272,17 @@ public abstract class Controller
 				currFormSession.form.isShowCancel()		&& currFormSession.currField.isShowCancel()		&& (!currFormSession.fieldHistory.empty() || currFormSession.currField instanceof Page),
 				currFormSession.form.isShowForward()	&& currFormSession.currField.isShowForward()	&& currFormSession.currField.getOptional() == Optionalness.ALWAYS);
 		// Note: these paths may be null (in which case built-in defaults must be used)
+		
+		
+		/* TODO optional/valid logic: 
+		 * 
+		 * (optialness=always && (field.isNoColumn() || !field.getcolumn.isvalueset(record))) || (optionalness!=always && fieldUI.isValid()))
+		 * 		 * 	
+		 * assumption: a set value is (still?) valid (is this true for locations?)
+		 * 
+		 * Will this work for pages?
+		 */
+		
 		return state;
 	}
 	
@@ -258,7 +295,7 @@ public abstract class Controller
 		currFormSession.form.finish(currFormSession.record); // sets end-time if necessary
 	
 		// Store currentRecord
-		dao.store(currFormSession.record);
+		recordStore.store(currFormSession.record);
 	
 		// Log record:
 		addLogLine("RECORD", currFormSession.record.toString());
@@ -320,23 +357,34 @@ public abstract class Controller
 	{
 		if(mf.isMaxReached(currFormSession.record))
 		{ // Maximum number of attachments for this field is reached:
-			goForward(false); // skip field
+			goForward(false); // skip field //TODO this needs to change if we allow to delete previously generated media
 			return false;
 		}
 		return true;
 	}
 	
 	/**
-	 * @param pf  the PhotoField
-	 * @return whether or not a UI update is required after entering the field
-	 */
-	public abstract boolean enterPhotoField(PhotoField pf);
-	
-	/**
 	 * @param lf  the LocationField
+	 * @param whether or not the location field is entered together with a page that contains it, or entered on its own
 	 * @return whether or not a UI update is required after entering the field
 	 */
-	public abstract boolean enterLocationField(LocationField lf);
+	public boolean enterLocationField(LocationField lf, boolean withPage)
+	{
+		if(withPage && !lf.isStartWithPage())
+			return false;
+		
+		if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currFormSession.record, getCurrentBestLocation()))
+		{
+			startLocationListener(lf); // start listening for a location
+			return true;
+		}
+		else
+		{	// we already have a (good enough) location
+			if(!withPage)
+				goForward(false); // skip the wait screen
+			return false;
+		}
+	}
 	
 	/**
 	 * @param of  the OrientationField
@@ -350,11 +398,8 @@ public abstract class Controller
 	 */
 	public boolean enterPage(Page page)
 	{
-		// TODO does this work?
-		//for(Field f : page.getFields())
-		//	f.enter(this);
-		
-		// TODO startWithPage location
+		for(Field f : page.getFields())
+			f.enter(this, true); // enter with page
 		
 		// Setup the triggers
 		setupTriggers(page.getTriggers());
@@ -479,50 +524,6 @@ public abstract class Controller
 	{
 		return field.isEnabled() && !currFormSession.tempDisabledFields.contains(field);
 	}
-
-	public void choiceMade(ChoiceField chosenChild)
-	{
-		// Note: chosenChild is not the currentField! The currentField (also a ChoiceField) is its parent.
-		if(chosenChild.isLeaf())
-		{
-			// Store value
-			if(!chosenChild.getRoot().isNoColumn())
-				chosenChild.storeValue(currFormSession.record);
-			// Go to next field
-			goTo(currFormSession.form.getNextField(chosenChild));
-			/*
-			 * We cannot use goForward() here because then we would first need to make the chosenChild the currentField, in which case it would end up in the
-			 * fieldHistory which does not make sense because a leaf choice cannot be displayed on its own.
-			 */
-		}
-		else
-			goTo(chosenChild); // chosenChild becomes the new currentField (we go one level down in the choice tree)
-	}
-
-	public void mediaDone(File mediaAttachment)
-	{
-		MediaField ma = (MediaField) currFormSession.currField;
-		if(mediaAttachment != null && mediaAttachment.exists())
-		{
-			addLogLine("ATTACHMENT", currFormSession.currField.getID(), mediaAttachment.getName());
-			
-			ma.incrementCount(currFormSession.record); // Store/increase number of pictures/recordings taken
-			if(ma.isMaxReached(currFormSession.record) && ma.getDisableChoice() != null)
-				currFormSession.tempDisabledFields.add(ma.getDisableChoice()); // disable the choice that makes the MA accessible
-			currFormSession.mediaAttachments.add(mediaAttachment);
-			goForward(false); // goto next/jump field
-		}
-		else
-		{
-			addLogLine("ATTACHMENT", currFormSession.currField.getID(), "NONE");
-			
-			if(ma.getOptional() != Optionalness.ALWAYS)
-				// at least one attachment is required:
-				goTo(ma); // stay at this field
-			else
-				goForward(false); // goto next/jump field
-		}
-	}
 	
 	protected void exit()
 	{
@@ -544,14 +545,6 @@ public abstract class Controller
 	}
 
 	/**
-	 * @return the currentForm
-	 */
-	public Form getCurrentForm()
-	{
-		return currFormSession.form;
-	}
-
-	/**
 	 * @return the project
 	 */
 	public Project getProject()
@@ -568,6 +561,14 @@ public abstract class Controller
 	}
 	
 	/**
+	 * @return the current Form
+	 */
+	public Form getCurrentForm()
+	{
+		return currFormSession.form;
+	}
+	
+	/**
 	 * @return the mode of the currently open form
 	 */
 	public FormSession.Mode getCurrentFormMode()
@@ -576,35 +577,40 @@ public abstract class Controller
 	}
 
 	/**
-	 * @return the currentField
+	 * @return the current Field
 	 */
 	public Field getCurrentField()
 	{
 		return currFormSession.currField;
 	}
 	
-	protected void startLocationListener(LocationField locField)
-	{
-		startLocationListener(Arrays.asList(locField));
-	}
-	
-	protected void addLogLine(String... fields)
+	public void addLogLine(String... fields)
 	{
 		if(logger != null)
 			logger.addLine(fields);
 	}
 	
-	protected void addBlankLogLine()
+	public void addBlankLogLine()
 	{
 		if(logger != null)
 			logger.addBlankLine();
+	}
+	
+	protected void startLocationListener(LocationField locField)
+	{
+		startLocationListener(Arrays.asList(locField));
 	}
 
 	public abstract void startLocationListener(List<LocationField> locFields);
 
 	public abstract void stopLocationListener();
 	
-	protected abstract void displayField(Field currentField);
+	public abstract Location getCurrentBestLocation();
+	
+	public void addMediaAttachment(File mediaAttachment)
+	{
+		currFormSession.mediaAttachments.add(mediaAttachment);
+	}
 	
 	protected abstract void vibrate(int durationMS);
 	
@@ -619,7 +625,7 @@ public abstract class Controller
 	 * 
 	 * @author mstevens
 	 */
-	static protected class FormSession
+	public static class FormSession
 	{
 
 		public static enum Mode
@@ -640,14 +646,15 @@ public abstract class Controller
 		}
 		
 		//Dynamic
-		Form form;
-		Mode mode;
-		CollectorRecord record;
-		Stack<Field> fieldHistory;
-		Field currField = null;
-		Set<Field> tempDisabledFields;
-		List<File> mediaAttachments;	
-		long startTime;
+		protected Form form;
+		protected Mode mode;
+		protected CollectorRecord record;
+		protected Stack<Field> fieldHistory;
+		protected Field currField = null;
+		protected boolean currFieldDisplayed = false;
+		protected Set<Field> tempDisabledFields;
+		protected List<File> mediaAttachments;	
+		protected long startTime;
 		
 		/**
 		 * @param form

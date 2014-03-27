@@ -15,14 +15,17 @@ import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
-import uk.ac.ucl.excites.sapelli.collector.database.DataAccessClient;
+import uk.ac.ucl.excites.sapelli.collector.db.DataAccess;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.sender.dropbox.DropboxSync;
 import uk.ac.ucl.excites.sapelli.sender.gsm.SMSSender;
 import uk.ac.ucl.excites.sapelli.sender.gsm.SignalMonitor;
 import uk.ac.ucl.excites.sapelli.sender.util.Constants;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.util.Logger;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -36,7 +39,6 @@ import uk.ac.ucl.excites.sapelli.transmission.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
-import uk.ac.ucl.excites.sapelli.util.Logger;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -52,7 +54,7 @@ import android.util.Log;
  * @author Michalis Vitos, mstevens
  * 
  */
-public class DataSenderService extends Service implements TransmissionSender, DataAccessClient
+public class DataSenderService extends Service implements TransmissionSender, StoreClient
 {
 
 	// Statics-------------------------------------------------------
@@ -69,7 +71,8 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 	private SMSSender smsSender;
 	private int startMode = START_STICKY; // indicates how to behave if the service is killed
 	private boolean allowRebind; // indicates whether onRebind should be used
-	private DataAccess dao;
+	private ProjectStore projectStore;
+	private RecordStore recordStore;
 	private Map<Project,Logger> loggers;
 	
 	private ScheduledExecutorService scheduleTaskExecutor;
@@ -99,7 +102,8 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 		setServiceForeground(this);
 		
 		// DataAccess instance:
-		dao = ((CollectorApp) getApplication()).getDataAccess(this);
+		projectStore = ((CollectorApp) getApplication()).getProjectStore(this);
+		recordStore = ((CollectorApp) getApplication()).getRecordStore(this);
 				
 		// Get the preferences
 		final int timeSchedule = DataSenderPreferences.getTimeSchedule(this);
@@ -108,7 +112,7 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 		
 		boolean projectWithSMSEnabled = false;
 
-		for(Project p : dao.retrieveProjects())
+		for(Project p : projectStore.retrieveProjects())
 		{
 			if(p.isLogging())
 			{
@@ -197,7 +201,9 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 			Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
 		android.os.Process.killProcess(pid);
 		
-		((CollectorApp) getApplication()).discardDataAccess(this); //signal that the service no longer needs the DAO
+		//signal that the service no longer needs the DAOs:
+		((CollectorApp) getApplication()).discardStoreUsage(projectStore, this);
+		((CollectorApp) getApplication()).discardStoreUsage(recordStore, this);
 	}
 	
 	private class SendingTask implements Runnable
@@ -252,7 +258,7 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 				//	}
 				
 				//Generate transmissions...
-				for(Project p : dao.retrieveProjects())
+				for(Project p : projectStore.retrieveProjects())
 				{
 					Settings settings = p.getTransmissionSettings();
 					
@@ -379,7 +385,7 @@ public class DataSenderService extends Service implements TransmissionSender, Da
 		
 		//Columns to factor out:
 		Set<Column<?>> factorOut = new HashSet<Column<?>>();
-		factorOut.add(schema.getColumn(Form.COLUMN_DEVICE_ID));
+		factorOut.add(Form.COLUMN_DEVICE_ID);
 		
 		//Make transmissions: 
 		List<SMSTransmission> transmissions = new ArrayList<SMSTransmission>();

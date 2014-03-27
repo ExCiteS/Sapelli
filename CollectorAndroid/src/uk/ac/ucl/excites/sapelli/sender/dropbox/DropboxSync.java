@@ -4,8 +4,8 @@ import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.sender.util.RecursiveFileObserver;
+import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.util.Debug;
-import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
 import android.content.Context;
 import android.os.FileObserver;
 

@@ -5,38 +5,58 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.EditTextField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AudioUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.ButtonUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.CheckBoxUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.LabelUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.LocationUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.MultiListUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.OrientationUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.PhotoUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.TextBoxUI;
 
-public interface CollectorUI
+public interface CollectorUI<V>
 {
 
-	public FieldUI createChoiceUI(ChoiceField cf);
+	public ChoiceUI<V> createChoiceUI(ChoiceField cf);
 
-	public FieldUI createPhotoUI(PhotoField pf);
+	public PhotoUI<V> createPhotoUI(PhotoField pf);
 
-	public FieldUI createAudioUI(AudioField af);
+	public AudioUI<V> createAudioUI(AudioField af);
 
-	public FieldUI createLocationUI(LocationField lf);
+	public LocationUI<V> createLocationUI(LocationField lf);
 	
-	public FieldUI createLabelUI(LabelField lf);
+	public OrientationUI<V> createOrientationUI(OrientationField of);
 	
-	public FieldUI createButtonUI(ButtonField bf);
+	public LabelUI<V> createLabelUI(LabelField lf);
+	
+	public ButtonUI<V> createButtonUI(ButtonField bf);
 
-	public FieldUI createTextFieldUI(EditTextField tf);
+	public TextBoxUI<V> createTextFieldUI(TextBoxField tf);
 	
-	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf);
-
-	public FieldUI createButtonFieldUI(ButtonField bf);
+	public CheckBoxUI<V> createCheckBoxFieldUI(CheckBoxField cbf);
 	
-	public FieldUI createMultiListUI(MultiListField mlf);
+	public MultiListUI<V> createMultiListUI(MultiListField mlf);
 	
-	public FieldUI createPageUI(Page page);
+	public PageUI<V> createPageUI(Page page);
 
 	public void setField(Field currentField);
-
+	
+	public FieldUI<?, V> getCurrentFieldUI();
+	
+	public int getSpacingPx();
+	
+	public int getScreenWidthPx();
+	
+	public int getScreenHeightPx();
+	
 }

@@ -6,11 +6,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
+import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.io.FileWriter;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
-import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.util.io.FileWriter;
 
 /**
  * @author mstevens
@@ -25,10 +25,11 @@ public class Project
 	
 	static public final String DEFAULT_VERSION = "0";
 	
-	static public final int PROJECT_HASH_SIZE = Schema.SCHEMA_USAGE_ID_SIZE; // = 32 bits
-	static public final IntegerRangeMapping PROJECT_HASH_FIELD = Schema.SCHEMA_USAGE_ID_FIELD; // unsigned(!) 32bit integer
+	static public final int PROJECT_HASH_SIZE = 32; //bits
+	static public final IntegerRangeMapping PROJECT_HASH_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_HASH_SIZE); // unsigned(!) 32bit integer
 	
-	static public final int MAX_FORMS = ((int) Schema.SCHEMA_USAGE_SUB_ID_FIELD.getHighBound()) + 1; // = 15 + 1 = 16
+	static public final int MAX_FORMS = (int) Form.FORM_INDEX_FIELD.getHighBound() + 1; // = 15 + 1 = 16 forms allowed
+	
 	
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
@@ -47,7 +48,7 @@ public class Project
 	
 	//DYNAMICS------------------------------------------------------------
 	private int id = Integer.MIN_VALUE; //don't init to 0 because that is an acceptable project id
-	private long hash;
+	private long hash; // unsigned(!) 32bit integer
 	private String name;
 	private String variant;
 	private String version;
@@ -153,7 +154,7 @@ public class Project
 	}
 
 	/**
-	 * @return the hash
+	 * @return the hash (computed from the Project's XML file)
 	 */
 	public long getHash()
 	{

@@ -21,6 +21,8 @@ import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
@@ -256,7 +258,36 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		return super.onKeyUp(keyCode, event);
 	}
 	
-	public void startCameraApp()
+	public void startAudioRecorderApp(AndroidAudioUI audioUI)
+	{
+		// TODO call native audio recorder (maybe look at how ODK Collect does it)
+	}
+	
+	private void audioRecorderDone(int resultCode)
+	{
+		// Just in case ...
+		if(!(collectorView.getCurrentFieldUI() instanceof AndroidAudioUI))
+		{
+			// TODO delete tmpAudio file if not null
+			return;
+		}
+		
+		AndroidAudioUI audioUI = (AndroidAudioUI) collectorView.getCurrentFieldUI();
+		if(resultCode == RESULT_OK)
+		{
+			// deal with file ... (see cameraDone())
+			
+			//audioUI.mediaDone(..., true);
+		}
+		else
+		// if(resultCode == RESULT_CANCELED)
+		{
+			// TODO delete file if not null & existing
+			//audioUI.mediaDone(null, true);
+		}
+	}
+	
+	public void startCameraApp(AndroidPhotoUI photoUI)
 	{
 		/*
 		 * Use native/Android camera app
@@ -272,7 +303,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		if(!isIntentAvailable(this, MediaStore.ACTION_IMAGE_CAPTURE)) // check if the device is able to handle PhotoField Intents
 		{ // Device cannot take photos
 			Log.i(TAG, "Cannot take photo due to device limitation.");
-			controller.mediaDone(null); // skip the PhotoField field (pass null to indicate no file was created)
+			photoUI.mediaDone(null, true); // skip the PhotoField field (pass null to indicate no file was created)
 		}
 		else
 		{ // Device can take photos
@@ -290,16 +321,25 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 			}
 			catch(Exception e)
 			{
-				if(tmpPhotoFile != null && tmpPhotoFile.exists())
+				if(tmpPhotoFile != null)
 					tmpPhotoFile.delete();
 				Log.e(TAG, "setPhoto() error", e);
-				controller.mediaDone(null);
+				photoUI.mediaDone(null, true);
 			}
 		}
 	}
 
 	private void cameraDone(int resultCode)
 	{
+		// Just in case ...
+		if(!(collectorView.getCurrentFieldUI() instanceof AndroidPhotoUI))
+		{
+			if(tmpPhotoFile != null)
+				tmpPhotoFile.delete();
+			return;
+		}
+		
+		AndroidPhotoUI photoUI = (AndroidPhotoUI) collectorView.getCurrentFieldUI();
 		if(resultCode == RESULT_OK)
 		{
 			if(tmpPhotoFile != null && tmpPhotoFile.exists())
@@ -308,23 +348,23 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 				{ // Rename the file & pass it to the controller
 					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewTempFile(controller.getCurrentRecord());
 					tmpPhotoFile.renameTo(newPhoto);
-					controller.mediaDone(newPhoto);
+					photoUI.mediaDone(newPhoto, true);
 				}
 				catch(Exception e)
 				{ // could not rename the file
 					tmpPhotoFile.delete();
-					controller.mediaDone(null);
+					photoUI.mediaDone(null, true);
 				}
 			}
 			else
-				controller.mediaDone(null);
+				photoUI.mediaDone(null, true);
 		}
 		else
 		// if(resultCode == RESULT_CANCELED)
 		{
-			if(tmpPhotoFile != null && tmpPhotoFile.exists())
+			if(tmpPhotoFile != null)
 				tmpPhotoFile.delete(); // Delete the tmp file from the device
-			controller.mediaDone(null);
+			photoUI.mediaDone(null, true);
 		}
 	}
 

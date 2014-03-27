@@ -7,16 +7,20 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.ButtonUI;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
-import uk.ac.ucl.excites.sapelli.util.StringUtils;
 
 /**
  * A Field that represents an on-screen button, it can optionally have either Boolean- or DateTime column.
  * 
  * @author mstevens
+ */
+/**
+ * @author mstevens
+ *
  */
 public class ButtonField extends Field
 {
@@ -86,10 +90,10 @@ public class ButtonField extends Field
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#enter(uk.ac.ucl.excites.collector.project.ui.Controller)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
 	 */
 	@Override
-	public boolean enter(Controller controller)
+	public boolean enter(Controller controller, boolean withPage)
 	{
 		return true;
 	}
@@ -98,9 +102,9 @@ public class ButtonField extends Field
 	 * @see uk.ac.ucl.excites.collector.project.model.Field#createUI(uk.ac.ucl.excites.collector.project.ui.CollectorUI)
 	 */
 	@Override
-	public FieldUI createUI(CollectorUI collectorUI)
+	public <V> ButtonUI<V> createUI(CollectorUI<V> collectorUI)
 	{
-		return collectorUI.createButtonFieldUI(this);
+		return collectorUI.createButtonUI(this);
 	}
 
 }

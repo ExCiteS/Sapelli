@@ -11,7 +11,8 @@ import java.io.FileInputStream;
 
 
 
-import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
+
+import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 
 import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGBuilder;

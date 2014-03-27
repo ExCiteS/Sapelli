@@ -13,12 +13,12 @@ import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.xml.FormParser;
+import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.ROT13;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
-import uk.ac.ucl.excites.sapelli.util.BinaryHelpers;
-import uk.ac.ucl.excites.sapelli.util.ROT13;
-import uk.ac.ucl.excites.sapelli.util.TimeUtils;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -34,6 +34,7 @@ public abstract class MediaField extends Field
 	static private final Pattern OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
 	
 	//protected int min;
+	protected boolean useNativeApp;
 	protected int max;
 	protected ChoiceField disableChoice;
 
@@ -65,13 +66,13 @@ public abstract class MediaField extends Field
 	
 	protected abstract String getFileExtension(String mediaType);
 
-//	/**
-//	 * @return the min
-//	 */
-//	public int getMin()
-//	{
-//		return min;
-//	}
+	/**
+	 * @return the min
+	 */
+	public int getMin()
+	{
+		return optional == Optionalness.ALWAYS ? 0 : 1; 
+	}
 	
 	/**
 	 * @return the max
@@ -79,6 +80,22 @@ public abstract class MediaField extends Field
 	public int getMax()
 	{
 		return max;
+	}
+	
+	/**
+	 * @return the useNativeApp
+	 */
+	public boolean isUseNativeApp()
+	{
+		return useNativeApp;
+	}
+
+	/**
+	 * @param useNativeApp the useNativeApp to set
+	 */
+	public void setUseNativeApp(boolean useNativeApp)
+	{
+		this.useNativeApp = useNativeApp;
 	}
 
 //	/**
@@ -143,7 +160,7 @@ public abstract class MediaField extends Field
 		int currentCount = getCount(record);	
 		if(currentCount >= max)
 			throw new IllegalStateException("Maximum # of attachments (" + max + ") reached.");
-		((IntegerColumn) form.getColumnFor(this)).storeValue(record, Long.valueOf(++currentCount));
+		((IntegerColumn) form.getColumnFor(this)).storeValue(record, ++currentCount);
 	}
 
 	public File getNewTempFile(CollectorRecord record) throws IOException
@@ -228,9 +245,11 @@ public abstract class MediaField extends Field
 	}
 	
 	@Override
-	public boolean enter(Controller controller)
+	public boolean enter(Controller controller, boolean withPage)
 	{
-		return controller.enterMediaField(this);
+		if(!withPage)
+			return controller.enterMediaField(this);
+		return true;
 	}
 	
 }

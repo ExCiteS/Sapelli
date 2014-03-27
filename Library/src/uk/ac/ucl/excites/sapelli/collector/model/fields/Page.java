@@ -11,9 +11,9 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
 
 /**
  * A Page of a {@link Form}.
@@ -32,6 +32,15 @@ public class Page extends Field
 		super(form, id);
 		fields = new ArrayList<Field>();
 		triggers = new ArrayList<Trigger>();
+		noColumn = true; // Pages never have columns of their own
+	}
+	
+	/**
+	 * @param noColumn the noColumn to set
+	 */
+	public void setNoColumn(boolean noColumn)
+	{
+		// Ignore! Pages never have columns of their own.
 	}
 	
 	public void addField(Field field)
@@ -57,22 +66,26 @@ public class Page extends Field
 		return triggers;
 	}
 
+	/**
+	 * Overrides method of Field to ensure that the columns of fields contained
+	 * by this Page get created and added to the Schema of the Form, even though
+	 * the Page does not have a column of its own.
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#addColumnTo(java.util.List)
+	 */
 	@Override
-	public boolean isNoColumn()
+	protected void addColumnTo(List<Column<?>> columns)
 	{
-		for(Field field : fields)
-			if(!field.isNoColumn())
-				return false;
-		return true;
-	}
-
-	@Override
-	protected List<Column<?>> createColumns()
-	{
-		List<Column<?>> columns = new ArrayList<Column<?>>(); 
 		for(Field f : fields)
-			CollectionUtils.addAllIgnoreNull(columns, f.getColumns());
-		return columns;
+			/* No need to call Field#isNoColumn() here, Field#getColumn() will return null in
+			 * case of fields with noColumn=true, but these are filtered out by addIgnoreNull(): */
+			CollectionUtils.addIgnoreNull(columns, f.getColumn());
+	}
+	
+	@Override
+	public Column<?> getColumn()
+	{
+		throw new UnsupportedOperationException("Page fields do not have a column of their own.");
 	}
 	
 	/* (non-Javadoc)
@@ -81,17 +94,22 @@ public class Page extends Field
 	@Override
 	protected Column<?> createColumn()
 	{
-		throw new UnsupportedOperationException("Page fields require multiple columns, call createColumns() instead.");
+		throw new UnsupportedOperationException("Page fields do not have a column of their own.");
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
+	 */
 	@Override
-	public boolean enter(Controller controller)
+	public boolean enter(Controller controller, boolean withPage)
 	{
+		if(withPage)
+			throw new IllegalStateException("Pages cannot be nested!");
 		return controller.enterPage(this);
 	}
 
 	@Override
-	public FieldUI createUI(CollectorUI collectorUI)
+	public <V> PageUI<V> createUI(CollectorUI<V> collectorUI)
 	{
 		return collectorUI.createPageUI(this);
 	}

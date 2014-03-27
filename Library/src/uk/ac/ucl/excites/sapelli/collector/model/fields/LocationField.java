@@ -7,11 +7,11 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.LocationUI;
+import uk.ac.ucl.excites.sapelli.shared.util.Timeoutable;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
-import uk.ac.ucl.excites.sapelli.util.Timeoutable;
 
 /**
  * @author mstevens
@@ -44,6 +44,7 @@ public class LocationField extends Field implements Timeoutable
 	//Dynamics---------------------------------------------
 	private int type;
 	private boolean startWithForm;
+	private boolean startWithPage;
 	private boolean waitAtField;
 	private int timeoutS;
 	private int maxAgeS;
@@ -139,6 +140,22 @@ public class LocationField extends Field implements Timeoutable
 	public void setStartWithForm(boolean startWithForm)
 	{
 		this.startWithForm = startWithForm;
+	}
+	
+	/**
+	 * @return the startWithPage
+	 */
+	public boolean isStartWithPage()
+	{
+		return startWithPage;
+	}
+
+	/**
+	 * @param startWithPage the startWithPage to set
+	 */
+	public void setStartWithPage(boolean startWithPage)
+	{
+		this.startWithPage = startWithPage;
 	}
 
 	/**
@@ -298,6 +315,17 @@ public class LocationField extends Field implements Timeoutable
 	
 	public boolean storeLocation(Record record, Location location, boolean bestWeCouldGet)
 	{	
+		if(isAcceptable(location, bestWeCouldGet))
+		{
+			// This location is good enough or it is the best we could get, so store it:
+			((LocationColumn) form.getColumnFor(this)).storeValue(record, location);
+			return true;
+		}
+		return false;
+	}
+	
+	public boolean isAcceptable(Location location, boolean bestWeCouldGet)
+	{
 		// Null check:
 		if(location == null)
 			return false;
@@ -314,8 +342,6 @@ public class LocationField extends Field implements Timeoutable
 			if(location.getAccuracy() > maxAccuracyRadius)
 				return false; //not accurate enough
 		}
-		// This location is good enough or it is the best we could get, so store it:
-		((LocationColumn) form.getColumnFor(this)).storeValue(record, location);
 		return true;
 	}
 	
@@ -325,13 +351,13 @@ public class LocationField extends Field implements Timeoutable
 	}
 
 	@Override
-	public boolean enter(Controller controller)
+	public boolean enter(Controller controller, boolean withPage)
 	{
-		return controller.enterLocationField(this);
+		return controller.enterLocationField(this, withPage);
 	}
 	
 	@Override
-	public FieldUI createUI(CollectorUI collectorUI)
+	public <V> LocationUI<V> createUI(CollectorUI<V> collectorUI)
 	{
 		return collectorUI.createLocationUI(this);
 	}

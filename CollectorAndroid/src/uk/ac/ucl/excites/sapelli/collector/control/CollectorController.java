@@ -9,22 +9,18 @@ import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
-import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
-import uk.ac.ucl.excites.sapelli.collector.model.Form.Next;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
+import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
-import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.content.Context;
 import android.location.Location;
@@ -52,9 +48,9 @@ public class CollectorController extends Controller implements LocationListener,
 	private Location currentBestLocation = null;
 	private OrientationSensor orientationSensor;
 
-	public CollectorController(Project project, DataAccess dao, CollectorActivity activity)
+	public CollectorController(Project project, CollectorView collectorView, RecordStore recordStore, CollectorActivity activity)
 	{
-		super(project, dao);
+		super(project, collectorView, recordStore);
 		this.activity = activity;
 
 		// Get Device ID (as a CRC32 hash):
@@ -69,37 +65,18 @@ public class CollectorController extends Controller implements LocationListener,
 	}
 
 	@Override
-	public boolean enterPhotoField(PhotoField pf)
-	{
-		if(!enterMediaField(pf))
-			return false;
-		if(pf.isUseNativeApp())
-			activity.startCameraApp(); // Start native camera app of device
-		return !pf.isUseNativeApp();
-	}
-
-	@Override
-	public boolean enterLocationField(LocationField lf)
-	{
-		if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(currentBestLocation)))
-		{
-			startLocationListener(lf); // start listening for a location
-			return true;
-		}
-		else
-		{	// we already have a (good enough) location
-			goForward(false); // skip the wait screen
-			return false;
-		}
-	}
-
-	@Override
 	public boolean enterOrientationField(OrientationField of)
 	{
 		if(orientationSensor == null)
 			orientationSensor = new OrientationSensor(activity);		
 		orientationSensor.start(this); // start listening for orientation updates
 		return false; // there is no UI needed for this (for now?) 
+	}
+
+	@Override
+	public uk.ac.ucl.excites.sapelli.storage.types.Location getCurrentBestLocation()
+	{
+		return LocationUtils.getSapelliLocation(currentBestLocation); // passing null returns null
 	}
 	
 	@Override
@@ -113,53 +90,6 @@ public class CollectorController extends Controller implements LocationListener,
 			Log.d(TAG, "Stored record:");
 			Log.d(TAG, currFormSession.record.toString());
 		}
-	}
-
-	public void timeout(Field field)
-	{
-		if(field != currFormSession.currField)
-			return; // this shouldn't happen really
-		//Log:
-		addLogLine("TIMEOUT", currFormSession.currField.getID());
-		// Handle location field
-		if(currFormSession.currField instanceof LocationField)
-		{
-			LocationField lf = (LocationField) currFormSession.currField;
-			if(lf.retrieveLocation(currFormSession.record) == null && lf.isUseBestNonQualifyingLocationAfterTimeout())
-				lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(currentBestLocation), true);
-			
-			// If still no location set (because either isUseBestNQLAT==false or currentBestLocation==null), and locationField is non-optional: cancel & exit!
-			if(lf.retrieveLocation(currFormSession.record) == null && lf.getOptional() != Optionalness.ALWAYS)
-			{
-				activity.runOnUiThread(new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						activity.showErrorDialog("Cannot get GPS signal and location is mandatory for field '" + currFormSession.currField.getID() + "'. Please, make sure your GPS receiver is enabled.", true, new Runnable()
-						{
-							@Override
-							public void run()
-							{
-								goTo(new EndField(currFormSession.form, false, Next.EXITAPP));
-							}
-						});
-					}
-				});
-				return;
-			}
-		}
-		// else if() //other fields with timeouts in the future?
-		// ...
-		// Continue:
-		activity.runOnUiThread(new Runnable()
-		{
-			@Override
-			public void run()
-			{
-				goForward(false);
-			}
-		});
 	}
 
 	public void onOrientationChanged(Orientation orientation)
@@ -232,12 +162,6 @@ public class CollectorController extends Controller implements LocationListener,
 	public void onStatusChanged(String provider, int status, Bundle extras)
 	{
 		// does nothing for now
-	}
-	
-	@Override
-	protected void displayField(Field field)
-	{
-		activity.getCollectorView().setField(field);
 	}
 	
 	@Override

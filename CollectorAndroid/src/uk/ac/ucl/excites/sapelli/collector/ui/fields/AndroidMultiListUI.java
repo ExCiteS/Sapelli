@@ -1,10 +1,10 @@
-package uk.ac.ucl.excites.sapelli.collector.ui.fieldviews;
+package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField.MultiListItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import android.annotation.SuppressLint;
+import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.View;
@@ -13,45 +13,68 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
 import android.widget.Spinner;
 import android.widget.TextView;
 
 /**
- * A FieldUI/View class for MultiListFields
+ * Android version of MultiListUI
  * 
  * @author mstevens
  */
-@SuppressLint("ViewConstructor")
-public class MultiListView extends LinearLayout implements FieldUI
+public class AndroidMultiListUI extends MultiListUI<View> //extends LinearLayout implements FieldUI
 {
 
 	static private final LayoutParams FULL_WIDTH = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-	static private final String PLEASE_SELECT = "� Please select �"; //TODO multilang
 	
-	private MultiListField field;
-		
-	public MultiListView(Context context, MultiListField field)
+	private LinearLayout view;
+	
+	public AndroidMultiListUI(MultiListField listField, CollectorController controller, CollectorView collectorView)
 	{
-		super(context);
-		this.field = field;
-		setOrientation(LinearLayout.VERTICAL);
+		super(listField, controller, collectorView);
+	}
+	
+	@Override
+	public LinearLayout getPlatformView(boolean onPage, CollectorRecord record)
+	{
+		if(view == null)
+		{
+			view = new LinearLayout(((CollectorView) collectorUI).getContext());
+			view.setOrientation(LinearLayout.VERTICAL);
+		}
 		
+		// Update...
 		addNextList(field.getItemsRoot());
+		// TODO set previous value...
+		
+		return view;
+	}
+	
+
+	@Override
+	protected MultiListItem getChosenItem()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 	private void addNextList(MultiListItem parentItem)
 	{
+		// Null check:
+		if(view == null)
+			return;
+		
 		// Label:
-		TextView label = new TextView(getContext());
-		label.setText(field.getLabel(getChildCount() / 2));
+		TextView label = new TextView(view.getContext());
+		label.setText(field.getLabel(view.getChildCount() / 2));
 		label.setLayoutParams(FULL_WIDTH);
-		addView(label);
+		view.addView(label);
 		
 		// Combo box:
-		final Spinner spinner = new Spinner(getContext());
+		final Spinner spinner = new Spinner(view.getContext());
 		spinner.setLayoutParams(FULL_WIDTH);
 		//	Adapter:
-		final MultiListAdapter adapter = new MultiListAdapter(getContext(), parentItem);
+		final MultiListAdapter adapter = new MultiListAdapter(view.getContext(), parentItem);
 		spinner.setAdapter(adapter);
 		//	Select default if preSelect=true:
 		if(field.isPreSelect())
@@ -77,52 +100,22 @@ public class MultiListView extends LinearLayout implements FieldUI
 			}
 			
 		});
-		addView(spinner);
+		view.addView(spinner);
 	}
 	
 	private void revert(Spinner till)
 	{
-		while(getChildAt(getChildCount() - 1) != till)
+		// Null check:
+		if(view == null)
+			return;
+		
+		while(view.getChildAt(view.getChildCount() - 1) != till)
 		{
 			// Remove last spinner
-			removeViewAt(getChildCount() - 1);
+			view.removeViewAt(view.getChildCount() - 1);
 			// Remove its label:
-			removeViewAt(getChildCount() - 1);
+			view.removeViewAt(view.getChildCount() - 1);
 		}
-	}
-
-	@Override
-	public MultiListField getField()
-	{
-		return field;
-	}
-
-
-	@Override
-	public void update(Record record)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public boolean isValid(Record record)
-	{
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public void storeValue(Record record)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void cancel()
-	{
-		// does nothing
 	}
 	
 	/**

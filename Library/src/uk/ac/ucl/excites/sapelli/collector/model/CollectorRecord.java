@@ -7,8 +7,6 @@ import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 
 /**
  * Subclass of Record to represent records create by the Sapelli Collector
@@ -18,6 +16,8 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 public class CollectorRecord extends Record implements Comparable<CollectorRecord>
 {
 
+	static private final long serialVersionUID = 2L;
+	
 	private Form form;
 	
 	/**
@@ -36,24 +36,23 @@ public class CollectorRecord extends Record implements Comparable<CollectorRecor
 	
 	public DateTime getStartTime(boolean asStoredBinary)
 	{
-		DateTimeColumn dtCol = (DateTimeColumn) schema.getColumn(Form.COLUMN_TIMESTAMP_START);
 		if(asStoredBinary)
-			return dtCol.retrieveValueAsStoredBinary(this);
+			return Form.COLUMN_TIMESTAMP_START.retrieveValueAsStoredBinary(this);
 		else
-			return dtCol.retrieveValue(this);
+			return Form.COLUMN_TIMESTAMP_START.retrieveValue(this);
 	}
 	
 	public DateTime getEndTime()
 	{
 		if(form.isStoreEndTime())
-			return ((DateTimeColumn) schema.getColumn(Form.COLUMN_TIMESTAMP_END)).retrieveValue(this);
+			return Form.COLUMN_TIMESTAMP_END.retrieveValue(this);
 		else
 			return null;
 	}
 	
 	public long getDeviceID()
 	{
-		return ((IntegerColumn) schema.getColumn(Form.COLUMN_DEVICE_ID)).retrieveValue(this);
+		return Form.COLUMN_DEVICE_ID.retrieveValue(this);
 	}
 	
 	/**

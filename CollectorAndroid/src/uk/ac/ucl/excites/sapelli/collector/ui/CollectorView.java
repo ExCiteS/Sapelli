@@ -9,24 +9,25 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.EditTextField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
-import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.AudioView;
-import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.ButtonView;
-import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.CameraView;
-import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.CheckBoxView;
-import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.ChoiceView;
-import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.EditTextView;
-import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.LabelView;
-import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.MultiListView;
-import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.PageView;
-import uk.ac.ucl.excites.sapelli.collector.ui.fieldviews.WaitingView;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidButtonUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidCheckBoxUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidChoiceUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLabelUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidMultiListUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPageUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidTextBoxUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.OrientationUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLocationUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
 import android.graphics.Color;
@@ -38,10 +39,9 @@ import android.widget.LinearLayout;
  * The GUI of the CollectorActivity
  * 
  * @author mstevens
- *
  */
 @SuppressLint("ViewConstructor")
-public class CollectorView extends LinearLayout implements CollectorUI
+public class CollectorView extends LinearLayout implements CollectorUI<View>
 {
 	
 	static private final int BUTTONS_VIEW_ID = 0;
@@ -49,20 +49,22 @@ public class CollectorView extends LinearLayout implements CollectorUI
 
 	// Spacing (in dip) between UI elements:
 	static public final float SPACING_DIP = 8.0f;
+	static public final float PADDING_DIP = 2.0f;
 	
 	private CollectorActivity activity;
 	private CollectorController controller;
 	
 	// UI elements:
 	private ControlsView controlsView;
-	private FieldUI fieldUI;
-	private HashMap<Field, FieldUI> viewCache;
+	private FieldUI<?, View> fieldUI;
+	private View fieldUIView = null;
+	private HashMap<Field, FieldUI<?, View>> viewCache;
 	
 	public CollectorView(CollectorActivity activity)
 	{
 		super(activity);
 		this.activity = activity;
-		this.viewCache = new HashMap<Field, FieldUI>();
+		this.viewCache = new HashMap<Field, FieldUI<?, View>>();
 		
 		// Root layout (= this):
 		this.setOrientation(LinearLayout.VERTICAL);
@@ -95,32 +97,47 @@ public class CollectorView extends LinearLayout implements CollectorUI
 		if(fieldUI != null && fieldUI.getField() != field)
 		{
 			fieldUI.cancel(); // to stop audio recording, close camera, ...
-			this.removeView((View) fieldUI); // throw away the old fieldField
+			this.removeView(fieldUIView); // throw away the old fieldField
 			fieldUI = null;
+			fieldUIView = null;
 		}
 		
 		// Recycle cached view or create new one
 		if(fieldUI == null)
 		{
-			FieldUI cachedView = viewCache.get(field);
+			FieldUI<?, View> cachedView = viewCache.get(field);
 			if(cachedView != null)
 				this.fieldUI = cachedView; // Reuse cached view instance if possible:
 			else
 			{
-				this.fieldUI = field.createUI(this);
-				viewCache.put(field, fieldUI); // cache the view for later reuse
-				((View) fieldUI).setId(FIELD_VIEW_ID);
+				this.fieldUI = field.createUI(this); // create new fieldUI for field
+				viewCache.put(field, fieldUI); // cache the fieldUI for later reuse
 			}
-			// Add the view:
-			this.addView((View) fieldUI, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		}
 
-		// Update & (re-)enable the view (even if new!):
-		fieldUI.update(controller.getCurrentRecord());
-		((View) fieldUI).setEnabled(true);
+		// Get the actual (updated) View instance and add it to ourselves, and (re-)enable it (even if new):
+		View oldView = fieldUIView;
+		fieldUIView = fieldUI.getPlatformView(false, controller.getCurrentRecord());
+		if(fieldUIView != oldView)
+		{
+			this.addView(fieldUIView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+			fieldUIView.setId(FIELD_VIEW_ID);
+		}
+		fieldUIView.setEnabled(true);
 			
 		// Re-enable the buttons
 		controlsView.enable();
+	}
+	
+	public CollectorActivity getActivity()
+	{
+		return activity;
+	}
+	
+	@Override
+	public FieldUI<?, View> getCurrentFieldUI()
+	{
+		return fieldUI;
 	}
 
 	/**
@@ -132,69 +149,70 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	}
 
 	@Override
-	public FieldUI createChoiceUI(ChoiceField cf)
+	public ChoiceUI<View> createChoiceUI(ChoiceField cf)
 	{
-		return new ChoiceView(activity, this, controller, cf);
+		return new AndroidChoiceUI(cf, controller, this);
 	}
 
 	@Override
-	public FieldUI createPhotoUI(PhotoField pf)
+	public AndroidPhotoUI createPhotoUI(PhotoField pf)
 	{
-		return new CameraView(activity, this, controller, pf);
+		return new AndroidPhotoUI(pf, controller, this);
 	}
 
 	@Override
-	public FieldUI createAudioUI(AudioField af)
+	public AndroidAudioUI createAudioUI(AudioField af)
 	{
-		return new AudioView(activity, this, controller, af);
+		return new AndroidAudioUI(af, controller, this);
 	}
 	
 	@Override
-	public FieldUI createLocationUI(LocationField lf)
+	public AndroidLocationUI createLocationUI(LocationField lf)
 	{
-		return new WaitingView(activity, controller, lf);
+		return new AndroidLocationUI(lf, controller, this);
+	}
+	
+	@Override
+	public OrientationU<View> createOrientationUI(OrientationField of)
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
-	public FieldUI createLabelUI(LabelField lf)
+	public AndroidLabelUI createLabelUI(LabelField lf)
 	{
-		return new LabelView(activity, lf);
+		return new AndroidLabelUI(lf, controller, this);
 	}
 	
 	@Override
-	public FieldUI createButtonUI(ButtonField bf)
+	public AndroidButtonUI createButtonUI(ButtonField bf)
 	{
-		return new ButtonView(activity, bf);
+		return new AndroidButtonUI(bf, controller, this);
 	}
 	
 	@Override
-	public FieldUI createTextFieldUI(EditTextField tf)
+	public AndroidTextBoxUI createTextFieldUI(TextBoxField tf)
 	{
-		return new EditTextView(activity, controller, tf);
+		return new AndroidTextBoxUI(tf, controller, this);
 	}
 	
 	@Override
-	public FieldUI createCheckBoxFieldUI(CheckBoxField cbf)
+	public AndroidCheckBoxUI createCheckBoxFieldUI(CheckBoxField cbf)
 	{
-		return new CheckBoxView(activity, controller, cbf);
+		return new AndroidCheckBoxUI(cbf, controller, this);
 	}
 	
 	@Override
-	public FieldUI createMultiListUI(MultiListField mlf)
+	public AndroidMultiListUI createMultiListUI(MultiListField mlf)
 	{
-		return new MultiListView(activity, mlf);
-	}
-
-	@Override
-	public FieldUI createButtonFieldUI(ButtonField bf)
-	{
-		return new ButtonView(activity, bf);
+		return new AndroidMultiListUI(mlf, controller, this);
 	}
 	
 	@Override
-	public FieldUI createPageUI(Page page)
+	public AndroidPageUI createPageUI(Page pg)
 	{
-		return new PageView(activity, this, page);
+		return new AndroidPageUI(pg, controller, this);
 	}
 	
 	public void cancelCurrentField()
@@ -223,8 +241,8 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	{
 		super.setEnabled(enabled);
 		controlsView.setEnabled(enabled);
-		if(fieldUI != null)
-			((View) fieldUI).setEnabled(enabled);
+		if(fieldUIView != null)
+			fieldUIView.setEnabled(enabled);
 	}
 	
 	/*
@@ -269,20 +287,33 @@ public class CollectorView extends LinearLayout implements CollectorUI
 	 * 
 	 */
 	
+	@Override
 	public int getSpacingPx()
 	{
 		return ScreenMetrics.ConvertDipToPx(activity, SPACING_DIP);
 	}
 	
+	@Override
+	public int getScreenWidthPx()
+	{
+		return ScreenMetrics.GetScreenWidth(activity);
+	}
+	
+	@Override
+	public int getScreenHeightPx()
+	{
+		return ScreenMetrics.GetScreenHeight(activity);
+	}
+	
 	public int getIconWidthPx(int numCols)
 	{
-		int widthPx = (ScreenMetrics.GetScreenWidth(activity) - ((numCols - 1) * getSpacingPx())) / numCols;
+		int widthPx = (getScreenWidthPx() - ((numCols - 1) * getSpacingPx())) / numCols;
 		return Math.max(widthPx, 0); //avoid negative pixel counts
 	}
 	
 	public int getIconHeightPx(int numRows, boolean buttonsShowing)
 	{
-		int heightPx = (ScreenMetrics.GetScreenHeight(activity) - (buttonsShowing ? (controlsView.getButtonHeightPx() + getSpacingPx()) : 0) - ((numRows - 1) * getSpacingPx())) / numRows;
+		int heightPx = (getScreenHeightPx() - (buttonsShowing ? (controlsView.getButtonHeightPx() + getSpacingPx()) : 0) - ((numRows - 1) * getSpacingPx())) / numRows;
 		return Math.max(heightPx, 0); //avoid negative pixel counts
 	}
 

@@ -7,9 +7,9 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.LabelUI;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.util.StringUtils;
 
 /**
  * @author mstevens
@@ -50,19 +50,19 @@ public class LabelField extends Field
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#enter(uk.ac.ucl.excites.collector.project.ui.Controller)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
 	 */
 	@Override
-	public boolean enter(Controller controller)
+	public boolean enter(Controller controller, boolean onPage)
 	{
-		return false;
+		return true;
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createUI(uk.ac.ucl.excites.collector.project.ui.CollectorUI)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#createUI(uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI)
 	 */
 	@Override
-	public FieldUI createUI(CollectorUI collectorUI)
+	public <V> LabelUI<V> createUI(CollectorUI<V> collectorUI)
 	{
 		return collectorUI.createLabelUI(this);
 	}

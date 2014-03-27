@@ -20,7 +20,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.EditTextField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -31,8 +31,8 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
+import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.util.xml.SubtreeParser;
 
 /**
  * A {@link SubtreeParser} for <Form>s
@@ -337,11 +337,11 @@ public class FormParser extends SubtreeParser
 			// <Textbox>
 			else if(qName.equals(TAG_TEXTFIELD))
 			{
-				EditTextField txtField = new EditTextField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_TEXTFIELD, ATTRIBUTE_FIELD_LABEL, attributes, false, true));
-				txtField.setMinLength(readIntegerAttribute(ATTRIBUTE_TEXT_MINLENGTH, EditTextField.DEFAULT_MIN_LENGTH, attributes));
-				txtField.setMaxLength(readIntegerAttribute(ATTRIBUTE_TEXT_MAXLENGTH, EditTextField.DEFAULT_MAX_LENGTH, attributes));
-				txtField.setMultiline(readBooleanAttribute(ATTRIBUTE_TEXT_MULTILINE, EditTextField.DEFAULT_MULTILINE, attributes));
-				txtField.setInitialValue(readStringAttribute(EditTextField.DEFAULT_INITIAL_VALUE, attributes, false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
+				TextBoxField txtField = new TextBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_TEXTFIELD, ATTRIBUTE_FIELD_LABEL, attributes, false, true));
+				txtField.setMinLength(readIntegerAttribute(ATTRIBUTE_TEXT_MINLENGTH, TextBoxField.DEFAULT_MIN_LENGTH, attributes));
+				txtField.setMaxLength(readIntegerAttribute(ATTRIBUTE_TEXT_MAXLENGTH, TextBoxField.DEFAULT_MAX_LENGTH, attributes));
+				txtField.setMultiline(readBooleanAttribute(ATTRIBUTE_TEXT_MULTILINE, TextBoxField.DEFAULT_MULTILINE, attributes));
+				txtField.setInitialValue(readStringAttribute(TextBoxField.DEFAULT_INITIAL_VALUE, attributes, false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
 				newField(txtField, attributes);
 			}
 			// <Checkbox>
@@ -532,7 +532,7 @@ public class FormParser extends SubtreeParser
 		 * Because of this the optionalness of the page is reset to ALWAYS after all contained fields are parsed.
 		 */
 		if(currentPage != null)
-			currentPage.setOptional(Optionalness.ALWAYS); 
+			currentPage.setOptional(Optionalness.ALWAYS);
 		currentPage = null;
 	}
 	

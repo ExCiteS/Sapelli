@@ -12,7 +12,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.MultiListUI;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 
 /**
@@ -86,6 +86,14 @@ public class MultiListField extends Field
 		return itemsRoot;
 	}
 	
+	/**
+	 * @return the values dictionary
+	 */
+	public Dictionary<MultiListItem> getDictionary()
+	{
+		return values;
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
 	 */
@@ -97,8 +105,8 @@ public class MultiListField extends Field
 		// Column...
 		if(values.isEmpty())
 		{	//no values set
-			form.addWarning("noColumn was forced to true on MultiListField " + getID() + " because it has no items.");
 			noColumn = true; //!!!
+			form.addWarning("noColumn was forced to true on MultiListField " + getID() + " because it has no items.");
 			return null;
 		}
 		else
@@ -117,10 +125,10 @@ public class MultiListField extends Field
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#enter(uk.ac.ucl.excites.collector.project.ui.Controller)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
 	 */
 	@Override
-	public boolean enter(Controller controller)
+	public boolean enter(Controller controller, boolean withPage)
 	{
 		return true;
 	}
@@ -129,7 +137,7 @@ public class MultiListField extends Field
 	 * @see uk.ac.ucl.excites.collector.project.model.Field#createUI(uk.ac.ucl.excites.collector.project.ui.CollectorUI)
 	 */
 	@Override
-	public FieldUI createUI(CollectorUI collectorUI)
+	public <V> MultiListUI<V> createUI(CollectorUI<V> collectorUI)
 	{
 		return collectorUI.createMultiListUI(this);
 	}

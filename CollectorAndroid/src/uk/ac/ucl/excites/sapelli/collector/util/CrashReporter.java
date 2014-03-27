@@ -8,8 +8,8 @@ import java.io.Writer;
 import java.lang.Thread.UncaughtExceptionHandler;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
-import uk.ac.ucl.excites.sapelli.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 
 /**
  * Simple Class to Log App Crashes to a file<br>

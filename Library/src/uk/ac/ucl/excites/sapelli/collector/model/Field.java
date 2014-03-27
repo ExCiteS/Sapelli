@@ -1,19 +1,14 @@
 package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
 
-/**
- * @author mstevens
- *
- */
 /**
  * @author mstevens
  *
@@ -62,11 +57,12 @@ public abstract class Field implements JumpSource
 	
 	public Field(Form form, String id)
 	{
-		this(form, id, null);
+		this(form, id, id); // use id as default label
 	}
 	
 	public Field(Form form, String id, String label)
 	{
+		//TODO check if id is valid column name
 		if(id == null || id.trim().isEmpty())
 			throw new NullPointerException("ID cannot be null or empty.");
 		this.form = form;
@@ -262,28 +258,39 @@ public abstract class Field implements JumpSource
 		this.showForward = showForward;
 	}
 
-	public List<Column<?>> getColumns()
+	public Column<?> getColumn()
 	{
-		if(!noColumn)
-			return createColumns();
-		return null;
+		// Check noColumn...
+		if(noColumn)
+			return null;
+		
+		// Check if the form (or rather its schema) already has a column for this field:
+		Column<?> schemaCol = form.getColumnFor(this);
+		
+		if(schemaCol == null)
+			/* the form's schema is not yet initialised, and most likely this method was called as
+			 * part of the initialisation process, so return a newly created column for this field: */
+			return createColumn(); 
+		else
+			return schemaCol; // return previously created column
 	}
 	
 	/**
-	 * Provided such that RelationField classes (which need to generate multiple columns) can override it
+	 * Method that asks the Field to add its column to the provided list.
 	 * 
-	 * @return
+	 * Should be overridden in composite Fields like {@link Page}!
+	 * 
+	 * @param columns
 	 */
-	protected List<Column<?>> createColumns()
+	protected void addColumnTo(List<Column<?>> columns)
 	{
-		List<Column<?>> cols = new ArrayList<Column<?>>();
-		CollectionUtils.addIgnoreNull(cols, createColumn());
-		return cols;
+		CollectionUtils.addIgnoreNull(columns, getColumn());
 	}
 	
 	/**
-	 * Returns a new Column object capable of storing values for this field
-	 * Important: there is typically only one column and in that case it is assumed that the field.id is used as the column name.
+	 * Important:<br/>
+	 * 	- it is assumed this method is *only* called if noColumn=false;<br/>
+	 * 	- it is assumed that the field.id will be used as the column's name.
 	 * 
 	 * @return
 	 */
@@ -318,7 +325,7 @@ public abstract class Field implements JumpSource
 	}
 
 	/**
-	 * To be overriden by Fields that use files (images, sounds, etc.) that are stored with the project
+	 * To be overridden by Fields that use files (images, sounds, etc.) that are stored with the project
 	 * 
 	 * @param project
 	 * @return
@@ -335,9 +342,10 @@ public abstract class Field implements JumpSource
 	 *  This method uses double-dispatch: the actual Field-type-specific behaviour will be defined in the class implementing the Controller interface.
 	 * 
 	 * @param controller
+	 * @param onPage whether or not the field is entered because the page containing it entered (true) or because it is entered on its own (false)
 	 * @return whether or not a UI update is required after entering the field)
 	 */
-	public abstract boolean enter(Controller controller);
+	public abstract boolean enter(Controller controller, boolean withPage);
 	
 	/**
 	 * Returns a FieldUI object to represent this Field.
@@ -347,6 +355,6 @@ public abstract class Field implements JumpSource
 	 * @param collectorUI
 	 * @return
 	 */
-	public abstract FieldUI createUI(CollectorUI collectorUI);
+	public abstract <V> FieldUI<?, V> createUI(CollectorUI<V> collectorUI);
 	
 }

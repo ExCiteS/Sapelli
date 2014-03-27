@@ -15,7 +15,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.*;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
-import uk.ac.ucl.excites.sapelli.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;

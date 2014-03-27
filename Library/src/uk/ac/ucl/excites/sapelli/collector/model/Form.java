@@ -9,8 +9,10 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -18,7 +20,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -31,8 +32,8 @@ public class Form
 	/**
 	 * Allowed form indexes: 0 to {@link Project#MAX_FORMS} - 1
 	 */
-	public static final IntegerRangeMapping FORM_INDEX_FIELD = new IntegerRangeMapping(0, Project.MAX_FORMS - 1);
-	public static final int FORM_INDEX_SIZE = FORM_INDEX_FIELD.getSize(); //bits
+	public static final int FORM_INDEX_SIZE = Schema.SCHEMA_ID_SIZE /* 36 */ - Project.PROJECT_HASH_SIZE /* 32 */; // = 4 bits
+	public static final IntegerRangeMapping FORM_INDEX_FIELD = IntegerRangeMapping.ForSize(0, FORM_INDEX_SIZE);
 	
 	public static final boolean END_TIME_DEFAULT = false;
 
@@ -57,9 +58,9 @@ public class Form
 	public static final boolean DEFAULT_ANIMATION = true;
 	public static final boolean DEFAULT_OBFUSCATE_MEDIA_FILES = false;
 
-	public static final String COLUMN_TIMESTAMP_START = "StartTime";
-	public static final String COLUMN_TIMESTAMP_END = "EndTime";
-	public static final String COLUMN_DEVICE_ID = "DeviceID";
+	public static final DateTimeColumn COLUMN_TIMESTAMP_START = DateTimeColumn.Century21NoMS("StartTime", false);
+	public static final DateTimeColumn COLUMN_TIMESTAMP_END = DateTimeColumn.Century21NoMS("EndTime", false);
+	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn("DeviceID", false, false, 32);
 	
 
 	// Dynamics-------------------------------------------------------
@@ -118,11 +119,6 @@ public class Form
 		else
 			throw new IllegalArgumentException("Invalid form index, valid values are " + FORM_INDEX_FIELD.getLogicalRangeString() + " (up to " + Project.MAX_FORMS + " forms per project).");
 		project.addForm(this); //!!!
-	}
-
-	public void initialiseStorage()
-	{
-		getSchema(); //this will also trigger all Columns to be created/initialised
 	}
 
 	/**
@@ -516,7 +512,12 @@ public class Form
 			getSchema(); // make sure getSchema() is at least called once
 		return producesRecords;
 	}
-
+	
+	public void initialiseStorage()
+	{
+		getSchema(); //this will also trigger all Columns to be created/initialised
+	}
+	
 	/**
 	 * The returned Schema object will contain all columns defined by fields in the form, plus the implicitly added
 	 * columns (StartTime & DeviceID, which together are used as the primary key, and the optional EndTime). However,
@@ -536,8 +537,9 @@ public class Form
 			// Generate columns for user-defined fields:
 			List<Column<?>> userDefinedColumns = new ArrayList<Column<?>>();
 			for(Field f : fields)
-				if(!f.isNoColumn())
-					userDefinedColumns.addAll(f.getColumns());
+				/*	Important: do *NOT* check noColumn here and do *NOT* replace the call
+				 *  to Field#addColumnTo(List<Column<?>>) by a call to Field#getColumn()! */
+				f.addColumnTo(userDefinedColumns);
 	
 			// Check if there are user-defined columns at all, if not we don't need to generate a schema at all...
 			if(userDefinedColumns.isEmpty())
@@ -548,8 +550,7 @@ public class Form
 			else
 			{	
 				// Create new Schema:
-				schema = new Schema(project.getHash(),	/* Project#hash becomes Schema#usageID */
-									this.index, 		/* Form#index becomes Schema#usageSubID */
+				schema = new Schema(SapelliCollectorClient.GetSchemaID(this), // combination of project hash and form index
 									project.getName() +
 									(project.getVariant() != null ? '_' + project.getVariant() : "") +
 									"_v" + project.getVersion() +
@@ -562,16 +563,14 @@ public class Form
 				 * 	user-defined field _with_ a column.
 				 */
 				// StartTime column:
-				DateTimeColumn startTimeCol = DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_START, false);		
-				schema.addColumn(startTimeCol);
+				schema.addColumn(COLUMN_TIMESTAMP_START);
 				// EndTime column:
 				if(storeEndTime)
-					schema.addColumn(DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_END, false));
+					schema.addColumn(COLUMN_TIMESTAMP_END);
 				// Device ID column:
-				IntegerColumn deviceIDCol = new IntegerColumn(COLUMN_DEVICE_ID, false, false, 32);
-				schema.addColumn(deviceIDCol);
+				schema.addColumn(COLUMN_DEVICE_ID);
 				// Add primary key on StartTime & DeviceID:
-				schema.addIndex(new Index(COLUMN_TIMESTAMP_START + COLUMN_DEVICE_ID, true, startTimeCol, deviceIDCol), true);
+				schema.addIndex(new Index(COLUMN_TIMESTAMP_START.getName() + "_" + COLUMN_DEVICE_ID.getName(), true, COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID), true);
 				
 				// Add user-defined columns
 				schema.addColumns(userDefinedColumns);
@@ -581,6 +580,20 @@ public class Form
 			}
 		}
 		return schema;
+	}
+	
+	/**
+	 * Returns the column associated with the given field.
+	 * 
+	 * @param field
+	 * @return the column for the given field, or null in case the field has no column or the schema has not been initialised yet(!)
+	 */
+	public Column<?> getColumnFor(Field field)
+	{
+		if(!field.isNoColumn() && schema != null)
+			return schema.getColumn(field.getID());
+		else
+			return null;
 	}
 	
 	/**
@@ -603,21 +616,13 @@ public class Form
 			CollectorRecord record = new CollectorRecord(this);
 	
 			// Set current time as start timestamp
-			((DateTimeColumn) schema.getColumn(COLUMN_TIMESTAMP_START)).storeValue(record, new DateTime() /*= now*/);
+			COLUMN_TIMESTAMP_START.storeValue(record, new DateTime() /*= now*/);
 	
 			// Set deviceID
-			((IntegerColumn) schema.getColumn(COLUMN_DEVICE_ID)).storeValue(record, deviceID);
+			COLUMN_DEVICE_ID.storeValue(record, deviceID);
 	
 			return record;
 		}
-		else
-			return null;
-	}
-	
-	public Column<?> getColumnFor(Field field)
-	{
-		if(isProducesRecords() && !field.isNoColumn())
-			return getSchema().getColumn(field.getID());
 		else
 			return null;
 	}
@@ -626,7 +631,7 @@ public class Form
 	{
 		if(storeEndTime)
 			// Set current time as end timestamp
-			((DateTimeColumn) schema.getColumn(COLUMN_TIMESTAMP_END)).storeValue(record, new DateTime() /*= now*/);
+			COLUMN_TIMESTAMP_END.storeValue(record, new DateTime() /*= now*/);
 	}
 	
 	public void addWarning(String warning)

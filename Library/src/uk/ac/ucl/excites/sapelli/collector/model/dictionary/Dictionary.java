@@ -8,8 +8,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
-import uk.ac.ucl.excites.sapelli.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 
 /**
  * @author mstevens

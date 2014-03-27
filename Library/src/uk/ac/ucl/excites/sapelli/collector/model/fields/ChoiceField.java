@@ -12,10 +12,9 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.util.CollectionUtils;
 
 
 /**
@@ -308,25 +307,21 @@ public class ChoiceField extends Field implements DictionaryItem
 			return this; //return self
 	}
 	
-	public void storeValue(Record record)
-	{
-		if(!isNoColumn() && isLeaf())
-			((IntegerColumn) form.getColumnFor(root)).storeValue(record, Long.valueOf(dictionary.lookupIndex(this))); //this = the selected leaf
-	}
-	
 	public ChoiceDictionary getDictionary()
 	{
 		return dictionary;
 	}
 	
 	@Override
-	public boolean enter(Controller controller)
+	public boolean enter(Controller controller, boolean withPage)
 	{
-		return controller.enterChoiceField(this);
+		if(!withPage)
+			return controller.enterChoiceField(this);
+		return true;
 	}
 	
 	@Override
-	public FieldUI createUI(CollectorUI collectorUI)
+	public <V> ChoiceUI<V> createUI(CollectorUI<V> collectorUI)
 	{
 		return collectorUI.createChoiceUI(this);
 	}

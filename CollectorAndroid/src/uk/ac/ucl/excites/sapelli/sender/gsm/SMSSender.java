@@ -2,13 +2,13 @@ package uk.ac.ucl.excites.sapelli.sender.gsm;
 
 import java.util.ArrayList;
 
-import uk.ac.ucl.excites.sapelli.collector.database.DataAccess;
+import uk.ac.ucl.excites.sapelli.collector.db.DataAccess;
+import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.transmission.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSService;
 import uk.ac.ucl.excites.sapelli.transmission.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.sms.text.TextMessage;
-import uk.ac.ucl.excites.sapelli.util.BinaryHelpers;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;

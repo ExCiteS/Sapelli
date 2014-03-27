@@ -4,7 +4,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.OrientationUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
@@ -91,15 +91,17 @@ public class OrientationField extends Field
 	}
 
 	@Override
-	public boolean enter(Controller controller)
+	public boolean enter(Controller controller, boolean withPage)
 	{
-		return controller.enterOrientationField(this);
+		if(!withPage)
+			return controller.enterOrientationField(this);
+		return true;
 	}
-	
+
 	@Override
-	public FieldUI createUI(CollectorUI collectorUI)
+	public <V> OrientationUI<V> createUI(CollectorUI<V> collectorUI)
 	{
-		return null; // there is not UI for this field
+		return collectorUI.createOrientationUI(this);
 	}
 
 }

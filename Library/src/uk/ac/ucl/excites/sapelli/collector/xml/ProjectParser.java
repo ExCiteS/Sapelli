@@ -14,10 +14,10 @@ import org.xml.sax.SAXException;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
+import uk.ac.ucl.excites.sapelli.shared.util.io.UnclosableBufferedInputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
+import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLHasher;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
-import uk.ac.ucl.excites.sapelli.util.io.UnclosableBufferedInputStream;
-import uk.ac.ucl.excites.sapelli.util.xml.DocumentParser;
-import uk.ac.ucl.excites.sapelli.util.xml.XMLHasher;
 
 /**
  * Handler for project (i.e. survey) description XML files
@@ -212,14 +212,14 @@ public class ProjectParser extends DocumentParser
 					Form relatedForm = project.getForm(entry.getValue()); // uses equalsIgnoreCase()
 					if(relatedForm == null)
 						throw new SAXException("Relationship \"" + rel.getID() + "\" in form \"" + rel.getForm().getID() + "\" refers to unknown related form \"" + entry.getValue() + "\".");
-					rel.setRelatedForm(relatedForm);
+					rel.setRelatedForm(relatedForm); // will trigger initialisation of Schema of relatedForm (this should not be a problem, it will not be done again below)
 				}
 				
 				// Initialise forms...
 				for(Form form : project.getForms())
 				{	
 					form.initialiseStorage(); // generates Schema, Column & ValueDictionaries
-					addWarnings(form.getWarnings());		
+					addWarnings(form.getWarnings());
 				}
 			}
 		}
