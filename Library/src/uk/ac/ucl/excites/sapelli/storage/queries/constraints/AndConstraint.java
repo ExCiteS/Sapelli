@@ -23,29 +23,27 @@ public class AndConstraint extends Constraint
 		this.constraints = new ArrayList<Constraint>();
 		if(constraints != null)
 			for(Constraint c : constraints)
-			{
-				if(c instanceof AndConstraint)
-					// Flatten nested ANDs (AND is associative):
-					for(Constraint sc : ((AndConstraint) c).constraints)
-						this.constraints.add(sc);
-				else
-					this.constraints.add(c);
-			}
+				addConstraint(c);
 	}
 	
 	public void addConstraint(Constraint constraint)
 	{
-		constraints.add(constraint);
+		if(constraint instanceof AndConstraint)
+			// Flatten nested ANDs (AND is associative):
+			for(Constraint subConstraint : ((AndConstraint) constraint).constraints)
+				this.constraints.add(subConstraint);
+		else
+			this.constraints.add(constraint);
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.queries.Filter#_select(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint#_isValid(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	protected boolean isValid(Record record)
+	protected boolean _isValid(Record record)
 	{
 		for(Constraint f : constraints)
-			if(!f.isValid(record))
+			if(!f._isValid(record))
 				return false;
 		return true;
 	}

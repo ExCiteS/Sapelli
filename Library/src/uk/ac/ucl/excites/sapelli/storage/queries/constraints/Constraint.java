@@ -28,21 +28,21 @@ public abstract class Constraint
 	{
 		List<Record> result = new ArrayList<Record>();
 		for(Record r : records)
-			if(select(r))
+			if(isValid(r))
 				result.add(r);
 		return result;
 	}
 
-	public boolean select(Record record)
+	public boolean isValid(Record record)
 	{
-		return record != null & isValid(record);
+		return record != null & _isValid(record);
 	}
 	
 	/**
 	 * @param record a guaranteed non-null {@link Record} instance
 	 * @return
 	 */
-	protected abstract boolean isValid(Record record);
+	protected abstract boolean _isValid(Record record);
 		
 	public abstract void accept(ConstraintVisitor visitor);
 	

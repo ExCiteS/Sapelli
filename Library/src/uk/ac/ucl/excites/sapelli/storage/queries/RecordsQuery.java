@@ -188,7 +188,7 @@ public class RecordsQuery
 			Constraint schemaCheck = new Constraint()
 			{
 				@Override
-				protected boolean isValid(Record record)
+				protected boolean _isValid(Record record)
 				{
 					return record.getSchema().equals(sourceSchema);
 				}

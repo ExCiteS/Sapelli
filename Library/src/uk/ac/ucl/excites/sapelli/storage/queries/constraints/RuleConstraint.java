@@ -31,6 +31,32 @@ public class RuleConstraint extends Constraint
 		GREATER				/* > */
 	}
 	
+	public static final String[] COMPARISON_STRINGS = new String[]
+	{	"smaller",
+		"smallerEqual",
+		"equal",
+		"different", "notEqual",
+		"greaterEqual",
+		"greater"
+	};
+	
+	public static Comparison parseComparisonString(String comparisonString) throws ParseException
+	{
+		if(COMPARISON_STRINGS[0].equalsIgnoreCase(comparisonString))
+			return Comparison.SMALLER;
+		if(COMPARISON_STRINGS[1].equalsIgnoreCase(comparisonString))
+			return Comparison.SMALLER_OR_EQUAL;
+		if(COMPARISON_STRINGS[2].equalsIgnoreCase(comparisonString))
+			return Comparison.EQUAL;
+		if(COMPARISON_STRINGS[3].equalsIgnoreCase(comparisonString) || COMPARISON_STRINGS[4].equalsIgnoreCase(comparisonString))
+			return Comparison.NOT_EQUAL;
+		if(COMPARISON_STRINGS[5].equalsIgnoreCase(comparisonString))
+			return Comparison.GREATER_OR_EQUAL;
+		if(COMPARISON_STRINGS[6].equalsIgnoreCase(comparisonString))
+			return Comparison.GREATER;
+		throw new ParseException("Unrecognised comparison", 0);
+	}
+	
 	/**
 	 * @param compareColumn
 	 * @param comparison
@@ -128,7 +154,11 @@ public class RuleConstraint extends Constraint
 		return value;
 	}
 	
-	public boolean isValid(Record record)
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint#_isValid(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 */
+	@Override
+	public boolean _isValid(Record record)
 	{
 		// Get (sub)record:
 		record = columnPointer.getRecord(record, false);

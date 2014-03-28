@@ -21,12 +21,12 @@ public class NotConstraint extends Constraint
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint#isValid(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint#_isValid(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	protected boolean isValid(Record record)
+	protected boolean _isValid(Record record)
 	{
-		return !negatedConstraint.isValid(record);
+		return !negatedConstraint._isValid(record);
 	}
 
 	/* (non-Javadoc)

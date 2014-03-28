@@ -29,6 +29,8 @@ import uk.ac.ucl.excites.sapelli.collector.ui.ControlsState;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
@@ -409,8 +411,11 @@ public abstract class Controller
 	
 	public boolean enterLinksTo(Relationship rel)
 	{
-	
-		
+		CollectorRecord foreignRecord = getHeldRecord(rel);
+		if(foreignRecord != null)
+			openFormSession(FormSession.Edit(rel.getRelatedForm(), foreignRecord)); // Edit the "held" record
+		else
+			openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); ; // Open related from to create a new record
 		return false;
 	}
 	
@@ -418,35 +423,55 @@ public abstract class Controller
 	{
 		CollectorRecord foreignRecord = null;
 		
-		// Try to obtain foreign record from previous form:
-		if(prevFormSession != null)
-		{
-			if(prevFormSession.form == rel.getRelatedForm()) // we have come back from the related form
-				foreignRecord = prevFormSession.record;
-			else if(rel.isHoldForeignRecord() && prevFormSession.form == currFormSession.form) // we have looped within the same form & we are allowed to hold on to the ref
-			{
-				//foreignRecord = dao.retrieveRecord(/* key taken from prevFormSession.record */);
-			}
-		}
-		// Try to obtain foreign record by database query:
-		if(rel.isHoldForeignRecord() && foreignRecord == null)
-		{
-			//foreignRecord = dao.retrieve(/* last record of related form */);
-		}
+		// Try to obtain foreignRecord in various ways...
+		if(prevFormSession.form == rel.getRelatedForm() && rel.getConstraints().isValid(prevFormSession.record)) // We have come back from the related form and its record meets the constraints
+			foreignRecord = prevFormSession.record;
+		else
+			foreignRecord = getHeldRecord(rel); // get held record (can be null, for instance if this relationship doesn't hold on to foreign records)
 		
-		//TODO Check if the foreignRecord meets the constraints:
-		//	make it null if it doesn't
-		
+		// Deal with foreignRecord and continue...
 		if(foreignRecord != null)
-		{	
-			//TODO Refer to foreign record from current record
+		{
+			// Store foreign key:
+			((ForeignKeyColumn) rel.getColumn()).storeValue(currFormSession.record, new ForeignKey(foreignRecord));
 			
+			// Go to next field in current form...
 			goForward(false);
 		}
 		else
-			openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); ; // Open related from to create a new foreign record
-		
+		{	// Open related from to create a new foreign record
+			openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash));
+		}
 		return false;
+	}
+	
+	private CollectorRecord getHeldRecord(Relationship rel)
+	{
+		if(!rel.isHoldForeignRecord())
+			return null;
+
+		// Try to obtain the "held" foreign record:
+		CollectorRecord foreignRecord = null;
+		
+		// Using the previous form session...
+		if(	!rel.isNoColumn() &&							/* If the relationship has a column to store foreign keys (i.e. it is not of type LINK) */
+			prevFormSession != null &&						/* AND there is a previous form session */		
+			prevFormSession.form == currFormSession.form)	/* AND it is for the same as the current form (i.e. we have looped within the same form) */
+		{
+			ForeignKey key = ((ForeignKeyColumn) rel.getColumn()).retrieveValue(prevFormSession.record); // get foreign key from previos record	
+			foreignRecord = (CollectorRecord) recordStore.retrieveRecord(key.getForeignRecordQuery()); // look-up the corresponding foreign record
+		}
+		
+		// Check if the foreignRecord meets the constraints...
+		if(rel.getConstraints().isValid(foreignRecord)) // passing null will return false
+			foreignRecord = null; // ... and make it null if it doesn't
+		
+		// If we still don't have one...
+		if(foreignRecord == null)
+			// ... then try to obtain it by querying for most recent record that meets the relationship constraints...
+			foreignRecord = (CollectorRecord) recordStore.retrieveRecord(rel.getHeldRecordQuery()); // TODO no deviceid (for local/remote source) is checked for now
+		
+		return foreignRecord; // may still be null!
 	}
 	
 	/**

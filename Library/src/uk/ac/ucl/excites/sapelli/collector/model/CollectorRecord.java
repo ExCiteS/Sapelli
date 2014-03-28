@@ -24,8 +24,10 @@ public class CollectorRecord extends Record implements Comparable<CollectorRecor
 	 * @param form
 	 */
 	public CollectorRecord(Form form)
-	{	
+	{
 		super(form.getSchema());
+		if(!form.isProducesRecords())
+			throw new IllegalArgumentException("This form does not produce records!");
 		this.form = form;
 	}
 	

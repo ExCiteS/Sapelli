@@ -20,7 +20,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -31,8 +30,11 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 
 /**
  * A {@link SubtreeParser} for <Form>s
@@ -53,6 +55,7 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_ORIENTATION = "Orientation";
 	static private final String TAG_BELONGS_TO = "BelongsTo";
 	static private final String TAG_LINKS_TO = "LinksTo";
+	static private final String TAG_CONSTRAINT = "Constraint";
 	static private final String TAG_BUTTON = "Button";
 	static private final String TAG_LABEL = "Label";
 	static private final String TAG_TEXTFIELD = "Text";
@@ -106,6 +109,8 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
 	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
+	static private final String ATTRIBUTE_RELATIONSHIP_HOLD = "hold";
+	static private final String ATTRIBUTE_CONSTRAINT_COLUMN = "column";
 	static private final String ATTRIBUTE_LABEL_TEXT = "text";
 	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
@@ -124,6 +129,7 @@ public class FormParser extends SubtreeParser
 	private String formStartFieldId;
 	private ChoiceField currentChoice;
 	private MultiListItem currentListItem;
+	private Relationship currentRelationship;
 	private Page currentPage;
 	private HashMap<JumpSource, String> jumpSourceToJumpTargetId;
 	private Hashtable<String, Field> idToField;
@@ -207,11 +213,44 @@ public class FormParser extends SubtreeParser
 			//Activate this subtree parser:
 			activate(); //!!!
 		}
-		// children of <Form> (fields)
+		
+		// Within a form...
 		else if(currentForm != null)
-		{
+		{	
+			// Children of <BelongsTo> or <LinksTo> (we put this first so we can deal with fields or triggers appearing within a relationship)
+			if(currentRelationship != null)
+			{
+				if(qName.equals(TAG_CONSTRAINT))
+				{
+					String columnName = readRequiredStringAttribute(getRelationshipTag(currentRelationship), ATTRIBUTE_CONSTRAINT_COLUMN, attributes, true, false);
+					
+					// Comparison attribute name:
+					String comparisonAttrib = null;
+					for(String compStr : RuleConstraint.COMPARISON_STRINGS)
+						if(attributes.getIndex(compStr) != -1)
+						{
+							comparisonAttrib = compStr;
+							break;
+						}
+					if(comparisonAttrib == null)
+					{
+						addWarning("<" + TAG_CONSTRAINT + "> does not contain an comparison attribute (i.e. 1 of: " + StringUtils.join(RuleConstraint.COMPARISON_STRINGS, ", ") + ").");
+						return;
+					}
+					
+					((ProjectParser) owner).addRelationshipConstraint(	currentRelationship,
+																		columnName,
+																		comparisonAttrib,
+																		readRequiredStringAttribute(getRelationshipTag(currentRelationship), comparisonAttrib, attributes, true, true));
+				}
+				// <?> in <BelongsTo> or <LinksTo>
+				else
+					addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within <" + getRelationshipTag(currentRelationship) + ">.");
+			}
+			
+			// Children of <Form> (fields & triggers)...			
 			// <Choice>
-			if(qName.equals(TAG_CHOICE))
+			else if(qName.equals(TAG_CHOICE))
 			{
 				currentChoice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getValue(ATTRIBUTE_FIELD_VALUE), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
 				newField(currentChoice, attributes);
@@ -304,15 +343,13 @@ public class FormParser extends SubtreeParser
 			else if(qName.equals(TAG_BELONGS_TO))
 			{
 				Relationship belongsTo = new Relationship(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), Relationship.Type.MANY_TO_ONE);
-				newField(belongsTo, attributes);
-				((ProjectParser) owner).addRelationship(belongsTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes, true, false));
+				newRelationship(belongsTo, attributes);
 			}
 			// <LinksTo>
 			else if(qName.equals(TAG_LINKS_TO))
 			{
 				Relationship linksTo = new Relationship(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), Relationship.Type.LINK);
-				newField(linksTo, attributes);
-				((ProjectParser) owner).addRelationship(linksTo, readRequiredStringAttribute(qName, ATTRIBUTE_RELATIONSHIP_FORM, attributes, true, false));
+				newRelationship(linksTo, attributes);
 			}
 			// <Button>
 			else if(qName.equals(TAG_BUTTON))
@@ -413,7 +450,7 @@ public class FormParser extends SubtreeParser
 					currentForm.addTrigger(trigger);
 			}
 			// Add future field types here...
-			// <?> in <Form>	
+			// <?> in <Form>
 			else
 			{
 				addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within <" + TAG_FORM + ">.");
@@ -440,6 +477,20 @@ public class FormParser extends SubtreeParser
 									readStringAttribute(currentForm.getID() + "_" + currentForm.getFields().size(), attributes, true, false, ATTRIBUTE_FIELD_ID));
 		newField(newPage, attributes);
 		currentPage = newPage; //!!! the newPage helper variable avoids that newField() adds the page to itselfs instead of the form!
+	}
+	
+	private void newRelationship(Relationship relationship, Attributes attributes) throws SAXException
+	{
+		newField(relationship, attributes);
+		// Remember form name (to resolved later):
+		((ProjectParser) owner).addRelationship(relationship, readRequiredStringAttribute(getRelationshipTag(relationship), ATTRIBUTE_RELATIONSHIP_FORM, attributes, true, false));
+		
+		// Other attributes:
+		relationship.setHoldForeignRecord(readBooleanAttribute(ATTRIBUTE_RELATIONSHIP_HOLD, Relationship.DEFAULT_HOLD_FOREIGN_RECORD, attributes));
+		// TODO ? updateStartTimeUponLeave, saveBeforeFormChange, discardBeforeLeave (only for linksTo) ?
+		
+		// Remember relationship so constraints can be parsed for it:
+		currentRelationship = relationship;
 	}
 	
 	/**
@@ -560,6 +611,11 @@ public class FormParser extends SubtreeParser
 		{
 			closePage();
 		}
+		// </BelongsTo> or </LinksTo> 
+		else if(qName.equals(TAG_BELONGS_TO) || qName.equals(TAG_LINKS_TO))
+		{
+			currentRelationship = null;
+		}
 		// </Form>
 		else if(qName.equals(TAG_FORM))
 		{
@@ -605,6 +661,16 @@ public class FormParser extends SubtreeParser
 			// Deactivate this subtree parser:
 			deactivate(); //will call reset() (+ warnings will be copied to owner)
 		}
+	}
+	
+	private String getRelationshipTag(Relationship relationship)
+	{
+		switch(relationship.getType())
+		{
+			case MANY_TO_ONE : return TAG_LINKS_TO;
+			case LINK : return TAG_LINKS_TO;
+		}
+		throw new IllegalArgumentException("Unsupported relationship type");
 	}
 
 	@Override

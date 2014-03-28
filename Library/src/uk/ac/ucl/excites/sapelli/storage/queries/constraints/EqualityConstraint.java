@@ -30,10 +30,10 @@ public class EqualityConstraint extends Constraint
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.queries.Filter#_select(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint#_isValid(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	protected boolean isValid(Record record)
+	protected boolean _isValid(Record record)
 	{
 		return Record.EqualValues(columnPointer.retrieveValue(record), value);
 	}

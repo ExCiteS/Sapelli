@@ -22,7 +22,7 @@
     <!-- source="localCreate|localSelect|remoteQR|remoteBT|remoteSMS|remoteHTTP" ? -->
     <!-- paged="true" by default -->
     <BelongsTo id="SessionKey" form="Session" source="localCreate" hold="true" optional="false" updateStartTimeUponLeave="true" saveBeforeFormChange="false">
-      <Constraint column="closed" equals="false"/>
+      <Constraint column="closed" equal="false"/>
     </BelongsTo>
   
     <Choice id="Type" optional="false" rows="2" cols="1" showRelationship="SessionKey">
@@ -136,7 +136,7 @@
 
       <Button label="Start Session" showOnEdit="false" jump="_SAVE+PREVFORM"/>
       
-      <Button id="closed" label="Close Session" showOnCreate="false" column="boolean" jump="_SAVE+PREVFORM"/>
+      <Button id="closed" column="boolean" optional="false" label="Close Session" showOnCreate="false" jump="_SAVE+PREVFORM"/>
   
     </Page>
   

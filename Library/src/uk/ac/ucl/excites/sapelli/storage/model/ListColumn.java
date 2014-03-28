@@ -22,6 +22,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	static private final long serialVersionUID = 2L;
 	
 	static public final int DEFAULT_MINIMUM_LENGTH = 0; // list items
+	static public final int DEFAULT_MAXIMUM_LENGTH = Integer.MAX_VALUE; // like any List or other Collection (Collection#size() returns an int)
 	static public final char SERIALISATION_SEPARATOR = ',';
 	static public final char SERIALISATION_SEPARATOR_ESCAPE = '.';
 	static public final char SERIALISATION_SEPARATOR_ESCAPE_PREFIX = '/';
@@ -34,6 +35,11 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	private final IntegerRangeMapping sizeField;
 	protected final Column<T> singleColumn;
 
+	public ListColumn(String name, Column<T> singleColumn, boolean optional)
+	{
+		this(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, DEFAULT_MAXIMUM_LENGTH);
+	}
+	
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int maxLength)
 	{
 		this(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, maxLength);

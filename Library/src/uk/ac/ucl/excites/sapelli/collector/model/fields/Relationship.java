@@ -11,6 +11,12 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
+import uk.ac.ucl.excites.sapelli.storage.queries.ExtremeValueRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.NullRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 
 /**
  * Field that represents relationship with another Form
@@ -60,6 +66,7 @@ public class Relationship extends UILessField
 	private Form relatedForm;
 	private Type type;
 	private boolean holdForeignRecord;
+	private AndConstraint constraints;
 
 	/**
 	 * @param form
@@ -72,8 +79,9 @@ public class Relationship extends UILessField
 			throw new IllegalArgumentException("One-to-one relationships are not yet implemented."); //TODO implemented One-to-one relationships (still needs XML syntax)
 		if(type == Type.MANY_TO_MANY)
 			throw new IllegalArgumentException("Many-to-many relationships are not yet implemented."); //TODO implemented Many-to-many relationships (still needs XML syntax) */
-		this.type = type; 
+		this.type = type;
 		noColumn = (type == Type.LINK);
+		constraints = new AndConstraint();
 	}
 	
 	public void setNoColumn(boolean noColumn)
@@ -92,6 +100,37 @@ public class Relationship extends UILessField
 			form.addWarning("Related form does not produce records, changed <BelongsTo> to <Link>");
 		}
 		this.relatedForm = relatedForm;
+	}
+	
+	public void addConstraint(Constraint constraint)
+	{
+		constraints.addConstraint(constraint);
+	}
+
+	/**
+	 * @return the constraints
+	 */
+	public AndConstraint getConstraints()
+	{
+		return constraints;
+	}
+	
+	/**
+	 * Returns a SingleRecordQuery that can be used to find (or verify)
+	 * the "held" record (the most recent record that meets the constraints).
+	 * 
+	 * If this relationship does not hold on to foreign records a dummy query
+	 * will be returns which always returns a null record upon execution.
+	 * 
+	 * TODO check for deviceID / source:local/remote ...
+	 * 
+	 * @return
+	 */
+	public SingleRecordQuery getHeldRecordQuery()
+	{
+		if(!holdForeignRecord)
+			return new NullRecordQuery();
+		return ExtremeValueRecordQuery.Max(Form.COLUMN_TIMESTAMP_START, new RecordsQuery(relatedForm.getSchema(), constraints));
 	}
 
 	/**
@@ -131,8 +170,11 @@ public class Relationship extends UILessField
 	 */
 	@Override
 	protected Column<?> createColumn()
-	{
-		return new ForeignKeyColumn(id, relatedForm.getSchema(), (optional != Optionalness.NEVER));
+	{	
+		if(noColumn)
+			return null; // just in case (LinksTo)
+		else
+			return new ForeignKeyColumn(id, relatedForm.getSchema(), (optional != Optionalness.NEVER)); // (BelongsTo)
 	}
 
 	/* (non-Javadoc)

@@ -5,7 +5,10 @@ package uk.ac.ucl.excites.sapelli.collector.xml;
 
 import java.io.File;
 import java.io.InputStream;
+import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
 import org.xml.sax.Attributes;
@@ -17,6 +20,10 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.shared.util.io.UnclosableBufferedInputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLHasher;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
 
 /**
@@ -72,6 +79,7 @@ public class ProjectParser extends DocumentParser
 	private long projectHash;
 	private String startFormID;
 	private HashMap<Relationship, String> relationshipToFormID;
+	private HashMap<Relationship, List<ConstraintDescription>> relationshipToConstraints;
 
 	public ProjectParser(String basePath, boolean createProjectFolder)
 	{
@@ -79,6 +87,7 @@ public class ProjectParser extends DocumentParser
 		this.basePath = basePath;
 		this.createProjectFolder = createProjectFolder;
 		this.relationshipToFormID = new HashMap<Relationship, String>();
+		this.relationshipToConstraints = new HashMap<Relationship, List<ConstraintDescription>>();
 	}
 
 	public Project parseProject(File xmlFile) throws Exception
@@ -94,6 +103,7 @@ public class ProjectParser extends DocumentParser
 		projectHash = -1;
 		startFormID = null;
 		relationshipToFormID.clear();
+		relationshipToConstraints.clear();
 		
 		// Get XML hash:
 		UnclosableBufferedInputStream ubInput = new UnclosableBufferedInputStream(input); // decorate stream to avoid it from being closed and to ensure we can use mark/reset
@@ -221,6 +231,19 @@ public class ProjectParser extends DocumentParser
 					form.initialiseStorage(); // generates Schema, Column & ValueDictionaries
 					addWarnings(form.getWarnings());
 				}
+				
+				// Resolve relationship constraints:
+				for(Entry<Relationship, List<ConstraintDescription>> entry : relationshipToConstraints.entrySet())
+					for(ConstraintDescription constrDesc : entry.getValue())
+						try
+						{
+							Relationship rel = entry.getKey();
+							rel.addConstraint(constrDesc.resolve(rel.getRelatedForm()));
+						}
+						catch(Exception e)
+						{
+							throw new SAXException("Error upon resolving constraint on Relationship \"" + entry.getKey().getID() + "\"", e);
+						}
 			}
 		}
 	}
@@ -250,6 +273,70 @@ public class ProjectParser extends DocumentParser
 	protected void addRelationship(Relationship relationship, String formID)
 	{
 		relationshipToFormID.put(relationship, formID);
+	}
+	
+	protected void addRelationshipConstraint(Relationship relationship, String columnName, String comparisonAttrib, String valueString) throws SAXException
+	{
+		if(!relationshipToConstraints.containsKey(relationship))
+			relationshipToConstraints.put(relationship, new ArrayList<ConstraintDescription>());
+		// Add constraint description to be resolved later:
+		try
+		{
+			relationshipToConstraints.get(relationship).add(new ConstraintDescription(columnName, comparisonAttrib, valueString));
+		}
+		catch(ParseException pe)
+		{
+			throw new SAXException("Error upon parsing constraint", pe);
+		}
+	}
+	
+	/**
+	 * Helper class to temporarily hold descriptions of constraints (for now only of {@link RuleConstraints}), until they can be resolved to Constraint instances
+	 * 
+	 * @author mstevens
+	 */
+	private class ConstraintDescription
+	{
+		
+		String columnName;
+		RuleConstraint.Comparison comparison;
+		String valueString;
+		
+		/**
+		 * @param columnName
+		 * @param comparison
+		 * @param valueString
+		 * @throws ParseException 
+		 */
+		public ConstraintDescription(String columnName, String comparisonAttrib, String valueString) throws ParseException
+		{
+			this.columnName = columnName;
+			this.valueString = valueString;
+			this.comparison = RuleConstraint.parseComparisonString(comparisonAttrib);
+		}
+		
+		public Constraint resolve(Form form) throws SAXException, IllegalArgumentException, NullPointerException, ParseException
+		{
+			// Form checks:
+			if(form == null)
+				throw new NullPointerException("Non-null form is needed to resolve Constraint");
+			if(!form.isProducesRecords())
+			{
+				addWarning("Cannot impose constraint on records of form \"" + form.getID() + "\" because it does not produce data records.");
+				return null;
+			}
+			
+			// Get column:
+			ColumnPointer columnPointer = new ColumnPointer(form.getSchema(), columnName); // will throw IllegalArgumentException if no such column is found 
+			
+			// Column check:
+			if(!(columnPointer.getColumn() instanceof ComparatorColumn<?>))
+				throw new SAXException("Constraint refers to a column (\"" + columnName + "\") which is not comparable.");
+			
+			// Return RuleConstraint:
+			return RuleConstraint.FromString(columnPointer, comparison, valueString); 
+		}
+		
 	}
 
 }

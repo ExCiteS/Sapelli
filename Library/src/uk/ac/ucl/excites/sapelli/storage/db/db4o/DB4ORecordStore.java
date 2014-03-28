@@ -120,7 +120,7 @@ public class DB4ORecordStore extends RecordStore
 			public boolean match(Record record)
 			{
 				return	(query.isAnySchema() || record.getSchema().equals(query.getSourceSchema())) /* Schema check */
-						&& query.getConstraints().select(record);									/* Filter by constraint(s) */ 
+						&& query.getConstraints().isValid(record);									/* Filter by constraint(s) */ 
 			}
 		});
 		
