@@ -52,10 +52,14 @@ public class AndroidChoiceUI extends ChoiceUI<View>
 		if(onPage && field.isRoot())
 		{
 			if(pageView == null)
-			{
 				pageView = new PageView(((CollectorView) collectorUI).getContext());
-				
-			}
+			
+			// Update pageView:
+			ChoiceField chosen = field.getSelectedChoice(record);
+			if(chosen != null)
+				pageView.setChosen(chosen);
+			else
+				pageView.setChosen(field);
 			
 			return pageView;
 		}
@@ -63,7 +67,10 @@ public class AndroidChoiceUI extends ChoiceUI<View>
 		{
 			if(pickView == null)
 				pickView = new ChoiceView(((CollectorView) collectorUI).getContext());
+			
+			// Update pickView:
 			pickView.update();
+			
 			return pickView;
 		}
 	}

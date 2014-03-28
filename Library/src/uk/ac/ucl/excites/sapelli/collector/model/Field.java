@@ -260,6 +260,10 @@ public abstract class Field implements JumpSource
 
 	public Column<?> getColumn()
 	{
+		// Deal with root...
+		if(!isRoot())
+			return getRoot().getColumn();
+		
 		// Check noColumn...
 		if(noColumn)
 			return null;

@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -330,6 +331,31 @@ public class ChoiceField extends Field implements DictionaryItem
 	public List<String> getDocExtras()
 	{
 		return Arrays.asList(this.imageRelativePath, this.id);
+	}
+	
+	@Override
+	public IntegerColumn getColumn()
+	{
+		return (IntegerColumn) super.getColumn();
+	}
+	
+	/**
+	 * Returns the selected choice for the given ChoiceField 
+	 * 
+	 * @param rootChoiceField the choiceField
+	 * @return the selected choice
+	 */
+	public ChoiceField getSelectedChoice(CollectorRecord record)
+	{
+		if(!isRoot())
+			return root.getSelectedChoice(record);
+		if(isNoColumn())
+			return null; //throw new IllegalArgumentException("Field \"" + getID() + "\" has no column.");
+		Long choiceIdx = getColumn().retrieveValue(record);
+		if(choiceIdx != null)
+			return getDictionary().lookupItem(choiceIdx.intValue());
+		else
+			return null;
 	}
 	
 	/**

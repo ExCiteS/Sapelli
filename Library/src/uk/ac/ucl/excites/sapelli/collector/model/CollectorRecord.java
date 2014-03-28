@@ -62,48 +62,14 @@ public class CollectorRecord extends Record implements Comparable<CollectorRecor
 	 * 
 	 * @return the selected choice
 	 */
-	public ChoiceField getSelectedChoice()
+	public ChoiceField getFirstSelectedChoice()
 	{
 		for(Field f : form.getFields())
 			if(f instanceof ChoiceField)
-				return getSelectedChoice((ChoiceField) f);
+				return ((ChoiceField) f).getSelectedChoice(this);
 		throw new IllegalStateException("This form has no ChoiceField");
 	}
-
-	/**
-	 * Returns the selected choice for the named (by ID) ChoiceField
-	 * 
-	 * @param fieldID  choiceField ID String
-	 * @return the selected choice
-	 */
-	public ChoiceField getSelectedChoice(String fieldID)
-	{
-		Field field = form.getField(fieldID);
-		if(field == null)
-			throw new IllegalArgumentException("Field \"" + fieldID + "\" does not exist.");
-		if(field instanceof ChoiceField)
-			return getSelectedChoice((ChoiceField) field);
-		else
-			throw new IllegalArgumentException("Field \"" + fieldID + "\" is not a ChoiceField.");
-	}
 	
-	/**
-	 * Returns the selected choice for the given ChoiceField 
-	 * 
-	 * @param rootChoiceField the choiceField
-	 * @return the selected choice
-	 */
-	public ChoiceField getSelectedChoice(ChoiceField rootChoiceField)
-	{
-		if(rootChoiceField.isNoColumn())
-			throw new IllegalArgumentException("Field \"" + rootChoiceField.getID() + "\" has no column.");
-		Long choiceIdx = (Long) schema.getColumn(rootChoiceField.getID()).retrieveValue(this);
-		if(choiceIdx != null)
-			return rootChoiceField.getDictionary().lookupItem(choiceIdx.intValue());
-		else
-			return null;
-	}
-
 	/**
 	 * Sorts formEntries by startDate
 	 * 

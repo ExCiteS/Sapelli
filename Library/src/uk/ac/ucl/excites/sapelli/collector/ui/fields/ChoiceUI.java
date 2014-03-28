@@ -8,7 +8,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 
 /**
  * @author mstevens
@@ -51,7 +50,7 @@ public abstract class ChoiceUI<V> extends SelfLeavingFieldUI<ChoiceField, V>
 		{
 			// Store value
 			if(!field.isNoColumn())
-				((IntegerColumn) field.getRoot().getColumn()).storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
+				field.getColumn().storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
 			// Go to next field
 			controller.goTo(controller.getCurrentForm().getNextField(chosenChild));
 			/*
