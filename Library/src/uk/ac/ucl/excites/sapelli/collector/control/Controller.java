@@ -98,11 +98,17 @@ public abstract class Controller
 
 	public void openFormSession(FormSession formSession)
 	{
-		// Deal with current form:
-		if(currFormSession != null && currFormSession.form != formSession.form)
+		openFormSession(formSession, false);
+	}
+	
+	public void openFormSession(FormSession formSession, boolean prevFormMove)
+	{
+		// Deal with current form session:
+		if(currFormSession != null)
 		{
 			prevFormSession = currFormSession; // remember previous formSession
-			formHistory.push(currFormSession); // add to form history
+			if(!prevFormMove && currFormSession.form != formSession.form)
+				formHistory.push(currFormSession); // add previous formSession to history if, we are not "coming back" and we are not looping within the same form
 			disableTriggers(currFormSession.form.getTriggers()); // disable triggers
 		}
 		currFormSession = formSession;
@@ -145,9 +151,7 @@ public abstract class Controller
 		if(formHistory.empty())
 			return false;
 		//else:
-		prevFormSession = currFormSession; // remember previous formSession
-		currFormSession = null; // make currentFormSession null such that it is not added to the formHistory stack
-		openFormSession(formHistory.pop()); // re-open previous form
+		openFormSession(formHistory.pop(), true); // re-open previous form
 		return true;
 	}
 
@@ -270,7 +274,7 @@ public abstract class Controller
 	public ControlsState getControlsState()
 	{
 		ControlsState state = new ControlsState(
-				currFormSession.form.isShowBack()		&& currFormSession.currField.isShowBack()		&& !currFormSession.fieldHistory.empty(),
+				currFormSession.form.isShowBack()		&& currFormSession.currField.isShowBack()		&& (!currFormSession.fieldHistory.empty() || !formHistory.empty()),
 				currFormSession.form.isShowCancel()		&& currFormSession.currField.isShowCancel()		&& (!currFormSession.fieldHistory.empty() || currFormSession.currField instanceof Page),
 				currFormSession.form.isShowForward()	&& currFormSession.currField.isShowForward()	&& currFormSession.currField.getOptional() == Optionalness.ALWAYS);
 		// Note: these paths may be null (in which case built-in defaults must be used)
