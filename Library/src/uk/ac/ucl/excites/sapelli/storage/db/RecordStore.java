@@ -6,6 +6,7 @@ package uk.ac.ucl.excites.sapelli.storage.db;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
@@ -21,6 +22,13 @@ import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 public abstract class RecordStore implements Store
 {
 
+	protected StorageClient client;
+	
+	public RecordStore(StorageClient client)
+	{
+		this.client = client;
+	}
+	
 	/**
 	 * @param record - the record to store or update
 	 */

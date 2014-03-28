@@ -10,6 +10,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
+import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
@@ -37,8 +38,9 @@ public class DB4ORecordStore extends RecordStore
 	private ObjectContainer db4o;
 	private String filename;
 	
-	public DB4ORecordStore(File folder, String baseFilename) throws Exception
+	public DB4ORecordStore(StorageClient client, File folder, String baseFilename) throws Exception
 	{
+		super(client);
 		this.filename = baseFilename + DATABASE_NAME_SUFFIX;
 		this.db4o = DB4OConnector.open(DB4OConnector.getFile(folder, filename), Project.class);
 	}
