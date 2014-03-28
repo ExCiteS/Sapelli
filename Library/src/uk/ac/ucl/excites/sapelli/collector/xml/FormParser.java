@@ -358,7 +358,7 @@ public class FormParser extends SubtreeParser
 				newField(btn, attributes);
 				try
 				{
-					btn.setColumn(readStringAttribute(ATTRIBUTE_BUTTON_COLUMN, ButtonField.ButtonColumn.NONE.name(), attributes, true, false));
+					btn.setColumnType(readStringAttribute(ATTRIBUTE_BUTTON_COLUMN, ButtonField.DEFAULT_COLUMN.name(), attributes, true, false));
 				}
 				catch(IllegalArgumentException iae)
 				{

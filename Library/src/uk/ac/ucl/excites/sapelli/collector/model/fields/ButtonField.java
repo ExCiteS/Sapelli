@@ -26,7 +26,7 @@ public class ButtonField extends Field
 {
 	
 	// Statics --------------------------------------------
-	static public enum ButtonColumn
+	static public enum ButtonColumnType
 	{
 		NONE,
 		BOOLEAN,
@@ -34,10 +34,10 @@ public class ButtonField extends Field
 	}
 	
 	static public final String ID_PREFIX = "btn";
-	static public final ButtonColumn DEFAULT_COLUMN = ButtonColumn.NONE;
+	static public final ButtonColumnType DEFAULT_COLUMN = ButtonColumnType.NONE;
 	
 	// Dynamics -------------------------------------------
-	private ButtonColumn column;
+	private ButtonColumnType columnType;
 	
 	/**
 	 * @param form
@@ -56,23 +56,35 @@ public class ButtonField extends Field
 	public ButtonField(Form form, String id, String label)
 	{	
 		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id), label);
-		setColumn(DEFAULT_COLUMN);
+		setColumnType(DEFAULT_COLUMN);
 	}
 
-	public void setColumn(String column) throws IllegalArgumentException
+	public void setColumnType(String column) throws IllegalArgumentException
 	{
-		setColumn(ButtonColumn.valueOf(column.toUpperCase()));
+		setColumnType(ButtonColumnType.valueOf(column.toUpperCase()));
 	}
 	
-	public void setColumn(ButtonColumn column)
+	public void setColumnType(ButtonColumnType columnType)
 	{
-		this.column = column;
-		this.noColumn = (this.column == ButtonColumn.NONE); 
+		this.columnType = columnType;
+		this.noColumn = (this.columnType == ButtonColumnType.NONE); 
 	}
 	
+	/**
+	 * @return the columnType
+	 */
+	public ButtonColumnType getColumnType()
+	{
+		return columnType;
+	}
+
 	public void setNoColumn(boolean noColumn)
 	{
-		throw new UnsupportedOperationException("setNoColumn() is unsupported on ButtonFields, use setColumn() instead.");
+		this.noColumn = noColumn;
+		if(noColumn)
+			this.columnType = ButtonColumnType.NONE;
+		else
+			throw new UnsupportedOperationException("setNoColumn(false) is unsupported on ButtonFields, use setColumn() instead.");
 	}
 	
 	/* (non-Javadoc)
@@ -81,7 +93,7 @@ public class ButtonField extends Field
 	@Override
 	protected Column<?> createColumn()
 	{
-		switch(column)
+		switch(columnType)
 		{
 			case BOOLEAN : return new BooleanColumn(id, optional != Optionalness.NEVER);
 			case DATETIME : return DateTimeColumn.Century21NoMS(id, optional != Optionalness.NEVER);
