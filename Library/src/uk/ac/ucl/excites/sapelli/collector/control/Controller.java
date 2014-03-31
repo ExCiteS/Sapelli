@@ -198,11 +198,7 @@ public abstract class Controller
 		{
 			currFormSession.currField = null; // !!! otherwise we create loops
 			currFormSession.currFieldDisplayed = false;
-			Field previousField = currFormSession.fieldHistory.pop();
-			if(previousField.isSkipOnBack())
-				goBack(false); // Move two steps backwards
-			else
-				goTo(previousField);
+			goTo(currFormSession.fieldHistory.pop());
 		}
 		else
 			// Try to go to previous form...
@@ -232,9 +228,9 @@ public abstract class Controller
 				return; // not allowed to leave
 			}
 			
-			// Add current field to history if it is not the same as the next field...
-			if(currFormSession.currField != nextField)
-				currFormSession.fieldHistory.add(currFormSession.currField);
+			// Add current field to history if it is not the same as the next field & it is not to be skipped upon back...
+			if(currFormSession.currField != nextField && !currFormSession.currField.isSkipOnBack())
+				currFormSession.fieldHistory.push(currFormSession.currField);
 		}
 		
 		// 	Next field becomes the (new) current field...
@@ -325,11 +321,14 @@ public abstract class Controller
 		// Play sound
 		File endSoundFile = project.getSoundFile(currFormSession.form.getSaveSoundRelativePath());
 		if(FileHelpers.isReadableFile(endSoundFile))
-			playSound(endSoundFile);		
+			playSound(endSoundFile);
 	}
 	
-	protected void discardAttachments()
+	protected void discardRecordAndAttachments()
 	{
+		// Discard record:
+		currFormSession.record = null; //!!!
+		
 		// Delete any attachments:
 		for(File attachment : currFormSession.mediaAttachments)
 			if(attachment.exists())
@@ -425,11 +424,22 @@ public abstract class Controller
 	
 	public boolean enterBelongsTo(Relationship rel)
 	{
+		// Check if we already have a foreign key value...
+		if(rel.getColumn().isValueSet(currFormSession.record))
+			goForward(false);
+		
+		// TODO find a way to open existing foreign record for editing (+ coming back without going in some kind of loop)
+		
 		CollectorRecord foreignRecord = null;
 		
 		// Try to obtain foreignRecord in various ways...
-		if(prevFormSession.form == rel.getRelatedForm() && rel.getConstraints().isValid(prevFormSession.record)) // We have come back from the related form and its record meets the constraints
-			foreignRecord = prevFormSession.record;
+		if(prevFormSession != null && prevFormSession.form == rel.getRelatedForm())
+		{	// We have come back from the related form ...
+			if(prevFormSession.record == null && rel.getOptional() == Optionalness.ALWAYS) // ... but without a saved record, this is OK only if the belongTo field is optional
+				goForward(true); // go to next field (no foreign key stored)
+			else if(rel.getConstraints().isValid(prevFormSession.record)) // ... we'll use the record if it meets requirements (if it's null, isValid() will return false)
+				foreignRecord = prevFormSession.record;
+		}
 		else
 			foreignRecord = getHeldRecord(rel); // get held record (can be null, for instance if this relationship doesn't hold on to foreign records)
 		
@@ -437,10 +447,10 @@ public abstract class Controller
 		if(foreignRecord != null)
 		{
 			// Store foreign key:
-			((ForeignKeyColumn) rel.getColumn()).storeValue(currFormSession.record, new ForeignKey(foreignRecord));
+			rel.getColumn().storeValue(currFormSession.record, new ForeignKey(foreignRecord));
 			
 			// Go to next field in current form...
-			goForward(false);
+			goForward(true);
 		}
 		else
 		{	// Open related from to create a new foreign record
@@ -454,16 +464,19 @@ public abstract class Controller
 		if(!rel.isHoldForeignRecord())
 			return null;
 
+		ForeignKeyColumn column = (ForeignKeyColumn) rel.getColumn();
+		
 		// Try to obtain the "held" foreign record:
 		CollectorRecord foreignRecord = null;
 		
 		// Using the previous form session...
 		if(	!rel.isNoColumn() &&							/* If the relationship has a column to store foreign keys (i.e. it is not of type LINK) */
 			prevFormSession != null &&						/* AND there is a previous form session */		
-			prevFormSession.form == currFormSession.form)	/* AND it is for the same as the current form (i.e. we have looped within the same form) */
+			prevFormSession.form == currFormSession.form &&	/* AND it is for the same as the current form (i.e. we have looped within the same form) */
+			column.isValueSet(prevFormSession.record))		/* AND the previous record stored a foreign key (if optional it can also be null) */
 		{
-			ForeignKey key = ((ForeignKeyColumn) rel.getColumn()).retrieveValue(prevFormSession.record); // get foreign key from previos record	
-			foreignRecord = (CollectorRecord) recordStore.retrieveRecord(key.getForeignRecordQuery()); // look-up the corresponding foreign record
+			ForeignKey key = column.retrieveValue(prevFormSession.record);								// get foreign key from previous record
+			foreignRecord = (CollectorRecord) recordStore.retrieveRecord(key.getForeignRecordQuery());	// look-up the corresponding foreign record
 		}
 		
 		// Check if the foreignRecord meets the constraints...
@@ -491,7 +504,7 @@ public abstract class Controller
 		if(ef.isSave())
 			saveRecordAndAttachments();
 		else
-			discardAttachments();
+			discardRecordAndAttachments();
 		
 		// Insert blank line in log:
 		addBlankLogLine();

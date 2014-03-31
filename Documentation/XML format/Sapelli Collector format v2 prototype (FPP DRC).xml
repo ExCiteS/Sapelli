@@ -21,7 +21,7 @@
         
     <!-- source="localCreate|localSelect|remoteQR|remoteBT|remoteSMS|remoteHTTP" ? -->
     <!-- paged="true" by default -->
-    <BelongsTo id="SessionKey" form="Session" source="localCreate" hold="true" optional="false" updateStartTimeUponLeave="true" saveBeforeFormChange="false">
+    <BelongsTo id="SessionKey" form="Session" source="localCreate" hold="true" skipOnBack="true" optional="false" updateStartTimeUponLeave="true" saveBeforeFormChange="false">
       <Constraint column="closed" equal="false"/>
     </BelongsTo>
   

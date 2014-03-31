@@ -176,6 +176,12 @@ public class Relationship extends UILessField
 		else
 			return new ForeignKeyColumn(id, relatedForm.getSchema(), (optional != Optionalness.NEVER)); // (BelongsTo)
 	}
+	
+	@Override
+	public ForeignKeyColumn getColumn()
+	{
+		return (ForeignKeyColumn) super.getColumn();
+	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.collector.project.model.Field#getFiles(uk.ac.ucl.excites.collector.project.model.Project)
