@@ -189,6 +189,11 @@ public class CollectorApp extends Application
 		return projectStore;
 	}
 	
+	public SapelliCollectorClient getCollectorClient(StoreClient client) throws Exception
+	{
+		return new SapelliCollectorClient(getProjectStore(client));
+	}
+	
 	/**
 	 * @param client
 	 * @return
@@ -197,7 +202,7 @@ public class CollectorApp extends Application
 	{
 		if(recordStore == null)
 		{
-			recordStore = new DB4ORecordStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_NAME);
+			recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_NAME);
 			storeClients.put(recordStore, new ArrayList<StoreClient>());
 		}
 		storeClients.get(recordStore).add(client); //add to set of clients currently using the projectStore
