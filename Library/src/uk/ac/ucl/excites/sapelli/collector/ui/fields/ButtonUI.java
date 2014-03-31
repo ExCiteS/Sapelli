@@ -23,6 +23,29 @@ public abstract class ButtonUI<V> extends SelfLeavingFieldUI<ButtonField, V>
 		super(field, controller, collectorUI);
 	}
 	
+	/**
+	 * If the button has a boolean columns but it is not pressed the 'null' value
+	 * in the column should still be changed to 'false' to indicate that the button
+	 * was shown to the user (i.e. the field was reached), and to ensure the record
+	 * can be saved if the button is non-optional.
+	 * 
+	 * We do not have a similar mechanism for datatime columns, so it is recommended
+	 * to always make buttons with a datatime column optional (which they are by default).
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI#leave(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord, boolean)
+	 */
+	@Override
+	public boolean leave(CollectorRecord record, boolean noValidation)
+	{
+		if(field.getColumnType() == ButtonColumnType.BOOLEAN)
+		{
+			BooleanColumn column = (BooleanColumn) field.getColumn();
+			if(!column.isValueSet(record)) // if value is null (and only then!)...
+				column.storeValue(record, false); // save 'false' to indicate that the button was not pressed
+		}
+		return true;
+	}
+	
 	protected void buttonPressed()
 	{
 		CollectorRecord record = controller.getCurrentRecord();
