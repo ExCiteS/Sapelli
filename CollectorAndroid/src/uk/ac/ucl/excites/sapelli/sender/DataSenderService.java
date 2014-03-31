@@ -1,3 +1,4 @@
+/*
 package uk.ac.ucl.excites.sapelli.sender;
 
 import java.util.ArrayList;
@@ -48,283 +49,284 @@ import android.os.IBinder;
 import android.util.Log;
 
 
-/**
+ *//**
  * A service that checks about network connectivity and tries to send the data Also the service tries to upload file attachments to Dropbox
  * 
  * @author Michalis Vitos, mstevens
  * 
  */
+/*
 public class DataSenderService extends Service implements TransmissionSender, StoreClient
 {
 
-	// Statics-------------------------------------------------------
-	static private final String TAG = "DataSenderService";
-	static private final String LOG_PREFIX = "Sender_";
-	private static final long POST_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
-	private static final long PRE_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
-	private static final long INTERVAL_BETWEEN_SMS_SENDING = 2 * 1000;
-	private static final int RECORD_SENDING_ATTEMPT_TIMEOUT_MIN = 20; 
-	
-	// Dynamics------------------------------------------------------
-	private SignalMonitor gsmMonitor;
-	private List<DropboxSync> folderObservers;
-	private SMSSender smsSender;
-	private int startMode = START_STICKY; // indicates how to behave if the service is killed
-	private boolean allowRebind; // indicates whether onRebind should be used
-	private ProjectStore projectStore;
-	private RecordStore recordStore;
-	private Map<Project,Logger> loggers;
-	
-	private ScheduledExecutorService scheduleTaskExecutor;
-	private ScheduledFuture<?> scheduledFuture;
+// Statics-------------------------------------------------------
+static private final String TAG = "DataSenderService";
+static private final String LOG_PREFIX = "Sender_";
+private static final long POST_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
+private static final long PRE_AIRPLANE_MODE_WAITING_TIME_MS = 30 * 1000;
+private static final long INTERVAL_BETWEEN_SMS_SENDING = 2 * 1000;
+private static final int RECORD_SENDING_ATTEMPT_TIMEOUT_MIN = 20; 
 
-	@Override
-	public void onCreate()
+// Dynamics------------------------------------------------------
+private SignalMonitor gsmMonitor;
+private List<DropboxSync> folderObservers;
+private SMSSender smsSender;
+private int startMode = START_STICKY; // indicates how to behave if the service is killed
+private boolean allowRebind; // indicates whether onRebind should be used
+private ProjectStore projectStore;
+private RecordStore recordStore;
+private Map<Project,Logger> loggers;
+
+private ScheduledExecutorService scheduleTaskExecutor;
+private ScheduledFuture<?> scheduledFuture;
+
+@Override
+public void onCreate()
+{
+	//Loggers
+	loggers = new HashMap<Project, Logger>();
+
+	// Creates a thread pool that can schedule commands to run after a given
+	// duration, or to execute periodically.
+	scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
+	
+	// Folder observers:
+	folderObservers = new ArrayList<DropboxSync>();
+	
+	// Wait for the Debugger to be attached
+	//android.os.Debug.waitForDebugger();
+}
+
+@Override
+public int onStartCommand(Intent intent, int flags, int startId)
+{
+
+	setServiceForeground(this);
+	
+	// DataAccess instance:
+	projectStore = ((CollectorApp) getApplication()).getProjectStore(this);
+	recordStore = ((CollectorApp) getApplication()).getRecordStore(this);
+			
+	// Get the preferences
+	final int timeSchedule = DataSenderPreferences.getTimeSchedule(this);
+	boolean dropboxUpload = DataSenderPreferences.getDropboxUpload(this);
+	boolean smsUpload = DataSenderPreferences.getSMSUpload(this);
+	
+	boolean projectWithSMSEnabled = false;
+
+	for(Project p : projectStore.retrieveProjects())
 	{
-		//Loggers
-		loggers = new HashMap<Project, Logger>();
+		if(p.isLogging())
+		{
+			try
+			{
+				Logger logger = new Logger(p.getLogFolderPath(), LOG_PREFIX);
+				for(Entry<Project, Logger> pl : loggers.entrySet())
+					pl.getValue().addLine("DataSender", "Service started.");
+				loggers.put(p, logger);
+			}
+			catch(Exception e)
+			{
+				Debug.e("Logger construction error", e);
+			}
+		}
 
-		// Creates a thread pool that can schedule commands to run after a given
-		// duration, or to execute periodically.
-		scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
+		Settings settings = p.getTransmissionSettings(); 
+		// Upload via SMS
+		if(smsUpload && settings.isSMSUpload())
+		{
+			projectWithSMSEnabled = true;
+			if(!settings.isSMSIntroductionSent())
+			{	//TODO send introduction
+				
+			}
+		}
 		
-		// Folder observers:
-		folderObservers = new ArrayList<DropboxSync>();
-		
-		// Wait for the Debugger to be attached
-		//android.os.Debug.waitForDebugger();
+		// Upload to Dropbox
+		if(dropboxUpload && settings.isDropboxUpload())
+		{
+			try
+			{
+				DropboxSync observer = new DropboxSync(getApplicationContext(), p.getDataFolder(), ((CollectorApp) getApplication()).getSapelliFolder().getAbsolutePath()); 
+				folderObservers.add(observer);
+				observer.startWatching();
+			}
+			catch(Exception e)
+			{
+				Debug.d("Could not set up Dropbox Observer for project " + p.getName());
+			}
+		}
 	}
 
-	@Override
-	public int onStartCommand(Intent intent, int flags, int startId)
-	{
+	//if at least one project needs SMS sending:
+	if(projectWithSMSEnabled)
+		smsSender = new SMSSender(this, dao);
+	else
+		Debug.d("SMS Uploading is not enabled");
 	
-		setServiceForeground(this);
-		
-		// DataAccess instance:
-		projectStore = ((CollectorApp) getApplication()).getProjectStore(this);
-		recordStore = ((CollectorApp) getApplication()).getRecordStore(this);
-				
-		// Get the preferences
-		final int timeSchedule = DataSenderPreferences.getTimeSchedule(this);
-		boolean dropboxUpload = DataSenderPreferences.getDropboxUpload(this);
-		boolean smsUpload = DataSenderPreferences.getSMSUpload(this);
-		
-		boolean projectWithSMSEnabled = false;
+	//Start GSM SignalMonitor
+	gsmMonitor = new SignalMonitor(this);
+	
+	// ================================================================================
+	// Schedule Transmitting
+	// ================================================================================
+	if(scheduledFuture != null)
+	{
+		 Note: we can check if it the task is currently executing with isRunning(scheduledFuture),
+ * However, we cancel the scheduledFuture anyway to ensure that an earlier schedule will never be executed at a later time.
+		 
+		scheduledFuture.cancel(true); //TODO this does NOT actually interrupt the running task, we should check for Thread.interrupted() from within the task and end it ourselves
+	}
+	// Schedule a runnable task every TIME_SCHEDULE in minutes:
+	scheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
+	
+	return startMode;
+}
 
-		for(Project p : projectStore.retrieveProjects())
+@Override
+public void onDestroy()
+{
+	//Close loggers:
+	for(Entry<Project, Logger> pl : loggers.entrySet())
+		pl.getValue().addFinalLine("DataSender", "Service stopped.");
+	
+	// Go to AirplaneMode if needed:
+	if(DataSenderPreferences.getAirplaneMode(this) && !DeviceControl.inAirplaneMode(this))
+		DeviceControl.toggleAirplaneMode(this);
+	
+	// The service is no longer used and is being destroyed
+	if(scheduledFuture != null)
+		scheduledFuture.cancel(true);
+	stopSelf();
+	int pid = android.os.Process.myPid();
+	if(Constants.DEBUG_LOG)
+		Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
+	android.os.Process.killProcess(pid);
+	
+	//signal that the service no longer needs the DAOs:
+	((CollectorApp) getApplication()).discardStoreUsage(projectStore, this);
+	((CollectorApp) getApplication()).discardStoreUsage(recordStore, this);
+}
+
+private class SendingTask implements Runnable
+{
+	private Context context = DataSenderService.this;
+	
+	public void run()
+	{
+		// Try to save any exception into the SD Card
+		try
 		{
-			if(p.isLogging())
-			{
-				try
-				{
-					Logger logger = new Logger(p.getLogFolderPath(), LOG_PREFIX);
-					for(Entry<Project, Logger> pl : loggers.entrySet())
-						pl.getValue().addLine("DataSender", "Service started.");
-					loggers.put(p, logger);
-				}
-				catch(Exception e)
-				{
-					Debug.e("Logger construction error", e);
-				}
-			}
+			Debug.d("-- SendingTask Started --");
 
-			Settings settings = p.getTransmissionSettings(); 
-			// Upload via SMS
-			if(smsUpload && settings.isSMSUpload())
+			for(Entry<Project, Logger> pl : loggers.entrySet())
+				pl.getValue().addLine("Sending task");
+			
+			//Come out of airplane more if needed
+			if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
 			{
-				projectWithSMSEnabled = true;
-				if(!settings.isSMSIntroductionSent())
-				{	//TODO send introduction
-					
+				DeviceControl.toggleAirplaneMode(context);
+				Debug.d("Phone was in AirplaneMode and try to get it out.");
+
+				//Wait for connectivity to become available
+				try
+				{	
+					Debug.d("POST_AIRPLANE_MODE_WAITING_TIME_MS: " + POST_AIRPLANE_MODE_WAITING_TIME_MS);
+					Thread.sleep(POST_AIRPLANE_MODE_WAITING_TIME_MS);
+				}
+				catch(InterruptedException ie)
+				{
+					//TODO rollback(?) & return
 				}
 			}
 			
-			// Upload to Dropbox
-			if(dropboxUpload && settings.isDropboxUpload())
+			// TODO Block until we have connectivity
+			
+			//	int tempCount = 0;
+			//	while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
+			//	{
+			//		Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
+			//		// Wait for 1 a second on every attempt
+			//		try
+			//		{
+			//			Thread.sleep(1000);
+			//		}
+			//		catch(InterruptedException e)
+			//		{
+			//			if(Constants.DEBUG_LOG)
+			//				Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
+			//		}
+			//		tempCount++;
+			//	}
+			
+			//Generate transmissions...
+			for(Project p : projectStore.retrieveProjects())
 			{
-				try
-				{
-					DropboxSync observer = new DropboxSync(getApplicationContext(), p.getDataFolder(), ((CollectorApp) getApplication()).getSapelliFolder().getAbsolutePath()); 
-					folderObservers.add(observer);
-					observer.startWatching();
-				}
-				catch(Exception e)
-				{
-					Debug.d("Could not set up Dropbox Observer for project " + p.getName());
-				}
-			}
-		}
-
-		//if at least one project needs SMS sending:
-		if(projectWithSMSEnabled)
-			smsSender = new SMSSender(this, dao);
-		else
-			Debug.d("SMS Uploading is not enabled");
-		
-		//Start GSM SignalMonitor
-		gsmMonitor = new SignalMonitor(this);
-		
-		// ================================================================================
-		// Schedule Transmitting
-		// ================================================================================
-		if(scheduledFuture != null)
-		{
-			/* Note: we can check if it the task is currently executing with isRunning(scheduledFuture),
-			 * However, we cancel the scheduledFuture anyway to ensure that an earlier schedule will never be executed at a later time.
-			 */
-			scheduledFuture.cancel(true); //TODO this does NOT actually interrupt the running task, we should check for Thread.interrupted() from within the task and end it ourselves
-		}
-		// Schedule a runnable task every TIME_SCHEDULE in minutes:
-		scheduledFuture = scheduleTaskExecutor.scheduleAtFixedRate(new SendingTask(), 0, timeSchedule, TimeUnit.MINUTES);
-		
-		return startMode;
-	}
-	
-	@Override
-	public void onDestroy()
-	{
-		//Close loggers:
-		for(Entry<Project, Logger> pl : loggers.entrySet())
-			pl.getValue().addFinalLine("DataSender", "Service stopped.");
-		
-		// Go to AirplaneMode if needed:
-		if(DataSenderPreferences.getAirplaneMode(this) && !DeviceControl.inAirplaneMode(this))
-			DeviceControl.toggleAirplaneMode(this);
-		
-		// The service is no longer used and is being destroyed
-		if(scheduledFuture != null)
-			scheduledFuture.cancel(true);
-		stopSelf();
-		int pid = android.os.Process.myPid();
-		if(Constants.DEBUG_LOG)
-			Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
-		android.os.Process.killProcess(pid);
-		
-		//signal that the service no longer needs the DAOs:
-		((CollectorApp) getApplication()).discardStoreUsage(projectStore, this);
-		((CollectorApp) getApplication()).discardStoreUsage(recordStore, this);
-	}
-	
-	private class SendingTask implements Runnable
-	{
-		private Context context = DataSenderService.this;
-		
-		public void run()
-		{
-			// Try to save any exception into the SD Card
-			try
-			{
-				Debug.d("-- SendingTask Started --");
-
-				for(Entry<Project, Logger> pl : loggers.entrySet())
-					pl.getValue().addLine("Sending task");
+				Settings settings = p.getTransmissionSettings();
 				
-				//Come out of airplane more if needed
-				if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
-				{
-					DeviceControl.toggleAirplaneMode(context);
-					Debug.d("Phone was in AirplaneMode and try to get it out.");
-
-					//Wait for connectivity to become available
-					try
-					{	
-						Debug.d("POST_AIRPLANE_MODE_WAITING_TIME_MS: " + POST_AIRPLANE_MODE_WAITING_TIME_MS);
-						Thread.sleep(POST_AIRPLANE_MODE_WAITING_TIME_MS);
-					}
-					catch(InterruptedException ie)
+				//Log signal strength & roaming:
+				loggers.get(p).addLine("Current cellular signal strength: " + gsmMonitor.getSignalStrength());
+				loggers.get(p).addLine("Device is " + (gsmMonitor.isRoaming() ? "" : "not ") + "currently roaming.");
+				
+				Debug.d("Device is " + (gsmMonitor.isRoaming() ? "" : "not ") + "currently roaming");
+				
+				for(Form f : p.getForms())
+				{		
+					Schema schema = f.getSchema();
+					
+					List<Record> records = new ArrayList<Record>(dao.retrieveUnsentRecords(schema, RECORD_SENDING_ATTEMPT_TIMEOUT_MIN));
+					Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version " + p.getVersion() + ").");
+					
+					if(records.isEmpty())
 					{
-						//TODO rollback(?) & return
+						loggers.get(p).addLine("No records to send for form " + f.getName());
+						continue;
 					}
-				}
-				
-				// TODO Block until we have connectivity
-				
-				//	int tempCount = 0;
-				//	while(!gsmMonitor.isInService() && tempCount < DataSenderPreferences.getMaxAttempts(DataSenderService.this))
-				//	{
-				//		Log.i(Constants.TAG, "Connection Attempt! " + tempCount);
-				//		// Wait for 1 a second on every attempt
-				//		try
-				//		{
-				//			Thread.sleep(1000);
-				//		}
-				//		catch(InterruptedException e)
-				//		{
-				//			if(Constants.DEBUG_LOG)
-				//				Log.i(Constants.TAG, "signalCheck() error: " + e.toString());
-				//		}
-				//		tempCount++;
-				//	}
-				
-				//Generate transmissions...
-				for(Project p : projectStore.retrieveProjects())
-				{
-					Settings settings = p.getTransmissionSettings();
+					else
+						loggers.get(p).addLine(records.size() + " records to send for form " + f.getName());
 					
-					//Log signal strength & roaming:
-					loggers.get(p).addLine("Current cellular signal strength: " + gsmMonitor.getSignalStrength());
-					loggers.get(p).addLine("Device is " + (gsmMonitor.isRoaming() ? "" : "not ") + "currently roaming.");
+					//Decide on transmission mode
+					//TODO
 					
-					Debug.d("Device is " + (gsmMonitor.isRoaming() ? "" : "not ") + "currently roaming");
+					//HTTP over GPRS/EDGE/3G/4G or Wi-Fi
+					//TODO HTTPTransmissions
 					
-					for(Form f : p.getForms())
-					{		
-						Schema schema = f.getSchema();
+					//SMS
+					Log.d(TAG, "prefs sms upload: " + DataSenderPreferences.getSMSUpload(DataSenderService.this));
+					Log.d(TAG, "project sms upload: " + settings.isSMSUpload());
+					Log.d(TAG, "gsm service: " + gsmMonitor.isInService());
+					Log.d(TAG, "proj allow roaming: " + settings.isSMSAllowRoaming());
+					Log.d(TAG, "gsm service roaming: " + gsmMonitor.isRoaming());
+					Log.d(TAG, "roaming decision: " + (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()));
+					
+					if(DataSenderPreferences.getSMSUpload(DataSenderService.this) && settings.isSMSUpload() && gsmMonitor.isInService() && (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()))
+					{
+						Log.d(TAG, "Attempting SMS transmission generation");
 						
-						List<Record> records = new ArrayList<Record>(dao.retrieveUnsentRecords(schema, RECORD_SENDING_ATTEMPT_TIMEOUT_MIN));
-						Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version " + p.getVersion() + ").");
+						//Generate transmission(s)
+						List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records.iterator());
 						
-						if(records.isEmpty())
+						//Store transmission(s) & update records so associated transmission is stored
+						for(Transmission t : smsTransmissions)
 						{
-							loggers.get(p).addLine("No records to send for form " + f.getName());
-							continue;
+							Log.d(TAG, "Transmission " + ((SMSTransmission) t).getID());
+							
+							for(Record r : t.getRecords())
+								dao.store(r);
+							dao.store(t);
 						}
-						else
-							loggers.get(p).addLine(records.size() + " records to send for form " + f.getName());
 						
-						//Decide on transmission mode
-						//TODO
+						// TODO fetch unsent existing sms transmissions from db
 						
-						//HTTP over GPRS/EDGE/3G/4G or Wi-Fi
-						//TODO HTTPTransmissions
-						
-						//SMS
-						/*Log.d(TAG, "prefs sms upload: " + DataSenderPreferences.getSMSUpload(DataSenderService.this));
-						Log.d(TAG, "project sms upload: " + settings.isSMSUpload());
-						Log.d(TAG, "gsm service: " + gsmMonitor.isInService());
-						Log.d(TAG, "proj allow roaming: " + settings.isSMSAllowRoaming());
-						Log.d(TAG, "gsm service roaming: " + gsmMonitor.isRoaming());
-						Log.d(TAG, "roaming decision: " + (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()));*/
-						
-						if(DataSenderPreferences.getSMSUpload(DataSenderService.this) && settings.isSMSUpload() && gsmMonitor.isInService() && (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()))
+						//Send transmission(s)
+						//TODO check signal again?
+						for(SMSTransmission t : smsTransmissions)
 						{
-							Log.d(TAG, "Attempting SMS transmission generation");
-							
-							//Generate transmission(s)
-							List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records.iterator());
-							
-							//Store transmission(s) & update records so associated transmission is stored
-							for(Transmission t : smsTransmissions)
+							try
 							{
-								Log.d(TAG, "Transmission " + ((SMSTransmission) t).getID());
-								
-								for(Record r : t.getRecords())
-									dao.store(r);
-								dao.store(t);
-							}
-							
-							// TODO fetch unsent existing sms transmissions from db
-							
-							//Send transmission(s)
-							//TODO check signal again?
-							for(SMSTransmission t : smsTransmissions)
-							{
-								try
-								{
-									loggers.get(p).addLine("Sending SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalNumberOfParts() + " messages");
-									Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalNumberOfParts() + " messages");
-									t.send(DataSenderService.this);
+								loggers.get(p).addLine("Sending SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalNumberOfParts() + " messages");
+								Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalNumberOfParts() + " messages");
+								t.send(DataSenderService.this);
 
 //									try
 //									{	
@@ -335,154 +337,130 @@ public class DataSenderService extends Service implements TransmissionSender, St
 //									{
 //										//TODO rollback(?) & return
 //									}
-								}
-								catch(Exception e)
-								{
-									loggers.get(p).addLine("Error upon sending SMSTransmission: " + e.getMessage());
-									Log.e(TAG, "error on sending sms transmission", e);
-								}
+							}
+							catch(Exception e)
+							{
+								loggers.get(p).addLine("Error upon sending SMSTransmission: " + e.getMessage());
+								Log.e(TAG, "error on sending sms transmission", e);
 							}
 						}
 					}
-					
-					// commit changes to db:
-					// dao.commit();
 				}
+				
+				// commit changes to db:
+				// dao.commit();
+			}
 
-				// TODO Airplane mode causes bugs to the sending process of the transmissions
-				//Go back to airplane more if needed
-				if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))
+			// TODO Airplane mode causes bugs to the sending process of the transmissions
+			//Go back to airplane more if needed
+			if(DataSenderPreferences.getAirplaneMode(context) && !DeviceControl.inAirplaneMode(context))
+			{
+				try
+				{	//Wait for messages to be sent
+					Debug.d("PRE_AIRPLANE_MODE_WAITING_TIME_MS: " + PRE_AIRPLANE_MODE_WAITING_TIME_MS);
+					Thread.sleep(PRE_AIRPLANE_MODE_WAITING_TIME_MS);
+				}
+				catch(InterruptedException ie)
 				{
-					try
-					{	//Wait for messages to be sent
-						Debug.d("PRE_AIRPLANE_MODE_WAITING_TIME_MS: " + PRE_AIRPLANE_MODE_WAITING_TIME_MS);
-						Thread.sleep(PRE_AIRPLANE_MODE_WAITING_TIME_MS);
-					}
-					catch(InterruptedException ie)
-					{
-						//TODO rollback(?) & return
-					}
-
-					DeviceControl.toggleAirplaneMode(context);
-					Debug.d("Phone must go in AirplaneMode and try to get it in.");
+					//TODO rollback(?) & return
 				}
 
-				Debug.d("-- SendingTask Ended --");
+				DeviceControl.toggleAirplaneMode(context);
+				Debug.d("Phone must go in AirplaneMode and try to get it in.");
+			}
+
+			Debug.d("-- SendingTask Ended --");
+		}
+		catch(Exception e)
+		{
+			Debug.e(e);
+			Thread.currentThread().getUncaughtExceptionHandler().uncaughtException(Thread.currentThread(), e);
+		}
+	}
+		
+}
+
+private List<SMSTransmission> generateSMSTransmissions(Project project, Schema schema, Iterator<Record> records)
+{
+	//Settings:
+	Settings settings = project.getTransmissionSettings();
+	
+	//Columns to factor out:
+	Set<Column<?>> factorOut = new HashSet<Column<?>>();
+	factorOut.add(Form.COLUMN_DEVICE_ID);
+	
+	//Make transmissions: 
+	List<SMSTransmission> transmissions = new ArrayList<SMSTransmission>();
+	while(records.hasNext())
+	{
+		// Create transmission:			
+		SMSTransmission t = null;
+		switch(settings.getSMSMode())
+		{
+			case BINARY : t = new BinarySMSTransmission(schema, factorOut, settings.getSMSRelay(), settings); break;
+			case TEXT : t = new TextSMSTransmission(schema, factorOut, settings.getSMSRelay(), settings); break;
+		}
+		
+		// Add as many records as possible:
+		while(records.hasNext() && !t.isFull())
+		{
+			Record r = records.next();
+			try
+			{
+				t.addRecord(r);
 			}
 			catch(Exception e)
 			{
-				Debug.e(e);
-				Thread.currentThread().getUncaughtExceptionHandler().uncaughtException(Thread.currentThread(), e);
+				loggers.get(project).addLine("Error upon adding record: " + r.toString());
+				Log.e(TAG, "Error upon adding record", e);
 			}
 		}
-			
+		if(!t.isEmpty())
+			transmissions.add(t);
 	}
-	
-	private List<SMSTransmission> generateSMSTransmissions(Project project, Schema schema, Iterator<Record> records)
-	{
-		//Settings:
-		Settings settings = project.getTransmissionSettings();
-		
-		//Columns to factor out:
-		Set<Column<?>> factorOut = new HashSet<Column<?>>();
-		factorOut.add(Form.COLUMN_DEVICE_ID);
-		
-		//Make transmissions: 
-		List<SMSTransmission> transmissions = new ArrayList<SMSTransmission>();
-		while(records.hasNext())
-		{
-			// Create transmission:			
-			SMSTransmission t = null;
-			switch(settings.getSMSMode())
-			{
-				case BINARY : t = new BinarySMSTransmission(schema, factorOut, settings.getSMSRelay(), settings); break;
-				case TEXT : t = new TextSMSTransmission(schema, factorOut, settings.getSMSRelay(), settings); break;
-			}
-			
-			// Add as many records as possible:
-			while(records.hasNext() && !t.isFull())
-			{
-				Record r = records.next();
-				try
-				{
-					t.addRecord(r);
-				}
-				catch(Exception e)
-				{
-					loggers.get(project).addLine("Error upon adding record: " + r.toString());
-					Log.e(TAG, "Error upon adding record", e);
-				}
-			}
-			if(!t.isEmpty())
-				transmissions.add(t);
-		}
-		return transmissions;
-	}
-	
-
-	@SuppressWarnings("deprecation")
-	public void setServiceForeground(Context mContext)
-	{
-		final int myID = 9999;
-
-		// The intent to launch when the user clicks the expanded notification
-		Intent mIntent = new Intent(mContext, DataSenderPreferences.class);
-		mIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-		PendingIntent pendIntent = PendingIntent.getActivity(mContext, 0, mIntent, 0);
-
-		// This constructor is deprecated. Use Notification.Builder instead
-		Notification mNotification = new Notification(R.drawable.ic_sender, getString(R.string.title_activity_main), System.currentTimeMillis());
-
-		// This method is deprecated. Use Notification.Builder instead.
-		mNotification.setLatestEventInfo(this, getString(R.string.title_activity_main), getString(R.string.notification), pendIntent); //TODO remove use of deprecated method 
-
-		mNotification.flags |= Notification.FLAG_NO_CLEAR;
-		startForeground(myID, mNotification);
-	}
-
-	/**
-	 * Checks if a scheduledFuture is currently executing its task
-	 * 
-	 * @see http://stackoverflow.com/a/4840622/1084488
-	 * 
-	 * @param future
-	 */
-	protected static boolean isRunning(ScheduledFuture<?> future)
-	{
-	    return future.getDelay(TimeUnit.MILLISECONDS) <= 0;
-	}
-	
-	@Override
-	public IBinder onBind(Intent intent)
-	{
-		return null;
-	}
-
-	@Override
-	public boolean onUnbind(Intent intent)
-	{
-		// All clients have unbound with unbindService()
-		return allowRebind;
-	}
-
-	@Override
-	public void onRebind(Intent intent)
-	{
-		// A client is binding to the service with bindService(),
-		// after onUnbind() has already been called
-	}
-
-	@Override
-	public SMSService getSMSService()
-	{
-		return smsSender;
-	}
-
-	@Override
-	public HTTPClient getHTTPClient()
-	{
-		// TODO return HTTPClient
-		return null;
-	}
-
+	return transmissions;
 }
+
+
+@SuppressWarnings("deprecation")
+public void setServiceForeground(Context mContext)
+{
+	final int myID = 9999;
+
+	// The intent to launch when the user clicks the expanded notification
+	Intent mIntent = new Intent(mContext, DataSenderPreferences.class);
+	mIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+	PendingIntent pendIntent = PendingIntent.getActivity(mContext, 0, mIntent, 0);
+
+	// This constructor is deprecated. Use Notification.Builder instead
+	Notification mNotification = new Notification(R.drawable.ic_sender, getString(R.string.title_activity_main), System.currentTimeMillis());
+
+	// This method is deprecated. Use Notification.Builder instead.
+	mNotification.setLatestEventInfo(this, getString(R.string.title_activity_main), getString(R.string.notification), pendIntent); //TODO remove use of deprecated method 
+
+	mNotification.flags |= Notification.FLAG_NO_CLEAR;
+	startForeground(myID, mNotification);
+}
+
+ *//**
+ * Checks if a scheduledFuture is currently executing its task
+ * 
+ * @see http://stackoverflow.com/a/4840622/1084488
+ * 
+ * @param future
+ */
+/*
+ * protected static boolean isRunning(ScheduledFuture<?> future) { return future.getDelay(TimeUnit.MILLISECONDS) <= 0; }
+ * 
+ * @Override public IBinder onBind(Intent intent) { return null; }
+ * 
+ * @Override public boolean onUnbind(Intent intent) { // All clients have unbound with unbindService() return allowRebind; }
+ * 
+ * @Override public void onRebind(Intent intent) { // A client is binding to the service with bindService(), // after onUnbind() has already been called }
+ * 
+ * @Override public SMSService getSMSService() { return smsSender; }
+ * 
+ * @Override public HTTPClient getHTTPClient() { // TODO return HTTPClient return null; }
+ * 
+ * }
+ */
