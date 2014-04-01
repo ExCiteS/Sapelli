@@ -138,12 +138,12 @@ public abstract class Controller
 		// Cancel button pressed
 		addLogLine("CANCEL_BUTTON", currFormSession.currField.getID());
 		
-		goTo(new EndField(currFormSession.form, false, Next.LOOPFORM)); // loop without saving first
+		goTo(new EndField(currFormSession.form, false, Next.LOOPFORM), true); // loop without saving first (forced leaving of current field)
 	}
 
 	public void cancelAndStop()
 	{
-		goTo(new EndField(currFormSession.form, false, Next.EXITAPP)); // exit without saving first
+		goTo(new EndField(currFormSession.form, false, Next.EXITAPP), true); // exit without saving first (forced leaving of current field)
 	}
 	
 	public boolean goToPreviousForm()
@@ -211,6 +211,11 @@ public abstract class Controller
 	
 	public synchronized void goTo(Field nextField)
 	{
+		goTo(nextField, false);
+	}
+	
+	public synchronized void goTo(Field nextField, boolean forceLeave)
+	{
 		// Null check...
 		if(nextField == null)
 		{	
@@ -222,7 +227,7 @@ public abstract class Controller
 		if(currFormSession.currField != null)
 		{
 			// Check if we are allowed to leave the current field...	
-			if(currFormSession.currFieldDisplayed && !ui.getCurrentFieldUI().leave(currFormSession.record)) // leave() will call isValid() on fieldUIs that need this
+			if(currFormSession.currFieldDisplayed && (forceLeave || !ui.getCurrentFieldUI().leave(currFormSession.record))) // check if we are allowed to leave the currently displayed field (unless the leaving is forced)
 			{
 				addLogLine("STAY", "Not allowed to leave field " + currFormSession.currField.getID());
 				return; // not allowed to leave

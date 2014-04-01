@@ -5,10 +5,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
-import uk.ac.ucl.excites.sapelli.collector.model.Form.Next;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
@@ -28,15 +25,13 @@ public abstract class LocationUI<V> extends FieldUI<LocationField, V>
 	@Override
 	public boolean leave(CollectorRecord record, boolean noValidation)
 	{
-		// TODO Auto-generated method stub
-		return fals;
+		return noValidation || isValid(record);
 	}
 
 	@Override
 	public boolean isValid(CollectorRecord record)
 	{
-		// TODO Auto-generated method stub
-		return fals;
+		return field.retrieveLocation(record) != null || field.getOptional() == Optionalness.ALWAYS;
 	}
 	
 	@Override
@@ -55,21 +50,11 @@ public abstract class LocationUI<V> extends FieldUI<LocationField, V>
 		if(field.retrieveLocation(record) == null && field.isUseBestNonQualifyingLocationAfterTimeout())
 			field.storeLocation(record, controller.getCurrentBestLocation(), true);
 			
-		// If still no location set (because either isUseBestNQLAT==false or currentBestLocation==null), and locationField is non-optional: cancel & exit!
-		if(field.retrieveLocation(record) == null && field.getOptional() != Optionalness.ALWAYS)
-		{
-			activity.showErrorDialog("Cannot get GPS signal and location is mandatory for field '" + field.getID() + "'. Please, make sure your GPS receiver is enabled.", true, new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					goTo(new EndField(currFormSession.form, false, Next.EXITAPP)); // called controller.exit ... instead?
-				}
-			});
-			return;
-		}
-		
-		controller.goForward(false);
+		// If still no location set (because either isUseBestNQLAT==false or currentBestLocation==null), and locationField is non-optional: loop form!
+		if(isValid(record))
+			controller.cancelAndRestartForm(); // TODO maybe show an error somehow?
+		else
+			controller.goForward(false);
 	}
 
 }

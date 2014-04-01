@@ -23,6 +23,7 @@ import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.content.Context;
+import android.content.Intent;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
@@ -106,16 +107,30 @@ public class CollectorController extends Controller implements LocationListener,
 	{
 		if(locFields.isEmpty())
 			return;
-		// get locationmanager:
+		// Get locationmanager:
 		if(locationManager == null)
 			locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
-		// determine which provider(s) we need:
+		// Determine which provider(s) we need:
 		Set<String> providers = new HashSet<String>();
 		for(LocationField lf : locFields)
 			providers.addAll(LocationUtils.getProvider(locationManager, lf));
-		// start listening to each provider:
+		// Start listening to each provider:
 		for(String provider : providers)
+		{
 			locationManager.requestLocationUpdates(provider, LOCATION_LISTENER_UPDATE_MIN_TIME_MS, LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M, this);
+			// Test if provider is active:
+			if(!locationManager.isProviderEnabled(provider))
+			{
+				activity.showErrorDialog("Please enable location provider (" + provider + ") in device  settings.", true, new Runnable() // TODO multilang
+				{	// TODO /how will not illiterates deal with this, and what if the launcher is used (settings screen will be inaccessible)?
+					@Override
+					public void run()
+					{
+						activity.startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), 0);
+					}
+				});
+			}
+		}
 	}
 
 	public void stopLocationListener()
