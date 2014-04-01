@@ -7,22 +7,22 @@
         android:onClick="openSenderSettings"
         android:showAsAction="always"
         android:title="@string/sender_settings_menuitem"/>
-    <item
+    <!-- <item
         android:id="@+id/statistics_menuitem"
         android:icon="@android:drawable/ic_menu_info_details"
         android:onClick="showStatistics"
         android:showAsAction="always"
-        android:title="@string/statistics_menuitem"/>
+        android:title="@string/statistics_menuitem"/> -->
     <item
         android:id="@+id/create_shortcut"
         android:icon="@android:drawable/ic_menu_directions"
-        android:onClick="showStatistics"
+        android:onClick="createShortcut"
         android:showAsAction="always"
         android:title="@string/create_shortcut"/>
     <item
         android:id="@+id/remove_shortcut"
         android:icon="@android:drawable/ic_menu_delete"
-        android:onClick="showStatistics"
+        android:onClick="removeShortcut"
         android:showAsAction="always"
         android:title="@string/remove_shortcut"/>
     <item

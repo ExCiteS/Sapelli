@@ -301,25 +301,19 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		else if(item == copyDBItem)
 			return copyDBtoSD(item);
 		else if(item == createShortcutItem)
-		{
-			createShortcut();
-			return true;
-		}
+			return createShortcut(item);
 		else if(item == removeShortcutItem)
-		{
-			removeShortcut();
-			return true;
-		}
+			return removeShortcut(item);
 		return false;
 	}
 
-/*	public boolean openSenderSettings(MenuItem item)
+	public boolean openSenderSettings(MenuItem item)
 	{
 		// TODO Re-enable the service at same point
 		// startActivity(new Intent(getBaseContext(), DataSenderPreferences.class));
 		return true;
 	}
-*/
+
 
 	public boolean exportRecords(MenuItem item)
 	{
@@ -685,15 +679,16 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	}
 	
 	/**
-	 * Remove a shortcut
+	 * Create a shortcut
 	 * 
 	 */
-	public void createShortcut()
+	public boolean createShortcut(MenuItem item)
 	{
 		// Get the selected project
 		Project selectedProject = getSelectedProject(true);
 		if(selectedProject != null)
 			createShortcut(selectedProject);
+		return true;
 	}
 	
 	/**
@@ -755,12 +750,13 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	 * Remove a shortcut
 	 * 
 	 */
-	public void removeShortcut()
+	public boolean removeShortcut(MenuItem item)
 	{
 		// Get the selected project
 		Project selectedProject = getSelectedProject(true);
 		if(selectedProject != null)
 			removeShortcut(selectedProject);
+		return true;
 	}
 	
 	/**
