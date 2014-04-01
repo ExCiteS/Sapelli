@@ -25,7 +25,6 @@ import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
-import uk.ac.ucl.excites.sapelli.sender.DataSenderPreferences;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
@@ -64,7 +63,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.ipaulpro.afilechooser.utils.FileUtils;
 
@@ -176,7 +174,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			}
 		});
 
-		// Check the Preferences
+/*		// Check the Preferences
 		if(DataSenderPreferences.getTimeSchedule(this) == 1)
 		{
 			DataSenderPreferences.printPreferences(this);
@@ -185,6 +183,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
 			startActivity(settingsActivity);
 		}
+*/
 
 		// TODO Re-enable the service at same point
 		// Start the DataSenderService
@@ -295,9 +294,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	@Override
 	public boolean onMenuItemClick(MenuItem item)
 	{
-		if(item == senderSettingsItem)
+		/*if(item == senderSettingsItem)
 			return openSenderSettings(item);
-		else if(item == exportRecordsItem)
+		else*/ if(item == exportRecordsItem)
 			return exportRecords(item);
 		else if(item == importRecordsItem)
 			return importRecords(item);
@@ -316,11 +315,12 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return false;
 	}
 
-	public boolean openSenderSettings(MenuItem item)
+/*	public boolean openSenderSettings(MenuItem item)
 	{
 		startActivity(new Intent(getBaseContext(), DataSenderPreferences.class));
 		return true;
 	}
+*/
 
 	public boolean exportRecords(MenuItem item)
 	{
