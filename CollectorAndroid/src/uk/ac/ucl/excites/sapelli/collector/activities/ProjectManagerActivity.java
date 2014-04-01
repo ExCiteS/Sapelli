@@ -26,7 +26,6 @@ import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.sender.DataSenderPreferences;
-import uk.ac.ucl.excites.sapelli.sender.util.ServiceChecker;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
@@ -187,11 +186,12 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			startActivity(settingsActivity);
 		}
 
+		// TODO Re-enable the service at same point
 		// Start the DataSenderService
-		if(DataSenderPreferences.getSenderEnabled(this)) //TODO make this optional
-		{
-			ServiceChecker.startService(this);
-		}
+		// if(DataSenderPreferences.getSenderEnabled(this)) //TODO make this optional
+		// {
+		// ServiceChecker.startService(this);
+		// }
 	}
 
 	@Override
@@ -488,8 +488,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		projectStore.delete(p);
 		populateProjectList();
 
+		// TODO Re-enable the service at same point
 		// Restart the DataSenderService to stop monitoring the deleted project
-		ServiceChecker.restartActiveDataSender(this);
+		// ServiceChecker.restartActiveDataSender(this);
 	}
 
 	public void loadFile(View view)
@@ -614,8 +615,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		populateProjectList();
 		selectProjectInList(project); // select the new project
 
+		// TODO Re-enable the service at same point
 		// Restart the DataSenderService to start monitoring the new project
-		ServiceChecker.restartActiveDataSender(this);
+		// ServiceChecker.restartActiveDataSender(this);
 	}
 
 	private void storeProject(Project p)
