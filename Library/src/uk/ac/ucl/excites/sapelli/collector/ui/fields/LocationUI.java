@@ -47,6 +47,7 @@ public abstract class LocationUI<V> extends FieldUI<LocationField, V>
 		
 		CollectorRecord record = controller.getCurrentRecord();
 		
+		// Try to store current best non-qualifying location (if allowed):
 		if(field.retrieveLocation(record) == null && field.isUseBestNonQualifyingLocationAfterTimeout())
 			field.storeLocation(record, controller.getCurrentBestLocation(), true);
 			

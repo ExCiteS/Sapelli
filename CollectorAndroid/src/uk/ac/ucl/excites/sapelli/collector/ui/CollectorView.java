@@ -22,6 +22,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidCheckBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidChoiceUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLabelUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidMultiListUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidOrientationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPageUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidTextBoxUI;
@@ -173,10 +174,9 @@ public class CollectorView extends LinearLayout implements CollectorUI<View>
 	}
 	
 	@Override
-	public OrientationU<View> createOrientationUI(OrientationField of)
+	public AndroidOrientationUI createOrientationUI(OrientationField of)
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return new AndroidOrientationUI(of, controller, this);
 	}
 
 	@Override

@@ -71,7 +71,7 @@ public class CollectorController extends Controller implements LocationListener,
 		if(orientationSensor == null)
 			orientationSensor = new OrientationSensor(activity);		
 		orientationSensor.start(this); // start listening for orientation updates
-		return false; // there is no UI needed for this (for now?) 
+		return false; // there is no UI needed for this (for now)
 	}
 
 	@Override
@@ -97,7 +97,7 @@ public class CollectorController extends Controller implements LocationListener,
 	{
 		if(currFormSession.currField instanceof OrientationField)
 		{
-			((OrientationField) currFormSession.currField).storeValue(currFormSession.record, orientation);
+			((OrientationField) currFormSession.currField).storeOrientation(currFormSession.record, orientation);
 			orientationSensor.stop(); // stop listening for updates
 			goForward(false);
 		}

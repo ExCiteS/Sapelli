@@ -50,6 +50,7 @@ public class AndroidLocationUI extends LocationUI<View>
 			{
 				pageView = new Button(((CollectorView) collectorUI).getContext());
 				pageView.setText(field.getLabel());
+				// TODO some kind of icon/image would be nice (an little flag or crosshairs?)
 				pageView.setOnClickListener(new OnClickListener()
 				{
 					@Override
@@ -65,6 +66,7 @@ public class AndroidLocationUI extends LocationUI<View>
 		}
 		else
 		{
+			// TODO show coordinates/accuracy to literate users (this will need a new XML attribute)
 			if(waitView == null)
 			{
 				Context context = ((CollectorView) collectorUI).getContext();
@@ -92,7 +94,7 @@ public class AndroidLocationUI extends LocationUI<View>
 						}
 					});
 				}
-			}, ((Timeoutable) field).getTimeoutS() * 1000 /*ms*/);		
+			}, ((Timeoutable) field).getTimeoutS() * 1000 /*ms*/);
 			
 			return waitView;
 		}
