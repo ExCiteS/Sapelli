@@ -174,23 +174,21 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			}
 		});
 
-/*		// Check the Preferences
+/*		// TODO Re-enable the service at same point
+		// Check the Preferences
 		if(DataSenderPreferences.getTimeSchedule(this) == 1)
 		{
 			DataSenderPreferences.printPreferences(this);
 			Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG).show();
-
+			
 			Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
 			startActivity(settingsActivity);
 		}
-*/
-
-		// TODO Re-enable the service at same point
+		
 		// Start the DataSenderService
-		// if(DataSenderPreferences.getSenderEnabled(this)) //TODO make this optional
-		// {
-		// ServiceChecker.startService(this);
-		// }
+		if(DataSenderPreferences.getSenderEnabled(this)) //TODO make this optional
+			ServiceChecker.startService(this);
+*/
 	}
 
 	@Override
@@ -317,7 +315,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 /*	public boolean openSenderSettings(MenuItem item)
 	{
-		startActivity(new Intent(getBaseContext(), DataSenderPreferences.class));
+		// TODO Re-enable the service at same point
+		// startActivity(new Intent(getBaseContext(), DataSenderPreferences.class));
 		return true;
 	}
 */
