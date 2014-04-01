@@ -25,8 +25,6 @@ import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
-import uk.ac.ucl.excites.sapelli.sender.DataSenderPreferences;
-import uk.ac.ucl.excites.sapelli.sender.util.ServiceChecker;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
@@ -65,7 +63,6 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.ipaulpro.afilechooser.utils.FileUtils;
 
@@ -177,21 +174,22 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			}
 		});
 
-		// Check the Preferences
-		if(DataSenderPreferences.getTimeSchedule(this) == 1)
-		{
-			DataSenderPreferences.printPreferences(this);
-			Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG).show();
-
-			Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
-			startActivity(settingsActivity);
-		}
-
-		// Start the DataSenderService
-		if(DataSenderPreferences.getSenderEnabled(this)) //TODO make this optional
-		{
-			ServiceChecker.startService(this);
-		}
+		// TODO Re-enable the service at same point
+		// // Check the Preferences
+		// if(DataSenderPreferences.getTimeSchedule(this) == 1)
+		// {
+		// DataSenderPreferences.printPreferences(this);
+		// Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG).show();
+		//
+		// Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
+		// startActivity(settingsActivity);
+		// }
+		//
+		// // Start the DataSenderService
+		// if(DataSenderPreferences.getSenderEnabled(this)) //TODO make this optional
+		// {
+		// ServiceChecker.startService(this);
+		// }
 	}
 
 	@Override
@@ -318,7 +316,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 	public boolean openSenderSettings(MenuItem item)
 	{
-		startActivity(new Intent(getBaseContext(), DataSenderPreferences.class));
+		// TODO Re-enable the service at same point
+		// startActivity(new Intent(getBaseContext(), DataSenderPreferences.class));
 		return true;
 	}
 
@@ -488,8 +487,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		projectStore.delete(p);
 		populateProjectList();
 
+		// TODO Re-enable the service at same point
 		// Restart the DataSenderService to stop monitoring the deleted project
-		ServiceChecker.restartActiveDataSender(this);
+		// ServiceChecker.restartActiveDataSender(this);
 	}
 
 	public void loadFile(View view)

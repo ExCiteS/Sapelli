@@ -112,12 +112,14 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
-
+        <!--
         <service
             android:name="uk.ac.ucl.excites.sapelli.sender.DataSenderService"
             android:icon="@drawable/ic_excites_grey"
             android:label="@string/service_name" >
         </service>
+        -->
+
         <service
             android:name="com.dropbox.sync.android.DbxSyncService"
             android:enabled="true"
@@ -125,6 +127,7 @@
             android:label="Dropbox Sync" >
         </service>
 
+        <!--
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.sender.BootReceiver"
             android:exported="true" >
@@ -132,6 +135,8 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+        -->
+
     </application>
 
 </manifest>
