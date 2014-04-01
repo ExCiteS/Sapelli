@@ -278,7 +278,7 @@ public abstract class Controller
 		
 		/* TODO optional/valid logic: 
 		 * 
-		 * (optialness=always && (field.isNoColumn() || !field.getcolumn.isvalueset(record))) || (optionalness!=always && fieldUI.isValid()))
+		 * (optionalness=always && (field.isNoColumn() || !field.getcolumn.isvalueset(record))) || (optionalness!=always && fieldUI.isValid()))
 		 * 		 * 	
 		 * assumption: a set value is (still?) valid (is this true for locations?)
 		 * 

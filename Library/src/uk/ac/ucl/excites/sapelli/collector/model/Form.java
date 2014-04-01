@@ -75,7 +75,6 @@ public class Form
 	// Fields
 	private Field start;
 	private final List<Field> fields;
-	private final List<LocationField> locationFields;
 	private final List<Trigger> triggers;
 	
 	// Android shortcut:
@@ -110,7 +109,6 @@ public class Form
 		this.id = id;
 		
 		this.fields = new ArrayList<Field>();
-		this.locationFields = new ArrayList<LocationField>();
 		this.triggers = new ArrayList<Trigger>();
 		
 		// Set Form index & add it to the Project:
@@ -132,8 +130,6 @@ public class Form
 	public void addField(Field f)
 	{
 		fields.add(f);
-		if(f instanceof LocationField)
-			locationFields.add((LocationField) f);
 	}
 
 	public int getFieldIndex(Field field)
@@ -394,7 +390,11 @@ public class Form
 
 	public List<LocationField> getLocationFields()
 	{
-		return locationFields;
+		List<LocationField> locFields = new ArrayList<LocationField>();
+		for(Field f : fields)
+			if(f instanceof LocationField)
+				locFields.add((LocationField) f);
+		return locFields;
 	}
 
 	public List<LocationField> getLocationFields(boolean onlyStartWithForm)
