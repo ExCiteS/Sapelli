@@ -33,7 +33,7 @@ public abstract class TextBoxUI<V> extends NonSelfLeavingFieldUI<TextBoxField, V
 	public boolean isValid(CollectorRecord record)
 	{
 		// TODO deal with optionallity? minimal lenths?
-		String text = getValue();
+		String text = getValue();		
 		// Too short:
 		if(text.length() < field.getMinLength())
 		{

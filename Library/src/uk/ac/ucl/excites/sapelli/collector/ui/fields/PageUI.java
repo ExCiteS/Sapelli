@@ -47,7 +47,11 @@ public abstract class PageUI<V> extends NonSelfLeavingFieldUI<Page, V>
 		{
 			for(FieldUI<?, V> fUI : fieldUIs)
 				if(!fUI.getField().isNoColumn())
-					fUI.leave(record, true); // skip validation (otherwise we'd repeat it), this means that NonSelfLeavingFieldUIs will only store their value
+					fUI.leave(record, true); // skip validation (otherwise we'd repeat it), this means that NonSelfLeavingFieldUIs (and Boolean-column Buttons) will only store their value
+			
+			// Page will be left (and not to go to one of its contained fields), so disable its triggers:
+			controller.disableTriggers(field.getTriggers());
+			
 			return true;
 		}
 		return false;
@@ -58,9 +62,16 @@ public abstract class PageUI<V> extends NonSelfLeavingFieldUI<Page, V>
 	{
 		for(FieldUI<?, V> fUI : fieldUIs)
 			if(!fUI.isValid(record))
+			{
+				markValidity(fUI, false); // mark with red border
 				return false;
+			}
+			else
+				markValidity(fUI, true); // remove red border (if it is there)
 		return true;
 	}
+	
+	protected abstract void markValidity(FieldUI<?, V> fieldUI, boolean valid);
 
 	@Override
 	protected void storeValue(CollectorRecord record)

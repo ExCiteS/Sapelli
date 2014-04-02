@@ -58,10 +58,19 @@ public class ButtonField extends Field
 		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id), label);
 		setColumnType(DEFAULT_COLUMN);
 	}
-
-	public void setColumnType(String column) throws IllegalArgumentException
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#canJumpFromPage()
+	 */
+	@Override
+	public boolean canJumpFromPage()
 	{
-		setColumnType(ButtonColumnType.valueOf(column.toUpperCase()));
+		return true;
+	}
+
+	public void setColumnType(String columnTypeStr) throws IllegalArgumentException
+	{
+		setColumnType(ButtonColumnType.valueOf(columnTypeStr.toUpperCase()));
 	}
 	
 	public void setColumnType(ButtonColumnType columnType)
@@ -82,9 +91,13 @@ public class ButtonField extends Field
 	{
 		this.noColumn = noColumn;
 		if(noColumn)
-			this.columnType = ButtonColumnType.NONE;
-		else
-			throw new UnsupportedOperationException("setNoColumn(false) is unsupported on ButtonFields, use setColumn() instead.");
+			columnType = ButtonColumnType.NONE;
+		else if(columnType == ButtonColumnType.NONE) // intended column type is still unknown
+		{
+			throw new UnsupportedOperationException("setNoColumn(false) is unsupported on ButtonFields, use setColumnType(String) or setColumnType(ButtonColumnType) instead.");
+			// If we were to start parsing noColumn for more than just ChoiceFields (as currently), then this warning would be nicer than the exception above:
+			//form.addWarning("Attribute 'noColumn=\"false\"' is ambiguous (and therefore ignored) on <Button>s, please use 'column=\"boolean\"' or 'column=\"datetime\"' instead."); 
+		}
 	}
 	
 	/* (non-Javadoc)

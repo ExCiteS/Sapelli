@@ -9,6 +9,12 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
 
+/**
+ * @author mstevens
+ *
+ * @param <MF>
+ * @param <V>
+ */
 public abstract class MediaUI<MF extends MediaField, V> extends SelfLeavingFieldUI<MF, V>
 {
 
@@ -22,18 +28,17 @@ public abstract class MediaUI<MF extends MediaField, V> extends SelfLeavingField
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
 			controller.addLogLine("ATTACHMENT", field.getID(), mediaAttachment.getName());
-			CollectorRecord record = controller.getCurrentRecord();
 			
-			field.incrementCount(record); // Store/increase number of pictures/recordings taken
+			field.incrementCount(controller.getCurrentRecord()); // Store/increase number of pictures/recordings taken
 			
 			// Store file:
 			controller.addMediaAttachment(mediaAttachment);
 			
-			controller.goForward(false); // goto next/jump field
+			controller.goForward(userRequested); // goto next/jump field
 		}
 		else
 		{
-			controller.addLogLine("ATTACHMENT", field.getID(), "NONE");
+			controller.addLogLine("ATTACHMENT", field.getID(), "-NONE-");
 			
 			if(field.getOptional() != Optionalness.ALWAYS)
 				// at least one attachment is required:
@@ -51,10 +56,10 @@ public abstract class MediaUI<MF extends MediaField, V> extends SelfLeavingField
 	@Override
 	public boolean isValid(CollectorRecord record)
 	{
-		return field.getCount(record) >= field.getMin();
+		return field.isNoColumn() || (field.getCount(record) >= field.getMin() && field.getCount(record) <= field.getMax());
 	}
 	
 	@Override
-	public abstract void cancel();
+	public abstract void cancel(); // force concrete subclass to implement this (e.g. to stop audio recording)!
 	
 }

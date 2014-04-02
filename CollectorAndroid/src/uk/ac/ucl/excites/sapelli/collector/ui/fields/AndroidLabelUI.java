@@ -4,6 +4,8 @@ import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.TextView;
 
@@ -28,8 +30,11 @@ public class AndroidLabelUI extends LabelUI<View>
 		if(label == null)
 		{
 			label = new TextView(((CollectorView) collectorUI).getContext());
+			label.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 			label.setText(field.getLabel());
-			//TODO bold? larger font?
+			label.setTextSize(TypedValue.COMPLEX_UNIT_PX, label.getTextSize() * field.getTextSizeScale()); 
+			//TODO bold?
+			label.setGravity(field.isCentered() ? Gravity.CENTER_HORIZONTAL : label.getGravity());
 		}
 		return label;
 	}

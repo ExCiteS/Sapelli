@@ -135,6 +135,17 @@ public abstract class Field implements JumpSource
 	}
 	
 	/**
+	 * By default fields that are contained within a Page cannot jump away from the page
+	 * Some subclasses (i.e. ButtonField) will override this. 
+	 * 
+	 * @return
+	 */
+	public boolean canJumpFromPage()
+	{
+		return false;
+	}
+	
+	/**
 	 * @return the showOnCreate
 	 */
 	public boolean isShowOnCreate()
@@ -317,7 +328,7 @@ public abstract class Field implements JumpSource
 	 */
 	public boolean isRoot()
 	{
-		return true;
+		return this == getRoot();
 	}
 	
 	/**

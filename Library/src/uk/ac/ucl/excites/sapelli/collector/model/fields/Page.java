@@ -45,7 +45,14 @@ public class Page extends Field
 	
 	public void addField(Field field)
 	{
+		if(field == null)
+			throw new NullPointerException("Cannot add a null field object to a Page");
+		
 		fields.add(field);
+		
+		// Make child field "jump back" to the page, unless it is allowed to jump elsewhere:
+		if(!field.canJumpFromPage())
+			field.setJump(this);
 	}
 
 	public List<Field> getFields()

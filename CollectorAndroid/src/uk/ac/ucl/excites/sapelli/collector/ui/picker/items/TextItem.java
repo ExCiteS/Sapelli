@@ -30,6 +30,8 @@ public class TextItem extends Item
 		TextView txtView = new FontFitTextView(context);
 		txtView.setTextColor(Color.BLACK);
 		txtView.setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
+		txtView.setIncludeFontPadding(false);
+		//txtView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
 		txtView.setText(text);
 		return txtView;
 	}

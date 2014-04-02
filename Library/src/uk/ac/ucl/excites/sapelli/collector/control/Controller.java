@@ -30,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
@@ -121,7 +122,7 @@ public abstract class Controller
 			stopLocationListener(); // stop listening for location updates (if we were still listening for another form for example)
 	
 		// Log start form
-		addLogLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getIndex() + ")");
+		addLogLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getPosition() + ")");
 		
 		// Setup the triggers
 		setupTriggers(currFormSession.form.getTriggers());
@@ -171,7 +172,7 @@ public abstract class Controller
 		// Log interaction:
 		if(requestedByUser)
 			addLogLine("FORWARD_BUTTON", currFormSession.currField.getID());
-	
+		
 		if(currFormSession.currField != null)
 			goTo(currFormSession.form.getNextField(currFormSession.currField));
 		else
@@ -214,6 +215,10 @@ public abstract class Controller
 		goTo(nextField, false);
 	}
 	
+	/**
+	 * @param nextField
+	 * @param forceLeave when true the previous field is left without any validation nor storage(!), under the assumption the user will come back there. It is *not* the same as the noValidation argument on leave(Record,boolean).
+	 */
 	public synchronized void goTo(Field nextField, boolean forceLeave)
 	{
 		// Null check...
@@ -227,7 +232,7 @@ public abstract class Controller
 		if(currFormSession.currField != null)
 		{
 			// Check if we are allowed to leave the current field...	
-			if(currFormSession.currFieldDisplayed && (forceLeave || !ui.getCurrentFieldUI().leave(currFormSession.record))) // check if we are allowed to leave the currently displayed field (unless the leaving is forced)
+			if(!forceLeave && currFormSession.currFieldDisplayed && !ui.getCurrentFieldUI().leave(currFormSession.record)) // check if we are allowed to leave the currently displayed field (unless the leaving is forced)
 			{
 				addLogLine("STAY", "Not allowed to leave field " + currFormSession.currField.getID());
 				return; // not allowed to leave
@@ -252,21 +257,14 @@ public abstract class Controller
 		
 		// Entering new current field...
 		addLogLine("REACHED", currFormSession.currField.getID());
+		Field holdCurrentField = currFormSession.currField; // remember the "current" current field, to deal with case in which another goForward/goTo call happens from the enter() method (e.g. when entering a leaf choice) 
 		if(currFormSession.currField.enter(this, false))
 		{	// update UI if needed
 			ui.setField(currFormSession.currField);
 			currFormSession.currFieldDisplayed = true;
 		}
-		else
-			currFormSession.currFieldDisplayed = false;
-	}
-	
-	public void goToFromPage(Field fieldOnPage)
-	{
-
-		//TODO skip validation (allowing to temporarily leave the page), what with control flow ("back" should go back to page and "next" as well)? (probably this needs a custom method on the controller instead)
-		goTo(fieldOnPage);
-		
+		else if(currFormSession.currField == holdCurrentField)
+			currFormSession.currFieldDisplayed = false; /// only when the current field hasn't changed!
 	}
 
 	/**
@@ -275,9 +273,9 @@ public abstract class Controller
 	public ControlsState getControlsState()
 	{
 		ControlsState state = new ControlsState(
-				currFormSession.form.isShowBack()		&& currFormSession.currField.isShowBack()		&& (!currFormSession.fieldHistory.empty() || !formHistory.empty()),
-				currFormSession.form.isShowCancel()		&& currFormSession.currField.isShowCancel()		&& (!currFormSession.fieldHistory.empty() || currFormSession.currField instanceof Page),
-				currFormSession.form.isShowForward()	&& currFormSession.currField.isShowForward()	&& currFormSession.currField.getOptional() == Optionalness.ALWAYS);
+				currFormSession.currField.isShowBack()		&& (!currFormSession.fieldHistory.empty() || !formHistory.empty()),
+				currFormSession.currField.isShowCancel()	&& (!currFormSession.fieldHistory.empty() || currFormSession.currField instanceof Page),
+				currFormSession.currField.isShowForward()	&& currFormSession.currField.getOptional() == Optionalness.ALWAYS);
 		// Note: these paths may be null (in which case built-in defaults must be used)
 		
 		
@@ -299,10 +297,10 @@ public abstract class Controller
 			return;
 		
 		// Finalise the currentRecord:
-		currFormSession.form.finish(currFormSession.record); // sets end-time if necessary
+		currFormSession.form.finish(currFormSession.record); // (re)sets the end-time if necessary
 	
 		// Store currentRecord
-		recordStore.store(currFormSession.record);
+		recordStore.store(new Record(currFormSession.record)); //TODO remove new Record()  (this is a hopefully temporarily hack to deal with db4o problems with CollectorRecords for Forms that have Pages)
 	
 		// Log record:
 		addLogLine("RECORD", currFormSession.record.toString());
@@ -347,9 +345,12 @@ public abstract class Controller
 	 */
 	public boolean enterChoiceField(ChoiceField cf)
 	{
-		// Deal with leaves (should never happen, but just in case...):
+		// Deal with leaves:
 		if(cf.isLeaf())
-			throw new IllegalStateException("Cannot enter a leaf choice (" + cf.toString() + ")");
+		{
+			goForward(true); // go to next field (leaf will not be remembered on the fieldHistory stack because it has skipOnBack=true)
+			return false;
+		}
 		// The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
 		for(ChoiceField child : cf.getChildren())
 			if(isFieldEndabled(child))
@@ -408,6 +409,15 @@ public abstract class Controller
 	 */
 	public boolean enterPage(Page page)
 	{
+		// Deal with returning from field that is part of the page itself:
+		Field prevField = currFormSession.getPreviousField();
+		while(prevField != null && (prevField == page || page.getFields().contains(prevField.getRoot())))
+		{
+			currFormSession.fieldHistory.pop();
+			prevField = currFormSession.getPreviousField();
+		}
+		
+		// Enter child fields (but signal that they are entered as part of entering the page):
 		for(Field f : page.getFields())
 			f.enter(this, true); // enter with page
 		
@@ -547,9 +557,8 @@ public abstract class Controller
 	/**
 	 * @param triggers
 	 * 
-	 * TODO not yet called when leaving a page that has triggers!
 	 */
-	private void disableTriggers(List<Trigger> triggers)
+	public void disableTriggers(List<Trigger> triggers)
 	{
 		for(Trigger trigger : triggers)
 			disableTrigger(trigger);
@@ -717,6 +726,11 @@ public abstract class Controller
 			this.tempDisabledFields = new HashSet<Field>();
 			this.mediaAttachments = new ArrayList<File>();
 			this.startTime = System.currentTimeMillis();
+		}
+		
+		public Field getPreviousField()
+		{
+			return fieldHistory.isEmpty() ? null : fieldHistory.peek();
 		}
 		
 	}

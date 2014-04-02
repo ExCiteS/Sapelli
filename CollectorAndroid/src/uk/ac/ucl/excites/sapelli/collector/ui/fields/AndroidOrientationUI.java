@@ -38,7 +38,7 @@ public class AndroidOrientationUI extends OrientationUI<View>
 					@Override
 					public void onClick(View v)
 					{
-						controller.goToFromPage(field);
+						controller.goTo(field, true); // go to field and leave page without validation
 					}
 				});
 			}

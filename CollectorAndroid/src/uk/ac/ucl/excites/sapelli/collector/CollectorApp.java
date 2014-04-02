@@ -35,7 +35,7 @@ public class CollectorApp extends Application
 	static private final String TAG = "CollectorApp";
 	
 	static private final String SAPELLI_FOLDER = "Sapelli" + File.separatorChar;
-	static private final String DATABASE_NAME = "Sapelli.db4o";
+	static private final String DATABASE_BASENAME = "Sapelli";
 	static private final String DEMO_PREFIX = "Demo_";
 	
 	static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
@@ -182,7 +182,7 @@ public class CollectorApp extends Application
 	{
 		if(projectStore == null)
 		{
-			projectStore = USE_PREFS_FOR_PROJECT_STORAGE ? new PrefProjectStore(this) : new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_NAME);
+			projectStore = USE_PREFS_FOR_PROJECT_STORAGE ? new PrefProjectStore(this) : new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			storeClients.put(projectStore, new ArrayList<StoreClient>());
 		}
 		storeClients.get(projectStore).add(client); //add to set of clients currently using the projectStore
@@ -202,7 +202,7 @@ public class CollectorApp extends Application
 	{
 		if(recordStore == null)
 		{
-			recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_NAME);
+			recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			storeClients.put(recordStore, new ArrayList<StoreClient>());
 		}
 		storeClients.get(recordStore).add(client); //add to set of clients currently using the projectStore

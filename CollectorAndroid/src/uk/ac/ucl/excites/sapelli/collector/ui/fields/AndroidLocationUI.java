@@ -56,7 +56,7 @@ public class AndroidLocationUI extends LocationUI<View>
 					@Override
 					public void onClick(View v)
 					{
-						controller.goToFromPage(field);
+						controller.goTo(field, true); // go to field and leave page without validation
 					}
 				});
 				// TODO add spinner on button (when startWithForm or startWithPage), make change it for a "got location" icon when location is obtained

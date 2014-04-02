@@ -6,19 +6,16 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 
 /**
- * Super class for FieldUIs that "leave themselves", rather than requiring an external request for that.
- * It is assumed they will handle and validation or storage behaviour themselves before the calling of
- * leave(Record), so no validation or storage is repeated at that point.
+ * Super class for FieldUIs that can "leave themselves", rather than requiring an external request for that.
+ * It is assumed they will handle any validation and storage behaviour themselves _before_ the calling of leave().
+ * However, there are cases in which it will still be possible to leave it by means of external request
+ * (one obvious example is the pressing of the forward button on a field with optionality=ALWAYS).
+ * Therefore, basic validation of stored values is repeated at the point of leaving, but storage itself is not!
  * 
- * Note 1: subclasses still need to implements isValid() such that we can check if they are in a valid
- * state from the outside (e.g. to either show or hide the forward button on non-optional but revisited
- * fields that have already acquired a value).
- * 
- * Note 2: if the field has optionality = ALWAYS it will still be possible to leave it by means of external
- * request (i.e. the forward button being pressed), when this happens it is implied that the value no value
- * has to be stored, nor validated, for that matter.
+ * Note: subclasses may override isValid() to perform more specific checks (or no check at all if that is appropriate).
  * 
  * @param <F>
  * @param <V>
@@ -39,7 +36,16 @@ public abstract class SelfLeavingFieldUI<F extends Field, V> extends FieldUI<F, 
 	@Override
 	public boolean leave(CollectorRecord record, boolean noValidation)
 	{
-		return true; // no validation or storage logic at leaving time.
+		return noValidation || isValid(record); // no storage happens at this point!
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#isValid(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
+	 */
+	@Override
+	public boolean isValid(CollectorRecord record)
+	{
+		return field.isNoColumn() || field.getOptional() == Optionalness.ALWAYS || field.getColumn().isValueSet(record);
 	}
 
 }

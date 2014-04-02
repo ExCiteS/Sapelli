@@ -5,37 +5,24 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
 
 /**
  * @author mstevens
  *
  */
-public abstract class LocationUI<V> extends FieldUI<LocationField, V>
+public abstract class LocationUI<V> extends SelfLeavingFieldUI<LocationField, V>
 {
 
 	public LocationUI(LocationField field, Controller controller, CollectorUI<V> collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}
-
-	@Override
-	public boolean leave(CollectorRecord record, boolean noValidation)
-	{
-		return noValidation || isValid(record);
-	}
-
-	@Override
-	public boolean isValid(CollectorRecord record)
-	{
-		return field.retrieveLocation(record) != null || field.getOptional() == Optionalness.ALWAYS;
-	}
 	
 	@Override
-	public abstract void cancel();
+	public abstract void cancel(); // force concrete subclass to implement this (e.g. to stop listening for locations)!
 	
 	protected void timeout()
 	{

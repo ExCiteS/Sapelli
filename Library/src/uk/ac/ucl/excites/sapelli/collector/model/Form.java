@@ -32,8 +32,8 @@ public class Form
 	/**
 	 * Allowed form indexes: 0 to {@link Project#MAX_FORMS} - 1
 	 */
-	public static final int FORM_INDEX_SIZE = Schema.SCHEMA_ID_SIZE /* 36 */ - Project.PROJECT_HASH_SIZE /* 32 */; // = 4 bits
-	public static final IntegerRangeMapping FORM_INDEX_FIELD = IntegerRangeMapping.ForSize(0, FORM_INDEX_SIZE);
+	public static final int FORM_POSITION_SIZE = Schema.SCHEMA_ID_SIZE /* 36 */ - Project.PROJECT_HASH_SIZE /* 32 */; // = 4 bits
+	public static final IntegerRangeMapping FORM_POSITION_FIELD = IntegerRangeMapping.ForSize(0, FORM_POSITION_SIZE);
 	
 	public static final boolean END_TIME_DEFAULT = false;
 
@@ -49,11 +49,12 @@ public class Form
 	public static final String V1X_NEXT_LOOP = "LOOP";
 	public static final String V1X_NEXT_EXIT = "EXIT";
 	
+	public static final boolean V1X_DEFAULT_SHOW_BACK = true;
+	public static final boolean V1X_DEFAULT_SHOW_CANCEL = true;
+	public static final boolean V1X_DEFAULT_SHOW_FORWARD = true;
+	
 	public static final boolean DEFAULT_SINGLE_PAGE = false;
 	public static final boolean DEFAULT_VIBRATE = true;
-	public static final boolean DEFAULT_SHOW_BACK = true;
-	public static final boolean DEFAULT_SHOW_CANCEL = true;
-	public static final boolean DEFAULT_SHOW_FORWARD = true;
 	public static final String DEFAULT_BUTTON_BACKGROUND_COLOR = "#E8E8E8"; //light gray
 	public static final boolean DEFAULT_ANIMATION = true;
 	public static final boolean DEFAULT_OBFUSCATE_MEDIA_FILES = false;
@@ -65,7 +66,7 @@ public class Form
 
 	// Dynamics-------------------------------------------------------
 	private final Project project;
-	private final int index;
+	private final int position;
 	private boolean producesRecords = true;
 	private Schema schema;
 	private final String id;
@@ -95,9 +96,6 @@ public class Form
 	private String saveSoundRelativePath;
 
 	// Buttons:
-	private boolean showBack = DEFAULT_SHOW_BACK;
-	private boolean showCancel = DEFAULT_SHOW_CANCEL;
-	private boolean showForward = DEFAULT_SHOW_FORWARD;
 	private String buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
 	private String backButtonImageRelativePath;
 	private String cancelButtonImageRelativePath;
@@ -112,10 +110,10 @@ public class Form
 		this.triggers = new ArrayList<Trigger>();
 		
 		// Set Form index & add it to the Project:
-		if(FORM_INDEX_FIELD.fits(project.getForms().size()))
-			this.index = project.getForms().size();
+		if(FORM_POSITION_FIELD.fits(project.getForms().size()))
+			this.position = project.getForms().size();
 		else
-			throw new IllegalArgumentException("Invalid form index, valid values are " + FORM_INDEX_FIELD.getLogicalRangeString() + " (up to " + Project.MAX_FORMS + " forms per project).");
+			throw new IllegalArgumentException("Invalid form index, valid values are " + FORM_POSITION_FIELD.getLogicalRangeString() + " (up to " + Project.MAX_FORMS + " forms per project).");
 		project.addForm(this); //!!!
 	}
 
@@ -137,20 +135,25 @@ public class Form
 		return fields.indexOf(field.getRoot());
 	}
 
+	/**
+	 * @param current
+	 * @return the next field to go to, or null if the next field could not be determined because the current field is part of a page
+	 */
 	public Field getNextField(Field current)
 	{
-		int currentIndex = getFieldIndex(current);
-		// Exception handling:
-		if(currentIndex < 0)
-			throw new IllegalArgumentException("The current field is not part of this form.");
 		// Check for jump field (possibly the one of a parent in case of ChoiceField):
 		Field nextF = current.getJump();
 		if(nextF == null)
-			// No jump is set, check for field below current one:
+		{	// No jump is set, check for field below current one:
+			int currentIndex = getFieldIndex(current);
+			if(currentIndex < 0)
+				// This field is not part of the form (it is likely part of a page):
+				return null; // don't throw an exception here
 			if(currentIndex + 1 < fields.size())
 				nextF = fields.get(currentIndex + 1); // go to next field in the form
 			else
 				nextF = new EndField(this, true, next); // current field is the last of the form, go to the form's "next", but save the record first
+		}
 		return nextF; // use jump as next
 	}
 
@@ -271,57 +274,6 @@ public class Form
 	public void setShortcutImageRelativePath(String shortcutImageRelativePath)
 	{
 		this.shortcutImageRelativePath = shortcutImageRelativePath;
-	}
-
-	/**
-	 * @return the showBack
-	 */
-	public boolean isShowBack()
-	{
-		return showBack;
-	}
-
-	/**
-	 * @param showBack
-	 *            the showBack to set
-	 */
-	public void setShowBack(boolean showBack)
-	{
-		this.showBack = showBack;
-	}
-
-	/**
-	 * @return the showCancel
-	 */
-	public boolean isShowCancel()
-	{
-		return showCancel;
-	}
-
-	/**
-	 * @param showCancel
-	 *            the showCancel to set
-	 */
-	public void setShowCancel(boolean showCancel)
-	{
-		this.showCancel = showCancel;
-	}
-
-	/**
-	 * @return the showForward
-	 */
-	public boolean isShowForward()
-	{
-		return showForward;
-	}
-
-	/**
-	 * @param showForward
-	 *            the showForward to set
-	 */
-	public void setShowForward(boolean showForward)
-	{
-		this.showForward = showForward;
 	}
 
 	/**
@@ -496,11 +448,11 @@ public class Form
 	}
 
 	/**
-	 * @return the index
+	 * @return the positon within the project
 	 */
-	public int getIndex()
+	public int getPosition()
 	{
-		return index;
+		return position;
 	}
 
 	/**

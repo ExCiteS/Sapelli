@@ -9,10 +9,11 @@ import android.content.Context;
 import android.graphics.Color;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.LinearLayout.LayoutParams;
 import android.widget.TextView;
 
 /**
@@ -21,8 +22,6 @@ import android.widget.TextView;
  */
 public class AndroidTextBoxUI extends TextBoxUI<View>
 {
-	
-	static private final LayoutParams FULL_WIDTH = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
 	
 	private TextBoxView view;
 
@@ -73,7 +72,6 @@ public class AndroidTextBoxUI extends TextBoxUI<View>
 	public class TextBoxView extends LinearLayout
 	{
 
-		private TextBoxField field;
 		private EditText editText;
 		private TextView errorMsg;
 		
@@ -82,16 +80,17 @@ public class AndroidTextBoxUI extends TextBoxUI<View>
 			super(context);
 
 			setOrientation(LinearLayout.VERTICAL);
+			setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 
 			// Label:
 			TextView label = new TextView(context);
 			label.setText(field.getLabel());
-			label.setLayoutParams(FULL_WIDTH);
+			label.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 			addView(label);
 
 			// Textbox:
 			editText = new EditText(context);
-			editText.setLayoutParams(FULL_WIDTH);
+			editText.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 			if(field.isMultiline() == true)
 				editText.setSingleLine(false);
 			else
@@ -100,8 +99,10 @@ public class AndroidTextBoxUI extends TextBoxUI<View>
 
 			// Error msg:
 			errorMsg = new TextView(context);
-			errorMsg.setLayoutParams(FULL_WIDTH);
+			errorMsg.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 			errorMsg.setTextColor(Color.RED);
+			errorMsg.setGravity(Gravity.RIGHT);
+			errorMsg.setTextSize(TypedValue.COMPLEX_UNIT_PX, errorMsg.getTextSize() * 0.9f);
 			errorMsg.setVisibility(GONE);
 			addView(errorMsg);
 

@@ -41,6 +41,7 @@ public class AndroidMultiListUI extends MultiListUI<View> //extends LinearLayout
 		{
 			view = new LinearLayout(((CollectorView) collectorUI).getContext());
 			view.setOrientation(LinearLayout.VERTICAL);
+			view.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 		}
 		
 		// Update...

@@ -24,13 +24,17 @@ public abstract class ButtonUI<V> extends SelfLeavingFieldUI<ButtonField, V>
 	}
 	
 	/**
-	 * If the button has a boolean columns but it is not pressed the 'null' value
+	 * In fact ButtonUI is somewhat of a mix between SelfLeaving and NonSelfLeaving,
+	 * because sometimes we *do* want to execute storage behaviour upon leaving:
+	 * 
+	 * If the button has a boolean column but it is not pressed the 'null' value
 	 * in the column should still be changed to 'false' to indicate that the button
 	 * was shown to the user (i.e. the field was reached), and to ensure the record
 	 * can be saved if the button is non-optional.
 	 * 
-	 * We do not have a similar mechanism for datatime columns, so it is recommended
-	 * to always make buttons with a datatime column optional (which they are by default).
+	 * We do not have a similar mechanism for datetime columns, so it is recommended
+	 * to always make buttons with a datetime column optional (a warning is shown if
+	 * this is not the case).
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI#leave(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord, boolean)
 	 */
@@ -41,16 +45,16 @@ public abstract class ButtonUI<V> extends SelfLeavingFieldUI<ButtonField, V>
 		{
 			BooleanColumn column = (BooleanColumn) field.getColumn();
 			if(!column.isValueSet(record)) // if value is null (and only then!)...
-				column.storeValue(record, false); // save 'false' to indicate that the button was not pressed
+				column.storeValue(record, false); // save 'false' to indicate that the button was *not* pressed
 		}
-		return true;
+		return super.leave(record, noValidation);
 	}
 	
 	protected void buttonPressed()
 	{
 		CollectorRecord record = controller.getCurrentRecord();
 		
-		// Store boolean/datetime:
+		// Store boolean or datetime:
 		if(field.getColumnType() == ButtonColumnType.BOOLEAN)
 			((BooleanColumn) field.getColumn()).storeValue(record, true);
 		else if(field.getColumnType() == ButtonColumnType.DATETIME)
@@ -66,18 +70,9 @@ public abstract class ButtonUI<V> extends SelfLeavingFieldUI<ButtonField, V>
 		 * Simply calling goForward() is not a good idea because if the button is on a page (which is usually the case)
 		 * the current field of the controller is the page, not the button, so in that case goForward() will go to the
 		 * jump/next of the page, instead of the jump/next of the button. Therefore we first check if he button has a
-		 * jump and if it has so goTo there. If it does not have a jump we go the the next of the button or, more likely
-		 * the page that contains it, by means of goForward().
+		 * jump and if it has so goTo there. If it does not have a jump we call goForward() which will take is to the
+		 * next/jump of the page (if the button is on one) or to the next of the button (if it is not on a page).
 		 */
-	}
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#isValid(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
-	 */
-	@Override
-	public boolean isValid(CollectorRecord record)
-	{
-		return true;
 	}
 
 }

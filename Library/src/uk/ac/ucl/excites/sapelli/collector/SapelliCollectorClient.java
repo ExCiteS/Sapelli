@@ -26,23 +26,23 @@ public class SapelliCollectorClient implements TransmissionClient
 	// STATICS-------------------------------------------------------
 	static public long GetSchemaID(Form form)
 	{
-		return GetSchemaID(form.getProject().getHash(), form.getIndex());
+		return GetSchemaID(form.getProject().getHash(), form.getPosition());
 	}
 	
 	static public long GetSchemaID(long projectHash, int formIndex)
 	{
-		return	(projectHash << Form.FORM_INDEX_SIZE) +	// Project hash takes up first 32 bits
+		return	(projectHash << Form.FORM_POSITION_SIZE) +	// Project hash takes up first 32 bits
 				formIndex;								// Form index takes up next 4 bits
 	}
 	
 	static public long GetProjectHash(long schemaID)
 	{
-		return schemaID >> Form.FORM_INDEX_SIZE;
+		return schemaID >> Form.FORM_POSITION_SIZE;
 	}
 	
 	static public int GetFormIndex(long schemaID)
 	{
-		return (int) (schemaID % (1 << Form.FORM_INDEX_SIZE));
+		return (int) (schemaID % (1 << Form.FORM_POSITION_SIZE));
 	}
 		
 	// DYNAMICS------------------------------------------------------

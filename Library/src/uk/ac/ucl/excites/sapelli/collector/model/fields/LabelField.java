@@ -19,6 +19,11 @@ public class LabelField extends Field
 {
 
 	static public final String ID_PREFIX = "lbl";
+	static public final float DEFAULT_TEXT_SIZE_SCALE = 1.0f; // same as surrounding text  
+	static public final boolean DEFAULT_TEXT_CENTERED = false;
+	
+	private float textSizeScale = DEFAULT_TEXT_SIZE_SCALE;
+	private boolean centered = DEFAULT_TEXT_CENTERED;
 	
 	/**
 	 * @param form
@@ -32,12 +37,44 @@ public class LabelField extends Field
 	/**
 	 * @param form
 	 * @param id
-	 * @param text
+	 * @param labelText
 	 */
-	public LabelField(Form form, String id, String text)
+	public LabelField(Form form, String id, String labelText)
 	{	
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (text.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(text.trim(), "_")) : id), text);
+		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (labelText.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(labelText.trim(), "_")) : id), labelText);
 		this.noColumn = true;
+	}
+	
+	/**
+	 * @return the textSizeScale
+	 */
+	public float getTextSizeScale()
+	{
+		return textSizeScale;
+	}
+
+	/**
+	 * @param textSizeScale the textSizeScale to set
+	 */
+	public void setTextSizeScale(float textSizeScale)
+	{
+		this.textSizeScale = textSizeScale;
+	}
+
+	/**
+	 * @return the centered
+	 */
+	public boolean isCentered()
+	{
+		return centered;
+	}
+
+	/**
+	 * @param centered the centered to set
+	 */
+	public void setCentered(boolean centered)
+	{
+		this.centered = centered;
 	}
 
 	/* (non-Javadoc)

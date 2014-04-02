@@ -100,11 +100,11 @@
        <Trigger fixedTimer="5" jump="_PREVFORM"/>
     </Page>
     
-    <Page id="SessionPage">
+    <Page id="SessionPage" showForward="false">
 
-      <Label text="Session"/><!-- noColumn="true" is implied -->
+      <Label text="Community session" scale="1.75" centered="true"/>
 
-      <Text id="Creator:" label="Creator" minLength="2" maxLength="48" optional="false"/>
+      <Text id="Creator" label="Creator:" minLength="2" maxLength="48" optional="false"/>
 
       <MultiList id="Community" label="Province:;Community:" optional="false" preSelectDefault="false">
         <Item value="Province 1">
@@ -132,11 +132,13 @@
 
       <Check id="Training" label="Training session" defaultValue="false"/>
 
-      <Text id="Comment:" label="Comments" maxLength="1024" multiline="true" optional="true"/>
+      <Text id="Comment" label="Comments:" maxLength="1024" multiline="true" optional="true"/>
 
-      <Button label="Start Session" showOnEdit="false" jump="_SAVE+PREVFORM"/>
+      <Button label="Start session" showOnEdit="false" jump="_SAVE+PREVFORM"/>
       
-      <Button id="closed" column="boolean" optional="false" label="Close Session" showOnCreate="false" jump="_SAVE+PREVFORM"/>
+      <Button label="Continue session" showOnCreate="false" jump="_SAVE+PREVFORM"/>
+      
+      <Button id="closed" column="boolean" optional="false" label="Close session" showOnCreate="false" jump="_SAVE+PREVFORM"/>
   
     </Page>
   

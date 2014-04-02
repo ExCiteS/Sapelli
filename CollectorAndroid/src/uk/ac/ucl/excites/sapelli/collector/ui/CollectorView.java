@@ -21,14 +21,13 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidButtonUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidCheckBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidChoiceUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLabelUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLocationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidMultiListUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidOrientationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPageUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidTextBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.OrientationUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLocationUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
 import android.graphics.Color;
@@ -47,6 +46,8 @@ public class CollectorView extends LinearLayout implements CollectorUI<View>
 	
 	static private final int BUTTONS_VIEW_ID = 0;
 	static private final int FIELD_VIEW_ID = 1;
+	
+	static public final LayoutParams FULL_WIDTH_LAYOUTPARAMS = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT); // = default for view added to a vertical LinearLayout
 
 	// Spacing (in dip) between UI elements:
 	static public final float SPACING_DIP = 8.0f;
@@ -59,13 +60,13 @@ public class CollectorView extends LinearLayout implements CollectorUI<View>
 	private ControlsView controlsView;
 	private FieldUI<?, View> fieldUI;
 	private View fieldUIView = null;
-	private HashMap<Field, FieldUI<?, View>> viewCache;
+	private HashMap<Field, FieldUI<?, View>> fieldUICache;
 	
 	public CollectorView(CollectorActivity activity)
 	{
 		super(activity);
 		this.activity = activity;
-		this.viewCache = new HashMap<Field, FieldUI<?, View>>();
+		this.fieldUICache = new HashMap<Field, FieldUI<?, View>>();
 		
 		// Root layout (= this):
 		this.setOrientation(LinearLayout.VERTICAL);
@@ -94,36 +95,40 @@ public class CollectorView extends LinearLayout implements CollectorUI<View>
 		// Update buttons
 		controlsView.update(controller);
 		
-		// Remove current view if there is one and it does not represent the same field:
-		if(fieldUI != null && fieldUI.getField() != field)
-		{
-			fieldUI.cancel(); // to stop audio recording, close camera, ...
-			this.removeView(fieldUIView); // throw away the old fieldField
-			fieldUI = null;
-			fieldUIView = null;
+		// Get or create fieldUI for field...
+		FieldUI<?, View> newFieldUI = fieldUICache.get(field); // try to recycle cached fieldUI
+		if(newFieldUI == null)
+		{	// no cached fieldUI for this field...
+			newFieldUI = field.createUI(this); // create new fieldUI for field
+			if(newFieldUI == null) // just in case
+				throw new IllegalStateException("Could not construct UI for field \"" + field.getID() + "\".");
+			fieldUICache.put(field, newFieldUI); // cache the fieldUI for later reuse
 		}
 		
-		// Recycle cached view or create new one
-		if(fieldUI == null)
-		{
-			FieldUI<?, View> cachedView = viewCache.get(field);
-			if(cachedView != null)
-				this.fieldUI = cachedView; // Reuse cached view instance if possible:
-			else
-			{
-				this.fieldUI = field.createUI(this); // create new fieldUI for field
-				viewCache.put(field, fieldUI); // cache the fieldUI for later reuse
-			}
-		}
+		// Cancel current fieldUI if there is one and it is not the same as the new one (i.e. it does probably not represent the same field)...
+		if(fieldUI != null && newFieldUI != fieldUI)
+			fieldUI.cancel(); // to stop audio recording, close camera, ...
+		
+		// newFieldUI become the current fieldUI:
+		fieldUI = newFieldUI;
 
-		// Get the actual (updated) View instance and add it to ourselves, and (re-)enable it (even if new):
-		View oldView = fieldUIView;
-		fieldUIView = fieldUI.getPlatformView(false, controller.getCurrentRecord());
-		if(fieldUIView != oldView)
-		{
-			this.addView(fieldUIView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-			fieldUIView.setId(FIELD_VIEW_ID);
+		// Get the actual (updated) View instance:
+		View newFieldUIView = fieldUI.getPlatformView(false, controller.getCurrentRecord());
+		
+		// Replace current view:
+		if(newFieldUIView != fieldUIView)
+		{	// the *new* view is different from the current one (which might be null)...
+			// Remove the current (i.e. old) view...
+			if(fieldUIView != null) // if it is not null...
+				this.removeView(fieldUIView);
+			// Add the new view...
+			if(newFieldUIView != null) // if it is not null itself (just in case)...
+				this.addView(newFieldUIView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		}
+		fieldUIView = newFieldUIView;
+		
+		// Enable new view:
+		fieldUIView.setId(FIELD_VIEW_ID);
 		fieldUIView.setEnabled(true);
 			
 		// Re-enable the buttons
@@ -228,7 +233,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View>
 	 */
 	public void invalidateView(Field field)
 	{
-		viewCache.remove(field);
+		fieldUICache.remove(field);
 	}
 	
 	/**
@@ -291,6 +296,11 @@ public class CollectorView extends LinearLayout implements CollectorUI<View>
 	public int getSpacingPx()
 	{
 		return ScreenMetrics.ConvertDipToPx(activity, SPACING_DIP);
+	}
+	
+	public int convertDipToPx(float dip)
+	{
+		return ScreenMetrics.ConvertDipToPx(activity, dip);
 	}
 	
 	@Override

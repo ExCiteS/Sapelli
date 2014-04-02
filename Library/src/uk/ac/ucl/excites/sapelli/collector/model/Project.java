@@ -28,7 +28,7 @@ public class Project
 	static public final int PROJECT_HASH_SIZE = 32; //bits
 	static public final IntegerRangeMapping PROJECT_HASH_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_HASH_SIZE); // unsigned(!) 32bit integer
 	
-	static public final int MAX_FORMS = (int) Form.FORM_INDEX_FIELD.getHighBound() + 1; // = 15 + 1 = 16 forms allowed
+	static public final int MAX_FORMS = (int) Form.FORM_POSITION_FIELD.getHighBound() + 1; // = 15 + 1 = 16 forms allowed
 	
 	
 	// Backwards compatibility:

@@ -97,6 +97,8 @@ public class AndroidAudioUI extends AudioUI<View>
 	@Override
 	public View getPlatformView(boolean onPage, CollectorRecord record)
 	{
+		//TODO onPage view
+		
 		if(view == null)
 			view = new AudioView(((CollectorView) collectorUI).getContext());
 		

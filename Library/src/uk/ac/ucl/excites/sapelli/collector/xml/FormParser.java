@@ -18,6 +18,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField.ButtonColumnType;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
@@ -115,6 +116,8 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
 	static private final String ATTRIBUTE_TEXT_MULTILINE = "multiLine";
+	static private final String ATTRIBUTE_LABEL_SCALE = "scale";
+	static private final String ATTRIBUTE_LABEL_CENTERED = "centered";
 	static private final String ATTRIBUTE_LIST_PRESELECT = "preSelectDefault";
 	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
 	static private final String ATTRIBUTE_BUTTON_COLUMN = "column";
@@ -127,10 +130,16 @@ public class FormParser extends SubtreeParser
 	private Project project;
 	private Form currentForm;
 	private String formStartFieldId;
+	
+	private Boolean v1xFormShowBack = null;
+	private Boolean v1xFormShowCancel = null;
+	private Boolean v1xFormShowForward = null;
+	
 	private ChoiceField currentChoice;
 	private MultiListItem currentListItem;
 	private Relationship currentRelationship;
 	private Page currentPage;
+	
 	private HashMap<JumpSource, String> jumpSourceToJumpTargetId;
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaField, String> mediaAttachToDisableId;
@@ -162,7 +171,8 @@ public class FormParser extends SubtreeParser
 				throw new SAXException("Forms cannot be nested!");
 			
 			String id = readRequiredStringAttribute(TAG_FORM, attributes, true, false, ATTRIBUTE_FORM_ID, ATTRIBUTE_FORM_NAME); // "name" is v1.x syntax but still accepted in v2.0 (yet "id" is preferred)
-			if(((ProjectParser) owner).getFormat() == ProjectParser.Format.v1_x)
+			ProjectParser.Format format = ((ProjectParser) owner).getFormat();
+			if(format == ProjectParser.Format.v1_x)
 			{	// Backwards compatibility
 				if(project.getForms().isEmpty()) // only for 1st, and assumed only, currentForm
 				{
@@ -190,10 +200,18 @@ public class FormParser extends SubtreeParser
 			// Sound end vibration at the end of the currentForm:
 			currentForm.setSaveSoundRelativePath(readStringAttribute(null, attributes, false, false, ATTRIBUTE_FORM_SAVE_SOUND, ATTRIBUTE_FORM_END_SOUND)); // Get the sound path
 			currentForm.setVibrateOnSave(readBooleanAttribute(Form.DEFAULT_VIBRATE, attributes, ATTRIBUTE_FORM_SAVE_VIBRATE, ATTRIBUTE_FORM_END_VIBRATE));
-			// Which buttons are allowed to show:
-			currentForm.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Form.DEFAULT_SHOW_BACK, attributes));
-			currentForm.setShowCancel(readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Form.DEFAULT_SHOW_CANCEL, attributes));
-			currentForm.setShowForward(readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Form.DEFAULT_SHOW_FORWARD, attributes));
+			// Which buttons are allowed to show (deprecated in format >= 2):
+			if(attributes.getIndex(ATTRIBUTE_SHOW_BACK) != -1 || attributes.getIndex(ATTRIBUTE_SHOW_CANCEL) != -1 || attributes.getIndex(ATTRIBUTE_SHOW_FORWARD) != -1)
+			{
+				if(format == ProjectParser.Format.v1_x)
+				{
+					v1xFormShowBack = readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Form.V1X_DEFAULT_SHOW_BACK, attributes);
+					v1xFormShowCancel = readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Form.V1X_DEFAULT_SHOW_CANCEL, attributes);
+					v1xFormShowForward = readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Form.V1X_DEFAULT_SHOW_FORWARD, attributes);
+				}
+				else
+					addWarning("Attributes '" + ATTRIBUTE_SHOW_BACK + "', '" + ATTRIBUTE_SHOW_CANCEL + "' & '" + ATTRIBUTE_SHOW_FORWARD + "' are deprecated on <Form> in format >= 2.");
+			}
 			// Animation:
 			currentForm.setAnimation(readBooleanAttribute(ATTRIBUTE_FORM_ANIMATION, Form.DEFAULT_ANIMATION, attributes));
 			// Obfuscate Media Files:
@@ -254,7 +272,7 @@ public class FormParser extends SubtreeParser
 			{
 				currentChoice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getValue(ATTRIBUTE_FIELD_VALUE), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
 				newField(currentChoice, attributes);
-				// No column:
+				// noColumn:
 				currentChoice.setNoColumn(readBooleanAttribute(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN, attributes));
 				// Other attributes:
 				currentChoice.setImageRelativePath(readStringAttribute(ATTRIBUTE_FIELD_IMG, null, attributes, false, false));
@@ -364,12 +382,16 @@ public class FormParser extends SubtreeParser
 				{
 					throw new SAXException("Invalid '" + ATTRIBUTE_BUTTON_COLUMN + "' attribute value on <" + TAG_BUTTON + ">.", iae);
 				}
+				if(btn.getColumnType() == ButtonColumnType.DATETIME && btn.getOptional() != Optionalness.ALWAYS)
+					addWarning("Button \"" + btn.getID() + "\" has a DateTime column but is not optional, this means the button will *have* to be pressed.");
 			}
 			// <Label>
 			else if(qName.equals(TAG_LABEL))
 			{
-				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, ATTRIBUTE_LABEL_TEXT, attributes, false, true));
+				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, attributes, false, true, ATTRIBUTE_LABEL_TEXT, ATTRIBUTE_FIELD_LABEL));
 				newField(lbl, attributes);
+				lbl.setTextSizeScale(readFloatAttribute(ATTRIBUTE_LABEL_SCALE, LabelField.DEFAULT_TEXT_SIZE_SCALE, attributes));
+				lbl.setCentered(readBooleanAttribute(ATTRIBUTE_LABEL_CENTERED, LabelField.DEFAULT_TEXT_CENTERED, attributes));
 			}
 			// <Textbox>
 			else if(qName.equals(TAG_TEXTFIELD))
@@ -474,7 +496,7 @@ public class FormParser extends SubtreeParser
 		Page newPage = new Page(currentForm,
 								attributes == null ?
 									currentForm.getID() + "_page" :
-									readStringAttribute(currentForm.getID() + "_" + currentForm.getFields().size(), attributes, true, false, ATTRIBUTE_FIELD_ID));
+									readStringAttribute(currentForm.getID() + "_page_" + currentForm.getFields().size(), attributes, true, false, ATTRIBUTE_FIELD_ID));
 		newField(newPage, attributes);
 		currentPage = newPage; //!!! the newPage helper variable avoids that newField() adds the page to itselfs instead of the form!
 	}
@@ -502,7 +524,7 @@ public class FormParser extends SubtreeParser
 	 */
 	private void newField(Field field, Attributes attributes) throws SAXException
 	{
-		// Warn about IDs starting with '_':
+		// Warn about IDs starting with '_': //TODO test if no invalid XML chars
 		if(field.getID().startsWith("_"))
 		{
 			// For really stupid cases ;-):
@@ -516,13 +538,15 @@ public class FormParser extends SubtreeParser
 		if(field.isRoot())
 		{
 			if(currentPage == null)
+			{	// field is top-level (directly contained within the form, and not in a page first)...
 				currentForm.addField(field);
+				// ... and therefore it can be jumped to, so remember its ID (upper cased, for case insensitivity):
+				if(idToField.put(field.getID().toUpperCase(), field) != null)
+					throw new SAXException("Duplicate field ID '" + field.getID() + "' in Form '" + currentForm.getID() + "'! (Note: field and form IDs are case insensitive)");
+			}
 			else
+				// the field is contained by a page:
 				currentPage.addField(field);
-			
-			// Remember ID (upper cased, for case insensitivity) of field itself, such that it can be jumped to:
-			if(idToField.put(field.getID().toUpperCase(), field) != null)
-				throw new SAXException("Duplicate field ID '" + field.getID() + "' in Form '" + currentForm.getID() + "'! (Note: field and form IDs are case insensitive)");
 			
 			// Set optionalness:
 			if(attributes != null)
@@ -545,10 +569,15 @@ public class FormParser extends SubtreeParser
 		
 		// Read various optional Field attributes: 
 		if(attributes != null)
-		{
-			// Remember jumps (always "intra-Form"):
+		{	
+			// Remember jumps (always "intra-Form", and not leaving a page unless the field can do that):
 			if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
-				jumpSourceToJumpTargetId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // upper cased, for case insensitivity
+			{
+				if(currentPage == null || field.canJumpFromPage())
+					jumpSourceToJumpTargetId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // upper cased, for case insensitivity
+				else if(currentPage != null)
+					addWarning("Field \"" + field.getID() + "\" tries to jump away from the page, but is not allowed.");
+			}
 			
 			// Skip on back:
 			field.setSkipOnBack(readBooleanAttribute(ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK, attributes));
@@ -560,10 +589,10 @@ public class FormParser extends SubtreeParser
 			// Background colour:
 			field.setBackgroundColor(readStringAttribute(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, attributes, true, false));
 			
-			// Which buttons are allowed to show:
-			field.setShowBack(readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK, attributes));
-			field.setShowCancel(readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL, attributes));
-			field.setShowForward(readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD, attributes));
+			// Which buttons are allowed to show (with backwards compatibility for v1.0 forms which may have shopBack/showCancel/showForward at the form level):
+			field.setShowBack((v1xFormShowBack != null ? v1xFormShowBack : true) && readBooleanAttribute(ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK, attributes));
+			field.setShowCancel((v1xFormShowCancel != null ? v1xFormShowCancel : true) && readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL, attributes));
+			field.setShowForward((v1xFormShowForward != null ? v1xFormShowForward : true) && readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD, attributes));
 		}
 	}
 	

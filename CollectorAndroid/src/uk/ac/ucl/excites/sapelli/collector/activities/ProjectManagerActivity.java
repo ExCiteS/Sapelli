@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper.Format;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
@@ -94,6 +95,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 	// DYNAMICS-------------------------------------------------------
 	private ProjectStore projectStore;
+	private RecordStore recordStore;
 
 	// UI
 	private EditText enterURL;
@@ -136,11 +138,22 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			showErrorDialog("Could not open ProjectStore: " + e.getLocalizedMessage(), true);
 			return;
 		}
-		
+				
 		if(BuildInfo.DEMO_BUILD)
 			return;
 		//else ...
 		// Only if not in demo mode:			
+		
+		// Get RecordStore instance:
+		try
+		{
+			recordStore = app.getRecordStore(this);
+		}
+		catch(Exception e)
+		{
+			showErrorDialog("Could not open RecordStore: " + e.getLocalizedMessage(), true);
+			return;
+		}
 		
 		// Set-up UI...
 		setTitle(getString(R.string.app_name) + ' ' + getString(R.string.project_manager));

@@ -36,7 +36,7 @@ public class PrefProjectStore extends ProjectStore
 	// Dynamics---------------------------------------------
 	private Context context;
 	private SharedPreferences preferences;
-	private HashMap<Long,Project> projectCache;
+	private Map<Long,Project> projectCache;
 
 	public PrefProjectStore(Context context)
 	{
@@ -116,7 +116,7 @@ public class PrefProjectStore extends ProjectStore
 	{		
 		// Get project from cache if it is there ...
 		if(projectCache != null && projectCache.containsKey(projectHash))
-			return projectCache.get(projectCache);
+			return projectCache.get(projectHash);
 		
 		// ... parse the project if not ...
 		String prefKey = getPrefKey(projectHash);

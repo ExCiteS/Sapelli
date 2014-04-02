@@ -151,7 +151,7 @@ public class CollectorController extends Controller implements LocationListener,
 				LocationField lf = (LocationField) currFormSession.currField;
 				// try to store location:
 				if(lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(location)))
-				{ // location successfully stored:
+				{ 	// location successfully stored:
 					if(currFormSession.form.getLocationFields(true).isEmpty())
 						stopLocationListener(); // there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)
 					goForward(false); // continue (will leave waiting screen & stop the timeout timer)

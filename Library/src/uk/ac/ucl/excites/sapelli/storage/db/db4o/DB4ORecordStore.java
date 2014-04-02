@@ -7,7 +7,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -42,7 +41,7 @@ public class DB4ORecordStore extends RecordStore
 	{
 		super(client);
 		this.filename = baseFilename + DATABASE_NAME_SUFFIX;
-		this.db4o = DB4OConnector.open(DB4OConnector.getFile(folder, filename), Project.class);
+		this.db4o = DB4OConnector.open(DB4OConnector.getFile(folder, filename), Record.class);
 	}
 
 	/* (non-Javadoc)

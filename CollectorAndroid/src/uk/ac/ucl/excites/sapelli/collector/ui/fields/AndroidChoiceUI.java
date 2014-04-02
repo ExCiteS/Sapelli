@@ -9,7 +9,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.DrawableItem;
@@ -23,6 +22,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -35,7 +35,8 @@ import android.widget.TextView;
 public class AndroidChoiceUI extends ChoiceUI<View>
 {
 	
-	static public final int PAGE_CHOSEN_ITEM_SIZE_DIP = 60; // width = height
+	static public final float PAGE_CHOSEN_ITEM_SIZE_DIP = 60.0f; // width = height
+	static public final float PAGE_CHOSEN_ITEM_MARGIN_DIP = 1.0f; // same margin all round
 	static public final float CROSS_THICKNESS = 0.02f;
 	
 	private PageView pageView;
@@ -75,21 +76,28 @@ public class AndroidChoiceUI extends ChoiceUI<View>
 		}
 	}
 	
-	public class PageView extends LinearLayout
+	public class PageView extends LinearLayout implements OnClickListener
 	{
 
 		private TextView label;
 		private View chosenView;
+		private int chosenSizePx;
+		private int chosenPaddingPx;
+		private int chosenMarginPx;
 		
 		public PageView(Context context)
 		{
 			super(context);
-			this.setOrientation(LinearLayout.HORIZONTAL);
+			this.setOrientation(LinearLayout.VERTICAL);
 			
 			// Add label:
 			label = new TextView(getContext());
 			label.setText(field.getLabel());
 			this.addView(label);
+			
+			chosenSizePx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_SIZE_DIP);
+			chosenPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
+			chosenMarginPx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_MARGIN_DIP);
 		}
 		
 		public void setChosen(ChoiceField chosenField)
@@ -99,17 +107,34 @@ public class AndroidChoiceUI extends ChoiceUI<View>
 				this.removeView(chosenView);
 			
 			// New chosenView
-			int px = ScreenMetrics.ConvertDipToPx(getContext(), PAGE_CHOSEN_ITEM_SIZE_DIP);
-			chosenView = createItem(field, px, px, ScreenMetrics.ConvertDipToPx(getContext(), CollectorView.PADDING_DIP)).getView(getContext());
-			chosenView.setOnClickListener(new OnClickListener()
+			chosenView = createItem(chosenField, chosenSizePx, chosenSizePx, chosenPaddingPx).getView(getContext());
+			chosenView.setOnClickListener(this);
+
+			// Set margins on layoutparams:
+			LayoutParams chosenLP = new LinearLayout.LayoutParams(chosenView.getLayoutParams());
+			chosenLP.setMargins(chosenMarginPx, chosenMarginPx, chosenMarginPx, chosenMarginPx);
+			
+			// Add the view:
+			this.addView(chosenView, chosenLP);
+		}
+
+		@Override
+		public void onClick(View v)
+		{
+			// Task to perform after animation has finished:
+			Runnable action = new Runnable()
 			{
-				@Override
-				public void onClick(View v)
+				public void run()
 				{
-					controller.goToFromPage(field);
+					controller.goTo(field, true); // go to field and leave page without validation
 				}
-			});
-			this.addView(chosenView);
+			};
+
+			// Execute the "press" animation if allowed, then perform the action: 
+			if(controller.getCurrentForm().isAnimation())
+				(new PressAnimator(action, v, (CollectorView) collectorUI)).execute(); //execute animation and the action afterwards
+			else
+				action.run(); //perform task now (animation is disabled)			
 		}
 		
 	}
@@ -140,10 +165,10 @@ public class AndroidChoiceUI extends ChoiceUI<View>
 			// Item size & padding:
 			int itemWidthPx = ((CollectorView) collectorUI).getIconWidthPx(field.getCols());
 			int itemHeightPx = ((CollectorView) collectorUI).getIconHeightPx(field.getRows(), controller.getControlsState().isAnyButtonShown());
-			int itemPaddingPx = ScreenMetrics.ConvertDipToPx(getContext(), CollectorView.PADDING_DIP);
+			int itemPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 
 			// Adapter & images:
-			pickerAdapter = new PickerAdapter(getContext());
+			pickerAdapter = new PickerAdapter(context);
 			for(ChoiceField child : field.getChildren())
 				pickerAdapter.addItem(createItem(child, itemWidthPx, itemHeightPx, itemPaddingPx));
 			

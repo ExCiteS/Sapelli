@@ -308,6 +308,12 @@ public class LocationField extends Field implements Timeoutable
 		return new LocationColumn(id, (optional != Optionalness.NEVER), doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, false, storeProvider); // we never store time (for now)
 	}
 	
+	@Override
+	public LocationColumn getColumn()
+	{
+		return (LocationColumn) super.getColumn();
+	}
+	
 	public boolean storeLocation(CollectorRecord record, Location location)
 	{
 		return storeLocation(record, location, false);
@@ -315,10 +321,12 @@ public class LocationField extends Field implements Timeoutable
 	
 	public boolean storeLocation(CollectorRecord record, Location location, boolean bestWeCouldGet)
 	{	
+		if(isNoColumn())
+			return true; // just in case
 		if(isAcceptable(location, bestWeCouldGet))
 		{
 			// This location is good enough or it is the best we could get, so store it:
-			((LocationColumn) form.getColumnFor(this)).storeValue(record, location);
+			getColumn().storeValue(record, location);
 			return true;
 		}
 		return false;

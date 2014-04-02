@@ -53,8 +53,6 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 	private Form currentForm;
 	private ControlsState currentState;
 	
-	private int backColor;
-	
 	private Item backButton;
 	private Item cancelButton;
 	private Item forwardButton;
@@ -94,32 +92,24 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 	{
 		this.controller = controller;
 		
-		// Create button items if needed...
+		// (Re)create button items if needed...
 		if(currentForm == null || currentForm != controller.getCurrentForm())
 		{
 			currentForm = controller.getCurrentForm();
 			Project project = controller.getProject();
 			
 			// Background colour:
-			backColor = ColourHelpers.ParseColour(currentForm.getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR); //default is light gray		
+			int backColor = ColourHelpers.ParseColour(currentForm.getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR); //default is light gray		
 			
-			// Back button 
-			if(currentForm.isShowBack())
-				backButton = createButton(project.getImageFile(currentForm.getBackButtonImageRelativePath()), new HorizontalArrow(FOREGROUND_COLOR, true));
-			else
-				backButton = null;
+			// Back button
+			backButton = createButton(project.getImageFile(currentForm.getBackButtonImageRelativePath()), new HorizontalArrow(FOREGROUND_COLOR, true), backColor);
 			
-			// Cancel button 
-			if(currentForm.isShowCancel())
-				cancelButton = createButton(project.getImageFile(currentForm.getCancelButtonImageRelativePath()), new SaltireCross(FOREGROUND_COLOR));
-			else
-				cancelButton = null;
+			// Cancel button
+			cancelButton = createButton(project.getImageFile(currentForm.getCancelButtonImageRelativePath()), new SaltireCross(FOREGROUND_COLOR), backColor);
 			
-			// Forward button 
-			if(currentForm.isShowForward())
-				forwardButton = createButton(project.getImageFile(currentForm.getForwardButtonImageRelativePath()), new HorizontalArrow(FOREGROUND_COLOR, false));
-			else
-				forwardButton = null;
+			// Forward button
+			forwardButton = createButton(project.getImageFile(currentForm.getForwardButtonImageRelativePath()), new HorizontalArrow(FOREGROUND_COLOR, false), backColor);
+			
 		}
 		
 		// Update state if needed...
@@ -174,7 +164,7 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 		}
 	}
 	
-	private Item createButton(File imgFile, Drawable drawable)
+	private Item createButton(File imgFile, Drawable drawable, int backColor)
 	{
 		Item button = null;
 

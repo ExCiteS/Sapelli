@@ -4,7 +4,6 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
@@ -28,15 +27,6 @@ public abstract class ChoiceUI<V> extends SelfLeavingFieldUI<ChoiceField, V>
 			throw new IllegalArgumentException("Cannot display leaf choice.");
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#isValid(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
-	 */
-	@Override
-	public boolean isValid(CollectorRecord record)
-	{
-		return false; // always invalid because we're not a at leaf!
-	}
-	
 	/**
 	 * Note: chosenChild is not the current Field of the Controller, its current Field (also a ChoiceField) is its parent.
 	 * 
@@ -46,20 +36,18 @@ public abstract class ChoiceUI<V> extends SelfLeavingFieldUI<ChoiceField, V>
 	{
 		if(!controller.isFieldEndabled(chosenChild))
 			return;
-		if(chosenChild.isLeaf())
-		{
-			// Store value
-			if(!field.isNoColumn())
-				field.getColumn().storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
-			// Go to next field
-			controller.goTo(controller.getCurrentForm().getNextField(chosenChild));
-			/*
-			 * We cannot use Controller#goForward() here because then we would first need to make the chosenChild the currentField, in which case it would end up in the
-			 * fieldHistory which does not make sense because a leaf choice cannot be displayed on its own.
-			 */
-		}
-		else
-			controller.goTo(chosenChild); // chosenChild becomes the new currentField (we go one level down in the choice tree)
+		// Store value if chosenChild is a leaf and the field has a column:
+		if(chosenChild.isLeaf() && !field.isNoColumn())
+			field.getColumn().storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
+		// Go to chosenChild:
+		controller.goTo(chosenChild, !chosenChild.isLeaf());
+		
+		/* Note 1:	chosenChild becomes the new currentField (i.e. we go one level "down" in the choice tree),
+		 * 			but if it is a leaf the controller will call goForward() from enterChoiceField().
+		 * 
+		 * Note 2:	if the chosenChild is not a leaf we "force" the goTo because otherwise validation would keep us from
+		 * 			advancing. If it is a leaf we let validation happen.
+		 */
 	}
 
 }
