@@ -33,8 +33,8 @@ public abstract class MultiListUI<V> extends NonSelfLeavingFieldUI<MultiListFiel
 	protected void storeValue(CollectorRecord record)
 	{
 		MultiListItem chosen = getChosenItem();
-		if(!field.isNoColumn() && chosen != null)
-			field.getColumn().storeValue(record, field.getValueForItem(chosen));
+		if(!field.isNoColumn())
+			field.getColumn().storeValue(record, chosen != null ? field.getValueForItem(chosen) : null);
 	}
 
 	/* (non-Javadoc)
@@ -44,8 +44,7 @@ public abstract class MultiListUI<V> extends NonSelfLeavingFieldUI<MultiListFiel
 	public boolean isValid(CollectorRecord record)
 	{
 		MultiListItem chosen = getChosenItem();
-		boolean valid = chosen == null ? (field.getOptional() == Optionalness.ALWAYS) : chosen.isLeaf();
-		return valid;
+		return chosen == null ? (field.getOptional() == Optionalness.ALWAYS) : chosen.isLeaf();
 	}
 	
 	protected abstract MultiListItem getChosenItem();
