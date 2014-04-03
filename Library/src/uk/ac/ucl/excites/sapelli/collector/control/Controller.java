@@ -257,14 +257,15 @@ public abstract class Controller
 		
 		// Entering new current field...
 		addLogLine("REACHED", currFormSession.currField.getID());
-		Field holdCurrentField = currFormSession.currField; // remember the "current" current field, to deal with case in which another goForward/goTo call happens from the enter() method (e.g. when entering a leaf choice) 
-		if(currFormSession.currField.enter(this, false))
-		{	// update UI if needed
+		Field holdCurrentField = currFormSession.currField; // remember the "current" current field, to deal with case in which another goForward/goTo call happens from the enter() method (e.g. when entering a leaf choice)
+		boolean needsUIUpdate = currFormSession.currField.enter(this, false);
+		// If the current field has changed as part of the entering we are done here: 
+		if(currFormSession.currField != holdCurrentField)
+			return;
+		//else: update UI if needed and remember whether current field is displayed
+		if(needsUIUpdate)
 			ui.setField(currFormSession.currField);
-			currFormSession.currFieldDisplayed = true;
-		}
-		else if(currFormSession.currField == holdCurrentField)
-			currFormSession.currFieldDisplayed = false; /// only when the current field hasn't changed!
+		currFormSession.currFieldDisplayed = needsUIUpdate;
 	}
 
 	/**
