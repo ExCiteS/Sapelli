@@ -139,7 +139,7 @@ public class AndroidPageUI extends PageUI<View>
 	{
 		if(fieldUIView == null)
 			return null;
-		LinearLayout wrapper = new LinearLayout(((CollectorView) collectorUI).getContext());
+		final LinearLayout wrapper = new LinearLayout(((CollectorView) collectorUI).getContext());
 		wrapper.setPadding(wrapperPaddingPx, wrapperPaddingPx, wrapperPaddingPx, wrapperPaddingPx);
 		wrapper.setLayoutParams(wrapperLayoutParams);
 		wrapper.addView(fieldUIView);

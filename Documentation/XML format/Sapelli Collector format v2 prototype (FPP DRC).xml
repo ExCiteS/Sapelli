@@ -102,7 +102,8 @@
     
     <Page id="SessionPage" showForward="false">
 
-      <Label text="Community session" scale="1.75" centered="true"/>
+      <Label text="Create community session" scale="1.75" centered="true" showOnEdit="false"/>
+      <Label text="Edit community session" scale="1.75" centered="true" showOnCreate="false"/>
 
       <Text id="Creator" label="Creator:" minLength="2" maxLength="48" optional="false"/>
 

@@ -5,11 +5,11 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
+import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField.MultiListItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 
 /**
  * @author mstevens
@@ -19,6 +19,7 @@ public abstract class MultiListUI<V> extends NonSelfLeavingFieldUI<MultiListFiel
 {
 
 	static protected final String PLEASE_SELECT = "— Please select —"; //TODO multilang
+	static protected final String UNDO_SELECTION = "— No selection —"; //TODO multilang
 	
 	public MultiListUI(MultiListField listField, Controller controller, CollectorUI<V> collectorUI)
 	{
@@ -31,8 +32,9 @@ public abstract class MultiListUI<V> extends NonSelfLeavingFieldUI<MultiListFiel
 	@Override
 	protected void storeValue(CollectorRecord record)
 	{
-		if(!field.isNoColumn())
-			((IntegerColumn) field.getColumn()).storeValue(record, field.getDictionary().lookupIndex(getChosenItem()));
+		MultiListItem chosen = getChosenItem();
+		if(!field.isNoColumn() && chosen != null)
+			field.getColumn().storeValue(record, field.getValueForItem(chosen));
 	}
 
 	/* (non-Javadoc)
@@ -41,8 +43,9 @@ public abstract class MultiListUI<V> extends NonSelfLeavingFieldUI<MultiListFiel
 	@Override
 	public boolean isValid(CollectorRecord record)
 	{
-		// TODO multilist validation
-		return false; // are we at leaf?
+		MultiListItem chosen = getChosenItem();
+		boolean valid = chosen == null ? (field.getOptional() == Optionalness.ALWAYS) : chosen.isLeaf();
+		return valid;
 	}
 	
 	protected abstract MultiListItem getChosenItem();

@@ -429,7 +429,7 @@ public class FormParser extends SubtreeParser
 						if(currentListItem.getParent().getDefaultChild() == null)
 							currentListItem.getParent().setDefaultChild(currentListItem);
 						else
-							addWarning("More than 1 item marked as default within one of the (sub)lists of MultiListField " + currentListItem.getField().getID() + ", using 1st item marked as defaut as the default for the list.");
+							addWarning("More than 1 item marked as default within one of the (sub)lists of MultiListField " + currentListItem.getField().getID() + ", using 1st item marked as default as the default for the list.");
 					}
 				}
 				//else if(otherListItemContainingField != null) { /* ... */ }

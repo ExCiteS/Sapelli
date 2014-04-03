@@ -55,20 +55,22 @@ public abstract class PageUI<V> extends NonSelfLeavingFieldUI<Page, V>
 			return true;
 		}
 		return false;
-	}	
+	}
 
 	@Override
 	public boolean isValid(CollectorRecord record)
 	{
+		boolean valid = true;
 		for(FieldUI<?, V> fUI : fieldUIs)
-			if(!fUI.isValid(record))
-			{
-				markValidity(fUI, false); // mark with red border
-				return false;
-			}
-			else
-				markValidity(fUI, true); // remove red border (if it is there)
-		return true;
+			valid = isValid(fUI, record);
+		return valid;
+	}
+	
+	public boolean isValid(FieldUI<?, V> fUI, CollectorRecord record)
+	{
+		boolean valid = fUI.isValid(record);
+		markValidity(fUI, valid); // highlight with red border if invalid, remove border (if it is there) if valid
+		return valid; 
 	}
 	
 	protected abstract void markValidity(FieldUI<?, V> fieldUI, boolean valid);

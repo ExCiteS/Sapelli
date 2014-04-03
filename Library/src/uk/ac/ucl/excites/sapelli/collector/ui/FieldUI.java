@@ -3,6 +3,8 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
 
 /**
  * @author mstevens
@@ -72,5 +74,24 @@ public abstract class FieldUI<F extends Field, V>
 	 * @return
 	 */
 	public abstract boolean isValid(CollectorRecord record);
+	
+	/**
+	 * Rather hackish method to allow fieldUIs on a page to request the page to revalidate them 
+	 */
+	@SuppressWarnings("unchecked")
+	protected void requestPageRevalidation()
+	{
+		try // using try-catch just in case...
+		{
+			if(controller.getCurrentField() instanceof Page)
+			{
+				((PageUI<V>) collectorUI.getCurrentFieldUI()).isValid(this, controller.getCurrentRecord()); 
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+		}
+	}
 	
 }

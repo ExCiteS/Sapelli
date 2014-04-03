@@ -94,6 +94,16 @@ public class MultiListField extends Field
 		return values;
 	}
 	
+	public int getValueForItem(MultiListItem item)
+	{
+		return values.lookupIndex(item);
+	}
+	
+	public MultiListItem getItemForValue(int value)
+	{
+		return values.lookupItem(value);
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
 	 */
@@ -140,6 +150,12 @@ public class MultiListField extends Field
 	public <V> MultiListUI<V> createUI(CollectorUI<V> collectorUI)
 	{
 		return collectorUI.createMultiListUI(this);
+	}
+	
+	@Override
+	public IntegerColumn getColumn()
+	{
+		return (IntegerColumn) super.getColumn();
 	}
 	
 	/**
