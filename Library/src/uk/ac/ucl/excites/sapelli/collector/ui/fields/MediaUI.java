@@ -50,7 +50,7 @@ public abstract class MediaUI<MF extends MediaField, V> extends SelfLeavingField
 	
 	protected boolean showCreateButton()
 	{
-		return field.isMaxReached(controller.getCurrentRecord());
+		return !field.isMaxReached(controller.getCurrentRecord());
 	}
 	
 	@Override
