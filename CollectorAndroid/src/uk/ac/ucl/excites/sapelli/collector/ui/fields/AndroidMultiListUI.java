@@ -70,7 +70,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			// Remove all spinners	
 			fullRevert();
 			
-			// Add first spinner, if there is a value in the column the rest will following automatically by selection from the selectionStack:
+			// Add first spinner, if there is a value in the column the remaining spinner(s) will follow automatically by selection from the selectionStack:
 			addNextList(field.getItemsRoot());
 		}
 		
