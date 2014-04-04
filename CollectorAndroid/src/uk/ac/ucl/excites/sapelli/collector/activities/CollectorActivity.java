@@ -87,6 +87,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 	private Map<Trigger,ScheduledFuture<?>> fixedTimerTriggerFutures;
 	private List<Trigger> keyPressTriggers;
 	private SparseArray<Trigger> keyCodeToTrigger = null;
+	private Trigger anyKeyTrigger = null;
 	
 	// UI
 	private CollectorView collectorView;
@@ -192,30 +193,36 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
-		// Check triggers...
-		Trigger t = keyCodeToTrigger.get(keyCode);
-		if(t != null)
+		// Check for keytriggers...
+		Trigger keyTrigger = null;
+		//	"Any" key trigger:
+		keyTrigger = anyKeyTrigger;
+		//	Specific key trigger:
+		if(keyTrigger != null)
+			keyTrigger = keyCodeToTrigger.get(keyCode);
+		//	Fire if we found a matching trigger:
+		if(keyTrigger != null)
 		{
-			controller.fireTrigger(t);
+			controller.fireTrigger(keyTrigger);
 			return true;
 		}
 
 		// Handle non-trigger firing events...
 		switch(keyCode)
 		{
-		case KeyEvent.KEYCODE_BACK:
-			controller.goBack(true); // TODO maybe make this optional?
-			return true;
-		case KeyEvent.KEYCODE_DPAD_RIGHT:
-			return true;
-		case KeyEvent.KEYCODE_DPAD_LEFT:
-			return true;
-		case KeyEvent.KEYCODE_VOLUME_DOWN:
-			if(BuildInfo.DEMO_BUILD)
-				showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".");
-			return true;
-		case KeyEvent.KEYCODE_VOLUME_UP:
-			return true;
+			case KeyEvent.KEYCODE_BACK:
+				controller.goBack(true); // TODO maybe make this optional?
+				return true;
+			case KeyEvent.KEYCODE_DPAD_RIGHT:
+				return true;
+			case KeyEvent.KEYCODE_DPAD_LEFT:
+				return true;
+			case KeyEvent.KEYCODE_VOLUME_DOWN:
+				if(BuildInfo.DEMO_BUILD)
+					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".");
+				return true;
+			case KeyEvent.KEYCODE_VOLUME_UP:
+				return true;
 		}
 		
 		// Pass to super...
@@ -240,22 +247,6 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 			}
 		}
 		return count;
-	}
-
-	/**
-	 * Handle device key presses (disabling them)
-	 */
-	@Override
-	public boolean onKeyUp(int keyCode, KeyEvent event)
-	{
-		switch(keyCode)
-		{
-		case KeyEvent.KEYCODE_VOLUME_DOWN:
-			return true;
-		case KeyEvent.KEYCODE_VOLUME_UP:
-			return true;
-		}
-		return super.onKeyUp(keyCode, event);
 	}
 	
 	public void startAudioRecorderApp(AndroidAudioUI audioUI)
@@ -543,13 +534,17 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 	 */
 	protected void refreshTriggerKeyCodes()
 	{
+		// Clear:
 		keyCodeToTrigger.clear();
+		anyKeyTrigger = null;
+		// Setup:
 		for(Trigger t : keyPressTriggers)
 			for(Key k : t.getKeys())
 			{
 				int keyCode = -1;
 				switch(k) // map Trigger.Key enum values onto the KEYCODE's of Android's KeyEvent class 
 				{
+					case ANY : anyKeyTrigger = t;
 					case BACK : keyCode = KeyEvent.KEYCODE_BACK; break;
 					case SEARCH : keyCode = KeyEvent.KEYCODE_SEARCH; break;
 					case HOME : keyCode = KeyEvent.KEYCODE_HOME; break;

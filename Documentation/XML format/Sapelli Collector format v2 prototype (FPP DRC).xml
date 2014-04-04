@@ -16,13 +16,20 @@
       <string name="test1">un deux trois</string>
     </Locale>
   </Strings>
+
+  <Form id="Splash" skipOnBack="true" next="NEXTFORM">
+    <Trigger fixedTimer="5" key="ANY" jump="_END"/>
+    <Choice id="FPPLogo" noColumn="true" rows="1" cols="1">
+      <Choice img="FPP_logo.jpg" alt="Forest Peoples Programme"/>
+    </Choice>
+  </Form>
   
-  <Form id="Entry" name="Community data" startField="SessionKey" end="_LOOP" endVibrate="true" showBack="true" showCancel="true" storeEndTime="true">
+  <Form id="Entry" startField="SessionKey" end="_LOOP" endVibrate="true" showBack="true" showCancel="true" storeEndTime="true">
         
     <!-- source="localCreate|localSelect|remoteQR|remoteBT|remoteSMS|remoteHTTP" ? -->
     <!-- paged="true" by default -->
     <BelongsTo id="SessionKey" form="Session" source="localCreate" hold="true" skipOnBack="true" optional="false" updateStartTimeUponLeave="true" saveBeforeFormChange="false">
-      <Constraint column="closed" equal="false"/>
+      <Constraint column="closed" notEqual="true"/>
     </BelongsTo>
   
     <Choice id="Type" optional="false" rows="2" cols="1" showRelationship="SessionKey">
@@ -87,12 +94,13 @@
     
   </Form>
   
-  <!-- should 'editable' be an attribute of the form of of belongsTo? -> probably NOT -->
+
+  <!-- editable should be a field attribute (default=true), not a form one -->  
   <!-- edit protection: here? -->
   <!-- should 'hold' be an attribute of the form of of belongsTo? -> probably YES -->
   <!-- end: accept form names? -->
   
-  <Form id="Session" name="Community session" editable="true" storeEndTime="true" next="PREVFORM">
+  <Form id="Session" storeEndTime="true" next="PREVFORM">
 
     <Page skipOnBack="true" showOnCreate="false" showOnEdit="true">
        <Label text="Press ... within 5 seconds to access the Session form"/>
@@ -107,7 +115,7 @@
 
       <Text id="Creator" label="Creator:" minLength="2" maxLength="48" optional="false"/>
 
-      <MultiList id="Community" label="Province:;Community:" optional="false" preSelectDefault="false">
+      <MultiList id="Community" label="Province:;Community:" optional="false" editable="false" preSelectDefault="false">
         <Item value="Province 1">
           <Item value="Community P1.1"/>
           <Item value="Community P1.2"/>
@@ -139,7 +147,7 @@
       
       <Button label="Continue session" showOnCreate="false" jump="_SAVE+PREVFORM"/>
       
-      <Button id="closed" column="boolean" optional="false" label="Close session" showOnCreate="false" jump="_SAVE+PREVFORM"/>
+      <Button id="closed" column="boolean" optional="true" label="Close session" showOnCreate="false" jump="_SAVE+PREVFORM"/>
   
     </Page>
   

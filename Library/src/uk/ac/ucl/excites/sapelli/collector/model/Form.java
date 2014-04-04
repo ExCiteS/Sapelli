@@ -43,6 +43,7 @@ public class Form
 		LOOPFORM,
 		LOOPPROJ,
 		PREVFORM,
+		NEXTFORM,
 		EXITAPP
 	}
 	public static final Next DEFAULT_NEXT = Next.LOOPFORM;
@@ -53,6 +54,7 @@ public class Form
 	public static final boolean V1X_DEFAULT_SHOW_CANCEL = true;
 	public static final boolean V1X_DEFAULT_SHOW_FORWARD = true;
 	
+	public static final boolean DEFAULT_SKIP_ON_BACK = false;
 	public static final boolean DEFAULT_SINGLE_PAGE = false;
 	public static final boolean DEFAULT_VIBRATE = true;
 	public static final String DEFAULT_BUTTON_BACKGROUND_COLOR = "#E8E8E8"; //light gray
@@ -68,6 +70,7 @@ public class Form
 	private final Project project;
 	private final int position;
 	private boolean producesRecords = true;
+	private boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	private Schema schema;
 	private final String id;
 
@@ -130,7 +133,7 @@ public class Form
 		fields.add(f);
 	}
 
-	public int getFieldIndex(Field field)
+	public int getFieldPosition(Field field)
 	{
 		return fields.indexOf(field.getRoot());
 	}
@@ -145,12 +148,12 @@ public class Form
 		Field nextF = current.getJump();
 		if(nextF == null)
 		{	// No jump is set, check for field below current one:
-			int currentIndex = getFieldIndex(current);
-			if(currentIndex < 0)
+			int currentPos = getFieldPosition(current);
+			if(currentPos < 0)
 				// This field is not part of the form (it is likely part of a page):
 				return null; // don't throw an exception here
-			if(currentIndex + 1 < fields.size())
-				nextF = fields.get(currentIndex + 1); // go to next field in the form
+			if(currentPos + 1 < fields.size())
+				nextF = fields.get(currentPos + 1); // go to next field in the form
 			else
 				nextF = new EndField(this, true, next); // current field is the last of the form, go to the form's "next", but save the record first
 		}
@@ -388,6 +391,22 @@ public class Form
 	}
 
 	/**
+	 * @return the skipOnBack
+	 */
+	public boolean isSkipOnBack()
+	{
+		return skipOnBack;
+	}
+
+	/**
+	 * @param skipOnBack the skipOnBack to set
+	 */
+	public void setSkipOnBack(boolean skipOnBack)
+	{
+		this.skipOnBack = skipOnBack;
+	}
+
+	/**
 	 * @param next the next to set
 	 * @throws IllegalArgumentException	when the nextStr is not recognised
 	 */
@@ -448,7 +467,7 @@ public class Form
 	}
 
 	/**
-	 * @return the positon within the project
+	 * @return the position within the project
 	 */
 	public int getPosition()
 	{

@@ -24,30 +24,38 @@ public abstract class ButtonUI<V> extends SelfLeavingFieldUI<ButtonField, V>
 	}
 	
 	/**
-	 * In fact ButtonUI is somewhat of a mix between SelfLeaving and NonSelfLeaving,
-	 * because sometimes we *do* want to execute storage behaviour upon leaving:
+	 * If the button has a boolean column but it is not pressed the 'null' value in
+	 * the column should still be changed to 'false' to indicate that the button was
+	 * shown to the user (i.e. the field was reached), and to ensure the record can
+	 * be transmitted even if the button is non-optional.
 	 * 
-	 * If the button has a boolean column but it is not pressed the 'null' value
-	 * in the column should still be changed to 'false' to indicate that the button
-	 * was shown to the user (i.e. the field was reached), and to ensure the record
-	 * can be saved if the button is non-optional.
+	 * Note 1:	This will only happen if the button was shown to the user. So *not*
+	 * 			when the button (or the page that contains it) was not reached, or
+	 * 			when it was hidden due to not being allowed to show on create/edit.
 	 * 
-	 * We do not have a similar mechanism for datetime columns, so it is recommended
-	 * to always make buttons with a datetime column optional (a warning is shown if
-	 * this is not the case).
+	 * Note 2:	We do *not* have a similar mechanism for datetime columns, so it is
+	 * 			recommended to always make buttons with a datetime column optional
+	 * 			(a warning is shown if this is not the case).
 	 * 
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI#leave(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord, boolean)
+	 * Note 3:	The reason we to this upon validation instead of leaving, is that
+	 * 			because if we would do it upon leaving, unpressed boolean-column
+	 * 			non-optional buttons on pages would return false on isValid(),
+	 * 			preventing leave() from being called at all. 
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI#isValid(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
 	 */
 	@Override
-	public boolean leave(CollectorRecord record, boolean noValidation)
+	public boolean isValid(CollectorRecord record)
 	{
+		// Replace 'null' by 'false' in boolean column:
 		if(field.getColumnType() == ButtonColumnType.BOOLEAN)
 		{
 			BooleanColumn column = (BooleanColumn) field.getColumn();
-			if(!column.isValueSet(record)) // if value is null (and only then!)...
-				column.storeValue(record, false); // save 'false' to indicate that the button was *not* pressed
+			if(!column.isValueSet(record)) // if current value is null (and only then!)...
+				column.storeValue(record, false); // save 'false' to indicate that the button was *not* (yet) pressed
 		}
-		return super.leave(record, noValidation);
+		
+		return super.isValid(record);
 	}
 	
 	protected void buttonPressed()

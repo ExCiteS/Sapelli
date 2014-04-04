@@ -88,6 +88,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FORM_ANIMATION = "animation";
 	static private final String ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES = "obfuscateMediaFiles";
 	static private final String ATTRIBUTE_FORM_SINGLE_PAGE = "singlePage";
+	static private final String ATTRIBUTE_SKIP_ON_BACK = "skipOnBack"; // used on both FORM and FIELD
 	static private final String ATTRIBUTE_FIELD_ID = "id";
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_OPTIONAL = "optional";
@@ -97,7 +98,6 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_LABEL = "label";
 	static private final String ATTRIBUTE_FIELD_LABELS = "labels";
 	static private final String ATTRIBUTE_FIELD_BACKGROUND_COLOR = "backgroundColor";
-	static private final String ATTRIBUTE_FIELD_SKIP_ON_BACK = "skipOnBack";
 	static private final String ATTRIBUTE_FIELD_SHOW_ON_CREATE = "showOnCreate";
 	static private final String ATTRIBUTE_FIELD_SHOW_ON_EDIT = "showOnEdit";
 	static private final String ATTRIBUTE_FIELD_VALUE = "value";
@@ -227,6 +227,8 @@ public class FormParser extends SubtreeParser
 				newPage(null);
 			// Start field:
 			formStartFieldId = readStringAttribute(ATTRIBUTE_FORM_START_FIELD, null, attributes, true, false);
+			// skipOnBack:
+			currentForm.setSkipOnBack(readBooleanAttribute(ATTRIBUTE_SKIP_ON_BACK, Form.DEFAULT_SKIP_ON_BACK, attributes));
 			
 			//Activate this subtree parser:
 			activate(); //!!!
@@ -580,7 +582,7 @@ public class FormParser extends SubtreeParser
 			}
 			
 			// Skip on back:
-			field.setSkipOnBack(readBooleanAttribute(ATTRIBUTE_FIELD_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK, attributes));
+			field.setSkipOnBack(readBooleanAttribute(ATTRIBUTE_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK, attributes));
 			
 			// Show on create/edit:
 			field.setShowOnCreate(readBooleanAttribute(ATTRIBUTE_FIELD_SHOW_ON_CREATE, Field.DEFAULT_SHOW_ON_CREATE, attributes));

@@ -19,6 +19,7 @@ public class Trigger implements JumpSource
 	
 	static public enum Key
 	{
+		ANY,
 		BACK,
 		SEARCH,
 		HOME,

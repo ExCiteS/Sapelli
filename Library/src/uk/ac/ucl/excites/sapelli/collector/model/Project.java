@@ -228,13 +228,13 @@ public class Project
 	}
 	
 	/**
-	 * @param index
-	 * @return	the {@link Form} with the specified {@code index}, or {@code null} if the project has no such form. 
+	 * @param position
+	 * @return	the {@link Form} with the specified {@code position}, or {@code null} if the project has no such form. 
 	 */
-	public Form getForm(int index)
+	public Form getForm(int position)
 	{
-		if(index >= 0 && index < forms.size())
-			return forms.get(index);
+		if(position >= 0 && position < forms.size())
+			return forms.get(position);
 		else
 			return null; //no such form
 	}
@@ -268,6 +268,18 @@ public class Project
 			this.startForm = startForm;
 		else
 			throw new IllegalArgumentException("Unknown form.");
+	}
+	
+	/**
+	 * @param currentForm
+	 * @return the form following the given one
+	 */
+	public Form getNextForm(Form currentForm)
+	{
+		if(currentForm.getPosition() + 1 < forms.size())
+			return forms.get(currentForm.getPosition() + 1); // go to next field in the form
+		else
+			return null;
 	}
 
 	/**

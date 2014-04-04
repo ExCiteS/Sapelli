@@ -26,6 +26,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsState;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
@@ -108,8 +109,10 @@ public abstract class Controller
 		if(currFormSession != null)
 		{
 			prevFormSession = currFormSession; // remember previous formSession
-			if(!prevFormMove && currFormSession.form != formSession.form)
-				formHistory.push(currFormSession); // add previous formSession to history if, we are not "coming back" and we are not looping within the same form
+			if(	!prevFormMove &&							// If we are not "coming back",
+				currFormSession.form != formSession.form && // AND we are not looping within the same form,
+				!currFormSession.form.isSkipOnBack())		// AND the previous form does not have skipOnBack=true,
+				formHistory.push(currFormSession);			// ... add previous formSession to history
 			disableTriggers(currFormSession.form.getTriggers()); // disable triggers
 		}
 		currFormSession = formSession;
@@ -420,7 +423,13 @@ public abstract class Controller
 		
 		// Enter child fields (but signal that they are entered as part of entering the page):
 		for(Field f : page.getFields())
-			f.enter(this, true); // enter with page
+		{	
+			if(	(currFormSession.mode == Mode.CREATE && !f.isShowOnCreate()) ||
+				(currFormSession.mode == Mode.EDIT && !f.isShowOnEdit()))
+				addLogLine("SKIPPING", currFormSession.currField.getID());
+			else
+				f.enter(this, true); // enter with page
+		}
 		
 		// Setup the triggers
 		setupTriggers(page.getTriggers());
@@ -517,7 +526,7 @@ public abstract class Controller
 		addLogLine("FORM_END", ef.getID(), currFormSession.form.getName(), Long.toString((System.currentTimeMillis() - currFormSession.startTime) / 1000) + " seconds");
 		
 		// Save or discard:
-		if(ef.isSave())
+		if(ef.isSave() && currFormSession.form.isProducesRecords())
 			saveRecordAndAttachments();
 		else
 			discardRecordAndAttachments();
@@ -538,6 +547,16 @@ public abstract class Controller
 				if(!goToPreviousForm()) // try to re-open previous form
 				{	// there is no previous form (this shouldn't really happen...):
 					showError("Invalid state: no previous form to return to!", false); //TODO multilang
+					startProject(); // restart project instead
+				}
+				break;
+			case NEXTFORM:
+				Form nextForm = project.getNextForm(currFormSession.form);
+				if(nextForm != null)
+					openFormSession(FormSession.Create(nextForm, deviceIDHash));
+				else
+				{	// there is no next form:
+					showError("Invalid state: there is no next form to go to from here!", false); //TODO multilang
 					startProject(); // restart project instead
 				}
 				break;
@@ -565,9 +584,47 @@ public abstract class Controller
 			disableTrigger(trigger);
 	}
 	
-	protected abstract void setupTrigger(Trigger trigger);
+	protected void setupTrigger(Trigger trigger)
+	{
+		// Key press trigger:
+		if(!trigger.getKeys().isEmpty())
+		{
+			setupKeyPressTrigger(trigger);
+			addLogLine("TRIGGER", "Set-up key press trigger, firing on pressing of " + CollectionUtils.allToString(trigger.getKeys(), false));
+		}		
+		// Fixed timer trigger:
+		if(trigger.getFixedTimer() != Trigger.NO_TIMEOUT)
+		{
+			if(logger != null)
+				logger.addLine("TRIGGER", "Set-up fixed timer trigger, firing in " + trigger.getFixedTimer() + " seconds");			
+			setupTimerTrigger(trigger);
+		}
+	}
 	
-	protected abstract void disableTrigger(Trigger trigger);
+	protected abstract void setupKeyPressTrigger(Trigger trigger);
+	
+	protected abstract void setupTimerTrigger(Trigger trigger);
+	
+	protected void disableTrigger(Trigger trigger)
+	{
+		// Key press trigger:
+		if(!trigger.getKeys().isEmpty())
+		{
+			disableKeyPressTrigger(trigger);
+			addLogLine("TRIGGER", "Disabled key press trigger, firing on pressing of " + CollectionUtils.allToString(trigger.getKeys(), false));
+		}
+		// Fixed timer trigger:
+		if(trigger.getFixedTimer() != Trigger.NO_TIMEOUT)
+		{
+			if(logger != null)
+				logger.addLine("TRIGGER", "Disabled fixed timer trigger");
+			disableTimerTrigger(trigger);
+		}	
+	}
+	
+	protected abstract void disableKeyPressTrigger(Trigger trigger);
+	
+	protected abstract void disableTimerTrigger(Trigger trigger);
 	
 	public void fireTrigger(Trigger trigger)
 	{
