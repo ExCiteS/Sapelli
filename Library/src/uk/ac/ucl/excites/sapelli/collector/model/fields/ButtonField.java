@@ -18,10 +18,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
  * 
  * @author mstevens
  */
-/**
- * @author mstevens
- *
- */
 public class ButtonField extends Field
 {
 	
@@ -124,10 +120,10 @@ public class ButtonField extends Field
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createUI(uk.ac.ucl.excites.collector.project.ui.CollectorUI)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#createUI(UI)
 	 */
 	@Override
-	public <V> ButtonUI<V> createUI(CollectorUI<V> collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> ButtonUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createButtonUI(this);
 	}

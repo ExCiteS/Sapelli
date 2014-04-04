@@ -76,7 +76,7 @@ public class CheckBoxField extends Field
 	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#createUI(uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI)
 	 */
 	@Override
-	public <V> CheckBoxUI<V> createUI(CollectorUI<V> collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> CheckBoxUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createCheckBoxFieldUI(this);
 	}

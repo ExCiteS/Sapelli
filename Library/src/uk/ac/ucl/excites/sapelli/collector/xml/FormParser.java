@@ -399,11 +399,17 @@ public class FormParser extends SubtreeParser
 			else if(qName.equals(TAG_TEXTFIELD))
 			{
 				TextBoxField txtField = new TextBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_TEXTFIELD, ATTRIBUTE_FIELD_LABEL, attributes, false, true));
-				txtField.setMinLength(readIntegerAttribute(ATTRIBUTE_TEXT_MINLENGTH, TextBoxField.DEFAULT_MIN_LENGTH, attributes));
+				newField(txtField, attributes); // first set general things like optionality (needed for getDefaultMinLength() below).
+				
+				// Deal with minimum & maximum length:
+				if(txtField.getOptional() != Optionalness.ALWAYS && attributes.getIndex(ATTRIBUTE_TEXT_MINLENGTH) == -1)
+					addWarning("Text field \"" + txtField.getID() + "\" is non-optional but no minimal length is defined, therefore the minimum will be set to " + TextBoxField.DEFAULT_MIN_LENGTH_NON_OPTIONAL + " character(s). If this is not sensible then please use the '" + ATTRIBUTE_TEXT_MINLENGTH + "' attribute to set an minimum length explicitly.");				
+				txtField.setMinLength(readIntegerAttribute(ATTRIBUTE_TEXT_MINLENGTH, txtField.getDefaultMinLength(), attributes));
 				txtField.setMaxLength(readIntegerAttribute(ATTRIBUTE_TEXT_MAXLENGTH, TextBoxField.DEFAULT_MAX_LENGTH, attributes));
+				
 				txtField.setMultiline(readBooleanAttribute(ATTRIBUTE_TEXT_MULTILINE, TextBoxField.DEFAULT_MULTILINE, attributes));
 				txtField.setInitialValue(readStringAttribute(TextBoxField.DEFAULT_INITIAL_VALUE, attributes, false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
-				newField(txtField, attributes);
+				
 			}
 			// <Checkbox>
 			else if(qName.equals(TAG_CHECKBOX))

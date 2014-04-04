@@ -12,10 +12,10 @@ import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
  * @author mstevens
  *
  */
-public abstract class OrientationUI<V> extends SelfLeavingFieldUI<OrientationField, V>
+public abstract class OrientationUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<OrientationField, V, UI>
 {
 
-	public OrientationUI(OrientationField field, Controller controller, CollectorUI<V> collectorUI)
+	public OrientationUI(OrientationField field, Controller controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

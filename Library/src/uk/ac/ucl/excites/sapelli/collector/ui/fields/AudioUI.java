@@ -11,10 +11,10 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
  * @author mstevens
  * 
  */
-public abstract class AudioUI<V> extends MediaUI<AudioField, V>
+public abstract class AudioUI<V, UI extends CollectorUI<V, UI>> extends MediaUI<AudioField, V, UI>
 {
 	
-	public AudioUI(AudioField field, Controller controller, CollectorUI<V> collectorUI)
+	public AudioUI(AudioField field, Controller controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

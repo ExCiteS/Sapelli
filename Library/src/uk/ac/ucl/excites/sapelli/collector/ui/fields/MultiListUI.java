@@ -15,13 +15,13 @@ import uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI;
  * @author mstevens
  *
  */
-public abstract class MultiListUI<V> extends NonSelfLeavingFieldUI<MultiListField, V>
+public abstract class MultiListUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<MultiListField, V, UI>
 {
 
 	static protected final String PLEASE_SELECT = "— Please select —"; //TODO multilang
 	static protected final String UNDO_SELECTION = "— No selection —"; //TODO multilang
 	
-	public MultiListUI(MultiListField listField, Controller controller, CollectorUI<V> collectorUI)
+	public MultiListUI(MultiListField listField, Controller controller, UI collectorUI)
 	{
 		super(listField, controller, collectorUI);
 	}

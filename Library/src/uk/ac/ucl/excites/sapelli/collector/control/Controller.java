@@ -49,7 +49,7 @@ public abstract class Controller
 	
 	// DYNAMICS------------------------------------------------------
 	protected Project project;
-	protected CollectorUI<?> ui;
+	protected CollectorUI<?, ?> ui;
 	protected RecordStore recordStore;
 	protected Logger logger;
 	
@@ -61,7 +61,7 @@ public abstract class Controller
 	
 	protected boolean handlingUserGoBackRequest = false;
 	
-	public Controller(Project project, CollectorUI<?> ui, RecordStore recordStore)
+	public Controller(Project project, CollectorUI<?, ?> ui, RecordStore recordStore)
 	{
 		this.project = project;
 		this.ui = ui;

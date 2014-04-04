@@ -6,7 +6,6 @@ import java.util.TimerTask;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
-import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.shared.util.Timeoutable;
 import android.content.Context;
@@ -21,14 +20,14 @@ import android.widget.ProgressBar;
  * @author Julia, mstevens
  *
  */
-public class AndroidLocationUI extends LocationUI<View>
+public class AndroidLocationUI extends LocationUI<View, CollectorView>
 {
 
 	private Button pageView;
 	private LinearLayout waitView;
 	private Timer timeoutCounter = null;
 	
-	public AndroidLocationUI(LocationField field, Controller controller, CollectorUI<View> collectorUI)
+	public AndroidLocationUI(LocationField field, Controller controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}
@@ -48,7 +47,7 @@ public class AndroidLocationUI extends LocationUI<View>
 		{
 			if(pageView == null)
 			{
-				pageView = new Button(((CollectorView) collectorUI).getContext());
+				pageView = new Button(collectorUI.getContext());
 				pageView.setText(field.getLabel());
 				// TODO some kind of icon/image would be nice (an little flag or crosshairs?)
 				pageView.setOnClickListener(new OnClickListener()
@@ -69,7 +68,7 @@ public class AndroidLocationUI extends LocationUI<View>
 			// TODO show coordinates/accuracy to literate users (this will need a new XML attribute)
 			if(waitView == null)
 			{
-				Context context = ((CollectorView) collectorUI).getContext();
+				Context context = collectorUI.getContext();
 				waitView = new LinearLayout(context);
 				waitView.setGravity(Gravity.CENTER);
 				waitView.addView(new ProgressBar(context, null, android.R.attr.progressBarStyleLarge));
@@ -85,7 +84,7 @@ public class AndroidLocationUI extends LocationUI<View>
 				@Override
 				public void run()
 				{	//time's up!
-					((CollectorView) collectorUI).getActivity().runOnUiThread(new Runnable()
+					collectorUI.getActivity().runOnUiThread(new Runnable()
 					{
 						@Override
 						public void run()

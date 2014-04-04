@@ -116,7 +116,7 @@ public class Page extends Field
 	}
 
 	@Override
-	public <V> PageUI<V> createUI(CollectorUI<V> collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> PageUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createPageUI(this);
 	}

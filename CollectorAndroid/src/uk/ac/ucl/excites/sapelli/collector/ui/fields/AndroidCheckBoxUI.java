@@ -9,6 +9,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import android.view.View;
+import android.view.View.OnFocusChangeListener;
 import android.widget.CheckBox;
 import android.widget.LinearLayout.LayoutParams;
 
@@ -16,7 +17,7 @@ import android.widget.LinearLayout.LayoutParams;
  * @author Julia, mstevens
  * 
  */
-public class AndroidCheckBoxUI extends CheckBoxUI<View>
+public class AndroidCheckBoxUI extends CheckBoxUI<View, CollectorView>
 {
 
 	static private final float NEGATIVE_TOP_MARGIN_DIP = -5.5f;
@@ -44,11 +45,35 @@ public class AndroidCheckBoxUI extends CheckBoxUI<View>
 	{
 		if(chbx == null)
 		{
-			chbx = new CheckBox(((CollectorView) collectorUI).getContext());
+			chbx = new CheckBox(collectorUI.getContext());
 			LayoutParams lp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
 			lp.setMargins(0, negativeTopMarginPx, 0, negativeBottomMarginPx); // otherwise checkbox has too much margin on top & bottom (at least on Nexus4) // TODO test on XCover1 & 2)
 			chbx.setLayoutParams(lp);
 			chbx.setText(field.getLabel());
+			
+			// Make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
+			chbx.setFocusable(true);
+			chbx.setFocusableInTouchMode(true);
+			chbx.setOnFocusChangeListener(new OnFocusChangeListener()
+			{
+				@Override
+				public void onFocusChange(View v, boolean hasFocus)
+				{
+					if(hasFocus)
+					{
+						CheckBox chbx = (CheckBox) v;
+						
+						// Hide keyboard if it is currently shown:
+						collectorUI.hideKeyboard();
+						
+						// Swap state (to simulate a click):
+						chbx.setChecked(!chbx.isChecked());
+						
+						// Lose focus again:
+						chbx.clearFocus();
+					}
+				}
+			});
 		}
 		
 		// Update checkbox state:

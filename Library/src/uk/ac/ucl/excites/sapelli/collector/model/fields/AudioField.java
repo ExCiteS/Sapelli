@@ -91,7 +91,7 @@ public class AudioField extends MediaField
 	}
 
 	@Override
-	public <V> AudioUI<V> createUI(CollectorUI<V> collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> AudioUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createAudioUI(this);
 	}

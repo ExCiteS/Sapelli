@@ -147,7 +147,7 @@ public class MultiListField extends Field
 	 * @see uk.ac.ucl.excites.collector.project.model.Field#createUI(uk.ac.ucl.excites.collector.project.ui.CollectorUI)
 	 */
 	@Override
-	public <V> MultiListUI<V> createUI(CollectorUI<V> collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> MultiListUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createMultiListUI(this);
 	}

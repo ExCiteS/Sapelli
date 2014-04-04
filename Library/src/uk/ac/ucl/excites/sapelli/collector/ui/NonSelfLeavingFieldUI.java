@@ -13,13 +13,14 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
  * 
  * @param <F>
  * @param <V>
+ * @param <UI>
  * 
  * @author mstevens
  */
-public abstract class NonSelfLeavingFieldUI<F extends Field, V> extends FieldUI<F, V>
+public abstract class NonSelfLeavingFieldUI<F extends Field, V, UI extends CollectorUI<V, UI>> extends FieldUI<F, V, UI>
 {
 
-	public NonSelfLeavingFieldUI(F field, Controller controller, CollectorUI<V> collectorUI)
+	public NonSelfLeavingFieldUI(F field, Controller controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

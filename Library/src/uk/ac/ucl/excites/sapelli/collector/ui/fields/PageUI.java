@@ -20,15 +20,15 @@ import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
  * @author mstevens
  *
  */
-public abstract class PageUI<V> extends NonSelfLeavingFieldUI<Page, V>
+public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<Page, V, UI>
 {
 
-	protected List<FieldUI<?, V>> fieldUIs;
+	protected List<FieldUI<?, V, UI>> fieldUIs;
 	
-	public PageUI(Page page, Controller controller, CollectorUI<V> collectorUI)
+	public PageUI(Page page, Controller controller, UI collectorUI)
 	{
 		super(page, controller, collectorUI);
-		fieldUIs = new ArrayList<FieldUI<?, V>>();
+		fieldUIs = new ArrayList<FieldUI<?, V, UI>>();
 		
 		for(Field f : page.getFields())
 			CollectionUtils.addIgnoreNull(fieldUIs, f.createUI(collectorUI));
@@ -37,7 +37,7 @@ public abstract class PageUI<V> extends NonSelfLeavingFieldUI<Page, V>
 	@Override
 	public void cancel()
 	{
-		for(FieldUI<?, V> fUI : fieldUIs)
+		for(FieldUI<?, V, UI> fUI : fieldUIs)
 			fUI.cancel();
 	}
 	
@@ -46,7 +46,7 @@ public abstract class PageUI<V> extends NonSelfLeavingFieldUI<Page, V>
 	{
 		if(noValidation || isValid(record))
 		{
-			for(FieldUI<?, V> fUI : fieldUIs)
+			for(FieldUI<?, V, UI> fUI : fieldUIs)
 				if(	(controller.getCurrentFormMode() == Mode.CREATE && fUI.getField().isShowOnCreate()) ||
 					(controller.getCurrentFormMode() == Mode.EDIT && fUI.getField().isShowOnEdit()))
 					fUI.leave(record, true); // skip validation (otherwise we'd repeat it), this means that NonSelfLeavingFieldUIs (and Boolean-column Buttons) will only store their value
@@ -63,22 +63,28 @@ public abstract class PageUI<V> extends NonSelfLeavingFieldUI<Page, V>
 	public boolean isValid(CollectorRecord record)
 	{
 		boolean valid = true;
-		for(FieldUI<?, V> fUI : fieldUIs)
+		for(FieldUI<?, V, UI> fUI : fieldUIs)
 			if(	(controller.getCurrentFormMode() == Mode.CREATE && fUI.getField().isShowOnCreate()) ||
 				(controller.getCurrentFormMode() == Mode.EDIT && fUI.getField().isShowOnEdit()))
 				valid = isValid(fUI, record);	
 		return valid;
 	}
 	
-	public boolean isValid(FieldUI<?, V> fUI, CollectorRecord record)
+	public boolean isValid(FieldUI<?, V, UI> fUI, CollectorRecord record)
 	{
 		boolean valid = fUI.isValid(record);
 		markValidity(fUI, valid); // highlight with red border if invalid, remove border (if it is there) if valid
 		return valid; 
 	}
 	
-	protected abstract void markValidity(FieldUI<?, V> fieldUI, boolean valid);
+	protected abstract void markValidity(FieldUI<?, V, UI> fieldUI, boolean valid);
 
+	public void clearInvalidity(FieldUI<?, V, UI> fieldUI)
+	{
+		if(fieldUIs.contains(fieldUI))
+			markValidity(fieldUI, true);
+	}
+	
 	@Override
 	protected void storeValue(CollectorRecord record)
 	{

@@ -11,14 +11,14 @@ import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
 
-public abstract class ButtonUI<V> extends SelfLeavingFieldUI<ButtonField, V>
+public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<ButtonField, V, UI>
 {
 
 	/**
 	 * @param field
 	 * @param controller
 	 */
-	public ButtonUI(ButtonField field, Controller controller, CollectorUI<V> collectorUI)
+	public ButtonUI(ButtonField field, Controller controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

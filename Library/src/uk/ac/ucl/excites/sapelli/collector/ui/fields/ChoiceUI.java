@@ -12,7 +12,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
  * @author mstevens
  *
  */
-public abstract class ChoiceUI<V> extends SelfLeavingFieldUI<ChoiceField, V>
+public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<ChoiceField, V, UI>
 {
 
 	/**
@@ -20,7 +20,7 @@ public abstract class ChoiceUI<V> extends SelfLeavingFieldUI<ChoiceField, V>
 	 * @param controller
 	 * @param collectorUI
 	 */
-	public ChoiceUI(ChoiceField choice, Controller controller, CollectorUI<V> collectorUI)
+	public ChoiceUI(ChoiceField choice, Controller controller, UI collectorUI)
 	{
 		super(choice, controller, collectorUI);
 		if(choice.isLeaf()) // just in case...

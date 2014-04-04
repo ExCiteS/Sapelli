@@ -27,12 +27,14 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidOrientationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPageUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidTextBoxUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
 
 /**
@@ -41,8 +43,10 @@ import android.widget.LinearLayout;
  * @author mstevens
  */
 @SuppressLint("ViewConstructor")
-public class CollectorView extends LinearLayout implements CollectorUI<View>
+public class CollectorView extends LinearLayout implements CollectorUI<View, CollectorView>
 {
+	
+	static private final String TAG = "CollectorView";
 	
 	static private final int BUTTONS_VIEW_ID = 0;
 	static private final int FIELD_VIEW_ID = 1;
@@ -58,15 +62,20 @@ public class CollectorView extends LinearLayout implements CollectorUI<View>
 	
 	// UI elements:
 	private ControlsView controlsView;
-	private FieldUI<?, View> fieldUI;
+	private FieldUI<?, View, CollectorView> fieldUI;
 	private View fieldUIView = null;
-	private HashMap<Field, FieldUI<?, View>> fieldUICache;
+	private HashMap<Field, FieldUI<?, View, CollectorView>> fieldUICache;
+	
+	// Input manager:
+	InputMethodManager imm;
 	
 	public CollectorView(CollectorActivity activity)
 	{
 		super(activity);
 		this.activity = activity;
-		this.fieldUICache = new HashMap<Field, FieldUI<?, View>>();
+		this.fieldUICache = new HashMap<Field, FieldUI<?, View, CollectorView>>();
+		
+		this.imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
 		
 		// Root layout (= this):
 		this.setOrientation(LinearLayout.VERTICAL);
@@ -96,7 +105,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View>
 		controlsView.update(controller);
 		
 		// Get or create fieldUI for field...
-		FieldUI<?, View> newFieldUI = fieldUICache.get(field); // try to recycle cached fieldUI
+		FieldUI<?, View, CollectorView> newFieldUI = fieldUICache.get(field); // try to recycle cached fieldUI
 		if(newFieldUI == null)
 		{	// no cached fieldUI for this field...
 			newFieldUI = field.createUI(this); // create new fieldUI for field
@@ -141,7 +150,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View>
 	}
 	
 	@Override
-	public FieldUI<?, View> getCurrentFieldUI()
+	public FieldUI<?, View, CollectorView> getCurrentFieldUI()
 	{
 		return fieldUI;
 	}
@@ -155,7 +164,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View>
 	}
 
 	@Override
-	public ChoiceUI<View> createChoiceUI(ChoiceField cf)
+	public AndroidChoiceUI createChoiceUI(ChoiceField cf)
 	{
 		return new AndroidChoiceUI(cf, controller, this);
 	}
@@ -325,6 +334,18 @@ public class CollectorView extends LinearLayout implements CollectorUI<View>
 	{
 		int heightPx = (getScreenHeightPx() - (buttonsShowing ? (controlsView.getButtonHeightPx() + getSpacingPx()) : 0) - ((numRows - 1) * getSpacingPx())) / numRows;
 		return Math.max(heightPx, 0); //avoid negative pixel counts
+	}
+	
+	public void hideKeyboard()
+	{
+		try
+		{
+			imm.hideSoftInputFromWindow(getWindowToken(), 0);
+		}
+		catch(Exception e) // just in case
+		{
+			Log.e(TAG, "Exception upon trying to hide keyboard.", e);
+		}
 	}
 
 }

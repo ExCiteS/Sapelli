@@ -33,7 +33,7 @@ import android.widget.AdapterView;
  * @author Julia, Michalis, mstevens
  * 
  */
-public class AndroidAudioUI extends AudioUI<View>
+public class AndroidAudioUI extends AudioUI<View, CollectorView>
 {
 	
 	static private final String TAG = "AndroidAudioUI";
@@ -100,7 +100,7 @@ public class AndroidAudioUI extends AudioUI<View>
 		//TODO onPage view
 		
 		if(view == null)
-			view = new AudioView(((CollectorView) collectorUI).getContext());
+			view = new AudioView(collectorUI.getContext());
 		
 		// Update view:
 		//	Make start button visible if more recordings can still be added:
@@ -133,7 +133,7 @@ public class AndroidAudioUI extends AudioUI<View>
 			setNumColumns(1);
 
 			// Button size, padding & background colour:
-			this.buttonHeight = ((CollectorView) collectorUI).getIconHeightPx(2, controller.getControlsState().isAnyButtonShown());
+			this.buttonHeight = collectorUI.getIconHeightPx(2, controller.getControlsState().isAnyButtonShown());
 			this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 			this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
 			
@@ -184,7 +184,7 @@ public class AndroidAudioUI extends AudioUI<View>
 						case BUTTON_INDEX_START:
 						{
 							if(field.isUseNativeApp())
-								((CollectorView) collectorUI).getActivity().startAudioRecorderApp(AndroidAudioUI.this);
+								collectorUI.getActivity().startAudioRecorderApp(AndroidAudioUI.this);
 							else if(startRecording())
 								view.setStartVisibility(false);
 							break;
@@ -206,7 +206,7 @@ public class AndroidAudioUI extends AudioUI<View>
 
 			// Execute the "press" animation if allowed, then perform the action: 
 			if(controller.getCurrentForm().isAnimation())
-				(new PressAnimator(action, v, (CollectorView) collectorUI)).execute(); //execute animation and the action afterwards
+				(new PressAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
 			else
 				action.run(); //perform task now (animation is disabled)
 		}

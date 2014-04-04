@@ -14,7 +14,7 @@ import android.widget.TextView;
  * @author mstevens
  *
  */
-public class AndroidLabelUI extends LabelUI<View>
+public class AndroidLabelUI extends LabelUI<View, CollectorView>
 {
 	
 	private TextView label;
@@ -29,7 +29,7 @@ public class AndroidLabelUI extends LabelUI<View>
 	{
 		if(label == null)
 		{
-			label = new TextView(((CollectorView) collectorUI).getContext());
+			label = new TextView(collectorUI.getContext());
 			label.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 			label.setText(field.getLabel());
 			label.setTextSize(TypedValue.COMPLEX_UNIT_PX, label.getTextSize() * field.getTextSizeScale()); 

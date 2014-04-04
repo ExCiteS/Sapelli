@@ -99,7 +99,7 @@ public class OrientationField extends Field
 	}
 
 	@Override
-	public <V> OrientationUI<V> createUI(CollectorUI<V> collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> OrientationUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createOrientationUI(this);
 	}

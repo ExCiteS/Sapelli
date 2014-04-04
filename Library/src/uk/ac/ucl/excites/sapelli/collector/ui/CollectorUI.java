@@ -24,34 +24,34 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.PhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.TextBoxUI;
 
-public interface CollectorUI<V>
+public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 {
 
-	public ChoiceUI<V> createChoiceUI(ChoiceField cf);
+	public ChoiceUI<V, UI> createChoiceUI(ChoiceField cf);
 
-	public PhotoUI<V> createPhotoUI(PhotoField pf);
+	public PhotoUI<V, UI> createPhotoUI(PhotoField pf);
 
-	public AudioUI<V> createAudioUI(AudioField af);
+	public AudioUI<V, UI> createAudioUI(AudioField af);
 
-	public LocationUI<V> createLocationUI(LocationField lf);
+	public LocationUI<V, UI> createLocationUI(LocationField lf);
 	
-	public OrientationUI<V> createOrientationUI(OrientationField of);
+	public OrientationUI<V, UI> createOrientationUI(OrientationField of);
 	
-	public LabelUI<V> createLabelUI(LabelField lf);
+	public LabelUI<V, UI> createLabelUI(LabelField lf);
 	
-	public ButtonUI<V> createButtonUI(ButtonField bf);
+	public ButtonUI<V, UI> createButtonUI(ButtonField bf);
 
-	public TextBoxUI<V> createTextFieldUI(TextBoxField tf);
+	public TextBoxUI<V, UI> createTextFieldUI(TextBoxField tf);
 	
-	public CheckBoxUI<V> createCheckBoxFieldUI(CheckBoxField cbf);
+	public CheckBoxUI<V, UI> createCheckBoxFieldUI(CheckBoxField cbf);
 	
-	public MultiListUI<V> createMultiListUI(MultiListField mlf);
+	public MultiListUI<V, UI> createMultiListUI(MultiListField mlf);
 	
-	public PageUI<V> createPageUI(Page page);
+	public PageUI<V, UI> createPageUI(Page page);
 
 	public void setField(Field currentField);
 	
-	public FieldUI<?, V> getCurrentFieldUI();
+	public FieldUI<?, V, UI> getCurrentFieldUI();
 	
 	public int getSpacingPx();
 	

@@ -22,10 +22,11 @@ public class TextBoxField extends Field
 	static public final String ID_PREFIX = "txt";
 
 	// Defaults
-	public static final int DEFAULT_MIN_LENGTH = 0; // minimum length of 0 if not set
-	public static final int DEFAULT_MAX_LENGTH = 100; // maximum length of 100 if not set
-	public static final boolean DEFAULT_MULTILINE = false; // single-line by default
-	public static final String DEFAULT_INITIAL_VALUE = ""; // empty String is the default/initial initialValue
+	public static final int DEFAULT_MIN_LENGTH_OPTIONAL = 0;		// default minimum length of 0 chars if field is optional (i.e. optionality = ALWAYS)
+	public static final int DEFAULT_MIN_LENGTH_NON_OPTIONAL = 1;	// default minimum length of 1 char if field is not optional (i.e. optionality = NEVER or NOT_WHEN_REACHED)
+	public static final int DEFAULT_MAX_LENGTH = 100; 				// default maximum length of 100 chars
+	public static final boolean DEFAULT_MULTILINE = false;			// single-line by default
+	public static final String DEFAULT_INITIAL_VALUE = "";			// empty String is the default/initial initialValue
 
 	// Dynamics
 	private int maxLength;
@@ -43,7 +44,7 @@ public class TextBoxField extends Field
 	{
 		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id), label);
 		this.maxLength = DEFAULT_MAX_LENGTH;
-		this.minLength = DEFAULT_MIN_LENGTH;
+		this.minLength = DEFAULT_MIN_LENGTH_OPTIONAL;
 		this.multiline = DEFAULT_MULTILINE;
 		this.initialValue = DEFAULT_INITIAL_VALUE;
 	}
@@ -87,7 +88,7 @@ public class TextBoxField extends Field
 	@Override
 	protected Column<?> createColumn()
 	{
-		return StringColumn.ForCharacterCount(id, optional != Optionalness.NEVER, getMaxLength());
+		return StringColumn.ForCharacterCount(id, optional != Optionalness.NEVER, maxLength);
 	}
 
 	/* (non-Javadoc)
@@ -103,7 +104,7 @@ public class TextBoxField extends Field
 	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#createUI(uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI)
 	 */
 	@Override
-	public <V> TextBoxUI<V> createUI(CollectorUI<V> collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> TextBoxUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createTextFieldUI(this);
 	}
@@ -113,10 +114,14 @@ public class TextBoxField extends Field
 		this.maxLength = maxLength;
 	}
 
+	public int getDefaultMinLength()
+	{
+		return optional == Optionalness.ALWAYS ? DEFAULT_MIN_LENGTH_OPTIONAL : DEFAULT_MIN_LENGTH_NON_OPTIONAL;
+	}
+	
 	public void setMinLength(int minLength)
 	{
 		this.minLength = minLength;
-
 	}
 
 	public void setMultiline(boolean multiline)

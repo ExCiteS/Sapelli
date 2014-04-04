@@ -10,7 +10,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
-import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerAdapter;
@@ -50,12 +49,12 @@ import android.widget.ViewSwitcher;
  * 
  * @author mstevens, Michalis Vitos
  */
-public class AndroidPhotoUI extends PhotoUI<View>
+public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 {
 	
 	private CameraView photoView;
 	
-	public AndroidPhotoUI(PhotoField field, Controller controller, CollectorUI<View> collectorUI)
+	public AndroidPhotoUI(PhotoField field, Controller controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}
@@ -81,7 +80,7 @@ public class AndroidPhotoUI extends PhotoUI<View>
 		else
 		{
 			if(photoView == null)
-				photoView = new CameraView(((CollectorView) collectorUI).getContext());
+				photoView = new CameraView(collectorUI.getContext());
 			
 			// Init/reset the view:
 			photoView.update();
@@ -215,7 +214,7 @@ public class AndroidPhotoUI extends PhotoUI<View>
 
 			// Execute the "press" animation if allowed, then perform the action: 
 			if(controller.getCurrentForm().isAnimation())
-				(new PressAnimator(action, v, (CollectorView) collectorUI)).execute(); //execute animation and the action afterwards
+				(new PressAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
 			else
 				action.run(); //perform task now (animation is disabled)
 		}
@@ -344,7 +343,7 @@ public class AndroidPhotoUI extends PhotoUI<View>
 				// Layout:
 				setBackgroundColor(Color.TRANSPARENT);
 				setGravity(Gravity.CENTER);
-				setPadding(0, 0, 0, ((CollectorView) collectorUI).getSpacingPx());
+				setPadding(0, 0, 0, collectorUI.getSpacingPx());
 
 				// Columns
 				setNumColumns(getNumberOfColumns());

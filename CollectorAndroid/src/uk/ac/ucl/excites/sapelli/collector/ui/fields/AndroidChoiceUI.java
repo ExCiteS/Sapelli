@@ -32,7 +32,7 @@ import android.widget.TextView;
  * 
  * @author mstevens
  */
-public class AndroidChoiceUI extends ChoiceUI<View>
+public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 {
 	
 	static public final float PAGE_CHOSEN_ITEM_SIZE_DIP = 60.0f; // width = height
@@ -53,7 +53,7 @@ public class AndroidChoiceUI extends ChoiceUI<View>
 		if(onPage && field.isRoot())
 		{
 			if(pageView == null)
-				pageView = new PageView(((CollectorView) collectorUI).getContext());
+				pageView = new PageView(collectorUI.getContext());
 			
 			// Update pageView:
 			ChoiceField chosen = field.getSelectedChoice(record);
@@ -67,7 +67,7 @@ public class AndroidChoiceUI extends ChoiceUI<View>
 		else
 		{
 			if(pickView == null)
-				pickView = new ChoiceView(((CollectorView) collectorUI).getContext());
+				pickView = new ChoiceView(collectorUI.getContext());
 			
 			// Update pickView:
 			pickView.update();
@@ -132,7 +132,7 @@ public class AndroidChoiceUI extends ChoiceUI<View>
 
 			// Execute the "press" animation if allowed, then perform the action: 
 			if(controller.getCurrentForm().isAnimation())
-				(new PressAnimator(action, v, (CollectorView) collectorUI)).execute(); //execute animation and the action afterwards
+				(new PressAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
 			else
 				action.run(); //perform task now (animation is disabled)			
 		}
@@ -163,8 +163,8 @@ public class AndroidChoiceUI extends ChoiceUI<View>
 			setNumColumns(field.getCols());
 			
 			// Item size & padding:
-			int itemWidthPx = ((CollectorView) collectorUI).getIconWidthPx(field.getCols());
-			int itemHeightPx = ((CollectorView) collectorUI).getIconHeightPx(field.getRows(), controller.getControlsState().isAnyButtonShown());
+			int itemWidthPx = collectorUI.getIconWidthPx(field.getCols());
+			int itemHeightPx = collectorUI.getIconHeightPx(field.getRows(), controller.getControlsState().isAnyButtonShown());
 			int itemPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 
 			// Adapter & images:
@@ -200,7 +200,7 @@ public class AndroidChoiceUI extends ChoiceUI<View>
 
 			// Execute the "press" animation if allowed, then perform the action: 
 			if(controller.getCurrentForm().isAnimation())
-				(new PressAnimator(action, v, (CollectorView) collectorUI)).execute(); //execute animation and the action afterwards
+				(new PressAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
 			else
 				action.run(); //perform task now (animation is disabled)
 		}

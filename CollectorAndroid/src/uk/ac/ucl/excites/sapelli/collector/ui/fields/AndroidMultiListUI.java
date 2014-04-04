@@ -11,6 +11,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.View;
+import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
@@ -25,7 +26,7 @@ import android.widget.TextView;
  * 
  * @author mstevens
  */
-public class AndroidMultiListUI extends MultiListUI<View> //extends LinearLayout implements FieldUI
+public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 {
 	
 	private LinearLayout view;
@@ -43,7 +44,7 @@ public class AndroidMultiListUI extends MultiListUI<View> //extends LinearLayout
 	{	
 		if(view == null)
 		{
-			view = new LinearLayout(((CollectorView) collectorUI).getContext());
+			view = new LinearLayout(collectorUI.getContext());
 			view.setOrientation(LinearLayout.VERTICAL);
 			view.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 		}
@@ -115,7 +116,29 @@ public class AndroidMultiListUI extends MultiListUI<View> //extends LinearLayout
 		else if(field.isPreSelect())
 			spinner.setSelection(parentItem.getDefaultChildIndex());
 		//else: first (dummy) item will be selected
-				
+		
+		// Make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
+		spinner.setFocusable(true);
+		spinner.setFocusableInTouchMode(true);
+		spinner.setOnFocusChangeListener(new OnFocusChangeListener()
+		{
+			@Override
+			public void onFocusChange(View v, boolean hasFocus)
+			{
+				if(hasFocus)
+				{
+					// Hide keyboard if it is currently shown:
+					collectorUI.hideKeyboard();
+					
+					// Simulate click:
+					((Spinner) v).performClick();
+					
+					// Lose focus again:
+					v.clearFocus();
+				}
+			}
+		});
+		
 		// 	Item selected event:
 		spinner.setOnItemSelectedListener(new OnItemSelectedListener()
 		{

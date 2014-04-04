@@ -15,10 +15,10 @@ import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
  * @param <MF>
  * @param <V>
  */
-public abstract class MediaUI<MF extends MediaField, V> extends SelfLeavingFieldUI<MF, V>
+public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<MF, V, UI>
 {
 
-	public MediaUI(MF field, Controller controller, CollectorUI<V> collectorUI)
+	public MediaUI(MF field, Controller controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

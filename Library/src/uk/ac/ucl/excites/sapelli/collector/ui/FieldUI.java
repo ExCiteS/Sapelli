@@ -7,19 +7,22 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
 
 /**
+ * Abstract class to represent the UI of a Field
+ * 
  * @author mstevens
  *
  * @param <F>
  * @param <V>
+ * @param <UI>
  */
-public abstract class FieldUI<F extends Field, V>
+public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 {
 	
 	protected F field;
 	protected Controller controller;
-	protected CollectorUI<V> collectorUI;
+	protected UI collectorUI;
 	
-	public FieldUI(F field, Controller controller, CollectorUI<V> collectorUI)
+	public FieldUI(F field, Controller controller, UI collectorUI)
 	{
 		this.field = field;
 		this.controller = controller;
@@ -76,22 +79,27 @@ public abstract class FieldUI<F extends Field, V>
 	public abstract boolean isValid(CollectorRecord record);
 	
 	/**
-	 * Rather hackish method to allow fieldUIs on a page to request the page to revalidate them 
+	 * Slightly hackish method to trigger (re)validation a fieldUI through the page that contains it.
+	 * If the field is not a page its own validation method is used directly.
 	 */
 	@SuppressWarnings("unchecked")
-	protected void requestPageRevalidation()
+	protected boolean isValidInformPage(CollectorRecord record)
 	{
-		try // using try-catch just in case...
-		{
-			if(controller.getCurrentField() instanceof Page)
-			{
-				((PageUI<V>) collectorUI.getCurrentFieldUI()).isValid(this, controller.getCurrentRecord()); 
-			}
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace(System.err);
-		}
+		if(controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI)
+			return ((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).isValid(this, record); 
+		else
+			return this.isValid(record); // validate field on its own
+	}
+	
+	/**
+	 * Slightly hackish way to remove the invalid mark (red border) around a field on a page.
+	 * If the field is not on a page nothing happens.
+	 */
+	@SuppressWarnings("unchecked")
+	protected void clearPageInvalidMark()
+	{
+		if(controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI)
+			((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).clearInvalidity(this);
 	}
 	
 }

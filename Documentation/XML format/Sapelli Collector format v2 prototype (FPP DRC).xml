@@ -141,7 +141,7 @@
 
       <Check id="Training" label="Training session" defaultValue="false"/>
 
-      <Text id="Comment" label="Comments:" maxLength="1024" multiline="true" optional="true"/>
+      <Text id="Comment" label="Comments:" maxLength="1024" multiLine="true" optional="true"/>
 
       <Button label="Start session" showOnEdit="false" jump="_SAVE+PREVFORM"/>
       

@@ -13,10 +13,10 @@ import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
  * @author mstevens
  *
  */
-public abstract class LocationUI<V> extends SelfLeavingFieldUI<LocationField, V>
+public abstract class LocationUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<LocationField, V, UI>
 {
 
-	public LocationUI(LocationField field, Controller controller, CollectorUI<V> collectorUI)
+	public LocationUI(LocationField field, Controller controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

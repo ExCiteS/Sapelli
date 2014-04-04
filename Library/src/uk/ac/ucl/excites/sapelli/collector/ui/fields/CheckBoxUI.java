@@ -12,10 +12,10 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
  * @author mstevens
  *
  */
-public abstract class CheckBoxUI<V> extends NonSelfLeavingFieldUI<CheckBoxField, V>
+public abstract class CheckBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<CheckBoxField, V, UI>
 {
 
-	public CheckBoxUI(CheckBoxField checkBox, Controller controller, CollectorUI<V> collectorUI)
+	public CheckBoxUI(CheckBoxField checkBox, Controller controller, UI collectorUI)
 	{
 		super(checkBox, controller, collectorUI);
 	}

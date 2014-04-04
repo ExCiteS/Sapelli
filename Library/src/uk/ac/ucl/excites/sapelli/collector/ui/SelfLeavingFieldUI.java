@@ -19,13 +19,14 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
  * 
  * @param <F>
  * @param <V>
+ * @param <UI>
  * 
  * @author mstevens
  */
-public abstract class SelfLeavingFieldUI<F extends Field, V> extends FieldUI<F, V>
+public abstract class SelfLeavingFieldUI<F extends Field, V, UI extends CollectorUI<V, UI>> extends FieldUI<F, V, UI>
 {
 
-	public SelfLeavingFieldUI(F field, Controller controller, CollectorUI<V> collectorUI)
+	public SelfLeavingFieldUI(F field, Controller controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

@@ -11,10 +11,10 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
  * @author mstevens
  * 
  */
-public abstract class PhotoUI<V> extends MediaUI<PhotoField, V>
+public abstract class PhotoUI<V, UI extends CollectorUI<V, UI>> extends MediaUI<PhotoField, V, UI>
 {
 	
-	public PhotoUI(PhotoField field, Controller controller, CollectorUI<V> collectorUI)
+	public PhotoUI(PhotoField field, Controller controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

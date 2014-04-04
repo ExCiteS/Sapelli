@@ -8,6 +8,8 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.Editable;
+import android.text.InputFilter;
+import android.text.InputType;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -20,7 +22,7 @@ import android.widget.TextView;
  * @author Julia, mstevens
  * 
  */
-public class AndroidTextBoxUI extends TextBoxUI<View>
+public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 {
 	
 	private TextBoxView view;
@@ -42,18 +44,19 @@ public class AndroidTextBoxUI extends TextBoxUI<View>
 	public View getPlatformView(boolean onPage, CollectorRecord record)
 	{
 		if(view == null)
-			view = new TextBoxView(((CollectorView) collectorUI).getContext());
+			view = new TextBoxView(collectorUI.getContext());
 		
 		// Update view:
 		StringColumn col = (StringColumn) field.getColumn();
+		view.setWatchText(false);
 		if(record.isValueSet(col))
 			view.setText(col.retrieveValue(record));
 		else
 			view.setText(field.getInitialValue());
+		view.setWatchText(true);
 		
 		return view;
 	}
-	
 
 	@Override
 	protected void setValidationError(String errorDescr)
@@ -74,6 +77,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View>
 
 		private EditText editText;
 		private TextView errorMsg;
+		private boolean watchText = true;
 		
 		public TextBoxView(Context context)
 		{
@@ -91,10 +95,16 @@ public class AndroidTextBoxUI extends TextBoxUI<View>
 			// Textbox:
 			editText = new EditText(context);
 			editText.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
-			if(field.isMultiline() == true)
-				editText.setSingleLine(false);
-			else
-				editText.setSingleLine(true);
+			int inputType = InputType.TYPE_CLASS_TEXT;
+			//	Multi-line:
+			if(field.isMultiline())
+				inputType |= InputType.TYPE_TEXT_FLAG_MULTI_LINE;
+			editText.setSingleLine(!field.isMultiline());
+			// Limit input length to specified maximum:
+			editText.setFilters(new InputFilter[] { new InputFilter.LengthFilter(field.getMaxLength()) });
+			//	Set input type:
+			editText.setInputType(inputType);
+			//	Add the textbox:
 			addView(editText);
 
 			// Error msg:
@@ -105,17 +115,31 @@ public class AndroidTextBoxUI extends TextBoxUI<View>
 			errorMsg.setTextSize(TypedValue.COMPLEX_UNIT_PX, errorMsg.getTextSize() * 0.9f);
 			errorMsg.setVisibility(GONE);
 			addView(errorMsg);
+			
+			editText.setOnFocusChangeListener(new OnFocusChangeListener()
+			{
+				@Override
+				public void onFocusChange(View v, boolean hasFocus)
+				{
+					if(!hasFocus)
+						isValidInformPage(controller.getCurrentRecord()); // will call isValid() but via the containing page such that the red box can (dis)appear, if the field is not a page isValid() is called directly
+				}
+			});
 
 			editText.addTextChangedListener(new TextWatcher()
 			{	
 				@Override
-				final public void afterTextChanged(Editable s)
-				{
-					isValid(controller.getCurrentRecord());
-				}
+				final public void afterTextChanged(Editable s) { /* Don't care */ }
 
 				@Override
-				final public void beforeTextChanged(CharSequence s, int start, int count, int after) { /* Don't care */ }
+				final public void beforeTextChanged(CharSequence s, int start, int count, int after)
+				{
+					if(watchText)
+					{
+						clearPageInvalidMark(); // the user is currently typing, so don't annoy him/her with the red box
+						clearError();
+					}
+				}
 
 				@Override
 				final public void onTextChanged(CharSequence s, int start, int before, int count) { /* Don't care */ }
@@ -142,6 +166,14 @@ public class AndroidTextBoxUI extends TextBoxUI<View>
 		{
 			errorMsg.setText("");
 			errorMsg.setVisibility(GONE);
+		}
+
+		/**
+		 * @param watchText the watchText to set
+		 */
+		public void setWatchText(boolean watchText)
+		{
+			this.watchText = watchText;
 		}
 		
 	}

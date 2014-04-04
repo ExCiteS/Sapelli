@@ -327,7 +327,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 	
 	@Override
-	public <V> ChoiceUI<V> createUI(CollectorUI<V> collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> ChoiceUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createChoiceUI(this);
 	}

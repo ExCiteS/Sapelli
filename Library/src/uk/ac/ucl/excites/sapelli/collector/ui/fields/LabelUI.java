@@ -11,10 +11,10 @@ import uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI;
  * @author mstevens
  *
  */
-public abstract class LabelUI<V> extends NonSelfLeavingFieldUI<LabelField, V>
+public abstract class LabelUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<LabelField, V, UI>
 {
 
-	public LabelUI(LabelField labelField, Controller controller, CollectorUI<V> collectorUI)
+	public LabelUI(LabelField labelField, Controller controller, UI collectorUI)
 	{
 		super(labelField, controller, collectorUI);
 	}

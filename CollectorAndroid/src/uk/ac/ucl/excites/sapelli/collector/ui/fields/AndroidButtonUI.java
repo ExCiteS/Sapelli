@@ -16,7 +16,7 @@ import android.widget.Button;
  * 
  * @author mstevens
  */
-public class AndroidButtonUI extends ButtonUI<View> implements OnClickListener
+public class AndroidButtonUI extends ButtonUI<View, CollectorView> implements OnClickListener
 {
 	
 	private Button button;
@@ -37,7 +37,7 @@ public class AndroidButtonUI extends ButtonUI<View> implements OnClickListener
 	{
 		if(button == null)
 		{
-			button = new Button(((CollectorView) collectorUI).getContext());
+			button = new Button(collectorUI.getContext());
 			button.setText(field.getLabel());
 			button.setOnClickListener(this);
 		}

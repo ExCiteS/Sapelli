@@ -365,7 +365,7 @@ public class LocationField extends Field implements Timeoutable
 	}
 	
 	@Override
-	public <V> LocationUI<V> createUI(CollectorUI<V> collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> LocationUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createLocationUI(this);
 	}

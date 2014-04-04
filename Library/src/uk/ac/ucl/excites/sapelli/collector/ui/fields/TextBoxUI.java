@@ -11,10 +11,10 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 /**
  * @author mstevens
  */
-public abstract class TextBoxUI<V> extends NonSelfLeavingFieldUI<TextBoxField, V>
+public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<TextBoxField, V, UI>
 {
 
-	public TextBoxUI(TextBoxField textBox, Controller controller, CollectorUI<V> collectorUI)
+	public TextBoxUI(TextBoxField textBox, Controller controller, UI collectorUI)
 	{
 		super(textBox, controller, collectorUI);
 	}

@@ -154,7 +154,7 @@ public class PhotoField extends MediaField
 	}
 	
 	@Override
-	public <V> PhotoUI<V> createUI(CollectorUI<V> collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> PhotoUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createPhotoUI(this);
 	}

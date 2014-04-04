@@ -26,7 +26,7 @@ import android.widget.ScrollView;
  * 
  */
 @SuppressLint("ViewConstructor")
-public class AndroidPageUI extends PageUI<View>
+public class AndroidPageUI extends PageUI<View, CollectorView>
 {
 
 	static public final float CHILD_BOTTOM_MARGIN_DIP = 5.0f;
@@ -50,7 +50,7 @@ public class AndroidPageUI extends PageUI<View>
 	}
 	
 	@Override
-	protected void markValidity(FieldUI<?, View> fieldUI, boolean valid)
+	protected void markValidity(FieldUI<?, View, CollectorView> fieldUI, boolean valid)
 	{
 		if(view == null)
 			return; // (this should never happen)
@@ -77,7 +77,7 @@ public class AndroidPageUI extends PageUI<View>
 		if(onPage)
 			throw new IllegalStateException("Pages cannot be nested!");
 		
-		Context context = ((CollectorView) collectorUI).getContext();
+		Context context = collectorUI.getContext();
 		
 		// Create or recycle view: 
 		LinearLayout container = null;
@@ -96,7 +96,7 @@ public class AndroidPageUI extends PageUI<View>
 		
 		// (Re)add updated views for contained fields:
 		int fIndex = 0;
-		for(FieldUI<?, View> fUI : fieldUIs)
+		for(FieldUI<?, View, CollectorView> fUI : fieldUIs)
 		{
 			LinearLayout currentWrappedView = (LinearLayout) container.getChildAt(fIndex); // may be null
 			View newView = fUI.getPlatformView(true, record); // the actual view object returned may be recycled but its state will be updated to reflect current record
@@ -139,7 +139,7 @@ public class AndroidPageUI extends PageUI<View>
 	{
 		if(fieldUIView == null)
 			return null;
-		final LinearLayout wrapper = new LinearLayout(((CollectorView) collectorUI).getContext());
+		final LinearLayout wrapper = new LinearLayout(collectorUI.getContext());
 		wrapper.setPadding(wrapperPaddingPx, wrapperPaddingPx, wrapperPaddingPx, wrapperPaddingPx);
 		wrapper.setLayoutParams(wrapperLayoutParams);
 		wrapper.addView(fieldUIView);
