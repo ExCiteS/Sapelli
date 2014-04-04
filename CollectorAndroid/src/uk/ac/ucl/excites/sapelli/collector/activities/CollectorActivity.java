@@ -188,7 +188,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 	}
 
 	/**
-	 * Handle device key presses (mostly disabling them)
+	 * Handle device key presses (down)
 	 */
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
@@ -198,7 +198,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		//	"Any" key trigger:
 		keyTrigger = anyKeyTrigger;
 		//	Specific key trigger:
-		if(keyTrigger != null)
+		if(keyTrigger == null)
 			keyTrigger = keyCodeToTrigger.get(keyCode);
 		//	Fire if we found a matching trigger:
 		if(keyTrigger != null)
@@ -211,7 +211,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		switch(keyCode)
 		{
 			case KeyEvent.KEYCODE_BACK:
-				controller.goBack(true); // TODO maybe make this optional?
+				controller.goBack(true);
 				return true;
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
 				return true;
@@ -227,6 +227,22 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		
 		// Pass to super...
 		return super.onKeyDown(keyCode, event);
+	}
+
+	/**
+	 * Handle device key presses (up)
+	 */
+	@Override
+	public boolean onKeyUp(int keyCode, KeyEvent event)
+	{
+		switch(keyCode)
+		{
+		case KeyEvent.KEYCODE_VOLUME_DOWN:
+			return true;
+		case KeyEvent.KEYCODE_VOLUME_UP:
+			return true;
+		}
+		return super.onKeyUp(keyCode, event);
 	}
 	
 	private int exportDemoRecords(boolean delete)
@@ -544,7 +560,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 				int keyCode = -1;
 				switch(k) // map Trigger.Key enum values onto the KEYCODE's of Android's KeyEvent class 
 				{
-					case ANY : anyKeyTrigger = t;
+					case ANY : anyKeyTrigger = t; break;
 					case BACK : keyCode = KeyEvent.KEYCODE_BACK; break;
 					case SEARCH : keyCode = KeyEvent.KEYCODE_SEARCH; break;
 					case HOME : keyCode = KeyEvent.KEYCODE_HOME; break;
