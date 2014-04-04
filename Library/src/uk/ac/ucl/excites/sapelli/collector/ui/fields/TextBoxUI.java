@@ -32,7 +32,6 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	@Override
 	public boolean isValid(CollectorRecord record)
 	{
-		// TODO deal with optionallity? minimal lenths?
 		String text = getValue();		
 		// Too short:
 		if(text.length() < field.getMinLength())

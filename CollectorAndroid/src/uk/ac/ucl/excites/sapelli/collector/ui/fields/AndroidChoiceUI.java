@@ -23,6 +23,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -48,7 +49,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	}
 
 	@Override
-	public View getPlatformView(boolean onPage, CollectorRecord record)
+	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
 		if(onPage && field.isRoot())
 		{
@@ -76,7 +77,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		}
 	}
 	
-	public class PageView extends LinearLayout implements OnClickListener
+	public class PageView extends LinearLayout implements OnClickListener, OnFocusChangeListener
 	{
 
 		private TextView label;
@@ -109,6 +110,11 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// New chosenView
 			chosenView = createItem(chosenField, chosenSizePx, chosenSizePx, chosenPaddingPx).getView(getContext());
 			chosenView.setOnClickListener(this);
+			
+			// Make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
+			chosenView.setFocusable(true);
+			chosenView.setFocusableInTouchMode(true);
+			chosenView.setOnFocusChangeListener(this);
 
 			// Set margins on layoutparams:
 			LayoutParams chosenLP = new LinearLayout.LayoutParams(chosenView.getLayoutParams());
@@ -119,8 +125,26 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		}
 
 		@Override
+		public void onFocusChange(View v, boolean hasFocus)
+		{
+			if(hasFocus)
+			{
+				// Hide keyboard if it is currently shown:
+				collectorUI.hideKeyboard();
+				
+				// Simulate click:
+				onClick(v);
+				
+				// Lose focus again:
+				v.clearFocus();
+			}
+		}
+
+		@Override
 		public void onClick(View v)
 		{
+			clearPageInvalidMark(); // the user will make a choice now, so don't annoy him/her with the red box
+			
 			// Task to perform after animation has finished:
 			Runnable action = new Runnable()
 			{

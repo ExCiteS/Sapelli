@@ -41,7 +41,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 	}
 	
 	@Override
-	public View getPlatformView(boolean onPage, CollectorRecord record)
+	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
 		if(onPage)
 		{

@@ -25,7 +25,7 @@ public class AndroidLabelUI extends LabelUI<View, CollectorView>
 	}
 
 	@Override
-	public TextView getPlatformView(boolean onPage, CollectorRecord record)
+	public TextView getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
 		if(label == null)
 		{

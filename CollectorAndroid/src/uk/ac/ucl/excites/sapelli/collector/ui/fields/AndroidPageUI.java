@@ -72,7 +72,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 	}
 	
 	@Override
-	public ScrollView getPlatformView(boolean onPage, CollectorRecord record)
+	public ScrollView getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
 		if(onPage)
 			throw new IllegalStateException("Pages cannot be nested!");
@@ -110,6 +110,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 				currentWrappedView = wrapView(newView); // wrapView(null) will return null
 				// Add if not null:
 				if(currentWrappedView != null) // just in case
+					// Add to ourselves:
 					container.addView(currentWrappedView, fIndex, childLayoutParams);
 			}
 			
@@ -126,8 +127,9 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 			else
 				currentWrappedView.setVisibility(View.VISIBLE);
 			
-			// Mark as valid (as part of updating the view):
-			markValidity(currentWrappedView, true);
+			// Mark as valid (initial status):
+			if(newRecord)
+				markValidity(currentWrappedView, true);
 			
 			fIndex++;
 		}

@@ -22,6 +22,8 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	protected Controller controller;
 	protected UI collectorUI;
 	
+	private CollectorRecord lastKnownRecord = null;
+	
 	public FieldUI(F field, Controller controller, UI collectorUI)
 	{
 		this.field = field;
@@ -42,7 +44,27 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param record
 	 * @return
 	 */
-	public abstract V getPlatformView(boolean onPage, CollectorRecord record);
+	public V getPlatformView(boolean onPage, CollectorRecord record)
+	{
+		// Check if record is new:
+		boolean newRecord = (lastKnownRecord != record);
+		
+		// Remember record:
+		lastKnownRecord = record;
+		
+		return getPlatformView(onPage, record, newRecord);
+	}
+	
+	/**
+	 * Returns a platform-specific UI element (e.g. an Android View instance),
+	 * the object may be recycled but should be updated w.r.t. the provided record.
+	 * 
+	 * @param onPage
+	 * @param record
+	 * @param newRecord whether or not this is a new record
+	 * @return
+	 */
+	public abstract V getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord);
 	
 	/**
 	 * To be overridden by FieldUIs that need to execute cancelling behaviour before disappearing off the screen

@@ -23,7 +23,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 	}
 	
 	@Override
-	public View getPlatformView(boolean onPage, CollectorRecord record)
+	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
 		if(onPage)
 		{

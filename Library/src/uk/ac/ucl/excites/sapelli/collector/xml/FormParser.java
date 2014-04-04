@@ -403,7 +403,7 @@ public class FormParser extends SubtreeParser
 				
 				// Deal with minimum & maximum length:
 				if(txtField.getOptional() != Optionalness.ALWAYS && attributes.getIndex(ATTRIBUTE_TEXT_MINLENGTH) == -1)
-					addWarning("Text field \"" + txtField.getID() + "\" is non-optional but no minimal length is defined, therefore the minimum will be set to " + TextBoxField.DEFAULT_MIN_LENGTH_NON_OPTIONAL + " character(s). If this is not sensible then please use the '" + ATTRIBUTE_TEXT_MINLENGTH + "' attribute to set an minimum length explicitly.");				
+					addWarning("Text field \"" + txtField.getID() + "\" is non-optional but no minimal length is defined, therefore the minimum will be set to " + TextBoxField.DEFAULT_MIN_LENGTH_NON_OPTIONAL + " character(s). If this is not appropriate then please use the '" + ATTRIBUTE_TEXT_MINLENGTH + "' attribute to set the minimum length explicitly.");				
 				txtField.setMinLength(readIntegerAttribute(ATTRIBUTE_TEXT_MINLENGTH, txtField.getDefaultMinLength(), attributes));
 				txtField.setMaxLength(readIntegerAttribute(ATTRIBUTE_TEXT_MAXLENGTH, TextBoxField.DEFAULT_MAX_LENGTH, attributes));
 				

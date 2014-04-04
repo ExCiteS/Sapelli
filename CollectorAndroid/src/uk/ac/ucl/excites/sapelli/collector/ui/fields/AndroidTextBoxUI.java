@@ -41,20 +41,32 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 	}
 	
 	@Override
-	public View getPlatformView(boolean onPage, CollectorRecord record)
+	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
+		// Create view if needed:
 		if(view == null)
+		{
 			view = new TextBoxView(collectorUI.getContext());
+			newRecord = true; // force update of new view
+		}
 		
 		// Update view:
-		StringColumn col = (StringColumn) field.getColumn();
-		view.setWatchText(false);
-		if(record.isValueSet(col))
-			view.setText(col.retrieveValue(record));
-		else
-			view.setText(field.getInitialValue());
-		view.setWatchText(true);
+		if(newRecord)
+		{
+			//	Clear error:
+			view.clearError();
+			//	Set default or current value:
+			view.setWatchText(false);
+			StringColumn col = (StringColumn) field.getColumn();
+			
+			if(record.isValueSet(col))
+				view.setText(col.retrieveValue(record));
+			else
+				view.setText(field.getInitialValue());
+			view.setWatchText(true);
+		}
 		
+		// Return view:
 		return view;
 	}
 

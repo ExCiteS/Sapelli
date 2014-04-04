@@ -95,7 +95,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 	}
 
 	@Override
-	public View getPlatformView(boolean onPage, CollectorRecord record)
+	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
 		//TODO onPage view
 		

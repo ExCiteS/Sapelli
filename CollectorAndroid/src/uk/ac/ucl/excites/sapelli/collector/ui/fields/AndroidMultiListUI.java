@@ -30,7 +30,6 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 {
 	
 	private LinearLayout view;
-	private CollectorRecord lastKnownRecord = null;
 	private Stack<MultiListItem> selectionStack;
 	
 	public AndroidMultiListUI(MultiListField listField, CollectorController controller, CollectorView collectorView)
@@ -40,44 +39,40 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 	}
 	
 	@Override
-	public LinearLayout getPlatformView(boolean onPage, CollectorRecord record)
+	public LinearLayout getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{	
 		if(view == null)
 		{
 			view = new LinearLayout(collectorUI.getContext());
 			view.setOrientation(LinearLayout.VERTICAL);
 			view.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
+			newRecord = true; // force update of new view
 		}
 		
 		// Update view:
-		if(!field.isNoColumn() && field.getColumn().isValueSet(record))
-		{	// Value set in column (probably we are editing):
-			
-			// Get selected leaf:
-			MultiListItem item = field.getItemForValue(field.getColumn().retrieveValue(record).intValue());
-			
-			// Build up path from selected leaf to root:
-			selectionStack.clear(); // just in case
-			while(!item.isRoot())
+		if(newRecord)
+		{
+			// Set the value that was stored (if there is one):
+			if(!field.isNoColumn() && field.getColumn().isValueSet(record))
 			{
-				selectionStack.push(item);
-				item = item.getParent();
+				// Get selected leaf:
+				MultiListItem item = field.getItemForValue(field.getColumn().retrieveValue(record).intValue());
+				
+				// Build up path from selected leaf to root:
+				selectionStack.clear(); // just in case
+				while(!item.isRoot())
+				{
+					selectionStack.push(item);
+					item = item.getParent();
+				}
 			}
 			
 			// Remove all spinners	
 			fullRevert();
-			// Add first spinner, the rest will following automatically by selection from the selectionStack:
+			
+			// Add first spinner, if there is a value in the column the rest will following automatically by selection from the selectionStack:
 			addNextList(field.getItemsRoot());
 		}
-		else if(record != lastKnownRecord)
-		{	// New record:
-			fullRevert();
-			// (Re)add labels/spinners & perform pre-selection if needed:
-			addNextList(field.getItemsRoot());
-		}
-		
-		// Remember record:
-		lastKnownRecord = record;
 		
 		return view;
 	}

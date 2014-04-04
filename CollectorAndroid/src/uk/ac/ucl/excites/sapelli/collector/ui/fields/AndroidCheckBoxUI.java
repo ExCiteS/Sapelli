@@ -41,7 +41,7 @@ public class AndroidCheckBoxUI extends CheckBoxUI<View, CollectorView>
 	}
 	
 	@Override
-	public CheckBox getPlatformView(boolean onPage, CollectorRecord record)
+	public CheckBox getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
 		if(chbx == null)
 		{
@@ -74,15 +74,19 @@ public class AndroidCheckBoxUI extends CheckBoxUI<View, CollectorView>
 					}
 				}
 			});
+			
+			newRecord = true; // force update of new view
 		}
 		
 		// Update checkbox state:
-		BooleanColumn col = (BooleanColumn) field.getColumn();
-		if(record.isValueSet(col))
-			chbx.setChecked(col.retrieveValue(record));
-		else
-			chbx.setChecked(field.getInitialValue());
-		
+		if(newRecord)
+		{
+			BooleanColumn col = (BooleanColumn) field.getColumn();
+			if(record.isValueSet(col))
+				chbx.setChecked(col.retrieveValue(record));
+			else
+				chbx.setChecked(field.getInitialValue());
+		}
 		return chbx;
 	}
 	

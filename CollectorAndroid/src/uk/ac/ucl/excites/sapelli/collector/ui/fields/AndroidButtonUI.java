@@ -33,7 +33,7 @@ public class AndroidButtonUI extends ButtonUI<View, CollectorView> implements On
 	}
 
 	@Override
-	public Button getPlatformView(boolean onPage, CollectorRecord record)
+	public Button getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
 		if(button == null)
 		{
