@@ -64,9 +64,12 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLe
 	{
 		boolean valid = true;
 		for(FieldUI<?, V, UI> fUI : fieldUIs)
-			if(	(controller.getCurrentFormMode() == Mode.CREATE && fUI.getField().isShowOnCreate()) ||
-				(controller.getCurrentFormMode() == Mode.EDIT && fUI.getField().isShowOnEdit()))
-				valid = isValid(fUI, record);	
+		{
+			if(	((controller.getCurrentFormMode() == Mode.CREATE && fUI.getField().isShowOnCreate()) ||
+				 (controller.getCurrentFormMode() == Mode.EDIT && fUI.getField().isShowOnEdit()))
+				&& !isValid(fUI, record))
+				valid = false;
+		}
 		return valid;
 	}
 	

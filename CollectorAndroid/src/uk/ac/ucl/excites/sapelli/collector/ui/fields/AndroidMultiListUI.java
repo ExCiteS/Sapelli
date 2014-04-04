@@ -146,6 +146,8 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			@Override
 			public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
 			{
+				clearPageInvalidMark(); // the user is currently interacting with the spinner(s), so don't annoy him/her with the red box
+				
 				revert(spinner);
 				//requestPageRevalidation();
 				MultiListItem chosen = adapter.getItem(position);
