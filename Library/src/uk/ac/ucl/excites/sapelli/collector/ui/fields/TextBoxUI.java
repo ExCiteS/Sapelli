@@ -79,7 +79,13 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 			setValidationError("Maximum length of " + field.getMaxLength() + " characters exceeded."); //TODO multilang
 			return false;
 		}
-		// Column validation:
+		// Match regular expression:
+		if(field.getRegexPattern() != null && !field.getRegexPattern().matcher(text).matches())
+		{
+			setValidationError("Input pattern mismatch"); //TODO multilang
+			return false;
+		}
+		// Column-level validation:
 		switch(field.getContent())
 		{
 			case text :

@@ -3,6 +3,9 @@
  */
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -70,6 +73,7 @@ public class TextBoxField extends Field
 	private String initialValue;
 	private Content content;
 	private Capitalisation capitalisation;
+	private Pattern regexPattern = null;
 	
 	/**
 	 * @param form
@@ -222,6 +226,32 @@ public class TextBoxField extends Field
 		{
 			form.addWarning("Unrecognised capitalisation: " + contentStr);
 		}
+	}
+
+	/**
+	 * @return the regexPattern
+	 */
+	public Pattern getRegexPattern()
+	{
+		return regexPattern;
+	}
+
+	/**
+	 * @param regex the regex to set
+	 */
+	public void setRegexPattern(String regex)
+	{
+		if(regex == null)
+			this.regexPattern = null;
+		else
+			try
+			{
+				this.regexPattern = Pattern.compile(regex);
+			}
+			catch(PatternSyntaxException pse)
+			{
+				form.addWarning("Invalid regular expression (" + regex +") on field \'" + id + "\', no pattern check will be applied.");
+			}
 	}
 
 	/**

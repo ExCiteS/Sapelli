@@ -121,6 +121,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
 	static private final String ATTRIBUTE_TEXT_MULTILINE = "multiLine";
 	static private final String ATTRIBUTE_TEXT_CONTENT = "content";
+	static private final String ATTRIBUTE_TEXT_REGEX = "regex";
 	static private final String ATTRIBUTE_TEXT_CAPITALISATION = "autoCaps";
 	static private final String ATTRIBUTE_LABEL_SCALE = "scale";
 	static private final String ATTRIBUTE_LABEL_CENTERED = "centered";
@@ -418,9 +419,19 @@ public class FormParser extends SubtreeParser
 				txtField.setMinLength(readIntegerAttribute(ATTRIBUTE_TEXT_MINLENGTH, txtField.getDefaultMinLength(), attributes));
 				txtField.setMaxLength(readIntegerAttribute(ATTRIBUTE_TEXT_MAXLENGTH, TextBoxField.DEFAULT_MAX_LENGTH, attributes));
 				
+				// Multi-line:
 				txtField.setMultiline(readBooleanAttribute(ATTRIBUTE_TEXT_MULTILINE, TextBoxField.DEFAULT_MULTILINE, attributes));
+				
+				// Initial value:
 				txtField.setInitialValue(readStringAttribute(TextBoxField.DEFAULT_INITIAL_VALUE, attributes, false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
+				
+				// Content types:
 				txtField.setContent(readStringAttribute(ATTRIBUTE_TEXT_CONTENT, TextBoxField.DEFAULT_CONTENT.name(), attributes, true, false));
+				
+				// Regular expression pattern (to check input against):
+				txtField.setRegexPattern(readStringAttribute(ATTRIBUTE_TEXT_REGEX, null, attributes, false, false));
+				
+				// Auto capitalisation:
 				txtField.setCapitalisation(readStringAttribute(ATTRIBUTE_TEXT_CAPITALISATION, TextBoxField.DEFAULT_CAPITALISATION.name(), attributes, true, false));
 			}
 			// <Checkbox>
