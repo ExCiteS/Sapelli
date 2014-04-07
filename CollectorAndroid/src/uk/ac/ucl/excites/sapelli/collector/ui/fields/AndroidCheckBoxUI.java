@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -61,16 +62,15 @@ public class AndroidCheckBoxUI extends CheckBoxUI<View, CollectorView>
 				{
 					if(hasFocus)
 					{
-						CheckBox chbx = (CheckBox) v;
-						
 						// Hide keyboard if it is currently shown:
 						collectorUI.hideKeyboard();
 						
-						// Swap state (to simulate a click):
-						chbx.setChecked(!chbx.isChecked());
-						
 						// Lose focus again:
-						chbx.clearFocus();
+						v.clearFocus();
+
+						// Swap state (to simulate a click):						
+						CheckBox chbx = (CheckBox) v;
+						chbx.setChecked(!chbx.isChecked());
 					}
 				}
 			});
@@ -87,6 +87,7 @@ public class AndroidCheckBoxUI extends CheckBoxUI<View, CollectorView>
 			else
 				chbx.setChecked(field.getInitialValue());
 		}
+		chbx.setEnabled(controller.getCurrentFormMode() != Mode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
 		return chbx;
 	}
 	

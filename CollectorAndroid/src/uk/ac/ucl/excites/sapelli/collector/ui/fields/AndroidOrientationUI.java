@@ -25,6 +25,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 	@Override
 	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
+		//TODO editable
 		if(onPage)
 		{
 			if(pageView == null)

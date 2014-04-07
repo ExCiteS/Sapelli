@@ -93,10 +93,13 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_JUMP = "jump";
 	static private final String ATTRIBUTE_FIELD_OPTIONAL = "optional";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
+	static private final String ATTRIBUTE_FIELD_EDITABLE = "editable";
 	static private final String ATTRIBUTE_FIELD_ALT = "alt";
 	static private final String ATTRIBUTE_FIELD_IMG = "img";
 	static private final String ATTRIBUTE_FIELD_LABEL = "label";
 	static private final String ATTRIBUTE_FIELD_LABELS = "labels";
+	static private final String ATTRIBUTE_FIELD_CAPTION = "caption";
+	static private final String ATTRIBUTE_FIELD_CAPTIONS = "captions";
 	static private final String ATTRIBUTE_FIELD_BACKGROUND_COLOR = "backgroundColor";
 	static private final String ATTRIBUTE_FIELD_SHOW_ON_CREATE = "showOnCreate";
 	static private final String ATTRIBUTE_FIELD_SHOW_ON_EDIT = "showOnEdit";
@@ -542,9 +545,10 @@ public class FormParser extends SubtreeParser
 			addWarning("Please avoid field IDs starting with '_' (" + field.getID() + ")."); 
 		}
 		
-		// If the field is a root field: add it to the form or page, remember its ID, and set its optionalness:
+		// If the field is a root field...
 		if(field.isRoot())
 		{
+			// Add it to the form or page:
 			if(currentPage == null)
 			{	// field is top-level (directly contained within the form, and not in a page first)...
 				currentForm.addField(field);
@@ -571,8 +575,11 @@ public class FormParser extends SubtreeParser
 					else if("never".equalsIgnoreCase(optText) || Boolean.FALSE.toString().equalsIgnoreCase(optText))
 						opt = Optionalness.NEVER;
 				}
-				field.setOptional(opt);				
+				field.setOptional(opt);
 			}
+			
+			// Set editable (inherit from page if on page):
+			field.setEditable(readBooleanAttribute(ATTRIBUTE_FIELD_EDITABLE, currentPage == null ? Field.DEFAULT_EDITABLE : currentPage.isEditable(), attributes));
 		}
 		
 		// Read various optional Field attributes: 

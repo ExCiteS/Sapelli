@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
@@ -12,6 +13,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.DrawableItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.LayeredItem;
@@ -51,10 +53,15 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	@Override
 	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
-		if(onPage && field.isRoot())
+		if(onPage)
 		{
+			if(!field.isRoot())
+				return null; // just in case
+			
 			if(pageView == null)
 				pageView = new PageView(collectorUI.getContext());
+			
+			pageView.setEnabled(controller.getCurrentFormMode() != Mode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
 			
 			// Update pageView:
 			ChoiceField chosen = field.getSelectedChoice(record);
@@ -77,6 +84,10 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		}
 	}
 	
+	/**
+	 * @author mstevens
+	 *
+	 */
 	public class PageView extends LinearLayout implements OnClickListener, OnFocusChangeListener
 	{
 
@@ -108,7 +119,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				this.removeView(chosenView);
 			
 			// New chosenView
-			chosenView = createItem(chosenField, chosenSizePx, chosenSizePx, chosenPaddingPx).getView(getContext());
+			chosenView = createItem(chosenField, chosenSizePx, chosenSizePx, chosenPaddingPx, !isEnabled()).getView(getContext());
 			chosenView.setOnClickListener(this);
 			
 			// Make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
@@ -132,18 +143,23 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				// Hide keyboard if it is currently shown:
 				collectorUI.hideKeyboard();
 				
-				// Simulate click:
-				onClick(v);
-				
 				// Lose focus again:
 				v.clearFocus();
+				
+				// Simulate click:
+				onClick(v);
 			}
 		}
 
 		@Override
 		public void onClick(View v)
 		{
-			clearPageInvalidMark(); // the user will make a choice now, so don't annoy him/her with the red box
+			// Do nothing if not enabled:
+			if(!isEnabled())
+				return;
+			
+			// The user will make a choice now, so don't annoy him/her with the red box:
+			clearPageInvalidMark();
 			
 			// Task to perform after animation has finished:
 			Runnable action = new Runnable()
@@ -194,7 +210,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// Adapter & images:
 			pickerAdapter = new PickerAdapter(context);
 			for(ChoiceField child : field.getChildren())
-				pickerAdapter.addItem(createItem(child, itemWidthPx, itemHeightPx, itemPaddingPx));
+				pickerAdapter.addItem(createItem(child, itemWidthPx, itemHeightPx, itemPaddingPx, !field.isEnabled()));
 			
 			// Click listeners:
 			setOnItemClickListener(this);
@@ -245,7 +261,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param child
 	 * @return corresponding item
 	 */
-	private Item createItem(ChoiceField child, int itemWidthPx, int itemHeightPx, int itemPaddingPx)
+	private Item createItem(ChoiceField child, int itemWidthPx, int itemHeightPx, int itemPaddingPx, boolean grayedOut)
 	{
 		File imageFile = controller.getProject().getImageFile(child.getImageRelativePath());
 		Item item = null;
@@ -254,23 +270,35 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		else
 			item = new TextItem(child.getAltText()); //render alt text instead of image
 		
-		// Crossing
-		if(child.isCrossed())
-		{
-			LayeredItem crossedItem = new LayeredItem();
-			int crossColour = ColourHelpers.ParseColour(child.getCrossColor(), ChoiceField.DEFAULT_CROSS_COLOR);
-			crossedItem.addLayer(item);
-			crossedItem.addLayer(new DrawableItem(new SaltireCross(crossColour, CROSS_THICKNESS))); // later we may expose thickness in the XML as well
-			item = crossedItem;
+		// Set background colour:
+		item.setBackgroundColor(ColourHelpers.ParseColour(child.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+		
+		// Crossing & graying out
+		if(child.isCrossed() || grayedOut)
+		{	
+			LayeredItem layeredItem = new LayeredItem();
+			layeredItem.addLayer(item, false);
+			// Crossing:
+			if(child.isCrossed())
+				layeredItem.addLayer(new DrawableItem(new SaltireCross(ColourHelpers.ParseColour(child.getCrossColor(), ChoiceField.DEFAULT_CROSS_COLOR), CROSS_THICKNESS))); // later we may expose thickness in the XML as well
+			// Graying-out:
+			if(grayedOut)
+			{
+				// Make background of layered stack gray:
+				layeredItem.setBackgroundColor(CollectorView.COLOR_GRAY); 			
+				// Add grayed-out layer:
+				Item grayOutOverlay = new EmptyItem();
+				grayOutOverlay.setBackgroundColor(CollectorView.COLOR_SEMI_TRANSPARENT_GRAY);
+				layeredItem.addLayer(grayOutOverlay, false);	
+			}
+			// Item becomes layered:
+			item = layeredItem;
 		}
 		
 		// Set size & padding:
 		item.setWidthPx(itemWidthPx);
 		item.setHeightPx(itemHeightPx);
 		item.setPaddingPx(itemPaddingPx);
-		
-		// Set background colour:
-		item.setBackgroundColor(ColourHelpers.ParseColour(child.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		
 		return item;
 	}

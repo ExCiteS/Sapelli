@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -14,6 +15,7 @@ import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.view.View.OnFocusChangeListener;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -65,6 +67,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 				view.setText(field.getInitialValue());
 			view.setWatchText(true);
 		}
+		view.setEnabled(controller.getCurrentFormMode() != Mode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
 		
 		// Return view:
 		return view;
@@ -84,7 +87,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			view.clearError();
 	}
 	
-	public class TextBoxView extends LinearLayout
+	public class TextBoxView extends LinearLayout implements OnFocusChangeListener, TextWatcher
 	{
 
 		private EditText editText;
@@ -116,6 +119,9 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			editText.setFilters(new InputFilter[] { new InputFilter.LengthFilter(field.getMaxLength()) });
 			//	Set input type:
 			editText.setInputType(inputType);
+			//	Event handlers:
+			editText.setOnFocusChangeListener(this);
+			editText.addTextChangedListener(this);
 			//	Add the textbox:
 			addView(editText);
 
@@ -127,35 +133,6 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			errorMsg.setTextSize(TypedValue.COMPLEX_UNIT_PX, errorMsg.getTextSize() * 0.9f);
 			errorMsg.setVisibility(GONE);
 			addView(errorMsg);
-			
-			editText.setOnFocusChangeListener(new OnFocusChangeListener()
-			{
-				@Override
-				public void onFocusChange(View v, boolean hasFocus)
-				{
-					if(!hasFocus)
-						isValidInformPage(controller.getCurrentRecord()); // will call isValid() but via the containing page such that the red box can (dis)appear, if the field is not a page isValid() is called directly
-				}
-			});
-
-			editText.addTextChangedListener(new TextWatcher()
-			{	
-				@Override
-				final public void afterTextChanged(Editable s) { /* Don't care */ }
-
-				@Override
-				final public void beforeTextChanged(CharSequence s, int start, int count, int after)
-				{
-					if(watchText)
-					{
-						clearPageInvalidMark(); // the user is currently typing, so don't annoy him/her with the red box
-						clearError();
-					}
-				}
-
-				@Override
-				final public void onTextChanged(CharSequence s, int start, int before, int count) { /* Don't care */ }
-			});
 		}
 		
 		public String getText()
@@ -186,6 +163,42 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		public void setWatchText(boolean watchText)
 		{
 			this.watchText = watchText;
+		}
+		
+		@Override
+		public void setEnabled(boolean enabled)
+		{
+			super.setEnabled(enabled);
+			editText.setEnabled(enabled);
+		}
+		
+		@Override
+		public void onFocusChange(View v, boolean hasFocus)
+		{
+			if(!hasFocus)
+				isValidInformPage(controller.getCurrentRecord()); // will call isValid() but via the containing page such that the red box can (dis)appear, if the field is not a page isValid() is called directly
+		}
+		
+		@Override
+		final public void afterTextChanged(Editable s)
+		{
+			/* Don't care */
+		}
+
+		@Override
+		final public void beforeTextChanged(CharSequence s, int start, int count, int after)
+		{
+			if(watchText)
+			{
+				clearPageInvalidMark(); // the user is currently typing, so don't annoy him/her with the red box
+				clearError();
+			}
+		}
+
+		@Override
+		final public void onTextChanged(CharSequence s, int start, int before, int count)
+		{
+			/* Don't care */
 		}
 		
 	}

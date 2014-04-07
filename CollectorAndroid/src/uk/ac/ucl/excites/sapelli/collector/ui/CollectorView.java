@@ -57,6 +57,9 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final float SPACING_DIP = 8.0f;
 	static public final float PADDING_DIP = 2.0f;
 	
+	static public final int COLOR_SEMI_TRANSPARENT_GRAY = Color.parseColor("#80777777");
+	static public final int COLOR_GRAY = Color.parseColor("#777777");
+	
 	private CollectorActivity activity;
 	private CollectorController controller;
 	

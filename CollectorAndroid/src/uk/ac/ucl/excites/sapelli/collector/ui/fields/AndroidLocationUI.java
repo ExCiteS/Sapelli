@@ -43,6 +43,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 	@Override
 	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
 	{
+		//TODO editable
 		if(onPage)
 		{
 			if(pageView == null)

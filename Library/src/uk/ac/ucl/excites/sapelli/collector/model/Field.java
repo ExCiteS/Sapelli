@@ -34,6 +34,7 @@ public abstract class Field implements JumpSource
 	static public final boolean DEFAULT_SHOW_ON_EDIT = true;
 	static public final Optionalness DEFAULT_OPTIONAL = Optionalness.NOT_IF_REACHED;
 	static public final boolean DEFAULT_NO_COLUMN = false;
+	static public final boolean DEFAULT_EDITABLE = true;
 	static public final String DEFAULT_BACKGROUND_COLOR = "#FFFFFF"; //white
 	
 	
@@ -48,6 +49,7 @@ public abstract class Field implements JumpSource
 	protected boolean showOnEdit = DEFAULT_SHOW_ON_EDIT;
 	protected Optionalness optional = DEFAULT_OPTIONAL;
 	protected boolean noColumn = DEFAULT_NO_COLUMN;
+	protected boolean editable = DEFAULT_EDITABLE;
 	protected String backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	
 	// Buttons:
@@ -205,6 +207,22 @@ public abstract class Field implements JumpSource
 		enabled = true;
 	}
 	
+	/**
+	 * @return the editable
+	 */
+	public boolean isEditable()
+	{
+		return editable;
+	}
+
+	/**
+	 * @param editable the editable to set
+	 */
+	public void setEditable(boolean editable)
+	{
+		this.editable = editable;
+	}
+
 	/**
 	 * @return the backgroundColor
 	 */

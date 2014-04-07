@@ -102,12 +102,12 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 			View newView = fUI.getPlatformView(true, record); // the actual view object returned may be recycled but its state will be updated to reflect current record
 			
 			// Replace current (wrapped) view:
-			if(newView != unwrapView(currentWrappedView)) // unwrapView(null) will return null
+			if(newView != unwrapView(currentWrappedView)) // Note: unwrapView(null) will return null
 			{	// not the same view so remove current:
 				if(currentWrappedView != null)
-					container.removeViewAt(fIndex); // removes wrapped view
+					container.removeViewAt(fIndex); // remove wrapped view
 				// Current becomes wrapped newView:
-				currentWrappedView = wrapView(newView); // wrapView(null) will return null
+				currentWrappedView = wrapView(newView); // Note: wrapView(null) will return null
 				// Add if not null:
 				if(currentWrappedView != null) // just in case
 					// Add to ourselves:
@@ -126,6 +126,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 			}
 			else
 				currentWrappedView.setVisibility(View.VISIBLE);
+			// Note: non-editable fields are shown in edit mode but will be be disabled (grayed-out)
 			
 			// Mark as valid (initial status):
 			if(newRecord)

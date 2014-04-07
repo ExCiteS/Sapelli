@@ -341,6 +341,10 @@ public class ChoiceField extends Field implements DictionaryItem
 	@Override
 	public IntegerColumn getColumn()
 	{
+		// Non-root:
+		if(!isRoot())
+			return root.getColumn();
+		// Root:
 		return (IntegerColumn) super.getColumn();
 	}
 	
@@ -352,10 +356,8 @@ public class ChoiceField extends Field implements DictionaryItem
 	 */
 	public ChoiceField getSelectedChoice(CollectorRecord record)
 	{
-		if(!isRoot())
-			return root.getSelectedChoice(record);
-		if(isNoColumn())
-			return null; //throw new IllegalArgumentException("Field \"" + getID() + "\" has no column.");
+		if(record == null || isNoColumn())
+			return null;
 		Long choiceIdx = getColumn().retrieveValue(record);
 		if(choiceIdx != null)
 			return getDictionary().lookupItem(choiceIdx.intValue());

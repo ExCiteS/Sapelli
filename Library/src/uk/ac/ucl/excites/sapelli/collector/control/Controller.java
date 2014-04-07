@@ -253,7 +253,14 @@ public abstract class Controller
 		if(	(currFormSession.mode == Mode.CREATE && !currFormSession.currField.isShowOnCreate()) ||
 			(currFormSession.mode == Mode.EDIT && !currFormSession.currField.isShowOnEdit()))
 		{
-			addLogLine("SKIPPING", currFormSession.currField.getID());
+			addLogLine("SKIPPING", currFormSession.currField.getID(), "Not shown on " + currFormSession.mode.toString());
+			goForward(false);
+			return;
+		}
+		// Skip uneditable fields when in edit mode...
+		if(currFormSession.mode == Mode.EDIT && !currFormSession.currField.isEditable())
+		{
+			addLogLine("SKIPPING", currFormSession.currField.getID(), "Not editable");
 			goForward(false);
 			return;
 		}
@@ -777,6 +784,10 @@ public abstract class Controller
 		 */
 		private FormSession(Form form, Mode mode, CollectorRecord record)
 		{
+			if(form == null)
+				throw new NullPointerException("Form cannot be null!");
+			if(record == null && form.isProducesRecords())
+				throw new NullPointerException("Record cannot be null because this is a record-producing form!");	
 			this.form = form;
 			this.mode = mode;
 			this.record = record;
