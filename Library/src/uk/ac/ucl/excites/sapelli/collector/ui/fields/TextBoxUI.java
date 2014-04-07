@@ -36,9 +36,13 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 			default :
 				((StringColumn) field.getColumn()).storeValue(record, getValue()); break;
 			case unsignedint :
-			case signedint :				
+			case signedint :
+			case unsignedlong :
+			case signedlong :
 			case unsignedfloat :
 			case signedfloat :
+			case unsigneddouble :
+			case signeddouble :
 				field.getColumn().parseAndStoreValue(record, getValue()); break; // parse number & store it
 		}
 	}
@@ -56,9 +60,13 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 			default :
 				return ((StringColumn) field.getColumn()).retrieveValue(record);
 			case unsignedint :
-			case signedint :				
+			case signedint :
+			case unsignedlong :
+			case signedlong :
 			case unsignedfloat :
 			case signedfloat :
+			case unsigneddouble :
+			case signeddouble :
 				return field.getColumn().retrieveValueAsString(record); // retrieve as String
 		}
 	}
@@ -82,7 +90,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 		// Match regular expression:
 		if(field.getRegexPattern() != null && !field.getRegexPattern().matcher(text).matches())
 		{
-			setValidationError("Input pattern mismatch"); //TODO multilang
+			setValidationError("Pattern mismatch"); //TODO multilang
 			return false;
 		}
 		// Column-level validation:
@@ -100,9 +108,13 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 				}
 				break;
 			case unsignedint :
-			case signedint :				
+			case signedint :
+			case unsignedlong :
+			case signedlong :
 			case unsignedfloat :
 			case signedfloat :
+			case unsigneddouble :
+			case signeddouble :
 				if(!field.getColumn().isValidValueString(text))
 				{
 					setValidationError("Invalid numeric input."); //TODO multilang

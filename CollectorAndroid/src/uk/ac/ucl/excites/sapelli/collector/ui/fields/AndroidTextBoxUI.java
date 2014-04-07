@@ -224,9 +224,13 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 				// Phone class:
 				inputType = InputType.TYPE_CLASS_PHONE; break;
 			case unsignedint :
-			case signedint :				
+			case signedint :
+			case unsignedlong :
+			case signedlong :
 			case unsignedfloat :
 			case signedfloat :
+			case unsigneddouble :
+			case signeddouble :
 				// Number class:
 				inputType = InputType.TYPE_CLASS_NUMBER; break;
 		}
@@ -244,12 +248,16 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			case phonenumber :
 				break;
 			case unsignedint :
+			case unsignedlong :
 				break;
 			case signedint :
+			case signedlong :
 				inputType |= InputType.TYPE_NUMBER_FLAG_SIGNED; break;
 			case unsignedfloat :
+			case unsigneddouble :
 				inputType |= InputType.TYPE_NUMBER_FLAG_DECIMAL; break;
 			case signedfloat :
+			case signeddouble :
 				inputType |= InputType.TYPE_NUMBER_FLAG_SIGNED | InputType.TYPE_NUMBER_FLAG_DECIMAL; break;
 		}
 		

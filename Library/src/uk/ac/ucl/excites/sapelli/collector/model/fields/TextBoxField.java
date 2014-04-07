@@ -41,9 +41,12 @@ public class TextBoxField extends Field
 		// Numeric (Android InputType class Number; stored as Integer or Float):
 		unsignedint,
 		signedint,
+		unsignedlong,
+		signedlong,
 		unsignedfloat,
 		signedfloat,
-		// For now we do not support the textual input of Longs or Doubles
+		unsigneddouble,
+		signeddouble,
 	}
 	
 	/**
@@ -144,10 +147,18 @@ public class TextBoxField extends Field
 				return new IntegerColumn(id, optional != Optionalness.NEVER, false, Integer.SIZE);
 			case signedint :
 				return new IntegerColumn(id, optional != Optionalness.NEVER, true, Integer.SIZE);
+			case unsignedlong :
+				return new IntegerColumn(id, optional != Optionalness.NEVER, false, Long.SIZE);
+			case signedlong :
+				return new IntegerColumn(id, optional != Optionalness.NEVER, true, Long.SIZE);
 			case unsignedfloat :
 				return new FloatColumn(id, optional != Optionalness.NEVER, false, false);
 			case signedfloat :
 				return new FloatColumn(id, optional != Optionalness.NEVER, true, false);
+			case unsigneddouble :
+				return new FloatColumn(id, optional != Optionalness.NEVER, false, true);
+			case signeddouble :
+				return new FloatColumn(id, optional != Optionalness.NEVER, true, true);
 		}
 	}
 
