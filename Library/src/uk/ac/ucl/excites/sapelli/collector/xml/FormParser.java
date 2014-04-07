@@ -96,10 +96,12 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_EDITABLE = "editable";
 	static private final String ATTRIBUTE_FIELD_ALT = "alt";
 	static private final String ATTRIBUTE_FIELD_IMG = "img";
-	static private final String ATTRIBUTE_FIELD_LABEL = "label";
-	static private final String ATTRIBUTE_FIELD_LABELS = "labels";
 	static private final String ATTRIBUTE_FIELD_CAPTION = "caption";
 	static private final String ATTRIBUTE_FIELD_CAPTIONS = "captions";
+	static private final String ATTRIBUTE_FIELD_LABEL = "label"; // synonym for caption
+	static private final String ATTRIBUTE_FIELD_LABELS = "labels"; // synonym for captions
+	static private final String[] ATTRIBUTE_FIELD_CAPTION_SINGULAR = { ATTRIBUTE_FIELD_CAPTION, ATTRIBUTE_FIELD_LABEL };
+	static private final String[] ATTRIBUTE_FIELD_CAPTION_PLURAL = { ATTRIBUTE_FIELD_CAPTION, ATTRIBUTE_FIELD_CAPTIONS, ATTRIBUTE_FIELD_LABEL, ATTRIBUTE_FIELD_LABELS };
 	static private final String ATTRIBUTE_FIELD_BACKGROUND_COLOR = "backgroundColor";
 	static private final String ATTRIBUTE_FIELD_SHOW_ON_CREATE = "showOnCreate";
 	static private final String ATTRIBUTE_FIELD_SHOW_ON_EDIT = "showOnEdit";
@@ -115,15 +117,17 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
 	static private final String ATTRIBUTE_RELATIONSHIP_HOLD = "hold";
 	static private final String ATTRIBUTE_CONSTRAINT_COLUMN = "column";
-	static private final String ATTRIBUTE_LABEL_TEXT = "text";
 	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
 	static private final String ATTRIBUTE_TEXT_MULTILINE = "multiLine";
+	static private final String ATTRIBUTE_TEXT_CONTENT = "content";
+	static private final String ATTRIBUTE_TEXT_CAPITALISATION = "autoCaps";
 	static private final String ATTRIBUTE_LABEL_SCALE = "scale";
 	static private final String ATTRIBUTE_LABEL_CENTERED = "centered";
 	static private final String ATTRIBUTE_LIST_PRESELECT = "preSelectDefault";
 	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
 	static private final String ATTRIBUTE_BUTTON_COLUMN = "column";
+	static private final String ATTRIBUTE_MEDIA_MAX = "max";
 	static private final String ATTRIBUTE_TRIGGER_KEY = "key";
 	static private final String ATTRIBUTE_TRIGGER_KEYS = "keys";
 	static private final String ATTRIBUTE_TRIGGER_FIXED_TIMER = "fixedTimer";
@@ -275,7 +279,11 @@ public class FormParser extends SubtreeParser
 			// <Choice>
 			else if(qName.equals(TAG_CHOICE))
 			{
-				currentChoice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getValue(ATTRIBUTE_FIELD_VALUE), currentChoice); // old currentChoice becomes the parent (if it is null that's ok)
+				currentChoice = new ChoiceField(currentForm,
+												attributes.getValue(ATTRIBUTE_FIELD_ID),
+												attributes.getValue(ATTRIBUTE_FIELD_VALUE),
+												currentChoice, // old currentChoice becomes the parent (if it is null that's ok)
+												readCaption(attributes, TAG_CHOICE, false));
 				newField(currentChoice, attributes);
 				// noColumn:
 				currentChoice.setNoColumn(readBooleanAttribute(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN, attributes));
@@ -290,7 +298,7 @@ public class FormParser extends SubtreeParser
 			// <Location>
 			else if(qName.equals(TAG_LOCATION))
 			{
-				LocationField locField = new LocationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
+				LocationField locField = new LocationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_LOCATION, false));
 				newField(locField, attributes);
 				// Location type:
 				String type = attributes.getValue("type");
@@ -320,9 +328,9 @@ public class FormParser extends SubtreeParser
 			// <Photo>
 			else if(qName.equals(TAG_PHOTO))
 			{
-				PhotoField photoField = new PhotoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
+				PhotoField photoField = new PhotoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_PHOTO, false));
 				newField(photoField, attributes);
-				mediaAttachmentAttributes(photoField, attributes);
+				newMediaField(photoField, attributes);
 				photoField.setUseNativeApp(readBooleanAttribute("useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP, attributes));
 				// Camera options (only used when useNativeApp=false):
 				photoField.setUseFrontFacingCamera(readBooleanAttribute("useFrontCamera", PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA, attributes));
@@ -347,16 +355,16 @@ public class FormParser extends SubtreeParser
 			// <Audio>
 			else if(qName.equals(TAG_AUDIO))
 			{
-				AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
+				AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_AUDIO, false));
 				newField(audioField, attributes);
-				mediaAttachmentAttributes(audioField, attributes);
+				newMediaField(audioField, attributes);
 				audioField.setStartRecImageRelativePath(readStringAttribute("startRecImg", null, attributes, false, false));
 				audioField.setStopRecImageRelativePath(readStringAttribute("stopRecImg", null, attributes, false, false));
 			}
 			// <Orientation>
 			else if(qName.equals(TAG_ORIENTATION))
 			{
-				OrientationField orField = new OrientationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID));
+				OrientationField orField = new OrientationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_ORIENTATION, false));
 				newField(orField, attributes);
 				orField.setStoreAzimuth(readBooleanAttribute("storeAzimuth", OrientationField.DEFAULT_STORE_AZIMUTH, attributes));
 				orField.setStoreAzimuth(readBooleanAttribute("storePitch", OrientationField.DEFAULT_STORE_PITCH, attributes));
@@ -377,7 +385,7 @@ public class FormParser extends SubtreeParser
 			// <Button>
 			else if(qName.equals(TAG_BUTTON))
 			{
-				ButtonField btn = new ButtonField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_BUTTON, ATTRIBUTE_FIELD_LABEL, attributes, false, true));
+				ButtonField btn = new ButtonField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_BUTTON, true));
 				newField(btn, attributes);
 				try
 				{
@@ -393,7 +401,7 @@ public class FormParser extends SubtreeParser
 			// <Label>
 			else if(qName.equals(TAG_LABEL))
 			{
-				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, attributes, false, true, ATTRIBUTE_LABEL_TEXT, ATTRIBUTE_FIELD_LABEL));
+				LabelField lbl = new LabelField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_LABEL, true));
 				newField(lbl, attributes);
 				lbl.setTextSizeScale(readFloatAttribute(ATTRIBUTE_LABEL_SCALE, LabelField.DEFAULT_TEXT_SIZE_SCALE, attributes));
 				lbl.setCentered(readBooleanAttribute(ATTRIBUTE_LABEL_CENTERED, LabelField.DEFAULT_TEXT_CENTERED, attributes));
@@ -401,7 +409,7 @@ public class FormParser extends SubtreeParser
 			// <Textbox>
 			else if(qName.equals(TAG_TEXTFIELD))
 			{
-				TextBoxField txtField = new TextBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_TEXTFIELD, ATTRIBUTE_FIELD_LABEL, attributes, false, true));
+				TextBoxField txtField = new TextBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_TEXTFIELD, true));
 				newField(txtField, attributes); // first set general things like optionality (needed for getDefaultMinLength() below).
 				
 				// Deal with minimum & maximum length:
@@ -412,19 +420,20 @@ public class FormParser extends SubtreeParser
 				
 				txtField.setMultiline(readBooleanAttribute(ATTRIBUTE_TEXT_MULTILINE, TextBoxField.DEFAULT_MULTILINE, attributes));
 				txtField.setInitialValue(readStringAttribute(TextBoxField.DEFAULT_INITIAL_VALUE, attributes, false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
-				
+				txtField.setContent(readStringAttribute(ATTRIBUTE_TEXT_CONTENT, TextBoxField.DEFAULT_CONTENT.name(), attributes, true, false));
+				txtField.setCapitalisation(readStringAttribute(ATTRIBUTE_TEXT_CAPITALISATION, TextBoxField.DEFAULT_CAPITALISATION.name(), attributes, true, false));
 			}
 			// <Checkbox>
 			else if(qName.equals(TAG_CHECKBOX))
 			{
-				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_CHECKBOX, ATTRIBUTE_FIELD_LABEL, attributes, false, true));
+				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_CHECKBOX, true));
 				chbxField.setInitialValue(readBooleanAttribute(ATTRIBUTE_FIELD_DEFAULTVALUE, CheckBoxField.DEFAULT_INITIAL_VALUE, attributes));
 				newField(chbxField, attributes);
 			}
 			// <List> or <MultiList> (these are in fact just synonyms, but we added both to avoid confusing novice form designers with terminoly that refers to a multi-level list when they only need a flat list)  
 			else if(qName.equals(TAG_LIST) || qName.equals(TAG_MULTILIST))
 			{
-				MultiListField ml = new MultiListField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readRequiredStringAttribute(TAG_LABEL, attributes, false, true, ATTRIBUTE_FIELD_LABELS, ATTRIBUTE_FIELD_LABEL));
+				MultiListField ml = new MultiListField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, qName.equals(TAG_LIST) ? TAG_LIST : TAG_MULTILIST, true, true));
 				ml.setPreSelect(readBooleanAttribute(ATTRIBUTE_LIST_PRESELECT, MultiListField.DEFAULT_PRESELECT, attributes));
 				newField(ml, attributes);
 				currentListItem = ml.getItemsRoot();
@@ -560,9 +569,9 @@ public class FormParser extends SubtreeParser
 				// the field is contained by a page:
 				currentPage.addField(field);
 			
-			// Set optionalness:
 			if(attributes != null)
 			{
+				// Set optionalness:
 				String optText = attributes.getValue(ATTRIBUTE_FIELD_OPTIONAL);
 				Optionalness opt = currentPage == null ? Field.DEFAULT_OPTIONAL : currentPage.getOptional(); // use default optionalness or that of the containing page
 				if(optText != null && !optText.trim().isEmpty())
@@ -576,10 +585,10 @@ public class FormParser extends SubtreeParser
 						opt = Optionalness.NEVER;
 				}
 				field.setOptional(opt);
+				
+				// Set editable (inherit from page if on page):
+				field.setEditable(readBooleanAttribute(ATTRIBUTE_FIELD_EDITABLE, currentPage == null ? Field.DEFAULT_EDITABLE : currentPage.isEditable(), attributes));
 			}
-			
-			// Set editable (inherit from page if on page):
-			field.setEditable(readBooleanAttribute(ATTRIBUTE_FIELD_EDITABLE, currentPage == null ? Field.DEFAULT_EDITABLE : currentPage.isEditable(), attributes));
 		}
 		
 		// Read various optional Field attributes: 
@@ -611,9 +620,9 @@ public class FormParser extends SubtreeParser
 		}
 	}
 	
-	private void mediaAttachmentAttributes(MediaField ma, Attributes attributes)
+	private void newMediaField(MediaField ma, Attributes attributes)
 	{
-		ma.setMax(readIntegerAttribute("max", MediaField.DEFAULT_MAX, attributes));
+		ma.setMax(readIntegerAttribute(ATTRIBUTE_MEDIA_MAX , MediaField.DEFAULT_MAX, attributes));
 		if(attributes.getValue(ATTRIBUTE_DISABLE_FIELD) != null)
 			mediaAttachToDisableId.put(ma, attributes.getValue(ATTRIBUTE_DISABLE_FIELD).trim().toUpperCase()); // upper cased, for case insensitivity
 	}
@@ -705,6 +714,19 @@ public class FormParser extends SubtreeParser
 			// Deactivate this subtree parser:
 			deactivate(); //will call reset() (+ warnings will be copied to owner)
 		}
+	}
+	
+	private String readCaption(Attributes attributes, String tag, boolean required) throws SAXException
+	{
+		return readCaption(attributes, tag, required, false); // singular by default
+	}
+	
+	private String readCaption(Attributes attributes, String tag, boolean required, boolean plural) throws SAXException
+	{
+		if(required)
+			return readRequiredStringAttribute(tag, attributes, false, true, plural ? ATTRIBUTE_FIELD_CAPTION_PLURAL : ATTRIBUTE_FIELD_CAPTION_SINGULAR);
+		else
+			return readStringAttribute(null, attributes, false, true, plural ? ATTRIBUTE_FIELD_CAPTION_PLURAL : ATTRIBUTE_FIELD_CAPTION_SINGULAR);
 	}
 	
 	private String getRelationshipTag(Relationship relationship)

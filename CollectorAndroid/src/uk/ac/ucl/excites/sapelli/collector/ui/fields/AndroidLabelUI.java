@@ -31,7 +31,7 @@ public class AndroidLabelUI extends LabelUI<View, CollectorView>
 		{
 			label = new TextView(collectorUI.getContext());
 			label.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
-			label.setText(field.getLabel());
+			label.setText(field.getCaption());
 			label.setTextSize(TypedValue.COMPLEX_UNIT_PX, label.getTextSize() * field.getTextSizeScale()); 
 			//TODO bold?
 			label.setGravity(field.isCentered() ? Gravity.CENTER_HORIZONTAL : label.getGravity());

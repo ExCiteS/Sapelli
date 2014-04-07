@@ -8,7 +8,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.LabelUI;
-import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 
 /**
@@ -27,21 +26,14 @@ public class LabelField extends Field
 	
 	/**
 	 * @param form
-	 * @param text
-	 */
-	public LabelField(Form form, String text)
-	{
-		this(form, null, text);
-	}
-	
-	/**
-	 * @param form
 	 * @param id
-	 * @param labelText
+	 * @param caption the label's caption, cannot be null.
 	 */
-	public LabelField(Form form, String id, String labelText)
+	public LabelField(Form form, String id, String caption)
 	{	
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (labelText.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(labelText.trim(), "_")) : id), labelText);
+		super(	form,
+				(id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id),
+				caption);
 		this.noColumn = true;
 	}
 	

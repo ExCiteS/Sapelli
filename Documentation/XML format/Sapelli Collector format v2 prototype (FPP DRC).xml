@@ -103,19 +103,19 @@
   <Form id="Session" storeEndTime="true" next="PREVFORM">
 
     <Page skipOnBack="true" showOnCreate="false" showOnEdit="true">
-       <Label text="Press ... within 5 seconds to access the Session form"/>
+       <Label caption="Press ... within 5 seconds to access the Session form"/>
        <Trigger key="VOLUME_DOWN" jump="SessionPage"/>
        <Trigger fixedTimer="5" jump="_PREVFORM"/>
     </Page>
     
     <Page id="SessionPage" showForward="false">
 
-      <Label text="Create community session" scale="1.75" centered="true" showOnEdit="false"/>
-      <Label text="Edit community session" scale="1.75" centered="true" showOnCreate="false"/>
+      <Label caption="Create community session" scale="1.75" centered="true" showOnEdit="false"/>
+      <Label caption="Edit community session" scale="1.75" centered="true" showOnCreate="false"/>
 
-      <Text id="Creator" label="Creator:" minLength="2" maxLength="48" optional="false"/>
+      <Text id="Creator" caption="Creator:" minLength="2" maxLength="48" autoCaps="words" optional="false"/>
 
-      <MultiList id="Community" label="Province:;Community:" optional="false" editable="false" preSelectDefault="false">
+      <MultiList id="Community" captions="Province:;Community:" optional="false" editable="false" preSelectDefault="false">
         <Item value="Province 1">
           <Item value="Community P1.1"/>
           <Item value="Community P1.2"/>
@@ -135,19 +135,19 @@
         </Item>
       </MultiList>
 
-      <Check id="Operational" label="Operational session" defaultValue="true"/>
+      <Check id="Operational" caption="Operational session" defaultValue="true"/>
 
-      <Check id="Testing" label="Testing session" defaultValue="false"/>
+      <Check id="Testing" caption="Testing session" defaultValue="false"/>
 
-      <Check id="Training" label="Training session" defaultValue="false"/>
+      <Check id="Training" caption="Training session" defaultValue="false"/>
 
-      <Text id="Comment" label="Comments:" maxLength="1024" multiLine="true" optional="true"/>
+      <Text id="Comment" caption="Comments:" maxLength="1024" autoCaps="sentences" multiLine="true" optional="true"/>
 
-      <Button label="Start session" showOnEdit="false" jump="_SAVE+PREVFORM"/>
+      <Button caption="Start session" showOnEdit="false" jump="_SAVE+PREVFORM"/>
       
-      <Button label="Continue session" showOnCreate="false" jump="_SAVE+PREVFORM"/>
+      <Button caption="Continue session" showOnCreate="false" jump="_SAVE+PREVFORM"/>
       
-      <Button id="closed" column="boolean" optional="true" label="Close session" showOnCreate="false" jump="_SAVE+PREVFORM"/>
+      <Button id="closed" column="boolean" optional="true" caption="Close session" showOnCreate="false" jump="_SAVE+PREVFORM"/>
   
     </Page>
   

@@ -51,13 +51,13 @@ public class Location extends Record
 	// Schema(s) & columns
 	//	Default Schema (used for Location instances), which uses 64 bit floats (doubles) for latitude, longitude & altitude:
 	static final public Schema SCHEMA = new Schema(Schema.ReservedIDs.LOCATION_SCHEMA.ordinal(), Schema.ReservedIDs.LOCATION_SCHEMA.name());
-	static final public FloatColumn COLUMN_LATITUDE = new FloatColumn("Latitude", false, true);					// non-optional 64 bit float
-	static final public FloatColumn COLUMN_LONGITUDE = new FloatColumn("Longitude", false, true);				// non-optional 64 bit float
-	static final public FloatColumn COLUMN_ALTITUDE = new FloatColumn("Altitude", true, true);					// optional 64 bit float
-	static final public FloatColumn COLUMN_BEARING = new FloatColumn("Bearing", true, false);					// optional 32 bit float
-	static final public FloatColumn COLUMN_SPEED = new FloatColumn("Speed", true, false);						// optional 32 bit float
-	static final public FloatColumn COLUMN_ACCURACY = new FloatColumn("Accuracy", true, false);					// optional 32 bit float
-	static final public DateTimeColumn COLUMN_TIME = DateTimeColumn.JavaMSTime("Time", true);					// optional 64 bit millisecond timestamp
+	static final public FloatColumn COLUMN_LATITUDE = new FloatColumn("Latitude", false, true, true);			// non-optional signed 64 bit float
+	static final public FloatColumn COLUMN_LONGITUDE = new FloatColumn("Longitude", false, true, true);			// non-optional signed 64 bit float
+	static final public FloatColumn COLUMN_ALTITUDE = new FloatColumn("Altitude", true, true, true);			// optional signed 64 bit float
+	static final public FloatColumn COLUMN_BEARING = new FloatColumn("Bearing", true, true, false);				// optional signed 32 bit float
+	static final public FloatColumn COLUMN_SPEED = new FloatColumn("Speed", true, true, false);					// optional signed 32 bit float
+	static final public FloatColumn COLUMN_ACCURACY = new FloatColumn("Accuracy", true, true, false);			// optional signed 32 bit float
+	static final public DateTimeColumn COLUMN_TIME = DateTimeColumn.JavaMSTime("Time", true);					// optional signed 64 bit millisecond timestamp
 	static final public IntegerColumn COLUMN_PROVIDER = new IntegerColumn("Provider", false, PROVIDER_FIELD);	// non-optional 2 bit unsigned integer
 	static
 	{	// Add columns to default Schema & seal it:

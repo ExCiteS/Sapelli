@@ -102,7 +102,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			
 			// Label:
 			TextView label = new TextView(getContext());
-			label.setText(field.getLabel(level));
+			label.setText(field.getCaption(level));
 			label.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 			addView(label);
 			

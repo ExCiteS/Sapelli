@@ -15,6 +15,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 
 
@@ -44,17 +45,23 @@ public class ChoiceField extends Field implements DictionaryItem
 	private String value;
 	private ChoiceDictionary dictionary;
 	
-	public ChoiceField(Form form, String id, String value, ChoiceField parent)
+	/**
+	 * @param form the form this choice(tree) belongs to
+	 * @param id the id of the choice, only allowed to be null if not a root choice
+	 * @param value the value of the choice (may be null)
+	 * @param parent the parent of the choice (may be null if this is a root choice)
+	 * @param caption the caption of the choicefield (may be null)
+	 */
+	public ChoiceField(Form form, String id, String value, ChoiceField parent, String caption)
 	{
 		super(	form,
 				id == null || id.isEmpty() ?
 					(parent == null ?
 						null /* id is mandatory for the root: Field constructor will throw NullPointerException */ :
 						/* generate id based on parent ID and value or child number: */
-						parent.getID() + "." + (value == null || value.isEmpty() ?
-													parent.getChildren().size() + 1 :
-													value)) :
-					id);
+						parent.getID() + "." + (value == null || value.trim().isEmpty() ? parent.getChildren().size() + 1 : StringUtils.replaceWhitespace(value.trim(), "_"))) :
+					id,
+				caption);
 		this.children = new ArrayList<ChoiceField>();
 		this.parent = parent;
 		this.value = ((value == null || value.isEmpty()) ? null : value); //replace empty string with null (so we don't need to check for empty string elsewhere)
@@ -136,6 +143,16 @@ public class ChoiceField extends Field implements DictionaryItem
 	public ChoiceField getRoot()
 	{
 		return root;
+	}
+	
+	/** Always return the caption of the root
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#getCaption()
+	 */
+	@Override
+	public String getCaption()
+	{
+		return root.caption;
 	}
 	
 	/**

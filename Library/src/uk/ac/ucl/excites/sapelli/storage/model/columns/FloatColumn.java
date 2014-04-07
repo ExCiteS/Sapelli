@@ -20,24 +20,27 @@ public class FloatColumn extends ComparatorColumn<Double>
 	static private final long serialVersionUID = 2L;
 	
 	static public final boolean DEFAULT_DOUBLE_PRECISION = false; // 32 bit (float) by default
+	private static final boolean DEFAULT_SIGNEDNESS = true; //allow signed values by default
 	
 	private boolean doublePrecision;
+	private boolean signed;
 	
 	public FloatColumn(String name, boolean optional)
 	{
-		this(name, optional, DEFAULT_DOUBLE_PRECISION);
+		this(name, optional, DEFAULT_SIGNEDNESS, DEFAULT_DOUBLE_PRECISION);
 	}
 	
-	public FloatColumn(String name, boolean optional, boolean doublePrecision)
+	public FloatColumn(String name, boolean optional, boolean signed, boolean doublePrecision)
 	{
 		super(Double.class, name, optional);
 		this.doublePrecision = doublePrecision;
+		this.signed = signed;
 	}
 
 	@Override
 	public FloatColumn copy()
 	{
-		return new FloatColumn(name, optional, doublePrecision);
+		return new FloatColumn(name, optional, signed, doublePrecision);
 	}
 	
 	/**
@@ -94,10 +97,11 @@ public class FloatColumn extends ComparatorColumn<Double>
 	@Override
 	protected void validate(Double value) throws IllegalArgumentException
 	{
-		/* Does nothing
-		 * Note: I originally planned to check whether the value could
-		 * 		 fit in a 32 bit float when in single precision mode,
-		 * 		 but there is no obvious (or even correct) way to do this(?). 
+		if(!signed && value < 0.0d)
+			throw new IllegalArgumentException("Cannot store negative values because column is unsigned");
+		/*
+		 * Note: I originally planned to also check whether the value could fit in a 32 bit float when in
+		 * 		 single precision mode, but it seems there is no obvious (or even correct) way to do this. 
 		 */
 	}
 
@@ -177,6 +181,22 @@ public class FloatColumn extends ComparatorColumn<Double>
 		int hash = super.hashCode();
 		hash = 31 * hash + (doublePrecision ? 0 : 1);
 		return hash;
+	}
+
+	/**
+	 * @return the doublePrecision
+	 */
+	public boolean isDoublePrecision()
+	{
+		return doublePrecision;
+	}
+
+	/**
+	 * @return the signed
+	 */
+	public boolean isSigned()
+	{
+		return signed;
 	}
 	
 }

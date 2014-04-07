@@ -24,7 +24,7 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	//STATICS
 	private static final long serialVersionUID = 2L;
 	
-	private static final boolean DEFAULT_SIGNEDNESS = true; //use signed integers by default
+	private static final boolean DEFAULT_SIGNEDNESS = true; //allow signed values by default
 	private static final int DEFAULT_SIZE_BITS = 32; //use 32 bit integers by default
 	
 	//DYNAMICS

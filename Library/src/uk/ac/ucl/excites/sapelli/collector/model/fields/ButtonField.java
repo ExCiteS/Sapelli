@@ -8,7 +8,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ButtonUI;
-import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
@@ -37,21 +36,12 @@ public class ButtonField extends Field
 	
 	/**
 	 * @param form
-	 * @param label
-	 */
-	public ButtonField(Form form, String label)
-	{
-		this(form, null, label);
-	}
-	
-	/**
-	 * @param form
 	 * @param id
-	 * @param label
+	 * @param caption
 	 */
-	public ButtonField(Form form, String id, String label)
+	public ButtonField(Form form, String id, String caption)
 	{	
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id), label);
+		super(form, (id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id), caption);
 		setColumnType(DEFAULT_COLUMN);
 	}
 	

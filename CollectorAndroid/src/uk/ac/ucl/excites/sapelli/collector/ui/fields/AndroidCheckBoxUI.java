@@ -50,7 +50,7 @@ public class AndroidCheckBoxUI extends CheckBoxUI<View, CollectorView>
 			LayoutParams lp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
 			lp.setMargins(0, negativeTopMarginPx, 0, negativeBottomMarginPx); // otherwise checkbox has too much margin on top & bottom (at least on Nexus4) // TODO test on XCover1 & 2)
 			chbx.setLayoutParams(lp);
-			chbx.setText(field.getLabel());
+			chbx.setText(field.getCaption());
 			
 			// Make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
 			chbx.setFocusable(true);

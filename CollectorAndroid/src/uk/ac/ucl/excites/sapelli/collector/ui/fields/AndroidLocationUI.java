@@ -49,7 +49,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 			if(pageView == null)
 			{
 				pageView = new Button(collectorUI.getContext());
-				pageView.setText(field.getLabel());
+				pageView.setText(field.getCaption());
 				// TODO some kind of icon/image would be nice (an little flag or crosshairs?)
 				pageView.setOnClickListener(new OnClickListener()
 				{

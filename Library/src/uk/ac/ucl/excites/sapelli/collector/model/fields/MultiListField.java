@@ -25,9 +25,9 @@ public class MultiListField extends Field
 
 	static public final String UNKNOWN_LABEL_PREFIX = "Level "; //TODO multilang
 	static public final boolean DEFAULT_PRESELECT = true;
-	static public final String LABEL_SEPARATOR = ";";
+	static public final String CAPTION_SEPARATOR = ";";
 	
-	private String[] labels;
+	private String[] captions;
 	private MultiListItem itemsRoot;
 	private boolean preSelect = DEFAULT_PRESELECT;
 	private Dictionary<MultiListItem> values;
@@ -35,36 +35,32 @@ public class MultiListField extends Field
 	/**
 	 * @param form
 	 * @param id
+	 * @param captions
 	 */
-	public MultiListField(Form form, String id, String labels)
+	public MultiListField(Form form, String id, String captions)
 	{
 		super(form, id);
-		this.labels = labels.split(LABEL_SEPARATOR);
+		this.captions = captions.split(CAPTION_SEPARATOR);
 		this.itemsRoot = new MultiListItem(this);
 		this.values = new Dictionary<MultiListItem>();
 	}
 	
 	@Override
-	public String getLabel()
+	public String getCaption()
 	{
-		return getLabel(0);
+		return getCaption(0);
 	}
 	
-	public String getLabel(int level)
+	public String getCaption(int level)
 	{
 		if(level < 0)
 			throw new IndexOutOfBoundsException("Level cannot be negative!");
-		else if(level < labels.length)
-			return labels[level];
+		else if(level < captions.length)
+			return captions[level];
 		else
-			return labels[0].isEmpty() ? "" : UNKNOWN_LABEL_PREFIX + level;
+			return captions[0].isEmpty() ? "" : UNKNOWN_LABEL_PREFIX + level;
 	}
-	
-	public String[] getLabels()
-	{
-		return labels;
-	}
-	
+
 	/**
 	 * @return the preSelect
 	 */

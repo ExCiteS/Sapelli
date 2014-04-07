@@ -4,8 +4,8 @@ import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField.Content;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.Editable;
@@ -57,14 +57,11 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		{
 			//	Clear error:
 			view.clearError();
+			
 			//	Set default or current value:
 			view.setWatchText(false);
-			StringColumn col = (StringColumn) field.getColumn();
-			
-			if(record.isValueSet(col))
-				view.setText(col.retrieveValue(record));
-			else
-				view.setText(field.getInitialValue());
+			String value = retrieveValue(record);
+			view.setText(value != null ? value : field.getInitialValue());
 			view.setWatchText(true);
 		}
 		view.setEnabled(controller.getCurrentFormMode() != Mode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
@@ -94,6 +91,10 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		private TextView errorMsg;
 		private boolean watchText = true;
 		
+		/**
+		 * @param context
+		 * 
+		 */
 		public TextBoxView(Context context)
 		{
 			super(context);
@@ -103,22 +104,19 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 
 			// Label:
 			TextView label = new TextView(context);
-			label.setText(field.getLabel());
+			label.setText(field.getCaption());
 			label.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 			addView(label);
 
 			// Textbox:
 			editText = new EditText(context);
 			editText.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
-			int inputType = InputType.TYPE_CLASS_TEXT;
-			//	Multi-line:
-			if(field.isMultiline())
-				inputType |= InputType.TYPE_TEXT_FLAG_MULTI_LINE;
+			//	Multiline (as specified as part of input type);
 			editText.setSingleLine(!field.isMultiline());
-			// Limit input length to specified maximum:
+			//	Limit input length to specified maximum:
 			editText.setFilters(new InputFilter[] { new InputFilter.LengthFilter(field.getMaxLength()) });
 			//	Set input type:
-			editText.setInputType(inputType);
+			editText.setInputType(getInputType());
 			//	Event handlers:
 			editText.setOnFocusChangeListener(this);
 			editText.addTextChangedListener(this);
@@ -201,6 +199,83 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			/* Don't care */
 		}
 		
+	}
+	
+	/**
+	 * @return
+	 * 
+	 * @see <a href="http://developer.android.com/reference/android/text/InputType.html">InputType</a>
+	 * @see <a href="http://developer.android.com/reference/android/widget/TextView.html#attr_android:inputType">TextView inputType</a>
+	 */
+	private int getInputType()
+	{
+		int inputType;
+		
+		// Input Class
+		switch(field.getContent())
+		{
+			case text :
+			case email :
+			case password :
+			default :
+				// Text class:
+				inputType = InputType.TYPE_CLASS_TEXT; break;
+			case phonenumber :
+				// Phone class:
+				inputType = InputType.TYPE_CLASS_PHONE; break;
+			case unsignedint :
+			case signedint :				
+			case unsignedfloat :
+			case signedfloat :
+				// Number class:
+				inputType = InputType.TYPE_CLASS_NUMBER; break;
+		}
+		
+		// Variations:
+		switch(field.getContent())
+		{
+			case text :
+			default :
+				inputType |= InputType.TYPE_TEXT_VARIATION_NORMAL; break;
+			case email :
+				inputType |= InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS; break;
+			case password :
+				inputType |= InputType.TYPE_TEXT_VARIATION_PASSWORD; break;
+			case phonenumber :
+				break;
+			case unsignedint :
+				break;
+			case signedint :
+				inputType |= InputType.TYPE_NUMBER_FLAG_SIGNED; break;
+			case unsignedfloat :
+				inputType |= InputType.TYPE_NUMBER_FLAG_DECIMAL; break;
+			case signedfloat :
+				inputType |= InputType.TYPE_NUMBER_FLAG_SIGNED | InputType.TYPE_NUMBER_FLAG_DECIMAL; break;
+		}
+		
+		// Only for content=text:
+		if(field.getContent() == Content.text)
+		{
+			//	Automatic capitalisation:
+			switch(field.getCapitalisation())
+			{
+				case none :
+				default :
+					break;
+				case all :
+					inputType |= InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS; break;
+				case words :
+					inputType |= InputType.TYPE_TEXT_FLAG_CAP_WORDS; break;
+				case sentences :
+					inputType |= InputType.TYPE_TEXT_FLAG_CAP_SENTENCES; break;
+			}
+			
+			//	Multi-line:
+			if(field.isMultiline())
+				inputType |= InputType.TYPE_TEXT_FLAG_MULTI_LINE;	
+		}
+		
+		return inputType;
 	}
 	
 }

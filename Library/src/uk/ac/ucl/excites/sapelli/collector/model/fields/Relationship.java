@@ -69,8 +69,9 @@ public class Relationship extends UILessField
 	private AndConstraint constraints;
 
 	/**
-	 * @param form
-	 * @param id
+	 * @param form the form the field belongs to
+	 * @param id the id of the field, should not be null
+	 * @param type the Relationshio.Type
 	 */
 	public Relationship(Form form, String id, Type type)
 	{

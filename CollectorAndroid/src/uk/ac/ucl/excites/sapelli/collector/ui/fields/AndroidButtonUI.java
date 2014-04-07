@@ -39,7 +39,7 @@ public class AndroidButtonUI extends ButtonUI<View, CollectorView> implements On
 		if(button == null)
 		{
 			button = new Button(collectorUI.getContext());
-			button.setText(field.getLabel());
+			button.setText(field.getCaption());
 			button.setOnClickListener(this);
 		}
 		

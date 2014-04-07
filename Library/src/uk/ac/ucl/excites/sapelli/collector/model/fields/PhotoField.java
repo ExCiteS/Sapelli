@@ -43,9 +43,9 @@ public class PhotoField extends MediaField
 	private String approveButtonImageRelativePath;
 	private String discardButtonImageRelativePath;
 	
-	public PhotoField(Form form, String id)
+	public PhotoField(Form form, String id, String caption)
 	{
-		super(form, id);
+		super(form, id, caption);
 		useNativeApp = DEFAULT_USE_NATIVE_APP;
 		useFrontFacingCamera = DEFAULT_USE_FRONT_FACING_CAMERA;
 		flashMode = DEFAULT_FLASH_MODE;

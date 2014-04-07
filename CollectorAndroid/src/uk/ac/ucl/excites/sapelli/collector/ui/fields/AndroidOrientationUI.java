@@ -31,7 +31,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 			if(pageView == null)
 			{
 				pageView = new Button(collectorUI.getContext());
-				pageView.setText(field.getLabel());
+				pageView.setText(field.getCaption());
 				// TODO some kind of icon/image would be nice (an arrow?)
 				pageView.setOnClickListener(new OnClickListener()
 				{

@@ -26,9 +26,14 @@ public class OrientationField extends Field
 	private boolean storePitch = DEFAULT_STORE_PITCH;
 	private boolean storeRoll = DEFAULT_STORE_ROLL;
 	
-	public OrientationField(Form form, String id)
+	/**
+	 * @param form the form the field belongs to
+	 * @param id the id of the field, should not be null
+	 * @param caption the caption of the field, may be null (in which case the id is used as the caption)
+	 */
+	public OrientationField(Form form, String id, String caption)
 	{
-		super(form, id);
+		super(form, id, caption);
 	}
 
 	/**

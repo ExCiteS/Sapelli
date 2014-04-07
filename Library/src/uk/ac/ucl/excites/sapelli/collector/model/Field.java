@@ -7,6 +7,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 
 /**
@@ -22,6 +23,12 @@ public abstract class Field implements JumpSource
 	    ALWAYS,
 	    NOT_IF_REACHED,
 	    NEVER
+	}
+	
+	static public String captionToID(String prefix, Form form, String caption)
+	{
+		// TODO remove chars that are illegal in XML tag names
+		return prefix + (caption.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(caption.trim(), "_").replace(":", ""));
 	}
 	
 	//Defaults:
@@ -40,7 +47,7 @@ public abstract class Field implements JumpSource
 	
 	//Dynamics---------------------------------------------
 	protected String id;
-	protected String label;
+	protected String caption;
 	protected Form form;
 	protected Field jump;
 	protected boolean enabled = DEFAULT_ENABLED;
@@ -57,19 +64,28 @@ public abstract class Field implements JumpSource
 	private boolean showCancel = DEFAULT_SHOW_CANCEL;
 	private boolean showForward = DEFAULT_SHOW_FORWARD;
 	
+	/**
+	 * @param form the form the field belongs to
+	 * @param id the id of the field, should not be null
+	 */
 	public Field(Form form, String id)
 	{
-		this(form, id, id); // use id as default label
+		this(form, id, id); // use id as default caption
 	}
 	
-	public Field(Form form, String id, String label)
+	/**
+	 * @param form the form the field belongs to
+	 * @param id the id of the field, should not be null
+	 * @param caption the caption of the field, may be null (in which case the id is used as the caption)
+	 */
+	public Field(Form form, String id, String caption)
 	{
 		//TODO check if id is valid column name
 		if(id == null || id.trim().isEmpty())
-			throw new NullPointerException("ID cannot be null or empty.");
+			throw new NullPointerException("Top-level field ID cannot be null or empty.");
 		this.form = form;
 		this.id = id.trim();
-		this.label = label;
+		this.caption = caption == null ? this.id : caption;
 	}
 	
 	/**
@@ -83,9 +99,9 @@ public abstract class Field implements JumpSource
 	/**
 	 * @return the label
 	 */
-	public String getLabel()
+	public String getCaption()
 	{
-		return label;
+		return caption;
 	}
 	
 	/**

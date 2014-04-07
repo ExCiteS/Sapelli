@@ -206,16 +206,45 @@ public abstract class Column<T> implements Serializable
 	protected abstract T read(BitInputStream bitStream) throws IOException;
 	
 	/**
-	 * Perform checks on potential value (e.g.: not too big for size restrictions, no invalid content, etc.) 
-	 * Argument is assumed to be non-null! Hence, null checks should happen before any call of this method.
+	 * Perform checks (e.g.: not too big for size restrictions, no invalid content, etc.) on potential value 
 	 * 
 	 * @param value
-	 * @throws IllegalArgumentException	in case of invalid value
+	 * @return whether or not the value is valid
 	 */
 	@SuppressWarnings("unchecked")
-	public void validateObject(Object value) throws IllegalArgumentException
+	public boolean isValidValue(Object value)
 	{
-		validate((T) value);
+		if(value == null)
+			return optional == true;
+		try
+		{
+			validate((T) value);
+		}
+		catch(Exception iae)
+		{
+			return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * Perform checks (e.g.: not too big for size restrictions, no invalid content, etc.) on potential value, given as a String to be parsed
+	 * 
+	 * @param value
+	 * @return whether or not the value is valid
+	 */
+	public boolean isValidValueString(String valueStr)
+	{
+		if(valueStr == null || valueStr.isEmpty()) //empty String is treated as null
+			return optional == true;
+		try
+		{
+			return isValidValue(parse(valueStr));
+		}
+		catch(Exception e)
+		{
+			return false;
+		}
 	}
 	
 	/**

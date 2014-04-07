@@ -104,7 +104,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			
 			// Add label:
 			label = new TextView(getContext());
-			label.setText(field.getLabel());
+			label.setText(field.getCaption());
 			this.addView(label);
 			
 			chosenSizePx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_SIZE_DIP);

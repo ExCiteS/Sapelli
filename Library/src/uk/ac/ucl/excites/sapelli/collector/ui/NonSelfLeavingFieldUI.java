@@ -40,7 +40,18 @@ public abstract class NonSelfLeavingFieldUI<F extends Field, V, UI extends Colle
 		if(noValidation || isValid(record))
 		{
 			if(!field.isNoColumn())
-				storeValue(record);
+			{
+				try
+				{
+					storeValue(record);
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace(System.err);
+					controller.addLogLine("STORAGE ERROR", e.getClass().getName(), (e.getMessage() != null ? e.getMessage() : ""));
+					return false;
+				}
+			}
 			return true;
 		}
 		return false;
@@ -50,7 +61,8 @@ public abstract class NonSelfLeavingFieldUI<F extends Field, V, UI extends Colle
 	 * It can safely assumed that the field#noColumn=false (except in the case of Pages) and that isValid() has been called beforehand and returned true.
 	 * 
 	 * @param record
+	 * @throws Exception 
 	 */
-	protected abstract void storeValue(CollectorRecord record);
+	protected abstract void storeValue(CollectorRecord record) throws Exception;
 
 }

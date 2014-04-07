@@ -19,9 +19,9 @@ public class LocationColumn extends RecordColumn<Location>
 	static private final long serialVersionUID = 2L;
 	
 	//	Alternative latitude, longitude & altitude columns using 32 instead of 64 bits (used when doublePrecision=false):
-	static final private FloatColumn COLUMN_LATITUDE_32 = new FloatColumn(Location.COLUMN_LATITUDE.getName(), false, false);	// non-optional 32 bit float
-	static final private FloatColumn COLUMN_LONGITUDE_32 = new FloatColumn(Location.COLUMN_LONGITUDE.getName(), false, false);	// non-optional 32 bit float
-	static final private FloatColumn COLUMN_ALTITUDE_32 = new FloatColumn(Location.COLUMN_ALTITUDE.getName(), true, false);		// optional 32 bit float
+	static final private FloatColumn COLUMN_LATITUDE_32 = new FloatColumn(Location.COLUMN_LATITUDE.getName(), false, true, false);		// non-optional signed 32 bit float
+	static final private FloatColumn COLUMN_LONGITUDE_32 = new FloatColumn(Location.COLUMN_LONGITUDE.getName(), false, true, false);	// non-optional signed 32 bit float
+	static final private FloatColumn COLUMN_ALTITUDE_32 = new FloatColumn(Location.COLUMN_ALTITUDE.getName(), true, true, false);		// optional signed 32 bit float
 		
 	//Dynamic--------------------------------------------------------
 	

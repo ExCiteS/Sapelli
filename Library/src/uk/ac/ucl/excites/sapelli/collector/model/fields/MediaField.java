@@ -28,7 +28,7 @@ public abstract class MediaField extends Field
 {
 
 	//static public final int DEFAULT_MIN = 0;
-	static public final int DEFAULT_MAX = 255; //column will use 1 byte
+	static public final int DEFAULT_MAX = 255; //column will use 1 byte (up to 255 items)
 	static public final char FILENAME_ELEMENT_SEPARATOR = '_';
 	
 	static private final Pattern OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
@@ -38,23 +38,10 @@ public abstract class MediaField extends Field
 	protected int max;
 	protected ChoiceField disableChoice;
 
-	public MediaField(Form form, String id)
+	public MediaField(Form form, String id, String caption)
 	{
-		this(form, id, /*DEFAULT_MIN,*/ DEFAULT_MAX, null); //Use on byte --> up to 255 items
-	}
-
-	/**
-	 * @param id
-	 * @param max
-	 * @param disableChoice
-	 */
-	public MediaField(Form form, String id, /*int min,*/ int max, ChoiceField disableChoice)
-	{
-		super(form, id);
-		if(id == null)
-			throw new NullPointerException("ID of top-level field cannot be null");
-		setMax(max); //setMinMax(min, max);
-		this.disableChoice = disableChoice;
+		super(form, id, caption);
+		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);		
 	}
 	
 	public abstract String getMediaType();

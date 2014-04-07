@@ -19,7 +19,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
  * A Page of a {@link Form}.
  * 
  * @author mstevens
- *
  */
 public class Page extends Field
 {
@@ -27,6 +26,13 @@ public class Page extends Field
 	private final List<Field> fields;
 	private final List<Trigger> triggers;
 
+	/**
+	 * Create a	new page
+	 * Note: pages never have captions, form designers should user labels for that.
+	 * 
+	 * @param form
+	 * @param id
+	 */
 	public Page(Form form, String id)
 	{
 		super(form, id);

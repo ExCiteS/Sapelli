@@ -24,9 +24,9 @@ public class AudioField extends MediaField
 	private static final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
 	private static final String EXTENSION_3GPP = "3gp";
 
-	public AudioField(Form form, String id)
+	public AudioField(Form form, String id, String caption)
 	{
-		super(form, id);
+		super(form, id, caption);
 		useNativeApp = DEFAULT_USE_NATIVE_APP;
 	}
 

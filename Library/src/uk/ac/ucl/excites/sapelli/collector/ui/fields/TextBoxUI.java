@@ -21,18 +21,52 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	
 	/**
 	 * 
+	 * @throws Exception 
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI#storeValue(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
 	 */
 	@Override
-	public void storeValue(CollectorRecord record)
+	public void storeValue(CollectorRecord record) throws Exception
 	{
-		((StringColumn) field.getColumn()).storeValue(record, getValue());	
+		switch(field.getContent())
+		{
+			case text :
+			case password :
+			case email :
+			case phonenumber :
+			default :
+				((StringColumn) field.getColumn()).storeValue(record, getValue()); break;
+			case unsignedint :
+			case signedint :				
+			case unsignedfloat :
+			case signedfloat :
+				field.getColumn().parseAndStoreValue(record, getValue()); break; // parse number & store it
+		}
+	}
+	
+	public String retrieveValue(CollectorRecord record)
+	{
+		if(!record.isValueSet(field.getColumn()))
+			return null;
+		switch(field.getContent())
+		{
+			case text :
+			case password :
+			case email :
+			case phonenumber :
+			default :
+				return ((StringColumn) field.getColumn()).retrieveValue(record);
+			case unsignedint :
+			case signedint :				
+			case unsignedfloat :
+			case signedfloat :
+				return field.getColumn().retrieveValueAsString(record); // retrieve as String
+		}
 	}
 	
 	@Override
 	public boolean isValid(CollectorRecord record)
 	{
-		String text = getValue();		
+		String text = getValue();
 		// Too short:
 		if(text.length() < field.getMinLength())
 		{
@@ -44,6 +78,31 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 		{
 			setValidationError("Maximum length of " + field.getMaxLength() + " characters exceeded."); //TODO multilang
 			return false;
+		}
+		// Column validation:
+		switch(field.getContent())
+		{
+			case text :
+			case password :
+			case email :
+			case phonenumber :
+			default :
+				if(!field.getColumn().isValidValue(text))
+				{	// this shouldn't happen, given that max length has already been checked
+					setValidationError("Invalid input."); //TODO multilang
+					return false;
+				}
+				break;
+			case unsignedint :
+			case signedint :				
+			case unsignedfloat :
+			case signedfloat :
+				if(!field.getColumn().isValidValueString(text))
+				{
+					setValidationError("Invalid numeric input."); //TODO multilang
+					return false;
+				}
+				break;
 		}
 		// OK:
 		clearValidationError();

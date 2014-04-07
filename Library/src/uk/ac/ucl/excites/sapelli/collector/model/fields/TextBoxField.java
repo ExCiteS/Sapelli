@@ -8,45 +8,85 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.TextBoxUI;
-import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import android.annotation.SuppressLint;
 
 /**
- * @author Julia
+ * A Field class representing a text box
  * 
+ * @author mstevens, Julia
  */
 public class TextBoxField extends Field
 {
 
 	static public final String ID_PREFIX = "txt";
 
+	/**
+	 * Content types
+	 */
+	static public enum Content
+	{
+		// Text-like (Android InputType class Text; stored as String):
+		text, // 
+		password,
+		email,
+		// Phone number (Android InputType class Phone; stored as String):
+		phonenumber,
+		// Numeric (Android InputType class Number; stored as Integer or Float):
+		unsignedint,
+		signedint,
+		unsignedfloat,
+		signedfloat,
+		// For now we do not support the textual input of Longs or Doubles
+	}
+	
+	/**
+	 * Automatic capitalisation (only applies for Content=text)
+	 */
+	static public enum Capitalisation
+	{
+		none,
+		all,
+		words,
+		sentences,
+	}
+	
 	// Defaults
 	public static final int DEFAULT_MIN_LENGTH_OPTIONAL = 0;		// default minimum length of 0 chars if field is optional (i.e. optionality = ALWAYS)
 	public static final int DEFAULT_MIN_LENGTH_NON_OPTIONAL = 1;	// default minimum length of 1 char if field is not optional (i.e. optionality = NEVER or NOT_WHEN_REACHED)
-	public static final int DEFAULT_MAX_LENGTH = 100; 				// default maximum length of 100 chars
+	public static final int DEFAULT_MAX_LENGTH = 128; 				// default maximum length of 128 chars
 	public static final boolean DEFAULT_MULTILINE = false;			// single-line by default
 	public static final String DEFAULT_INITIAL_VALUE = "";			// empty String is the default/initial initialValue
-
+	public static final Content DEFAULT_CONTENT = Content.text;		// plain Text content by default
+	public static final Capitalisation DEFAULT_CAPITALISATION = Capitalisation.none; // use no automatic capitalisation by default
+	
 	// Dynamics
 	private int maxLength;
 	private int minLength;
 	private boolean multiline;
 	private String initialValue;
-	
+	private Content content;
+	private Capitalisation capitalisation;
 	
 	/**
 	 * @param form
 	 * @param id
-	 * @parap label
+	 * @param caption
 	 */
-	public TextBoxField(Form form, String id, String label)
+	public TextBoxField(Form form, String id, String caption)
 	{
-		super(form, (id == null || id.isEmpty() ? ID_PREFIX + (label.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(label.trim(), "_")) : id), label);
+		super(	form,
+				(id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id),
+				caption);
 		this.maxLength = DEFAULT_MAX_LENGTH;
 		this.minLength = DEFAULT_MIN_LENGTH_OPTIONAL;
 		this.multiline = DEFAULT_MULTILINE;
 		this.initialValue = DEFAULT_INITIAL_VALUE;
+		this.content = DEFAULT_CONTENT;
+		this.capitalisation = DEFAULT_CAPITALISATION;
 	}
 
 	/**
@@ -88,7 +128,23 @@ public class TextBoxField extends Field
 	@Override
 	protected Column<?> createColumn()
 	{
-		return StringColumn.ForCharacterCount(id, optional != Optionalness.NEVER, maxLength);
+		switch(content)
+		{
+			case text :
+			case password :
+			case email :
+			case phonenumber :
+			default :
+				return StringColumn.ForCharacterCount(id, optional != Optionalness.NEVER, maxLength);
+			case unsignedint :
+				return new IntegerColumn(id, optional != Optionalness.NEVER, false, Integer.SIZE);
+			case signedint :
+				return new IntegerColumn(id, optional != Optionalness.NEVER, true, Integer.SIZE);
+			case unsignedfloat :
+				return new FloatColumn(id, optional != Optionalness.NEVER, false, false);
+			case signedfloat :
+				return new FloatColumn(id, optional != Optionalness.NEVER, true, false);
+		}
 	}
 
 	/* (non-Javadoc)
@@ -133,5 +189,73 @@ public class TextBoxField extends Field
 	{
 		this.initialValue = initValue;
 	}
+	
+	/**
+	 * @return the content
+	 */
+	public Content getContent()
+	{
+		return content;
+	}
 
+	/**
+	 * @param content the content to set
+	 */
+	public void setContent(Content content)
+	{
+		this.content = content;
+	}
+	
+	/**
+	 * @param contentStr the content (as String) to set
+	 */
+	@SuppressLint("DefaultLocale")
+	public void setContent(String contentStr)
+	{
+		if(contentStr == null)
+			return;
+		try
+		{
+			this.content = Content.valueOf(contentStr.toLowerCase());
+		}
+		catch(IllegalArgumentException iae)
+		{
+			form.addWarning("Unrecognised capitalisation: " + contentStr);
+		}
+	}
+
+	/**
+	 * @return the capitalisation
+	 */
+	public Capitalisation getCapitalisation()
+	{
+		return capitalisation;
+	}
+
+	/**
+	 * @param capitalisation the capitalisation to set
+	 */
+	public void setCapitalisation(Capitalisation capitalisation)
+	{
+		this.capitalisation = capitalisation;
+	}
+	
+	/**
+	 * @param capitalistationStr the capitalisation (as String) to set
+	 */
+	@SuppressLint("DefaultLocale")
+	public void setCapitalisation(String capitalisationStr)
+	{
+		if(capitalisationStr == null)
+			return;
+		try
+		{
+			this.capitalisation = Capitalisation.valueOf(capitalisationStr.toLowerCase());
+		}
+		catch(IllegalArgumentException iae)
+		{
+			form.addWarning("Unrecognised capitalisation: " + capitalisationStr);
+		}
+	}
+	
 }
