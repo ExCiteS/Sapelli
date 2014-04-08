@@ -141,14 +141,16 @@ public abstract class Column<T> implements Serializable
 	}
 	
 	/**
-	 * Checks whether a value for this column is set in the given record
+	 * Checks whether a value (non-null) for this column is set in the given record.
+	 * 
+	 * Note: equivalent to {@link Record#isValueSet(Column)} (may get rid of one of them later)
 	 * 
 	 * @param record
 	 * @return whether or not a (non-null) value is set
 	 */
 	public boolean isValueSet(Record record)
 	{
-		return retrieveValue(record) != null;
+		return record.getValue(this) != null;
 	}
 	
 	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException, IllegalArgumentException

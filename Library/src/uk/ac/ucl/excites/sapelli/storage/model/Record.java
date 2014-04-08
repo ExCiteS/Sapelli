@@ -117,46 +117,48 @@ public class Record implements Serializable
 	 */
 	protected void setValue(Column<?> column, Object value)
 	{
-		setValue(schema.getColumnPosition(column), value);
+		int position = schema.getColumnPosition(column);
+		if(position == Schema.UNKNOWN_COLUMN_POSITION)
+			throw new IllegalArgumentException("The schema of this record has no such column (\"" + column.name + "\").");
+		values[position] = value;
 	}
 	
-	private void setValue(int columnPosition, Object value)
-	{
-		if(columnPosition == Schema.UNKNOWN_COLUMN_POSITION)
-			throw new IllegalArgumentException("Invalid column position (" + columnPosition + ")!");
-		values[columnPosition] = value;
-	}
-
+	/**
+	 * To be called from {@link Column#retrieveValue(Record)}
+	 * 
+	 * @param column
+	 */
 	protected Object getValue(Column<?> column)
 	{
-		return getValue(column.getName());
-	}
-	
-	protected Object getValue(String columnName)
-	{
-		int position = schema.getColumnPosition(columnName);
+		int position = schema.getColumnPosition(column);
 		if(position == Schema.UNKNOWN_COLUMN_POSITION)
-			throw new IllegalArgumentException("The schema of this record has no column with name \"" + columnName + "\".");
-		return getValue(position);
+			throw new IllegalArgumentException("The schema of this record has no such column (\"" + column.name + "\").");
+		return values[position];
 	}
-	
-	protected Object getValue(int columnPosition)
-	{
-		if(columnPosition == Schema.UNKNOWN_COLUMN_POSITION)
-			throw new IllegalArgumentException("There is no column at position " + columnPosition);
-		return values[columnPosition];
-	}
-	
+		
+	/**
+	 * Checks whether a value (non-null) has been set for the given column.
+	 * 
+	 * Note: equivalent to {@link Column#isValueSet(Record)} (may get rid of one of them later)
+	 * 
+	 * @param column
+	 * @return whether or not a (non-null) value is set
+	 */
 	public boolean isValueSet(Column<?> column)
 	{
 		return getValue(column) != null;
 	}
 	
+	/**
+	 * Checks whether all non-optional columns have been assigned a (non-null) value
+	 * 
+	 * @return
+	 */
 	public boolean isFilled()
 	{
 		for(Column<?> c : schema.getColumns())
 			if(!isValueSet(c) && !c.isOptional())
-				return false; //null value in non-optional column	
+				return false; // null value in non-optional column	
 		return true;
 	}
 	

@@ -60,11 +60,6 @@ public class Schema implements Serializable
 
 	private boolean sealed = false;
 	
-	public Schema(long id)
-	{
-		this(id, null);
-	}
-
 	public Schema(long id, String name)
 	{
 		if(SCHEMA_ID_FIELD.fits(id))
@@ -93,17 +88,38 @@ public class Schema implements Serializable
 		columnNameToPosition.put(column.getName(), columns.size());
 		columns.add(column);
 	}
-
-	public Column getColumn(int position)
+	
+	/**
+	 * Add an {@link Index} to the Schema, which may or may not be used as the primary key.
+	 * In case it is to be used as the primary key the index needs to be unique and should consist only of non-optional (i.e. non-nullable) columns.
+	 * 
+	 * Note: adding a primary key index is not allowed after the Schema has been sealed, adding normal indexes is allowed.
+	 * 
+	 * @param index
+	 * @param useAsPrimaryKey
+	 */
+	public void addIndex(Index index, boolean useAsPrimaryKey)
 	{
-		try
+		if(sealed && useAsPrimaryKey)
+			throw new IllegalStateException("Cannot set the primary key of a sealed schema (adding normal indexes is allowed)!");
+		if(index == null)
+			throw new IllegalArgumentException("Index cannot be null!");
+		// Check if the indexed columns are columns of this Schema instance:
+		for(Column idxCol : index.getColumns())
+			if(!containsColumn(idxCol))
+				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before Indexes are added.");
+		if(useAsPrimaryKey)
 		{
-			return columns.get(position);
+			if(primaryKey != null)
+				throw new IllegalStateException("This Schema already has a primary key (there can be only 1)!");
+			if(!index.isUnique())
+				throw new IllegalArgumentException("An Index needs to be unique to serve as the primary key!");
+			for(Column idxCol : index.getColumns())
+				if(idxCol.isOptional())
+					throw new IllegalArgumentException("An primary key index cannot contain optional (i.e. nullable) columns!");
+			primaryKey = index; // set the index as primary key
 		}
-		catch(IndexOutOfBoundsException iobe)
-		{
-			return null;
-		}
+		indexes.add(index); // add to the indexes
 	}
 
 	/**
@@ -162,39 +178,6 @@ public class Schema implements Serializable
 	{
 		Column myColumn = getColumn(column.getName());
 		return myColumn != null && myColumn.equals(column);
-	}
-	
-	/**
-	 * Add an {@link Index} to the Schema, which may or may not be used as the primary key.
-	 * In case it is to be used as the primary key the index needs to be unique and should consist only of non-optional (i.e. non-nullable) columns.
-	 * 
-	 * Note: adding a primary key index is not allowed after the Schema has been sealed, adding normal indexes is allowed.
-	 * 
-	 * @param index
-	 * @param useAsPrimaryKey
-	 */
-	public void addIndex(Index index, boolean useAsPrimaryKey)
-	{
-		if(sealed && useAsPrimaryKey)
-			throw new IllegalStateException("Cannot set the primary key of a sealed schema (adding normal indexes is allowed)!");
-		if(index == null)
-			throw new IllegalArgumentException("Index cannot be null!");
-		// Check if the indexed columns are columns of this Schema instance:
-		for(Column idxCol : index.getColumns())
-			if(!containsColumn(idxCol))
-				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before Indexes are added.");
-		if(useAsPrimaryKey)
-		{
-			if(primaryKey != null)
-				throw new IllegalStateException("This Schema already has a primary key (there can be only 1)!");
-			if(!index.isUnique())
-				throw new IllegalArgumentException("An Index needs to be unique to serve as the primary key!");
-			for(Column idxCol : index.getColumns())
-				if(idxCol.isOptional())
-					throw new IllegalArgumentException("An primary key index cannot contain optional (i.e. nullable) columns!");
-			primaryKey = index; // set the index as primary key
-		}
-		indexes.add(index); // add to the indexes
 	}
 
 	/**
