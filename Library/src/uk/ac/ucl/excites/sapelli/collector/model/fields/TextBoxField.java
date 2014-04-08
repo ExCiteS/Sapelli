@@ -33,12 +33,12 @@ public class TextBoxField extends Field
 	static public enum Content
 	{
 		// Text-like (Android InputType class Text; stored as String):
-		text, // 
+		text,
 		password,
 		email,
 		// Phone number (Android InputType class Phone; stored as String):
 		phonenumber,
-		// Numeric (Android InputType class Number; stored as Integer or Float):
+		// Numeric (Android InputType class Number; stored as Integer/Long or Float/Double):
 		unsignedint,
 		signedint,
 		unsignedlong,

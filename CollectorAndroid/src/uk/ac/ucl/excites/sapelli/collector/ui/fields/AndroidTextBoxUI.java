@@ -211,7 +211,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 	{
 		int inputType;
 		
-		// Input Class
+		// Input Class:
 		switch(field.getContent())
 		{
 			case text :
