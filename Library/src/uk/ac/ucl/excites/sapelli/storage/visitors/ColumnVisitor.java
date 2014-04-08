@@ -55,9 +55,9 @@ public interface ColumnVisitor
 	
 	public boolean allowForeignKeySelfTraversal();
 	
-	public boolean skipNonBinaryStoredLocationColumns();
+	public boolean skipNonBinarySerialisedLocationSubColumns();
 	
-	public boolean skipNonBinaryStoredOrientationColumns();
+	public boolean skipNonBinarySerialisedOrientationSubColumns();
 	
 	public boolean includeVirtualColumns();
 		

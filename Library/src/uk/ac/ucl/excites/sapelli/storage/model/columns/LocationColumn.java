@@ -131,7 +131,7 @@ public class LocationColumn extends RecordColumn<Location>
 	public void accept(ColumnVisitor visitor)
 	{
 		if(visitor.allowLocationSelfTraversal())
-			super.accept(visitor, !visitor.skipNonBinaryStoredLocationColumns());
+			super.accept(visitor, !visitor.skipNonBinarySerialisedLocationSubColumns());
 		else
 			visitor.visit(this);
 	}

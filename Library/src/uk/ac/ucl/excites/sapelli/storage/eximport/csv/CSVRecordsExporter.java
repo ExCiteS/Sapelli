@@ -174,13 +174,13 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	}
 
 	@Override
-	public boolean skipNonBinaryStoredLocationColumns()
+	public boolean skipNonBinarySerialisedLocationSubColumns()
 	{
 		return false;
 	}
 
 	@Override
-	public boolean skipNonBinaryStoredOrientationColumns()
+	public boolean skipNonBinarySerialisedOrientationSubColumns()
 	{
 		return false;
 	}
