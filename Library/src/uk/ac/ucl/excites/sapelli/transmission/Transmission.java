@@ -88,8 +88,12 @@ public abstract class Transmission
 		if(columnsToFactorOut != null)
 		{
 			for(Column<?> c : columnsToFactorOut)
-				if(schema.getColumnPosition(c) == Schema.UNKNOWN_COLUMN_POSITION)
-					throw new IllegalArgumentException(c.toString() + " does not belong to the given schema.");
+			{
+				if(c.isVirtual())
+					throw new IllegalArgumentException("Column \"" + c.toString() + "\" is virtual. We never transmit virtual column data so there is no point in factoring out this column.");
+				if(!schema.containsColumn(c.getName(), false)) 
+					throw new IllegalArgumentException("Column \"" + c.toString() + "\" does not belong to the given schema.");
+			}
 		}
 		this.columnsToFactorOut = columnsToFactorOut; //may be null
 	}

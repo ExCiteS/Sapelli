@@ -109,19 +109,23 @@ public class XMLRecordsImporter extends DocumentParser
 				{
 					RecordColumn<?> recCol = ((RecordColumn<?>) columnStack.peek());
 					// Create subrecord instance:
-					if(!record.isValueSet(recCol))
+					if(!recCol.isValueSet(record))
 						recCol.storeObject(record, recCol.getNewRecord());
 					// Set subrecord as record:
 					record = recCol.retrieveValue(record);
 				}
 				// Deal with current column:
-				Column<?> col = record.getSchema().getColumn(colName);
+				Column<?> col = record.getSchema().getColumn(colName, true);
+				if(col == null)
+					addWarning("Column " + colName + " does not exist in " + record.getSchema().toString());
+				else if(col.isVirtual())
+				{
+					addWarning("Skipping virtual column " + colName);
+					col = null;
+				}
 				columnStack.push(col); // even when null! (to deal with unrecognised columns)
 				if(col == null)
-				{
-					addWarning("Column " + colName + " does not exist in " + record.getSchema().toString());
 					break;
-				}
 			}
 		}
 		// <?>

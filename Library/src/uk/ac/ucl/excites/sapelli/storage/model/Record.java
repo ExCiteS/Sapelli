@@ -63,7 +63,7 @@ public class Record implements Serializable
 		this(another.schema);
 		
 		//(Deep) copy of values:
-		for(Column<?> c : this.schema.getColumns())
+		for(Column<?> c : this.schema.getColumns(false))
 			setValue(c, c.retrieveValueCopy(another));
 	}
 	
@@ -117,9 +117,15 @@ public class Record implements Serializable
 	 */
 	protected void setValue(Column<?> column, Object value)
 	{
+		// Deal with virtual columns:
+		if(column.isVirtual())
+			throw new IllegalArgumentException("Records do not hold values of virtual columns!"); // this should never happen
+		// Get column position:
 		int position = schema.getColumnPosition(column);
+		// Check position:
 		if(position == Schema.UNKNOWN_COLUMN_POSITION)
 			throw new IllegalArgumentException("The schema of this record has no such column (\"" + column.name + "\").");
+		// Get value:
 		values[position] = value;
 	}
 	
@@ -130,25 +136,18 @@ public class Record implements Serializable
 	 */
 	protected Object getValue(Column<?> column)
 	{
+		// Deal with virtual columns:
+		if(column.isVirtual())
+			throw new IllegalArgumentException("Records do not hold values of virtual columns!"); // this should never happen
+		// Get column position:
 		int position = schema.getColumnPosition(column);
+		// Check position:
 		if(position == Schema.UNKNOWN_COLUMN_POSITION)
 			throw new IllegalArgumentException("The schema of this record has no such column (\"" + column.name + "\").");
+		// Set value:
 		return values[position];
 	}
-		
-	/**
-	 * Checks whether a value (non-null) has been set for the given column.
-	 * 
-	 * Note: equivalent to {@link Column#isValueSet(Record)} (may get rid of one of them later)
-	 * 
-	 * @param column
-	 * @return whether or not a (non-null) value is set
-	 */
-	public boolean isValueSet(Column<?> column)
-	{
-		return getValue(column) != null;
-	}
-	
+
 	/**
 	 * Checks whether all non-optional columns have been assigned a (non-null) value
 	 * 
@@ -156,17 +155,17 @@ public class Record implements Serializable
 	 */
 	public boolean isFilled()
 	{
-		for(Column<?> c : schema.getColumns())
-			if(!isValueSet(c) && !c.isOptional())
+		for(Column<?> c : schema.getColumns(false))
+			if(getValue(c) == null && !c.isOptional())
 				return false; // null value in non-optional column	
 		return true;
 	}
 	
-	public void writeToBitStream(BitOutputStream bitStream, Set<Column<?>> skipColumns) throws IOException
+	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<Column<?>> skipColumns) throws IOException
 	{
 		try
 		{	//write fields:
-			for(Column<?> c : schema.getColumns())
+			for(Column<?> c : schema.getColumns(includeVirtual))
 				if(skipColumns == null || !skipColumns.contains(c))
 					c.retrieveAndWriteValue(this, bitStream);
 		}
@@ -176,13 +175,16 @@ public class Record implements Serializable
 		}
 	}
 	
-	public void readFromBitStream(BitInputStream bitStream, Set<Column<?>> skipColumns) throws IOException
+	public void readFromBitStream(BitInputStream bitStream, boolean includeVirtual, Set<Column<?>> skipColumns) throws IOException
 	{
 		try
 		{	//read fields:
-			for(Column<?> c : schema.getColumns())
+			for(Column<?> c : schema.getColumns(includeVirtual))
 				if(skipColumns == null || !skipColumns.contains(c))
-					c.readAndStoreValue(this, bitStream); 
+					if(!c.isVirtual())
+						c.readAndStoreValue(this, bitStream);
+					else
+						c.readValue(bitStream); // read but don't store values of virtual columns (i.e. we skip them in the stream)
 		}
 		catch(Exception e)
 		{
@@ -195,13 +197,13 @@ public class Record implements Serializable
 	 * 
 	 * @return
 	 */
-	public int getSize()
+	public int getSize(boolean includeVirtual, Set<Column<?>> skipColumns)
 	{
 		BitOutputStream out = null;
 		try
 		{
 			out = new BitOutputStream(new ByteArrayOutputStream());
-			this.writeToBitStream(out, null);
+			this.writeToBitStream(out, includeVirtual, skipColumns);
 			return out.getNumberOfBitsWritten();
 		}
 		catch(IOException e)
@@ -316,7 +318,7 @@ public class Record implements Serializable
 	
 	public boolean hasEqualValues(Record other, boolean asStoredBinary)
 	{
-		return hasEqualValues(other, this.schema.getColumns(), asStoredBinary); // compare all columns
+		return hasEqualValues(other, this.schema.getColumns(false), asStoredBinary); // compare all non-virtual columns
 	}
 	
 	/**
@@ -345,7 +347,7 @@ public class Record implements Serializable
 	{
 		StringBuffer bff = new StringBuffer();
 		bff.append(schema.toString());
-		for(Column<?> c : schema.getColumns())
+		for(Column<?> c : schema.getColumns(true))
 			bff.append("|" + c.getName() + ": " + c.retrieveValueAsString(this));
 		return bff.toString();
 	}
@@ -357,7 +359,7 @@ public class Record implements Serializable
 	 */
 	public String serialise()
 	{
-		return serialise(null);
+		return serialise(false, null);
 	}
 	
 	/**
@@ -366,11 +368,11 @@ public class Record implements Serializable
 	 * @param skipColumns
 	 * @return
 	 */
-	public String serialise(Set<Column<?>> skipColumns)
+	public String serialise(boolean includeVirtual, Set<Column<?>> skipColumns)
 	{
 		StringBuilder bldr = new StringBuilder();
 		boolean first = true;
-		for(Column<?> col : schema.getColumns())
+		for(Column<?> col : schema.getColumns(includeVirtual))
 		{
 			// Separator:
 			if(first)
@@ -395,7 +397,7 @@ public class Record implements Serializable
 	 */
 	public void parse(String serialisedRecord) throws Exception
 	{
-		parse(serialisedRecord, null);
+		parse(serialisedRecord, false, null);
 	}
 	
 	/**
@@ -405,15 +407,15 @@ public class Record implements Serializable
 	 * @param skipColumns
 	 * @throws Exception
 	 */
-	public void parse(String serialisedRecord, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
+	public void parse(String serialisedRecord, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		String[] parts = serialisedRecord.split("\\" + SERIALISATION_SEPARATOR);
 		if(parts.length != values.length)
 			throw new IllegalArgumentException("Mismatch between number of serialised values (" + parts.length + ") and the number of columns in the schema (" + values.length + ").");
 		int p = 0;
-		for(Column<?> col : schema.getColumns())
+		for(Column<?> col : schema.getColumns(includeVirtual))
 		{
-			if(skipColumns == null || !skipColumns.contains(col))
+			if(!col.isVirtual() && (skipColumns == null || !skipColumns.contains(col))) // skip virtual columns & skipColumns (but *do* increment the counter p!)
 				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
 			p++;
 		}
@@ -429,7 +431,7 @@ public class Record implements Serializable
 			out = new BitOutputStream(rawOut);
 				
 			//Write record:
-			this.writeToBitStream(out, null);
+			this.writeToBitStream(out, false, null);
 			
 			//Flush & close the stream and get bytes:
 			out.flush();

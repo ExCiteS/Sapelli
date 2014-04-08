@@ -49,14 +49,16 @@ public interface ColumnVisitor
 	
 	public void leave(RecordColumn<?> recordCol);
 	
-	public boolean isLocationSelfTraversalAllowed();
+	public boolean allowLocationSelfTraversal();
 	
-	public boolean isOrientationSelfTraversalAllowed();
+	public boolean allowOrientationSelfTraversal();
 	
-	public boolean isForeignKeySelfTraversalAllowed();
+	public boolean allowForeignKeySelfTraversal();
 	
-	public boolean isSkippingNonBinaryStoredLocationColumnsAllowed();
+	public boolean skipNonBinaryStoredLocationColumns();
 	
-	public boolean isSkippingNonBinaryStoredOrientationColumnsAllowed();
+	public boolean skipNonBinaryStoredOrientationColumns();
+	
+	public boolean includeVirtualColumns();
 		
 }

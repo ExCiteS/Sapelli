@@ -195,7 +195,7 @@ public abstract class BinaryTransmission extends Transmission
 			
 			//Write records:
 			for(Record r : records)
-				r.writeToBitStream(out, columnsToFactorOut);
+				r.writeToBitStream(out, false /* do not include virtual columns */, columnsToFactorOut);
 			
 			//Flush & close the stream and get bytes:
 			out.flush();
@@ -236,10 +236,10 @@ public abstract class BinaryTransmission extends Transmission
 			}
 			
 			//Read records:
-			while(in.bitsAvailable() >= schema.getMinimumSize(columnsToFactorOut))
+			while(in.bitsAvailable() >= schema.getMinimumSize(false /* do not include virtual columns */, columnsToFactorOut))
 			{
 				r = client.getNewRecord(schema);
-				r.readFromBitStream(in, columnsToFactorOut);
+				r.readFromBitStream(in, false /* do not include virtual columns */, columnsToFactorOut);
 				//Set factored out values:
 				if(columnsToFactorOut != null)
 					for(Column<?> c : columnsToFactorOut)

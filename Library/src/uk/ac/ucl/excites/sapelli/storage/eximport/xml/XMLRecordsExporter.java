@@ -195,7 +195,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		
 		// Write column value or null value comment:
 		String columnName = compositeMode == CompositeMode.As_flat_tags ? leafColumnPointer.getQualifiedColumnName() : leafColumn.getName();
-		if(record != null && record.isValueSet(leafColumn))
+		if(record != null && leafColumn.isValueSet(record))
 			writer.writeLine(StringUtils.addTabsFront("<" + columnName + ">" + XMLUtils.escapeCharacters(leafColumn.retrieveValueAsString(record)) + "</" + columnName + ">", tabs));
 		else
 			writer.writeLine(StringUtils.addTabsFront(getNullRecordComment(columnName), tabs));
@@ -207,33 +207,39 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	}
 	
 	@Override
-	public boolean isLocationSelfTraversalAllowed()
+	public boolean allowLocationSelfTraversal()
 	{
 		return compositeMode != CompositeMode.As_String;
 	}
 
 	@Override
-	public boolean isOrientationSelfTraversalAllowed()
+	public boolean allowOrientationSelfTraversal()
 	{
 		return compositeMode != CompositeMode.As_String;
 	}
 
 	@Override
-	public boolean isForeignKeySelfTraversalAllowed()
+	public boolean allowForeignKeySelfTraversal()
 	{
 		return compositeMode != CompositeMode.As_String;
 	}
 
 	@Override
-	public boolean isSkippingNonBinaryStoredLocationColumnsAllowed()
+	public boolean skipNonBinaryStoredLocationColumns()
 	{
 		return false;
 	}
 
 	@Override
-	public boolean isSkippingNonBinaryStoredOrientationColumnsAllowed()
+	public boolean skipNonBinaryStoredOrientationColumns()
 	{
 		return false;
+	}
+
+	@Override
+	public boolean includeVirtualColumns()
+	{
+		return true;
 	}
 	
 }

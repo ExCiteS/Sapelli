@@ -130,8 +130,8 @@ public class LocationColumn extends RecordColumn<Location>
 	@Override
 	public void accept(ColumnVisitor visitor)
 	{
-		if(visitor.isLocationSelfTraversalAllowed())
-			super.accept(visitor, !visitor.isSkippingNonBinaryStoredLocationColumnsAllowed());
+		if(visitor.allowLocationSelfTraversal())
+			super.accept(visitor, !visitor.skipNonBinaryStoredLocationColumns());
 		else
 			visitor.visit(this);
 	}

@@ -49,7 +49,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	
 	public String retrieveValue(CollectorRecord record)
 	{
-		if(!record.isValueSet(field.getColumn()))
+		if(!field.getColumn().isValueSet(record))
 			return null;
 		switch(field.getContent())
 		{

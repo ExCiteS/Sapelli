@@ -53,7 +53,7 @@ public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 	@Override
 	public void accept(ColumnVisitor visitor)
 	{
-		if(visitor.isForeignKeySelfTraversalAllowed())
+		if(visitor.allowForeignKeySelfTraversal())
 			super.accept(visitor, true);
 		else
 			visitor.visit(this);

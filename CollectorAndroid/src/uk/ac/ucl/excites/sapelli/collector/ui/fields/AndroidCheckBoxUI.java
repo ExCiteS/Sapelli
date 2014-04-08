@@ -82,7 +82,7 @@ public class AndroidCheckBoxUI extends CheckBoxUI<View, CollectorView>
 		if(newRecord)
 		{
 			BooleanColumn col = (BooleanColumn) field.getColumn();
-			if(record.isValueSet(col))
+			if(col.isValueSet(record))
 				chbx.setChecked(col.retrieveValue(record));
 			else
 				chbx.setChecked(field.getInitialValue());

@@ -34,45 +34,53 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	static private final long serialVersionUID = 2L;
 
 	static public final char QUALIFIED_NAME_SEPARATOR = '.';
-	static public final boolean DEFAULT_FULL_SERIALISATION = true; // don't skip columns upon (de)serialisation by default
+	static public final boolean DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION = true;
+	static public final boolean DEFAULT_INCLUDE_VIRTUALCOLS_IN_BINARY_SERIALISATION = false;
+	static public final boolean DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION = true;
 	
 	private final Schema schema;
 	protected final Set<Column<?>> skipColumns;
-	protected final boolean fullSerialisation;
+	protected final boolean includeSkipColsInStringSerialisation;
+	protected final boolean includeVirtualColsInBinarySerialisation;
+	protected final boolean includeVirtualColsInStringSerialisation;
 	private final Map<Column<?>, Column<?>> swapColumns;
 
 	public RecordColumn(Class<R> type, String name, Schema schema, boolean optional)
 	{
-		this(type, name, schema, optional, DEFAULT_FULL_SERIALISATION);
+		this(type, name, schema, optional, DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION, DEFAULT_INCLUDE_VIRTUALCOLS_IN_BINARY_SERIALISATION, DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION);
 	}
 	
 	/**
 	 * @param type
 	 * @param name
-	 * @param schema	schema containing subcolumns
+	 * @param schema schema containing subcolumns
 	 * @param optional
-	 * @param fullSerialisation	whether serialisation/deserialisation should exclude the subcolumns in skipcolumns (false) or not (true)
+	 * @param includeSkipColsInStringSerialisation whether serialisation/deserialisation to/from String should include the subcolumns in skipColumns
+	 * @param includeVirtualColsInBinarySerialisation whether writing/reading to/from binary storage should include virtual subcolumns
+	 * @param includeVirtualColsInStringSerialisation whether serialisation/deserialisation to/from String should include virtual subcolumns
 	 */
-	public RecordColumn(Class<R> type, String name, Schema schema, boolean optional, boolean fullSerialisation)
+	public RecordColumn(Class<R> type, String name, Schema schema, boolean optional, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInBinarySerialisation, boolean includeVirtualColsInStringSerialisation)
 	{
 		super(type, name, optional);
 		if(schema == null)
 			throw new NullPointerException("RecordColumn needs a non-null schema to specify its subcolumns.");
 		this.schema = schema;
 		this.skipColumns = new HashSet<Column<?>>();
-		this.fullSerialisation = fullSerialisation;
+		this.includeSkipColsInStringSerialisation = includeSkipColsInStringSerialisation;
+		this.includeVirtualColsInBinarySerialisation = includeVirtualColsInBinarySerialisation;
+		this.includeVirtualColsInStringSerialisation = includeVirtualColsInStringSerialisation;
 		this.swapColumns = new HashMap<Column<?>, Column<?>>();
 	}
 	
 	/**
 	 * Add a column that needs to be skipped upon reading/writing to binary storage and
-	 * optionally also for serialisation/deserialisation to String
+	 * optionally also for serialisation/deserialisation to/from String
 	 * 
 	 * @param skipColumn
 	 */
 	protected void addSkipColumn(Column<?> skipColumn)
 	{
-		if(!schema.containsColumn(skipColumn))
+		if(!schema.containsColumn(skipColumn, true))
 			throw new IllegalArgumentException("Unknown subColumn");
 		skipColumns.add(skipColumn);
 	}
@@ -89,7 +97,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	 */
 	protected void addBinaryColumn(Column<?> schemaColumn, Column<?> binaryColumn)
 	{
-		if(!schema.containsColumn(schemaColumn))
+		if(!schema.containsColumn(schemaColumn, true))
 			throw new IllegalArgumentException("Unknown subColumn");
 		if(!schemaColumn.getType().equals(binaryColumn.getType()))
 			throw new IllegalArgumentException("Column type mismatch!");
@@ -117,13 +125,13 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	@Override
 	public R parse(String recordStr) throws ParseException, IllegalArgumentException, NullPointerException
 	{
-		return parse(recordStr, fullSerialisation);
+		return parse(recordStr, includeVirtualColsInStringSerialisation, includeSkipColsInStringSerialisation ? null : skipColumns);
 	}
 	
-	protected R parse(String recordStr, boolean allColumns) throws ParseException, IllegalArgumentException, NullPointerException
+	public R parse(String recordStr, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		R record = getNewRecord();
-		record.parse(recordStr, allColumns ? null : skipColumns);
+		record.parse(recordStr, includeVirtual, skipColumns);
 		return record;
 	}
 
@@ -133,18 +141,18 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	@Override
 	public String toString(R record)
 	{
-		return toString(record, fullSerialisation);
+		return toString(record, includeVirtualColsInStringSerialisation, includeSkipColsInStringSerialisation ? null : skipColumns);
 	}
 	
-	protected String toString(R record, boolean allColumns)
+	public String toString(R record, boolean includeVirtual, Set<Column<?>> skipColumns)
 	{
-		return record.serialise(allColumns ? null : skipColumns);
+		return record.serialise(includeVirtual, skipColumns);
 	}
 
 	@Override
 	protected void write(R record, BitOutputStream bitStream) throws IOException
 	{
-		for(Column<?> subCol : schema.getColumns())
+		for(Column<?> subCol : schema.getColumns(includeVirtualColsInBinarySerialisation))
 			if(!skipColumns.contains(subCol))
 				getBinaryColumn(subCol).writeObject(subCol.retrieveValue(record), bitStream); // will also write optional bit of the subcolumn if it is optional
 	}
@@ -158,7 +166,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	protected R read(BitInputStream bitStream) throws IOException
 	{
 		R record = getNewRecord();
-		for(Column<?> subCol : schema.getColumns())
+		for(Column<?> subCol : schema.getColumns(includeVirtualColsInBinarySerialisation))
 			if(!skipColumns.contains(subCol))
 				subCol.storeObject(record, getBinaryColumn(subCol).readValue(bitStream));
 		return record;
@@ -182,7 +190,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	@Override
 	protected int _getMaximumSize()
 	{
-		return schema.getMaximumSize(skipColumns);
+		return schema.getMaximumSize(includeVirtualColsInBinarySerialisation, skipColumns);
 	}
 
 	/* (non-Javadoc)
@@ -191,7 +199,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	@Override
 	protected int _getMinimumSize()
 	{
-		return schema.getMinimumSize(skipColumns);
+		return schema.getMinimumSize(includeVirtualColsInBinarySerialisation, skipColumns);
 	}
 
 	/* (non-Javadoc)
@@ -216,7 +224,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 		int hash = super.hashCode();
 		hash = 31 * hash + schema.hashCode();
 		hash = 31 * hash + skipColumns.hashCode();
-		hash = 31 * hash + (fullSerialisation ? 0 : 1);
+		hash = 31 * hash + (includeSkipColsInStringSerialisation ? 0 : 1);
 		hash = 31 * hash + swapColumns.hashCode();
 		return hash;
 	}
@@ -238,9 +246,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 		// Enter record column:
 		visitor.enter(this);
 		// Traverse subcolumns:
-		for(Column<?> subCol : schema.getColumns())
-			if(fullTraverse || !skipColumns.contains(subCol))
-				subCol.accept(visitor);
+		schema.accept(visitor, fullTraverse ? null : skipColumns);
 		// Leave record column:
 		visitor.leave(this);
 	}

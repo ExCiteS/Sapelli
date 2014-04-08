@@ -38,7 +38,7 @@ public class ForeignKey extends Record
 		this(foreignRecord.schema);
 		
 		// Copy the key part values:
-		for(Column<?> keyPartCol : getIndex().getColumns())
+		for(Column<?> keyPartCol : getIndex().getColumns(false))
 		{
 			Object keyPartValue = keyPartCol.retrieveValueCopy(foreignRecord);
 			if(keyPartValue == null)
@@ -80,7 +80,7 @@ public class ForeignKey extends Record
 			throw new IllegalStateException("All values of the key must be set before a query can be created!");
 		// Match for key parts:
 		AndConstraint andConstraint = new AndConstraint();
-		for(Column<?> keyPartCol : getIndex().getColumns())
+		for(Column<?> keyPartCol : getIndex().getColumns(false))
 			andConstraint.addConstraint(new EqualityConstraint(keyPartCol, keyPartCol.retrieveValue(this)));
 		// Single record query:
 		return new FirstRecordQuery(new RecordsQuery(foreignSchema, andConstraint));

@@ -133,6 +133,11 @@ public class FileWriter
 		}
 	}
 	
+	public boolean isTransactionBufferEmpty()
+	{
+		return transactionBuffer == null || transactionBuffer.length() == 0;
+	}
+	
 	public void rollbackTransaction()
 	{
 		transactionBuffer = null; // discard transactionBuffer and its contents!
@@ -213,7 +218,11 @@ public class FileWriter
 		file.renameTo(new File(getContainingFolderPath() + newName));
 	}
 
-	public void delete() throws Exception
+	/**
+	 * Delete the file being written to (first closing the writer)
+	 * 
+	 */
+	public void delete()
 	{
 		if(writer != null)
 			close();

@@ -21,9 +21,12 @@ public class Index extends Schema
 		super(ReservedIDs.INDEX_SCHEMA.ordinal(), name);
 		this.unique = unique;
 		
-		// Add columns:
+		// Add columns (but check if they are not virtual):
 		for(Column<?> iCol : columns)
-			addColumn(iCol); // Note: the columns are not copied, just shared! (columns don't "know" their Schema(s) anyway)
+			if(!iCol.isVirtual())
+				addColumn(iCol); // Note: the columns are not copied, just shared! (columns don't "know" their Schema(s) anyway)
+			else
+				throw new IllegalArgumentException("Indexing of virtual columns is not supported!");
 		seal();
 	}
 

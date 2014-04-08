@@ -2,12 +2,15 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -23,7 +26,7 @@ public class Schema implements Serializable
 	private static final long serialVersionUID = 2L;
 
 	// Statics------------------------------------------------------------
-	static public final int UNKNOWN_COLUMN_POSITION = -1;
+	static protected final int UNKNOWN_COLUMN_POSITION = -1;
 	
 	// Identification:
 	static public final int SCHEMA_ID_SIZE = 36; //bits
@@ -53,8 +56,10 @@ public class Schema implements Serializable
 	protected final long id;
 	protected final String name;
 
-	private final List<Column> columns;
-	private final Map<String, Integer> columnNameToPosition;
+	private final List<Column> columns; // only contains non-virtual columns
+	private final Map<String, Integer> columnNameToPosition; // only contans non-virtual columns
+	private final Map<Column, List<Column>> columnToVirtualColumns;
+	private final Map<String, Column> virtualColumnsByName;
 	private final List<Index> indexes;
 	private Index primaryKey;
 
@@ -69,7 +74,9 @@ public class Schema implements Serializable
 		this.name = (name == null || name.isEmpty() ? "Schema_ID" + id : name);
 		columnNameToPosition = new LinkedHashMap<String, Integer>();
 		columns = new ArrayList<Column>();
+		virtualColumnsByName = new HashMap<String, Column>();
 		indexes = new ArrayList<Index>();
+		columnToVirtualColumns = new HashMap<Column, List<Column>>();
 	}
 
 	public void addColumns(List<Column<?>> columns)
@@ -82,11 +89,22 @@ public class Schema implements Serializable
 	{
 		if(sealed)
 			throw new IllegalStateException("Cannot extend a sealed schema!");
-		if(containsColumn(column.getName()))
+		if(containsColumn(column, true))
 			throw new IllegalArgumentException("The schema already contains a column with name \"" + column.getName() + "\"!");
-		// Add the column:
-		columnNameToPosition.put(column.getName(), columns.size());
-		columns.add(column);
+		if(!column.isVirtual())
+		{	// Add the column:
+			columnNameToPosition.put(column.getName(), columns.size());
+			columns.add(column);			
+		}
+		else
+		{	// Deal with virtual column:
+			Column sourceColumn = column.getSourceColumn(); 
+			if(!containsColumn(sourceColumn, false))
+				throw new IllegalArgumentException("The schema does not contain the source column of the given virtual column.");
+			if(!columnToVirtualColumns.containsKey(sourceColumn))
+				columnToVirtualColumns.put(sourceColumn, new ArrayList<Column>());
+			columnToVirtualColumns.get(sourceColumn).add(column);
+		}
 	}
 	
 	/**
@@ -105,8 +123,8 @@ public class Schema implements Serializable
 		if(index == null)
 			throw new IllegalArgumentException("Index cannot be null!");
 		// Check if the indexed columns are columns of this Schema instance:
-		for(Column idxCol : index.getColumns())
-			if(!containsColumn(idxCol))
+		for(Column idxCol : index.getColumns(false))
+			if(!containsColumn(idxCol, false))
 				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before Indexes are added.");
 		if(useAsPrimaryKey)
 		{
@@ -114,7 +132,7 @@ public class Schema implements Serializable
 				throw new IllegalStateException("This Schema already has a primary key (there can be only 1)!");
 			if(!index.isUnique())
 				throw new IllegalArgumentException("An Index needs to be unique to serve as the primary key!");
-			for(Column idxCol : index.getColumns())
+			for(Column idxCol : index.getColumns(false))
 				if(idxCol.isOptional())
 					throw new IllegalArgumentException("An primary key index cannot contain optional (i.e. nullable) columns!");
 			primaryKey = index; // set the index as primary key
@@ -124,59 +142,71 @@ public class Schema implements Serializable
 
 	/**
 	 * @param name
-	 * @return	the {@link Column} instance with this name, or {@code null} if the Schema contains no such column
+	 * @param checkVirtual whether or not to look in the schema's virtual columns
+	 * @return the {@link Column} instance with this name, or {@code null} if the Schema contains no such column
 	 */
-	public Column getColumn(String name)
+	public Column getColumn(String name, boolean checkVirtual)
 	{
 		Integer pos = columnNameToPosition.get(name);
 		if(pos == null)
-			return null;
+			return checkVirtual ? virtualColumnsByName.get(name) : null;
 		return columns.get(pos);
 	}
 
-	public List<Column> getColumns()
+	public List<Column> getColumns(boolean includeVirtual)
 	{
+		if(includeVirtual)
+		{
+			List<Column> allCols = new ArrayList<Column>();
+			for(Column nonVirtualCol : columns)
+			{
+				allCols.add(nonVirtualCol);
+				CollectionUtils.addAllIgnoreNull(allCols, columnToVirtualColumns.get(nonVirtualCol));
+			}
+			return allCols;
+		}
 		return columns;
+	}
+	
+	public Collection<Column> getVirtualColumns()
+	{
+		return virtualColumnsByName.values();
 	}
 
 	/**
-	 * @param name
-	 * @return	the position of the {@link Column} instance with this name, or {@link #UNKNOWN_COLUMN_POSITION} if the Schema contains no such column
+	 * Returns the position of a given non-virtual column.
+	 * Null is returned if the schema doesn't contain the column at all, but also if the column is virtual (even if the source is contained by the schema).
+	 * 
+	 * @param column a non-virtual column
+	 * @return	the position of the given {@link Column} instance within this Schema, or {@link #UNKNOWN_COLUMN_POSITION} if the Schema contains no such column
 	 */
-	public int getColumnPosition(String name)
+	protected int getColumnPosition(Column column)
 	{
-		Integer idx = columnNameToPosition.get(name);
+		Integer idx = columnNameToPosition.get(column.getName());
 		if(idx == null)
 			return UNKNOWN_COLUMN_POSITION;
 		return idx.intValue();
 	}
-
-	/**
-	 * @param column
-	 * @return	the position of the given {@link Column} instance within this Schema, or {@link #UNKNOWN_COLUMN_POSITION} if the Schema contains no such column
-	 */
-	public int getColumnPosition(Column column)
-	{
-		return getColumnPosition(column.getName());
-	}
 	
 	/**
-	 * @param name
+	 * @param name the name of a column
+	 * @param checkVirtual whether or not to look in the schema's virtual columns
 	 * @return
 	 */
-	public boolean containsColumn(String name)
+	public boolean containsColumn(String name, boolean checkVirtual)
 	{
-		return columnNameToPosition.containsKey(name);
+		return columnNameToPosition.containsKey(name) || (checkVirtual && virtualColumnsByName.containsKey(name));
 	}
 	
 	/**
 	 * 
 	 * @param column
+	 * @param checkVirtual whether or not to look in the schema's virtual columns
 	 * @return	whether or not this Schema contains the given Column or an exact equivalent of it
 	 */
-	public boolean containsColumn(Column column)
+	public boolean containsColumn(Column column, boolean checkVirtual)
 	{
-		Column myColumn = getColumn(column.getName());
+		Column myColumn = getColumn(column.getName(), checkVirtual);
 		return myColumn != null && myColumn.equals(column);
 	}
 
@@ -242,47 +272,50 @@ public class Schema implements Serializable
 	}
 
 	/**
-	 * @return whether or not the size taken up by binary stored records of this schema varies at run-time (i.e. depending on input)
+	 * @return whether or not the size taken up by binary stored records of this schema varies at run-time (i.e. depending on data input)
 	 */
 	public boolean isVariableSize()
 	{
-		for(Column<?> c : columns)
-			if(c.isVariableSize())
+		return isVariableSize(false, null);
+	}
+	
+	/**
+	 * @return whether or not the size taken up by binary stored records of this schema varies at run-time (i.e. depending on data input)
+	 * 
+	 * @param includeVirtual
+	 * @param skipColumns columns to ignore in the total
+	 * @return
+	 */
+	public boolean isVariableSize(boolean includeVirtual, Set<Column<?>> skipColumns)
+	{
+		for(Column<?> c : getColumns(includeVirtual))
+			if((skipColumns == null || !skipColumns.contains(c)) && c.isVariableSize())
 				return true;
 		return false;
 	}
-
-	/**
-	 * Returns the number of bits a record of this schema takes up when written to a binary representation. In case of a variable size the maximum effective
-	 * size is returned.
-	 * 
-	 * @return
-	 */
-	public int getSize()
-	{
-		return getMaximumSize();
-	}
-
+	
 	/**
 	 * Returns the minimum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * Includes all non-virtual columns in the count.
 	 * 
 	 * @return
 	 */
 	public int getMinimumSize()
 	{
-		return getMinimumSize(null);
+		return getMinimumSize(false, null);
 	}
 	
 	/**
 	 * Returns the minimum effective number of bits a record of this schema takes up when written to a binary representation.
 	 * 
-	 * @param skipColumns columns to ignore the total
+	 * @param includeVirtual
+	 * @param skipColumns columns to ignore in the total
 	 * @return
 	 */
-	public int getMinimumSize(Set<Column<?>> skipColumns)
+	public int getMinimumSize(boolean includeVirtual, Set<Column<?>> skipColumns)
 	{
 		int total = 0;
-		for(Column<?> c : columns)
+		for(Column<?> c : getColumns(includeVirtual))
 			if(skipColumns == null || !skipColumns.contains(c))
 				total += c.getMinimumSize();
 		return total;
@@ -290,24 +323,26 @@ public class Schema implements Serializable
 	
 	/**
 	 * Returns the maximum effective number of bits a record of this schema takes up when written to a binary representation.
+	 * Includes all non-virtual columns in the count.
 	 * 
 	 * @return
 	 */
 	public int getMaximumSize()
 	{
-		return getMaximumSize(null);
+		return getMaximumSize(false, null);
 	}
 
 	/**
 	 * Returns the maximum effective number of bits a record of this schema takes up when written to a binary representation.
 	 * 
+	 * @param includeVirtual
 	 * @param skipColumns columns to ignore the total
 	 * @return
 	 */
-	public int getMaximumSize(Set<Column<?>> skipColumns)
+	public int getMaximumSize(boolean includeVirtual, Set<Column<?>> skipColumns)
 	{
 		int total = 0;
-		for(Column<?> c : columns)
+		for(Column<?> c : getColumns(includeVirtual))
 			if(skipColumns == null || !skipColumns.contains(c))
 				total += c.getMaximumSize();
 		return total;
@@ -360,7 +395,8 @@ public class Schema implements Serializable
 				while(myCols.hasNext() /* && otherCols.hasNext() */)
 					if(!myCols.next().equals(otherCols.next(), checkNames, true))
 						return false;
-				//TODO compare indexes?
+				//TODO compare indexes
+				//TODO compare virtualColumns
 			}
 			return true;
 		}
@@ -375,6 +411,7 @@ public class Schema implements Serializable
 		hash = 31 * hash + (int)(id ^ (id >>> 32));
 		hash = 31 * hash + (name == null ? 0 : name.hashCode());
 		hash = 31 * hash + columns.hashCode();
+		hash = 31 * hash + columnToVirtualColumns.hashCode();
 		hash = 31 * hash + indexes.hashCode();
 		hash = 31 * hash + (primaryKey == null ? 0 : primaryKey.hashCode());
 		hash = 31 * hash + (sealed ? 0 : 1);
@@ -391,7 +428,7 @@ public class Schema implements Serializable
 	{
 		StringBuffer bff = new StringBuffer();
 		bff.append(toString() + ":");
-		for(Column<?> c : columns)
+		for(Column<?> c : getColumns(true))
 			bff.append("\n\t- " + c.getSpecification());
 		return bff.toString();
 	}
@@ -403,7 +440,7 @@ public class Schema implements Serializable
 	
 	public void accept(ColumnVisitor visitor, Set<Column<?>> skipColumns)
 	{
-		for(Column<?> c : columns)
+		for(Column<?> c : getColumns(visitor.includeVirtualColumns()))
 			if(skipColumns == null || !skipColumns.contains(c))
 				c.accept(visitor);
 	}

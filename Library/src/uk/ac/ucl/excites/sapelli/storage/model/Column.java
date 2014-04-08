@@ -18,6 +18,11 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * @param <T>
  * @author mstevens
  */
+/**
+ * @author mstevens
+ *
+ * @param <T>
+ */
 public abstract class Column<T> implements Serializable
 {
 	
@@ -33,6 +38,7 @@ public abstract class Column<T> implements Serializable
 	private final Class<T> type;
 	protected final String name;
 	protected final boolean optional;
+	protected ColumnVirtualiser<?, T> virtualiser;
 	
 	public Column(Class<T> type, String name, boolean optional)
 	{
@@ -47,6 +53,22 @@ public abstract class Column<T> implements Serializable
 	 * @return a copy of this Column
 	 */
 	public abstract Column<T> copy();
+	
+	/**
+	 * Make this column a virtual (& read-only) column which actually works with values stored in another "real" column
+	 * 
+	 * Note: Do *NOT* make columns virtual after they have already been added to a schema! (Currently not checked) 
+	 * 
+	 * @param virtualiser
+	 */
+	public void makeVirtual(ColumnVirtualiser<?, T> virtualiser) throws IllegalArgumentException
+	{
+		if(this.virtualiser != null && this.virtualiser != virtualiser)
+			throw new IllegalStateException("This column has already been made virtual!");
+		if(this.optional != virtualiser.getSourceColumn().optional)
+			throw new IllegalArgumentException("Optionality of virtual & source column must be the same!");
+		this.virtualiser = virtualiser;
+	}
 	
 	public void parseAndStoreValue(Record record, String value) throws ParseException, IllegalArgumentException, NullPointerException
 	{
@@ -84,9 +106,11 @@ public abstract class Column<T> implements Serializable
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
 	 */
-	public void storeValue(Record record, T value) throws IllegalArgumentException, NullPointerException
+	public void storeValue(Record record, T value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
 	{
-		if(!record.getSchema().containsColumn(this))
+		if(isVirtual())
+			throw new UnsupportedOperationException("Virtual columns are read-only!");
+		if(!record.getSchema().containsColumn(this, false))
 			throw new IllegalArgumentException("Schema mismatch.");
 		if(value == null)
 		{
@@ -101,6 +125,37 @@ public abstract class Column<T> implements Serializable
 		}
 	}
 	
+	/**
+	 * Retrieves previously stored value for this column at a given record and casts it to the relevant native type (T)
+	 * 
+	 * @param record
+	 * @return stored value
+	 */
+	@SuppressWarnings("unchecked")
+	public T retrieveValue(Record record)
+	{
+		if(isVirtual())
+			return virtualiser.retrieveValue(record);
+		if(!record.getSchema().containsColumn(this, false))
+			throw new IllegalArgumentException("Schema mismatch.");
+		return (T) record.getValue(this);
+	}
+	
+	/**
+	 * Checks whether a value (non-null) for this column is set in the given record.
+	 * 
+	 * @param record
+	 * @return whether or not a (non-null) value is set
+	 */
+	public boolean isValueSet(Record record)
+	{
+		return retrieveValue(record) != null;
+	}
+	
+	/**
+	 * @param record
+	 * @return
+	 */
 	public String retrieveValueAsString(Record record)
 	{
 		T value = retrieveValue(record);
@@ -111,12 +166,14 @@ public abstract class Column<T> implements Serializable
 	}
 	
 	/**
-	 * @param value assumed to be non-null!
-	 * @return
+	 * @param value
+	 * @return a String representation of the value, or null if the value was null
 	 */
 	@SuppressWarnings("unchecked")
 	public String objectToString(Object value)
 	{
+		if(value == null)
+			return null;
 		return toString((T) value);
 	}
 	
@@ -125,33 +182,6 @@ public abstract class Column<T> implements Serializable
 	 * @return
 	 */
 	public abstract String toString(T value); 
-	
-	/**
-	 * Retrieves previously stored value for this column at a given record and casts it to the relevant native type (T)
-	 * 
-	 * @param record
-	 * @return stored value
-	 */
-	@SuppressWarnings("unchecked")
-	public T retrieveValue(Record record)
-	{
-		if(!record.getSchema().containsColumn(this))
-			throw new IllegalArgumentException("Schema mismatch.");
-		return (T) record.getValue(this);
-	}
-	
-	/**
-	 * Checks whether a value (non-null) for this column is set in the given record.
-	 * 
-	 * Note: equivalent to {@link Record#isValueSet(Column)} (may get rid of one of them later)
-	 * 
-	 * @param record
-	 * @return whether or not a (non-null) value is set
-	 */
-	public boolean isValueSet(Record record)
-	{
-		return record.getValue(this) != null;
-	}
 	
 	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException, IllegalArgumentException
 	{
@@ -331,6 +361,7 @@ public abstract class Column<T> implements Serializable
 		return toString() + " [" +
 		    				name + "; "
 		    				+ (optional ? "optional" : "required") + "; "
+		    				+ (isVirtual() ? "virtual;" : "")
 		    				+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits]";
 	}
 	
@@ -364,17 +395,6 @@ public abstract class Column<T> implements Serializable
 	public boolean isVariableSize()
 	{
 		return optional ? true : (_getMinimumSize() != _getMaximumSize());
-	}
-	
-	/**
-	 * Returns the number of bits values for this column take up when written to a binary representation.
-	 * In case of a variable size the maximum size is returned.
-	 * 
-	 * @return
-	 */
-	public int getSize()
-	{
-		return getMaximumSize();
 	}
 	
 	/**
@@ -445,6 +465,13 @@ public abstract class Column<T> implements Serializable
 			Column<T> other = (Column<T>) obj;
 			if(this.optional != other.optional)
 				return false;
+			if(this.virtualiser != null)
+			{
+				if(this.virtualiser.equals(other.virtualiser))
+					return false;
+			}
+			else if(other.virtualiser != null)
+				return false;
 			// Check names:
 			if(checkName && !this.name.equals(other.name))
 				return false;
@@ -466,7 +493,24 @@ public abstract class Column<T> implements Serializable
 		hash = 31 * hash + type.hashCode();
 		hash = 31 * hash + name.hashCode();
 		hash = 31 * hash + (optional ? 0 : 1);
+		hash = 31 * hash + (virtualiser == null ? 0 : virtualiser.hashCode()); // Note: for now ColumnVirtualiser does not implement hashCode()
 		return hash;
+	}
+	
+	/**
+	 * @return whether or not this is a virtual column
+	 */
+	public boolean isVirtual()
+	{
+		return virtualiser != null;
+	}
+	
+	public Column<?> getSourceColumn()
+	{
+		if(isVirtual())
+			return virtualiser.getSourceColumn();
+		else
+			return this;
 	}
 	
 }

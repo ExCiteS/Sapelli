@@ -69,7 +69,7 @@ public class ColumnPointer implements Comparator<Record>
 				Column<?> prevCol = columnStack.peek(); 
 				if(!(prevCol instanceof RecordColumn))
 					throw new IllegalArgumentException("Column \"" + prevCol.getName() + "\" is expected to be a RecordColumn but it is not.");
-				if(!((RecordColumn<?>) prevCol).getSchema().containsColumn(col))
+				if(!((RecordColumn<?>) prevCol).getSchema().containsColumn(col, true))
 					throw new IllegalArgumentException("Column \"" + col.getName() + "\" is not a subcolumn of RecordColumn \"" + prevCol.getName() + "\".");
 			}
 			columnStack.push(col);
@@ -101,7 +101,7 @@ public class ColumnPointer implements Comparator<Record>
 				if(!columnStack.isEmpty())
 					schema = ((RecordColumn<?>) columnStack.peek()).getSchema();
 				// Deal with current column:
-				Column<?> col = schema.getColumn(colName);
+				Column<?> col = schema.getColumn(colName, true);
 				if(col != null)
 					columnStack.push(col);
 				else
@@ -112,14 +112,14 @@ public class ColumnPointer implements Comparator<Record>
 	
 	private boolean findColumn(Stack<Column<?>> stack, Schema schema, String columnName)
 	{
-		if(schema.containsColumn(columnName))
+		if(schema.containsColumn(columnName, true))
 		{
-			stack.push(schema.getColumn(columnName));
+			stack.push(schema.getColumn(columnName, true));
 			return true;
 		}
 		else
 		{
-			for(Column<?> c : schema.getColumns())
+			for(Column<?> c : schema.getColumns(true))
 				if(c instanceof RecordColumn)
 				{
 					stack.push(c);
@@ -164,7 +164,7 @@ public class ColumnPointer implements Comparator<Record>
 		Stack<Column<?>> path = columnStack;
 		
 		// Check if we have a complete path to the pointed-at column starting from the top-level schema:
-		if(!topLevelRecord.getSchema().containsColumn(path.firstElement())) // Either the columnStack is missing parent columns, or this record is from another schema...
+		if(!topLevelRecord.getSchema().containsColumn(path.firstElement(), true)) // Either the columnStack is missing parent columns, or this record is from another schema...
 			path = constructPathTo(topLevelRecord.getSchema(), getColumn()); // Try to construct a path to the pointed-at record
 		
 		// Get the right (sub)record:
@@ -173,7 +173,7 @@ public class ColumnPointer implements Comparator<Record>
 			if(col instanceof RecordColumn && col != path.peek())
 			{
 				RecordColumn<?> recCol = ((RecordColumn<?>) col);
-				if(!record.isValueSet(recCol))
+				if(!recCol.isValueSet(record))
 				{
 					if(create)
 						recCol.storeObject(record, recCol.getNewRecord());
@@ -188,7 +188,7 @@ public class ColumnPointer implements Comparator<Record>
 	}
 	
 	/**
-	 * Get the value store in the pointed-at column for the given topLevelRecord.
+	 * Get the value stored in the pointed-at column for the given topLevelRecord.
 	 * Note: value is returned as an Object.
 	 * 
 	 * @param topLevelRecord
@@ -229,7 +229,7 @@ public class ColumnPointer implements Comparator<Record>
 		Stack<Column<?>> path = columnStack;
 		
 		// Check if we have a complete path to the pointed-at column starting from the top-level schema (if one was given):
-		if(topLevelSchema != null && !topLevelSchema.containsColumn(path.firstElement())) // Either the columnStack is missing parent columns, or this record is from another schema...
+		if(topLevelSchema != null && !topLevelSchema.containsColumn(path.firstElement(), true)) // Either the columnStack is missing parent columns, or this record is from another schema...
 			path = constructPathTo(topLevelSchema, getColumn()); // Try to construct a path to the pointed-at record
 		
 		StringBuilder bldr = new StringBuilder();

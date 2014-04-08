@@ -64,8 +64,8 @@ public class OrientationColumn extends RecordColumn<Orientation>
 	@Override
 	public void accept(ColumnVisitor visitor)
 	{
-		if(visitor.isOrientationSelfTraversalAllowed())
-			super.accept(visitor, !visitor.isSkippingNonBinaryStoredOrientationColumnsAllowed());
+		if(visitor.allowOrientationSelfTraversal())
+			super.accept(visitor, !visitor.skipNonBinaryStoredOrientationColumns());
 		else
 			visitor.visit(this);
 	}

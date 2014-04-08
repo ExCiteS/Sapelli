@@ -557,12 +557,12 @@ public class Form
 	 * Returns the column associated with the given field.
 	 * 
 	 * @param field
-	 * @return the column for the given field, or null in case the field has no column or the schema has not been initialised yet(!)
+	 * @return the (non-virtual) column for the given field, or null in case the field has no column or the schema has not been initialised yet(!)
 	 */
 	public Column<?> getColumnFor(Field field)
 	{
 		if(!field.isNoColumn() && schema != null)
-			return schema.getColumn(field.getID());
+			return schema.getColumn(field.getID(), false);
 		else
 			return null;
 	}
