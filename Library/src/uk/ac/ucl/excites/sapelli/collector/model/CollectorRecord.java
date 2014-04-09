@@ -89,46 +89,6 @@ public class CollectorRecord extends Record implements Comparable<CollectorRecor
 		return form;
 	}
 	
-//	/**
-//	 * This is rather hackish, but somehow I prefer it over duplicating the {@link Record#toXML(int)} code entirely here
-//	 * 
-//	 * @param tabs
-//	 * @return
-//	 */
-//	public String toXML(int tabs)
-//	{
-//		// Look-up selected choices:
-//		Map<String, ChoiceField> choiceFieldIDToSelected = new HashMap<String, ChoiceField>();
-//		for(Field f : form.getFields())
-//			if(f instanceof ChoiceField && !f.isNoColumn())
-//				choiceFieldIDToSelected.put(f.getID(), getSelectedChoice((ChoiceField) f));
-//		
-//		// Process XML:
-//		String[] lines = record.toXML(tabs).split("\n");
-//		StringBuilder bldr = new StringBuilder();
-//		Pattern closeTagPattern = Pattern.compile("</(.+)>");
-//		bldr.append(lines[0] + "\n"); //<Record>
-//		for(int l = 1; l < lines.length - 1; l++) //skip <Record> & </Record>
-//		{
-//			//Add line as is:
-//			bldr.append(lines[l] + "\n");
-//			
-//			//Check close tag and at "<*-value>...</*-value>" line if needed:
-//			Matcher matcher = closeTagPattern.matcher(lines[l]);
-//			if(matcher.find())
-//			{
-//				String columnName = matcher.group(1);
-//				if(choiceFieldIDToSelected.containsKey(columnName))
-//				{
-//					ChoiceField selected = choiceFieldIDToSelected.get(columnName); 
-//					bldr.append(StringUtils.addTabsFront("<" + columnName + "-value>" + (selected != null ? XMLUtils.escapeCharacters(selected.getValue()) : null) + "</" + columnName + "-value>\n", tabs + 1));
-//				}
-//			}
-//		}
-//		bldr.append(lines[lines.length - 1] + "\n"); //</Record>
-//		return bldr.toString();
-//	}
-	
 	public String toKML()
 	{
 		//TODO KML output
