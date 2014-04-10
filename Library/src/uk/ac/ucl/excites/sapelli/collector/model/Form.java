@@ -62,9 +62,9 @@ public class Form
 	public static final boolean DEFAULT_OBFUSCATE_MEDIA_FILES = false;
 
 	public static final String COLUMN_TIMESTAMP_START_NAME = "StartTime";
-	public static final DateTimeColumn COLUMN_TIMESTAMP_START = DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_START_NAME, false);
+	public static final DateTimeColumn COLUMN_TIMESTAMP_START = DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_START_NAME, false, true);
 	public static final String COLUMN_TIMESTAMP_END_NAME = "EndTime";
-	public static final DateTimeColumn COLUMN_TIMESTAMP_END = DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_END_NAME, false);
+	public static final DateTimeColumn COLUMN_TIMESTAMP_END = DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_END_NAME, false, true);
 	public static final String COLUMN_DEVICE_ID_NAME = "DeviceID";
 	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn(COLUMN_DEVICE_ID_NAME, false, false, 32);
 	

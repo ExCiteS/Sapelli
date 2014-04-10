@@ -95,7 +95,7 @@ public class ButtonField extends Field
 		switch(columnType)
 		{
 			case BOOLEAN : return new BooleanColumn(id, optional != Optionalness.NEVER);
-			case DATETIME : return DateTimeColumn.Century21NoMS(id, optional != Optionalness.NEVER);
+			case DATETIME : return DateTimeColumn.Century21NoMS(id, optional != Optionalness.NEVER, true);
 			/* case NONE */ default : return null;
 		}
 	}

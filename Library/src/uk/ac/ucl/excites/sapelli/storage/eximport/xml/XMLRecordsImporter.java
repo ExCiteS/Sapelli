@@ -151,9 +151,15 @@ public class XMLRecordsImporter extends DocumentParser
 					record = ((RecordColumn<?>) col).retrieveValue(record);
 			
 			// Get string representation of column value:
-			String valueString = new String(ch, start, length); // don't trim here because the values of StringColumns are not quoted in XML exports!
-			if(valueString.isEmpty())
-				return; // empty String are treated as null so there is no value to set. We return here to avoid errors when setting null values on non-optional columns.
+			String valueString = new String(ch, start, length);
+			// String checks:
+			if(!(column instanceof StringColumn)) // Note: We may want to try and do this without so many instanceof checks...
+			{
+				valueString = valueString.trim();
+				if(valueString.isEmpty())
+					return; // unless the column is a StringColumn the empty String should be treated as null so there is no value to set. We return here to avoid errors when setting null values on non-optional columns.	
+			}
+			// else --> don't trim here & allow empty String (because the values of StringColumns are not quoted in XML exports and empty string is not the same as null in this case)!
 			
 			// Parse & store value:
 			try

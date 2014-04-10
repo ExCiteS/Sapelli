@@ -393,7 +393,7 @@ public class Record implements Serializable
 			if(first)
 				first = false;
 			else
-				bldr.append(SERIALISATION_SEPARATOR);
+				bldr.append(SERIALISATION_SEPARATOR); // also when value is skipped below!
 			// Value:
 			if(skipColumns == null || !skipColumns.contains(col))
 			{
@@ -425,8 +425,8 @@ public class Record implements Serializable
 	public void parse(String serialisedRecord, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		String[] parts = serialisedRecord.split("\\" + SERIALISATION_SEPARATOR);
-		if(parts.length != values.length)
-			throw new IllegalArgumentException("Mismatch between number of serialised values (" + parts.length + ") and the number of columns in the schema (" + values.length + ").");
+		if(parts.length != schema.getNumberOfColumns(includeVirtual))
+			throw new IllegalArgumentException("Unexpected number of values (got: " + parts.length + "; expected: " + schema.getNumberOfColumns(includeVirtual) + ") in serialised record (" + serialisedRecord +  ").");
 		int p = 0;
 		for(Column<?> col : schema.getColumns(includeVirtual))
 		{

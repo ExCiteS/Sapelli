@@ -34,9 +34,9 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	static private final int QUARTER_OF_AN_HOUR_MS = 15 /*minutes*/ * 60 /*seconds*/ * 1000 /*milliseconds*/;
 	static private final int TIMEZONE_QH_OFFSET_SIZE = 7; //bits
 	
-	static public final String RAW_TIMESTAMP_VIRTUAL_COLUMN_NAME = "UnixTimestampMS";
-	static public final String UTC_OFFSET_VIRTUAL_COLUMN_NAME = "LocalToUCTOffsetH";
 	static public final String LOCAL_PRETTY_VIRTUAL_COLUMN_NAME = "LocalYYYYMMDD_HHMMSS";
+	static public final String UTC_OFFSET_VIRTUAL_COLUMN_NAME = "UCTOffsetH";
+	static public final String RAW_TIMESTAMP_VIRTUAL_COLUMN_NAME = "UnixMS";
 	
 	/**
 	 * Returns a DateTimeColumn that can hold Java-style timestamps, i.e. signed 64 bit integers representing
@@ -47,9 +47,9 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	 * @param optional
 	 * @return
 	 */
-	static public DateTimeColumn JavaMSTime(String name, boolean optional)
+	static public DateTimeColumn JavaMSTime(String name, boolean optional, boolean addVirtuals)
 	{
-		return new DateTimeColumn(name, new DateTime(Long.MIN_VALUE), 64 /*bits*/, true, false, true, optional);
+		return new DateTimeColumn(name, new DateTime(Long.MIN_VALUE), 64 /*bits*/, true, false, true, optional, addVirtuals);
 		/* //Alternative:
 		 *  return new DateTimeColumn(name, new DateTime(Long.MIN_VALUE), new DateTime(Long.MAX_VALUE), true, false, true, optional);
 		 */
@@ -63,9 +63,9 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	 * @param optional
 	 * @return
 	 */
-	static public DateTimeColumn Century21(String name, boolean optional)
+	static public DateTimeColumn Century21(String name, boolean optional, boolean addVirtuals)
 	{
-		return new DateTimeColumn(name, new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC), new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC), true, true, false, optional);
+		return new DateTimeColumn(name, new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC), new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC), true, true, false, optional, addVirtuals);
 	}
 	
 	/**
@@ -76,9 +76,9 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	 * @param optional
 	 * @return
 	 */
-	static public DateTimeColumn Century21NoMS(String name, boolean optional)
+	static public DateTimeColumn Century21NoMS(String name, boolean optional, boolean addVirtuals)
 	{
-		return new DateTimeColumn(name, new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC), new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC), false, true, false, optional);
+		return new DateTimeColumn(name, new DateTime(2000, 01, 01, 00, 00, 00, DateTimeZone.UTC), new DateTime(2100, 01, 01, 00, 00, 00, DateTimeZone.UTC), false, true, false, optional, addVirtuals);
 	}
 	
 	/**
@@ -91,9 +91,9 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	 * @param optional
 	 * @return
 	 */
-	static public DateTimeColumn Compact(String name, boolean optional)
+	static public DateTimeColumn Compact(String name, boolean optional, boolean addVirtuals)
 	{
-		return new DateTimeColumn(name, new DateTime(2008, 01, 01, 00, 00, 00, DateTimeZone.UTC), 30 /*bits*/, false, false, false, optional);
+		return new DateTimeColumn(name, new DateTime(2008, 01, 01, 00, 00, 00, DateTimeZone.UTC), 30 /*bits*/, false, false, false, optional, addVirtuals);
 	}
 	
 	/**
@@ -138,7 +138,7 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	 * @param strictHighBound whether highBound date should be strictly respected (true) or not (false; meaning that the column will accept any DateTime that fits in the allocated number of bits)
 	 * @param optional
 	 */
-	public DateTimeColumn(String name, DateTime lowBound, DateTime highBound, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional)
+	public DateTimeColumn(String name, DateTime lowBound, DateTime highBound, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, boolean addVirtuals)
 	{
 		this(	name,
 				new IntegerRangeMapping(	Math.round(lowBound.getMillis() / (keepMS ? 1 : 1000d)),
@@ -146,7 +146,8 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 				keepMS,
 				keepLocalTimezone,
 				strictHighBound,
-				optional);
+				optional,
+				addVirtuals);
 	}
 	
 	/**
@@ -158,7 +159,7 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	 * @param strictHighBound whether highBound date should be strictly respected (true) or not (false; meaning that the column will accept any DateTime that fits in the allocated number of bits)
 	 * @param optional
 	 */
-	public DateTimeColumn(String name, DateTime lowBound, int sizeBits, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional)
+	public DateTimeColumn(String name, DateTime lowBound, int sizeBits, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, boolean addVirtuals)
 	{
 		this(	name,
 				IntegerRangeMapping.ForSize(	Math.round(lowBound.getMillis() / (keepMS ? 1 : 1000d)),
@@ -166,10 +167,11 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 				keepMS,
 				keepLocalTimezone,
 				strictHighBound,
-				optional);
+				optional,
+				addVirtuals);
 	}
 	
-	private DateTimeColumn(String name, IntegerRangeMapping timeMapping, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional)
+	private DateTimeColumn(String name, IntegerRangeMapping timeMapping, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, boolean addVirtuals)
 	{
 		super(DateTime.class, name, optional);
 		this.timeMapping = timeMapping;
@@ -177,73 +179,68 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 		this.keepLocalTimezone = keepLocalTimezone;
 		this.strict = strictHighBound;
 		
-		// Add virtual version with raw millisecond timestamp (= elapsed ms since the UNIX/Java epoch of 1970-01-01T00:00:00Z; 'Z' meaning UTC)
-		this.addVirtualVersion(new IntegerColumn(RAW_TIMESTAMP_VIRTUAL_COLUMN_NAME, optional, true, Long.SIZE), new VirtualColumn.ValueMapper<Long, DateTime>()
+		if(addVirtuals)
 		{
-			private static final long serialVersionUID = 2L;
-
-			@Override
-			public Long mapValue(DateTime nonNullValue)
+			// Add virtual version with second-accurate local(!) time in "pretty ISO" format ("yyyy-MM-dd HH:mm:ss"), which should be correctly interpreted by (most) Excel installations.
+			this.addVirtualVersion(StringColumn.ForCharacterCount(LOCAL_PRETTY_VIRTUAL_COLUMN_NAME, optional, 19) , new VirtualColumn.ValueMapper<String, DateTime>()
 			{
-				return nonNullValue.getMillis();
-			}
-
-			@Override
-			public int hashCode()
+				private static final long serialVersionUID = 2L;
+	
+				@Override
+				public String mapValue(DateTime nonNullValue)
+				{
+					return TimeUtils.PrettyTimestampWithoutMSFormatter.print(nonNullValue);
+				}
+	
+				@Override
+				public int hashCode()
+				{
+					return LOCAL_PRETTY_VIRTUAL_COLUMN_NAME.hashCode();
+				}
+			});
+			
+			// Add virtual version with offset in number of hours (signed float) of the local timezone w.r.t. UTC:
+			this.addVirtualVersion(new FloatColumn(UTC_OFFSET_VIRTUAL_COLUMN_NAME, optional, true, false), new VirtualColumn.ValueMapper<Double, DateTime>()
 			{
-				return RAW_TIMESTAMP_VIRTUAL_COLUMN_NAME.hashCode();
-			}
-		});
-		
-		// Add virtual version with offset in number of hours (signed float) of the local timezone w.r.t. UTC:
-		this.addVirtualVersion(new FloatColumn(UTC_OFFSET_VIRTUAL_COLUMN_NAME, optional, true, false), new VirtualColumn.ValueMapper<Double, DateTime>()
-		{
-			private static final long serialVersionUID = 2L;
-
-			@Override
-			public Double mapValue(DateTime nonNullValue)
+				private static final long serialVersionUID = 2L;
+	
+				@Override
+				public Double mapValue(DateTime nonNullValue)
+				{
+					return Double.valueOf(getTimeZoneOffsetH(nonNullValue));
+				}
+	
+				@Override
+				public int hashCode()
+				{
+					return UTC_OFFSET_VIRTUAL_COLUMN_NAME.hashCode();
+				}
+			});
+			
+			// Add virtual version with raw millisecond timestamp (= elapsed ms since the UNIX/Java epoch of 1970-01-01T00:00:00Z; 'Z' meaning UTC)
+			this.addVirtualVersion(new IntegerColumn(RAW_TIMESTAMP_VIRTUAL_COLUMN_NAME, optional, true, Long.SIZE), new VirtualColumn.ValueMapper<Long, DateTime>()
 			{
-				return Double.valueOf(getTimeZoneOffsetH(nonNullValue));
-			}
-
-			@Override
-			public int hashCode()
-			{
-				return UTC_OFFSET_VIRTUAL_COLUMN_NAME.hashCode();
-			}
-		});
-		
-		// Add virtual version with second-accurate local(!) time in "pretty ISO" format ("yyyy-MM-dd HH:mm:ss"), which should be correctly interpreted by (most) Excel installations.
-		this.addVirtualVersion(StringColumn.ForCharacterCount(LOCAL_PRETTY_VIRTUAL_COLUMN_NAME, optional, 19) , new VirtualColumn.ValueMapper<String, DateTime>()
-		{
-			private static final long serialVersionUID = 2L;
-
-			@Override
-			public String mapValue(DateTime nonNullValue)
-			{
-				return	nonNullValue.getYear() + "-" +
-						(nonNullValue.getMonthOfYear() < 10 ? "0" : "") + nonNullValue.getMonthOfYear() + "-" +
-						(nonNullValue.getDayOfMonth() < 10 ? "0" : "") + nonNullValue.getDayOfMonth() + ' ' +
-						(nonNullValue.getHourOfDay() < 10 ? "0" : "") + nonNullValue.getHourOfDay() + ':' +
-						(nonNullValue.getMinuteOfHour() < 10 ? "0" : "") + nonNullValue.getMinuteOfHour() + ':' +
-						(nonNullValue.getSecondOfMinute() < 10 ? "0" : "") + nonNullValue.getSecondOfMinute();
-				/* Note:	Of course it would be nicer to just use the line below, but unfortunately org.joda.time.format.DateTimeFormatter is
-				 * 			not serializable and will never be (http://sourceforge.net/p/joda-time/bugs/17/). */
-				//return TimeUtils.PrettyTimestampWithoutMSFormatter.print(nonNullValue);
-			}
-
-			@Override
-			public int hashCode()
-			{
-				return LOCAL_PRETTY_VIRTUAL_COLUMN_NAME.hashCode();
-			}
-		});
+				private static final long serialVersionUID = 2L;
+	
+				@Override
+				public Long mapValue(DateTime nonNullValue)
+				{
+					return nonNullValue.getMillis();
+				}
+	
+				@Override
+				public int hashCode()
+				{
+					return RAW_TIMESTAMP_VIRTUAL_COLUMN_NAME.hashCode();
+				}
+			});
+		}
 	}
 	
 	@Override
 	public DateTimeColumn copy()
 	{
-		return new DateTimeColumn(name, timeMapping, keepMS, keepLocalTimezone, strict, optional);
+		return new DateTimeColumn(name, timeMapping, keepMS, keepLocalTimezone, strict, optional, virtualVersions != null && virtualVersions.get(0).getName().equals(LOCAL_PRETTY_VIRTUAL_COLUMN_NAME));
 	}
 	
 	@Override
@@ -255,19 +252,20 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 		}
 		catch(IllegalArgumentException iae)
 		{
-			return parse(value, TimeUtils.ISOWithoutMSFormatter); //for compatibility with old XML exports which used ISO without milliseconds if the keepMS=false
+			return parse(value, TimeUtils.ISOWithoutMSFormatter); //for compatibility with old XML exports which used ISO without milliseconds when keepMS=false
 		}
+	}
+
+	protected DateTime parse(String value, DateTimeFormatter formatter) throws IllegalArgumentException
+	{
+		return formatter.withOffsetParsed().parseDateTime(value); // always parse UTC offset (even when keepLocalTimezone=false, that only affects binary storage)
 	}
 	
 	@Override
 	public String toString(DateTime value)
 	{
-		return (keepLocalTimezone ? TimeUtils.ISOWithMSFormatter.withZone(value.getZone()) : TimeUtils.ISOWithMSFormatter.withZoneUTC()).print(value); // always keep milliseconds in XML!
-	}
-
-	protected DateTime parse(String value, DateTimeFormatter formatter) throws IllegalArgumentException
-	{
-		return (keepLocalTimezone ? formatter.withOffsetParsed() : formatter).parseDateTime(value);
+		// Note: we always keep milliseconds & UTC offset (keepMS & keepLocalTimeZone only affect binary storage)
+		return TimeUtils.ISOWithMSFormatter.withZone(value.getZone()).print(value);
 	}
 	
 	@Override
