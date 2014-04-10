@@ -61,9 +61,12 @@ public class Form
 	public static final boolean DEFAULT_ANIMATION = true;
 	public static final boolean DEFAULT_OBFUSCATE_MEDIA_FILES = false;
 
-	public static final DateTimeColumn COLUMN_TIMESTAMP_START = DateTimeColumn.Century21NoMS("StartTime", false);
-	public static final DateTimeColumn COLUMN_TIMESTAMP_END = DateTimeColumn.Century21NoMS("EndTime", false);
-	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn("DeviceID", false, false, 32);
+	public static final String COLUMN_TIMESTAMP_START_NAME = "StartTime";
+	public static final DateTimeColumn COLUMN_TIMESTAMP_START = DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_START_NAME, false);
+	public static final String COLUMN_TIMESTAMP_END_NAME = "EndTime";
+	public static final DateTimeColumn COLUMN_TIMESTAMP_END = DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_END_NAME, false);
+	public static final String COLUMN_DEVICE_ID_NAME = "DeviceID";
+	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn(COLUMN_DEVICE_ID_NAME, false, false, 32);
 	
 
 	// Dynamics-------------------------------------------------------
@@ -580,11 +583,11 @@ public class Form
 			throw new IllegalArgumentException("The provided schema is not compatible with this form!");
 	}*/
 
-	public CollectorRecord newRecord(long deviceID)
+	public Record newRecord(long deviceID)
 	{
 		if(isProducesRecords())
 		{
-			CollectorRecord record = new CollectorRecord(this);
+			Record record = getSchema().createRecord();
 	
 			// Set current time as start timestamp
 			COLUMN_TIMESTAMP_START.storeValue(record, new DateTime() /*= now*/);
@@ -596,6 +599,32 @@ public class Form
 		}
 		else
 			return null;
+	}
+	
+	public DateTime getStartTime(Record record)
+	{
+		return getStartTime(record, false);
+	}
+	
+	public DateTime getStartTime(Record record, boolean asStoredBinary)
+	{
+		if(asStoredBinary)
+			return COLUMN_TIMESTAMP_START.retrieveValueAsStoredBinary(record);
+		else
+			return COLUMN_TIMESTAMP_START.retrieveValue(record);
+	}
+	
+	public DateTime getEndTime(Record record)
+	{
+		if(isStoreEndTime())
+			return COLUMN_TIMESTAMP_END.retrieveValue(record);
+		else
+			return null;
+	}
+	
+	public long getDeviceID(Record record)
+	{
+		return COLUMN_DEVICE_ID.retrieveValue(record);
 	}
 	
 	public void finish(Record record)

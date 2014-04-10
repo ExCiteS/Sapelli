@@ -3,11 +3,11 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
  * @author mstevens
@@ -54,7 +54,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	}
 	
 	@Override
-	public boolean isValid(CollectorRecord record)
+	public boolean isValid(Record record)
 	{
 		return field.isNoColumn() || (field.getCount(record) >= field.getMin() && field.getCount(record) <= field.getMax());
 	}

@@ -8,6 +8,7 @@ import java.util.Stack;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
@@ -41,6 +42,17 @@ public abstract class SimpleSchemaTraverser extends SimpleColumnVisitor
 	public void leave(RecordColumn<?> recordCol)
 	{
 		columnStack.pop();
+	}
+	
+	/**
+	 * Visit method for VirtualColumns. We treat them like any other column (i.e. we do *not* visit their target column directly). 
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn)
+	 */
+	@Override
+	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol)
+	{
+		visit((Column<VT>) virtCol);
 	}
 	
 	@Override

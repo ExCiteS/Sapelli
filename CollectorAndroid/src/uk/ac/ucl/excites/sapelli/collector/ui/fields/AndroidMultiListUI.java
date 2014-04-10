@@ -4,11 +4,11 @@ import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField.MultiListItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.View;
@@ -40,11 +40,11 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 	}
 	
 	@Override
-	public MultiListView getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
+	protected MultiListView getPlatformView(boolean onPage, Record record, boolean newRecord)
 	{	
 		if(view == null)
 		{
-			view = new MultiListView(collectorUI.getContext());
+			view = new MultiListView(onPage, collectorUI.getContext());
 			newRecord = true; // force update of new view
 		}
 		
@@ -89,9 +89,12 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 	private class MultiListView extends LinearLayout implements OnFocusChangeListener, OnItemSelectedListener
 	{
 
-		public MultiListView(Context context)
+		private boolean onPage;
+		
+		public MultiListView(boolean onPage, Context context)
 		{
 			super(context);
+			this.onPage = onPage;
 			setOrientation(LinearLayout.VERTICAL);
 			setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 		}
@@ -121,10 +124,10 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 				spinner.setSelection(parentItem.getDefaultChildIndex());
 			//else: first (dummy) item will be selected
 			
-			//	Make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
-			spinner.setFocusable(true);
-			spinner.setFocusableInTouchMode(true);
-			spinner.setOnFocusChangeListener(this);
+			//	If on page: make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
+			spinner.setFocusable(onPage);
+			spinner.setFocusableInTouchMode(onPage);
+			spinner.setOnFocusChangeListener(onPage ? this : null);
 			
 			//	Item selected event:
 			spinner.setOnItemSelectedListener(this);

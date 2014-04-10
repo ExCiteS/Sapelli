@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.sapelli.storage.visitors;
 
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
@@ -45,6 +46,8 @@ public interface ColumnVisitor
 	
 	public void visit(OrientationColumn orCol);
 	
+	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol);
+	
 	public void enter(RecordColumn<?> recordCol);
 	
 	public void leave(RecordColumn<?> recordCol);
@@ -60,5 +63,5 @@ public interface ColumnVisitor
 	public boolean skipNonBinarySerialisedOrientationSubColumns();
 	
 	public boolean includeVirtualColumns();
-		
+	
 }

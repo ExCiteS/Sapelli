@@ -2,11 +2,11 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewHelpers;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
@@ -72,7 +72,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 	}
 	
 	@Override
-	public ScrollView getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
+	protected ScrollView getPlatformView(boolean onPage, Record record, boolean newRecord)
 	{
 		if(onPage)
 			throw new IllegalStateException("Pages cannot be nested!");

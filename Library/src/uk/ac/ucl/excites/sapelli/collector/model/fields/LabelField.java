@@ -35,6 +35,7 @@ public class LabelField extends Field
 				(id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id),
 				caption);
 		this.noColumn = true;
+		this.optional = Optionalness.ALWAYS;
 	}
 	
 	/**
@@ -96,9 +97,17 @@ public class LabelField extends Field
 		return collectorUI.createLabelUI(this);
 	}
 	
+	@Override
 	public void setNoColumn(boolean noColumn)
 	{
-		throw new UnsupportedOperationException("setNoColumn is unsupported on LabelFields since they never have columns.");
+		//form.addWarning("Ignored noColumn setting on Label (it never has a column)");
+		//throw new UnsupportedOperationException("setNoColumn is unsupported on LabelFields since they never have columns.");
+	}
+	
+	@Override
+	public void setOptional(Optionalness optionalness)
+	{
+		// does nothing, labels are always optional
 	}
 	
 }

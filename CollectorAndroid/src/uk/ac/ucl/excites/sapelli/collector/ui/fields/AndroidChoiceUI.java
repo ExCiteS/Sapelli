@@ -4,7 +4,6 @@ import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -21,6 +20,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.TextItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
@@ -51,7 +51,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	}
 
 	@Override
-	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
+	protected View getPlatformView(boolean onPage, Record record, boolean newRecord)
 	{
 		if(onPage)
 		{

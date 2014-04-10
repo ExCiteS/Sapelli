@@ -4,10 +4,10 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
  * @author mstevens
@@ -32,7 +32,7 @@ public abstract class LocationUI<V, UI extends CollectorUI<V, UI>> extends SelfL
 		//Log:
 		controller.addLogLine("TIMEOUT", field.getID());
 		
-		CollectorRecord record = controller.getCurrentRecord();
+		Record record = controller.getCurrentRecord();
 		
 		// Try to store current best non-qualifying location (if allowed):
 		if(field.retrieveLocation(record) == null && field.isUseBestNonQualifyingLocationAfterTimeout())

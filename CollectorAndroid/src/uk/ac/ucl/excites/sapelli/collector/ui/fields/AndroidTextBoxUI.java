@@ -2,10 +2,10 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField.Content;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
 import android.text.Editable;
@@ -43,7 +43,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 	}
 	
 	@Override
-	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
+	protected View getPlatformView(boolean onPage, Record record, boolean newRecord)
 	{
 		// Create view if needed:
 		if(view == null)

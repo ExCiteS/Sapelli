@@ -4,9 +4,9 @@
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
  * Super class for FieldUIs that can "leave themselves", rather than requiring an external request for that.
@@ -32,19 +32,19 @@ public abstract class SelfLeavingFieldUI<F extends Field, V, UI extends Collecto
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#leave(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord, boolean)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#leave(uk.ac.ucl.excites.sapelli.storage.model.Record, boolean)
 	 */
 	@Override
-	public boolean leave(CollectorRecord record, boolean noValidation)
+	public boolean leave(Record record, boolean noValidation)
 	{
 		return noValidation || isValid(record); // no storage happens at this point!
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#isValid(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#isValid(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	public boolean isValid(CollectorRecord record)
+	public boolean isValid(Record record)
 	{
 		return field.isNoColumn() || field.getOptional() == Optionalness.ALWAYS || field.getColumn().isValueSet(record);
 	}

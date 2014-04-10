@@ -1,9 +1,9 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -23,7 +23,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 	}
 	
 	@Override
-	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
+	protected View getPlatformView(boolean onPage, Record record, boolean newRecord)
 	{
 		//TODO editable
 		if(onPage)

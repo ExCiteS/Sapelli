@@ -8,13 +8,13 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
  * @author mstevens
@@ -42,7 +42,7 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLe
 	}
 	
 	@Override
-	public boolean leave(CollectorRecord record, boolean noValidation)
+	public boolean leave(Record record, boolean noValidation)
 	{
 		if(noValidation || isValid(record))
 		{
@@ -59,8 +59,11 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLe
 		return false;
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#isValid(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 */
 	@Override
-	public boolean isValid(CollectorRecord record)
+	public boolean isValid(Record record)
 	{
 		boolean valid = true;
 		for(FieldUI<?, V, UI> fUI : fieldUIs)
@@ -73,7 +76,7 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLe
 		return valid;
 	}
 	
-	public boolean isValid(FieldUI<?, V, UI> fUI, CollectorRecord record)
+	public boolean isValid(FieldUI<?, V, UI> fUI, Record record)
 	{
 		boolean valid = fUI.isValid(record);
 		markValidity(fUI, valid); // highlight with red border if invalid, remove border (if it is there) if valid
@@ -89,7 +92,7 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLe
 	}
 	
 	@Override
-	protected void storeValue(CollectorRecord record)
+	protected void storeValue(Record record)
 	{
 		// does nothing (Pages have no column of their own)
 	}

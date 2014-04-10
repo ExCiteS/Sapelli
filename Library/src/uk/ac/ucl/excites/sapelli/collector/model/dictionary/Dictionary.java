@@ -96,4 +96,19 @@ public class Dictionary<I extends DictionaryItem>
 		return bldr.toString();
 	}
 	
+	public List<String> serialise(DictionarySerialiser<I> serialiser)
+	{
+		List<String> stringList = new ArrayList<String>();
+		for(I item : indexed)
+			stringList.add(serialiser.serialise(item));
+		return stringList;
+	}
+	
+	public interface DictionarySerialiser<I>
+	{
+		
+		public String serialise(I item);
+		
+	}
+	
 }

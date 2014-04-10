@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -286,7 +285,7 @@ public abstract class Controller
 		ControlsState state = new ControlsState(
 				currFormSession.currField.isShowBack()		&& (!currFormSession.fieldHistory.empty() || !formHistory.empty()),
 				currFormSession.currField.isShowCancel()	&& (!currFormSession.fieldHistory.empty() || currFormSession.currField instanceof Page),
-				currFormSession.currField.isShowForward()	&& currFormSession.currField.getOptional() == Optionalness.ALWAYS);
+				currFormSession.currField.isShowForward()	&& (currFormSession.currField.getOptional() == Optionalness.ALWAYS || (currFormSession.currFieldDisplayed && ui.getCurrentFieldUI().isValid(getCurrentRecord()))));
 		// Note: these paths may be null (in which case built-in defaults must be used)
 		
 		
@@ -446,7 +445,7 @@ public abstract class Controller
 	
 	public boolean enterLinksTo(Relationship rel)
 	{
-		CollectorRecord foreignRecord = getHeldRecord(rel);
+		Record foreignRecord = getHeldRecord(rel);
 		if(foreignRecord != null)
 			openFormSession(FormSession.Edit(rel.getRelatedForm(), foreignRecord)); // Edit the "held" record
 		else
@@ -462,7 +461,7 @@ public abstract class Controller
 		
 		// TODO find a way to open existing foreign record for editing (+ coming back without going in some kind of loop)
 		
-		CollectorRecord foreignRecord = null;
+		Record foreignRecord = null;
 		
 		// Try to obtain foreignRecord in various ways...
 		if(prevFormSession != null && prevFormSession.form == rel.getRelatedForm())
@@ -491,7 +490,7 @@ public abstract class Controller
 		return false;
 	}
 	
-	private CollectorRecord getHeldRecord(Relationship rel)
+	private Record getHeldRecord(Relationship rel)
 	{
 		if(!rel.isHoldForeignRecord())
 			return null;
@@ -499,7 +498,7 @@ public abstract class Controller
 		ForeignKeyColumn column = (ForeignKeyColumn) rel.getColumn();
 		
 		// Try to obtain the "held" foreign record:
-		CollectorRecord foreignRecord = null;
+		Record foreignRecord = null;
 		
 		// Using the previous form session...
 		if(	!rel.isNoColumn() &&							/* If the relationship has a column to store foreign keys (i.e. it is not of type LINK) */
@@ -508,7 +507,7 @@ public abstract class Controller
 			column.isValueSet(prevFormSession.record))		/* AND the previous record stored a foreign key (if optional it can also be null) */
 		{
 			ForeignKey key = column.retrieveValue(prevFormSession.record);								// get foreign key from previous record
-			foreignRecord = (CollectorRecord) recordStore.retrieveRecord(key.getForeignRecordQuery());	// look-up the corresponding foreign record
+			foreignRecord = (Record) recordStore.retrieveRecord(key.getForeignRecordQuery());	// look-up the corresponding foreign record
 		}
 		
 		// Check if the foreignRecord meets the constraints...
@@ -518,7 +517,7 @@ public abstract class Controller
 		// If we still don't have one...
 		if(foreignRecord == null)
 			// ... then try to obtain it by querying for most recent record that meets the relationship constraints...
-			foreignRecord = (CollectorRecord) recordStore.retrieveRecord(rel.getHeldRecordQuery()); // TODO no deviceid (for local/remote source) is checked for now
+			foreignRecord = (Record) recordStore.retrieveRecord(rel.getHeldRecordQuery()); // TODO no deviceid (for local/remote source) is checked for now
 		
 		return foreignRecord; // may still be null!
 	}
@@ -676,7 +675,7 @@ public abstract class Controller
 	/**
 	 * @return the currentRecord
 	 */
-	public CollectorRecord getCurrentRecord()
+	public Record getCurrentRecord()
 	{
 		return currFormSession.record;
 	}
@@ -761,7 +760,7 @@ public abstract class Controller
 			return new FormSession(form, Mode.CREATE, form.isProducesRecords() ? form.newRecord(deviceIDHash) : null);
 		}
 		
-		static public FormSession Edit(Form form, CollectorRecord record)
+		static public FormSession Edit(Form form, Record record)
 		{
 			return new FormSession(form, Mode.EDIT, record);
 		}
@@ -769,7 +768,7 @@ public abstract class Controller
 		//Dynamic
 		protected Form form;
 		protected Mode mode;
-		protected CollectorRecord record;
+		protected Record record;
 		protected Stack<Field> fieldHistory;
 		protected Field currField = null;
 		protected boolean currFieldDisplayed = false;
@@ -782,7 +781,7 @@ public abstract class Controller
 		 * @param mode
 		 * @param record
 		 */
-		private FormSession(Form form, Mode mode, CollectorRecord record)
+		private FormSession(Form form, Mode mode, Record record)
 		{
 			if(form == null)
 				throw new NullPointerException("Form cannot be null!");

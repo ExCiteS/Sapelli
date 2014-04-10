@@ -109,7 +109,6 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 			
 			// Forward button
 			forwardButton = createButton(project.getImageFile(currentForm.getForwardButtonImageRelativePath()), new HorizontalArrow(FOREGROUND_COLOR, false), backColor);
-			
 		}
 		
 		// Update state if needed...

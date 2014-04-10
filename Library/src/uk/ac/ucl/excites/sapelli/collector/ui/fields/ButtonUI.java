@@ -3,11 +3,11 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField.ButtonColumnType;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
 
@@ -45,7 +45,7 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI#isValid(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
 	 */
 	@Override
-	public boolean isValid(CollectorRecord record)
+	public boolean isValid(Record record)
 	{
 		// Replace 'null' by 'false' in boolean column:
 		if(field.getColumnType() == ButtonColumnType.BOOLEAN)
@@ -60,7 +60,7 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	
 	protected void buttonPressed()
 	{
-		CollectorRecord record = controller.getCurrentRecord();
+		Record record = controller.getCurrentRecord();
 		
 		// Store boolean or datetime:
 		if(field.getColumnType() == ButtonColumnType.BOOLEAN)

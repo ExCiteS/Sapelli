@@ -14,6 +14,7 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -26,15 +27,21 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public class DateTimeColumn extends ComparatorColumn<DateTime>
 {
 	
+	// STATICS-------------------------------------------------------
 	static private final long serialVersionUID = 2L;
 	
+	static private final int HOUR_MS = 60 /*minutes*/ * 60 /*seconds*/ * 1000 /*milliseconds*/;
 	static private final int QUARTER_OF_AN_HOUR_MS = 15 /*minutes*/ * 60 /*seconds*/ * 1000 /*milliseconds*/;
 	static private final int TIMEZONE_QH_OFFSET_SIZE = 7; //bits
 	
+	static public final String RAW_TIMESTAMP_VIRTUAL_COLUMN_NAME = "UnixTimestampMS";
+	static public final String UTC_OFFSET_VIRTUAL_COLUMN_NAME = "LocalToUCTOffsetH";
+	static public final String LOCAL_PRETTY_VIRTUAL_COLUMN_NAME = "LocalYYYYMMDD_HHMMSS";
+	
 	/**
 	 * Returns a DateTimeColumn that can hold Java-style timestamps, i.e. signed 64 bit integers representing
-	 * the number of milliseconds since (or to, if negative) the Java/Unix epoch of 1970/01/1 00:00:00 UTC.
-	 * All times are treated as UTC (local timezone is NOT kept).
+	 * the number of milliseconds since (or to, if negative) the Java/Unix epoch of 1970/01/01 00:00:00 UTC.
+	 * All times are stored as UTC (local timezone is NOT kept).
 	 * 
 	 * @param name
 	 * @param optional
@@ -89,6 +96,34 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 		return new DateTimeColumn(name, new DateTime(2008, 01, 01, 00, 00, 00, DateTimeZone.UTC), 30 /*bits*/, false, false, false, optional);
 	}
 	
+	/**
+	 * Note (2013-07-13):
+	 * 	Implementation used to be:
+	 * 		return value.getZone().toTimeZone().getRawOffset();
+	 *  But that is incorrect during summer time!
+	 *  The current implementation could be shortened by using only Joda-time's DateTimeZone and no longer also the native TimeZone, like so
+	 * 		return value.getZone().getOffset(value.getMillis());
+	 * 	However that causes weird crashes in Joda-time (probably due to a bug in the library).
+	 * 
+	 * @param value
+	 * @return
+	 */
+	static public int getTimeZoneOffsetMS(DateTime value)
+	{
+		return value.getZone().toTimeZone().getOffset(value.getMillis());
+	}
+
+	static public int getTimeZoneOffsetQH(DateTime value)
+	{
+		return getTimeZoneOffsetMS(value) / QUARTER_OF_AN_HOUR_MS;
+	}
+	
+	static public float getTimeZoneOffsetH(DateTime value)
+	{
+		return ((float) getTimeZoneOffsetMS(value)) / HOUR_MS; 
+	}
+	
+	// DYNAMICS------------------------------------------------------
 	protected IntegerRangeMapping timeMapping;
 	protected boolean keepMS;
 	protected boolean keepLocalTimezone;
@@ -141,6 +176,68 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 		this.keepMS = keepMS;
 		this.keepLocalTimezone = keepLocalTimezone;
 		this.strict = strictHighBound;
+		
+		// Add virtual version with raw millisecond timestamp (= elapsed ms since the UNIX/Java epoch of 1970-01-01T00:00:00Z; 'Z' meaning UTC)
+		this.addVirtualVersion(new IntegerColumn(RAW_TIMESTAMP_VIRTUAL_COLUMN_NAME, optional, true, Long.SIZE), new VirtualColumn.ValueMapper<Long, DateTime>()
+		{
+			private static final long serialVersionUID = 2L;
+
+			@Override
+			public Long mapValue(DateTime nonNullValue)
+			{
+				return nonNullValue.getMillis();
+			}
+
+			@Override
+			public int hashCode()
+			{
+				return RAW_TIMESTAMP_VIRTUAL_COLUMN_NAME.hashCode();
+			}
+		});
+		
+		// Add virtual version with offset in number of hours (signed float) of the local timezone w.r.t. UTC:
+		this.addVirtualVersion(new FloatColumn(UTC_OFFSET_VIRTUAL_COLUMN_NAME, optional, true, false), new VirtualColumn.ValueMapper<Double, DateTime>()
+		{
+			private static final long serialVersionUID = 2L;
+
+			@Override
+			public Double mapValue(DateTime nonNullValue)
+			{
+				return Double.valueOf(getTimeZoneOffsetH(nonNullValue));
+			}
+
+			@Override
+			public int hashCode()
+			{
+				return UTC_OFFSET_VIRTUAL_COLUMN_NAME.hashCode();
+			}
+		});
+		
+		// Add virtual version with second-accurate local(!) time in "pretty ISO" format ("yyyy-MM-dd HH:mm:ss"), which should be correctly interpreted by (most) Excel installations.
+		this.addVirtualVersion(StringColumn.ForCharacterCount(LOCAL_PRETTY_VIRTUAL_COLUMN_NAME, optional, 19) , new VirtualColumn.ValueMapper<String, DateTime>()
+		{
+			private static final long serialVersionUID = 2L;
+
+			@Override
+			public String mapValue(DateTime nonNullValue)
+			{
+				return	nonNullValue.getYear() + "-" +
+						(nonNullValue.getMonthOfYear() < 10 ? "0" : "") + nonNullValue.getMonthOfYear() + "-" +
+						(nonNullValue.getDayOfMonth() < 10 ? "0" : "") + nonNullValue.getDayOfMonth() + ' ' +
+						(nonNullValue.getHourOfDay() < 10 ? "0" : "") + nonNullValue.getHourOfDay() + ':' +
+						(nonNullValue.getMinuteOfHour() < 10 ? "0" : "") + nonNullValue.getMinuteOfHour() + ':' +
+						(nonNullValue.getSecondOfMinute() < 10 ? "0" : "") + nonNullValue.getSecondOfMinute();
+				/* Note:	Of course it would be nicer to just use the line below, but unfortunately org.joda.time.format.DateTimeFormatter is
+				 * 			not serializable and will never be (http://sourceforge.net/p/joda-time/bugs/17/). */
+				//return TimeUtils.PrettyTimestampWithoutMSFormatter.print(nonNullValue);
+			}
+
+			@Override
+			public int hashCode()
+			{
+				return LOCAL_PRETTY_VIRTUAL_COLUMN_NAME.hashCode();
+			}
+		});
 	}
 	
 	@Override
@@ -160,6 +257,12 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 		{
 			return parse(value, TimeUtils.ISOWithoutMSFormatter); //for compatibility with old XML exports which used ISO without milliseconds if the keepMS=false
 		}
+	}
+	
+	@Override
+	public String toString(DateTime value)
+	{
+		return (keepLocalTimezone ? TimeUtils.ISOWithMSFormatter.withZone(value.getZone()) : TimeUtils.ISOWithMSFormatter.withZoneUTC()).print(value); // always keep milliseconds in XML!
 	}
 
 	protected DateTime parse(String value, DateTimeFormatter formatter) throws IllegalArgumentException
@@ -214,23 +317,6 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	
 	/**
 	 * Note (2013-07-13):
-	 * 	Implementation used to be:
-	 * 		return value.getZone().toTimeZone().getRawOffset() / QUARTER_OF_AN_HOUR_MS;
-	 *  But that is incorrect during summer time!
-	 *  The current implementation could be shortened by using only Joda-time's DateTimeZone and no longer also the native TimeZone, like so
-	 * 		return value.getZone().getOffset(value.getMillis()) / QUARTER_OF_AN_HOUR_MS;
-	 * 	However that causes weird crashes in Joda-time (probably due to a bug in the library).
-	 * 
-	 * @param value
-	 * @return
-	 */
-	protected int getTimeZoneOffsetQH(DateTime value)
-	{
-		return value.getZone().toTimeZone().getOffset(value.getMillis()) / QUARTER_OF_AN_HOUR_MS;
-	}
-	
-	/**
-	 * Note (2013-07-13):
 	 * 	Implementation used to be: return DateTimeZone.forTimeZone(uk.ac.ucl.excites.util.TimeUtils.getTimeZone(quarterHourOffset * QUARTER_OF_AN_HOUR_MS));
 	 * Seems to make no difference w.r.t. offset (although we do not get "named" zones this way, but the names could have been wrong anyway, due to DST)
 	 * 
@@ -240,12 +326,6 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	protected DateTimeZone getDateTimeZoneFor(int quarterHourOffset)
 	{
 		return DateTimeZone.forOffsetMillis(quarterHourOffset * QUARTER_OF_AN_HOUR_MS);
-	}
-
-	@Override
-	public String toString(DateTime value)
-	{
-		return (keepLocalTimezone ? TimeUtils.ISOWithMSFormatter.withZone(value.getZone()) : TimeUtils.ISOWithMSFormatter.withZoneUTC()).print(value); // always keep milliseconds in XML!
 	}
 
 	@Override

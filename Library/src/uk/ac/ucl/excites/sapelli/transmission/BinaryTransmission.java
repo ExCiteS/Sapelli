@@ -238,7 +238,7 @@ public abstract class BinaryTransmission extends Transmission
 			//Read records:
 			while(in.bitsAvailable() >= schema.getMinimumSize(false /* do not include virtual columns */, columnsToFactorOut))
 			{
-				r = client.getNewRecord(schema);
+				r = schema.createRecord();
 				r.readFromBitStream(in, false /* do not include virtual columns */, columnsToFactorOut);
 				//Set factored out values:
 				if(columnsToFactorOut != null)

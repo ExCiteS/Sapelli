@@ -19,7 +19,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
@@ -36,7 +38,7 @@ public class XMLRecordsImporter extends DocumentParser
 
 	protected StorageClient client;
 	protected Record currentRecord;
-	protected boolean v1xRecord;
+	protected boolean v1xExport;
 	protected Stack<Column<?>> columnStack;
 	protected List<Record> records;
 
@@ -83,19 +85,19 @@ public class XMLRecordsImporter extends DocumentParser
 				int schemaVersion = readIntegerAttribute(Schema.V1X_ATTRIBUTE_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION, attributes);
 				schema = client.getSchemaV1(schemaID, schemaVersion);
 				schemaDescr = "v1.x schema with ID " + schemaID + " and version " + schemaVersion;
-				v1xRecord = true;
+				v1xExport = true;
 			}
 			else
 			{
 				long schemaID = readRequiredLongAttribute(Record.TAG_RECORD, Schema.ATTRIBUTE_SCHEMA_ID, attributes);
 				schema = client.getSchema(schemaID);
 				schemaDescr = "schema with ID " + schemaID;
-				v1xRecord = false;
+				v1xExport = false;
 			}
 			if(schema == null)
 				addWarning("Record skipped because " + schemaDescr + " is unknown, please load the appropriate project.");
 			else
-				currentRecord = client.getNewRecord(schema);
+				currentRecord = schema.createRecord();
 			// TODO transmission? sent/received
 		}
 		// Record columns:
@@ -117,10 +119,10 @@ public class XMLRecordsImporter extends DocumentParser
 				// Deal with current column:
 				Column<?> col = record.getSchema().getColumn(colName, true);
 				if(col == null)
-					addWarning("Column " + colName + " does not exist in " + record.getSchema().toString());
-				else if(col.isVirtual())
+					addWarning("Skipping column " + colName + " because it does not exist in " + record.getSchema().toString());
+				else if(col instanceof VirtualColumn)
 				{
-					addWarning("Skipping virtual column " + colName);
+					//addWarning("Skipping virtual column " + colName);
 					col = null;
 				}
 				columnStack.push(col); // even when null! (to deal with unrecognised columns)
@@ -134,7 +136,7 @@ public class XMLRecordsImporter extends DocumentParser
 	}
 
 	@Override
-	public void characters(char ch[], int start, int length) throws SAXException
+	public void characters(char[] ch, int start, int length) throws SAXException
 	{
 		// Reached leaf value string...
 		if(currentRecord != null && !columnStack.isEmpty() && columnStack.peek() != null)
@@ -149,18 +151,33 @@ public class XMLRecordsImporter extends DocumentParser
 					record = ((RecordColumn<?>) col).retrieveValue(record);
 			
 			// Get string representation of column value:
-			String valueString = new String(ch, start, length).trim();
+			String valueString = new String(ch, start, length); // don't trim here because the values of StringColumns are not quoted in XML exports!
 			if(valueString.isEmpty())
 				return; // empty String are treated as null so there is no value to set. We return here to avoid errors when setting null values on non-optional columns.
 			
 			// Parse & store value:
 			try
 			{
-				if(v1xRecord && column instanceof LocationColumn)
+				if(v1xExport && column instanceof LocationColumn)
 					// Backwards compatibility with old location formats:
 					column.storeObject(record, Location.parseV1X(valueString));
 				else
-					column.parseAndStoreValue(record, valueString);
+				{
+					if(column instanceof StringColumn)
+						/* The values of StringColumns exported to XML are not quoted, so we store them 'as is'.
+						 * Parsing them with parseAndStoreValue() would cause empty string to be treated as null
+						 * and non-empty String would cause and Exception to be thrown because parseAndStoreValue()
+						 * would invoke StringColumn#parse() which expects a quoted String.
+						 * 
+						 * See XMLRecordExporter#visit(ColumnPointer) for the corresponding export logic.
+						 * Note that there we used (column.getType() == String.class) instead of an instanceof
+						 * check. This is to deal with virtual columns with a StringColumn as target. Here we
+						 * don't need to bother with that because virtual columns are always skipped upon
+						 * importing (see above). */
+						column.storeObject(record, valueString);
+					else
+						column.parseAndStoreValue(record, valueString);
+				}
 			}
 			catch(Exception e)
 			{

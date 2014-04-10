@@ -4,8 +4,8 @@
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
  * Superclass for FieldUIs that can only be left due to external request (e.g. the forward button being pressed) and
@@ -32,10 +32,10 @@ public abstract class NonSelfLeavingFieldUI<F extends Field, V, UI extends Colle
 	 * override this method in order to avoid the noColumn check on themselves and to call leave() on each of their
 	 * contained fields. 
 	 * 
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#leave(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord, boolean)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#leave(Record, boolean)
 	 */
 	@Override
-	public boolean leave(CollectorRecord record, boolean noValidation)
+	public boolean leave(Record record, boolean noValidation)
 	{
 		if(noValidation || isValid(record))
 		{
@@ -63,6 +63,6 @@ public abstract class NonSelfLeavingFieldUI<F extends Field, V, UI extends Colle
 	 * @param record
 	 * @throws Exception 
 	 */
-	protected abstract void storeValue(CollectorRecord record) throws Exception;
+	protected abstract void storeValue(Record record) throws Exception;
 
 }

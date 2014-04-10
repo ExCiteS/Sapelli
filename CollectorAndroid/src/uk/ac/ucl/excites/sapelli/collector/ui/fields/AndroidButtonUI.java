@@ -5,9 +5,9 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -34,7 +34,7 @@ public class AndroidButtonUI extends ButtonUI<View, CollectorView> implements On
 	}
 
 	@Override
-	public Button getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
+	protected View getPlatformView(boolean onPage, Record record, boolean newRecord)
 	{
 		if(button == null)
 		{

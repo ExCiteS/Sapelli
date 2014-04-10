@@ -4,12 +4,12 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField.MultiListItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
  * @author mstevens
@@ -30,7 +30,7 @@ public abstract class MultiListUI<V, UI extends CollectorUI<V, UI>> extends NonS
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI#storeValue(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
 	 */
 	@Override
-	protected void storeValue(CollectorRecord record)
+	protected void storeValue(Record record)
 	{
 		MultiListItem chosen = getChosenItem();
 		if(!field.isNoColumn())
@@ -41,7 +41,7 @@ public abstract class MultiListUI<V, UI extends CollectorUI<V, UI>> extends NonS
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#isValid(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
 	 */
 	@Override
-	public boolean isValid(CollectorRecord record)
+	public boolean isValid(Record record)
 	{
 		MultiListItem chosen = getChosenItem();
 		return chosen == null ? (field.getOptional() == Optionalness.ALWAYS) : chosen.isLeaf();

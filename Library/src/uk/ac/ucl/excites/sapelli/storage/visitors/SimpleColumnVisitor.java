@@ -17,7 +17,8 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 
 /**
- * A {@link ColumnVisitor} that treats all Column types the same
+ * A {@link ColumnVisitor} that treats all Column types the same.
+ * Note: the visiting of VirtualColumns & the entering/leaving of RecordColumns is left to subclasses.
  * 
  * @author mstevens
  */
@@ -129,5 +130,5 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	{
 		this.visit((Column<?>) stringCol);
 	}
-
+	
 }

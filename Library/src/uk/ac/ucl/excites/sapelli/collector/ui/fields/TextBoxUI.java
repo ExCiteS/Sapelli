@@ -1,10 +1,10 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 
 
@@ -22,10 +22,10 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	/**
 	 * 
 	 * @throws Exception 
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI#storeValue(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI#storeValue(Record)
 	 */
 	@Override
-	public void storeValue(CollectorRecord record) throws Exception
+	public void storeValue(Record record) throws Exception
 	{
 		switch(field.getContent())
 		{
@@ -47,7 +47,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 		}
 	}
 	
-	public String retrieveValue(CollectorRecord record)
+	public String retrieveValue(Record record)
 	{
 		if(!field.getColumn().isValueSet(record))
 			return null;
@@ -72,7 +72,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	}
 	
 	@Override
-	public boolean isValid(CollectorRecord record)
+	public boolean isValid(Record record)
 	{
 		String text = getValue();
 		// Too short:

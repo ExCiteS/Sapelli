@@ -7,11 +7,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
@@ -73,24 +71,15 @@ public class SapelliCollectorClient implements TransmissionClient
 			return null;
 	}
 	
-	@Override
-	public Record getNewRecord(Schema schema)
+	public Form getForm(Schema schema)
 	{
 		Project proj = projectStore.retrieveProject(GetProjectHash(schema.getID()));
 		if(proj != null)
-		{
-			Form frm = proj.getForm(GetFormIndex(schema.getID()));
-			if(frm != null)
-			{
-				if(frm.isProducesRecords())
-					return new CollectorRecord(frm); // CollectorRecord instance
-				else
-					return null;
-			}
-		}
-		return new Record(schema); // plain Record instance
+			return proj.getForm(GetFormIndex(schema.getID()));
+		else
+			return null;
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.transmission.TransmissionClient#getSettingsFor(uk.ac.ucl.excites.storage.model.Schema)
 	 */

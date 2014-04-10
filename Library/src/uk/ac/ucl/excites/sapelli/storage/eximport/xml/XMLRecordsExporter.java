@@ -186,7 +186,6 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	@Override
 	public void visit(ColumnPointer leafColumnPointer)
 	{
-		Column<?> leafColumn = leafColumnPointer.getColumn();
 		Record record = leafColumnPointer.getRecord(currentRecord, false);
 		
 		// If in nested or flat tags mode and subrecord is null: return
@@ -194,9 +193,18 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 			return;
 		
 		// Write column value or null value comment:
-		String columnName = compositeMode == CompositeMode.As_flat_tags ? leafColumnPointer.getQualifiedColumnName() : leafColumn.getName();
+		Column<?> leafColumn = leafColumnPointer.getColumn();
+		String columnName = (compositeMode == CompositeMode.As_flat_tags ? leafColumnPointer.getQualifiedColumnName() : leafColumn.getName());
 		if(record != null && leafColumn.isValueSet(record))
-			writer.writeLine(StringUtils.addTabsFront("<" + columnName + ">" + XMLUtils.escapeCharacters(leafColumn.retrieveValueAsString(record)) + "</" + columnName + ">", tabs));
+		{
+			/* 	If the column type is String (meaning it is a StringColumn or a VirtualColumn with a StringColumn as its target), then
+				we use the raw (i.e. unquoted) String value. We can do this because the difference between null and the empty string
+				is preserved due to the fact that we do not put a tag (only an XML comment) in case the value is null.
+				See XMLRecordsImporter#characters(char[], int, int) for the corresponding import logic.
+				*/
+			String valueString = (leafColumn.getType() == String.class ? (String) leafColumn.retrieveValue(record) : leafColumn.retrieveValueAsString(record));
+			writer.writeLine(StringUtils.addTabsFront("<" + columnName + ">" + XMLUtils.escapeCharacters(valueString) + "</" + columnName + ">", tabs));
+		}
 		else
 			writer.writeLine(StringUtils.addTabsFront(getNullRecordComment(columnName), tabs));
 	}

@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -50,7 +51,21 @@ public class Record implements Serializable
 		if(!schema.isSealed())
 			throw new IllegalStateException("Schema must be sealed before records based on it can be created!");
 		this.schema = schema;
-		values = new Object[schema.getNumberOfColumns()];
+		values = new Object[schema.getNumberOfColumns(false)];
+	}
+	
+	public Record(Schema schema, Object... values)
+	{
+		this(schema);
+		if(values != null)
+		{	
+			if(this.values.length == values.length)
+				// Init from given values:
+				for(int i = 0; i < values.length; i++)
+					this.values[i] = values[i];
+			else
+				throw new IllegalArgumentException("Unexpected number of values (given: " + values.length + "; expected: " + this.values.length + ").");
+		}
 	}
 	
 	/**
@@ -98,12 +113,12 @@ public class Record implements Serializable
 	{
 		if(force)
 		{		
-			if(newSchema.getNumberOfColumns() != values.length)
+			if(newSchema.getNumberOfColumns(false) != values.length)
 				throw new IndexOutOfBoundsException("The new schema has a different number of columns than the number of values in this record!");
 		}
 		else
 		{
-			if(!schema.equals(newSchema, true, true)) // also checks number of columns
+			if(!schema.equals(newSchema, true, true, false)) // also checks columns, but not indexes
 				throw new IllegalArgumentException("The provived schema is not compatible with this record!");
 		}
 		this.schema = newSchema; // we accept the new one
@@ -118,7 +133,7 @@ public class Record implements Serializable
 	protected void setValue(Column<?> column, Object value)
 	{
 		// Deal with virtual columns:
-		if(column.isVirtual())
+		if(column instanceof VirtualColumn)
 			throw new IllegalArgumentException("Records do not hold values of virtual columns!"); // this should never happen
 		// Get column position:
 		int position = schema.getColumnPosition(column);
@@ -137,7 +152,7 @@ public class Record implements Serializable
 	protected Object getValue(Column<?> column)
 	{
 		// Deal with virtual columns:
-		if(column.isVirtual())
+		if(column instanceof VirtualColumn)
 			throw new IllegalArgumentException("Records do not hold values of virtual columns!"); // this should never happen
 		// Get column position:
 		int position = schema.getColumnPosition(column);
@@ -181,7 +196,7 @@ public class Record implements Serializable
 		{	//read fields:
 			for(Column<?> c : schema.getColumns(includeVirtual))
 				if(skipColumns == null || !skipColumns.contains(c))
-					if(!c.isVirtual())
+					if(c instanceof VirtualColumn)
 						c.readAndStoreValue(this, bitStream);
 					else
 						c.readValue(bitStream); // read but don't store values of virtual columns (i.e. we skip them in the stream)
@@ -306,7 +321,7 @@ public class Record implements Serializable
 			}
 			else
 			{	// Only check if the number of columns matches (to avoid out or range errors below):
-				if(this.schema.getNumberOfColumns() != other.schema.getNumberOfColumns())
+				if(this.schema.getNumberOfColumns(false) != other.schema.getNumberOfColumns(false))
 					return false;
 			}
 			// Compare values for each column (using values as if decoded from binary stream):
@@ -359,7 +374,7 @@ public class Record implements Serializable
 	 */
 	public String serialise()
 	{
-		return serialise(false, null);
+		return serialise(false, Collections.<Column<?>>emptySet());
 	}
 	
 	/**
@@ -397,7 +412,7 @@ public class Record implements Serializable
 	 */
 	public void parse(String serialisedRecord) throws Exception
 	{
-		parse(serialisedRecord, false, null);
+		parse(serialisedRecord, false, Collections.<Column<?>>emptySet());
 	}
 	
 	/**
@@ -415,7 +430,7 @@ public class Record implements Serializable
 		int p = 0;
 		for(Column<?> col : schema.getColumns(includeVirtual))
 		{
-			if(!col.isVirtual() && (skipColumns == null || !skipColumns.contains(col))) // skip virtual columns & skipColumns (but *do* increment the counter p!)
+			if(!(col instanceof VirtualColumn) && (skipColumns == null || !skipColumns.contains(col))) // skip virtual columns & skipColumns (but *do* increment the counter p!)
 				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
 			p++;
 		}

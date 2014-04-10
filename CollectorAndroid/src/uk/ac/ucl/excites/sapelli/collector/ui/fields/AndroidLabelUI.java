@@ -1,9 +1,9 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -25,7 +25,7 @@ public class AndroidLabelUI extends LabelUI<View, CollectorView>
 	}
 
 	@Override
-	public TextView getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
+	protected TextView getPlatformView(boolean onPage, Record record, boolean newRecord)
 	{
 		if(label == null)
 		{

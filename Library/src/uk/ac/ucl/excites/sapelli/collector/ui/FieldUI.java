@@ -1,10 +1,10 @@
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
  * Abstract class to represent the UI of a Field
@@ -22,7 +22,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	protected Controller controller;
 	protected UI collectorUI;
 	
-	private CollectorRecord lastKnownRecord = null;
+	private Record lastKnownRecord = null;
 	
 	public FieldUI(F field, Controller controller, UI collectorUI)
 	{
@@ -44,7 +44,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param record
 	 * @return
 	 */
-	public V getPlatformView(boolean onPage, CollectorRecord record)
+	public V getPlatformView(boolean onPage, Record record)
 	{
 		// Check if record is new:
 		boolean newRecord = (lastKnownRecord != record);
@@ -64,7 +64,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param newRecord whether or not this is a new record
 	 * @return
 	 */
-	public abstract V getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord);
+	protected abstract V getPlatformView(boolean onPage, Record record, boolean newRecord);
 	
 	/**
 	 * To be overridden by FieldUIs that need to execute cancelling behaviour before disappearing off the screen
@@ -78,7 +78,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param record
 	 * @return whether or not leaving the field is allowed
 	 */
-	public boolean leave(CollectorRecord record)
+	public boolean leave(Record record)
 	{
 		return leave(record, false); // apply validation!
 	}
@@ -90,7 +90,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param noValidation skip validation if true (use with care!)
 	 * @return whether or not leaving the field is allowed
 	 */
-	public abstract boolean leave(CollectorRecord record, boolean noValidation);
+	public abstract boolean leave(Record record, boolean noValidation);
 	
 	/**
 	 * Checks whether the field, or rather the value that is (about to be) assigned, is valid.
@@ -98,16 +98,21 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param record
 	 * @return
 	 */
-	public abstract boolean isValid(CollectorRecord record);
+	public abstract boolean isValid(Record record);
+	
+	protected boolean isShownOnPage()
+	{
+		return controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI;
+	}
 	
 	/**
 	 * Slightly hackish method to trigger (re)validation a fieldUI through the page that contains it.
 	 * If the field is not a page its own validation method is used directly.
 	 */
 	@SuppressWarnings("unchecked")
-	protected boolean isValidInformPage(CollectorRecord record)
+	protected boolean isValidInformPage(Record record)
 	{
-		if(controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI)
+		if(isShownOnPage())
 			return ((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).isValid(this, record); 
 		else
 			return this.isValid(record); // validate field on its own
@@ -120,7 +125,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	@SuppressWarnings("unchecked")
 	protected void clearPageInvalidMark()
 	{
-		if(controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI)
+		if(isShownOnPage())
 			((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).clearInvalidity(this);
 	}
 	

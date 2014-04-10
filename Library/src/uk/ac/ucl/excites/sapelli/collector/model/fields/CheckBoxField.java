@@ -53,6 +53,12 @@ public class CheckBoxField extends Field
 		this.initialValue = initialValue;
 	}
 
+	@Override
+	public BooleanColumn getColumn()
+	{
+		return (BooleanColumn) super.getColumn();
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 

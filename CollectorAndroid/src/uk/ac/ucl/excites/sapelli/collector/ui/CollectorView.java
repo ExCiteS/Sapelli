@@ -104,9 +104,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		// Briefly disable the buttons:
 		controlsView.disable();
 		
-		// Update buttons
-		controlsView.update(controller);
-		
 		// Get or create fieldUI for field...
 		FieldUI<?, View, CollectorView> newFieldUI = fieldUICache.get(field); // try to recycle cached fieldUI
 		if(newFieldUI == null)
@@ -142,8 +139,9 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		// Enable new view:
 		fieldUIView.setId(FIELD_VIEW_ID);
 		fieldUIView.setEnabled(true);
-			
-		// Re-enable the buttons
+		
+		// Update & re-enable the buttons:
+		controlsView.update(controller);
 		controlsView.enable();
 	}
 	

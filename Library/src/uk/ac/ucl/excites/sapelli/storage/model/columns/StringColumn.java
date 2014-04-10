@@ -31,6 +31,28 @@ public class StringColumn extends ComparatorColumn<String>
 	static private final String SERIALISATION_QUOTE = "'";
 	
 	/**
+	 * The number of characters that can fit in the given number of bytes when the given Charset is used to encode them.
+	 * Worst case scenario is assumed in which every char needs to maximum number of bytes.
+	 * 
+	 * @return maximum number of characters that can fit
+	 */
+	public static int MaximumCharsIn(int allowedBytes, Charset charset)
+	{
+		return (int) Math.floor(allowedBytes / charset.newEncoder().maxBytesPerChar()); 
+	}
+	
+	/**
+	 * The number of bytes needed to encode a String with length up to the given number of characters using the given Charset.
+	 * Worst case scenario is assumed in which every char needs to maximum number of bytes.
+	 * 
+	 * @return number of bytes needed
+	 */
+	public static int BytesNeededFor(int maxLengthChars, Charset charset)
+	{
+		return (int) Math.ceil(maxLengthChars * charset.newEncoder().maxBytesPerChar());
+	}
+	
+	/**
 	 * @param name
 	 * @param optional
 	 * @param maxLengthChars the maximum length, measured in characters, a String stored in the column will have
@@ -50,11 +72,12 @@ public class StringColumn extends ComparatorColumn<String>
 	 */
 	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, Charset charset)
 	{
-		return new StringColumn(name, optional, (int) Math.ceil(maxLengthChars * charset.newEncoder().maxBytesPerChar()), charset);
+		return new StringColumn(name, optional, BytesNeededFor(maxLengthChars, charset), charset);
 	}
 	
 	//DYNAMIC--------------------------------------------------------
-	private Charset charset;	
+	private final String charsetName;
+	private transient Charset charset;
 	private IntegerRangeMapping sizeField;
 	
 	/**
@@ -89,6 +112,7 @@ public class StringColumn extends ComparatorColumn<String>
 			throw new IllegalArgumentException("maxLenghthBytes needs to be at least 1 byte to make sense, given " + maxLengthBytes + " bytes");
 		if(charset == null)
 			throw new NullPointerException("charset cannot be null!");
+		this.charsetName = charset.name(); // !!! (because charset is transient, due to Charset not being Serializable)
 		this.charset = charset;
 		this.sizeField = new IntegerRangeMapping(0, maxLengthBytes); // empty Strings are allowed
 	}
@@ -96,7 +120,7 @@ public class StringColumn extends ComparatorColumn<String>
 	@Override
 	public StringColumn copy()
 	{
-		return new StringColumn(name, optional, getMaximumBytes(), charset);
+		return new StringColumn(name, optional, getMaximumBytes(), Charset.forName(charsetName));
 	}
 	
 	/**
@@ -123,7 +147,7 @@ public class StringColumn extends ComparatorColumn<String>
 	{
 		return SERIALISATION_QUOTE + value + SERIALISATION_QUOTE; // surround with quotes
 	}
-
+	
 	/**
 	 * Checks for size restriction violations
 	 * 
@@ -132,7 +156,7 @@ public class StringColumn extends ComparatorColumn<String>
 	@Override
 	protected void validate(String value) throws IllegalArgumentException
 	{
-		int bytesNeeded = StringUtils.sizeBytes(value, charset);
+		int bytesNeeded = StringUtils.sizeBytes(value, getCharset());
 		if(bytesNeeded > getMaximumBytes())
 			throw new IllegalArgumentException("String \"" + value + "\" is too long (it would take " + bytesNeeded + " bytes, while the maximum allowed is " + getMaximumBytes() + " bytes).");
 	}
@@ -141,9 +165,9 @@ public class StringColumn extends ComparatorColumn<String>
 	protected void write(String value, BitOutputStream bitStream) throws IOException
 	{
 		//Write length:
-		sizeField.write(StringUtils.sizeBytes(value, charset), bitStream);
+		sizeField.write(StringUtils.sizeBytes(value, getCharset()), bitStream);
 		//Write actual string:
-		bitStream.write(value, charset);
+		bitStream.write(value, getCharset());
 	}
 
 	@Override
@@ -152,7 +176,7 @@ public class StringColumn extends ComparatorColumn<String>
 		//Read length:
 		int numberOfBytes = (int) sizeField.read(bitStream);
 		//Read actual string:
-		return bitStream.readString(numberOfBytes, charset);
+		return bitStream.readString(numberOfBytes, getCharset());
 	}
 
 	@Override
@@ -179,7 +203,7 @@ public class StringColumn extends ComparatorColumn<String>
 	 */
 	public int getMaximumChars()
 	{
-		return (int) Math.floor(getMaximumBytes() / charset.newEncoder().maxBytesPerChar()); 
+		return MaximumCharsIn(getMaximumBytes(), getCharset());
 	}
 	
 	@Override
@@ -188,7 +212,7 @@ public class StringColumn extends ComparatorColumn<String>
 		if(otherColumn instanceof StringColumn)
 		{
 			StringColumn other = (StringColumn) otherColumn;
-			return this.getMaximumBytes() == other.getMaximumBytes() && this.charset.equals(other.charset);
+			return this.getMaximumBytes() == other.getMaximumBytes() && this.getCharset().equals(other.getCharset());
 		}
 		else
 			return false;
@@ -216,9 +240,16 @@ public class StringColumn extends ComparatorColumn<String>
     public int hashCode()
 	{
 		int hash = super.hashCode();
-		hash = 31 * hash + charset.hashCode();
+		hash = 31 * hash + getCharset().hashCode();
 		hash = 31 * hash + sizeField.hashCode();
 		return hash;
+	}
+	
+	public Charset getCharset()
+	{
+		if(this.charset == null)
+			this.charset = Charset.forName(charsetName); // needed because charset member variable is transient (because Charset is not a Serialisable class)
+		return charset;
 	}
 	
 }

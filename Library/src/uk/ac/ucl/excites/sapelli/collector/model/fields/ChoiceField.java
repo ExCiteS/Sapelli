@@ -6,17 +6,20 @@ import java.util.Arrays;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary;
+import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary.DictionarySerialiser;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.util.StringListMapper;
 
 
 /**
@@ -301,8 +304,36 @@ public class ChoiceField extends Field implements DictionaryItem
 			return null;
 		}
 		else
-		{	//Create column:
-			return new IntegerColumn(id, (optional != Optionalness.NEVER), 0, dictionary.size() - 1);
+		{	
+			boolean opt = (optional != Optionalness.NEVER);
+			
+			//Create column:
+			IntegerColumn col = new IntegerColumn(id, opt, 0, dictionary.size() - 1);
+			
+			// Add virtual columns to it:
+			//	Value String column:
+			StringListMapper itemValueMapper = new StringListMapper(dictionary.serialise(new DictionarySerialiser<ChoiceField>()
+			{
+				@Override
+				public String serialise(ChoiceField item)
+				{
+					return item.value;
+				}
+			}));
+			col.addVirtualVersion(StringColumn.ForCharacterCount("Value", opt, itemValueMapper.getMaxStringLength()), itemValueMapper);
+			//	Image path column:
+			StringListMapper itemImgMapper = new StringListMapper(dictionary.serialise(new DictionarySerialiser<ChoiceField>()
+			{
+				@Override
+				public String serialise(ChoiceField item)
+				{
+					return item.imageRelativePath;
+				}
+			}));
+			col.addVirtualVersion(StringColumn.ForCharacterCount("Image", opt, itemImgMapper.getMaxStringLength()), itemImgMapper);
+			
+			// Return the column:
+			return col;
 		}
 	}
 	
@@ -368,10 +399,9 @@ public class ChoiceField extends Field implements DictionaryItem
 	/**
 	 * Returns the selected choice for the given ChoiceField 
 	 * 
-	 * @param rootChoiceField the choiceField
 	 * @return the selected choice
 	 */
-	public ChoiceField getSelectedChoice(CollectorRecord record)
+	public ChoiceField getSelectedChoice(Record record)
 	{
 		if(record == null || isNoColumn())
 			return null;
@@ -395,7 +425,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	 */
 	public static class ChoiceDictionary extends Dictionary<ChoiceField>
 	{
-		
+
 		/**
 		 * <b>Note:</b> This method should only be called after the whole choice tree is parsed & constructed (i.e. from addColumns()).
 		 */

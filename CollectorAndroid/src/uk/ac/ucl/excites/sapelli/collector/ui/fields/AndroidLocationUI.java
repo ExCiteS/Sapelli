@@ -4,10 +4,10 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.shared.util.Timeoutable;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.view.Gravity;
 import android.view.View;
@@ -41,7 +41,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 	}
 	
 	@Override
-	public View getPlatformView(boolean onPage, CollectorRecord record, boolean newRecord)
+	protected View getPlatformView(boolean onPage, Record record, boolean newRecord)
 	{
 		//TODO editable
 		if(onPage)

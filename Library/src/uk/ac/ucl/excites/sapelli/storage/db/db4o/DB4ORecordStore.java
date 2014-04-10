@@ -151,7 +151,7 @@ public class DB4ORecordStore extends RecordStore
 		// Run the RecordsQuery:
 		List<Record> records = retrieveRecords(query.getRecordsQuery());
 		
-		// Run execute the SingleRecordQuery (reducing the list to 1 record), without re-running the recordsQuery, return the result:
+		// Run execute the SingleRecordQuery (reducing the list to 1 record), without re-running the recordsQuery, and then return the result:
 		return query.execute(records, false);
 	}
 

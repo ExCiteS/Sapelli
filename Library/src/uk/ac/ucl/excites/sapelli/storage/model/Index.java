@@ -23,10 +23,10 @@ public class Index extends Schema
 		
 		// Add columns (but check if they are not virtual):
 		for(Column<?> iCol : columns)
-			if(!iCol.isVirtual())
-				addColumn(iCol); // Note: the columns are not copied, just shared! (columns don't "know" their Schema(s) anyway)
-			else
+			if(iCol instanceof VirtualColumn)
 				throw new IllegalArgumentException("Indexing of virtual columns is not supported!");
+			else
+				addColumn(iCol); // Note: the columns are not copied, just shared! (columns don't "know" their Schema(s) anyway)
 		seal();
 	}
 

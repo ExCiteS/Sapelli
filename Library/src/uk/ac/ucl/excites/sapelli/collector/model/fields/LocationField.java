@@ -4,12 +4,12 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.LocationUI;
 import uk.ac.ucl.excites.sapelli.shared.util.Timeoutable;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
@@ -319,12 +319,12 @@ public class LocationField extends Field implements Timeoutable
 		return (LocationColumn) super.getColumn();
 	}
 	
-	public boolean storeLocation(CollectorRecord record, Location location)
+	public boolean storeLocation(Record record, Location location)
 	{
 		return storeLocation(record, location, false);
 	}
 	
-	public boolean storeLocation(CollectorRecord record, Location location, boolean bestWeCouldGet)
+	public boolean storeLocation(Record record, Location location, boolean bestWeCouldGet)
 	{	
 		if(isNoColumn())
 			return true; // just in case
@@ -358,7 +358,7 @@ public class LocationField extends Field implements Timeoutable
 		return true;
 	}
 	
-	public Location retrieveLocation(CollectorRecord record)
+	public Location retrieveLocation(Record record)
 	{
 		return ((LocationColumn) form.getColumnFor(this)).retrieveValue(record);
 	}

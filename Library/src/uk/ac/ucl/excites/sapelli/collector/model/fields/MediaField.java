@@ -9,7 +9,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.xml.FormParser;
@@ -150,7 +149,7 @@ public abstract class MediaField extends Field
 		((IntegerColumn) form.getColumnFor(this)).storeValue(record, ++currentCount);
 	}
 
-	public File getNewTempFile(CollectorRecord record) throws IOException
+	public File getNewTempFile(Record record) throws IOException
 	{
 		String filename = generateFilename(record, getCount(record));
 		String dataFolderPath = form.getProject().getTempFolder().getAbsolutePath(); //getTempFolder() does the necessary checks (IOException is thrown in case of trouble)
@@ -166,7 +165,7 @@ public abstract class MediaField extends Field
 	 * @param attachmentNumber
 	 * @return
 	 */
-	public String generateFilename(CollectorRecord record, int attachmentNumber)
+	public String generateFilename(Record record, int attachmentNumber)
 	{
 		return generateFilename(record, attachmentNumber, form.isObfuscateMediaFiles(), form.isObfuscateMediaFiles());
 	}
@@ -181,11 +180,11 @@ public abstract class MediaField extends Field
 	 * @param obfuscateExtension
 	 * @return
 	 */
-	public String generateFilename(CollectorRecord record, int attachmentNumber, boolean obfuscateFilename, boolean obfuscateExtension)
+	public String generateFilename(Record record, int attachmentNumber, boolean obfuscateFilename, boolean obfuscateExtension)
 	{	
 		// Elements:
-		String dateTime = TimeUtils.getTimestampForFileName(record.getStartTime(true));
-		long deviceID = record.getDeviceID();
+		String dateTime = TimeUtils.getTimestampForFileName(form.getStartTime(record, true));
+		long deviceID = form.getDeviceID(record);
 		
 		// Assemble base filename
 		//	Format: "FieldID_DeviceID_DateTime_AttachmentNumber"

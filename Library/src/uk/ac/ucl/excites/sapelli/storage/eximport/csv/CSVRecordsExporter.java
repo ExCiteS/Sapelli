@@ -16,6 +16,8 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
 
@@ -84,7 +86,6 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	@Override
 	public ExportResult export(List<Record> records, String name) throws Exception
 	{
-		//TODO escape separator
 		//TODO sort per schema
 		//TODO append schemaID to header
 		//TODO polish
@@ -129,7 +130,18 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 						Column<?> col = cp.getColumn();
 						Record rec = cp.getRecord(r, false);
 						if(rec != null && col.isValueSet(rec))
-							writer.write(col.retrieveValueAsString(rec));
+						{
+							writer.write(	(col instanceof VirtualColumn && ((VirtualColumn<?, ?>) col).getTargetColumn() instanceof StringColumn) ?				
+												(String) col.retrieveValue(rec) :
+												col.retrieveValueAsString(rec));
+							// TODO escape separator!
+							/*
+							 * If the column is a VirtualColumn and its target column is a StringColumn then we can print the value as an unquoted String.
+							 * Unlike in the case of XMLRecordsExporter we can only do this for virtual StringColumns, because those will never be parsed
+							 * by CSVRecordsImporter anyway. If we'd do it for normal StringColumns (which would be parser upon importing) then we'd lose
+							 * the different between null and the empty String (which are not the same for StringColumns). 
+							 */
+						}
 					}
 					writer.write('\n');				
 				}

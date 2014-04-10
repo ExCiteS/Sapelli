@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -18,6 +17,10 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * A Schema holds a set of ordered {@link Column}s
  * 
  * @author mstevens
+ */
+/**
+ * @author mstevens
+ *
  */
 @SuppressWarnings("rawtypes")
 public class Schema implements Serializable
@@ -56,10 +59,10 @@ public class Schema implements Serializable
 	protected final long id;
 	protected final String name;
 
-	private final List<Column> columns; // only contains non-virtual columns
-	private final Map<String, Integer> columnNameToPosition; // only contans non-virtual columns
-	private final Map<Column, List<Column>> columnToVirtualColumns;
-	private final Map<String, Column> virtualColumnsByName;
+	private final List<Column> realColumns; // only contains non-virtual columns
+	private transient List<Column> allColumns; // contains non-virtual and virtual columns
+	private final Map<String, Integer> columnNameToPosition; // only contains non-virtual columns
+	private final Map<String, VirtualColumn> virtualColumnsByName;
 	private final List<Index> indexes;
 	private Index primaryKey;
 
@@ -73,37 +76,33 @@ public class Schema implements Serializable
 			throw new IllegalArgumentException("Invalid schema ID value (" + id + "), valid values are " + SCHEMA_ID_FIELD.getLogicalRangeString() + ".");
 		this.name = (name == null || name.isEmpty() ? "Schema_ID" + id : name);
 		columnNameToPosition = new LinkedHashMap<String, Integer>();
-		columns = new ArrayList<Column>();
-		virtualColumnsByName = new HashMap<String, Column>();
+		realColumns = new ArrayList<Column>();
+		virtualColumnsByName = new HashMap<String, VirtualColumn>();
 		indexes = new ArrayList<Index>();
-		columnToVirtualColumns = new HashMap<Column, List<Column>>();
 	}
 
+	@SuppressWarnings("unchecked")
 	public void addColumns(List<Column<?>> columns)
 	{
 		for(Column c : columns)
 			addColumn(c);
 	}
 	
-	public void addColumn(Column column)
+	public <T> void addColumn(Column<T> column)
 	{
 		if(sealed)
 			throw new IllegalStateException("Cannot extend a sealed schema!");
 		if(containsColumn(column, true))
 			throw new IllegalArgumentException("The schema already contains a column with name \"" + column.getName() + "\"!");
-		if(!column.isVirtual())
-		{	// Add the column:
-			columnNameToPosition.put(column.getName(), columns.size());
-			columns.add(column);			
-		}
-		else
-		{	// Deal with virtual column:
-			Column sourceColumn = column.getSourceColumn(); 
-			if(!containsColumn(sourceColumn, false))
-				throw new IllegalArgumentException("The schema does not contain the source column of the given virtual column.");
-			if(!columnToVirtualColumns.containsKey(sourceColumn))
-				columnToVirtualColumns.put(sourceColumn, new ArrayList<Column>());
-			columnToVirtualColumns.get(sourceColumn).add(column);
+		// Add the column:
+		columnNameToPosition.put(column.getName(), realColumns.size());
+		realColumns.add(column);
+		// Add any virtual versions it may have		
+		for(VirtualColumn<?, T> vCol : column.getVirtualVersions())
+		{
+			if(!containsColumn(vCol.getSourceColumn(), false))
+				throw new IllegalArgumentException("The schema does not contain the source column (" + vCol.getSourceColumn().getName() + ") of the given virtual column.");
+			virtualColumnsByName.put(vCol.getName(), vCol);
 		}
 	}
 	
@@ -150,25 +149,31 @@ public class Schema implements Serializable
 		Integer pos = columnNameToPosition.get(name);
 		if(pos == null)
 			return checkVirtual ? virtualColumnsByName.get(name) : null;
-		return columns.get(pos);
+		return realColumns.get(pos);
 	}
 
 	public List<Column> getColumns(boolean includeVirtual)
 	{
 		if(includeVirtual)
 		{
-			List<Column> allCols = new ArrayList<Column>();
-			for(Column nonVirtualCol : columns)
+			if(!sealed || allColumns == null) // (re)initialise the allColumns list if it is null or as long as the schema is not sealed.
 			{
-				allCols.add(nonVirtualCol);
-				CollectionUtils.addAllIgnoreNull(allCols, columnToVirtualColumns.get(nonVirtualCol));
+				allColumns = new ArrayList<Column>();
+				for(Column<?> nonVirtualCol : realColumns)
+				{
+					allColumns.add(nonVirtualCol); // "real" column
+					allColumns.addAll(nonVirtualCol.getVirtualVersions()); // insert virtual versions of real column after it
+				}
 			}
-			return allCols;
+			return allColumns;
 		}
-		return columns;
+		return realColumns;
 	}
 	
-	public Collection<Column> getVirtualColumns()
+	/**
+	 * @return an unordered collection of the virtual columns in the schema
+	 */
+	public Collection<VirtualColumn> getVirtualColumns()
 	{
 		return virtualColumnsByName.values();
 	}
@@ -250,6 +255,11 @@ public class Schema implements Serializable
 		this.sealed = true;
 	}
 
+	public Record createRecord()
+	{
+		return new Record(this);
+	}
+	
 	/**
 	 * @return the name
 	 */
@@ -266,9 +276,9 @@ public class Schema implements Serializable
 		return id;
 	}
 
-	public int getNumberOfColumns()
+	public int getNumberOfColumns(boolean includeVirtual)
 	{
-		return columns.size();
+		return realColumns.size() + (includeVirtual ? virtualColumnsByName.size() : 0);
 	}
 
 	/**
@@ -349,7 +359,7 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * Check for equality based on schema ID & version (nothing else)
+	 * Check for equality based on schema ID (nothing else)
 	 * 
 	 * @param obj object to compare this one with
 	 * @return whether or not the given Object is a Schema with the same ID & version as this one
@@ -358,7 +368,7 @@ public class Schema implements Serializable
 	@Override
 	public boolean equals(Object obj)
 	{
-		return equals(obj, false, false); // check only usageID & usageSubID by default
+		return equals(obj, false, false, false); // check only schemaID
 	}
 
 	/**
@@ -367,9 +377,10 @@ public class Schema implements Serializable
 	 * @param obj object to compare this one with
 	 * @param checkNames whether or not to compare the names of the schemas and (if checkColumns is true) those of their columns
 	 * @param checkColumns whether or not to compare columns (types, sizes, etc., and names if checkNames is true)
-	 * @return whether or not the given Object is an identical/equivalent Schema
+	 * @param checkIndexes whether or not to compare indexes
+	 * @return whether or not the given Object is an identical/equivalent Schema (under the given checking conditions)
 	 */
-	public boolean equals(Object obj, boolean checkNames, boolean checkColumns)
+	public boolean equals(Object obj, boolean checkNames, boolean checkColumns, boolean checkIndexes)
 	{
 		if(this == obj) // compare pointers first
 			return true;
@@ -383,20 +394,30 @@ public class Schema implements Serializable
 			// Name:
 			if(checkNames && !this.name.equals(other.name))
 				return false;
-			// Columns:
+			// Columns & indexes:
 			if(checkColumns)
 			{
-				// Check number of columns:
-				if(columns.size() != other.columns.size())
+				// Check number of (real) columns:
+				if(realColumns.size() != other.realColumns.size())
 					return false;
 				// Compare columns:
-				Iterator<Column> myCols = columns.iterator();
-				Iterator<Column> otherCols = other.columns.iterator();
+				Iterator<Column> myCols = realColumns.iterator();
+				Iterator<Column> otherCols = other.realColumns.iterator();
 				while(myCols.hasNext() /* && otherCols.hasNext() */)
 					if(!myCols.next().equals(otherCols.next(), checkNames, true))
 						return false;
-				//TODO compare indexes
-				//TODO compare virtualColumns
+			}
+			if(checkIndexes)
+			{
+				// Check number of indexes:
+				if(indexes.size() != other.indexes.size())
+					return false;
+				// Compare indexes:
+				Iterator<Index> myIndexes = indexes.iterator();
+				Iterator<Index> otherIndexes = other.indexes.iterator();
+				while(myIndexes.hasNext() /** otherIndexes.hasNext() */)
+					if(!myIndexes.next().equals(otherIndexes.next(), checkNames, checkColumns, false))
+						return false;
 			}
 			return true;
 		}
@@ -410,8 +431,7 @@ public class Schema implements Serializable
 		int hash = 1;
 		hash = 31 * hash + (int)(id ^ (id >>> 32));
 		hash = 31 * hash + (name == null ? 0 : name.hashCode());
-		hash = 31 * hash + columns.hashCode();
-		hash = 31 * hash + columnToVirtualColumns.hashCode();
+		hash = 31 * hash + realColumns.hashCode();
 		hash = 31 * hash + indexes.hashCode();
 		hash = 31 * hash + (primaryKey == null ? 0 : primaryKey.hashCode());
 		hash = 31 * hash + (sealed ? 0 : 1);
@@ -430,6 +450,7 @@ public class Schema implements Serializable
 		bff.append(toString() + ":");
 		for(Column<?> c : getColumns(true))
 			bff.append("\n\t- " + c.getSpecification());
+		// TODO add indexes & primary key to schema specs
 		return bff.toString();
 	}
 	
