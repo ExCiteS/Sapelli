@@ -78,8 +78,8 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 		 * Simply calling goForward() is not a good idea because if the button is on a page (which is usually the case)
 		 * the current field of the controller is the page, not the button, so in that case goForward() will go to the
 		 * jump/next of the page, instead of the jump/next of the button. Therefore we first check if he button has a
-		 * jump and if it has so goTo there. If it does not have a jump we call goForward() which will take is to the
-		 * next/jump of the page (if the button is on one) or to the next of the button (if it is not on a page).
+		 * jump and if it has one we "goTo()" there. If it does not have a jump we call goForward() which will take us
+		 * to the next/jump of the page (if the button is on one) or to the next of the button (if it is not on a page).
 		 */
 	}
 
