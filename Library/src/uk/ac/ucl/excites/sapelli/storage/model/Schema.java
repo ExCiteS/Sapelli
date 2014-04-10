@@ -18,10 +18,6 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-/**
- * @author mstevens
- *
- */
 @SuppressWarnings("rawtypes")
 public class Schema implements Serializable
 {
