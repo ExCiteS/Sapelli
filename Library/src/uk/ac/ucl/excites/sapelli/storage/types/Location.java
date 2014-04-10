@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.sapelli.storage.types;
 import java.text.ParseException;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -273,7 +274,7 @@ public class Location extends Record
 							(parts.length > 4 && !parts[4].isEmpty() ? Float.valueOf(parts[4]) : null),
 							(parts.length > 5 && !parts[5].isEmpty() ? Float.valueOf(parts[5]) : null),
 							(parts.length > 6 && !parts[6].isEmpty() ? Float.valueOf(parts[6]) : null),
-							(parts.length > 7 && !parts[7].isEmpty() ? Long.valueOf(parts[7]) : null),
+							(parts.length > 7 && !parts[7].isEmpty() ? new DateTime(Long.valueOf(parts[7]), DateTimeZone.UTC) : null),
 							Integer.parseInt(parts[oldFormat ? 2 : 0]));
 	}
 	
