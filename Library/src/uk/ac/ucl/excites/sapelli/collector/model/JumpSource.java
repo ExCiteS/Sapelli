@@ -5,12 +5,14 @@ package uk.ac.ucl.excites.sapelli.collector.model;
 
 
 /**
- * @author Michalis Vitos, mstevens
+ * @author mstevens, Michalis Vitos
  * 
  */
 public interface JumpSource
 {
 
 	public void setJump(Field target);
-
+	
+	public Field getJump();
+	
 }
