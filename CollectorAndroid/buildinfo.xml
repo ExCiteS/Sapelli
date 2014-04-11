@@ -88,7 +88,7 @@
 	    <echo>Checking for changes in: ${repository-path}</echo>
 	    <ac:var name="git-changes" unset="true"/>
 		<exec executable="git" resultproperty="git-changes" failifexecutionfails="false" errorproperty="">
-	        <arg value="diff-index"/>
+	        <arg value="diff"/>
 	        <arg value="--quiet"/>
 	        <arg value="HEAD"/>
 	    	<arg value='"${repository-path}"'/>
@@ -96,7 +96,7 @@
 		<ac:var name="repository-path-changes" unset="true"/>
 		<condition property="repository-path-changes" value="true" else="false">
 	        <and>
-	            <isset property="git-changes"/>
+			<isset property="git-changes"/>
 	        	<equals arg1="${git-changes}" arg2="1"/>
 	        </and>
 	    </condition>
