@@ -35,7 +35,7 @@ public abstract class Constraint
 
 	public boolean isValid(Record record)
 	{
-		return record != null & _isValid(record);
+		return record != null && _isValid(record);
 	}
 	
 	/**
