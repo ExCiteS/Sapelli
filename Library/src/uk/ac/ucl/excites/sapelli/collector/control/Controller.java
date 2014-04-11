@@ -137,10 +137,7 @@ public abstract class Controller
 	}
 	
 	public void cancelAndRestartForm()
-	{
-		// Cancel button pressed
-		addLogLine("CANCEL_BUTTON", currFormSession.currField.getID());
-		
+	{	
 		goTo(new EndField(currFormSession.form, false, Next.LOOPFORM), true); // loop without saving first (forced leaving of current field)
 	}
 
@@ -171,10 +168,6 @@ public abstract class Controller
 			return;
 		}
 		
-		// Log interaction:
-		if(requestedByUser)
-			addLogLine("FORWARD_BUTTON", currFormSession.currField.getID());
-		
 		if(currFormSession.currField != null)
 			goTo(currFormSession.form.getNextField(currFormSession.currField));
 		else
@@ -189,12 +182,8 @@ public abstract class Controller
 	public void goBack(boolean requestedByUser)
 	{
 		if(requestedByUser)
-		{	// Remember we are handling a user initiated goBack request, this will turn subsequently triggered automatic goForward requests into goBack requests!
+			// Remember we are handling a user initiated goBack request, this will turn subsequently triggered automatic goForward requests into goBack requests!
 			handlingUserGoBackRequest = true; // Do *not* replace this by: handlingGoBackRequest = requestedByUser
-		
-			// log interaction:
-			addLogLine("BACK_BUTTON", currFormSession.currField.getID());
-		}
 		
 		// Try to go to previous field...
 		if(!currFormSession.fieldHistory.isEmpty())
@@ -310,7 +299,7 @@ public abstract class Controller
 		currFormSession.form.finish(currFormSession.record); // (re)sets the end-time if necessary
 	
 		// Store currentRecord
-		recordStore.store(new Record(currFormSession.record)); //TODO remove new Record()  (this is a hopefully temporarily hack to deal with db4o problems with CollectorRecords for Forms that have Pages)
+		recordStore.store(currFormSession.record);
 	
 		// Log record:
 		addLogLine("RECORD", currFormSession.record.toString());

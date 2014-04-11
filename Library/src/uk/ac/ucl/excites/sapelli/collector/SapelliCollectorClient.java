@@ -3,7 +3,7 @@
  */
 package uk.ac.ucl.excites.sapelli.collector;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
@@ -111,9 +111,7 @@ public class SapelliCollectorClient implements TransmissionClient
 	@Override
 	public Set<Column<?>> getFactoredOutColumnsFor(Schema schema)
 	{
-		Set<Column<?>> columns = new HashSet<Column<?>>();
-		columns.add(Form.COLUMN_DEVICE_ID);
-		return columns;
+		return Collections.<Column<?>> singleton(Form.COLUMN_DEVICE_ID);
 	}
 
 }

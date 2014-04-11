@@ -141,9 +141,9 @@ public class RecordsQuery
 	{
 		this.sourceSchema = sourceSchema;
 		if(constraints != null && constraints.length == 1 && constraints[0] instanceof AndConstraint)
-			this.constraints = (AndConstraint) constraints[0];
+			this.constraints = (AndConstraint) constraints[0]; // flatten AND
 		else
-			this.constraints = new AndConstraint(constraints);	
+			this.constraints = new AndConstraint(constraints); // can deal with null
 		this.orderBy = orderBy;
 		this.orderAsc = orderAsc;
 		if(limit < NO_LIMIT || limit == 0)

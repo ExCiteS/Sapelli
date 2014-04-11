@@ -605,7 +605,7 @@ public class FormParser extends SubtreeParser
 		// Read various optional Field attributes: 
 		if(attributes != null)
 		{	
-			// Remember jumps (always "intra-Form", and not leaving a page unless the field can do that):
+			// Remember jumps (always "intra-Form", and not leaving a page unless this type of field is allowed to do that):
 			if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
 			{
 				if(currentPage == null || field.canJumpFromPage())

@@ -206,9 +206,19 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 			{
 				switch(positionToButton[position])
 				{
-					case BUTTON_TYPE_BACK		: controller.goBack(true); break;
-					case BUTTON_TYPE_CANCEL		: controller.cancelAndRestartForm(); break;
-					case BUTTON_TYPE_FORWARD	: controller.goForward(true); break;
+					// TODO when having switched to enum for button types we can make this code more compact (just having the addLogLine line once using buttontype.toString() instead of the hard coded Strings)
+					case BUTTON_TYPE_BACK :
+						controller.addLogLine("BACK_BUTTON", controller.getCurrentField().getID());
+						controller.goBack(true);
+						break;
+					case BUTTON_TYPE_CANCEL : 
+						controller.addLogLine("CANCEL_BUTTON", controller.getCurrentField().getID());
+						controller.cancelAndRestartForm();
+						break;
+					case BUTTON_TYPE_FORWARD :
+						controller.addLogLine("FORWARD_BUTTON", controller.getCurrentField().getID());
+						controller.goForward(true);
+						break;
 					default : return;
 				}
 			}

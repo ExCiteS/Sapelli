@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -33,22 +34,20 @@ public class Trigger implements JumpSource
 	protected List<Key> keys;
 	protected int fixedTimer = NO_TIMEOUT;
 	protected Field jump;
-
-	public Trigger()
-	{
-		keys = new ArrayList<Trigger.Key>();
-	}
+	protected FieldParameters jumpArgs;
 
 	/**
 	 * @return the keys
 	 */
 	public List<Key> getKeys()
 	{
-		return keys;
+		return keys != null ? keys : Collections.<Key> emptyList();
 	}
 	
 	public void addKey(Key key)
 	{
+		if(this.keys == null)
+			this.keys = new ArrayList<Trigger.Key>();
 		this.keys.add(key);
 	}
 
@@ -61,8 +60,7 @@ public class Trigger implements JumpSource
 	}
 
 	/**
-	 * @param fixedTimer
-	 *            the fixedTimer to set
+	 * @param fixedTimer the fixedTimer to set
 	 */
 	public void setFixedTimer(int fixedTimer)
 	{
@@ -87,5 +85,5 @@ public class Trigger implements JumpSource
 	{
 		this.jump = target;
 	}
-
+	
 }
