@@ -142,18 +142,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		if(BuildInfo.DEMO_BUILD)
 			return;
 		//else ...
-		// Only if not in demo mode:			
-		
-		// Get RecordStore instance:
-		try
-		{
-			recordStore = app.getRecordStore(this);
-		}
-		catch(Exception e)
-		{
-			showErrorDialog("Could not open RecordStore: " + e.getLocalizedMessage(), true);
-			return;
-		}
+		// Only if not in demo mode:
 		
 		// Set-up UI...
 		setTitle(getString(R.string.app_name) + ' ' + getString(R.string.project_manager));
@@ -332,6 +321,17 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		final Project selectedProject = getSelectedProject(false);
 		
+		// Get RecordStore instance:
+		try
+		{
+			recordStore = app.getRecordStore(this);
+		}
+		catch(Exception e)
+		{
+			showErrorDialog("Could not open RecordStore: " + e.getLocalizedMessage(), true);
+			return false;
+		}
+		
 		/* TODO show dialog with following options:
 		 * 
 		 * Source selection (spinner):
@@ -350,6 +350,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		 *   - As String
 		 *   - As flat tags [default]
 		 *   - As nested tags
+		 *   
+		 *  Remove after export
 		 * 
 		 * OK + CANCEL buttons
 		 */
@@ -396,6 +398,10 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 				}
 			}
 		});
+		
+		// Discard record store:
+		app.discardStoreUsage(recordStore, this);
+		recordStore = null;
 		
 		return true;
 	}
