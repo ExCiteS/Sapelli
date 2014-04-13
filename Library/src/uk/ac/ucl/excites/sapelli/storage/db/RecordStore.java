@@ -37,7 +37,11 @@ public abstract class RecordStore implements Store
 	/**
 	 * @param records - the records to store or update
 	 */
-	public abstract void store(List<Record> records);
+	public void store(List<Record> records)
+	{
+		for(Record r : records)
+			store(r);
+	}
 	
 	/**
 	 * @param record - the record to delete
