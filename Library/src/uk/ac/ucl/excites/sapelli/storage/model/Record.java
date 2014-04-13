@@ -197,9 +197,9 @@ public class Record implements Serializable
 			for(Column<?> c : schema.getColumns(includeVirtual))
 				if(skipColumns == null || !skipColumns.contains(c))
 					if(c instanceof VirtualColumn)
-						c.readAndStoreValue(this, bitStream);
-					else
 						c.readValue(bitStream); // read but don't store values of virtual columns (i.e. we skip them in the stream)
+					else
+						c.readAndStoreValue(this, bitStream);
 		}
 		catch(Exception e)
 		{
