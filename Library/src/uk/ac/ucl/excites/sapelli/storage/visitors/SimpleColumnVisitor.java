@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.sapelli.storage.visitors;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
@@ -111,6 +112,15 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	public void visit(OrientationColumn orCol)
 	{
 		this.visit((Column<?>) orCol);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn)
+	 */
+	@Override
+	public void visit(ByteArrayColumn byteArrayCol)
+	{
+		this.visit((Column<?>) byteArrayCol);
 	}
 
 	/* (non-Javadoc)

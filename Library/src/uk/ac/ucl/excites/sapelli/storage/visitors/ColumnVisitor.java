@@ -6,6 +6,7 @@ package uk.ac.ucl.excites.sapelli.storage.visitors;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
@@ -45,6 +46,8 @@ public interface ColumnVisitor
 	public void visit(LocationColumn locCol);
 	
 	public void visit(OrientationColumn orCol);
+	
+	public void visit(ByteArrayColumn byteArrayCol);
 	
 	public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol);
 	
