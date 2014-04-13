@@ -1,10 +1,10 @@
 package uk.ac.ucl.excites.sapelli.collector;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
@@ -76,7 +76,7 @@ public class CollectorApp extends Application
 	private ProjectStore projectStore = null;
 	private RecordStore recordStore = null;
 	//private TransmissionStore transmissionStore = null; 
-	private Map<Store, List<StoreClient>> storeClients;
+	private Map<Store, Set<StoreClient>> storeClients;
 
 	@Override
 	public void onCreate()
@@ -85,7 +85,7 @@ public class CollectorApp extends Application
 		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.getAllInfo());
 	
 		// Store clients:
-		storeClients = new HashMap<Store, List<StoreClient>>();
+		storeClients = new HashMap<Store, Set<StoreClient>>();
 		
 		// Sapelli folder (created on SD card or internal mass storage):
 		sapelliFolder = new File(getStorageDirectory().getAbsolutePath() + File.separator + SAPELLI_FOLDER);
@@ -183,7 +183,7 @@ public class CollectorApp extends Application
 		if(projectStore == null)
 		{
 			projectStore = USE_PREFS_FOR_PROJECT_STORAGE ? new PrefProjectStore(this) : new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
-			storeClients.put(projectStore, new ArrayList<StoreClient>());
+			storeClients.put(projectStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(projectStore).add(client); //add to set of clients currently using the projectStore
 		return projectStore;
@@ -203,7 +203,7 @@ public class CollectorApp extends Application
 		if(recordStore == null)
 		{
 			recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
-			storeClients.put(recordStore, new ArrayList<StoreClient>());
+			storeClients.put(recordStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(recordStore).add(client); //add to set of clients currently using the projectStore
 		return recordStore;
@@ -221,13 +221,15 @@ public class CollectorApp extends Application
 			return;
 		
 		// Remove client for this store:
-		storeClients.get(store).remove(client);
+		Set<StoreClient> clients = storeClients.get(store);
 		
+		if(clients != null)
+			clients.remove(client);
 		// Finalise if no longer used by other clients:
-		if(storeClients.get(store).isEmpty())
+		if(clients == null || clients.isEmpty())
 		{
 			store.finalise();
-			storeClients.remove(store); // remove empty list
+			storeClients.remove(store); // remove empty set
 
 			//Slightly dirty but acceptable:
 			if(store == projectStore)
