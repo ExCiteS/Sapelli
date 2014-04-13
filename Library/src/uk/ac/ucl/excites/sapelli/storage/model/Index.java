@@ -29,6 +29,12 @@ public class Index extends Schema
 				addColumn(iCol); // Note: the columns are not copied, just shared! (columns don't "know" their Schema(s) anyway)
 		seal();
 	}
+	
+	@Override
+	public <T> void addColumn(Column<T> column)
+	{
+		addColumn(column, false); // add column but *not* its virtual versions
+	}
 
 	/**
 	 * @return the unique

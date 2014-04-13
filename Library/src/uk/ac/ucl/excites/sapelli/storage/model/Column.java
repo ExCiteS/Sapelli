@@ -485,8 +485,8 @@ public abstract class Column<T> implements Serializable
 	 * A VirtualColumn instance will be created with this column as the "real" sourceColumn
 	 * and the given targetColumn as its "virtual" counterpart.
 	 * 
-	 * Note: this should happen *before* the column is added to a schema! Currently this
-	 * is not checked, later we may introduce 'column sealing' to do this (cfr. Schema#seal()).
+	 * Note: this should happen *before* the column is added to a schema! This is indirectly
+	 * enforced due to the way {@link Schema#getColumns(boolean)} works.
 	 * 
 	 * @param targetColumn
 	 * @param valueMapper
@@ -501,7 +501,7 @@ public abstract class Column<T> implements Serializable
 	/**
 	 * @return the virtualVersions
 	 */
-	public List<VirtualColumn<?, T>> getVirtualVersions()
+	protected List<VirtualColumn<?, T>> getVirtualVersions()
 	{
 		return virtualVersions == null ? Collections.<VirtualColumn<?, T>>emptyList() : virtualVersions;
 	}

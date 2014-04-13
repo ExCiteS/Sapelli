@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -58,8 +59,8 @@ public class Schema implements Serializable
 	private final List<Column> realColumns; // only contains non-virtual columns
 	private transient List<Column> allColumns; // contains non-virtual and virtual columns
 	private final Map<String, Integer> columnNameToPosition; // only contains non-virtual columns
-	private final Map<String, VirtualColumn> virtualColumnsByName;
-	private final List<Index> indexes;
+	private Map<String, VirtualColumn> virtualColumnsByName;
+	private List<Index> indexes;
 	private Index primaryKey;
 
 	private boolean sealed = false;
@@ -73,8 +74,6 @@ public class Schema implements Serializable
 		this.name = (name == null || name.isEmpty() ? "Schema_ID" + id : name);
 		columnNameToPosition = new LinkedHashMap<String, Integer>();
 		realColumns = new ArrayList<Column>();
-		virtualColumnsByName = new HashMap<String, VirtualColumn>();
-		indexes = new ArrayList<Index>();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -86,6 +85,11 @@ public class Schema implements Serializable
 	
 	public <T> void addColumn(Column<T> column)
 	{
+		addColumn(column, true);
+	}
+	
+	protected <T> void addColumn(Column<T> column, boolean useVirtual)
+	{
 		if(sealed)
 			throw new IllegalStateException("Cannot extend a sealed schema!");
 		if(containsColumn(column, true))
@@ -93,13 +97,16 @@ public class Schema implements Serializable
 		// Add the column:
 		columnNameToPosition.put(column.getName(), realColumns.size());
 		realColumns.add(column);
-		// Add any virtual versions it may have		
-		for(VirtualColumn<?, T> vCol : column.getVirtualVersions())
-		{
-			if(!containsColumn(vCol.getSourceColumn(), false))
-				throw new IllegalArgumentException("The schema does not contain the source column (" + vCol.getSourceColumn().getName() + ") of the given virtual column.");
-			virtualColumnsByName.put(vCol.getName(), vCol);
-		}
+		// If we are allowed then add any virtual versions it may have:		
+		if(useVirtual)
+			for(VirtualColumn<?, T> vCol : column.getVirtualVersions())
+			{
+				if(!containsColumn(vCol.getSourceColumn(), false))
+					throw new IllegalArgumentException("The schema does not contain the source column (" + vCol.getSourceColumn().getName() + ") of the given virtual column.");
+				if(virtualColumnsByName == null)
+					virtualColumnsByName = new HashMap<String, VirtualColumn>();
+				virtualColumnsByName.put(vCol.getName(), vCol);
+			}
 	}
 	
 	/**
@@ -132,6 +139,8 @@ public class Schema implements Serializable
 					throw new IllegalArgumentException("An primary key index cannot contain optional (i.e. nullable) columns!");
 			primaryKey = index; // set the index as primary key
 		}
+		if(indexes == null)
+			indexes = new ArrayList<Index>();
 		indexes.add(index); // add to the indexes
 	}
 
@@ -144,13 +153,13 @@ public class Schema implements Serializable
 	{
 		Integer pos = columnNameToPosition.get(name);
 		if(pos == null)
-			return checkVirtual ? virtualColumnsByName.get(name) : null;
+			return checkVirtual && virtualColumnsByName != null ? virtualColumnsByName.get(name) : null;
 		return realColumns.get(pos);
 	}
 
 	public List<Column> getColumns(boolean includeVirtual)
 	{
-		if(includeVirtual)
+		if(includeVirtual && virtualColumnsByName != null) // includeVirtual=true and we have at least 1 virtual column 
 		{
 			if(!sealed || allColumns == null) // (re)initialise the allColumns list if it is null or as long as the schema is not sealed.
 			{
@@ -158,7 +167,14 @@ public class Schema implements Serializable
 				for(Column<?> nonVirtualCol : realColumns)
 				{
 					allColumns.add(nonVirtualCol); // "real" column
-					allColumns.addAll(nonVirtualCol.getVirtualVersions()); // insert virtual versions of real column after it
+					// insert virtual versions of real column after it (if they are known by the schema):
+					for(VirtualColumn<?, ?> vCol : nonVirtualCol.getVirtualVersions())
+						/* check if this vCol was added through addColumn(), because it might have been
+						 * added to its "real" parent after the latter had been added to the schema).
+						 * We use vCol == getColumn(...) instead of containsColumn(vCol) because we
+						 * that would use equals() instead of ==. */
+						if(vCol == getColumn(vCol.getName(), true))
+							allColumns.add(vCol);
 				}
 			}
 			return allColumns;
@@ -171,7 +187,7 @@ public class Schema implements Serializable
 	 */
 	public Collection<VirtualColumn> getVirtualColumns()
 	{
-		return virtualColumnsByName.values();
+		return virtualColumnsByName == null ? Collections.<VirtualColumn> emptyList() : virtualColumnsByName.values();
 	}
 
 	/**
@@ -196,7 +212,7 @@ public class Schema implements Serializable
 	 */
 	public boolean containsColumn(String name, boolean checkVirtual)
 	{
-		return columnNameToPosition.containsKey(name) || (checkVirtual && virtualColumnsByName.containsKey(name));
+		return columnNameToPosition.containsKey(name) || (checkVirtual && virtualColumnsByName != null && virtualColumnsByName.containsKey(name));
 	}
 	
 	/**
@@ -216,7 +232,7 @@ public class Schema implements Serializable
 	 */
 	public List<Index> getIndexes()
 	{
-		return indexes;
+		return indexes == null ? Collections.<Index> emptyList() : indexes;
 	}
 
 	/**
@@ -274,7 +290,7 @@ public class Schema implements Serializable
 
 	public int getNumberOfColumns(boolean includeVirtual)
 	{
-		return realColumns.size() + (includeVirtual ? virtualColumnsByName.size() : 0);
+		return realColumns.size() + (includeVirtual && virtualColumnsByName != null ? virtualColumnsByName.size() : 0);
 	}
 
 	/**
@@ -406,11 +422,11 @@ public class Schema implements Serializable
 			if(checkIndexes)
 			{
 				// Check number of indexes:
-				if(indexes.size() != other.indexes.size())
+				if(getIndexes().size() != other.getIndexes().size())
 					return false;
 				// Compare indexes:
-				Iterator<Index> myIndexes = indexes.iterator();
-				Iterator<Index> otherIndexes = other.indexes.iterator();
+				Iterator<Index> myIndexes = getIndexes().iterator();
+				Iterator<Index> otherIndexes = other.getIndexes().iterator();
 				while(myIndexes.hasNext() /** otherIndexes.hasNext() */)
 					if(!myIndexes.next().equals(otherIndexes.next(), checkNames, checkColumns, false))
 						return false;
@@ -428,7 +444,7 @@ public class Schema implements Serializable
 		hash = 31 * hash + (int)(id ^ (id >>> 32));
 		hash = 31 * hash + (name == null ? 0 : name.hashCode());
 		hash = 31 * hash + realColumns.hashCode();
-		hash = 31 * hash + indexes.hashCode();
+		hash = 31 * hash + getIndexes().hashCode();
 		hash = 31 * hash + (primaryKey == null ? 0 : primaryKey.hashCode());
 		hash = 31 * hash + (sealed ? 0 : 1);
 		return hash;
