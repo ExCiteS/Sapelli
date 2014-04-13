@@ -78,7 +78,7 @@ public class StringColumn extends ComparatorColumn<String>
 	//DYNAMIC--------------------------------------------------------
 	private final String charsetName;
 	private transient Charset charset;
-	private IntegerRangeMapping sizeField;
+	private final IntegerRangeMapping sizeField;
 	
 	/**
 	 * @param name

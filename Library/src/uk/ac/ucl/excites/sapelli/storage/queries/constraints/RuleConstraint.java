@@ -32,7 +32,8 @@ public class RuleConstraint extends Constraint
 	}
 	
 	public static final String[] COMPARISON_STRINGS = new String[]
-	{	"smaller",
+	{	
+		"smaller",
 		"smallerEqual",
 		"equal",
 		"different", "notEqual",
