@@ -58,7 +58,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final float PADDING_DIP = 2.0f;
 	
 	static public final int COLOR_SEMI_TRANSPARENT_GRAY = Color.parseColor("#80777777");
-	static public final int COLOR_GRAY = Color.parseColor("#777777");
+	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
 	
 	private CollectorActivity activity;
 	private CollectorController controller;
@@ -167,7 +167,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	@Override
 	public AndroidChoiceUI createChoiceUI(ChoiceField cf)
 	{
-		return new AndroidChoiceUI(cf, controller, this);
+		return new AndroidChoiceUI(cf, controller, this); // based on GridView (no support for col/row spanning)
 	}
 
 	@Override
@@ -325,16 +325,35 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return ScreenMetrics.GetScreenHeight(activity);
 	}
 	
-	public int getIconWidthPx(int numCols)
+	//TODO pull all getFieldUI*Px methods up to CollectorUI
+	public int getFieldUIWidthPx()
 	{
-		int widthPx = (getScreenWidthPx() - ((numCols - 1) * getSpacingPx())) / numCols;
-		return Math.max(widthPx, 0); //avoid negative pixel counts
+		return getScreenWidthPx();
 	}
 	
-	public int getIconHeightPx(int numRows, boolean buttonsShowing)
+	public int getFieldUIPartWidthPx(int numCols)
 	{
-		int heightPx = (getScreenHeightPx() - (buttonsShowing ? (controlsView.getButtonHeightPx() + getSpacingPx()) : 0) - ((numRows - 1) * getSpacingPx())) / numRows;
-		return Math.max(heightPx, 0); //avoid negative pixel counts
+		return getFieldUIPartWidthPx(getFieldUIWidthPx(), numCols);
+	}
+	
+	public int getFieldUIPartWidthPx(int availableWidth, int numCols)
+	{
+		return Math.max((availableWidth - ((numCols - 1) * getSpacingPx())) / numCols, 0); // We use Math(x, 0) to avoid negative pixel counts
+	}
+	
+	public int getFieldUIHeightPx()
+	{
+		return getScreenHeightPx() - (controller.getControlsState().isAnyButtonShown() ? (controlsView.getButtonHeightPx() + getSpacingPx()) : 0);
+	}
+	
+	public int getFieldUIPartHeightPx(int numRows)
+	{
+		return getFieldUIPartHeightPx(getFieldUIHeightPx(), numRows);
+	}
+	
+	public int getFieldUIPartHeightPx(int availableHeight, int numRows)
+	{
+		return Math.max((availableHeight - ((numRows - 1) * getSpacingPx())) / numRows, 0); // We use Math(y, 0) to avoid negative pixel counts
 	}
 	
 	public void hideKeyboard()
