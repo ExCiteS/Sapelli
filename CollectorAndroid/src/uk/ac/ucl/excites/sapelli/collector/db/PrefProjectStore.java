@@ -13,8 +13,10 @@ import java.util.Map;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
+import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
@@ -29,9 +31,11 @@ public class PrefProjectStore extends ProjectStore
 	
 	// Statics----------------------------------------------
 	static protected final String TAG = "DB4OPrefDataAccess";
-	private static final String PREFERENCES_NAME = "PROJECT_PATH_STORAGE";
+	private static final String PREFERENCES_NAME = "PROJECT_STORAGE";
 	private static final String PREF_PROJECT_PATH_PREFIX = "PROJECT_";
 	private static final String PREF_PROJECT_PATH_POSTFIX = "_PATH";
+	private static final String HELD_FOREIGN_KEY_PREFIX = "RELATIONSHIP_";
+	private static final String HELD_FOREIGN_KEY_POSTFIX = "_HELD_FOREIGN_KEY";
 
 	// Dynamics---------------------------------------------
 	private Context context;
@@ -119,7 +123,7 @@ public class PrefProjectStore extends ProjectStore
 			return projectCache.get(projectHash);
 		
 		// ... parse the project if not ...
-		String prefKey = getPrefKey(projectHash);
+		String prefKey = getProjectPathPrefKey(projectHash);
 		String folderPath = preferences.getString(prefKey, null);
 		if(folderPath != null)
 		{
@@ -201,25 +205,25 @@ public class PrefProjectStore extends ProjectStore
 	
 	private void removeProjectPathPrefKey(Project project)
 	{
-		preferences.edit().remove(getPrefKey(project)).commit();
+		preferences.edit().remove(getProjectPathPrefKey(project)).commit();
 	}
 	
 	private void removeProjectPathPrefKey(long projectHash)
 	{
-		preferences.edit().remove(getPrefKey(projectHash)).commit();
+		preferences.edit().remove(getProjectPathPrefKey(projectHash)).commit();
 	}
 	
 	private void storeProjectPathPrefKey(Project project)
 	{
-		preferences.edit().putString(getPrefKey(project), project.getProjectFolderPath()).commit();
+		preferences.edit().putString(getProjectPathPrefKey(project), project.getProjectFolderPath()).commit();
 	}
 	
-	private String getPrefKey(Project project)
+	private String getProjectPathPrefKey(Project project)
 	{
-		return getPrefKey(project.getHash());
+		return getProjectPathPrefKey(project.getHash());
 	}
 	
-	private String getPrefKey(long projectHash)
+	private String getProjectPathPrefKey(long projectHash)
 	{
 		return PREF_PROJECT_PATH_PREFIX + projectHash + PREF_PROJECT_PATH_POSTFIX;
 	}
@@ -255,6 +259,44 @@ public class PrefProjectStore extends ProjectStore
 	public void backup(File destinationFolder)
 	{
 		// TODO backup
+	}
+
+	private String getHeldForeignKeyPrefKey(Relationship relationship)
+	{
+		return HELD_FOREIGN_KEY_PREFIX + relationship.getForm().getProject().getHash() + "_" + relationship.getForm().getPosition() + "_" + relationship.getID() + HELD_FOREIGN_KEY_POSTFIX;
+	}
+	
+	@Override
+	public void storeHeldForeignKey(Relationship relationship, ForeignKey foreignKey)
+	{
+		if(!relationship.isHoldForeignRecord())
+			throw new IllegalArgumentException("This relationship is not allowed to hold on to foreign records");
+		preferences.edit().putString(getHeldForeignKeyPrefKey(relationship), foreignKey.serialise()).commit();
+	}
+
+	@Override
+	public ForeignKey retrieveHeldForeignKey(Relationship relationship)
+	{
+		if(!relationship.isHoldForeignRecord())
+			throw new IllegalArgumentException("This relationship is not allowed to hold on to foreign records");
+		String prefKey = getHeldForeignKeyPrefKey(relationship);
+		String serialisedForeignKey = preferences.getString(prefKey, null);
+		if(serialisedForeignKey != null)
+			try
+			{
+				return (ForeignKey) (new ForeignKey(relationship.getRelatedForm().getSchema())).parse(serialisedForeignKey);
+			}
+			catch(Exception e)
+			{
+				deleteHeldForeignKey(relationship);
+			}
+		return null;
+	}
+	
+	@Override
+	public void deleteHeldForeignKey(Relationship relationship)
+	{
+		preferences.edit().remove(getHeldForeignKeyPrefKey(relationship)).commit();
 	}
 
 }
