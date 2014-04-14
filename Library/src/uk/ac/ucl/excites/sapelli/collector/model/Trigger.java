@@ -85,5 +85,17 @@ public class Trigger implements JumpSource
 	{
 		this.jump = target;
 	}
+
+	@Override
+	public void setNextFieldArguments(FieldParameters argumentsForNextField)
+	{
+		this.jumpArgs = argumentsForNextField;
+	}
+
+	@Override
+	public FieldParameters getNextFieldArguments()
+	{
+		return jumpArgs != null ? jumpArgs : FieldParameters.EMPTY;
+	}
 	
 }

@@ -40,7 +40,7 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 		if(!field.isNoColumn() && chosenChild.isLeaf() && field.getDictionary().contains(chosenChild))
 			field.getColumn().storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
 		// Go to chosenChild:
-		controller.goTo(chosenChild, !chosenChild.isLeaf());
+		controller.goTo(chosenChild, !chosenChild.isLeaf()); // Note: no arguments (i.e. FieldParameters) are passed from parent to child
 		
 		/* Note 1:	chosenChild becomes the new currentField (i.e. we go one level "down" in the choice tree),
 		 * 			but if it is a leaf the controller will call goForward() from enterChoiceField().

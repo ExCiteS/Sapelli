@@ -70,7 +70,7 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 		
 		// Continue to jump or next:
 		if(field.getJump() != null)
-			controller.goTo(field.getJump());
+			controller.goTo(new Controller.FieldWithArguments(field.getJump(), field.getNextFieldArguments()));
 		else
 			controller.goForward(true);
 		

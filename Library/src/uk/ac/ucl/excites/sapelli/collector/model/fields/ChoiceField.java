@@ -7,6 +7,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary;
@@ -351,10 +352,10 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 	
 	@Override
-	public boolean enter(Controller controller, boolean withPage)
+	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
 	{
 		if(!withPage)
-			return controller.enterChoiceField(this);
+			return controller.enterChoiceField(this, arguments);
 		return true;
 	}
 	

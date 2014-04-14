@@ -11,6 +11,7 @@ import java.util.Set;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
+import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -65,7 +66,7 @@ public class CollectorController extends Controller implements LocationListener,
 	}
 
 	@Override
-	public boolean enterOrientationField(OrientationField of)
+	public boolean enterOrientationField(OrientationField of, FieldParameters arguments)
 	{
 		if(orientationSensor == null)
 			orientationSensor = new OrientationSensor(activity);		
@@ -94,9 +95,9 @@ public class CollectorController extends Controller implements LocationListener,
 
 	public void onOrientationChanged(Orientation orientation)
 	{
-		if(currFormSession.currField instanceof OrientationField)
+		if(getCurrentField() instanceof OrientationField)
 		{
-			((OrientationField) currFormSession.currField).storeOrientation(currFormSession.record, orientation);
+			((OrientationField) getCurrentField()).storeOrientation(currFormSession.record, orientation);
 			orientationSensor.stop(); // stop listening for updates
 			goForward(false);
 		}
@@ -145,9 +146,9 @@ public class CollectorController extends Controller implements LocationListener,
 		{
 			currentBestLocation = location;
 			// check if we can/need to use the location now:
-			if(currFormSession.currField instanceof LocationField)
+			if(getCurrentField() instanceof LocationField)
 			{	// user is currently waiting for a location for the currFormSession.currField
-				LocationField lf = (LocationField) currFormSession.currField;
+				LocationField lf = (LocationField) getCurrentField();
 				// try to store location:
 				if(lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(location)))
 				{ 	// location successfully stored:

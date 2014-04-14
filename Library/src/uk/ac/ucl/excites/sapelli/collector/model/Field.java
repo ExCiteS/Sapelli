@@ -50,6 +50,7 @@ public abstract class Field implements JumpSource
 	protected String caption;
 	protected Form form;
 	protected Field jump;
+	private FieldParameters nextFieldArgs;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	protected boolean showOnCreate = DEFAULT_SHOW_ON_CREATE;
@@ -203,6 +204,18 @@ public abstract class Field implements JumpSource
 	public Field getJump()
 	{
 		return jump;
+	}
+	
+	@Override
+	public void setNextFieldArguments(FieldParameters argumentsForNextField)
+	{
+		this.nextFieldArgs = argumentsForNextField;
+	}
+
+	@Override
+	public FieldParameters getNextFieldArguments()
+	{
+		return nextFieldArgs != null ? nextFieldArgs : FieldParameters.EMPTY;
 	}
 	
 	/**
@@ -391,10 +404,11 @@ public abstract class Field implements JumpSource
 	 *  This method uses double-dispatch: the actual Field-type-specific behaviour will be defined in the class implementing the Controller interface.
 	 * 
 	 * @param controller
-	 * @param onPage whether or not the field is entered because the page containing it entered (true) or because it is entered on its own (false)
+	 * @param arguments arguments passed from previous field (should never be null, but will often be the FieldParameters.EMPTY object)
+	 * @param withPage whether or not the field is entered because the page containing it entered (true) or because it is entered on its own (false)
 	 * @return whether or not a UI update is required after entering the field)
 	 */
-	public abstract boolean enter(Controller controller, boolean withPage);
+	public abstract boolean enter(Controller controller, FieldParameters arguments, boolean withPage);
 	
 	/**
 	 * Returns a FieldUI object to represent this Field.

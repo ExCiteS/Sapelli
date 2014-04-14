@@ -15,4 +15,8 @@ public interface JumpSource
 	
 	public Field getJump();
 	
+	public void setNextFieldArguments(FieldParameters argumentsForNextField);
+	
+	public FieldParameters getNextFieldArguments();
+	
 }

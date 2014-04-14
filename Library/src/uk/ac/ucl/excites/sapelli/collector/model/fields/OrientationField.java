@@ -2,6 +2,7 @@ package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.OrientationUI;
@@ -96,10 +97,10 @@ public class OrientationField extends Field
 	}
 
 	@Override
-	public boolean enter(Controller controller, boolean withPage)
+	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
 	{
 		if(!withPage)
-			return controller.enterOrientationField(this);
+			return controller.enterOrientationField(this, arguments);
 		return true;
 	}
 

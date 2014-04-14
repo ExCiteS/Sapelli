@@ -7,6 +7,7 @@ import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -198,17 +199,17 @@ public class Relationship extends UILessField
 	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
 	 */
 	@Override
-	public boolean enter(Controller controller, boolean withPage)
+	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
 	{
 		if(!withPage)
 			switch(type)
 			{
 				case LINK:
-					return controller.enterLinksTo(this);
+					return controller.enterLinksTo(this, arguments);
 				//case ONE_TO_ONE:
 				//	return false; //TODO
 				case MANY_TO_ONE:
-					return controller.enterBelongsTo(this);
+					return controller.enterBelongsTo(this, arguments);
 				//case MANY_TO_MANY:
 				//	return false; //TODO
 				default :
