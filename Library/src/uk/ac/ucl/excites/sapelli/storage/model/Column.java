@@ -472,6 +472,10 @@ public abstract class Column<T> implements Serializable
 	@Override
     public int hashCode()
 	{
+		// DB4O issue workaround:
+		if(type == null) //	TODO remove this at some point when we have abandoned DB4O for good
+			return super.hashCode();
+		// else:
 		int hash = 1;
 		hash = 31 * hash + type.hashCode();
 		hash = 31 * hash + name.hashCode();
