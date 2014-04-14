@@ -42,6 +42,7 @@ public final class DB4OConnector
 			{
 				dbConfig.common().objectClass(clazz).cascadeOnActivate(true);
 				dbConfig.common().objectClass(clazz).cascadeOnUpdate(true);
+				dbConfig.common().objectClass(clazz).cascadeOnDelete(true);
 			}
 		// Open the db:
 		return Db4oEmbedded.openFile(dbConfig, db4oFile.getAbsolutePath()); // (throws various exceptions)		
