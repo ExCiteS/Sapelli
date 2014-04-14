@@ -64,6 +64,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.ipaulpro.afilechooser.utils.FileUtils;
 
@@ -355,6 +356,26 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		 * 
 		 * OK + CANCEL buttons
 		 */
+		final ExportDialog exportDialog = new ExportDialog(this, selectedProject);
+
+		// set dialog message
+		exportDialog.setCancelable(false).setPositiveButton("Export", new DialogInterface.OnClickListener()
+		{
+			public void onClick(DialogInterface dialog, int id)
+			{
+				// TODO export data
+				// To get the selected values exportDialog.getProjects() etc.
+				Toast.makeText(ProjectManagerActivity.this, exportDialog.getProjects(), Toast.LENGTH_LONG).show();
+			}
+		}).setNegativeButton("Cancel", new DialogInterface.OnClickListener()
+		{
+			public void onClick(DialogInterface dialog, int id)
+			{
+				dialog.cancel();
+			}
+		});
+		// create and show the alert dialog
+		exportDialog.create().show();
 		
 		final ExImportHelper.Format exportFormat = Format.XML; //TODO determine from dialog input
 		
