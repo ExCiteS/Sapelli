@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.CheckBoxUI;
@@ -74,7 +75,7 @@ public class CheckBoxField extends Field
 	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
 	 */
 	@Override
-	public boolean enter(Controller controller, boolean withPage)
+	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
 	{
 		return true;
 	}

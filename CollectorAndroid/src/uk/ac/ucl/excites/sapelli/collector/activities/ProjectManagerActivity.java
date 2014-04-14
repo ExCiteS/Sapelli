@@ -72,17 +72,16 @@ import com.ipaulpro.afilechooser.utils.FileUtils;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends BaseActivity implements ProjectLoaderClient, StoreClient, DeviceID.InitialisationCallback,
-		MenuItem.OnMenuItemClickListener
+public class ProjectManagerActivity extends BaseActivity implements ProjectLoaderClient, StoreClient, DeviceID.InitialisationCallback, MenuItem.OnMenuItemClickListener
 {
 
 	// STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectManagerActivity";
-
+	
 	static private final String XML_FILE_EXTENSION = "xml";
 
 	static private final String DEMO_PROJECT = "demo.excites";
-
+	
 	// SHORTCUT INTENT ACTIONS
 	private static final String DEFAULT_INSTALL_SHORTCUT_ACTION = "com.android.launcher.action.INSTALL_SHORTCUT";
 	private static final String DEFAULT_UNINSTALL_SHORTCUT_ACTION = "com.android.launcher.action.UNINSTALL_SHORTCUT";
@@ -122,12 +121,11 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
-			app.getSapelliFolder(); // throws IllegalStateException if not accessible or not create-able
+			app.getSapelliFolder(); //throws IllegalStateException if not accessible or not create-able
 		}
 		catch(IllegalStateException ise)
-		{ // Inform the user and close the application
-			showErrorDialog(getString(R.string.app_name)
-					+ " needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
+		{	// Inform the user and close the application
+			showErrorDialog(getString(R.string.app_name) + " needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
 			return;
 		}
 
@@ -141,12 +139,12 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			showErrorDialog("Could not open ProjectStore: " + e.getLocalizedMessage(), true);
 			return;
 		}
-
+				
 		if(BuildInfo.DEMO_BUILD)
 			return;
-		// else ...
+		//else ...
 		// Only if not in demo mode:
-
+		
 		// Set-up UI...
 		setTitle(getString(R.string.app_name) + ' ' + getString(R.string.project_manager));
 		// Hide soft keyboard on create
@@ -179,21 +177,28 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			}
 		});
 
-		/*
-		 * // TODO Re-enable the service at same point // Check the Preferences if(DataSenderPreferences.getTimeSchedule(this) == 1) {
-		 * DataSenderPreferences.printPreferences(this); Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG).show();
-		 * 
-		 * Intent settingsActivity = new Intent(this, DataSenderPreferences.class); startActivity(settingsActivity); }
-		 * 
-		 * // Start the DataSenderService if(DataSenderPreferences.getSenderEnabled(this)) //TODO make this optional ServiceChecker.startService(this);
-		 */
+/*		// TODO Re-enable the service at same point
+		// Check the Preferences
+		if(DataSenderPreferences.getTimeSchedule(this) == 1)
+		{
+			DataSenderPreferences.printPreferences(this);
+			Toast.makeText(this, "Please configure the Data Sender.", Toast.LENGTH_LONG).show();
+			
+			Intent settingsActivity = new Intent(this, DataSenderPreferences.class);
+			startActivity(settingsActivity);
+		}
+		
+		// Start the DataSenderService
+		if(DataSenderPreferences.getSenderEnabled(this)) //TODO make this optional
+			ServiceChecker.startService(this);
+*/
 	}
 
 	@Override
 	protected void onResume()
 	{
 		super.onResume();
-
+		
 		// Initialise DeviceID:
 		DeviceID.Initialise(this, this); // will post a callback upon completion (success/failure)
 
@@ -203,19 +208,21 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			showErrorDialog("Could not establish database connection", true);
 			return;
 		}
-
+		
 		// And finally...
 		if(BuildInfo.DEMO_BUILD)
 			demoMode();
 		else
-			populateProjectList(); // Update project list
+			populateProjectList(); 	// Update project list
 	}
-
+	
 	@Override
 	public void initialisationSuccess(DeviceID deviceID)
 	{
-		infoLbl.setText(getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".\n" + BuildInfo.getBuildInfo() + ".\n\n"
-				+ getString(R.string.by_ucl_excites) + "\n\n" + "Device ID (CRC32): " + deviceID.getIDAsCRC32Hash() + '.');
+		infoLbl.setText(getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".\n" +
+						BuildInfo.getBuildInfo() + ".\n\n" +
+						getString(R.string.by_ucl_excites) + "\n\n" +
+						"Device ID (CRC32): " + deviceID.getIDAsCRC32Hash() + '.');
 	}
 
 	@Override
@@ -232,7 +239,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			List<Project> projects = projectStore.retrieveProjects();
 			Project p = null;
 			if(projects.isEmpty())
-			{ // Use /mnt/sdcard/Sapelli/ as the basePath:
+			{	// Use /mnt/sdcard/Sapelli/ as the basePath:
 				ProjectLoader loader = new ProjectLoader(this, app.getProjectFolderPath(), app.getTempFolderPath());
 				p = loader.load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
 				storeProject(p);
@@ -288,9 +295,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	@Override
 	public boolean onMenuItemClick(MenuItem item)
 	{
-		/*
-		 * if(item == senderSettingsItem) return openSenderSettings(item); else
-		 */if(item == exportRecordsItem)
+		/*if(item == senderSettingsItem)
+			return openSenderSettings(item);
+		else*/ if(item == exportRecordsItem)
 			return exportRecords(item);
 		else if(item == importRecordsItem)
 			return importRecords(item);
@@ -310,10 +317,11 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return true;
 	}
 
+
 	public boolean exportRecords(MenuItem item)
 	{
 		final Project selectedProject = getSelectedProject(false);
-
+		
 		// Get RecordStore instance:
 		try
 		{
@@ -324,24 +332,30 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			showErrorDialog("Could not open RecordStore: " + e.getLocalizedMessage(), true);
 			return false;
 		}
-
-		/*
-		 * TODO show dialog with following options:
+		
+		/* TODO show dialog with following options:
 		 * 
-		 * Source selection (spinner): - all records of forms of currently selected project [default, but only shown if selectedProject != null] - all records
-		 * of any forms/schema [default if selectedProject == null]
+		 * Source selection (spinner):
+		 * 	- all records of forms of currently selected project [default, but only shown if selectedProject != null]
+		 *  - all records of any forms/schema [default if selectedProject == null]
 		 * 
-		 * Date range: - [optional after TIME_X --> checkbox + date/time picket - [optional] before TIME_Y --> checkbox + date/time picket
+		 * Date range:
+		 *  - [optional after TIME_X --> checkbox + date/time picket
+		 *  - [optional] before TIME_Y --> checkbox + date/time picket
 		 * 
-		 * Output format (spinner) - XML [default] - CSV
-		 * 
-		 * If XML selected above, show spinner for composite mode selection: - As String - As flat tags [default] - As nested tags
-		 * 
-		 * Remove after export
+		 * Output format (spinner)
+		 *  - XML [default]
+		 *  - CSV
+		 *  
+		 *  If XML selected above, show spinner for composite mode selection:
+		 *   - As String
+		 *   - As flat tags [default]
+		 *   - As nested tags
+		 *   
+		 *  Remove after export
 		 * 
 		 * OK + CANCEL buttons
 		 */
-
 		final ExportDialog exportDialog = new ExportDialog(this, selectedProject);
 
 		// set dialog message
@@ -362,15 +376,15 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		});
 		// create and show the alert dialog
 		exportDialog.create().show();
-
-		final ExImportHelper.Format exportFormat = Format.XML; // TODO determine from dialog input
-
+		
+		final ExImportHelper.Format exportFormat = Format.XML; //TODO determine from dialog input
+		
 		/* Query for records based on dialog input */
-		final List<Record> exportSelection = null; // TODO
-
+		final List<Record> exportSelection = null; //TODO
+		
 		/* Generate name for selection, based on dialog input */
-		final String exportSelectionDescription = "selection"; // TODO
-
+		final String exportSelectionDescription = "selection"; //TODO
+		
 		/* Export (asynchronous) */
 		new Thread(new Runnable()
 		{
@@ -394,23 +408,22 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 				}
 				if(result != null)
 				{
-					final ExportResult res = result;
+					final ExportResult res = result; 
 					ProjectManagerActivity.this.runOnUiThread(new Runnable()
 					{
 						public void run()
 						{
-							ProjectManagerActivity.this.showInfoDialog("Data export", "Successfully exported " + res.getNumberedOfExportedRecords()
-									+ " records to: " + res.getDestination() + "."); // TODO multilang
+							ProjectManagerActivity.this.showInfoDialog("Data export", "Successfully exported " + res.getNumberedOfExportedRecords() + " records to: " + res.getDestination() + "."); //TODO multilang
 						}
 					});
 				}
 			}
 		});
-
+		
 		// Discard record store:
 		app.discardStoreUsage(recordStore, this);
 		recordStore = null;
-
+		
 		return true;
 	}
 
@@ -424,9 +437,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		{
 			startActivityForResult(intent, RETURN_BROWSE_FOR_RECORD_IMPORT);
 		}
-		catch(ActivityNotFoundException e)
-		{
-		}
+		catch(ActivityNotFoundException e){}
 
 		return true;
 	}
@@ -443,7 +454,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		}
 		return true;
 	}
-
+	
 	public void browse(View view)
 	{
 		// Use the GET_CONTENT intent from the utility class
@@ -454,9 +465,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		{
 			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
 		}
-		catch(ActivityNotFoundException e)
-		{
-		}
+		catch(ActivityNotFoundException e){}
 	}
 
 	/**
@@ -464,8 +473,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	 */
 	public void populateProjectList()
 	{
-		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list_item, android.R.id.text1, new ArrayList<Project>(projectStore
-				.retrieveProjects())));
+		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list_item, android.R.id.text1, new ArrayList<Project>(projectStore.retrieveProjects())));
 		if(!projectList.getAdapter().isEmpty())
 		{
 			runBtn.setEnabled(true);
@@ -528,13 +536,13 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			return;
 		}
 		enterURL.setText(""); // clear field
-
+		
 		Project project = null;
 		try
 		{
 			// Download Sapelli file if path is a URL
 			if(Pattern.matches(Patterns.WEB_URL.toString(), path)) // We don't check the extension to support "smart"/dynamic URLs
-			{ // Start async task to download the file:
+			{	// Start async task to download the file:
 				(new DownloadFileFromURL(path, "Project")).execute(); // the task will also call processSapelliFile() and checkProject()
 				return;
 			}
@@ -555,12 +563,11 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		}
 		catch(Exception e)
 		{
-			showErrorDialog("Invalid XML or Sapelli file: " + path + "\nError: " + e.getMessage()
-					+ (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
+			showErrorDialog("Invalid XML or Sapelli file: " + path + "\nError: " + e.getMessage() + (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
 			return;
 		}
-
-		// Add project
+		
+		//Add project
 		if(project != null) // check to be sure
 			addProject(project);
 		else
@@ -618,9 +625,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// Check file dependencies
 		List<String> invalidFiles = project.checkForInvalidFiles();
 		if(!invalidFiles.isEmpty())
-			showWarningDialog("The following files could not be found or read in the project path (" + project.getProjectFolderPath() + "): "
-					+ StringUtils.join(invalidFiles, ", "));
-
+			showWarningDialog("The following files could not be found or read in the project path (" + project.getProjectFolderPath() + "): " + StringUtils.join(invalidFiles, ", "));
+		
 		// Generate documentation
 		try
 		{
@@ -630,7 +636,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		{
 			showErrorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
 		}
-
+		
 		// Encryption Check
 		if(project.getTransmissionSettings().isEncrypt())
 			requestEncryptionKey(project);
@@ -665,21 +671,21 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			return;
 		}
 	}
-
+	
 	@Override
 	public boolean isDuplicateProject(Project loadProject)
 	{
 		// TODO Auto-generated method stub
 		return false;
 	}
-
+	
 	private void requestEncryptionKey(final Project project)
 	{
 		// encryptionDialog = new AlertDialog.Builder(this);
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setTitle("Project Encryption");
 		builder.setMessage("This project requires a password in order to encrypt and transmit the data. Please provide a password:");
-
+		
 		// Set an EditText view to get user input
 		final EditText input = new EditText(this);
 		builder.setView(input);
@@ -689,7 +695,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			public void onClick(DialogInterface dialog, int whichButton)
 			{
 				String inputStr = input.getText().toString();
-				project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? Settings.DEFAULT_PASSWORD /* Set the Default Password */: inputStr);
+				project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? 	Settings.DEFAULT_PASSWORD /*Set the Default Password*/ :
+																					inputStr);
 			}
 		});
 		encryptionDialog = builder.create();
@@ -710,7 +717,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		i.setAction(Intent.ACTION_MAIN);
 		return i;
 	}
-
+	
 	/**
 	 * Create a shortcut
 	 * 
@@ -723,7 +730,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			createShortcut(selectedProject);
 		return true;
 	}
-
+	
 	/**
 	 * Create a shortcut
 	 * 
@@ -733,51 +740,49 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		// Icon image file:
 		File shortcutImageFile = project.getImageFile(project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
-
-		// -----------------------------------------------------
+		
+		//-----------------------------------------------------
 		// Create a shortcut in standard Android Home Launcher
-		// -----------------------------------------------------
+		//-----------------------------------------------------
 		Intent androidLauncherIntent = getShortcutCreationIntent(project, false);
 		// Get up icon bitmap:
-		Drawable iconResource = FileHelpers.isReadableFile(shortcutImageFile) ? Drawable.createFromPath(shortcutImageFile.getAbsolutePath()) : getResources()
-				.getDrawable(R.drawable.ic_excites_grey);
+		Drawable iconResource = FileHelpers.isReadableFile(shortcutImageFile) ?	Drawable.createFromPath(shortcutImageFile.getAbsolutePath()) : getResources().getDrawable(R.drawable.ic_excites_grey);
 		Bitmap icon = ((BitmapDrawable) iconResource).getBitmap();
 		// Resize the icon bitmap according to the default size:
 		int maxIconSize = (int) getResources().getDimension(android.R.dimen.app_icon_size); // Get standard system icon size
 		if(icon.getWidth() > maxIconSize || icon.getHeight() > maxIconSize)
-			icon = Bitmap.createScaledBitmap(icon, maxIconSize, maxIconSize, true); // TODO make this keep aspect ratio?
+			icon = Bitmap.createScaledBitmap(icon, maxIconSize, maxIconSize, true); //TODO make this keep aspect ratio?
 		// Set up shortcut icon:
 		androidLauncherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, icon);
 		// Fire the intent:
 		sendBroadcast(androidLauncherIntent);
-		// -----------------------------------------------------
-
-		// -----------------------------------------------------
+		//-----------------------------------------------------
+		
+		//-----------------------------------------------------
 		// Create an shortcut in the Sapelli Launcher
-		// -----------------------------------------------------
+		//-----------------------------------------------------
 		Intent sapelliLauncherIntent = getShortcutCreationIntent(project, true);
 		// Set up shortcut icon path:
-		sapelliLauncherIntent.putExtra(SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH, FileHelpers.isReadableFile(shortcutImageFile) ? shortcutImageFile.getAbsolutePath()
-				: null); // launcher will use default Sapelli icon when path is null
+		sapelliLauncherIntent.putExtra(SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH, FileHelpers.isReadableFile(shortcutImageFile) ? shortcutImageFile.getAbsolutePath() : null); // launcher will use default Sapelli icon when path is null
 		// Fire the intent:
-		sendBroadcast(sapelliLauncherIntent);
-		// -----------------------------------------------------
+		sendBroadcast(sapelliLauncherIntent);		
+		//-----------------------------------------------------
 	}
-
+	
 	private Intent getShortcutCreationIntent(Project projectToRun, boolean sapelliLauncher)
 	{
 		Intent shortcutCreationIntent = new Intent();
-
+		
 		// Action:
 		shortcutCreationIntent.setAction(sapelliLauncher ? SAPELLI_LAUNCHER_INSTALL_SHORTCUT_ACTION : DEFAULT_INSTALL_SHORTCUT_ACTION);
 		// Shortcut intent:
 		shortcutCreationIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, getProjectRunIntent(projectToRun));
 		// Shortcut name:
 		shortcutCreationIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, projectToRun.toString());
-		// Do not allow duplicate shortcuts:
+		// 	Do not allow duplicate shortcuts:
 		if(!sapelliLauncher)
 			shortcutCreationIntent.putExtra("duplicate", false); // only needed for Android Home Launcher (although Sapelli Launcher would just ignore it)
-
+		
 		return shortcutCreationIntent;
 	}
 
@@ -793,7 +798,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			removeShortcut(selectedProject);
 		return true;
 	}
-
+	
 	/**
 	 * Remove a shortcut
 	 * 
@@ -808,16 +813,16 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	}
 
 	private Intent getShortcutRemovalIntent(Project project, boolean sapelliLauncher)
-	{
+	{		
 		Intent shortcutRemovalIntent = new Intent();
-
+		
 		// Action:
 		shortcutRemovalIntent.setAction(sapelliLauncher ? SAPELLI_LAUNCHER_UNINSTALL_SHORTCUT_ACTION : DEFAULT_UNINSTALL_SHORTCUT_ACTION);
 		// Shortcut intent:
 		shortcutRemovalIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, getProjectRunIntent(project));
 		// Shortcut name:
 		shortcutRemovalIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, project.toString());
-
+		
 		return shortcutRemovalIntent;
 	}
 
@@ -870,17 +875,16 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						// Show parser warnings if needed:
 						showParserWarnings(importer.getWarnings());
 
-						/*
-						 * //TEST CODE (export again to compare with imported file): RecordsExporter exporter = new RecordsExporter(((CollectorApp)
-						 * getApplication()).getDumpFolderPath(), dao); exporter.export(records);
-						 */
-
-						// Store the records:
-						// for(Record r : records)
-						// dao.store(r); //TODO avoid duplicates!
-
-						// User feedback:
-						showInfoDialog("Succesfully imported " + records.size() + " records."); // TODO report skipped duplicates
+						/*//TEST CODE (export again to compare with imported file):
+						RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao);
+						exporter.export(records);*/
+	
+						//Store the records:
+						//for(Record r : records)
+						//	dao.store(r); //TODO avoid duplicates!
+						
+						//User feedback:
+						showInfoDialog("Succesfully imported " + records.size() + " records."); //TODO report skipped duplicates
 					}
 					catch(Exception e)
 					{
@@ -1077,7 +1081,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			if(downloadFinished)
 			{
 				Project project = null;
-
+				
 				// Process the file & add the project to the db & list on the screen
 				try
 				{
@@ -1090,7 +1094,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 							+ (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
 					return;
 				}
-
+				
 				// Handle temp file:
 				if(project != null)
 					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_'

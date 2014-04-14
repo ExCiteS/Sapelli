@@ -14,6 +14,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.Next;
+import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
@@ -130,10 +131,10 @@ public abstract class Controller
 		setupTriggers(currFormSession.form.getTriggers());
 
 		// Go to field...
-		if(currFormSession.currField == null)
-			goTo(currFormSession.form.getStartField()); // begin filling out the form at the start field
+		if(currFormSession.atField())
+			goTo(currFormSession.currFieldAndArguments); // continue where we left off
 		else
-			goTo(currFormSession.currField); // continue where we left off
+			goTo(currFormSession.form.getStartField()); // begin filling out the form at the start field
 	}
 	
 	public void cancelAndRestartForm()
@@ -168,8 +169,8 @@ public abstract class Controller
 			return;
 		}
 		
-		if(currFormSession.currField != null)
-			goTo(currFormSession.form.getNextField(currFormSession.currField));
+		if(currFormSession.atField())
+			goTo(currFormSession.form.getNextFieldAndArguments(getCurrentField()));
 		else
 			openFormSession(currFormSession); // this shouldn't happen really...
 	}
@@ -186,11 +187,11 @@ public abstract class Controller
 			handlingUserGoBackRequest = true; // Do *not* replace this by: handlingGoBackRequest = requestedByUser
 		
 		// Try to go to previous field...
-		if(!currFormSession.fieldHistory.isEmpty())
+		if(!currFormSession.fieldAndArgumentHistory.isEmpty())
 		{
-			currFormSession.currField = null; // !!! otherwise we create loops
+			currFormSession.currFieldAndArguments = null; // !!! otherwise we create loops
 			currFormSession.currFieldDisplayed = false;
-			goTo(currFormSession.fieldHistory.pop());
+			goTo(currFormSession.fieldAndArgumentHistory.pop());
 		}
 		else
 			// Try to go to previous form...
@@ -203,66 +204,76 @@ public abstract class Controller
 	
 	public synchronized void goTo(Field nextField)
 	{
-		goTo(nextField, false);
+		goTo(new FieldWithArguments(nextField));
+	}
+	
+	public synchronized void goTo(FieldWithArguments nextFieldAndArguments)
+	{
+		goTo(nextFieldAndArguments, false);
+	}
+	
+	public synchronized void goTo(Field nextField, boolean forceLeave)
+	{
+		goTo(new FieldWithArguments(nextField), forceLeave);
 	}
 	
 	/**
 	 * @param nextField
 	 * @param forceLeave when true the previous field is left without any validation nor storage(!), under the assumption the user will come back there. It is *not* the same as the noValidation argument on leave(Record,boolean).
 	 */
-	public synchronized void goTo(Field nextField, boolean forceLeave)
+	public synchronized void goTo(FieldWithArguments nextFieldAndArguments, boolean forceLeave)
 	{
 		// Null check...
-		if(nextField == null)
+		if(nextFieldAndArguments == null || nextFieldAndArguments.field == null)
 		{	
 			addLogLine("NULL_FIELD");
 			return;
 		}
 	
 		// Deal with current field...
-		if(currFormSession.currField != null)
+		if(currFormSession.atField())
 		{
 			// Check if we are allowed to leave the current field...	
 			if(!forceLeave && currFormSession.currFieldDisplayed && !ui.getCurrentFieldUI().leave(currFormSession.record)) // check if we are allowed to leave the currently displayed field (unless the leaving is forced)
 			{
-				addLogLine("STAY", "Not allowed to leave field " + currFormSession.currField.getID());
+				addLogLine("STAY", "Not allowed to leave field " + getCurrentField().getID());
 				return; // not allowed to leave
 			}
 			
 			// Add current field to history if it is not the same as the next field & it is not to be skipped upon back...
-			if(currFormSession.currField != nextField && !currFormSession.currField.isSkipOnBack())
-				currFormSession.fieldHistory.push(currFormSession.currField);
+			if(nextFieldAndArguments.field != getCurrentField() && !getCurrentField().isSkipOnBack())
+				currFormSession.fieldAndArgumentHistory.push(currFormSession.currFieldAndArguments);
 		}
 		
 		// 	Next field becomes the (new) current field...
-		currFormSession.currField = nextField;
+		currFormSession.currFieldAndArguments = nextFieldAndArguments;
 		
 		// Skip the new current field if it is not meant to be shown on create/edit...
-		if(	(currFormSession.mode == Mode.CREATE && !currFormSession.currField.isShowOnCreate()) ||
-			(currFormSession.mode == Mode.EDIT && !currFormSession.currField.isShowOnEdit()))
+		if(	(currFormSession.mode == Mode.CREATE && !getCurrentField().isShowOnCreate()) ||
+			(currFormSession.mode == Mode.EDIT && !getCurrentField().isShowOnEdit()))
 		{
-			addLogLine("SKIPPING", currFormSession.currField.getID(), "Not shown on " + currFormSession.mode.toString());
+			addLogLine("SKIPPING", getCurrentField().getID(), "Not shown on " + currFormSession.mode.toString());
 			goForward(false);
 			return;
 		}
 		// Skip uneditable fields when in edit mode...
-		if(currFormSession.mode == Mode.EDIT && !currFormSession.currField.isEditable())
+		if(currFormSession.mode == Mode.EDIT && !getCurrentField().isEditable())
 		{
-			addLogLine("SKIPPING", currFormSession.currField.getID(), "Not editable");
+			addLogLine("SKIPPING", getCurrentField().getID(), "Not editable");
 			goForward(false);
 			return;
 		}
 		
 		// Entering new current field...
-		addLogLine("REACHED", currFormSession.currField.getID());
-		Field holdCurrentField = currFormSession.currField; // remember the "current" current field, to deal with case in which another goForward/goTo call happens from the enter() method (e.g. when entering a leaf choice)
-		boolean needsUIUpdate = currFormSession.currField.enter(this, false);
+		addLogLine("REACHED", getCurrentField().getID());
+		Field holdCurrentField = getCurrentField(); // remember the "current" current field, to deal with case in which another goForward/goTo call happens from the enter() method (e.g. when entering a leaf choice)
+		boolean needsUIUpdate = currFormSession.currFieldAndArguments.field.enter(this, currFormSession.currFieldAndArguments.arguments, false); // pass arguments to enter()
 		// If the current field has changed as part of the entering we are done here: 
-		if(currFormSession.currField != holdCurrentField)
+		if(getCurrentField() != holdCurrentField)
 			return;
 		//else: update UI if needed and remember whether current field is displayed
 		if(needsUIUpdate)
-			ui.setField(currFormSession.currField);
+			ui.setField(getCurrentField());
 		currFormSession.currFieldDisplayed = needsUIUpdate;
 	}
 
@@ -272,9 +283,9 @@ public abstract class Controller
 	public ControlsState getControlsState()
 	{
 		ControlsState state = new ControlsState(
-				currFormSession.currField.isShowBack()		&& (!currFormSession.fieldHistory.empty() || !formHistory.empty()),
-				currFormSession.currField.isShowCancel()	&& (!currFormSession.fieldHistory.empty() || currFormSession.currField instanceof Page),
-				currFormSession.currField.isShowForward()	&& (currFormSession.currField.getOptional() == Optionalness.ALWAYS || (currFormSession.currFieldDisplayed && ui.getCurrentFieldUI().isValid(getCurrentRecord()))));
+				getCurrentField().isShowBack()		&& (!currFormSession.fieldAndArgumentHistory.empty() || !formHistory.empty()),
+				getCurrentField().isShowCancel()	&& (!currFormSession.fieldAndArgumentHistory.empty() || getCurrentField() instanceof Page),
+				getCurrentField().isShowForward()	&& (getCurrentField().getOptional() == Optionalness.ALWAYS || (currFormSession.currFieldDisplayed && ui.getCurrentFieldUI().isValid(getCurrentRecord()))));
 		// Note: these paths may be null (in which case built-in defaults must be used)
 		
 		
@@ -342,7 +353,7 @@ public abstract class Controller
 	 * @param cf  the ChoiceField
 	 * @return whether or not a UI update is required after entering the field
 	 */
-	public boolean enterChoiceField(ChoiceField cf)
+	public boolean enterChoiceField(ChoiceField cf, FieldParameters arguments)
 	{
 		// Deal with leaves:
 		if(cf.isLeaf())
@@ -363,7 +374,7 @@ public abstract class Controller
 	 * @param af  the MediaField
 	 * @return whether or not a UI update is required after entering the field
 	 */
-	public boolean enterMediaField(MediaField mf)
+	public boolean enterMediaField(MediaField mf, FieldParameters arguments)
 	{
 		if(mf.isMaxReached(currFormSession.record))
 		{ // Maximum number of attachments for this field is reached:
@@ -378,7 +389,7 @@ public abstract class Controller
 	 * @param whether or not the location field is entered together with a page that contains it, or entered on its own
 	 * @return whether or not a UI update is required after entering the field
 	 */
-	public boolean enterLocationField(LocationField lf, boolean withPage)
+	public boolean enterLocationField(LocationField lf, FieldParameters arguments, boolean withPage)
 	{
 		if(withPage && !lf.isStartWithPage())
 			return false;
@@ -400,19 +411,19 @@ public abstract class Controller
 	 * @param of  the OrientationField
 	 * @return whether or not a UI update is required after entering the field
 	 */
-	public abstract boolean enterOrientationField(OrientationField of);
+	public abstract boolean enterOrientationField(OrientationField of, FieldParameters arguments);
 	
 	/**
 	 * @param page	the Page
 	 * @return whether or not a UI update is required after entering the field
 	 */
-	public boolean enterPage(Page page)
+	public boolean enterPage(Page page, FieldParameters arguments)
 	{
-		// Deal with returning from field that is part of the page itself:
+		// Deal with returning from field that is (part of) the page itself:
 		Field prevField = currFormSession.getPreviousField();
 		while(prevField != null && (prevField == page || page.getFields().contains(prevField.getRoot())))
-		{
-			currFormSession.fieldHistory.pop();
+		{	// pop on-page field(s) & page itself off the history:
+			currFormSession.fieldAndArgumentHistory.pop();
 			prevField = currFormSession.getPreviousField();
 		}
 		
@@ -421,9 +432,9 @@ public abstract class Controller
 		{	
 			if(	(currFormSession.mode == Mode.CREATE && !f.isShowOnCreate()) ||
 				(currFormSession.mode == Mode.EDIT && !f.isShowOnEdit()))
-				addLogLine("SKIPPING", currFormSession.currField.getID());
+				addLogLine("SKIPPING", getCurrentField().getID());
 			else
-				f.enter(this, true); // enter with page
+				f.enter(this, FieldParameters.EMPTY, true); // enter with page (but don't pass on the arguments)
 		}
 		
 		// Setup the triggers
@@ -432,7 +443,7 @@ public abstract class Controller
 		return true;
 	}
 	
-	public boolean enterLinksTo(Relationship rel)
+	public boolean enterLinksTo(Relationship rel, FieldParameters arguments)
 	{
 		Record foreignRecord = getHeldRecord(rel);
 		if(foreignRecord != null)
@@ -442,8 +453,10 @@ public abstract class Controller
 		return false;
 	}
 	
-	public boolean enterBelongsTo(Relationship rel)
+	public boolean enterBelongsTo(Relationship rel, FieldParameters arguments)
 	{
+		//System.out.println("Prev form:" + (prevFormSession != null ? prevFormSession.form.getID() : "none"));
+		
 		// Check if we already have a foreign key value...
 		if(rel.getColumn().isValueSet(currFormSession.record))
 			goForward(false);
@@ -466,6 +479,8 @@ public abstract class Controller
 		// Deal with foreignRecord and continue...
 		if(foreignRecord != null)
 		{
+			System.out.println("Foreign record: " + foreignRecord.toString()); //TODO remove
+			
 			// Store foreign key:
 			rel.getColumn().storeValue(currFormSession.record, new ForeignKey(foreignRecord));
 			
@@ -495,7 +510,7 @@ public abstract class Controller
 			prevFormSession.form == currFormSession.form &&	/* AND it is for the same as the current form (i.e. we have looped within the same form) */
 			column.isValueSet(prevFormSession.record))		/* AND the previous record stored a foreign key (if optional it can also be null) */
 		{
-			ForeignKey key = column.retrieveValue(prevFormSession.record);								// get foreign key from previous record
+			ForeignKey key = column.retrieveValue(prevFormSession.record);						// get foreign key from previous record
 			foreignRecord = (Record) recordStore.retrieveRecord(key.getForeignRecordQuery());	// look-up the corresponding foreign record
 		}
 		
@@ -515,7 +530,7 @@ public abstract class Controller
 	 * @param ef  the EndField
 	 * @return whether or not a UI update is required after entering the field
 	 */
-	public boolean enterEndField(EndField ef)
+	public boolean enterEndField(EndField ef, FieldParameters arguments)
 	{
 		// Logging:
 		addLogLine("FORM_END", ef.getID(), currFormSession.form.getName(), Long.toString((System.currentTimeMillis() - currFormSession.startTime) / 1000) + " seconds");
@@ -626,7 +641,7 @@ public abstract class Controller
 		if(trigger.getJump() == null)
 			return;
 		addLogLine("TRIGGER", "Fired, jumping to: " + trigger.getJump().getID());
-		goTo(trigger.getJump());
+		goTo(new FieldWithArguments(trigger.getJump(), trigger.getNextFieldArguments()));
 	}
 
 	public boolean isFieldEndabled(Field field)
@@ -690,7 +705,15 @@ public abstract class Controller
 	 */
 	public Field getCurrentField()
 	{
-		return currFormSession.currField;
+		return currFormSession.getCurrentField();
+	}
+	
+	/**
+	 * @return the current Field
+	 */
+	public FieldParameters getCurrentFieldArguments()
+	{
+		return currFormSession.getCurrentFieldArguments();
 	}
 	
 	public void addLogLine(String... fields)
@@ -729,6 +752,32 @@ public abstract class Controller
 	
 	protected abstract void exitApp();
 	
+	public static class FieldWithArguments
+	{
+		
+		protected Field field;
+		protected FieldParameters arguments;
+		
+		/**
+		 * @param field the field
+		 */
+		public FieldWithArguments(Field field)
+		{
+			this(field, FieldParameters.EMPTY);
+		}
+		
+		/**
+		 * @param field the field
+		 * @param arguments arguments passed along by previous field
+		 */
+		public FieldWithArguments(Field field, FieldParameters arguments)
+		{
+			this.field = field;
+			this.arguments = arguments;
+		}
+		
+	}
+	
 	/**
 	 * Helper class which holds all state variables needed to manage an open "form session"
 	 * 
@@ -758,8 +807,8 @@ public abstract class Controller
 		protected Form form;
 		protected Mode mode;
 		protected Record record;
-		protected Stack<Field> fieldHistory;
-		protected Field currField = null;
+		protected Stack<FieldWithArguments> fieldAndArgumentHistory;
+		protected FieldWithArguments currFieldAndArguments = null;
 		protected boolean currFieldDisplayed = false;
 		protected Set<Field> tempDisabledFields;
 		protected List<File> mediaAttachments;	
@@ -779,7 +828,7 @@ public abstract class Controller
 			this.form = form;
 			this.mode = mode;
 			this.record = record;
-			this.fieldHistory = new Stack<Field>();
+			this.fieldAndArgumentHistory = new Stack<FieldWithArguments>();
 			this.tempDisabledFields = new HashSet<Field>();
 			this.mediaAttachments = new ArrayList<File>();
 			this.startTime = System.currentTimeMillis();
@@ -787,7 +836,22 @@ public abstract class Controller
 		
 		public Field getPreviousField()
 		{
-			return fieldHistory.isEmpty() ? null : fieldHistory.peek();
+			return fieldAndArgumentHistory.isEmpty() ? null : fieldAndArgumentHistory.peek().field;
+		}
+		
+		public Field getCurrentField()
+		{
+			return currFieldAndArguments != null ? currFieldAndArguments.field : null;
+		}
+		
+		public FieldParameters getCurrentFieldArguments()
+		{
+			return currFieldAndArguments != null ? currFieldAndArguments.arguments : null;
+		}
+		
+		public boolean atField()
+		{
+			return currFieldAndArguments != null;
 		}
 		
 	}

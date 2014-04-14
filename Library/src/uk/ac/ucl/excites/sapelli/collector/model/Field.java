@@ -14,7 +14,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
  * @author mstevens
  *
  */
-public abstract class Field implements JumpSource
+public abstract class Field extends JumpSource
 {
 	
 	//Statics----------------------------------------------
@@ -49,7 +49,6 @@ public abstract class Field implements JumpSource
 	protected String id;
 	protected String caption;
 	protected Form form;
-	protected Field jump;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	protected boolean showOnCreate = DEFAULT_SHOW_ON_CREATE;
@@ -193,16 +192,6 @@ public abstract class Field implements JumpSource
 	public void setShowOnEdit(boolean showOnEdit)
 	{
 		this.showOnEdit = showOnEdit;
-	}
-
-	public void setJump(Field target)
-	{
-		this.jump = target;
-	}
-	
-	public Field getJump()
-	{
-		return jump;
 	}
 	
 	/**
@@ -391,10 +380,11 @@ public abstract class Field implements JumpSource
 	 *  This method uses double-dispatch: the actual Field-type-specific behaviour will be defined in the class implementing the Controller interface.
 	 * 
 	 * @param controller
-	 * @param onPage whether or not the field is entered because the page containing it entered (true) or because it is entered on its own (false)
+	 * @param arguments arguments passed from previous field (should never be null, but will often be the FieldParameters.EMPTY object)
+	 * @param withPage whether or not the field is entered because the page containing it entered (true) or because it is entered on its own (false)
 	 * @return whether or not a UI update is required after entering the field)
 	 */
-	public abstract boolean enter(Controller controller, boolean withPage);
+	public abstract boolean enter(Controller controller, FieldParameters arguments, boolean withPage);
 	
 	/**
 	 * Returns a FieldUI object to represent this Field.

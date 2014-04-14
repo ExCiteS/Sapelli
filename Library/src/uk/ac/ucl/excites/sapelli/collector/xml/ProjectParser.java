@@ -188,6 +188,7 @@ public class ProjectParser extends DocumentParser
 		}
 		catch(Exception e)
 		{
+			e.printStackTrace(System.err);
 			throw new SAXException("Error while parsing element <" + qName + ">: " + e.getMessage(), e);
 		}
 	}

@@ -6,12 +6,14 @@ package uk.ac.ucl.excites.sapelli.collector.xml;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map.Entry;
+import java.util.Stack;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
+import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.JumpSource;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -66,6 +68,7 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_LISTITEM = "Item";
 	static private final String TAG_PAGE = "Page";
 	static private final String TAG_TRIGGER = "Trigger";
+	static private final String TAG_ARGUMENT = "Argument";
 	
 	//ATTRIBUTES
 	static private final String ATTRIBUTE_FORM_NAME = "name";
@@ -133,6 +136,8 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_TRIGGER_KEYS = "keys";
 	static private final String ATTRIBUTE_TRIGGER_FIXED_TIMER = "fixedTimer";
 	static private final String ATTRIBUTE_TRIGGER_JUMP = "jump";
+	static private final String ATTRIBUTE_ARGUMENT_PARAM = "param";
+	static private final String ATTRIBUTE_ARGUMENT_VALUE = "value";
 	
 	// DYNAMICS-------------------------------------------------------
 	private Project project;
@@ -143,10 +148,9 @@ public class FormParser extends SubtreeParser
 	private Boolean v1xFormShowCancel = null;
 	private Boolean v1xFormShowForward = null;
 	
-	private ChoiceField currentChoice;
+	private Stack<Field> openFields;
+	private Trigger openTrigger;
 	private MultiListItem currentListItem;
-	private Relationship currentRelationship;
-	private Page currentPage;
 	
 	private HashMap<JumpSource, String> jumpSourceToJumpTargetId;
 	private Hashtable<String, Field> idToField;
@@ -155,18 +159,24 @@ public class FormParser extends SubtreeParser
 	public FormParser(ProjectParser projectParser)
 	{
 		super(projectParser, TAG_FORM);
-		reset(); //!!!
 		this.project = projectParser.getProject();
+		this.openFields = new Stack<Field>();
+		this.jumpSourceToJumpTargetId = new HashMap<JumpSource, String>();
+		this.idToField = new Hashtable<String, Field>();
+		this.mediaAttachToDisableId = new HashMap<MediaField, String>();
 	}
 
 	@Override
 	public void reset()
 	{
 		currentForm = null;
+		openFields.clear();
+		openTrigger = null;
+		currentListItem = null;
 		formStartFieldId = null;
-		jumpSourceToJumpTargetId = new HashMap<JumpSource, String>();
-		idToField = new Hashtable<String, Field>();
-		mediaAttachToDisableId = new HashMap<MediaField, String>();
+		jumpSourceToJumpTargetId.clear();
+		idToField.clear();
+		mediaAttachToDisableId.clear();
 	}
 	
 	@Override
@@ -244,57 +254,26 @@ public class FormParser extends SubtreeParser
 		
 		// Within a form...
 		else if(currentForm != null)
-		{	
-			// Children of <BelongsTo> or <LinksTo> (we put this first so we can deal with fields or triggers appearing within a relationship)
-			if(currentRelationship != null)
-			{
-				if(qName.equals(TAG_CONSTRAINT))
-				{
-					String columnName = readRequiredStringAttribute(getRelationshipTag(currentRelationship), ATTRIBUTE_CONSTRAINT_COLUMN, attributes, true, false);
-					
-					// Comparison attribute name:
-					String comparisonAttrib = null;
-					for(String compStr : RuleConstraint.COMPARISON_STRINGS)
-						if(attributes.getIndex(compStr) != -1)
-						{
-							comparisonAttrib = compStr;
-							break;
-						}
-					if(comparisonAttrib == null)
-					{
-						addWarning("<" + TAG_CONSTRAINT + "> does not contain an comparison attribute (i.e. 1 of: " + StringUtils.join(RuleConstraint.COMPARISON_STRINGS, ", ") + ").");
-						return;
-					}
-					
-					((ProjectParser) owner).addRelationshipConstraint(	currentRelationship,
-																		columnName,
-																		comparisonAttrib,
-																		readRequiredStringAttribute(getRelationshipTag(currentRelationship), comparisonAttrib, attributes, true, true));
-				}
-				// <?> in <BelongsTo> or <LinksTo>
-				else
-					addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within <" + getRelationshipTag(currentRelationship) + ">.");
-			}
-			
+		{				
 			// Children of <Form> (fields & triggers)...			
 			// <Choice>
-			else if(qName.equals(TAG_CHOICE))
+			if(qName.equals(TAG_CHOICE))
 			{
-				currentChoice = new ChoiceField(currentForm,
+				ChoiceField choice = new ChoiceField(currentForm,
 												attributes.getValue(ATTRIBUTE_FIELD_ID),
 												attributes.getValue(ATTRIBUTE_FIELD_VALUE),
-												currentChoice, // old currentChoice becomes the parent (if it is null that's ok)
+												!openFields.isEmpty() && openFields.peek() instanceof ChoiceField ? (ChoiceField) openFields.peek() : null, // old currentChoice becomes the parent (if it is null that's ok)
 												readCaption(attributes, TAG_CHOICE, false));
-				newField(currentChoice, attributes);
+				newField(choice, attributes);
 				// noColumn:
-				currentChoice.setNoColumn(readBooleanAttribute(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN, attributes));
+				choice.setNoColumn(readBooleanAttribute(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN, attributes));
 				// Other attributes:
-				currentChoice.setImageRelativePath(readStringAttribute(ATTRIBUTE_FIELD_IMG, null, attributes, false, false));
-				currentChoice.setAltText(readStringAttribute(ATTRIBUTE_FIELD_ALT, null, attributes, false, false));
-				currentChoice.setCols(readIntegerAttribute(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS, attributes));
-				currentChoice.setRows(readIntegerAttribute(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS, attributes));
-				currentChoice.setCrossed(readBooleanAttribute("crossed", ChoiceField.DEFAULT_CROSSED, attributes));
-				currentChoice.setCrossColor(readStringAttribute("crossColor", ChoiceField.DEFAULT_CROSS_COLOR, attributes, true, false));
+				choice.setImageRelativePath(readStringAttribute(ATTRIBUTE_FIELD_IMG, null, attributes, false, false));
+				choice.setAltText(readStringAttribute(ATTRIBUTE_FIELD_ALT, null, attributes, false, false));
+				choice.setCols(readIntegerAttribute(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS, attributes));
+				choice.setRows(readIntegerAttribute(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS, attributes));
+				choice.setCrossed(readBooleanAttribute("crossed", ChoiceField.DEFAULT_CROSSED, attributes));
+				choice.setCrossColor(readStringAttribute("crossColor", ChoiceField.DEFAULT_CROSS_COLOR, attributes, true, false));
 			}
 			// <Location>
 			else if(qName.equals(TAG_LOCATION))
@@ -330,7 +309,6 @@ public class FormParser extends SubtreeParser
 			else if(qName.equals(TAG_PHOTO))
 			{
 				PhotoField photoField = new PhotoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_PHOTO, false));
-				newField(photoField, attributes);
 				newMediaField(photoField, attributes);
 				photoField.setUseNativeApp(readBooleanAttribute("useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP, attributes));
 				// Camera options (only used when useNativeApp=false):
@@ -357,7 +335,6 @@ public class FormParser extends SubtreeParser
 			else if(qName.equals(TAG_AUDIO))
 			{
 				AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_AUDIO, false));
-				newField(audioField, attributes);
 				newMediaField(audioField, attributes);
 				audioField.setStartRecImageRelativePath(readStringAttribute("startRecImg", null, attributes, false, false));
 				audioField.setStopRecImageRelativePath(readStringAttribute("stopRecImg", null, attributes, false, false));
@@ -407,7 +384,7 @@ public class FormParser extends SubtreeParser
 				lbl.setTextSizeScale(readFloatAttribute(ATTRIBUTE_LABEL_SCALE, LabelField.DEFAULT_TEXT_SIZE_SCALE, attributes));
 				lbl.setCentered(readBooleanAttribute(ATTRIBUTE_LABEL_CENTERED, LabelField.DEFAULT_TEXT_CENTERED, attributes));
 			}
-			// <Textbox>
+			// <Text>
 			else if(qName.equals(TAG_TEXTFIELD))
 			{
 				TextBoxField txtField = new TextBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_TEXTFIELD, true));
@@ -434,7 +411,7 @@ public class FormParser extends SubtreeParser
 				// Auto capitalisation:
 				txtField.setCapitalisation(readStringAttribute(ATTRIBUTE_TEXT_CAPITALISATION, TextBoxField.DEFAULT_CAPITALISATION.name(), attributes, true, false));
 			}
-			// <Checkbox>
+			// <Check>
 			else if(qName.equals(TAG_CHECKBOX))
 			{
 				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_CHECKBOX, true));
@@ -449,24 +426,6 @@ public class FormParser extends SubtreeParser
 				newField(ml, attributes);
 				currentListItem = ml.getItemsRoot();
 			}
-			// <Item> (contained within <List> or <MultiList>, and maybe other things later)
-			else if(qName.equals(TAG_LISTITEM))
-			{
-				if(currentListItem != null)
-				{
-					currentListItem = new MultiListItem(currentListItem, readRequiredStringAttribute(TAG_LISTITEM, ATTRIBUTE_FIELD_VALUE, attributes, false, true));
-					if(readBooleanAttribute(ATTRIBUTE_LISTITEM_DEFAULT, false, attributes))
-					{
-						if(currentListItem.getParent().getDefaultChild() == null)
-							currentListItem.getParent().setDefaultChild(currentListItem);
-						else
-							addWarning("More than 1 item marked as default within one of the (sub)lists of MultiListField " + currentListItem.getField().getID() + ", using 1st item marked as default as the default for the list.");
-					}
-				}
-				//else if(otherListItemContainingField != null) { /* ... */ }
-				else
-					addWarning("Ignored <" + TAG_LISTITEM + "> element occuring outside <" + TAG_LIST + "> or  <" + TAG_MULTILIST + ">.");
-			}
 			// <Page> (Field composite)
 			else if(qName.equals(TAG_PAGE))
 			{
@@ -475,40 +434,95 @@ public class FormParser extends SubtreeParser
 			// <Trigger>
 			else if(qName.equals(TAG_TRIGGER))
 			{
-				Trigger trigger = new Trigger();
+				newTrigger(new Trigger(), attributes);
+			}
+			// Add future field types here
+			//	...
+			
+			// Tags appearing within Field tags
+			else if(!openFields.isEmpty())
+			{
+				Field currentField = openFields.peek();
 				
-				// Parse the attributes
-				String keys = readStringAttribute(null, attributes, true, false, ATTRIBUTE_TRIGGER_KEY, ATTRIBUTE_TRIGGER_KEYS);
-				if(keys != null)
-					for(String k : keys.split(Trigger.KEY_SEPARATOR))
+				// <Argument>
+				if(qName.equals(TAG_ARGUMENT))
+				{
+					parseArgument(currentField, attributes);
+				}
+				// <Item> (contained within <List> or <MultiList>, and maybe other things later)
+				else if(qName.equals(TAG_LISTITEM))
+				{
+					if(currentListItem != null)
 					{
-						try
+						currentListItem = new MultiListItem(currentListItem, readRequiredStringAttribute(TAG_LISTITEM, ATTRIBUTE_FIELD_VALUE, attributes, false, true));
+						if(readBooleanAttribute(ATTRIBUTE_LISTITEM_DEFAULT, false, attributes))
 						{
-							trigger.addKey(Trigger.Key.valueOf(k.toUpperCase()));
-						}
-						catch(Exception e)
-						{
-							addWarning("Unrecognised Trigger key: " + k);
+							if(currentListItem.getParent().getDefaultChild() == null)
+								currentListItem.getParent().setDefaultChild(currentListItem);
+							else
+								addWarning("More than 1 item marked as default within one of the (sub)lists of MultiListField " + currentListItem.getField().getID() + ", using 1st item marked as default as the default for the list.");
 						}
 					}
-				trigger.setFixedTimer(readIntegerAttribute(ATTRIBUTE_TRIGGER_FIXED_TIMER, Trigger.NO_TIMEOUT, attributes));
-				if(attributes.getValue(ATTRIBUTE_TRIGGER_JUMP) != null) // Remember jump (always "intra-Form")
-					jumpSourceToJumpTargetId.put(trigger, attributes.getValue(ATTRIBUTE_TRIGGER_JUMP).trim().toUpperCase()); // upper cased, for insensitivity
-				
-				// Add the trigger to the current Page
-				if(currentPage != null)
-					currentPage.addTrigger(trigger);
-				// else add the triggers to the Form
+					else
+						addWarning("Ignored <" + TAG_LISTITEM + "> element occuring outside <" + TAG_LIST + "> or  <" + TAG_MULTILIST + ">.");
+				}
+				// <Constraint> (contained within <BelongsTo> or <LinksTo>, and maybe other things later)
+				else if(qName.equals(TAG_CONSTRAINT))
+				{
+					if(currentField instanceof Relationship)
+					{
+						Relationship currentRelationship = (Relationship) currentField;
+						String columnName = readRequiredStringAttribute(getRelationshipTag(currentRelationship), ATTRIBUTE_CONSTRAINT_COLUMN, attributes, true, false);
+						
+						// Comparison attribute name:
+						String comparisonAttrib = null;
+						for(String compStr : RuleConstraint.COMPARISON_STRINGS)
+							if(attributes.getIndex(compStr) != -1)
+							{
+								comparisonAttrib = compStr;
+								break;
+							}
+						if(comparisonAttrib == null)
+							addWarning("<" + TAG_CONSTRAINT + "> does not contain an comparison attribute (i.e. 1 of: " + StringUtils.join(RuleConstraint.COMPARISON_STRINGS, ", ") + ").");
+						else
+							((ProjectParser) owner).addRelationshipConstraint(	currentRelationship,
+																				columnName,
+																				comparisonAttrib,
+																				readRequiredStringAttribute(getRelationshipTag(currentRelationship), comparisonAttrib, attributes, true, true));
+					}
+					// <Constraint> in something else than <BelongsTo> or <LinksTo>
+					else
+						addWarning("Ignored <" + TAG_CONSTRAINT + "> element occuring outside <" + TAG_BELONGS_TO + "> or  <" + TAG_LINKS_TO + ">.");
+				}
+				// <?> within field
 				else
-					currentForm.addTrigger(trigger);
+				{
+					addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within field with id \"" + currentField.getID() + "\".");
+				}
 			}
-			// Add future field types here...
-			// <?> in <Form>
+			
+			// Tags appearing within <Trigger>
+			else if(openTrigger != null)
+			{
+				// <Argument>
+				if(qName.equals(TAG_ARGUMENT))
+				{
+					parseArgument(openTrigger, attributes);
+				}
+				// <?> within trigger
+				else
+				{
+					addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within <" + TAG_TRIGGER + ">.");
+				}
+			}
+			
+			// <?> within <Form>
 			else
 			{
 				addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within <" + TAG_FORM + ">.");
 			}
 		}
+		
 		// <?> outside of <Form> (shouldn't happen)
 		else
 		{
@@ -522,14 +536,13 @@ public class FormParser extends SubtreeParser
 	 */
 	private void newPage(Attributes attributes) throws SAXException
 	{
-		if(currentPage != null)
-			throw new SAXException("Nested <Page> elements are not allowed.");
+		if(!openFields.isEmpty())
+			throw new SAXException("<Page> elements must be apprear directly within <Form> and cannot be nested.");
 		Page newPage = new Page(currentForm,
 								attributes == null ?
 									currentForm.getID() + "_page" :
 									readStringAttribute(currentForm.getID() + "_page_" + currentForm.getFields().size(), attributes, true, false, ATTRIBUTE_FIELD_ID));
 		newField(newPage, attributes);
-		currentPage = newPage; //!!! the newPage helper variable avoids that newField() adds the page to itselfs instead of the form!
 	}
 	
 	private void newRelationship(Relationship relationship, Attributes attributes) throws SAXException
@@ -541,9 +554,14 @@ public class FormParser extends SubtreeParser
 		// Other attributes:
 		relationship.setHoldForeignRecord(readBooleanAttribute(ATTRIBUTE_RELATIONSHIP_HOLD, Relationship.DEFAULT_HOLD_FOREIGN_RECORD, attributes));
 		// TODO ? updateStartTimeUponLeave, saveBeforeFormChange, discardBeforeLeave (only for linksTo) ?
-		
-		// Remember relationship so constraints can be parsed for it:
-		currentRelationship = relationship;
+	}
+	
+	private void newMediaField(MediaField ma, Attributes attributes) throws SAXException
+	{
+		newField(ma, attributes);
+		ma.setMax(readIntegerAttribute(ATTRIBUTE_MEDIA_MAX , MediaField.DEFAULT_MAX, attributes));
+		if(attributes.getValue(ATTRIBUTE_DISABLE_FIELD) != null)
+			mediaAttachToDisableId.put(ma, attributes.getValue(ATTRIBUTE_DISABLE_FIELD).trim().toUpperCase()); // upper cased, for case insensitivity
 	}
 	
 	/**
@@ -564,6 +582,9 @@ public class FormParser extends SubtreeParser
 					throw new SAXException(field.getID() + " is a reserved ID, don't use it for user-defined fields.");
 			addWarning("Please avoid field IDs starting with '_' (" + field.getID() + ")."); 
 		}
+		
+		// Get current page if there is one:
+		Page currentPage = getCurrentPage();
 		
 		// If the field is a root field...
 		if(field.isRoot())
@@ -629,38 +650,94 @@ public class FormParser extends SubtreeParser
 			field.setShowCancel((v1xFormShowCancel != null ? v1xFormShowCancel : true) && readBooleanAttribute(ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL, attributes));
 			field.setShowForward((v1xFormShowForward != null ? v1xFormShowForward : true) && readBooleanAttribute(ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD, attributes));
 		}
+		
+		// Remember current field:
+		openFields.push(field); //!!!
 	}
 	
-	private void newMediaField(MediaField ma, Attributes attributes)
+	private void newTrigger(Trigger trigger, Attributes attributes)
 	{
-		ma.setMax(readIntegerAttribute(ATTRIBUTE_MEDIA_MAX , MediaField.DEFAULT_MAX, attributes));
-		if(attributes.getValue(ATTRIBUTE_DISABLE_FIELD) != null)
-			mediaAttachToDisableId.put(ma, attributes.getValue(ATTRIBUTE_DISABLE_FIELD).trim().toUpperCase()); // upper cased, for case insensitivity
+		// Parse the attributes
+		String keys = readStringAttribute(null, attributes, true, false, ATTRIBUTE_TRIGGER_KEY, ATTRIBUTE_TRIGGER_KEYS);
+		if(keys != null)
+			for(String k : keys.split(Trigger.KEY_SEPARATOR))
+			{
+				try
+				{
+					trigger.addKey(Trigger.Key.valueOf(k.toUpperCase()));
+				}
+				catch(Exception e)
+				{
+					addWarning("Unrecognised Trigger key: " + k);
+				}
+			}
+		trigger.setFixedTimer(readIntegerAttribute(ATTRIBUTE_TRIGGER_FIXED_TIMER, Trigger.NO_TIMEOUT, attributes));
+		if(attributes.getValue(ATTRIBUTE_TRIGGER_JUMP) != null) // Remember jump (always "intra-Form")
+			jumpSourceToJumpTargetId.put(trigger, attributes.getValue(ATTRIBUTE_TRIGGER_JUMP).trim().toUpperCase()); // upper cased, for insensitivity
+		
+		// Add the trigger to the current Page
+		Page currentPage = getCurrentPage();
+		if(currentPage != null)
+			currentPage.addTrigger(trigger);
+		// else add the triggers to the Form
+		else
+			currentForm.addTrigger(trigger);
+		
+		// Remember trigger (so arguments can be added):
+		openTrigger = trigger;
 	}
 	
-	protected void closePage()
+	private void parseArgument(JumpSource source, Attributes attributes) throws SAXException
 	{
-		/*
-		 * The 'optional' attribute of a page is only used to inherit from by contained fields (see newField()),
+		if(!source.hasNextFieldArguements())
+			source.setNextFieldArguments(new FieldParameters());
+		source.getNextFieldArguments().put(	readRequiredStringAttribute(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_PARAM, attributes, true, false),
+											readRequiredStringAttribute(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_VALUE, attributes, false, true));
+		// TODO Let Field instance validate param & value? 
+	}
+
+	private Page getCurrentPage()
+	{
+		return !openFields.isEmpty() && openFields.peek() instanceof Page ? (Page) openFields.peek() : null;
+	}
+	
+	protected void closePage(Page page)
+	{
+		/* The 'optional' attribute of a page is only used to inherit from by contained fields (see newField()),
 		 * at runtime it doesn't have meaning in itself because whether or not a page can be skipped or left is
 		 * to be decided based on the optionalness and acquired values of the contained fields.
 		 * Because of this the optionalness of the page is reset to ALWAYS after all contained fields are parsed.
 		 */
-		if(currentPage != null)
-			currentPage.setOptional(Optionalness.ALWAYS);
-		currentPage = null;
+		page.setOptional(Optionalness.ALWAYS);
 	}
 	
 	@Override
 	protected void parseEndElement(String uri, String localName, String qName) throws SAXException
 	{
-		// </Choice>
-		if(qName.equals(TAG_CHOICE))
+		// Close field: </Choice>, </Location>, </Photo>, </Audio>, </Orientation>, </BelongsTo>, </LinksTo>, </Button>, </Label>, </Textbox>, </Checkbox>, </List>, </MultiList>, </Page>
+		if(	!openFields.isEmpty() && (
+			qName.equals(TAG_CHOICE) || qName.equals(TAG_LOCATION) ||
+			qName.equals(TAG_PHOTO) || qName.equals(TAG_AUDIO) ||
+			qName.equals(TAG_ORIENTATION) || qName.equals(TAG_BELONGS_TO) ||
+			qName.equals(TAG_LINKS_TO) || qName.equals(TAG_BUTTON) ||
+			qName.equals(TAG_LABEL) || qName.equals(TAG_TEXTFIELD) ||
+			qName.equals(TAG_CHECKBOX) || qName.equals(TAG_LIST) ||
+			qName.equals(TAG_MULTILIST) || qName.equals(TAG_PAGE)))
 		{
-			if(currentChoice.isRoot() && currentChoice.isLeaf())
-				throw new SAXException("Root choices need at least 1 child (but 2 or more children probably makes more sense).");
-			currentChoice = currentChoice.getParent(); // parent (possibly null in case of root) becomes currentChoice
+			Field currentField = openFields.pop(); // pop the field
+			
+			// </Choice>
+			if(qName.equals(TAG_CHOICE) && currentField instanceof ChoiceField)
+			{
+				ChoiceField currentChoice = (ChoiceField) currentField;
+				if(currentChoice.isRoot() && currentChoice.isLeaf())
+					throw new SAXException("Root choices need at least 1 child (but 2 or more children probably makes more sense).");
+			}
+			// </Page>
+			else if(qName.equals(TAG_PAGE) && currentField instanceof Page)
+				closePage((Page) currentField);
 		}
+		
 		// </Item>, </List> or </MultiList>
 		else if(qName.equals(TAG_LISTITEM) || qName.equals(TAG_LIST) || qName.equals(TAG_MULTILIST))
 		{
@@ -670,21 +747,23 @@ public class FormParser extends SubtreeParser
 				currentListItem.setDefaultChild(currentListItem.getChildren().get(0)); // first child become default
 			currentListItem = currentListItem.getParent(); // parent (possibly null in case of root) becomes currentListItem
 		}
-		// </Page>
-		else if(qName.equals(TAG_PAGE))
+		
+		// </Trigger>
+		else if(qName.equals(TAG_TRIGGER))
 		{
-			closePage();
+			openTrigger = null;
 		}
-		// </BelongsTo> or </LinksTo> 
-		else if(qName.equals(TAG_BELONGS_TO) || qName.equals(TAG_LINKS_TO))
-		{
-			currentRelationship = null;
-		}
+		
 		// </Form>
 		else if(qName.equals(TAG_FORM))
 		{
-			// in case of a singePage form:
-			closePage();
+			// close page in case of a singePage form:
+			Page currentPage = getCurrentPage();
+			if(currentPage != null)
+			{
+				closePage(currentPage);
+				openFields.pop();
+			}
 			
 			// Resolve/set currentForm start field:
 			Field startField = currentForm.getFields().get(0); // first field is the default start field

@@ -8,6 +8,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary.DictionarySerialiser;
@@ -169,7 +170,7 @@ public class MultiListField extends Field
 	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
 	 */
 	@Override
-	public boolean enter(Controller controller, boolean withPage)
+	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
 	{
 		return true;
 	}
