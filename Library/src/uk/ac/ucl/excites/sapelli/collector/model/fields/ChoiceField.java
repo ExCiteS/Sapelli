@@ -338,27 +338,11 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 	
 	/**
-	 * @return the value
+	 * @return the value (possibly null)
 	 */
 	public String getValue()
 	{
-		if(value == null && parent != null)
-			return parent.getValue(); //return value of parent
-		else
-			return value; //return own value (possibly null)
-	}
-	
-	private ChoiceField getLowestAncestorWithValue()
-	{
-		if(value == null) //we don't need to check for empty String because those are replaced by null in the constructor
-		{
-			if(parent != null)
-				return parent.getLowestAncestorWithValue(); //recursive call
-			else
-				return null; //in case there is no value all the way to the root
-		}
-		else
-			return this; //return self
+		return value;
 	}
 	
 	public ChoiceDictionary getDictionary()
@@ -415,8 +399,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	/**
 	 * A Dictionary for ChoiceFields.
 	 * 
-	 * Holds a (Hash)Map (itemToIndex) which maps ChoiceFields that are both "valued" (i.e. with non-null value String) AND
-	 * "selectable" (being either a leaf itself or the lowest "valued" ancestor of a "non-valued" leaf) to indexes,
+	 * Holds a (Hash)Map (itemToIndex) which maps "valued" (i.e. with non-null value String) leaves to indexes,
 	 * which are used to store the value (i.e. the choice made) of the ChoiceField tree.
 	 * 
 	 * Also holds an (Array)List which allows choices to be looked up by index.
@@ -427,7 +410,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	{
 
 		/**
-		 * <b>Note:</b> This method should only be called after the whole choice tree is parsed & constructed (i.e. from addColumns()).
+		 * <b>Note:</b> This method should only be called after the whole choice tree is parsed & constructed (i.e. from createColumn()).
 		 */
 		protected void initialise(ChoiceField root)
 		{
@@ -438,18 +421,14 @@ public class ChoiceField extends Field implements DictionaryItem
 		}
 	
 		/**
-		 * Recursive method which implements a depth-first traversal that finds all leaves and stores them or their lowest valued ancestor in the dictionary.
+		 * Recursive method which implements a depth-first traversal that finds all leaves and stores them in the dictionary provided they carry a value.
 		 */
 		private void traverse(ChoiceField choice)
 		{
-			if(choice.isLeaf())
+			if(choice.isLeaf() && choice.getValue() != null)
 			{
-				ChoiceField valuedChoice = choice.getLowestAncestorWithValue();
-				if(valuedChoice != null && !itemToIndex.containsKey(valuedChoice))
-				{
-					itemToIndex.put(valuedChoice, indexed.size());
-					indexed.add(valuedChoice);
-				}
+				itemToIndex.put(choice, indexed.size());
+				indexed.add(choice);
 			}
 			else
 			{

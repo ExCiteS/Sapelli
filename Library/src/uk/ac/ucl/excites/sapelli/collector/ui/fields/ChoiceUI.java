@@ -36,8 +36,8 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	{
 		if(!controller.isFieldEndabled(chosenChild))
 			return;
-		// Store value if chosenChild is a leaf and the field has a column:
-		if(chosenChild.isLeaf() && !field.isNoColumn())
+		// Store value if the field has a column, the chosenChild is a leaf and it is known in the field dictionary (meaning it carries a value):
+		if(!field.isNoColumn() && chosenChild.isLeaf() && field.getDictionary().contains(chosenChild))
 			field.getColumn().storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
 		// Go to chosenChild:
 		controller.goTo(chosenChild, !chosenChild.isLeaf());

@@ -51,6 +51,11 @@ public class Dictionary<I extends DictionaryItem>
 		return (idx != null ? idx : UNKNOWN_INDEX);
 	}
 	
+	public boolean contains(DictionaryItem item)
+	{
+		return lookupIndex(item) != UNKNOWN_INDEX;
+	}
+	
 	public I lookupItem(int index)
 	{
 		return indexed.get(index);
