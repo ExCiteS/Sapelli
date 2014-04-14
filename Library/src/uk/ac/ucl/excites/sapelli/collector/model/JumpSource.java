@@ -5,18 +5,39 @@ package uk.ac.ucl.excites.sapelli.collector.model;
 
 
 /**
- * @author mstevens, Michalis Vitos
+ * Super class for Field & Trigger
  * 
+ * @author mstevens
  */
-public interface JumpSource
+public abstract class JumpSource
 {
 
-	public void setJump(Field target);
+	protected Field jump;
+	protected FieldParameters nextFieldArgs;
 	
-	public Field getJump();
+	public void setJump(Field target)
+	{
+		this.jump = target;
+	}
 	
-	public void setNextFieldArguments(FieldParameters argumentsForNextField);
+	public Field getJump()
+	{
+		return jump;
+	}
 	
-	public FieldParameters getNextFieldArguments();
+	public void setNextFieldArguments(FieldParameters argumentsForNextField)
+	{
+		this.nextFieldArgs = argumentsForNextField;
+	}
+
+	public boolean hasNextFieldArguements()
+	{
+		return nextFieldArgs != null && nextFieldArgs != FieldParameters.EMPTY;
+	}
+	
+	public FieldParameters getNextFieldArguments()
+	{
+		return nextFieldArgs != null ? nextFieldArgs : FieldParameters.EMPTY;
+	}
 	
 }

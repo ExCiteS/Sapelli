@@ -11,7 +11,7 @@ import java.util.List;
  * @author Michalis Vitos, mstevens
  *
  */
-public class Trigger implements JumpSource
+public class Trigger extends JumpSource
 {
 
 	// Statics----------------------------------------------
@@ -67,35 +67,6 @@ public class Trigger implements JumpSource
 		if(fixedTimer != NO_TIMEOUT && fixedTimer < 0)
 			throw new IllegalArgumentException("Invalid timer duration: " + fixedTimer);
 		this.fixedTimer = fixedTimer;
-	}
-
-	/**
-	 * @return the jump
-	 */
-	public Field getJump()
-	{
-		return jump;
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.project.model.JumpSource#setJump(uk.ac.ucl.excites.sapelli.collector.project.model.Field)
-	 */
-	@Override
-	public void setJump(Field target)
-	{
-		this.jump = target;
-	}
-
-	@Override
-	public void setNextFieldArguments(FieldParameters argumentsForNextField)
-	{
-		this.jumpArgs = argumentsForNextField;
-	}
-
-	@Override
-	public FieldParameters getNextFieldArguments()
-	{
-		return jumpArgs != null ? jumpArgs : FieldParameters.EMPTY;
 	}
 	
 }

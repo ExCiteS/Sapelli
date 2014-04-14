@@ -14,7 +14,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
  * @author mstevens
  *
  */
-public abstract class Field implements JumpSource
+public abstract class Field extends JumpSource
 {
 	
 	//Statics----------------------------------------------
@@ -49,8 +49,6 @@ public abstract class Field implements JumpSource
 	protected String id;
 	protected String caption;
 	protected Form form;
-	protected Field jump;
-	private FieldParameters nextFieldArgs;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	protected boolean showOnCreate = DEFAULT_SHOW_ON_CREATE;
@@ -194,28 +192,6 @@ public abstract class Field implements JumpSource
 	public void setShowOnEdit(boolean showOnEdit)
 	{
 		this.showOnEdit = showOnEdit;
-	}
-
-	public void setJump(Field target)
-	{
-		this.jump = target;
-	}
-	
-	public Field getJump()
-	{
-		return jump;
-	}
-	
-	@Override
-	public void setNextFieldArguments(FieldParameters argumentsForNextField)
-	{
-		this.nextFieldArgs = argumentsForNextField;
-	}
-
-	@Override
-	public FieldParameters getNextFieldArguments()
-	{
-		return nextFieldArgs != null ? nextFieldArgs : FieldParameters.EMPTY;
 	}
 	
 	/**
