@@ -10,12 +10,11 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerAdapter;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.FileImageItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.ResourceImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
@@ -328,7 +327,6 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 
 			static public final float BUTTON_HEIGHT_DIP = 64;
 
-			private int buttonSize; // width = height
 			private int buttonPadding;
 			private int buttonBackColor;
 			
@@ -350,10 +348,10 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				setNumColumns(getNumberOfColumns());
 
 				// Images/buttons:
-				pickerAdapter = new PickerAdapter(super.getContext());
 
 				// Button size, padding & background colour:
-				this.buttonSize = ScreenMetrics.ConvertDipToPx(context, BUTTON_HEIGHT_DIP);
+				int buttonSize = ScreenMetrics.ConvertDipToPx(context, BUTTON_HEIGHT_DIP);
+				this.setItemDimensionsPx(buttonSize, buttonSize);
 				this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 				this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
 				
@@ -361,16 +359,14 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				addButtons();
 
 				// And finally:
-				setAdapter(pickerAdapter);
+				setAdapter(getAdapter()); // this is supposedly needed on Android v2.3.x (TODO test it)
 			}
 			
 			protected void addButton(Item button)
 			{
-				button.setWidthPx(buttonSize);
-				button.setHeightPx(buttonSize);
 				button.setPaddingPx(buttonPadding);
 				button.setBackgroundColor(buttonBackColor);
-				pickerAdapter.addItem(button);
+				getAdapter().addItem(button);
 			}
 
 			protected abstract int getNumberOfColumns();

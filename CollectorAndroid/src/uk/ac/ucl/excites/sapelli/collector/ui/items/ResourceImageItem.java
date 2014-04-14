@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.collector.ui.picker.items;
+package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
 import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGBuilder;

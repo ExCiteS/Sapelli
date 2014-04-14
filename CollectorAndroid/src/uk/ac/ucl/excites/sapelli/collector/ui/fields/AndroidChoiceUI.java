@@ -7,16 +7,15 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerAdapter;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.DrawableItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.EmptyItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.FileImageItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.LayeredItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.TextItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.TextItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
@@ -75,13 +74,23 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		else
 		{
 			if(pickView == null)
-				pickView = new ChoiceView(collectorUI.getContext());
+				pickView = getChoiceView();
 			
 			// Update pickView:
 			pickView.update();
 			
-			return pickView;
+			return (View) pickView;
 		}
+	}
+	
+	/**
+	 * To be overridden by AndroidICSChoiceUI
+	 * 
+	 * @return
+	 */
+	public ChoiceView getChoiceView()
+	{
+		return new PreICSChoiceView(collectorUI.getContext());
 	}
 	
 	/**
@@ -119,7 +128,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				this.removeView(chosenView);
 			
 			// New chosenView
-			chosenView = createItem(chosenField, chosenSizePx, chosenSizePx, chosenPaddingPx, !isEnabled()).getView(getContext());
+			chosenView = createItem(chosenField, chosenPaddingPx, !isEnabled()).getView(getContext());
 			chosenView.setOnClickListener(this);
 			
 			// Make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
@@ -128,7 +137,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			chosenView.setOnFocusChangeListener(this);
 
 			// Set margins on layoutparams:
-			LayoutParams chosenLP = new LinearLayout.LayoutParams(chosenView.getLayoutParams());
+			LayoutParams chosenLP = new LinearLayout.LayoutParams(chosenSizePx, chosenSizePx);
 			chosenLP.setMargins(chosenMarginPx, chosenMarginPx, chosenMarginPx, chosenMarginPx);
 			
 			// Add the view:
@@ -179,17 +188,44 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		
 	}
 	
+	protected void onChildClick(final ChoiceField child, View childView)
+	{
+		// Task to perform after animation has finished:
+		Runnable action = new Runnable()
+		{
+			public void run()
+			{
+				choiceMade(child);
+			}
+		};
+
+		// Execute the "press" animation if allowed, then perform the action: 
+		if(controller.getCurrentForm().isAnimation())
+			(new PressAnimator(action, childView, collectorUI)).execute(); //execute animation and the action afterwards
+		else
+			action.run(); //perform task now (animation is disabled)	
+	}
+	
 	/**
-	 * TODO later we may implement colSpan/rowSpan support here, but that would require us to base the ChoiceView on GridLayout rather than PickerView/GridView
+	 * ChoiceView interface
+	 * 
+	 * @author mstevens
+	 */
+	protected interface ChoiceView
+	{
+		
+		public void update();
+		
+	}
+	
+	/**
 	 * 
 	 * @author Julia, mstevens, Michalis Vitos
 	 */
-	public class ChoiceView extends PickerView implements AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener
+	private class PreICSChoiceView extends PickerView implements ChoiceView, AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener
 	{
-		
-		static public final String TAG = "ChoiceView";
-				
-		public ChoiceView(Context context)
+						
+		public PreICSChoiceView(Context context)
 		{
 			super(context);
 			
@@ -203,15 +239,15 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			setNumColumns(field.getCols());
 			
 			// Item size & padding:
-			int itemWidthPx = collectorUI.getIconWidthPx(field.getCols());
-			int itemHeightPx = collectorUI.getIconHeightPx(field.getRows(), controller.getControlsState().isAnyButtonShown());
+			setItemDimensionsPx(collectorUI.getFieldUIPartWidthPx(field.getCols()),
+								collectorUI.getFieldUIPartHeightPx(field.getRows()));
+			
 			int itemPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 
-			// Adapter & images:
-			pickerAdapter = new PickerAdapter(context);
+			// Add items for children:
+			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
-				pickerAdapter.addItem(createItem(child, itemWidthPx, itemHeightPx, itemPaddingPx, !field.isEnabled()));
-			
+				adapter.addItem(createItem(child, itemPaddingPx, !field.isEnabled())); // TODO deprecate enable/disable at field level?
 			// Click listeners:
 			setOnItemClickListener(this);
 			setOnItemLongClickListener(this);
@@ -221,28 +257,16 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		{
 			// Update visibility:
 			int c = 0;
+			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
-				pickerAdapter.getItem(c++).setVisibility(controller.isFieldEndabled(child));
-			setAdapter(pickerAdapter);
+				adapter.getItem(c++).setVisibility(controller.isFieldEndabled(child));
+			setAdapter(adapter);
 		}
 		
 		@Override
 		public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 		{
-			// Task to perform after animation has finished:
-			Runnable action = new Runnable()
-			{
-				public void run()
-				{
-					choiceMade(field.getChildren().get(position)); // pass the chosen child
-				}
-			};
-
-			// Execute the "press" animation if allowed, then perform the action: 
-			if(controller.getCurrentForm().isAnimation())
-				(new PressAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
-			else
-				action.run(); //perform task now (animation is disabled)
+			onChildClick(field.getChildren().get(position) /* pass the chosen child */, v);
 		}
 		
 		@Override
@@ -261,7 +285,13 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param child
 	 * @return corresponding item
 	 */
-	private Item createItem(ChoiceField child, int itemWidthPx, int itemHeightPx, int itemPaddingPx, boolean grayedOut)
+	/**
+	 * @param child
+	 * @param itemPaddingPx
+	 * @param grayedOut
+	 * @return
+	 */
+	public Item createItem(ChoiceField child, int itemPaddingPx, boolean grayedOut)
 	{
 		File imageFile = controller.getProject().getImageFile(child.getImageRelativePath());
 		Item item = null;
@@ -285,7 +315,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			if(grayedOut)
 			{
 				// Make background of layered stack gray:
-				layeredItem.setBackgroundColor(CollectorView.COLOR_GRAY); 			
+				layeredItem.setBackgroundColor(CollectorView.COLOR_GRAY);
 				// Add grayed-out layer:
 				Item grayOutOverlay = new EmptyItem();
 				grayOutOverlay.setBackgroundColor(CollectorView.COLOR_SEMI_TRANSPARENT_GRAY);
@@ -296,8 +326,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		}
 		
 		// Set size & padding:
-		item.setWidthPx(itemWidthPx);
-		item.setHeightPx(itemHeightPx);
 		item.setPaddingPx(itemPaddingPx);
 		
 		return item;

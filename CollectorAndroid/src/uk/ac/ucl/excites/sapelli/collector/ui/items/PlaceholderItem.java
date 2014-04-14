@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.collector.ui.picker.items;
+package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
 import android.content.Context;
 import android.view.View;

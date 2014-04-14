@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.collector.ui.picker.items;
+package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
 import uk.ac.ucl.excites.sapelli.collector.ui.FontFitTextView;
 import android.content.Context;

@@ -13,12 +13,11 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerAdapter;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.FileImageItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.Item;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.ResourceImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
@@ -116,7 +115,6 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		static private final int BUTTON_INDEX_START = 0;
 		static private final int BUTTON_INDEX_STOP = 1;
 		
-		private int buttonHeight;
 		private int buttonPadding;
 		private int buttonBackColor;
 		
@@ -134,12 +132,11 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			setNumColumns(1);
 
 			// Button size, padding & background colour:
-			this.buttonHeight = collectorUI.getIconHeightPx(2, controller.getControlsState().isAnyButtonShown());
+			this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, collectorUI.getFieldUIPartHeightPx(2));
 			this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 			this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
 			
 			// Adapter & button images:
-			pickerAdapter = new PickerAdapter(super.getContext());
 			// Start rec button:
 			Item startButton = null;
 			File startRecImageFile = controller.getProject().getImageFile(field.getStartRecImageRelativePath());
@@ -165,11 +162,9 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		
 		private void addButton(Item button)
 		{
-			button.setWidthPx(LayoutParams.MATCH_PARENT);
-			button.setHeightPx(buttonHeight);
 			button.setPaddingPx(buttonPadding);
 			button.setBackgroundColor(buttonBackColor);
-			pickerAdapter.addItem(button);
+			getAdapter().addItem(button);
 		}
 		
 		@Override
@@ -214,8 +209,9 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		
 		public void setStartVisibility(boolean visible)
 		{
-			pickerAdapter.getItem(BUTTON_INDEX_START).setVisibility(visible);
-			setAdapter(pickerAdapter); //this does not seem to be needed on Android 4.x, but it is needed on v2.3.x
+			PickerAdapter adapter = getAdapter();
+			adapter.getItem(BUTTON_INDEX_START).setVisibility(visible);
+			setAdapter(adapter); //this does not seem to be needed on Android 4.x, but it is needed on v2.3.x (TODO test if it is really so)
 		}
 		
 	}

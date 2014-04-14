@@ -6,13 +6,12 @@ import java.io.File;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsState;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerAdapter;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.PickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.picker.items.*;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
@@ -68,11 +67,10 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 		this.collectorView = collectorView;
 		
 		enabled = true;
+		
+		setItemDimensionsPx(LayoutParams.MATCH_PARENT, getButtonHeightPx());
 		setOnItemClickListener(this);
-		
-		// Adapter (setAdapter() is called from update())
-		pickerAdapter = new PickerAdapter(super.getContext());
-		
+				
 		// UI set-up:
 		setBackgroundColor(Color.BLACK);
 		setHorizontalSpacing(collectorView.getSpacingPx());
@@ -130,7 +128,11 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 				// Columns
 				setNumColumns(positionToButton.length);
 				
-				pickerAdapter.clear();
+				PickerAdapter pickerAdapter = getAdapter();
+				if(pickerAdapter == null)
+					pickerAdapter = new PickerAdapter(getContext());
+				else
+					pickerAdapter.clear();
 				int p = 0;
 				//	Add buttons:
 				if(currentState.isBackShown())
@@ -179,8 +181,6 @@ public class ControlsView extends PickerView implements AdapterView.OnItemClickL
 		*/
 		
 		// Button size, padding & color:
-		button.setWidthPx(LayoutParams.MATCH_PARENT);
-		button.setHeightPx(getButtonHeightPx());
 		button.setPaddingPx(ScreenMetrics.ConvertDipToPx(getContext(), PADDING_DIP));
 		button.setBackgroundColor(backColor);
 		
