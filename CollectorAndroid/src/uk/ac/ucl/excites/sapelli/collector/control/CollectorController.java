@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
@@ -49,9 +50,9 @@ public class CollectorController extends Controller implements LocationListener,
 	private Location currentBestLocation = null;
 	private OrientationSensor orientationSensor;
 
-	public CollectorController(Project project, CollectorView collectorView, RecordStore recordStore, CollectorActivity activity)
+	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, CollectorActivity activity)
 	{
-		super(project, collectorView, recordStore);
+		super(project, collectorView, projectStore, recordStore);
 		this.activity = activity;
 
 		// Get Device ID (as a CRC32 hash):

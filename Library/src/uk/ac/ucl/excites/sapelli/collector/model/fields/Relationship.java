@@ -61,6 +61,8 @@ public class Relationship extends UILessField
 		
 	}
 	
+	static public final String PARAMETER_EDIT = "edit";
+	
 	static public final boolean DEFAULT_HOLD_FOREIGN_RECORD = false;
 	
 	// Dynamics------------------------------------------------------
@@ -216,6 +218,11 @@ public class Relationship extends UILessField
 					return false;
 			}
 		return true;
+	}
+	
+	public boolean isEditMode(FieldParameters arguments)
+	{
+		return Boolean.parseBoolean(arguments.get(PARAMETER_EDIT, Boolean.FALSE.toString()));
 	}
 
 }

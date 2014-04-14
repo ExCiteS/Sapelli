@@ -176,7 +176,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		}
 
 		// Set-up controller:
-		controller = new CollectorController(project, collectorView, recordStore, this);
+		controller = new CollectorController(project, collectorView, projectStore, recordStore, this);
 		collectorView.setController(controller); // !!!
 		
 		// Start project:

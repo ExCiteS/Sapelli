@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -33,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
@@ -50,6 +52,7 @@ public abstract class Controller
 	// DYNAMICS------------------------------------------------------
 	protected Project project;
 	protected CollectorUI<?, ?> ui;
+	protected ProjectStore projectStore;
 	protected RecordStore recordStore;
 	protected Logger logger;
 	
@@ -61,10 +64,11 @@ public abstract class Controller
 	
 	protected boolean handlingUserGoBackRequest = false;
 	
-	public Controller(Project project, CollectorUI<?, ?> ui, RecordStore recordStore)
+	public Controller(Project project, CollectorUI<?, ?> ui, ProjectStore projectStore, RecordStore recordStore)
 	{
 		this.project = project;
 		this.ui = ui;
+		this.projectStore = projectStore;
 		this.recordStore = recordStore;
 		
 		// Collections:
@@ -445,85 +449,96 @@ public abstract class Controller
 	
 	public boolean enterLinksTo(Relationship rel, FieldParameters arguments)
 	{
-		Record foreignRecord = getHeldRecord(rel);
-		if(foreignRecord != null)
-			openFormSession(FormSession.Edit(rel.getRelatedForm(), foreignRecord)); // Edit the "held" record
-		else
-			openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); ; // Open related from to create a new record
+		//TODO enterLinksTo
+		
+//		Record foreignRecord = getHeldRecord(rel);
+//		if(foreignRecord != null)
+//			openFormSession(FormSession.Edit(rel.getRelatedForm(), foreignRecord)); // Edit the "held" record
+//		else
+//			openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); ; // Open related from to create a new record
 		return false;
 	}
 	
 	public boolean enterBelongsTo(Relationship rel, FieldParameters arguments)
 	{
-		//System.out.println("Prev form:" + (prevFormSession != null ? prevFormSession.form.getID() : "none"));
+		ForeignKeyColumn column = rel.getColumn();
+		Constraint constraints = rel.getConstraints();
+		ForeignKey foreignKey = column.retrieveValue(currFormSession.record); // may be null
 		
-		// Check if we already have a foreign key value...
-		if(rel.getColumn().isValueSet(currFormSession.record))
-			goForward(false);
-		
-		// TODO find a way to open existing foreign record for editing (+ coming back without going in some kind of loop)
-		
-		Record foreignRecord = null;
-		
-		// Try to obtain foreignRecord in various ways...
-		if(prevFormSession != null && prevFormSession.form == rel.getRelatedForm())
-		{	// We have come back from the related form ...
-			if(prevFormSession.record == null && rel.getOptional() == Optionalness.ALWAYS) // ... but without a saved record, this is OK only if the belongTo field is optional
-				goForward(true); // go to next field (no foreign key stored)
-			else if(rel.getConstraints().isValid(prevFormSession.record)) // ... we'll use the record if it meets requirements (if it's null, isValid() will return false)
-				foreignRecord = prevFormSession.record;
-		}
-		else
-			foreignRecord = getHeldRecord(rel); // get held record (can be null, for instance if this relationship doesn't hold on to foreign records)
-		
-		// Deal with foreignRecord and continue...
-		if(foreignRecord != null)
-		{
-			System.out.println("Foreign record: " + foreignRecord.toString()); //TODO remove
+		if(prevFormSession == null || prevFormSession.form != rel.getRelatedForm())
+		{	/* We did not return from the related form; this can occur in  3 possible cases:
+			 * 	- there is no prev form (fresh collector activity intent);
+			 * 	- prevForm = currForm (loop within current form);
+			 * - prevForm = yet another form */
 			
-			// Store foreign key:
-			rel.getColumn().storeValue(currFormSession.record, new ForeignKey(foreignRecord));
+			// Check is we already have a value...
+			if(foreignKey != null)
+			{	// We already have a foreign key value
+				if(rel.isEditMode(arguments))
+				{	// in edit mode (the edit argument was true)
+					// TODO wipe edit argument!
+					
+					// Edit foreign record
+					openFormSession(FormSession.Edit(rel.getRelatedForm(), recordStore.retrieveRecord(foreignKey.getForeignRecordQuery())));
+				}
+				else
+				{	// not in edit mode (the edit argument was false, or more likely, missing)
+					goForward(false); // continue
+				}
+			}
+			else
+			{	// We don't have a foreign key value yet
+				
+				// Note: we ignore the edit argument here because we only allow editing if a value is already set
+				// TODO wipe edit argument!
 			
-			// Go to next field in current form...
-			goForward(true);
+				if(rel.isHoldForeignRecord())
+				{	// the Relationship is allowed to hold on to foreign records 
+					ForeignKey heldForeignKey = projectStore.retrieveHeldForeignKey(rel);
+					Record foreignRecord = heldForeignKey != null ? recordStore.retrieveRecord(heldForeignKey.getForeignRecordQuery()) : null;
+					if(constraints.isValid(foreignRecord)) // passing null will return false
+					{	// we have a "held" foreign key, the corresponding foreign record was found and meets the constraints:
+						column.storeValue(currFormSession.record, heldForeignKey); // Store foreign key
+						goForward(false); // Go to next field in current form...
+					}
+					else
+					{	// Either we didn't have a "held" foreign key, OR no corresponding record was found, OR the record didn't meet the constraints:
+						projectStore.deleteHeldForeignKey(rel); // clear held foreign key (if there was none nothing will happen)
+						openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); // open relatedForm to create new record
+					}
+				}
+				else
+				{	// the Relationship is *not* allowed to hold on to foreign records
+					openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); // open relatedForm to create new record
+				}
+			}
 		}
-		else
-		{	// Open related from to create a new foreign record
-			openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash));
-		}
-		return false;
-	}
-	
-	private Record getHeldRecord(Relationship rel)
-	{
-		if(!rel.isHoldForeignRecord())
-			return null;
+		else if(prevFormSession != null && prevFormSession.form == rel.getRelatedForm())
+		{	// We returned from the related form
+			
+			// Check is we already have a value...
+			if(foreignKey != null)
+			{	// We already have a foreign key value
+			
+				if(rel.isEditMode(arguments))
+				{	// in edit mode (the edit argument was true)
 
-		ForeignKeyColumn column = (ForeignKeyColumn) rel.getColumn();
-		
-		// Try to obtain the "held" foreign record:
-		Record foreignRecord = null;
-		
-		// Using the previous form session...
-		if(	!rel.isNoColumn() &&							/* If the relationship has a column to store foreign keys (i.e. it is not of type LINK) */
-			prevFormSession != null &&						/* AND there is a previous form session */		
-			prevFormSession.form == currFormSession.form &&	/* AND it is for the same as the current form (i.e. we have looped within the same form) */
-			column.isValueSet(prevFormSession.record))		/* AND the previous record stored a foreign key (if optional it can also be null) */
-		{
-			ForeignKey key = column.retrieveValue(prevFormSession.record);						// get foreign key from previous record
-			foreignRecord = (Record) recordStore.retrieveRecord(key.getForeignRecordQuery());	// look-up the corresponding foreign record
+				}
+				else
+				{	// not in edit mode (the edit argument was false, or more likely, missing)
+
+					
+				}
+			}
+			else
+			{	// We don't have a foreign key value yet
+				
+			}
 		}
 		
-		// Check if the foreignRecord meets the constraints...
-		if(rel.getConstraints().isValid(foreignRecord)) // passing null will return false
-			foreignRecord = null; // ... and make it null if it doesn't
+		// TODO "reset starttime upon leave"?
 		
-		// If we still don't have one...
-		if(foreignRecord == null)
-			// ... then try to obtain it by querying for most recent record that meets the relationship constraints...
-			foreignRecord = (Record) recordStore.retrieveRecord(rel.getHeldRecordQuery()); // TODO no deviceid (for local/remote source) is checked for now
-		
-		return foreignRecord; // may still be null!
+		return false;
 	}
 	
 	/**
@@ -573,7 +588,7 @@ public abstract class Controller
 			case EXITAPP:
 				exit();
 				break;
-		}		
+		}
 		
 		return false; // no UI update needed
 	}
