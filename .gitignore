@@ -20,7 +20,8 @@ tmp/**
 temp/**
 *.tmp
 *.bak
-~$*.docx
+**~$*.docx
+**~$*.xlsx
 
 # Local configuration file (sdk path, etc)
 local.properties
