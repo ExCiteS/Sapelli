@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
-<SapelliCollectorProject format="2" name="FPP DRC" variant="prototype" id="400" version="0.1" startForm="Entry">
+<SapelliCollectorProject format="2" name="FPP DRC" variant="prototype" id="400" version="0.8" startForm="Splash">
   <Configuration>
     <Transmission>
       <!-- TODO -->
@@ -25,18 +25,20 @@
   </Form>
   
   <Form id="Entry" startField="SessionKey" end="_LOOP" endVibrate="true" showBack="true" showCancel="true" storeEndTime="true">
-        
+    
     <!-- source="localCreate|localSelect|remoteQR|remoteBT|remoteSMS|remoteHTTP" ? -->
-    <!-- paged="true" by default -->
     <BelongsTo id="SessionKey" form="Session" source="localCreate" hold="true" skipOnBack="true" optional="false" updateStartTimeUponLeave="true" saveBeforeFormChange="false">
       <Constraint column="closed" notEqual="true"/>
     </BelongsTo>
   
-    <Choice id="Type" optional="false" rows="2" cols="1" showRelationship="SessionKey">
-      <Choice value="Waypoint" alt="Area delineation waypoint" img="Waypoint.png"/>
-      <Choice value="Resources/Sites" alt="Resources/Sites" img="Resources-Sites.png" rows="3" cols="1">
-        <Choice value="Farming" alt="Farming" img="Farming.png" rows="3" cols="1">
-          <Choice value="Annual farming" alt="Annual farming" img="Annual farming.png" rows="3" cols="2">
+    <Choice id="Type" optional="false" rows="3" cols="1">
+      <Choice alt="Edit session" jump="SessionKey">
+        <Argument param="edit" value="true"/>
+      </Choice>
+      <Choice alt="Area delineation waypoint" img="Waypoint.png"/>
+      <Choice alt="Resources/Sites" img="Resources-Sites.png" rows="3" cols="1">
+        <Choice alt="Farming" img="Farming.png" rows="3" cols="1">
+          <Choice alt="Annual farming" img="Annual farming.png" rows="3" cols="2">
             <Choice value="AF#1" alt="Annual farming #1 (placeholder)"/>
             <Choice value="AF#2" alt="Annual farming #2 (placeholder)"/>
             <Choice value="AF#3" alt="Annual farming #3 (placeholder)"/>
@@ -44,7 +46,7 @@
             <Choice value="AF#5" alt="Annual farming #5 (placeholder)"/>
             <Choice value="AF#6" alt="Annual farming #6 (placeholder)"/>
           </Choice>
-          <Choice value="Perrenial farming" alt="Perrenial farming" img="Perrenial farming.png" rows="3" cols="2">
+          <Choice alt="Perrenial farming" img="Perrenial farming.png" rows="3" cols="2">
             <Choice value="PF#1" alt="Perrenial farming #1 (placeholder)"/>
             <Choice value="PF#2" alt="Perrenial farming #2 (placeholder)"/>
             <Choice value="PF#3" alt="Perrenial farming #3 (placeholder)"/>
@@ -52,7 +54,7 @@
             <Choice value="PF#5" alt="Perrenial farming #5 (placeholder)"/>
             <Choice value="PF#6" alt="Perrenial farming #6 (placeholder)"/>
           </Choice>
-          <Choice value="Livestock farming" alt="Livestock farming" img="Livestock farming.png" rows="3" cols="2">
+          <Choice alt="Livestock farming" img="Livestock farming.png" rows="3" cols="2">
             <Choice value="LF#1" alt="Livestock farming #1 (placeholder)"/>
             <Choice value="LF#2" alt="Livestock farming #2 (placeholder)"/>
             <Choice value="LF#3" alt="Livestock farming #3 (placeholder)"/>
@@ -61,8 +63,8 @@
             <Choice value="LF#6" alt="Livestock farming #6 (placeholder)"/>
           </Choice>
         </Choice>
-        <Choice value="Forest" alt="Forest" img="Forest.png" rows="2" cols="1">
-          <Choice value="Hunting" alt="Hunting" img="Hunting.png" rows="3" cols="2">
+        <Choice alt="Forest" img="Forest.png" rows="2" cols="1">
+          <Choice alt="Hunting" img="Hunting.png" rows="3" cols="2">
             <Choice value="Hunt#1" alt="Hunting #1 (placeholder)"/>
             <Choice value="Hunt#2" alt="Hunting #2 (placeholder)"/>
             <Choice value="Hunt#3" alt="Hunting #3 (placeholder)"/>
@@ -70,7 +72,7 @@
             <Choice value="Hunt#5" alt="Hunting #5 (placeholder)"/>
             <Choice value="Hunt#6" alt="Hunting #6 (placeholder)"/>
           </Choice>
-          <Choice value="Gathering" alt="Gathering" img="Gathering.png" rows="3" cols="2">
+          <Choice alt="Gathering" img="Gathering.png" rows="3" cols="2">
             <Choice value="Gather#1" alt="Gathering #1 (placeholder)"/>
             <Choice value="Gather#2" alt="Gathering #2 (placeholder)"/>
             <Choice value="Gather#3" alt="Gathering #3 (placeholder)"/>
@@ -79,7 +81,7 @@
             <Choice value="Gather#6" alt="Gathering #6 (placeholder)"/>
           </Choice>
         </Choice>
-        <Choice value="People" alt="People" img="People.png" row="3" cols="2">
+        <Choice alt="People" img="People.png" row="3" cols="2">
           <Choice value="People#1" alt="People #1 (placeholder)"/>
           <Choice value="People#2" alt="People #2 (placeholder)"/>
           <Choice value="People#3" alt="People #3 (placeholder)"/>
@@ -93,13 +95,7 @@
     <Location id="Position"/>
     
   </Form>
-  
-
-  <!-- editable should be a field attribute (default=true), not a form one -->  
-  <!-- edit protection: here? -->
-  <!-- should 'hold' be an attribute of the form of of belongsTo? -> probably YES -->
-  <!-- end: accept form names? -->
-  
+    
   <Form id="Session" storeEndTime="true" next="PREVFORM">
 
     <Page skipOnBack="true" showOnCreate="false" showOnEdit="true">
