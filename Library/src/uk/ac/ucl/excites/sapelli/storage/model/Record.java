@@ -409,10 +409,11 @@ public class Record implements Serializable
 	 * 
 	 * @param serialisedRecord
 	 * @throws Exception
+	 * @return the Record itself
 	 */
-	public void parse(String serialisedRecord) throws Exception
+	public Record parse(String serialisedRecord) throws Exception
 	{
-		parse(serialisedRecord, false, Collections.<Column<?>>emptySet());
+		return parse(serialisedRecord, false, Collections.<Column<?>>emptySet());
 	}
 	
 	/**
@@ -421,8 +422,9 @@ public class Record implements Serializable
 	 * @param serialisedRecord
 	 * @param skipColumns
 	 * @throws Exception
+	 * @return the Record itself
 	 */
-	public void parse(String serialisedRecord, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
+	public Record parse(String serialisedRecord, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		String[] parts = serialisedRecord.split("\\" + SERIALISATION_SEPARATOR);
 		if(parts.length != schema.getNumberOfColumns(includeVirtual))
@@ -434,6 +436,7 @@ public class Record implements Serializable
 				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
 			p++;
 		}
+		return this;
 	}
 	
 	public byte[] toBytes() throws IOException
