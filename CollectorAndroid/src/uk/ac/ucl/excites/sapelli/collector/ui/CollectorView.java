@@ -20,6 +20,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidButtonUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidCheckBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidChoiceUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidICSChoiceUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLabelUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLocationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidMultiListUI;
@@ -31,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Build;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -167,7 +169,11 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	@Override
 	public AndroidChoiceUI createChoiceUI(ChoiceField cf)
 	{
-		return new AndroidChoiceUI(cf, controller, this); // based on GridView (no support for col/row spanning)
+		// TODO Maybe we should instead include the GridLayout as a support library such that we can use it regardless of the Android version 
+		//if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH /* = 14 */)
+		//	return new AndroidICSChoiceUI(cf, controller, this); // based on GridLayout (supports col/row spanning)
+		//else
+			return new AndroidChoiceUI(cf, controller, this); // based on GridView (no support for col/row spanning)
 	}
 
 	@Override

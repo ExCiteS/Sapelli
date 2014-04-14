@@ -32,21 +32,33 @@ public class ChoiceField extends Field implements DictionaryItem
 	
 	static public final int DEFAULT_NUM_COLS = 1;
 	static public final int DEFAULT_NUM_ROWS = 2;
+	static public final int DEFAULT_NUM_COLS_WITHOUT_SPAN = -1; // for backward compatibility on pre-AndroidICS devices (in which we cannot use col/row spanning)
+	static public final int DEFAULT_NUM_ROWS_WITHOUT_SPAN = -1;
+	static public final int DEFAULT_COL_SPAN = 1;
+	static public final int DEFAULT_ROW_SPAN = 1;
 	static public final String DEFAULT_ALT_TEXT = "?";
 	static public final boolean DEFAULT_CROSSED = false;
 	static public final String DEFAULT_CROSS_COLOR = "#A5FF0000"; // Red with 65% alpha
 	
 	private ChoiceField parent;
 	private ChoiceField root;
-	private List<ChoiceField> children;
+	private String value;
+	private ChoiceDictionary dictionary;
+	
+	// Appearance of choice field within its parent:
+	private int colSpan = DEFAULT_COL_SPAN;
+	private int rowSpan = DEFAULT_ROW_SPAN;
 	private String imageRelativePath;
-	private int cols;
-	private int rows;
 	private String altText;
 	private boolean crossed;
 	private String crossColor;
-	private String value;
-	private ChoiceDictionary dictionary;
+	
+	// Children & their arrangement:
+	private List<ChoiceField> children;
+	private int cols = DEFAULT_NUM_COLS;
+	private int rows = DEFAULT_NUM_ROWS;
+	private int colsWithoutSpan = DEFAULT_NUM_COLS_WITHOUT_SPAN;
+	private int rowsWithoutSpan = DEFAULT_NUM_ROWS_WITHOUT_SPAN;	
 	
 	/**
 	 * @param form the form this choice(tree) belongs to
@@ -209,6 +221,70 @@ public class ChoiceField extends Field implements DictionaryItem
 		this.rows = rows;
 	}
 	
+	/**
+	 * @return the colsWithoutSpan
+	 */
+	public int getColsWithoutSpan()
+	{
+		return colsWithoutSpan == DEFAULT_NUM_COLS_WITHOUT_SPAN ? getCols() : colsWithoutSpan;
+	}
+
+	/**
+	 * @param colsWithoutSpan the colsWithoutSpan to set
+	 */
+	public void setColsWithoutSpan(int colsWithoutSpan)
+	{
+		this.colsWithoutSpan = colsWithoutSpan;
+	}
+
+	/**
+	 * @return the rowsWithoutSpan
+	 */
+	public int getRowsWithoutSpan()
+	{
+		return rowsWithoutSpan == DEFAULT_NUM_ROWS_WITHOUT_SPAN ? getRows() : rowsWithoutSpan;
+	}
+
+	/**
+	 * @param rowsWithoutSpan the rowsWithoutSpan to set
+	 */
+	public void setRowsWithoutSpan(int rowsWithoutSpan)
+	{
+		this.rowsWithoutSpan = rowsWithoutSpan;
+	}
+
+	/**
+	 * @return the colSpan
+	 */
+	public int getColSpan()
+	{
+		return colSpan;
+	}
+
+	/**
+	 * @param colSpan the colSpan to set
+	 */
+	public void setColSpan(int colSpan)
+	{
+		this.colSpan = colSpan;
+	}
+
+	/**
+	 * @return the rowSpan
+	 */
+	public int getRowSpan()
+	{
+		return rowSpan;
+	}
+
+	/**
+	 * @param rowSpan the rowSpan to set
+	 */
+	public void setRowSpan(int rowSpan)
+	{
+		this.rowSpan = rowSpan;
+	}
+
 	/**
 	 * @return the crossed
 	 */
