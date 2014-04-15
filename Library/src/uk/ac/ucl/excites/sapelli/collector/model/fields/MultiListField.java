@@ -149,7 +149,7 @@ public class MultiListField extends Field
 						return parentAtLevel != null ? parentAtLevel.value : null;
 					}
 				}));
-				col.addVirtualVersion(StringColumn.ForCharacterCount(getCaption(level), opt, levelValueMapper.getMaxStringLength()), levelValueMapper); // TODO ensure no illegal chars are in caption
+				col.addVirtualVersion(StringColumn.ForCharacterCount(getCaption(level), opt, Math.max(levelValueMapper.getMaxStringLength(), 1)), levelValueMapper); // TODO ensure no illegal chars are in caption
 			}
 
 			// Return the column:

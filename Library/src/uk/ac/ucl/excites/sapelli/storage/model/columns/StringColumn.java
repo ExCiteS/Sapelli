@@ -72,6 +72,8 @@ public class StringColumn extends ComparatorColumn<String>
 	 */
 	public static StringColumn ForCharacterCount(String name, boolean optional, int maxLengthChars, Charset charset)
 	{
+		if(maxLengthChars <= 0)
+			throw new IllegalArgumentException("maxLenghthChars needs to be at least 1 character to make sense, given " + maxLengthChars + " characters");
 		return new StringColumn(name, optional, BytesNeededFor(maxLengthChars, charset), charset);
 	}
 	

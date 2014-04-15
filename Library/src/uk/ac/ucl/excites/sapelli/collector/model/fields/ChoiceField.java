@@ -321,7 +321,7 @@ public class ChoiceField extends Field implements DictionaryItem
 					return item.value;
 				}
 			}));
-			col.addVirtualVersion(StringColumn.ForCharacterCount("Value", opt, itemValueMapper.getMaxStringLength()), itemValueMapper);
+			col.addVirtualVersion(StringColumn.ForCharacterCount("Value", opt, Math.max(itemValueMapper.getMaxStringLength(), 1)), itemValueMapper);
 			//	Image path column:
 			StringListMapper itemImgMapper = new StringListMapper(dictionary.serialise(new DictionarySerialiser<ChoiceField>()
 			{
@@ -331,7 +331,7 @@ public class ChoiceField extends Field implements DictionaryItem
 					return item.imageRelativePath;
 				}
 			}));
-			col.addVirtualVersion(StringColumn.ForCharacterCount("Image", opt, itemImgMapper.getMaxStringLength()), itemImgMapper);
+			col.addVirtualVersion(StringColumn.ForCharacterCount("Image", opt, Math.max(itemImgMapper.getMaxStringLength(), 1)), itemImgMapper);
 			
 			// Return the column:
 			return col;
