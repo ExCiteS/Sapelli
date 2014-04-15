@@ -153,19 +153,6 @@ public class DB4OProjectStore extends ProjectStore
 	}
 
 	@Override
-	public void finalise()
-	{
-		db4o.close();
-	}
-
-	@Override
-	public void backup(File destinationFolder) throws Exception
-	{
-		db4o.commit();
-		db4o.ext().backup(DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName()).getAbsolutePath());
-	}
-
-	@Override
 	public void storeHeldForeignKey(Relationship relationship, ForeignKey foreignKey)
 	{
 		if(!relationship.isHoldForeignRecord())
@@ -232,6 +219,19 @@ public class DB4OProjectStore extends ProjectStore
 			this.foreignKey = foreignKey;
 		}
 		
+	}
+
+	@Override
+	public void finalise()
+	{
+		db4o.close();
+	}
+
+	@Override
+	public void backup(File destinationFolder) throws Exception
+	{
+		db4o.commit();
+		db4o.ext().backup(DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName()).getAbsolutePath());
 	}
 	
 }

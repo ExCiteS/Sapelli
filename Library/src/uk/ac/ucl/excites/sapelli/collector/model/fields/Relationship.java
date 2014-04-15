@@ -224,5 +224,10 @@ public class Relationship extends UILessField
 	{
 		return Boolean.parseBoolean(arguments.get(PARAMETER_EDIT, Boolean.FALSE.toString()));
 	}
+	
+	public void clearEditMode(FieldParameters arguments)
+	{
+		arguments.clear(PARAMETER_EDIT);
+	}
 
 }

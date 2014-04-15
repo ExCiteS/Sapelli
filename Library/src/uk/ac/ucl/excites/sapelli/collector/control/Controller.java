@@ -112,24 +112,24 @@ public abstract class Controller
 		// Deal with current form session:
 		if(currFormSession != null)
 		{
-			prevFormSession = currFormSession; // remember previous formSession
-			if(	!prevFormMove &&							// If we are not "coming back",
-				currFormSession.form != formSession.form && // AND we are not looping within the same form,
-				!currFormSession.form.isSkipOnBack())		// AND the previous form does not have skipOnBack=true,
-				formHistory.push(currFormSession);			// ... add previous formSession to history
+			prevFormSession = currFormSession; // remember previous formSession (always)
+			if(!prevFormMove &&								// If we are not "coming back",
+			   currFormSession.form != formSession.form &&	// AND we are not looping within the same form,
+			   !currFormSession.form.isSkipOnBack())		// AND the previous form does not have skipOnBack=true,
+				formHistory.push(currFormSession);			// THEN: add previous formSession to history
 			disableTriggers(currFormSession.form.getTriggers()); // disable triggers
 		}
 		currFormSession = formSession;
-				
+		
+		// Log start form
+		addLogLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getPosition() + ")");
+		
 		// Location...
 		List<LocationField> lfStartWithForm = currFormSession.form.getLocationFields(true);
 		if(!lfStartWithForm.isEmpty())
 			startLocationListener(lfStartWithForm); // start listening for location updates
 		else
 			stopLocationListener(); // stop listening for location updates (if we were still listening for another form for example)
-	
-		// Log start form
-		addLogLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getPosition() + ")");
 		
 		// Setup the triggers
 		setupTriggers(currFormSession.form.getTriggers());
@@ -466,43 +466,39 @@ public abstract class Controller
 		ForeignKey foreignKey = column.retrieveValue(currFormSession.record); // may be null
 		
 		if(prevFormSession == null || prevFormSession.form != rel.getRelatedForm())
-		{	/* We did not return from the related form; this can occur in  3 possible cases:
+		{	/* We did not return from the related form; this can occur in 3 possible cases:
 			 * 	- there is no prev form (fresh collector activity intent);
 			 * 	- prevForm = currForm (loop within current form);
-			 * - prevForm = yet another form */
+			 *	- prevForm = yet another form */
 			
 			// Check is we already have a value...
 			if(foreignKey != null)
 			{	// We already have a foreign key value
 				if(rel.isEditMode(arguments))
 				{	// in edit mode (the edit argument was true)
-					// TODO wipe edit argument!
-					
-					// Edit foreign record
+					//	Edit foreign record:
 					openFormSession(FormSession.Edit(rel.getRelatedForm(), recordStore.retrieveRecord(foreignKey.getForeignRecordQuery())));
 				}
 				else
 				{	// not in edit mode (the edit argument was false, or more likely, missing)
-					goForward(false); // continue
+					goForward(false); // continue to next field
 				}
 			}
 			else
 			{	// We don't have a foreign key value yet
-				
-				// Note: we ignore the edit argument here because we only allow editing if a value is already set
-				// TODO wipe edit argument!
-			
+				rel.clearEditMode(arguments); // Ignore & clear the edit argument here because we only allow editing if a value is already set
+				// Check is we are allowed to hold on to foreign records:
 				if(rel.isHoldForeignRecord())
 				{	// the Relationship is allowed to hold on to foreign records 
 					ForeignKey heldForeignKey = projectStore.retrieveHeldForeignKey(rel);
 					Record foreignRecord = heldForeignKey != null ? recordStore.retrieveRecord(heldForeignKey.getForeignRecordQuery()) : null;
 					if(constraints.isValid(foreignRecord)) // passing null will return false
-					{	// we have a "held" foreign key, the corresponding foreign record was found and meets the constraints:
+					{	// we have a "held" foreign key, the corresponding foreign record was found and meets the constraints
 						column.storeValue(currFormSession.record, heldForeignKey); // Store foreign key
-						goForward(false); // Go to next field in current form...
+						goForward(false); // continue to next field
 					}
 					else
-					{	// Either we didn't have a "held" foreign key, OR no corresponding record was found, OR the record didn't meet the constraints:
+					{	// Either we didn't have a "held" foreign key, OR no corresponding record was found, OR the record didn't meet the constraints
 						projectStore.deleteHeldForeignKey(rel); // clear held foreign key (if there was none nothing will happen)
 						openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); // open relatedForm to create new record
 					}
@@ -515,28 +511,30 @@ public abstract class Controller
 		}
 		else if(prevFormSession != null && prevFormSession.form == rel.getRelatedForm())
 		{	// We returned from the related form
+			Record foreignRecord = prevFormSession.record;
 			
-			// Check is we already have a value...
-			if(foreignKey != null)
-			{	// We already have a foreign key value
-			
-				if(rel.isEditMode(arguments))
-				{	// in edit mode (the edit argument was true)
-
-				}
-				else
-				{	// not in edit mode (the edit argument was false, or more likely, missing)
-
-					
-				}
+			if(constraints.isValid(foreignRecord)) // passing null will return false
+			{	// the relatedForm produced/edited a non-null record which meets the constraints
+				foreignKey = new ForeignKey(foreignRecord);
+				column.storeValue(currFormSession.record, foreignKey); // Store/update foreign key
+				if(rel.isHoldForeignRecord())
+					projectStore.storeHeldForeignKey(rel, foreignKey); // Store/update "held" foreign key if allowed
+				goForward(true); // continue to next field
 			}
 			else
-			{	// We don't have a foreign key value yet
-				
+			{	// either the relatedForm did not save its record (i.e. it is now null), OR it doesn't meet the constraints
+				if(foreignKey != null || rel.getOptional() == Optionalness.ALWAYS)
+				{	// Either we already have a (previously set) foreign key value, OR we don't need one because the field is optional
+					goForward(true); // continue to next field (keeping the currently stored foreign key if there is one, or keeping it blank if there is none)
+				}
+				else
+				{	// We do not already have a foreign key value & the field is not optional
+					openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); // re-open relatedForm to create new record
+				}
 			}
 		}
 		
-		// TODO "reset starttime upon leave"?
+		// TODO "reset starttime upon leave"? (would need to happen at every goForward() call)
 		
 		return false;
 	}
@@ -589,8 +587,8 @@ public abstract class Controller
 				exit();
 				break;
 		}
-		
-		return false; // no UI update needed
+		// No UI update needed:
+		return false;
 	}
 
 	private void setupTriggers(List<Trigger> triggers)

@@ -53,6 +53,15 @@ public class FieldParameters
 			return defaultValue;
 	}
 	
+	/**
+	 * @param key
+	 * @return the previously assigned value, or null if there was none.
+	 */
+	public String clear(String key)
+	{
+		return keyValuePairs.remove(key);
+	}
+	
 	public boolean contains(String key)
 	{
 		return keyValuePairs.containsKey(key);

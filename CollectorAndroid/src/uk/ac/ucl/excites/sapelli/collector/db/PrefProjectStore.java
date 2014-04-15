@@ -249,18 +249,6 @@ public class PrefProjectStore extends ProjectStore
 		return null;
 	}
 
-	@Override
-	public void finalise()
-	{
-		// does nothing
-	}
-
-	@Override
-	public void backup(File destinationFolder)
-	{
-		// TODO backup
-	}
-
 	private String getHeldForeignKeyPrefKey(Relationship relationship)
 	{
 		return HELD_FOREIGN_KEY_PREFIX + relationship.getForm().getProject().getHash() + "_" + relationship.getForm().getPosition() + "_" + relationship.getID() + HELD_FOREIGN_KEY_POSTFIX;
@@ -297,6 +285,18 @@ public class PrefProjectStore extends ProjectStore
 	public void deleteHeldForeignKey(Relationship relationship)
 	{
 		preferences.edit().remove(getHeldForeignKeyPrefKey(relationship)).commit();
+	}
+	
+	@Override
+	public void finalise()
+	{
+		// does nothing
+	}
+	
+	@Override
+	public void backup(File destinationFolder)
+	{
+		// TODO backup
 	}
 
 }
