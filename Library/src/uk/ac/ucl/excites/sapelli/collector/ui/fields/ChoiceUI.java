@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
@@ -40,13 +41,16 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 		if(!field.isNoColumn() && chosenChild.isLeaf() && field.getDictionary().contains(chosenChild))
 			field.getColumn().storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
 		// Go to chosenChild:
-		controller.goTo(chosenChild, !chosenChild.isLeaf()); // Note: no arguments (i.e. FieldParameters) are passed from parent to child
+		controller.goTo(new FieldWithArguments(chosenChild), !chosenChild.isLeaf() || !field.getDictionary().contains(chosenChild)); // Note: no arguments (i.e. FieldParameters) are passed from parent to child
 		
 		/* Note 1:	chosenChild becomes the new currentField (i.e. we go one level "down" in the choice tree),
 		 * 			but if it is a leaf the controller will call goForward() from enterChoiceField().
 		 * 
-		 * Note 2:	if the chosenChild is not a leaf we "force" the goTo because otherwise validation would keep us from
-		 * 			advancing. If it is a leaf we let validation happen.
+		 * Note 2:	if the chosenChild is not a leaf, or it is a "valueless" leaf, we "force" the goTo because
+		 * 			otherwise validation would keep us from advancing. If it is a "valued" leaf validation will happen.
+		 * 			This means valueless leaves offer way out of choice trees, even non-optional ones. Form designers should
+		 * 			use this with care (e.g. by using the valueless leaf as a "back jump", and by assuring the field will
+		 * 			later be revisited to acquire a value.
 		 */
 	}
 

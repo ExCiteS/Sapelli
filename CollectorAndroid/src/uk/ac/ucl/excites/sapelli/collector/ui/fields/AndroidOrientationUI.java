@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -38,7 +39,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 					@Override
 					public void onClick(View v)
 					{
-						controller.goTo(field, true); // go to field and leave page without validation
+						controller.goTo(new FieldWithArguments(field), true); // go to field and leave page without validation
 					}
 				});
 			}

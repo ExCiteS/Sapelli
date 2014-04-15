@@ -3,6 +3,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
@@ -175,7 +176,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			{
 				public void run()
 				{
-					controller.goTo(field, true); // go to field and leave page without validation
+					controller.goTo(new FieldWithArguments(field), true); // go to field and leave page without validation
 				}
 			};
 

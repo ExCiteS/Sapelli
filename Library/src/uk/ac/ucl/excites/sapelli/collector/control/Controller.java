@@ -13,18 +13,19 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
+import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.Next;
-import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.BelongsToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsState;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
@@ -107,17 +108,17 @@ public abstract class Controller
 		openFormSession(formSession, false);
 	}
 	
-	public void openFormSession(FormSession formSession, boolean prevFormMove)
+	public void openFormSession(FormSession formSession, boolean resumeForm)
 	{
 		// Deal with current form session:
 		if(currFormSession != null)
 		{
+			disableTriggers(currFormSession.form.getTriggers()); // disable triggers
 			prevFormSession = currFormSession; // remember previous formSession (always)
-			if(!prevFormMove &&								// If we are not "coming back",
+			if(!resumeForm &&								// If we are not "coming back",
 			   currFormSession.form != formSession.form &&	// AND we are not looping within the same form,
 			   !currFormSession.form.isSkipOnBack())		// AND the previous form does not have skipOnBack=true,
 				formHistory.push(currFormSession);			// THEN: add previous formSession to history
-			disableTriggers(currFormSession.form.getTriggers()); // disable triggers
 		}
 		currFormSession = formSession;
 		
@@ -135,20 +136,20 @@ public abstract class Controller
 		setupTriggers(currFormSession.form.getTriggers());
 
 		// Go to field...
-		if(currFormSession.atField())
+		if(resumeForm && currFormSession.atField())
 			goTo(currFormSession.currFieldAndArguments); // continue where we left off
 		else
-			goTo(currFormSession.form.getStartField()); // begin filling out the form at the start field
+			goTo(new FieldWithArguments(currFormSession.form.getStartField())); // begin filling out the form at the start field
 	}
 	
 	public void cancelAndRestartForm()
 	{	
-		goTo(new EndField(currFormSession.form, false, Next.LOOPFORM), true); // loop without saving first (forced leaving of current field)
+		goTo(new FieldWithArguments(new EndField(currFormSession.form, false, Next.LOOPFORM)), true); // loop without saving first (forced leaving of current field)
 	}
 
 	public void cancelAndStop()
 	{
-		goTo(new EndField(currFormSession.form, false, Next.EXITAPP), true); // exit without saving first (forced leaving of current field)
+		goTo(new FieldWithArguments(new EndField(currFormSession.form, false, Next.EXITAPP)), true); // exit without saving first (forced leaving of current field)
 	}
 	
 	public boolean goToPreviousForm()
@@ -206,19 +207,9 @@ public abstract class Controller
 			handlingUserGoBackRequest = false;
 	}
 	
-	public synchronized void goTo(Field nextField)
-	{
-		goTo(new FieldWithArguments(nextField));
-	}
-	
-	public synchronized void goTo(FieldWithArguments nextFieldAndArguments)
+	public void goTo(FieldWithArguments nextFieldAndArguments)
 	{
 		goTo(nextFieldAndArguments, false);
-	}
-	
-	public synchronized void goTo(Field nextField, boolean forceLeave)
-	{
-		goTo(new FieldWithArguments(nextField), forceLeave);
 	}
 	
 	/**
@@ -292,6 +283,13 @@ public abstract class Controller
 				getCurrentField().isShowForward()	&& (getCurrentField().getOptional() == Optionalness.ALWAYS || (currFormSession.currFieldDisplayed && ui.getCurrentFieldUI().isValid(getCurrentRecord()))));
 		// Note: these paths may be null (in which case built-in defaults must be used)
 		
+		System.out.println("Form history:");
+		for(FormSession fs : formHistory)
+			System.out.println(" - " + fs.form.getID());
+		
+		System.out.println("Field history:");
+		for(FieldWithArguments fa : currFormSession.fieldAndArgumentHistory)
+			System.out.println(" - " + fa.field.getID());
 		
 		/* TODO optional/valid logic: 
 		 * 
@@ -447,7 +445,7 @@ public abstract class Controller
 		return true;
 	}
 	
-	public boolean enterLinksTo(Relationship rel, FieldParameters arguments)
+	public boolean enterLinksTo(LinksToField linksTo, FieldParameters arguments)
 	{
 		//TODO enterLinksTo
 		
@@ -459,78 +457,87 @@ public abstract class Controller
 		return false;
 	}
 	
-	public boolean enterBelongsTo(Relationship rel, FieldParameters arguments)
+	public boolean enterBelongsTo(BelongsToField belongsTo, FieldParameters arguments)
 	{
-		ForeignKeyColumn column = rel.getColumn();
-		Constraint constraints = rel.getConstraints();
+		ForeignKeyColumn column = belongsTo.getColumn();
+		Constraint constraints = belongsTo.getConstraints();
 		ForeignKey foreignKey = column.retrieveValue(currFormSession.record); // may be null
 		
-		if(prevFormSession == null || prevFormSession.form != rel.getRelatedForm())
-		{	/* We did not return from the related form; this can occur in 3 possible cases:
-			 * 	- there is no prev form (fresh collector activity intent);
-			 * 	- prevForm = currForm (loop within current form);
-			 *	- prevForm = yet another form */
-			
+		if(!arguments.getBoolean(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM, false))
+		{	// We were *not* waiting for a return from the relatedForm
 			// Check is we already have a value...
 			if(foreignKey != null)
-			{	// We already have a foreign key value
-				if(rel.isEditMode(arguments))
-				{	// in edit mode (the edit argument was true)
+			{	System.out.println("we alreadt have a value");// We already have a foreign key value
+				if(arguments.getBoolean(BelongsToField.PARAMETER_EDIT, false))
+				{	System.out.println("edit mode");// in edit mode (the edit argument was true)
 					//	Edit foreign record:
-					openFormSession(FormSession.Edit(rel.getRelatedForm(), recordStore.retrieveRecord(foreignKey.getForeignRecordQuery())));
+					arguments.put(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM, Boolean.TRUE.toString()); // remember we are waiting for relatedForm
+					openFormSession(FormSession.Edit(belongsTo.getRelatedForm(), recordStore.retrieveRecord(foreignKey.getForeignRecordQuery()))); // open relatedForm to edit foreign record
 				}
 				else
-				{	// not in edit mode (the edit argument was false, or more likely, missing)
+				{	System.out.println("not edit mode");// not in edit mode (the edit argument was false, or more likely, missing)
 					goForward(false); // continue to next field
 				}
 			}
 			else
-			{	// We don't have a foreign key value yet
-				rel.clearEditMode(arguments); // Ignore & clear the edit argument here because we only allow editing if a value is already set
+			{	System.out.println("we don't have a value yet");// We don't have a foreign key value yet
+				// Note: we ignore the edit argument here because we only allow editing if a value is already set
+				Record foreignRecord = null;
 				// Check is we are allowed to hold on to foreign records:
-				if(rel.isHoldForeignRecord())
-				{	// the Relationship is allowed to hold on to foreign records 
-					ForeignKey heldForeignKey = projectStore.retrieveHeldForeignKey(rel);
-					Record foreignRecord = heldForeignKey != null ? recordStore.retrieveRecord(heldForeignKey.getForeignRecordQuery()) : null;
+				if(belongsTo.isHoldForeignRecord())
+				{	System.out.println("isHeldFR=true");// the Relationship is allowed to hold on to foreign records 
+					ForeignKey heldForeignKey = projectStore.retrieveHeldForeignKey(belongsTo);
+					foreignRecord = heldForeignKey != null ? recordStore.retrieveRecord(heldForeignKey.getForeignRecordQuery()) : null;
 					if(constraints.isValid(foreignRecord)) // passing null will return false
-					{	// we have a "held" foreign key, the corresponding foreign record was found and meets the constraints
+					{	System.out.println("we have a valid held rec"); // we have a "held" foreign key, the corresponding foreign record was found and meets the constraints
 						column.storeValue(currFormSession.record, heldForeignKey); // Store foreign key
 						goForward(false); // continue to next field
 					}
 					else
-					{	// Either we didn't have a "held" foreign key, OR no corresponding record was found, OR the record didn't meet the constraints
-						projectStore.deleteHeldForeignKey(rel); // clear held foreign key (if there was none nothing will happen)
-						openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); // open relatedForm to create new record
+					{	System.out.println("no valid held rec, held key: " + heldForeignKey + "; heldrec: " + foreignRecord);// Either we didn't have a "held" foreign key, OR no corresponding record was found, OR the record didn't meet the constraints
+						projectStore.deleteHeldForeignKey(belongsTo); // clear held foreign key (if there was none nothing will happen)
+						foreignRecord = null; // relatedForm will be opened for creation below 
 					}
 				}
-				else
-				{	// the Relationship is *not* allowed to hold on to foreign records
-					openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); // open relatedForm to create new record
+				if(foreignRecord == null)
+				{	System.out.println("not allowed to hold");// the Relationship is *not* allowed to hold on to foreign records
+					arguments.put(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM, Boolean.TRUE.toString()); // remember we are waiting for relatedForm
+					openFormSession(FormSession.Create(belongsTo.getRelatedForm(), deviceIDHash)); // open relatedForm to create new record
 				}
 			}
 		}
-		else if(prevFormSession != null && prevFormSession.form == rel.getRelatedForm())
-		{	// We returned from the related form
-			Record foreignRecord = prevFormSession.record;
-			
-			if(constraints.isValid(foreignRecord)) // passing null will return false
-			{	// the relatedForm produced/edited a non-null record which meets the constraints
-				foreignKey = new ForeignKey(foreignRecord);
-				column.storeValue(currFormSession.record, foreignKey); // Store/update foreign key
-				if(rel.isHoldForeignRecord())
-					projectStore.storeHeldForeignKey(rel, foreignKey); // Store/update "held" foreign key if allowed
-				goForward(true); // continue to next field
-			}
-			else
-			{	// either the relatedForm did not save its record (i.e. it is now null), OR it doesn't meet the constraints
-				if(foreignKey != null || rel.getOptional() == Optionalness.ALWAYS)
-				{	// Either we already have a (previously set) foreign key value, OR we don't need one because the field is optional
-					goForward(true); // continue to next field (keeping the currently stored foreign key if there is one, or keeping it blank if there is none)
+		else
+		{	// We were waiting to return from the relatedForm...
+			// Clear waitingForRelatedForm parameter:
+			arguments.clear(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM);
+			// Check if we really came back from the relatedForm:
+			if(prevFormSession != null && prevFormSession.form == belongsTo.getRelatedForm())
+			{	// ... and we did indeed return from it
+				Record foreignRecord = prevFormSession.record;
+				
+				if(constraints.isValid(foreignRecord)) // passing null will return false
+				{	System.out.println("related form savid valid foreign rec");// the relatedForm produced/edited a non-null record which meets the constraints
+					foreignKey = new ForeignKey(foreignRecord);
+					column.storeValue(currFormSession.record, foreignKey); // Store/update foreign key
+					if(belongsTo.isHoldForeignRecord())
+						projectStore.storeHeldForeignKey(belongsTo, foreignKey); // Store/update "held" foreign key if allowed
+					goForward(true); // continue to next field
 				}
 				else
-				{	// We do not already have a foreign key value & the field is not optional
-					openFormSession(FormSession.Create(rel.getRelatedForm(), deviceIDHash)); // re-open relatedForm to create new record
+				{	System.out.println("no valid foreign rec, fRec: " + foreignRecord);// either the relatedForm did not save its record (i.e. it is now null), OR it doesn't meet the constraints
+					if(foreignKey != null || belongsTo.getOptional() == Optionalness.ALWAYS)
+					{	// Either we already have a (previously set) foreign key value, OR we don't need one because the field is optional
+						goForward(true); // continue to next field (keeping the currently stored foreign key if there is one, or keeping it blank if there is none)
+					}
+					else
+					{	// We do not already have a foreign key value & the field is not optional
+						openFormSession(FormSession.Create(belongsTo.getRelatedForm(), deviceIDHash)); // re-open relatedForm to create new record
+					}
 				}
+			}
+			else
+			{	// we were waiting to return from related for but the previous form is another one: this should never happen(?)
+				// TODO show error & restartForm?
 			}
 		}
 		
@@ -722,11 +729,19 @@ public abstract class Controller
 	}
 	
 	/**
-	 * @return the current Field
+	 * @return the arguments passed to the current Field
 	 */
 	public FieldParameters getCurrentFieldArguments()
 	{
 		return currFormSession.getCurrentFieldArguments();
+	}
+	
+	/**
+	 * @return the currentField and the arguments it received
+	 */
+	public FieldWithArguments getCurrentFieldAndArguments()
+	{
+		return currFormSession.currFieldAndArguments;
 	}
 	
 	public void addLogLine(String... fields)
@@ -786,7 +801,7 @@ public abstract class Controller
 		public FieldWithArguments(Field field, FieldParameters arguments)
 		{
 			this.field = field;
-			this.arguments = arguments;
+			this.arguments = new FieldParameters(arguments); // create a copy!
 		}
 		
 	}

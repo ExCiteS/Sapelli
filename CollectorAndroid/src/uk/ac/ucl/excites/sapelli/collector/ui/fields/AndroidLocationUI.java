@@ -4,6 +4,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.shared.util.Timeoutable;
@@ -56,7 +57,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 					@Override
 					public void onClick(View v)
 					{
-						controller.goTo(field, true); // go to field and leave page without validation
+						controller.goTo(new FieldWithArguments(field), true); // go to field and leave page without validation
 					}
 				});
 				// TODO add spinner on button (when startWithForm or startWithPage), make change it for a "got location" icon when location is obtained

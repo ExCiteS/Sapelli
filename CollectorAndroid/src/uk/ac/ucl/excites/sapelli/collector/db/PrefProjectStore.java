@@ -284,6 +284,7 @@ public class PrefProjectStore extends ProjectStore
 	@Override
 	public void deleteHeldForeignKey(Relationship relationship)
 	{
+		// Don't check for isHoldForeignRecord() here!
 		preferences.edit().remove(getHeldForeignKeyPrefKey(relationship)).commit();
 	}
 	

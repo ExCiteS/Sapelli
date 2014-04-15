@@ -176,6 +176,7 @@ public class DB4OProjectStore extends ProjectStore
 	@Override
 	public void deleteHeldForeignKey(Relationship relationship)
 	{
+		// Don't check for isHoldForeignRecord() here!
 		HeldForeignKey heldFK = retrieveHeldForeignKeyObj(relationship);
 		if(heldFK != null)
 		{

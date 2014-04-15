@@ -19,12 +19,14 @@ import uk.ac.ucl.excites.sapelli.collector.model.JumpSource;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.BelongsToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField.ButtonColumnType;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
@@ -351,14 +353,12 @@ public class FormParser extends SubtreeParser
 			// <BelongsTo>
 			else if(qName.equals(TAG_BELONGS_TO))
 			{
-				Relationship belongsTo = new Relationship(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), Relationship.Type.MANY_TO_ONE);
-				newRelationship(belongsTo, attributes);
+				newRelationship(new BelongsToField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID)), attributes);
 			}
 			// <LinksTo>
 			else if(qName.equals(TAG_LINKS_TO))
 			{
-				Relationship linksTo = new Relationship(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), Relationship.Type.LINK);
-				newRelationship(linksTo, attributes);
+				newRelationship(new LinksToField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID)), attributes);
 			}
 			// <Button>
 			else if(qName.equals(TAG_BUTTON))
@@ -821,11 +821,10 @@ public class FormParser extends SubtreeParser
 	
 	private String getRelationshipTag(Relationship relationship)
 	{
-		switch(relationship.getType())
-		{
-			case MANY_TO_ONE : return TAG_LINKS_TO;
-			case LINK : return TAG_LINKS_TO;
-		}
+		if(relationship instanceof BelongsToField)
+			return TAG_BELONGS_TO;
+		if(relationship instanceof LinksToField)
+			return TAG_LINKS_TO;
 		throw new IllegalArgumentException("Unsupported relationship type");
 	}
 

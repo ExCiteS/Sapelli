@@ -4,7 +4,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
-import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 
 /**
  * Class representing a foreign key, used to reference a record of another ("foreign") schema.
@@ -80,8 +80,9 @@ public class ForeignKey extends Record
 			throw new IllegalStateException("All values of the key must be set before a query can be created!");
 		// Match for key parts:
 		AndConstraint andConstraint = new AndConstraint();
-		for(Column<?> keyPartCol : getIndex().getColumns(false))
-			andConstraint.addConstraint(new EqualityConstraint(keyPartCol, keyPartCol.retrieveValue(this)));
+		for(Column<?> keyPartCol : getIndex().getColumns(false)) //TODO figure out why it didn't work with eqConstr & try to fix it, because the cast to comparatorCols is asking for trouble
+			//andConstraint.addConstraint(new EqualityConstraint(keyPartCol, keyPartCol.retrieveValue(this)));
+			andConstraint.addConstraint(new RuleConstraint((ComparatorColumn<?>) keyPartCol, RuleConstraint.Comparison.EQUAL, keyPartCol.retrieveValue(this)));
 		// Single record query:
 		return new FirstRecordQuery(new RecordsQuery(foreignSchema, andConstraint));
 	}
