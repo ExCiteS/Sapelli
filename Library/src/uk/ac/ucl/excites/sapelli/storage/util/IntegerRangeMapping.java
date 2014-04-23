@@ -94,7 +94,7 @@ public class IntegerRangeMapping implements Serializable
 	}
 	
 	/**
-	 * @return the loBound
+	 * @return the loBound (inclusive!)
 	 */
 	public long getLowBound()
 	{
@@ -102,7 +102,7 @@ public class IntegerRangeMapping implements Serializable
 	}
 
 	/**
-	 * @return the hiBound
+	 * @return the hiBound (inclusive!)
 	 */
 	public long getHighBound()
 	{
@@ -111,7 +111,7 @@ public class IntegerRangeMapping implements Serializable
 	
 	/**
 	 * @param strict indicates whether the specified (true) or effective (false) upper bound is returned
-	 * @return the hiBound
+	 * @return the hiBound (inclusive!)
 	 */
 	public long getHighBound(boolean strict)
 	{
