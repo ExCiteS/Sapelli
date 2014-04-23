@@ -28,7 +28,7 @@ import de.jockels.open.Environment2;
  * @author Michalis Vitos, mstevens
  * 
  */
-public class CollectorApp extends Application
+public class CollectorApp extends Application implements StoreClient
 {
 
 	// STATICS------------------------------------------------------------
@@ -246,8 +246,11 @@ public class CollectorApp extends Application
 		File exportFolder = new File(getDumpFolderPath());
 		if(!FileHelpers.createFolder(exportFolder))
 			throw new Exception("Export folder (" + exportFolder.getAbsolutePath() + ") does not exist and could not be created!");
-		for(Store store : storeClients.keySet())
+		for(Store store : new Store[] { getProjectStore(this), getRecordStore(this) })
+		{
 			store.backup(exportFolder);
+			discardStoreUsage(store, this);
+		}
 	}
 
 }
