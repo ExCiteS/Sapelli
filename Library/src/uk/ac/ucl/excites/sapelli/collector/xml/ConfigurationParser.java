@@ -3,11 +3,11 @@
  */
 package uk.ac.ucl.excites.sapelli.collector.xml;
 
-import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
+import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
 
@@ -45,7 +45,7 @@ public class ConfigurationParser extends SubtreeParser
 	}
 
 	@Override
-	public void parseStartElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
+	public void parseStartElement(String uri, String localName, String qName, XMLAttributes attributes) throws SAXException
 	{
 		// <Configuration>
 		if(qName.equals(TAG_CONFIGURATION))
@@ -58,7 +58,7 @@ public class ConfigurationParser extends SubtreeParser
 			// <Logging>
 			if(qName.equals(TAG_LOGGING))
 			{
-				project.setLogging(readBooleanAttribute(ATTRIBUTE_ENABLED, Project.DEFAULT_LOGGING, attributes));
+				project.setLogging(attributes.getBoolean(ATTRIBUTE_ENABLED, Project.DEFAULT_LOGGING));
 			}
 			// <Transmission>
 			else if(qName.equals(TAG_TRANSMISSION))
@@ -73,39 +73,39 @@ public class ConfigurationParser extends SubtreeParser
 			{
 				if(transmissionSettings == null)
 					throw new SAXException("<" + TAG_DROPBOX_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
-				transmissionSettings.setDropboxUpload(readBooleanAttribute(ATTRIBUTE_ENABLED, Settings.DEFAULT_DROPBOX_UPLOAD, attributes));
-				transmissionSettings.setDropboxAllowMobileData(readBooleanAttribute(ATTRIBUTE_MOBILE_DATA, Settings.DEFAULT_DROPBOX_ALLOW_MOBILE_DATA, attributes));
-				transmissionSettings.setDropboxAllowRoaming(readBooleanAttribute(ATTRIBUTE_ROAMING, Settings.DEFAULT_DROPBOX_ALLOW_ROAMING, attributes));
+				transmissionSettings.setDropboxUpload(attributes.getBoolean(ATTRIBUTE_ENABLED, Settings.DEFAULT_DROPBOX_UPLOAD));
+				transmissionSettings.setDropboxAllowMobileData(attributes.getBoolean(ATTRIBUTE_MOBILE_DATA, Settings.DEFAULT_DROPBOX_ALLOW_MOBILE_DATA));
+				transmissionSettings.setDropboxAllowRoaming(attributes.getBoolean(ATTRIBUTE_ROAMING, Settings.DEFAULT_DROPBOX_ALLOW_ROAMING));
 			}
 			// <HTTPUpload>
 			else if(qName.equals(TAG_HTTP_UPLOAD))
 			{
 				if(transmissionSettings == null)
 					throw new SAXException("<" + TAG_HTTP_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
-				transmissionSettings.setHTTPUpload(readBooleanAttribute(ATTRIBUTE_ENABLED, Settings.DEFAULT_HTTP_UPLOAD, attributes));
+				transmissionSettings.setHTTPUpload(attributes.getBoolean(ATTRIBUTE_ENABLED, Settings.DEFAULT_HTTP_UPLOAD));
 				String server = attributes.getValue("server");
 				if(server != null && !server.isEmpty())
 					transmissionSettings.setServerAddress(server);
-				transmissionSettings.setHTTPAllowMobileData(readBooleanAttribute(ATTRIBUTE_MOBILE_DATA, Settings.DEFAULT_HTTP_ALLOW_MOBILE_DATA, attributes));
-				transmissionSettings.setHTTPAllowRoaming(readBooleanAttribute(ATTRIBUTE_ROAMING, Settings.DEFAULT_HTTP_ALLOW_ROAMING, attributes));
+				transmissionSettings.setHTTPAllowMobileData(attributes.getBoolean(ATTRIBUTE_MOBILE_DATA, Settings.DEFAULT_HTTP_ALLOW_MOBILE_DATA));
+				transmissionSettings.setHTTPAllowRoaming(attributes.getBoolean(ATTRIBUTE_ROAMING, Settings.DEFAULT_HTTP_ALLOW_ROAMING));
 			}
 			// <SMSUpload>
 			else if(qName.equals(TAG_SMS_UPLOAD))
 			{
 				if(transmissionSettings == null)
 					throw new SAXException("<" + TAG_SMS_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
-				transmissionSettings.setSMSUpload(readBooleanAttribute(ATTRIBUTE_ENABLED, Settings.DEFAULT_SMS_UPLOAD, attributes));
+				transmissionSettings.setSMSUpload(attributes.getBoolean(ATTRIBUTE_ENABLED, Settings.DEFAULT_SMS_UPLOAD));
 				String relay = attributes.getValue("relay");
 				if(relay != null && !relay.isEmpty())
 					transmissionSettings.setSMSRelay(new SMSAgent(relay));
-				transmissionSettings.setSMSAllowRoaming(readBooleanAttribute(ATTRIBUTE_ROAMING, Settings.DEFAULT_SMS_ALLOW_ROAMING, attributes));
+				transmissionSettings.setSMSAllowRoaming(attributes.getBoolean(ATTRIBUTE_ROAMING, Settings.DEFAULT_SMS_ALLOW_ROAMING));
 			}
 			// <Encryption>
 			else if(qName.equals(TAG_ENCRYPTION))
 			{
 				if(transmissionSettings == null)
 					throw new SAXException("<" + TAG_ENCRYPTION + "> should only appear in <" + TAG_TRANSMISSION + ">.");
-				transmissionSettings.setEncrypt(readBooleanAttribute(ATTRIBUTE_ENABLED, Settings.DEFAULT_ENCRYPT, attributes));
+				transmissionSettings.setEncrypt(attributes.getBoolean(ATTRIBUTE_ENABLED, Settings.DEFAULT_ENCRYPT));
 			}
 			// Add future configuration elements here...
 			

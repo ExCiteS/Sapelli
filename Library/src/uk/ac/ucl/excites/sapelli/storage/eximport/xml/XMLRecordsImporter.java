@@ -8,11 +8,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
+import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -64,7 +64,7 @@ public class XMLRecordsImporter extends DocumentParser
 	}
 
 	@Override
-	public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
+	public void parseStartElement(String uri, String localName, String qName, XMLAttributes attributes) throws Exception
 	{
 		// <RecordsExport>
 		if(qName.equals(XMLRecordsExporter.TAG_RECORDS_EXPORT))
@@ -79,17 +79,17 @@ public class XMLRecordsImporter extends DocumentParser
 			
 			Schema schema = null;
 			String schemaDescr = null;
-			if(attributes.getIndex(Schema.V1X_ATTRIBUTE_SCHEMA_ID) != -1)
+			if(attributes.contains(Schema.V1X_ATTRIBUTE_SCHEMA_ID))
 			{	//This file contains records exported by Sapelli v1.x
-				int schemaID = readRequiredIntegerAttribute(Record.TAG_RECORD, Schema.V1X_ATTRIBUTE_SCHEMA_ID, "because this is a v1.x record", attributes);
-				int schemaVersion = readIntegerAttribute(Schema.V1X_ATTRIBUTE_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION, attributes);
+				int schemaID = attributes.getRequiredInteger(Record.TAG_RECORD, Schema.V1X_ATTRIBUTE_SCHEMA_ID, "because this is a v1.x record");
+				int schemaVersion = attributes.getInteger(Schema.V1X_ATTRIBUTE_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION);
 				schema = client.getSchemaV1(schemaID, schemaVersion);
 				schemaDescr = "v1.x schema with ID " + schemaID + " and version " + schemaVersion;
 				v1xExport = true;
 			}
 			else
 			{
-				long schemaID = readRequiredLongAttribute(Record.TAG_RECORD, Schema.ATTRIBUTE_SCHEMA_ID, attributes);
+				long schemaID = attributes.getRequiredLong(Record.TAG_RECORD, Schema.ATTRIBUTE_SCHEMA_ID);
 				schema = client.getSchema(schemaID);
 				schemaDescr = "schema with ID " + schemaID;
 				v1xExport = false;

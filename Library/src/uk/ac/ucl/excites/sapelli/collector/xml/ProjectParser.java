@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -19,6 +18,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.shared.util.io.UnclosableBufferedInputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
+import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLHasher;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
@@ -130,7 +130,7 @@ public class ProjectParser extends DocumentParser
 	}
 
 	@Override
-	protected void parseStartElement(String uri, String localName, String qName, Attributes attributes) throws SAXException
+	protected void parseStartElement(String uri, String localName, String qName, XMLAttributes attributes) throws SAXException
 	{
 		try
 		{
@@ -144,7 +144,7 @@ public class ProjectParser extends DocumentParser
 				}
 				
 				// Detect format version...
-				int formatVersion = readIntegerAttribute(ATTRIBUTE_PROJECT_FORMAT, qName.equals(TAG_PROJECT_V1X) ? Format.v1_x.ordinal() : DEFAULT_FORMAT.ordinal(), attributes); //default: v1.x for ExCiteS tag, DEFAULT_FORMAT for Sapelli tag. 
+				int formatVersion = attributes.getInteger(ATTRIBUTE_PROJECT_FORMAT, qName.equals(TAG_PROJECT_V1X) ? Format.v1_x.ordinal() : DEFAULT_FORMAT.ordinal()); //default: v1.x for ExCiteS tag, DEFAULT_FORMAT for Sapelli tag. 
 				// 	too low:
 				if(formatVersion < LOWEST_SUPPORTED_FORMAT.ordinal())
 					throw new SAXException("Unsupported format version: " + formatVersion);
@@ -161,18 +161,18 @@ public class ProjectParser extends DocumentParser
 				// Project...
 				project = new Project(	(format == Format.v1_x) ?
 											Project.PROJECT_ID_V1X_TEMP : // for format = 1 we set a temp id value (will be replaced by Form:schema-id) 
-											readRequiredIntegerAttribute(qName, ATTRIBUTE_PROJECT_ID, "because format is >= 2", attributes), // id is required for format >= 2
+												attributes.getRequiredInteger(qName, ATTRIBUTE_PROJECT_ID, "because format is >= 2"), // id is required for format >= 2
 										projectHash,
-										readRequiredStringAttribute(TAG_PROJECT, ATTRIBUTE_PROJECT_NAME, attributes, true, false),
-										readStringAttribute(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, attributes, true, false),
+										attributes.getRequiredString(TAG_PROJECT, ATTRIBUTE_PROJECT_NAME, true, false),
+										attributes.getString(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, true, false),
 										basePath,
 										createProjectFolder);
 				
 				// Set variant:
-				project.setVariant(readStringAttribute(ATTRIBUTE_PROJECT_VARIANT, null, attributes, true, false));
+				project.setVariant(attributes.getString(ATTRIBUTE_PROJECT_VARIANT, null, true, false));
 				
 				// Read startForm ID:
-				startFormID = readStringAttribute(ATTRIBUTE_PROJECT_START_FORM, null, attributes, true, false); 
+				startFormID = attributes.getString(ATTRIBUTE_PROJECT_START_FORM, null, true, false); 
 				
 				// Add subtree parsers:
 				addSubtreeParser(new ConfigurationParser(this));

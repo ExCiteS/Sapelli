@@ -500,7 +500,7 @@ public abstract class Controller
 					}
 				}
 				if(foreignRecord == null)
-				{	System.out.println("not allowed to hold");// the Relationship is *not* allowed to hold on to foreign records
+				{	System.out.println("no valid held record or not allowed to hold");// we didn't find a valid held foreign record or the relationship is simply *not* allowed to hold on to foreign records
 					arguments.put(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM, Boolean.TRUE.toString()); // remember we are waiting for relatedForm
 					openFormSession(FormSession.Create(belongsTo.getRelatedForm(), deviceIDHash)); // open relatedForm to create new record
 				}

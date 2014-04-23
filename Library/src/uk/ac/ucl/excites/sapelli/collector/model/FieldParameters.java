@@ -7,13 +7,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import android.net.ParseException;
+import uk.ac.ucl.excites.sapelli.shared.util.Parameters;
 
 /**
  * @author mstevens
  *
  */
-public class FieldParameters
+public class FieldParameters extends Parameters
 {
 	
 	/**
@@ -43,6 +43,18 @@ public class FieldParameters
 		this(new HashMap<String, String>(other.keyValuePairs));
 	}
 	
+	@Override
+	public String getValue(String param)
+	{
+		return keyValuePairs.get(param);
+	}
+	
+	@Override
+	public boolean contains(String key)
+	{
+		return keyValuePairs.containsKey(key);
+	}
+	
 	/**
 	 * Sets the value for the specified key and returns the previous value if the key was present before, or null if it was not. 
 	 * 
@@ -58,40 +70,6 @@ public class FieldParameters
 	}
 	
 	/**
-	 * Read parameter
-	 * 
-	 * @param key
-	 * @param defaultValue
-	 * @return
-	 */
-	public String get(String key, String defaultValue)
-	{	
-		if(keyValuePairs.containsKey(key))
-			return keyValuePairs.get(key);
-		else
-			return defaultValue;
-	}
-	
-	/**
-	 * Read boolean parameter
-	 * 
-	 * @param key
-	 * @param defaultValue
-	 * @return
-	 */
-	public boolean getBoolean(String key, boolean defaultValue)
-	{
-		try
-		{
-			return Boolean.parseBoolean(get(key, Boolean.toString(defaultValue)));
-		}
-		catch(ParseException pe)
-		{
-			return defaultValue;
-		}
-	}
-	
-	/**
 	 * Warning don't clear arguments from the FieldParameters kept by Field or Trigger instances! Create copy first.
 	 * 
 	 * @param key
@@ -100,11 +78,6 @@ public class FieldParameters
 	public String clear(String key)
 	{
 		return keyValuePairs.remove(key);
-	}
-	
-	public boolean contains(String key)
-	{
-		return keyValuePairs.containsKey(key);
 	}
 
 }
