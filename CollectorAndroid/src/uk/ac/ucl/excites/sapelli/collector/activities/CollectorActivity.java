@@ -113,7 +113,19 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 			showErrorDialog("Sapelli needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
 			return;
 		}
-
+		
+		// Get project- & recordstore objects:
+		try
+		{
+			projectStore = app.getProjectStore(this);
+			recordStore = app.getRecordStore(this);
+		}
+		catch(Exception e)
+		{
+			showErrorDialog("Could not open Project- or RecordStore: " + e.getLocalizedMessage(), true);
+			return;
+		}
+		
 		// Scheduling...
 		scheduleTaskExecutor = Executors.newScheduledThreadPool(4); // Creates a thread pool that can schedule commands to run after a given duration, or to execute periodically.
 		fixedTimerTriggerFutures = new HashMap<Trigger, ScheduledFuture<?>>();
@@ -147,19 +159,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 			showErrorDialog("CollectorActivity started without '" + INTENT_PARAM_PROJECT_HASH + "' intent parameter, don't know which project to load!", true);
 			return;
 		}
-		
-		// Get project- & recordstore objects:
-		try
-		{
-			projectStore = app.getProjectStore(this);
-			recordStore = app.getRecordStore(this);
-		}
-		catch(Exception e)
-		{
-			showErrorDialog("Could not open Project- or RecordStore: " + e.getLocalizedMessage(), true);
-			return;
-		}
-		
+
 		// Get Project object:
 		project = projectStore.retrieveProject(projectHash);
 		if(project == null)
