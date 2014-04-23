@@ -13,7 +13,9 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 
 /**
- * Interface for Record storage back-ends
+ * Abstract superclass for Record storage back-ends
+ * 
+ * Note: Records of internal schemata are not to be stored/retrieved directly. 
  * 
  * TODO explicit retrieval (and implicit storage) or Schema instances
  * 
@@ -30,10 +32,24 @@ public abstract class RecordStore implements Store
 	}
 	
 	/**
-	 * @param record - the record to store or update
+	 * @param record - the record to store or update; records of internal schemata will be rejected
 	 */
-	public abstract void store(Record record);
+	public void store(Record record)
+	{
+		// Checks:
+		if(record == null)
+			return; //throw new NullPointerException("Cannot store null record");
+		if(record.getSchema().isInternal())
+			throw new IllegalArgumentException("Cannot store record of internal schema directly.");
+		// Store:
+		storeNonInternal(record);
+	}
 
+	/**
+	 * @param record - the record to store or update; can be assumed to be non-null and not of an internal schema
+	 */
+	protected abstract void storeNonInternal(Record record);
+	
 	/**
 	 * @param records - the records to store or update
 	 */

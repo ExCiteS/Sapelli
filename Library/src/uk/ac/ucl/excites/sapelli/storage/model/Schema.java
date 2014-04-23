@@ -28,19 +28,27 @@ public class Schema implements Serializable
 	// Statics------------------------------------------------------------
 	static protected final int UNKNOWN_COLUMN_POSITION = -1;
 	
-	// Identification:
+	// Identification of "external"/"client" schema instances:
 	static public final int SCHEMA_ID_SIZE = 36; //bits
-	static public final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE); // unsigned(!) 36 bit integer
+	static public final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE); // unsigned(!) 36 bit integer; does not accept the IDs of internal schemata!
 	
-	static public final String ATTRIBUTE_SCHEMA_ID = "schemaID";
-	static public final String ATTRIBUTE_SCHEMA_NAME = "schemaName";
-	static public enum ReservedIDs
-	{
-		INDEX_SCHEMA,		/* 0 */
-		LOCATION_SCHEMA,	/* 1 */
-		ORIENTATION_SCHEMA	/* 2 */
+	/**
+	 * Identification of "internal" schemata
+	 * 
+	 * The ordinal position (x) within the enum is made negative (formula: -x - 1) and used as the schema ID.
+	 * This allows to differentiate "internal" schemata (& their records) from "external"/"client" schemata (& records).
+	 */
+	static public enum InternalKind
+	{				/* ordinal	-> schema id */
+		INDEX,		/*	0		->	-1 */
+		LOCATION,	/*	1		->	-2 */
+		ORIENTATION	/*	2		->	-3 */
 		// more later?
 	}
+	
+	// XML attributes (for record exports):
+	static public final String ATTRIBUTE_SCHEMA_ID = "schemaID";
+	static public final String ATTRIBUTE_SCHEMA_NAME = "schemaName";
 	
 	// v1.x-style identification (for backwards compatibility only):
 	//	Note: schemaID & schemaVersion are no longer stored in a Schema instance, instead a 1.x Project instance holds them (Project#id = schemaID & Project#schemaVersion = schemaVersion) 
@@ -55,25 +63,60 @@ public class Schema implements Serializable
 	// Dynamics-----------------------------------------------------------
 	protected final long id;
 	protected final String name;
-
+	private boolean sealed = false;
+	
+	// Columns & indexes:
 	private final List<Column> realColumns; // only contains non-virtual columns
-	private transient List<Column> allColumns; // contains non-virtual and virtual columns
 	private final Map<String, Integer> columnNameToPosition; // only contains non-virtual columns
 	private Map<String, VirtualColumn> virtualColumnsByName;
 	private List<Index> indexes;
 	private Index primaryKey;
-
-	private boolean sealed = false;
+	private transient List<Column> allColumns; // contains non-virtual and virtual columns
 	
+	/**
+	 * Make a schema instance of an internal kind
+	 * 
+	 * @param internalKind
+	 */
+	public Schema(InternalKind internalKind)
+	{
+		this(internalKind, internalKind.name());
+	}
+	
+	/**
+	 * Make a schema instance of an internal kind
+	 * 
+	 * @param internalKind
+	 * @param name
+	 */
+	public Schema(InternalKind internalKind, String name)
+	{
+		this(	(internalKind.ordinal() * -1l) - 1l, // Use negative id to indicate this is an "internal" schema and avoid ID collisions with "external"/"client" schema instances
+				name,
+				false); // don't check the id (we know it doesn't fit in the SCHEMA_ID_FIELD because it is negative)
+	}
+	
+	/**
+	 * Create a new (external/client) schema instance
+	 * 
+	 * @param id
+	 * @param name
+	 */
 	public Schema(long id, String name)
 	{
-		if(SCHEMA_ID_FIELD.fits(id))
-			this.id = id;
-		else
+		this(id, name, true); // check the id!
+	}
+	
+	private Schema(long id, String name, boolean checkID)
+	{
+		// If allowed then check if id fits in SCHEMA_ID_FIELD:
+		if(checkID && !SCHEMA_ID_FIELD.fits(id))
 			throw new IllegalArgumentException("Invalid schema ID value (" + id + "), valid values are " + SCHEMA_ID_FIELD.getLogicalRangeString() + ".");
+		// Set fields:
+		this.id = id;
 		this.name = (name == null || name.isEmpty() ? "Schema_ID" + id : name);
-		columnNameToPosition = new LinkedHashMap<String, Integer>();
-		realColumns = new ArrayList<Column>();
+		this.columnNameToPosition = new LinkedHashMap<String, Integer>();
+		this.realColumns = new ArrayList<Column>();
 	}
 
 	@SuppressWarnings("unchecked")
@@ -286,6 +329,11 @@ public class Schema implements Serializable
 	public long getID()
 	{
 		return id;
+	}
+	
+	public boolean isInternal()
+	{
+		return id < 0;
 	}
 
 	public int getNumberOfColumns(boolean includeVirtual)

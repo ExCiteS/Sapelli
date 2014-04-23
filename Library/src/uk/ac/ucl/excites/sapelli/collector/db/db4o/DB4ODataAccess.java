@@ -21,6 +21,7 @@ import com.db4o.query.Predicate;
 /**
  * @author mstevens, julia, Michalis Vitos
  * 
+ * TODO get rid of this once tranmission code has been updated to no longer use it
  */
 public class DB4ODataAccess implements DataAccess
 {

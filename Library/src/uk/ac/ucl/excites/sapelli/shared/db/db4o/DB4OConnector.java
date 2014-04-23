@@ -32,20 +32,31 @@ public final class DB4OConnector
 	
 	static public ObjectContainer open(File db4oFile, Class<?>... cascadeClasses) throws Exception
 	{
-		// Configure the db:
-		EmbeddedConfiguration dbConfig = Db4oEmbedded.newConfiguration();
-		//dbConfig.file().readOnly(readOnly);
-		dbConfig.common().updateDepth(DB4ODataAccess.UPDATE_DEPTH);
-		dbConfig.common().exceptionsOnNotStorable(true);
-		if(cascadeClasses != null)
-			for(Class<?> clazz : cascadeClasses)
-			{
-				dbConfig.common().objectClass(clazz).cascadeOnActivate(true);
-				dbConfig.common().objectClass(clazz).cascadeOnUpdate(true);
-				dbConfig.common().objectClass(clazz).cascadeOnDelete(true);
-			}
-		// Open the db:
-		return Db4oEmbedded.openFile(dbConfig, db4oFile.getAbsolutePath()); // (throws various exceptions)		
+		ObjectContainer objCont = null;
+		try
+		{
+			// Configure the db:
+			EmbeddedConfiguration dbConfig = Db4oEmbedded.newConfiguration();
+			//dbConfig.file().readOnly(readOnly);
+			dbConfig.common().updateDepth(DB4ODataAccess.UPDATE_DEPTH);
+			dbConfig.common().exceptionsOnNotStorable(true);
+			if(cascadeClasses != null)
+				for(Class<?> clazz : cascadeClasses)
+				{
+					dbConfig.common().objectClass(clazz).cascadeOnActivate(true);
+					dbConfig.common().objectClass(clazz).cascadeOnUpdate(true);
+					dbConfig.common().objectClass(clazz).cascadeOnDelete(true);
+				}
+			// Open the db:
+			objCont = Db4oEmbedded.openFile(dbConfig, db4oFile.getAbsolutePath()); // (throws various exceptions)
+		}
+		catch(Exception e)
+		{
+			System.err.println("DB4OConnector: failed to open connection to " + db4oFile.getAbsolutePath());
+			throw e;
+		}
+		System.out.println("DB4OConnector: opened connection to " + db4oFile.getAbsolutePath());
+		return objCont;
 	}
 	
 	private DB4OConnector() {} //this class should not be instantiated

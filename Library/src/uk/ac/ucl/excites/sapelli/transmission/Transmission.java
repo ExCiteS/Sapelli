@@ -18,8 +18,11 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
- * @author mstevens
+ * Abstract superclass for all Transmissions
  * 
+ * TODO support for multi-schema transmissions? (containing records of more than 1 schema)
+ * 
+ * @author mstevens
  */
 public abstract class Transmission
 {
@@ -59,6 +62,8 @@ public abstract class Transmission
 		this(); //!!!
 		if(schema == null)
 			throw new NullPointerException("Schema cannot be null on sending side.");
+		if(schema.isInternal())
+			throw new IllegalArgumentException("Cannot directly transmit records of internal schema.");
 		this.schema = schema;
 		setColumnsToFactorOut(columnsToFactorOut);
 		this.settings = settings;
@@ -103,6 +108,9 @@ public abstract class Transmission
 	
 	public boolean addRecord(Record record) throws Exception
 	{
+		if(record.getSchema() != schema)
+			throw new IllegalArgumentException("Schema mismatch");
+		
 		if(!record.isFilled())
 			return false;
 		

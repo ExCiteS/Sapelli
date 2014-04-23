@@ -12,8 +12,10 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
@@ -41,14 +43,14 @@ public class DB4ORecordStore extends RecordStore
 	{
 		super(client);
 		this.filename = baseFilename + DATABASE_NAME_SUFFIX;
-		this.db4o = DB4OConnector.open(DB4OConnector.getFile(folder, filename), Record.class);
+		this.db4o = DB4OConnector.open(DB4OConnector.getFile(folder, filename), Record.class, Schema.class);
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordDataAccess#store(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#storeNonInternal(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	public void store(Record record)
+	public void storeNonInternal(Record record)
 	{
 		db4o.store(record);
 		db4o.commit();
@@ -71,7 +73,7 @@ public class DB4ORecordStore extends RecordStore
 		db4o.delete(record);
 		db4o.commit();
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordDataAccess#retrieveRecords()
 	 */
@@ -85,11 +87,10 @@ public class DB4ORecordStore extends RecordStore
 		for(Record r : resultSet)
 		{
 			db4o.activate(r, ACTIVATION_DEPTH);
-			result.add(r);
+			// Filter out records of internal schemas:
+			if(!r.getSchema().isInternal())
+				result.add(r);
 		}
-		
-		//TODO somehow filter out subrecords??
-		
 		return result;
 	}
 	
@@ -110,25 +111,28 @@ public class DB4ORecordStore extends RecordStore
 	 */
 	@Override
 	public List<Record> retrieveRecords(final RecordsQuery query)
-	{
+	{		
 		// Query for records:
 		ObjectSet<Record> resultSet = db4o.query(new Predicate<Record>()
 		{
 			private static final long serialVersionUID = 1L;
-			
+
 			public boolean match(Record record)
 			{
-				return	(query.isAnySchema() || record.getSchema().equals(query.getSourceSchema())) /* Schema check */
-						&& query.getConstraints().isValid(record);									/* Filter by constraint(s) */ 
+				return	!record.getSchema().isInternal()												/* filter out records of internal schemas */
+						&& (query.isAnySchema() || query.getSourceSchema().equals(record.getSchema()));	/* Schema check */
 			}
 		});
 		
-		// Activate result records & add to new ArrayList (list returned by DB4O doesn't allow sorting and possibly other things):
+		// Activate result records, filter by query constraints & add to new ArrayList (list returned by DB4O doesn't allow sorting and possibly other things):
 		List<Record> result = new ArrayList<Record>();
-		for(Record r : resultSet)
+		Constraint constraints = query.getConstraints();
+		while(resultSet.hasNext())
 		{
+			Record r = resultSet.next();
 			db4o.activate(r, ACTIVATION_DEPTH);
-			result.add(r);
+			if(constraints.isValid(r)); // Filter by constraint(s) (for some reason the DB4O query doesn't work if this happens inside the Predicate's match() method)
+				result.add(r);
 		}
 		
 		// Sort result:
@@ -139,7 +143,7 @@ public class DB4ORecordStore extends RecordStore
 		if(limit != RecordsQuery.NO_LIMIT && result.size() > limit)
 			return result.subList(0, limit);
 		else
-			return result;		
+			return result;
 	}
 
 	/* (non-Javadoc)
