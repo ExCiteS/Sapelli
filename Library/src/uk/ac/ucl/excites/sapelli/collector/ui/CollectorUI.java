@@ -53,6 +53,8 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 	
 	public FieldUI<?, V, UI> getCurrentFieldUI();
 	
+	public void hideKeyboard();
+	
 	public int getSpacingPx();
 	
 	public int getScreenWidthPx();

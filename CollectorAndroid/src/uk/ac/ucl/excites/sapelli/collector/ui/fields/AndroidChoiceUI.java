@@ -176,7 +176,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			{
 				public void run()
 				{
-					controller.goTo(new FieldWithArguments(field), true); // go to field and leave page without validation
+					controller.goTo(new FieldWithArguments(field), true); // force leave the page (PageUI#leave() will not be called!) to go to the field itself
 				}
 			};
 

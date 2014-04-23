@@ -25,7 +25,9 @@ public class ForeignKey extends Record
 	 */
 	public ForeignKey(Schema foreignSchema)
 	{
-		super(foreignSchema.getPrimaryKey()); //the primary key of the foreign schema (which is an instance of Index, a subclass of Schema)
+		 /* We use the foreign schema's primary key (an instance of Index, a subclass
+		  * of Schema) as the schema for this record (ForeignKey is a subclass of Record) */
+		super(foreignSchema.getPrimaryKey());
 		this.foreignSchema = foreignSchema;
 	}
 	

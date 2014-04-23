@@ -39,7 +39,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 					@Override
 					public void onClick(View v)
 					{
-						controller.goTo(new FieldWithArguments(field), true); // go to field and leave page without validation
+						controller.goTo(new FieldWithArguments(field), true); // force leave the page (PageUI#leave() will not be called!) to go to the field itself
 					}
 				});
 			}

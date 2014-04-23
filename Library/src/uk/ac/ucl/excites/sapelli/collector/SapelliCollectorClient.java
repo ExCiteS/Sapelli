@@ -30,7 +30,7 @@ public class SapelliCollectorClient implements TransmissionClient
 	static public long GetSchemaID(long projectHash, int formIndex)
 	{
 		return	(projectHash << Form.FORM_POSITION_SIZE) +	// Project hash takes up first 32 bits
-				formIndex;								// Form index takes up next 4 bits
+				formIndex;									// Form index takes up next 4 bits
 	}
 	
 	static public long GetProjectHash(long schemaID)

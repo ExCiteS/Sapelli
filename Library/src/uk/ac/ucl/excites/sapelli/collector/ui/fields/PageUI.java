@@ -51,8 +51,9 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLe
 					(controller.getCurrentFormMode() == Mode.EDIT && fUI.getField().isShowOnEdit()))
 					fUI.leave(record, true); // skip validation (otherwise we'd repeat it), this means that NonSelfLeavingFieldUIs (and Boolean-column Buttons) will only store their value
 			
-			// Page will be left (and not to go to one of its contained fields), so disable its triggers:
+			// Page will be left (and not to go to one of its contained fields, because in that case leave() wouldn't have been called), so disable its triggers & hide the keyboard which may still be shown:
 			controller.disableTriggers(field.getTriggers());
+			collectorUI.hideKeyboard();
 			
 			return true;
 		}

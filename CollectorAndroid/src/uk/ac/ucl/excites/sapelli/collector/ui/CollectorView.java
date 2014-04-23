@@ -356,6 +356,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return Math.max((availableHeight - ((numRows - 1) * getSpacingPx())) / numRows, 0); // We use Math(y, 0) to avoid negative pixel counts
 	}
 	
+	@Override
 	public void hideKeyboard()
 	{
 		try
