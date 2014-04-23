@@ -401,7 +401,7 @@ public class Schema implements Serializable
 			Schema other = (Schema) obj;
 			// ID:
 			boolean idMatch = (this.id == other.id);
-			if(!(checkNames || checkColumns) || !idMatch)
+			if(!idMatch || !(checkNames || checkColumns || checkIndexes))
 				return idMatch;
 			// Name:
 			if(checkNames && !this.name.equals(other.name))
