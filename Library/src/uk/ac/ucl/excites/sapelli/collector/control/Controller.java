@@ -27,7 +27,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsState;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
@@ -271,36 +270,13 @@ public abstract class Controller
 			ui.setField(getCurrentField());
 		currFormSession.currFieldDisplayed = needsUIUpdate;
 	}
-
+	
 	/**
-	 * @return the current ButtonState
+	 * Re-enter current field
 	 */
-	public ControlsState getControlsState()
+	public void goToCurrent()
 	{
-		ControlsState state = new ControlsState(
-				getCurrentField().isShowBack()		&& (!currFormSession.fieldAndArgumentHistory.empty() || !formHistory.empty()),
-				getCurrentField().isShowCancel()	&& (!currFormSession.fieldAndArgumentHistory.empty() || getCurrentField() instanceof Page),
-				getCurrentField().isShowForward()	&& (getCurrentField().getOptional() == Optionalness.ALWAYS || (currFormSession.currFieldDisplayed && ui.getCurrentFieldUI().isValid(getCurrentRecord()))));
-		// Note: these paths may be null (in which case built-in defaults must be used)
-		
-		System.out.println("Form history:");
-		for(FormSession fs : formHistory)
-			System.out.println(" - " + fs.form.getID());
-		
-		System.out.println("Field history:");
-		for(FieldWithArguments fa : currFormSession.fieldAndArgumentHistory)
-			System.out.println(" - " + fa.field.getID());
-		
-		/* TODO optional/valid logic: 
-		 * 
-		 * (optionalness=always && (field.isNoColumn() || !field.getcolumn.isvalueset(record))) || (optionalness!=always && fieldUI.isValid()))
-		 * 		 * 	
-		 * assumption: a set value is (still?) valid (is this true for locations?)
-		 * 
-		 * Will this work for pages?
-		 */
-		
-		return state;
+		goTo(currFormSession.currFieldAndArguments, true); // force leaving
 	}
 	
 	protected void saveRecordAndAttachments()
@@ -728,20 +704,9 @@ public abstract class Controller
 		return currFormSession.getCurrentField();
 	}
 	
-	/**
-	 * @return the arguments passed to the current Field
-	 */
-	public FieldParameters getCurrentFieldArguments()
+	public boolean canGoBack(boolean withinFormOnly)
 	{
-		return currFormSession.getCurrentFieldArguments();
-	}
-	
-	/**
-	 * @return the currentField and the arguments it received
-	 */
-	public FieldWithArguments getCurrentFieldAndArguments()
-	{
-		return currFormSession.currFieldAndArguments;
+		return (currFormSession != null && !currFormSession.fieldAndArgumentHistory.empty()) || (!withinFormOnly && !formHistory.empty());
 	}
 	
 	public void addLogLine(String... fields)

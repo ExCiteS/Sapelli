@@ -110,13 +110,19 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_BACKGROUND_COLOR = "backgroundColor";
 	static private final String ATTRIBUTE_FIELD_SHOW_ON_CREATE = "showOnCreate";
 	static private final String ATTRIBUTE_FIELD_SHOW_ON_EDIT = "showOnEdit";
+	static private final String ATTRIBUTE_FIELD_SHOW_FORWARD = "showForward";
+	static private final String ATTRIBUTE_FIELD_SHOW_BACK_ON_CREATE = "showBackOnCreate";
+	static private final String ATTRIBUTE_FIELD_SHOW_BACK_ON_EDIT = "showBackOnEdit";
+	static private final String ATTRIBUTE_FIELD_SHOW_CANCEL = "showCancel";
+	static private final String ATTRIBUTE_FIELD_SHOW_CANCEL_ON_CREATE = "showCancelOnCreate";
+	static private final String ATTRIBUTE_FIELD_SHOW_CANCEL_ON_EDIT = "showCancelOnEdit";
+	static private final String ATTRIBUTE_FIELD_SHOW_FORWARD_ON_CREATE = "showForwardOnCreate";
+	static private final String ATTRIBUTE_FIELD_SHOW_FORWARD_ON_EDIT = "showForwardOnEdit";
+	static private final String ATTRIBUTE_FIELD_SHOW_BACK = "showBack";
 	static private final String ATTRIBUTE_FIELD_VALUE = "value";
 	static private final String ATTRIBUTE_FIELD_DEFAULTVALUE = "defaultValue";
 	static private final String ATTRIBUTE_FIELD_INITVALUE = "initValue";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
-	static private final String ATTRIBUTE_SHOW_FORWARD = "showForward";
-	static private final String ATTRIBUTE_SHOW_CANCEL = "showCancel";
-	static private final String ATTRIBUTE_SHOW_BACK = "showBack";
 	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
 	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
@@ -221,16 +227,16 @@ public class FormParser extends SubtreeParser
 			currentForm.setSaveSoundRelativePath(attributes.getString(null, false, false, ATTRIBUTE_FORM_SAVE_SOUND, ATTRIBUTE_FORM_END_SOUND)); // Get the sound path
 			currentForm.setVibrateOnSave(attributes.getBoolean(Form.DEFAULT_VIBRATE, ATTRIBUTE_FORM_SAVE_VIBRATE, ATTRIBUTE_FORM_END_VIBRATE));
 			// Which buttons are allowed to show (deprecated in format >= 2):
-			if(attributes.contains(ATTRIBUTE_SHOW_BACK) || attributes.contains(ATTRIBUTE_SHOW_CANCEL) || attributes.contains(ATTRIBUTE_SHOW_FORWARD))
+			if(attributes.contains(ATTRIBUTE_FIELD_SHOW_BACK) || attributes.contains(ATTRIBUTE_FIELD_SHOW_CANCEL) || attributes.contains(ATTRIBUTE_FIELD_SHOW_FORWARD))
 			{
 				if(format == ProjectParser.Format.v1_x)
 				{
-					v1xFormShowBack = attributes.getBoolean(ATTRIBUTE_SHOW_BACK, Form.V1X_DEFAULT_SHOW_BACK);
-					v1xFormShowCancel = attributes.getBoolean(ATTRIBUTE_SHOW_CANCEL, Form.V1X_DEFAULT_SHOW_CANCEL);
-					v1xFormShowForward = attributes.getBoolean(ATTRIBUTE_SHOW_FORWARD, Form.V1X_DEFAULT_SHOW_FORWARD);
+					v1xFormShowBack = attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_BACK, Form.V1X_DEFAULT_SHOW_BACK);
+					v1xFormShowCancel = attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL, Form.V1X_DEFAULT_SHOW_CANCEL);
+					v1xFormShowForward = attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD, Form.V1X_DEFAULT_SHOW_FORWARD);
 				}
 				else
-					addWarning("Attributes '" + ATTRIBUTE_SHOW_BACK + "', '" + ATTRIBUTE_SHOW_CANCEL + "' & '" + ATTRIBUTE_SHOW_FORWARD + "' are deprecated on <Form> in format >= 2.");
+					addWarning("Attributes '" + ATTRIBUTE_FIELD_SHOW_BACK + "', '" + ATTRIBUTE_FIELD_SHOW_CANCEL + "' & '" + ATTRIBUTE_FIELD_SHOW_FORWARD + "' are deprecated on <Form> in format >= 2.");
 			}
 			// Animation:
 			currentForm.setAnimation(attributes.getBoolean(ATTRIBUTE_FORM_ANIMATION, Form.DEFAULT_ANIMATION));
@@ -645,10 +651,21 @@ public class FormParser extends SubtreeParser
 			// Background colour:
 			field.setBackgroundColor(attributes.getString(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, true, false));
 			
-			// Which buttons are allowed to show (with backwards compatibility for v1.0 forms which may have shopBack/showCancel/showForward at the form level):
-			field.setShowBack((v1xFormShowBack != null ? v1xFormShowBack : true) && attributes.getBoolean(ATTRIBUTE_SHOW_BACK, Field.DEFAULT_SHOW_BACK));
-			field.setShowCancel((v1xFormShowCancel != null ? v1xFormShowCancel : true) && attributes.getBoolean(ATTRIBUTE_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));
-			field.setShowForward((v1xFormShowForward != null ? v1xFormShowForward : true) && attributes.getBoolean(ATTRIBUTE_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
+			// Which buttons are allowed to show...
+			// 	Mode-specific:
+			field.setShowBackOnCreate(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_BACK_ON_CREATE, Field.DEFAULT_SHOW_BACK));
+			field.setShowBackOnEdit(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_BACK_ON_EDIT, Field.DEFAULT_SHOW_BACK));
+			field.setShowCancelOnCreate(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL_ON_CREATE, Field.DEFAULT_SHOW_CANCEL));
+			field.setShowCancelOnEdit(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL_ON_EDIT, Field.DEFAULT_SHOW_CANCEL));
+			field.setShowForwardOnCreate(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD_ON_CREATE, Field.DEFAULT_SHOW_FORWARD));
+			field.setShowForwardOnEdit(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD_ON_EDIT, Field.DEFAULT_SHOW_FORWARD));		
+			//	Across all modes (overrules mode-specific settings) + with backwards compatibility for v1.0 forms which may have shopBack/showCancel/showForward at the form level:
+			if(attributes.contains(ATTRIBUTE_FIELD_SHOW_BACK) || v1xFormShowBack != null)
+				field.setShowBack((v1xFormShowBack != null ? v1xFormShowBack : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_BACK, Field.DEFAULT_SHOW_BACK));
+			if(attributes.contains(ATTRIBUTE_FIELD_SHOW_CANCEL) || v1xFormShowCancel != null)
+				field.setShowCancel((v1xFormShowCancel != null ? v1xFormShowCancel : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));
+			if(attributes.contains(ATTRIBUTE_FIELD_SHOW_FORWARD) || v1xFormShowForward != null)
+				field.setShowForward((v1xFormShowForward != null ? v1xFormShowForward : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
 		}
 		
 		// Remember current field:

@@ -64,7 +64,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	private CollectorController controller;
 	
 	// UI elements:
-	private ControlsView controlsView;
+	private AndroidControlsUI controlsUI;
 	private FieldUI<?, View, CollectorView> fieldUI;
 	private View fieldUIView = null;
 	private HashMap<Field, FieldUI<?, View, CollectorView>> fieldUICache;
@@ -86,7 +86,8 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		this.setBackgroundColor(Color.BLACK);
 		
 		// Set-up controlsView:
-		controlsView = new ControlsView(activity, this);
+		controlsUI = new AndroidControlsUI(controller, this); // TODO does it need a collectorUi instance?
+		View controlsView = controlsUI.getPlatformView(); 
 		controlsView.setId(BUTTONS_VIEW_ID);
 		this.addView(controlsView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 	}
@@ -102,7 +103,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		activity.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		
 		// Briefly disable the buttons:
-		controlsView.disable();
+		controlsUI.disable();
 		
 		// Get or create fieldUI for field...
 		FieldUI<?, View, CollectorView> newFieldUI = fieldUICache.get(field); // try to recycle cached fieldUI
@@ -141,8 +142,8 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		fieldUIView.setEnabled(true);
 		
 		// Update & re-enable the buttons:
-		controlsView.update(controller);
-		controlsView.enable();
+		controlsUI.update(controller.getCurrentForm(), fieldUI);
+		controlsUI.enable();
 	}
 	
 	public CollectorActivity getActivity()
@@ -230,6 +231,12 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return new AndroidPageUI(pg, controller, this);
 	}
 	
+	@Override
+	public AndroidControlsUI createControlsUI()
+	{
+		return new AndroidControlsUI(controller, this);
+	}
+	
 	public void cancelCurrentField()
 	{
 		if(fieldUI != null)
@@ -255,7 +262,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	public void setEnabled(boolean enabled)
 	{
 		super.setEnabled(enabled);
-		controlsView.setEnabled(enabled);
+		controlsUI.enable();
 		if(fieldUIView != null)
 			fieldUIView.setEnabled(enabled);
 	}
@@ -343,7 +350,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	
 	public int getFieldUIHeightPx()
 	{
-		return getScreenHeightPx() - (controller.getControlsState().isAnyButtonShown() ? (controlsView.getButtonHeightPx() + getSpacingPx()) : 0);
+		return getScreenHeightPx() - controlsUI.getCurrentHeightPx();
 	}
 	
 	public int getFieldUIPartHeightPx(int numRows)

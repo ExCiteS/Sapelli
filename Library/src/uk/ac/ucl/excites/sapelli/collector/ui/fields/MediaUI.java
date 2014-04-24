@@ -40,9 +40,9 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		{
 			controller.addLogLine("ATTACHMENT", field.getID(), "-NONE-");
 			
-			if(field.getOptional() != Optionalness.ALWAYS)
-				// at least one attachment is required:
-				controller.goTo(controller.getCurrentFieldAndArguments()); // stay at this field ("return;" is not enough because if we are using a native app it needs to be restarted)
+			if(field.getOptional() != Optionalness.ALWAYS && field.getCount(controller.getCurrentRecord()) < 1)
+				// at least one attachment is required & we have none:
+				controller.goToCurrent(); // stay at this field ("return;" is not enough because if we are using a native app it needs to be restarted)
 			else
 				controller.goForward(userRequested); // goto next/jump field //TODO this needs changing when we allow review of photos/audio
 		}

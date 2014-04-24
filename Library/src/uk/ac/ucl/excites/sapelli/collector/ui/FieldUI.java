@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
@@ -127,6 +128,34 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	{
 		if(isShownOnPage())
 			((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).clearInvalidity(this);
+	}
+	
+	public boolean isShowBack()
+	{
+		return	(controller.getCurrentFormMode() == Mode.CREATE && field.isShowBackOnCreate()) || (controller.getCurrentFormMode() == Mode.EDIT && field.isShowBackOnEdit()) /* allowed by field in current mode */
+				&& controller.canGoBack(false); // can we go back to a previous field or form
+	}
+	
+	public boolean isShowCancel()
+	{
+		return	(controller.getCurrentFormMode() == Mode.CREATE && field.isShowCancelOnCreate()) || (controller.getCurrentFormMode() == Mode.EDIT && field.isShowCancelOnEdit()) /* allowed by field in current mode */
+				&& controller.canGoBack(true); // can we go back within the current form
+	}
+	
+	public boolean isShowForward()
+	{
+		return (controller.getCurrentFormMode() == Mode.CREATE && field.isShowForwardOnCreate()) || (controller.getCurrentFormMode() == Mode.EDIT && field.isShowForwardOnEdit()) /* allowed by field in current mode */
+				&& true;
+		//TODO && (getCurrentField().getOptional() == Optionalness.ALWAYS || (currFormSession.currFieldDisplayed && ui.getCurrentFieldUI().isValid(getCurrentRecord()))));
+		
+		/* TODO optional/valid logic: 
+		 * 
+		 * (optionalness=always && (field.isNoColumn() || !field.getcolumn.isvalueset(record))) || (optionalness!=always && fieldUI.isValid()))
+		 * 		 * 	
+		 * assumption: a set value is (still?) valid (is this true for locations?)
+		 * 
+		 * Will this work for pages?
+		 */
 	}
 	
 }

@@ -98,4 +98,13 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLe
 		// does nothing (Pages have no column of their own)
 	}
 
+	/** Overridden such that the cancel control is always shown in allowed for current mode, even if the page is the first field in the form (i.e. there is no field history)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#isShowCancel()
+	 */
+	@Override
+	public boolean isShowCancel()
+	{
+		return (controller.getCurrentFormMode() == Mode.CREATE && field.isShowCancelOnCreate()) || (controller.getCurrentFormMode() == Mode.EDIT && field.isShowCancelOnEdit()); /* allowed by field in current mode */
+	}
+
 }

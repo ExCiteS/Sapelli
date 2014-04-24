@@ -48,6 +48,8 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 	public MultiListUI<V, UI> createMultiListUI(MultiListField mlf);
 	
 	public PageUI<V, UI> createPageUI(Page page);
+	
+	public ControlsUI<V, UI> createControlsUI();
 
 	public void setField(Field currentField);
 	

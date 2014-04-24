@@ -59,9 +59,12 @@ public abstract class Field extends JumpSource
 	protected String backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	
 	// Buttons:
-	private boolean showBack = DEFAULT_SHOW_BACK;
-	private boolean showCancel = DEFAULT_SHOW_CANCEL;
-	private boolean showForward = DEFAULT_SHOW_FORWARD;
+	private boolean showBackOnCreate = DEFAULT_SHOW_BACK;
+	private boolean showBackOnEdit = DEFAULT_SHOW_BACK;
+	private boolean showCancelOnCreate = DEFAULT_SHOW_CANCEL;
+	private boolean showCancelOnEdit = DEFAULT_SHOW_CANCEL;
+	private boolean showForwardOnCreate = DEFAULT_SHOW_FORWARD;
+	private boolean showForwardOnEdit = DEFAULT_SHOW_FORWARD;
 	
 	/**
 	 * @param form the form the field belongs to
@@ -245,11 +248,99 @@ public abstract class Field extends JumpSource
 	}
 
 	/**
-	 * @return the showBack
+	 * @return the showBackOnCreate
 	 */
-	public boolean isShowBack()
+	public boolean isShowBackOnCreate()
 	{
-		return showBack;
+		return showBackOnCreate;
+	}
+
+	/**
+	 * @param showBackOnCreate the showBackOnCreate to set
+	 */
+	public void setShowBackOnCreate(boolean showBackOnCreate)
+	{
+		this.showBackOnCreate = showBackOnCreate;
+	}
+
+	/**
+	 * @return the showBackOnEdit
+	 */
+	public boolean isShowBackOnEdit()
+	{
+		return showBackOnEdit;
+	}
+
+	/**
+	 * @param showBackOnEdit the showBackOnEdit to set
+	 */
+	public void setShowBackOnEdit(boolean showBackOnEdit)
+	{
+		this.showBackOnEdit = showBackOnEdit;
+	}
+
+	/**
+	 * @return the showCancelOnCreate
+	 */
+	public boolean isShowCancelOnCreate()
+	{
+		return showCancelOnCreate;
+	}
+
+	/**
+	 * @param showCancelOnCreate the showCancelOnCreate to set
+	 */
+	public void setShowCancelOnCreate(boolean showCancelOnCreate)
+	{
+		this.showCancelOnCreate = showCancelOnCreate;
+	}
+
+	/**
+	 * @return the showCancelOnEdit
+	 */
+	public boolean isShowCancelOnEdit()
+	{
+		return showCancelOnEdit;
+	}
+
+	/**
+	 * @param showCancelOnEdit the showCancelOnEdit to set
+	 */
+	public void setShowCancelOnEdit(boolean showCancelOnEdit)
+	{
+		this.showCancelOnEdit = showCancelOnEdit;
+	}
+
+	/**
+	 * @return the showForwardOnCreate
+	 */
+	public boolean isShowForwardOnCreate()
+	{
+		return showForwardOnCreate;
+	}
+
+	/**
+	 * @param showForwardOnCreate the showForwardOnCreate to set
+	 */
+	public void setShowForwardOnCreate(boolean showForwardOnCreate)
+	{
+		this.showForwardOnCreate = showForwardOnCreate;
+	}
+
+	/**
+	 * @return the showForwardOnEdit
+	 */
+	public boolean isShowForwardOnEdit()
+	{
+		return showForwardOnEdit;
+	}
+
+	/**
+	 * @param showForwardOnEdit the showForwardOnEdit to set
+	 */
+	public void setShowForwardOnEdit(boolean showForwardOnEdit)
+	{
+		this.showForwardOnEdit = showForwardOnEdit;
 	}
 
 	/**
@@ -257,15 +348,8 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowBack(boolean showBack)
 	{
-		this.showBack = showBack;
-	}
-
-	/**
-	 * @return the showCancel
-	 */
-	public boolean isShowCancel()
-	{
-		return showCancel;
+		this.showBackOnCreate = showBack;
+		this.showBackOnEdit = showBack;
 	}
 
 	/**
@@ -273,15 +357,8 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowCancel(boolean showCancel)
 	{
-		this.showCancel = showCancel;
-	}
-
-	/**
-	 * @return the showForward
-	 */
-	public boolean isShowForward()
-	{
-		return showForward;
+		this.showCancelOnCreate = showCancel;
+		this.showCancelOnEdit = showCancel;
 	}
 
 	/**
@@ -289,7 +366,8 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowForward(boolean showForward)
 	{
-		this.showForward = showForward;
+		this.showForwardOnCreate = showForward;
+		this.showForwardOnEdit = showForward;
 	}
 
 	public Column<?> getColumn()
@@ -308,7 +386,7 @@ public abstract class Field extends JumpSource
 		if(schemaCol == null)
 			/* the form's schema is not yet initialised, and most likely this method was called as
 			 * part of the initialisation process, so return a newly created column for this field: */
-			return createColumn(); 
+			return createColumn();
 		else
 			return schemaCol; // return previously created column
 	}
