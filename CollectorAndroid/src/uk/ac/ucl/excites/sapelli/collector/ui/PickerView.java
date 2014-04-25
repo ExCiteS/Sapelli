@@ -18,7 +18,7 @@ import android.widget.GridView;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public abstract class PickerView extends GridView
+public class PickerView extends GridView
 {
 
 	// Statics:

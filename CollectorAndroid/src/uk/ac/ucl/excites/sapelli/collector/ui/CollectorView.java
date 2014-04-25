@@ -386,4 +386,12 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		}
 	}
 
+	/**
+	 * @return the controlsUI
+	 */
+	public AndroidControlsUI getControlsUI()
+	{
+		return controlsUI;
+	}
+	
 }

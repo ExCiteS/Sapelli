@@ -21,6 +21,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
@@ -211,7 +212,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		switch(keyCode)
 		{
 			case KeyEvent.KEYCODE_BACK:
-				controller.goBack(true);
+				collectorView.getControlsUI().handleHardwareKeyPress(Control.BACK);
 				return true;
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
 				return true;

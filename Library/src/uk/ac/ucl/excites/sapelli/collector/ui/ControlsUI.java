@@ -1,6 +1,9 @@
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
+import java.util.Arrays;
+
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.model.Form;
 
 /**
  * Abstract class to represent the controls UI (i.e. back/cancel/fwd buttons, maybe others later)
@@ -34,6 +37,9 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	protected UI collectorUI;
 	protected boolean enabled;
 	
+	private Form currentForm;
+	private State[] controlStates;
+	
 	public ControlsUI(Controller controller, UI collectorUI)
 	{
 		this.controller = controller;
@@ -46,7 +52,31 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	 */
 	protected abstract V getPlatformView();
 	
-	public abstract void update(FieldUI<?, V, UI> currentFieldUI);
+	public void update(FieldUI<?, V, UI> fieldUI)
+	{
+		// Form change?
+		if(currentForm != fieldUI.getField().getForm())
+		{
+			currentForm = fieldUI.getField().getForm();
+			updateForm(currentForm);
+		}
+		
+		// What do we need to show?
+		State[] newControlStates = new State[Control.values().length];
+		for(Control control : ControlsUI.Control.values())
+			newControlStates[control.ordinal()] = fieldUI.getControlState(control); // takes into account the current FormMode
+		
+		// Is this different from the currently shown controls?
+		if(!Arrays.equals(newControlStates, controlStates))
+		{
+			controlStates = newControlStates;
+			updateControlStates(controlStates);
+		}
+	}
+	
+	protected abstract void updateForm(Form newForm);
+	
+	protected abstract void updateControlStates(State[] newControlStates);
 	
 	public void disable()
 	{
@@ -63,15 +93,47 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 		return enabled;
 	}
 	
-	/**
-	 * It is assumed that this method is only called when enabled=true
-	 * 
-	 * @param control
-	 */
-	protected void onControlClick(Control control)
+	public boolean isControlEnabled(Control control)
 	{
-		// Log interaction:
-		controller.addLogLine("CONTROL_PRESS_" + control.name(), controller.getCurrentField().getID());
+		return enabled && controlStates[control.ordinal()] == State.SHOWN_ENABLED;
+	}
+	
+	public void handleHardwareKeyPress(Control control)
+	{
+		if(isControlEnabled(control))
+		{
+			// Log interaction:
+			controller.addLogLine("HARDWARE_CONTROL_PRESS_" + control.name(), controller.getCurrentField().getID());		
+		
+			// Handle event:
+			handleControlEvent(control);
+		}
+	}
+	
+	/**
+	 * @param clickPosition
+	 */
+	protected void onControlClick(int clickPosition)
+	{
+		// Compute position offset (accounting for hidden controls):
+		int positionOffset = 0;
+		for(int p = 0; p <= clickPosition; p++)
+			if(controlStates[p] == State.HIDDEN)
+				positionOffset++;
+		if(controlStates[clickPosition + positionOffset] == State.SHOWN_ENABLED)
+		{
+			Control control = Control.values()[clickPosition + positionOffset];
+						
+			// Log interaction:
+			controller.addLogLine("CONTROL_PRESS_" + control.name(), controller.getCurrentField().getID());
+			
+			// Handle event:
+			handleControlEvent(control);
+		}
+	}
+	
+	private void handleControlEvent(Control control)
+	{
 		switch(control)
 		{
 			case BACK :				

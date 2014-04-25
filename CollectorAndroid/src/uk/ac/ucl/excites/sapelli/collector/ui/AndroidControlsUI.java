@@ -4,10 +4,10 @@
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import java.io.File;
-import java.util.Arrays;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.ui.PickerView.PickerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
@@ -23,6 +23,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.view.View;
+import android.widget.AbsListView.LayoutParams;
 import android.widget.AdapterView;
 
 /**
@@ -30,7 +31,7 @@ import android.widget.AdapterView;
  * 
  * @author mstevens
  */
-public class AndroidControlsUI extends ControlsUI<View, CollectorView>
+public class AndroidControlsUI extends ControlsUI<View, CollectorView> implements AdapterView.OnItemClickListener
 {
 	
 	// Statics-------------------------------------------------------
@@ -40,18 +41,36 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView>
 	static private final int SEMI_TRANSPARENT_WHITE = Color.parseColor("#80FFFFFF");
 	
 	// Dynamics------------------------------------------------------
-	private ControlsView view;
-
+	private ControlItem[] controlItems;
+	private PickerView view;
+	
 	public AndroidControlsUI(Controller controller, CollectorView collectorView)
 	{
 		super(controller, collectorView);
+		
+		// ControlItem array:
+		this.controlItems = new ControlItem[Control.values().length];
 	}
 
 	@Override
 	protected View getPlatformView()
 	{
 		if(view == null)
-			view = new ControlsView(collectorUI.getContext());
+		{
+			view = new PickerView(collectorUI.getContext());
+			
+			// UI set-up:
+			view.setBackgroundColor(Color.BLACK);
+			view.setHorizontalSpacing(collectorUI.getSpacingPx());
+			view.setPadding(0, 0, 0, collectorUI.getSpacingPx()); // Bottom padding (to put spacing between buttons and view underneath)
+			
+			// ControlItem size:
+			view.setItemDimensionsPx(LayoutParams.MATCH_PARENT, getControlHeightPx());
+			
+			// Listen for clicks:
+			view.setOnItemClickListener(this);
+		}
+			
 		return view;
 	}
 	
@@ -69,12 +88,78 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView>
 		if(view != null)
 			view.setEnabled(true);
 	}
+
+	@Override
+	public void updateForm(Form newForm)
+	{
+		if(view == null)
+			return;
+		
+		// Background colour:
+		int controlBackgroundColor = ColourHelpers.ParseColour(newForm.getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR); //default is light gray
+		
+		// (Re)instantiate control items (i.e. buttons):
+		for(Control control : ControlsUI.Control.values())
+			controlItems[control.ordinal()] = new ControlItem(collectorUI.getContext(), control, newForm, controlBackgroundColor);
+	}
+
+	@Override
+	public void updateControlStates(State[] newControlStates)
+	{
+		if(view == null)
+			return;
+		
+		// Update shown controlItems:
+		PickerAdapter adapter = view.getAdapter();
+		adapter.clear();
+		for(Control control : ControlsUI.Control.values())
+		{
+			State state = newControlStates[control.ordinal()]; 
+			if(state != State.HIDDEN)
+			{
+				adapter.addItem(controlItems[control.ordinal()]);
+				controlItems[control.ordinal()].setGrayedOut(state == State.SHOWN_DISABLED);
+			}	
+		}
+		
+		// Are any controls shown?
+		if(!adapter.isEmpty())
+		{	// Yes...
+			view.setVisibility(View.VISIBLE);
+			
+			// Columns:
+			view.setNumColumns(adapter.getItems().size());
+
+			// Set adapter:
+			view.setAdapter(adapter); // only needed on Android 2.3.x?
+		}
+		else
+		{	// No...
+			view.setVisibility(View.GONE);
+		}
+	}
 	
 	@Override
-	public void update(FieldUI<?, View, CollectorView> currentFieldUI)
+	public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 	{
-		if(view != null)
-			view.update(controller.getCurrentForm(), currentFieldUI);
+		// Are we allowed to trigger an action?
+		if(!enabled || view == null || position < 0 || position >= view.getAdapter().getItems().size())
+			return; // ignore the click if buttons are disabled or invalid button was somehow pressed
+		
+		// Action triggered by click:
+		Runnable action = new Runnable()
+		{
+			public void run()
+			{
+				onControlClick(position);
+			}
+		};
+
+		// Execute the "press" animation if allowed, then perform the action: 
+		if(controller.getCurrentForm().isAnimation())
+			(new PressAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
+		else
+			action.run(); //perform task now (animation is disabled)
 	}
 	
 	@Override
@@ -89,189 +174,67 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView>
 	}
 	
 	/**
-	 * @author mstevens, Julia, Michalis Vitos
+	 * ControlItem, representing a control button
+	 * Can be grayed out.
 	 * 
+	 * @author mstevens
 	 */
-	private class ControlsView extends PickerView implements AdapterView.OnItemClickListener
+	private class ControlItem extends LayeredItem
 	{
 	
-		private State[] controlStates;
-		private ControlItem[] controlItems;
-		private Form currentForm;
-		
-		/**
-		 * @param context
-		 */	
-		public ControlsView(Context context)
+		// Overlay to gray-out disabled (but shown) buttons
+		private Item grayOutOverlay;
+	
+		public ControlItem(Context context, Control control, Form form, int backgroundColor)
 		{
-			super(context);
+			// Background & padding:
+			this.setBackgroundColor(backgroundColor);
+			this.setPaddingPx(0);
 			
-			// UI set-up:
-			setBackgroundColor(Color.BLACK);
-			setHorizontalSpacing(collectorUI.getSpacingPx());
-			setPadding(0, 0, 0, collectorUI.getSpacingPx()); // Bottom padding (to put spacing between buttons and view underneath)
-			
-			// ControlItem array:
-			this.controlItems = new ControlItem[Control.values().length];
-			
-			// ControlItem size:
-			setItemDimensionsPx(LayoutParams.MATCH_PARENT, getControlHeightPx());
-			
-			// Listen for clicks:
-			setOnItemClickListener(this);
-		}
-
-		public void update(Form form, FieldUI<?, View, CollectorView> fieldUI)
-		{
-			// Form change?
-			if(currentForm != form)
+			// the actual button:
+			String imgRelativePath = null;
+			Drawable drawable = null;
+			switch(control)
 			{
-				currentForm = form;
-				
-				// Background colour:
-				int controlBackgroundColor = ColourHelpers.ParseColour(currentForm.getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR); //default is light gray
-				
-				// (Re)instantiate control items (i.e. buttons):
-				for(Control control : ControlsUI.Control.values())
-				{
-					controlItems[control.ordinal()] = new ControlItem(control, controlBackgroundColor);
-				}
-			}
-			
-			// What do we need to show?
-			State[] newControlStates = new State[Control.values().length];
-			for(Control control : ControlsUI.Control.values())
-				newControlStates[control.ordinal()] = fieldUI.getControlState(control); // takes into account the current FormMode
-			
-			// Is this different from the currently shown controls?
-			if(!Arrays.equals(controlStates, newControlStates))
-			{
-				controlStates = newControlStates;
-				
-				// Update shown controlItems:
-				PickerAdapter adapter = getAdapter();
-				adapter.clear();
-				for(Control control : ControlsUI.Control.values())
-				{
-					State state = controlStates[control.ordinal()]; 
-					if(state != State.HIDDEN)
-					{
-						adapter.addItem(controlItems[control.ordinal()]);
-						controlItems[control.ordinal()].setGrayedOut(state == State.SHOWN_DISABLED);
-					}	
-				}
-				
-				// Are any controls shown?
-				if(!adapter.isEmpty())
-				{	// Yes...
-					setVisibility(View.VISIBLE);
-					
-					// Columns:
-					setNumColumns(adapter.getItems().size());
-
-					// Set adapter:
-					setAdapter(adapter); // only needed on Android 2.3.x?
-				}
-				else
-				{	// No...
-					setVisibility(View.GONE);
-				}
-			}
-		}
-		
-		@Override
-		public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
-		{
-			// Are we allowed to trigger an action?
-			if(!enabled || position < 0 || position >= getAdapter().getItems().size())
-				return; // ignore the click if buttons are disabled or invalid button was somehow pressed
-			
-			// Action triggered by click:
-			Runnable action = new Runnable()
-			{
-				public void run()
-				{
-					// Compute position offset (accounting for hidden controls):
-					int positionOffset = 0;
-					for(int p = 0; p <= position; p++)
-						if(controlStates[p] == State.HIDDEN)
-							positionOffset++;
-					if(controlStates[position + positionOffset] == State.SHOWN_ENABLED)
-						onControlClick(Control.values()[position + positionOffset]);
-				}
-			};
-
-			// Execute the "press" animation if allowed, then perform the action: 
-			if(controller.getCurrentForm().isAnimation())
-				(new PressAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
+				case BACK:
+					imgRelativePath = form.getBackButtonImageRelativePath();
+					drawable = new HorizontalArrow(FOREGROUND_COLOR, true);
+					break;
+				case CANCEL:
+					imgRelativePath = form.getCancelButtonImageRelativePath();
+					drawable = new SaltireCross(FOREGROUND_COLOR);
+					break;
+				case FORWARD:
+					imgRelativePath = form.getForwardButtonImageRelativePath();
+					drawable = new HorizontalArrow(FOREGROUND_COLOR, false);
+					break;
+			}				
+			File imgFile = controller.getProject().getImageFile(imgRelativePath);
+			Item button = null;
+			if(FileHelpers.isReadableFile(imgFile))
+				button = new FileImageItem(imgFile);
 			else
-				action.run(); //perform task now (animation is disabled)
+				button = new DrawableItem(drawable);
+			/* Unused -- replaced by Drawable buttons (arrow & cross)
+			// Resource image (e.g. R.drawable.button_back_svg, .button_back, .button_delete_svg, .button_delete, .button_forward_svg, .button_forward)
+			button = new ResourceImageItem(getContext().getResources(), R.drawable.button_back_svg); */
+			button.setPaddingPx(ScreenMetrics.ConvertDipToPx(context, PADDING_DIP));
+			
+			// the overlay
+			grayOutOverlay = new EmptyItem();
+			grayOutOverlay.setPaddingPx(0);
+			setGrayedOut(false);
+			
+			// add the layers:
+			this.addLayer(button, true);
+			this.addLayer(grayOutOverlay, false);
 		}
 		
-		/**
-		 * ControlItem, representing a control button
-		 * Can be grayed out.
-		 * 
-		 * @author mstevens
-		 */
-		private class ControlItem extends LayeredItem
+		public void setGrayedOut(boolean grayedOut)
 		{
-		
-			// Overlay to gray-out disabled (but shown) buttons
-			private Item grayOutOverlay;
-		
-			public ControlItem(Control control, int backgroundColor)
-			{
-				// Background & padding:
-				this.setBackgroundColor(backgroundColor);
-				this.setPaddingPx(0);
-				
-				// the actual button:
-				String imgRelativePath = null;
-				Drawable drawable = null;
-				switch(control)
-				{
-					case BACK:
-						imgRelativePath = currentForm.getBackButtonImageRelativePath();
-						drawable = new HorizontalArrow(FOREGROUND_COLOR, true);
-						break;
-					case CANCEL:
-						imgRelativePath = currentForm.getCancelButtonImageRelativePath();
-						drawable = new SaltireCross(FOREGROUND_COLOR);
-						break;
-					case FORWARD:
-						imgRelativePath = currentForm.getForwardButtonImageRelativePath();
-						drawable = new HorizontalArrow(FOREGROUND_COLOR, false);
-						break;
-				}				
-				File imgFile = controller.getProject().getImageFile(imgRelativePath);
-				Item button = null;
-				if(FileHelpers.isReadableFile(imgFile))
-					button = new FileImageItem(imgFile);
-				else
-					button = new DrawableItem(drawable);
-				/* Unused -- replaced by Drawable buttons (arrow & cross)
-				// Resource image (e.g. R.drawable.button_back_svg, .button_back, .button_delete_svg, .button_delete, .button_forward_svg, .button_forward)
-				button = new ResourceImageItem(getContext().getResources(), R.drawable.button_back_svg); */
-				button.setPaddingPx(ScreenMetrics.ConvertDipToPx(getContext(), PADDING_DIP));
-				
-				// the overlay
-				grayOutOverlay = new EmptyItem();
-				grayOutOverlay.setPaddingPx(0);
-				setGrayedOut(false);
-				
-				// add the layers:
-				this.addLayer(button, true);
-				this.addLayer(grayOutOverlay, false);
-			}
-			
-			public void setGrayedOut(boolean grayedOut)
-			{
-				grayOutOverlay.setBackgroundColor(grayedOut ? SEMI_TRANSPARENT_WHITE : Color.TRANSPARENT);
-			}
-			
+			grayOutOverlay.setBackgroundColor(grayedOut ? SEMI_TRANSPARENT_WHITE : Color.TRANSPARENT);
 		}
-
+		
 	}
 
 }
