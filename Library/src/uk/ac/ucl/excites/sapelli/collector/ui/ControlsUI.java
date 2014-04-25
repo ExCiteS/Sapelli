@@ -1,7 +1,6 @@
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.Form;
 
 /**
  * Abstract class to represent the controls UI (i.e. back/cancel/fwd buttons, maybe others later)
@@ -14,10 +13,23 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 {
 	
-	static public final int BUTTON_TYPE_BACK = -1;
-	static public final int BUTTON_TYPE_CANCEL = 0;
-	static public final int BUTTON_TYPE_FORWARD = 1;
+	// Statics-------------------------------------------------------
+	static public enum Control
+	{
+		BACK,
+		//UP,
+		CANCEL,
+		FORWARD
+	}
 	
+	static public enum State
+	{
+		HIDDEN,
+		SHOWN_DISABLED, // "grayed out"
+		SHOWN_ENABLED
+	}
+	
+	// Dynamics------------------------------------------------------
 	protected Controller controller;
 	protected UI collectorUI;
 	protected boolean enabled;
@@ -34,7 +46,7 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	 */
 	protected abstract V getPlatformView();
 	
-	public abstract void update(Form currentForm, FieldUI<?, V, UI> currentFieldUI);
+	public abstract void update(FieldUI<?, V, UI> currentFieldUI);
 	
 	public void disable()
 	{
@@ -54,23 +66,21 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	/**
 	 * It is assumed that this method is only called when enabled=true
 	 * 
-	 * @param button
+	 * @param control
 	 */
-	protected void onButtonClick(int button)
+	protected void onControlClick(Control control)
 	{
-		switch(button)
+		// Log interaction:
+		controller.addLogLine("CONTROL_PRESS_" + control.name(), controller.getCurrentField().getID());
+		switch(control)
 		{
-			// TODO when having switched to enum for button types we can make this code more compact (just having the addLogLine line once using buttontype.toString() instead of the hard coded Strings)
-			case BUTTON_TYPE_BACK :
-				controller.addLogLine("BACK_BUTTON", controller.getCurrentField().getID());
+			case BACK :				
 				controller.goBack(true);
 				break;
-			case BUTTON_TYPE_CANCEL : 
-				controller.addLogLine("CANCEL_BUTTON", controller.getCurrentField().getID());
+			case CANCEL : 
 				controller.cancelAndRestartForm();
 				break;
-			case BUTTON_TYPE_FORWARD :
-				controller.addLogLine("FORWARD_BUTTON", controller.getCurrentField().getID());
+			case FORWARD :
 				controller.goForward(true);
 				break;
 			default : return;

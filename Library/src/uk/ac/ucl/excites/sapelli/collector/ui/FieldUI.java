@@ -1,9 +1,10 @@
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
+import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
+import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.State;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
@@ -130,32 +131,45 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 			((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).clearInvalidity(this);
 	}
 	
-	public boolean isShowBack()
+	public ControlsUI.State getControlState(Control control)
 	{
-		return	(controller.getCurrentFormMode() == Mode.CREATE && field.isShowBackOnCreate()) || (controller.getCurrentFormMode() == Mode.EDIT && field.isShowBackOnEdit()) /* allowed by field in current mode */
-				&& controller.canGoBack(false); // can we go back to a previous field or form
-	}
-	
-	public boolean isShowCancel()
-	{
-		return	(controller.getCurrentFormMode() == Mode.CREATE && field.isShowCancelOnCreate()) || (controller.getCurrentFormMode() == Mode.EDIT && field.isShowCancelOnEdit()) /* allowed by field in current mode */
-				&& controller.canGoBack(true); // can we go back within the current form
-	}
-	
-	public boolean isShowForward()
-	{
-		return (controller.getCurrentFormMode() == Mode.CREATE && field.isShowForwardOnCreate()) || (controller.getCurrentFormMode() == Mode.EDIT && field.isShowForwardOnEdit()) /* allowed by field in current mode */
-				&& true;
-		//TODO && (getCurrentField().getOptional() == Optionalness.ALWAYS || (currFormSession.currFieldDisplayed && ui.getCurrentFieldUI().isValid(getCurrentRecord()))));
+		// Check if the field allows this control to be shown in the current formMode:
+		boolean show = field.isControlAllowToBeShown(control, controller.getCurrentFormMode());
 		
-		/* TODO optional/valid logic: 
-		 * 
-		 * (optionalness=always && (field.isNoColumn() || !field.getcolumn.isvalueset(record))) || (optionalness!=always && fieldUI.isValid()))
-		 * 		 * 	
-		 * assumption: a set value is (still?) valid (is this true for locations?)
-		 * 
-		 * Will this work for pages?
-		 */
+		// Additional checks (if not forbidden by field):
+		if(show)
+			switch(control)
+			{
+			case BACK:
+				show &= controller.canGoBack(false); // can we go back to a previous field or form
+				break;
+			case CANCEL:
+				show &= isShowCancel();
+				break;
+			case FORWARD:
+				show &= isShowForward();
+				break;
+			}
+		
+		// Return state
+		return show ? State.SHOWN_ENABLED : State.HIDDEN; // for now we don't use SHOWN_DISABLED (= "grayed-out")
 	}
+	
+	/**
+	 * Whether or not to show the Cancel control above this fieldUI
+	 * May be overridden (e.g. by {@link PageUI}).
+	 *  
+	 * @return
+	 */
+	protected boolean isShowCancel()
+	{
+		return controller.canGoBack(true); // can we go back within the current form
+	}
+	
+	/**
+	 *  
+	 * @return whether of not to show the Forward control above this fieldUI
+	 */
+	protected abstract boolean isShowForward();
 	
 }

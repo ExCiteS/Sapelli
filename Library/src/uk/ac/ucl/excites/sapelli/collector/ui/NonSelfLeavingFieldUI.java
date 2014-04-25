@@ -65,4 +65,13 @@ public abstract class NonSelfLeavingFieldUI<F extends Field, V, UI extends Colle
 	 */
 	protected abstract void storeValue(Record record) throws Exception;
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#isShowForward()
+	 */
+	@Override
+	protected boolean isShowForward()
+	{
+		return true; // TODO validate first? check noColumn? Value set? Optionality ...
+	}
+	
 }

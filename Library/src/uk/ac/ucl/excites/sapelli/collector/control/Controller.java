@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
@@ -48,6 +47,13 @@ public abstract class Controller
 	// STATICS-------------------------------------------------------
 	private static final String LOG_PREFIX = "Collector_";
 	public static final int VIBRATION_DURATION_MS = 600;
+	
+	public static enum FormMode
+	{
+		CREATE,
+		EDIT,
+		//SELECT
+	}
 	
 	// DYNAMICS------------------------------------------------------
 	protected Project project;
@@ -243,15 +249,15 @@ public abstract class Controller
 		currFormSession.currFieldAndArguments = nextFieldAndArguments;
 		
 		// Skip the new current field if it is not meant to be shown on create/edit...
-		if(	(currFormSession.mode == Mode.CREATE && !getCurrentField().isShowOnCreate()) ||
-			(currFormSession.mode == Mode.EDIT && !getCurrentField().isShowOnEdit()))
+		if(	(currFormSession.mode == FormMode.CREATE && !getCurrentField().isShowOnCreate()) ||
+			(currFormSession.mode == FormMode.EDIT && !getCurrentField().isShowOnEdit()))
 		{
 			addLogLine("SKIPPING", getCurrentField().getID(), "Not shown on " + currFormSession.mode.toString());
 			goForward(false);
 			return;
 		}
 		// Skip uneditable fields when in edit mode...
-		if(currFormSession.mode == Mode.EDIT && !getCurrentField().isEditable())
+		if(currFormSession.mode == FormMode.EDIT && !getCurrentField().isEditable())
 		{
 			addLogLine("SKIPPING", getCurrentField().getID(), "Not editable");
 			goForward(false);
@@ -408,8 +414,8 @@ public abstract class Controller
 		// Enter child fields (but signal that they are entered as part of entering the page):
 		for(Field f : page.getFields())
 		{	
-			if(	(currFormSession.mode == Mode.CREATE && !f.isShowOnCreate()) ||
-				(currFormSession.mode == Mode.EDIT && !f.isShowOnEdit()))
+			if(	(currFormSession.mode == FormMode.CREATE && !f.isShowOnCreate()) ||
+				(currFormSession.mode == FormMode.EDIT && !f.isShowOnEdit()))
 				addLogLine("SKIPPING", getCurrentField().getID());
 			else
 				f.enter(this, FieldParameters.EMPTY, true); // enter with page (but don't pass on the arguments)
@@ -691,7 +697,7 @@ public abstract class Controller
 	/**
 	 * @return the mode of the currently open form
 	 */
-	public FormSession.Mode getCurrentFormMode()
+	public FormMode getCurrentFormMode()
 	{
 		return currFormSession.mode;
 	}
@@ -778,27 +784,20 @@ public abstract class Controller
 	 */
 	public static class FormSession
 	{
-
-		public static enum Mode
-		{
-			CREATE,
-			EDIT,
-			//SELECT
-		}
 		
 		static public FormSession Create(Form form, long deviceIDHash)
 		{
-			return new FormSession(form, Mode.CREATE, form.isProducesRecords() ? form.newRecord(deviceIDHash) : null);
+			return new FormSession(form, FormMode.CREATE, form.isProducesRecords() ? form.newRecord(deviceIDHash) : null);
 		}
 		
 		static public FormSession Edit(Form form, Record record)
 		{
-			return new FormSession(form, Mode.EDIT, record);
+			return new FormSession(form, FormMode.EDIT, record);
 		}
 		
 		//Dynamic
 		protected Form form;
-		protected Mode mode;
+		protected FormMode mode;
 		protected Record record;
 		protected Stack<FieldWithArguments> fieldAndArgumentHistory;
 		protected FieldWithArguments currFieldAndArguments = null;
@@ -812,7 +811,7 @@ public abstract class Controller
 		 * @param mode
 		 * @param record
 		 */
-		private FormSession(Form form, Mode mode, Record record)
+		private FormSession(Form form, FormMode mode, Record record)
 		{
 			if(form == null)
 				throw new NullPointerException("Form cannot be null!");

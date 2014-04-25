@@ -49,4 +49,13 @@ public abstract class SelfLeavingFieldUI<F extends Field, V, UI extends Collecto
 		return field.isNoColumn() || field.getOptional() == Optionalness.ALWAYS || field.getColumn().isValueSet(record);
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#isShowForward()
+	 */
+	@Override
+	protected boolean isShowForward()
+	{
+		return field.getOptional() == Optionalness.ALWAYS;
+	}
+	
 }

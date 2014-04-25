@@ -84,10 +84,23 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		this.setOrientation(LinearLayout.VERTICAL);
 		this.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		this.setBackgroundColor(Color.BLACK);
+	}
+	
+	/**
+	 * Sets the controller and (re)initialises the view
+	 * 
+	 * @param controller the controller to set
+	 */
+	public void initialise(CollectorController controller)
+	{
+		this.controller = controller;
+		
+		// Clear cache:
+		fieldUICache.clear();
 		
 		// Set-up controlsView:
-		controlsUI = new AndroidControlsUI(controller, this); // TODO does it need a collectorUi instance?
-		View controlsView = controlsUI.getPlatformView(); 
+		controlsUI = new AndroidControlsUI(controller, this);
+		View controlsView = controlsUI.getPlatformView();
 		controlsView.setId(BUTTONS_VIEW_ID);
 		this.addView(controlsView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 	}
@@ -98,11 +111,14 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	 * @param field
 	 */
 	public void setField(Field field)
-	{		
+	{
+		if(controller == null)
+			throw new IllegalStateException("CollectorView is not initialised.");
+		
 		// avoid layout shift (known Android bug when using full screen)
 		activity.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		
-		// Briefly disable the buttons:
+		// Briefly disable the controls:
 		controlsUI.disable();
 		
 		// Get or create fieldUI for field...
@@ -122,6 +138,9 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		// newFieldUI become the current fieldUI:
 		fieldUI = newFieldUI;
 
+		// Update the controls:
+		controlsUI.update(fieldUI);
+		
 		// Get the actual (updated) View instance:
 		View newFieldUIView = fieldUI.getPlatformView(false, controller.getCurrentRecord());
 		
@@ -141,8 +160,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		fieldUIView.setId(FIELD_VIEW_ID);
 		fieldUIView.setEnabled(true);
 		
-		// Update & re-enable the buttons:
-		controlsUI.update(controller.getCurrentForm(), fieldUI);
+		// Re-enable the controls:
 		controlsUI.enable();
 	}
 	
@@ -155,14 +173,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	public FieldUI<?, View, CollectorView> getCurrentFieldUI()
 	{
 		return fieldUI;
-	}
-
-	/**
-	 * @param controller the controller to set
-	 */
-	public void setController(CollectorController controller)
-	{
-		this.controller = controller;
 	}
 
 	@Override

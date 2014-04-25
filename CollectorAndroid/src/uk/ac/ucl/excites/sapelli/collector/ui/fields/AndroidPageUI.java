@@ -1,7 +1,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
@@ -118,8 +118,8 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 				continue;
 			
 			// Deal with showOnCreate/Edit:
-			if(	(controller.getCurrentFormMode() == Mode.CREATE && !fUI.getField().isShowOnCreate()) ||
-				(controller.getCurrentFormMode() == Mode.EDIT && !fUI.getField().isShowOnEdit()))
+			if(	(controller.getCurrentFormMode() == FormMode.CREATE && !fUI.getField().isShowOnCreate()) ||
+				(controller.getCurrentFormMode() == FormMode.EDIT && !fUI.getField().isShowOnEdit()))
 			{
 				currentWrappedView.setVisibility(View.GONE);
 				controller.addLogLine("HIDING", fUI.getField().getID());

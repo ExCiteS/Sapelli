@@ -4,12 +4,19 @@ import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 
+/**
+ * @author mstevens
+ *
+ */
 /**
  * @author mstevens
  *
@@ -59,12 +66,7 @@ public abstract class Field extends JumpSource
 	protected String backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	
 	// Buttons:
-	private boolean showBackOnCreate = DEFAULT_SHOW_BACK;
-	private boolean showBackOnEdit = DEFAULT_SHOW_BACK;
-	private boolean showCancelOnCreate = DEFAULT_SHOW_CANCEL;
-	private boolean showCancelOnEdit = DEFAULT_SHOW_CANCEL;
-	private boolean showForwardOnCreate = DEFAULT_SHOW_FORWARD;
-	private boolean showForwardOnEdit = DEFAULT_SHOW_FORWARD;
+	private boolean[][] showControlByMode;
 	
 	/**
 	 * @param form the form the field belongs to
@@ -88,6 +90,27 @@ public abstract class Field extends JumpSource
 		this.form = form;
 		this.id = id.trim();
 		this.caption = caption == null ? this.id : caption;
+		
+		// Construct a 2-dimensional boolean array (Controls x FormMode):
+		this.showControlByMode = new boolean[ControlsUI.Control.values().length][];
+		for(Control control : ControlsUI.Control.values())
+		{
+			showControlByMode[control.ordinal()] = new boolean[Controller.FormMode.values().length];
+			for(FormMode mode : Controller.FormMode.values())
+			{
+				boolean defaultShown = true;
+				switch(control)
+				{
+				case BACK: defaultShown = DEFAULT_SHOW_BACK;
+					break;
+				case CANCEL: defaultShown = DEFAULT_SHOW_CANCEL;
+					break;
+				case FORWARD: defaultShown = DEFAULT_SHOW_FORWARD;
+					break;					
+				}
+				showControlByMode[control.ordinal()][mode.ordinal()] = defaultShown;
+			}
+		}
 	}
 	
 	/**
@@ -248,99 +271,33 @@ public abstract class Field extends JumpSource
 	}
 
 	/**
-	 * @return the showBackOnCreate
+	 * @param control
+	 * @param formMode
+	 * @return whether of the the giving control is allowed to be show for this field when in the given formMode
 	 */
-	public boolean isShowBackOnCreate()
+	public boolean isControlAllowToBeShown(Control control, FormMode formMode)
 	{
-		return showBackOnCreate;
+		return showControlByMode[control.ordinal()][formMode.ordinal()];
 	}
-
+	
 	/**
-	 * @param showBackOnCreate the showBackOnCreate to set
+	 * @param control
+	 * @param formMode
+	 * @param show
 	 */
-	public void setShowBackOnCreate(boolean showBackOnCreate)
+	public void setShowControlOnMode(Control control, FormMode formMode, boolean show)
 	{
-		this.showBackOnCreate = showBackOnCreate;
+		showControlByMode[control.ordinal()][formMode.ordinal()] = show;
 	}
-
+	
 	/**
-	 * @return the showBackOnEdit
+	 * @param control
+	 * @param show
 	 */
-	public boolean isShowBackOnEdit()
+	public void setShowControl(Control control, boolean show)
 	{
-		return showBackOnEdit;
-	}
-
-	/**
-	 * @param showBackOnEdit the showBackOnEdit to set
-	 */
-	public void setShowBackOnEdit(boolean showBackOnEdit)
-	{
-		this.showBackOnEdit = showBackOnEdit;
-	}
-
-	/**
-	 * @return the showCancelOnCreate
-	 */
-	public boolean isShowCancelOnCreate()
-	{
-		return showCancelOnCreate;
-	}
-
-	/**
-	 * @param showCancelOnCreate the showCancelOnCreate to set
-	 */
-	public void setShowCancelOnCreate(boolean showCancelOnCreate)
-	{
-		this.showCancelOnCreate = showCancelOnCreate;
-	}
-
-	/**
-	 * @return the showCancelOnEdit
-	 */
-	public boolean isShowCancelOnEdit()
-	{
-		return showCancelOnEdit;
-	}
-
-	/**
-	 * @param showCancelOnEdit the showCancelOnEdit to set
-	 */
-	public void setShowCancelOnEdit(boolean showCancelOnEdit)
-	{
-		this.showCancelOnEdit = showCancelOnEdit;
-	}
-
-	/**
-	 * @return the showForwardOnCreate
-	 */
-	public boolean isShowForwardOnCreate()
-	{
-		return showForwardOnCreate;
-	}
-
-	/**
-	 * @param showForwardOnCreate the showForwardOnCreate to set
-	 */
-	public void setShowForwardOnCreate(boolean showForwardOnCreate)
-	{
-		this.showForwardOnCreate = showForwardOnCreate;
-	}
-
-	/**
-	 * @return the showForwardOnEdit
-	 */
-	public boolean isShowForwardOnEdit()
-	{
-		return showForwardOnEdit;
-	}
-
-	/**
-	 * @param showForwardOnEdit the showForwardOnEdit to set
-	 */
-	public void setShowForwardOnEdit(boolean showForwardOnEdit)
-	{
-		this.showForwardOnEdit = showForwardOnEdit;
+		for(FormMode mode : Controller.FormMode.values())
+			showControlByMode[control.ordinal()][mode.ordinal()] = show;
 	}
 
 	/**
@@ -348,8 +305,7 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowBack(boolean showBack)
 	{
-		this.showBackOnCreate = showBack;
-		this.showBackOnEdit = showBack;
+		setShowControl(Control.BACK, showBack);
 	}
 
 	/**
@@ -357,8 +313,7 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowCancel(boolean showCancel)
 	{
-		this.showCancelOnCreate = showCancel;
-		this.showCancelOnEdit = showCancel;
+		setShowControl(Control.CANCEL, showCancel);
 	}
 
 	/**
@@ -366,8 +321,7 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowForward(boolean showForward)
 	{
-		this.showForwardOnCreate = showForward;
-		this.showForwardOnEdit = showForward;
+		setShowControl(Control.FORWARD, showForward);
 	}
 
 	public Column<?> getColumn()

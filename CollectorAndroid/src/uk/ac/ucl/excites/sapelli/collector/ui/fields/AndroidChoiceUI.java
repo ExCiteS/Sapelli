@@ -4,7 +4,7 @@ import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FieldWithArguments;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -61,7 +61,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			if(pageView == null)
 				pageView = new PageView(collectorUI.getContext());
 			
-			pageView.setEnabled(controller.getCurrentFormMode() != Mode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
+			pageView.setEnabled(controller.getCurrentFormMode() != FormMode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
 			
 			// Update pageView:
 			ChoiceField chosen = field.getSelectedChoice(record);
@@ -242,7 +242,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// Item size & padding:
 			setItemDimensionsPx(collectorUI.getFieldUIPartWidthPx(field.getCols()),
 								collectorUI.getFieldUIPartHeightPx(field.getRows()));
-			
 			int itemPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 
 			// Add items for children:

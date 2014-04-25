@@ -3,7 +3,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormSession.Mode;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField.MultiListItem;
@@ -73,7 +73,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			view.addNextList(field.getItemsRoot());
 		}
 		// Enable/disable:
-		view.setEnabled(controller.getCurrentFormMode() != Mode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
+		view.setEnabled(controller.getCurrentFormMode() != FormMode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
 		
 		return view;
 	}
