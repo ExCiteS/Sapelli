@@ -37,21 +37,28 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	{
 		if(!controller.isFieldEndabled(chosenChild))
 			return;
-		// Store value if the field has a column, the chosenChild is a leaf and it is known in the field dictionary (meaning it carries a value):
-		if(!field.isNoColumn() && chosenChild.isLeaf() && field.getDictionary().contains(chosenChild))
-			field.getColumn().storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
-		// Go to chosenChild:
-		controller.goTo(new FieldWithArguments(chosenChild), !chosenChild.isLeaf() || !field.getDictionary().contains(chosenChild)); // Note: no arguments (i.e. FieldParameters) are passed from parent to child
-		
-		/* Note 1:	chosenChild becomes the new currentField (i.e. we go one level "down" in the choice tree),
-		 * 			but if it is a leaf the controller will call goForward() from enterChoiceField().
-		 * 
-		 * Note 2:	if the chosenChild is not a leaf, or it is a "valueless" leaf, we "force" the goTo because
-		 * 			otherwise validation would keep us from advancing. If it is a "valued" leaf validation will happen.
-		 * 			This means valueless leaves offer way out of choice trees, even non-optional ones. Form designers should
-		 * 			use this with care (e.g. by using the valueless leaf as a "back jump", and by assuring the field will
-		 * 			later be revisited to acquire a value.
-		 */
+		FieldWithArguments next;
+		if(chosenChild.isLeaf())
+		{	// Store value if the field has a column, the chosenChild is a leaf and it is known in the field dictionary (meaning it carries a value):
+			if(!field.isNoColumn() && chosenChild.isLeaf() && field.getDictionary().contains(chosenChild))
+				field.getColumn().storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
+			// Go to next/jump of chosenChild:
+			next = field.getForm().getNextFieldAndArguments(chosenChild);
+		}
+		else
+			// Go to chosen child:
+			next = new FieldWithArguments(chosenChild, field.getNextFieldArguments()); // No arguments (i.e. FieldParameters) are passed from parent to child
+		// Go...
+		controller.goTo(next, !chosenChild.isLeaf() || !field.getDictionary().contains(chosenChild));
+		/* Note 1:	chosenChild is not the currentField! The currentField (also a ChoiceField) is its parent.
+		 * Note 2:	For leaves we cannot just call goForward() here because then we would first need to make
+		 * 			the chosenChild the currentField, in which case it would end up in the fieldHistory which
+		 * 			does not make sense because a leaf choice cannot be displayed on its own.
+		 * Note 3:	If the chosenChild is not a leaf, or it is a "valueless" leaf, the goTo is "forced" because
+		 * 			otherwise validation would keep us from advancing. If it is a "valued" leaf validation will
+		 * 			happen. This means valueless leaves offer way out of choice trees, even non-optional ones.
+		 * 			Form designers should use this with care (e.g. only using valueless leaves as "back jumps",
+		 * 			and assuring the field will be revisited to acquire a value. */
 	}
 
 }

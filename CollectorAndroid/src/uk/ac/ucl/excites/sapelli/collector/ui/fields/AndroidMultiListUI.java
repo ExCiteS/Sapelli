@@ -49,6 +49,9 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 		}
 		
 		// Update view:
+		//	Enable/disable:
+		view.setEnabled(controller.getCurrentFormMode() != FormMode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
+		//	For new records:
 		if(newRecord)
 		{
 			// Set the value that was stored (if there is one):
@@ -65,15 +68,11 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 					item = item.getParent();
 				}
 			}
-			
-			// Remove all spinners	
+			// Remove all spinners
 			view.fullRevert();
-			
 			// Add first spinner, if there is a value in the column the remaining spinner(s) will follow automatically by selection from the selectionStack:
 			view.addNextList(field.getItemsRoot());
 		}
-		// Enable/disable:
-		view.setEnabled(controller.getCurrentFormMode() != FormMode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
 		
 		return view;
 	}
@@ -113,6 +112,9 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			final MultiListSpinner spinner = new MultiListSpinner(getContext());
 			spinner.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 			
+			//	Make spinner disabled in the view is (for non-editable fields on edit mode):
+			spinner.setEnabled(isEnabled());
+			
 			//	Adapter:
 			final MultiListAdapter adapter = new MultiListAdapter(getContext(), parentItem);
 			spinner.setAdapter(adapter);
@@ -124,10 +126,10 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 				spinner.setSelection(parentItem.getDefaultChildIndex());
 			//else: first (dummy) item will be selected
 			
-			//	If on page: make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
-			spinner.setFocusable(onPage);
-			spinner.setFocusableInTouchMode(onPage);
-			spinner.setOnFocusChangeListener(onPage ? this : null);
+			//	If on page & enabled: make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
+			spinner.setFocusable(onPage && isEnabled());
+			spinner.setFocusableInTouchMode(onPage && isEnabled());
+			spinner.setOnFocusChangeListener(onPage && isEnabled() ? this : null);
 			
 			//	Item selected event:
 			spinner.setOnItemSelectedListener(this);
@@ -177,7 +179,6 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			MultiListAdapter adapter = spinner.getAdapter();
 			
 			revert(spinner);
-			//requestPageRevalidation();
 			MultiListItem chosen = adapter.getItem(position);
 			if(chosen != adapter.nonSelectableItem && chosen != adapter.nullItem && !chosen.isLeaf())
 				addNextList(chosen);
@@ -192,15 +193,6 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 		public MultiListSpinner getBottomSpinner()
 		{
 			return ((MultiListSpinner) getChildAt(getChildCount() - 1));
-		}
-		
-		@Override
-		public void setEnabled(boolean enabled)
-		{
-			super.setEnabled(enabled);
-			// Apply to all spinners:
-			for(int i = 1; i < getChildCount(); i+=2)
-				getChildAt(i).setEnabled(enabled);
 		}
 		
 	}

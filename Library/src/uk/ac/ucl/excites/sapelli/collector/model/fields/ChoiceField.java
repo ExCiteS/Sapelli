@@ -160,17 +160,6 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 	
 	/**
-	 * Leafs are always skipped upon back because they cannot be shown on their own
-	 * 
-	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#isSkipOnBack()
-	 */
-	@Override
-	public boolean isSkipOnBack()
-	{
-		return isLeaf() || super.isSkipOnBack();
-	}
-
-	/**
 	 * @return the children
 	 */
 	public List<ChoiceField> getChildren()

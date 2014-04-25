@@ -126,6 +126,7 @@ public abstract class Controller
 				formHistory.push(currFormSession);			// THEN: add previous formSession to history
 		}
 		currFormSession = formSession;
+		currFormSession.currFieldDisplayed = false; //!!!
 		
 		// Log start form
 		addLogLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getPosition() + ")");
@@ -341,10 +342,8 @@ public abstract class Controller
 	{
 		// Deal with leaves:
 		if(cf.isLeaf())
-		{
-			goForward(true); // go to next field (leaf will not be remembered on the fieldHistory stack because it has skipOnBack=true)
 			return false;
-		}
+		
 		// The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
 		for(ChoiceField child : cf.getChildren())
 			if(isFieldEndabled(child))
