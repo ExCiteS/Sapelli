@@ -140,18 +140,18 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	}
 	
 	@Override
-	public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
+	public void onItemClick(AdapterView<?> parent, View v, int position, final long id)
 	{
 		// Are we allowed to trigger an action?
-		if(!enabled || view == null || position < 0 || position >= view.getAdapter().getItems().size())
-			return; // ignore the click if buttons are disabled or invalid button was somehow pressed
+		if(!enabled || view == null)
+			return; // ignore the click if controls are disabled
 		
 		// Action triggered by click:
 		Runnable action = new Runnable()
 		{
 			public void run()
 			{
-				onControlClick(position);
+				handleControlEvent(Control.values()[(int) id], false);
 			}
 		};
 
@@ -187,6 +187,8 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	
 		public ControlItem(Context context, Control control, Form form, int backgroundColor)
 		{
+			super((long) control.ordinal()); // pass control ordinal as id
+			
 			// Background & padding:
 			this.setBackgroundColor(backgroundColor);
 			this.setPaddingPx(0);

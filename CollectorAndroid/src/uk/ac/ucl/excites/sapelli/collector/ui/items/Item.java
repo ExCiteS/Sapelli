@@ -21,11 +21,20 @@ public abstract class Item
 	static public final int DEFAULT_BACKGROUND_COLOR = Color.WHITE;
 	
 	// Dynamics:
+	protected Long id;
 	protected int paddingPx = DEFAULT_PADDING_PX;
 	protected int backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	protected boolean visible = true;
 	
 	private View view = null;
+	
+	/**
+	 * @param id (may be null)
+	 */
+	public Item(Long id)
+	{
+		this.id = id;
+	}
 	
 	public View getView(Context context)
 	{
@@ -80,6 +89,16 @@ public abstract class Item
 	public void setPaddingPx(int paddingPx)
 	{
 		this.paddingPx = paddingPx;
+	}
+	
+	public boolean hasID()
+	{
+		return id != null;
+	}
+	
+	public long getID()
+	{
+		return id;
 	}
 
 	/**

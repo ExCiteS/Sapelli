@@ -96,6 +96,9 @@ public class PickerView extends GridView
 
 		public long getItemId(int position)
 		{
+			Item item = getItem(position);
+			if(item.hasID())
+				return item.getID();
 			return position;
 		}
 

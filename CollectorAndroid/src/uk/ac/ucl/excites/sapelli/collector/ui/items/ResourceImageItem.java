@@ -10,6 +10,7 @@ import com.larvalabs.svgandroid.SVGDrawable;
 //import com.caverock.androidsvg.SVG;
 //import com.caverock.androidsvg.SVGImageView;
 
+import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.util.Log;
 import android.widget.ImageView;
@@ -33,11 +34,17 @@ public class ResourceImageItem extends ImageItem
 	private Resources resources;
 	private int resourceID;
 	
-	public ResourceImageItem(Resources resources, int id)
+	public ResourceImageItem(Resources resources, int resourceId)
 	{
-		super(resources.getResourceEntryName(id).toLowerCase().endsWith(SVG_SUFFIX));
+		this(null, resources, resourceId);
+	}
+	
+	@SuppressLint("DefaultLocale")
+	public ResourceImageItem(Long id, Resources resources, int resourceId)
+	{
+		super(id, resources.getResourceEntryName(resourceId).toLowerCase().endsWith(SVG_SUFFIX));
 		this.resources = resources;
-		this.resourceID = id;
+		this.resourceID = resourceId;
 	}
 
 	//@SuppressLint("NewApi")

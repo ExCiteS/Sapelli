@@ -23,6 +23,12 @@ public class LayeredItem extends Item
 	
 	public LayeredItem()
 	{
+		this(null);
+	}
+	
+	public LayeredItem(Long id)
+	{
+		super(id);
 		this.layers = new ArrayList<Item>();
 	}
 	

@@ -20,8 +20,9 @@ public abstract class ImageItem extends Item
 	protected final boolean vectorBased;
 	protected boolean keepVectorAspectRatio = DEFAULT_KEEP_VECTOR_ASPECT_RATIO;
 	
-	public ImageItem(boolean vectorBased)
+	public ImageItem(Long id, boolean vectorBased)
 	{
+		super(id);
 		this.vectorBased = vectorBased;
 	}
 	

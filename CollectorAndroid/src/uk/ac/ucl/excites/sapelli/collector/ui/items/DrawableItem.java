@@ -20,6 +20,12 @@ public class DrawableItem extends Item
 	
 	public DrawableItem(Drawable drawable)
 	{
+		this(null, drawable);
+	}
+	
+	public DrawableItem(Long id, Drawable drawable)
+	{
+		super(id);
 		this.drawable = drawable;
 	}
 	

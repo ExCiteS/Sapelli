@@ -13,11 +13,10 @@ import java.io.FileInputStream;
 
 
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
-
 import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGBuilder;
 import com.larvalabs.svgandroid.SVGDrawable;
-
+import android.annotation.SuppressLint;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.widget.ImageView;
@@ -36,7 +35,13 @@ public class FileImageItem extends ImageItem
 	
 	public FileImageItem(File file)
 	{
-		super(FileHelpers.getFileExtension(file.getName()).toLowerCase().startsWith("svg")); //will also work for svgz files
+		this(null, file);
+	}
+	
+	@SuppressLint("DefaultLocale")
+	public FileImageItem(Long id, File file)
+	{
+		super(id, FileHelpers.getFileExtension(file.getName()).toLowerCase().startsWith("svg")); //will also work for svgz files
 		this.file = file;
 	}
 	

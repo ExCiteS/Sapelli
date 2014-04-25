@@ -12,6 +12,16 @@ import android.view.View;
  */
 public class EmptyItem extends Item
 {
+	
+	public EmptyItem()
+	{
+		this(null);
+	}
+	
+	public EmptyItem(Long id)
+	{
+		super(id);
+	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.picker.items.Item#createView(android.content.Context)

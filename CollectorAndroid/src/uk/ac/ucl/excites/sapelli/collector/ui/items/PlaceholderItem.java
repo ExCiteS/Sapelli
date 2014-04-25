@@ -5,9 +5,15 @@ import android.view.View;
 
 public class PlaceholderItem extends Item
 {
-
+	
 	public PlaceholderItem()
 	{
+		this(null);
+	}
+
+	public PlaceholderItem(Long id)
+	{
+		super(id);
 		visible = false; //!!!
 	}
 	

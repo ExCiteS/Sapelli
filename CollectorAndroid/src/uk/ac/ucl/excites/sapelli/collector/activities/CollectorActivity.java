@@ -212,7 +212,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		switch(keyCode)
 		{
 			case KeyEvent.KEYCODE_BACK:
-				collectorView.getControlsUI().handleHardwareKeyPress(Control.BACK);
+				collectorView.getControlsUI().handleControlEvent(Control.BACK, true);
 				return true;
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
 				return true;

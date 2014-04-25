@@ -98,42 +98,19 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 		return enabled && controlStates[control.ordinal()] == State.SHOWN_ENABLED;
 	}
 	
-	public void handleHardwareKeyPress(Control control)
-	{
-		if(isControlEnabled(control))
-		{
-			// Log interaction:
-			controller.addLogLine("HARDWARE_CONTROL_PRESS_" + control.name(), controller.getCurrentField().getID());		
-		
-			// Handle event:
-			handleControlEvent(control);
-		}
-	}
-	
 	/**
-	 * @param clickPosition
+	 * @param control
+	 * @param hardwareKeyPress
 	 */
-	protected void onControlClick(int clickPosition)
+	public void handleControlEvent(Control control, boolean hardwareKeyPress)
 	{
-		// Compute position offset (accounting for hidden controls):
-		int positionOffset = 0;
-		for(int p = 0; p <= clickPosition; p++)
-			if(controlStates[p] == State.HIDDEN)
-				positionOffset++;
-		if(controlStates[clickPosition + positionOffset] == State.SHOWN_ENABLED)
-		{
-			Control control = Control.values()[clickPosition + positionOffset];
-						
-			// Log interaction:
-			controller.addLogLine("CONTROL_PRESS_" + control.name(), controller.getCurrentField().getID());
-			
-			// Handle event:
-			handleControlEvent(control);
-		}
-	}
-	
-	private void handleControlEvent(Control control)
-	{
+		if(!isControlEnabled(control))
+			return;
+		
+		// Log interaction:
+		controller.addLogLine((hardwareKeyPress ? "KEY" : "CLICK") + "_CONTROL_" + control.name(), controller.getCurrentField().getID());
+		
+		// Handle event:
 		switch(control)
 		{
 			case BACK :				

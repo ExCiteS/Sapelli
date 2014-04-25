@@ -21,6 +21,12 @@ public class TextItem extends Item
 	
 	public TextItem(String text)
 	{
+		this(null, text);
+	}
+	
+	public TextItem(Long id, String text)
+	{
+		super(id);
 		this.text = text;
 	}
 	
