@@ -597,7 +597,7 @@ public class FormParser extends SubtreeParser
 		// Get current page if there is one:
 		Page currentPage = getCurrentPage();
 		
-		// If the field is a root field...
+		// If the field is a root field (note: even elements on a page are root fields)...
 		if(field.isRoot())
 		{
 			// Add it to the form or page:
@@ -629,6 +629,10 @@ public class FormParser extends SubtreeParser
 				}
 				field.setOptional(opt);
 				
+				// Show on create/edit:
+				field.setShowOnCreate(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_ON_CREATE, Field.DEFAULT_SHOW_ON_CREATE));
+				field.setShowOnEdit(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_ON_EDIT, Field.DEFAULT_SHOW_ON_EDIT));
+				
 				// Set editable (inherit from page if on page):
 				field.setEditable(attributes.getBoolean(ATTRIBUTE_FIELD_EDITABLE, currentPage == null ? Field.DEFAULT_EDITABLE : currentPage.isEditable()));
 			}
@@ -648,10 +652,6 @@ public class FormParser extends SubtreeParser
 			
 			// Skip on back:
 			field.setSkipOnBack(attributes.getBoolean(ATTRIBUTE_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK));
-			
-			// Show on create/edit:
-			field.setShowOnCreate(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_ON_CREATE, Field.DEFAULT_SHOW_ON_CREATE));
-			field.setShowOnEdit(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_ON_EDIT, Field.DEFAULT_SHOW_ON_EDIT));
 			
 			// Background colour:
 			field.setBackgroundColor(attributes.getString(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, true, false));
@@ -720,7 +720,7 @@ public class FormParser extends SubtreeParser
 
 	private Page getCurrentPage()
 	{
-		return !openFields.isEmpty() && openFields.peek() instanceof Page ? (Page) openFields.peek() : null;
+		return (!openFields.isEmpty() && openFields.peek() instanceof Page) ? (Page) openFields.peek() : null;
 	}
 	
 	protected void closePage(Page page)
