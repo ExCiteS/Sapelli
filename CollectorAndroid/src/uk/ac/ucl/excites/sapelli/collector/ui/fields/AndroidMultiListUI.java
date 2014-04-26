@@ -195,6 +195,15 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			return ((MultiListSpinner) getChildAt(getChildCount() - 1));
 		}
 		
+		@Override
+		public void setEnabled(boolean enabled)
+		{
+			super.setEnabled(enabled);
+			// Apply to all current spinners:
+			for(int i = 1; i < getChildCount(); i+=2)
+				getChildAt(i).setEnabled(enabled);
+		}
+		
 	}
 
 	/**
