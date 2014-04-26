@@ -206,7 +206,7 @@ public class RecordsQuery
 	/**
 	 * @return the constraints
 	 */
-	public AndConstraint getConstraints()
+	public Constraint getConstraints()
 	{
 		return constraints;
 	}

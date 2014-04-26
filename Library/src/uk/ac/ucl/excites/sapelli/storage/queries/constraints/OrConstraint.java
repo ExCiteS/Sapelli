@@ -42,8 +42,8 @@ public class OrConstraint extends Constraint
 	@Override
 	protected boolean _isValid(Record record)
 	{
-		for(Constraint f : constraints)
-			if(f._isValid(record))
+		for(Constraint subConstraint : constraints)
+			if(subConstraint._isValid(record))
 				return true;
 		return false;
 	}

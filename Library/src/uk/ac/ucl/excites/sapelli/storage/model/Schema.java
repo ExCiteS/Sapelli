@@ -66,8 +66,8 @@ public class Schema implements Serializable
 	private boolean sealed = false;
 	
 	// Columns & indexes:
-	private final List<Column> realColumns; // only contains non-virtual columns
-	private final Map<String, Integer> columnNameToPosition; // only contains non-virtual columns
+	private final List<Column> realColumns; // only contains non-virtual ("real") columns
+	private final Map<String, Integer> columnNameToPosition; // only contains non-virtual ("real") columns
 	private Map<String, VirtualColumn> virtualColumnsByName;
 	private List<Index> indexes;
 	private Index primaryKey;
@@ -199,6 +199,34 @@ public class Schema implements Serializable
 			return checkVirtual && virtualColumnsByName != null ? virtualColumnsByName.get(name) : null;
 		return realColumns.get(pos);
 	}
+	
+	/**
+	 * Returns the non-virtual ("real") column at the given position
+	 * 
+	 * @param position
+	 * @return
+	 */
+	protected Column<?> getColumn(int position)
+	{
+		if(position < 0 || position >= realColumns.size())
+			throw new ArrayIndexOutOfBoundsException("Invalid column position (" + position + ")");
+		return realColumns.get(position);
+	}
+	
+	/**
+	 * Returns the position of a given non-virtual column.
+	 * Null is returned if the schema doesn't contain the column at all, but also if the column is virtual (even if the source is contained by the schema).
+	 * 
+	 * @param realColumn a non-virtual column
+	 * @return	the position of the given {@link Column} instance within this Schema, or {@link #UNKNOWN_COLUMN_POSITION} if the Schema contains no such column
+	 */
+	protected int getColumnPosition(Column realColumn)
+	{
+		Integer idx = columnNameToPosition.get(realColumn.getName());
+		if(idx == null)
+			return UNKNOWN_COLUMN_POSITION;
+		return idx.intValue();
+	}
 
 	public List<Column> getColumns(boolean includeVirtual)
 	{
@@ -231,21 +259,6 @@ public class Schema implements Serializable
 	public Collection<VirtualColumn> getVirtualColumns()
 	{
 		return virtualColumnsByName == null ? Collections.<VirtualColumn> emptyList() : virtualColumnsByName.values();
-	}
-
-	/**
-	 * Returns the position of a given non-virtual column.
-	 * Null is returned if the schema doesn't contain the column at all, but also if the column is virtual (even if the source is contained by the schema).
-	 * 
-	 * @param column a non-virtual column
-	 * @return	the position of the given {@link Column} instance within this Schema, or {@link #UNKNOWN_COLUMN_POSITION} if the Schema contains no such column
-	 */
-	protected int getColumnPosition(Column column)
-	{
-		Integer idx = columnNameToPosition.get(column.getName());
-		if(idx == null)
-			return UNKNOWN_COLUMN_POSITION;
-		return idx.intValue();
 	}
 	
 	/**

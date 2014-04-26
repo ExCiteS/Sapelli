@@ -81,12 +81,14 @@ public class ForeignKey extends Record
 		if(!isFilled())
 			throw new IllegalStateException("All values of the key must be set before a query can be created!");
 		// Match for key parts:
-		AndConstraint andConstraint = new AndConstraint();
-		for(Column<?> keyPartCol : getIndex().getColumns(false)) //TODO figure out why it didn't work with eqConstr & try to fix it, because the cast to comparatorCols is asking for trouble
-			//andConstraint.addConstraint(new EqualityConstraint(keyPartCol, keyPartCol.retrieveValue(this)));
-			andConstraint.addConstraint(new RuleConstraint((ComparatorColumn<?>) keyPartCol, RuleConstraint.Comparison.EQUAL, keyPartCol.retrieveValue(this)));
+		AndConstraint constraints = new AndConstraint();
+		int c = 0;
+		for(Object keyPart : values) //TODO figure out why it didn't work with eqConstr & try to fix it, because the cast to comparatorCols is asking for trouble
+			//constraints.addConstraint(new EqualityConstraint(schema.getColumn(c++), keyPart));
+			constraints.addConstraint(new RuleConstraint((ComparatorColumn<?>) schema.getColumn(c++), RuleConstraint.Comparison.EQUAL, keyPart)); 
+		
 		// Single record query:
-		return new FirstRecordQuery(new RecordsQuery(foreignSchema, andConstraint));
+		return new FirstRecordQuery(new RecordsQuery(foreignSchema, constraints));
 	}
 	
 	@Override

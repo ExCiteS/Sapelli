@@ -360,9 +360,14 @@ public class Record implements Serializable
 	@Override
 	public String toString()
 	{
+		return toString(true);
+	}
+	
+	public String toString(boolean includeVirtual)
+	{
 		StringBuffer bff = new StringBuffer();
 		bff.append(schema.toString());
-		for(Column<?> c : schema.getColumns(true))
+		for(Column<?> c : schema.getColumns(includeVirtual))
 			bff.append("|" + c.getName() + ": " + c.retrieveValueAsString(this));
 		return bff.toString();
 	}
