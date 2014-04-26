@@ -6,7 +6,6 @@ package uk.ac.ucl.excites.sapelli.storage.visitors;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -16,6 +15,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 
 /**
  * A {@link ColumnVisitor} that treats all Column types the same.
@@ -43,12 +43,12 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.util.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn)
+	 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn)
 	 */
 	@Override
-	public void visit(DateTimeColumn dateTimeCol)
+	public void visit(TimeStampColumn timeStampCol)
 	{
-		this.visit((Column<?>) dateTimeCol);
+		this.visit((Column<?>) timeStampCol);	
 	}
 
 	/* (non-Javadoc)

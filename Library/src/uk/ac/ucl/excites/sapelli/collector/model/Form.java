@@ -7,8 +7,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FieldWithArguments;
@@ -19,8 +17,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 
 /**
@@ -64,9 +63,9 @@ public class Form
 	public static final boolean DEFAULT_OBFUSCATE_MEDIA_FILES = false;
 
 	public static final String COLUMN_TIMESTAMP_START_NAME = "StartTime";
-	public static final DateTimeColumn COLUMN_TIMESTAMP_START = DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_START_NAME, false, true);
+	public static final TimeStampColumn COLUMN_TIMESTAMP_START = TimeStampColumn.Century21NoMS(COLUMN_TIMESTAMP_START_NAME, false, true);
 	public static final String COLUMN_TIMESTAMP_END_NAME = "EndTime";
-	public static final DateTimeColumn COLUMN_TIMESTAMP_END = DateTimeColumn.Century21NoMS(COLUMN_TIMESTAMP_END_NAME, false, true);
+	public static final TimeStampColumn COLUMN_TIMESTAMP_END = TimeStampColumn.Century21NoMS(COLUMN_TIMESTAMP_END_NAME, false, true);
 	public static final String COLUMN_DEVICE_ID_NAME = "DeviceID";
 	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn(COLUMN_DEVICE_ID_NAME, false, false, 32);
 	
@@ -592,7 +591,7 @@ public class Form
 			Record record = getSchema().createRecord();
 	
 			// Set current time as start timestamp
-			COLUMN_TIMESTAMP_START.storeValue(record, new DateTime() /*= now*/);
+			COLUMN_TIMESTAMP_START.storeValue(record, TimeStamp.now());
 	
 			// Set deviceID
 			COLUMN_DEVICE_ID.storeValue(record, deviceID);
@@ -603,12 +602,12 @@ public class Form
 			return null;
 	}
 	
-	public DateTime getStartTime(Record record)
+	public TimeStamp getStartTime(Record record)
 	{
 		return getStartTime(record, false);
 	}
 	
-	public DateTime getStartTime(Record record, boolean asStoredBinary)
+	public TimeStamp getStartTime(Record record, boolean asStoredBinary)
 	{
 		if(asStoredBinary)
 			return COLUMN_TIMESTAMP_START.retrieveValueAsStoredBinary(record);
@@ -616,7 +615,7 @@ public class Form
 			return COLUMN_TIMESTAMP_START.retrieveValue(record);
 	}
 	
-	public DateTime getEndTime(Record record)
+	public TimeStamp getEndTime(Record record)
 	{
 		if(isStoreEndTime())
 			return COLUMN_TIMESTAMP_END.retrieveValue(record);
@@ -633,7 +632,7 @@ public class Form
 	{
 		if(storeEndTime)
 			// Set current time as end timestamp
-			COLUMN_TIMESTAMP_END.storeValue(record, new DateTime() /*= now*/);
+			COLUMN_TIMESTAMP_END.storeValue(record, TimeStamp.now());
 	}
 	
 	public void addWarning(String warning)

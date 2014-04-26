@@ -1,7 +1,5 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
-import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField.ButtonColumnType;
@@ -9,7 +7,8 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 
 public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<ButtonField, V, UI>
 {
@@ -66,7 +65,7 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 		if(field.getColumnType() == ButtonColumnType.BOOLEAN)
 			((BooleanColumn) field.getColumn()).storeValue(record, true);
 		else if(field.getColumnType() == ButtonColumnType.DATETIME)
-			((DateTimeColumn) field.getColumn()).storeValue(record, DateTime.now());
+			((TimeStampColumn) field.getColumn()).storeValue(record, TimeStamp.now());
 		
 		// Continue to jump or next:
 		if(field.getJump() != null)

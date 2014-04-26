@@ -2,14 +2,13 @@ package uk.ac.ucl.excites.sapelli.storage.types;
 
 import java.text.ParseException;
 
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 
 
@@ -58,7 +57,7 @@ public class Location extends Record
 	static final public FloatColumn COLUMN_BEARING = new FloatColumn("Bearing", true, true, false);				// optional signed 32 bit float
 	static final public FloatColumn COLUMN_SPEED = new FloatColumn("Speed", true, true, false);					// optional signed 32 bit float
 	static final public FloatColumn COLUMN_ACCURACY = new FloatColumn("Accuracy", true, true, false);			// optional signed 32 bit float
-	static final public DateTimeColumn COLUMN_TIME = DateTimeColumn.JavaMSTime("TimeUTC", true, false);			// optional signed 64 bit millisecond-accurate UTC timestamp (local timezone not kept, not virtual columns added) 
+	static final public TimeStampColumn COLUMN_TIME = TimeStampColumn.JavaMSTime("TimeUTC", true, false);			// optional signed 64 bit millisecond-accurate UTC timestamp (local timezone not kept, not virtual columns added) 
 	static final public IntegerColumn COLUMN_PROVIDER = new IntegerColumn("Provider", false, PROVIDER_FIELD);	// non-optional 2 bit unsigned integer
 	static
 	{	// Add columns to default Schema & seal it:
@@ -81,7 +80,7 @@ public class Location extends Record
 	 */
 	public Location(double lat, double lon)
 	{
-		this(lat, lon, null, null, null, null, (DateTime) null, PROVIDER_UNKNOWN);
+		this(lat, lon, null, null, null, null, (TimeStamp) null, PROVIDER_UNKNOWN);
 	}
 	
 	/**
@@ -96,7 +95,7 @@ public class Location extends Record
 	 */
 	public Location(double lat, double lon, Double alt, Float bearing, Float speed, Float acc, Long time, int provider)
 	{
-		this(lat, lon, alt, bearing, speed, acc, (time != null ? new DateTime(time) : null), provider);
+		this(lat, lon, alt, bearing, speed, acc, (time != null ? new TimeStamp(time) : null), provider);
 	}
 	
 	/**
@@ -109,7 +108,7 @@ public class Location extends Record
 	 * @param time
 	 * @param provider
 	 */
-	public Location(double lat, double lon, Double alt, Float bearing, Float speed, Float acc, DateTime time, int provider)
+	public Location(double lat, double lon, Double alt, Float bearing, Float speed, Float acc, TimeStamp time, int provider)
 	{
 		super(SCHEMA);
 		COLUMN_LATITUDE.storeValue(this, lat);
@@ -224,7 +223,7 @@ public class Location extends Record
 	/**
 	 * @return the time
 	 */
-	public DateTime getTime()
+	public TimeStamp getTime()
 	{
 		return COLUMN_TIME.retrieveValue(this);
 	}
@@ -274,7 +273,7 @@ public class Location extends Record
 							(parts.length > 4 && !parts[4].isEmpty() ? Float.valueOf(parts[4]) : null),
 							(parts.length > 5 && !parts[5].isEmpty() ? Float.valueOf(parts[5]) : null),
 							(parts.length > 6 && !parts[6].isEmpty() ? Float.valueOf(parts[6]) : null),
-							(parts.length > 7 && !parts[7].isEmpty() ? new DateTime(Long.valueOf(parts[7]), DateTimeZone.UTC) : null),
+							(parts.length > 7 && !parts[7].isEmpty() ? new TimeStamp(Long.valueOf(parts[7]), DateTimeZone.UTC) : null),
 							Integer.parseInt(parts[oldFormat ? 2 : 0]));
 	}
 	
