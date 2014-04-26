@@ -4,12 +4,9 @@
 package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
@@ -87,7 +84,6 @@ public class RuleConstraint extends Constraint
 	}
 	
 	// DYNAMICS------------------------------------------------------
-	private List<RecordColumn<?>> recordColumns;
 	private ColumnPointer columnPointer;
 	private Comparison comparison;
 	private Object value;
@@ -108,7 +104,6 @@ public class RuleConstraint extends Constraint
 	 * @param columnPointer
 	 * @param comparison
 	 * @param value
-	 * @param recordColumns
 	 */
 	public RuleConstraint(ColumnPointer columnPointer, Comparison comparison, Object value)
 	{
@@ -117,10 +112,6 @@ public class RuleConstraint extends Constraint
 		this.columnPointer = columnPointer;
 		this.comparison = comparison;
 		this.value = value;
-		this.recordColumns = new ArrayList<RecordColumn<?>>();
-		if(recordColumns != null)
-			for(RecordColumn<?> rCol : recordColumns)
-				this.recordColumns.add(rCol);
 	}
 	
 	/**
@@ -171,31 +162,20 @@ public class RuleConstraint extends Constraint
 		switch(comparison)
 		{
 			case SMALLER:
-				if(compResult >= 0)
-					return false; // record-value is not smaller than value (it is larger or equal)
-				break;
+				return compResult < 0;
 			case SMALLER_OR_EQUAL:
-				if(compResult > 0)
-					return false; // record-value is not smaller than or to value (it is larger)
-				break;
+				return compResult <= 0;
 			case EQUAL:
-				if(compResult != 0)
-					return false; // record-value is not equal to value (it is larger or smaller)
-				break;
+				return compResult == 0;
 			case NOT_EQUAL:
-				if(compResult == 0)
-					return false; // record-value is not different from value (it is equal)
-				break;
+				return compResult != 0;
 			case GREATER_OR_EQUAL:
-				if(compResult < 0)
-					return false; // record-value is not greater than or equal to value (it is smaller)
-				break;
+				return compResult >= 0;
 			case GREATER:
-				if(compResult <= 0)
-					return false; // record-value is not greater than value (it is smaller or equal)
-				break;
+				return compResult > 0;
+			default:
+				throw new IllegalStateException("Unknown comparison: " + comparison.name());
 		}
-		return true;
 	}
 
 	/* (non-Javadoc)
