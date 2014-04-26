@@ -118,6 +118,19 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 		return getTimeZoneOffsetMS(value) / QUARTER_OF_AN_HOUR_MS;
 	}
 	
+	/**
+	 * Note (2013-07-13):
+	 * 	Implementation used to be: return DateTimeZone.forTimeZone(uk.ac.ucl.excites.util.TimeUtils.getTimeZone(quarterHourOffset * QUARTER_OF_AN_HOUR_MS));
+	 * Seems to make no difference w.r.t. offset (although we do not get "named" zones this way, but the names could have been wrong anyway, due to DST)
+	 * 
+	 * @param quarterHourOffset
+	 * @return
+	 */
+	static public DateTimeZone getDateTimeZoneFor(int quarterHourOffset)
+	{
+		return DateTimeZone.forOffsetMillis(quarterHourOffset * QUARTER_OF_AN_HOUR_MS);
+	}
+	
 	static public float getTimeZoneOffsetH(DateTime value)
 	{
 		return ((float) getTimeZoneOffsetMS(value)) / HOUR_MS; 
@@ -311,19 +324,6 @@ public class DateTimeColumn extends ComparatorColumn<DateTime>
 	public DateTime getHighBound()
 	{
 		return new DateTime(timeMapping.getHighBound(strict) * (keepMS ? 1 : 1000));
-	}
-	
-	/**
-	 * Note (2013-07-13):
-	 * 	Implementation used to be: return DateTimeZone.forTimeZone(uk.ac.ucl.excites.util.TimeUtils.getTimeZone(quarterHourOffset * QUARTER_OF_AN_HOUR_MS));
-	 * Seems to make no difference w.r.t. offset (although we do not get "named" zones this way, but the names could have been wrong anyway, due to DST)
-	 * 
-	 * @param quarterHourOffset
-	 * @return
-	 */
-	protected DateTimeZone getDateTimeZoneFor(int quarterHourOffset)
-	{
-		return DateTimeZone.forOffsetMillis(quarterHourOffset * QUARTER_OF_AN_HOUR_MS);
 	}
 
 	@Override
