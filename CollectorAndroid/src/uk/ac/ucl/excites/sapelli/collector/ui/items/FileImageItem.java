@@ -6,20 +6,16 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import java.io.File;
 import java.io.FileInputStream;
 
-//import com.caverock.androidsvg.SVG;
-//import com.caverock.androidsvg.SVGImageView;
-
-
-
-
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
-import com.larvalabs.svgandroid.SVG;
-import com.larvalabs.svgandroid.SVGBuilder;
-import com.larvalabs.svgandroid.SVGDrawable;
 import android.annotation.SuppressLint;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.widget.ImageView;
+
+//import com.caverock.androidsvg.SVG;
+import com.larvalabs.svgandroid.SVG;
+import com.larvalabs.svgandroid.SVGBuilder;
+import com.larvalabs.svgandroid.SVGDrawable;
 
 /**
  * An ImageItem subclass for images stored as files

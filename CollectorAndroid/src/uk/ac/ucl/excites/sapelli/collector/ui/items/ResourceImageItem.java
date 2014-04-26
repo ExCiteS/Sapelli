@@ -3,15 +3,15 @@
  */
 package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
+//import com.caverock.androidsvg.SVG;
+
 import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGBuilder;
 import com.larvalabs.svgandroid.SVGDrawable;
 
-//import com.caverock.androidsvg.SVG;
-//import com.caverock.androidsvg.SVGImageView;
-
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
+import android.graphics.drawable.PictureDrawable;
 import android.util.Log;
 import android.widget.ImageView;
 
@@ -66,7 +66,7 @@ public class ResourceImageItem extends ImageItem
 				
 				// Usin AndroidSVG library:
 				//view.setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-				//SVG svg = SVG.getFromResource(context, resourceID);
+				//SVG svg = SVG.getFromResource(resources, resourceID);
 		        //view.setImageDrawable(new PictureDrawable(svg.renderToPicture()));
 			}
 		}

@@ -25,13 +25,10 @@ public abstract class ImageItem extends Item
 		super(id);
 		this.vectorBased = vectorBased;
 	}
-	
-	protected Context context;
-	
+		
 	@Override
 	protected View createView(Context context)
 	{
-		this.context = context;
 		ImageView view = new ImageView(context);
 		// Set image:
 		setImage(view);
