@@ -215,8 +215,8 @@ public class IntegerRangeMapping implements Serializable
 	{
 		int hash = 1;
 		hash = 31 * hash + size;
-		hash = 31 * hash + (int)(loBound ^ (loBound >>> 32));
-		hash = 31 * hash + (int)(hiBound ^ (hiBound >>> 32));
+		hash = 31 * hash + (int)(loBound ^ (loBound >>> Integer.SIZE));
+		hash = 31 * hash + (int)(hiBound ^ (hiBound >>> Integer.SIZE));
 		return hash;
 	}
 	
