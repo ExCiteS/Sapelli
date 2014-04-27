@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/scrollView"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:id="@+id/projectManager_ScrollView"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
     android:layout_marginBottom="0dp"
     android:layout_marginLeft="5dp"
     android:layout_marginRight="5dp"
@@ -11,39 +11,44 @@
     android:fillViewport="true" >
 
     <LinearLayout
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical" >
 
-        <LinearLayout
-            android:layout_width="fill_parent"
+        <TextView
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="top"
-            android:layout_marginBottom="4dp"
-            android:layout_marginTop="4dp"
-            android:orientation="vertical" >
+            android:gravity="center"
+            android:text="@string/available_projects"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:textColor="@color/black" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/available_projects"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="@color/black" />
+        <include
+            android:layout_width="wrap_content"
+            layout="@layout/hr" />
 
-            <include
-                android:layout_width="wrap_content"
-                layout="@layout/hr" />
+        <RelativeLayout
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_weight="1" >
+
+            <ImageView
+                android:id="@+id/ProjectsListBackgroundImage"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:background="#00000000"
+                android:scaleType="fitCenter"
+                android:padding="5dp"
+                android:contentDescription="@string/app_name"/>
 
             <ListView
                 android:id="@+id/ProjectsList"
                 android:layout_width="fill_parent"
-                android:layout_height="140dip"
+                android:layout_height="fill_parent"
                 android:layout_marginBottom="4dp"
                 android:layout_marginTop="4dp"
-                android:layout_weight="1"
-                android:background="@drawable/grey_border"
-                android:cacheColorHint="#fff"
+				android:cacheColorHint="#fff" 
+                android:background="@drawable/projectlist_background"
                 android:choiceMode="singleChoice"
                 android:divider="@color/grey"
                 android:dividerHeight="1dip" >
@@ -51,31 +56,34 @@
                 <requestFocus />
             </ListView>
 
-            <LinearLayout
-                android:id="@+id/AddRemoveProjectsButons"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content" >
+        </RelativeLayout>
 
-                <Button
-                    android:id="@+id/RunProjectButton"
-                    android:layout_width="0dip"
-                    android:layout_height="wrap_content"
-                    android:layout_weight=".5"
-                    android:onClick="runProject"
-                    android:text="@string/run_project" />
+        <LinearLayout
+            android:id="@+id/AddRemoveProjectsButons"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:layout_marginTop="4dp" >
 
-                <Button
-                    android:id="@+id/RemoveProjectButton"
-                    android:layout_width="0dip"
-                    android:layout_height="wrap_content"
-                    android:layout_weight=".5"
-                    android:onClick="removeDialog"
-                    android:text="@string/remove_project" />
-            </LinearLayout>
+            <Button
+                android:id="@+id/RunProjectButton"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:layout_weight=".5"
+                android:onClick="runProject"
+                android:text="@string/run_project" />
+
+            <Button
+                android:id="@+id/RemoveProjectButton"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:layout_weight=".5"
+                android:onClick="removeDialog"
+                android:text="@string/remove_project" />
         </LinearLayout>
 
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="4dp"
             android:layout_marginTop="4dp"
@@ -133,48 +141,6 @@
                     android:onClick="loadFile"
                     android:text="@string/load_project" />
             </LinearLayout>
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="4dp"
-            android:layout_marginTop="4dp"
-            android:gravity="bottom"
-            android:orientation="vertical" >
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/software_and_device_info"
-                android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="@color/black" />
-
-            <include layout="@layout/hr" />
-
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_margin="4dp">
-
-                <ImageView
-                    android:id="@+id/icon"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentLeft="true"
-                    android:layout_alignParentTop="true"
-                    android:contentDescription="@string/app_name"
-                    android:src="@drawable/ic_excites_transparent" />
-
-                <TextView
-                    android:id="@+id/info"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/black"
-                    android:layout_toRightOf="@id/icon"
-                    android:textSize="10sp" />
-            </RelativeLayout>
         </LinearLayout>
     </LinearLayout>
 

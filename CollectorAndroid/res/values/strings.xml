@@ -3,13 +3,13 @@
     
     <string name="app_name">Sapelli Collector</string>
     
-    <string name="by_ucl_excites">Sapelli is a project by UCL ExCiteS &amp; collaborators.</string>
+    <string name="by_ucl_excites_html">&lt;a href=&quot;http://sapelli.org&gt;Sapelli&lt;/a&gt; is a project by &lt;a href=&quot;http://ucl.ac.uk/excites&quot;&gt;UCL ExCiteS&lt;/a&gt; &amp; collaborators</string>
     
     <string name="project_manager">Project Manager</string>
     <string name="available_projects">Available projects</string>
     <string name="run_project">Run project</string>
     <string name="remove_project">Remove project</string>
-    <string name="load_new_projects">Load new projects</string>
+    <string name="load_new_projects">Add projects</string>
     <string name="load_project">Load Project</string>
     <string name="browse">Browse</string>
     <string name="scan_qr_code">Scan QR Code</string>
@@ -20,6 +20,7 @@
     <string name="take_photo">Take photo</string>
     <string name="sender_settings_menuitem">Data Sender Settings</string>
     <string name="copy_db_menuitem">Copy DB4O to SD card</string>
+    <string name="about">About &#8230;</string>
     <string name="statistics_menuitem">Statistics</string>
     <string name="export_records_menuitem">Export records</string>
     <string name="import_records_menuitem">Import records</string>

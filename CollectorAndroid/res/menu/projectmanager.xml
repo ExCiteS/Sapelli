@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-
+      
     <item
         android:id="@+id/sender_settings_menuitem"
         android:icon="@android:drawable/ic_menu_preferences"
@@ -31,17 +31,23 @@
         android:onClick="exportRecords"
         android:showAsAction="always"
         android:title="@string/export_records_menuitem"/>
-    <item
+    <!-- <item
         android:id="@+id/import_records_menuitem"
         android:icon="@drawable/ic_menu_archive"
         android:onClick="importRecords"
         android:showAsAction="always"
-        android:title="@string/import_records_menuitem"/>
+        android:title="@string/import_records_menuitem"/> -->
     <item
         android:id="@+id/copy_db_menuitem"
         android:icon="@android:drawable/ic_menu_save"
         android:onClick="copyDBtoSD"
         android:showAsAction="always"
         android:title="@string/copy_db_menuitem"/>
-
+    <item
+        android:id="@+id/about_menuitem"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:onClick="openAboutDialog"
+        android:showAsAction="always"
+        android:title="@string/about"/>
+    
 </menu>

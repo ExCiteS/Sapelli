@@ -11,7 +11,6 @@ import com.larvalabs.svgandroid.SVGDrawable;
 
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
-import android.graphics.drawable.PictureDrawable;
 import android.util.Log;
 import android.widget.ImageView;
 

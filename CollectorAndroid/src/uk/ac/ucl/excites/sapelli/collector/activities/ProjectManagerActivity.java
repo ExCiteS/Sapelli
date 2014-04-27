@@ -52,27 +52,35 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.Html;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.util.Patterns;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ipaulpro.afilechooser.utils.FileUtils;
+import com.larvalabs.svgandroid.SVG;
+import com.larvalabs.svgandroid.SVGBuilder;
+import com.larvalabs.svgandroid.SVGDrawable;
 
 /**
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends BaseActivity implements ProjectLoaderClient, StoreClient, DeviceID.InitialisationCallback, MenuItem.OnMenuItemClickListener
+public class ProjectManagerActivity extends BaseActivity implements ProjectLoaderClient, StoreClient, DeviceID.InitialisationCallback
 {
 
 	// STATICS--------------------------------------------------------
@@ -103,14 +111,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	private ListView projectList;
 	private Button runBtn;
 	private Button removeBtn;
-	private MenuItem senderSettingsItem;
-	private MenuItem exportRecordsItem;
-	private MenuItem importRecordsItem;
-	private MenuItem copyDBItem;
-	private MenuItem createShortcutItem;
-	private MenuItem removeShortcutItem;
 	private Dialog encryptionDialog;
-	private TextView infoLbl;
+	private DeviceID deviceID;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -155,10 +157,22 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		projectList = (ListView) findViewById(R.id.ProjectsList);
 		runBtn = (Button) findViewById(R.id.RunProjectButton);
 		removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
-		infoLbl = (TextView) findViewById(R.id.info);
-
-		// get scrolling right
-		findViewById(R.id.scrollView).setOnTouchListener(new View.OnTouchListener()
+		// Set background logo under project list:
+		SVG svg = new SVGBuilder().readFromResource(getResources(), R.drawable.sapelli_logo).build();
+		((ImageView) findViewById(R.id.ProjectsListBackgroundImage)).setImageDrawable(new SVGDrawable(svg));
+		// Make title bar click open the about dialog:
+		View v = findViewById (android.R.id.title);
+	    v.setClickable(true);
+	    v.setOnClickListener(new OnClickListener()
+	    {
+	        @Override
+	        public void onClick(View v)
+	        {
+	        	openAboutDialog(null);
+	        }
+	    });
+		// Get scrolling right
+		findViewById(R.id.projectManager_ScrollView).setOnTouchListener(new View.OnTouchListener()
 		{
 			@Override
 			public boolean onTouch(View v, MotionEvent event)
@@ -170,8 +184,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		projectList.setOnTouchListener(new View.OnTouchListener()
 		{
 			public boolean onTouch(View v, MotionEvent event)
-			{
-				// Disallow the touch request for parent scroll on touch of child view
+			{	// Disallow the touch request for parent scroll on touch of child view
 				v.getParent().requestDisallowInterceptTouchEvent(true);
 				return false;
 			}
@@ -219,10 +232,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	@Override
 	public void initialisationSuccess(DeviceID deviceID)
 	{
-		infoLbl.setText(getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".\n" +
-						BuildInfo.getBuildInfo() + ".\n\n" +
-						getString(R.string.by_ucl_excites) + "\n\n" +
-						"Device ID (CRC32): " + deviceID.getIDAsCRC32Hash() + '.');
+		this.deviceID = deviceID;
 	}
 
 	@Override
@@ -268,46 +278,35 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
-		getMenuInflater().inflate(R.menu.projectpicker, menu);
-
-		// Set click listeners (the android:onClick attribute in the XML only works on Android >= v3.0)
-		senderSettingsItem = menu.findItem(R.id.sender_settings_menuitem);
-		if(senderSettingsItem != null)
-			senderSettingsItem.setOnMenuItemClickListener(this);
-		exportRecordsItem = menu.findItem(R.id.export_records_menuitem);
-		if(exportRecordsItem != null)
-			exportRecordsItem.setOnMenuItemClickListener(this);
-		importRecordsItem = menu.findItem(R.id.import_records_menuitem);
-		if(importRecordsItem != null)
-			importRecordsItem.setOnMenuItemClickListener(this);
-		copyDBItem = menu.findItem(R.id.copy_db_menuitem);
-		if(copyDBItem != null)
-			copyDBItem.setOnMenuItemClickListener(this);
-		createShortcutItem = menu.findItem(R.id.create_shortcut);
-		if(createShortcutItem != null)
-			createShortcutItem.setOnMenuItemClickListener(this);
-		removeShortcutItem = menu.findItem(R.id.remove_shortcut);
-		if(removeShortcutItem != null)
-			removeShortcutItem.setOnMenuItemClickListener(this);
+		getMenuInflater().inflate(R.menu.projectmanager, menu);
 		return true;
 	}
-
+	
 	@Override
-	public boolean onMenuItemClick(MenuItem item)
+	public boolean onOptionsItemSelected(MenuItem item)
 	{
-		/*if(item == senderSettingsItem)
-			return openSenderSettings(item);
-		else*/ if(item == exportRecordsItem)
-			return exportRecords(item);
-		else if(item == importRecordsItem)
-			return importRecords(item);
-		else if(item == copyDBItem)
-			return copyDBtoSD(item);
-		else if(item == createShortcutItem)
-			return createShortcut(item);
-		else if(item == removeShortcutItem)
-			return removeShortcut(item);
-		return false;
+		/* 	Note:
+		 * 	the android:onClick attribute in the XML only works on Android >= v3.0,
+		 *	so we need to direct the handling of menu clicks manually here for things
+		 *	to work on earlier versions. */
+	    switch(item.getItemId())
+	    {
+	    	case R.id.sender_settings_menuitem :
+	    		return openSenderSettings(item);
+	    	case R.id.export_records_menuitem :
+	    		return exportRecords(item);
+	    	//case R.id.import_records_menuitem :
+	    		//return importRecords(item);
+	    	case R.id.create_shortcut :
+	    		return createShortcut(item);
+	    	case R.id.remove_shortcut :
+	    		return removeShortcut(item);
+	    	case R.id.copy_db_menuitem :
+	    		return copyDBtoSD(item);
+	    	case R.id.about_menuitem :
+	    		return openAboutDialog(item);
+	    }
+	    return true;
 	}
 
 	public boolean openSenderSettings(MenuItem item)
@@ -317,7 +316,40 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return true;
 	}
 
+	public boolean openAboutDialog(MenuItem item)
+	{
+		// Set-up UI:
+		View view = LayoutInflater.from(this).inflate(R.layout.dialog_about, null);
+		TextView infoLbl = (TextView) view.findViewById(R.id.aboutInfo);
+		infoLbl.setClickable(true);
+		infoLbl.setMovementMethod(LinkMovementMethod.getInstance());
+		infoLbl.setText(Html.fromHtml(
+				"<p>" + getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".</p>" +
+				"<p>" + BuildInfo.getBuildInfo() + ".</p>" +
+				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
+				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));		
+		ImageView iconImg = (ImageView) view.findViewById(R.id.aboutIcon);
+		iconImg.setOnClickListener(new OnClickListener()
+		{
+			@Override
+			public void onClick(View v)
+			{
+				startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://sapelli.org")));
+			}
+		});
+		
+		// Set-up dialog:
+		AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
+		dialogBuilder.setPositiveButton(getString(android.R.string.ok), null); // click will dismiss the dialog (BACK press will too)
+		AlertDialog aboutDialog = dialogBuilder.create();
+		aboutDialog.setView(view, 0, 0, 0, 0); // no margins
 
+		// Show the dialog:
+		aboutDialog.show();
+		
+		return true;
+	}
+	
 	public boolean exportRecords(MenuItem item)
 	{
 		final Project selectedProject = getSelectedProject(false);
