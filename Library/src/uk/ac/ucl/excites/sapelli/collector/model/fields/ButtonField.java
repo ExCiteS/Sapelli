@@ -11,7 +11,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ButtonUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.DateTimeColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 
 /**
  * A Field that represents an on-screen button, it can optionally have either Boolean- or DateTime column.
@@ -96,7 +96,7 @@ public class ButtonField extends Field
 		switch(columnType)
 		{
 			case BOOLEAN : return new BooleanColumn(id, optional != Optionalness.NEVER);
-			case DATETIME : return DateTimeColumn.Century21NoMS(id, optional != Optionalness.NEVER, true);
+			case DATETIME : return TimeStampColumn.Century21NoMS(id, optional != Optionalness.NEVER, true);
 			/* case NONE */ default : return null;
 		}
 	}

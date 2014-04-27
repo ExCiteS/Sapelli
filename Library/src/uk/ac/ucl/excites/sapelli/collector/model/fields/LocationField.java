@@ -346,7 +346,7 @@ public class LocationField extends Field implements Timeoutable
 		if(!bestWeCouldGet)
 		{
 			// Time check:
-			long ageMS = System.currentTimeMillis() - location.getTime().getMillis();
+			long ageMS = System.currentTimeMillis() - location.getTime().getMsSinceEpoch();
 			if(ageMS > maxAgeS * 1000)
 				return false; //location is too old
 			// Provider type check:

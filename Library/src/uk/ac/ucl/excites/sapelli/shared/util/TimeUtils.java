@@ -10,6 +10,8 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+
 /**
  * @author mstevens, Michalis Vitos
  *
@@ -92,6 +94,11 @@ public final class TimeUtils
 			return ISOWithoutMSFormatter.print(dateTime);
 	}
 	
+	static public String getISOTimestamp(TimeStamp timeStamp, boolean withMS)
+	{
+		return getISOTimestamp(timeStamp.toDateTime(), withMS);
+	}
+	
 	static public String getISOTimestamp(long timestamp, boolean withMS)
 	{
 		if(withMS)
@@ -110,6 +117,11 @@ public final class TimeUtils
 		return FileTimestampFormatter.print(dateTime);
 	}
 	
+	static public String getTimestampForFileName(TimeStamp timeStamp)
+	{
+		return FileTimestampFormatter.print(timeStamp.toDateTime());
+	}
+	
 	static public String getTimestampForFileName(long timestamp)
 	{
 		return FileTimestampFormatter.print(timestamp);
@@ -123,6 +135,11 @@ public final class TimeUtils
 	static public String getPrettyTimestamp(DateTime dateTime)
 	{
 		return PrettyTimestampWithoutMSFormatter.print(dateTime);
+	}
+	
+	static public String getPrettyTimestamp(TimeStamp timeStamp)
+	{
+		return PrettyTimestampWithoutMSFormatter.print(timeStamp.toDateTime());
 	}
 	
 	static public String getPrettyTimestamp(long timestamp)

@@ -4,7 +4,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
-import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 
 /**
  * Class representing a foreign key, used to reference a record of another ("foreign") schema.
@@ -83,9 +83,8 @@ public class ForeignKey extends Record
 		// Match for key parts:
 		AndConstraint constraints = new AndConstraint();
 		int c = 0;
-		for(Object keyPart : values) //TODO figure out why it didn't work with eqConstr & try to fix it, because the cast to comparatorCols is asking for trouble
-			//constraints.addConstraint(new EqualityConstraint(schema.getColumn(c++), keyPart));
-			constraints.addConstraint(new RuleConstraint((ComparatorColumn<?>) schema.getColumn(c++), RuleConstraint.Comparison.EQUAL, keyPart)); 
+		for(Object keyPart : values)
+			constraints.addConstraint(new EqualityConstraint(schema.getColumn(c++), keyPart));
 		
 		// Single record query:
 		return new FirstRecordQuery(new RecordsQuery(foreignSchema, constraints));
