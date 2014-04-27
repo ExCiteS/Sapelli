@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField.ButtonColumnType;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
@@ -69,7 +70,7 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 		
 		// Continue to jump or next:
 		if(field.getJump() != null)
-			controller.goTo(new Controller.FieldWithArguments(field.getJump(), field.getNextFieldArguments()));
+			controller.goTo(new FieldWithArguments(field.getJump(), field.getNextFieldArguments()));
 		else
 			controller.goForward(true);
 		

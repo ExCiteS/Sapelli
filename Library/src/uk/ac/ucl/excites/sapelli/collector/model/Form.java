@@ -8,8 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FieldWithArguments;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
@@ -146,7 +145,7 @@ public class Form
 	 * @param current
 	 * @return the next field to go to along with passed arguments, or null if the next field could not be determined (likely because the current field is part of a page)
 	 */
-	public Controller.FieldWithArguments getNextFieldAndArguments(Field current)
+	public FieldWithArguments getNextFieldAndArguments(Field current)
 	{
 		// Check for jump field (possibly the one of a parent in case of ChoiceField):
 		Field nextF = current.getJump();

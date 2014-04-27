@@ -2,11 +2,8 @@ package uk.ac.ucl.excites.sapelli.collector.control;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
@@ -126,7 +123,7 @@ public abstract class Controller
 				formHistory.push(currFormSession);			// THEN: add previous formSession to history
 		}
 		currFormSession = formSession;
-		currFormSession.currFieldDisplayed = false; //!!!
+		currFormSession.setCurrentFieldDisplayed(false); //!!!
 		
 		// Log start form
 		addLogLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getPosition() + ")");
@@ -143,7 +140,7 @@ public abstract class Controller
 
 		// Go to field...
 		if(resumeForm && currFormSession.atField())
-			goTo(currFormSession.currFieldAndArguments); // continue where we left off
+			goTo(currFormSession.getCurrent()); // continue where we left off
 		else
 			goTo(new FieldWithArguments(currFormSession.form.getStartField())); // begin filling out the form at the start field
 	}
@@ -198,12 +195,8 @@ public abstract class Controller
 			handlingUserGoBackRequest = true; // Do *not* replace this by: handlingGoBackRequest = requestedByUser
 		
 		// Try to go to previous field...
-		if(!currFormSession.fieldAndArgumentHistory.isEmpty())
-		{
-			currFormSession.currFieldAndArguments = null; // !!! otherwise we create loops
-			currFormSession.currFieldDisplayed = false;
-			goTo(currFormSession.fieldAndArgumentHistory.pop());
-		}
+		if(currFormSession.canGoBack())
+			goTo(currFormSession.getPrevious(true), true); // force leaving
 		else
 			// Try to go to previous form...
 			goToPreviousForm();
@@ -212,6 +205,15 @@ public abstract class Controller
 		if(requestedByUser)
 			handlingUserGoBackRequest = false;
 	}
+	
+	/**
+	 * Re-enter current field
+	 */
+	public void goToCurrent()
+	{
+		goTo(currFormSession.getCurrent(), true); // force leaving
+	}
+	
 	
 	public void goTo(FieldWithArguments nextFieldAndArguments)
 	{
@@ -231,61 +233,48 @@ public abstract class Controller
 			return;
 		}
 	
-		// Deal with current field...
-		if(currFormSession.atField())
+		// Check if we are allowed to leave the currently displayed field (unless the leaving is forced)...
+		if(currFormSession.atField() && !forceLeave && currFormSession.isCurrentFieldDisplayed() && !ui.getCurrentFieldUI().leave(currFormSession.record)) 
 		{
-			// Check if we are allowed to leave the current field...	
-			if(!forceLeave && currFormSession.currFieldDisplayed && !ui.getCurrentFieldUI().leave(currFormSession.record)) // check if we are allowed to leave the currently displayed field (unless the leaving is forced)
-			{
-				addLogLine("STAY", "Not allowed to leave field " + getCurrentField().getID());
-				return; // not allowed to leave
-			}
-			
-			// Add current field to history if it is not the same as the next field & it is not to be skipped upon back...
-			if(nextFieldAndArguments.field != getCurrentField() && !getCurrentField().isSkipOnBack())
-				currFormSession.fieldAndArgumentHistory.push(currFormSession.currFieldAndArguments);
+			addLogLine("STAY", "Not allowed to leave field " + getCurrentField().getID());
+			return; // not allowed to leave
 		}
+			
+		// Next field becomes the (new) current field...
+		currFormSession.setCurrent(nextFieldAndArguments); // deals with history as well
 		
-		// 	Next field becomes the (new) current field...
-		currFormSession.currFieldAndArguments = nextFieldAndArguments;
+		// Temp variable for the new current field (avoids calling getters, and used to check whether another goForward/goTo call happens from the enter() method below):
+		Field currField = currFormSession.getCurrentField();
 		
 		// Skip the new current field if it is not meant to be shown on create/edit...
-		if(	(currFormSession.mode == FormMode.CREATE && !getCurrentField().isShowOnCreate()) ||
-			(currFormSession.mode == FormMode.EDIT && !getCurrentField().isShowOnEdit()))
+		if(	(currFormSession.mode == FormMode.CREATE && !currField.isShowOnCreate()) ||
+			(currFormSession.mode == FormMode.EDIT && !currField.isShowOnEdit()))
 		{
-			addLogLine("SKIPPING", getCurrentField().getID(), "Not shown on " + currFormSession.mode.toString());
+			addLogLine("SKIPPING", currField.getID(), "Not shown on " + currFormSession.mode.toString());
 			goForward(false);
 			return;
 		}
 		// Skip uneditable fields when in edit mode...
-		if(currFormSession.mode == FormMode.EDIT && !getCurrentField().isEditable())
+		if(currFormSession.mode == FormMode.EDIT && !currField.isEditable())
 		{
-			addLogLine("SKIPPING", getCurrentField().getID(), "Not editable");
+			addLogLine("SKIPPING", currField.getID(), "Not editable");
 			goForward(false);
 			return;
 		}
 		
 		// Entering new current field...
-		addLogLine("REACHED", getCurrentField().getID());
-		Field holdCurrentField = getCurrentField(); // remember the "current" current field, to deal with case in which another goForward/goTo call happens from the enter() method (e.g. when entering a leaf choice)
-		boolean needsUIUpdate = currFormSession.currFieldAndArguments.field.enter(this, currFormSession.currFieldAndArguments.arguments, false); // pass arguments to enter()
-		// If the current field has changed as part of the entering we are done here: 
-		if(getCurrentField() != holdCurrentField)
-			return;
-		//else: update UI if needed and remember whether current field is displayed
-		if(needsUIUpdate)
-			ui.setField(getCurrentField());
-		currFormSession.currFieldDisplayed = needsUIUpdate;
+		addLogLine("REACHED", currField.getID());
+		boolean needsUIUpdate = currField.enter(this, currFormSession.getCurrentFieldArguments(), false); // pass arguments to enter()
+ 
+		if(currFormSession.getCurrentField() == currField)
+		{	// If the current field hasn't changed as a result of the enter() call...
+			if(needsUIUpdate)
+				ui.setField(currField); // update UI if needed
+			currFormSession.setCurrentFieldDisplayed(needsUIUpdate); // remember whether current field is displayed
+		}
+		//else: when the current field *has* changed as part of the entering we are done here
 	}
-	
-	/**
-	 * Re-enter current field
-	 */
-	public void goToCurrent()
-	{
-		goTo(currFormSession.currFieldAndArguments, true); // force leaving
-	}
-	
+
 	protected void saveRecordAndAttachments()
 	{
 		if(!currFormSession.form.isProducesRecords()) //!!!
@@ -402,14 +391,6 @@ public abstract class Controller
 	 */
 	public boolean enterPage(Page page, FieldParameters arguments)
 	{
-		// Deal with returning from field that is (part of) the page itself:
-		Field prevField = currFormSession.getPreviousField();
-		while(prevField != null && (prevField == page || page.getFields().contains(prevField.getRoot())))
-		{	// pop on-page field(s) & page itself off the history:
-			currFormSession.fieldAndArgumentHistory.pop();
-			prevField = currFormSession.getPreviousField();
-		}
-		
 		// Enter child fields (but signal that they are entered as part of entering the page):
 		for(Field f : page.getFields())
 		{	
@@ -448,40 +429,38 @@ public abstract class Controller
 		{	// We were *not* waiting for a return from the relatedForm
 			// Check is we already have a value...
 			if(foreignKey != null)
-			{	System.out.println("we alreadt have a value");// We already have a foreign key value
+			{	// We already have a foreign key value
 				if(arguments.getBoolean(BelongsToField.PARAMETER_EDIT, false))
-				{	System.out.println("edit mode");// in edit mode (the edit argument was true)
-					//	Edit foreign record:
+				{	// We are in edit mode (the edit argument was true):
 					arguments.put(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM, Boolean.TRUE.toString()); // remember we are waiting for relatedForm
 					openFormSession(FormSession.Edit(belongsTo.getRelatedForm(), recordStore.retrieveRecord(foreignKey.getForeignRecordQuery()))); // open relatedForm to edit foreign record
 				}
 				else
-				{	System.out.println("not edit mode");// not in edit mode (the edit argument was false, or more likely, missing)
+					// We are not in edit mode (the edit argument was false, or more likely, missing)
 					goForward(false); // continue to next field
-				}
 			}
 			else
-			{	System.out.println("we don't have a value yet");// We don't have a foreign key value yet
-				// Note: we ignore the edit argument here because we only allow editing if a value is already set
+			{	// We don't have a foreign key value yet
+				//	Note: we ignore the edit argument here because we only allow editing if a value is already set
 				Record foreignRecord = null;
 				// Check is we are allowed to hold on to foreign records:
 				if(belongsTo.isHoldForeignRecord())
-				{	System.out.println("isHeldFR=true");// the Relationship is allowed to hold on to foreign records 
+				{	// The Relationship is allowed to hold on to foreign records 
 					ForeignKey heldForeignKey = projectStore.retrieveHeldForeignKey(belongsTo);
 					foreignRecord = heldForeignKey != null ? recordStore.retrieveRecord(heldForeignKey.getForeignRecordQuery()) : null;
 					if(constraints.isValid(foreignRecord)) // passing null will return false
-					{	System.out.println("we have a valid held rec"); // we have a "held" foreign key, the corresponding foreign record was found and meets the constraints
+					{	// We have a "held" foreign key, the corresponding foreign record was found and meets the constraints
 						column.storeValue(currFormSession.record, heldForeignKey); // Store foreign key
 						goForward(false); // continue to next field
 					}
 					else
-					{	System.out.println("no valid held rec, held key: " + heldForeignKey + "; heldrec: " + foreignRecord);// Either we didn't have a "held" foreign key, OR no corresponding record was found, OR the record didn't meet the constraints
+					{	// Either we didn't have a "held" foreign key, OR no corresponding record was found, OR the record didn't meet the constraints
 						projectStore.deleteHeldForeignKey(belongsTo); // clear held foreign key (if there was none nothing will happen)
 						foreignRecord = null; // relatedForm will be opened for creation below 
 					}
 				}
 				if(foreignRecord == null)
-				{	System.out.println("no valid held record or not allowed to hold");// we didn't find a valid held foreign record or the relationship is simply *not* allowed to hold on to foreign records
+				{	// We didn't find a valid held foreign record or the relationship is simply *not* allowed to hold on to foreign records
 					arguments.put(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM, Boolean.TRUE.toString()); // remember we are waiting for relatedForm
 					openFormSession(FormSession.Create(belongsTo.getRelatedForm(), deviceIDHash)); // open relatedForm to create new record
 				}
@@ -495,9 +474,8 @@ public abstract class Controller
 			if(prevFormSession != null && prevFormSession.form == belongsTo.getRelatedForm())
 			{	// ... and we did indeed return from it
 				Record foreignRecord = prevFormSession.record;
-				
 				if(constraints.isValid(foreignRecord)) // passing null will return false
-				{	System.out.println("related form savid valid foreign rec");// the relatedForm produced/edited a non-null record which meets the constraints
+				{	// The relatedForm produced/edited a non-null record which meets the constraints
 					foreignKey = new ForeignKey(foreignRecord);
 					column.storeValue(currFormSession.record, foreignKey); // Store/update foreign key
 					if(belongsTo.isHoldForeignRecord())
@@ -505,15 +483,14 @@ public abstract class Controller
 					goForward(true); // continue to next field
 				}
 				else
-				{	System.out.println("no valid foreign rec, fRec: " + foreignRecord);// either the relatedForm did not save its record (i.e. it is now null), OR it doesn't meet the constraints
+				{	// Either the relatedForm did not save its record (i.e. it is now null), OR it doesn't meet the constraints
 					if(foreignKey != null || belongsTo.getOptional() == Optionalness.ALWAYS)
-					{	// Either we already have a (previously set) foreign key value, OR we don't need one because the field is optional
+						// Either we already have a (previously set) foreign key value, OR we don't need one because the field is optional
 						goForward(true); // continue to next field (keeping the currently stored foreign key if there is one, or keeping it blank if there is none)
-					}
+					
 					else
-					{	// We do not already have a foreign key value & the field is not optional
+						// We do not already have a foreign key value & the field is not optional
 						openFormSession(FormSession.Create(belongsTo.getRelatedForm(), deviceIDHash)); // re-open relatedForm to create new record
-					}
 				}
 			}
 			else
@@ -711,7 +688,7 @@ public abstract class Controller
 	
 	public boolean canGoBack(boolean withinFormOnly)
 	{
-		return (currFormSession != null && !currFormSession.fieldAndArgumentHistory.empty()) || (!withinFormOnly && !formHistory.empty());
+		return (currFormSession != null && currFormSession.canGoBack()) || (!withinFormOnly && !formHistory.empty());
 	}
 	
 	public void addLogLine(String... fields)
@@ -749,102 +726,5 @@ public abstract class Controller
 	protected abstract void showError(String errorMsg, boolean exit);
 	
 	protected abstract void exitApp();
-	
-	public static class FieldWithArguments
-	{
-		
-		protected Field field;
-		protected FieldParameters arguments;
-		
-		/**
-		 * @param field the field
-		 */
-		public FieldWithArguments(Field field)
-		{
-			this(field, FieldParameters.EMPTY);
-		}
-		
-		/**
-		 * @param field the field
-		 * @param arguments arguments passed along by previous field
-		 */
-		public FieldWithArguments(Field field, FieldParameters arguments)
-		{
-			this.field = field;
-			this.arguments = new FieldParameters(arguments); // create a copy!
-		}
-		
-	}
-	
-	/**
-	 * Helper class which holds all state variables needed to manage an open "form session"
-	 * 
-	 * @author mstevens
-	 */
-	public static class FormSession
-	{
-		
-		static public FormSession Create(Form form, long deviceIDHash)
-		{
-			return new FormSession(form, FormMode.CREATE, form.isProducesRecords() ? form.newRecord(deviceIDHash) : null);
-		}
-		
-		static public FormSession Edit(Form form, Record record)
-		{
-			return new FormSession(form, FormMode.EDIT, record);
-		}
-		
-		//Dynamic
-		protected Form form;
-		protected FormMode mode;
-		protected Record record;
-		protected Stack<FieldWithArguments> fieldAndArgumentHistory;
-		protected FieldWithArguments currFieldAndArguments = null;
-		protected boolean currFieldDisplayed = false;
-		protected Set<Field> tempDisabledFields;
-		protected List<File> mediaAttachments;	
-		protected long startTime;
-		
-		/**
-		 * @param form
-		 * @param mode
-		 * @param record
-		 */
-		private FormSession(Form form, FormMode mode, Record record)
-		{
-			if(form == null)
-				throw new NullPointerException("Form cannot be null!");
-			if(record == null && form.isProducesRecords())
-				throw new NullPointerException("Record cannot be null because this is a record-producing form!");	
-			this.form = form;
-			this.mode = mode;
-			this.record = record;
-			this.fieldAndArgumentHistory = new Stack<FieldWithArguments>();
-			this.tempDisabledFields = new HashSet<Field>();
-			this.mediaAttachments = new ArrayList<File>();
-			this.startTime = System.currentTimeMillis();
-		}
-		
-		public Field getPreviousField()
-		{
-			return fieldAndArgumentHistory.isEmpty() ? null : fieldAndArgumentHistory.peek().field;
-		}
-		
-		public Field getCurrentField()
-		{
-			return currFieldAndArguments != null ? currFieldAndArguments.field : null;
-		}
-		
-		public FieldParameters getCurrentFieldArguments()
-		{
-			return currFieldAndArguments != null ? currFieldAndArguments.arguments : null;
-		}
-		
-		public boolean atField()
-		{
-			return currFieldAndArguments != null;
-		}
-		
-	}
 	
 }
