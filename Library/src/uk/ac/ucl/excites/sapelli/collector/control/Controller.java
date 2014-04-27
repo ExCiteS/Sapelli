@@ -38,6 +38,10 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
  * 
  * @author mstevens, Michalis Vitos, Julia
  */
+/**
+ * @author mstevens
+ *
+ */
 public abstract class Controller
 {
 	
@@ -213,7 +217,6 @@ public abstract class Controller
 	{
 		goTo(currFormSession.getCurrent(), true); // force leaving
 	}
-	
 	
 	public void goTo(FieldWithArguments nextFieldAndArguments)
 	{
@@ -556,6 +559,11 @@ public abstract class Controller
 		return false;
 	}
 
+	/**
+	 * Set-up the given triggers.
+	 * 
+	 * @param triggers
+	 */
 	private void setupTriggers(List<Trigger> triggers)
 	{
 		for(Trigger trigger : triggers)
@@ -563,8 +571,9 @@ public abstract class Controller
 	}
 	
 	/**
-	 * @param triggers
+	 * Disable the given triggers.
 	 * 
+	 * @param triggers
 	 */
 	public void disableTriggers(List<Trigger> triggers)
 	{
@@ -572,6 +581,11 @@ public abstract class Controller
 			disableTrigger(trigger);
 	}
 	
+	/**
+	 * Set-up the given trigger
+	 * 
+	 * @param trigger
+	 */
 	protected void setupTrigger(Trigger trigger)
 	{
 		// Key press trigger:
@@ -593,6 +607,11 @@ public abstract class Controller
 	
 	protected abstract void setupTimerTrigger(Trigger trigger);
 	
+	/**
+	 * Disable the given trigger
+	 * 
+	 * @param trigger
+	 */
 	protected void disableTrigger(Trigger trigger)
 	{
 		// Key press trigger:
@@ -614,6 +633,11 @@ public abstract class Controller
 	
 	protected abstract void disableTimerTrigger(Trigger trigger);
 	
+	/**
+	 * Execute trigger
+	 * 
+	 * @param trigger
+	 */
 	public void fireTrigger(Trigger trigger)
 	{
 		if(trigger.getJump() == null)
