@@ -51,6 +51,7 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
@@ -158,8 +159,19 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		runBtn = (Button) findViewById(R.id.RunProjectButton);
 		removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
 		// Set background logo under project list:
-		SVG svg = new SVGBuilder().readFromResource(getResources(), R.drawable.sapelli_logo).build();
-		((ImageView) findViewById(R.id.ProjectsListBackgroundImage)).setImageDrawable(new SVGDrawable(svg));
+		if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT /* = 19 */)
+			try	// For some reason the background image blows up the size of the containing RelativeLayout on Android < KitKat. TODO investigate further & ask on StackOverflow and/or contact AndroidSVG creator
+			{
+				ImageView projListBackground = (ImageView) findViewById(R.id.ProjectsListBackgroundImage);
+				SVG svg = new SVGBuilder().readFromResource(getResources(), R.drawable.sapelli_logo).build();
+				projListBackground.setImageDrawable(new SVGDrawable(svg));
+				//SVG svg = SVG.getFromResource(getResources(), R.drawable.sapelli_logo);
+				//projListBackground.setImageDrawable(new PictureDrawable(svg.renderToPicture()));
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace(System.err);
+			}
 		// Make title bar click open the about dialog:
 		View v = findViewById (android.R.id.title);
 	    v.setClickable(true);
