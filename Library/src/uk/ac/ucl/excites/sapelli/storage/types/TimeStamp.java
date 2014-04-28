@@ -64,9 +64,9 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	}
 
 	// DYNAMICS------------------------------------------------------
+	private final long msSinceEpoch;
+	private final int quarterHourOffsetWrtUTC;
 	private transient DateTime dateTime; // transient!
-	private long msSinceEpoch;
-	private int quarterHourOffsetWrtUTC;
 
 	/**
 	 * *Now* constructor
@@ -99,9 +99,8 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	 */
 	public TimeStamp(DateTime dateTime)
 	{
+		this(dateTime.getMillis(), getTimeZoneOffsetQH(dateTime));
 		this.dateTime = dateTime;
-		this.msSinceEpoch = dateTime.getMillis();
-		this.quarterHourOffsetWrtUTC = getTimeZoneOffsetQH(dateTime);
 	}
 	
 	/**
@@ -122,6 +121,7 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	{
 		this.msSinceEpoch = timeStamp.msSinceEpoch;
 		this.quarterHourOffsetWrtUTC = timeStamp.quarterHourOffsetWrtUTC;
+		this.dateTime = timeStamp.dateTime;
 	}
 
 	/**
