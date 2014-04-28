@@ -157,13 +157,20 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 		@Override
 		public void onFocusChange(View v, boolean hasFocus)
 		{
-			if(hasFocus)
+			if(isEnabled() && hasFocus)
 			{
 				// Hide keyboard if it is currently shown:
 				collectorUI.hideKeyboard();
 				
 				// Simulate click:
-				((MultiListSpinner) v).performClick();
+				try
+				{
+					((MultiListSpinner) v).performClick(); // We've seen some crashes here on Gingerbread/Xcover1, hence the try/catch
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace(System.err);
+				}
 				
 				// Lose focus again:
 				v.clearFocus();
@@ -173,12 +180,13 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 		@Override
 		public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
 		{
-			clearPageInvalidMark(); // the user is currently interacting with the spinner(s), so don't annoy him/her with the red box
-			
-			MultiListSpinner spinner = (MultiListSpinner) parent; 
+			clearPageInvalidMark(); // the user is currently interacting with the spinner(s), so don't annoy him/her with the red box			
+
+			MultiListSpinner spinner = (MultiListSpinner) parent;
 			MultiListAdapter adapter = spinner.getAdapter();
 			
 			revert(spinner);
+			
 			MultiListItem chosen = adapter.getItem(position);
 			if(chosen != adapter.nonSelectableItem && chosen != adapter.nullItem && !chosen.isLeaf())
 				addNextList(chosen);
@@ -201,7 +209,12 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			super.setEnabled(enabled);
 			// Apply to all current spinners:
 			for(int i = 1; i < getChildCount(); i+=2)
-				getChildAt(i).setEnabled(enabled);
+			{
+				MultiListSpinner spinner = (MultiListSpinner) getChildAt(i);
+				spinner.setEnabled(enabled);
+				spinner.setFocusable(onPage && enabled);
+				spinner.setFocusableInTouchMode(onPage && enabled);
+			}
 		}
 		
 	}
