@@ -2,9 +2,9 @@ package uk.ac.ucl.excites.sapelli.collector.control;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
@@ -38,7 +38,7 @@ public class FormSession
 	private Stack<FieldWithArguments> fieldAndArgumentHistory;
 	private FieldWithArguments currFieldAndArguments = null;
 	private boolean currFieldDisplayed = false;
-	protected Set<Field> tempDisabledFields;
+	private Map<Field,Boolean> runtimeEnabled = null;
 	protected List<File> mediaAttachments;	
 	protected long startTime;
 	
@@ -57,7 +57,6 @@ public class FormSession
 		this.mode = mode;
 		this.record = record;
 		this.fieldAndArgumentHistory = new Stack<FieldWithArguments>();
-		this.tempDisabledFields = new HashSet<Field>();
 		this.mediaAttachments = new ArrayList<File>();
 		this.startTime = System.currentTimeMillis();
 	}
@@ -108,11 +107,35 @@ public class FormSession
 	{
 		return currFieldDisplayed;
 	}
-
+	
+	/**
+	 * Set the "runtime enabledness" of the given field
+	 * 
+	 * @param field
+	 * @param enabled
+	 */
+	protected void setRuntimeEnabled(Field field, boolean enabled)
+	{
+		if(runtimeEnabled == null)
+			runtimeEnabled = new HashMap<Field, Boolean>();
+		runtimeEnabled.put(field, enabled);
+	}
+	
+	/**
+	 * Get the "runtime enabledness" of the given field (often null)
+	 * 
+	 * @param field
+	 * @return
+	 */
+	protected Boolean getRuntimeEnabled(Field field)
+	{
+		return runtimeEnabled != null ? runtimeEnabled.get(field) : null;
+	}
+	
 	/**
 	 * @param currFieldDisplayed the currFieldDisplayed to set
 	 */
-	public void setCurrentFieldDisplayed(boolean currFieldDisplayed)
+	protected void setCurrentFieldDisplayed(boolean currFieldDisplayed)
 	{
 		this.currFieldDisplayed = currFieldDisplayed;
 	}

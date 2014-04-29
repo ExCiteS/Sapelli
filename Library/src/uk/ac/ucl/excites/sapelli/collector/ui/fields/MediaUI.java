@@ -61,5 +61,5 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	
 	@Override
 	public abstract void cancel(); // force concrete subclass to implement this (e.g. to stop audio recording)!
-	
+
 }

@@ -42,7 +42,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 	}
 	
 	@Override
-	protected View getPlatformView(boolean onPage, Record record, boolean newRecord)
+	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{
 		//TODO editable
 		if(onPage)
@@ -62,6 +62,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 				});
 				// TODO add spinner on button (when startWithForm or startWithPage), make change it for a "got location" icon when location is obtained
 				// TODO show "got location" icon when already has location
+				// TODO take "enabled" into account!
 			}
 			return pageView;
 		}

@@ -228,16 +228,6 @@ public abstract class Field extends JumpSource
 		return enabled;
 	}
 	
-	public void disable()
-	{
-		enabled = false;
-	}
-	
-	public void enable()
-	{
-		enabled = true;
-	}
-	
 	/**
 	 * @return the editable
 	 */
@@ -275,7 +265,7 @@ public abstract class Field extends JumpSource
 	 * @param formMode
 	 * @return whether of the the giving control is allowed to be show for this field when in the given formMode
 	 */
-	public boolean isControlAllowToBeShown(Control control, FormMode formMode)
+	public boolean isControlAllowedToBeShown(Control control, FormMode formMode)
 	{
 		return showControlByMode[control.ordinal()][formMode.ordinal()];
 	}

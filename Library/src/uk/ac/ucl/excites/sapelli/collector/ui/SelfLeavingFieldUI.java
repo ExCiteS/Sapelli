@@ -35,7 +35,7 @@ public abstract class SelfLeavingFieldUI<F extends Field, V, UI extends Collecto
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#leave(uk.ac.ucl.excites.sapelli.storage.model.Record, boolean)
 	 */
 	@Override
-	public boolean leave(Record record, boolean noValidation)
+	protected boolean leave(Record record, boolean noValidation)
 	{
 		return noValidation || isValid(record); // no storage happens at this point!
 	}

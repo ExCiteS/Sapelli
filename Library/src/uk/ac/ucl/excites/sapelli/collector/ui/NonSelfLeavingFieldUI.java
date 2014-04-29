@@ -35,7 +35,7 @@ public abstract class NonSelfLeavingFieldUI<F extends Field, V, UI extends Colle
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#leave(Record, boolean)
 	 */
 	@Override
-	public boolean leave(Record record, boolean noValidation)
+	protected boolean leave(Record record, boolean noValidation)
 	{
 		if(noValidation || isValid(record))
 		{

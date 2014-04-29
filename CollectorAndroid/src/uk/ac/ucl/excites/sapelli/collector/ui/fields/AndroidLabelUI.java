@@ -25,16 +25,21 @@ public class AndroidLabelUI extends LabelUI<View, CollectorView>
 	}
 
 	@Override
-	protected TextView getPlatformView(boolean onPage, Record record, boolean newRecord)
+	protected TextView getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{
 		if(label == null)
 		{
 			label = new TextView(collectorUI.getContext());
 			label.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
+			
+			// Alignment:
+			label.setGravity(field.isCentered() ? Gravity.CENTER_HORIZONTAL : label.getGravity()); //TODO right alignment?
+			
+			// Font size:
 			label.setText(field.getCaption());
-			label.setTextSize(TypedValue.COMPLEX_UNIT_PX, label.getTextSize() * field.getTextSizeScale()); 
-			//TODO bold?
-			label.setGravity(field.isCentered() ? Gravity.CENTER_HORIZONTAL : label.getGravity());
+			label.setTextSize(TypedValue.COMPLEX_UNIT_PX, label.getTextSize() * field.getTextSizeScale());
+			
+			//TODO bold? italic?
 		}
 		return label;
 	}

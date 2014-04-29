@@ -142,7 +142,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI.update(fieldUI);
 		
 		// Get the actual (updated) View instance:
-		View newFieldUIView = fieldUI.getPlatformView(false, controller.getCurrentRecord());
+		View newFieldUIView = fieldUI.showField(false, controller.getCurrentRecord());
 		
 		// Replace current view:
 		if(newFieldUIView != fieldUIView)

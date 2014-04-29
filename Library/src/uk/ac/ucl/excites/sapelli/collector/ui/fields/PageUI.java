@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
@@ -42,19 +41,17 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLe
 	}
 	
 	@Override
-	public boolean leave(Record record, boolean noValidation)
+	protected boolean leave(Record record, boolean noValidation)
 	{
 		if(noValidation || isValid(record))
 		{
-			for(FieldUI<?, V, UI> fUI : fieldUIs)
-				if(	(controller.getCurrentFormMode() == FormMode.CREATE && fUI.getField().isShowOnCreate()) ||
-					(controller.getCurrentFormMode() == FormMode.EDIT && fUI.getField().isShowOnEdit()))
-					fUI.leave(record, true); // skip validation (otherwise we'd repeat it), this means that NonSelfLeavingFieldUIs (and Boolean-column Buttons) will only store their value
-			
-			// Page will be left (and not to go to one of its contained fields, because in that case leave() wouldn't have been called), so disable its triggers & hide the keyboard which may still be shown:
+			// Page will be left (and not to go to one of its contained fields, because in that case leave() wouldn't have been called), so disable its triggers:
 			controller.disableTriggers(field.getTriggers());
-			collectorUI.hideKeyboard();
-			
+			// Leave contained fields, but without repeating validation (values will be stored however):
+			for(FieldUI<?, V, UI> fUI : fieldUIs)
+				if(controller.isFieldEnabled(fUI.getField())) // field is enabled (and shown)
+					fUI.leaveField(record, true);
+			// Allow leaving:
 			return true;
 		}
 		return false;
@@ -69,9 +66,8 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLe
 		boolean valid = true;
 		for(FieldUI<?, V, UI> fUI : fieldUIs)
 		{
-			if(	((controller.getCurrentFormMode() == FormMode.CREATE && fUI.getField().isShowOnCreate()) ||
-				 (controller.getCurrentFormMode() == FormMode.EDIT && fUI.getField().isShowOnEdit()))
-				&& !isValid(fUI, record))
+			if(	controller.isFieldEnabled(fUI.getField())	// field is enabled (and shown),
+				&& !isValid(fUI, record))					// but not valid
 				valid = false;
 		}
 		return valid;
@@ -98,7 +94,9 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLe
 		// does nothing (Pages have no column of their own)
 	}
 
-	/** Overridden such that the cancel control is always shown, even if the page is the first field in the form (i.e. there is no field history)
+	/**
+	 * Overridden such that the cancel control is always shown (even if the page is the first field in the form; i.e. there is no field history).
+	 * This will still be overruled if showCancelOnX=false was specified in XML though.
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#isShowCancel()
 	 */

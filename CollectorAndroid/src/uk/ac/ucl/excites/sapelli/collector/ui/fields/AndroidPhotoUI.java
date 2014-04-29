@@ -69,9 +69,9 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 	}
 	
 	@Override
-	protected View getPlatformView(boolean onPage, Record record, boolean newRecord)
+	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{
-		//TODO editable
+		//TODO take "enabled" into account
 		if(onPage)
 		{
 			//TODO photo-on-page button

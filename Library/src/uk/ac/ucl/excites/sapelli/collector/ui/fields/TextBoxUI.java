@@ -132,5 +132,14 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	protected abstract void setValidationError(String errorDescr);
 	
 	protected abstract void clearValidationError();
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#usesKeyboard()
+	 */
+	@Override
+	public boolean usesKeyboard()
+	{
+		return true;
+	}
 
 }

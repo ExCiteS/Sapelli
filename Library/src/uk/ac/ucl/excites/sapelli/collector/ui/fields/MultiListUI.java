@@ -12,8 +12,11 @@ import uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
+ * FieldUI for MultiList fields
+ * 
+ * TODO maybe allow list navigation/selection by keystrokes (in which case this class should override FieldUI#usesKeyboard() in order to return true)
+ * 
  * @author mstevens
- *
  */
 public abstract class MultiListUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<MultiListField, V, UI>
 {

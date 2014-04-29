@@ -35,8 +35,8 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	 */
 	protected void choiceMade(ChoiceField chosenChild)
 	{
-		if(!controller.isFieldEndabled(chosenChild))
-			return;
+		if(!controller.isFieldEnabled(chosenChild))
+			throw new IllegalArgumentException("This choice is disabled:" + chosenChild.getAltText()); // should never happen
 		FieldWithArguments next;
 		if(chosenChild.isLeaf())
 		{	// Store value if the field has a column, the chosenChild is a leaf and it is known in the field dictionary (meaning it carries a value):

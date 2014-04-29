@@ -94,10 +94,10 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 	}
 
 	@Override
-	protected View getPlatformView(boolean onPage, Record record, boolean newRecord)
+	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{
 		//TODO onPage view
-		//TODO editable
+		//TODO take "enabled" into account
 		
 		if(view == null)
 			view = new AudioView(collectorUI.getContext());

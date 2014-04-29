@@ -1,7 +1,6 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField.Content;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -43,7 +42,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 	}
 	
 	@Override
-	protected View getPlatformView(boolean onPage, Record record, boolean newRecord)
+	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{
 		// Create view if needed:
 		if(view == null)
@@ -64,7 +63,8 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			view.setText(value != null ? value : field.getInitialValue());
 			view.setWatchText(true);
 		}
-		view.setEnabled(controller.getCurrentFormMode() != FormMode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
+		// Disable when in edit mode and field is not editable, otherwise enable:
+		view.setEnabled(enabled); // also sets event handlers
 		
 		// Return view:
 		return view;
@@ -117,9 +117,6 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			editText.setFilters(new InputFilter[] { new InputFilter.LengthFilter(field.getMaxLength()) });
 			//	Set input type:
 			editText.setInputType(getInputType());
-			//	Event handlers:
-			editText.setOnFocusChangeListener(this);
-			editText.addTextChangedListener(this);
 			//	Add the textbox:
 			addView(editText);
 
@@ -168,13 +165,21 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		{
 			super.setEnabled(enabled);
 			editText.setEnabled(enabled);
+			//	Event handlers:
+			editText.setOnFocusChangeListener(enabled ? this : null);
+			editText.addTextChangedListener(enabled ? this : null);
 		}
 		
 		@Override
 		public void onFocusChange(View v, boolean hasFocus)
 		{
 			if(!hasFocus)
-				isValidInformPage(controller.getCurrentRecord()); // will call isValid() but via the containing page such that the red box can (dis)appear, if the field is not a page isValid() is called directly
+			{	// Focus is lost, so...
+				// Hide keyboard if it is currently shown:
+				collectorUI.hideKeyboard();
+				// Validate:
+				isValidInformPage(controller.getCurrentRecord()); // will call isValid() but via the containing page such that the red box can (dis)appear, if the field is not on a page isValid() is called directly
+			}
 		}
 		
 		@Override

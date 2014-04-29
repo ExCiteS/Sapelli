@@ -1,7 +1,6 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.FieldUI;
@@ -72,7 +71,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 	}
 	
 	@Override
-	protected ScrollView getPlatformView(boolean onPage, Record record, boolean newRecord)
+	protected ScrollView getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{
 		if(onPage)
 			throw new IllegalStateException("Pages cannot be nested!");
@@ -99,7 +98,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 		for(FieldUI<?, View, CollectorView> fUI : fieldUIs)
 		{
 			LinearLayout currentWrappedView = (LinearLayout) container.getChildAt(fIndex); // may be null
-			View newView = fUI.getPlatformView(true, record); // the actual view object returned may be recycled but its state will be updated to reflect current record
+			View newView = fUI.showField(true, record); // the actual view object returned may be recycled but its state will be updated to reflect current record
 			
 			// Replace current (wrapped) view:
 			if(newView != unwrapView(currentWrappedView)) // Note: unwrapView(null) will return null
@@ -118,8 +117,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 				continue;
 			
 			// Deal with showOnCreate/Edit:
-			if(	(controller.getCurrentFormMode() == FormMode.CREATE && !fUI.getField().isShowOnCreate()) ||
-				(controller.getCurrentFormMode() == FormMode.EDIT && !fUI.getField().isShowOnEdit()))
+			if(!controller.isFieldToBeShown(fUI.getField()))
 			{
 				currentWrappedView.setVisibility(View.GONE);
 				controller.addLogLine("HIDING", fUI.getField().getID());

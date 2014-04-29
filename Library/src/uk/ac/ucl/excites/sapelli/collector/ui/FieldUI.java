@@ -6,6 +6,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.State;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.TextBoxUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -23,6 +24,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	protected F field;
 	protected Controller controller;
 	protected UI collectorUI;
+	private boolean shown = false;
 	
 	private Record lastKnownRecord = null;
 	
@@ -46,7 +48,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param record
 	 * @return
 	 */
-	public V getPlatformView(boolean onPage, Record record)
+	public V showField(boolean onPage, Record record)
 	{
 		// Check if record is new:
 		boolean newRecord = (lastKnownRecord != record);
@@ -54,7 +56,10 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		// Remember record:
 		lastKnownRecord = record;
 		
-		return getPlatformView(onPage, record, newRecord);
+		// Mark the fieldUI as currently shown:
+		this.shown = true;
+		
+		return getPlatformView(onPage, controller.isFieldEnabled(field), record, newRecord);
 	}
 	
 	/**
@@ -62,11 +67,12 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * the object may be recycled but should be updated w.r.t. the provided record.
 	 * 
 	 * @param onPage
+	 * @parem enabled
 	 * @param record
 	 * @param newRecord whether or not this is a new record
 	 * @return
 	 */
-	protected abstract V getPlatformView(boolean onPage, Record record, boolean newRecord);
+	protected abstract V getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord);
 	
 	/**
 	 * To be overridden by FieldUIs that need to execute cancelling behaviour before disappearing off the screen
@@ -80,9 +86,9 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param record
 	 * @return whether or not leaving the field is allowed
 	 */
-	public boolean leave(Record record)
+	public boolean leaveField(Record record)
 	{
-		return leave(record, false); // apply validation!
+		return leaveField(record, false); // apply validation!
 	}
 	
 	/**
@@ -92,7 +98,27 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param noValidation skip validation if true (use with care!)
 	 * @return whether or not leaving the field is allowed
 	 */
-	public abstract boolean leave(Record record, boolean noValidation);
+	public boolean leaveField(Record record, boolean noValidation)
+	{
+		boolean allowLeaving = leave(record, noValidation);
+		if(allowLeaving)
+		{	// The field will be left, so...
+			this.shown = false; // mark fieldUI as *not* currently shown
+			// Hide the keyboard which may still be shown:
+			if(usesKeyboard())
+				collectorUI.hideKeyboard();
+		}
+		return allowLeaving;
+	}
+	
+	/**
+	 * Handles request to leave the field.
+	 * 
+	 * @param record
+	 * @param noValidation skip validation if true (use with care!)
+	 * @return whether or not leaving the field is allowed
+	 */
+	protected abstract boolean leave(Record record, boolean noValidation);
 	
 	/**
 	 * Checks whether the field, or rather the value that is (about to be) assigned, is valid.
@@ -102,11 +128,30 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	public abstract boolean isValid(Record record);
 	
+	/**
+	 * Checks whether of not this FieldUI can/may require keyboard input.
+	 * Default implementation returns {@code false}, but this may be overridden by subclasses (notably {@link TextBoxUI}).
+	 * 
+	 * @return whether or not this FieldUI can/may require keyboard input
+	 */
+	public boolean usesKeyboard()
+	{
+		return false;
+	}
+	
 	protected boolean isShownOnPage()
 	{
 		return controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI;
 	}
 	
+	/**
+	 * @return whether or not the FieldUI is currently being shown
+	 */
+	public boolean isFieldShown()
+	{
+		return shown;
+	}
+
 	/**
 	 * Slightly hackish method to trigger (re)validation a fieldUI through the page that contains it.
 	 * If the field is not a page its own validation method is used directly.
@@ -134,20 +179,20 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	public ControlsUI.State getControlState(Control control)
 	{
 		// Check if the field allows this control to be shown in the current formMode:
-		boolean show = field.isControlAllowToBeShown(control, controller.getCurrentFormMode());
+		boolean show = field.isControlAllowedToBeShown(control, controller.getCurrentFormMode());
 		
 		// Additional checks (if not forbidden by field):
 		if(show)
 			switch(control)
 			{
 			case BACK:
-				show &= controller.canGoBack(false); // can we go back to a previous field or form
+				show = show && controller.canGoBack(false); // can we go back to a previous field or form
 				break;
 			case CANCEL:
-				show &= isShowCancel();
+				show = show && isShowCancel();
 				break;
 			case FORWARD:
-				show &= isShowForward();
+				show = show && isShowForward();
 				break;
 			}
 		

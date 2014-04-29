@@ -3,7 +3,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField.MultiListItem;
@@ -40,7 +39,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 	}
 	
 	@Override
-	protected MultiListView getPlatformView(boolean onPage, Record record, boolean newRecord)
+	protected MultiListView getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{	
 		if(view == null)
 		{
@@ -50,7 +49,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 		
 		// Update view:
 		//	Enable/disable:
-		view.setEnabled(controller.getCurrentFormMode() != FormMode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
+		view.setEnabled(enabled); // also sets-up event listeners
 		//	For new records:
 		if(newRecord)
 		{
@@ -85,7 +84,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 		return view.getBottomSpinner().getSelectedItem(); // return selected item of bottom spinner (may be null and not necessarily a leaf)
 	}
 	
-	private class MultiListView extends LinearLayout implements OnFocusChangeListener, OnItemSelectedListener
+	private class MultiListView extends LinearLayout implements OnItemSelectedListener
 	{
 
 		private boolean onPage;
@@ -109,15 +108,8 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			addView(label);
 			
 			// Spinner (combo box):
-			final MultiListSpinner spinner = new MultiListSpinner(getContext());
+			final MultiListSpinner spinner = new MultiListSpinner(getContext(), parentItem, onPage);
 			spinner.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
-			
-			//	Make spinner disabled in the view is (for non-editable fields on edit mode):
-			spinner.setEnabled(isEnabled());
-			
-			//	Adapter:
-			final MultiListAdapter adapter = new MultiListAdapter(getContext(), parentItem);
-			spinner.setAdapter(adapter);
 			
 			if(!selectionStack.isEmpty())
 				spinner.selectItem(selectionStack.pop());
@@ -126,10 +118,8 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 				spinner.setSelection(parentItem.getDefaultChildIndex());
 			//else: first (dummy) item will be selected
 			
-			//	If on page & enabled: make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
-			spinner.setFocusable(onPage && isEnabled());
-			spinner.setFocusableInTouchMode(onPage && isEnabled());
-			spinner.setOnFocusChangeListener(onPage && isEnabled() ? this : null);
+			//	Enable/disable spinner (also sets focus event listener):
+			spinner.setEnabled(isEnabled());
 			
 			//	Item selected event:
 			spinner.setOnItemSelectedListener(this);
@@ -151,29 +141,6 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 				removeViewAt(getChildCount() - 1);
 				// Remove its label:
 				removeViewAt(getChildCount() - 1);
-			}
-		}
-		
-		@Override
-		public void onFocusChange(View v, boolean hasFocus)
-		{
-			if(isEnabled() && hasFocus)
-			{
-				// Hide keyboard if it is currently shown:
-				collectorUI.hideKeyboard();
-				
-				// Simulate click:
-				try
-				{
-					((MultiListSpinner) v).performClick(); // We've seen some crashes here on Gingerbread/Xcover1, hence the try/catch
-				}
-				catch(Exception e)
-				{
-					e.printStackTrace(System.err);
-				}
-				
-				// Lose focus again:
-				v.clearFocus();
 			}
 		}
 		
@@ -209,16 +176,82 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			super.setEnabled(enabled);
 			// Apply to all current spinners:
 			for(int i = 1; i < getChildCount(); i+=2)
+				getChildAt(i).setEnabled(enabled); // every second child is a spinner
+		}
+		
+	}
+	
+	/**
+	 * Custom Spinner class
+	 * 
+	 * @author mstevens
+	 */
+	private class MultiListSpinner extends Spinner implements OnFocusChangeListener
+	{
+		
+		private boolean onPage;
+
+		public MultiListSpinner(Context context, MultiListItem parentItem, boolean onPage)
+		{
+			super(context);
+			this.onPage = onPage;
+			// Set adapter:
+			super.setAdapter(new MultiListAdapter(context, parentItem));
+		}
+		
+		@Override
+		public void setAdapter(SpinnerAdapter adapter)
+		{
+			throw new UnsupportedOperationException("Changing the adapter on MultiListSpinner is not allowed.");
+		}
+
+		@Override
+		public MultiListAdapter getAdapter()
+		{
+			return (MultiListAdapter) super.getAdapter();
+		}
+		
+		public void selectItem(MultiListItem item)
+		{
+			setSelection(getAdapter().getPosition(item));
+		}
+		
+		@Override
+		public MultiListItem getSelectedItem()
+		{
+			MultiListAdapter adapter = getAdapter();
+			MultiListItem selected = adapter.getItem(getSelectedItemPosition());
+			if(selected != adapter.nonSelectableItem && selected != adapter.nullItem)
+				return selected;
+			else
+				return null;
+		}
+		
+		@Override
+		public void setEnabled(boolean enabled)
+		{
+			super.setEnabled(enabled);
+			//	If on page & enabled: make other fields lose focus and simulate clicking with onFocusChange:
+			setFocusable(onPage && enabled);
+			setFocusableInTouchMode(onPage && enabled);
+			setOnFocusChangeListener(onPage && enabled ? this : null);
+		}
+		
+		@Override
+		public void onFocusChange(View v, boolean hasFocus)
+		{
+			if(hasFocus && isFieldShown() && isEnabled())
 			{
-				MultiListSpinner spinner = (MultiListSpinner) getChildAt(i);
-				spinner.setEnabled(enabled);
-				spinner.setFocusable(onPage && enabled);
-				spinner.setFocusableInTouchMode(onPage && enabled);
+				// Simulate click:
+				((MultiListSpinner) v).performClick();
+				
+				// Lose focus again:
+				v.clearFocus();
 			}
 		}
 		
 	}
-
+	
 	/**
 	 * Custom ArrayAdapter to allow simulation of the spinner being in an "unselected" state (not supported on Android).
 	 * 
@@ -279,56 +312,6 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 				return super.getDropDownView(position, null, parent);
 		}
 
-	}
-	
-	/**
-	 * @author mstevens
-	 *
-	 */
-	private class MultiListSpinner extends Spinner
-	{
-
-		public MultiListSpinner(Context context)
-		{
-			super(context);
-		}
-		
-		@Override
-		public void setAdapter(SpinnerAdapter adapter)
-		{
-			if(adapter instanceof MultiListAdapter)
-				setAdapter((MultiListAdapter) adapter);
-			else
-				throw new IllegalArgumentException("MultiListSpinner only takes a MultiListAdapter instance as its adapter.");
-		}
-
-		public void setAdapter(MultiListAdapter adapter)
-		{
-			super.setAdapter(adapter);
-		}
-		
-		@Override
-		public MultiListAdapter getAdapter()
-		{
-			return (MultiListAdapter) super.getAdapter();
-		}
-		
-		public void selectItem(MultiListItem item)
-		{
-			setSelection(getAdapter().getPosition(item));
-		}
-		
-		@Override
-		public MultiListItem getSelectedItem()
-		{
-			MultiListAdapter adapter = getAdapter();
-			MultiListItem selected = adapter.getItem(getSelectedItemPosition());
-			if(selected != adapter.nonSelectableItem && selected != adapter.nullItem)
-				return selected;
-			else
-				return null;
-		}
-		
 	}
 
 }

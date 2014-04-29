@@ -3,7 +3,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
@@ -51,17 +50,18 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	}
 
 	@Override
-	protected View getPlatformView(boolean onPage, Record record, boolean newRecord)
+	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{
-		if(onPage)
-		{
+		if(onPage || !enabled)
+		{	// on page or disabled:
 			if(!field.isRoot())
 				return null; // just in case
 			
 			if(pageView == null)
 				pageView = new PageView(collectorUI.getContext());
 			
-			pageView.setEnabled(controller.getCurrentFormMode() != FormMode.EDIT || field.isEditable()); // disable when in edit mode and field is not editable, otherwise enable
+			// Enable/disable (do this before calling setChosen()!):
+			pageView.setEnabled(enabled); // also sets up event listeners!
 			
 			// Update pageView:
 			ChoiceField chosen = field.getSelectedChoice(record);
@@ -73,7 +73,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			return pageView;
 		}
 		else
-		{
+		{	// not on page and enabled:
 			if(pickView == null)
 				pickView = getChoiceView();
 			
@@ -82,6 +82,28 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			
 			return (View) pickView;
 		}
+	}
+	
+	protected void onChildClick(final ChoiceField child, View childView)
+	{
+		// Ignore click if child is disabled:
+		if(!controller.isFieldEnabled(child))
+			return;
+		
+		// Task to perform after animation has finished:
+		Runnable action = new Runnable()
+		{
+			public void run()
+			{
+				choiceMade(child);
+			}
+		};
+
+		// Execute the "press" animation if allowed, then perform the action: 
+		if(controller.getCurrentForm().isAnimation())
+			(new PressAnimator(action, childView, collectorUI)).execute(); //execute animation and the action afterwards
+		else
+			action.run(); //perform task now (animation is disabled)	
 	}
 	
 	/**
@@ -95,8 +117,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	}
 	
 	/**
+	 * View for displaying a ChoiceField as part of a Page
+	 * 
 	 * @author mstevens
-	 *
 	 */
 	public class PageView extends LinearLayout implements OnClickListener, OnFocusChangeListener
 	{
@@ -130,13 +153,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			
 			// New chosenView
 			chosenView = createItem(chosenField, chosenPaddingPx, !isEnabled()).getView(getContext());
-			chosenView.setOnClickListener(this);
 			
-			// Make other fields lose focus, make keyboard disappear, and simulate clicking with onFocusChange:
-			chosenView.setFocusable(true);
-			chosenView.setFocusableInTouchMode(true);
-			chosenView.setOnFocusChangeListener(this);
-
 			// Set margins on layoutparams:
 			LayoutParams chosenLP = new LinearLayout.LayoutParams(chosenSizePx, chosenSizePx);
 			chosenLP.setMargins(chosenMarginPx, chosenMarginPx, chosenMarginPx, chosenMarginPx);
@@ -144,15 +161,24 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// Add the view:
 			this.addView(chosenView, chosenLP);
 		}
+		
+		@Override
+		public void setEnabled(boolean enabled)
+		{
+			super.setEnabled(enabled);
+			chosenView.setEnabled(enabled);
+			chosenView.setOnClickListener(enabled ? this : null);
+			// Make other fields lose focus and simulate clicking with onFocusChange:
+			chosenView.setFocusable(enabled);
+			chosenView.setFocusableInTouchMode(enabled);
+			chosenView.setOnFocusChangeListener(enabled ? this : null);
+		}
 
 		@Override
 		public void onFocusChange(View v, boolean hasFocus)
 		{
-			if(hasFocus)
+			if(hasFocus && isFieldShown() && isEnabled() && v.isEnabled())
 			{
-				// Hide keyboard if it is currently shown:
-				collectorUI.hideKeyboard();
-				
 				// Lose focus again:
 				v.clearFocus();
 				
@@ -164,8 +190,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		@Override
 		public void onClick(View v)
 		{
-			// Do nothing if not enabled:
-			if(!isEnabled())
+			// Do nothing if not shown or enabled:
+			if(!isFieldShown() || !isEnabled() || !v.isEnabled())
 				return;
 			
 			// The user will make a choice now, so don't annoy him/her with the red box:
@@ -187,24 +213,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				action.run(); //perform task now (animation is disabled)			
 		}
 		
-	}
-	
-	protected void onChildClick(final ChoiceField child, View childView)
-	{
-		// Task to perform after animation has finished:
-		Runnable action = new Runnable()
-		{
-			public void run()
-			{
-				choiceMade(child);
-			}
-		};
-
-		// Execute the "press" animation if allowed, then perform the action: 
-		if(controller.getCurrentForm().isAnimation())
-			(new PressAnimator(action, childView, collectorUI)).execute(); //execute animation and the action afterwards
-		else
-			action.run(); //perform task now (animation is disabled)	
 	}
 	
 	/**
@@ -247,7 +255,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// Add items for children:
 			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
-				adapter.addItem(createItem(child, itemPaddingPx, !field.isEnabled())); // TODO deprecate enable/disable at field level?
+				adapter.addItem(createItem(child, itemPaddingPx, !controller.isFieldEnabled(child)));
 			// Click listeners:
 			setOnItemClickListener(this);
 			setOnItemLongClickListener(this);
@@ -255,11 +263,11 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		
 		public void update()
 		{
-			// Update visibility:
+			// Update grayed-out state:
 			int c = 0;
 			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
-				adapter.getItem(c++).setVisibility(controller.isFieldEndabled(child));
+				adapter.getItem(c++).setVisibility(controller.isFieldEnabled(child));
 			setAdapter(adapter);
 		}
 		

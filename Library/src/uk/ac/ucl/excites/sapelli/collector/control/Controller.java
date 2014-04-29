@@ -104,17 +104,18 @@ public abstract class Controller
 		prevFormSession = null;
 		currFormSession = null;
 		formHistory.clear();
+		handlingUserGoBackRequest = false;
 		
 		// Open a Create-mode session for the startForm:
 		openFormSession(FormSession.Create(project.getStartForm(), deviceIDHash));
 	}
 
-	public void openFormSession(FormSession formSession)
+	protected void openFormSession(FormSession formSession)
 	{
 		openFormSession(formSession, false);
 	}
 	
-	public void openFormSession(FormSession formSession, boolean resumeForm)
+	protected void openFormSession(FormSession formSession, boolean resumeForm)
 	{
 		// Deal with current form session:
 		if(currFormSession != null)
@@ -130,7 +131,7 @@ public abstract class Controller
 		currFormSession.setCurrentFieldDisplayed(false); //!!!
 		
 		// Log start form
-		addLogLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getPosition() + ")");
+		addLogLine("FORM_START", currFormSession.form.getName() + " (index: " + currFormSession.form.getPosition() + ")", "mode: " + currFormSession.mode.name());
 		
 		// Location...
 		List<LocationField> lfStartWithForm = currFormSession.form.getLocationFields(true);
@@ -211,6 +212,15 @@ public abstract class Controller
 	}
 	
 	/**
+	 * @param withinFormOnly
+	 * @return whether of not we can go back to a previous field or (if withinFormOnly=false) form
+	 */
+	public boolean canGoBack(boolean withinFormOnly)
+	{
+		return (currFormSession != null && currFormSession.canGoBack()) || (!withinFormOnly && !formHistory.empty());
+	}
+	
+	/**
 	 * Re-enter current field
 	 */
 	public void goToCurrent()
@@ -237,30 +247,22 @@ public abstract class Controller
 		}
 	
 		// Check if we are allowed to leave the currently displayed field (unless the leaving is forced)...
-		if(currFormSession.atField() && !forceLeave && currFormSession.isCurrentFieldDisplayed() && !ui.getCurrentFieldUI().leave(currFormSession.record)) 
+		if(currFormSession.atField() && !forceLeave && currFormSession.isCurrentFieldDisplayed() && !ui.getCurrentFieldUI().leaveField(currFormSession.record)) 
 		{
 			addLogLine("STAY", "Not allowed to leave field " + getCurrentField().getID());
 			return; // not allowed to leave
 		}
-			
+		
 		// Next field becomes the (new) current field...
 		currFormSession.setCurrent(nextFieldAndArguments); // deals with history as well
 		
 		// Temp variable for the new current field (avoids calling getters, and used to check whether another goForward/goTo call happens from the enter() method below):
 		Field currField = currFormSession.getCurrentField();
 		
-		// Skip the new current field if it is not meant to be shown on create/edit...
-		if(	(currFormSession.mode == FormMode.CREATE && !currField.isShowOnCreate()) ||
-			(currFormSession.mode == FormMode.EDIT && !currField.isShowOnEdit()))
+		// Skip the new current field if it is not meant to be shown in the current form mode:
+		if(!isFieldToBeShown(currField))
 		{
-			addLogLine("SKIPPING", currField.getID(), "Not shown on " + currFormSession.mode.toString());
-			goForward(false);
-			return;
-		}
-		// Skip uneditable fields when in edit mode...
-		if(currFormSession.mode == FormMode.EDIT && !currField.isEditable())
-		{
-			addLogLine("SKIPPING", currField.getID(), "Not editable");
+			addLogLine("SKIPPING", currField.getID(), "Not shown on " + currFormSession.mode.name());
 			goForward(false);
 			return;
 		}
@@ -276,6 +278,44 @@ public abstract class Controller
 			currFormSession.setCurrentFieldDisplayed(needsUIUpdate); // remember whether current field is displayed
 		}
 		//else: when the current field *has* changed as part of the entering we are done here
+	}
+	
+	/**
+	 * Checks whether the given field is to be shown in the current FormMode.
+	 * Note that disabled fields may still be shown (e.g. displayed grayed-out).
+	 * 
+	 * @param field
+	 * @return
+	 */
+	public boolean isFieldToBeShown(Field field)
+	{
+		switch(currFormSession.mode)
+		{
+			case CREATE:
+				return field.isShowOnCreate();
+			case EDIT:
+				return field.isShowOnEdit();
+			default:
+				throw new IllegalStateException("Unknown FormMode: " + currFormSession.mode.name());
+		}
+	}
+	
+	/**
+	 * Checks whether the given field is currently enabled.
+	 * While disabled fields may still be shown, a field that is *not* allowed to be shown is always disabled.
+	 * 
+	 * @param field
+	 * @return
+	 */
+	public boolean isFieldEnabled(Field field)
+	{
+		Boolean runtimeEnabled = null;
+		return 	// a field that is *not* allowed to be shown is always disabled:
+				isFieldToBeShown(field)
+				// "runtime enabledness" (kept in FormSession, but rarely used) has preference over "static enabledness" (kept in the Field object itself, true by default):
+				&& ((runtimeEnabled = currFormSession.getRuntimeEnabled(field)) != null ? runtimeEnabled : field.isEnabled())
+				// when in EDIT mode the field must be editable to be enabled:
+				&& (currFormSession.mode != FormMode.EDIT || field.isEditable());
 	}
 
 	protected void saveRecordAndAttachments()
@@ -338,7 +378,7 @@ public abstract class Controller
 		
 		// The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
 		for(ChoiceField child : cf.getChildren())
-			if(isFieldEndabled(child))
+			if(isFieldEnabled(child))
 				return true;
 		// This ChoiceField currently has no enabled children, so we should skip it:
 		goForward(false);
@@ -397,9 +437,8 @@ public abstract class Controller
 		// Enter child fields (but signal that they are entered as part of entering the page):
 		for(Field f : page.getFields())
 		{	
-			if(	(currFormSession.mode == FormMode.CREATE && !f.isShowOnCreate()) ||
-				(currFormSession.mode == FormMode.EDIT && !f.isShowOnEdit()))
-				addLogLine("SKIPPING", getCurrentField().getID());
+			if(!isFieldToBeShown(f))
+				addLogLine("SKIPPING", getCurrentField().getID(), "not shown on " + currFormSession.mode.name());
 			else
 				f.enter(this, FieldParameters.EMPTY, true); // enter with page (but don't pass on the arguments)
 		}
@@ -645,11 +684,6 @@ public abstract class Controller
 		addLogLine("TRIGGER", "Fired, jumping to: " + trigger.getJump().getID());
 		goTo(new FieldWithArguments(trigger.getJump(), trigger.getNextFieldArguments()));
 	}
-
-	public boolean isFieldEndabled(Field field)
-	{
-		return field.isEnabled() && !currFormSession.tempDisabledFields.contains(field);
-	}
 	
 	protected void exit()
 	{
@@ -708,11 +742,6 @@ public abstract class Controller
 	public Field getCurrentField()
 	{
 		return currFormSession.getCurrentField();
-	}
-	
-	public boolean canGoBack(boolean withinFormOnly)
-	{
-		return (currFormSession != null && currFormSession.canGoBack()) || (!withinFormOnly && !formHistory.empty());
 	}
 	
 	public void addLogLine(String... fields)
