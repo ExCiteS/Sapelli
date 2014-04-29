@@ -173,7 +173,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		@Override
 		public void onFocusChange(View v, boolean hasFocus)
 		{
-			if(!hasFocus)
+			if(!hasFocus && isFieldShown())
 			{	// Focus is lost, so...
 				// Hide keyboard if it is currently shown:
 				collectorUI.hideKeyboard();
@@ -191,7 +191,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		@Override
 		final public void beforeTextChanged(CharSequence s, int start, int count, int after)
 		{
-			if(watchText)
+			if(isFieldShown() && watchText)
 			{
 				clearPageInvalidMark(); // the user is currently typing, so don't annoy him/her with the red box
 				clearError();
