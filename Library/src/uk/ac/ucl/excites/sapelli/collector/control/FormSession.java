@@ -2,6 +2,7 @@ package uk.ac.ucl.excites.sapelli.collector.control;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public class FormSession
 {
 	
+	// STATIC -------------------------------------------------------
 	static public FormSession Create(Form form, long deviceIDHash)
 	{
 		return new FormSession(form, FormMode.CREATE, form.isProducesRecords() ? form.newRecord(deviceIDHash) : null);
@@ -31,16 +33,17 @@ public class FormSession
 		return new FormSession(form, FormMode.EDIT, record);
 	}
 	
-	//Dynamic //TODO make more fields private or final(?)
+	// DYNAMIC ------------------------------------------------------
 	protected final Form form;
 	protected final FormMode mode;
-	protected Record record;
-	private Stack<FieldWithArguments> fieldAndArgumentHistory;
+	protected Record record; //TODO make final? do we really need to make the record null in Controller#discardRecordAndAttachments()?
+	protected long startTime; //TODO make final?
+	
+	private final Stack<FieldWithArguments> fieldAndArgumentHistory;
 	private FieldWithArguments currFieldAndArguments = null;
 	private boolean currFieldDisplayed = false;
-	private Map<Field,Boolean> runtimeEnabled = null;
-	protected List<File> mediaAttachments;	
-	protected long startTime;
+	private Map<Field,Boolean> runtimeEnabled = null; // only instantiated when needed
+	private List<File> mediaAttachments = null; // only instantiated when needed
 	
 	/**
 	 * @param form
@@ -57,7 +60,6 @@ public class FormSession
 		this.mode = mode;
 		this.record = record;
 		this.fieldAndArgumentHistory = new Stack<FieldWithArguments>();
-		this.mediaAttachments = new ArrayList<File>();
 		this.startTime = System.currentTimeMillis();
 	}
 	
@@ -158,6 +160,21 @@ public class FormSession
 	public boolean atField()
 	{
 		return currFieldAndArguments != null;
+	}
+	
+	public void addMediaAttachment(File mediaAttachment)
+	{
+		if(mediaAttachments == null)
+			new ArrayList<File>();
+		mediaAttachments.add(mediaAttachment);
+	}
+
+	/**
+	 * @return the mediaAttachments
+	 */
+	public List<File> getMediaAttachments()
+	{
+		return mediaAttachments != null ? mediaAttachments : Collections.<File>emptyList();
 	}
 	
 }

@@ -336,7 +336,7 @@ public abstract class Controller
 		try
 		{
 			File dataFolder = project.getDataFolder();
-			for(File attachment : currFormSession.mediaAttachments)
+			for(File attachment : currFormSession.getMediaAttachments())
 				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
 		}
 		catch(IOException ioe)
@@ -360,10 +360,10 @@ public abstract class Controller
 		currFormSession.record = null; //!!!
 		
 		// Delete any attachments:
-		for(File attachment : currFormSession.mediaAttachments)
+		for(File attachment : currFormSession.getMediaAttachments())
 			if(attachment.exists())
 				attachment.delete();
-		currFormSession.mediaAttachments.clear();
+		currFormSession.getMediaAttachments().clear();
 	}
 	
 	/**
@@ -769,7 +769,7 @@ public abstract class Controller
 	
 	public void addMediaAttachment(File mediaAttachment)
 	{
-		currFormSession.mediaAttachments.add(mediaAttachment);
+		currFormSession.addMediaAttachment(mediaAttachment);
 	}
 	
 	protected abstract void vibrate(int durationMS);
