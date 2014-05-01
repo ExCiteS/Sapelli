@@ -20,14 +20,14 @@ public abstract class ImageItem extends Item
 	protected final boolean vectorBased;
 	protected boolean keepVectorAspectRatio = DEFAULT_KEEP_VECTOR_ASPECT_RATIO;
 	
-	public ImageItem(Long id, boolean vectorBased)
+	public ImageItem(Integer id, boolean vectorBased)
 	{
 		super(id);
 		this.vectorBased = vectorBased;
 	}
 		
 	@Override
-	protected View createView(Context context)
+	protected View createView(Context context, boolean recycleChildren)
 	{
 		ImageView view = new ImageView(context);
 		// Set image:

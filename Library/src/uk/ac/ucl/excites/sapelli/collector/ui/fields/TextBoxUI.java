@@ -3,7 +3,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 
@@ -22,10 +21,10 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	/**
 	 * 
 	 * @throws Exception 
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI#storeValue(Record)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.NonSelfLeavingFieldUI#storeValue(Record)
 	 */
 	@Override
-	public void storeValue(Record record) throws Exception
+	protected void storeValue(Record record) throws Exception
 	{
 		switch(field.getContent())
 		{
@@ -47,7 +46,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 		}
 	}
 	
-	public String retrieveValue(Record record)
+	protected String retrieveValue(Record record)
 	{
 		if(!field.getColumn().isValueSet(record))
 			return null;
@@ -132,14 +131,5 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	protected abstract void setValidationError(String errorDescr);
 	
 	protected abstract void clearValidationError();
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#usesKeyboard()
-	 */
-	@Override
-	public boolean usesKeyboard()
-	{
-		return true;
-	}
 
 }

@@ -86,7 +86,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 	}
 
 	@Override
-	public void cancel()
+	protected void cancel()
 	{
 		if(audioRecorder != null)
 			stopRecording();

@@ -3,7 +3,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.NonSelfLeavingFieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 

@@ -23,14 +23,14 @@ public class DrawableItem extends Item
 		this(null, drawable);
 	}
 	
-	public DrawableItem(Long id, Drawable drawable)
+	public DrawableItem(Integer id, Drawable drawable)
 	{
 		super(id);
 		this.drawable = drawable;
 	}
 	
 	@Override
-	protected View createView(Context context)
+	protected View createView(Context context, boolean recycleChildren)
 	{
 		ImageView view = new ImageView(context);
 		view.setImageDrawable(drawable);

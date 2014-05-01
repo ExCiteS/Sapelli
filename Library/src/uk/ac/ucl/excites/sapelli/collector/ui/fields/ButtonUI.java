@@ -5,7 +5,6 @@ import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField.ButtonColumnType;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
@@ -42,7 +41,7 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	 * 			non-optional buttons on pages would return false on isValid(),
 	 * 			preventing leave() from being called at all. 
 	 * 
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI#isValid(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.SelfLeavingFieldUI#isValid(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
 	 */
 	@Override
 	public boolean isValid(Record record)

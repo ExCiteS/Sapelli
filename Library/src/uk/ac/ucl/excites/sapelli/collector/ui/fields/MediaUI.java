@@ -3,10 +3,9 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -40,9 +39,9 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		{
 			controller.addLogLine("ATTACHMENT", field.getID(), "-NONE-");
 			
-			if(field.getOptional() != Optionalness.ALWAYS && field.getCount(controller.getCurrentRecord()) < 1)
+			if(!isValid(controller.getCurrentRecord()))
 				// at least one attachment is required & we have none:
-				controller.goToCurrent(); // stay at this field ("return;" is not enough because if we are using a native app it needs to be restarted)
+				controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE); // stay at this field ("return;" is not enough because if we are using a native app it needs to be restarted)
 			else
 				controller.goForward(userRequested); // goto next/jump field //TODO this needs changing when we allow review of photos/audio
 		}
@@ -60,6 +59,6 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	}
 	
 	@Override
-	public abstract void cancel(); // force concrete subclass to implement this (e.g. to stop audio recording)!
+	protected abstract void cancel(); // force concrete subclass to implement this (e.g. to stop audio recording)!
 
 }

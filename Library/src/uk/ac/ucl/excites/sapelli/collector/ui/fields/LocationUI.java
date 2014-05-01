@@ -6,7 +6,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.SelfLeavingFieldUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -22,7 +21,7 @@ public abstract class LocationUI<V, UI extends CollectorUI<V, UI>> extends SelfL
 	}
 	
 	@Override
-	public abstract void cancel(); // force concrete subclass to implement this (e.g. to stop listening for locations)!
+	protected abstract void cancel(); // force concrete subclass to implement this (e.g. to stop listening for locations)!
 	
 	protected void timeout()
 	{

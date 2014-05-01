@@ -39,7 +39,7 @@ public class ResourceImageItem extends ImageItem
 	}
 	
 	@SuppressLint("DefaultLocale")
-	public ResourceImageItem(Long id, Resources resources, int resourceId)
+	public ResourceImageItem(Integer  id, Resources resources, int resourceId)
 	{
 		super(id, resources.getResourceEntryName(resourceId).toLowerCase().endsWith(SVG_SUFFIX));
 		this.resources = resources;

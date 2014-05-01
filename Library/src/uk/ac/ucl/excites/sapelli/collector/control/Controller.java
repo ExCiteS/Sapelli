@@ -49,11 +49,35 @@ public abstract class Controller
 	private static final String LOG_PREFIX = "Collector_";
 	public static final int VIBRATION_DURATION_MS = 600;
 	
+	/**
+	 * The mode in which a {@link Form} is opened
+	 */
 	public static enum FormMode
 	{
 		CREATE,
 		EDIT,
 		//SELECT
+	}
+	
+	/**
+	 * Determines what should happen when the current field is (attempted to be) left. 
+	 */
+	public static enum LeaveRule
+	{
+		/**
+		 * Leaving the current field will only be allowed if validation (& value storage) is successful.
+		 */
+		CONDITIONAL,
+		
+		/**
+		 * The current field must be unconditionally left but valid values may be stored. 
+		 */
+		UNCONDITIONAL_WITH_STORAGE,
+		
+		/**
+		 * The current field must be unconditionally left without any validation or value storage happening. 
+		 */
+		UNCONDITIONAL_NO_STORAGE
 	}
 	
 	// DYNAMICS------------------------------------------------------
@@ -152,12 +176,12 @@ public abstract class Controller
 	
 	public void cancelAndRestartForm()
 	{	
-		goTo(new FieldWithArguments(new EndField(currFormSession.form, false, Next.LOOPFORM)), true); // loop without saving first (forced leaving of current field)
+		goTo(new FieldWithArguments(new EndField(currFormSession.form, false, Next.LOOPFORM)), LeaveRule.UNCONDITIONAL_NO_STORAGE); // loop without saving first (forced leaving of current field)
 	}
 
 	public void cancelAndStop()
 	{
-		goTo(new FieldWithArguments(new EndField(currFormSession.form, false, Next.EXITAPP)), true); // exit without saving first (forced leaving of current field)
+		goTo(new FieldWithArguments(new EndField(currFormSession.form, false, Next.EXITAPP)), LeaveRule.UNCONDITIONAL_NO_STORAGE); // exit without saving first (forced leaving of current field)
 	}
 	
 	public boolean goToPreviousForm()
@@ -201,7 +225,7 @@ public abstract class Controller
 		
 		// Try to go to previous field...
 		if(currFormSession.canGoBack())
-			goTo(currFormSession.getPrevious(true), true); // force leaving
+			goTo(currFormSession.getPrevious(true), LeaveRule.UNCONDITIONAL_WITH_STORAGE); // force leaving but allow storage (if valid)
 		else
 			// Try to go to previous form...
 			goToPreviousForm();
@@ -223,21 +247,23 @@ public abstract class Controller
 	/**
 	 * Re-enter current field
 	 */
-	public void goToCurrent()
+	public void goToCurrent(LeaveRule leaveRule)
 	{
-		goTo(currFormSession.getCurrent(), true); // force leaving
+		goTo(currFormSession.getCurrent(), leaveRule);
 	}
 	
 	public void goTo(FieldWithArguments nextFieldAndArguments)
 	{
-		goTo(nextFieldAndArguments, false);
+		goTo(nextFieldAndArguments, LeaveRule.CONDITIONAL); // only leave upon successful validation (& value storage)
 	}
 	
 	/**
+	 * Go to the given field with arguments
+	 * 
 	 * @param nextField
-	 * @param forceLeave when true the previous field is left without any validation nor storage(!), under the assumption the user will come back there. It is *not* the same as the noValidation argument on leave(Record,boolean).
+	 * @param leaveRule determines what should happen when attempting to leave the current field 
 	 */
-	public synchronized void goTo(FieldWithArguments nextFieldAndArguments, boolean forceLeave)
+	public synchronized void goTo(FieldWithArguments nextFieldAndArguments, LeaveRule leaveRule)
 	{
 		// Null check...
 		if(nextFieldAndArguments == null || nextFieldAndArguments.field == null)
@@ -246,8 +272,8 @@ public abstract class Controller
 			return;
 		}
 	
-		// Check if we are allowed to leave the currently displayed field (unless the leaving is forced)...
-		if(currFormSession.atField() && !forceLeave && currFormSession.isCurrentFieldDisplayed() && !ui.getCurrentFieldUI().leaveField(currFormSession.record)) 
+		// Try to leave the currently displayed field...
+		if(currFormSession.atField() && currFormSession.isCurrentFieldDisplayed() && !ui.getCurrentFieldUI().leaveField(currFormSession.record, leaveRule))
 		{
 			addLogLine("STAY", "Not allowed to leave field " + getCurrentField().getID());
 			return; // not allowed to leave
@@ -270,14 +296,15 @@ public abstract class Controller
 		// Entering new current field...
 		addLogLine("REACHED", currField.getID());
 		boolean needsUIUpdate = currField.enter(this, currFormSession.getCurrentFieldArguments(), false); // pass arguments to enter()
- 
+		
+		// UI update, if (still) needed:
 		if(currFormSession.getCurrentField() == currField)
 		{	// If the current field hasn't changed as a result of the enter() call...
 			if(needsUIUpdate)
 				ui.setField(currField); // update UI if needed
 			currFormSession.setCurrentFieldDisplayed(needsUIUpdate); // remember whether current field is displayed
 		}
-		//else: when the current field *has* changed as part of the entering we are done here
+		//else: when the current field *has* changed as part of the entering then we are done here
 	}
 	
 	/**

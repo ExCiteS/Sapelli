@@ -1,12 +1,13 @@
-package uk.ac.ucl.excites.sapelli.collector.ui;
+package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
+import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.State;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.TextBoxUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -73,52 +74,52 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @return
 	 */
 	protected abstract V getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord);
+
+	public void hideField()
+	{
+		// mark fieldUI as *not* currently shown:
+		this.shown = false;
+		// Run cancel behaviour:
+		cancel();
+	}
 	
 	/**
 	 * To be overridden by FieldUIs that need to execute cancelling behaviour before disappearing off the screen
 	 */
-	public void cancel()
+	protected void cancel()
 	{
 		// does nothing by default!
-	}
-	
-	/**
-	 * @param record
-	 * @return whether or not leaving the field is allowed
-	 */
-	public boolean leaveField(Record record)
-	{
-		return leaveField(record, false); // apply validation!
 	}
 	
 	/**
 	 * Request to leave the field.
 	 * 
 	 * @param record
-	 * @param noValidation skip validation if true (use with care!)
+	 * @param rule determines whether the leaving is (un)conditional and whether validation/storage is allowed to take place
 	 * @return whether or not leaving the field is allowed
 	 */
-	public boolean leaveField(Record record, boolean noValidation)
+	public boolean leaveField(Record record, Controller.LeaveRule rule)
 	{
-		boolean allowLeaving = leave(record, noValidation);
-		if(allowLeaving)
-		{	// The field will be left, so...
-			this.shown = false; // mark fieldUI as *not* currently shown
-			// Hide the keyboard which may still be shown:
-			if(usesKeyboard())
-				collectorUI.hideKeyboard();
+		if(	// when the request is unconditional AND no storage is allowed we don't call leave() so no validation/storage happens:
+				(rule == LeaveRule.UNCONDITIONAL_NO_STORAGE)
+				// otherwise we allow validation/storage to happen but it only affects the leave permission if the request is conditional:
+				||	(rule == LeaveRule.UNCONDITIONAL_WITH_STORAGE | leave(record, false)))	// "|" (instead of "||") ensures leave() is called even when rule==UNCONDITIONAL_WITH_STORAGE
+		{
+			hideField(); // the field will be left, so hide it
+			return true;
 		}
-		return allowLeaving;
+		else
+			return false;
 	}
 	
 	/**
 	 * Handles request to leave the field.
 	 * 
 	 * @param record
-	 * @param noValidation skip validation if true (use with care!)
+	 * @param skipValidation skip validation if true (use with care!)
 	 * @return whether or not leaving the field is allowed
 	 */
-	protected abstract boolean leave(Record record, boolean noValidation);
+	protected abstract boolean leave(Record record, boolean skipValidation);
 	
 	/**
 	 * Checks whether the field, or rather the value that is (about to be) assigned, is valid.
@@ -127,17 +128,6 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @return
 	 */
 	public abstract boolean isValid(Record record);
-	
-	/**
-	 * Checks whether of not this FieldUI can/may require keyboard input.
-	 * Default implementation returns {@code false}, but this may be overridden by subclasses (notably {@link TextBoxUI}).
-	 * 
-	 * @return whether or not this FieldUI can/may require keyboard input
-	 */
-	public boolean usesKeyboard()
-	{
-		return false;
-	}
 	
 	protected boolean isShownOnPage()
 	{
@@ -185,15 +175,15 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		if(show)
 			switch(control)
 			{
-			case BACK:
-				show = show && controller.canGoBack(false); // can we go back to a previous field or form
-				break;
-			case CANCEL:
-				show = show && isShowCancel();
-				break;
-			case FORWARD:
-				show = show && isShowForward();
-				break;
+				case BACK:
+					show &= controller.canGoBack(false); // can we go back to a previous field or form
+					break;
+				case CANCEL:
+					show &= isShowCancel();
+					break;
+				case FORWARD:
+					show &= isShowForward();
+					break;
 			}
 		
 		// Return state

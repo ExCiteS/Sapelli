@@ -21,25 +21,35 @@ public abstract class Item
 	static public final int DEFAULT_BACKGROUND_COLOR = Color.WHITE;
 	
 	// Dynamics:
-	protected Long id;
+	protected Integer id;
 	protected int paddingPx = DEFAULT_PADDING_PX;
 	protected int backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	protected boolean visible = true;
 	
-	private View view = null;
+	private View view = null; // cached view instance, to allow for recycling
 	
 	/**
 	 * @param id (may be null)
 	 */
-	public Item(Long id)
+	public Item(Integer id)
 	{
 		this.id = id;
 	}
 	
 	public View getView(Context context)
 	{
-		if(view == null)
-			view = createView(context);
+		return getView(context, true); // recycle views by default
+	}
+	
+	/**
+	 * @param context
+	 * @param recycle whether or not to recycle previously instantiate view instance
+	 * @return
+	 */
+	public View getView(Context context, boolean recycle)
+	{
+		if(view == null || !recycle)
+			view = createView(context, recycle);
 		
 		// Set padding:
 		view.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
@@ -58,7 +68,12 @@ public abstract class Item
 		view = null;
 	}
 	
-	protected abstract View createView(Context context);
+	/**
+	 * @param context
+	 * @param recycleChildren only relevant to composite subclasses like {@link LayeredItem}
+	 * @return
+	 */
+	protected abstract View createView(Context context, boolean recycleChildren);
 	
 	public void applyVisibility(View view)
 	{
@@ -96,7 +111,7 @@ public abstract class Item
 		return id != null;
 	}
 	
-	public long getID()
+	public Integer getID()
 	{
 		return id;
 	}

@@ -1,10 +1,11 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.collector.ui;
+package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -26,18 +27,14 @@ public abstract class NonSelfLeavingFieldUI<F extends Field, V, UI extends Colle
 	}
 
 	/**
-	 * Leaving is only allowed upon successful validation, and if valid the value must first be stored.
+	 * Unless noValidation=true, leaving is only allowed upon successful validation, and if valid the value must first be stored.
 	 * 
-	 * Note: "field group" fields (currently there is only Page, possibly we'll introduce others later) will need to
-	 * override this method in order to avoid the noColumn check on themselves and to call leave() on each of their
-	 * contained fields. 
-	 * 
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#leave(Record, boolean)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#leave(Record, boolean)
 	 */
 	@Override
-	protected boolean leave(Record record, boolean noValidation)
+	protected boolean leave(Record record, boolean skipValidation)
 	{
-		if(noValidation || isValid(record))
+		if(skipValidation || isValid(record))
 		{
 			if(!field.isNoColumn())
 			{
@@ -49,7 +46,7 @@ public abstract class NonSelfLeavingFieldUI<F extends Field, V, UI extends Colle
 				{
 					e.printStackTrace(System.err);
 					controller.addLogLine("STORAGE ERROR", e.getClass().getName(), (e.getMessage() != null ? e.getMessage() : ""));
-					return false;
+					return skipValidation;
 				}
 			}
 			return true;
@@ -71,7 +68,7 @@ public abstract class NonSelfLeavingFieldUI<F extends Field, V, UI extends Colle
 	@Override
 	protected boolean isShowForward()
 	{
-		return true; // TODO validate first? check noColumn? Value set? Optionality ...
+		return true;
 	}
 	
 }

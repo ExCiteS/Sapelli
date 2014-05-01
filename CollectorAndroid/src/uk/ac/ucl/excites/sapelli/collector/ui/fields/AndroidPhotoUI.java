@@ -59,7 +59,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 	}
 	
 	@Override
-	public void cancel()
+	protected void cancel()
 	{
 		if(photoView != null)
 		{

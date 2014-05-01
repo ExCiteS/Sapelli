@@ -18,7 +18,7 @@ public class EmptyItem extends Item
 		this(null);
 	}
 	
-	public EmptyItem(Long id)
+	public EmptyItem(Integer id)
 	{
 		super(id);
 	}
@@ -27,7 +27,7 @@ public class EmptyItem extends Item
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.picker.items.Item#createView(android.content.Context)
 	 */
 	@Override
-	protected View createView(Context context)
+	protected View createView(Context context, boolean recycleChildren)
 	{
 		return new View(context);
 	}

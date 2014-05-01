@@ -4,6 +4,7 @@ import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -87,7 +88,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	protected void onChildClick(final ChoiceField child, View childView)
 	{
 		// Ignore click if child is disabled:
-		if(!controller.isFieldEnabled(child))
+		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return;
 		
 		// Task to perform after animation has finished:
@@ -160,18 +161,24 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			
 			// Add the view:
 			this.addView(chosenView, chosenLP);
+			
+			// Enable/disable the chosenView:
+			setEnabled(isEnabled());
 		}
 		
 		@Override
 		public void setEnabled(boolean enabled)
 		{
 			super.setEnabled(enabled);
-			chosenView.setEnabled(enabled);
-			chosenView.setOnClickListener(enabled ? this : null);
-			// Make other fields lose focus and simulate clicking with onFocusChange:
-			chosenView.setFocusable(enabled);
-			chosenView.setFocusableInTouchMode(enabled);
-			chosenView.setOnFocusChangeListener(enabled ? this : null);
+			if(chosenView != null)
+			{
+				chosenView.setEnabled(enabled);
+				chosenView.setOnClickListener(enabled ? this : null);
+				// Make other fields lose focus and simulate clicking with onFocusChange:
+				chosenView.setFocusable(enabled);
+				chosenView.setFocusableInTouchMode(enabled);
+				chosenView.setOnFocusChangeListener(enabled ? this : null);
+			}
 		}
 
 		@Override
@@ -202,7 +209,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			{
 				public void run()
 				{
-					controller.goTo(new FieldWithArguments(field), true); // force leave the page (PageUI#leave() will not be called!) to go to the field itself
+					controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field itself
 				}
 			};
 
@@ -274,7 +281,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		@Override
 		public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 		{
-			onChildClick(field.getChildren().get(position) /* pass the chosen child */, v);
+			if(isEnabled())
+				onChildClick(field.getChildren().get(position) /* pass the chosen child */, v);
 		}
 		
 		@Override

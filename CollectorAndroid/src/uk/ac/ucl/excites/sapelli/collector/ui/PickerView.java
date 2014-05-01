@@ -27,12 +27,20 @@ public class PickerView extends GridView
 	
 	// Dynamics:
 	protected LayoutParams itemLayoutParams = new LayoutParams(DEFAULT_WIDTH_PX, DEFAULT_HEIGHT_PX);
+	protected boolean recycleViews;
 	
 	public PickerView(Context context)
 	{
+		this(context, true); // allow recycled views by default
+	}
+	
+	public PickerView(Context context, boolean recycleViews)
+	{
 		super(context);
+		this.recycleViews = recycleViews;
 		
-		setAdapter(new PickerAdapter(context));
+		// Set adapter:
+		setAdapter(new PickerAdapter());
 		
 		// This is needed to hide the border when an picker item is pressed and to calculate the borders more appropriately
 		setSelector(R.drawable.picker_view_selector);
@@ -44,6 +52,22 @@ public class PickerView extends GridView
 	}
 	
 	/**
+	 * @return the recycleViews
+	 */
+	public boolean isRecycleViews()
+	{
+		return recycleViews;
+	}
+
+	/**
+	 * @param recycleViews the recycleViews to set
+	 */
+	public void setRecycleViews(boolean recycleViews)
+	{
+		this.recycleViews = recycleViews;
+	}
+
+	/**
 	 * @param widthPx the widthPx to set
 	 * @param heightPx the heightPx to set
 	 */
@@ -53,19 +77,16 @@ public class PickerView extends GridView
 	}
 	
 	/**
-	 * @author Julia, mstevens
+	 * @author mstevens, Julia
 	 *
 	 */
 	public class PickerAdapter extends BaseAdapter
 	{
 
-		private Context context;
+		private final List<Item> items;
 		
-		private List<Item> items;
-		
-		public PickerAdapter(Context localContext)
+		public PickerAdapter()
 		{
-			this.context = localContext;
 			this.items = new ArrayList<Item>();
 		}
 		
@@ -79,35 +100,34 @@ public class PickerView extends GridView
 			items.clear();
 		}
 
+		@Override
 		public int getCount()
 		{
 			return items.size();
 		}
 
+		@Override
 		public Item getItem(int position)
 		{
 			return items.get(position);
 		}
-		
-		public List<Item> getItems()
-		{
-			return items;
-		}
 
+		@Override
 		public long getItemId(int position)
 		{
 			Item item = getItem(position);
 			if(item.hasID())
-				return item.getID();
+				return (long) item.getID();
 			return position;
 		}
 
 		/**
 		 * Create a new ImageView for each item referenced by the Adapter
 		 */
+		@Override
 		public View getView(int position, View convertView, ViewGroup parent)
 		{
-			if(convertView != null)
+			if(recycleViews && convertView != null && convertView.getId() == getItemId(position))
 			{
 				items.get(position).applyVisibility(convertView); // in case visibility has changed
 				return convertView;
@@ -115,7 +135,10 @@ public class PickerView extends GridView
 			else
 			{
 				// Create the view:
-				View view = items.get(position).getView(context);
+				View view = items.get(position).getView(getContext(), recycleViews);
+				
+				// Set id:
+				view.setId((int) getItemId(position));
 				
 				// Set layout params (width & height):
 				view.setLayoutParams(itemLayoutParams);

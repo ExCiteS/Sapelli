@@ -16,6 +16,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ButtonUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.CheckBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.LabelUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.LocationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MultiListUI;
@@ -54,8 +55,6 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 	public void setField(Field currentField);
 	
 	public FieldUI<?, V, UI> getCurrentFieldUI();
-	
-	public void hideKeyboard();
 	
 	public int getSpacingPx();
 	

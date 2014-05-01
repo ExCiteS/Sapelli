@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidOrientationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPageUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidTextBoxUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -70,7 +71,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	private HashMap<Field, FieldUI<?, View, CollectorView>> fieldUICache;
 	
 	// Input manager:
-	InputMethodManager imm;
+	private InputMethodManager imm;
 	
 	public CollectorView(CollectorActivity activity)
 	{
@@ -131,9 +132,9 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			fieldUICache.put(field, newFieldUI); // cache the fieldUI for later reuse
 		}
 		
-		// Cancel current fieldUI if there is one and it is not the same as the new one (i.e. it does probably not represent the same field)...
-		if(fieldUI != null && newFieldUI != fieldUI)
-			fieldUI.cancel(); // to stop audio recording, close camera, ...
+		// Hide current fieldUI, if there is one, it is not the same as the new one (i.e. it does probably not represent the same field), and it is currently shown...
+		if(fieldUI != null && newFieldUI != fieldUI && fieldUI.isFieldShown())
+			fieldUI.hideField(); // mark field as not shown, and execute cancel behaviour (e.g. stop audio recording, close camera, ...)
 		
 		// newFieldUI become the current fieldUI:
 		fieldUI = newFieldUI;
@@ -152,13 +153,13 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 				this.removeView(fieldUIView);
 			// Add the new view...
 			if(newFieldUIView != null) // if it is not null itself (just in case)...
+			{
 				this.addView(newFieldUIView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+				newFieldUIView.setId(FIELD_VIEW_ID);
+			}
+			// New becomes current:
+			fieldUIView = newFieldUIView;
 		}
-		fieldUIView = newFieldUIView;
-		
-		// Enable new view:
-		fieldUIView.setId(FIELD_VIEW_ID);
-		fieldUIView.setEnabled(true);
 		
 		// Re-enable the controls:
 		controlsUI.enable();
@@ -250,7 +251,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	public void cancelCurrentField()
 	{
 		if(fieldUI != null)
-			fieldUI.cancel();
+			fieldUI.hideField();
 	}
 	
 	/**
@@ -373,7 +374,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return Math.max((availableHeight - ((numRows - 1) * getSpacingPx())) / numRows, 0); // We use Math(y, 0) to avoid negative pixel counts
 	}
 	
-	@Override
 	public void hideKeyboard()
 	{
 		try

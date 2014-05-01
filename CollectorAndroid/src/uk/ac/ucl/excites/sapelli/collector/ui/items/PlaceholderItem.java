@@ -11,7 +11,7 @@ public class PlaceholderItem extends Item
 		this(null);
 	}
 
-	public PlaceholderItem(Long id)
+	public PlaceholderItem(Integer id)
 	{
 		super(id);
 		visible = false; //!!!
@@ -24,7 +24,7 @@ public class PlaceholderItem extends Item
 	}
 
 	@Override
-	protected View createView(Context context)
+	protected View createView(Context context, boolean recycleChildren)
 	{
 		return new View(context);
 	}

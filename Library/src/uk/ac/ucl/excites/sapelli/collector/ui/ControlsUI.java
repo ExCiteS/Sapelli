@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 
 /**
  * Abstract class to represent the controls UI (i.e. back/cancel/fwd buttons, maybe others later)
@@ -55,7 +56,7 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	public void update(FieldUI<?, V, UI> fieldUI)
 	{
 		// Form change?
-		if(currentForm != fieldUI.getField().getForm())
+		if(fieldUI.getField().getForm() != currentForm)
 		{
 			currentForm = fieldUI.getField().getForm();
 			updateForm(currentForm);

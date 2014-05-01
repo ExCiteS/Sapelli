@@ -24,14 +24,14 @@ public class TextItem extends Item
 		this(null, text);
 	}
 	
-	public TextItem(Long id, String text)
+	public TextItem(Integer id, String text)
 	{
 		super(id);
 		this.text = text;
 	}
 	
 	@Override
-	protected View createView(Context context)
+	protected View createView(Context context, boolean recycleChildren)
 	{
 		TextView txtView = new FontFitTextView(context);
 		txtView.setTextColor(Color.BLACK);

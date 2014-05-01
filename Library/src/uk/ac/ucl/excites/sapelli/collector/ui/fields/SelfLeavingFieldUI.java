@@ -1,11 +1,12 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.collector.ui;
+package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
+import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -35,9 +36,9 @@ public abstract class SelfLeavingFieldUI<F extends Field, V, UI extends Collecto
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.FieldUI#leave(uk.ac.ucl.excites.sapelli.storage.model.Record, boolean)
 	 */
 	@Override
-	protected boolean leave(Record record, boolean noValidation)
+	protected boolean leave(Record record, boolean skipValidation)
 	{
-		return noValidation || isValid(record); // no storage happens at this point!
+		return skipValidation || isValid(record); // no storage happens at this point! (except sometimes in ButtonUI)
 	}
 	
 	/* (non-Javadoc)

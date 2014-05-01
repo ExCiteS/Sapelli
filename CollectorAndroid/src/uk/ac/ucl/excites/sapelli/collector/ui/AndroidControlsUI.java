@@ -90,10 +90,17 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	}
 
 	@Override
-	public void updateForm(Form newForm)
+	protected void updateForm(Form newForm)
 	{
 		if(view == null)
 			return;
+		
+		/* Disable view recycling if animation enabled, in order to work around an Android bug
+		 * 	On recent Android versions (observed on v4.1.2/Xcover2 & v4.4.2/Nexus4; but not on v2.3.6/Xcover1)
+		 * 	the press animation leaves behind a trailing control view in some cases. The only workaround we've
+		 * 	found so far (other than disabling the press animation on the controls, which we don't want to do)
+		 * 	is to always create now views for the control items. */
+		view.setRecycleViews(!newForm.isAnimation());
 		
 		// Background colour:
 		int controlBackgroundColor = ColourHelpers.ParseColour(newForm.getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR); //default is light gray
@@ -102,9 +109,9 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		for(Control control : ControlsUI.Control.values())
 			controlItems[control.ordinal()] = new ControlItem(collectorUI.getContext(), control, newForm, controlBackgroundColor);
 	}
-
+	
 	@Override
-	public void updateControlStates(State[] newControlStates)
+	protected void updateControlStates(State[] newControlStates)
 	{
 		if(view == null)
 			return;
@@ -117,9 +124,9 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			State state = newControlStates[control.ordinal()]; 
 			if(state != State.HIDDEN)
 			{
-				adapter.addItem(controlItems[control.ordinal()]);
 				controlItems[control.ordinal()].setGrayedOut(state == State.SHOWN_DISABLED);
-			}	
+				adapter.addItem(controlItems[control.ordinal()]);
+			}
 		}
 		
 		// Are any controls shown?
@@ -128,10 +135,10 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			view.setVisibility(View.VISIBLE);
 			
 			// Columns:
-			view.setNumColumns(adapter.getItems().size());
+			view.setNumColumns(adapter.getCount());
 
-			// Set adapter:
-			view.setAdapter(adapter); // only needed on Android 2.3.x?
+			// Reset adapter:
+			view.setAdapter(adapter);
 		}
 		else
 		{	// No...
@@ -187,7 +194,8 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	
 		public ControlItem(Context context, Control control, Form form, int backgroundColor)
 		{
-			super((long) control.ordinal()); // pass control ordinal as id
+			// Pass control ordinal as id:
+			super(control.ordinal());
 			
 			// Background & padding:
 			this.setBackgroundColor(backgroundColor);

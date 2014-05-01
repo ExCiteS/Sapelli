@@ -35,7 +35,7 @@ public class FileImageItem extends ImageItem
 	}
 	
 	@SuppressLint("DefaultLocale")
-	public FileImageItem(Long id, File file)
+	public FileImageItem(Integer id, File file)
 	{
 		super(id, FileHelpers.getFileExtension(file.getName()).toLowerCase().startsWith("svg")); //will also work for svgz files
 		this.file = file;

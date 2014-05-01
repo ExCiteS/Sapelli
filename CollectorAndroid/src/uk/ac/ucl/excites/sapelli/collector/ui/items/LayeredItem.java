@@ -26,7 +26,7 @@ public class LayeredItem extends Item
 		this(null);
 	}
 	
-	public LayeredItem(Long id)
+	public LayeredItem(Integer id)
 	{
 		super(id);
 		this.layers = new ArrayList<Item>();
@@ -56,12 +56,12 @@ public class LayeredItem extends Item
 	}
 	
 	@Override
-	protected View createView(Context context)
+	protected View createView(Context context, boolean recycleChildren)
 	{
 		RelativeLayout rl = new RelativeLayout(context);
 		for(Item layer : layers)
 		{
-			View layerView = layer.getView(context);
+			View layerView = layer.getView(context, recycleChildren);
 			rl.addView(layerView, new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 		}
 		return rl;
