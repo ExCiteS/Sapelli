@@ -181,19 +181,17 @@ public class TextBoxField extends Field
 		return collectorUI.createTextFieldUI(this);
 	}
 
-	public void setMaxLength(int maxLength)
+	public void setMinMaxLength(int minLength, int maxLength)
 	{
+		if(minLength < 0 || maxLength < 1 || minLength > maxLength)
+			throw new IllegalArgumentException("minLength must be greater or equal to 0, maxLength must be greater or equal to 1, and minLength must be smaller or equal to maxLength");
+		this.minLength = minLength;
 		this.maxLength = maxLength;
 	}
 
 	public int getDefaultMinLength()
 	{
 		return optional == Optionalness.ALWAYS ? DEFAULT_MIN_LENGTH_OPTIONAL : DEFAULT_MIN_LENGTH_NON_OPTIONAL;
-	}
-	
-	public void setMinLength(int minLength)
-	{
-		this.minLength = minLength;
 	}
 
 	public void setMultiline(boolean multiline)
