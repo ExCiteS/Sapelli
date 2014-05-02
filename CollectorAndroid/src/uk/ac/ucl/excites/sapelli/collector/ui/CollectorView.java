@@ -394,4 +394,14 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return controlsUI;
 	}
 	
+	/**
+	 * Makes the currently focused view lose its focus
+	 */
+	public void revokeFocus()
+	{
+		View focusedView = activity.getCurrentFocus();
+		if(focusedView != null)
+			focusedView.clearFocus();
+	}
+	
 }

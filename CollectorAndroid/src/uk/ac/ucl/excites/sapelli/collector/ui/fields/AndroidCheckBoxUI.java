@@ -9,7 +9,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.view.View;
-import android.view.View.OnFocusChangeListener;
+import android.view.View.OnClickListener;
 import android.widget.CheckBox;
 import android.widget.LinearLayout.LayoutParams;
 
@@ -64,7 +64,7 @@ public class AndroidCheckBoxUI extends CheckBoxUI<View, CollectorView>
 	/**
 	 * @author mstevens
 	 */
-	private class CustomCheckBox extends CheckBox implements OnFocusChangeListener
+	private class CustomCheckBox extends CheckBox implements OnClickListener
 	{
 		
 		private boolean onPage;
@@ -82,28 +82,18 @@ public class AndroidCheckBoxUI extends CheckBoxUI<View, CollectorView>
 			lp.setMargins(0, negativeTopMarginPx, 0, negativeBottomMarginPx); // otherwise checkbox has too much margin on top & bottom (at least on Nexus4) // TODO test on XCover1 & 2)
 			setLayoutParams(lp);
 		}
-
+		
 		@Override
-		public void onFocusChange(View v, boolean hasFocus)
+		public void onClick(View v)
 		{
-			if(hasFocus && isFieldShown() && isEnabled())
-			{
-				// Swap state (to simulate a click):						
-				setChecked(!isChecked());
-				
-				// Lose focus again:
-				clearFocus();
-			}
+			collectorUI.revokeFocus(); // make other fields lose focus (notably to trigger validation on text fields)
 		}
 		
 		@Override
 		public void setEnabled(boolean enabled)
 		{
 			super.setEnabled(enabled);
-			// If on page: make other fields lose focus and simulate clicking with onFocusChange:
-			setFocusable(onPage && enabled);
-			setFocusableInTouchMode(onPage && enabled);
-			setOnFocusChangeListener(onPage && enabled ? this : null);
+			setOnClickListener(onPage && enabled ? this : null);
 		}
 		
 	}
