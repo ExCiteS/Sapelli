@@ -52,7 +52,7 @@ public abstract class Controller
 	/**
 	 * The mode in which a {@link Form} is opened
 	 */
-	public static enum FormMode
+	public static enum Mode
 	{
 		CREATE,
 		EDIT,
@@ -308,7 +308,7 @@ public abstract class Controller
 	}
 	
 	/**
-	 * Checks whether the given field is to be shown in the current FormMode.
+	 * Checks whether the given field is to be shown in the current Mode.
 	 * Note that disabled fields may still be shown (e.g. displayed grayed-out).
 	 * 
 	 * @param field
@@ -323,7 +323,7 @@ public abstract class Controller
 			case EDIT:
 				return field.isShowOnEdit();
 			default:
-				throw new IllegalStateException("Unknown FormMode: " + currFormSession.mode.name());
+				throw new IllegalStateException("Unknown Mode: " + currFormSession.mode.name());
 		}
 	}
 	
@@ -342,7 +342,7 @@ public abstract class Controller
 				// "runtime enabledness" (kept in FormSession, but rarely used) has preference over "static enabledness" (kept in the Field object itself, true by default):
 				&& ((runtimeEnabled = currFormSession.getRuntimeEnabled(field)) != null ? runtimeEnabled : field.isEnabled())
 				// when in EDIT mode the field must be editable to be enabled:
-				&& (currFormSession.mode != FormMode.EDIT || field.isEditable());
+				&& (currFormSession.mode != Mode.EDIT || field.isEditable());
 	}
 
 	protected void saveRecordAndAttachments()
@@ -758,7 +758,7 @@ public abstract class Controller
 	/**
 	 * @return the mode of the currently open form
 	 */
-	public FormMode getCurrentFormMode()
+	public Mode getCurrentMode()
 	{
 		return currFormSession.mode;
 	}

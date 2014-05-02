@@ -74,7 +74,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @return
 	 */
 	protected abstract V getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord);
-
+	
 	public void hideField()
 	{
 		// mark fieldUI as *not* currently shown:
@@ -169,7 +169,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	public ControlsUI.State getControlState(Control control)
 	{
 		// Check if the field allows this control to be shown in the current formMode:
-		boolean show = field.isControlAllowedToBeShown(control, controller.getCurrentFormMode());
+		boolean show = field.isControlAllowedToBeShown(control, controller.getCurrentMode());
 		
 		// Additional checks (if not forbidden by field):
 		if(show)

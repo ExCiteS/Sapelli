@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -25,17 +25,17 @@ public class FormSession
 	// STATIC -------------------------------------------------------
 	static public FormSession Create(Form form, long deviceIDHash)
 	{
-		return new FormSession(form, FormMode.CREATE, form.isProducesRecords() ? form.newRecord(deviceIDHash) : null);
+		return new FormSession(form, Mode.CREATE, form.isProducesRecords() ? form.newRecord(deviceIDHash) : null);
 	}
 	
 	static public FormSession Edit(Form form, Record record)
 	{
-		return new FormSession(form, FormMode.EDIT, record);
+		return new FormSession(form, Mode.EDIT, record);
 	}
 	
 	// DYNAMIC ------------------------------------------------------
 	protected final Form form;
-	protected final FormMode mode;
+	protected final Mode mode;
 	protected Record record; //TODO make final? do we really need to make the record null in Controller#discardRecordAndAttachments()?
 	protected long startTime; //TODO make final?
 	
@@ -50,7 +50,7 @@ public class FormSession
 	 * @param mode
 	 * @param record
 	 */
-	private FormSession(Form form, FormMode mode, Record record)
+	private FormSession(Form form, Mode mode, Record record)
 	{
 		if(form == null)
 			throw new NullPointerException("Form cannot be null!");

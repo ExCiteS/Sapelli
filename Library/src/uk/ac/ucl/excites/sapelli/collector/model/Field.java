@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.FormMode;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
@@ -91,12 +91,12 @@ public abstract class Field extends JumpSource
 		this.id = id.trim();
 		this.caption = caption == null ? this.id : caption;
 		
-		// Construct a 2-dimensional boolean array (Controls x FormMode):
+		// Construct a 2-dimensional boolean array (Controls * FormMode):
 		this.showControlByMode = new boolean[ControlsUI.Control.values().length][];
 		for(Control control : ControlsUI.Control.values())
 		{
-			showControlByMode[control.ordinal()] = new boolean[Controller.FormMode.values().length];
-			for(FormMode mode : Controller.FormMode.values())
+			showControlByMode[control.ordinal()] = new boolean[Controller.Mode.values().length];
+			for(Mode mode : Controller.Mode.values())
 			{
 				boolean defaultShown = true;
 				switch(control)
@@ -265,7 +265,7 @@ public abstract class Field extends JumpSource
 	 * @param formMode
 	 * @return whether of the the giving control is allowed to be show for this field when in the given formMode
 	 */
-	public boolean isControlAllowedToBeShown(Control control, FormMode formMode)
+	public boolean isControlAllowedToBeShown(Control control, Mode formMode)
 	{
 		return showControlByMode[control.ordinal()][formMode.ordinal()];
 	}
@@ -275,7 +275,7 @@ public abstract class Field extends JumpSource
 	 * @param formMode
 	 * @param show
 	 */
-	public void setShowControlOnMode(Control control, FormMode formMode, boolean show)
+	public void setShowControlOnMode(Control control, Mode formMode, boolean show)
 	{
 		showControlByMode[control.ordinal()][formMode.ordinal()] = show;
 	}
@@ -286,7 +286,7 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowControl(Control control, boolean show)
 	{
-		for(FormMode mode : Controller.FormMode.values())
+		for(Mode mode : Controller.Mode.values())
 			showControlByMode[control.ordinal()][mode.ordinal()] = show;
 	}
 
