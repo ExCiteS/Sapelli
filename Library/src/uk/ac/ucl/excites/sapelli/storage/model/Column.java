@@ -100,14 +100,11 @@ public abstract class Column<T> implements Serializable
 		if(value == null)
 		{
 			if(!optional)
-				throw new NullPointerException("Cannot set null value for non-optional column " + getName() + "!");
-			//else: don't store anything (value is null but column is optional)
+				throw new NullPointerException("Cannot set null value for non-optional column \"" + getName() + "\"!");
 		}
 		else
-		{
 			validate(value); //throws IllegalArgumentException if invalid
-			record.setValue(this, value);
-		}
+		record.setValue(this, value); // also store null (to overwrite earlier non-values)
 	}
 	
 	/**
