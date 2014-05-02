@@ -110,6 +110,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			// Spinner (combo box):
 			final MultiListSpinner spinner = new MultiListSpinner(getContext(), parentItem, onPage);
 			spinner.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
+			spinner.setPrompt(field.getCaption(level));
 			
 			if(!selectionStack.isEmpty())
 				spinner.selectItem(selectionStack.pop());
