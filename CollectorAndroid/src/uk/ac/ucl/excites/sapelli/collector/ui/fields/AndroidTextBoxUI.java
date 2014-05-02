@@ -98,6 +98,21 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		if(view != null)
 			view.clearError();
 	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#claimFocus()
+	 */
+	@Override
+	public boolean claimFocus()
+	{
+		if(isFieldShown() && view != null && view.isEnabled() && !view.nullMode)
+		{
+			view.editText.requestFocus();
+			//TODO why doesn't the keyboard appear (or not always)?
+			return true;
+		}
+		return false;
+	}
 
 	/*
 	 * (non-Javadoc)

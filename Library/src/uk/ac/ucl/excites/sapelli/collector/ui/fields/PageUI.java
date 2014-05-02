@@ -104,6 +104,19 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 			markValidity(fieldUI, true);
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#claimFocus()
+	 */
+	@Override
+	public boolean claimFocus()
+	{
+		for(FieldUI<?, V, UI> fUI : fieldUIs)
+			if(	controller.isFieldEnabled(fUI.getField())	// field is enabled (and shown)
+				&& fUI.claimFocus())
+				return true; // the first child field to claim the focus gets it.
+		return false;
+	}
+	
 	/**
 	 * Overridden such that the cancel control is always shown (even if the page is the first field in the form; i.e. there is no field history).
 	 * This will still be overruled if showCancelOnX=false was specified in XML though.

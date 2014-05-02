@@ -161,6 +161,9 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			fieldUIView = newFieldUIView;
 		}
 		
+		// Set focus:
+		fieldUI.claimFocus();
+		
 		// Re-enable the controls:
 		controlsUI.enable();
 	}

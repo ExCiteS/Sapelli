@@ -141,6 +141,19 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	{
 		return shown;
 	}
+	
+	/**
+	 * When called the fieldUI is given the change to take the screen focus.
+	 * If it does, it should return {@code true}, if it does not it should
+	 * return {@code false}, which is also the default behaviour, but some
+	 * subclasses will override this.
+	 * 
+	 * @return
+	 */
+	public boolean claimFocus()
+	{
+		return false;
+	}
 
 	/**
 	 * Slightly hackish method to trigger (re)validation a fieldUI through the page that contains it.
