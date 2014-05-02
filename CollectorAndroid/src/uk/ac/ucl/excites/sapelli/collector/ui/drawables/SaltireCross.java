@@ -59,7 +59,7 @@ public class SaltireCross extends Drawable
 	{
 		// Canvas bounding box:
 		Rect canvasBounds = getBounds();
-				
+		
 		// SaltireCross bounding box:
 		float side = Math.min(canvasBounds.width(), canvasBounds.height());
 		Rect crossBounds = new Rect(canvasBounds.left + (int) ((canvasBounds.width() - side) / 2.0f),

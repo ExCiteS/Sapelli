@@ -13,16 +13,18 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 /**
  * FieldUI for MultiList fields
  * 
- * TODO maybe allow list navigation/selection by keystrokes (in which case this class should override FieldUI#usesKeyboard() in order to return true)
+ * TODO maybe allow list navigation/selection by keystrokes (in which case the keyboard should be hidden in cancel())
  * 
  * @author mstevens
  */
 public abstract class MultiListUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<MultiListField, V, UI>
 {
 
+	// STATIC -------------------------------------------------------
 	static protected final String PLEASE_SELECT = "— Please select —"; //TODO multilang
 	static protected final String UNDO_SELECTION = "— No selection —"; //TODO multilang
 	
+	// DYNAMIC ------------------------------------------------------
 	public MultiListUI(MultiListField listField, Controller controller, UI collectorUI)
 	{
 		super(listField, controller, collectorUI);

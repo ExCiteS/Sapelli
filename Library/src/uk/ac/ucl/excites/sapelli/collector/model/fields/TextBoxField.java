@@ -62,11 +62,12 @@ public class TextBoxField extends Field
 	}
 	
 	// Defaults
-	public static final int DEFAULT_MIN_LENGTH_OPTIONAL = 0;		// default minimum length of 0 chars if field is optional (i.e. optionality = ALWAYS)
-	public static final int DEFAULT_MIN_LENGTH_NON_OPTIONAL = 1;	// default minimum length of 1 char if field is not optional (i.e. optionality = NEVER or NOT_WHEN_REACHED)
-	public static final int DEFAULT_MAX_LENGTH = 128; 				// default maximum length of 128 chars
-	public static final boolean DEFAULT_MULTILINE = false;			// single-line by default
-	public static final String DEFAULT_INITIAL_VALUE = "";			// empty String is the default/initial initialValue
+	public static final int DEFAULT_MIN_LENGTH_OPTIONAL = 0;			// default minimum length of 0 chars if field is optional (i.e. optionality = ALWAYS)
+	public static final int DEFAULT_MIN_LENGTH_NON_OPTIONAL = 1;		// default minimum length of 1 char if field is not optional (i.e. optionality = NEVER or NOT_WHEN_REACHED)
+	public static final int DEFAULT_MAX_LENGTH = 128; 					// default maximum length of 128 chars
+	public static final boolean DEFAULT_MULTILINE = false;				// single-line by default
+	public static final String DEFAULT_INITIAL_VALUE_OPTIONAL = null;	// null is the default initialValue if field is optional (i.e. optionality = ALWAYS)
+	public static final String DEFAULT_INITIAL_VALUE_NON_OPTIONAL = "";	// empty String is the default initialValue if field is not optional (i.e. optionality = NEVER or NOT_WHEN_REACHED)
 	public static final Content DEFAULT_CONTENT = Content.text;		// plain Text content by default
 	public static final Capitalisation DEFAULT_CAPITALISATION = Capitalisation.none; // use no automatic capitalisation by default
 	
@@ -89,14 +90,26 @@ public class TextBoxField extends Field
 		super(	form,
 				(id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id),
 				caption);
-		this.maxLength = DEFAULT_MAX_LENGTH;
-		this.minLength = DEFAULT_MIN_LENGTH_OPTIONAL;
+		this.setMinMaxLength(getDefaultMinLength(), DEFAULT_MAX_LENGTH);
+		this.setInitialValue(getDefaultInitialValue());
 		this.multiline = DEFAULT_MULTILINE;
-		this.initialValue = DEFAULT_INITIAL_VALUE;
 		this.content = DEFAULT_CONTENT;
 		this.capitalisation = DEFAULT_CAPITALISATION;
 	}
 
+	public int getDefaultMinLength()
+	{
+		return optional == Optionalness.ALWAYS ? DEFAULT_MIN_LENGTH_OPTIONAL : DEFAULT_MIN_LENGTH_NON_OPTIONAL;
+	}
+	
+	public void setMinMaxLength(int minLength, int maxLength)
+	{
+		if(minLength < 0 || maxLength < 1 || minLength > maxLength)
+			throw new IllegalArgumentException("minLength must be greater or equal to 0, maxLength must be greater or equal to 1, and minLength must be smaller or equal to maxLength");
+		this.minLength = minLength;
+		this.maxLength = maxLength;
+	}
+	
 	/**
 	 * @return the maxLength
 	 */
@@ -112,6 +125,31 @@ public class TextBoxField extends Field
 	{
 		return minLength;
 	}
+	
+	public String getDefaultInitialValue()
+	{
+		return optional == Optionalness.ALWAYS ? DEFAULT_INITIAL_VALUE_OPTIONAL : DEFAULT_INITIAL_VALUE_NON_OPTIONAL;
+	}
+	
+	/**
+	 * @return the initValue
+	 */
+	public String getInitialValue()
+	{
+		return initialValue;
+	}
+
+	/**
+	 * @param initValue
+	 */
+	public void setInitialValue(String initValue)
+	{
+		if(initValue == null && optional != Optionalness.ALWAYS)
+			throw new IllegalArgumentException("Initial/default value can only be null if the field is (always) optional");
+		if(initValue != null && initValue.length() > maxLength)
+			throw new IllegalArgumentException("Initial/default value is too long (length: " + initValue.length() + "; max: " + maxLength + ")");
+		this.initialValue = initValue;
+	}
 
 	/**
 	 * @return the multiline
@@ -122,86 +160,11 @@ public class TextBoxField extends Field
 	}
 
 	/**
-	 * @return the initValue
+	 * @param multiline
 	 */
-	public String getInitialValue()
-	{
-		return initialValue;
-	}
-
-	/* (non-Javadoc)
-	 * 
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
-	 */
-	@Override
-	protected Column<?> createColumn()
-	{
-		switch(content)
-		{
-			case text :
-			case password :
-			case email :
-			case phonenumber :
-			default :
-				return StringColumn.ForCharacterCount(id, optional != Optionalness.NEVER, maxLength);
-			case unsignedint :
-				return new IntegerColumn(id, optional != Optionalness.NEVER, false, Integer.SIZE);
-			case signedint :
-				return new IntegerColumn(id, optional != Optionalness.NEVER, true, Integer.SIZE);
-			case unsignedlong :
-				return new IntegerColumn(id, optional != Optionalness.NEVER, false, Long.SIZE);
-			case signedlong :
-				return new IntegerColumn(id, optional != Optionalness.NEVER, true, Long.SIZE);
-			case unsignedfloat :
-				return new FloatColumn(id, optional != Optionalness.NEVER, false, false);
-			case signedfloat :
-				return new FloatColumn(id, optional != Optionalness.NEVER, true, false);
-			case unsigneddouble :
-				return new FloatColumn(id, optional != Optionalness.NEVER, false, true);
-			case signeddouble :
-				return new FloatColumn(id, optional != Optionalness.NEVER, true, true);
-		}
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
-	 */
-	@Override
-	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
-	{
-		return true;
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#createUI(uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI)
-	 */
-	@Override
-	public <V, UI extends CollectorUI<V, UI>> TextBoxUI<V, UI> createUI(UI collectorUI)
-	{
-		return collectorUI.createTextFieldUI(this);
-	}
-
-	public void setMinMaxLength(int minLength, int maxLength)
-	{
-		if(minLength < 0 || maxLength < 1 || minLength > maxLength)
-			throw new IllegalArgumentException("minLength must be greater or equal to 0, maxLength must be greater or equal to 1, and minLength must be smaller or equal to maxLength");
-		this.minLength = minLength;
-		this.maxLength = maxLength;
-	}
-
-	public int getDefaultMinLength()
-	{
-		return optional == Optionalness.ALWAYS ? DEFAULT_MIN_LENGTH_OPTIONAL : DEFAULT_MIN_LENGTH_NON_OPTIONAL;
-	}
-
 	public void setMultiline(boolean multiline)
 	{
 		this.multiline = multiline;
-	}
-
-	public void setInitialValue(String initValue)
-	{
-		this.initialValue = initValue;
 	}
 	
 	/**
@@ -296,6 +259,58 @@ public class TextBoxField extends Field
 		{
 			form.addWarning("Unrecognised capitalisation: " + capitalisationStr);
 		}
+	}
+	
+	/* (non-Javadoc)
+	 * 
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 */
+	@Override
+	protected Column<?> createColumn()
+	{
+		switch(content)
+		{
+			case text :
+			case password :
+			case email :
+			case phonenumber :
+			default :
+				return StringColumn.ForCharacterCount(id, optional != Optionalness.NEVER, maxLength);
+			case unsignedint :
+				return new IntegerColumn(id, optional != Optionalness.NEVER, false, Integer.SIZE);
+			case signedint :
+				return new IntegerColumn(id, optional != Optionalness.NEVER, true, Integer.SIZE);
+			case unsignedlong :
+				return new IntegerColumn(id, optional != Optionalness.NEVER, false, Long.SIZE);
+			case signedlong :
+				return new IntegerColumn(id, optional != Optionalness.NEVER, true, Long.SIZE);
+			case unsignedfloat :
+				return new FloatColumn(id, optional != Optionalness.NEVER, false, false);
+			case signedfloat :
+				return new FloatColumn(id, optional != Optionalness.NEVER, true, false);
+			case unsigneddouble :
+				return new FloatColumn(id, optional != Optionalness.NEVER, false, true);
+			case signeddouble :
+				return new FloatColumn(id, optional != Optionalness.NEVER, true, true);
+		}
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
+	 */
+	@Override
+	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
+	{
+		return true;
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#createUI(uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI)
+	 */
+	@Override
+	public <V, UI extends CollectorUI<V, UI>> TextBoxUI<V, UI> createUI(UI collectorUI)
+	{
+		return collectorUI.createTextFieldUI(this);
 	}
 	
 }

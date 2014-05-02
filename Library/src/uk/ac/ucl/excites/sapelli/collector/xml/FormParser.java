@@ -123,7 +123,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_SHOW_BACK = "showBack";
 	static private final String ATTRIBUTE_FIELD_VALUE = "value";
 	static private final String ATTRIBUTE_FIELD_DEFAULTVALUE = "defaultValue";
-	static private final String ATTRIBUTE_FIELD_INITVALUE = "initValue";
+	static private final String ATTRIBUTE_FIELD_INITVALUE = "initialValue";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
 	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
 	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
@@ -409,8 +409,8 @@ public class FormParser extends SubtreeParser
 				// Multi-line:
 				txtField.setMultiline(attributes.getBoolean(ATTRIBUTE_TEXT_MULTILINE, TextBoxField.DEFAULT_MULTILINE));
 				
-				// Initial value:
-				txtField.setInitialValue(attributes.getString(TextBoxField.DEFAULT_INITIAL_VALUE, false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
+				// Initial value (must happen after min/maxLength are set):
+				txtField.setInitialValue(attributes.getString(txtField.getDefaultInitialValue(), false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
 				
 				// Content types:
 				txtField.setContent(attributes.getString(ATTRIBUTE_TEXT_CONTENT, TextBoxField.DEFAULT_CONTENT.name(), true, false));
