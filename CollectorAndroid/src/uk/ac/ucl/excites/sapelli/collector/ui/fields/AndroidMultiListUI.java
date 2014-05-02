@@ -69,8 +69,15 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			}
 			// Remove all spinners
 			view.fullRevert();
+			
+			// Briefly disable automatic pop-up of next spinner:
+			view.setAutoOpenToSelect(false);
+			
 			// Add first spinner, if there is a value in the column the remaining spinner(s) will follow automatically by selection from the selectionStack:
 			view.addNextList(field.getItemsRoot());
+			
+			// Re-enable automatic pop-up:
+			view.setAutoOpenToSelect(true);
 		}
 		
 		return view;
@@ -88,6 +95,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 	{
 
 		private boolean onPage;
+		private boolean autoOpenToSelect = true;
 		
 		public MultiListView(boolean onPage, Context context)
 		{
@@ -112,18 +120,23 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			spinner.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 			spinner.setPrompt(field.getCaption(level));
 			
+			//	Item selected event:
+			spinner.setOnItemSelectedListener(this);
+			
+			//	Item selection:
+			//		Current value:
 			if(!selectionStack.isEmpty())
 				spinner.selectItem(selectionStack.pop());
-			//	Select default if preSelect=true:
+			//		Select default if preSelect=true:
 			else if(field.isPreSelect())
 				spinner.setSelection(parentItem.getDefaultChildIndex());
+			//		Simulate user click:
+			else if(autoOpenToSelect)
+					spinner.performClick();
 			//else: first (dummy) item will be selected
 			
 			//	Enable/disable spinner (also sets focus event listener):
 			spinner.setEnabled(isEnabled());
-			
-			//	Item selected event:
-			spinner.setOnItemSelectedListener(this);
 			
 			//	Add the spinner:
 			addView(spinner);
@@ -179,7 +192,15 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			for(int i = 1; i < getChildCount(); i+=2)
 				getChildAt(i).setEnabled(enabled); // every second child is a spinner
 		}
-		
+
+		/**
+		 * @param autoOpenToSelect the autoOpenToSelect to set
+		 */
+		public void setAutoOpenToSelect(boolean autoOpenToSelect)
+		{
+			this.autoOpenToSelect = autoOpenToSelect;
+		}
+
 	}
 	
 	/**
