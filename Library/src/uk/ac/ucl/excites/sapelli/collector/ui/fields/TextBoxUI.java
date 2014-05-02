@@ -86,6 +86,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 		if(text == null)
 		{
 			if(field.getOptional() != Optionalness.ALWAYS)
+				 // this should never happen really
 				error = "Non-optional field requires a value."; //TODO multilang
 		}
 		// Too short:

@@ -260,8 +260,25 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 					isValidInformPage(controller.getCurrentRecord()); // will call isValid() but via the containing page such that the red box can (dis)appear, if the field is not on a page isValid() is called directly
 			}
 			else if(nullMode)
-				// disable nullMode on touch:
-				setNullMode(false);
+				/* Note:
+				 * 	We use a post() here because if we call setNullMode(false) directly here the keyboard
+				 * 	doesn't appear on Android v2.3.x (observed on Xcover1/v2.3.6). However, the downside
+				 *	of this solution is that on more recent versions (observed on Nexus4/v4.4.2, but not on
+				 *	Xcover1/v2.3.6) it triggers "getTextBeforeCursor on inactive InputConnection" warnings
+				 *	appearing in logcat. We could of course make the use of post() depend on the Android
+				 *	version but so far we don't know exactly which version(s) are affected by this side-effect.
+				 *	So given that these warnings are harmless (only appearing in logcat and no functionality
+				 *	issues) we will just use post() unconditionally (at least for now).
+				 */
+				post(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						// disable nullMode on touch:
+						setNullMode(false);	
+					}
+				});
 		}
 		
 		/**
