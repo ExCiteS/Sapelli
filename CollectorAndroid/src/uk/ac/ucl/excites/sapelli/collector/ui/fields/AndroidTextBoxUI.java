@@ -168,6 +168,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 				// Briefly disable text watching:
 				watchText = false;
 				
+				setNullMode(false); // won't do anything if nullMode=false
 				editText.setText(value);
 				editText.setSelection(value.length()); // set cursor to end
 				
