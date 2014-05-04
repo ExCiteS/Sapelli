@@ -43,7 +43,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	static public final float CROSS_THICKNESS = 0.02f;
 	
 	private PageView pageView;
-	private ChoiceView pickView;
+	private ChoiceView choiceView;
 
 	public AndroidChoiceUI(ChoiceField choice, CollectorController controller, CollectorView collectorView)
 	{
@@ -75,13 +75,14 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		}
 		else
 		{	// not on page and enabled:
-			if(pickView == null)
-				pickView = getChoiceView();
+			if(choiceView == null)
+				choiceView = getChoiceView();
 			
-			// Update pickView:
-			pickView.update();
+			// Update & enable pickView:
+			choiceView.update();
+			choiceView.setEnabled(true);
 			
-			return (View) pickView;
+			return (View) choiceView;
 		}
 	}
 	
@@ -231,6 +232,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	{
 		
 		public void update();
+		
+		public void setEnabled(boolean enabled);
 		
 	}
 	
