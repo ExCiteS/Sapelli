@@ -258,7 +258,9 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			// Limit input length to specified maximum:
 			editText.setFilters(field != null ? new InputFilter[] { new InputFilter.LengthFilter(field.getMaxLength()) } : new InputFilter[] { });
 			// Set input type:
-			editText.setInputType(field != null ? getInputType() : InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_NORMAL);
+			editText.setInputType(field != null ?
+									getInputType() :
+									InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_NORMAL | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS); // plain text without spell check
 		}
 		
 		@Override
