@@ -13,6 +13,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.text.Editable;
@@ -108,7 +109,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		if(isFieldShown() && view != null && view.isEnabled() && !view.nullMode)
 		{
 			view.editText.requestFocus();
-			//TODO why doesn't the keyboard appear (or not always)?
+			collectorUI.showKeyboardFor(view.editText);
 			return true;
 		}
 		return false;
@@ -132,6 +133,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 		private TextView errorMsg;
 		private boolean watchText = true;
 		private boolean nullMode = false;
+		private Drawable crossDrawable = null;
 		
 		// Variables to hold on to some of editText's default attributes while in nullMode: 
 		private Drawable editTextBackground = null;
@@ -217,7 +219,9 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 				{
 					// remember current background drawable & set "crossed" one:
 					editTextBackground = editText.getBackground();
-					ViewHelpers.setViewBackground(editText, new LayerDrawable(new Drawable[] { editTextBackground, new DiagonalCross(NULL_MODE_CROSS_COLOR, ScreenMetrics.ConvertDipToPx(getContext(), NULL_MODE_CROSS_LINE_WIDTH_DIP)) }));
+					if(crossDrawable == null)
+						crossDrawable = new DiagonalCross(NULL_MODE_CROSS_COLOR, ScreenMetrics.ConvertDipToPx(getContext(), NULL_MODE_CROSS_LINE_WIDTH_DIP), Paint.Cap.ROUND);
+					ViewHelpers.setViewBackground(editText, new LayerDrawable(new Drawable[] { editTextBackground, crossDrawable }));
 					// remember current text colors & set color to dark gray:
 					editTextColors = editText.getTextColors();
 					editText.setTextColor(NULL_MODE_TEXT_COLOR);

@@ -4,26 +4,19 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.drawables;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.ColorFilter;
-import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PixelFormat;
 import android.graphics.Rect;
-import android.graphics.drawable.Drawable;
 
 /**
  * Draws a horizontal arrow (pointing left or right), which fits exactly in the vertical, and optionally also the horizontal bounds of the canvas
  * 
  * @author mstevens, Michalis Vitos
  */
-public class HorizontalArrow extends Drawable
+public class HorizontalArrow extends Arrow
 {
 	
-	static public final int DEFAULT_COLOUR = Color.BLACK;
 	static public final boolean DEFAULT_FILL_WIDTH = false;
 
-	private int colour;
 	private boolean leftPointing;
 	private boolean fillWidth = DEFAULT_FILL_WIDTH;
 	
@@ -39,7 +32,7 @@ public class HorizontalArrow extends Drawable
 	
 	public HorizontalArrow(int colour, boolean leftPointing, boolean fillWidth)
 	{
-		this.colour = colour;
+		super(colour);
 		this.leftPointing = leftPointing;
 		this.fillWidth = fillWidth;
 	}
@@ -60,13 +53,6 @@ public class HorizontalArrow extends Drawable
 		boundsPaint.setStyle(Paint.Style.STROKE);
 		boundsPaint.setColor(Color.RED);
 		canvas.drawRect(bounds, boundsPaint);*/
-		
-		// Arrow paint:
-		Paint arrowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-		arrowPaint.setStrokeWidth(1);
-		arrowPaint.setAntiAlias(true);
-		arrowPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-		arrowPaint.setColor(colour);
 		
 		// Altitude of the equilateral triangle which forms the arrow head:
 		float altitude = (float) (Math.sqrt(3.0) * bounds.height() / 2.0f);
@@ -96,39 +82,6 @@ public class HorizontalArrow extends Drawable
 		}
 		arrow.close();
 		canvas.drawPath(arrow, arrowPaint);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see android.graphics.drawable.Drawable#getOpacity()
-	 */
-	@Override
-	public int getOpacity()
-	{
-		return PixelFormat.UNKNOWN;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see android.graphics.drawable.Drawable#setAlpha(int)
-	 */
-	@Override
-	public void setAlpha(int alpha)
-	{	//if the colour already had an alpha value it is overwritten:
-		this.colour = Color.argb(alpha, Color.red(this.colour), Color.green(this.colour), Color.blue(this.colour));
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see android.graphics.drawable.Drawable#setColorFilter(android.graphics.ColorFilter)
-	 */
-	@Override
-	public void setColorFilter(ColorFilter cf)
-	{
-		//Not supported
 	}
 
 }

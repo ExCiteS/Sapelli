@@ -377,6 +377,30 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return Math.max((availableHeight - ((numRows - 1) * getSpacingPx())) / numRows, 0); // We use Math(y, 0) to avoid negative pixel counts
 	}
 	
+	/**
+	 * Show software keyboard for input on the given view.
+	 * 
+	 * TODO check what happens on devices with an (exposed) hardware keyboard
+	 * 
+	 * @param viewWithKeyboardInputNeed
+	 */
+	public void showKeyboardFor(View viewWithKeyboardInputNeed)
+	{
+		try
+		{
+			imm.showSoftInput(viewWithKeyboardInputNeed, InputMethodManager.SHOW_IMPLICIT);
+		}
+		catch(Exception e) // just in case
+		{
+			Log.e(TAG, "Exception upon trying to show keyboard.", e);
+		}
+	}
+	
+	/**
+	 * Hide the software keyobard is currently shown.
+	 * 
+	 * TODO check what happens on devices with an (exposed) hardware keyboard 
+	 */
 	public void hideKeyboard()
 	{
 		try

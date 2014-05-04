@@ -26,6 +26,7 @@ public class SaltireCross extends Drawable
 	
 	private int colour;
 	private float thickness;
+	private Paint crossPaint;
 	
 	/**
 	 * @param colour
@@ -37,6 +38,13 @@ public class SaltireCross extends Drawable
 			throw new IllegalArgumentException("Invalid thickness (" + thickness + "), value should be within [0.0, " + MAX_THICKNESS + "].");
 		this.colour = color;
 		this.thickness = thickness;
+		
+		// SaltireCross paint:
+		crossPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+		crossPaint.setStrokeWidth(1);
+		crossPaint.setAntiAlias(true);
+		crossPaint.setStyle(Paint.Style.FILL_AND_STROKE);
+		crossPaint.setColor(colour);
 	}
 	
 	public SaltireCross(int color)
@@ -75,13 +83,6 @@ public class SaltireCross extends Drawable
 		boundsPaint.setColor(Color.RED);
 		canvas.drawRect(canvasBounds, boundsPaint);
 		canvas.drawRect(crossBounds, boundsPaint);*/
-
-		// SaltireCross paint:
-		Paint crossPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-		crossPaint.setStrokeWidth(1);
-		crossPaint.setAntiAlias(true);
-		crossPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-		crossPaint.setColor(colour);
 		
 		// Draw the cross:
 		float x1 = side * thickness;	//x1 = horizontal distance between 45� corner of triangle and nearest crossBounds corner

@@ -22,18 +22,25 @@ public class DiagonalCross extends Drawable
 	static public final int DEFAULT_COLOUR = Color.BLACK;
 	
 	private int colour;
-	private float lineWidth;
+	private Paint linePaint;
 	
 	/**
 	 * @param colour
 	 * @param lineWidthPx the stroke width of the lines the cross consists of (in pixels)
 	 */
-	public DiagonalCross(int color, float lineWidthPx)
+	public DiagonalCross(int colour, float lineWidthPx, Paint.Cap lineEnds)
 	{
 		if(lineWidthPx < 0.0f)
 			throw new IllegalArgumentException("Invalid line width (" + lineWidthPx + " px).");
-		this.colour = color;
-		this.lineWidth = lineWidthPx;
+		this.colour = colour;
+		
+		// Paint:
+		linePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+		linePaint.setStyle(Paint.Style.FILL_AND_STROKE);
+		linePaint.setAntiAlias(true);
+		linePaint.setColor(colour);
+		linePaint.setStrokeWidth(lineWidthPx);
+		linePaint.setStrokeCap(lineEnds);		
 	}
 	
 	@Override
@@ -41,17 +48,10 @@ public class DiagonalCross extends Drawable
 	{
 		// Canvas bounding box:
 		Rect canvasBounds = getBounds();
-
-		// Paint:
-		Paint crossPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-		crossPaint.setStrokeWidth(lineWidth);
-		crossPaint.setAntiAlias(true);
-		crossPaint.setStyle(Paint.Style.FILL_AND_STROKE);
-		crossPaint.setColor(colour);
 		
 		// Draw the cross:
-		canvas.drawLine(canvasBounds.left, canvasBounds.top, canvasBounds.right, canvasBounds.bottom, crossPaint);
-		canvas.drawLine(canvasBounds.left, canvasBounds.bottom, canvasBounds.right, canvasBounds.top, crossPaint);
+		canvas.drawLine(canvasBounds.left, canvasBounds.top, canvasBounds.right, canvasBounds.bottom, linePaint);
+		canvas.drawLine(canvasBounds.left, canvasBounds.bottom, canvasBounds.right, canvasBounds.top, linePaint);
 	}
 
 	/*
