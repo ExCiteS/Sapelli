@@ -212,7 +212,7 @@ public class MultiListField extends Field
 		
 		private String value;
 		
-		private List<MultiListItem> children = new ArrayList<MultiListItem>();;
+		private List<MultiListItem> children = new ArrayList<MultiListItem>();
 		private int defaultChildIdx = NO_DEFAULT_ITEM_SET_IDX;
 
 		/**

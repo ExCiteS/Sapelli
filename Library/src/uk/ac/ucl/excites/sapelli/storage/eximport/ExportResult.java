@@ -111,5 +111,10 @@ public class ExportResult
 		else
 			return String.format(Locale.getDefault(), "Failed to export records to %s, due to %s.", destination, failureReason); //TODO multilang
 	}
+	
+	public boolean wasSuccessful()
+	{
+		return failureReason == null;
+	}
 
 }

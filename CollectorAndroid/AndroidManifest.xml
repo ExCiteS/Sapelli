@@ -28,9 +28,9 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.ACCESS_GPS"/>
-	<uses-permission android:name="android.permission.ACCESS_LOCATION"/>
-	<uses-permission android:name="android.permission.ACCESS_ASSISTED_GPS"/>
+    <uses-permission android:name="android.permission.ACCESS_GPS" />
+    <uses-permission android:name="android.permission.ACCESS_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_ASSISTED_GPS" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
 
@@ -120,7 +120,7 @@
             android:name="uk.ac.ucl.excites.sapelli.sender.DataSenderService"
             android:icon="@drawable/ic_excites_grey"
             android:label="@string/service_name" >
-        </service>
+        </service>
         -->
 
         <service
@@ -137,9 +137,16 @@
             <intent-filter android:priority="9999999999" >
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
-        </receiver>
+        </receiver>
         -->
-
+        <activity
+            android:name="uk.ac.ucl.excites.sapelli.collector.activities.ExportActivity"
+            android:label="@string/title_activity_export"
+            android:parentActivityName="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity" />
+        </activity>
     </application>
 
 </manifest>

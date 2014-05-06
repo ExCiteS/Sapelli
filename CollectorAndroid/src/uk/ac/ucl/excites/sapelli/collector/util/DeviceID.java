@@ -8,7 +8,6 @@ import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
-import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -17,7 +16,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.wifi.WifiManager;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.SystemClock;
 import android.provider.Settings.Secure;
@@ -216,7 +214,7 @@ public class DeviceID
 		
 	}
 	
-	private static class Initialiser extends AsyncTask<Void, Void, Integer>
+	private static class Initialiser extends AsyncTaskWithWaitingDialog<Void, Void, Integer>
 	{
 
 		// Statics --------------------------------------------------
@@ -231,7 +229,6 @@ public class DeviceID
 		private DeviceID id;
 		private InitialisationCallback caller;
 		private Context context;
-		private ProgressDialog progress;
 		private WifiManager wifiManager;
 		private BluetoothAdapter bluetoothAdapter;
 		private BroadcastReceiver wiFiBroadcastReceiver;
@@ -240,6 +237,7 @@ public class DeviceID
 		
 		public Initialiser(Context context, InitialisationCallback caller)
 		{
+			super(context, "Determining device ID..."); //TODO multilang
 			this.context = context;
 			this.caller = caller;
 			this.id = new DeviceID(context);
@@ -253,15 +251,6 @@ public class DeviceID
 			}
 			else
 				caller.initialisationSuccess(id);
-		}
-		
-		@Override
-		protected void onPreExecute()
-		{
-			progress = new ProgressDialog(context);
-			progress.setMessage("Loading");
-			progress.setCancelable(false);
-			progress.show();
 		}
 
 		@Override
@@ -310,7 +299,7 @@ public class DeviceID
 		@Override
 		protected void onPostExecute(Integer result)
 		{
-			progress.dismiss();
+			super.onPostExecute(result); // to dismiss waiting dialog
 			switch(result)
 			{
 				case RESULT_OK:

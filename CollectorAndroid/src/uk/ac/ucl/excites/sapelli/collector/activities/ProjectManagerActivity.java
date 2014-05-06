@@ -28,10 +28,6 @@ import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper;
-import uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper.Format;
-import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
@@ -70,7 +66,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.ipaulpro.afilechooser.utils.FileUtils;
 import com.larvalabs.svgandroid.SVG;
@@ -105,7 +100,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 	// DYNAMICS-------------------------------------------------------
 	private ProjectStore projectStore;
-	private RecordStore recordStore;
 
 	// UI
 	private EditText enterURL;
@@ -364,110 +358,12 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	
 	public boolean exportRecords(MenuItem item)
 	{
-		final Project selectedProject = getSelectedProject(false);
-		
-		// Get RecordStore instance:
-		try
-		{
-			recordStore = app.getRecordStore(this);
-		}
-		catch(Exception e)
-		{
-			showErrorDialog("Could not open RecordStore: " + e.getLocalizedMessage(), true);
-			return false;
-		}
-		
-		/* TODO show dialog with following options:
-		 * 
-		 * Source selection (spinner):
-		 * 	- all records of forms of currently selected project [default, but only shown if selectedProject != null]
-		 *  - all records of any forms/schema [default if selectedProject == null]
-		 * 
-		 * Date range:
-		 *  - [optional after TIME_X --> checkbox + date/time picket
-		 *  - [optional] before TIME_Y --> checkbox + date/time picket
-		 * 
-		 * Output format (spinner)
-		 *  - XML [default]
-		 *  - CSV
-		 *  
-		 *  If XML selected above, show spinner for composite mode selection:
-		 *   - As String
-		 *   - As flat tags [default]
-		 *   - As nested tags
-		 *   
-		 *  Remove after export
-		 * 
-		 * OK + CANCEL buttons
-		 */
-		final ExportDialog exportDialog = new ExportDialog(this, selectedProject);
-
-		// set dialog message
-		exportDialog.setCancelable(false).setPositiveButton("Export", new DialogInterface.OnClickListener()
-		{
-			public void onClick(DialogInterface dialog, int id)
-			{
-				// TODO export data
-				// To get the selected values exportDialog.getProjects() etc.
-				Toast.makeText(ProjectManagerActivity.this, exportDialog.getProjects(), Toast.LENGTH_LONG).show();
-			}
-		}).setNegativeButton("Cancel", new DialogInterface.OnClickListener()
-		{
-			public void onClick(DialogInterface dialog, int id)
-			{
-				dialog.cancel();
-			}
-		});
-		// create and show the alert dialog
-		exportDialog.create().show();
-		
-		final ExImportHelper.Format exportFormat = Format.XML; //TODO determine from dialog input
-		
-		/* Query for records based on dialog input */
-		final List<Record> exportSelection = null; //TODO
-		
-		/* Generate name for selection, based on dialog input */
-		final String exportSelectionDescription = "selection"; //TODO
-		
-		/* Export (asynchronous) */
-		new Thread(new Runnable()
-		{
-			public void run()
-			{
-				ExportResult result = null;
-				try
-				{
-					result = ExImportHelper.exportRecords(new File(app.getDumpFolderPath()), exportSelection, exportSelectionDescription, exportFormat);
-				}
-				catch(final Exception e)
-				{
-					ProjectManagerActivity.this.runOnUiThread(new Runnable()
-					{
-						public void run()
-						{
-							ProjectManagerActivity.this.showErrorDialog("Error (" + e.toString() + " during record export: " + e.getMessage(), false);
-						}
-					});
-					return;
-				}
-				if(result != null)
-				{
-					final ExportResult res = result; 
-					ProjectManagerActivity.this.runOnUiThread(new Runnable()
-					{
-						public void run()
-						{
-							ProjectManagerActivity.this.showInfoDialog("Data export", "Successfully exported " + res.getNumberedOfExportedRecords() + " records to: " + res.getDestination() + "."); //TODO multilang
-						}
-					});
-				}
-			}
-		});
-		
-		// Discard record store:
-		app.discardStoreUsage(recordStore, this);
-		recordStore = null;
-		
+		Project selectedProject = getSelectedProject(false);
+		Intent i = new Intent(getApplicationContext(), ExportActivity.class);
+		if(selectedProject != null)
+			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, selectedProject.getHash());
+		i.setAction(Intent.ACTION_MAIN);
+		startActivity(i);
 		return true;
 	}
 

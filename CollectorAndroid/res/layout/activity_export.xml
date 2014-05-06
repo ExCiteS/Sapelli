@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical">
+    
+    <LinearLayout
+        android:id="@+id/layoutExportOKCancel"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal" >
+
+        <Button
+            android:id="@+id/btnExportOK"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="scanQR"
+            android:text="@android:string/ok" />
+
+        <Button
+            android:id="@+id/btnExportCancel"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:onClick="loadFile"
+            android:text="@android:string/cancel" />
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_alignParentTop="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="5dp" >
+
+            <TextView
+                android:id="@+id/lblSelectExportRecords"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/exportSelection" />
+
+            <RadioButton
+                android:id="@+id/radioExportSelectedProj"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/exportSelectedProj" />
+
+            <RadioButton
+                android:id="@+id/radioExportAllProj"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/exportAllProj" />
+
+            <TextView
+                android:id="@+id/lblExportDateRange"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/exportDateRange" />
+            
+			<Button
+                android:id="@+id/btnExportFromDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/exportDateRangeFrom" />
+
+            <Button
+                android:id="@+id/btnExportToDate"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/exportDateRangeTo" />
+
+            <TextView
+                android:id="@+id/lblExportFormat"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/exportFormat"/>
+
+            <Spinner
+                android:id="@+id/spinExportFormat"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <LinearLayout
+                android:id="@+id/layoutXMLOptions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone" >
+
+                <TextView
+                    android:id="@+id/lblXMLMode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/exportXMLMode"/>
+
+                <Spinner
+                    android:id="@+id/spinXMLMode"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/layoutCSVOptions"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:visibility="gone" >
+
+                <TextView
+                    android:id="@+id/lblCSVMode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/exportCSVSeparator" />
+
+                <Spinner
+                    android:id="@+id/spinCSVSeparator"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+
+            <CheckBox
+                android:id="@+id/chbxExportRemove"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/exportRemove" />
+        </LinearLayout>
+    </ScrollView>
+
+</RelativeLayout>

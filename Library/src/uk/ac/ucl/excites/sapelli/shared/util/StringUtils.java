@@ -7,6 +7,7 @@ import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * @author mstevens
@@ -160,6 +161,13 @@ public final class StringUtils
 			if(c == needle)
 				count++;
 		return count;
+	}
+	
+	static public String capitalizeFirstLetter(String original)
+	{
+	    if(original.length() == 0)
+	        return original;
+	    return original.substring(0, 1).toUpperCase(Locale.getDefault()) + original.substring(1);
 	}
 	
 }

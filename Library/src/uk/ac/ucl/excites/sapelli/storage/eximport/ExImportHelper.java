@@ -23,7 +23,7 @@ public class ExImportHelper
 		CSV
 	}
 	
-	static private Exporter getExporter(File exportFolder, Format format, XMLRecordsExporter.CompositeMode xmlCompositeMode, String csvSeparator)
+	static public Exporter getExporter(File exportFolder, Format format, XMLRecordsExporter.CompositeMode xmlCompositeMode, String csvSeparator)
 	{
 		switch(format)
 		{

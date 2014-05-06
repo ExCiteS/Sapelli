@@ -19,7 +19,7 @@ public class RecordsQuery
 	static public final boolean DEFAULT_ORDER = true; // ASCending
 	
 	// DYNAMICS------------------------------------------------------
-	private final Schema sourceSchema;
+	private final List<Schema> sourceSchemata;
 	private final AndConstraint constraints;
 	private final ColumnPointer orderBy;
 	private final boolean orderAsc;
@@ -32,17 +32,22 @@ public class RecordsQuery
 	
 	public RecordsQuery(Schema sourceSchema)
 	{
-		this(sourceSchema, (ColumnPointer) null, DEFAULT_ORDER, NO_LIMIT, (Constraint[]) null);
+		this(Collections.<Schema> singletonList(sourceSchema));
 	}
 	
-	public RecordsQuery(ComparatorColumn<?> orderBy, boolean orderDesc)
+	public RecordsQuery(List<Schema> sourceSchemata)
 	{
-		this(null, orderBy, orderDesc, NO_LIMIT, (Constraint[]) null);
+		this(sourceSchemata, (ColumnPointer) null, DEFAULT_ORDER, NO_LIMIT, (Constraint[]) null);
 	}
 	
-	public RecordsQuery(ColumnPointer orderBy, boolean orderDesc)
+	public RecordsQuery(ComparatorColumn<?> orderBy, boolean orderAsc)
 	{
-		this(null, orderBy, orderDesc, NO_LIMIT, (Constraint[]) null);
+		this((List<Schema>) null, orderBy, orderAsc, NO_LIMIT, (Constraint[]) null);
+	}
+	
+	public RecordsQuery(ColumnPointer orderBy, boolean orderAsc)
+	{
+		this(null, orderBy, orderAsc, NO_LIMIT, (Constraint[]) null);
 	}
 	
 	public RecordsQuery(int limit)
@@ -56,43 +61,63 @@ public class RecordsQuery
 	}
 	
 	public RecordsQuery(Schema sourceSchema, Constraint... constraints)
-	{
-		this(sourceSchema, (ColumnPointer) null, DEFAULT_ORDER, NO_LIMIT, constraints);
+	{	
+		this(Collections.<Schema> singletonList(sourceSchema), constraints);
 	}
 	
-	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderDesc)
+	public RecordsQuery(List<Schema> sourceSchemata, Constraint... constraints)
 	{
-		this(sourceSchema, orderBy, orderDesc, NO_LIMIT, (Constraint[]) null);
+		this(sourceSchemata, (ColumnPointer) null, DEFAULT_ORDER, NO_LIMIT, constraints);
 	}
 	
-	public RecordsQuery(Schema sourceSchema, ColumnPointer orderBy, boolean orderDesc)
+	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderAsc)
 	{
-		this(sourceSchema, orderBy, orderDesc, NO_LIMIT, (Constraint[]) null);
+		this(sourceSchema, orderBy, orderAsc, NO_LIMIT, (Constraint[]) null);
 	}
 	
-	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderDesc, Constraint... constraints)
+	public RecordsQuery(Schema sourceSchema, ColumnPointer orderBy, boolean orderAsc)
 	{
-		this(sourceSchema, orderBy, orderDesc, NO_LIMIT, constraints);
+		this(Collections.<Schema> singletonList(sourceSchema), orderBy, orderAsc);
 	}
 	
-	public RecordsQuery(Schema sourceSchema, ColumnPointer orderBy, boolean orderDesc, Constraint... constraints)
+	public RecordsQuery(List<Schema> sourceSchemata, ColumnPointer orderBy, boolean orderAsc)
 	{
-		this(sourceSchema, orderBy, orderDesc, NO_LIMIT, constraints);
+		this(sourceSchemata, orderBy, orderAsc, NO_LIMIT, (Constraint[]) null);
 	}
 	
-	public RecordsQuery(ComparatorColumn<?> orderBy, boolean orderDesc, Constraint... constraints)
+	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderAsc, Constraint... constraints)
 	{
-		this(null, orderBy, orderDesc, NO_LIMIT, constraints);
+		this(sourceSchema, orderBy, orderAsc, NO_LIMIT, constraints);
 	}
 	
-	public RecordsQuery(ColumnPointer orderBy, boolean orderDesc, Constraint... constraints)
+	public RecordsQuery(Schema sourceSchema, ColumnPointer orderBy, boolean orderAsc, Constraint... constraints)
 	{
-		this(null, orderBy, orderDesc, NO_LIMIT, constraints);
+		this(Collections.<Schema> singletonList(sourceSchema), orderBy, orderAsc, constraints);
+	}
+	
+	public RecordsQuery(List<Schema> sourceSchemata, ColumnPointer orderBy, boolean orderAsc, Constraint... constraints)
+	{
+		this(sourceSchemata, orderBy, orderAsc, NO_LIMIT, constraints);
+	}
+	
+	public RecordsQuery(ComparatorColumn<?> orderBy, boolean orderAsc, Constraint... constraints)
+	{
+		this((List<Schema>) null, orderBy, orderAsc, NO_LIMIT, constraints);
+	}
+	
+	public RecordsQuery(ColumnPointer orderBy, boolean orderAsc, Constraint... constraints)
+	{
+		this(null, orderBy, orderAsc, NO_LIMIT, constraints);
 	}
 	
 	public RecordsQuery(Schema sourceSchema, int limit)
 	{
-		this(sourceSchema, (ColumnPointer) null, DEFAULT_ORDER, limit, (Constraint[]) null);
+		this(Collections.<Schema> singletonList(sourceSchema), limit);
+	}
+	
+	public RecordsQuery(List<Schema> sourceSchemata, int limit)
+	{
+		this(sourceSchemata, (ColumnPointer) null, DEFAULT_ORDER, limit, (Constraint[]) null);
 	}
 	
 	public RecordsQuery(int limit, Constraint... constraints)
@@ -100,46 +125,61 @@ public class RecordsQuery
 		this(null, (ColumnPointer) null, DEFAULT_ORDER, limit, constraints);
 	}
 	
-	public RecordsQuery(Schema sourcSchema, int limit, Constraint... constraints)
+	public RecordsQuery(Schema sourceSchema, int limit, Constraint... constraints)
 	{
-		this(sourcSchema, (ColumnPointer) null, DEFAULT_ORDER, limit, constraints);
+		this(Collections.<Schema> singletonList(sourceSchema), limit, constraints);
 	}
 	
-	public RecordsQuery(ComparatorColumn<?> orderBy, boolean orderDesc, int limit)
+	public RecordsQuery(List<Schema> sourceSchemata, int limit, Constraint... constraints)
 	{
-		this(null, orderBy, orderDesc, limit, (Constraint[]) null);
+		this(sourceSchemata, (ColumnPointer) null, DEFAULT_ORDER, limit, constraints);
 	}
 	
-	public RecordsQuery(ColumnPointer orderBy, boolean orderDesc, int limit)
+	public RecordsQuery(ComparatorColumn<?> orderBy, boolean orderAsc, int limit)
 	{
-		this(null, orderBy, orderDesc, limit, (Constraint[]) null);
+		this((List<Schema>) null, orderBy, orderAsc, limit, (Constraint[]) null);
 	}
 	
-	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderDesc, int limit)
+	public RecordsQuery(ColumnPointer orderBy, boolean orderAsc, int limit)
 	{
-		this(sourceSchema, orderBy, orderDesc, limit, (Constraint[]) null);
+		this(null, orderBy, orderAsc, limit, (Constraint[]) null);
 	}
 	
-	public RecordsQuery(Schema sourceSchema, ColumnPointer orderBy, boolean orderDesc, int limit)
+	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderAsc, int limit)
 	{
-		this(sourceSchema, orderBy, orderDesc, limit, (Constraint[]) null);
+		this(sourceSchema, orderBy, orderAsc, limit, (Constraint[]) null);
+	}
+	
+	public RecordsQuery(Schema sourceSchema, ColumnPointer orderBy, boolean orderAsc, int limit)
+	{
+		this(Collections.<Schema> singletonList(sourceSchema), orderBy, orderAsc, limit);
+	}
+	
+	public RecordsQuery(List<Schema> sourceSchemata, ColumnPointer orderBy, boolean orderAsc, int limit)
+	{
+		this(sourceSchemata, orderBy, orderAsc, limit, (Constraint[]) null);
 	}
 	
 	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderAsc, int limit, Constraint... constraints)
 	{
-		this(sourceSchema, new ColumnPointer(orderBy), orderAsc, limit, constraints);
+		this(Collections.<Schema> singletonList(sourceSchema), orderBy, orderAsc, limit, constraints);
+	}
+	
+	public RecordsQuery(List<Schema> sourceSchemata, ComparatorColumn<?> orderBy, boolean orderAsc, int limit, Constraint... constraints)
+	{
+		this(sourceSchemata, new ColumnPointer(orderBy), orderAsc, limit, constraints);
 	}
 	
 	/**
-	 * @param sourceSchema may be null (to query records of any schema)
+	 * @param sourceSchemata may be null or empty (to query records of *any* schema)
 	 * @param orderBy
 	 * @param orderAsc soring order: ASCending (true) or DESCending (false)
 	 * @param limit
 	 * @param constraints
 	 */
-	public RecordsQuery(Schema sourceSchema, ColumnPointer orderBy, boolean orderAsc, int limit, Constraint... constraints)
+	public RecordsQuery(List<Schema> sourceSchemata, ColumnPointer orderBy, boolean orderAsc, int limit, Constraint... constraints)
 	{
-		this.sourceSchema = sourceSchema;
+		this.sourceSchemata = (sourceSchemata != null ? sourceSchemata : Collections.<Schema> emptyList());
 		if(constraints != null && constraints.length == 1 && constraints[0] instanceof AndConstraint)
 			this.constraints = (AndConstraint) constraints[0]; // flatten AND
 		else
@@ -181,7 +221,7 @@ public class RecordsQuery
 	
 	private Constraint getInMemoryConstraits()
 	{
-		if(sourceSchema == null)
+		if(sourceSchemata.isEmpty())
 			return constraints; //Any schema
 		else
 		{	// Specific schema: add additional constraint to check for it
@@ -190,7 +230,7 @@ public class RecordsQuery
 				@Override
 				protected boolean _isValid(Record record)
 				{
-					return record.getSchema().equals(sourceSchema);
+					return sourceSchemata.contains(record.getSchema());
 				}
 	
 				@Override
@@ -239,15 +279,15 @@ public class RecordsQuery
 	
 	public boolean isAnySchema()
 	{
-		return sourceSchema == null;
+		return sourceSchemata.isEmpty();
 	}
 	
 	/**
 	 * @return the sourceSchema
 	 */
-	public Schema getSourceSchema()
+	public List<Schema> getSourceSchemata()
 	{
-		return sourceSchema;
+		return sourceSchemata;
 	}
 
 }
