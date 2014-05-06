@@ -43,13 +43,20 @@ import android.widget.RadioButton;
 import android.widget.Spinner;
 import android.widget.TimePicker;
 
+/**
+ * Activity that deals with exporting of Sapelli Collector records to various output formats
+ * 
+ * @author mstevens, Michalis Vitos
+ */
 public class ExportActivity extends BaseActivity implements OnClickListener, StoreClient
 {
 	
+	// Statics---------------------------------------------
 	static private final int DT_RANGE_IDX_FROM = 0;
 	static private final int DT_RANGE_IDX_TO = 1;
 	static private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm");
 	
+	// Dynamics--------------------------------------------
 	private Project selectedProject;
 	DateTime[] dateRange = new DateTime[2];
 	
@@ -66,9 +73,6 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 	
 	private CheckBox chbxRemove;
 	
-	private Button btnOK;
-	private Button btnCancel;
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
@@ -76,9 +80,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 		setContentView(R.layout.activity_export);
 		this.app = (CollectorApp) getApplication();
 		
-		
 		//TODO load project
-		
 		
 		// UI elements...
 		radioSelectedProject = (RadioButton) findViewById(R.id.radioExportSelectedProj);
@@ -131,23 +133,28 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 		
 		chbxRemove = (CheckBox) findViewById(R.id.chbxExportRemove);
 		
-		btnOK = (Button) findViewById(R.id.btnExportOK);
-		btnOK.setOnClickListener(this);
-		btnCancel = (Button) findViewById(R.id.btnExportCancel);
-		btnCancel.setOnClickListener(this);
+		((Button) findViewById(R.id.btnExportOK)).setOnClickListener(this);
+		((Button) findViewById(R.id.btnExportCancel)).setOnClickListener(this);
 	}
 	
 	@Override
 	public void onClick(View v)
 	{
-		if(v == btnFrom)
-			setDateRange(DT_RANGE_IDX_FROM);
-		else if(v == btnTo)
-			setDateRange(DT_RANGE_IDX_TO);
-		if(v == btnOK)
-			new QueryTask(radioSelectedProject.isSelected() ? selectedProject : null, null, null).execute();
-		else if(v == btnCancel)
-			this.finish();
+		switch(v.getId())
+		{
+			case R.id.btnExportFromDate :
+				setDateRange(DT_RANGE_IDX_FROM);
+				break;
+			case R.id.btnExportToDate :
+				setDateRange(DT_RANGE_IDX_TO);
+				break;
+			case R.id.btnExportOK :
+				new QueryTask(radioSelectedProject.isSelected() ? selectedProject : null, dateRange[DT_RANGE_IDX_FROM], dateRange[DT_RANGE_IDX_TO]).execute();
+				break;
+			case R.id.btnExportCancel :
+				this.finish();
+				break;
+		}
 	}
 	
 	private void setDateRange(final int dtRangeIdx)
@@ -233,26 +240,6 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 									dateRange[dtRangeIdx] == null ?
 											getString(R.string.exportDateRangeAnytime) :
 											dateTimeFormatter.print(dateRange[dtRangeIdx])));
-	}
-	
-	public boolean hasFrom()
-	{
-		return dateRange[DT_RANGE_IDX_FROM] != null;
-	}
-	
-	public DateTime getFrom()
-	{
-		return dateRange[DT_RANGE_IDX_FROM];
-	}
-	
-	public boolean hasTo()
-	{
-		return dateRange[DT_RANGE_IDX_TO] != null;
-	}
-	
-	public DateTime getTo()
-	{
-		return dateRange[DT_RANGE_IDX_TO];
 	}
 	
 	private void queryCallback(List<Record> result)
