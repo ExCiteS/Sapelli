@@ -233,12 +233,12 @@ public class FileWriter
 	{
 		return FileHelpers.getFolderPath(file.getAbsolutePath());
 	}
-
-	public String getFileName()
+	
+	public File getFile()
 	{
-		return FileHelpers.getFileName(file.getAbsolutePath());
+		return file;
 	}
-
+	
 	public boolean fileExists()
 	{
 		if(file != null)

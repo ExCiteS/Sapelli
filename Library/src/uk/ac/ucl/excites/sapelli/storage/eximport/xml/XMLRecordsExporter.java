@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.sapelli.storage.eximport.xml;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
@@ -66,9 +67,9 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	
 	private Record currentRecord;
 	
-	public XMLRecordsExporter(String exportFolderPath, CompositeMode compositeMode)
+	public XMLRecordsExporter(File exportFolder)
 	{
-		this(new File(exportFolderPath), compositeMode);
+		this(exportFolder, DEFAULT_COMPOSITE_MODE);
 	}
 	
 	public XMLRecordsExporter(File exportFolder, CompositeMode compositeMode)
@@ -92,59 +93,73 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	
 	private void closeWriter()
 	{
-		writer.writeLine("</" + TAG_RECORDS_EXPORT + ">");
-		writer.dispose(); // also closes
-		writer = null;
+		if(writer != null)
+		{
+			writer.writeLine("</" + TAG_RECORDS_EXPORT + ">");
+			writer.dispose(); // also closes
+			writer = null;
+		}
 	}
 	
 	@Override
-	public ExportResult export(List<Record> records, String name) throws Exception
+	public ExportResult export(List<Record> records, String name)
 	{
-		openWriter(name);
-		tabs = 1;
 		int count = 0;
-		for(Record r : records)
+		try
 		{
-			writer.openTransaction(); // output will be buffered
-			try
-			{				
-				//Open tag:
-				writer.writeLine(StringUtils.addTabsFront("<" + Record.TAG_RECORD + " " +
-						Schema.ATTRIBUTE_SCHEMA_NAME + "=\"" + XMLUtils.escapeCharacters(r.getSchema().getName()) + "\" " +
-						Schema.ATTRIBUTE_SCHEMA_ID + "=\"" + r.getSchema().getID() + "\"" +
-						">", tabs));
-						//TODO transmission/sent
-			
-				// Indent: 
-				tabs++;
-			
-				// Traverse columns:
-				currentRecord = r;
-				traverse(r.getSchema());
-			
-				// Unindent:
-				tabs--;
-			
-				//Close tag:
-				writer.writeLine(StringUtils.addTabsFront("</" + Record.TAG_RECORD + ">", tabs));
-			
-			}
-			catch(Exception e)
+			openWriter(name);
+			tabs = 1;
+			for(Record r : records)
 			{
-				e.printStackTrace(System.err);
-				writer.rollbackTransaction(); // !!!
-				tabs = 1;
-				writer.writeLine(XMLUtils.comment("Exception on exporting record: " + e.toString() + (e.getMessage() != null ? " [" + e.getMessage() + "]" : ""), tabs));
-				continue; // !!!
+				writer.openTransaction(); // output will be buffered
+				try
+				{				
+					//Open tag:
+					writer.writeLine(StringUtils.addTabsFront("<" + Record.TAG_RECORD + " " +
+							Schema.ATTRIBUTE_SCHEMA_NAME + "=\"" + XMLUtils.escapeCharacters(r.getSchema().getName()) + "\" " +
+							Schema.ATTRIBUTE_SCHEMA_ID + "=\"" + r.getSchema().getID() + "\"" +
+							">", tabs));
+							//TODO transmission/sent
+				
+					// Indent: 
+					tabs++;
+				
+					// Traverse columns:
+					currentRecord = r;
+					traverse(r.getSchema());
+				
+					// Unindent:
+					tabs--;
+				
+					//Close tag:
+					writer.writeLine(StringUtils.addTabsFront("</" + Record.TAG_RECORD + ">", tabs));
+				
+				}
+				catch(Exception e)
+				{
+					writer.rollbackTransaction(); // !!!
+					tabs = 1;
+					writer.writeLine(XMLUtils.comment("Exception on exporting record: " + e.toString() + (e.getMessage() != null ? " [" + e.getMessage() + "]" : ""), tabs));
+					throw e; //!!!
+				}
+				writer.commitTransaction(); // write out buffer
+				count++;
 			}
-			
-			writer.commitTransaction(); // write out buffer
-			count++;
+			// Result...			
+			return ExportResult.Success(count, exportFolder, Collections.singletonList(writer.getFile()));
 		}
-		
-		ExportResult result = new ExportResult(count, writer.getFullPath());
-		closeWriter();
-		return result;
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+			if(count > 0)
+				return ExportResult.PartialFailure(count, exportFolder, Collections.singletonList(writer.getFile()), e);
+			else
+				return ExportResult.Failure(e, exportFolder);
+		}
+		finally
+		{
+			closeWriter();
+		}
 	}
 
 	@Override
