@@ -48,11 +48,7 @@ public abstract class Constraint
 	
 	public Constraint negate()
 	{
-		if(this instanceof NotConstraint)
-			// Avoid double-negations:
-			return ((NotConstraint) this).getNegatedConstraint();
-		else
-			return new NotConstraint(this);
+		return NotConstraint.Negate(this); // will avoid double negations
 	}
 
 }

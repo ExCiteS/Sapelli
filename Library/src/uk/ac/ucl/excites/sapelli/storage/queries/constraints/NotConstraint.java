@@ -12,11 +12,26 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
  */
 public class NotConstraint extends Constraint
 {
+	
+	/**
+	 * @param constraintToNegate
+	 * @return
+	 */
+	static Constraint Negate(Constraint constraintToNegate)
+	{
+		if(constraintToNegate instanceof NotConstraint)
+			// Avoid double-negations:
+			return ((NotConstraint) constraintToNegate).negatedConstraint;
+		else
+			return new NotConstraint(constraintToNegate);
+	}
 
 	private final Constraint negatedConstraint;
 	
-	public NotConstraint(Constraint negatedConstraint)
+	private NotConstraint(Constraint negatedConstraint)
 	{
+		if(negatedConstraint == null)
+			throw new NullPointerException("negatedConstraint cannot be null!");
 		this.negatedConstraint = negatedConstraint;
 	}
 
