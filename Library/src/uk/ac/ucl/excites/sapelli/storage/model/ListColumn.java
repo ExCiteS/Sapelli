@@ -48,7 +48,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	@SuppressWarnings("unchecked")
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength)
 	{
-		super((Class<L>) List.class, name, optional);
+		super((Class<L>) (Class<?>) List.class, name, optional);
 		this.singleColumn = singleColumn;
 		this.sizeField = new IntegerRangeMapping(minLength, maxLength);
 	}
