@@ -27,7 +27,7 @@ public class OrConstraint extends CompositeConstraint
 		for(Constraint subConstraint : constraints)
 			if(subConstraint._isValid(record))
 				return true;
-		return false;
+		return !hasSubConstraints(); // if we do not have subConstraints then any record is valid, if we *do* have subconstraints then reaching this line means none of them caused us to return true above, so return false.
 	}
 
 	/* (non-Javadoc)
