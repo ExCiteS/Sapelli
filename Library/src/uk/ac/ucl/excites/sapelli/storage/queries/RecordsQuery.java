@@ -7,6 +7,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.CompositeConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -20,7 +21,7 @@ public class RecordsQuery
 	
 	// DYNAMICS------------------------------------------------------
 	private final List<Schema> sourceSchemata;
-	private final AndConstraint constraints;
+	private final Constraint constraints;
 	private final ColumnPointer orderBy;
 	private final boolean orderAsc;
 	private final Integer limit;
@@ -173,17 +174,16 @@ public class RecordsQuery
 	/**
 	 * @param sourceSchemata may be null or empty (to query records of *any* schema)
 	 * @param orderBy
-	 * @param orderAsc soring order: ASCending (true) or DESCending (false)
+	 * @param orderAsc sorting order: ASCending (true) or DESCending (false)
 	 * @param limit
 	 * @param constraints
 	 */
 	public RecordsQuery(List<Schema> sourceSchemata, ColumnPointer orderBy, boolean orderAsc, int limit, Constraint... constraints)
 	{
 		this.sourceSchemata = (sourceSchemata != null ? sourceSchemata : Collections.<Schema> emptyList());
-		if(constraints != null && constraints.length == 1 && constraints[0] instanceof AndConstraint)
-			this.constraints = (AndConstraint) constraints[0]; // flatten AND
-		else
-			this.constraints = new AndConstraint(constraints); // can deal with the array or one of its elements being null
+		this.constraints = constraints != null && constraints.length == 1 ?
+							constraints[0] : 
+							new AndConstraint(constraints); // can deal with the array or one of its elements being null, nested ANDs will be flattened
 		this.orderBy = orderBy;
 		this.orderAsc = orderAsc;
 		if(limit < NO_LIMIT || limit == 0)
@@ -222,7 +222,7 @@ public class RecordsQuery
 	private Constraint getInMemoryConstraits()
 	{
 		if(sourceSchemata.isEmpty())
-			return constraints; //Any schema
+			return constraints; // Any schema
 		else
 		{	// Specific schema: add additional constraint to check for it
 			Constraint schemaCheck = new Constraint()
@@ -236,10 +236,10 @@ public class RecordsQuery
 				@Override
 				public void accept(ConstraintVisitor visitor) { /* ignore */ }
 			};
-			if(constraints.getSubConstraints().isEmpty())
+			if(constraints instanceof CompositeConstraint && !((CompositeConstraint) constraints).hasSubConstraints())
 				return schemaCheck;
 			else
-				return new AndConstraint(schemaCheck, constraints);
+				return new AndConstraint(schemaCheck, constraints); // nested AND will be flattened
 		}
 	}
 
