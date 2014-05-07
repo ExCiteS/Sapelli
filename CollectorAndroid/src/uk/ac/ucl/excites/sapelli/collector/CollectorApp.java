@@ -44,6 +44,7 @@ public class CollectorApp extends Application implements StoreClient
 	static private final String TEMP_FOLDER = "Temp" + File.separator;
 	static private final String DOWNLOAD_FOLDER = "Downloads" + File.separator;
 	static private final String DUMP_FOLDER = "Dumps" + File.separator;
+	static private final String EXPORT_FOLDER = "Export" + File.separator;
 	
 	/**
 	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on
@@ -152,6 +153,11 @@ public class CollectorApp extends Application implements StoreClient
 	public String getDumpFolderPath()
 	{
 		return getSapelliFolder().getAbsolutePath() + File.separator + DUMP_FOLDER;
+	}
+	
+	public String getExportFolderPath()
+	{
+		return getSapelliFolder().getAbsolutePath() + File.separator + EXPORT_FOLDER;
 	}
 
 	@Override

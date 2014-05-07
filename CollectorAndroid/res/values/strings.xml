@@ -58,6 +58,7 @@
     <string name="exportDateRangeFrom">From %s</string>
     <string name="exportDateRangeTo">To %s</string>
     <string name="exportDateRangeAnytime">anytime</string>
+    <string name="exportDestination">Destination:</string>
     <string name="exportFormat">Output format:</string>
     <string name="exportXMLMode">XML mode:</string>
     <string name="exportCSVSeparator">CSV separator:</string>
