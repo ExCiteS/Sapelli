@@ -60,7 +60,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	private void openWriter(String description) throws Exception
 	{
 		Charset utf8 = Charset.forName("UTF-8");
-		writer = new FileWriter(exportFolder + File.separator + "RecordDump_" + description + "_" + TimeUtils.getTimestampForFileName() + ".csv", utf8);
+		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName() + ".csv"), utf8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 	}
 	
@@ -82,12 +82,12 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	
 	/**
 	 * @param records all assumed to be of the same top-level schema
-	 * @param name
+	 * @param description
 	 * @return
 	 * @throws Exception
 	 */
 	@Override
-	public ExportResult export(List<Record> records, String name)
+	public ExportResult export(List<Record> records, String description)
 	{
 		// Group records by schema:
 		Map<Schema, List<Record>> recordsBySchema = new HashMap<Schema, List<Record>>();
@@ -113,7 +113,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 			//TODO append separator to header
 			try
 			{
-				openWriter(name);
+				openWriter(description + "_" + entry.getKey().getName());
 
 				// Construct column list:
 				columnPointers.clear();

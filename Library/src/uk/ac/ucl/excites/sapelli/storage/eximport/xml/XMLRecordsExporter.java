@@ -84,7 +84,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	private void openWriter(String description) throws Exception
 	{
 		Charset utf8 = Charset.forName("UTF-8");
-		writer = new FileWriter(exportFolder + File.separator + "RecordDump_" + description + "_" + TimeUtils.getTimestampForFileName() + ".xml", utf8);
+		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName() + ".xml"), utf8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 		writer.writeLine(XMLUtils.header(utf8.displayName(), USES_XML_VERSION_11));
 		writer.writeLine("<" + TAG_RECORDS_EXPORT + ">");
@@ -102,12 +102,12 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	}
 	
 	@Override
-	public ExportResult export(List<Record> records, String name)
+	public ExportResult export(List<Record> records, String description)
 	{
 		int count = 0;
 		try
 		{
-			openWriter(name);
+			openWriter(description);
 			tabs = 1;
 			for(Record r : records)
 			{

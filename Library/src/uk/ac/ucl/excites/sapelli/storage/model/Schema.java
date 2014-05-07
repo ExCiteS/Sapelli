@@ -114,7 +114,7 @@ public class Schema implements Serializable
 			throw new IllegalArgumentException("Invalid schema ID value (" + id + "), valid values are " + SCHEMA_ID_FIELD.getLogicalRangeString() + ".");
 		// Set fields:
 		this.id = id;
-		this.name = (name == null || name.isEmpty() ? "Schema_ID" + id : name);
+		this.name = (name == null || name.isEmpty() ? "Schema-" + id : name);
 		this.columnNameToPosition = new LinkedHashMap<String, Integer>();
 		this.realColumns = new ArrayList<Column>();
 	}

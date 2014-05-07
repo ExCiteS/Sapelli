@@ -48,7 +48,8 @@ public final class FileHelpers
 				case '\\': 
 				case '/': 
 				case '|': 
-				case '\n': 
+				case '\n':
+				case '\r':
 				case '\t': return false;
 			}
 		}
@@ -85,6 +86,7 @@ public final class FileHelpers
 				case '/': chars[c] = '_'; break;
 				case '|': chars[c] = ';'; break;
 				case '\n': chars[c] = '_'; break;
+				case '\r': chars[c] = '_'; break;
 				case '\t': chars[c] = '_'; break;
 			}
 		}
