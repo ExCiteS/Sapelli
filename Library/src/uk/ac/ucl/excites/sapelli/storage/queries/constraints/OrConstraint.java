@@ -3,9 +3,6 @@
  */
 package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -13,27 +10,12 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
  * 
  * @author mstevens
  */
-public class OrConstraint extends Constraint
+public class OrConstraint extends CompositeConstraint
 {
 
-	private final List<Constraint> constraints;
-	
 	public OrConstraint(Constraint... constraints)
 	{
-		this.constraints = new ArrayList<Constraint>();
-		if(constraints != null)
-			for(Constraint c : constraints)
-				addConstraint(c);
-	}
-	
-	public void addConstraint(Constraint constraint)
-	{
-		if(constraint instanceof OrConstraint)
-			// Flatten nested ORs (OR is associative):
-			for(Constraint subConstraint : ((OrConstraint) constraint).constraints)
-				this.constraints.add(subConstraint);
-		else
-			this.constraints.add(constraint);
+		super(constraints);
 	}
 
 	/* (non-Javadoc)
@@ -56,10 +38,11 @@ public class OrConstraint extends Constraint
 	{
 		visitor.visit(this);
 	}
-	
-	public List<Constraint> getSubConstraints()
+
+	@Override
+	protected boolean isAssociative()
 	{
-		return constraints;
+		return true;
 	}
 
 }

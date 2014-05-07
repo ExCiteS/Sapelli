@@ -3,9 +3,6 @@
  */
 package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
 /**
@@ -13,27 +10,12 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
  * 
  * @author mstevens
  */
-public class AndConstraint extends Constraint
+public class AndConstraint extends CompositeConstraint
 {
 
-	private final List<Constraint> constraints;
-	
 	public AndConstraint(Constraint... constraints)
 	{
-		this.constraints = new ArrayList<Constraint>();
-		if(constraints != null)
-			for(Constraint c : constraints)
-				addConstraint(c);
-	}
-	
-	public void addConstraint(Constraint constraint)
-	{
-		if(constraint instanceof AndConstraint)
-			// Flatten nested ANDs (AND is associative):
-			for(Constraint subConstraint : ((AndConstraint) constraint).constraints)
-				this.constraints.add(subConstraint);
-		else
-			this.constraints.add(constraint);
+		super(constraints);
 	}
 
 	/* (non-Javadoc)
@@ -56,10 +38,11 @@ public class AndConstraint extends Constraint
 	{
 		visitor.visit(this);
 	}
-	
-	public List<Constraint> getSubConstraints()
+
+	@Override
+	protected boolean isAssociative()
 	{
-		return constraints;
+		return true;
 	}
 
 }
