@@ -10,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.joda.time.DateTime;
+
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileWriter;
@@ -35,6 +37,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 
 	// STATICS-------------------------------------------------------
 	static public final String DEFAULT_SEPARATOR = ","; 
+	static private Charset UTF8 = Charset.forName("UTF-8");
 	
 	// DYNAMICS------------------------------------------------------
 	private File exportFolder;
@@ -57,11 +60,10 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		this.columnPointers = new ArrayList<ColumnPointer>();
 	}
 	
-	private void openWriter(String description) throws Exception
+	private void openWriter(String description, DateTime timestamp) throws Exception
 	{
-		Charset utf8 = Charset.forName("UTF-8");
-		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName() + ".csv"), utf8);
-		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
+		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".csv"), UTF8);
+		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);	
 	}
 	
 	private void deleteFile()
@@ -89,6 +91,9 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	@Override
 	public ExportResult export(List<Record> records, String description)
 	{
+		// Timestamp for filenames:
+		DateTime timestamp = DateTime.now();
+		
 		// Group records by schema:
 		Map<Schema, List<Record>> recordsBySchema = new HashMap<Schema, List<Record>>();
 		for(Record r : records)
@@ -113,7 +118,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 			//TODO append separator to header
 			try
 			{
-				openWriter(description + "_" + entry.getKey().getName());
+				openWriter(description + "_" + entry.getKey().getName(), timestamp);
 
 				// Construct column list:
 				columnPointers.clear();
