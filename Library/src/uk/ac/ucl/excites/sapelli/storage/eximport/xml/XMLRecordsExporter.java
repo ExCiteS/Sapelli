@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.sapelli.storage.eximport.xml;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -107,7 +108,9 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	@Override
 	public ExportResult export(List<Record> records, String description)
 	{
-		int count = 0;
+		if(records == null || records.isEmpty())
+			return ExportResult.NothingToExport();
+		List<Record> exported = new ArrayList<Record>();
 		try
 		{
 			openWriter(description);
@@ -146,16 +149,17 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 					throw e; //!!!
 				}
 				writer.commitTransaction(); // write out buffer
-				count++;
+				exported.add(r);
+				// TODO mark record as exported?
 			}
 			// Result...			
-			return ExportResult.Success(count, exportFolder, Collections.singletonList(writer.getFile()));
+			return ExportResult.Success(exported, exportFolder, Collections.singletonList(writer.getFile()));
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace(System.err);
-			if(count > 0)
-				return ExportResult.PartialFailure(count, exportFolder, Collections.singletonList(writer.getFile()), e);
+			if(!exported.isEmpty())
+				return ExportResult.PartialFailure(exported, exportFolder, Collections.singletonList(writer.getFile()), e);
 			else
 				return ExportResult.Failure(e, exportFolder);
 		}

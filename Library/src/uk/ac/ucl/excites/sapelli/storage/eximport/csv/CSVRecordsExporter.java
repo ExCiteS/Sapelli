@@ -91,6 +91,9 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	@Override
 	public ExportResult export(List<Record> records, String description)
 	{
+		if(records == null || records.isEmpty())
+			return ExportResult.NothingToExport();
+		
 		// Timestamp for filenames:
 		DateTime timestamp = DateTime.now();
 		
@@ -110,7 +113,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		}
 		
 		// Export each group to a separate CSV file:
-		int count = 0;
+		List<Record> exported = new ArrayList<Record>();
 		List<File> csvFiles = new ArrayList<File>();
 		for(Map.Entry<Schema, List<Record>> entry : recordsBySchema.entrySet())
 		{
@@ -172,7 +175,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 						throw e;
 					}
 					writer.commitTransaction(); // write out buffer
-					count++;
+					exported.add(r);
 				}
 				csvFiles.add(writer.getFile());
 				closeWriter();
@@ -181,14 +184,14 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 			{
 				e.printStackTrace(System.err);
 				deleteFile();
-				if(count > 0)
-					return ExportResult.PartialFailure(count, exportFolder, csvFiles, e);
+				if(!exported.isEmpty())
+					return ExportResult.PartialFailure(exported, exportFolder, csvFiles, e);
 				else
 					return ExportResult.Failure(e, exportFolder);
 			}
 		}
 		// Success:
-		return ExportResult.Success(count, exportFolder, csvFiles);
+		return ExportResult.Success(exported, exportFolder, csvFiles);
 	}
 	
 	@Override
