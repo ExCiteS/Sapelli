@@ -159,9 +159,9 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		{
 			e.printStackTrace(System.err);
 			if(!exported.isEmpty())
-				return ExportResult.PartialFailure(exported, exportFolder, Collections.singletonList(writer.getFile()), e);
+				return ExportResult.PartialFailure(exported, exportFolder, Collections.singletonList(writer.getFile()), e, records.size() - exported.size());
 			else
-				return ExportResult.Failure(e, exportFolder);
+				return ExportResult.Failure(exportFolder, e, records.size());
 		}
 		finally
 		{

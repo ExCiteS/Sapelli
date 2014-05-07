@@ -95,12 +95,6 @@
                 android:layout_height="wrap_content" />
         </LinearLayout>
 
-        <CheckBox
-            android:id="@+id/chbxExportRemove"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/exportRemove" />
-
         <!-- stretching frame layout, using layout_weight -->
         <FrameLayout
             android:layout_width="fill_parent"

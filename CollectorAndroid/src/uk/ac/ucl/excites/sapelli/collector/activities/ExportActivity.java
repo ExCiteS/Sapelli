@@ -2,18 +2,17 @@ package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
-import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper;
@@ -25,6 +24,9 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.Composi
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.app.Dialog;
@@ -71,14 +73,11 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 	private Spinner spinXMLMode;
 	private Spinner spinCSVSeparator;
 	
-	private CheckBox chbxRemove;
-	
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_export);
-		this.app = (CollectorApp) getApplication();
 		
 		//TODO load project
 		
@@ -87,7 +86,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 		radioAllProjects = (RadioButton) findViewById(R.id.radioExportAllProj);
 		if(selectedProject != null)
 		{
-			radioSelectedProject.setText(String.format(Locale.getDefault(), getString(R.string.exportSelectedProj), selectedProject));
+			radioSelectedProject.setText(getString(R.string.exportSelectedProj, selectedProject));
 			radioSelectedProject.setChecked(true);
 		}
 		else
@@ -131,8 +130,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 		spinCSVSeparator = (Spinner) findViewById(R.id.spinCSVSeparator);
 		//TODO csv separator...
 		
-		chbxRemove = (CheckBox) findViewById(R.id.chbxExportRemove);
-		
+		//	OK & Cancel buttons:
 		((Button) findViewById(R.id.btnExportOK)).setOnClickListener(this);
 		((Button) findViewById(R.id.btnExportCancel)).setOnClickListener(this);
 	}
@@ -149,7 +147,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 				setDateRange(DT_RANGE_IDX_TO);
 				break;
 			case R.id.btnExportOK :
-				new QueryTask(radioSelectedProject.isSelected() ? selectedProject : null, dateRange[DT_RANGE_IDX_FROM], dateRange[DT_RANGE_IDX_TO]).execute();
+				new QueryTask().execute();
 				break;
 			case R.id.btnExportCancel :
 				this.finish();
@@ -187,7 +185,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 		// Create the dialog
 		AlertDialog.Builder builder = new Builder(this);
 		// Set the title
-		builder.setTitle(String.format(Locale.getDefault(), getString(dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo), "...")) 
+		builder.setTitle(getString(dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo, '…')) 
 		// Set UI:
 		.setView(view)
 		// Set the buttons:
@@ -222,7 +220,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 			@Override
 			public void onClick(DialogInterface dialog, int which)
 			{
-				updateDateRange(dtRangeIdx, null); // null = *any time*
+				updateDateRange(dtRangeIdx, null); // null = *any time* (no limit set)
 			}
 		})
 		// Create the dialog and show it.
@@ -233,47 +231,91 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 	{
 		dateRange[dtRangeIdx] = newDT;
 		Button btn = dtRangeIdx == DT_RANGE_IDX_FROM ? btnFrom : btnTo;
-		btn.setText(String.format(	Locale.getDefault(),
-									getString(dtRangeIdx == DT_RANGE_IDX_FROM ?
-											R.string.exportDateRangeFrom :
-											R.string.exportDateRangeTo),
-									dateRange[dtRangeIdx] == null ?
-											getString(R.string.exportDateRangeAnytime) :
-											dateTimeFormatter.print(dateRange[dtRangeIdx])));
+		btn.setText(getString(	dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo,
+								dateRange[dtRangeIdx] == null ? getString(R.string.exportDateRangeAnytime) : dateTimeFormatter.print(dateRange[dtRangeIdx])));
 	}
 	
 	private void queryCallback(List<Record> result)
 	{
-		if(result == null)
-			showErrorDialog("Failed to query for records.", true);
-		else if(result.isEmpty())
-			//Dialogs.showWarningDialog(this, "There are no records to export.", true);
-			;
+		if(result.isEmpty())
+			showOKDialog(getString(R.string.title_activity_export), getString(R.string.exportNoRecordsFound));
 		else
 		{
-			//Exporter exporter = ExImportHelper.getExporter(null, , xmlCompositeMode, csvSeparator)
-			//new ExportTask(result.size(), exporter, selectionDescr).execute();
-		}	
+			Exporter exporter = null; //ExImportHelper.getExporter(null, , xmlCompositeMode, csvSeparator)
+			new ExportTask(result, exporter, "TODO").execute();
+		}
 	}
 	
-	private void exportCallback(ExportResult result)
+	private void queryCallback(Exception queryFailure)
 	{
+		showErrorDialog(getString(R.string.exportQueryFailed, ExceptionHelpers.getMessageAndCause(queryFailure)), true);
+	}
+	
+	private void exportCallback(final ExportResult result)
+	{
+		if(result == null)
+			return; // just in case (shouldn't happen)
+		
+		// Runnable to delete exported records:
+		Runnable deleteTask = new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				new DeleteTask(result.getExportedRecords()).execute();
+			}
+		};
+		
+		// Deal with result:
 		if(result.wasSuccessful())
 		{
-			
-			
+			if(result.getNumberedOfExportedRecords() > 0)
+				// show dialog, OK will run deleteTask, cancel will finish activity:
+				showYesNoDialog(R.string.exportSuccessTitle,
+								getString(R.string.exportSuccessMsg, result.getNumberedOfExportedRecords(), result.getDestination()) + '\n' + getString(R.string.exportDeleteConfirm),
+								false,
+								deleteTask,
+								true);
+			else
+				// show dialog & finish activity on OK:
+				showOKDialog(R.string.exportSuccessTitle, getString(R.string.exportNothing), true);
 		}
+		else
+		{
+			if(result.getNumberedOfExportedRecords() > 0)
+				// show dialog, OK will run deleteTask, cancel will finish activity:
+				showYesNoDialog(R.string.exportPartialSuccessTitle,
+								getString(R.string.exportPartialSuccessMsg, result.getNumberedOfExportedRecords(), result.getDestination(), result.getNumberOfUnexportedRecords(), ExceptionHelpers.getMessageAndCause(result.getFailureReason())) + '\n' + getString(R.string.exportDeleteConfirm),
+								false,
+								deleteTask,
+								true);
+			else
+				// show dialog & finish activity on OK:
+				showOKDialog(	R.string.exportFailureTitle,
+								getString(R.string.exportFailureMsg, result.getDestination(), ExceptionHelpers.getMessageAndCause(result.getFailureReason())),
+								true);
+		}
+	}
+	
+	/**
+	 * @param failure exception that caused record deletion to fail (may be null)
+	 */
+	private void deleteCallback(Exception failure)
+	{
+		if(failure != null)
+			showOKDialog(R.string.exportFailureTitle, R.string.exportDeleteFailureMsg, true);
+		else
+			this.finish();
 	}
 	
 	private class QueryTask extends AsyncTaskWithWaitingDialog<Void, Void, List<Record>>
 	{
 
-		private Project project;
+		private Exception failure = null;
 		
-		public QueryTask(Project project, DateTime from, DateTime to)
+		public QueryTask()
 		{
-			super(ExportActivity.this, "Fetching records..."); //TODO multilang
-			this.project = project;
+			super(ExportActivity.this, getString(R.string.exportFetching));
 		}
 
 		@Override
@@ -285,18 +327,22 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 				store = app.getRecordStore(ExportActivity.this);
 				// Schemas (when list stays empty all records of any schema/project/form will be fetched):
 				List<Schema> schemata = new ArrayList<Schema>();
-				if(project != null)
-					for(Form f : project.getForms())
+				if(selectedProject != null)
+					for(Form f : selectedProject.getForms())
 						schemata.add(f.getSchema());
 				// Date range:
-				//if(fromTime != null)
-					
-					
-				return store.retrieveRecords(new RecordsQuery(schemata));
+				AndConstraint constraints = new AndConstraint();
+				if(dateRange[DT_RANGE_IDX_FROM] != null)
+					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.GREATER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_FROM])));
+				if(dateRange[DT_RANGE_IDX_TO] != null)
+					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
+				// Retrieve by query:
+				return store.retrieveRecords(new RecordsQuery(schemata, constraints));
 			}
 			catch(Exception e)
 			{
 				e.printStackTrace(System.err);
+				failure = e;
 				return null;
 			}
 			finally
@@ -309,29 +355,43 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 		protected void onPostExecute(List<Record> result)
 		{
 			super.onPostExecute(result); // dismiss dialog
-			queryCallback(result);
+			if(result != null)
+				queryCallback(result);
+			else
+				queryCallback(failure);
 		}
 	}
 	
-	private class ExportTask extends AsyncTaskWithWaitingDialog<List<Record>, Void, ExportResult>
+	private class ExportTask extends AsyncTaskWithWaitingDialog<Void, Void, ExportResult>
 	{
 
+		private List<Record> records;
 		private Exporter exporter;
 		private String selectionDescr;
 		
-		public ExportTask(int numberOfRecords, Exporter exporter, String selectionDescr)
+		public ExportTask(List<Record> records, Exporter exporter, String selectionDescr)
 		{
-			super(ExportActivity.this, String.format(Locale.getDefault(), "Exporting %d records...", numberOfRecords)); //TODO multilang
+			super(ExportActivity.this, getString(R.string.exportXRecords, records.size()));
+			this.records = records;
 			this.exporter = exporter;
 			this.selectionDescr = selectionDescr;
 		}
 
 		@Override
-		protected ExportResult doInBackground(List<Record>... params)
+		protected ExportResult doInBackground(Void... params)
 		{
-			if(params != null && params.length == 1)
-				return exporter.export(params[0], selectionDescr);
-			return null;
+			try
+			{
+				Thread.sleep(5000);
+			}
+			catch(InterruptedException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+//			if(params != null && params.length == 1)
+//				return exporter.export(params[0], selectionDescr);
+			return ExportResult.Success(records, "bleh");
 		}
 		
 		@Override
@@ -341,6 +401,47 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 			exportCallback(result);
 		}
 		
+	}
+	
+	private class DeleteTask extends AsyncTaskWithWaitingDialog<Void, Void, Void>
+	{
+
+		private List<Record> records;
+		private Exception failure = null;
+		
+		public DeleteTask(List<Record> recordsToDelete)
+		{
+			super(ExportActivity.this, getString(R.string.exportDeletingX, recordsToDelete.size()));
+			this.records = recordsToDelete;
+		}
+
+		@Override
+		protected Void doInBackground(Void... params)
+		{
+			RecordStore store = null;
+			try
+			{
+				store = app.getRecordStore(ExportActivity.this);
+				store.delete(records);
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace(System.err);
+				failure = e;
+			}
+			finally
+			{
+				app.discardStoreUsage(store, ExportActivity.this);
+			}
+			return null;
+		}
+		
+		@Override
+		protected void onPostExecute(Void result)
+		{
+			super.onPostExecute(result); // dismiss dialog
+			deleteCallback(failure);				
+		}
 	}
 
 }

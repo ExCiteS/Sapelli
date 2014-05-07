@@ -98,8 +98,6 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 	{
 		super.onCreate(savedInstanceState);
 
-		app = (CollectorApp) getApplication();
-		
 		// Retrieve the tmpPhotoLocation for the saved state
 		if(savedInstanceState != null && savedInstanceState.containsKey(TEMP_PHOTO_PATH_KEY))
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
@@ -185,7 +183,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		
 		// Show demo disclaimer if needed:
 		if(BuildInfo.DEMO_BUILD)
-			showInfoDialog("Disclaimer", "This is " + getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
+			showOKDialog("Disclaimer", "This is " + getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
 	}
 
 	/**
@@ -220,6 +218,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				if(BuildInfo.DEMO_BUILD)
+					//TODO export
 					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".");
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_UP:

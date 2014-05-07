@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
@@ -122,8 +123,8 @@ public class CollectorController extends Controller implements LocationListener,
 			// Test if provider is active:
 			if(!locationManager.isProviderEnabled(provider))
 			{
-				activity.showErrorDialog("Please enable location provider (" + provider + ") in device  settings.", true, new Runnable() // TODO multilang
-				{	// TODO /how will not illiterates deal with this, and what if the launcher is used (settings screen will be inaccessible)?
+				activity.showOKDialog(R.string.app_name, activity.getString(R.string.enableLocationProvider, provider), true, new Runnable()
+				{	// TODO /how will not illiterates deal with this, and what if the Sapelli launcher is used (settings screen will be inaccessible)?
 					@Override
 					public void run()
 					{

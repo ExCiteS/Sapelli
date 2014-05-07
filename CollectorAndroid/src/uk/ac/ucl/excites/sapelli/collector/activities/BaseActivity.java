@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.collector.R;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -20,49 +21,181 @@ import android.os.Bundle;
 public abstract class BaseActivity extends Activity
 {
 	
+	private static final int HIDE_BUTTON = -1;
+	static private final boolean DEFAULT_FINISH_ON_DIALOG_OK = false;
+	static private final boolean DEFAULT_FINISH_ON_DIALOG_CANCEL = false;
+	
 	protected CollectorApp app;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+		this.app = (CollectorApp) getApplication();
 	}
 	
-	/**
-	 * Show dialog with error message
-	 * 
-	 * @param message
-	 */
-	public void showErrorDialog(String message, final boolean exitOnOK)
+	public void showOKDialog(int titleId, int messageId)
 	{
-		new AlertDialog.Builder(this).setTitle("Error").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
-		{
-			public void onClick(DialogInterface dialog, int whichButton)
-			{
-				if(exitOnOK)
-					finish();
-			}
-		}).create().show();
+		showDialog(getString(titleId), getString(messageId), android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
 	}
 	
-	/**
-	 * Show dialog with error message
-	 * 
-	 * @param message
-	 */
-	public void showErrorDialog(String message, final boolean exitOnOK, final Runnable task)
+	public void showOKDialog(String title, int messageId)
 	{
-		new AlertDialog.Builder(this).setTitle("Error").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
-		{
-			public void onClick(DialogInterface dialog, int whichButton)
-			{
-				task.run();
-				if(exitOnOK)
-					finish();
-			}
-		}).create().show();
+		showDialog(title, getString(messageId), android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+	}
+	
+	public void showOKDialog(int titleId, String message)
+	{
+		showDialog(getString(titleId), message, android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+	}
+	
+	public void showOKDialog(String title, String message)
+	{
+		showDialog(title, message, android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+	}
+	
+	public void showOKDialog(int titleId, int messageId, boolean finishOnOK)
+	{
+		showDialog(getString(titleId), getString(messageId), android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+	}
+	
+	public void showOKDialog(String title, int messageId, boolean finishOnOK)
+	{
+		showDialog(title, getString(messageId), android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+	}
+	
+	public void showOKDialog(int titleId, String message, boolean finishOnOK)
+	{
+		showDialog(getString(titleId), message, android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+	}
+	
+	public void showOKDialog(String title, String message, boolean finishOnOK)
+	{
+		showDialog(title, message, android.R.string.ok, finishOnOK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+	}
+	
+	public void showOKDialog(int titleId, int messageId, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(getString(titleId), getString(messageId), android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+	}
+	
+	public void showOKDialog(String title, int messageId, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(title, getString(messageId), android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+	}
+	
+	public void showOKDialog(int titleId, String message, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(getString(titleId), message, android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+	}
+	
+	public void showOKDialog(String title, String message, boolean finishOnOK, Runnable okTask)
+	{
+		showDialog(title, message, android.R.string.ok, finishOnOK, okTask, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
+	}
+	
+	public void showOKCancelDialog(int titleId, int messageId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
+	{
+		showDialog(getString(titleId), getString(messageId), android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
 	}
 
+	public void showOKCancelDialog(String title, int messageId, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
+	{
+		showDialog(title, getString(messageId), android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+	}
+	
+	public void showOKCancelDialog(int titleId, String message, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
+	{
+		showDialog(getString(titleId), message, android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+	}
+	
+	public void showOKCancelDialog(String title, String message, boolean finishOnOK, Runnable okTask, boolean finishOnCancel)
+	{
+		showDialog(title, message, android.R.string.ok, finishOnOK, okTask, android.R.string.cancel, finishOnCancel);
+	}
+	
+	public void showYesNoDialog(int titleId, int messageId, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	{
+		showDialog(getString(titleId), getString(messageId), R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+	}
+
+	public void showYesNoDialog(String title, int messageId, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	{
+		showDialog(title, getString(messageId), R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+	}
+	
+	public void showYesNoDialog(int titleId, String message, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	{
+		showDialog(getString(titleId), message, R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+	}
+	
+	public void showYesNoDialog(String title, String message, boolean finishOnYes, Runnable yesTask, boolean finishOnNo)
+	{
+		showDialog(title, message, R.string.yes, finishOnYes, yesTask, R.string.no, finishOnNo);
+	}
+	
+	/**
+	 * @param title
+	 * @param message
+	 * @param postiveButtonId
+	 * @param finishOnPositive
+	 * @param positiveTask
+	 * @param negativeButtonId
+	 * @param finishOnNegative
+	 */
+	private void showDialog(String title, String message, int postiveButtonId, final boolean finishOnPositive, final Runnable positiveTask, int negativeButtonId, boolean finishOnNegative)
+	{
+		// Builder:
+		AlertDialog.Builder bldr = new AlertDialog.Builder(this);
+		
+		// set title:
+		bldr.setTitle(title);
+		// set message:
+		bldr.setMessage(message);
+		// set positive button:
+		bldr.setPositiveButton(postiveButtonId, finishOnPositive || positiveTask != null ? new DialogInterface.OnClickListener()
+		{
+			public void onClick(DialogInterface dialog, int whichButton)
+			{
+				if(positiveTask != null)
+					positiveTask.run();
+				if(finishOnPositive)
+					finish();
+			}
+		} : null);
+		// set negative button:
+		if(negativeButtonId != -1)
+			bldr.setNegativeButton(negativeButtonId, finishOnNegative ? new DialogInterface.OnClickListener()
+			{
+				public void onClick(DialogInterface dialog, int whichButton)
+				{
+					finish();
+				}
+			} : null);
+		// create & show
+		bldr.create().show();
+	}
+	
+	/**
+	 * Show dialog with error message
+	 * 
+	 * @param message
+	 */
+	public void showErrorDialog(String message, boolean finish)
+	{
+		showOKDialog(R.string.error, message, finish);
+	}
+
+	/**
+	 * Show dialog with error message
+	 * 
+	 * @param messageId
+	 */
+	public void showErrorDialog(int messageId, boolean finish)
+	{
+		showOKDialog(R.string.error, messageId, finish);
+	}
+	
 	/**
 	 * Show dialog with warning message
 	 * 
@@ -70,10 +203,17 @@ public abstract class BaseActivity extends Activity
 	 */
 	public void showWarningDialog(String message)
 	{
-		new AlertDialog.Builder(this).setTitle("Warning").setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
-		{
-			public void onClick(DialogInterface dialog, int whichButton) { /*does nothing*/ }
-		}).create().show();
+		showOKDialog(R.string.warning, message, false);
+	}
+	
+	/**
+	 * Show dialog with warning message
+	 * 
+	 * @param messageId
+	 */
+	public void showWarningDialog(int messageId)
+	{
+		showOKDialog(R.string.warning, messageId, false);
 	}
 	
 	/**
@@ -83,21 +223,17 @@ public abstract class BaseActivity extends Activity
 	 */
 	public void showInfoDialog(String message)
 	{
-		showInfoDialog("Info", message);
+		showOKDialog(R.string.info, message, false);
 	}
 	
 	/**
 	 * Show dialog with info message
 	 * 
-	 * @param title
-	 * @param message
+	 * @param messageId
 	 */
-	public void showInfoDialog(String title, String message)
+	public void showInfoDialog(int messageId)
 	{
-		new AlertDialog.Builder(this).setTitle(title).setMessage(message).setNeutralButton("OK", new DialogInterface.OnClickListener()
-		{
-			public void onClick(DialogInterface dialog, int whichButton) { /*does nothing*/ }
-		}).create().show();
+		showOKDialog(R.string.info, messageId, false);
 	}
 	
 }

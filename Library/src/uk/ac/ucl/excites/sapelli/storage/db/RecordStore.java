@@ -65,6 +65,15 @@ public abstract class RecordStore implements Store
 	public abstract void delete(Record record);
 
 	/**
+	 * @param records - the records to delete
+	 */
+	public void delete(List<Record> records)
+	{
+		for(Record r : records)
+			delete(r);
+	}
+	
+	/**
 	 * Retrieve all Records (of any schema)
 	 * 
 	 * @return

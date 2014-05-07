@@ -32,7 +32,24 @@
     <string name="app_usage_statistics">Statistics on App usage</string>
     <string name="settings">Settings</string>
     
-    <string name="title_activity_export">Sapelli Exporter</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    
+    <string name="needsStorageAccess">needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.</string>
+    <string name="projectStorageAccessFail">Could not access project storage, due to: %s.</string>
+    <string name="enableLocationProvider">Please enable location provider (%s) in device  settings.</string>
+    <string name="noDeviceID">Failed to generate a unique identifier for your device.</string>
+    <string name="selectProject">Please select a project.</string>
+    <string name="removeProjectConfirm">Are you sure that you want to remove the project?</string>
+    <string name="demoLoadFail">Could not load demo project.</string>
+    <string name="chooseSapelliFile">Choose a .sapelli or .sap  file</string>
+    <string name="backupFailDueTo">Failed to backup database(s), due to: %s</string>
+    
+    <string name="error">Error</string>
+    <string name="warning">Warning</string>
+    <string name="info">Info</string>
+    
+    <string name="title_activity_export">Sapelli Collector Exporter</string>
     <string name="exportSelection">Select records to export:</string>
     <string name="exportSelectedProj">All records of %s</string>
     <string name="exportAllProj">All records of all projects</string>
@@ -44,5 +61,19 @@
     <string name="exportXMLMode">XML mode:</string>
     <string name="exportCSVSeparator">CSV separator:</string>
     <string name="exportRemove">Delete records after successful export</string>
+    <string name="exportFetching">Fetching records…</string>
+    <string name="exportQueryFailed">Failed to query for records, due to: %s.</string>
+    <string name="exportNoRecordsFound">No records meeting export criteria were found.</string>
+    <string name="exportXRecords">Exporting %d records…</string>
+    <string name="exportSuccessTitle">Success</string>
+    <string name="exportSuccessMsg">Successfully exported %1$d records to %2$s.</string>
+    <string name="exportPartialSuccessTitle">Partial success</string>
+    <string name="exportPartialSuccessMsg">Successfully exported %1$d records to %2$s, but failed to export %3$d additional records due to: %4$s.</string>
+    <string name="exportDeleteConfirm">Do you want to delete the exported records?</string>
+    <string name="exportFailureTitle">Failure</string>
+    <string name="exportFailureMsg">Failed to export any records to %1$s, due to: %2$s.</string>
+    <string name="exportDeleteFailureMsg">Failed to delete (some of) the records.</string>
+    <string name="exportNothing">There was nothing to export.</string>
+    <string name="exportDeletingX">Deleting %d records…</string>
 
 </resources>

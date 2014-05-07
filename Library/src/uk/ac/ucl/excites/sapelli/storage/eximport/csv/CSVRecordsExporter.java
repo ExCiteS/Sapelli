@@ -176,6 +176,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 					}
 					writer.commitTransaction(); // write out buffer
 					exported.add(r);
+					// TODO mark record as exported?
 				}
 				csvFiles.add(writer.getFile());
 				closeWriter();
@@ -185,9 +186,9 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				e.printStackTrace(System.err);
 				deleteFile();
 				if(!exported.isEmpty())
-					return ExportResult.PartialFailure(exported, exportFolder, csvFiles, e);
+					return ExportResult.PartialFailure(exported, exportFolder, csvFiles, e, records.size() - exported.size());
 				else
-					return ExportResult.Failure(e, exportFolder);
+					return ExportResult.Failure(exportFolder, e, records.size());
 			}
 		}
 		// Success:

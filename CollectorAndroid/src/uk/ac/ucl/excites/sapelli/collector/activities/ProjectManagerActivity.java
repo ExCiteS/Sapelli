@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
-import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
@@ -26,6 +25,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
@@ -113,7 +113,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		app = (CollectorApp) getApplication();
 
 		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
@@ -122,18 +121,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		}
 		catch(IllegalStateException ise)
 		{	// Inform the user and close the application
-			showErrorDialog(getString(R.string.app_name) + " needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
-			return;
-		}
-
-		// Get ProjectStore instance:
-		try
-		{
-			projectStore = app.getProjectStore(this);
-		}
-		catch(Exception e)
-		{
-			showErrorDialog("Could not open ProjectStore: " + e.getLocalizedMessage(), true);
+			showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
 			return;
 		}
 				
@@ -221,10 +209,14 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// Initialise DeviceID:
 		DeviceID.Initialise(this, this); // will post a callback upon completion (success/failure)
 
-		// Check database connection:
-		if(projectStore == null)
+		// Get ProjectStore instance:
+		try
 		{
-			showErrorDialog("Could not establish database connection", true);
+			projectStore = app.getProjectStore(this);
+		}
+		catch(Exception e)
+		{
+			showErrorDialog(getString(R.string.projectStorageAccessFail, ExceptionHelpers.getMessageAndCause(e)), true);
 			return;
 		}
 		
@@ -245,7 +237,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	public void initialisationFailure(DeviceID deviceID)
 	{
 		deviceID.printInfo();
-		showErrorDialog("Sapelli was unable to generate a unique identifier for your device.", true);
+		showErrorDialog(R.string.noDeviceID, true);
 	}
 
 	private void demoMode()
@@ -268,7 +260,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		catch(Exception e)
 		{
 			Log.e(TAG, "Error loading/storing/launching demo project", e);
-			showErrorDialog("Could not load demo project.", true);
+			showErrorDialog(R.string.demoLoadFail, true);
 		}
 	}
 
@@ -390,7 +382,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		}
 		catch(Exception e)
 		{
-			showErrorDialog("Failed to backup database(s): " + e.getLocalizedMessage(), false);
+			showErrorDialog(getString(R.string.backupFailDueTo, ExceptionHelpers.getMessageAndCause(e)), false);
 		}
 		return true;
 	}
@@ -400,7 +392,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// Use the GET_CONTENT intent from the utility class
 		Intent target = FileUtils.createGetContentIntent();
 		// Create the chooser Intent
-		Intent intent = Intent.createChooser(target, "Choose a sapelli file");
+		Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
 		try
 		{
 			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
@@ -439,7 +431,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		if(projectList.getCheckedItemPosition() == -1)
 		{
 			if(errorIfNull)
-				showErrorDialog("Please select a project", false); // TODO multilang
+				showErrorDialog(R.string.selectProject, false);
 			return null;
 		}
 		return ((ArrayAdapter<Project>) projectList.getAdapter()).getItem(projectList.getCheckedItemPosition());
@@ -854,24 +846,17 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	 */
 	public void removeDialog(View view)
 	{
-		if(projectList.getCheckedItemPosition() == -1)
-			showErrorDialog("Please select a project", false);
-		else
+		Project project = getSelectedProject(true);
+		if(project != null)
 		{
-			AlertDialog removeDialogBox = new AlertDialog.Builder(this).setMessage("Are you sure that you want to remove the project?")
-					.setPositiveButton("Yes", new DialogInterface.OnClickListener()
-					{
-						public void onClick(DialogInterface dialog, int whichButton)
-						{
-							removeProject();
-						}
-					}).setNegativeButton("Cancel", new DialogInterface.OnClickListener()
-					{
-						public void onClick(DialogInterface dialog, int whichButton)
-						{
-						}
-					}).create();
-			removeDialogBox.show();
+			showYesNoDialog(R.string.project_manager, R.string.removeProjectConfirm, false, new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					removeProject();
+				}
+			}, false);
 		}
 	}
 

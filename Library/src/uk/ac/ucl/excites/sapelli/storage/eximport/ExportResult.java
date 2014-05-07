@@ -6,7 +6,6 @@ package uk.ac.ucl.excites.sapelli.storage.eximport;
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
@@ -20,37 +19,37 @@ public class ExportResult
 	// STATICS-------------------------------------------------------
 	static public ExportResult Success(List<Record> exportedRecords, String destination)
 	{
-		return new ExportResult(exportedRecords, destination, null, null);
+		return new ExportResult(exportedRecords, destination, null, null, 0);
 	}
 	
 	static public ExportResult Success(List<Record> exportedRecords, File folder, List<File> files)
 	{
-		return new ExportResult(exportedRecords, folder.getAbsolutePath(), files, null);
+		return new ExportResult(exportedRecords, folder.getAbsolutePath(), files, null, 0);
 	}
 	
-	static public ExportResult PartialFailure(List<Record> exportedRecords, String destination, Exception reason)
+	static public ExportResult PartialFailure(List<Record> exportedRecords, String destination, Exception reason, int numberOfUnexportedRecords)
 	{
-		return new ExportResult(exportedRecords, destination, null, reason);
+		return new ExportResult(exportedRecords, destination, null, reason, numberOfUnexportedRecords);
 	}
 	
-	static public ExportResult PartialFailure(List<Record> exportedRecords, File folder, List<File> files, Exception reason)
+	static public ExportResult PartialFailure(List<Record> exportedRecords, File folder, List<File> files, Exception reason, int numberOfUnexportedRecords)
 	{
-		return new ExportResult(exportedRecords, folder.getAbsolutePath(), files, reason);
+		return new ExportResult(exportedRecords, folder.getAbsolutePath(), files, reason, numberOfUnexportedRecords);
 	}
 	
-	static public ExportResult Failure(Exception reason, String destination)
+	static public ExportResult Failure(String destination, Exception reason, int numberOfUnexportedRecords)
 	{
-		return new ExportResult(null, destination, null, reason);
+		return new ExportResult(null, destination, null, reason, numberOfUnexportedRecords);
 	}
 	
-	static public ExportResult Failure(Exception reason, File folder)
+	static public ExportResult Failure(File folder, Exception reason, int numberOfUnexportedRecords)
 	{
-		return new ExportResult(null, folder.getAbsolutePath(), null, reason);
+		return new ExportResult(null, folder.getAbsolutePath(), null, reason, numberOfUnexportedRecords);
 	}
 	
 	static public ExportResult NothingToExport()
 	{
-		return new ExportResult(null, "", null, null);
+		return new ExportResult(null, "", null, null, 0);
 	}
 	
 	// DYNAMICS------------------------------------------------------
@@ -58,6 +57,7 @@ public class ExportResult
 	private final String destination;
 	private final List<File> files;
 	private final Exception failureReason;
+	private final int numberOfUnexportedRecords;
 	
 	/**
 	 * @param exportedRecords
@@ -65,12 +65,13 @@ public class ExportResult
 	 * @param files
 	 * @param failureReason
 	 */
-	private ExportResult(List<Record> exportedRecords, String destination, List<File> files, Exception failureReason)
+	private ExportResult(List<Record> exportedRecords, String destination, List<File> files, Exception failureReason, int numberOfUnexportedRecords)
 	{
 		this.exportedRecords = exportedRecords;
 		this.destination = destination;
 		this.files = files;
 		this.failureReason = failureReason;
+		this.numberOfUnexportedRecords = numberOfUnexportedRecords;
 	}
 
 	/**
@@ -107,24 +108,17 @@ public class ExportResult
 		return failureReason;
 	}
 	
-	public String getMessage()
-	{
-		if(failureReason == null)
-		{
-			if(getNumberedOfExportedRecords() > 0)
-				return String.format(Locale.getDefault(), "Succesfully exported %d records to %s.", getNumberedOfExportedRecords(), destination); //TODO multilang
-			else
-				return "There was nothing to export."; //TODO multilang
-		}
-		else if(getNumberedOfExportedRecords() > 0)
-			return String.format(Locale.getDefault(), "Succesfully exported %d records to %s, failed to export 1 or more additional records due to %s", getNumberedOfExportedRecords(), destination, failureReason.getMessage() != null ? failureReason.getMessage() : failureReason); //TODO multilang
-		else
-			return String.format(Locale.getDefault(), "Failed to export records to %s, due to %s.", destination, failureReason.getMessage() != null ? failureReason.getMessage() : failureReason); //TODO multilang
-	}
-	
 	public boolean wasSuccessful()
 	{
-		return failureReason == null;
+		return failureReason == null && numberOfUnexportedRecords == 0;
 	}
 
+	/**
+	 * @return the numberOfUnexportedRecords
+	 */
+	public int getNumberOfUnexportedRecords()
+	{
+		return numberOfUnexportedRecords;
+	}
+	
 }
