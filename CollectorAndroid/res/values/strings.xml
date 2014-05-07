@@ -50,6 +50,7 @@
     <string name="info">Info</string>
     
     <string name="title_activity_export">Sapelli Collector Exporter</string>
+    <string name="export">Export</string>
     <string name="exportSelection">Select records to export:</string>
     <string name="exportSelectedProj">All records of %s</string>
     <string name="exportAllProj">All records of all projects</string>
