@@ -203,7 +203,6 @@ public class FileWriter
 		
 		// Open file:
 		writer = new OutputStreamWriter(new FileOutputStream(file, seekToEOF), charset);
-
 	}
 
 	protected void _dispose()

@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,16 +10,15 @@ import org.joda.time.format.DateTimeFormatter;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper;
-import uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper.Format;
+import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter.Format;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separator;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -49,7 +49,7 @@ import android.widget.TimePicker;
  * 
  * @author mstevens, Michalis Vitos
  */
-public class ExportActivity extends BaseActivity implements OnClickListener, StoreClient
+public class ExportActivity extends ProjectLoadingActivity implements OnClickListener
 {
 	
 	// Statics---------------------------------------------
@@ -58,8 +58,8 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 	static private final DateTimeFormatter dateTimeFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm");
 	
 	// Dynamics--------------------------------------------
-	private Project selectedProject;
-	DateTime[] dateRange = new DateTime[2];
+	private DateTime[] dateRange = new DateTime[2];
+	private File exportFolder;
 	
 	// UI Elements
 	private RadioButton radioSelectedProject;
@@ -67,6 +67,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 
 	private Button btnFrom;
 	private Button btnTo;
+	private Button btnDestination;
 	
 	private Spinner spinOutputFormat;
 	private Spinner spinXMLMode;
@@ -78,14 +79,17 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_export);
 		
-		//TODO load project
+		this.loadProject(false);
+		
+		// Export path:
+		exportFolder = new File(app.getExportFolderPath());
 		
 		// UI elements...
 		radioSelectedProject = (RadioButton) findViewById(R.id.radioExportSelectedProj);
 		radioAllProjects = (RadioButton) findViewById(R.id.radioExportAllProj);
-		if(selectedProject != null)
+		if(project != null)
 		{
-			radioSelectedProject.setText(getString(R.string.exportSelectedProj, selectedProject));
+			radioSelectedProject.setText(getString(R.string.exportSelectedProj, project));
 			radioSelectedProject.setChecked(true);
 		}
 		else
@@ -94,6 +98,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 			radioAllProjects.setChecked(true);
 		}
 		
+		// Time range:
 		btnFrom = (Button) findViewById(R.id.btnExportFromDate);
 		btnFrom.setOnClickListener(this);
 		btnTo = (Button) findViewById(R.id.btnExportToDate);
@@ -101,8 +106,14 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 		updateDateRange(DT_RANGE_IDX_FROM, null);
 		updateDateRange(DT_RANGE_IDX_TO, null);
 		
+		// Output destination:
+		btnDestination = (Button) findViewById(R.id.btnDestination);
+		btnDestination.setText(exportFolder.getAbsolutePath());
+		btnDestination.setEnabled(false); // TODO make export path configurable (for now it is not)
+		
+		// Output formats:
 		spinOutputFormat = (Spinner) findViewById(R.id.spinExportFormat);
-		final ArrayAdapter<Format> formatAdapter = new ArrayAdapter<Format>(this, android.R.layout.simple_spinner_item, ExImportHelper.Format.values());
+		final ArrayAdapter<Format> formatAdapter = new ArrayAdapter<Format>(this, android.R.layout.simple_spinner_item, Format.values());
 		formatAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		spinOutputFormat.setAdapter(formatAdapter);
 		final LinearLayout xmlOptions = (LinearLayout) findViewById(R.id.layoutXMLOptions);
@@ -121,13 +132,19 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 			public void onNothingSelected(AdapterView<?> parent) { /* ignore */ }
 		});
 		
+		// XML options:
 		spinXMLMode = (Spinner) findViewById(R.id.spinXMLMode);
-		ArrayAdapter<CompositeMode> xmlModeAdapter = new ArrayAdapter<CompositeMode>(this, android.R.layout.simple_spinner_item, XMLRecordsExporter.CompositeMode.values());
+		ArrayAdapter<CompositeMode> xmlModeAdapter = new ArrayAdapter<CompositeMode>(this, android.R.layout.simple_spinner_item, CompositeMode.values());
 		xmlModeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
 		spinXMLMode.setAdapter(xmlModeAdapter);
+		spinXMLMode.setSelection(xmlModeAdapter.getPosition(XMLRecordsExporter.DEFAULT_COMPOSITE_MODE));
 		
+		// CSV options:
 		spinCSVSeparator = (Spinner) findViewById(R.id.spinCSVSeparator);
-		//TODO csv separator...
+		ArrayAdapter<Separator> csvModeAdapter = new ArrayAdapter<Separator>(this, android.R.layout.simple_spinner_item, Separator.values());
+		csvModeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+		spinCSVSeparator.setAdapter(csvModeAdapter);
+		spinCSVSeparator.setSelection(csvModeAdapter.getPosition(CSVRecordsExporter.DEFAULT_SEPARATOR));
 		
 		//	OK & Cancel buttons:
 		((Button) findViewById(R.id.btnExportOK)).setOnClickListener(this);
@@ -183,7 +200,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 		
 		// Create the dialog
 		AlertDialog.Builder builder = new Builder(this);
-		// Set the title
+		// Set the title:
 		builder.setTitle(getString(dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo, '…')) 
 		// Set UI:
 		.setView(view)
@@ -240,8 +257,25 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 			showOKDialog(getString(R.string.title_activity_export), getString(R.string.exportNoRecordsFound));
 		else
 		{
-			Exporter exporter = null; //ExImportHelper.getExporter(null, , xmlCompositeMode, csvSeparator)
-			new ExportTask(result, exporter, "TODO").execute();
+			// Get Exporter:
+			Exporter exporter = null;
+			switch((Format) spinOutputFormat.getSelectedItem())
+			{
+				case CSV:
+					exporter = new CSVRecordsExporter(exportFolder, (Separator) spinCSVSeparator.getSelectedItem());
+					break;
+				case XML:
+					exporter = new XMLRecordsExporter(exportFolder, (CompositeMode) spinXMLMode.getSelectedItem());
+					break;
+				default:
+					throw new IllegalStateException("Unknown export format: " + ((Format) spinOutputFormat.getSelectedItem()).toString());
+			}
+			
+			// TODO Generate selection description String:
+			String selectionDesc = "TODO";
+			
+			// Export!:
+			new ExportTask(result, exporter, selectionDesc).execute();
 		}
 	}
 	
@@ -326,8 +360,8 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 				store = app.getRecordStore(ExportActivity.this);
 				// Schemas (when list stays empty all records of any schema/project/form will be fetched):
 				List<Schema> schemata = new ArrayList<Schema>();
-				if(selectedProject != null)
-					for(Form f : selectedProject.getForms())
+				if(project != null && radioSelectedProject.isChecked())
+					for(Form f : project.getForms())
 						schemata.add(f.getSchema());
 				// Date range:
 				AndConstraint constraints = new AndConstraint();
@@ -359,6 +393,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 			else
 				queryCallback(failure);
 		}
+		
 	}
 	
 	private class ExportTask extends AsyncTaskWithWaitingDialog<Void, Void, ExportResult>
@@ -379,18 +414,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 		@Override
 		protected ExportResult doInBackground(Void... params)
 		{
-			try
-			{
-				Thread.sleep(5000);
-			}
-			catch(InterruptedException e)
-			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-//			if(params != null && params.length == 1)
-//				return exporter.export(params[0], selectionDescr);
-			return ExportResult.Success(records, "bleh");
+			return exporter.export(records, selectionDescr);
 		}
 		
 		@Override
@@ -441,6 +465,7 @@ public class ExportActivity extends BaseActivity implements OnClickListener, Sto
 			super.onPostExecute(result); // dismiss dialog
 			deleteCallback(failure);				
 		}
+		
 	}
 
 }

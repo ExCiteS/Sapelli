@@ -47,20 +47,42 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		/**
 		 * Create one tag with name {@link RecordColumn#getName()} containing a single String value generated using {@link RecordColumn#toString(Record)}.
 		 */
-		As_String,
+		String,
 		
 		/**
 		 * Create separate tags for each "leaf" column, names are constructed from parents' names and the leaf column's name, separated by {@link RecordColumn#QUALIFIED_NAME_SEPARATOR}.
 		 */
-		As_flat_tags,
+		Flat,
 		
 		/**
 		 * Create one tag with name {@link RecordColumn#getName()} containing child tags for the subcolumn.
 		 */
-		As_nested_tags
+		Nested;
+		
+		/**
+		 * TODO use i18n/StringProvide
+		 * 
+		 * @see java.lang.Enum#toString()
+		 */
+		@Override
+		public String toString()
+		{
+			switch(this)
+			{
+				case String:
+					return "Single string";
+				case Flat:
+					return "Flat tags";
+				case Nested:
+					return "Grouped tags";
+				default:
+					return name();
+			}
+		}
+		
 	}
 	
-	static public CompositeMode DEFAULT_COMPOSITE_MODE = CompositeMode.As_flat_tags;
+	static public CompositeMode DEFAULT_COMPOSITE_MODE = CompositeMode.Flat;
 	
 	// DYNAMICS------------------------------------------------------
 	private File exportFolder;
@@ -172,7 +194,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	@Override
 	public void enter(RecordColumn<?> recordCol)
 	{
-		if(compositeMode == CompositeMode.As_String)
+		if(compositeMode == CompositeMode.String)
 			return; //this should never happen
 		
 		// Push on columnStack:
@@ -181,7 +203,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		// Write null value comment if subrecord is null:
 		if(getColumnPointer().retrieveValue(currentRecord) == null)
 			writer.writeLine(StringUtils.addTabsFront(getNullRecordComment(recordCol.getName()), tabs));
-		else if(compositeMode == CompositeMode.As_nested_tags) 
+		else if(compositeMode == CompositeMode.Nested) 
 		{	// If in nested tags mode and subrecord is not null, open parent tag:
 			writer.writeLine(StringUtils.addTabsFront("<" + recordCol.getName() + ">", tabs));
 			tabs++;
@@ -191,11 +213,11 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	@Override
 	public void leave(RecordColumn<?> recordCol)
 	{
-		if(compositeMode == CompositeMode.As_String)
+		if(compositeMode == CompositeMode.String)
 			return; //this should never happen
 
 		// If in nested tags mode and subrecord is not null, close parent tag:
-		if(compositeMode == CompositeMode.As_nested_tags && getColumnPointer().retrieveValue(currentRecord) != null)
+		if(compositeMode == CompositeMode.Nested && getColumnPointer().retrieveValue(currentRecord) != null)
 		{
 			tabs--;
 			writer.writeLine(StringUtils.addTabsFront("</" + recordCol.getName() + ">", tabs));
@@ -211,12 +233,12 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		Record record = leafColumnPointer.getRecord(currentRecord, false);
 		
 		// If in nested or flat tags mode and subrecord is null: return
-		if(record == null && compositeMode != CompositeMode.As_String)
+		if(record == null && compositeMode != CompositeMode.String)
 			return;
 		
 		// Write column value or null value comment:
 		Column<?> leafColumn = leafColumnPointer.getColumn();
-		String columnName = (compositeMode == CompositeMode.As_flat_tags ? leafColumnPointer.getQualifiedColumnName() : leafColumn.getName());
+		String columnName = (compositeMode == CompositeMode.Flat ? leafColumnPointer.getQualifiedColumnName() : leafColumn.getName());
 		if(record != null && leafColumn.isValueSet(record))
 		{
 			/* 	If the column type is String (meaning it is a StringColumn or a VirtualColumn with a StringColumn as its target), then
@@ -239,19 +261,19 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	@Override
 	public boolean allowLocationSelfTraversal()
 	{
-		return compositeMode != CompositeMode.As_String;
+		return compositeMode != CompositeMode.String;
 	}
 
 	@Override
 	public boolean allowOrientationSelfTraversal()
 	{
-		return compositeMode != CompositeMode.As_String;
+		return compositeMode != CompositeMode.String;
 	}
 
 	@Override
 	public boolean allowForeignKeySelfTraversal()
 	{
-		return compositeMode != CompositeMode.As_String;
+		return compositeMode != CompositeMode.String;
 	}
 
 	@Override

@@ -14,8 +14,6 @@ import java.util.concurrent.TimeUnit;
 import uk.ac.ucl.excites.sapelli.R;
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
@@ -23,11 +21,10 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper.Format;
+import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.content.Context;
 import android.content.Intent;
@@ -48,15 +45,12 @@ import android.view.WindowManager;
  * 
  * @author mstevens, julia, Michalis Vitos
  */
-public class CollectorActivity extends BaseActivity implements StoreClient
+public class CollectorActivity extends ProjectLoadingActivity
 {
 
 	// STATICS--------------------------------------------------------
 	static private final String TAG = "CollectorActivity";
 
-	// INTENT PARAMETER:
-	public static final String INTENT_PARAM_PROJECT_HASH = "Project_Hash"; // used on "direct" intents (coming from ProjectManagerActivity) & shortcut intents
-	
 	static private final String TEMP_PHOTO_PREFIX = "tmpPhoto";
 	static private final String TEMP_PHOTO_SUFFIX = ".tmp";
 	static private final String TEMP_PHOTO_PATH_KEY = "tmpPhotoPath";
@@ -69,9 +63,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 	private static final int TIMEOUT_MIN = 5; // timeout after 5 minutes
 	
 	// DYNAMICS-------------------------------------------------------
-	private ProjectStore projectStore;
 	private RecordStore recordStore;
-	private Project project;
 	private CollectorController controller;
 
 	// Temp location to save a photo
@@ -93,11 +85,22 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
-		super.onCreate(savedInstanceState);
+		super.onCreate(savedInstanceState); // sets app & projectStore members!
 
 		// Retrieve the tmpPhotoLocation for the saved state
 		if(savedInstanceState != null && savedInstanceState.containsKey(TEMP_PHOTO_PATH_KEY))
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
+		
+		// Get recordstore object:
+		try
+		{
+			recordStore = app.getRecordStore(this);
+		}
+		catch(Exception e)
+		{
+			showErrorDialog("Could not open Project- or RecordStore: " + e.getLocalizedMessage(), true);
+			return;
+		}
 		
 		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
@@ -107,18 +110,6 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		catch(IllegalStateException ise)
 		{	// Inform the user and close the application
 			showErrorDialog("Sapelli needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
-			return;
-		}
-		
-		// Get project- & recordstore objects:
-		try
-		{
-			projectStore = app.getProjectStore(this);
-			recordStore = app.getRecordStore(this);
-		}
-		catch(Exception e)
-		{
-			showErrorDialog("Could not open Project- or RecordStore: " + e.getLocalizedMessage(), true);
 			return;
 		}
 		
@@ -139,31 +130,16 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		collectorView = new CollectorView(this);
 		setContentView(collectorView);
 		
-		// Load the project
-		loadProject();
+		// Load the project (mandatory):
+		loadProject(true);
 	}
 
-	private void loadProject()
+	/*
+	 * @see uk.ac.ucl.excites.sapelli.collector.activities.ProjectLoadingActivity#postLoadInitialisation()
+	 */
+	@Override
+	protected void postLoadInitialisation()
 	{
-		Long projectHash = null;
-		// Get project hash from extras (the key is the same for both call-by-intent & call-by-shortcut scenarios):
-		Bundle extras = getIntent().getExtras();
-		if(extras != null && extras.containsKey(INTENT_PARAM_PROJECT_HASH))
-			projectHash =  extras.getLong(INTENT_PARAM_PROJECT_HASH);
-		else
-		{
-			showErrorDialog("CollectorActivity started without '" + INTENT_PARAM_PROJECT_HASH + "' intent parameter, don't know which project to load!", true);
-			return;
-		}
-
-		// Get Project object:
-		project = projectStore.retrieveProject(projectHash);
-		if(project == null)
-		{	// show error (activity will be exited after used clicks OK in the dialog):
-			showErrorDialog("Could not find project with hash: " + projectHash, true);
-			return;
-		}
-		
 		// Check if project path is accessible:
 		if(!FileHelpers.isReadableWritableDirectory(new File(project.getProjectFolderPath())))
 		{	// show error (activity will be exited after used clicks OK in the dialog):
@@ -250,7 +226,7 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 			Log.d(TAG, "Exporting records...");
 			try
 			{
-				uk.ac.ucl.excites.sapelli.storage.eximport.ExImportHelper.exportRecords(project.getDataFolder(), recordStore.retrieveAllRecords(), "DemoRecords", Format.XML);
+				(new XMLRecordsExporter(project.getDataFolder())).export(recordStore.retrieveAllRecords(), "DemoRecords");
 				if(delete)
 					recordStore.deleteAllRecords();
 			}
@@ -479,8 +455,8 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		if(controller != null)
 			controller.cancelAndStop();
 		
-		// Load the project
-		loadProject();
+		// Load the project (mandatory):
+		loadProject(true);
 	}
 
 	@Override
@@ -492,10 +468,9 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 		if(controller != null)
 			controller.cancelAndStop();
 		// Signal that the activity no longer needs the Store objects:
-		app.discardStoreUsage(projectStore, this);
 		app.discardStoreUsage(recordStore, this);
 		// super:
-		super.onDestroy();
+		super.onDestroy(); // discards projectStore
 	}
 
 	public void setupTimerTrigger(final Trigger trigger)

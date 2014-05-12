@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.joda.time.DateTime;
@@ -30,18 +31,57 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
 /**
  * Class to export {@link Record}s to XML files, which can be re-imported by {@link XMLRecordsImporter}.
  * 
+ * The CSV will get a header with the column names separated by the separator, plus this:
+ * 	*separator*schemaID=...*separator*
+ * 
  * @author mstevens
  */
 public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporter
 {
 
-	// STATICS-------------------------------------------------------
-	static public final String DEFAULT_SEPARATOR = ","; 
+	// STATICS------------------------------------------------------- 
 	static private Charset UTF8 = Charset.forName("UTF-8");
+	
+	static public enum Separator
+	{
+		
+		COMMA,
+		SEMICOLON,
+		TAB;
+		
+		/**
+		 * TODO use i18n/StringProvide
+		 * 
+		 * @see java.lang.Enum#toString()
+		 */
+		@Override
+		public String toString()
+		{
+			return name().toLowerCase(Locale.getDefault());
+		}
+		
+		public String getSeparatorString()
+		{
+			switch(this)
+			{
+				case COMMA:
+					return ",";
+				case SEMICOLON:
+					return ";";
+				case TAB:
+					return "\t";
+				default:
+					throw new IllegalStateException("Unknown CSV sepator: " + name());
+			}
+		}
+		
+	}
+	
+	static public final Separator DEFAULT_SEPARATOR = Separator.COMMA;
 	
 	// DYNAMICS------------------------------------------------------
 	private File exportFolder;
-	private String separator;
+	private Separator separator;
 	
 	private FileWriter writer = null;
 	private List<ColumnPointer> columnPointers;
@@ -51,7 +91,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		this(exportFolder, DEFAULT_SEPARATOR);
 	}
 	
-	public CSVRecordsExporter(File exportFolder, String separator)
+	public CSVRecordsExporter(File exportFolder, Separator separator)
 	{
 		if(!FileHelpers.createFolder(exportFolder))
 			throw new IllegalArgumentException("Export folder (" + exportFolder + ") does not exist and could not be created!");
@@ -117,8 +157,6 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		List<File> csvFiles = new ArrayList<File>();
 		for(Map.Entry<Schema, List<Record>> entry : recordsBySchema.entrySet())
 		{
-			//TODO append schemaID to header
-			//TODO append separator to header
 			try
 			{
 				openWriter(description + "_" + entry.getKey().getName(), timestamp);
@@ -131,8 +169,11 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				writer.openTransaction(); // output will be buffered
 				try
 				{
+					// Column names (separatoed by the separator):
 					for(ColumnPointer cp : columnPointers)
-						writer.write((!writer.isTransactionBufferEmpty() ? separator : "") + cp.getQualifiedColumnName());
+						writer.write((!writer.isTransactionBufferEmpty() ? separator.getSeparatorString() : "") + cp.getQualifiedColumnName());
+					// Postfix: separator+"schemeID="+...+separator	
+					writer.write(separator.getSeparatorString() + Schema.ATTRIBUTE_SCHEMA_ID + "=" + entry.getKey().getID() + separator.getSeparatorString());
 					writer.write('\n');
 				}
 				catch(Exception e)
@@ -151,7 +192,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 						for(ColumnPointer cp : columnPointers)
 						{
 							if(!writer.isTransactionBufferEmpty())
-								writer.write(separator);
+								writer.write(separator.getSeparatorString());
 							Column<?> col = cp.getColumn();
 							Record rec = cp.getRecord(r, false);
 							if(rec != null && col.isValueSet(rec))

@@ -225,6 +225,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			demoMode();
 		else
 			populateProjectList(); 	// Update project list
+		// TODO remember & re-select last selected project
 	}
 	
 	@Override

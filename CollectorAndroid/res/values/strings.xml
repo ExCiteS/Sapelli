@@ -60,7 +60,7 @@
     <string name="exportDateRangeAnytime">anytime</string>
     <string name="exportDestination">Destination:</string>
     <string name="exportFormat">Output format:</string>
-    <string name="exportXMLMode">XML mode:</string>
+    <string name="exportXMLMode">Represent composite columns as:</string>
     <string name="exportCSVSeparator">CSV separator:</string>
     <string name="exportRemove">Delete records after successful export</string>
     <string name="exportFetching">Fetching records…</string>

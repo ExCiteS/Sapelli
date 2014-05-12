@@ -29,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
  * 
  * <p>Supported formats:<br/>
  * 	- v1.x exports, with both v1.x versions of the {@link Location} serialisation format (see {@link Location#parseV1X(String)}).<br/>
- *  - All 3 {@link CompositeMode}s supported by {@link XMLRecordsExporter}: {@link CompositeMode#As_String}, {@link CompositeMode#As_flat_tags} & {@link CompositeMode#As_nested_tags} 
+ *  - All 3 {@link CompositeMode}s supported by {@link XMLRecordsExporter}: {@link CompositeMode#String}, {@link CompositeMode#Flat} & {@link CompositeMode#Nested} 
  * 
  * @author mstevens
  */
