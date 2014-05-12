@@ -49,9 +49,20 @@ public class TimeStampColumn extends ComparatorColumn<TimeStamp>
 	static public TimeStampColumn JavaMSTime(String name, boolean optional, boolean addVirtuals)
 	{
 		return new TimeStampColumn(name, new TimeStamp(Long.MIN_VALUE), 64 /*bits*/, true, false, true, optional, addVirtuals);
-		/* //Alternative:
-		 *  return new TimeStampColumn(name, new DateTime(Long.MIN_VALUE), new DateTime(Long.MAX_VALUE), true, false, true, optional);
-		 */
+	}
+	
+	/**
+	 * Returns a TimeStampColumn that can hold Java-style timestamps, i.e. signed 64 bit integers representing
+	 * the number of milliseconds since (or to, if negative) the Java/Unix epoch of 1970/01/01 00:00:00 UTC.
+	 * Local timezone IS kept.
+	 * 
+	 * @param name
+	 * @param optional
+	 * @return
+	 */
+	static public TimeStampColumn JavaMSLocalTime(String name, boolean optional, boolean addVirtuals)
+	{
+		return new TimeStampColumn(name, new TimeStamp(Long.MIN_VALUE), 64 /*bits*/, true, true, true, optional, addVirtuals);
 	}
 	
 	/**
@@ -249,11 +260,16 @@ public class TimeStampColumn extends ComparatorColumn<TimeStamp>
 			bitStream.write(value.getQuarterHourOffsetWrtUTC(), TIMEZONE_QH_OFFSET_SIZE, true);
 	}
 
+	/**
+	 * Note: when local time zone is not kept TimeStamps that are read from binary input will be in UTC.
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#read(uk.ac.ucl.excites.sapelli.storage.io.BitInputStream)
+	 */
 	@Override
 	protected TimeStamp read(BitInputStream bitStream) throws IOException
 	{
 		long msSinceJavaEpoch = timeMapping.read(bitStream) * (keepMS ? 1 : 1000);
-		return new TimeStamp(msSinceJavaEpoch, keepLocalTimezone ? TimeStamp.getDateTimeZoneFor((int) bitStream.readInteger(TIMEZONE_QH_OFFSET_SIZE, true)) : null);
+		return new TimeStamp(msSinceJavaEpoch, keepLocalTimezone ? TimeStamp.getDateTimeZoneFor((int) bitStream.readInteger(TIMEZONE_QH_OFFSET_SIZE, true)) : DateTimeZone.UTC);
 	}		
 
 	@Override
