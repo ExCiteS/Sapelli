@@ -19,6 +19,10 @@
 		<property name="appVersionCode" value="${mani.manifest.android:versionCode}"/>
 		<property name="package" value="${mani.manifest.package}"/>
 		<property name="gen-dir" location="${project-dir}${file.separator}gen"/>
+		<property name="mvn-gen-dir" location="${project-dir}${file.separator}target${file.separator}generated-sources${file.separator}r"/>
+		<condition property="build-dir" value="${mvn-gen-dir}" else="${gen-dir}">
+			<isset property="mvn-phase"/>
+    	</condition>
 		<property name="assets-dir" location="${project-dir}${file.separator}assets"/>
 		<loadresource property="package-path">
 			<propertyresource name="package"/>
@@ -28,7 +32,7 @@
 				</tokenfilter>
 			</filterchain>
 		</loadresource>
-		<property name="output-dir" location="${gen-dir}${file.separator}${package-path}"/>
+		<property name="output-dir" location="${build-dir}${file.separator}${package-path}"/>
 		<condition property="output-dir-not-there">
 			<not>
 				<available file="${output-dir}" type="dir"/>
@@ -218,8 +222,8 @@ public class ${classname}
 	
 	<!-- doesn't seem to work, but can be achieved in the builder settings within Eclipse -->
 	<target name="-refresh-eclipse" depends="-settings">
-		<echo>Refreshing generated sources folder in Eclipse...</echo>
-		<eclipse.refreshLocal resource="${gen-dir}" depth="infinite"/>
+	<!-- 	<echo>Refreshing generated sources folder in Eclipse...</echo>
+		<eclipse.refreshLocal resource="${gen-dir}" depth="infinite"/> -->
 	</target>
 	
 	<target name="-clean-demo">
