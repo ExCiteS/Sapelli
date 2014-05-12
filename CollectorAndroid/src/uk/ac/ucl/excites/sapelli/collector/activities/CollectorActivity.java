@@ -13,7 +13,6 @@ import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.R;
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
-import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -70,8 +69,6 @@ public class CollectorActivity extends BaseActivity implements StoreClient
 	private static final int TIMEOUT_MIN = 5; // timeout after 5 minutes
 	
 	// DYNAMICS-------------------------------------------------------
-	private CollectorApp app;
-
 	private ProjectStore projectStore;
 	private RecordStore recordStore;
 	private Project project;
