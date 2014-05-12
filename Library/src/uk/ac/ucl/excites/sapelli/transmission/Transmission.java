@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.sapelli.transmission;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,15 +91,13 @@ public abstract class Transmission
 	
 	protected void setColumnsToFactorOut(Set<Column<?>> columnsToFactorOut)
 	{
-		if(columnsToFactorOut != null)
-		{
+		if(columnsToFactorOut == null)
+			columnsToFactorOut = Collections.<Column<?>>emptySet();
+		else
 			for(Column<?> c : columnsToFactorOut)
-			{
 				if(!schema.containsColumn(c.getName(), false)) 
 					throw new IllegalArgumentException("Column \"" + c.toString() + "\" does not belong to the given schema.");
-			}
-		}
-		this.columnsToFactorOut = columnsToFactorOut; //may be null
+		this.columnsToFactorOut = columnsToFactorOut;
 	}
 	
 	public List<Record> getRecords()

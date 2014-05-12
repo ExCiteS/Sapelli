@@ -42,17 +42,17 @@ public class OrientationColumn extends RecordColumn<Orientation>
 	
 	public boolean isStoreAzimuth()
 	{
-		return !skipColumns.contains(Orientation.COLUMN_AZIMUTH);
+		return !isColumnSkipped(Orientation.COLUMN_AZIMUTH);
 	}
 	
 	public boolean isStorePitch()
 	{
-		return !skipColumns.contains(Orientation.COLUMN_PITCH);
+		return !isColumnSkipped(Orientation.COLUMN_PITCH);
 	}
 	
 	public boolean isStoreRoll()
 	{
-		return !skipColumns.contains(Orientation.COLUMN_ROLL);
+		return !isColumnSkipped(Orientation.COLUMN_ROLL);
 	}
 	
 	@Override

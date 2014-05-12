@@ -181,7 +181,7 @@ public class Record implements Serializable
 		try
 		{	//write fields:
 			for(Column<?> c : schema.getColumns(includeVirtual))
-				if(skipColumns == null || !skipColumns.contains(c))
+				if(!skipColumns.contains(c))
 					c.retrieveAndWriteValue(this, bitStream);
 		}
 		catch(Exception e)
@@ -195,7 +195,7 @@ public class Record implements Serializable
 		try
 		{	//read fields:
 			for(Column<?> c : schema.getColumns(includeVirtual))
-				if(skipColumns == null || !skipColumns.contains(c))
+				if(!skipColumns.contains(c))
 					if(c instanceof VirtualColumn)
 						c.readValue(bitStream); // read but don't store values of virtual columns (i.e. we skip them in the stream)
 					else
@@ -289,18 +289,10 @@ public class Record implements Serializable
 	@Override
     public int hashCode()
 	{
-		try
-		{
-			int hash = 1;
-			hash = 31 * hash + schema.hashCode();
-			hash = 31 * hash + Arrays.hashCode(this.toBytes());
-			return hash;
-		}
-		catch(IOException ioe)
-		{
-			ioe.printStackTrace(System.err);
-			return super.hashCode();
-		}
+		int hash = 1;
+		hash = 31 * hash + schema.hashCode();
+		hash = 31 * hash + Arrays.hashCode(values);
+		return hash;
 	}
 	
 	@Override
@@ -437,7 +429,7 @@ public class Record implements Serializable
 		int p = 0;
 		for(Column<?> col : schema.getColumns(includeVirtual))
 		{
-			if(!(col instanceof VirtualColumn) && (skipColumns == null || !skipColumns.contains(col))) // skip virtual columns & skipColumns (but *do* increment the counter p!)
+			if(!(col instanceof VirtualColumn) && !skipColumns.contains(col)) // skip virtual columns & skipColumns (but *do* increment the counter p!)
 				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
 			p++;
 		}
@@ -454,7 +446,7 @@ public class Record implements Serializable
 			out = new BitOutputStream(rawOut);
 				
 			//Write record:
-			this.writeToBitStream(out, false, null);
+			this.writeToBitStream(out, false, Collections.<Column<?>> emptySet());
 			
 			//Flush & close the stream and get bytes:
 			out.flush();

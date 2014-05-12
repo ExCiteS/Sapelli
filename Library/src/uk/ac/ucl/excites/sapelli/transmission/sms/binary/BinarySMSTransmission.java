@@ -2,6 +2,7 @@ package uk.ac.ucl.excites.sapelli.transmission.sms.binary;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -39,7 +40,7 @@ public class BinarySMSTransmission extends SMSTransmission
 	 */
 	public BinarySMSTransmission(Schema schema, SMSAgent receiver, Settings settings)
 	{
-		super(schema, null, receiver, settings);
+		super(schema, Collections.<Column<?>> emptySet(), receiver, settings);
 	}
 	
 	/**

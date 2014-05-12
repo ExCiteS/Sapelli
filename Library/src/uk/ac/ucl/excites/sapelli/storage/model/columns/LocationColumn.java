@@ -87,32 +87,32 @@ public class LocationColumn extends RecordColumn<Location>
 	
 	public boolean isStoreAltitude()
 	{
-		return !skipColumns.contains(Location.COLUMN_ALTITUDE);
+		return !isColumnSkipped(Location.COLUMN_ALTITUDE);
 	}
 	
 	public boolean isStoreBearing()
 	{
-		return !skipColumns.contains(Location.COLUMN_BEARING);
+		return !isColumnSkipped(Location.COLUMN_BEARING);
 	}
 	
 	public boolean isStoreSpeed()
 	{
-		return !skipColumns.contains(Location.COLUMN_SPEED);
+		return !isColumnSkipped(Location.COLUMN_SPEED);
 	}
 	
 	public boolean isStoreAccuracy()
 	{
-		return !skipColumns.contains(Location.COLUMN_ACCURACY);
+		return !isColumnSkipped(Location.COLUMN_ACCURACY);
 	}
 	
 	public boolean isStoreTime()
 	{
-		return !skipColumns.contains(Location.COLUMN_TIME);
+		return !isColumnSkipped(Location.COLUMN_TIME);
 	}
 	
 	public boolean isStoreProvider()
 	{
-		return !skipColumns.contains(Location.COLUMN_PROVIDER);
+		return !isColumnSkipped(Location.COLUMN_PROVIDER);
 	}
 
 	@Override

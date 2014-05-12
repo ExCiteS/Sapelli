@@ -6,6 +6,7 @@ package uk.ac.ucl.excites.sapelli.transmission.sms.text;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
@@ -208,7 +209,7 @@ public class TextSMSTransmission extends SMSTransmission
 	 */
 	public TextSMSTransmission(Schema schema, SMSAgent receiver, Settings settings)
 	{
-		super(schema, null, receiver, settings);
+		super(schema, Collections.<Column<?>> emptySet(), receiver, settings);
 	}
 
 	/**

@@ -39,18 +39,6 @@ public abstract class SMSTransmission extends BinaryTransmission
 	 * To be called on the sending side.
 	 * 
 	 * @param schema
-	 * @param receiver
-	 * @param settings
-	 */
-	public SMSTransmission(Schema schema, SMSAgent receiver, Settings settings)
-	{
-		this(schema, null, receiver, settings);
-	}
-	
-	/**
-	 * To be called on the sending side.
-	 * 
-	 * @param schema
 	 * @param columnsToFactorOut
 	 * @param receiver
 	 * @param settings

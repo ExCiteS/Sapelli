@@ -359,7 +359,7 @@ public class Schema implements Serializable
 	 */
 	public boolean isVariableSize()
 	{
-		return isVariableSize(false, null);
+		return isVariableSize(false, Collections.<Column<?>>emptySet());
 	}
 	
 	/**
@@ -372,7 +372,7 @@ public class Schema implements Serializable
 	public boolean isVariableSize(boolean includeVirtual, Set<Column<?>> skipColumns)
 	{
 		for(Column<?> c : getColumns(includeVirtual))
-			if((skipColumns == null || !skipColumns.contains(c)) && c.isVariableSize())
+			if(!skipColumns.contains(c) && c.isVariableSize())
 				return true;
 		return false;
 	}
@@ -385,7 +385,7 @@ public class Schema implements Serializable
 	 */
 	public int getMinimumSize()
 	{
-		return getMinimumSize(false, null);
+		return getMinimumSize(false, Collections.<Column<?>>emptySet());
 	}
 	
 	/**
@@ -399,7 +399,7 @@ public class Schema implements Serializable
 	{
 		int total = 0;
 		for(Column<?> c : getColumns(includeVirtual))
-			if(skipColumns == null || !skipColumns.contains(c))
+			if(!skipColumns.contains(c))
 				total += c.getMinimumSize();
 		return total;
 	}
@@ -412,7 +412,7 @@ public class Schema implements Serializable
 	 */
 	public int getMaximumSize()
 	{
-		return getMaximumSize(false, null);
+		return getMaximumSize(false, Collections.<Column<?>>emptySet());
 	}
 
 	/**
@@ -426,7 +426,7 @@ public class Schema implements Serializable
 	{
 		int total = 0;
 		for(Column<?> c : getColumns(includeVirtual))
-			if(skipColumns == null || !skipColumns.contains(c))
+			if(!skipColumns.contains(c))
 				total += c.getMaximumSize();
 		return total;
 	}
@@ -529,13 +529,13 @@ public class Schema implements Serializable
 	
 	public void accept(ColumnVisitor visitor)
 	{
-		accept(visitor, null);
+		accept(visitor, Collections.<Column<?>>emptySet());
 	}
 	
 	public void accept(ColumnVisitor visitor, Set<Column<?>> skipColumns)
 	{
 		for(Column<?> c : getColumns(visitor.includeVirtualColumns()))
-			if(skipColumns == null || !skipColumns.contains(c))
+			if(!skipColumns.contains(c))
 				c.accept(visitor);
 	}
 
