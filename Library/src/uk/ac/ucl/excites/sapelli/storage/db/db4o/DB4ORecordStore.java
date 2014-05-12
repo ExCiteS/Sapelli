@@ -63,6 +63,14 @@ public class DB4ORecordStore extends RecordStore
 			db4o.store(r);
 		db4o.commit();
 	}
+	
+	@Override
+	public void delete(List<Record> records)
+	{
+		for(Record r : records)
+			db4o.delete(r);
+		db4o.commit();
+	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordDataAccess#delete(uk.ac.ucl.excites.sapelli.storage.model.Record)

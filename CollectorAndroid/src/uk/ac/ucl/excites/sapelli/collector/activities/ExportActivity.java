@@ -336,7 +336,7 @@ public class ExportActivity extends ProjectLoadingActivity implements OnClickLis
 	private void deleteCallback(Exception failure)
 	{
 		if(failure != null)
-			showOKDialog(R.string.exportFailureTitle, R.string.exportDeleteFailureMsg, true);
+			showOKDialog(R.string.exportFailureTitle, getString(R.string.exportDeleteFailureMsg, ExceptionHelpers.getMessageAndCause(failure)), true);
 		else
 			this.finish();
 	}

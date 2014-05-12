@@ -21,18 +21,25 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/exportSelection" />
-
-            <RadioButton
-                android:id="@+id/radioExportSelectedProj"
+            
+            <RadioGroup
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/exportSelectedProj" />
+	            android:layout_height="wrap_content">
 
-            <RadioButton
-                android:id="@+id/radioExportAllProj"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/exportAllProj" />
+	            <RadioButton
+	                android:id="@+id/radioExportSelectedProj"
+	                android:layout_width="wrap_content"
+	                android:layout_height="wrap_content"
+	                android:text="@string/exportSelectedProj" />
+	
+	            <RadioButton
+	                android:id="@+id/radioExportAllProj"
+	                android:layout_width="wrap_content"
+	                android:layout_height="wrap_content"
+	                android:text="@string/exportAllProj" />
+            
+            </RadioGroup>
+            
         </LinearLayout>
 
         <LinearLayout
