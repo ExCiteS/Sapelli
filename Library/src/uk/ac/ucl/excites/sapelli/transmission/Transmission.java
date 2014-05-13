@@ -176,9 +176,9 @@ public abstract class Transmission
 			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
 		
 		// Set sendingAttemptedAt for all records:
-		DateTime now = new DateTime();
-		for(Record r : records)
-			r.setSendingAttemptedAt(now);
+//		DateTime now = new DateTime();
+//		for(Record r : records)
+//			r.setSendingAttemptedAt(now);
 		
 		sendPayload(transmissionSender); // !!!
 	}
@@ -241,7 +241,7 @@ public abstract class Transmission
 		for(Record r : records)
 		{
 			r.setSent(true);
-			r.setSendingAttemptedAt(sentAt);
+			//r.setSendingAttemptedAt(sentAt);
 		}
 		this.sentAt = sentAt;
 	}

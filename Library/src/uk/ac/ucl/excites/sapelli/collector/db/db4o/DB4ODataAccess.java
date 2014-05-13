@@ -145,8 +145,8 @@ public class DB4ODataAccess implements DataAccess
 			public boolean match(Record r)
 			{
 				return	r.getSchema() == schema &&
-						!r.isSent() &&
-						(r.getSendingAttemptedAt() == null || r.getSendingAttemptedAt().plusMinutes(sendingAttemptTimeoutMinutes).isBeforeNow());
+						!r.isSent() /*&&
+						(r.getSendingAttemptedAt() == null || r.getSendingAttemptedAt().plusMinutes(sendingAttemptTimeoutMinutes).isBeforeNow())*/;
 			}
 		});
 		for(Record r : result)

@@ -23,7 +23,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.content.Context;
@@ -45,7 +44,7 @@ import android.view.WindowManager;
  * 
  * @author mstevens, julia, Michalis Vitos
  */
-public class CollectorActivity extends ProjectLoadingActivity
+public class CollectorActivity extends ProjectActivity
 {
 
 	// STATICS--------------------------------------------------------
@@ -63,7 +62,6 @@ public class CollectorActivity extends ProjectLoadingActivity
 	private static final int TIMEOUT_MIN = 5; // timeout after 5 minutes
 	
 	// DYNAMICS-------------------------------------------------------
-	private RecordStore recordStore;
 	private CollectorController controller;
 
 	// Temp location to save a photo
@@ -85,22 +83,11 @@ public class CollectorActivity extends ProjectLoadingActivity
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
-		super.onCreate(savedInstanceState); // sets app & projectStore members!
+		super.onCreate(savedInstanceState); // sets app, projectStore & recordStore members!
 
 		// Retrieve the tmpPhotoLocation for the saved state
 		if(savedInstanceState != null && savedInstanceState.containsKey(TEMP_PHOTO_PATH_KEY))
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
-		
-		// Get recordstore object:
-		try
-		{
-			recordStore = app.getRecordStore(this);
-		}
-		catch(Exception e)
-		{
-			showErrorDialog("Could not open Project- or RecordStore: " + e.getLocalizedMessage(), true);
-			return;
-		}
 		
 		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
@@ -467,10 +454,8 @@ public class CollectorActivity extends ProjectLoadingActivity
 		cancelExitFuture(); // cancel exit timer if needed
 		if(controller != null)
 			controller.cancelAndStop();
-		// Signal that the activity no longer needs the Store objects:
-		app.discardStoreUsage(recordStore, this);
 		// super:
-		super.onDestroy(); // discards projectStore
+		super.onDestroy(); // discards projectStore & recordStore
 	}
 
 	public void setupTimerTrigger(final Trigger trigger)

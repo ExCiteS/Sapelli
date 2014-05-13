@@ -13,7 +13,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
-import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter.Format;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
@@ -49,7 +48,7 @@ import android.widget.TimePicker;
  * 
  * @author mstevens, Michalis Vitos
  */
-public class ExportActivity extends ProjectLoadingActivity implements OnClickListener
+public class ExportActivity extends ProjectActivity implements OnClickListener
 {
 	
 	// Statics---------------------------------------------
@@ -76,10 +75,10 @@ public class ExportActivity extends ProjectLoadingActivity implements OnClickLis
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
 	{
-		super.onCreate(savedInstanceState);
+		super.onCreate(savedInstanceState); // sets app, projectStore & recordStore members!
 		setContentView(R.layout.activity_export);
 		
-		this.loadProject(false);
+		this.loadProject(false); // loads project specified by intent (if one was selected)
 		
 		// Export path:
 		exportFolder = new File(app.getExportFolderPath());
@@ -354,10 +353,8 @@ public class ExportActivity extends ProjectLoadingActivity implements OnClickLis
 		@Override
 		protected List<Record> doInBackground(Void... params)
 		{
-			RecordStore store = null;
 			try
 			{
-				store = app.getRecordStore(ExportActivity.this);
 				// Schemas (when list stays empty all records of any schema/project/form will be fetched):
 				List<Schema> schemata = new ArrayList<Schema>();
 				if(project != null && radioSelectedProject.isChecked())
@@ -371,17 +368,13 @@ public class ExportActivity extends ProjectLoadingActivity implements OnClickLis
 				if(dateRange[DT_RANGE_IDX_TO] != null)
 					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
 				// Retrieve by query:
-				return store.retrieveRecords(new RecordsQuery(schemata, constraints));
+				return recordStore.retrieveRecords(new RecordsQuery(schemata, constraints));
 			}
 			catch(Exception e)
 			{
 				e.printStackTrace(System.err);
 				failure = e;
 				return null;
-			}
-			finally
-			{
-				app.discardStoreUsage(store, ExportActivity.this);
 			}
 		}
 		
@@ -442,20 +435,14 @@ public class ExportActivity extends ProjectLoadingActivity implements OnClickLis
 		@Override
 		protected Void doInBackground(Void... params)
 		{
-			RecordStore store = null;
 			try
 			{
-				store = app.getRecordStore(ExportActivity.this);
-				store.delete(records);
+				recordStore.delete(records);
 			}
 			catch(Exception e)
 			{
 				e.printStackTrace(System.err);
 				failure = e;
-			}
-			finally
-			{
-				app.discardStoreUsage(store, ExportActivity.this);
 			}
 			return null;
 		}

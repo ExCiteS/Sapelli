@@ -24,6 +24,10 @@ import com.db4o.query.Predicate;
 /**
  * DB4O implementation of {@link RecordStore}.
  * 
+ * DB4O storage has many known and unknown stability, performance and functionality issues.
+ * We have painstakingly tried to work around the most concerning of those, but nevertheless
+ * it is essential that we move away from DB4O sooner rather than later.
+ * 
  * @author mstevens
  */
 public class DB4ORecordStore extends RecordStore
@@ -147,22 +151,18 @@ public class DB4ORecordStore extends RecordStore
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#deleteAllRecords()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveAllDeletableRecords()
 	 */
-	@Override
-	public void deleteAllRecords()
+	protected List<Record> retrieveAllDeletableRecords()
 	{
-		List<Record> result = db4o.query(Record.class);
-		for(Record r : result)
-			doDelete(r);
-		db4o.commit();
+		return db4o.query(Record.class); // also includes records of internal schemata
 	}
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doDelete(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	public void doDelete(Record record)
+	public void doDelete(Record record) throws Exception
 	{
 		db4o.delete(record);
 	}

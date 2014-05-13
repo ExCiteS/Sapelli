@@ -12,8 +12,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
@@ -38,11 +36,8 @@ public class Record implements Serializable
 	protected Schema schema;
 	protected Object[] values;
 	
-	protected String exportComment;
 	protected boolean exported = false;
-	
 	protected boolean sent = false;
-	protected DateTime sendingAttemptedAt = null;
 	
 	public Record(Schema schema)
 	{
@@ -268,22 +263,6 @@ public class Record implements Serializable
 	public void setSent(boolean sent)
 	{
 		this.sent = sent;
-	}
-
-	/**
-	 * @return the sendingAttemptedAt - if sent=true this is the timestamp of the last (successful) attempt 
-	 */
-	public DateTime getSendingAttemptedAt()
-	{
-		return sendingAttemptedAt;
-	}
-
-	/**
-	 * @param sendingAttemptedAt the sendingAttemptedAt to set
-	 */
-	public void setSendingAttemptedAt(DateTime sendingAttemptedAt)
-	{
-		this.sendingAttemptedAt = sendingAttemptedAt;
 	}
 
 	@Override

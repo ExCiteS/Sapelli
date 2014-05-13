@@ -45,9 +45,10 @@ public abstract class RecordStore implements Store
 	
 	/**
 	 * @param record - the record to store or update; records of internal schemata will be rejected
-	 * @return success
+	 * 
+	 * @throws Exception
 	 */
-	public boolean store(Record record)
+	public void store(Record record) throws Exception
 	{
 		if(isStorable(record))
 		{
@@ -60,42 +61,37 @@ public abstract class RecordStore implements Store
 			{
 				e.printStackTrace(System.err);
 				rollbackTransaction();
-				return false;
+				throw e;
 			}
 			commitTransaction();
-			return true;
 		}
-		return false;
 	}
 	
 	/**
 	 * @param records - the records to store or update
+	 * @throws Exception
 	 */
-	public boolean store(List<Record> records)
+	public void store(List<Record> records) throws Exception
 	{
-		boolean storedAtLeastOne = false;
 		startTransaction();
 		try
 		{
 			for(Record r : records)
 				if(isStorable(r))
-				{
 					doStore(r);
-					storedAtLeastOne = true;
-				}
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace(System.err);
 			rollbackTransaction();
-			return false;
+			throw e;
 		}
 		commitTransaction();
-		return storedAtLeastOne;
 	}
 	
 	/**
 	 * @param record - the record to store or update; can be assumed to be non-null and not of an internal schema
+	 * @throws Exception
 	 */
 	protected abstract void doStore(Record record) throws Exception;
 	
@@ -146,17 +142,12 @@ public abstract class RecordStore implements Store
 	 * @return
 	 */
 	public abstract Record retrieveRecord(SingleRecordQuery query);
-	
-	/**
-	 * Deletes *ALL* records.
-	 * USE WITH CARE!
-	 */
-	public abstract void deleteAllRecords();
-	
+
 	/**
 	 * @param record - the record to delete
+	 * @throws Exception
 	 */
-	public void delete(Record record)
+	public void delete(Record record) throws Exception
 	{
 		startTransaction();
 		try
@@ -167,15 +158,16 @@ public abstract class RecordStore implements Store
 		{
 			e.printStackTrace(System.err);
 			rollbackTransaction();
-			return;
+			throw e;
 		}
 		commitTransaction();
 	}
 
 	/**
 	 * @param records - the records to delete
+	 * @throws Exception
 	 */
-	public void delete(List<Record> records)
+	public void delete(List<Record> records) throws Exception
 	{
 		startTransaction();
 		try
@@ -187,11 +179,37 @@ public abstract class RecordStore implements Store
 		{
 			e.printStackTrace(System.err);
 			rollbackTransaction();
-			return;
+			throw e;
 		}
 		commitTransaction();
 	}
 	
+	/**
+	 * Deletes *ALL* records.
+	 * USE WITH CARE!
+	 * 
+	 * @throws Exception
+	 */
+	public void deleteAllRecords() throws Exception
+	{
+		delete(retrieveAllDeletableRecords());
+	}
+	
+	/**
+	 * Meant to be overridden in cases where the database contains more deletable
+	 * record instances than those returned by {@link #retrieveAllRecords()}.
+	 * 
+	 * @return list of deletable records
+	 */
+	protected List<Record> retrieveAllDeletableRecords()
+	{
+		return retrieveAllRecords();
+	}
+	
+	/**
+	 * @param record - the record to delete
+	 * @throws Exception
+	 */
 	protected abstract void doDelete(Record record) throws Exception;
 
 }

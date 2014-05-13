@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
@@ -353,11 +354,19 @@ public abstract class Controller
 		// Finalise the currentRecord:
 		currFormSession.form.finish(currFormSession.record); // (re)sets the end-time if necessary
 	
-		// Store currentRecord
-		recordStore.store(currFormSession.record);
-	
 		// Log record:
 		addLogLine("RECORD", currFormSession.record.toString());
+		
+		// Store currentRecord:
+		try
+		{
+			recordStore.store(currFormSession.record);
+		}
+		catch(Exception e)
+		{
+			addLogLine("ERROR", "Upon saving record", ExceptionHelpers.getMessageAndCause(e));
+			return;
+		}
 	
 		// Move attachments from temp to data folder:
 		try
@@ -369,6 +378,8 @@ public abstract class Controller
 		catch(IOException ioe)
 		{
 			ioe.printStackTrace(System.err);
+			addLogLine("ERROR", "Upon moving attachements", ExceptionHelpers.getMessageAndCause(ioe));
+			return;
 		}
 	
 		// Signal the successful storage of the currentRecord
