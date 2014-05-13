@@ -362,7 +362,8 @@ public class ExportActivity extends ProjectLoadingActivity implements OnClickLis
 				List<Schema> schemata = new ArrayList<Schema>();
 				if(project != null && radioSelectedProject.isChecked())
 					for(Form f : project.getForms())
-						schemata.add(f.getSchema());
+						if(f.isProducesRecords())
+							schemata.add(f.getSchema());
 				// Date range:
 				AndConstraint constraints = new AndConstraint();
 				if(dateRange[DT_RANGE_IDX_FROM] != null)
