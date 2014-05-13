@@ -17,7 +17,7 @@
     <string name="remove_shortcut">Remove Shortcut</string>
     <string name="take_photo">Take photo</string>
     <string name="sender_settings_menuitem">Data Sender Settings</string>
-    <string name="copy_db_menuitem">Copy DB4O to SD card</string>
+    <string name="copy_db_menuitem">Dump databases</string>
     <string name="about">About &#8230;</string>
     <string name="statistics_menuitem">Statistics</string>
     <string name="export_records_menuitem">Export records</string>
