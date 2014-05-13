@@ -31,47 +31,73 @@ public abstract class RecordStore implements Store
 		this.client = client;
 	}
 	
+	protected abstract void startTransaction();
+	
+	protected abstract void commitTransaction();
+	
+	protected abstract void rollbackTransaction();
+
+	public boolean isStorable(Record record)
+	{
+		return 	record != null &&					// obviously it makes no sense to store null records
+				!record.getSchema().isInternal();	// records of "internal" schemata cannot be stored directly
+	}
+	
 	/**
 	 * @param record - the record to store or update; records of internal schemata will be rejected
+	 * @return success
 	 */
-	public void store(Record record)
+	public boolean store(Record record)
 	{
-		// Checks:
-		if(record == null)
-			return; //throw new NullPointerException("Cannot store null record");
-		if(record.getSchema().isInternal())
-			throw new IllegalArgumentException("Cannot store record of internal schema directly.");
-		// Store:
-		storeNonInternal(record);
+		if(isStorable(record))
+		{
+			startTransaction();
+			try
+			{
+				doStore(record);
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace(System.err);
+				rollbackTransaction();
+				return false;
+			}
+			commitTransaction();
+			return true;
+		}
+		return false;
 	}
-
-	/**
-	 * @param record - the record to store or update; can be assumed to be non-null and not of an internal schema
-	 */
-	protected abstract void storeNonInternal(Record record);
 	
 	/**
 	 * @param records - the records to store or update
 	 */
-	public void store(List<Record> records)
+	public boolean store(List<Record> records)
 	{
-		for(Record r : records)
-			store(r);
+		boolean storedAtLeastOne = false;
+		startTransaction();
+		try
+		{
+			for(Record r : records)
+				if(isStorable(r))
+				{
+					doStore(r);
+					storedAtLeastOne = true;
+				}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+			rollbackTransaction();
+			return false;
+		}
+		commitTransaction();
+		return storedAtLeastOne;
 	}
 	
 	/**
-	 * @param record - the record to delete
+	 * @param record - the record to store or update; can be assumed to be non-null and not of an internal schema
 	 */
-	public abstract void delete(Record record);
-
-	/**
-	 * @param records - the records to delete
-	 */
-	public void delete(List<Record> records)
-	{
-		for(Record r : records)
-			delete(r);
-	}
+	protected abstract void doStore(Record record) throws Exception;
 	
 	/**
 	 * Retrieve all Records (of any schema)
@@ -92,6 +118,17 @@ public abstract class RecordStore implements Store
 	public List<Record> retrieveRecords(Schema schema)
 	{
 		return retrieveRecords(new RecordsQuery(schema));
+	}
+	
+	/**
+	 * Retrieve Records of given Schemata
+	 * 
+	 * @param schemata
+	 * @return
+	 */
+	public List<Record> retrieveRecords(List<Schema> schemata)
+	{
+		return retrieveRecords(new RecordsQuery(schemata));
 	}
 
 	/**
@@ -115,5 +152,46 @@ public abstract class RecordStore implements Store
 	 * USE WITH CARE!
 	 */
 	public abstract void deleteAllRecords();
+	
+	/**
+	 * @param record - the record to delete
+	 */
+	public void delete(Record record)
+	{
+		startTransaction();
+		try
+		{
+			doDelete(record);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+			rollbackTransaction();
+			return;
+		}
+		commitTransaction();
+	}
+
+	/**
+	 * @param records - the records to delete
+	 */
+	public void delete(List<Record> records)
+	{
+		startTransaction();
+		try
+		{
+			for(Record r : records)
+				doDelete(r);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+			rollbackTransaction();
+			return;
+		}
+		commitTransaction();
+	}
+	
+	protected abstract void doDelete(Record record) throws Exception;
 
 }

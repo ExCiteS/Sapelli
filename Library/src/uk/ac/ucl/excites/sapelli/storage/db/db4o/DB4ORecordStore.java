@@ -45,45 +45,36 @@ public class DB4ORecordStore extends RecordStore
 		this.filename = baseFilename + DATABASE_NAME_SUFFIX;
 		this.db4o = DB4OConnector.open(DB4OConnector.getFile(folder, filename), Record.class, Schema.class);
 	}
+	
+	@Override
+	protected void startTransaction()
+	{
+		// does nothing
+	}
+
+	@Override
+	protected void commitTransaction()
+	{
+		db4o.commit();
+	}
+
+	@Override
+	protected void rollbackTransaction()
+	{
+		db4o.rollback();
+	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#storeNonInternal(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStore(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	public void storeNonInternal(Record record)
+	protected void doStore(Record record) throws Exception
 	{
 		db4o.store(record);
-		db4o.commit();
-	}
-	
-	@Override
-	public void store(List<Record> records)
-	{
-		for(Record r : records)
-			db4o.store(r);
-		db4o.commit();
-	}
-	
-	@Override
-	public void delete(List<Record> records)
-	{
-		for(Record r : records)
-			db4o.delete(r);
-		db4o.commit();
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordDataAccess#delete(uk.ac.ucl.excites.sapelli.storage.model.Record)
-	 */
-	@Override
-	public void delete(Record record)
-	{
-		db4o.delete(record);
-		db4o.commit();
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordDataAccess#retrieveRecords()
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveAllRecords()
 	 */
 	@Override
 	public List<Record> retrieveAllRecords()
@@ -103,19 +94,7 @@ public class DB4ORecordStore extends RecordStore
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordDataAccess#deleteAllRecords()
-	 */
-	@Override
-	public void deleteAllRecords()
-	{
-		List<Record> result = db4o.query(Record.class);
-		for(Record r : result)
-			db4o.delete(r);
-		db4o.commit();
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordDataAccess#retrieveRecords(uk.ac.ucl.excites.sapelli.storage.queries.Query)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveRecords(uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery)
 	 */
 	@Override
 	public List<Record> retrieveRecords(final RecordsQuery query)
@@ -155,7 +134,7 @@ public class DB4ORecordStore extends RecordStore
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordAccess#retrieveRecord(uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveRecord(uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery)
 	 */
 	@Override
 	public Record retrieveRecord(SingleRecordQuery query)
@@ -165,6 +144,27 @@ public class DB4ORecordStore extends RecordStore
 		
 		// Run execute the SingleRecordQuery (reducing the list to 1 record), without re-running the recordsQuery, and then return the result:
 		return query.execute(records, false);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#deleteAllRecords()
+	 */
+	@Override
+	public void deleteAllRecords()
+	{
+		List<Record> result = db4o.query(Record.class);
+		for(Record r : result)
+			doDelete(r);
+		db4o.commit();
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doDelete(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 */
+	@Override
+	public void doDelete(Record record)
+	{
+		db4o.delete(record);
 	}
 
 	@Override
