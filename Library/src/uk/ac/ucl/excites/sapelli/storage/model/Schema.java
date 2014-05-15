@@ -28,23 +28,37 @@ public class Schema implements Serializable
 	// Statics------------------------------------------------------------
 	static protected final int UNKNOWN_COLUMN_POSITION = -1;
 	
-	// Identification of "external"/"client" schema instances:
-	static public final int SCHEMA_ID_SIZE = 36; //bits
-	static public final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE); // unsigned(!) 36 bit integer; does not accept the IDs of internal schemata!
-	
 	/**
 	 * Identification of "internal" schemata
 	 * 
 	 * The ordinal position (x) within the enum is made negative (formula: -x - 1) and used as the schema ID.
 	 * This allows to differentiate "internal" schemata (& their records) from "external"/"client" schemata (& records).
 	 */
-	static public enum InternalKind
+	static public enum Internal
 	{				/* ordinal	-> schema id */
 		INDEX,		/*	0		->	-1 */
 		LOCATION,	/*	1		->	-2 */
 		ORIENTATION	/*	2		->	-3 */
 		// more later?
 	}
+	
+	// Identification of schema "external"/"client" instances:
+	/* 	The Model ID identifies the data model a schema is part of.
+	 * 	The concept of the data model is left to defined by client code using the storage layer.
+	 * 	In the case of the Sapelli Collector the data model is a Project and the model ID corresponds
+	 * 	to the project hash.
+	 * 	This is only relevant for "external"/"client" schema instances because "internal"
+	 * 	schemata never belong to a model directly. */
+	static public final int MODEL_ID_SIZE = 32; //bits
+	static public final IntegerRangeMapping MODEL_ID_FIELD = IntegerRangeMapping.ForSize(0, MODEL_ID_SIZE); // unsigned(!) 32 bit integer
+	/*	the Model Schema Number signifies the number, position or index of a schema within the model it belongs to.
+	 * 	In the case of the Sapelli Collector it the value corresponds to the position within the project of the 
+	 * 	form the schema corresponds to. */
+	static public final int MODEL_SCHEMA_NO_SIZE = 4; //bits
+	static public final IntegerRangeMapping MODEL_SCHEMA_NO_FIELD = IntegerRangeMapping.ForSize(0, MODEL_SCHEMA_NO_SIZE); // unsigned(!) 4 bit integer
+	/*	the Schema ID is a combination of the above identifiers and uniquely identifies a schema. */
+	static public final int SCHEMA_ID_SIZE = MODEL_ID_SIZE + MODEL_SCHEMA_NO_SIZE; //bits
+	static public final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE); // unsigned(!) 36 bit integer; does not accept the IDs of internal schemata!
 	
 	// XML attributes (for record exports):
 	static public final String ATTRIBUTE_SCHEMA_ID = "schemaID";
@@ -76,22 +90,22 @@ public class Schema implements Serializable
 	/**
 	 * Make a schema instance of an internal kind
 	 * 
-	 * @param internalKind
+	 * @param internal
 	 */
-	public Schema(InternalKind internalKind)
+	public Schema(Internal internal)
 	{
-		this(internalKind, internalKind.name());
+		this(internal, internal.name());
 	}
 	
 	/**
 	 * Make a schema instance of an internal kind
 	 * 
-	 * @param internalKind
+	 * @param internal
 	 * @param name
 	 */
-	public Schema(InternalKind internalKind, String name)
+	public Schema(Internal internal, String name)
 	{
-		this(	(internalKind.ordinal() * -1l) - 1l, // Use negative id to indicate this is an "internal" schema and avoid ID collisions with "external"/"client" schema instances
+		this(	(internal.ordinal() * -1l) - 1l, // Use negative id to indicate this is an "internal" schema and avoid ID collisions with "external"/"client" schema instances
 				name,
 				false); // don't check the id (we know it doesn't fit in the SCHEMA_ID_FIELD because it is negative)
 	}
@@ -102,9 +116,12 @@ public class Schema implements Serializable
 	 * @param id
 	 * @param name
 	 */
-	public Schema(long id, String name)
+	public Schema(long modelID, short modelSchemaNumber, String name)
 	{
-		this(id, name, true); // check the id!
+		this(	(modelID << MODEL_SCHEMA_NO_SIZE) +	// Model ID takes up first 32 bits
+				modelSchemaNumber,					// Model Schema Number takes up next 4 bits
+				name,
+				true); 	// check the id!
 	}
 	
 	private Schema(long id, String name, boolean checkID)
@@ -117,6 +134,36 @@ public class Schema implements Serializable
 		this.name = (name == null || name.isEmpty() ? "Schema-" + id : name);
 		this.columnNameToPosition = new LinkedHashMap<String, Integer>();
 		this.realColumns = new ArrayList<Column>();
+	}
+	
+	/**
+	 * @return the schema id
+	 */
+	public long getID()
+	{
+		return id;
+	}
+	
+	/**
+	 * @return
+	 */
+	public long getModelID()
+	{
+		if(!isInternal())
+			throw new IllegalStateException("Internal schemata do not belong to a model.");
+		return id >> MODEL_SCHEMA_NO_SIZE;
+	}
+	
+	public short getModelSchemaNumber()
+	{
+		if(!isInternal())
+			throw new IllegalStateException("Internal schemata do not belong to a model.");
+		return (short) (id % (1 << MODEL_SCHEMA_NO_SIZE));
+	}
+	
+	public boolean isInternal()
+	{
+		return id < 0;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -336,19 +383,6 @@ public class Schema implements Serializable
 		return name;
 	}
 	
-	/**
-	 * @return the id
-	 */
-	public long getID()
-	{
-		return id;
-	}
-	
-	public boolean isInternal()
-	{
-		return id < 0;
-	}
-
 	public int getNumberOfColumns(boolean includeVirtual)
 	{
 		return realColumns.size() + (includeVirtual && virtualColumnsByName != null ? virtualColumnsByName.size() : 0);

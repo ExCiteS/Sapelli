@@ -7,7 +7,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -32,7 +31,7 @@ public class Form
 	/**
 	 * Allowed form indexes: 0 to {@link Project#MAX_FORMS} - 1
 	 */
-	public static final int FORM_POSITION_SIZE = Schema.SCHEMA_ID_SIZE /* 36 */ - Project.PROJECT_HASH_SIZE /* 32 */; // = 4 bits
+	public static final int FORM_POSITION_SIZE = Schema.MODEL_SCHEMA_NO_SIZE; // = 4 bits
 	public static final IntegerRangeMapping FORM_POSITION_FIELD = IntegerRangeMapping.ForSize(0, FORM_POSITION_SIZE);
 	
 	public static final boolean END_TIME_DEFAULT = false;
@@ -71,7 +70,7 @@ public class Form
 
 	// Dynamics-------------------------------------------------------
 	private final Project project;
-	private final int position;
+	private final short position;
 	private boolean producesRecords = true;
 	private boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	private Schema schema;
@@ -117,7 +116,7 @@ public class Form
 		
 		// Set Form index & add it to the Project:
 		if(FORM_POSITION_FIELD.fits(project.getForms().size()))
-			this.position = project.getForms().size();
+			this.position = (short) project.getForms().size();
 		else
 			throw new IllegalArgumentException("Invalid form index, valid values are " + FORM_POSITION_FIELD.getLogicalRangeString() + " (up to " + Project.MAX_FORMS + " forms per project).");
 		project.addForm(this); //!!!
@@ -472,7 +471,7 @@ public class Form
 	/**
 	 * @return the position within the project
 	 */
-	public int getPosition()
+	public short getPosition()
 	{
 		return position;
 	}
@@ -524,7 +523,8 @@ public class Form
 			else
 			{	
 				// Create new Schema:
-				schema = new Schema(SapelliCollectorClient.GetSchemaID(this), // combination of project hash and form index
+				schema = new Schema(project.getHash(),
+									position,
 									project.getName() +
 									(project.getVariant() != null ? '_' + project.getVariant() : "") +
 									"_v" + project.getVersion() +

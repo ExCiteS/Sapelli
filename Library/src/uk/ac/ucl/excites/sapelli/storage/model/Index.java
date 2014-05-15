@@ -18,7 +18,7 @@ public class Index extends Schema
 	
 	public Index(String name, boolean unique, Column<?>... columns)
 	{
-		super(InternalKind.INDEX, name);
+		super(Internal.INDEX, name);
 		this.unique = unique;
 		
 		// Add columns (but check if they are not virtual):

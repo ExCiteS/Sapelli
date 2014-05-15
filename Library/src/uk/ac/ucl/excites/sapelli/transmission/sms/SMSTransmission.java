@@ -154,14 +154,14 @@ public abstract class SMSTransmission extends BinaryTransmission
 	}
 	
 	@Override
-	protected void readPayload(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
+	protected void receivePayload(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
 	{
 		// First to a completeness check:
 		if(!isComplete())
 			throw new IncompleteTransmissionException(this);
 		
 		// Read messages:
-		super.readPayload(schemaToUse, settingsToUse);
+		super.receivePayload(schemaToUse, settingsToUse);
 	}
 
 	public void resend(int partNumber)

@@ -349,4 +349,9 @@ public class TextSMSTransmission extends SMSTransmission
 		}
 	}
 	
+	public int getMaxPayloadBytes()
+	{
+		return MAX_PAYLOAD_CHARS * BITS_PER_CHAR / Byte.SIZE; 
+	}
+	
 }

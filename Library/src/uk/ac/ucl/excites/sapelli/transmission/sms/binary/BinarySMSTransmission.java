@@ -106,5 +106,10 @@ public class BinarySMSTransmission extends SMSTransmission
 		rawOut.close();
 		return rawOut.toByteArray();
 	}
+	
+	public int getMaxPayloadBytes()
+	{
+		return MAX_PAYLOAD_SIZE;
+	}
 
 }

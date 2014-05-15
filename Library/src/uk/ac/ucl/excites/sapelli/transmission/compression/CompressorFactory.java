@@ -18,12 +18,12 @@ public class CompressorFactory
 	static public enum CompressionMode
 	{	//Changing the order of the enum seems to cause problems (possibly only when using old DB4O databases), so don't
 		NONE,
-		GZIP,
+		DEFLATE,
+		LZMA,
 		LZMA2,
 		BZIP2,
-		DEFLATE,
-		LZMA
-		/*HUFFMAN*/
+		GZIP
+		/*,HUFFMAN*/
 	}
 	
 	static public Compressor getCompressor(CompressionMode mode)
@@ -32,10 +32,10 @@ public class CompressorFactory
 		{
 			case NONE		: return new DummyCompressor();
 			case DEFLATE	: return new DeflateCompressor();
-			case GZIP		: return new GZipCompressor();
 			case LZMA		: return new LZMACompressor();
 			case LZMA2		: return new LZMA2Compressor();
 			case BZIP2		: return new BZIP2Compressor();
+			case GZIP		: return new GZipCompressor();
 			default			: return new DummyCompressor();
 		}
 	}
@@ -78,7 +78,7 @@ public class CompressorFactory
 
 	static public CompressorResult ApplyBestCompression(byte[] data)
 	{
-		return ApplyBestCompression(data, CompressorFactory.CompressionMode.values()); // will try all modes
+		return ApplyBestCompression(data, CompressorFactory.CompressionMode.values()); // will try all supported modes
 	}
 	
 	private static final int NUM_CORES = Runtime.getRuntime().availableProcessors();

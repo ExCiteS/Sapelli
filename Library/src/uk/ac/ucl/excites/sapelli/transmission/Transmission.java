@@ -5,10 +5,10 @@ package uk.ac.ucl.excites.sapelli.transmission;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import org.joda.time.DateTime;
@@ -35,10 +35,10 @@ public abstract class Transmission
 	
 	protected Settings settings;
 	protected TransmissionClient client; //only used on the receiving side
-	protected Schema schema;
+	protected long modelID = -1;
+	protected final Map<Schema,List<Record>> recordsBySchema;
 	protected Set<Column<?>> columnsToFactorOut;
 	protected Map<Column<?>, Object> factoredOutValues = null;
-	protected List<Record> records;
 
 	/**
 	 * To be called at the sending side.
@@ -58,14 +58,9 @@ public abstract class Transmission
 	 * @param columnsToFactorOut
 	 * @param settings
 	 */
-	public Transmission(Schema schema, Set<Column<?>> columnsToFactorOut, Settings settings)
+	public Transmission(Settings settings)
 	{
 		this(); //!!!
-		if(schema == null)
-			throw new NullPointerException("Schema cannot be null on sending side.");
-		if(schema.isInternal())
-			throw new IllegalArgumentException("Cannot directly transmit records of internal schema.");
-		this.schema = schema;
 		setColumnsToFactorOut(columnsToFactorOut);
 		this.settings = settings;
 	}
@@ -84,75 +79,112 @@ public abstract class Transmission
 		this.client = modelProvider;
 	}
 	
+	/**
+	 * To be called at the sending side.
+	 * 
+	 * @param schema
+	 * @param columnsToFactorOut
+	 * @param settings
+	 */
+	public Transmission(Schema schema, Set<Column<?>> columnsToFactorOut, Settings settings)
+	{
+		this(); //!!!
+		setColumnsToFactorOut(columnsToFactorOut);
+		this.settings = settings;
+	}
+	
 	private Transmission()
 	{
-		this.records = new ArrayList<Record>();
+		this.recordsBySchema = new HashMap<Schema, List<Record>>();
 	}
 	
 	protected void setColumnsToFactorOut(Set<Column<?>> columnsToFactorOut)
 	{
-		if(columnsToFactorOut == null)
-			columnsToFactorOut = Collections.<Column<?>>emptySet();
-		else
-			for(Column<?> c : columnsToFactorOut)
-				if(!schema.containsColumn(c.getName(), false)) 
-					throw new IllegalArgumentException("Column \"" + c.toString() + "\" does not belong to the given schema.");
+//		if(columnsToFactorOut == null)
+//			columnsToFactorOut = Collections.<Column<?>>emptySet();
+//		else
+//			for(Column<?> c : columnsToFactorOut)
+//				if(!schema.containsColumn(c.getName(), false)) 
+//					throw new IllegalArgumentException("Column \"" + c.toString() + "\" does not belong to the given schema.");
 		this.columnsToFactorOut = columnsToFactorOut;
 	}
 	
-	public List<Record> getRecords()
+	/**
+	 * @return records grouped by schema
+	 */
+	public Map<Schema,List<Record>> getRecordsBySchema()
 	{
-		return records;
+		return recordsBySchema;
 	}
 	
+	/**
+	 * @return flat list of records (sorted by Schema)
+	 */
+	public List<Record> getRecords()
+	{
+		List<Record> allRecords = new ArrayList<Record>();
+		for(Entry<Schema, List<Record>> entry : recordsBySchema.entrySet())
+			allRecords.addAll(entry.getValue());
+		return allRecords;
+	}
+	
+	/**
+	 * @return all schemata for which the transmission contains records 
+	 */
+	public Set<Schema> getSchemata()
+	{
+		return recordsBySchema.keySet();
+	}
+	
+	/**
+	 * @return whether the transmission contains records of more than 1 schema
+	 */
+	public boolean isMultiSchema()
+	{
+		return recordsBySchema.keySet().size() > 1;
+	}
+	
+	/**
+	 * To be called from the sending side
+	 * 
+	 * @param record
+	 * @return
+	 * @throws Exception
+	 */
 	public boolean addRecord(Record record) throws Exception
 	{
-		if(record.getSchema() != schema)
-			throw new IllegalArgumentException("Schema mismatch");
-		
 		if(!record.isFilled())
-			return false;
-		
-		if(columnsToFactorOut != null)
+			return false; // record is not fully filled (non-optional values are still null)
+		Schema schema = record.getSchema();
+		if(schema.isInternal())
+			throw new IllegalArgumentException("Cannot directly transmit records of internal schema.");
+		if(recordsBySchema.isEmpty())
+			// set model ID:
+			modelID = schema.getModelID();
+		//	Check model ID:
+		else if(modelID != schema.getModelID())
+			throw new IllegalArgumentException("The schemata of the records in a single Transmission must all belong to the same model.");
+
+		// Add the record:
+		List<Record> recordsOfSchema = recordsBySchema.get(schema);
+		if(recordsOfSchema == null)
 		{
-			if(records.isEmpty())
-			{
-				factoredOutValues = new HashMap<Column<?>, Object>();
-				//Store "factored out" values:
-				for(Column<?> c : columnsToFactorOut)
-					factoredOutValues.put(c, c.retrieveValue(record));
-			}
-			else
-			{	//Check if factored out values are the same
-				for(Column<?> c : columnsToFactorOut)
-				{
-					Object rValue = c.retrieveValue(record);
-					if(factoredOutValues.get(c) == null)
-					{
-						if(rValue != null)
-							throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
-					}
-					else
-					{
-						if(rValue == null || !rValue.equals(factoredOutValues.get(c)))
-							throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
-					}
-				}
-			}
+			recordsOfSchema = new ArrayList<Record>();
+			recordsBySchema.put(schema, recordsOfSchema);
 		}
+		recordsOfSchema.add(record);
 		
-		//Add the record:
-		records.add(record);
-		
-		//Try preparing messages:
+		// Try preparing messages:
 		try
 		{
 			preparePayload();
 		}
 		catch(TransmissionCapacityExceededException tcee)
-		{	//adding this record caused transmission capacity to be exceeded, so remove it and mark the transmission as full (unless there are no other records)
-			records.remove(record);
-			if(!records.isEmpty())
+		{	// adding this record caused transmission capacity to be exceeded, so remove it and mark the transmission as full (unless there are no other records)
+			recordsOfSchema.remove(record);
+			if(recordsOfSchema.isEmpty())
+				recordsBySchema.remove(schema);
+			if(!recordsBySchema.isEmpty())
 				full = true;
 			return false;
 		}
@@ -170,7 +202,7 @@ public abstract class Transmission
 			System.out.println("This transmission (& all of its parts) has already been sent.");
 			return;
 		}
-		if(records.isEmpty())
+		if(recordsBySchema.isEmpty())
 			throw new IllegalStateException("Transmission has no records. Add at least 1 record before sending the transmission .");
 		if(transmissionSender == null)
 			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
@@ -185,41 +217,28 @@ public abstract class Transmission
 
 	public void resend(TransmissionSender sender) throws Exception
 	{
-		//Clear early sentAt value (otherwise send() won't work):
+		// Clear early sentAt value (otherwise send() won't work):
 		sentAt = null;
 		
-		//Resend:
+		// Resend:
 		send(sender);
 	}
 	
 	protected abstract void sendPayload(TransmissionSender transmissionSender) throws Exception;
 	
-	public void read() throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
+	public void receive() throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
 	{
-		read(null, null);
-	}
-	
-	public void read(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
-	{
-		//Some checks:
-		if(!records.isEmpty())
-		{
-			if(schema == schemaToUse && settings == settingsToUse)
-			{
-				System.out.println("This SMSTransmission has already been received.");
-				return;
-			}
-			else
-				records.clear(); //Re-receiving with other schema/settings, so clear records
-		}
+		// Some checks:
+		if(!recordsBySchema.isEmpty())
+			throw new IllegalStateException("This SMSTransmission has already been received.");
 		
-		//Read payload:
-		readPayload(schemaToUse, settingsToUse);
+		// Read payload:
+		receivePayload(null, null);
 	}
 	
 	protected abstract void preparePayload() throws IOException, TransmissionCapacityExceededException;
 	
-	protected abstract void readPayload(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException;
+	protected abstract void receivePayload(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException;
 	
 	public boolean isFull()
 	{
@@ -228,7 +247,7 @@ public abstract class Transmission
 	
 	public boolean isEmpty()
 	{
-		return records.isEmpty();
+		return recordsBySchema.isEmpty();
 	}
 	
 	public boolean isSent()
@@ -238,11 +257,12 @@ public abstract class Transmission
 	
 	protected void setSentAt(DateTime sentAt)
 	{
-		for(Record r : records)
-		{
-			r.setSent(true);
-			//r.setSendingAttemptedAt(sentAt);
-		}
+		for(List<Record> records : recordsBySchema.values())
+			for(Record r : records)
+			{
+				r.setSent(true);
+				//r.setSendingAttemptedAt(sentAt);
+			}
 		this.sentAt = sentAt;
 	}
 	
@@ -266,9 +286,9 @@ public abstract class Transmission
 		this.receivedAt = receivedAt;
 	}
 	
-	public Schema getSchema()
+	public long getModelID()
 	{
-		return schema;
+		return modelID;
 	}
 	
 	public Settings getSettings()

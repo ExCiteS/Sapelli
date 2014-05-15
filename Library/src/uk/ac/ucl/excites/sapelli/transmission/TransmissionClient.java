@@ -21,4 +21,6 @@ public interface TransmissionClient extends StorageClient
 	
 	public Set<Column<?>> getFactoredOutColumnsFor(Schema schema);
 	
+	public short getNumberOfSchemataInModel(long modelID);
+	
 }
