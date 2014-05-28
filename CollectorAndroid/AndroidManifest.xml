@@ -115,14 +115,12 @@
                 <data android:mimeType="*/*" />
             </intent-filter>
         </activity>
-        <!--
+      
         <service
             android:name="uk.ac.ucl.excites.sapelli.sender.DataSenderService"
             android:icon="@drawable/ic_excites_grey"
             android:label="@string/service_name" >
         </service>
-        -->
-
         <service
             android:name="com.dropbox.sync.android.DbxSyncService"
             android:enabled="true"
