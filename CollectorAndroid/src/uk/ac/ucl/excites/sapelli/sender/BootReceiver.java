@@ -21,7 +21,8 @@ public class BootReceiver extends BroadcastReceiver
 			// For each of the projects that has sending enabled, set an Alarm
 			for(Project p : projectStore.retrieveProjects())
 				// TODO if (p.isSending())
-				SapelliAlarmManager.setAlarm(context, 10, p.hashCode());
+				// TODO interval should be saved in project -> p.getSendingInterval()
+				SapelliAlarmManager.setAlarm(context, 10 * 1000, p.hashCode());
 		}
 	}
 }
