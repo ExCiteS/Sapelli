@@ -127,16 +127,16 @@
             android:exported="false"
             android:label="Dropbox Sync" >
         </service>
-
-        <!--
+        
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.sender.BootReceiver"
+            android:enabled="false"
             android:exported="true" >
             <intent-filter android:priority="9999999999" >
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
-        </receiver>
-        -->
+        </receiver>
+
         <activity
             android:name="uk.ac.ucl.excites.sapelli.collector.activities.ExportActivity"
             android:label="@string/title_activity_export"

@@ -1,37 +1,27 @@
 package uk.ac.ucl.excites.sapelli.sender;
 
-import java.util.Calendar;
-
-import android.app.PendingIntent;
+import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.sender.util.SapelliAlarmManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
 public class BootReceiver extends BroadcastReceiver
 {
-
 	@Override
-	public void onReceive(Context mContext, Intent mIntent)
+	public void onReceive(Context context, Intent intent)
 	{
-
-		PendingIntent mPendingIntent = null;
-
-		if(DataSenderPreferences.getSenderEnabled(mContext))
+		if(intent.getAction().equals("android.intent.action.BOOT_COMPLETED"))
 		{
-			// TODO Re-enable the service at same point
-			// Intent service = new Intent(mContext, DataSenderService.class);
-			// mPendingIntent = PendingIntent.getService(mContext, 0, service, 0);
+			// Get ProjectStore instance:
+			ProjectStore projectStore = new PrefProjectStore(context);
+
+			// For each of the projects that has sending enabled, set an Alarm
+			for(Project p : projectStore.retrieveProjects())
+				// TODO if (p.isSending())
+				SapelliAlarmManager.setAlarm(context, 10, p.hashCode());
 		}
-
-		// Set up a calendar 2 minutes from now
-		Calendar mCalendar = Calendar.getInstance();
-		mCalendar.setTimeInMillis(System.currentTimeMillis());
-		mCalendar.add(Calendar.MINUTE, 2);
-
-		// TODO Re-enable the service at same point
-		// Schedule the alarm!
-		// AlarmManager mAlarmManager = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
-		// mAlarmManager.set(AlarmManager.RTC_WAKEUP, mCalendar.getTimeInMillis(), mPendingIntent);
 	}
-
 }

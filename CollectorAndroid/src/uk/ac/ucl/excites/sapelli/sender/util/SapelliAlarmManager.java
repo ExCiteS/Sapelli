@@ -1,10 +1,16 @@
 package uk.ac.ucl.excites.sapelli.sender.util;
 
+import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.sender.BootReceiver;
 import uk.ac.ucl.excites.sapelli.sender.DataSenderService;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 
 /**
  * @author Michalis Vitos
@@ -15,7 +21,9 @@ public class SapelliAlarmManager
 	public static final int SERVICE_REQUEST_CODE = 0;
 	public static final String PROJECT_HASH_CODE = "PROJECT_HASH_CODE";
 
-	public SapelliAlarmManager() {}
+	public SapelliAlarmManager()
+	{
+	}
 
 	/**
 	 * Set up an Alarm for a project that calls the {@link DataSenderService}, initially after a minute and then every <code>intervalMillis</code>
@@ -45,6 +53,9 @@ public class SapelliAlarmManager
 
 		// Setup the alarm to be triggered every intervalMillis
 		alarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerAtMillis, intervalMillis, getAlarmIntent(context, projectHashCode));
+
+		// Enable the Broadcast Receiver
+		enableBootReceiver(context, true);
 	}
 
 	private static PendingIntent getAlarmIntent(Context context, int projectHashCode)
@@ -60,7 +71,36 @@ public class SapelliAlarmManager
 	{
 		// Create Alarm Manager
 		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-
 		alarmManager.cancel(getAlarmIntent(context, projectHashCode));
+
+		// Check whether to cancel BootReceiver
+		checkBootReceiver(context);
+	}
+
+	private static void checkBootReceiver(Context context)
+	{
+		boolean isSending = false;
+
+		// Get ProjectStore instance:
+		ProjectStore projectStore = new PrefProjectStore(context);
+
+		// For each of the projects that has sending enabled, set an Alarm
+		for(Project p : projectStore.retrieveProjects())
+		{
+			// TODO if (p.isSending())
+			isSending = true;
+			break;
+		}
+
+		enableBootReceiver(context, isSending);
+	}
+
+	private static void enableBootReceiver(Context context, boolean enable)
+	{
+		ComponentName receiver = new ComponentName(context, BootReceiver.class);
+		PackageManager pm = context.getPackageManager();
+
+		final int newState = (enable) ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
+		pm.setComponentEnabledSetting(receiver, newState, PackageManager.DONT_KILL_APP);
 	}
 }
