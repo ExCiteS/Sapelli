@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="uk/ac/ucl/excites/sapelli/sender/" kind="src" path="src"/>
+	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Environment2"/>
 	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Sapelli Library"/>
