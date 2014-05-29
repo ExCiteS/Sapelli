@@ -78,6 +78,11 @@ public class SapelliAlarmManager
 		checkBootReceiver(context);
 	}
 
+	/**
+	 * Checks whether there is any project with Sending activated and either disables or enables the boot receiver
+	 * 
+	 * @param context
+	 */
 	private static void checkBootReceiver(Context context)
 	{
 		boolean isSending = false;
@@ -89,7 +94,7 @@ public class SapelliAlarmManager
 		for(Project p : projectStore.retrieveProjects())
 		{
 			// TODO if (p.isSending())
-			isSending = true;
+			isSending = false; // TODO change
 			break;
 		}
 
