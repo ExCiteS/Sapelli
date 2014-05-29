@@ -16,9 +16,8 @@ public class DataSenderService extends Service
 	public int onStartCommand(Intent intent, int flags, int startId)
 	{
 		Bundle extras = intent.getExtras();
-		final int projectHash = extras.getInt(SapelliAlarmManager.PROJECT_HASH_CODE);
-
-		Debug.d("Call to service: " + startId + " for project: " + projectHash);
+		final long projectId = extras.getInt(SapelliAlarmManager.PROJECT_ID);
+		Debug.d("Call to service: " + startId + " for project: " + projectId);
 
 		return Service.START_NOT_STICKY;
 	}
@@ -26,6 +25,7 @@ public class DataSenderService extends Service
 	@Override
 	public void onDestroy()
 	{
+		Debug.d("Service has been killed!");
 	}
 
 	@Override

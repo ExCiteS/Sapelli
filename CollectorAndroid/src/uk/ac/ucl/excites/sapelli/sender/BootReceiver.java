@@ -22,7 +22,7 @@ public class BootReceiver extends BroadcastReceiver
 			for(Project p : projectStore.retrieveProjects())
 				// TODO if (p.isSending())
 				// TODO interval should be saved in project -> p.getSendingInterval()
-				SapelliAlarmManager.setAlarm(context, 10 * 1000, p.hashCode());
+				SapelliAlarmManager.setAlarm(context, 10 * 1000, p.getID());
 		}
 	}
 }
