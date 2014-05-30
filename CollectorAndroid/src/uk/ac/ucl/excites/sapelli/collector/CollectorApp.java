@@ -17,6 +17,7 @@ import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.db4o.DB4ORecordStore;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.Application;
+import android.content.Context;
 import android.content.res.Configuration;
 import android.os.Environment;
 import android.util.Log;
@@ -46,6 +47,11 @@ public class CollectorApp extends Application implements StoreClient
 	static private final String DUMP_FOLDER = "Dumps" + File.separator;
 	static private final String EXPORT_FOLDER = "Export" + File.separator;
 	
+	static public ProjectStore GetProjectStore(Context context) throws Exception
+	{
+		return USE_PREFS_FOR_PROJECT_STORAGE ? new PrefProjectStore(context) : new DB4OProjectStore(context.getFilesDir(), getDemoPrefix() + DATABASE_BASENAME);
+	}
+
 	/**
 	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on
 	 * an accessible (i.e. mounted) storage device
@@ -188,7 +194,7 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		if(projectStore == null)
 		{
-			projectStore = USE_PREFS_FOR_PROJECT_STORAGE ? new PrefProjectStore(this) : new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			projectStore = GetProjectStore(this);
 			storeClients.put(projectStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(projectStore).add(client); //add to set of clients currently using the projectStore
