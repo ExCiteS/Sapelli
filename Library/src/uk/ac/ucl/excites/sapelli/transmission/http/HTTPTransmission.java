@@ -87,5 +87,12 @@ public class HTTPTransmission extends BinaryTransmission
 			throw new IllegalStateException("Transmission body is not set or empty.");
 		return Base64.decodeBase64(body);
 	}
+
+	@Override
+	public int getMaxPayloadBytes()
+	{
+		// TODO work out a reasonable size limit for HTTP transmissions
+		return 0;
+	}
 	
 }

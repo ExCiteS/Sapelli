@@ -50,35 +50,13 @@ public abstract class RecordStore implements Store
 	 */
 	public void store(Record record) throws Exception
 	{
-		if(isStorable(record))
-		{
-			startTransaction();
-			try
-			{
-				doStore(record);
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace(System.err);
-				rollbackTransaction();
-				throw e;
-			}
-			commitTransaction();
-		}
-	}
-	
-	/**
-	 * @param records - the records to store or update
-	 * @throws Exception
-	 */
-	public void store(List<Record> records) throws Exception
-	{
+		if(!isStorable(record))
+			throw new IllegalArgumentException(String.format("Record (%s) cannot be stored!", record.toString(false)));
+		Boolean insert = null;
 		startTransaction();
 		try
 		{
-			for(Record r : records)
-				if(isStorable(r))
-					doStore(r);
+			insert = doStore(record);
 		}
 		catch(Exception e)
 		{
@@ -87,13 +65,52 @@ public abstract class RecordStore implements Store
 			throw e;
 		}
 		commitTransaction();
+		// Inform client:
+		if(insert)
+			client.recordInserted(record);
+		else
+			client.recordUpdated(record);
+	}
+	
+	/**
+	 * @param records - the records to store or update
+	 * @throws Exception
+	 */
+	public void store(List<Record> records) throws Exception
+	{
+		Boolean[] insert = new Boolean[records.size()]; 
+		startTransaction();
+		int r = 0;
+		try
+		{
+			for(Record record : records)
+				if(isStorable(record))
+					insert[r++] = doStore(record);
+				else
+					throw new IllegalArgumentException(String.format("Record (%s) cannot be stored!", record.toString(false)));
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+			rollbackTransaction();
+			throw e;
+		}
+		commitTransaction();
+		// Inform client:
+		r = 0;
+		for(Record record : records)
+			if(insert[r++])
+				client.recordInserted(record);
+			else
+				client.recordUpdated(record);
 	}
 	
 	/**
 	 * @param record - the record to store or update; can be assumed to be non-null and not of an internal schema
 	 * @throws Exception
+	 * @return whether the record was new (i.e. it was INSERTed; returns true), or not (i.e. it was UPDATEd; returns false)
 	 */
-	protected abstract void doStore(Record record) throws Exception;
+	protected abstract boolean doStore(Record record) throws Exception;
 	
 	/**
 	 * Retrieve all Records (of any schema)
@@ -161,6 +178,8 @@ public abstract class RecordStore implements Store
 			throw e;
 		}
 		commitTransaction();
+		// Inform client:
+		client.recordDeleted(record);
 	}
 
 	/**
@@ -172,8 +191,8 @@ public abstract class RecordStore implements Store
 		startTransaction();
 		try
 		{
-			for(Record r : records)
-				doDelete(r);
+			for(Record record : records)
+				doDelete(record);
 		}
 		catch(Exception e)
 		{
@@ -182,6 +201,9 @@ public abstract class RecordStore implements Store
 			throw e;
 		}
 		commitTransaction();
+		// Inform client:
+		for(Record record : records)
+			client.recordDeleted(record);
 	}
 	
 	/**

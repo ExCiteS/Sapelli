@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.sapelli.storage;
 
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 
 /**
@@ -24,5 +25,11 @@ public interface StorageClient
 	 * @return	a matching {@link Schema} instance, or {@code null} if not found
 	 */
 	public Schema getSchemaV1(int schemaID, int schemaVersion);
-		
+	
+	public abstract void recordInserted(Record record);
+	
+	public abstract void recordUpdated(Record record);
+	
+	public abstract void recordDeleted(Record record);
+	
 }

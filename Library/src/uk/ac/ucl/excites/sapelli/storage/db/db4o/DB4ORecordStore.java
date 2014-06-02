@@ -72,9 +72,11 @@ public class DB4ORecordStore extends RecordStore
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStore(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	protected void doStore(Record record) throws Exception
+	protected boolean doStore(Record record) throws Exception
 	{
+		boolean insert = !db4o.ext().isStored(record);
 		db4o.store(record);
+		return insert;
 	}
 	
 	/* (non-Javadoc)

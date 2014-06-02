@@ -37,7 +37,7 @@ public class Record implements Serializable
 	protected Object[] values;
 	
 	protected boolean exported = false;
-	protected boolean sent = false;
+	protected Long transmissionID;
 	
 	public Record(Schema schema)
 	{
@@ -249,20 +249,19 @@ public class Record implements Serializable
 		this.exported = exported;
 	}
 
-	/**
-	 * @return the sent
-	 */
-	public boolean isSent()
+	public boolean isTransmissionIDSet()
 	{
-		return sent;
+		return transmissionID != null;
 	}
 
-	/**
-	 * @param sent the sent to set
-	 */
-	public void setSent(boolean sent)
+	public Long getTransmissionID()
 	{
-		this.sent = sent;
+		return transmissionID;
+	}
+
+	public void setTransmissionID(Long transmissionID)
+	{
+		this.transmissionID = transmissionID;
 	}
 
 	@Override

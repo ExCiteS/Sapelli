@@ -260,7 +260,8 @@ public abstract class Transmission
 		for(List<Record> records : recordsBySchema.values())
 			for(Record r : records)
 			{
-				r.setSent(true);
+				//TODO mark records as sent!!!
+				//r.setSent(true);
 				//r.setSendingAttemptedAt(sentAt);
 			}
 		this.sentAt = sentAt;
