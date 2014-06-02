@@ -161,7 +161,7 @@ public abstract class Column<T> implements Serializable
 	 * @param value assumed to be non-null!
 	 * @return
 	 */
-	public abstract String toString(T value); 
+	public abstract String toString(T value);
 	
 	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException, IllegalArgumentException
 	{
@@ -190,6 +190,11 @@ public abstract class Column<T> implements Serializable
 		}
 	}
 	
+	/**
+	 * @param value assumed to be non-null!
+	 * @param bitStream
+	 * @throws IOException
+	 */
 	protected abstract void write(T value, BitOutputStream bitStream) throws IOException;
 	
 	public final void readAndStoreValue(Record record, BitInputStream bitStream) throws IOException, IllegalArgumentException, NullPointerException

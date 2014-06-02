@@ -90,7 +90,6 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 		return bldr.toString();
 	}
 
-
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#write(java.lang.Object, uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream)
 	 */

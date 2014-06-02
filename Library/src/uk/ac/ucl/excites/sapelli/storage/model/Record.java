@@ -370,7 +370,7 @@ public class Record implements Serializable
 			else
 				bldr.append(SERIALISATION_SEPARATOR); // also when value is skipped below!
 			// Value:
-			if(skipColumns == null || !skipColumns.contains(col))
+			if(!skipColumns.contains(col))
 			{
 				String valueString = col.retrieveValueAsString(this);
 				bldr.append(valueString == null ? "" : StringUtils.escape(valueString, SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
