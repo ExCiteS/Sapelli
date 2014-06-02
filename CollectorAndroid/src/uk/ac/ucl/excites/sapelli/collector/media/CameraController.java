@@ -167,10 +167,17 @@ public class CameraController implements SurfaceHolder.Callback
 				//Set focus mode:
 				if(parameters.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_AUTO))
 					parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-				
-				//Flash mode:
-				parameters.setFlashMode(getAppropriateFlashMode(parameters));
-				
+
+				// Flash mode:
+				try
+				{
+					parameters.setFlashMode(getAppropriateFlashMode(parameters));
+				}
+				catch(NullPointerException e)
+				{
+					Log.e(TAG, "Exception in setFlashMode()", e);
+				}
+
 				//Resulting file:
 				//	Format:
 				parameters.setPictureFormat(ImageFormat.JPEG);
