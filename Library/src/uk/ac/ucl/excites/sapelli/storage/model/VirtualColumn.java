@@ -12,23 +12,34 @@ import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
- * A "virtual", read-only(!) column which maps the values of a "real" column (the sourceColumn)
- * to a different type/representation, which can be handled by another targetColumn.
+ * A "virtual", read-only(!) column which maps the values of a "real" column (the sourceColumn, of type ST)
+ * to a different type/representation, which can be handled by another "targetColumn" (of type TT).
  * The sourceColumn is assumed to be part of a schema on its own, the target column should never be added to a schema directly.
+ * 
+ * @param <ST> source type
+ * @param <TT> target ("virtual") type
  * 
  * @author mstevens
  */
-public class VirtualColumn<VT, ST> extends Column<VT>
+public class VirtualColumn<TT, ST> extends Column<TT>
 {
 	
 	private static final long serialVersionUID = 2L;
 	private static final char NAME_SEPARATOR = '-';
 
-	private final Column<ST> sourceColumn; // the "real" column
-	private final Column<VT> targetColumn; // the "virtual" column
-	private final ValueMapper<VT, ST> valueMapper;
+	/**
+	 * the "real" column
+	 */
+	private final Column<ST> sourceColumn;
+	
+	/**
+	 * the "virtual" column
+	 */
+	private final Column<TT> targetColumn;
+	
+	private final ValueMapper<TT, ST> valueMapper;
 
-	public VirtualColumn(Column<ST> sourceColumn, Column<VT> targetColumn, ValueMapper<VT, ST> valueMapper)
+	public VirtualColumn(Column<ST> sourceColumn, Column<TT> targetColumn, ValueMapper<TT, ST> valueMapper)
 	{
 		super(targetColumn.getType(), sourceColumn.name + NAME_SEPARATOR + targetColumn.name, targetColumn.optional);
 		if(sourceColumn == null || targetColumn == null || valueMapper == null)
@@ -43,13 +54,13 @@ public class VirtualColumn<VT, ST> extends Column<VT>
 	}
 	
 	@Override
-	public VirtualColumn<VT, ST> copy()
+	public VirtualColumn<TT, ST> copy()
 	{
-		return new VirtualColumn<VT, ST>(sourceColumn, targetColumn.copy(), valueMapper);
+		return new VirtualColumn<TT, ST>(sourceColumn, targetColumn.copy(), valueMapper);
 	}
 	
 	@Override
-	public void storeValue(Record record, VT value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
+	public void storeValue(Record record, TT value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("VirtualColumns are read-only!");
 	}
@@ -60,7 +71,7 @@ public class VirtualColumn<VT, ST> extends Column<VT>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#retrieveValue(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	public VT retrieveValue(Record record)
+	public TT retrieveValue(Record record)
 	{
 		// Retrieve value from sourceColumn:
 		ST sourceValue = sourceColumn.retrieveValue(record);
@@ -71,37 +82,37 @@ public class VirtualColumn<VT, ST> extends Column<VT>
 	}
 
 	@Override
-	public VT parse(String value) throws ParseException, IllegalArgumentException, NullPointerException
+	public TT parse(String value) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		return targetColumn.parse(value);
 	}
 
 	@Override
-	public String toString(VT value)
+	public String toString(TT value)
 	{
 		return targetColumn.toString(value);
 	}
 
 	@Override
-	protected void write(VT value, BitOutputStream bitStream) throws IOException
+	protected void write(TT value, BitOutputStream bitStream) throws IOException
 	{
 		targetColumn.write(value, bitStream);
 	}
 
 	@Override
-	protected VT read(BitInputStream bitStream) throws IOException
+	protected TT read(BitInputStream bitStream) throws IOException
 	{
 		return targetColumn.read(bitStream);
 	}
 
 	@Override
-	protected void validate(VT value) throws IllegalArgumentException
+	protected void validate(TT value) throws IllegalArgumentException
 	{
 		targetColumn.validate(value);
 	}
 
 	@Override
-	protected VT copy(VT value)
+	protected TT copy(TT value)
 	{
 		return targetColumn.copy(value);
 	}
@@ -119,7 +130,7 @@ public class VirtualColumn<VT, ST> extends Column<VT>
 	}
 
 	@Override
-	protected boolean equalRestrictions(Column<VT> otherColumn)
+	protected boolean equalRestrictions(Column<TT> otherColumn)
 	{
 		if(this.getClass().isInstance(otherColumn))
 		{
@@ -153,23 +164,31 @@ public class VirtualColumn<VT, ST> extends Column<VT>
 		return sourceColumn;
 	}
 	
-	public Column<VT> getTargetColumn()
+	public Column<TT> getTargetColumn()
 	{
 		return targetColumn;
 	}
 	
 	/**
-	 * @author mstevens
+	 * Mapping of source to target types
 	 *
-	 * @param <VT>
-	 * @param <ST>
+	 * @param <ST> source type
+	 * @param <TT> target ("virtual") type
+	 * 
+	 * @author mstevens
 	 */
-	static public abstract class ValueMapper<VT, ST> implements Serializable
+	static public abstract class ValueMapper<TT, ST> implements Serializable
 	{
 	
 		private static final long serialVersionUID = 2L;
 
-		public abstract VT mapValue(ST nonNullValue);
+		/**
+		 * Converts values from source type ST to target type TT
+		 * 
+		 * @param nonNullValue
+		 * @return
+		 */
+		public abstract TT mapValue(ST nonNullValue);
 		
 		public abstract int hashCode();
 		
