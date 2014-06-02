@@ -1,15 +1,11 @@
 package uk.ac.ucl.excites.sapelli.transmission.http;
 
 import java.io.IOException;
-import java.util.Set;
 
 import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
 
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.BinaryTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionSender;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
@@ -22,41 +18,25 @@ public class HTTPTransmission extends BinaryTransmission
 	private String serverURL;
 	private String body = null;
 	
-	
 	/**
 	 * To be called on the sending side.
 	 * 
-	 * @param schema
 	 * @param serverURL
-	 * @param settings
 	 */
-	public HTTPTransmission(Schema schema, String serverURL, Settings settings)
+	public HTTPTransmission(String serverURL)
 	{
-		this(schema, null, serverURL, settings);
-	}
-	
-	/**
-	 * To be called on the sending side.
-	 * 
-	 * @param schema
-	 * @param columnsToFactorOut
-	 * @param serverURL
-	 * @param settings
-	 */
-	public HTTPTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, String serverURL, Settings settings)
-	{
-		super(schema, columnsToFactorOut, settings);
+		super();
 		this.serverURL = serverURL;
 	}
 	
 	/**
 	 * To be called on the receiving side.
 	 * 
-	 * @param modelProvider
+	 * @param client
 	 */
-	public HTTPTransmission(DateTime receivedAt, TransmissionClient modelProvider)
+	public HTTPTransmission(DateTime receivedAt, TransmissionClient client)
 	{
-		super(modelProvider);
+		super(client);
 		setReceivedAt(receivedAt);
 	}
 	

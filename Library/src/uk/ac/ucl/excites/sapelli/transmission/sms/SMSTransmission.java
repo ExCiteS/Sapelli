@@ -5,13 +5,11 @@ package uk.ac.ucl.excites.sapelli.transmission.sms;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.joda.time.DateTime;
 
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.BinaryTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.DecodeException;
@@ -25,53 +23,50 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionSender;
  * @author mstevens
  *
  */
-public abstract class SMSTransmission extends BinaryTransmission
+public abstract class SMSTransmission<M extends Message> extends BinaryTransmission
 {
 	
 	protected SMSAgent receiver;
 	protected SMSAgent sender;
 	
-	protected SortedSet<Message> parts;
+	protected final SortedSet<M> parts;
 	
 	private DateTime deliveredAt;
 	
 	/**
 	 * To be called on the sending side.
 	 * 
-	 * @param schema
-	 * @param columnsToFactorOut
 	 * @param receiver
-	 * @param settings
 	 */
-	public SMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, SMSAgent receiver, Settings settings)
+	public SMSTransmission(SMSAgent receiver)
 	{
-		super(schema, columnsToFactorOut, settings);
+		super();
 		this.receiver = receiver;
-		this.parts = new TreeSet<Message>();
+		this.parts = new TreeSet<M>();
 	}
 	
 	/**
 	 * To be called on the receiving side.
 	 * 
-	 * @param modelProvider
+	 * @param client
 	 */
-	public SMSTransmission(TransmissionClient modelProvider)
+	public SMSTransmission(TransmissionClient client)
 	{
-		this(modelProvider, null);
+		super(client);
+		this.parts = new TreeSet<M>();
 	}
 	
 	/**
 	 * To be called on the receiving side.
 	 * 
-	 * @param modelProvider
+	 * @param client
 	 * @param parts
 	 */
-	public SMSTransmission(TransmissionClient modelProvider, List<Message> parts)
+	public SMSTransmission(TransmissionClient client, List<M> parts)
 	{
-		super(modelProvider);
-		this.parts = new TreeSet<Message>();
+		this(client);
 		if(parts != null)
-			for(Message m : parts)
+			for(M m : parts)
 				addPart(m);
 	}
 	
@@ -80,7 +75,7 @@ public abstract class SMSTransmission extends BinaryTransmission
 	 * 
 	 * @param msg
 	 */
-	public void addPart(Message msg)
+	public void addPart(M msg)
 	{
 		if(parts.isEmpty())
 		{	//set transmission ID & sender based on those of the first received message:
@@ -102,7 +97,7 @@ public abstract class SMSTransmission extends BinaryTransmission
 		}
 	}
 	
-	public SortedSet<Message> getParts()
+	public SortedSet<M> getParts()
 	{
 		return parts;
 	}

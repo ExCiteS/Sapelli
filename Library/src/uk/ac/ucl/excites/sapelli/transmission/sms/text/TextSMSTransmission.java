@@ -6,19 +6,13 @@ package uk.ac.ucl.excites.sapelli.transmission.sms.text;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
@@ -44,7 +38,7 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
  * @see <a href="http://en.wikipedia.org/wiki/Short_Message_Service">SMS</a>
  * @see <a href="http://en.wikipedia.org/wiki/GSM_03.38">GSM 03.38 / 3GPP TS 23.038</a>
  */
-public class TextSMSTransmission extends SMSTransmission
+public class TextSMSTransmission extends SMSTransmission<TextMessage>
 {
 	
 	//Statics
@@ -203,48 +197,33 @@ public class TextSMSTransmission extends SMSTransmission
 	/**
 	 * To be called on the sending side.
 	 * 
-	 * @param schema
 	 * @param receiver
-	 * @param settings
 	 */
-	public TextSMSTransmission(Schema schema, SMSAgent receiver, Settings settings)
+	public TextSMSTransmission(SMSAgent receiver)
 	{
-		super(schema, Collections.<Column<?>> emptySet(), receiver, settings);
-	}
-
-	/**
-	 * To be called on the sending side.
-	 * 
-	 * @param schema
-	 * @param columnsToFactorOut
-	 * @param receiver
-	 * @param settings
-	 */
-	public TextSMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, SMSAgent receiver, Settings settings)
-	{
-		super(schema, columnsToFactorOut, receiver, settings);
+		super(receiver);
 	}
 
 	/**
 	 * To be called on the receiving side.
 	 * 
-	 * @param modelProvider
+	 * @param client
 	 */
-	public TextSMSTransmission(TransmissionClient modelProvider)
+	public TextSMSTransmission(TransmissionClient client)
 	{
-		super(modelProvider);
+		super(client);
 	}
 	
 	/**
 	 * To be called on the receiving side.
 	 * 
-	 * @param modelProvider
+	 * @param client
 	 * @param parts
 	 *
 	 */
-	public TextSMSTransmission(TransmissionClient modelProvider, List<Message> parts)
+	public TextSMSTransmission(TransmissionClient client, List<TextMessage> parts)
 	{
-		super(modelProvider, parts);
+		super(client, parts);
 	}
 	
 	@Override
@@ -297,10 +276,7 @@ public class TextSMSTransmission extends SMSTransmission
 		// Split up transmission payload in parts:
 		String[] payloadParts = payload.split("(?<=\\G.{" + TextMessage.MAX_PAYLOAD_CHARS + "})");
 		for(String payloadPart : payloadParts)
-		{
-			Message msg = new TextMessage(receiver, this, parts.size() + 1, payloadParts.length, payloadPart);
-			parts.add(msg);
-		}
+			parts.add(new TextMessage(receiver, this, parts.size() + 1, payloadParts.length, payloadPart));
 	}
 
 	@Override
@@ -308,7 +284,7 @@ public class TextSMSTransmission extends SMSTransmission
 	{
 		// Assemble transmission payload String from part payload Strings:
 		StringBuilder blr = new StringBuilder();
-		for(Message part : parts)
+		for(TextMessage part : parts)
 			blr.append(((TextMessage) part).getPayload());
 		String payloadString = blr.toString();
 

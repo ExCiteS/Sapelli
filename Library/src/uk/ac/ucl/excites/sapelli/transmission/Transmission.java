@@ -13,7 +13,6 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
@@ -33,80 +32,33 @@ public abstract class Transmission
 	protected DateTime sentAt = null; //used only on sending side
 	protected DateTime receivedAt = null; //used on receiving side, and TODO on sending side once we have acknowledgements working
 	
-	protected Settings settings;
+	protected final Map<Schema,List<Record>> recordsBySchema;
 	protected TransmissionClient client; //only used on the receiving side
 	protected long modelID = -1;
-	protected final Map<Schema,List<Record>> recordsBySchema;
-	protected Set<Column<?>> columnsToFactorOut;
-	protected Map<Column<?>, Object> factoredOutValues = null;
-
+	protected Settings settings;
+		
 	/**
 	 * To be called at the sending side.
 	 * 
 	 * @param schema
-	 * @param settings
 	 */
-	public Transmission(Schema schema, Settings settings)
+	public Transmission()
 	{
-		this(schema, null, settings);
-	}
-	
-	/**
-	 * To be called at the sending side.
-	 * 
-	 * @param schema
-	 * @param columnsToFactorOut
-	 * @param settings
-	 */
-	public Transmission(Settings settings)
-	{
-		this(); //!!!
-		setColumnsToFactorOut(columnsToFactorOut);
-		this.settings = settings;
+		this.recordsBySchema = new HashMap<Schema, List<Record>>();
 	}
 	
 	/**
 	 * To be called at the receiving side.
 	 * 
-	 * @param modelProvider
+	 * @param client
 	 * @param settings
 	 */
-	public Transmission(TransmissionClient modelProvider)
+	public Transmission(TransmissionClient client)
 	{
 		this(); //!!!
-		if(modelProvider == null)
+		if(client == null)
 			throw new NullPointerException("TransmissionClient cannot be null on receiving side.");
-		this.client = modelProvider;
-	}
-	
-	/**
-	 * To be called at the sending side.
-	 * 
-	 * @param schema
-	 * @param columnsToFactorOut
-	 * @param settings
-	 */
-	public Transmission(Schema schema, Set<Column<?>> columnsToFactorOut, Settings settings)
-	{
-		this(); //!!!
-		setColumnsToFactorOut(columnsToFactorOut);
-		this.settings = settings;
-	}
-	
-	private Transmission()
-	{
-		this.recordsBySchema = new HashMap<Schema, List<Record>>();
-	}
-	
-	protected void setColumnsToFactorOut(Set<Column<?>> columnsToFactorOut)
-	{
-//		if(columnsToFactorOut == null)
-//			columnsToFactorOut = Collections.<Column<?>>emptySet();
-//		else
-//			for(Column<?> c : columnsToFactorOut)
-//				if(!schema.containsColumn(c.getName(), false)) 
-//					throw new IllegalArgumentException("Column \"" + c.toString() + "\" does not belong to the given schema.");
-		this.columnsToFactorOut = columnsToFactorOut;
+		this.client = client;
 	}
 	
 	/**

@@ -59,7 +59,7 @@ public class TextMessage extends Message
 	 * @param totalParts
 	 * @param payload
 	 */
-	public TextMessage(SMSAgent receiver, SMSTransmission transmission, int partNumber, int totalParts, String payload)
+	public TextMessage(SMSAgent receiver, SMSTransmission<?> transmission, int partNumber, int totalParts, String payload)
 	{
 		super(receiver, transmission, partNumber, totalParts);
 		if(payload == null)

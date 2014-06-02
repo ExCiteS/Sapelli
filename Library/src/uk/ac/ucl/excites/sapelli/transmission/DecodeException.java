@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 
 /**
  * @author mstevens
@@ -16,15 +15,15 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 public class DecodeException extends Exception
 {
 	
-	private static final long serialVersionUID = 9169900654612685777L;
+	private static final long serialVersionUID = 2L;
 	
-	private Schema schema;
+	private long modelID;
 	private List<Record> records; //records at least partially decoded
 	
-	public DecodeException(String message, Throwable cause, Schema schema, List<Record> records)
+	public DecodeException(String message, Throwable cause, long modelID, List<Record> records)
 	{
 		super(message, cause);
-		this.schema = schema;
+		this.modelID = modelID;
 		this.records = new ArrayList<Record>(records);
 	}
 
@@ -35,11 +34,11 @@ public class DecodeException extends Exception
 	}
 
 	/**
-	 * @return the schema
+	 * @return the modelID
 	 */
-	public Schema getSchema()
+	public long getModelID()
 	{
-		return schema;
+		return modelID;
 	}
 
 	/**

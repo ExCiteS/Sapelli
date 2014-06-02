@@ -2,16 +2,11 @@ package uk.ac.ucl.excites.sapelli.transmission.sms.binary;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
+import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
@@ -24,7 +19,7 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
  * @see BinaryMessage
  * @see <a href="http://en.wikipedia.org/wiki/Short_Message_Service">SMS</a>
  */
-public class BinarySMSTransmission extends SMSTransmission
+public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 {
 	
 	// Static
@@ -34,49 +29,33 @@ public class BinarySMSTransmission extends SMSTransmission
 	/**
 	 * To be called on the sending side.
 	 * 
-	 * @param schema
 	 * @param receiver
-	 * @param settings
 	 */
-	public BinarySMSTransmission(Schema schema, SMSAgent receiver, Settings settings)
+	public BinarySMSTransmission(SMSAgent receiver)
 	{
-		super(schema, Collections.<Column<?>> emptySet(), receiver, settings);
+		super(receiver);
 	}
-	
+
 	/**
-	 * To be called on the sending side.
+	 * To be called on the receiving side.
 	 * 
-	 * @param schema
-	 * @param columnsToFactorOut
-	 * @param receiver
-	 * @param settings
+	 * @param client
 	 */
-	public BinarySMSTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, SMSAgent receiver, Settings settings)
+	public BinarySMSTransmission(TransmissionClient client)
 	{
-		super(schema, columnsToFactorOut, receiver, settings);
+		super(client);
 	}
 	
 	/**
 	 * To be called on the receiving side.
 	 * 
-	 * @param modelProvider
-	 *
-	 */
-	public BinarySMSTransmission(TransmissionClient modelProvider)
-	{
-		super(modelProvider);
-	}
-	
-	/**
-	 * To be called on the receiving side.
-	 * 
-	 * @param modelProvider
+	 * @param client
 	 * @param parts
 	 *
 	 */
-	public BinarySMSTransmission(TransmissionClient modelProvider, List<Message> parts)
+	public BinarySMSTransmission(TransmissionClient client, List<BinaryMessage> parts)
 	{
-		super(modelProvider, parts);
+		super(client, parts);
 	}
 	
 	@Override
@@ -90,8 +69,7 @@ public class BinarySMSTransmission extends SMSTransmission
 		while(b < data.length)
 		{
 			byte[] partData = BinaryHelpers.subByteArray(data, b, BinaryMessage.MAX_PAYLOAD_SIZE_BYTES);
-			Message msg = new BinaryMessage(receiver, this, parts.size() + 1, numberOfParts, partData);
-			parts.add(msg);
+			parts.add(new BinaryMessage(receiver, this, parts.size() + 1, numberOfParts, partData));
 			b += BinaryMessage.MAX_PAYLOAD_SIZE_BYTES;
 		}
 	}
@@ -100,7 +78,7 @@ public class BinarySMSTransmission extends SMSTransmission
 	protected byte[] deserialise() throws IOException
 	{
 		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-		for(Message part : parts)
+		for(BinaryMessage part : parts)
 			rawOut.write(((BinaryMessage) part).getPayload());
 		rawOut.flush();
 		rawOut.close();

@@ -13,7 +13,7 @@ public abstract class Message implements Comparable<Message>
 	
 	protected SMSAgent sender;
 	protected SMSAgent receiver;
-	protected SMSTransmission transmission;
+	protected SMSTransmission<?> transmission;
 	protected int transmissionID;
 	protected DateTime sentAt;		//only on sending side
 	protected DateTime deliveredAt;	//only on sending side
@@ -30,7 +30,7 @@ public abstract class Message implements Comparable<Message>
 	 * @param partNumber
 	 * @param totalParts
 	 */
-	public Message(SMSAgent receiver, SMSTransmission transmission, int partNumber, int totalParts)
+	public Message(SMSAgent receiver, SMSTransmission<?> transmission, int partNumber, int totalParts)
 	{
 		if(partNumber < 1 || totalParts < 1 || partNumber > totalParts)
 			throw new IllegalArgumentException("Invalid part number (" + partNumber + ") of total number of parts (" + totalParts + ").");
@@ -54,7 +54,7 @@ public abstract class Message implements Comparable<Message>
 	
 	public abstract void send(SMSService smsService);
 	
-	public void setTransmission(SMSTransmission transmission)
+	public void setTransmission(SMSTransmission<?> transmission)
 	{
 		if(this.transmission == null)
 			this.transmission = transmission;
@@ -138,7 +138,7 @@ public abstract class Message implements Comparable<Message>
 		return sender;
 	}
 	
-	public SMSTransmission getTransmission()
+	public SMSTransmission<?> getTransmission()
 	{
 		return transmission;
 	}

@@ -73,7 +73,7 @@ public class BinaryMessage extends Message
 	 * @param totalParts
 	 * @param payload
 	 */
-	public BinaryMessage(SMSAgent receiver, SMSTransmission transmission, int partNumber, int totalParts, byte[] payload)
+	public BinaryMessage(SMSAgent receiver, SMSTransmission<?> transmission, int partNumber, int totalParts, byte[] payload)
 	{
 		super(receiver, transmission, partNumber, totalParts);
 		if(totalParts > BinarySMSTransmission.MAX_TRANSMISSION_PARTS)

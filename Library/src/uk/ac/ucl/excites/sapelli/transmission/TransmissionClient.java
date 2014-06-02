@@ -19,8 +19,6 @@ public interface TransmissionClient extends StorageClient
 	//TODO replace by: public EncryptionSettings getEncryptionSettings(int usageID, int usageSubID) ... 
 	public Settings getSettingsFor(Schema schema);
 	
-	public Set<Column<?>> getFactoredOutColumnsFor(Schema schema);
-	
 	public short getNumberOfSchemataInModel(long modelID); //TODO make it throw a specific exception if unknown model
 	
 }

@@ -4,13 +4,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
@@ -19,10 +18,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory;
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.CompressionMode;
 import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 public abstract class BinaryTransmission extends Transmission
@@ -37,14 +33,14 @@ public abstract class BinaryTransmission extends Transmission
 	protected Integer id = null; // Transmission ID: computed as a CRC16 hash over the transmission payload (unsigned 16 bit int)
 	protected float compressionRatio = 1.0f;
 	
-	public BinaryTransmission(TransmissionClient modelProvider)
+	public BinaryTransmission(TransmissionClient client)
 	{
-		super(modelProvider);
+		super(client);
 	}
 	
-	public BinaryTransmission(Schema schema, Set<Column<?>> columnsToFactorOut, Settings settings)
+	public BinaryTransmission()
 	{
-		super(schema, columnsToFactorOut, settings);
+		super();
 	}
 
 	protected void preparePayload() throws IOException, TransmissionCapacityExceededException
@@ -161,7 +157,6 @@ public abstract class BinaryTransmission extends Transmission
 			
 			// Look-up settings & columns to factor out:
 			settings = (settingsToUse == null ? client.getSettingsFor(schema) : settingsToUse);
-			setColumnsToFactorOut(client.getFactoredOutColumnsFor(schema));
 			
 			// Read encrypted, compressed & encoded records:
 			payloadBytes = in.readBytes(in.available());
@@ -197,26 +192,29 @@ public abstract class BinaryTransmission extends Transmission
 	{
 		BitOutputStream out = null;
 		try
-		{			
+		{
+			int numberOfDifferentSchemataInTransmission = getSchemata().size();
+			
 			// Get schema identification fields:
 			IntegerRangeMapping numberOfDifferentSchemataInTransmissionField = getNumberOfDifferentSchemataInTransmissionField();
 			IntegerRangeMapping modelSchemaNumberField = getModelSchemaNumberField();
 			
 			//	Find best schema order, resulting in the smallest amount of bits need for the numberOfRecordsPerSchemaFields (the last of which we don't need to write):
-			List<Schema> schemataOrder = null;
+			Schema[] schemataOrder = null;
 			IntegerRangeMapping[] numberOfRecordsPerSchemaFields = null;
 			int smallestSizeSum = Integer.MAX_VALUE;
 			// In each candidate order another schema is put in the last position:
 			for(Schema schemaToPutLast : getSchemata())
 			{
 				// Populate order:
-				List<Schema> order = new ArrayList<Schema>(getSchemata().size());
+				Schema[] candidateOrder = new Schema[numberOfDifferentSchemataInTransmission];
+				int s = 0;
 				for(Schema schema : getSchemata())
 					if(schema != schemaToPutLast)
-						order.add(schema);
-				order.add(schemaToPutLast);
+						candidateOrder[s++] = schema;
+				candidateOrder[numberOfDifferentSchemataInTransmission - 1] = schemaToPutLast;
 				// Get the numberOfRecordsPerSchemaFields for this order:
-				IntegerRangeMapping[] fieldsForOrder = getNumberOfRecordsPerSchemaFields(numberOfDifferentSchemataInTransmissionField, modelSchemaNumberField, order);
+				IntegerRangeMapping[] fieldsForOrder = getNumberOfRecordsPerSchemaFields(numberOfDifferentSchemataInTransmissionField, modelSchemaNumberField, candidateOrder);
 				// Compute sum of field sizes (except last):
 				int sumOfFieldSizesExceptLast = 0;
 				for(int f = 0; f < fieldsForOrder.length - 1; f++)
@@ -224,7 +222,7 @@ public abstract class BinaryTransmission extends Transmission
 				// Better?
 				if(sumOfFieldSizesExceptLast < smallestSizeSum)
 				{
-					schemataOrder = order;
+					schemataOrder = candidateOrder;
 					numberOfRecordsPerSchemaFields = fieldsForOrder;
 					smallestSizeSum = sumOfFieldSizesExceptLast;
 				}
@@ -235,14 +233,14 @@ public abstract class BinaryTransmission extends Transmission
 			out = new BitOutputStream(rawOut);
 			
 			// Write schema identification:
-			// 	write the number of different schemata (unless there is only 1 schema in the model):
+			// 	Write the number of different schemata (unless there is only 1 schema in the model):
 			if(numberOfDifferentSchemataInTransmissionField != null)
-				numberOfDifferentSchemataInTransmissionField.write(getSchemata().size(), out);
-			//	write the modelSchemaNumbers of the schemata occurring in the transmission (unless there is only 1 schema in the model):
+				numberOfDifferentSchemataInTransmissionField.write(numberOfDifferentSchemataInTransmission, out);
+			//	Write the modelSchemaNumbers of the schemata occurring in the transmission (unless there is only 1 schema in the model):
 			if(modelSchemaNumberField != null)
 				for(Schema schema : schemataOrder)
 					modelSchemaNumberField.write(schema.getModelSchemaNumber(), out);
-			//	check & write the number of records per schema (except the last one is not written):
+			//	Check & write the number of records per schema (except the last one is not written):
 			int f = 0;
 			for(Schema schema : schemataOrder)
 			{
@@ -257,48 +255,56 @@ public abstract class BinaryTransmission extends Transmission
 					throw new TransmissionCapacityExceededException("Cannot fit " + numberOfRecords + " of schema " + schema.getID() + " (max allowed: " + field.getHighBound(false) + ").");	
 			}
 
-			// Write record data per schema:
+			// Per schema...
 			for(Schema schema : schemataOrder)
 			{
-			
-				// Get factored out values ...
-//				if(columnsToFactorOut != null)
-//				{
-//					if(records.isEmpty())
-//					{
-//						factoredOutValues = new HashMap<Column<?>, Object>();
-//						//Store "factored out" values:
-//						for(Column<?> c : columnsToFactorOut)
-//							factoredOutValues.put(c, c.retrieveValue(record));
-//					}
-//					else
-//					{	//Check if factored out values are the same
-//						for(Column<?> c : columnsToFactorOut)
-//						{
-//							Object rValue = c.retrieveValue(record);
-//							if(factoredOutValues.get(c) == null)
-//							{
-//								if(rValue != null)
-//									throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
-//							}
-//							else
-//							{
-//								if(rValue == null || !rValue.equals(factoredOutValues.get(c)))
-//									throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
-//							}
-//						}
-//					}
-//				}
-				//Write factored out values:
-				//if(columnsToFactorOut != null)
-				//	for(Column<?> c : columnsToFactorOut)
-				//		c.writeObject(factoredOutValues.get(c), out);
+				List<Record> records = recordsBySchema.get(schema);
+				Map<Column<?>, Object> factoredOutValues = Collections.<Column<?>, Object> emptyMap();
 				
-				// Write records:
+				// Get factored out values ...
+				if(records.size() > 1)
+				{
+					factoredOutValues = new LinkedHashMap<Column<?>, Object>();
+					boolean first = true;
+					for(Record r : records)
+					{
+						if(first)
+						{	// get values of first record:
+							for(Column<?> c : schema.getColumns(false))
+								factoredOutValues.put(c, c.retrieveValue(records.get(0))); // treat all columns as potentially factored-out
+							first = false;
+						}
+						else
+						{	//Check if these values are these same in subsequent records:
+							for(Column<?> factoredOutCol : factoredOutValues.keySet())
+								if(!factoredOutValues.get(factoredOutCol).equals(factoredOutCol.retrieveValue(r)))
+									factoredOutValues.remove(factoredOutCol); // value mismatch -> this column can not be factored out
+							if(factoredOutValues.isEmpty())
+								break; // no factored-out columns left -> no need to loop over rest of the records
+						}
+					}
+				}
+				
+				// Write factoring-out header (& factored-out values, if used):
+				if(!factoredOutValues.isEmpty())
+				{
+					// Write flag which indicates that factoring-out is used:
+					out.write(true);
+					// Write flags which indicate which columns are factored out (= 1) and which are not (= 0):
+					for(Column<?> c : schema.getColumns(false))
+						out.write(factoredOutValues.containsKey(c));
+					// Write factored out values:
+					for(Entry<Column<?>, Object> fEntry : factoredOutValues.entrySet())
+						fEntry.getKey().writeObject(fEntry.getValue(), out);
+				}
+				else
+					// Write flag which indicates that factoring-out is *not* used:
+					out.write(false);
+				
+				// Write record data, skipping virtual columns and factored-out columns:
 				for(Record r : recordsBySchema.get(schema))
-					r.writeToBitStream(out, false /* do not include virtual columns */, Collections.<Column<?>> emptySet() /* (not factoring-out for now) */);
+					r.writeToBitStream(out, false /* do not include virtual columns */, factoredOutValues.keySet());
 			}
-
 			
 			//Flush & close the stream and get bytes:
 			out.flush();
@@ -321,72 +327,83 @@ public abstract class BinaryTransmission extends Transmission
 	}
 	
 	protected void decodeRecords(byte[] data) throws DecodeException
-	{
-		Schema schema = null; //TODO change (this is just to let it compile)
-		
+	{		
 		BitInputStream in = null;
 		Record record = null;
 		try
 		{
-			List<Schema> schemata = new ArrayList<Schema>();
-			
-			
 			//Input stream:
 			ByteArrayInputStream rawIn = new ByteArrayInputStream(data);
 			in = new BitInputStream(rawIn);
 			
-			
-						
 			// Read schema identification...
 			// 	the number of different schemata:
 			IntegerRangeMapping numberOfDifferentSchemataInTransmissionField = getNumberOfDifferentSchemataInTransmissionField();
 			int numberOfDifferentSchemata = numberOfDifferentSchemataInTransmissionField != null ?
 												(int) numberOfDifferentSchemataInTransmissionField.read(in) :
 												1;
+			Schema[] schemata = new Schema[numberOfDifferentSchemata];
 			//	the model schema numbers:
 			IntegerRangeMapping modelSchemaNumberField = getModelSchemaNumberField();
 			if(modelSchemaNumberField != null)
 				for(int i = 0; i < numberOfDifferentSchemata; i++)
-					schemata.add(client.getSchema((short) modelSchemaNumberField.read(in))); //TODO change client method (use modelid!)
+					schemata[i] = client.getSchema((short) modelSchemaNumberField.read(in)); //TODO change client method (use modelid!)
 			else
-				schemata.add(client.getSchema((short) 0)); //TODO change client method (use modelid!)
+				schemata[0] = client.getSchema((short) 0); //TODO change client method (use modelid!)
 			
 			//	the number of records per schema:
-			IntegerRangeMapping[] numberOfRecordsPerSchemaFields = getNumberOfRecordsPerSchemaFields(numberOfDifferentSchemataInTransmissionField, modelSchemaNumberField, schemata);			
-			// TODO read them...	
-			
-			
-//			//Read factored out values:
-//			if(columnsToFactorOut != null)
-//			{
-//				factoredOutValues = new HashMap<Column<?>, Object>();
-//				for(Column<?> c : columnsToFactorOut)
-//					factoredOutValues.put(c, c.readValue(in));
-//			}
-//			
-//			//Read records:
-//			while(in.bitsAvailable() >= schema.getMinimumSize(false /* do not include virtual columns */, columnsToFactorOut))
-//			{
-//				record = schema.createRecord();
-//				record.readFromBitStream(in, false /* do not include virtual columns */, columnsToFactorOut);
-//				// Set factored out values:
-//				if(columnsToFactorOut != null)
-//					for(Column<?> c : columnsToFactorOut)
-//						c.storeObject(record, factoredOutValues.get(c));
-//				
-//				// Add the record:
-//				List<Record> recordsOfSchema = recordsBySchema.get(schema);
-//				if(recordsOfSchema == null)
-//				{
-//					recordsOfSchema = new ArrayList<Record>();
-//					recordsBySchema.put(schema, recordsOfSchema);
-//				}
-//				recordsOfSchema.add(record);
-//			}
+			IntegerRangeMapping[] numberOfRecordsPerSchemaFields = getNumberOfRecordsPerSchemaFields(numberOfDifferentSchemataInTransmissionField, modelSchemaNumberField, schemata);
+			int[] numberOfRecordsPerSchema = new int[numberOfDifferentSchemata];
+			for(int i = 0; i < numberOfDifferentSchemata; i++)
+				// // read number of records for each each schema except for the last one (the number of records for that one is not stored in the header)
+				numberOfRecordsPerSchema[i] =	i < numberOfDifferentSchemata - 1 ?
+													(int) numberOfRecordsPerSchemaFields[i].read(in) :
+													Integer.MAX_VALUE; // no limit, reading of records will be limited by available bits (see below)
+
+			// Per schema...
+			for(int s = 0; s < schemata.length; s++)
+			{
+				Schema schema = schemata[s];
+				Map<Column<?>, Object> factoredOutValues = Collections.<Column<?>, Object> emptyMap();
+				
+				// Read factoring-out header (& factored-out values, if used)...
+				if(in.readBit()) //	read flag that indicates whether or not some columns are factored-out
+				{
+					List<Column<?>> factoredOutColumns = new ArrayList<Column<?>>();
+					// Read which columns are factored out:
+					for(Column<?> c : schema.getColumns(false))
+						if(in.readBit())
+							factoredOutColumns.add(c);
+					// Read factored out values:
+					factoredOutValues = new HashMap<Column<?>, Object>();
+					for(Column<?> fCol : factoredOutColumns)
+						factoredOutValues.put(fCol, fCol.readValue(in));
+				}
+				
+				// Create & store list for the records that will be decoded:
+				List<Record> recordsOfSchema = recordsBySchema.get(schema);
+				recordsBySchema.put(schema, recordsOfSchema);
+				
+				// Read record data:
+				while(	recordsOfSchema.size() < numberOfRecordsPerSchema[s] &&					
+						in.bitsAvailable() >= schema.getMinimumSize(false /* do not include virtual columns */, factoredOutValues.keySet()))
+				{
+					// Get new Record instance:
+					record = schema.createRecord();
+					// Read record values from the stream, skipping virtual columns and factored-out columns:
+					record.readFromBitStream(in, false /* do not include virtual columns */, factoredOutValues.keySet());
+					// Set factored out values:
+					if(!factoredOutValues.isEmpty())
+						for(Entry<Column<?>, Object> fEntry : factoredOutValues.entrySet())
+							fEntry.getKey().storeObject(record, fEntry.getValue());
+					// Add the record:
+					recordsOfSchema.add(record);				
+				}
+			}
 		}
 		catch(Exception e)
 		{
-			DecodeException de = new DecodeException("Error on decoding records.", e, schema, getRecords()); //pass schema used for decoding and records decoded so far 
+			DecodeException de = new DecodeException("Error on decoding records.", e, modelID, getRecords()); //pass schema used for decoding and records decoded so far 
 			de.addRecord(record); //add last (partially decoded) record (will be ignored if null)
 			recordsBySchema.clear(); //remove partially decoded records
 			throw de;
@@ -443,20 +460,20 @@ public abstract class BinaryTransmission extends Transmission
 	 * 
 	 * It is assumed the records are not compressed, nor encrypted.
 	 * 
+	 * @param numberOfDifferentSchemataInTransmissionField
+	 * @param modelSchemaNumberField
 	 * @param schemataOrder
-	 * @param bitsAvailableForFieldsAndRecords
 	 * @return
 	 */
-	private IntegerRangeMapping[] getNumberOfRecordsPerSchemaFields(IntegerRangeMapping numberOfDifferentSchemataInTransmissionField, IntegerRangeMapping modelSchemaNumberField, List<Schema> schemataOrder)
+	private IntegerRangeMapping[] getNumberOfRecordsPerSchemaFields(IntegerRangeMapping numberOfDifferentSchemataInTransmissionField, IntegerRangeMapping modelSchemaNumberField, Schema[] schemataOrder)
 	{
 		int headerSizeBits = 8 * 8; // TODO !!!!!
-		int numberOfDifferentSchemata = schemataOrder.size();
 		//	Compute number of bits left for the numberOfRecordPerSchemaFields (except last one) and the actual records:
 		int bitsAvailableForFieldsAndRecords =	(getMaxPayloadBytes() * Byte.SIZE)							// Payload bits available
 												- headerSizeBits											// Bits already used for the header
 												- (numberOfDifferentSchemataInTransmissionField == null ? 0 : numberOfDifferentSchemataInTransmissionField.getSize()) // will be written below
-												- (modelSchemaNumberField == null ? 0 : numberOfDifferentSchemata * modelSchemaNumberField.getSize());	// will be written below
-		IntegerRangeMapping[] fields = new IntegerRangeMapping[schemataOrder.size()];
+												- (modelSchemaNumberField == null ? 0 : schemataOrder.length * modelSchemaNumberField.getSize());	// will be written below
+		IntegerRangeMapping[] fields = new IntegerRangeMapping[schemataOrder.length];
 		
 		// Iterative process:
 		process : do
@@ -468,7 +485,7 @@ public abstract class BinaryTransmission extends Transmission
 			// Grow the size of the fields until a stable state is reached:
 			for(int x = 0; x < fields.length; x++)
 			{
-				Schema schemaX = schemataOrder.get(x);
+				Schema schemaX = schemataOrder[x];
 				// Compute the number of bits left for records of schemaX, under the assumption that all other schemata have only a single record in the transmission
 				int bitsAvailableForRecordsOfSchemaX = bitsAvailableForRecords;
 				for(Schema schemaY : schemataOrder)
@@ -534,20 +551,6 @@ public abstract class BinaryTransmission extends Transmission
 	public float getCompressionRatio()
 	{
 		return compressionRatio;
-	}
-	
-	private class SchemaAndNumberOfRecords
-	{
-		
-		Schema schema;
-		int numberOfRecords;
-
-		private SchemaAndNumberOfRecords(Schema schema, int numberOfRecords)
-		{
-			this.schema = schema;
-			this.numberOfRecords = numberOfRecords;
-		}
-
 	}
 	
 }
