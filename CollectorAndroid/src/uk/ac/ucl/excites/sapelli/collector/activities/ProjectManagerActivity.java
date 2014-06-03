@@ -354,7 +354,10 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		Project selectedProject = getSelectedProject(false);
 		Intent i = new Intent(getApplicationContext(), ExportActivity.class);
 		if(selectedProject != null)
-			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, selectedProject.getHash());
+		{
+			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_ID, selectedProject.getID());
+			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, selectedProject.hashCode());
+		}
 		i.setAction(Intent.ACTION_MAIN);
 		startActivity(i);
 		return true;
@@ -646,7 +649,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	private Intent getProjectRunIntent(Project project)
 	{
 		Intent i = new Intent(getApplicationContext(), CollectorActivity.class);
-		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, project.getHash());
+		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_ID, project.getID());
+		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, project.hashCode());
 		i.setAction(Intent.ACTION_MAIN);
 		return i;
 	}

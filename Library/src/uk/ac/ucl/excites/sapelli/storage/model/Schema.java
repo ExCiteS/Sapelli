@@ -43,22 +43,61 @@ public class Schema implements Serializable
 	}
 	
 	// Identification of schema "external"/"client" instances:
+	
 	/* 	The Model ID identifies the data model a schema is part of.
 	 * 	The concept of the data model is left to defined by client code using the storage layer.
+	 *  This is only relevant for "external"/"client" schema instances because "internal"
+	 * 	schemata never belong to a model directly.
 	 * 	In the case of the Sapelli Collector the data model is a Project and the model ID corresponds
-	 * 	to the project hash.
-	 * 	This is only relevant for "external"/"client" schema instances because "internal"
-	 * 	schemata never belong to a model directly. */
-	static public final int MODEL_ID_SIZE = 32; //bits
-	static public final IntegerRangeMapping MODEL_ID_FIELD = IntegerRangeMapping.ForSize(0, MODEL_ID_SIZE); // unsigned(!) 32 bit integer
+	 * 	to the combination of the project ID (= 24 bits) and the project hash (= 32 bits), which are
+	 *  combined into one 56 bit value in SapelliCollectorClient. */
+	static public final int MODEL_ID_SIZE = 56; //bits
+	static public final IntegerRangeMapping MODEL_ID_FIELD = IntegerRangeMapping.ForSize(0, MODEL_ID_SIZE); // unsigned(!) 56 bit integer
+	
 	/*	the Model Schema Number signifies the number, position or index of a schema within the model it belongs to.
 	 * 	In the case of the Sapelli Collector it the value corresponds to the position within the project of the 
 	 * 	form the schema corresponds to. */
 	static public final int MODEL_SCHEMA_NO_SIZE = 4; //bits
 	static public final IntegerRangeMapping MODEL_SCHEMA_NO_FIELD = IntegerRangeMapping.ForSize(0, MODEL_SCHEMA_NO_SIZE); // unsigned(!) 4 bit integer
+	
 	/*	the Schema ID is a combination of the above identifiers and uniquely identifies a schema. */
-	static public final int SCHEMA_ID_SIZE = MODEL_ID_SIZE + MODEL_SCHEMA_NO_SIZE; //bits
-	static public final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE); // unsigned(!) 36 bit integer; does not accept the IDs of internal schemata!
+	static public final int SCHEMA_ID_SIZE = MODEL_ID_SIZE + MODEL_SCHEMA_NO_SIZE; // 56 + 4 = 60 bits
+	static public final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE); // unsigned(!) 60 bit integer; does not accept the IDs of internal schemata (which are negative)!
+	
+	/**
+	 * Combines a {@code modelID} and a {@code modelSchemaNo} into a {@code schemaID}
+	 * 
+	 * @param modelID (unsigned 56 bit integer)
+	 * @param modelSchemaNo (unsigned 4 bit integer)
+	 * @return the schemaID (unsigned 60 bit integer)
+	 */
+	static public long GetSchemaID(long modelID, short modelSchemaNo)
+	{
+		return	(modelID << MODEL_SCHEMA_NO_SIZE) +	// modelID takes up first 56 bits
+				modelSchemaNo;						// modelSchemaNo takes up next 4 bits
+	}
+	
+	/**
+	 * Extracts a {@code modelID} from a {@code schemaID}
+	 * 
+	 * @param schemaID (unsigned 60 bit integer)
+	 * @return the modelID (unsigned 56 bit integer)
+	 */
+	static public long GetModelID(long schemaID)
+	{
+		return schemaID >> MODEL_SCHEMA_NO_SIZE;
+	}
+	
+	/**
+	 * Extracts a {@code modelSchemaNo} from a {@code schemaID}
+	 * 
+	 * @param schemaID (unsigned 60 bit integer)
+	 * @return the modelSchemaNo (unsigned 4 bit integer)
+	 */
+	static public short GetModelSchemaNo(long schemaID)
+	{
+		return (short) (schemaID % (1 << MODEL_SCHEMA_NO_SIZE));
+	}
 	
 	// XML attributes (for record exports):
 	static public final String ATTRIBUTE_SCHEMA_ID = "schemaID";
@@ -113,17 +152,22 @@ public class Schema implements Serializable
 	/**
 	 * Create a new (external/client) schema instance
 	 * 
-	 * @param id
+	 * @param modelID (unsigned 56 bit integer)
+	 * @param modelSchemaNo (unsigned 4 bit integer)
 	 * @param name
 	 */
-	public Schema(long modelID, short modelSchemaNumber, String name)
+	public Schema(long modelID, short modelSchemaNo, String name)
 	{
-		this(	(modelID << MODEL_SCHEMA_NO_SIZE) +	// Model ID takes up first 32 bits
-				modelSchemaNumber,					// Model Schema Number takes up next 4 bits
+		this(	GetSchemaID(modelID, modelSchemaNo),
 				name,
-				true); 	// check the id!
+				true); // check the id!
 	}
 	
+	/**
+	 * @param id
+	 * @param name
+	 * @param checkID
+	 */
 	private Schema(long id, String name, boolean checkID)
 	{
 		// If allowed then check if id fits in SCHEMA_ID_FIELD:
@@ -145,25 +189,35 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * @return
+	 * @return whether this is an "internal" (true) or "external"/"client" schema instance 
+	 */
+	public boolean isInternal()
+	{
+		return id < 0;
+	}
+	
+	/**
+	 * Only supported on "external"/"client" schemata (not on "internal" ones)
+	 * 
+	 * @return the modelID (unsigned 56 bit integer)
 	 */
 	public long getModelID()
 	{
 		if(!isInternal())
 			throw new IllegalStateException("Internal schemata do not belong to a model.");
-		return id >> MODEL_SCHEMA_NO_SIZE;
+		return GetModelID(id);
 	}
-	
-	public short getModelSchemaNumber()
+
+	/**
+	 * Only supported on "external"/"client" schemata (not on "internal" ones)
+	 * 
+	 * @return the modelSchemaNo (unsigned 4 bit integer)
+	 */
+	public short getModelSchemaNo()
 	{
 		if(!isInternal())
 			throw new IllegalStateException("Internal schemata do not belong to a model.");
-		return (short) (id % (1 << MODEL_SCHEMA_NO_SIZE));
-	}
-	
-	public boolean isInternal()
-	{
-		return id < 0;
+		return GetModelSchemaNo(id);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -213,7 +267,9 @@ public class Schema implements Serializable
 		if(sealed && useAsPrimaryKey)
 			throw new IllegalStateException("Cannot set the primary key of a sealed schema (adding normal indexes is allowed)!");
 		if(index == null)
-			throw new IllegalArgumentException("Index cannot be null!");
+			throw new NullPointerException("Index cannot be null!");
+		if(index.getNumberOfColumns(false) == 0)
+			throw new IllegalArgumentException("Index must cover at least 1 column!");
 		// Check if the indexed columns are columns of this Schema instance:
 		for(Column idxCol : index.getColumns(false))
 			if(!containsColumn(idxCol, false))

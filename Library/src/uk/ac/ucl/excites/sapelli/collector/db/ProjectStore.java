@@ -55,11 +55,21 @@ public abstract class ProjectStore implements Store
 	public abstract Project retrieveProject(String name, String variant, String version);
 
 	/**
-	 * Retrieves specific Project
+	 * Retrieves specific Project, identified by id and hash
 	 * 
-	 * @return null if project was not found
+	 * @param projectID
+	 * @param projectHash
+	 * @return null if no such project was found
 	 */
-	public abstract Project retrieveProject(long projectHash);
+	public abstract Project retrieveProject(int projectID, int projectHash);
+	
+	/**
+	 * Retrieves all project versions/variants which share a given ID
+	 * 
+	 * @param projectID
+	 * @return list of projects
+	 */
+	public abstract List<Project> retrieveProjectVersions(int projectID);
 
 	/**
 	 * Delete specific project

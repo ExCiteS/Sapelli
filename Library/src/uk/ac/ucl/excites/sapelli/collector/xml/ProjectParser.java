@@ -16,10 +16,8 @@ import org.xml.sax.SAXException;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.shared.util.io.UnclosableBufferedInputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
-import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLHasher;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
@@ -76,7 +74,6 @@ public class ProjectParser extends DocumentParser
 	
 	private Format format = DEFAULT_FORMAT;
 	private Project project;
-	private long projectHash;
 	private String startFormID;
 	private HashMap<Relationship, String> relationshipToFormID;
 	private HashMap<Relationship, List<ConstraintDescription>> relationshipToConstraints;
@@ -100,20 +97,12 @@ public class ProjectParser extends DocumentParser
 		// (Re)Initialise:
 		format = DEFAULT_FORMAT;
 		project = null;
-		projectHash = -1;
 		startFormID = null;
 		relationshipToFormID.clear();
 		relationshipToConstraints.clear();
 		
-		// Get XML hash:
-		UnclosableBufferedInputStream ubInput = new UnclosableBufferedInputStream(input); // decorate stream to avoid it from being closed and to ensure we can use mark/reset
-		ubInput.mark(Integer.MAX_VALUE);
-		projectHash = (new XMLHasher()).getCRC32HashCode(ubInput);
-		ubInput.reset();
-		ubInput.makeClosable();
-		
 		// Parse XML:
-		parse(ubInput); //!!!
+		parse(input); //!!! TODO ensure stream is buffered?
 		return project;
 	}
 
@@ -162,7 +151,6 @@ public class ProjectParser extends DocumentParser
 				project = new Project(	(format == Format.v1_x) ?
 											Project.PROJECT_ID_V1X_TEMP : // for format = 1 we set a temp id value (will be replaced by Form:schema-id) 
 												attributes.getRequiredInteger(qName, ATTRIBUTE_PROJECT_ID, "because format is >= 2"), // id is required for format >= 2
-										projectHash,
 										attributes.getRequiredString(TAG_PROJECT, ATTRIBUTE_PROJECT_NAME, true, false),
 										attributes.getString(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, true, false),
 										basePath,

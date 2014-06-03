@@ -3,15 +3,12 @@
  */
 package uk.ac.ucl.excites.sapelli.collector;
 
-import java.util.Collections;
-import java.util.Set;
-
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 
@@ -53,7 +50,7 @@ public class SapelliCollectorClient implements TransmissionClient
 		return (int) (modelID >> Project.PROJECT_ID_SIZE);
 	}
 	
-	static public short GetSchemaNumber(Form form)
+	static public short GetModelSchemaNo(Form form)
 	{
 		return form.getPosition();
 	}
@@ -66,40 +63,64 @@ public class SapelliCollectorClient implements TransmissionClient
 		this.projectStore = projectStore;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getSchema(long, short)
+	 */
 	@Override
-	public short getNumberOfSchemataInModel(long modelID)
+	public Schema getSchema(long modelID, short modelSchemaNo) throws UnknownModelException
+	{
+		Project project = projectStore.retrieveProject(GetProjectID(modelID), GetProjectHash(modelID));
+		if(project != null)
+			return project.getForm(modelSchemaNo).getSchema();
+		else
+			throw new UnknownModelException(modelID, modelSchemaNo);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getNumberOfSchemataInModel(long)
+	 */
+	@Override
+	public short getNumberOfSchemataInModel(long modelID) throws UnknownModelException
+	{
+		Project project = projectStore.retrieveProject(GetProjectID(modelID), GetProjectHash(modelID));
+		if(project != null)
+			return (short) project.getForms().size();
+		else
+			throw new UnknownModelException(modelID);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getSchemaV1(int, int)
+	 */
+	@Override
+	public Schema getSchemaV1(int schemaID, int schemaVersion) throws UnknownModelException
+	{
+		Project project = projectStore.retrieveV1Project(schemaID, schemaVersion);
+		if(project != null)
+			return project.getForm(0).getSchema(); // return schema of the first (and assumed only) form
+		else
+			throw new UnknownModelException(schemaID, schemaVersion);
+	}
+
+	@Override
+	public void recordInserted(Record record)
 	{
 		// TODO Auto-generated method stub
-		return 0;
+		
 	}
-	
+
 	@Override
-	public Schema getSchema(long schemaID)
+	public void recordUpdated(Record record)
 	{
-//		Project p = projectStore.retrieveProject(GetProjectHash(schemaID));
-//		if(p != null)
-//			return p.getForm(GetFormIndex(schemaID)).getSchema();
-//		else
-			return null;
+		// TODO Auto-generated method stub
+		
 	}
-	
+
 	@Override
-	public Schema getSchemaV1(int schemaID, int schemaVersion)
+	public void recordDeleted(Record record)
 	{
-//		Project p = projectStore.retrieveV1Project(schemaID, schemaVersion);
-//		if(p != null)
-//			return p.getForm(0).getSchema(); // return schema of the first (and assumed only) form
-//		else
-			return null;
-	}
-	
-	public Form getForm(Schema schema)
-	{
-//		Project proj = projectStore.retrieveProject(GetProjectHash(schema.getID()));
-//		if(proj != null)
-//			return proj.getForm(GetFormIndex(schema.getID()));
-//		else
-			return null;
+		// TODO Auto-generated method stub
+
 	}
 	
 	/* (non-Javadoc)
@@ -126,35 +147,20 @@ public class SapelliCollectorClient implements TransmissionClient
 //		}
 		return null;
 	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.transmission.TransmissionClient#getFactoredOutColumnsFor(uk.ac.ucl.excites.storage.model.Schema)
+	
+	/**
+	 * @param schema
+	 * @return the form that is backed by the given schema
+	 * @throws IllegalArgumentException when no matching Form is found
 	 */
-	@Override
-	public Set<Column<?>> getFactoredOutColumnsFor(Schema schema)
+	public Form getForm(Schema schema) throws IllegalArgumentException
 	{
-		return Collections.<Column<?>> singleton(Form.COLUMN_DEVICE_ID);
-	}
-
-	@Override
-	public void recordInserted(Record record)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void recordUpdated(Record record)
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void recordDeleted(Record record)
-	{
-		// TODO Auto-generated method stub
-		
+		long modelID = schema.getModelID();
+		Project project = projectStore.retrieveProject(GetProjectID(modelID), GetProjectHash(modelID));
+		if(project != null)
+			return project.getForm(schema.getModelSchemaNo());
+		else
+			throw new IllegalArgumentException("No matching form found!");
 	}
 
 }

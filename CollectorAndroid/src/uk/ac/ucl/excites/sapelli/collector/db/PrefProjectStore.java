@@ -33,6 +33,7 @@ public class PrefProjectStore extends ProjectStore
 	static protected final String TAG = "DB4OPrefDataAccess";
 	private static final String PREFERENCES_NAME = "PROJECT_STORAGE";
 	private static final String PREF_PROJECT_PATH_PREFIX = "PROJECT_";
+	private static final String PREF_PROJECT_PATH_MIDFIX = "_";
 	private static final String PREF_PROJECT_PATH_POSTFIX = "_PATH";
 	private static final String HELD_FOREIGN_KEY_PREFIX = "RELATIONSHIP_";
 	private static final String HELD_FOREIGN_KEY_POSTFIX = "_HELD_FOREIGN_KEY";
@@ -114,12 +115,13 @@ public class PrefProjectStore extends ProjectStore
 	 * Retrieves specific Project
 	 * 
 	 * @return null if project was not found
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(int, int)
 	 */
 	@Override
-	public Project retrieveProject(final long projectHash)
+	public Project retrieveProject(final int projectID, final int projectHash)
 	{		
 		// Get project from cache if it is there ...
-		if(projectCache != null && projectCache.containsKey(projectHash))
+		if(projectCache != null) && projectCache.containsKey(projectHash))
 			return projectCache.get(projectHash);
 		
 		// ... parse the project if not ...
@@ -220,16 +222,17 @@ public class PrefProjectStore extends ProjectStore
 	
 	private String getProjectPathPrefKey(Project project)
 	{
-		return getProjectPathPrefKey(project.getHash());
+		return getProjectPathPrefKey(project.getID(), project.hashCode());
 	}
 	
-	private String getProjectPathPrefKey(long projectHash)
+	private String getProjectPathPrefKey(int projectID, int projectHash)
 	{
-		return PREF_PROJECT_PATH_PREFIX + projectHash + PREF_PROJECT_PATH_POSTFIX;
+		return PREF_PROJECT_PATH_PREFIX + projectID + PREF_PROJECT_PATH_MIDFIX + projectHash + PREF_PROJECT_PATH_POSTFIX;
 	}
 	
 	private long getProjectHash(String projectPathPrefKey)
 	{
+		// TODO change!
 		return Long.parseLong(projectPathPrefKey.substring(PREF_PROJECT_PATH_PREFIX.length(), projectPathPrefKey.length() - PREF_PROJECT_PATH_POSTFIX.length()));
 	}
 	
@@ -251,7 +254,7 @@ public class PrefProjectStore extends ProjectStore
 
 	private String getHeldForeignKeyPrefKey(Relationship relationship)
 	{
-		return HELD_FOREIGN_KEY_PREFIX + relationship.getForm().getProject().getHash() + "_" + relationship.getForm().getPosition() + "_" + relationship.getID() + HELD_FOREIGN_KEY_POSTFIX;
+		return HELD_FOREIGN_KEY_PREFIX + "(" + getProjectPathPrefKey(relationship.getForm().getProject()) + ")_" + relationship.getForm().getPosition() + "_" + relationship.getID() + HELD_FOREIGN_KEY_POSTFIX;
 	}
 	
 	@Override

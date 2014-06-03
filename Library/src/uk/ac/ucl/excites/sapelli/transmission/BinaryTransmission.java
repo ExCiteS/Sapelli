@@ -17,6 +17,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory;
 import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
@@ -71,7 +72,7 @@ public abstract class BinaryTransmission extends Transmission
 			//		Encryption flag (1 bit):
 			out.write(false); // Encryption flag //TODO make dynamic
 			//		Compression flag (2 bits):
-			COMPRESSION_FLAG_FIELD.write(0, out); //TODO make dynamic 
+			COMPRESSION_FLAG_FIELD.write(0, out); //TODO make dynamic
 			
 			//	Body: Write the encoded, compressed & encrypted records:
 			out.write(recordBytes);
@@ -142,18 +143,18 @@ public abstract class BinaryTransmission extends Transmission
 			
 			Schema schema = null; //TODO change (this is just to let it compile)
 			
-			// Look-up schema unless one was provided:
-			if(schemaToUse == null)
-			{
-				schema = client.getSchema(schemaID);
-				if(schema == null)
-					throw new IllegalStateException("Cannot decode message because schema (ID: " + schemaID + ") is unknown");
-			}
-			else
-			{
-				schema = schemaToUse;
-				System.out.println("Using provided schema (ID: " + schemaToUse.getID() + ") instead of the one indicated by the transmission (ID: " + schemaID + ").");
-			}
+//			// Look-up schema unless one was provided:
+//			if(schemaToUse == null)
+//			{
+//				schema = client.getSchema(schemaID);
+//				if(schema == null)
+//					throw new IllegalStateException("Cannot decode message because schema (ID: " + schemaID + ") is unknown");
+//			}
+//			else
+//			{
+//				schema = schemaToUse;
+//				System.out.println("Using provided schema (ID: " + schemaToUse.getID() + ") instead of the one indicated by the transmission (ID: " + schemaID + ").");
+//			}
 			
 			// Look-up settings & columns to factor out:
 			settings = (settingsToUse == null ? client.getSettingsFor(schema) : settingsToUse);
@@ -197,7 +198,7 @@ public abstract class BinaryTransmission extends Transmission
 			
 			// Get schema identification fields:
 			IntegerRangeMapping numberOfDifferentSchemataInTransmissionField = getNumberOfDifferentSchemataInTransmissionField();
-			IntegerRangeMapping modelSchemaNumberField = getModelSchemaNumberField();
+			IntegerRangeMapping modelSchemaNoField = getModelSchemaNoField();
 			
 			//	Find best schema order, resulting in the smallest amount of bits need for the numberOfRecordsPerSchemaFields (the last of which we don't need to write):
 			Schema[] schemataOrder = null;
@@ -214,7 +215,7 @@ public abstract class BinaryTransmission extends Transmission
 						candidateOrder[s++] = schema;
 				candidateOrder[numberOfDifferentSchemataInTransmission - 1] = schemaToPutLast;
 				// Get the numberOfRecordsPerSchemaFields for this order:
-				IntegerRangeMapping[] fieldsForOrder = getNumberOfRecordsPerSchemaFields(numberOfDifferentSchemataInTransmissionField, modelSchemaNumberField, candidateOrder);
+				IntegerRangeMapping[] fieldsForOrder = getNumberOfRecordsPerSchemaFields(numberOfDifferentSchemataInTransmissionField, modelSchemaNoField, candidateOrder);
 				// Compute sum of field sizes (except last):
 				int sumOfFieldSizesExceptLast = 0;
 				for(int f = 0; f < fieldsForOrder.length - 1; f++)
@@ -237,9 +238,9 @@ public abstract class BinaryTransmission extends Transmission
 			if(numberOfDifferentSchemataInTransmissionField != null)
 				numberOfDifferentSchemataInTransmissionField.write(numberOfDifferentSchemataInTransmission, out);
 			//	Write the modelSchemaNumbers of the schemata occurring in the transmission (unless there is only 1 schema in the model):
-			if(modelSchemaNumberField != null)
+			if(modelSchemaNoField != null)
 				for(Schema schema : schemataOrder)
-					modelSchemaNumberField.write(schema.getModelSchemaNumber(), out);
+					modelSchemaNoField.write(schema.getModelSchemaNo(), out);
 			//	Check & write the number of records per schema (except the last one is not written):
 			int f = 0;
 			for(Schema schema : schemataOrder)
@@ -344,15 +345,15 @@ public abstract class BinaryTransmission extends Transmission
 												1;
 			Schema[] schemata = new Schema[numberOfDifferentSchemata];
 			//	the model schema numbers:
-			IntegerRangeMapping modelSchemaNumberField = getModelSchemaNumberField();
-			if(modelSchemaNumberField != null)
+			IntegerRangeMapping modelSchemaNoField = getModelSchemaNoField();
+			if(modelSchemaNoField != null)
 				for(int i = 0; i < numberOfDifferentSchemata; i++)
-					schemata[i] = client.getSchema((short) modelSchemaNumberField.read(in)); //TODO change client method (use modelid!)
+					schemata[i] = client.getSchema(modelID, (short) modelSchemaNoField.read(in));
 			else
-				schemata[0] = client.getSchema((short) 0); //TODO change client method (use modelid!)
+				schemata[0] = client.getSchema(modelID, (short) 0); // there is only 1 schema in the model so its number is 0
 			
 			//	the number of records per schema:
-			IntegerRangeMapping[] numberOfRecordsPerSchemaFields = getNumberOfRecordsPerSchemaFields(numberOfDifferentSchemataInTransmissionField, modelSchemaNumberField, schemata);
+			IntegerRangeMapping[] numberOfRecordsPerSchemaFields = getNumberOfRecordsPerSchemaFields(numberOfDifferentSchemataInTransmissionField, modelSchemaNoField, schemata);
 			int[] numberOfRecordsPerSchema = new int[numberOfDifferentSchemata];
 			for(int i = 0; i < numberOfDifferentSchemata; i++)
 				// // read number of records for each each schema except for the last one (the number of records for that one is not stored in the header)
@@ -425,8 +426,9 @@ public abstract class BinaryTransmission extends Transmission
 	 * 
 	 * @return the field (an IntegerRangMapping object) or null in case there is only 1 schema in the model
 	 * @throws IllegalStateException
+	 * @throws UnknownModelException 
 	 */
-	private IntegerRangeMapping getNumberOfDifferentSchemataInTransmissionField() throws IllegalStateException
+	private IntegerRangeMapping getNumberOfDifferentSchemataInTransmissionField() throws IllegalStateException, UnknownModelException
 	{
 		int numberOfSchemataInModel = client.getNumberOfSchemataInModel(modelID);
 		if(numberOfSchemataInModel > 1)
@@ -443,8 +445,9 @@ public abstract class BinaryTransmission extends Transmission
 	 * 
 	 * @return
 	 * @throws IllegalStateException
+	 * @throws UnknownModelException 
 	 */
-	private IntegerRangeMapping getModelSchemaNumberField() throws IllegalStateException
+	private IntegerRangeMapping getModelSchemaNoField() throws IllegalStateException, UnknownModelException
 	{
 		int numberOfSchemataInModel = client.getNumberOfSchemataInModel(modelID);
 		if(numberOfSchemataInModel > 1)

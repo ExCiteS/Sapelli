@@ -7,6 +7,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -32,7 +33,7 @@ public class Form
 	 * Allowed form indexes: 0 to {@link Project#MAX_FORMS} - 1
 	 */
 	public static final int FORM_POSITION_SIZE = Schema.MODEL_SCHEMA_NO_SIZE; // = 4 bits
-	public static final IntegerRangeMapping FORM_POSITION_FIELD = IntegerRangeMapping.ForSize(0, FORM_POSITION_SIZE);
+	public static final IntegerRangeMapping FORM_POSITION_FIELD = IntegerRangeMapping.ForSize(0, FORM_POSITION_SIZE); // unsigned(!) 4 bit integer, range: [0, 15] -> up to 16 forms per project
 	
 	public static final boolean END_TIME_DEFAULT = false;
 
@@ -521,10 +522,10 @@ public class Form
 				// this.schema stays null
 			}
 			else
-			{	
+			{
 				// Create new Schema:
-				schema = new Schema(project.getHash(),
-									position,
+				schema = new Schema(SapelliCollectorClient.GetModelID(project),
+									SapelliCollectorClient.GetModelSchemaNo(this),
 									project.getName() +
 									(project.getVariant() != null ? '_' + project.getVariant() : "") +
 									"_v" + project.getVersion() +

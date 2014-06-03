@@ -21,15 +21,14 @@ public class Project
 	
 	//STATICS-------------------------------------------------------------	
 	static public final int PROJECT_ID_SIZE = Schema.V1X_SCHEMA_ID_SIZE; // = 24 bits (kept the same was the v1.x Schema#id, for backwards compatibility)
-	static public final IntegerRangeMapping PROJECT_ID_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_ID_SIZE); // unsigned 24bit integer (compatible with old schemaID)
+	static public final IntegerRangeMapping PROJECT_ID_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_ID_SIZE); // unsigned(!) 24bit integer (compatible with old schemaID)
 	
 	static public final String DEFAULT_VERSION = "0";
 	
 	static public final int PROJECT_HASH_SIZE = 32; //bits
-	static public final IntegerRangeMapping PROJECT_HASH_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_HASH_SIZE); // unsigned(!) 32bit integer
+	static public final IntegerRangeMapping PROJECT_HASH_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_HASH_SIZE); // signed(!) 32bit integer (like Java hashCodes)
 	
 	static public final int MAX_FORMS = (int) Form.FORM_POSITION_FIELD.getHighBound() + 1; // = 15 + 1 = 16 forms allowed
-	
 	
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
@@ -47,8 +46,7 @@ public class Project
 	static public final boolean DEFAULT_LOGGING = false;
 	
 	//DYNAMICS------------------------------------------------------------
-	private int id = Integer.MIN_VALUE; //don't init to 0 because that is an acceptable project id
-	private long hash; // unsigned(!) 32bit integer
+	private int id = -1; // don't init to 0 because that is an acceptable project id
 	private String name;
 	private String variant;
 	private String version;
@@ -64,12 +62,12 @@ public class Project
 	private boolean v1xProject = false;
 	private int schemaVersion = -1;
 	
-	public Project(int id, long hash, String name, String basePath)
+	public Project(int id, String name, String basePath)
 	{
-		this(id, hash, name, DEFAULT_VERSION, basePath, false);
+		this(id, name, DEFAULT_VERSION, basePath, false);
 	}
 	
-	public Project(int id, long hash, String name, String version, String basePath, boolean createSubfolder)
+	public Project(int id, String name, String version, String basePath, boolean createSubfolder)
 	{
 		if(name == null || name.isEmpty() || basePath == null || basePath.isEmpty())
 			throw new IllegalArgumentException("Both a name and a valid path are required");
@@ -81,13 +79,7 @@ public class Project
 			v1xProject = true;
 		}
 		else
-			setID(id); // checks if it fits in field
-		
-		// Project hash:
-		if(PROJECT_HASH_FIELD.fits(hash))
-			this.hash = hash;
-		else
-			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getLogicalRangeString() + ".");		
+			setID(id); // checks if it fits in field	
 		
 		this.name = FileHelpers.makeValidFileName(name);
 		this.version = version;
@@ -151,14 +143,6 @@ public class Project
 	public int getID()
 	{
 		return id;
-	}
-
-	/**
-	 * @return the hash (computed from the Project's XML file)
-	 */
-	public long getHash()
-	{
-		return hash;
 	}
 
 	public String getName()
@@ -475,6 +459,12 @@ public class Project
 		}
 		else
 			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		return super.hashCode(); // TODO !!! + make consistent with equals!
 	}
 	
 }
