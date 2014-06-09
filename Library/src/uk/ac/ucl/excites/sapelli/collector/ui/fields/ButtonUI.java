@@ -39,7 +39,7 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	 * Note 3:	The reason we to this upon validation instead of leaving, is that
 	 * 			because if we would do it upon leaving, unpressed boolean-column
 	 * 			non-optional buttons on pages would return false on isValid(),
-	 * 			preventing leave() from being called at all. 
+	 * 			preventing leave() from being called at all.
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.SelfLeavingFieldUI#isValid(uk.ac.ucl.excites.sapelli.collector.model.CollectorRecord)
 	 */

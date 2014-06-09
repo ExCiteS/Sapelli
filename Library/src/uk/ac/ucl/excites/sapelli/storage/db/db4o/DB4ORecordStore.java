@@ -110,7 +110,7 @@ public class DB4ORecordStore extends RecordStore
 
 			public boolean match(Record record)
 			{
-				return	!record.getSchema().isInternal()														/* filter out records of internal schemas */
+				return	!record.getSchema().isInternal()													/* filter out records of internal schemas */
 						&& (query.isAnySchema() || query.getSourceSchemata().contains(record.getSchema()));	/* Schema check */
 			}
 		});
