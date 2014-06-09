@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.sapelli.sender.gsm;
 
+import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.content.Context;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
@@ -14,7 +15,7 @@ public class SignalMonitor extends PhoneStateListener
 	private int serviceState;
 	private boolean roaming;
 	private int signalStrength;
-	
+
 	/**
 	 * Check if there is GSM connectivity. The serrviceState has 3 modes, 0 : Normal operation condition, the phone is registered with an operator either in
 	 * home network or in roaming. 1 : Phone is not registered with any operator, the phone can be currently searching a new operator to register to, or not
@@ -31,11 +32,16 @@ public class SignalMonitor extends PhoneStateListener
 	{
 		serviceState = service.getState();
 		roaming = service.getRoaming();
+
+		Debug.d("Service changed to: " + serviceState);
 	}
 
 	@Override
 	public synchronized void onSignalStrengthsChanged(SignalStrength signalStr)
 	{
+
+		Debug.d("Signal changed to: " + signalStr);
+
 		if(signalStr.isGsm())
 			signalStrength = signalStr.getGsmSignalStrength();
 	}

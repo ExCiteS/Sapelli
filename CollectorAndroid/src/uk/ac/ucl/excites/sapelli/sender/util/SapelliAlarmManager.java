@@ -20,6 +20,7 @@ import android.os.SystemClock;
 public class SapelliAlarmManager
 {
 	public static final String PROJECT_ID = "projectId";
+	public static final String PROJECT_HASH = "projectHash";
 
 	public SapelliAlarmManager()
 	{

@@ -15,16 +15,19 @@ import android.util.Log;
 
 /**
  * @author Michalis Vitos, mstevens
- *
+ * 
  */
 public final class DeviceControl
 {
-	
+
 	private static final String TAG = "DeviceControl";
-	
-	private DeviceControl() //class should not be instantiated
-	{}
-	
+	// Time to wait after exiting the Airplane Mode for GSM to be connected
+	public static final int POST_AIRPLANE_MODE_WAITING_TIME = 30;
+
+	private DeviceControl() // class should not be instantiated
+	{
+	}
+
 	/**
 	 * Check to see if the phone is in AirplaneMode
 	 * 
@@ -41,6 +44,25 @@ public final class DeviceControl
 	}
 
 	/**
+	 * Toggle thought the AirplaneMode and wait for <code>postAirplaneModeWaitingTime</code> seconds for the device to toggle
+	 */
+	public static void toggleAirplaneMode(Context context, int postAirplaneModeWaitingTime)
+	{
+		// Toggle status
+		toggleAirplaneMode(context);
+
+		// Wait
+		try
+		{
+			Thread.sleep(postAirplaneModeWaitingTime * 1000);
+		}
+		catch(Exception e)
+		{
+			Debug.e(e);
+		}
+	}
+
+	/**
 	 * Toggle thought the AirplaneMode
 	 */
 	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
@@ -51,7 +73,7 @@ public final class DeviceControl
 		try
 		{
 			// If airplane mode is on, value 0, else value is 1
-			if(Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1)
+			if(canToogleAirplaneMode())
 				Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, isInAirplaneMode ? 0 : 1);
 			else
 				Settings.Global.putInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, isInAirplaneMode ? 0 : 1);
@@ -68,7 +90,7 @@ public final class DeviceControl
 			Debug.e("Error upon toggling airplane more.", e);
 		}
 	}
-	
+
 	public static boolean canToogleAirplaneMode()
 	{
 		return (Build.VERSION.SDK_INT < Build.VERSION_CODES.JELLY_BEAN_MR1) ? true : false;
@@ -79,13 +101,13 @@ public final class DeviceControl
 		Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
 		vibrator.vibrate(durationMS);
 	}
-	
+
 	public static void playSoundFile(Context context, File soundFile)
 	{
 		try
 		{
 			if(soundFile.exists()) // check if the file really exists
-			{	// Play the sound
+			{ // Play the sound
 				MediaPlayer mp = MediaPlayer.create(context, Uri.fromFile(soundFile));
 				mp.start();
 				mp.setOnCompletionListener(new OnCompletionListener()
@@ -103,5 +125,5 @@ public final class DeviceControl
 			Log.e(TAG, "Error upon playing sound file.", e);
 		}
 	}
-	
+
 }
