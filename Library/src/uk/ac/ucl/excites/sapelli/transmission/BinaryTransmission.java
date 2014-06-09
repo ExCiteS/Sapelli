@@ -13,6 +13,8 @@ import java.util.Map.Entry;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -63,7 +65,7 @@ public abstract class BinaryTransmission extends Transmission
 			
 			// Output stream:
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-			out = new BitOutputStream(rawOut);
+			out = new BitWrapOutputStream(rawOut);
 							
 			// Write complete payload:
 			//	Header:
@@ -127,7 +129,7 @@ public abstract class BinaryTransmission extends Transmission
 			
 			// Input stream:
 			ByteArrayInputStream rawIn = new ByteArrayInputStream(payloadBytes);
-			in = new BitInputStream(rawIn);
+			in = new BitWrapInputStream(rawIn);
 			
 			// Read Schema ID:
 			long schemaID = Schema.SCHEMA_ID_FIELD.read(in); // 36 bits, we are not on a byte boundary now.
@@ -231,7 +233,7 @@ public abstract class BinaryTransmission extends Transmission
 			
 			// Output stream:
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-			out = new BitOutputStream(rawOut);
+			out = new BitWrapOutputStream(rawOut);
 			
 			// Write schema identification:
 			// 	Write the number of different schemata (unless there is only 1 schema in the model):
@@ -335,7 +337,7 @@ public abstract class BinaryTransmission extends Transmission
 		{
 			//Input stream:
 			ByteArrayInputStream rawIn = new ByteArrayInputStream(data);
-			in = new BitInputStream(rawIn);
+			in = new BitWrapInputStream(rawIn);
 			
 			// Read schema identification...
 			// 	the number of different schemata:

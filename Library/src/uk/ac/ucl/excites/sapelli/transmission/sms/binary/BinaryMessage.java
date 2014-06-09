@@ -12,6 +12,8 @@ import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.BinaryTransmission;
@@ -111,7 +113,7 @@ public class BinaryMessage extends Message
 		try
 		{
 			//Input stream:
-			in = new BitInputStream(new ByteArrayInputStream(data));
+			in = new BitWrapInputStream(new ByteArrayInputStream(data));
 			
 			//Read header:
 			transmissionID = (int) BinaryTransmission.TRANSMISSION_ID_FIELD.read(in);	//Transmission ID
@@ -160,7 +162,7 @@ public class BinaryMessage extends Message
 		{
 			//Output stream:
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-			out = new BitOutputStream(rawOut);
+			out = new BitWrapOutputStream(rawOut);
 	
 			//Write header:
 			BinaryTransmission.TRANSMISSION_ID_FIELD.write(transmissionID, out);	//Transmission ID

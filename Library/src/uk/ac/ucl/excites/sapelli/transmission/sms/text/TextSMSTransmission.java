@@ -11,6 +11,8 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
@@ -246,7 +248,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		BitInputStream bis = null;
 		try
 		{
-			bis = new BitInputStream(new ByteArrayInputStream(data));
+			bis = new BitWrapInputStream(new ByteArrayInputStream(data));
 			Boolean escapeBit = null;
 			StringBuilder bld = new StringBuilder();
 			while(bis.bitsAvailable() + (escapeBit == null ? 0 : 1) > 0)
@@ -301,7 +303,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		try
 		{
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			bos = new BitOutputStream(baos);	
+			bos = new BitWrapOutputStream(baos);	
 			boolean prevPrevSP = false;
 			boolean prevSP = false;
 			for(int i = 0; i < payloadString.length(); i++)

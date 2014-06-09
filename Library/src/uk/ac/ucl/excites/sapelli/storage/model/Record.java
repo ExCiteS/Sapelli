@@ -14,6 +14,7 @@ import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 
 /**
@@ -212,7 +213,7 @@ public class Record implements Serializable
 		BitOutputStream out = null;
 		try
 		{
-			out = new BitOutputStream(new ByteArrayOutputStream());
+			out = new BitWrapOutputStream(new ByteArrayOutputStream());
 			this.writeToBitStream(out, includeVirtual, skipColumns);
 			return out.getNumberOfBitsWritten();
 		}
@@ -421,7 +422,7 @@ public class Record implements Serializable
 		{
 			//Output stream:
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-			out = new BitOutputStream(rawOut);
+			out = new BitWrapOutputStream(rawOut);
 				
 			//Write record:
 			this.writeToBitStream(out, false, Collections.<Column<?>> emptySet());

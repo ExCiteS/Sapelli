@@ -11,6 +11,8 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
@@ -281,7 +283,7 @@ public abstract class Column<T> implements Serializable
 		{
 			//Output stream:
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-			out = new BitOutputStream(rawOut);
+			out = new BitWrapOutputStream(rawOut);
 	
 			//Write value:
 			writeValue(value, out);
@@ -291,7 +293,7 @@ public abstract class Column<T> implements Serializable
 			out.close();
 	
 			//Input stream:
-			in = new BitInputStream(new ByteArrayInputStream(rawOut.toByteArray()));
+			in = new BitWrapInputStream(new ByteArrayInputStream(rawOut.toByteArray()));
 			
 			//Read value:
 			return readValue(in);
