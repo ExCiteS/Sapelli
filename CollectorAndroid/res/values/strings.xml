@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
 
-    <string name="app_name">Sapelli Collector</string>
+    <string name="app_name">Sapelli</string>
     <string name="by_ucl_excites_html">&lt;a href=&quot;http://sapelli.org&gt;Sapelli&lt;/a&gt; is a project by &lt;a href=&quot;http://ucl.ac.uk/excites&quot;&gt;UCL ExCiteS&lt;/a&gt; &amp; collaborators</string>
     <string name="project_manager">Project Manager</string>
     <string name="available_projects">Available projects</string>
@@ -12,15 +12,13 @@
     <string name="browse">Browse</string>
     <string name="scan_qr_code">Scan QR Code</string>
     <string name="software_and_device_info">App &amp; device info</string>
-    <string name="shortcuts">Shortcuts</string>
-    <string name="create_shortcut">Create Shortcut</string>
-    <string name="remove_shortcut">Remove Shortcut</string>
+    <string name="shortcut">Shortcut</string>
     <string name="take_photo">Take photo</string>
-    <string name="sender_settings_menuitem">Data Sender Settings</string>
+    <string name="transmission_settings">Transmission Settings</string>
     <string name="copy_db_menuitem">Dump databases</string>
-    <string name="about">About &#8230;</string>
+    <string name="about">About</string>
     <string name="statistics_menuitem">Statistics</string>
-    <string name="export_records_menuitem">Export records</string>
+    <string name="export_records">Export records</string>
     <string name="import_records_menuitem">Import records</string>
     <string name="title_activity_dropbox">Dropbox Authentication</string>
     <string name="title_activity_main">Sapelli Background Service</string>
@@ -31,10 +29,8 @@
     <string name="show_statistics">Show</string>
     <string name="app_usage_statistics">Statistics on App usage</string>
     <string name="settings">Settings</string>
-    
     <string name="yes">Yes</string>
     <string name="no">No</string>
-    
     <string name="needsStorageAccess">needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.</string>
     <string name="projectStorageAccessFail">Could not access project storage, due to: %s.</string>
     <string name="enableLocationProvider">Please enable location provider (%s) in device  settings.</string>
@@ -44,23 +40,21 @@
     <string name="demoLoadFail">Could not load demo project.</string>
     <string name="chooseSapelliFile">Choose a .sapelli or .sap  file</string>
     <string name="backupFailDueTo">Failed to backup database(s), due to: %s</string>
-    
     <string name="error">Error</string>
     <string name="warning">Warning</string>
     <string name="info">Info</string>
-    
     <string name="title_activity_export">Sapelli Collector Exporter</string>
     <string name="export">Export</string>
     <string name="exportSelection">Select records to export:</string>
     <string name="exportSelectedProj">All records of %s</string>
-    <string name="exportAllProj">All records of all projects</string>
+    <string name="exportAllProj">Export all records</string>
     <string name="exportDateRange">Date range:</string>
     <string name="exportDateRangeFrom">From %s</string>
     <string name="exportDateRangeTo">To %s</string>
     <string name="exportDateRangeAnytime">anytime</string>
     <string name="exportDestination">Destination:</string>
     <string name="exportFormat">Output format:</string>
-    <string name="exportXMLMode">Represent composite columns as:</string>
+    <string name="exportXMLMode">Composite columns:</string>
     <string name="exportCSVSeparator">CSV separator:</string>
     <string name="exportRemove">Delete records after successful export</string>
     <string name="exportFetching">Fetching records…</string>
@@ -77,5 +71,13 @@
     <string name="exportDeleteFailureMsg">Failed to delete (some of) the record, due to: %s.</string>
     <string name="exportNothing">There was nothing to export.</string>
     <string name="exportDeletingX">Deleting %d records…</string>
+    <string name="criteria">Criteria</string>
+    <string name="output">Output</string>
+    <string name="expand_transmission">Expand Transmission Settings</string>
+    <string name="expand_export">Expand Export Settings</string>
+    <string name="phone_number">Phone Number</string>
+    <string name="send">Send</string>
+    <string name="receive">Receive</string>
+    <string name="add_project">Please add a project</string>
 
 </resources>

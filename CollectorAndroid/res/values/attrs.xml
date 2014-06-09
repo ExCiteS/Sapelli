@@ -4,11 +4,26 @@
          Declare custom theme attributes that allow changing which styles are
          used for button bars depending on the API level.
          ?android:attr/buttonBarStyle is new as of API 11 so this is
-         necessary to support previous API levels.
+         necessary to support previous API levels.
     -->
     <declare-styleable name="ButtonBarContainerTheme">
         <attr name="buttonBarStyle" format="reference" />
         <attr name="buttonBarButtonStyle" format="reference" />
+    </declare-styleable>
+
+    <attr name="switchStyle" format="reference" />
+
+    <declare-styleable name="Switch">
+        <attr name="textLeft" format="string" />
+        <attr name="textRight" format="string" />
+        <attr name="switchMinWidth" format="dimension" />
+        <attr name="switchPadding" format="dimension" />
+        <attr name="colorUnChecked" format="color" />
+        <attr name="colorChecked" format="color" />
+        <attr name="backgroundDrawable" format="reference" />
+        <attr name="switchDrawable" format="dimension" />
+        <attr name="innerPadding" format="dimension" />
+        <attr name="isChecked" format="boolean" />
     </declare-styleable>
 
 </resources>

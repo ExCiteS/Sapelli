@@ -10,5 +10,7 @@
     <color name="grey_transparent">#33c0c0c0</color>
     <color name="focused">#99c0c0c0</color>
     <color name="selected">#99c0c0c0</color>
+    <color name="background_tab_pressed">#6633B5E5</color>
+    <color name="blue">#09c</color>
 
 </resources>

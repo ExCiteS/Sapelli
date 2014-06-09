@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/project_rootLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="2dip"
+        android:layout_above="@+id/btn_runProject"
+        android:background="?android:attr/dividerVertical" />
+
+    <Button
+        android:id="@+id/btn_runProject"
+        style="?android:attr/buttonBarButtonStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:padding="10dp"
+        android:text="@string/run_project" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_above="@+id/btn_runProject"
+        android:layout_marginTop="10dp" >
+
+        <LinearLayout
+            android:id="@+id/scrollableView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" >
+
+            <LinearLayout
+                android:id="@+id/shortcutHeader"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@layout/drop_shadow"
+                android:gravity="center_vertical"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="10dp"
+                    android:text="@string/shortcut" />
+
+                <uk.ac.ucl.excites.sapelli.collector.ui.Switch
+                    android:id="@+id/btn_shortcut"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingRight="5dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/transmissionHeader"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@layout/drop_shadow"
+                android:clickable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="10dp"
+                    android:text="@string/transmission_settings" />
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/expand_transmission"
+                    android:src="@drawable/ic_action_expand" />
+            </LinearLayout>
+
+            <include
+                android:id="@+id/transmissionView"
+                layout="@layout/fragment_transmission" />
+
+            <LinearLayout
+                android:id="@+id/exportHeader"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@layout/drop_shadow"
+                android:clickable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="10dp"
+                    android:text="@string/export_records" />
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/expand_export"
+                    android:src="@drawable/ic_action_expand" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+</RelativeLayout>

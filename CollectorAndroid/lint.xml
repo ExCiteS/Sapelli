@@ -7,4 +7,6 @@
         <ignore path="src/uk/ac/ucl/excites/sapelli/collector/activities/ProjectManagerActivity.java" />
         <ignore path="src/uk/ac/ucl/excites/sapelli/collector/ui/picker/items/FileImageItem.java" />
     </issue>
+    <issue id="ResourceAsColor" severity="ignore" />
+    <issue id="ValidFragment" severity="ignore" />
 </lint>

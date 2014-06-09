@@ -5,10 +5,10 @@ package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.v4.app.FragmentActivity;
 
 /**
  * Abstract super class for our activities.
@@ -18,7 +18,7 @@ import android.os.Bundle;
  * @author mstevens
  *
  */
-public abstract class BaseActivity extends Activity
+public abstract class BaseActivity extends FragmentActivity  
 {
 	
 	private static final int HIDE_BUTTON = -1;
