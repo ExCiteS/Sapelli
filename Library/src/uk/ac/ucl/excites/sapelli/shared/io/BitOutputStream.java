@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.storage.io;
+package uk.ac.ucl.excites.sapelli.shared.io;
 
 
 import java.io.IOException;

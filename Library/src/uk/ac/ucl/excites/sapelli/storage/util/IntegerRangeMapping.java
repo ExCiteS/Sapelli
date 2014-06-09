@@ -7,8 +7,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 
-import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
-import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 
 /**
  * Helper class that maps values from an integer range [x, y] (inclusive!),
