@@ -44,17 +44,16 @@ public final class DeviceControl
 	}
 
 	/**
-	 * Toggle thought the AirplaneMode and wait for <code>postAirplaneModeWaitingTime</code> seconds for the device to toggle
+	 * Disable AirplaneMode and wait for {@code waitingSeconds} seconds for the device to exit
 	 */
-	public static void toggleAirplaneMode(Context context, int postAirplaneModeWaitingTime)
+	public static void disableAirplaneModeAndWait(Context context, int waitingSeconds)
 	{
-		// Toggle status
-		toggleAirplaneMode(context);
+		disableAirplaneMode(context);
 
 		// Wait
 		try
 		{
-			Thread.sleep(postAirplaneModeWaitingTime * 1000);
+			Thread.sleep(waitingSeconds * 1000);
 		}
 		catch(Exception e)
 		{
@@ -63,27 +62,46 @@ public final class DeviceControl
 	}
 
 	/**
-	 * Toggle thought the AirplaneMode
+	 * Disable AirplaneMode (Take device out of AirplaneMode)
+	 */
+	public static void disableAirplaneMode(Context context)
+	{
+		setAirplaneMode(context, false);
+	}
+
+	/**
+	 * Enable AirplaneMode (Set the device in AirplaneMode)
+	 */
+	public static void enableAirplaneMode(Context context)
+	{
+		setAirplaneMode(context, true);
+	}
+
+	/**
+	 * Set AirplaneMode
+	 * 
+	 * @param context
+	 * @param enabled
+	 *            (True to set the device in Airplane Mode)
 	 */
 	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	@SuppressWarnings("deprecation")
-	public static void toggleAirplaneMode(Context context)
+	private static void setAirplaneMode(Context context, boolean enabled)
 	{
-		boolean isInAirplaneMode = inAirplaneMode(context);
 		try
 		{
 			// If airplane mode is on, value 0, else value is 1
 			if(canToogleAirplaneMode())
-				Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, isInAirplaneMode ? 0 : 1);
-			else
-				Settings.Global.putInt(context.getContentResolver(), Settings.Global.AIRPLANE_MODE_ON, isInAirplaneMode ? 0 : 1);
+			{
+				Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, enabled ? 1 : 0);
 
-			// Reload when the mode is changed each time by sending Intent
-			Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-			intent.putExtra("state", !isInAirplaneMode);
-			context.sendBroadcast(intent);
+				// Reload when the mode is changed each time by sending Intent
+				Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+				intent.putExtra("state", enabled);
+				context.sendBroadcast(intent);
 
-			Debug.d("Airplane mode is: " + (isInAirplaneMode ? "OFF" : "ON"));
+				Debug.d("Airplane mode is: " + (enabled ? "ON" : "OFF"));
+			}
 		}
 		catch(Exception e)
 		{
