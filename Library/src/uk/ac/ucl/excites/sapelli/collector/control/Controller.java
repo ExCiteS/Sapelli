@@ -71,7 +71,7 @@ public abstract class Controller
 		CONDITIONAL,
 		
 		/**
-		 * The current field must be unconditionally left but valid values may be stored. 
+		 * The current field must be unconditionally left but valid values may be stored.
 		 */
 		UNCONDITIONAL_WITH_STORAGE,
 		

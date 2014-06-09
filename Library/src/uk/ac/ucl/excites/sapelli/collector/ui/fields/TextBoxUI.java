@@ -10,6 +10,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 
 /**
  * @author mstevens
+ *
+ * @param <V>
+ * @param <UI>
  */
 public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<TextBoxField, V, UI>
 {
@@ -23,58 +26,6 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	public TextBoxUI(TextBoxField textBox, Controller controller, UI collectorUI)
 	{
 		super(textBox, controller, collectorUI);
-	}
-	
-	/**
-	 * 
-	 * @throws Exception 
-	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.NonSelfLeavingFieldUI#storeValue(Record)
-	 */
-	@Override
-	protected void storeValue(Record record) throws Exception
-	{
-		switch(field.getContent())
-		{
-			case text :
-			case password :
-			case email :
-			case phonenumber :
-			default :
-				((StringColumn) field.getColumn()).storeValue(record, getValue()); break;
-			case unsignedint :
-			case signedint :
-			case unsignedlong :
-			case signedlong :
-			case unsignedfloat :
-			case signedfloat :
-			case unsigneddouble :
-			case signeddouble :
-				field.getColumn().parseAndStoreValue(record, getValue()); break; // parse number & store it
-		}
-	}
-	
-	protected String retrieveValue(Record record)
-	{
-		if(!field.getColumn().isValueSet(record))
-			return null;
-		switch(field.getContent())
-		{
-			case text :
-			case password :
-			case email :
-			case phonenumber :
-			default :
-				return ((StringColumn) field.getColumn()).retrieveValue(record);
-			case unsignedint :
-			case signedint :
-			case unsignedlong :
-			case signedlong :
-			case unsignedfloat :
-			case signedfloat :
-			case unsigneddouble :
-			case signeddouble :
-				return field.getColumn().retrieveValueAsString(record); // retrieve as String
-		}
 	}
 	
 	@Override
@@ -135,6 +86,58 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 				error += "\nIf you don't want to answer, hit backspace until cross appears."; //TODO multilang
 			setValidationError(error);
 			return false;
+		}
+	}
+	
+	/**
+	 * 
+	 * @throws Exception 
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.NonSelfLeavingFieldUI#storeValue(Record)
+	 */
+	@Override
+	protected void storeValue(Record record) throws Exception
+	{
+		switch(field.getContent())
+		{
+			case text :
+			case password :
+			case email :
+			case phonenumber :
+			default :
+				((StringColumn) field.getColumn()).storeValue(record, getValue()); break;
+			case unsignedint :
+			case signedint :
+			case unsignedlong :
+			case signedlong :
+			case unsignedfloat :
+			case signedfloat :
+			case unsigneddouble :
+			case signeddouble :
+				field.getColumn().parseAndStoreValue(record, getValue()); break; // parse number & store it
+		}
+	}
+	
+	protected String retrieveValue(Record record)
+	{
+		if(!field.getColumn().isValueSet(record))
+			return null;
+		switch(field.getContent())
+		{
+			case text :
+			case password :
+			case email :
+			case phonenumber :
+			default :
+				return ((StringColumn) field.getColumn()).retrieveValue(record);
+			case unsignedint :
+			case signedint :
+			case unsignedlong :
+			case signedlong :
+			case unsignedfloat :
+			case signedfloat :
+			case unsigneddouble :
+			case signeddouble :
+				return field.getColumn().retrieveValueAsString(record); // retrieve as String
 		}
 	}
 	
