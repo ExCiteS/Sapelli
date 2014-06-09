@@ -7,9 +7,9 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 
+import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
-import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
-import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;

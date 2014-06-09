@@ -9,9 +9,9 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormatter;
 
+import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
-import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
@@ -263,7 +263,7 @@ public class TimeStampColumn extends ComparatorColumn<TimeStamp>
 	/**
 	 * Note: when local time zone is not kept TimeStamps that are read from binary input will be in UTC.
 	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#read(uk.ac.ucl.excites.sapelli.storage.io.BitInputStream)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream)
 	 */
 	@Override
 	protected TimeStamp read(BitInputStream bitStream) throws IOException

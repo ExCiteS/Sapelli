@@ -9,10 +9,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
-import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
-import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**

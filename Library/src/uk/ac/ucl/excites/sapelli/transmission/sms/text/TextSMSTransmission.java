@@ -9,8 +9,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.storage.io.BitInputStream;
-import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
