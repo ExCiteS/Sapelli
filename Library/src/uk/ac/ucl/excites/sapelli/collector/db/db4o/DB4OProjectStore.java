@@ -119,29 +119,36 @@ public class DB4OProjectStore extends ProjectStore
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(long)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProjectVersions(int)
 	 */
 	@Override
-	public Project retrieveProject(final long projectHash)
+	public List<Project> retrieveProjectVersions(final int projectID)
 	{
 		@SuppressWarnings("serial")
 		ObjectSet<Project> result = db4o.query(new Predicate<Project>()
 		{
 			public boolean match(Project project)
 			{
-				return project.getHash() == projectHash;
+				return project.getID() == projectID;
 			}
 		});
-		if(result.isEmpty())
-			return null;
-		else
-		{
-			Project p = result.get(0);
+		for(Project p : result)
 			db4o.activate(p, ACTIVATION_DEPTH);
-			return p;
-		}
+		return result;
 	}
-
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(int, int)
+	 */
+	@Override
+	public Project retrieveProject(int projectID, int projectHash)
+	{
+		for(Project p : retrieveProjectVersions(projectID))
+			if(p.hashCode() == projectHash)
+				return p;
+		return null;
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#delete(uk.ac.ucl.excites.sapelli.collector.model.Project)
 	 */
