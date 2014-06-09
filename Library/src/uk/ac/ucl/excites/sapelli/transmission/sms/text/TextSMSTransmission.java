@@ -226,11 +226,20 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		super(client, parts);
 	}
 	
+	private int minNumberOfCharactersNeededFor(int bits)
+	{
+		return (bits + BITS_PER_CHAR - 1) / BITS_PER_CHAR;
+	}
+	
 	@Override
 	protected void serialise(byte[] data) throws TransmissionCapacityExceededException, IOException
 	{
 		// Clear previously generated messages
 		parts.clear(); //!!!
+		
+		// Rough length check (does not taking escaping into account, hence the "at least"):
+		if(minNumberOfCharactersNeededFor(data.length * Byte.SIZE) > MAX_PAYLOAD_CHARS)
+			throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_CHARS + " characters) exceeded by at least " + minNumberOfCharactersNeededFor(data.length * Byte.SIZE) + " characters");
 		
 		// Convert data bytes to transmission payload String:
 		String payload = null;
@@ -242,6 +251,9 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 			StringBuilder bld = new StringBuilder();
 			while(bis.bitsAvailable() + (escapeBit == null ? 0 : 1) > 0)
 			{
+				// Check if there is room for one more character:
+				if(bld.length() + 1 > MAX_PAYLOAD_CHARS)					
+					throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_CHARS + " characters) exceeded by at least " + minNumberOfCharactersNeededFor(bis.bitsAvailable() + (escapeBit == null ? 0 : 1)) + " characters");
 				// Read 7, 6 or less bits and shift them to the right to fill 7 or 6 bits:
 				int readBits = Math.min(bis.bitsAvailable(), BITS_PER_CHAR - (escapeBit == null ? 0 : 1));
 				int c = (readBits > 0 ? (int) bis.readInteger(readBits, false) : 0) << (BITS_PER_CHAR - (escapeBit == null ? 0 : 1) - readBits);
@@ -268,10 +280,6 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		{
 			bis.close();
 		}
-		
-		// Check length:
-		if(payload.length() > MAX_PAYLOAD_CHARS)
-			throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_CHARS + " characters), exceeded by " + (payload.length() - MAX_PAYLOAD_CHARS) + " characters");
 		
 		// Split up transmission payload in parts:
 		String[] payloadParts = payload.split("(?<=\\G.{" + TextMessage.MAX_PAYLOAD_CHARS + "})");

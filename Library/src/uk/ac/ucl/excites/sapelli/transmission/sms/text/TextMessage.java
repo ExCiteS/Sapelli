@@ -39,7 +39,7 @@ public class TextMessage extends Message
 {
 	
 	//Static
-	public static final boolean MULTIPART = false; //we use standard single-part SMS messages, because using 
+	public static final boolean MULTIPART = false; // we use standard single-part SMS messages, because using 
 	public static final int MAX_TOTAL_CHARS = 160; // 	concatenated SMS would cause us to lose 7 chars per message
 	public static final int HEADER_CHARS = 4; // = 28 bits
 	public static final int MAX_PAYLOAD_CHARS = MAX_TOTAL_CHARS - HEADER_CHARS;
@@ -133,7 +133,7 @@ public class TextMessage extends Message
 		
 		//Write header:
 		// Merge header fields to 24 bit value:
-		int header = (transmission.getID() << (PART_NUMBER_FIELD.getSize() * 2)) +	// ID (= CRC16 hash): takes up first 16 bits
+		int header = (transmissionID << (PART_NUMBER_FIELD.getSize() * 2)) +	// ID (= CRC16 hash): takes up first 16 bits
 					 (partNumber << (PART_NUMBER_FIELD.getSize())) +				// partNumber: takes up next 4 bits
 					 totalParts;													// totalParts: takes up last 4 bits
 		// Split header in 4 * 6 bit parts:

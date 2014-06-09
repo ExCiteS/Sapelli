@@ -50,7 +50,7 @@ public abstract class BinaryTransmission extends Transmission
 		try
 		{
 			// Encode records:
-			byte[] recordBytes = encodeRecords(); //can throw TransmissionCapacityExceededException
+			byte[] recordBytes = encodeRecords(); // can throw TransmissionCapacityExceededException
 			
 			//System.out.println("Encoded records to: " + data.length + " bytes");
 			//System.out.println("Hash: " + BinaryHelpers.toHexadecimealString(Hashing.getSHA256Hash(data)));

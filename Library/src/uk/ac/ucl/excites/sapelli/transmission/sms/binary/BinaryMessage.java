@@ -163,7 +163,7 @@ public class BinaryMessage extends Message
 			out = new BitOutputStream(rawOut);
 	
 			//Write header:
-			BinaryTransmission.TRANSMISSION_ID_FIELD.write(transmission.getID(), out);	//Transmission ID
+			BinaryTransmission.TRANSMISSION_ID_FIELD.write(transmissionID, out);	//Transmission ID
 			PART_NUMBER_FIELD.write(partNumber, out);				//Part number
 			PART_NUMBER_FIELD.write(totalParts, out);				//Total parts
 			

@@ -249,4 +249,9 @@ public abstract class Transmission
 		return settings;
 	}
 	
+	public TransmissionClient getClient()
+	{
+		return client;
+	}
+	
 }

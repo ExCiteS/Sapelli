@@ -32,7 +32,7 @@ public class SapelliCollectorClient implements TransmissionClient
 	/**
 	 * @param projectID unsigned(!) 24 bit integer
 	 * @param projectHash signed 32 bit integer
-	 * @return
+	 * @return unsigned 56 bit integer
 	 */
 	static public long GetModelID(int projectID, int projectHash)
 	{

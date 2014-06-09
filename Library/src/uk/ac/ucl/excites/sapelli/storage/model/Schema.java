@@ -52,17 +52,26 @@ public class Schema implements Serializable
 	 * 	to the combination of the project ID (= 24 bits) and the project hash (= 32 bits), which are
 	 *  combined into one 56 bit value in SapelliCollectorClient. */
 	static public final int MODEL_ID_SIZE = 56; //bits
-	static public final IntegerRangeMapping MODEL_ID_FIELD = IntegerRangeMapping.ForSize(0, MODEL_ID_SIZE); // unsigned(!) 56 bit integer
+	/**
+	 * Model ID: unsigned(!) 56 bit integer
+	 */
+	static public final IntegerRangeMapping MODEL_ID_FIELD = IntegerRangeMapping.ForSize(0, MODEL_ID_SIZE);
 	
 	/*	the Model Schema Number signifies the number, position or index of a schema within the model it belongs to.
 	 * 	In the case of the Sapelli Collector it the value corresponds to the position within the project of the 
 	 * 	form the schema corresponds to. */
 	static public final int MODEL_SCHEMA_NO_SIZE = 4; //bits
-	static public final IntegerRangeMapping MODEL_SCHEMA_NO_FIELD = IntegerRangeMapping.ForSize(0, MODEL_SCHEMA_NO_SIZE); // unsigned(!) 4 bit integer
+	/**
+	 * Model schema number: unsigned(!) 4 bit integer
+	 */
+	static public final IntegerRangeMapping MODEL_SCHEMA_NO_FIELD = IntegerRangeMapping.ForSize(0, MODEL_SCHEMA_NO_SIZE);
 	
 	/*	the Schema ID is a combination of the above identifiers and uniquely identifies a schema. */
 	static public final int SCHEMA_ID_SIZE = MODEL_ID_SIZE + MODEL_SCHEMA_NO_SIZE; // 56 + 4 = 60 bits
-	static public final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE); // unsigned(!) 60 bit integer; does not accept the IDs of internal schemata (which are negative)!
+	/**
+	 * Schema ID: unsigned(!) 60 bit integer; does not accept the IDs of internal schemata (which are negative)!
+	 */
+	static public final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE);
 	
 	/**
 	 * Combines a {@code modelID} and a {@code modelSchemaNo} into a {@code schemaID}
@@ -203,7 +212,7 @@ public class Schema implements Serializable
 	 */
 	public long getModelID()
 	{
-		if(!isInternal())
+		if(isInternal())
 			throw new IllegalStateException("Internal schemata do not belong to a model.");
 		return GetModelID(id);
 	}
@@ -215,7 +224,7 @@ public class Schema implements Serializable
 	 */
 	public short getModelSchemaNo()
 	{
-		if(!isInternal())
+		if(isInternal())
 			throw new IllegalStateException("Internal schemata do not belong to a model.");
 		return GetModelSchemaNo(id);
 	}
