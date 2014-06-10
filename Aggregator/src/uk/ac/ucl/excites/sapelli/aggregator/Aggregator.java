@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.sapelli.aggregator;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -40,6 +42,7 @@ import uk.ac.ucl.excites.sapelli.collector.project.io.ExCiteSFileLoader;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.project.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.project.util.DuplicateException;
+import uk.ac.ucl.excites.sapelli.storage.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.DateTimeColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -50,7 +53,9 @@ import uk.ac.ucl.excites.sapelli.storage.xml.RecordsImporter;
 import uk.ac.ucl.excites.sapelli.transmission.DecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.IncompleteTransmissionException;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
+import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory;
 import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.CompressionMode;
+import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.transmission.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
@@ -95,14 +100,14 @@ public class Aggregator
 	private ObjectContainer db;
 
 	private DataAccess dao;
-	private Set<Record> allRecords;
 	
 	private static DateTimeFormatter formatter = ISODateTimeFormat.dateTime();
 
 	/**
 	 * @param args
+	 * @throws InterruptedException 
 	 */
-	public static void main(String[] args)
+	public static void main(String[] args) throws InterruptedException
 	{
 		if(args.length < 1)
 			aggregator = new Aggregator(Paths.get(DEFAULT_PATH_MSTEVENS)); // System.out.println("Please provide a working path");
@@ -115,10 +120,13 @@ public class Aggregator
 		aggregator.printSchemaAndProjectList();
 		System.out.println("");
 		
-		aggregator.loadRecords();
-
-		aggregator.export();
+		Set<Record> allRecords = aggregator.loadRecords();
+		List<Record> sortedRecords = aggregator.sort(allRecords);
 		
+		aggregator.export(sortedRecords);
+		
+		aggregator.compressionTest(sortedRecords);
+			
 		// Close db:
 		aggregator.db.close();
 	}
@@ -154,12 +162,9 @@ public class Aggregator
 			e.printStackTrace(System.err);
 			return;
 		}
-
-		// Data structures:
-		allRecords = new HashSet<Record>();
 	}
 
-	public void loadRecords()
+	public Set<Record> loadRecords()
 	{
 		Set<Record> dbRecords = loadDatabaseDumps(); //new HashSet<Record>(); 
 		System.out.println("");
@@ -195,10 +200,10 @@ public class Aggregator
 			if(!smsAndXml.contains(xmlRec) && !smsAndXml.contains(shiftOneSecond(xmlRec, true, false)) && !smsAndXml.contains(shiftOneSecond(xmlRec, false, true)) && !smsAndXml.contains(shiftOneSecond(xmlRec, true, true)))
 				smsAndXml.add(xmlRec);
 		System.out.println("There are " + (xmlRecords.size() + smsRecords.size() - smsAndXml.size()) + " duplicate records loaded both from XML exports and SMS transmissions.");
-		
 		System.out.println("");
 		
 		// Assemble unique records (take SMS before XML!):
+		Set<Record> allRecords = new HashSet<Record>();
 		allRecords.addAll(dbRecords);
 		int dbUnique = allRecords.size();
 		allRecords.addAll(smsRecords);
@@ -213,6 +218,8 @@ public class Aggregator
 		System.out.println("XML contributed: " + xmlUnique + " unique records");
 		
 		System.out.println("\nTotal unique records: " + allRecords.size() + ".\n");
+		
+		return allRecords;
 	}
 
 	private void loadProjects()
@@ -544,9 +551,7 @@ public class Aggregator
 								}
 							}
 							
-							//Compression test
-							//System.out.println("\tBest compression possible for this transmission: " + CompressorFactory.ApplyBestCompression(encodeRecords(tRecords)));
-							//CompressorFactory.CompressionTest(encodeRecords(tRecords));
+
 							
 						}
 						else
@@ -901,12 +906,37 @@ public class Aggregator
 			}
 		}
 	}
+	
+	public List<Record> sort(Set<Record> records)
+	{
+		List<Record> recs = new ArrayList<Record>();
+		recs.addAll(records); 
+		Collections.sort(recs, new Comparator<Record>()
+		{
+			@Override
+			public int compare(Record r1, Record r2)
+			{
+				DateTime st1 = (DateTime) r1.getSchema().getColumn(Form.COLUMN_TIMESTAMP_START).retrieveValue(r1);
+				DateTime st2 = (DateTime) r2.getSchema().getColumn(Form.COLUMN_TIMESTAMP_START).retrieveValue(r2);
+				int result = st1.compareTo(st2);
+				if(result == 0)
+				{
+					DateTime et1 = (DateTime) r1.getSchema().getColumn(Form.COLUMN_TIMESTAMP_END).retrieveValue(r1);
+					DateTime et2 = (DateTime) r2.getSchema().getColumn(Form.COLUMN_TIMESTAMP_END).retrieveValue(r2);
+					return et1.compareTo(et2);
+				}
+				else
+					return result;
+			}
+		});
+		return recs;
+	}
 
-	private void export()
+	private void export(List<Record> records)
 	{
 		// Sorts records by schema:
 		Map<Schema, Set<Record>> recordsBySchema = new HashMap<Schema, Set<Record>>();
-		for(Record r : allRecords)
+		for(Record r : records)
 		{
 			Set<Record> recordSet = recordsBySchema.get(r.getSchema());
 			if(recordSet == null)
@@ -917,17 +947,28 @@ public class Aggregator
 			recordSet.add(r);
 		}
 		
+		// Export all records to single XML file:
+		try
+		{
+			RecordsExporter re = new RecordsExporter(outputFolder.toString() + File.separatorChar, dao);
+			re.exportRecords(records, "ALL_byStartTime");
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		
 		// Export project-by-project:
 		for(Project project : dao.retrieveProjects())
 		{
 			Form form = project.getForms().get(0);
 			Schema schema = form.getSchema();
 			
-			Set<Record> records = recordsBySchema.get(schema);
-			if(records != null)
+			Set<Record> recordSet = recordsBySchema.get(schema);
+			if(recordSet != null)
 			{
 				SortedSet<FormEntry> entries = new TreeSet<FormEntry>();
-				for(Record r : records)
+				for(Record r : recordSet)
 					entries.add(new FormEntry(form, r));
 				
 				List<Record> sortedRecords = new ArrayList<Record>();
@@ -971,6 +1012,37 @@ public class Aggregator
 			
 		}
 	
+	}
+	
+	public void compressionTest(List<Record> records)
+	{
+		//Compression test
+		try
+		{
+			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
+			BitOutputStream bos = new BitOutputStream(rawOut);
+			for(Record r : records)
+				r.writeToBitStream(bos, Collections.<Column<?>> emptySet());
+			bos.flush();
+			bos.close();
+			byte[] recordData = rawOut.toByteArray();
+			System.out.println("SHA256 hash: " + BinaryHelpers.toHexadecimealString(Hashing.getSHA256Hash(recordData)));
+			//System.out.println("Best compression possible for these records: " + CompressorFactory.ApplyBestCompression(recordData));
+			CompressionMode[] modes = Arrays.copyOf(CompressorFactory.CompressionMode.values(), CompressorFactory.CompressionMode.values().length);
+			Arrays.sort(modes, new Comparator<CompressionMode>()
+					{
+						@Override
+						public int compare(CompressionMode cm1, CompressionMode cm2)
+						{
+							return cm1.name().compareTo(cm2.name());
+						}
+					});
+			CompressorFactory.CompressionTest(recordData, modes);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	public Form getMostRecentFromUsing(Schema schema)
