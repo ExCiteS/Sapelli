@@ -167,7 +167,7 @@ public class DataSenderService extends Service
 
 				// 1. Check for Airplane Mode
 				if(DeviceControl.canToogleAirplaneMode() && DeviceControl.inAirplaneMode(context) /* TODO && projects toggle AirplaneMode */)
-					DeviceControl.toggleAirplaneMode(context, DeviceControl.POST_AIRPLANE_MODE_WAITING_TIME);
+					DeviceControl.disableAirplaneModeAndWait(context, DeviceControl.POST_AIRPLANE_MODE_WAITING_TIME);
 
 				// 2. Check for SMS Signal
 				setupSMSmonitor(context);
@@ -191,7 +191,7 @@ public class DataSenderService extends Service
 
 				// 2. Put device back to AirplaneMode if needed
 				if(true /* TODO projects toggle AirplaneMode */)
-					DeviceControl.toggleAirplaneMode(context);
+					DeviceControl.enableAirplaneMode(context);
 			}
 
 			/**
