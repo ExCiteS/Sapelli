@@ -1,6 +1,5 @@
 package uk.ac.ucl.excites.sapelli.sender.gsm;
 
-import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.content.Context;
 import android.telephony.PhoneStateListener;
 import android.telephony.ServiceState;
@@ -32,16 +31,11 @@ public class SignalMonitor extends PhoneStateListener
 	{
 		serviceState = service.getState();
 		roaming = service.getRoaming();
-
-		Debug.d("Service changed to: " + serviceState);
 	}
 
 	@Override
 	public synchronized void onSignalStrengthsChanged(SignalStrength signalStr)
 	{
-
-		Debug.d("Signal changed to: " + signalStr);
-
 		if(signalStr.isGsm())
 			signalStrength = signalStr.getGsmSignalStrength();
 	}
