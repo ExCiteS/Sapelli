@@ -13,6 +13,7 @@ import uk.ac.ucl.excites.sapelli.sender.gsm.SMSSender;
 import uk.ac.ucl.excites.sapelli.sender.gsm.SignalMonitor;
 import uk.ac.ucl.excites.sapelli.sender.util.SapelliAlarmManager;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.app.Service;
@@ -45,20 +46,10 @@ public class DataSenderService extends Service
 		}
 		catch(InterruptedException e)
 		{
-			e.printStackTrace();
+			Debug.e(e);
 		}
 
-		// Run Projects
-		runProjects();
-
-		return Service.START_NOT_STICKY;
-	}
-
-	/**
-	 * Check if the Thread is already running and execute the projectTask
-	 */
-	private void runProjects()
-	{
+		// Run Projects in the queue:
 		if(!projectsExecutor.isTerminated())
 			projectsExecutor.execute(new Runnable()
 			{
@@ -80,6 +71,8 @@ public class DataSenderService extends Service
 					stopSelf();
 				}
 			});
+
+		return Service.START_NOT_STICKY;
 	}
 
 	@Override
@@ -102,14 +95,11 @@ public class DataSenderService extends Service
 	 */
 	public class ProjectSendingTask implements StoreClient
 	{
-		private Context context;
 		private Project project;
-		private SMSTranmission sms;
+		private SMSSendingTask smsSendingTask;
 
 		ProjectSendingTask(Context context, long modelID)
 		{
-			this.context = context;
-
 			// Load the project
 			try
 			{
@@ -127,58 +117,55 @@ public class DataSenderService extends Service
 
 			// TODO query for records
 
-			// If project has records to send
+			// TODO If project has records to send
 
-			// if project needs SMS transmission
-			if(sms == null)
-				sms = new SMSTranmission(context);
+			// TODO if project needs SMS transmission
+			if(smsSendingTask == null)
+				smsSendingTask = new SMSSendingTask(context);
 
-			sms.send(project);
+			smsSendingTask.send(project);
 
-			// else if project needs Internet transmission
+			// TODO else if project needs Internet transmission
 
-			// If there were sms transmissions, terminate them
-			if(sms != null)
-				sms.close();
-
-			// TODO Remove
-			final int time = 5;
-			Debug.d("Project " + modelID + " is running and it takes " + time + " seconds");
-			try
+			// If there were SMS Sending Tasks, terminate them
+			if(smsSendingTask != null)
 			{
-				Thread.sleep(time * 1000);
-			}
-			catch(InterruptedException e)
-			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				smsSendingTask.close();
+				smsSendingTask = null;
 			}
 		}
 
-		public class SMSTranmission
+		public class SMSSendingTask
 		{
 			private Context context;
 			private SignalMonitor gsmMonitor;
-			private SMSSender smsSender;
 
-			public SMSTranmission(final Context context)
+			public SMSSendingTask(final Context context)
 			{
 				this.context = context;
 
-				// 1. Check for Airplane Mode
-				if(DeviceControl.canToogleAirplaneMode() && DeviceControl.inAirplaneMode(context) /* TODO && projects toggle AirplaneMode */)
+				// Check for Airplane Mode
+				if(DeviceControl.canToogleAirplaneMode() /* TODO && project needs to change AirplaneMode */)
 					DeviceControl.disableAirplaneModeAndWait(context, DeviceControl.POST_AIRPLANE_MODE_WAITING_TIME);
 
-				// 2. Check for SMS Signal
+				// Check for SMS Signal
 				setupSMSmonitor(context);
 			}
 
 			public void send(Project p)
 			{
-				// 3. Send records
-				if(gsmMonitor.isInService())
+				// TODO get List of Records
+
+				// Send records
+				if(true /* gsmMonitor.isInService() */)
+				{
 					// TODO Send them
-					p.getDataFolderPath();
+
+					// Test
+					SMSSender smsSender = new SMSSender(context);
+					smsSender.send("Sapelli SMS Demo!!! " + TimeUtils.getPrettyTimestamp(), "+447577144675"); // Me
+					// smsSender.send("Sapelli SMS Demo!!! " + TimeUtils.getPrettyTimestamp(), "+447741098273"); // Julia
+				}
 			}
 
 			/**
@@ -186,10 +173,10 @@ public class DataSenderService extends Service
 			 */
 			public void close()
 			{
-				// 1. Stop GSM Signal Monitor
+				// Stop GSM Signal Monitor
 				stopSingnalMonitor();
 
-				// 2. Put device back to AirplaneMode if needed
+				// Put device back to AirplaneMode if needed
 				if(true /* TODO projects toggle AirplaneMode */)
 					DeviceControl.enableAirplaneMode(context);
 			}
@@ -212,14 +199,7 @@ public class DataSenderService extends Service
 					}
 				});
 
-				waitForSignalMonitor();
-			}
-
-			/**
-			 * Wait for the Signal Monitor listener to be established
-			 */
-			private void waitForSignalMonitor()
-			{
+				// Wait for the Signal Monitor listener to be established
 				while(gsmMonitor == null)
 				{
 					try
@@ -231,8 +211,6 @@ public class DataSenderService extends Service
 						Debug.e(e);
 					}
 				}
-
-				Debug.d("Is in SMS service: " + gsmMonitor.isInService());
 			}
 
 			private void stopSingnalMonitor()
