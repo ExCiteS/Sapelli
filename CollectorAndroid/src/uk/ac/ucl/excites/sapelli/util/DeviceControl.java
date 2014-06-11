@@ -48,16 +48,19 @@ public final class DeviceControl
 	 */
 	public static void disableAirplaneModeAndWait(Context context, int waitingSeconds)
 	{
-		disableAirplaneMode(context);
+		if(inAirplaneMode(context))
+		{
+			disableAirplaneMode(context);
 
-		// Wait
-		try
-		{
-			Thread.sleep(waitingSeconds * 1000);
-		}
-		catch(Exception e)
-		{
-			Debug.e(e);
+			// Wait
+			try
+			{
+				Thread.sleep(waitingSeconds * 1000);
+			}
+			catch(Exception e)
+			{
+				Debug.e(e);
+			}
 		}
 	}
 
@@ -66,7 +69,8 @@ public final class DeviceControl
 	 */
 	public static void disableAirplaneMode(Context context)
 	{
-		setAirplaneMode(context, false);
+		if(inAirplaneMode(context))
+			setAirplaneMode(context, false);
 	}
 
 	/**
@@ -74,7 +78,8 @@ public final class DeviceControl
 	 */
 	public static void enableAirplaneMode(Context context)
 	{
-		setAirplaneMode(context, true);
+		if(!inAirplaneMode(context))
+			setAirplaneMode(context, true);
 	}
 
 	/**
