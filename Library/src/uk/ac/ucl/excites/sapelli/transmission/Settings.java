@@ -6,9 +6,6 @@ package uk.ac.ucl.excites.sapelli.transmission;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.CompressionMode;
-import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
-import uk.ac.ucl.excites.sapelli.transmission.crypto.SecureKeyGenerator;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
 
 /**
@@ -25,9 +22,6 @@ public class Settings
 		TEXT
 	}
 	
-	static public final CompressionMode DEFAULT_COMPRESSION_MODE = CompressionMode.GZIP;
-	static public final boolean DEFAULT_ENCRYPT = false;
-	static public final String DEFAULT_PASSWORD = "ExCiteSWC1E6BT";
 	static public final SMSMode DEFAULT_SMS_MODE = SMSMode.BINARY;
 	
 	static public final boolean DEFAULT_DROPBOX_UPLOAD = false;
@@ -43,13 +37,9 @@ public class Settings
 	
 	//DYNAMICS-------------------------------------------------------
 	
-	//General--------------------------
-	protected CompressionMode compressionMode;
-	protected boolean encrypt;
-	protected byte[] encryptionKey;
-	protected byte[] encryptionSalt;
-	protected byte[] encryptionKeyHash;
-
+	//Encryption-----------------------
+	protected EncryptionSettings encryptionSettings;
+	
 	//Dropbox--------------------------
 	protected boolean dropboxUpload;
 	protected boolean dropboxAllowMobileData;
@@ -73,9 +63,7 @@ public class Settings
 	
 	public Settings()
 	{
-		compressionMode = DEFAULT_COMPRESSION_MODE;
-		encrypt = DEFAULT_ENCRYPT;
-		setPassword(DEFAULT_PASSWORD);
+		encryptionSettings = new EncryptionSettings();
 		dropboxUpload = DEFAULT_DROPBOX_UPLOAD;
 		dropboxAllowMobileData = DEFAULT_DROPBOX_ALLOW_MOBILE_DATA;
 		dropboxAllowRoaming = DEFAULT_DROPBOX_ALLOW_ROAMING;
@@ -96,11 +84,7 @@ public class Settings
 	 */
 	public Settings(Settings another)
 	{
-		compressionMode = another.compressionMode;
-		encrypt = another.encrypt;
-		encryptionKey = another.encryptionKey;
-		encryptionSalt = another.encryptionSalt;
-		encryptionKeyHash = another.encryptionKeyHash;
+		encryptionSettings = new EncryptionSettings(another.encryptionSettings);
 		dropboxUpload = another.dropboxUpload;
 		dropboxAllowMobileData = another.dropboxAllowMobileData;
 		dropboxAllowRoaming = another.dropboxAllowRoaming;
@@ -115,48 +99,21 @@ public class Settings
 	}
 	
 	/**
-	 * @return the compressionMode
+	 * @return the encryptionSettings
 	 */
-	public CompressionMode getCompressionMode()
+	public EncryptionSettings getEncryptionSettings()
 	{
-		return compressionMode;
+		return encryptionSettings;
 	}
 
 	/**
-	 * @param compressionMode the compressionMode to set
+	 * @param encryptionSettings the encryptionSettings to set
 	 */
-	public void setCompressionMode(CompressionMode compressionMode)
+	public void setEncryptionSettings(EncryptionSettings encryptionSettings)
 	{
-		this.compressionMode = compressionMode;
+		this.encryptionSettings = encryptionSettings;
 	}
 
-	/**
-	 * @return the encrypt
-	 */
-	public boolean isEncrypt()
-	{
-		return encrypt;
-	}
-
-	/**
-	 * @param encrypt the encrypt to set
-	 */
-	public void setEncrypt(boolean encrypt)
-	{
-		this.encrypt = encrypt;
-	}
-	
-	public void setPassword(String password)
-	{
-		//Do not store the password itself!
-		SecureKeyGenerator keygen = new SecureKeyGenerator(password, 256);
-		encryptionKey = keygen.getKey();
-		encryptionSalt = keygen.getSalt();
-		encryptionKeyHash = Hashing.getSHA256Hash(encryptionKey);
-		//hashedPassword = Cryptography.getSHA256Hash(password.trim());
-		//rehashedPassword = Cryptography.getSHA256Hash(hashedPassword);
-	}
-	
 	/**
 	 * @return the smsMode
 	 */

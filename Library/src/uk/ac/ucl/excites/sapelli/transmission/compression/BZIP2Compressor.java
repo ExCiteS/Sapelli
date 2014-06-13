@@ -11,7 +11,7 @@ import org.itadaki.bzip2.BZip2InputStream;
 import org.itadaki.bzip2.BZip2OutputStream;
 
 import uk.ac.ucl.excites.sapelli.transmission.compression.Compressor;
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.CompressionMode;
+import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
 
 /**
  * BZIP2 compressor.
@@ -59,9 +59,9 @@ public class BZIP2Compressor extends Compressor
 	}
 
 	@Override
-	public CompressionMode getMode()
+	public Compression getMode()
 	{
-		return CompressionMode.BZIP2;
+		return Compression.BZIP2;
 	}
 
 }

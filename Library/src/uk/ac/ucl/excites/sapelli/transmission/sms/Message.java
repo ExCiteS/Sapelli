@@ -1,8 +1,9 @@
 package uk.ac.ucl.excites.sapelli.transmission.sms;
 
-import java.util.Comparator;
-
 import org.joda.time.DateTime;
+
+import uk.ac.ucl.excites.sapelli.transmission.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.Payload.Type;
 
 /**
  * @author mstevens
@@ -68,6 +69,11 @@ public abstract class Message implements Comparable<Message>
 	public int getTransmissionID()
 	{
 		return transmissionID;
+	}
+	
+	public Payload.Type getPayloadType()
+	{
+		return Type.Records; //TODO!!!!!
 	}
 
 	/**
@@ -149,7 +155,7 @@ public abstract class Message implements Comparable<Message>
 		return this.getPartNumber() - another.getPartNumber();
 	}
 	
-	protected abstract int getPayloadHashCode();
+	protected abstract int getBodyHashCode();
 	
 	/**
 	 * hashCode() method
@@ -164,9 +170,10 @@ public abstract class Message implements Comparable<Message>
 		hash = 31 * hash + (sender == null ? 0 : sender.hashCode());
 		hash = 31 * hash + (receiver == null ? 0 : receiver.hashCode());
 		hash = 31 * hash + transmissionID;
+		//TODO payload type ...
 		hash = 31 * hash + partNumber;
 		hash = 31 * hash + totalParts;
-		hash = 31 * hash + getPayloadHashCode();
+		hash = 31 * hash + getBodyHashCode();
 		return hash;
 	}
 	
@@ -179,38 +186,22 @@ public abstract class Message implements Comparable<Message>
 	@Override
 	public boolean equals(Object obj)
 	{
+		if(this == obj)
+			return true;
 		if(obj instanceof Message)
 		{
 			Message another = (Message) obj;
 			return	(this.sender == null ? another.sender == null : this.sender.equals(another.sender)) &&
 					(this.receiver == null ? another.receiver == null : this.receiver.equals(another.receiver)) &&
 					this.transmissionID == another.transmissionID &&
+					// TODO payload type ...
 					this.partNumber == another.partNumber &&
 					this.totalParts == another.totalParts &&
-					this.getPayloadHashCode() == another.getPayloadHashCode();
+					equalBody(another);			
 		}
 		return false;
 	}
 	
-	/**
-	 * MessageComparator class.
-	 * 
-	 * Note:
-	 * 	This class is no longer used because Message now implements Comparable<Message>.
-	 * 	However for the time being we should not remove the comparator class because that breaks compatibility with old DB4LO dumps.
-	 * 
-	 * @deprecated
-	 * @author mstevens
-	 */
-	public static class MessageComparator implements Comparator<Message>
-	{
-
-		@Override
-		public int compare(Message lhs, Message rhs)
-		{
-			return lhs.getPartNumber() - rhs.getPartNumber();
-		}
-		
-	}
+	protected abstract boolean equalBody(Message another);
 	
 }

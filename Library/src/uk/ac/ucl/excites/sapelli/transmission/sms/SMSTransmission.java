@@ -11,10 +11,11 @@ import java.util.TreeSet;
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.transmission.BinaryTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.DecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.IncompleteTransmissionException;
+import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
+import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionSender;
 
@@ -23,7 +24,7 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionSender;
  * @author mstevens
  *
  */
-public abstract class SMSTransmission<M extends Message> extends BinaryTransmission
+public abstract class SMSTransmission<M extends Message> extends Transmission
 {
 	
 	protected SMSAgent receiver;
@@ -37,34 +38,39 @@ public abstract class SMSTransmission<M extends Message> extends BinaryTransmiss
 	 * To be called on the sending side.
 	 * 
 	 * @param receiver
-	 */
-	public SMSTransmission(SMSAgent receiver)
-	{
-		super();
-		this.receiver = receiver;
-		this.parts = new TreeSet<M>();
-	}
-	
-	/**
-	 * To be called on the receiving side.
-	 * 
 	 * @param client
+	 * @param payloadType
 	 */
-	public SMSTransmission(TransmissionClient client)
+	public SMSTransmission(SMSAgent receiver, TransmissionClient client, Payload.Type payloadType)
 	{
-		super(client);
-		this.parts = new TreeSet<M>();
+		this(null, receiver, client, payloadType, null);
 	}
-	
+		
 	/**
 	 * To be called on the receiving side.
 	 * 
+	 * @param sender
 	 * @param client
 	 * @param parts
 	 */
-	public SMSTransmission(TransmissionClient client, List<M> parts)
+	public SMSTransmission(SMSAgent sender, TransmissionClient client, List<M> parts)
 	{
-		this(client);
+		this(sender, null, client, parts.get(0).getPayloadType(), parts);
+	}
+	
+	/**
+	 * @param sender may be null on sending side
+	 * @param receiver may be null on receiving side
+	 * @param client
+	 * @param payloadType
+	 * @param parts list of Messages
+	 */
+	public SMSTransmission(SMSAgent sender, SMSAgent receiver, TransmissionClient client, Payload.Type payloadType, List<M> parts)
+	{
+		super(client, payloadType);
+		this.sender = sender;
+		this.receiver = receiver;
+		this.parts = new TreeSet<M>();
 		if(parts != null)
 			for(M m : parts)
 				addPart(m);

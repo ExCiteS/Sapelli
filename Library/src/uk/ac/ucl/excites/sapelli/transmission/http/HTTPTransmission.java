@@ -5,12 +5,14 @@ import java.io.IOException;
 import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
 
-import uk.ac.ucl.excites.sapelli.transmission.BinaryTransmission;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
+import uk.ac.ucl.excites.sapelli.transmission.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionSender;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
-public class HTTPTransmission extends BinaryTransmission
+public class HTTPTransmission extends Transmission
 {
 	
 	public static final int MAX_BODY_SIZE = 4096; //TODO determine a good value
@@ -23,9 +25,9 @@ public class HTTPTransmission extends BinaryTransmission
 	 * 
 	 * @param serverURL
 	 */
-	public HTTPTransmission(String serverURL)
+	public HTTPTransmission(String serverURL, TransmissionClient client, Payload.Type payloadType)
 	{
-		super();
+		super(client, payloadType);
 		this.serverURL = serverURL;
 	}
 	
@@ -34,9 +36,9 @@ public class HTTPTransmission extends BinaryTransmission
 	 * 
 	 * @param client
 	 */
-	public HTTPTransmission(DateTime receivedAt, TransmissionClient client)
+	public HTTPTransmission(DateTime receivedAt, TransmissionClient client, Payload.Type payloadType)
 	{
-		super(client);
+		super(client, payloadType);
 		setReceivedAt(receivedAt);
 	}
 	
@@ -53,26 +55,25 @@ public class HTTPTransmission extends BinaryTransmission
 	}
 
 	@Override
-	protected void serialise(byte[] data) throws TransmissionCapacityExceededException
+	protected void serialise(BitArray payloadBits) throws TransmissionCapacityExceededException
 	{
-		String serialisedData = Base64.encodeBase64String(data);
+		String serialisedData = Base64.encodeBase64String(payloadBits.toByteArray());
 		if(serialisedData.length() > MAX_BODY_SIZE)
 			throw new TransmissionCapacityExceededException("Maximum body size (" + MAX_BODY_SIZE + "), exceeded by " + (serialisedData.length() - MAX_BODY_SIZE) + " characters");
 	}
 
 	@Override
-	protected byte[] deserialise() throws IOException
+	protected BitArray deserialise() throws IOException
 	{
 		if(body == null || body.isEmpty())
 			throw new IllegalStateException("Transmission body is not set or empty.");
-		return Base64.decodeBase64(body);
+		return BitArray.FromBytes(Base64.decodeBase64(body));
 	}
 
 	@Override
-	public int getMaxPayloadBytes()
+	public int getMaxPayloadBits()
 	{
-		// TODO work out a reasonable size limit for HTTP transmissions
-		return 0;
+		return MAX_BODY_SIZE * Byte.SIZE;
 	}
 	
 }

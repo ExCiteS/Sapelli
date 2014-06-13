@@ -6,17 +6,16 @@ package uk.ac.ucl.excites.sapelli.transmission.sms.binary;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
-import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.transmission.BinaryTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSService;
@@ -57,14 +56,14 @@ public class BinaryMessage extends Message
 	
 	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, BinarySMSTransmission.MAX_TRANSMISSION_PARTS);
 	
-	public static final int HEADER_SIZE_BITS =	BinaryTransmission.TRANSMISSION_ID_FIELD.getSize() /* Transmission ID */ +
+	public static final int HEADER_SIZE_BITS =	Transmission.TRANSMISSION_ID_FIELD.getSize() /* Transmission ID */ +
 												PART_NUMBER_FIELD.getSize() /* Part number */ +
 												PART_NUMBER_FIELD.getSize() /* Parts total */; 
 	
-	public static final int MAX_PAYLOAD_SIZE_BYTES = MAX_TOTAL_SIZE_BYTES - BinaryHelpers.bytesNeeded(HEADER_SIZE_BITS);
+	public static final int MAX_BODY_SIZE_BITS = (MAX_TOTAL_SIZE_BYTES * Byte.SIZE) - HEADER_SIZE_BITS;
 	
 	//Dynamic
-	private byte[] payload;
+	private BitArray body;
 	
 	/**
 	 * To be called on the sending side.
@@ -75,14 +74,14 @@ public class BinaryMessage extends Message
 	 * @param totalParts
 	 * @param payload
 	 */
-	public BinaryMessage(SMSAgent receiver, SMSTransmission<?> transmission, int partNumber, int totalParts, byte[] payload)
+	protected BinaryMessage(SMSAgent receiver, SMSTransmission<?> transmission, int partNumber, int totalParts, BitArray body)
 	{
 		super(receiver, transmission, partNumber, totalParts);
 		if(totalParts > BinarySMSTransmission.MAX_TRANSMISSION_PARTS)
 			throw new IllegalArgumentException("Max transmission length exceded (" + totalParts + "; max is " + BinarySMSTransmission.MAX_TRANSMISSION_PARTS + ").");
-		if(payload.length > MAX_PAYLOAD_SIZE_BYTES)
-			throw new IllegalArgumentException("Content is too long (max size: " + MAX_PAYLOAD_SIZE_BYTES + ")");
-		this.payload = payload;
+		if(body.length() > MAX_BODY_SIZE_BITS)
+			throw new IllegalArgumentException("Message body is too long (max size: " + MAX_BODY_SIZE_BITS + ")");
+		this.body = body;
 	}
 	
 	/**
@@ -116,12 +115,13 @@ public class BinaryMessage extends Message
 			in = new BitWrapInputStream(new ByteArrayInputStream(data));
 			
 			//Read header:
-			transmissionID = (int) BinaryTransmission.TRANSMISSION_ID_FIELD.read(in);	//Transmission ID
+			transmissionID = (int) Transmission.TRANSMISSION_ID_FIELD.read(in);	//Transmission ID
+			// TODO payload type ...
 			partNumber = (int) PART_NUMBER_FIELD.read(in);				//Part number
 			totalParts = (int) PART_NUMBER_FIELD.read(in);				//Total parts
 			
 			//Read payload:
-			payload = in.readBytes(data.length - BinaryHelpers.bytesNeeded(HEADER_SIZE_BITS));
+			body = in.readBitArray(in.bitsAvailable());
 		}
 		catch(IOException ioe)
 		{
@@ -139,13 +139,13 @@ public class BinaryMessage extends Message
 	}
 
 	/**
-	 * Called by receiver
+	 * Called by {@link BinarySMSTransmission#deserialise()}
 	 * 
 	 * @return
 	 */
-	public byte[] getPayload()
+	public BitArray getBody()
 	{
-		return payload;
+		return body;
 	}
 	
 	/**
@@ -165,12 +165,13 @@ public class BinaryMessage extends Message
 			out = new BitWrapOutputStream(rawOut);
 	
 			//Write header:
-			BinaryTransmission.TRANSMISSION_ID_FIELD.write(transmissionID, out);	//Transmission ID
+			Transmission.TRANSMISSION_ID_FIELD.write(transmissionID, out);	//Transmission ID
+			// TODO payload type...
 			PART_NUMBER_FIELD.write(partNumber, out);				//Part number
 			PART_NUMBER_FIELD.write(totalParts, out);				//Total parts
 			
 			//Write payload:
-			out.write(payload);
+			out.write(body);
 			
 			// Flush, close & get bytes:
 			out.flush();
@@ -205,9 +206,15 @@ public class BinaryMessage extends Message
 	}
 
 	@Override
-	protected int getPayloadHashCode()
+	protected int getBodyHashCode()
 	{
-		return Arrays.hashCode(payload);
+		return body.hashCode();
+	}
+
+	@Override
+	protected boolean equalBody(Message another)
+	{
+		return another instanceof BinaryMessage && body.equals(((BinaryMessage) another).body);
 	}
 
 }

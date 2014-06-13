@@ -62,6 +62,17 @@ public abstract class BitOutputStream extends OutputStream
 	}
 	
 	/**
+	 * Writes the bits in a {@link BitArray} to the output
+	 * 
+	 * @param bits BitArray to be written
+	 * @throws IOException if an I/O error occurs
+	 */
+	public void write(BitArray bits) throws IOException
+	{
+		bits.writeTo(this);
+	}
+	
+	/**
 	 * Writes a byte to the output
 	 * 
 	 * Uses MSB 0 bit order (i.e. the most significant bit is written first)

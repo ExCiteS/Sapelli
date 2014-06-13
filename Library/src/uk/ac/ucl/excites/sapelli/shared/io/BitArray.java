@@ -3,6 +3,7 @@
  */
 package uk.ac.ucl.excites.sapelli.shared.io;
 
+import java.io.IOException;
 import java.util.BitSet;
 
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
@@ -14,9 +15,33 @@ import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 public class BitArray
 {
 
-	private BitSet bits;
-	private int length;
-
+	static public BitArray FromBytes(byte[] bytes)
+	{
+		try
+		{
+			BitArrayOutputStream baos = new BitArrayOutputStream();
+			baos.write(bytes);
+			baos.flush();
+			baos.close();
+			return baos.toBitArray();
+		}
+		catch(IOException e)
+		{
+			return null; // should never happen
+		}
+	}
+	
+	private final BitSet bits;
+	private final int length;
+	
+	/**
+	 * @param length
+	 */
+	public BitArray(int length)
+	{
+		this(new BitSet(length), length);
+	}
+	
 	/**
 	 * @param bits
 	 * @param length
@@ -35,6 +60,13 @@ public class BitArray
 			return bits.get(index);
 		throw new IndexOutOfBoundsException("index (" + index + ") out of bounds [0, " + (length - 1) + "]!");
 	}
+	
+	public void set(int index, boolean value)
+	{
+		if(index >= 0 && index < length)
+			bits.set(index, value);
+		throw new IndexOutOfBoundsException("index (" + index + ") out of bounds [0, " + (length - 1) + "]!");
+	}
 
 	public int length()
 	{
@@ -49,5 +81,60 @@ public class BitArray
 				bytes[i / Byte.SIZE] |= 1 << (7 - (i % 8)); //MSB is read first
 		return bytes;
 	}
-
+	
+	/**
+	 * Writes the bits to a {@link BitOutputStream}
+	 * 
+	 * @param bos the BitOutputStream
+	 * @throws IOException if an I/O error occurs
+	 */
+	public void writeTo(BitOutputStream bos) throws IOException
+	{
+		for(int i = 0; i < length; i++)
+			bos.write(bits.get(i));
+	}
+	
+	public int hashCode()
+	{
+		int hash = 1;
+		for(int i = 0; i < length; i++)
+			hash = 31 * hash + (get(i) ? 0 : 1);
+		return hash;
+	}
+	
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true;
+		if(obj instanceof BitArray)
+		{
+			BitArray other = (BitArray) obj;
+			if(this.length != other.length)
+				return false;
+			for(int i = 0; i < length; i++)
+				if(this.get(i) != other.get(i))
+					return false;
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * @param offset
+	 * @param length
+	 * @return a subArray of this one starting with the bit at position offset and the given length or less
+	 */
+	public BitArray subArray(int offset, int length)
+	{
+		if(offset < 0 || offset > this.length)
+			throw new IndexOutOfBoundsException("offset (" + offset + ") out of bounds [0, " + (this.length - 1) + "]!");
+		int to = offset + length;
+		if(to > this.length)
+			to = this.length;
+		BitArray sub = new BitArray(to - offset);
+		for(int i = offset; i < to; i++)
+			sub.set(i, this.get(i));
+		return sub;
+	}
+	
 }

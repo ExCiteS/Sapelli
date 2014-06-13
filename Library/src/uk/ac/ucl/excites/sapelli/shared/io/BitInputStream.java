@@ -59,6 +59,23 @@ public abstract class BitInputStream extends InputStream
 	}
 	
 	/**
+	 * Reads exactly {@code numberOfBits} of bits from the input stream, and returns them as a {@link BitArray}. 
+	 * If not enough bits could be read an {@link EOFException} is thrown.
+	 * 
+	 * @param length number of bits to be read
+	 * @return the resulting {@link BitArray}
+	 * @throws IOException if the stream is closed or another I/O error occurs
+	 * @throws EOFException could not read the requested amount of bits
+	 */
+	public BitArray readBitArray(int length) throws EOFException, IOException
+	{
+		BitArray bits = new BitArray(length);
+		for(int i = 0; i < length; i++)
+			bits.set(i, readBit());
+		return bits;
+	}
+	
+	/**
 	 * Equivalent to {@code read(buffer, 0, buffer.length)}.
 	 * 
 	 * @see java.io.InputStream#read(byte[])

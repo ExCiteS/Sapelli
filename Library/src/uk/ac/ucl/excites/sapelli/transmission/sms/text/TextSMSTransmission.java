@@ -3,16 +3,15 @@
  */
 package uk.ac.ucl.excites.sapelli.transmission.sms.text;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
-import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
-import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
-import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
+import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
@@ -200,32 +199,24 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	 * To be called on the sending side.
 	 * 
 	 * @param receiver
-	 */
-	public TextSMSTransmission(SMSAgent receiver)
-	{
-		super(receiver);
-	}
-
-	/**
-	 * To be called on the receiving side.
-	 * 
 	 * @param client
+	 * @param payloadType
 	 */
-	public TextSMSTransmission(TransmissionClient client)
+	public TextSMSTransmission(SMSAgent receiver, TransmissionClient client, Payload.Type payloadType)
 	{
-		super(client);
+		super(null, receiver, client, payloadType, null);
 	}
-	
+		
 	/**
 	 * To be called on the receiving side.
 	 * 
+	 * @param sender
 	 * @param client
 	 * @param parts
-	 *
 	 */
-	public TextSMSTransmission(TransmissionClient client, List<TextMessage> parts)
+	public TextSMSTransmission(SMSAgent sender, TransmissionClient client, List<TextMessage> parts)
 	{
-		super(client, parts);
+		super(sender, null, client, parts.get(0).getPayloadType(), parts);
 	}
 	
 	private int minNumberOfCharactersNeededFor(int bits)
@@ -234,21 +225,21 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	}
 	
 	@Override
-	protected void serialise(byte[] data) throws TransmissionCapacityExceededException, IOException
+	protected void serialise(BitArray payloadBits) throws TransmissionCapacityExceededException, IOException
 	{
 		// Clear previously generated messages
 		parts.clear(); //!!!
 		
 		// Rough length check (does not taking escaping into account, hence the "at least"):
-		if(minNumberOfCharactersNeededFor(data.length * Byte.SIZE) > MAX_PAYLOAD_CHARS)
-			throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_CHARS + " characters) exceeded by at least " + minNumberOfCharactersNeededFor(data.length * Byte.SIZE) + " characters");
+		if(minNumberOfCharactersNeededFor(payloadBits.length()) > MAX_PAYLOAD_CHARS)
+			throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_CHARS + " characters) exceeded by at least " + minNumberOfCharactersNeededFor(payloadBits.length()) + " characters");
 		
 		// Convert data bytes to transmission payload String:
 		String payload = null;
 		BitInputStream bis = null;
 		try
 		{
-			bis = new BitWrapInputStream(new ByteArrayInputStream(data));
+			bis = new BitArrayInputStream(payloadBits);
 			Boolean escapeBit = null;
 			StringBuilder bld = new StringBuilder();
 			while(bis.bitsAvailable() + (escapeBit == null ? 0 : 1) > 0)
@@ -290,20 +281,19 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	}
 
 	@Override
-	protected byte[] deserialise() throws IOException
+	protected BitArray deserialise() throws IOException
 	{
 		// Assemble transmission payload String from part payload Strings:
 		StringBuilder blr = new StringBuilder();
 		for(TextMessage part : parts)
-			blr.append(((TextMessage) part).getPayload());
+			blr.append(((TextMessage) part).getBody());
 		String payloadString = blr.toString();
 
 		// Convert transmission payload String to byte array:
-		BitOutputStream bos = null;
+		BitArrayOutputStream bos = null;
 		try
 		{
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
-			bos = new BitWrapOutputStream(baos);	
+			bos = new BitArrayOutputStream();	
 			boolean prevPrevSP = false;
 			boolean prevSP = false;
 			for(int i = 0; i < payloadString.length(); i++)
@@ -326,7 +316,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 				prevSP = currSP;
 			}
 			//Do *not* call bos.flush(), we only want whole bytes!
-			return baos.toByteArray();
+			return bos.toBitArray();
 		}
 		finally
 		{
@@ -335,9 +325,9 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		}
 	}
 	
-	public int getMaxPayloadBytes()
+	public int getMaxPayloadBits()
 	{
-		return MAX_PAYLOAD_CHARS * BITS_PER_CHAR / Byte.SIZE; 
+		return MAX_PAYLOAD_CHARS * BITS_PER_CHAR; 
 	}
 	
 }

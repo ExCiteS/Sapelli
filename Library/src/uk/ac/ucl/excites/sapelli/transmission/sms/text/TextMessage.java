@@ -48,7 +48,7 @@ public class TextMessage extends Message
 	private static final int HEADER_SEPARATOR_BIT = 1;
 
 	//Dynamic
-	private String payload;
+	private String body;
 	
 	/**
 	 * To be called on the sending side.
@@ -66,7 +66,7 @@ public class TextMessage extends Message
 			throw new NullPointerException("Payload cannot be null!");
 		if(payload.length() > MAX_PAYLOAD_CHARS)
 			throw new IllegalArgumentException("Payload is too long (max: " + MAX_PAYLOAD_CHARS + " chars; got: " + payload.length() + " chars).");
-		this.payload = payload;
+		this.body = payload;
 	}
 
 	/**
@@ -112,13 +112,13 @@ public class TextMessage extends Message
 		partNumber = (header >> PART_NUMBER_FIELD.getSize()) % (1 << PART_NUMBER_FIELD.getSize());
 		totalParts = header % (1 << PART_NUMBER_FIELD.getSize());
 		
-		// Set payload:
-		payload = content.substring(HEADER_CHARS);
+		// Set body:
+		body = content.substring(HEADER_CHARS);
 	}
 
-	public String getPayload()
+	public String getBody()
 	{
-		return payload;
+		return body;
 	}
 	
 	/**
@@ -148,8 +148,8 @@ public class TextMessage extends Message
 			blr.append(TextSMSTransmission.GSM_0338_CHAR_TABLE[c]);
 		}
 		
-		//Write payload:
-		blr.append(payload);
+		//Write body:
+		blr.append(body);
 		
 		return blr.toString();
 	}
@@ -161,9 +161,15 @@ public class TextMessage extends Message
 	}
 	
 	@Override
-	protected int getPayloadHashCode()
+	protected int getBodyHashCode()
 	{
-		return payload.hashCode();
+		return body.hashCode();
+	}
+	
+	@Override
+	protected boolean equalBody(Message another)
+	{
+		return another instanceof TextMessage && body.equals(((TextMessage) another).body);
 	}
 	
 	public boolean isMultiPart()

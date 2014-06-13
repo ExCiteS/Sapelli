@@ -10,7 +10,7 @@ import java.util.concurrent.Callable;
 public abstract class Compressor
 {
 
-	public abstract CompressorFactory.CompressionMode getMode();
+	public abstract CompressorFactory.Compression getMode();
 	
 	public abstract byte[] compress(byte[] data) throws IOException;
 
