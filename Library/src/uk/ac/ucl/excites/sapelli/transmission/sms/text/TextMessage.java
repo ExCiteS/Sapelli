@@ -52,6 +52,7 @@ public class TextMessage extends Message
 	
 	/**
 	 * To be called on the sending side.
+	 * Called by {@link TextSMSTransmission#serialise(uk.ac.ucl.excites.sapelli.shared.io.BitArray)}.
 	 * 
 	 * @param receiver
 	 * @param transmission
@@ -59,7 +60,7 @@ public class TextMessage extends Message
 	 * @param totalParts
 	 * @param payload
 	 */
-	public TextMessage(SMSAgent receiver, SMSTransmission<?> transmission, int partNumber, int totalParts, String payload)
+	protected TextMessage(SMSAgent receiver, SMSTransmission<?> transmission, int partNumber, int totalParts, String payload)
 	{
 		super(receiver, transmission, partNumber, totalParts);
 		if(payload == null)
@@ -116,7 +117,12 @@ public class TextMessage extends Message
 		body = content.substring(HEADER_CHARS);
 	}
 
-	public String getBody()
+	/**
+	 * Called by {@link TextSMSTransmission#deserialise()}. 
+	 * 
+	 * @return
+	 */
+	protected String getBody()
 	{
 		return body;
 	}

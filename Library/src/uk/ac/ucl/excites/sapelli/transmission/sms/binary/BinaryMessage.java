@@ -67,6 +67,7 @@ public class BinaryMessage extends Message
 	
 	/**
 	 * To be called on the sending side.
+	 * Called by {@link BinarySMSTransmission#serialise(BitArray)}.
 	 * 
 	 * @param receiver
 	 * @param transmission
@@ -143,7 +144,7 @@ public class BinaryMessage extends Message
 	 * 
 	 * @return
 	 */
-	public BitArray getBody()
+	protected BitArray getBody()
 	{
 		return body;
 	}
