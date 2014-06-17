@@ -10,7 +10,6 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
@@ -105,6 +104,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		// Update view:
 		//	Make start button visible if more recordings can still be added:
 		view.setStartVisibility(showCreateButton());
+		view.setStopVisibility(isValid(record));
 		
 		return view;
 	}
@@ -117,7 +117,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		
 		private int buttonPadding;
 		private int buttonBackColor;
-		
+
 		public AudioView(Context context)
 		{
 			super(context);
@@ -134,7 +134,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			// Button size, padding & background colour:
 			this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, collectorUI.getFieldUIPartHeightPx(2));
 			this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
-			this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
+			this.buttonBackColor = ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR);
 			
 			// Adapter & button images:
 			// Start rec button:
@@ -145,7 +145,8 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			else
 				startButton = new ResourceImageItem(getContext().getResources(), R.drawable.start_audio_rec);
 			startButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-			addButton(startButton); // show start button
+			addButton(startButton); // add start button
+
 			// Stop rec button:
 			Item stopButton = null;
 			File stopRecImageFile = controller.getProject().getImageFile(field.getStopRecImageRelativePath());
@@ -154,7 +155,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			else
 				stopButton = new ResourceImageItem(getContext().getResources(), R.drawable.stop_audio_rec);
 			stopButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-			addButton(stopButton); // show stop button
+			addButton(stopButton); // add stop button
 
 			// Set click listener
 			setOnItemClickListener(this);
@@ -182,7 +183,10 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 							if(field.isUseNativeApp())
 								collectorUI.getActivity().startAudioRecorderApp(AndroidAudioUI.this);
 							else if(startRecording())
+							{
 								view.setStartVisibility(false);
+								view.setStopVisibility(true);
+							}
 							break;
 						}
 						case BUTTON_INDEX_STOP:
@@ -192,7 +196,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 							else
 							{	// "stop" really means stop recording
 								stopRecording();
-								mediaDone(audioFile, true);
+							mediaDone(audioFile, true); // will also call goForward(0 on the controller, even if max is not reached
 							}
 							break;
 						}
@@ -214,6 +218,13 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			setAdapter(adapter); //this does not seem to be needed on Android 4.x, but it is needed on v2.3.x (TODO test if it is really so)
 		}
 		
+		public void setStopVisibility(boolean visible)
+		{
+			PickerAdapter adapter = getAdapter();
+			adapter.getItem(BUTTON_INDEX_STOP).setVisibility(visible);
+			setAdapter(adapter); // this does not seem to be needed on Android 4.x, but it is needed on v2.3.x (TODO test if it is really so)
+		}
+
 	}
 
 }
