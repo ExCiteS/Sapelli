@@ -61,7 +61,7 @@ public class CameraController implements SurfaceHolder.Callback
 		}
 		return NO_CAMERA_FOUND;
 	}
-	
+
 	public void setFlashMode(FlashMode flashMode)
 	{
 		this.flashMode = flashMode;
@@ -92,14 +92,21 @@ public class CameraController implements SurfaceHolder.Callback
 	{
 		if(camera != null)
 		{
-			camera.autoFocus(new AutoFocusCallback()
-			{		
-				@Override
-				public void onAutoFocus(boolean success, Camera camera)
+			// Use auto focus if the camera supports it
+			String focusMode = camera.getParameters().getFocusMode();
+			if(focusMode.equals(Camera.Parameters.FOCUS_MODE_AUTO) || focusMode.equals(Camera.Parameters.FOCUS_MODE_MACRO))
+			{
+				camera.autoFocus(new AutoFocusCallback()
 				{
-					camera.takePicture(null, null, callback);
-				}
-			});
+					@Override
+					public void onAutoFocus(boolean success, Camera camera)
+					{
+						camera.takePicture(null, null, callback);
+					}
+				});
+			}
+			else
+				camera.takePicture(null, null, callback);
 		}
 	}
 
@@ -146,25 +153,25 @@ public class CameraController implements SurfaceHolder.Callback
 			}
 			if(!cameraConfigured)
 			{
-				camera.setDisplayOrientation(90); //TODO optionally make this change with device orientation?
+				camera.setDisplayOrientation(90); // TODO optionally make this change with device orientation?
 				Camera.Parameters parameters = camera.getParameters();
-				
-				//Preview size:
+
+				// Preview size:
 				Camera.Size previewSize = getBestPreviewSize(width, height, parameters);
 				if(previewSize != null)
 					parameters.setPreviewSize(previewSize.width, previewSize.height);
-				
-				//Set scene mode:
+
+				// Set scene mode:
 				List<String> sceneModes = parameters.getSupportedSceneModes();
 				if(sceneModes != null && sceneModes.contains(Camera.Parameters.SCENE_MODE_AUTO))
 					parameters.setSceneMode(Camera.Parameters.SCENE_MODE_AUTO);
-					
-				//Set white balance:
+
+				// Set white balance:
 				List<String> whiteBalanceModes = parameters.getSupportedWhiteBalance();
 				if(whiteBalanceModes != null && whiteBalanceModes.contains(Camera.Parameters.WHITE_BALANCE_AUTO))
 					parameters.setWhiteBalance(Camera.Parameters.WHITE_BALANCE_AUTO);
-				
-				//Set focus mode:
+
+				// Set focus mode:
 				if(parameters.getSupportedFocusModes().contains(Camera.Parameters.FOCUS_MODE_AUTO))
 					parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
 
@@ -178,11 +185,11 @@ public class CameraController implements SurfaceHolder.Callback
 					Log.e(TAG, "Exception in setFlashMode()", e);
 				}
 
-				//Resulting file:
-				//	Format:
+				// Resulting file:
+				// Format:
 				parameters.setPictureFormat(ImageFormat.JPEG);
 				parameters.set("jpeg-quality", 100);
-				//	Size:
+				// Size:
 				Camera.Size pictureSize = getLargestPictureSize(parameters);
 				if(pictureSize != null)
 					parameters.setPictureSize(pictureSize.width, pictureSize.height);
@@ -241,7 +248,7 @@ public class CameraController implements SurfaceHolder.Callback
 		}
 		return result;
 	}
-	
+
 	private Camera.Size getLargestPictureSize(Camera.Parameters parameters)
 	{
 		Camera.Size result = null;
