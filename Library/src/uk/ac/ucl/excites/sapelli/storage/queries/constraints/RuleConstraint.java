@@ -197,7 +197,7 @@ public class RuleConstraint extends Constraint
 			RuleConstraint that = (RuleConstraint) obj;
 			return	this.columnPointer.equals(that.columnPointer) &&
 					this.comparison == that.comparison &&
-					this.value.equals(that.value);
+					(this.value != null ? this.value.equals(that.value) : that.value == null);
 		}
 		return false;
 	}
@@ -208,7 +208,7 @@ public class RuleConstraint extends Constraint
 		int hash = 1;
 		hash = 31 * hash + columnPointer.hashCode();
 		hash = 31 * hash + comparison.ordinal();
-		hash = 31 * hash + value.hashCode();
+		hash = 31 * hash + (value != null ? value.hashCode() : 0);
 		return hash;
 	}
 	

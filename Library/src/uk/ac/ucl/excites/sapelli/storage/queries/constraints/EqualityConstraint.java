@@ -66,7 +66,7 @@ public class EqualityConstraint extends Constraint
 		{
 			EqualityConstraint that = (EqualityConstraint) obj;
 			return	this.columnPointer.equals(that.columnPointer) &&
-					this.value.equals(that.value);
+					(this.value != null ? this.value.equals(that.value) : that.value == null);
 		}
 		return false;
 	}
@@ -76,7 +76,7 @@ public class EqualityConstraint extends Constraint
 	{
 		int hash = 1;
 		hash = 31 * hash + columnPointer.hashCode();
-		hash = 31 * hash + value.hashCode();
+		hash = 31 * hash + (value != null ? value.hashCode() : 0);
 		return hash;
 	}
 
