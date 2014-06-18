@@ -481,7 +481,7 @@ public abstract class Column<T> implements Serializable
 			return super.hashCode();
 		// else:
 		int hash = 1;
-		hash = 31 * hash + type.hashCode();
+		hash = 31 * hash + type.getName().hashCode(); // don't use type.hashCode() as it is not stable (Class does not implement hashCode() so Object.hashCode() is executed)
 		hash = 31 * hash + name.hashCode();
 		hash = 31 * hash + (optional ? 0 : 1);
 		hash = 31 * hash + (virtualVersions == null ? 0 : virtualVersions.hashCode());

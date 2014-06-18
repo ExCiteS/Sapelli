@@ -81,7 +81,7 @@ public class Form
 	private transient List<String> warnings;
 	
 	// Fields
-	private Field start;
+	private Field startField;
 	private final List<Field> fields;
 	private List<Trigger> triggers;
 	
@@ -210,7 +210,7 @@ public class Form
 	 */
 	public Field getStartField()
 	{
-		return start;
+		return startField;
 	}
 
 	/**
@@ -219,7 +219,7 @@ public class Form
 	 */
 	public void setStartField(Field start)
 	{
-		this.start = start;
+		this.startField = start;
 	}
 
 	public void addTrigger(Trigger trigger)
@@ -687,7 +687,7 @@ public class Form
 					this.producesRecords == that.producesRecords &&
 					this.skipOnBack == that.skipOnBack &&
 					(this.schema != null ? this.schema.equals(that.schema, true, true, false) : that.schema == null) &&
-					(this.start != null ? this.start.equals(that.start) : that.start == null) &&
+					(this.startField != null ? this.startField.equals(that.startField) : that.startField == null) &&
 					this.fields.equals(that.fields) &&
 					this.getTriggers().equals(that.getTriggers()) &&
 					(this.shortcutImageRelativePath != null ? this.shortcutImageRelativePath.equals(that.shortcutImageRelativePath) : that.shortcutImageRelativePath == null) &&
@@ -715,8 +715,7 @@ public class Form
 		hash = 31 * hash + (int) position;
 		hash = 31 * hash + (producesRecords ? 0 : 1);
 		hash = 31 * hash + (skipOnBack ? 0 : 1);
-		hash = 31 * hash + (schema == null ? 0 : schema.hashCode());
-		hash = 31 * hash + (start == null ? 0 : start.hashCode());
+		hash = 31 * hash + (startField == null ? 0 : startField.hashCode());
 		hash = 31 * hash + fields.hashCode();
 		hash = 31 * hash + (triggers == null ? 0 : triggers.hashCode());
 		hash = 31 * hash + (shortcutImageRelativePath == null ? 0 : shortcutImageRelativePath.hashCode());
@@ -730,6 +729,7 @@ public class Form
 		hash = 31 * hash + (backButtonImageRelativePath == null ? 0 : backButtonImageRelativePath.hashCode());
 		hash = 31 * hash + (cancelButtonImageRelativePath == null ? 0 : cancelButtonImageRelativePath.hashCode());
 		hash = 31 * hash + (forwardButtonImageRelativePath == null ? 0 : forwardButtonImageRelativePath.hashCode());
+		// There is no need to include the schema.hashCode() in this computation because the schema it is entirely inferred from things that are included in the computation.
 		return hash;
 	}
 
