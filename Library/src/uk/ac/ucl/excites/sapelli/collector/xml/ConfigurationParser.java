@@ -8,6 +8,7 @@ import org.xml.sax.SAXException;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
+import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
 import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
 
@@ -105,7 +106,10 @@ public class ConfigurationParser extends SubtreeParser
 			{
 				if(transmissionSettings == null)
 					throw new SAXException("<" + TAG_ENCRYPTION + "> should only appear in <" + TAG_TRANSMISSION + ">.");
-				transmissionSettings.setEncrypt(attributes.getBoolean(ATTRIBUTE_ENABLED, Settings.DEFAULT_ENCRYPT));
+				EncryptionSettings encryptSettings = new EncryptionSettings();
+				encryptSettings.setAllowEncryption(attributes.getBoolean(ATTRIBUTE_ENABLED, EncryptionSettings.DEFAULT_ALLOW_ENCRYPTION));
+				// TODO default project passwd?
+				transmissionSettings.setEncryptionSettings(encryptSettings);
 			}
 			// Add future configuration elements here...
 			

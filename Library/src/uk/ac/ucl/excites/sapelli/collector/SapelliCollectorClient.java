@@ -9,7 +9,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
+import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 
 /**
@@ -122,12 +122,12 @@ public class SapelliCollectorClient implements TransmissionClient
 		// TODO Auto-generated method stub
 
 	}
-	
+
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.transmission.TransmissionClient#getSettingsFor(uk.ac.ucl.excites.storage.model.Schema)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.TransmissionClient#getEncryptionSettingsFor(long)
 	 */
 	@Override
-	public Settings getSettingsFor(Schema schema)
+	public EncryptionSettings getEncryptionSettingsFor(long modelID)
 	{
 		/*TODO FIX THIS
 		 * This is buggy/hacky! Because schema's can be shared by multiple forms (and no schema ID/version duplicates are allowed)
