@@ -70,7 +70,7 @@ public abstract class Relationship extends UILessField
 	
 	public void setRelatedForm(Form relatedForm)
 	{
-		if(this.relatedForm != relatedForm)
+		if(this.relatedForm != null)
 			throw new IllegalStateException("relatedForm cannot be changed once it has been set!");
 		if(relatedForm == form)
 			throw new IllegalArgumentException("A form cannot be related to itself!"); //TODO why not? e.g. person-person relationship

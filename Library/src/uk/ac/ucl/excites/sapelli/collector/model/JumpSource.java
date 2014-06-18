@@ -19,7 +19,7 @@ public abstract class JumpSource
 	{
 		if(this == target)
 			throw new IllegalArgumentException("Jumping to one's self is not allowed!");
-		if(jump != target)
+		if(jump != null)
 			throw new IllegalStateException("Cannot change jump target once it has been set!");
 		this.jump = target;
 	}
@@ -31,8 +31,8 @@ public abstract class JumpSource
 	
 	public void setNextFieldArguments(FieldParameters argumentsForNextField)
 	{
-		if(nextFieldArgs != argumentsForNextField)
-			throw new IllegalStateException("Cannot change argumet once they have been set!");
+		if(nextFieldArgs != null)
+			throw new IllegalStateException("Cannot change arguments once they have been set!");
 		this.nextFieldArgs = argumentsForNextField;
 	}
 

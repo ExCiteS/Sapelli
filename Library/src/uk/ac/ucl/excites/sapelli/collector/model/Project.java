@@ -46,7 +46,7 @@ public class Project
 	static public final boolean DEFAULT_LOGGING = false;
 	
 	//DYNAMICS------------------------------------------------------------
-	private int id = -1; // don't init to 0 because that is an acceptable project id
+	private int id = Integer.MIN_VALUE; // don't init to 0 because that is an acceptable project id, nor -1 because that is used as temporary indication of a v1x project
 	private String name;
 	private String variant;
 	private String version;
@@ -60,7 +60,7 @@ public class Project
 	
 	// For backwards compatibility:
 	private boolean v1xProject = false;
-	private int schemaVersion = -1;
+	private int schemaVersion = -1; // don't init to 0 because that is an acceptable schema version
 	
 	public Project(int id, String name, String basePath)
 	{
@@ -114,7 +114,7 @@ public class Project
 	 */
 	private void setID(int id)
 	{
-		if(this.id != -1)
+		if(PROJECT_ID_FIELD.fits(this.id)) // check is there is already a valid id set
 			throw new IllegalStateException("Project id cannot be changed after it has been set.");
 		if(PROJECT_ID_FIELD.fits(id))
 			this.id = id;
@@ -123,9 +123,10 @@ public class Project
 	}
 	
 	/**
-	 * Backwards compatibility:
+	 * Backwards compatibility.
 	 * 	- project id will be set to schema id of 1st (and assumed only) form
 	 *  - schema version of that form will be stored in schemaVersion variable (to be able to parse old record export xml files)
+	 * Can be used on v1x projects only!
 	 * 
 	 * @param schemaID
 	 * @param schemaVersion
@@ -133,8 +134,8 @@ public class Project
 	public void setSchema(int schemaID, int schemaVersion)
 	{
 		if(!v1xProject)
-			throw new IllegalStateException("Only allowed for v1.x projects (created with id=-1).");
-		setID(schemaID);
+			throw new IllegalStateException("Only allowed for v1.x projects (created with id=PROJECT_ID_V1X_TEMP).");
+		setID(schemaID); // schemaID of first (and only) form is also used as projectID
 		if(Schema.V1X_SCHEMA_VERSION_FIELD.fits(schemaVersion))
 			this.schemaVersion = schemaVersion;
 		else
