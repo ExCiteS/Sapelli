@@ -24,10 +24,11 @@ public class AndConstraint extends CompositeConstraint
 	@Override
 	protected boolean _isValid(Record record)
 	{
-		for(Constraint subConstraint : constraints)
-			if(!subConstraint._isValid(record))
-				return false;
-		return true;
+		if(hasSubConstraints())
+			for(Constraint subConstraint : constraints)
+				if(!subConstraint._isValid(record))
+					return false;
+		return true; // also if we didn't have any subConstraints
 	}
 
 	/* (non-Javadoc)
@@ -43,6 +44,24 @@ public class AndConstraint extends CompositeConstraint
 	protected boolean isAssociative()
 	{
 		return true;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof AndConstraint)
+			return super.equals(obj); // CompositeConstraint#equals()
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // CompositeConstraint#hashCode()
+		hash = 31 * hash + "AND".hashCode(); // to differentiate from OrConstraint
+		return hash;
 	}
 
 }

@@ -50,5 +50,11 @@ public abstract class Constraint
 	{
 		return NotConstraint.Negate(this); // will avoid double negations
 	}
+	
+	@Override
+	public abstract boolean equals(Object obj);
+	
+	@Override
+	public abstract int hashCode();
 
 }

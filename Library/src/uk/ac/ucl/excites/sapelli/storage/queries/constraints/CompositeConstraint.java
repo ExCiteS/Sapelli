@@ -4,6 +4,7 @@
 package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -13,14 +14,13 @@ import java.util.List;
 public abstract class CompositeConstraint extends Constraint
 {
 
-	protected final List<Constraint> constraints;
+	protected List<Constraint> constraints;
 
 	/**
 	 * @param constraints
 	 */
 	public CompositeConstraint(Constraint... constraints)
 	{
-		this.constraints = new ArrayList<Constraint>();
 		if(constraints != null)
 			for(Constraint c : constraints)
 				addConstraint(c);
@@ -30,6 +30,8 @@ public abstract class CompositeConstraint extends Constraint
 	{
 		if(constraint == null)
 			return;
+		if(constraints == null)
+			this.constraints = new ArrayList<Constraint>();
 		if(this.getClass().isInstance(constraint) && isAssociative())
 			// Flatten instance of same CompositeConstraint subclass when associative:
 			for(Constraint subConstraint : ((CompositeConstraint) constraint).constraints)
@@ -40,7 +42,7 @@ public abstract class CompositeConstraint extends Constraint
 
 	public List<Constraint> getSubConstraints()
 	{
-		return constraints;
+		return constraints != null ? constraints : Collections.<Constraint> emptyList();
 	}
 
 	public boolean hasSubConstraints()
@@ -50,4 +52,25 @@ public abstract class CompositeConstraint extends Constraint
 	
 	protected abstract boolean isAssociative();
 
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof CompositeConstraint)
+		{
+			CompositeConstraint that = (CompositeConstraint) obj;
+			return this.getSubConstraints().equals(that.getSubConstraints());
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + getSubConstraints().hashCode();
+		return hash;
+	}
+	
 }
