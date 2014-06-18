@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
+import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.transmission.crypto.SecureKeyGenerator;
 
 

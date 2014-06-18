@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.transmission.crypto;
+package uk.ac.ucl.excites.sapelli.shared.crypto;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
