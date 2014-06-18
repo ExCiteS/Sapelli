@@ -62,14 +62,14 @@ public class TextBoxField extends Field
 	}
 	
 	// Defaults
-	public static final int DEFAULT_MIN_LENGTH_OPTIONAL = 0;			// default minimum length of 0 chars if field is optional (i.e. optionality = ALWAYS)
-	public static final int DEFAULT_MIN_LENGTH_NON_OPTIONAL = 1;		// default minimum length of 1 char if field is not optional (i.e. optionality = NEVER or NOT_WHEN_REACHED)
-	public static final int DEFAULT_MAX_LENGTH = 128; 					// default maximum length of 128 chars
-	public static final boolean DEFAULT_MULTILINE = false;				// single-line by default
-	public static final String DEFAULT_INITIAL_VALUE_OPTIONAL = null;	// null is the default initialValue if field is optional (i.e. optionality = ALWAYS)
-	public static final String DEFAULT_INITIAL_VALUE_NON_OPTIONAL = "";	// empty String is the default initialValue if field is not optional (i.e. optionality = NEVER or NOT_WHEN_REACHED)
-	public static final Content DEFAULT_CONTENT = Content.text;		// plain Text content by default
-	public static final Capitalisation DEFAULT_CAPITALISATION = Capitalisation.none; // use no automatic capitalisation by default
+	static public final int DEFAULT_MIN_LENGTH_OPTIONAL = 0;			// default minimum length of 0 chars if field is optional (i.e. optionality = ALWAYS)
+	static public final int DEFAULT_MIN_LENGTH_NON_OPTIONAL = 1;		// default minimum length of 1 char if field is not optional (i.e. optionality = NEVER or NOT_WHEN_REACHED)
+	static public final int DEFAULT_MAX_LENGTH = 128; 					// default maximum length of 128 chars
+	static public final boolean DEFAULT_MULTILINE = false;				// single-line by default
+	static public final String DEFAULT_INITIAL_VALUE_OPTIONAL = null;	// null is the default initialValue if field is optional (i.e. optionality = ALWAYS)
+	static public final String DEFAULT_INITIAL_VALUE_NON_OPTIONAL = "";	// empty String is the default initialValue if field is not optional (i.e. optionality = NEVER or NOT_WHEN_REACHED)
+	static public final Content DEFAULT_CONTENT = Content.text;		// plain Text content by default
+	static public final Capitalisation DEFAULT_CAPITALISATION = Capitalisation.none; // use no automatic capitalisation by default
 	
 	// Dynamics
 	private int maxLength;
@@ -311,6 +311,41 @@ public class TextBoxField extends Field
 	public <V, UI extends CollectorUI<V, UI>> TextBoxUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createTextFieldUI(this);
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof TextBoxField)
+		{
+			TextBoxField that = (TextBoxField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					this.maxLength == that.maxLength &&
+					this.minLength == that.minLength &&
+					this.multiline == that.multiline &&
+					(this.initialValue != null ? this.initialValue.equals(that.initialValue) : that.initialValue == null) &&
+					this.content == that.content &&
+					this.capitalisation == that.capitalisation &&
+					(this.regexPattern != null ? that.regexPattern != null && this.regexPattern.toString().equals(that.regexPattern.toString()) : that.regexPattern == null);
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + maxLength;
+		hash = 31 * hash + minLength;
+		hash = 31 * hash + (multiline ? 0 : 1);
+		hash = 31 * hash + (initialValue == null ? 0 : initialValue.hashCode());
+		hash = 31 * hash + content.ordinal();
+		hash = 31 * hash + capitalisation.ordinal();
+		hash = 31 * hash + (regexPattern == null ? 0 : regexPattern.toString().hashCode());
+		return hash;
 	}
 	
 }

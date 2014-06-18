@@ -79,5 +79,22 @@ public class FieldParameters extends Parameters
 	{
 		return keyValuePairs.remove(key);
 	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof FieldParameters)
+			return this.keyValuePairs.equals(((FieldParameters) obj).keyValuePairs);
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		return keyValuePairs.hashCode();
+	}
 
 }

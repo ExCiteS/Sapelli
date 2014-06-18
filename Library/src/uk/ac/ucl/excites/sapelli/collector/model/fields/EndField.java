@@ -43,8 +43,8 @@ public class EndField extends UILessField
 	}
 	
 	// Dynamics
-	private boolean save;
-	private Next next;
+	private final boolean save;
+	private final Next next;
 	
 	public EndField(Form form, boolean save, Next next)
 	{
@@ -97,6 +97,31 @@ public class EndField extends UILessField
 	public boolean enter(Controller controller, FieldParameters arguments, boolean onPage)
 	{
 		return controller.enterEndField(this, arguments);
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof EndField)
+		{
+			EndField that = (EndField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					this.save == that.save &&
+					this.next == that.next;
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + (save ? 0 : 1);
+		hash = 31 * hash + next.ordinal();
+		return hash;
 	}
 
 }

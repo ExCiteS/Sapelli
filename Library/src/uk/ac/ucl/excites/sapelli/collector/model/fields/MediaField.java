@@ -239,4 +239,33 @@ public abstract class MediaField extends Field
 		return true;
 	}
 	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof MediaField)
+		{
+			MediaField that = (MediaField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					//this.min == that.min &&
+					this.max == that.max &&
+					this.useNativeApp == that.useNativeApp &&
+					(this.disableChoice != null ? that.disableChoice != null && this.disableChoice.getID().equals(that.disableChoice.getID()) : that.disableChoice == null); // do not use disableChoice itself to avoid potential endless loops!
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		//hash = 31 * hash + min;
+		hash = 31 * hash + max;
+		hash = 31 * hash + (useNativeApp ? 0 : 1);
+		hash = 31 * hash + (disableChoice == null ? 0 : disableChoice.getID().hashCode()); // do not use disableChoice itself to avoid potential endless loops!
+		return hash;
+	}
+	
 }

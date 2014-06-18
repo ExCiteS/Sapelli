@@ -109,5 +109,32 @@ public class OrientationField extends Field
 	{
 		return collectorUI.createOrientationUI(this);
 	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof OrientationField)
+		{
+			OrientationField that = (OrientationField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					this.storeAzimuth == that.storeAzimuth &&
+					this.storePitch == that.storePitch &&
+					this.storeRoll == that.storeRoll;
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + (storeAzimuth ? 0 : 1);
+		hash = 31 * hash + (storePitch ? 0 : 1);
+		hash = 31 * hash + (storeRoll ? 0 : 1);
+		return hash;
+	}
 
 }

@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
@@ -71,18 +72,18 @@ public class Form
 
 	// Dynamics-------------------------------------------------------
 	private final Project project;
+	private final String id;
 	private final short position;
 	private boolean producesRecords = true;
 	private boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	private Schema schema;
-	private final String id;
 
 	private transient List<String> warnings;
 	
 	// Fields
 	private Field start;
 	private final List<Field> fields;
-	private final List<Trigger> triggers;
+	private List<Trigger> triggers;
 	
 	// Android shortcut:
 	private String shortcutImageRelativePath;
@@ -109,11 +110,13 @@ public class Form
 	
 	public Form(Project project, String id)
 	{
+		if(project == null || id == null || id.isEmpty())
+			throw new IllegalArgumentException("A project and non-empty id are required!");
+		
 		this.project = project;
 		this.id = id;
 		
 		this.fields = new ArrayList<Field>();
-		this.triggers = new ArrayList<Trigger>();
 		
 		// Set Form index & add it to the Project:
 		if(FORM_POSITION_FIELD.fits(project.getForms().size()))
@@ -221,6 +224,8 @@ public class Form
 
 	public void addTrigger(Trigger trigger)
 	{
+		if(triggers == null)
+			 triggers = new ArrayList<Trigger>();
 		triggers.add(trigger);
 	}
 
@@ -229,7 +234,7 @@ public class Form
 	 */
 	public List<Trigger> getTriggers()
 	{
-		return triggers;
+		return triggers != null ? triggers : Collections.<Trigger> emptyList();
 	}
 
 	/**
@@ -666,6 +671,66 @@ public class Form
 	public String toString()
 	{
 		return id;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof Form)
+		{
+			Form that = (Form) obj;
+			return	this.id.equals(that.id) &&
+					this.project.toString().equals(that.project.toString()) && // DO NOT INCLUDE project ITSELF HERE (otherwise we create an endless loop!)
+					this.position == that.position &&
+					this.producesRecords == that.producesRecords &&
+					this.skipOnBack == that.skipOnBack &&
+					(this.schema != null ? this.schema.equals(that.schema, true, true, false) : that.schema == null) &&
+					(this.start != null ? this.start.equals(that.start) : that.start == null) &&
+					this.fields.equals(that.fields) &&
+					this.getTriggers().equals(that.getTriggers()) &&
+					(this.shortcutImageRelativePath != null ? this.shortcutImageRelativePath.equals(that.shortcutImageRelativePath) : that.shortcutImageRelativePath == null) &&
+					this.animation == that.animation &&
+					this.obfuscateMediaFiles == that.obfuscateMediaFiles &&
+					this.storeEndTime == that.storeEndTime &&
+					this.next == that.next &&
+					this.vibrateOnSave == that.vibrateOnSave &&
+					(this.saveSoundRelativePath != null ? this.saveSoundRelativePath.equals(that.saveSoundRelativePath) : that.saveSoundRelativePath == null) &&
+					this.buttonBackgroundColor.equals(that.backButtonImageRelativePath) &&
+					(this.backButtonImageRelativePath != null ? this.backButtonImageRelativePath.equals(that.backButtonImageRelativePath) : that.backButtonImageRelativePath == null) &&
+					(this.cancelButtonImageRelativePath != null ? this.cancelButtonImageRelativePath.equals(that.cancelButtonImageRelativePath) : that.cancelButtonImageRelativePath == null) &&
+					(this.forwardButtonImageRelativePath != null ? this.forwardButtonImageRelativePath.equals(that.forwardButtonImageRelativePath) : that.forwardButtonImageRelativePath == null);
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + id.hashCode();
+		hash = 31 * hash + project.toString().hashCode(); // DO NOT INCLUDE project ITSELF HERE (otherwise we create an endless loop!)
+		hash = 31 * hash + (int) position;
+		hash = 31 * hash + (producesRecords ? 0 : 1);
+		hash = 31 * hash + (skipOnBack ? 0 : 1);
+		hash = 31 * hash + (schema == null ? 0 : schema.hashCode());
+		hash = 31 * hash + (start == null ? 0 : start.hashCode());
+		hash = 31 * hash + fields.hashCode();
+		hash = 31 * hash + (triggers == null ? 0 : triggers.hashCode());
+		hash = 31 * hash + (shortcutImageRelativePath == null ? 0 : shortcutImageRelativePath.hashCode());
+		hash = 31 * hash + (animation ? 0 : 1);
+		hash = 31 * hash + (obfuscateMediaFiles ? 0 : 1);
+		hash = 31 * hash + (storeEndTime ? 0 : 1);
+		hash = 31 * hash + next.ordinal();
+		hash = 31 * hash + (vibrateOnSave ? 0 : 1);
+		hash = 31 * hash + (saveSoundRelativePath == null ? 0 : saveSoundRelativePath.hashCode());
+		hash = 31 * hash + buttonBackgroundColor.hashCode();
+		hash = 31 * hash + (backButtonImageRelativePath == null ? 0 : backButtonImageRelativePath.hashCode());
+		hash = 31 * hash + (cancelButtonImageRelativePath == null ? 0 : cancelButtonImageRelativePath.hashCode());
+		hash = 31 * hash + (forwardButtonImageRelativePath == null ? 0 : forwardButtonImageRelativePath.hashCode());
+		return hash;
 	}
 
 }

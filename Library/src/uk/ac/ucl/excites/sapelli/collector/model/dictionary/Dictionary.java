@@ -27,8 +27,8 @@ public class Dictionary<I extends DictionaryItem>
 		DOC_HEADERS.add("VALUE");
 	}
 	
-	protected Map<I, Integer> itemToIndex;
-	protected List<I> indexed;
+	protected final Map<I, Integer> itemToIndex;
+	protected final List<I> indexed;
 	
 	public Dictionary()
 	{
@@ -107,6 +107,30 @@ public class Dictionary<I extends DictionaryItem>
 		for(I item : indexed)
 			stringList.add(serialiser.serialise(item));
 		return stringList;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof Dictionary<?>)
+		{
+			Dictionary<?> that = (Dictionary<?>) obj;
+			return	this.itemToIndex.equals(that.itemToIndex) &&
+					this.indexed.equals(that.indexed);
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + itemToIndex.hashCode();
+		hash = 31 * hash + indexed.hashCode();
+		return hash;
 	}
 	
 	public interface DictionarySerialiser<I>

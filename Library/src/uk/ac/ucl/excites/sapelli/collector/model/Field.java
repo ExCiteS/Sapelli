@@ -53,9 +53,9 @@ public abstract class Field extends JumpSource
 	
 	
 	//Dynamics---------------------------------------------
-	protected String id;
-	protected String caption;
-	protected Form form;
+	protected final String id;
+	protected final Form form;
+	protected final String caption;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	protected boolean showOnCreate = DEFAULT_SHOW_ON_CREATE;
@@ -393,6 +393,51 @@ public abstract class Field extends JumpSource
 	public List<File> getFiles(Project project)
 	{
 		return null;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof Field)
+		{
+			Field that = (Field) obj;
+			return	super.equals(that) && // JumpSource#equals(Object)
+					this.id.equals(that.id) &&
+					this.form.toString().equals(that.form.toString()) && // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
+					this.form.getProject().toString().equals(that.form.getProject().toString()) && // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
+					this.caption.equals(that.caption) &&
+					this.enabled == that.enabled &&
+					this.skipOnBack == that.skipOnBack &&
+					this.showOnCreate == that.showOnCreate &&
+					this.showOnEdit == that.showOnEdit &&
+					this.optional == that.optional &&
+					this.noColumn == that.noColumn &&
+					this.editable == that.editable &&
+					this.backgroundColor.equals(that.backgroundColor);
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // JumpSource#hashCode()
+		hash = 31 * hash + id.hashCode();
+		hash = 31 * hash + form.toString().hashCode(); // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
+		hash = 31 * hash + form.getProject().toString().hashCode(); // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
+		hash = 31 * hash + caption.hashCode();
+		hash = 31 * hash + (enabled ? 0 : 1);
+		hash = 31 * hash + (skipOnBack ? 0 : 1);
+		hash = 31 * hash + (showOnCreate ? 0 : 1);
+		hash = 31 * hash + (showOnEdit ? 0 : 1);
+		hash = 31 * hash + optional.ordinal();
+		hash = 31 * hash + (noColumn ? 0 : 1);
+		hash = 31 * hash + (editable ? 0 : 1);
+		hash = 31 * hash + backgroundColor.hashCode();
+		return hash;
 	}
 	
 	/**

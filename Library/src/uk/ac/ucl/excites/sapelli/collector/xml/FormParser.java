@@ -60,8 +60,8 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_PHOTO = "Photo";
 	static private final String TAG_LOCATION = "Location";
 	static private final String TAG_ORIENTATION = "Orientation";
-	static private final String TAG_BELONGS_TO = "BelongsTo";
-	static private final String TAG_LINKS_TO = "LinksTo";
+	static public final String TAG_BELONGS_TO = "BelongsTo";
+	static public final String TAG_LINKS_TO = "LinksTo";
 	static private final String TAG_CONSTRAINT = "Constraint";
 	static private final String TAG_BUTTON = "Button";
 	static private final String TAG_LABEL = "Label";

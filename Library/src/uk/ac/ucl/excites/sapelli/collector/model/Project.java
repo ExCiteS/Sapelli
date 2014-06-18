@@ -55,7 +55,7 @@ public class Project
 	
 	private Settings transmissionSettings;
 	private boolean logging;
-	private List<Form> forms;
+	private final List<Form> forms;
 	private Form startForm;
 	
 	// For backwards compatibility:
@@ -71,6 +71,8 @@ public class Project
 	{
 		if(name == null || name.isEmpty() || basePath == null || basePath.isEmpty())
 			throw new IllegalArgumentException("Both a name and a valid path are required");
+		if(version == null || version.isEmpty())
+			throw new IllegalArgumentException("A valid version is required");
 		
 		// Project id:
 		if(id == PROJECT_ID_V1X_TEMP)
@@ -112,6 +114,8 @@ public class Project
 	 */
 	private void setID(int id)
 	{
+		if(this.id != -1)
+			throw new IllegalStateException("Project id cannot be changed after it has been set.");
 		if(PROJECT_ID_FIELD.fits(id))
 			this.id = id;
 		else
@@ -445,6 +449,13 @@ public class Project
 		}
 	}
 	
+	public boolean equalSignature(Project other)
+	{
+		return 	this.name.equals(other.name)
+				&& (this.variant == null ? other.variant == null : variant.equals(other.variant))
+				&& this.version.equals(other.version);	
+	}
+	
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -452,10 +463,23 @@ public class Project
 			return true; // references to same object
 		if(obj instanceof Project)
 		{
-			Project other = (Project) obj;
-			return 	this.name.equals(other.name)
-					&& (this.variant == null ? other.variant == null : variant.equals(other.variant))
-					&& this.version.equals(other.version);			
+			Project that = (Project) obj;
+			if(this.id != that.id)
+				return false;
+			if(!equalSignature(that)) // checks name, variant & version
+				return false;
+			// TODO transmission settings?
+			if(this.logging != that.logging)
+				return false;
+			if(!this.forms.equals(that.forms))
+				return false;
+			if(this.startForm != null ? !this.startForm.equals(that.startForm) : that.startForm != null)
+				return false;
+			if(this.v1xProject != that.v1xProject)
+				return false;
+			if(this.schemaVersion != that.schemaVersion)
+				return false;
+			return true;
 		}
 		else
 			return false;
@@ -464,7 +488,18 @@ public class Project
 	@Override
 	public int hashCode()
 	{
-		return super.hashCode(); // TODO !!! + make consistent with equals!
+		int hash = 1;
+		hash = 31 * hash + id;
+		hash = 31 * hash + name.hashCode();
+		hash = 31 * hash + (variant == null ? 0 : variant.hashCode());
+		hash = 31 * hash + version.hashCode();
+		// TODO include tranmssion settings?
+		hash = 31 * hash + (logging ? 0 : 1);
+		hash = 31 * hash + forms.hashCode();
+		hash = 31 * hash + (startForm == null ? 0 : startForm.hashCode());
+		hash = 31 * hash + (v1xProject ? 0 : 1);
+		hash = 31 * hash + schemaVersion;
+		return hash;
 	}
 	
 }

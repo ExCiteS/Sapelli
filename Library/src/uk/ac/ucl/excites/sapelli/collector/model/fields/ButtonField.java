@@ -118,5 +118,28 @@ public class ButtonField extends Field
 	{
 		return collectorUI.createButtonUI(this);
 	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof ButtonField)
+		{
+			ButtonField that = (ButtonField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					this.columnType == that.columnType;
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + columnType.ordinal();
+		return hash;
+	}
 
 }
