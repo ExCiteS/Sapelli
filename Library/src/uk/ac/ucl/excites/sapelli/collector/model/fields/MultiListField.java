@@ -203,8 +203,8 @@ public class MultiListField extends Field
 			return	super.equals(that) && // Field#equals(Object)
 					Arrays.equals(this.captions, that.captions) &&
 					this.itemsRoot.equals(that.itemsRoot) &&
-					this.preSelect == that.preSelect &&
-					this.values.equals(that.values);
+					this.preSelect == that.preSelect;
+					// Do not include the values dictionary here, it is unnecessary and may cause endless loops.
 		}
 		else
 			return false;
@@ -217,7 +217,7 @@ public class MultiListField extends Field
 		hash = 31 * hash + Arrays.hashCode(captions);
 		hash = 31 * hash + itemsRoot.hashCode();
 		hash = 31 * hash + (preSelect ? 0 : 1);
-		hash = 31 * hash + values.hashCode();
+		// Do not include the values dictionary here, it is unnecessary and may cause endless loops.
 		return hash;
 	}
 	

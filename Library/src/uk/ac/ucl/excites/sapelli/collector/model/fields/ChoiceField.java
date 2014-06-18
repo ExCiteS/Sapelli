@@ -408,8 +408,8 @@ public class ChoiceField extends Field implements DictionaryItem
 					(this.altText != null ? this.altText.equals(that.altText) : that.altText == null) &&
 					this.crossed == that.crossed &&
 					this.crossColor.equals(that.crossColor) &&
-					(this.value != null ? this.value.equals(that.value) : that.value == null) &&
-					this.dictionary.equals(that.dictionary);
+					(this.value != null ? this.value.equals(that.value) : that.value == null);
+					// Do not include dictionary at all here! It is unnecessary and causes an endless loop!
 		}
 		else
 			return false;
@@ -429,7 +429,7 @@ public class ChoiceField extends Field implements DictionaryItem
 		hash = 31 * hash + (crossed ? 0 : 1);
 		hash = 31 * hash + crossColor.hashCode();
 		hash = 31 * hash + (value != null ? value.hashCode() : 0);
-		hash = 31 * hash + dictionary.hashCode();
+		// Do not include dictionary at all here! It is unnecessary and causes an endless loop!
 		return hash;
 	}
 	
