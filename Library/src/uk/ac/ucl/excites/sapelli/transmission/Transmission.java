@@ -7,14 +7,16 @@ import java.io.IOException;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
+import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
  * Abstract superclass for all Transmissions
- * 
- * TODO support for multi-schema transmissions? (containing records of more than 1 schema)
  * 
  * @author mstevens
  */
@@ -22,51 +24,113 @@ public abstract class Transmission
 {
 
 	// STATICS-------------------------------------------------------
-	static public final int TRANSMISSION_ID_SIZE = 16; // bits
-	static public final IntegerRangeMapping TRANSMISSION_ID_FIELD = IntegerRangeMapping.ForSize(0, TRANSMISSION_ID_SIZE); // unsigned(!) 16 bit integer
+	static public final int SEQUENTIAL_ID_SIZE = 6; // bits
+	static public final IntegerRangeMapping SEQUENTIAL_ID_FIELD = IntegerRangeMapping.ForSize(0, SEQUENTIAL_ID_SIZE); // unsigned(!) 6 bit integer
+	
+	static public final int PAYLOAD_HASH_SIZE = 16; // bits
+	static public final IntegerRangeMapping PAYLOAD_HASH_FIELD = IntegerRangeMapping.ForSize(0, PAYLOAD_HASH_SIZE); // unsigned(!) 16 bit integer
+	
+	static private final int PAYLOAD_HASH_NOT_SET = -1;
 	
 	// DYNAMICS------------------------------------------------------
 	protected final TransmissionClient client;
 	
-	protected final Payload payload;
-	protected Integer id = null; // Transmission ID: computed as a CRC16 hash over the transmission payload (unsigned 16 bit int)
+	/**
+	 * ID by which this transmission is identified in the context of the local device/server storage alone
+	 */
+	protected Integer localID;
+	
+	/**
+	 * Contents of the transmission
+	 */
+	protected Payload payload;
+	
+	/**
+	 * Computed as a CRC16 hash over the transmission payload (unsigned 16 bit int)
+	 */
+	protected int payloadHash = PAYLOAD_HASH_NOT_SET;
 	
 	protected DateTime sentAt = null; //used only on sending side
 	protected DateTime receivedAt = null; //used on receiving side, and TODO on sending side once we have acknowledgements working
 	
 	/**
+	 * To be called from the sending side
 	 * 
 	 * @param client
 	 * @param payload
 	 */
-	public Transmission(TransmissionClient client, Payload.Type payloadType)
+	public Transmission(TransmissionClient client, Payload payload)
 	{
 		this.client = client;
-		this.payload = Payload.New(this, payloadType);
+		this.payload = payload;
+		this.payload.setTransmission(this); // just in case
 	}
 	
-	public void send(TransmissionSender transmissionSender) throws Exception
+	/**
+	 * To be called from the receiving side
+	 * 
+	 * @param client
+	 * @param payloadHash
+	 */
+	public Transmission(TransmissionClient client, int payloadHash)
+	{
+		this.client = client;
+		this.payloadHash = payloadHash;
+	}
+	
+	public void setLocalID(int id)
+	{
+		if(localID != null && localID != id)
+			throw new IllegalStateException("LocalID has already been set!");
+		this.localID = id;
+	}
+	
+	public int getLocalID()
+	{
+		if(localID == null)
+			throw new IllegalStateException("LocalID has not been set yet");
+		return localID.intValue();
+	}
+	
+	public Payload getPayload()
+	{
+		return payload;
+	}
+	
+	public int getPayloadHash()
+	{	
+		if(payloadHash == PAYLOAD_HASH_NOT_SET)
+			throw new IllegalStateException("Payload hash has not been set yet");
+		return payloadHash;
+	}
+	
+	public void send(Sender transmissionSender) throws IOException, TransmissionCapacityExceededException, UnknownModelException
 	{
 		//Some checks:
+		if(transmissionSender == null)
+			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
+		if(payload == null)
+			throw new NullPointerException("Cannot send transmission without payload");
 		if(isSent())
 		{
-			System.out.println("This transmission (& all of its parts) has already been sent.");
+			System.out.println("This transmission has already been sent.");
 			return;
 		}
-//		if(recordsBySchema.isEmpty())
-//			throw new IllegalStateException("Transmission has no records. Add at least 1 record before sending the transmission .");
-//		if(transmissionSender == null)
-//			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
 		
-		// Set sendingAttemptedAt for all records:
-//		DateTime now = new DateTime();
-//		for(Record r : records)
-//			r.setSendingAttemptedAt(now);
+		// Serialise payload:
+		BitArray payloadBits = payload.serialise();
 		
-		sendPayload(transmissionSender); // !!!
+		// Compute & store payload hash:
+		this.payloadHash = computePayloadHash(payloadBits); // must be set before wrap() is called!
+		
+		// Wrap payload for transmission:
+		wrap(payloadBits);
+		
+		// The actual sending:
+		doSend(transmissionSender);
 	}
 
-	public void resend(TransmissionSender sender) throws Exception
+	public void resend(Sender sender) throws Exception
 	{
 		// Clear early sentAt value (otherwise send() won't work):
 		sentAt = null;
@@ -75,23 +139,58 @@ public abstract class Transmission
 		send(sender);
 	}
 	
-	protected abstract void sendPayload(TransmissionSender transmissionSender) throws Exception;
+	protected abstract void doSend(Sender transmissionSender);
 	
-	public void receive() throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
+	public void receive() throws IncompleteTransmissionException, IOException, IllegalStateException, PayloadDecodeException, UnknownModelException
 	{
 		// Some checks:
-//		if(!recordsBySchema.isEmpty())
-//			throw new IllegalStateException("This SMSTransmission has already been received.");
+		if(!isComplete())
+			throw new IncompleteTransmissionException(this);
+		if(this.payload != null)
+		{
+			System.out.println("This transmission has already been received.");
+			return;
+		}
 		
-		// Read payload:
-//		receivePayload(null, null);
-	}
+		// Unwrap (reassemble/decode) payload:
+		BitArray payloadBits = unwrap();
 		
-	public boolean isFull()
-	{
-		return payload.isFull();
+		// Verify payload hash:
+		if(payloadHash != computePayloadHash(payloadBits))
+			throw new IncompleteTransmissionException(this, "Payload hash mismatch");
+		
+		// Set payload:
+		this.payload = Payload.New(client, payloadBits);
+		this.payload.setTransmission(this); // !!!
+		
+		// Deserialise payload:
+		payload.deserialise(payloadBits);
 	}
 	
+	/**
+	 * Wraps/encodes/splits the payload bits in a way they can be send by this transmission
+	 * 
+	 * @param payloadBits
+	 * @throws TransmissionCapacityExceededException
+	 * @throws IOException
+	 */
+	protected abstract void wrap(BitArray payloadBits) throws TransmissionCapacityExceededException, IOException;
+	
+	/**
+	 * Unwraps/decoded/joins the payload bits
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
+	protected abstract BitArray unwrap() throws IOException;
+	
+	protected int computePayloadHash(BitArray payloadBits)
+	{
+		return Hashing.getCRC16Hash(payloadBits.toByteArray());
+	}
+	
+	public abstract boolean isComplete();
+		
 	public boolean isSent()
 	{
 		return sentAt != null;
@@ -99,13 +198,6 @@ public abstract class Transmission
 	
 	protected void setSentAt(DateTime sentAt)
 	{
-//		for(List<Record> records : recordsBySchema.values())
-//			for(Record r : records)
-//			{
-//				//TODO mark records as sent!!!
-//				//r.setSent(true);
-//				//r.setSendingAttemptedAt(sentAt);
-//			}
 		this.sentAt = sentAt;
 	}
 	
@@ -134,17 +226,6 @@ public abstract class Transmission
 		return client;
 	}
 	
-	public int getID()
-	{	
-		if(id == null)
-			throw new NullPointerException("Transmission ID has not been set.");
-		return id.intValue();
-	}
-	
 	public abstract int getMaxPayloadBits();
-	
-	protected abstract void serialise(BitArray payloadBits) throws TransmissionCapacityExceededException, IOException;
-	
-	protected abstract BitArray deserialise() throws IOException;
 	
 }

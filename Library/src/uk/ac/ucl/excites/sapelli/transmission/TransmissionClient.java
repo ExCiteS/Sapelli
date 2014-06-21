@@ -14,4 +14,6 @@ public interface TransmissionClient extends StorageClient
 
 	public EncryptionSettings getEncryptionSettingsFor(long modelID);
 	
+	public Payload newPayload(int nonBuiltinType);
+	
 }

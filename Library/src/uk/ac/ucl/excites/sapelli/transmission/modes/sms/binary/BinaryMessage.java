@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.transmission.sms.binary;
+package uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -16,10 +16,10 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSService;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 
 /**
  * Binary SMS message
@@ -56,7 +56,7 @@ public class BinaryMessage extends Message
 	
 	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, BinarySMSTransmission.MAX_TRANSMISSION_PARTS);
 	
-	public static final int HEADER_SIZE_BITS =	Transmission.TRANSMISSION_ID_FIELD.getSize() /* Transmission ID */ +
+	public static final int HEADER_SIZE_BITS =	Transmission.PAYLOAD_HASH_FIELD.getSize() /* Transmission ID */ +
 												PART_NUMBER_FIELD.getSize() /* Part number */ +
 												PART_NUMBER_FIELD.getSize() /* Parts total */; 
 	
@@ -67,7 +67,7 @@ public class BinaryMessage extends Message
 	
 	/**
 	 * To be called on the sending side.
-	 * Called by {@link BinarySMSTransmission#serialise(BitArray)}.
+	 * Called by {@link BinarySMSTransmission#wrap(BitArray)}.
 	 * 
 	 * @param receiver
 	 * @param transmission
@@ -116,10 +116,10 @@ public class BinaryMessage extends Message
 			in = new BitWrapInputStream(new ByteArrayInputStream(data));
 			
 			//Read header:
-			transmissionID = (int) Transmission.TRANSMISSION_ID_FIELD.read(in);	//Transmission ID
-			// TODO payload type ...
-			partNumber = (int) PART_NUMBER_FIELD.read(in);				//Part number
-			totalParts = (int) PART_NUMBER_FIELD.read(in);				//Total parts
+			// TODO seq id
+			payloadHash = (int) Transmission.PAYLOAD_HASH_FIELD.read(in);	// Payload hash
+			partNumber = (int) PART_NUMBER_FIELD.read(in);					// Part number
+			totalParts = (int) PART_NUMBER_FIELD.read(in);					// Total parts
 			
 			//Read payload:
 			body = in.readBitArray(in.bitsAvailable());
@@ -140,7 +140,7 @@ public class BinaryMessage extends Message
 	}
 
 	/**
-	 * Called by {@link BinarySMSTransmission#deserialise()}
+	 * Called by {@link BinarySMSTransmission#unwrap()}
 	 * 
 	 * @return
 	 */
@@ -166,10 +166,10 @@ public class BinaryMessage extends Message
 			out = new BitWrapOutputStream(rawOut);
 	
 			//Write header:
-			Transmission.TRANSMISSION_ID_FIELD.write(transmissionID, out);	//Transmission ID
-			// TODO payload type...
-			PART_NUMBER_FIELD.write(partNumber, out);				//Part number
-			PART_NUMBER_FIELD.write(totalParts, out);				//Total parts
+			// TODO seq id
+			Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, out);	// Payload hash
+			PART_NUMBER_FIELD.write(partNumber, out);					//Part number
+			PART_NUMBER_FIELD.write(totalParts, out);					//Total parts
 			
 			//Write payload:
 			out.write(body);
@@ -201,7 +201,7 @@ public class BinaryMessage extends Message
 	}
 
 	@Override
-	public void send(SMSService smsService)
+	public void send(SMSClient smsService)
 	{
 		smsService.send(this);
 	}

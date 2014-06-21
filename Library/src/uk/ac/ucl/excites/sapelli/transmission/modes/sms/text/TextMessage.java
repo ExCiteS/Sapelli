@@ -1,16 +1,16 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.transmission.sms.text;
+package uk.ac.ucl.excites.sapelli.transmission.modes.sms.text;
 
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.transmission.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSService;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 
 /**
  * Textual SMS message in which data in encoding as 7-bit characters using the default GSM 03.38 alphabet.
@@ -52,7 +52,7 @@ public class TextMessage extends Message
 	
 	/**
 	 * To be called on the sending side.
-	 * Called by {@link TextSMSTransmission#serialise(uk.ac.ucl.excites.sapelli.shared.io.BitArray)}.
+	 * Called by {@link TextSMSTransmission#wrap(uk.ac.ucl.excites.sapelli.shared.io.BitArray)}.
 	 * 
 	 * @param receiver
 	 * @param transmission
@@ -109,7 +109,7 @@ public class TextMessage extends Message
 		// Reassemble 24 bit header value out of 4 * 6 bit parts:
 		int header = (int) BinaryHelpers.mergeLong(headerParts, TextSMSTransmission.BITS_PER_CHAR - 1);
 		// Read header fields:
-		transmissionID = (header >> (PART_NUMBER_FIELD.getSize() * 2));
+		payloadHash = (header >> (PART_NUMBER_FIELD.getSize() * 2));
 		partNumber = (header >> PART_NUMBER_FIELD.getSize()) % (1 << PART_NUMBER_FIELD.getSize());
 		totalParts = header % (1 << PART_NUMBER_FIELD.getSize());
 		
@@ -118,7 +118,7 @@ public class TextMessage extends Message
 	}
 
 	/**
-	 * Called by {@link TextSMSTransmission#deserialise()}. 
+	 * Called by {@link TextSMSTransmission#unwrap()}. 
 	 * 
 	 * @return
 	 */
@@ -139,9 +139,9 @@ public class TextMessage extends Message
 		
 		//Write header:
 		// Merge header fields to 24 bit value:
-		int header = (transmissionID << (PART_NUMBER_FIELD.getSize() * 2)) +	// ID (= CRC16 hash): takes up first 16 bits
-					 (partNumber << (PART_NUMBER_FIELD.getSize())) +				// partNumber: takes up next 4 bits
-					 totalParts;													// totalParts: takes up last 4 bits
+		int header = (payloadHash << (PART_NUMBER_FIELD.getSize() * 2)) +	// Payload hash (= CRC16 hash): takes up first 16 bits
+					 (partNumber << (PART_NUMBER_FIELD.getSize())) +		// partNumber: takes up next 4 bits
+					 totalParts;											// totalParts: takes up last 4 bits
 		// Split header in 4 * 6 bit parts:
 		long[] headerParts = BinaryHelpers.splitLong(header, HEADER_CHARS, (TextSMSTransmission.BITS_PER_CHAR - 1));
 		// Insert a separator bit in front of each part and encode to a 7 bit character:
@@ -161,7 +161,7 @@ public class TextMessage extends Message
 	}
 
 	@Override
-	public void send(SMSService smsService)
+	public void send(SMSClient smsService)
 	{
 		smsService.send(this);
 	}

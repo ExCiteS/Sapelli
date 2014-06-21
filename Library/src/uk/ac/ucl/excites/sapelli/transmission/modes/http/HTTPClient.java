@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.transmission.http;
+package uk.ac.ucl.excites.sapelli.transmission.modes.http;
 
 /**
  * @author mstevens

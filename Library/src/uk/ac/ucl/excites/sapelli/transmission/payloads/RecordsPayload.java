@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.transmission;
+package uk.ac.ucl.excites.sapelli.transmission.payloads;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -21,7 +21,10 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
+import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
+import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 public class RecordsPayload extends Payload
@@ -32,17 +35,15 @@ public class RecordsPayload extends Payload
 	
 	protected final Map<Schema,List<Record>> recordsBySchema;
 	protected long modelID = -1;
-	protected boolean full = false;
 	
-	public RecordsPayload(Transmission transmission)
+	public RecordsPayload()
 	{
-		super(transmission);
 		this.recordsBySchema = new HashMap<Schema, List<Record>>();
 	}
 	
-	public Type getType()
+	public int getType()
 	{
-		return Type.Records;
+		return BuiltinType.Records.ordinal();
 	}
 	
 	/**
@@ -54,6 +55,8 @@ public class RecordsPayload extends Payload
 	 */
 	public boolean addRecord(Record record) throws Exception
 	{
+		if(!isTansmissionSet())
+			throw new IllegalStateException("No transmission set!");
 		if(!record.isFilled())
 			return false; // record is not fully filled (non-optional values are still null)
 		Schema schema = record.getSchema();
@@ -75,22 +78,20 @@ public class RecordsPayload extends Payload
 		}
 		recordsOfSchema.add(record);
 		
-		// Try preparing messages:
+		// Try serialising and check capacity:
 		try
 		{
-			preparePayload();
+			serialise();
 		}
 		catch(TransmissionCapacityExceededException tcee)
 		{	// adding this record caused transmission capacity to be exceeded, so remove it and mark the transmission as full (unless there are no other records)
 			recordsOfSchema.remove(record);
 			if(recordsOfSchema.isEmpty())
 				recordsBySchema.remove(schema);
-			if(!recordsBySchema.isEmpty())
-				full = true;
 			return false;
 		}
 		
-		// Payload was successfully prepared...
+		// Record was added and payload could be serialised (and fits within transmission bounds)
 		return true;
 	}
 	
@@ -143,17 +144,15 @@ public class RecordsPayload extends Payload
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.Payload#preparePayload()
+	 * @see uk.ac.ucl.excites.sapelli.transmission.Payload#doSerialise(uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream)
 	 */
 	@Override
-	protected BitArray preparePayload() throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	protected void write(BitOutputStream out) throws IllegalStateException, IOException, TransmissionCapacityExceededException, UnknownModelException
 	{
-		BitArrayOutputStream out = null;
+		if(recordsBySchema.isEmpty())
+			throw new IllegalStateException("Payload contains no records. Add at least 1 record before serialising.");
 		try
 		{
-			// Output stream:
-			out = new BitArrayOutputStream();
-
 			EncryptionSettings encryptionSettings = transmission.getClient().getEncryptionSettingsFor(modelID);
 			boolean encrypt = encryptionSettings.isAllowEncryption() && !encryptionSettings.getKeys().isEmpty();
 			
@@ -187,48 +186,29 @@ public class RecordsPayload extends Payload
 			if(COMPRESSION_MODES[bestComprIdx] != Compression.NONE || encrypt)
 				out.write(/*encrypt ? encrypt(comprResults[bestComprIdx]) : TODO*/ comprResults[bestComprIdx]); // write byte array, first encrypting it as needed
 			else
-				recordBits.writeTo(out); // write bit array (avoid padding to byte boundary)
-			
-			// Flush & close the stream and get payload data:
-			out.flush();
-			out.close();
-
-			return out.toBitArray();
+				recordBits.writeTo(out); // write bit array (avoid padding to byte boundary)			
 		}
 		catch(IOException e)
 		{
-			throw new IOException("Error on preparing payload.", e);
-		}
-		finally
-		{
-			try
-			{
-				if(out != null)
-					out.close();
-			}
-			catch(Exception ignore) {}
+			throw new IOException("Error on serialising payload.", e);
 		}
 	}
 	
 	/**
 	 * Note: SMSTransmission overrides this to insert a completeness check
 	 * 
-	 * @throws IllegalStateException
+	 * @param BitInputStream
 	 * @throws IOException
-	 * @throws DecodeException
+	 * @throws RecordsPayloadDecodeException
+	 * @throws UnknownModelException
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.transmission.Payload#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream)
 	 */
 	@Override
-	protected void receivePayload(BitArray payloadBits) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
+	protected void read(BitInputStream in) throws IOException, PayloadDecodeException, UnknownModelException
 	{
-//		BitInputStream in = null;
-//		try
-//		{
 //			// Deserialise payload:
 //			//byte[] payloadBytes // = deserialise();
-//			
-//			// Verify payload hash:
-//			if(this.payloadHash != Hashing.getCRC16Hash(payloadBytes))
-//				throw new IncompleteTransmissionException(transmission, "Payload hash mismatch");
 //			
 //			// Input stream:
 //			ByteArrayInputStream rawIn = new ByteArrayInputStream(payloadBytes);
@@ -254,16 +234,6 @@ public class RecordsPayload extends Payload
 //			
 //			// Decode records
 //			decodeRecords(recordBytes);
-//		}
-//		finally
-//		{
-//			try
-//			{
-//				if(in != null)
-//					in.close();
-//			}
-//			catch(Exception ignore) {}
-//		}
 	}
 	
 	/**
@@ -423,7 +393,7 @@ public class RecordsPayload extends Payload
 		}
 	}
 	
-	protected void decodeRecords(byte[] data) throws DecodeException
+	protected void decodeRecords(byte[] data) throws RecordsPayloadDecodeException
 	{		
 		BitInputStream in = null;
 		Record record = null;
@@ -500,8 +470,8 @@ public class RecordsPayload extends Payload
 		}
 		catch(Exception e)
 		{
-			DecodeException de = new DecodeException("Error on decoding records.", e, modelID, getRecords()); //pass schema used for decoding and records decoded so far 
-			de.addRecord(record); //add last (partially decoded) record (will be ignored if null)
+			RecordsPayloadDecodeException de = new RecordsPayloadDecodeException(this, "Error on decoding records.", e); //pass schema used for decoding and records decoded so far 
+			de.addPartialRecord(record); //add last (partially decoded) record (will be ignored if null)
 			recordsBySchema.clear(); //remove partially decoded records
 			throw de;
 		}

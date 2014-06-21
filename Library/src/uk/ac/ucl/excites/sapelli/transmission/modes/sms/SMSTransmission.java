@@ -1,23 +1,18 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.transmission.sms;
+package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import org.joda.time.DateTime;
 
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.transmission.DecodeException;
-import uk.ac.ucl.excites.sapelli.transmission.IncompleteTransmissionException;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.TransmissionSender;
+import uk.ac.ucl.excites.sapelli.transmission.Sender;
 
 
 /**
@@ -30,7 +25,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	protected SMSAgent receiver;
 	protected SMSAgent sender;
 	
-	protected final SortedSet<M> parts;
+	protected final SortedSet<M> parts = new TreeSet<M>();
 	
 	private DateTime deliveredAt;
 	
@@ -41,36 +36,44 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * @param client
 	 * @param payloadType
 	 */
-	public SMSTransmission(SMSAgent receiver, TransmissionClient client, Payload.Type payloadType)
+	public SMSTransmission(TransmissionClient client, SMSAgent receiver, Payload payload)
 	{
-		this(null, receiver, client, payloadType, null);
+		super(client, payload);
+		this.receiver = receiver;
 	}
 		
 	/**
 	 * To be called on the receiving side.
 	 * 
-	 * @param sender
 	 * @param client
-	 * @param parts
+	 * @param sender
+	 * @param firstReceivedPart
 	 */
-	public SMSTransmission(SMSAgent sender, TransmissionClient client, List<M> parts)
+	public SMSTransmission(TransmissionClient client, SMSAgent sender, M firstReceivedPart)
 	{
-		this(sender, null, client, parts.get(0).getPayloadType(), parts);
+		super(client, firstReceivedPart.getPayloadHash());
+		this.sender = sender;
+		addPart(firstReceivedPart);
 	}
 	
 	/**
+	 * Called when retrieving transmission from database
+	 * 
+	 * @param client
+	 * @param localID
 	 * @param sender may be null on sending side
 	 * @param receiver may be null on receiving side
-	 * @param client
-	 * @param payloadType
-	 * @param parts list of Messages
+	 * @param payloadHash
+	 * @param parts list of {@link Message}s
 	 */
-	public SMSTransmission(SMSAgent sender, SMSAgent receiver, TransmissionClient client, Payload.Type payloadType, List<M> parts)
+	public SMSTransmission(TransmissionClient client, int localID, String sender, String receiver, int payloadHash, List<M> parts) 
 	{
-		super(client, payloadType);
-		this.sender = sender;
-		this.receiver = receiver;
-		this.parts = new TreeSet<M>();
+		super(client, payloadHash);
+		//TODO set seq id? (must come before setLocalID!)
+		setLocalID(localID);
+		
+		//TODO this.sender = sender;
+		//TODO this.receiver = receiver;
 		if(parts != null)
 			for(M m : parts)
 				addPart(m);
@@ -84,14 +87,15 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	public void addPart(M msg)
 	{
 		if(parts.isEmpty())
-		{	//set transmission ID & sender based on those of the first received message:
-			this.id = msg.getTransmissionID();
+		{
+			//TODO set seq id?
 			this.sender = msg.getSender();
 		}
 		else
 		{	//each following received message must have a matching transmission id, sender & partsTotal:
-			if(id.intValue() != msg.getTransmissionID())
-				throw new IllegalArgumentException("This message does not belong to the transmission (ID mismatch)");
+			if(payloadHash != msg.getPayloadHash())
+				throw new IllegalArgumentException("This message does not belong to the same transmission (Payload hash mismatch)");
+			//TODO seq id check?
 			if(!sender.equals(msg.getSender()))
 				throw new IllegalArgumentException("This message originates from another sender.");
 		}
@@ -136,6 +140,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * 
 	 * @return whether all parts have been received
 	 */
+	@Override
 	public boolean isComplete()
 	{
 		if(parts.isEmpty())
@@ -143,7 +148,11 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 		return (parts.first().getTotalParts() == parts.size());
 	}
 	
-	protected void sendPayload(TransmissionSender transmissionSender) throws Exception
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.Transmission#doSend(uk.ac.ucl.excites.sapelli.transmission.TransmissionSender)
+	 */
+	@Override
+	protected void doSend(Sender transmissionSender)
 	{
 		if(parts.isEmpty())
 			throw new IllegalStateException("No messages to send.");
@@ -153,21 +162,24 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 			if(!m.isSent())
 				m.send(transmissionSender.getSMSService());
 	}
-	
-	@Override
-	protected void receivePayload(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
-	{
-		// First to a completeness check:
-		if(!isComplete())
-			throw new IncompleteTransmissionException(this);
-		
-		// Read messages:
-		super.receivePayload(schemaToUse, settingsToUse);
-	}
 
-	public void resend(int partNumber)
+	/**
+	 * Resends a specific part (single message)
+	 * 
+	 * @param transmissionSender
+	 * @param partNumber
+	 */
+	public void resend(Sender transmissionSender, int partNumber)
 	{
-		//TODO resent of individual part
+		int i = 1; // partNumbers start from 1!
+		for(Message m : parts)
+			if(i == partNumber)
+			{
+				m.send(transmissionSender.getSMSService());
+				return;
+			}
+			else
+				i++;
 	}
 	
 	/**

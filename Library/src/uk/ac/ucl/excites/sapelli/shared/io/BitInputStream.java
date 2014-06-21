@@ -462,4 +462,32 @@ public abstract class BitInputStream extends InputStream
 		return 0;
 	}
 	
+	/**
+	 * Skips over and discards {@code n} bits.
+	 * 
+	 * @param n - the number of bytes to be skipped
+	 * @return the actual number of bits skipped
+	 * @throws IOException - if some I/O error occurs.
+	 */
+	public long skipBits(long n) throws IOException
+	{
+		if(n > 0)
+		{
+			long i = 0;
+			for(; i < n; i++)
+			{
+				try
+				{
+					readBit();
+				}
+				catch(EOFException eof)
+				{
+					break;
+				}
+			}
+			return i;
+		}
+		return 0;
+	}
+	
 }

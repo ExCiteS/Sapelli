@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.transmission.sms.text;
+package uk.ac.ucl.excites.sapelli.transmission.modes.sms.text;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -14,8 +14,9 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
@@ -202,21 +203,36 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	 * @param client
 	 * @param payloadType
 	 */
-	public TextSMSTransmission(SMSAgent receiver, TransmissionClient client, Payload.Type payloadType)
+	public TextSMSTransmission(TransmissionClient client, SMSAgent receiver, Payload payload)
 	{
-		super(null, receiver, client, payloadType, null);
+		super(client, receiver, payload);
 	}
 		
 	/**
 	 * To be called on the receiving side.
 	 * 
-	 * @param sender
 	 * @param client
-	 * @param parts
+	 * @param sender
+	 * @param firstReceivedPart
 	 */
-	public TextSMSTransmission(SMSAgent sender, TransmissionClient client, List<TextMessage> parts)
+	public TextSMSTransmission(TransmissionClient client, SMSAgent sender, TextMessage firstReceivedPart)
 	{
-		super(sender, null, client, parts.get(0).getPayloadType(), parts);
+		super(client, sender, firstReceivedPart);
+	}
+	
+	/**
+	 * Called when retrieving transmission from database
+	 * 
+	 * @param client
+	 * @param localID
+	 * @param sender may be null on sending side
+	 * @param receiver may be null on receiving side
+	 * @param payloadHash
+	 * @param parts list of {@link Message}s
+	 */
+	public TextSMSTransmission(TransmissionClient client, int localID, String sender, String receiver, int payloadHash, List<TextMessage> parts) 
+	{
+		super(client, localID, sender, receiver, payloadHash, parts);
 	}
 	
 	private int minNumberOfCharactersNeededFor(int bits)
@@ -225,7 +241,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	}
 	
 	@Override
-	protected void serialise(BitArray payloadBits) throws TransmissionCapacityExceededException, IOException
+	protected void wrap(BitArray payloadBits) throws TransmissionCapacityExceededException, IOException
 	{
 		// Clear previously generated messages
 		parts.clear(); //!!!
@@ -281,7 +297,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	}
 
 	@Override
-	protected BitArray deserialise() throws IOException
+	protected BitArray unwrap() throws IOException
 	{
 		// Assemble transmission payload String from part payload Strings:
 		StringBuilder blr = new StringBuilder();

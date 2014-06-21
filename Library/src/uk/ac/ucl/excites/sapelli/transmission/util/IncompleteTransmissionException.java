@@ -1,9 +1,10 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.transmission;
+package uk.ac.ucl.excites.sapelli.transmission.util;
 
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 
 /**
  * @author mstevens

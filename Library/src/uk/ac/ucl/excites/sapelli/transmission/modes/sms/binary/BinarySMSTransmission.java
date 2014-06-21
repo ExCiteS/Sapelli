@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.transmission.sms.binary;
+package uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary;
 
 import java.io.IOException;
 import java.util.List;
@@ -9,8 +9,9 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
@@ -35,25 +36,40 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	 * @param client
 	 * @param payloadType
 	 */
-	public BinarySMSTransmission(SMSAgent receiver, TransmissionClient client, Payload.Type payloadType)
+	public BinarySMSTransmission(TransmissionClient client, SMSAgent receiver, Payload payload)
 	{
-		super(null, receiver, client, payloadType, null);
+		super(client, receiver, payload);
 	}
 		
 	/**
 	 * To be called on the receiving side.
 	 * 
-	 * @param sender
 	 * @param client
-	 * @param parts
+	 * @param sender
+	 * @param firstReceivedPart
 	 */
-	public BinarySMSTransmission(SMSAgent sender, TransmissionClient client, List<BinaryMessage> parts)
+	public BinarySMSTransmission(TransmissionClient client, SMSAgent sender, BinaryMessage firstReceivedPart)
 	{
-		super(sender, null, client, parts.get(0).getPayloadType(), parts);
+		super(client, sender, firstReceivedPart);
+	}
+	
+	/**
+	 * Called when retrieving transmission from database
+	 * 
+	 * @param client
+	 * @param localID
+	 * @param sender may be null on sending side
+	 * @param receiver may be null on receiving side
+	 * @param payloadHash
+	 * @param parts list of {@link Message}s
+	 */
+	public BinarySMSTransmission(TransmissionClient client, int localID, String sender, String receiver, int payloadHash, List<BinaryMessage> parts) 
+	{
+		super(client, localID, sender, receiver, payloadHash, parts);
 	}
 	
 	@Override
-	protected void serialise(BitArray payloadBits) throws TransmissionCapacityExceededException, IOException
+	protected void wrap(BitArray payloadBits) throws TransmissionCapacityExceededException, IOException
 	{
 		parts.clear();  //!!! clear previously generated messages
 		if(payloadBits.length() > MAX_PAYLOAD_SIZE_BITS)
@@ -67,7 +83,7 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	}
 
 	@Override
-	protected BitArray deserialise() throws IOException
+	protected BitArray unwrap() throws IOException
 	{
 		BitArrayOutputStream stream = new BitArrayOutputStream();
 		for(BinaryMessage part : parts)

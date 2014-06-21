@@ -10,7 +10,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 
 /**
  * @author mstevens

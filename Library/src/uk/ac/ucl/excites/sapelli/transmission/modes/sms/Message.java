@@ -1,24 +1,26 @@
-package uk.ac.ucl.excites.sapelli.transmission.sms;
+package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
 
 import org.joda.time.DateTime;
 
-import uk.ac.ucl.excites.sapelli.transmission.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.Payload.Type;
-
 /**
+ * Abstract class representing an SMS message which is one part of an {@link SMSTransmission}
+ * 
  * @author mstevens
- *
  */
 public abstract class Message implements Comparable<Message>
 {
 	
-	protected SMSAgent sender;
-	protected SMSAgent receiver;
+	protected int sequentialID;
+	protected int payloadHash;
 	protected SMSTransmission<?> transmission;
-	protected int transmissionID;
+	
 	protected DateTime sentAt;		//only on sending side
 	protected DateTime deliveredAt;	//only on sending side
 	protected DateTime receivedAt;	//only on receiving side
+	
+	protected SMSAgent sender;
+	protected SMSAgent receiver;	
+	
 	protected int partNumber;
 	protected int totalParts;
 	
@@ -36,8 +38,9 @@ public abstract class Message implements Comparable<Message>
 		if(partNumber < 1 || totalParts < 1 || partNumber > totalParts)
 			throw new IllegalArgumentException("Invalid part number (" + partNumber + ") of total number of parts (" + totalParts + ").");
 		this.receiver = receiver;
+		//TODO seq id
+		this.payloadHash = transmission.getPayloadHash();
 		this.transmission = transmission;
-		this.transmissionID = transmission.getID();
 		this.partNumber  = partNumber;
 		this.totalParts = totalParts;
 	}
@@ -53,7 +56,7 @@ public abstract class Message implements Comparable<Message>
 		this.receivedAt = receivedAt;
 	}
 	
-	public abstract void send(SMSService smsService);
+	public abstract void send(SMSClient smsService);
 	
 	public void setTransmission(SMSTransmission<?> transmission)
 	{
@@ -64,16 +67,11 @@ public abstract class Message implements Comparable<Message>
 	}
 	
 	/**
-	 * @return the transmissionID
+	 * @return the payloadHash
 	 */
-	public int getTransmissionID()
+	public int getPayloadHash()
 	{
-		return transmissionID;
-	}
-	
-	public Payload.Type getPayloadType()
-	{
-		return Type.Records; //TODO!!!!!
+		return payloadHash;
 	}
 
 	/**
@@ -169,8 +167,8 @@ public abstract class Message implements Comparable<Message>
 		int hash = 1;
 		hash = 31 * hash + (sender == null ? 0 : sender.hashCode());
 		hash = 31 * hash + (receiver == null ? 0 : receiver.hashCode());
-		hash = 31 * hash + transmissionID;
-		//TODO payload type ...
+		//TODO seq id
+		hash = 31 * hash + payloadHash;
 		hash = 31 * hash + partNumber;
 		hash = 31 * hash + totalParts;
 		hash = 31 * hash + getBodyHashCode();
@@ -193,8 +191,8 @@ public abstract class Message implements Comparable<Message>
 			Message another = (Message) obj;
 			return	(this.sender == null ? another.sender == null : this.sender.equals(another.sender)) &&
 					(this.receiver == null ? another.receiver == null : this.receiver.equals(another.receiver)) &&
-					this.transmissionID == another.transmissionID &&
-					// TODO payload type ...
+					//TODO seq id
+					this.payloadHash == another.payloadHash &&
 					this.partNumber == another.partNumber &&
 					this.totalParts == another.totalParts &&
 					equalBody(another);			

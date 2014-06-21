@@ -6,7 +6,7 @@ package uk.ac.ucl.excites.sapelli.transmission;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSAgent;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 
 /**
  * @author mstevens

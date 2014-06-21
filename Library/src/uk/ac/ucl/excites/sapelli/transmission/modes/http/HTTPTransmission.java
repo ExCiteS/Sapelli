@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.transmission.http;
+package uk.ac.ucl.excites.sapelli.transmission.modes.http;
 
 import java.io.IOException;
 
@@ -9,9 +9,13 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.TransmissionSender;
+import uk.ac.ucl.excites.sapelli.transmission.Sender;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
+/**
+ * @author mstevens
+ *
+ */
 public class HTTPTransmission extends Transmission
 {
 	
@@ -25,9 +29,9 @@ public class HTTPTransmission extends Transmission
 	 * 
 	 * @param serverURL
 	 */
-	public HTTPTransmission(String serverURL, TransmissionClient client, Payload.Type payloadType)
+	public HTTPTransmission(TransmissionClient client, String serverURL, Payload payload)
 	{
-		super(client, payloadType);
+		super(client, payload);
 		this.serverURL = serverURL;
 	}
 	
@@ -36,34 +40,31 @@ public class HTTPTransmission extends Transmission
 	 * 
 	 * @param client
 	 */
-	public HTTPTransmission(DateTime receivedAt, TransmissionClient client, Payload.Type payloadType)
+	public HTTPTransmission(TransmissionClient client, int payloadHash, String body, DateTime receivedAt)
 	{
-		super(client, payloadType);
+		super(client, payloadHash);
+		this.body = body;
 		setReceivedAt(receivedAt);
 	}
 	
 	@Override
-	protected void sendPayload(TransmissionSender transmissionSender) throws Exception
+	protected void doSend(Sender transmissionSender)
 	{
 		//HTTPClient client = sender.getHTTPClient();
 		// TODO HTTP sending
 	}
-	
-	public void setBody(String body)
-	{
-		this.body = body;
-	}
 
 	@Override
-	protected void serialise(BitArray payloadBits) throws TransmissionCapacityExceededException
+	protected void wrap(BitArray payloadBits) throws TransmissionCapacityExceededException
 	{
 		String serialisedData = Base64.encodeBase64String(payloadBits.toByteArray());
 		if(serialisedData.length() > MAX_BODY_SIZE)
 			throw new TransmissionCapacityExceededException("Maximum body size (" + MAX_BODY_SIZE + "), exceeded by " + (serialisedData.length() - MAX_BODY_SIZE) + " characters");
+		this.body = serialisedData;
 	}
 
 	@Override
-	protected BitArray deserialise() throws IOException
+	protected BitArray unwrap() throws IOException
 	{
 		if(body == null || body.isEmpty())
 			throw new IllegalStateException("Transmission body is not set or empty.");
@@ -74,6 +75,12 @@ public class HTTPTransmission extends Transmission
 	public int getMaxPayloadBits()
 	{
 		return MAX_BODY_SIZE * Byte.SIZE;
+	}
+
+	@Override
+	public boolean isComplete()
+	{
+		return body != null && !body.isEmpty();
 	}
 	
 }

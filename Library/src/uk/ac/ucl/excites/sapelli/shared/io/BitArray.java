@@ -68,6 +68,9 @@ public class BitArray
 		throw new IndexOutOfBoundsException("index (" + index + ") out of bounds [0, " + (length - 1) + "]!");
 	}
 
+	/**
+	 * @return the number of bits in the array
+	 */
 	public int length()
 	{
 		return length;
