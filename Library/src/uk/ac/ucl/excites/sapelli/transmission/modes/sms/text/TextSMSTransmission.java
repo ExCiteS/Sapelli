@@ -346,4 +346,13 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		return MAX_PAYLOAD_CHARS * BITS_PER_CHAR; 
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.Transmission#canWrapCanIncreaseSize()
+	 */
+	@Override
+	public boolean canWrapIncreaseSize()
+	{
+		return true;
+	}
+	
 }

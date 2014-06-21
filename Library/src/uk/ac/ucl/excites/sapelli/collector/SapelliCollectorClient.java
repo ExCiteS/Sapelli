@@ -53,6 +53,8 @@ public class SapelliCollectorClient implements TransmissionClient
 	
 	static public short GetModelSchemaNo(Form form)
 	{
+		// reserve No for heartbeart schema!
+		// TODO don't reserve no's for non-data producing forms
 		return form.getPosition();
 	}
 	

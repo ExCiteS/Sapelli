@@ -116,7 +116,8 @@ public abstract class Payload
 		// Capacity checks:
 		if(bits.length() > transmission.getMaxPayloadBits())
 			throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + bits.length() + " bits; max for transmission: " + transmission.getMaxPayloadBits() + " bits");
-		// TODO transmission/message serialisation (because escaping can lead to growth in payload size in some types of transmissions) 
+		if(transmission.canWrapIncreaseSize()) // the the transmission is one in which payload size can grow upon wrapping (e.g. due to escaping), then ... 
+			transmission.wrap(bits); // try wrapping the payload in the transmission, a TransmissionCapacityExceededException will be thrown when the size goes over the limit
 		
 		// Return bits:
 		return bits;

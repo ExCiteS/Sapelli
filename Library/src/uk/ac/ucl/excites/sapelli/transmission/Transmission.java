@@ -228,4 +228,9 @@ public abstract class Transmission
 	
 	public abstract int getMaxPayloadBits();
 	
+	/**
+	 * @return whether (true) or not (false) the wrapping of the payload data in the transmission (as implemented by {@link #wrap(BitArray)}) can cause the data size to grow (e.g. due to escaping)
+	 */
+	public abstract boolean canWrapIncreaseSize();
+	
 }

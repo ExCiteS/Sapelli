@@ -2,7 +2,6 @@ package uk.ac.ucl.excites.sapelli.transmission.modes.http;
 
 import java.io.IOException;
 
-import org.apache.commons.codec.binary.Base64;
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
@@ -15,14 +14,18 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
 /**
  * @author mstevens
  *
+ * http://stackoverflow.com/questions/3049626/sending-binary-data-via-post-on-android
+ * http://stackoverflow.com/questions/20508788/do-i-need-content-type-application-octet-stream-for-file-download
+ * http://stackoverflow.com/questions/4047731/send-imagejpg-via-httppost-from-android-to-servletwebserver
+ * Use mimi type: "application/octet-stream"
  */
 public class HTTPTransmission extends Transmission
 {
 	
-	public static final int MAX_BODY_SIZE = 4096; //TODO determine a good value
+	public static final int MAX_BODY_SIZE = 4096; // bytes (TODO determine a good value)
 	
 	private String serverURL;
-	private String body = null;
+	private byte[] body;
 	
 	/**
 	 * To be called on the sending side.
@@ -40,7 +43,7 @@ public class HTTPTransmission extends Transmission
 	 * 
 	 * @param client
 	 */
-	public HTTPTransmission(TransmissionClient client, int payloadHash, String body, DateTime receivedAt)
+	public HTTPTransmission(TransmissionClient client, int payloadHash, byte[] body, DateTime receivedAt)
 	{
 		super(client, payloadHash);
 		this.body = body;
@@ -57,30 +60,40 @@ public class HTTPTransmission extends Transmission
 	@Override
 	protected void wrap(BitArray payloadBits) throws TransmissionCapacityExceededException
 	{
-		String serialisedData = Base64.encodeBase64String(payloadBits.toByteArray());
-		if(serialisedData.length() > MAX_BODY_SIZE)
-			throw new TransmissionCapacityExceededException("Maximum body size (" + MAX_BODY_SIZE + "), exceeded by " + (serialisedData.length() - MAX_BODY_SIZE) + " characters");
-		this.body = serialisedData;
+		byte[] payloadBytes = payloadBits.toByteArray();
+ 		//String serialisedData = Base64.encodeBase64String(payloadBytes);
+		if(payloadBytes.length > MAX_BODY_SIZE)
+			throw new TransmissionCapacityExceededException("Maximum body size (" + MAX_BODY_SIZE + "), exceeded by " + (payloadBytes.length - MAX_BODY_SIZE) + " bytes");
+		this.body = payloadBytes;
 	}
 
 	@Override
 	protected BitArray unwrap() throws IOException
 	{
-		if(body == null || body.isEmpty())
-			throw new IllegalStateException("Transmission body is not set or empty.");
-		return BitArray.FromBytes(Base64.decodeBase64(body));
+		if(body == null)
+			throw new IllegalStateException("Transmission body has not been set.");
+		return BitArray.FromBytes(body); //Base64.decodeBase64(body)
 	}
-
+	
+	@Override
+	public boolean isComplete()
+	{
+		return body != null;
+	}
+	
 	@Override
 	public int getMaxPayloadBits()
 	{
 		return MAX_BODY_SIZE * Byte.SIZE;
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.Transmission#canWrapCanIncreaseSize()
+	 */
 	@Override
-	public boolean isComplete()
+	public boolean canWrapIncreaseSize()
 	{
-		return body != null && !body.isEmpty();
+		return false;
 	}
 	
 }

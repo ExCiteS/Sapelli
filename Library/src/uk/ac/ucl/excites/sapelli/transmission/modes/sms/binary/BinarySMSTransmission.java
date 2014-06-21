@@ -99,4 +99,13 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 		return MAX_PAYLOAD_SIZE_BITS;
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.Transmission#canWrapCanIncreaseSize()
+	 */
+	@Override
+	public boolean canWrapIncreaseSize()
+	{
+		return false;
+	}
+
 }

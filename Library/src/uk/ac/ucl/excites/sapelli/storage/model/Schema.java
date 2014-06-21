@@ -36,9 +36,10 @@ public class Schema implements Serializable
 	 */
 	static public enum Internal
 	{				/* ordinal	-> schema id */
-		INDEX,		/*	0		->	-1 */
-		LOCATION,	/*	1		->	-2 */
-		ORIENTATION	/*	2		->	-3 */
+		ANONYMOUS,	/*	0		->	-1 */
+		INDEX,		/*	1		->	-2 */
+		LOCATION,	/*	2		->	-3 */
+		ORIENTATION	/*	3		->	-4 */
 		// more later?
 	}
 	

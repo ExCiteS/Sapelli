@@ -33,6 +33,10 @@ public abstract class Receiver
 //		if(transmission == null)
 //			transmission = new BinarySMSTransmission(binSms.getSender(), client, binSms);
 		
+		// store/update transmisison!
+		
+		
+		//TODO make & send ACK
 	}
 	
 	public void receive(TextMessage txtSms)
