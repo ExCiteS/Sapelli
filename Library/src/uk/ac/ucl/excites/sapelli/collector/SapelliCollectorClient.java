@@ -10,6 +10,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
+import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 
 /**
@@ -161,6 +162,12 @@ public class SapelliCollectorClient implements TransmissionClient
 			return project.getForm(schema.getModelSchemaNo());
 		else
 			throw new IllegalArgumentException("No matching form found!");
+	}
+
+	@Override
+	public Payload newPayload(int nonBuiltinType)
+	{
+		return null; // for now there are no Sapelli Collector-specific transmission payloads
 	}
 
 }
