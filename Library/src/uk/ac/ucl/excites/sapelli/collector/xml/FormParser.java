@@ -209,7 +209,7 @@ public class FormParser extends SubtreeParser
 				{
 					int schemaID = attributes.getRequiredInteger(TAG_FORM, ATTRIBUTE_FORM_SCHEMA_ID, "because this is a v1.x project");
 					int schemaVersion = attributes.getInteger(ATTRIBUTE_FORM_SCHEMA_VERSION, Schema.V1X_DEFAULT_SCHEMA_VERSION);
-					project.setSchema(schemaID, schemaVersion); //schemaID will be used as projectID
+					project.setV1XSchemaInfo(schemaID, schemaVersion); //schemaID will be used as projectID
 				}
 				else
 					throw new SAXException("Only single-Form v1.x projects are supported");

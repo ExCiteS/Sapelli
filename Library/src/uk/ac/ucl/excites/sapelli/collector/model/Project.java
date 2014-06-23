@@ -13,13 +13,14 @@ import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
 
 /**
+ * A Sapelli Collector Project (i.e. a survey consisting of one or more forms)
+ * 
  * @author mstevens
- *
  */
 public class Project
 {
 	
-	//STATICS-------------------------------------------------------------	
+	//STATICS-------------------------------------------------------------
 	static public final int PROJECT_ID_SIZE = Schema.V1X_SCHEMA_ID_SIZE; // = 24 bits (kept the same was the v1.x Schema#id, for backwards compatibility)
 	static public final IntegerRangeMapping PROJECT_ID_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_ID_SIZE); // unsigned(!) 24bit integer (compatible with old schemaID)
 	
@@ -55,7 +56,9 @@ public class Project
 	
 	private Settings transmissionSettings;
 	private boolean logging;
+	private final Schema heartbeatSchema;
 	private final List<Form> forms;
+	private transient List<Schema> schemata;
 	private Form startForm;
 	
 	// For backwards compatibility:
@@ -101,7 +104,9 @@ public class Project
 			}
 			catch(IOException ignore) {}
 		}
-		// Forms collection:
+		// Heartbeat schema:
+		this.heartbeatSchema = new HeartbeatSchema(this);
+		// Forms list:
 		this.forms = new ArrayList<Form>();
 		// Logging:
 		this.logging = DEFAULT_LOGGING;
@@ -123,15 +128,31 @@ public class Project
 	}
 	
 	/**
-	 * Backwards compatibility.
+	 * @return the id
+	 */
+	public int getID()
+	{
+		return id;
+	}
+	
+	/**
+	 * @return the v1xProject
+	 */
+	public boolean isV1xProject()
+	{
+		return v1xProject;
+	}
+	
+	/**
+	 * Method for backwards compatibility with v1.x projects. Passes id & version of the schema of the (assumed only) form to the project.
 	 * 	- project id will be set to schema id of 1st (and assumed only) form
 	 *  - schema version of that form will be stored in schemaVersion variable (to be able to parse old record export xml files)
-	 * Can be used on v1x projects only!
+	 * Can be used on v1.x projects only!
 	 * 
 	 * @param schemaID
 	 * @param schemaVersion
 	 */
-	public void setSchema(int schemaID, int schemaVersion)
+	public void setV1XSchemaInfo(int schemaID, int schemaVersion)
 	{
 		if(!v1xProject)
 			throw new IllegalStateException("Only allowed for v1.x projects (created with id=PROJECT_ID_V1X_TEMP).");
@@ -143,11 +164,13 @@ public class Project
 	}
 	
 	/**
-	 * @return the id
+	 * @return the schemaVersion
 	 */
-	public int getID()
+	public int getSchemaVersion()
 	{
-		return id;
+		if(!v1xProject)
+			throw new IllegalStateException("Only supported for v1.x projects.");
+		return schemaVersion;
 	}
 
 	public String getName()
@@ -170,31 +193,13 @@ public class Project
 	{
 		if(this.variant != null)
 			throw new IllegalStateException("Variant cannot be changed after it has been set.");
-		if(!"".equals(variant))
+		if(variant != null && !variant.isEmpty())
 			this.variant = variant;
 	}
 
 	public String getVersion()
 	{
 		return version;
-	}
-	
-	/**
-	 * @return the v1xProject
-	 */
-	public boolean isV1xProject()
-	{
-		return v1xProject;
-	}
-
-	/**
-	 * @return the schemaVersion
-	 */
-	public int getSchemaVersion()
-	{
-		if(!v1xProject)
-			throw new IllegalStateException("Only supported for v1.x projects.");
-		return schemaVersion;
 	}
 	
 	/**
@@ -209,11 +214,27 @@ public class Project
 		forms.add(frm);
 		if(forms.size() == 1) //first form becomes startForm by default
 			startForm = frm;
+		// Throw away schemata list so it is recreated when requested:
+		this.schemata = null;
 	}
 	
 	public List<Form> getForms()
 	{
 		return forms;
+	}
+	
+	public List<Schema> getSchemata()
+	{
+		if(schemata == null)
+		{
+			List<Schema> schemata = new ArrayList<Schema>();
+			// Heartbeat always takes possition 0:
+			schemata.add(heartbeatSchema);
+			// Add data-producing forms:
+			for(Form f : forms)
+				/* TODO */;
+		}
+		return schemata;
 	}
 	
 	/**
