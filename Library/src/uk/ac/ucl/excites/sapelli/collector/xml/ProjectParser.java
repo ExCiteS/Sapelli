@@ -22,6 +22,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
+import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
 
 /**
@@ -152,12 +153,10 @@ public class ProjectParser extends DocumentParser
 											Project.PROJECT_ID_V1X_TEMP : // for format = 1 we set a temp id value (will be replaced by Form:schema-id) 
 												attributes.getRequiredInteger(qName, ATTRIBUTE_PROJECT_ID, "because format is >= 2"), // id is required for format >= 2
 										attributes.getRequiredString(TAG_PROJECT, ATTRIBUTE_PROJECT_NAME, true, false),
+										attributes.getString(ATTRIBUTE_PROJECT_VARIANT, null, true, false),
 										attributes.getString(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, true, false),
 										basePath,
 										createProjectFolder);
-				
-				// Set variant:
-				project.setVariant(attributes.getString(ATTRIBUTE_PROJECT_VARIANT, null, true, false));
 				
 				// Read startForm ID:
 				startFormID = attributes.getString(ATTRIBUTE_PROJECT_START_FORM, null, true, false); 
@@ -217,9 +216,19 @@ public class ProjectParser extends DocumentParser
 				// Initialise forms...
 				for(Form form : project.getForms())
 				{	
-					form.initialiseStorage(); // generates Schema, Column & ValueDictionaries
+					try
+					{
+						// generates Schema, Columns & ValueDictionaries:
+						form.initialiseStorage();
+					}
+					catch(ModelFullException e)
+					{
+						throw new SAXException("This project contains more data-producing Forms than allowed.");
+					}
 					addWarnings(form.getWarnings());
 				}
+				// Seal project model:
+				project.getModel().seal();
 				
 				// Resolve relationship constraints:
 				for(Entry<Relationship, List<ConstraintDescription>> entry : relationshipToConstraints.entrySet())

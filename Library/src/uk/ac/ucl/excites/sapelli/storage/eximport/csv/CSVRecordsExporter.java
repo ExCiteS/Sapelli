@@ -159,11 +159,12 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		{
 			try
 			{
-				openWriter(description + "_" + entry.getKey().getName(), timestamp);
+				Schema schema =  entry.getKey();
+				openWriter(description + "_" + schema.getName(), timestamp);
 
 				// Construct column list:
 				columnPointers.clear();
-				traverse(entry.getKey());
+				traverse(schema);
 				
 				// Write header:
 				writer.openTransaction(); // output will be buffered
@@ -172,8 +173,10 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 					// Column names (separatoed by the separator):
 					for(ColumnPointer cp : columnPointers)
 						writer.write((!writer.isTransactionBufferEmpty() ? separator.getSeparatorString() : "") + cp.getQualifiedColumnName());
-					// Postfix: separator+"schemeID="+...+separator	
-					writer.write(separator.getSeparatorString() + Schema.ATTRIBUTE_SCHEMA_ID + "=" + entry.getKey().getID() + separator.getSeparatorString());
+					// Postfix: separator+"modelID="+...+separator+"modelSchemaNumber="+...+separator
+					writer.write(	separator.getSeparatorString() + Schema.ATTRIBUTE_MODEL_ID + "=" + schema.getModelID() +
+									separator.getSeparatorString() + Schema.ATTRIBUTE_MODEL_SCHEMA_NUMBER + "=" + schema.getModelSchemaNumber() +
+									separator.getSeparatorString());
 					writer.write('\n');
 				}
 				catch(Exception e)
@@ -186,6 +189,8 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				// Write records:
 				for(Record r : entry.getValue())
 				{
+					if(r.getSchema().isInternal())
+						continue; // we do not export records of internal schemata
 					writer.openTransaction(); // output will be buffered
 					try
 					{	

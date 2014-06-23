@@ -5,9 +5,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileWriter;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
@@ -28,8 +31,6 @@ public class Project
 	
 	static public final int PROJECT_HASH_SIZE = 32; //bits
 	static public final IntegerRangeMapping PROJECT_HASH_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_HASH_SIZE); // signed(!) 32bit integer (like Java hashCodes)
-	
-	static public final int MAX_FORMS = (int) Form.FORM_POSITION_FIELD.getHighBound() + 1; // = 15 + 1 = 16 forms allowed
 	
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
@@ -58,7 +59,7 @@ public class Project
 	private boolean logging;
 	private final Schema heartbeatSchema;
 	private final List<Form> forms;
-	private transient List<Schema> schemata;
+	private transient Model model;
 	private Form startForm;
 	
 	// For backwards compatibility:
@@ -67,10 +68,10 @@ public class Project
 	
 	public Project(int id, String name, String basePath)
 	{
-		this(id, name, DEFAULT_VERSION, basePath, false);
+		this(id, name, null, DEFAULT_VERSION, basePath, false);
 	}
 	
-	public Project(int id, String name, String version, String basePath, boolean createSubfolder)
+	public Project(int id, String name, String variant, String version, String basePath, boolean createSubfolder)
 	{
 		if(name == null || name.isEmpty() || basePath == null || basePath.isEmpty())
 			throw new IllegalArgumentException("Both a name and a valid path are required");
@@ -87,6 +88,8 @@ public class Project
 			setID(id); // checks if it fits in field	
 		
 		this.name = FileHelpers.makeValidFileName(name);
+		if(variant != null && !variant.isEmpty())
+			this.variant = variant;
 		this.version = version;
 		// Path:
 		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
@@ -104,8 +107,10 @@ public class Project
 			}
 			catch(IOException ignore) {}
 		}
-		// Heartbeat schema:
-		this.heartbeatSchema = new HeartbeatSchema(this);
+		// Initialise Model:
+		this.model = new Model(SapelliCollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
+		// Heartbeat schema (Important: never put this before the model initialisation!):
+		this.heartbeatSchema = new HeartbeatSchema(this); // will add itself to the model
 		// Forms list:
 		this.forms = new ArrayList<Form>();
 		// Logging:
@@ -186,17 +191,6 @@ public class Project
 		return variant;
 	}
 
-	/**
-	 * @param variant the variant to set
-	 */
-	public void setVariant(String variant)
-	{
-		if(this.variant != null)
-			throw new IllegalStateException("Variant cannot be changed after it has been set.");
-		if(variant != null && !variant.isEmpty())
-			this.variant = variant;
-	}
-
 	public String getVersion()
 	{
 		return version;
@@ -209,13 +203,9 @@ public class Project
 	 */
 	public void addForm(Form frm)
 	{
-		if(forms.size() >= MAX_FORMS)
-			throw new IllegalStateException("Project cannot hold more than " + MAX_FORMS + " forms.");
 		forms.add(frm);
 		if(forms.size() == 1) //first form becomes startForm by default
 			startForm = frm;
-		// Throw away schemata list so it is recreated when requested:
-		this.schemata = null;
 	}
 	
 	public List<Form> getForms()
@@ -223,20 +213,19 @@ public class Project
 		return forms;
 	}
 	
-	public List<Schema> getSchemata()
+	public Model getModel()
 	{
-		if(schemata == null)
-		{
-			List<Schema> schemata = new ArrayList<Schema>();
-			// Heartbeat always takes possition 0:
-			schemata.add(heartbeatSchema);
-			// Add data-producing forms:
-			for(Form f : forms)
-				/* TODO */;
-		}
-		return schemata;
+		return model;
 	}
 	
+	/**
+	 * @return the heartbeatSchema
+	 */
+	public Schema getHeartbeatSchema()
+	{
+		return heartbeatSchema;
+	}
+
 	/**
 	 * @param position
 	 * @return	the {@link Form} with the specified {@code position}, or {@code null} if the project has no such form. 
@@ -486,25 +475,17 @@ public class Project
 		if(obj instanceof Project)
 		{
 			Project that = (Project) obj;
-			if(this.id != that.id)
-				return false;
-			if(!equalSignature(that)) // checks name, variant & version
-				return false;
-			// TODO transmission settings?
-			if(this.logging != that.logging)
-				return false;
-			if(!this.forms.equals(that.forms))
-				return false;
-			if(this.startForm != null ? !this.startForm.equals(that.startForm) : that.startForm != null)
-				return false;
-			if(this.v1xProject != that.v1xProject)
-				return false;
-			if(this.schemaVersion != that.schemaVersion)
-				return false;
-			return true;
+			return 	this.id == that.id &&
+					// no need to check the model here
+					equalSignature(that) && // checks name, variant & version
+					// TODO transmission settings?
+					this.logging == that.logging &&
+					this.forms.equals(that.forms) &&
+					(this.startForm != null ? this.startForm.equals(that.startForm) : that.startForm == null) &&
+					this.v1xProject == that.v1xProject &&
+					this.schemaVersion == that.schemaVersion;
 		}
-		else
-			return false;
+		return false;
 	}
 	
 	@Override

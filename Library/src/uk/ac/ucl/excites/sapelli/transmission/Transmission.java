@@ -165,6 +165,8 @@ public abstract class Transmission
 		
 		// Deserialise payload:
 		payload.deserialise(payloadBits);
+		
+		// set receivedAT?
 	}
 	
 	/**

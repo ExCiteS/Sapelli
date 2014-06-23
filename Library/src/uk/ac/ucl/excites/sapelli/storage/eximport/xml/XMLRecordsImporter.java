@@ -89,9 +89,10 @@ public class XMLRecordsImporter extends DocumentParser
 			}
 			else
 			{
-				long schemaID = attributes.getRequiredLong(Record.TAG_RECORD, Schema.ATTRIBUTE_SCHEMA_ID);
-				schema = client.getSchema(Schema.GetModelID(schemaID), Schema.GetModelSchemaNo(schemaID));
-				schemaDescr = "schema with ID " + schemaID;
+				long modelID = attributes.getRequiredLong(Record.TAG_RECORD, Schema.ATTRIBUTE_MODEL_ID);
+				int modelSchemaNo = attributes.getRequiredInteger(Record.TAG_RECORD, Schema.ATTRIBUTE_MODEL_SCHEMA_NUMBER);
+				schema = client.getModel(modelID).getSchema(modelSchemaNo);
+				schemaDescr = "schema " + schema.getName();
 				v1xExport = false;
 			}
 			if(schema == null)

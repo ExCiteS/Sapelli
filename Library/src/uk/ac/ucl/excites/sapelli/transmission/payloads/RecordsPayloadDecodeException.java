@@ -45,7 +45,7 @@ public class RecordsPayloadDecodeException extends PayloadDecodeException
 	 */
 	public long getModelID()
 	{
-		return ((RecordsPayload) payload).modelID;
+		return ((RecordsPayload) payload).model.getID();
 	}
 
 	/**

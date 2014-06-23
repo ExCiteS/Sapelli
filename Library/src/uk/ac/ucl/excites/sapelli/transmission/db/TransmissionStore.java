@@ -24,7 +24,7 @@ public abstract class TransmissionStore implements Store
 	
 	public abstract List<Integer> retrieveTransmissionIDs(int type, int payloadType, int payloadHash);
 	
-	public BinarySMSTransmission retrieveBinarySMSTransmission(SMSAgent correspondent, boolean sent, int payloadType, int payloadHash)
+	public BinarySMSTransmission retrieveBinarySMSTransmission(SMSAgent correspondent, boolean sent, int payloadHash)
 	{
 		// throw special exception when not unique		
 		return null;

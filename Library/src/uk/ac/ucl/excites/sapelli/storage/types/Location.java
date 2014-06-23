@@ -57,7 +57,7 @@ public class Location extends Record
 	static final public FloatColumn COLUMN_BEARING = new FloatColumn("Bearing", true, true, false);				// optional signed 32 bit float
 	static final public FloatColumn COLUMN_SPEED = new FloatColumn("Speed", true, true, false);					// optional signed 32 bit float
 	static final public FloatColumn COLUMN_ACCURACY = new FloatColumn("Accuracy", true, true, false);			// optional signed 32 bit float
-	static final public TimeStampColumn COLUMN_TIME = TimeStampColumn.JavaMSTime("TimeUTC", true, false);			// optional signed 64 bit millisecond-accurate UTC timestamp (local timezone not kept, not virtual columns added) 
+	static final public TimeStampColumn COLUMN_TIME = TimeStampColumn.JavaMSTime("TimeUTC", true, false);		// optional signed 64 bit millisecond-accurate UTC timestamp (local timezone not kept, not virtual columns added) 
 	static final public IntegerColumn COLUMN_PROVIDER = new IntegerColumn("Provider", false, PROVIDER_FIELD);	// non-optional 2 bit unsigned integer
 	static
 	{	// Add columns to default Schema & seal it:

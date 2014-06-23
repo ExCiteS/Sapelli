@@ -3,6 +3,10 @@
  */
 package uk.ac.ucl.excites.sapelli.storage;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
@@ -11,25 +15,32 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
  * @author mstevens
  *
  */
-public interface StorageClient
+public abstract class StorageClient
 {
-
-	/**
-	 * @param modelID (unsigned 56 bit integer)
-	 * @param modelSchemaNo (unsigned 4 bit integer)
-	 * @return a matching {@link Schema} instance
-	 * @throws {@link UnknownModelException} when no matching schema is found
-	 */
-	public Schema getSchema(long modelID, short modelSchemaNo) throws UnknownModelException;
+	
+	// DYNAMICS------------------------------------------------------
+	
+	public Model getModel(long modelID) throws UnknownModelException
+	{
+		// First check reserved models:
+		for(Model model : getReserveredModels())
+			if(model.getID() == modelID)
+				return model;
+		// Get client model:
+		return getClientModel(modelID);
+	}
 	
 	/**
-	 * Returns the number of schemata that exist in the model with the given {@code modelID}
+	 * Subclasses can override this but *must* return at least the same models returned by the super implementation.
 	 * 
-	 * @param modelID
-	 * @returns the number of schemata
-	 * @throws {@link UnknownModelException} when no matching model is found
+	 * @return
 	 */
-	public short getNumberOfSchemataInModel(long modelID) throws UnknownModelException;
+	public List<Model> getReserveredModels()
+	{
+		return new ArrayList<Model>();
+	}
+		
+	public abstract Model getClientModel(long modelID) throws UnknownModelException;
 	
 	/**
 	 * @param schemaID
@@ -37,7 +48,7 @@ public interface StorageClient
 	 * @return a matching {@link Schema} instance
 	 * @throws {@link UnknownModelException} when no matching schema is found
 	 */
-	public Schema getSchemaV1(int schemaID, int schemaVersion) throws UnknownModelException;
+	public abstract Schema getSchemaV1(int schemaID, int schemaVersion) throws UnknownModelException;
 	
 	public abstract void recordInserted(Record record);
 	

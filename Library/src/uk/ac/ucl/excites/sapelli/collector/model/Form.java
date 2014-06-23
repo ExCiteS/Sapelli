@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -20,7 +19,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -30,12 +29,6 @@ public class Form
 {
 
 	// Statics--------------------------------------------------------
-	/**
-	 * Allowed form indexes: 0 to {@link Project#MAX_FORMS} - 1
-	 */
-	public static final int FORM_POSITION_SIZE = Schema.MODEL_SCHEMA_NO_SIZE; // = 4 bits
-	public static final IntegerRangeMapping FORM_POSITION_FIELD = IntegerRangeMapping.ForSize(0, FORM_POSITION_SIZE); // unsigned(!) 4 bit integer, range: [0, 15] -> up to 16 forms per project
-	
 	public static final boolean END_TIME_DEFAULT = false;
 
 	// Where to go next:
@@ -117,12 +110,7 @@ public class Form
 		this.id = id;
 		
 		this.fields = new ArrayList<Field>();
-		
-		// Set Form index & add it to the Project:
-		if(FORM_POSITION_FIELD.fits(project.getForms().size()))
-			this.position = (short) project.getForms().size();
-		else
-			throw new IllegalArgumentException("Invalid form index, valid values are " + FORM_POSITION_FIELD.getLogicalRangeString() + " (up to " + Project.MAX_FORMS + " forms per project).");
+		this.position = (short) project.getForms().size();
 		project.addForm(this); //!!!
 	}
 
@@ -492,25 +480,20 @@ public class Form
 		return producesRecords;
 	}
 	
-	public void initialiseStorage()
-	{
-		getSchema(); //this will also trigger all Columns to be created/initialised
-	}
-	
 	/**
-	 * The returned Schema object will contain all columns defined by fields in the form, plus the implicitly added
-	 * columns (StartTime & DeviceID, which together are used as the primary key, and the optional EndTime). However,
-	 * those implicit columns are only added if at least 1 user-defined field has a column. If there are no user-defined
-	 * fields with columns then no implicit columns are added and then the whole schema is pointless, therefore in that
-	 * case this method will return null instead of a columnless Schema object and the {@link #producesRecords} variable
-	 * will be set to {@code false}. 
+	 * Generates the {@link Schema} for this form. It will contain all columns defined by fields in the form, and the
+	 * implicitly added columns (StartTime & DeviceID, which together are used as the primary key, and the optional EndTime).
+	 * However, those implicit columns are only added if at least 1 user-defined field has a column. If there are no
+	 * user-defined fields with columns then no implicit columns are added and then the whole schema is pointless,
+	 * therefore in that case the {@link #producesRecords} variable will be set to {@code false} to avoid future attempts
+	 * at generating a schema.
 	 * 
-	 * @return
+	 * @throws ModelFullException
 	 */
-	public Schema getSchema()
+	public void initialiseStorage() throws ModelFullException
 	{
 		if(!producesRecords)
-			return null;
+			return;
 		if(schema == null)
 		{	
 			// Generate columns for user-defined fields:
@@ -529,12 +512,8 @@ public class Form
 			else
 			{
 				// Create new Schema:
-				schema = new Schema(SapelliCollectorClient.GetModelID(project),
-									SapelliCollectorClient.GetModelSchemaNo(this),
-									project.getName() +
-									(project.getVariant() != null ? '_' + project.getVariant() : "") +
-									"_v" + project.getVersion() +
-									":" + id /* = form "name"*/);
+				schema = new Schema(project.getModel(),
+									project.getModel().getName() + ":" + id);
 				
 				/* Add implicit columns
 				 * 	StartTime & DeviceID together form the primary key of our records.
@@ -559,6 +538,17 @@ public class Form
 				schema.seal();
 			}
 		}
+	}
+	
+	/**
+	 * Gets the schema. Will return {@code null} in case of a non-data-producing form.
+	 * 
+	 * @return
+	 */
+	public Schema getSchema()
+	{
+		if(schema == null)
+			initialiseStorage();
 		return schema;
 	}
 	

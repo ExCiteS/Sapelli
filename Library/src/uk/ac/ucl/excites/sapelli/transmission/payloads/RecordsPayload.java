@@ -17,6 +17,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
@@ -34,7 +35,7 @@ public class RecordsPayload extends Payload
 	static protected final IntegerRangeMapping COMPRESSION_FLAG_FIELD = new IntegerRangeMapping(0, COMPRESSION_MODES.length - 1); 
 	
 	protected final Map<Schema,List<Record>> recordsBySchema;
-	protected long modelID = -1;
+	protected Model model;
 	
 	public RecordsPayload()
 	{
@@ -61,12 +62,12 @@ public class RecordsPayload extends Payload
 			return false; // record is not fully filled (non-optional values are still null)
 		Schema schema = record.getSchema();
 		if(schema.isInternal())
-			throw new IllegalArgumentException("Cannot directly transmit records of internal schema.");
+			throw new IllegalArgumentException("Cannot directly transmit records of an internal schema.");
 		if(recordsBySchema.isEmpty())
 			// set model ID:
-			modelID = schema.getModelID();
+			model = schema.getModel();
 		//	Check model ID:
-		else if(modelID != schema.getModelID())
+		else if(model != schema.getModel())
 			throw new IllegalArgumentException("The schemata of the records in a single Transmission must all belong to the same model.");
 
 		// Add the record:
@@ -153,7 +154,7 @@ public class RecordsPayload extends Payload
 			throw new IllegalStateException("Payload contains no records. Add at least 1 record before serialising.");
 		try
 		{
-			EncryptionSettings encryptionSettings = transmission.getClient().getEncryptionSettingsFor(modelID);
+			EncryptionSettings encryptionSettings = transmission.getClient().getEncryptionSettingsFor(model);
 			boolean encrypt = encryptionSettings.isAllowEncryption() && !encryptionSettings.getKeys().isEmpty();
 			
 			// Write HEADER PART 1 ------------------------
@@ -283,14 +284,14 @@ public class RecordsPayload extends Payload
 		
 		// Write schema identification:
 		// 	Write Model ID (56 bits):
-		Schema.MODEL_ID_FIELD.write(modelID, out);
+		Model.MODEL_ID_FIELD.write(model.getID(), out);
 		// 	Write the number of different schemata (unless there is only 1 schema in the model):
 		if(numberOfDifferentSchemataInTransmissionField != null)
 			numberOfDifferentSchemataInTransmissionField.write(numberOfDifferentSchemataInTransmission, out);
 		//	Write the modelSchemaNumbers of the schemata occurring in the transmission (unless there is only 1 schema in the model):
 		if(modelSchemaNoField != null)
 			for(Schema schema : schemataOrder)
-				modelSchemaNoField.write(schema.getModelSchemaNo(), out);
+				modelSchemaNoField.write(schema.getModelSchemaNumber(), out);
 		//	Check & write the number of records per schema (except the last one is not written):
 		int f = 0;
 		for(Schema schema : schemataOrder)
@@ -303,7 +304,7 @@ public class RecordsPayload extends Payload
 					field.write(numberOfRecords, out); // write number of records, but not for last schema
 			}
 			else
-				throw new TransmissionCapacityExceededException("Cannot fit " + numberOfRecords + " of schema " + schema.getID() + " (max allowed: " + field.getHighBound(false) + ").");	
+				throw new TransmissionCapacityExceededException("Cannot fit " + numberOfRecords + " of schema " + schema.getName() + " (max allowed: " + field.getHighBound(false) + ").");	
 		}
 		return schemataOrder;
 	}
@@ -414,9 +415,9 @@ public class RecordsPayload extends Payload
 			IntegerRangeMapping modelSchemaNoField = getModelSchemaNoField();
 			if(modelSchemaNoField != null)
 				for(int i = 0; i < numberOfDifferentSchemata; i++)
-					schemata[i] = transmission.getClient().getSchema(modelID, (short) modelSchemaNoField.read(in));
+					schemata[i] = model.getSchema((int) modelSchemaNoField.read(in));
 			else
-				schemata[0] = transmission.getClient().getSchema(modelID, (short) 0); // there is only 1 schema in the model so its number is 0
+				schemata[0] = model.getSchema(0); // there is only 1 schema in the model so its number is 0
 			
 			//	the number of records per schema:
 			IntegerRangeMapping[] numberOfRecordsPerSchemaFields = getNumberOfRecordsPerSchemaFields(numberOfDifferentSchemataInTransmissionField, modelSchemaNoField, schemata);
@@ -488,7 +489,7 @@ public class RecordsPayload extends Payload
 	
 	/**
 	 * 
-	 * modelID & client must be set!
+	 * model must be set!
 	 * 
 	 * @return the field (an IntegerRangMapping object) or null in case there is only 1 schema in the model
 	 * @throws IllegalStateException
@@ -496,7 +497,7 @@ public class RecordsPayload extends Payload
 	 */
 	private IntegerRangeMapping getNumberOfDifferentSchemataInTransmissionField() throws IllegalStateException, UnknownModelException
 	{
-		int numberOfSchemataInModel = transmission.getClient().getNumberOfSchemataInModel(modelID);
+		int numberOfSchemataInModel = model.getNumberOfSchemata();
 		if(numberOfSchemataInModel > 1)
 			return new IntegerRangeMapping(1, numberOfSchemataInModel);
 		else if(numberOfSchemataInModel == 1)
@@ -507,7 +508,7 @@ public class RecordsPayload extends Payload
 	
 	/**
 	 * 
-	 * modelID & client must be set!
+	 * model must be set!
 	 * 
 	 * @return
 	 * @throws IllegalStateException
@@ -515,7 +516,7 @@ public class RecordsPayload extends Payload
 	 */
 	private IntegerRangeMapping getModelSchemaNoField() throws IllegalStateException, UnknownModelException
 	{
-		int numberOfSchemataInModel = transmission.getClient().getNumberOfSchemataInModel(modelID);
+		int numberOfSchemataInModel = model.getNumberOfSchemata();
 		if(numberOfSchemataInModel > 1)
 			return new IntegerRangeMapping(0, numberOfSchemataInModel - 1);
 		else if(numberOfSchemataInModel == 1)

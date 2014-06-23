@@ -58,6 +58,11 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 		return ((float) getTimeZoneOffsetMS(value)) / HOUR_MS;
 	}
 	
+	/**
+	 * Current time in the current/default timezone
+	 * 
+	 * @return
+	 */
 	static public TimeStamp now()
 	{
 		return new TimeStamp();

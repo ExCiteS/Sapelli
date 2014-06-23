@@ -6,6 +6,7 @@ package uk.ac.ucl.excites.sapelli.collector;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
@@ -17,28 +18,20 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
  * @author mstevens
  *
  */
-public class SapelliCollectorClient implements TransmissionClient
+public class SapelliCollectorClient extends TransmissionClient
 {
 	
 	// STATICS-------------------------------------------------------
+	static public final int COLLECTOR_MANAGEMENT_MODEL_ID = TRANSMISSION_MANAGEMENT_MODEL_ID + 1; // = 1
+	
 	/**
 	 * @param project
-	 * @return
+	 * @return unsigned 56 bit integer
 	 */
 	static public long GetModelID(Project project)
 	{
-		return GetModelID(project.getID(), project.hashCode());
-	}
-	
-	/**
-	 * @param projectID unsigned(!) 24 bit integer
-	 * @param projectHash signed 32 bit integer
-	 * @return unsigned 56 bit integer
-	 */
-	static public long GetModelID(int projectID, int projectHash)
-	{
-		return	((((long) projectHash) & 0xffffffffL) << Project.PROJECT_ID_SIZE) +	// Project hash takes up first 32 bits
-				projectID;															// Project id takes up next 24 bits
+		return	((((long) project.hashCode()) & 0xffffffffL) << Project.PROJECT_ID_SIZE) +	// Project hash takes up first 32 bits
+				project.getID();															// Project id takes up next 24 bits
 	}
 	
 	static public int GetProjectID(long modelID)
@@ -51,13 +44,6 @@ public class SapelliCollectorClient implements TransmissionClient
 		return (int) (modelID >> Project.PROJECT_ID_SIZE);
 	}
 	
-	static public short GetModelSchemaNo(Form form)
-	{
-		// reserve No for heartbeart schema!
-		// TODO don't reserve no's for non-data producing forms
-		return form.getPosition();
-	}
-	
 	// DYNAMICS------------------------------------------------------
 	private ProjectStore projectStore;
 	
@@ -66,28 +52,38 @@ public class SapelliCollectorClient implements TransmissionClient
 		this.projectStore = projectStore;
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getSchema(long, short)
+	/**
+	 * @param modelID
+	 * @return the project corresponding to the given modelID
 	 */
-	@Override
-	public Schema getSchema(long modelID, short modelSchemaNo) throws UnknownModelException
+	public Project getProject(long modelID)
 	{
-		Project project = projectStore.retrieveProject(GetProjectID(modelID), GetProjectHash(modelID));
-		if(project != null)
-			return project.getForm(modelSchemaNo).getSchema();
-		else
-			throw new UnknownModelException(modelID, modelSchemaNo);
+		return projectStore.retrieveProject(GetProjectID(modelID), GetProjectHash(modelID));
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getNumberOfSchemataInModel(long)
+	/**
+	 * @param schema
+	 * @return the form that is backed by the given schema
+	 * @throws UnknownModelException when no matching Form is found
 	 */
-	@Override
-	public short getNumberOfSchemataInModel(long modelID) throws UnknownModelException
+	public Form getForm(Schema schema) throws UnknownModelException
 	{
-		Project project = projectStore.retrieveProject(GetProjectID(modelID), GetProjectHash(modelID));
+		if(schema.isInternal())
+			throw new IllegalArgumentException("Internal schema cannot be associated with a Form");
+		Project project = getProject(schema.getModelID());
 		if(project != null)
-			return (short) project.getForms().size();
+			for(Form f : project.getForms())
+				if(f.getSchema().equals(schema))
+					return f;
+		throw new UnknownModelException(schema.getModelID());
+	}
+	
+	@Override
+	public Model getClientModel(long modelID) throws UnknownModelException
+	{
+		Project project = getProject(modelID);
+		if(project != null)
+			return project.getModel();
 		else
 			throw new UnknownModelException(modelID);
 	}
@@ -127,10 +123,10 @@ public class SapelliCollectorClient implements TransmissionClient
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.TransmissionClient#getEncryptionSettingsFor(long)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.TransmissionClient#getEncryptionSettingsFor(Model)
 	 */
 	@Override
-	public EncryptionSettings getEncryptionSettingsFor(long modelID)
+	public EncryptionSettings getEncryptionSettingsFor(Model model)
 	{
 		/*TODO FIX THIS
 		 * This is buggy/hacky! Because schema's can be shared by multiple forms (and no schema ID/version duplicates are allowed)
@@ -149,21 +145,6 @@ public class SapelliCollectorClient implements TransmissionClient
 //			return null;
 //		}
 		return null;
-	}
-	
-	/**
-	 * @param schema
-	 * @return the form that is backed by the given schema
-	 * @throws IllegalArgumentException when no matching Form is found
-	 */
-	public Form getForm(Schema schema) throws IllegalArgumentException
-	{
-		long modelID = schema.getModelID();
-		Project project = projectStore.retrieveProject(GetProjectID(modelID), GetProjectHash(modelID));
-		if(project != null)
-			return project.getForm(schema.getModelSchemaNo());
-		else
-			throw new IllegalArgumentException("No matching form found!");
 	}
 
 	@Override

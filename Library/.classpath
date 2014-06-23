@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
+	<classpathentry excluding="uk/ac/ucl/excites/sapelli/collector/model/diagnostics/ProjectStatistics.java" kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
 	<classpathentry exported="true" kind="lib" path="libs/commons-io-2.4.jar" sourcepath="libs/src/commons-io-2.4-sources.jar">
 		<attributes>

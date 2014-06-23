@@ -17,11 +17,6 @@ public class UnknownModelException extends Exception
 		super(String.format("Unknown model (ID = %d).", modelID));
 	}
 	
-	public UnknownModelException(long modelID, short modelSchemaNo)
-	{
-		super(String.format("Unknown model (ID = %d) and/or schema (No = %d).", modelID, modelSchemaNo));
-	}
-	
 	public UnknownModelException(int schemaID, int schemaVersion)
 	{
 		super(String.format("Unknown model/schema (schemaID = %d; schemaVersion = %d).", schemaID, schemaVersion));
