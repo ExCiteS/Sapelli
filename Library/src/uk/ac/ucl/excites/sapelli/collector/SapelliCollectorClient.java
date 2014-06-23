@@ -22,7 +22,7 @@ public class SapelliCollectorClient extends TransmissionClient
 {
 	
 	// STATICS-------------------------------------------------------
-	static public final int COLLECTOR_MANAGEMENT_MODEL_ID = TRANSMISSION_MANAGEMENT_MODEL_ID + 1; // = 1
+	static public final long COLLECTOR_MANAGEMENT_MODEL_ID = TRANSMISSION_MANAGEMENT_MODEL_ID + 1; // = 1
 	
 	/**
 	 * @param project

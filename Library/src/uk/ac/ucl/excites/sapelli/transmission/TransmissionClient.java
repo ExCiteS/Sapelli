@@ -17,7 +17,8 @@ public abstract class TransmissionClient extends StorageClient
 {
 
 	// STATICS-------------------------------------------------------
-	static public final int TRANSMISSION_MANAGEMENT_MODEL_ID = 0; // reserved!
+	static public final long TRANSMISSION_MANAGEMENT_MODEL_ID = 0; // reserved!
+	static public final Model TRANSMISSION_MANAGEMENT_MODEL = new Model(TRANSMISSION_MANAGEMENT_MODEL_ID, "TransmissionManagement");
 
 	// DYNAMICS------------------------------------------------------
 	/* (non-Javadoc)
@@ -27,7 +28,7 @@ public abstract class TransmissionClient extends StorageClient
 	public List<Model> getReserveredModels()
 	{
 		List<Model> reserved = super.getReserveredModels();
-		//TODO reserved.add()
+		reserved.add(TRANSMISSION_MANAGEMENT_MODEL);
 		return reserved;
 	}
 	
