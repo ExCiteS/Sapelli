@@ -30,6 +30,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.util.Log;
 
 /**
@@ -50,6 +51,7 @@ public class CollectorController extends Controller implements LocationListener,
 	private LocationManager locationManager;
 	private Location currentBestLocation = null;
 	private OrientationSensor orientationSensor;
+	private long deviceIDHash;
 
 	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, CollectorActivity activity)
 	{
@@ -229,6 +231,21 @@ public class CollectorController extends Controller implements LocationListener,
 	protected void showError(String errorMsg, boolean exit)
 	{
 		activity.showErrorDialog(errorMsg, exit);
+	}
+
+	@Override
+	protected long getDeviceID()
+	{
+		return deviceIDHash;
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.control.Controller#getElapsedMillis()
+	 */
+	@Override
+	protected long getElapsedMillis()
+	{
+		return SystemClock.elapsedRealtime();
 	}
 
 }

@@ -88,8 +88,6 @@ public abstract class Controller
 	protected RecordStore recordStore;
 	protected Logger logger;
 	
-	protected long deviceIDHash; //to be initialised by subclasses
-	
 	protected Stack<FormSession> formHistory;
 	protected FormSession currFormSession;
 	protected FormSession prevFormSession; 
@@ -132,7 +130,7 @@ public abstract class Controller
 		handlingUserGoBackRequest = false;
 		
 		// Open a Create-mode session for the startForm:
-		openFormSession(FormSession.Create(project.getStartForm(), deviceIDHash));
+		openFormSession(FormSession.Create(project.getStartForm(), this));
 	}
 
 	protected void openFormSession(FormSession formSession)
@@ -513,7 +511,7 @@ public abstract class Controller
 				if(arguments.getBoolean(BelongsToField.PARAMETER_EDIT, false))
 				{	// We are in edit mode (the edit argument was true):
 					arguments.put(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM, Boolean.TRUE.toString()); // remember we are waiting for relatedForm
-					openFormSession(FormSession.Edit(belongsTo.getRelatedForm(), recordStore.retrieveRecord(foreignKey.getForeignRecordQuery()))); // open relatedForm to edit foreign record
+					openFormSession(FormSession.Edit(belongsTo.getRelatedForm(), recordStore.retrieveRecord(foreignKey.getForeignRecordQuery()), this)); // open relatedForm to edit foreign record
 				}
 				else
 					// We are not in edit mode (the edit argument was false, or more likely, missing)
@@ -542,7 +540,7 @@ public abstract class Controller
 				if(foreignRecord == null)
 				{	// We didn't find a valid held foreign record or the relationship is simply *not* allowed to hold on to foreign records
 					arguments.put(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM, Boolean.TRUE.toString()); // remember we are waiting for relatedForm
-					openFormSession(FormSession.Create(belongsTo.getRelatedForm(), deviceIDHash)); // open relatedForm to create new record
+					openFormSession(FormSession.Create(belongsTo.getRelatedForm(), this)); // open relatedForm to create new record
 				}
 			}
 		}
@@ -570,7 +568,7 @@ public abstract class Controller
 					
 					else
 						// We do not already have a foreign key value & the field is not optional
-						openFormSession(FormSession.Create(belongsTo.getRelatedForm(), deviceIDHash)); // re-open relatedForm to create new record
+						openFormSession(FormSession.Create(belongsTo.getRelatedForm(), this)); // re-open relatedForm to create new record
 				}
 			}
 			else
@@ -591,7 +589,7 @@ public abstract class Controller
 	public boolean enterEndField(EndField ef, FieldParameters arguments)
 	{
 		// Logging:
-		addLogLine("FORM_END", ef.getID(), currFormSession.form.getName(), Long.toString((System.currentTimeMillis() - currFormSession.startTime) / 1000) + " seconds");
+		addLogLine("FORM_END", ef.getID(), currFormSession.form.getName(), Long.toString((getElapsedMillis() - currFormSession.startTime) / 1000) + " seconds");
 		
 		// Save or discard:
 		if(ef.isSave() && currFormSession.form.isProducesRecords())
@@ -606,7 +604,7 @@ public abstract class Controller
 		switch(ef.getNext())
 		{
 			case LOOPFORM:
-				openFormSession(FormSession.Create(currFormSession.form, deviceIDHash));
+				openFormSession(FormSession.Create(currFormSession.form, this));
 				break;
 			case LOOPPROJ:
 				startProject(); // formHistory & currFormSession will be cleared
@@ -621,7 +619,7 @@ public abstract class Controller
 			case NEXTFORM:
 				Form nextForm = project.getNextForm(currFormSession.form);
 				if(nextForm != null)
-					openFormSession(FormSession.Create(nextForm, deviceIDHash));
+					openFormSession(FormSession.Create(nextForm, this));
 				else
 				{	// there is no next form:
 					showError("Invalid state: there is no next form to go to from here!", false); //TODO multilang
@@ -817,5 +815,15 @@ public abstract class Controller
 	protected abstract void showError(String errorMsg, boolean exit);
 	
 	protected abstract void exitApp();
+	
+	protected abstract long getDeviceID();
+	
+	/**
+	 * Returns the number of milliseconds since system boot.<br/>
+	 * Should use a realtime monotonic clock, i.e. independent of time(zone) changes, deep sleep, CPU power saving, etc.
+	 * 
+	 * @return number of milliseconds since system boot
+	 */
+	protected abstract long getElapsedMillis();
 	
 }

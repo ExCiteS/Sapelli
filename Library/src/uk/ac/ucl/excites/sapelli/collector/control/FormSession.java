@@ -23,21 +23,21 @@ public class FormSession
 {
 	
 	// STATIC -------------------------------------------------------
-	static public FormSession Create(Form form, long deviceIDHash)
+	static public FormSession Create(Form form, Controller controller)
 	{
-		return new FormSession(form, Mode.CREATE, form.isProducesRecords() ? form.newRecord(deviceIDHash) : null);
+		return new FormSession(form, Mode.CREATE, form.isProducesRecords() ? form.newRecord(controller.getDeviceID()) : null, controller.getElapsedMillis());
 	}
 	
-	static public FormSession Edit(Form form, Record record)
+	static public FormSession Edit(Form form, Record record, Controller controller)
 	{
-		return new FormSession(form, Mode.EDIT, record);
+		return new FormSession(form, Mode.EDIT, record, controller.getElapsedMillis());
 	}
 	
 	// DYNAMIC ------------------------------------------------------
 	protected final Form form;
 	protected final Mode mode;
 	protected Record record; //TODO make final? do we really need to make the record null in Controller#discardRecordAndAttachments()?
-	protected long startTime; //TODO make final?
+	protected final long startTime;
 	
 	private final Stack<FieldWithArguments> fieldAndArgumentHistory;
 	private FieldWithArguments currFieldAndArguments = null;
@@ -50,7 +50,7 @@ public class FormSession
 	 * @param mode
 	 * @param record
 	 */
-	private FormSession(Form form, Mode mode, Record record)
+	private FormSession(Form form, Mode mode, Record record, long startTime)
 	{
 		if(form == null)
 			throw new NullPointerException("Form cannot be null!");
@@ -60,7 +60,7 @@ public class FormSession
 		this.mode = mode;
 		this.record = record;
 		this.fieldAndArgumentHistory = new Stack<FieldWithArguments>();
-		this.startTime = System.currentTimeMillis();
+		this.startTime = startTime;
 	}
 	
 	public FieldWithArguments getPrevious(boolean forBackMove)
