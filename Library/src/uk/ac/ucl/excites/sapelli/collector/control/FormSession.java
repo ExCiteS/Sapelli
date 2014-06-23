@@ -165,7 +165,7 @@ public class FormSession
 	public void addMediaAttachment(File mediaAttachment)
 	{
 		if(mediaAttachments == null)
-			new ArrayList<File>();
+			mediaAttachments = new ArrayList<File>();
 		mediaAttachments.add(mediaAttachment);
 	}
 

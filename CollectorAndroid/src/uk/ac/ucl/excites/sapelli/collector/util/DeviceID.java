@@ -262,7 +262,7 @@ public class DeviceID
 				inAirplaneMode = true;
 				if(DeviceControl.canToogleAirplaneMode())
 				{
-					DeviceControl.toggleAirplaneMode(context);
+					DeviceControl.disableAirplaneMode(context);
 					int counter = 0;
 					while(DeviceControl.inAirplaneMode(context) && counter < MAX_STEPS)
 					{
@@ -306,7 +306,7 @@ public class DeviceID
 				{	
 					// Put the phone back in AirplaneMode (because it was in airplane mode before):
 					if(inAirplaneMode)
-						DeviceControl.toggleAirplaneMode(context);
+						DeviceControl.enableAirplaneMode(context);
 					
 					// Compute and save the Device ID
 					computeDeviceID();
