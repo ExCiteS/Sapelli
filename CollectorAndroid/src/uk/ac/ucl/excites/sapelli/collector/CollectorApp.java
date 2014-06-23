@@ -20,6 +20,9 @@ import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;
 import android.util.Log;
+
+import com.crashlytics.android.Crashlytics;
+
 import de.jockels.open.Environment2;
 
 /**
@@ -84,6 +87,9 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		super.onCreate();
 		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.getAllInfo());
+
+		// Start Crashlytics for bugs reporting
+		Crashlytics.start(this);
 	
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();

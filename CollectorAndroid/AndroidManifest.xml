@@ -147,6 +147,8 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity" />
         </activity>
+
+    <meta-data android:name="com.crashlytics.ApiKey" android:value="d4cd414cf1f34965f9373c71749e234360eaa421"/>
     </application>
 
 </manifest>
