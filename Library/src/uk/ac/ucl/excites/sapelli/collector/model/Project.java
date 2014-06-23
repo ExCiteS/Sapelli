@@ -13,7 +13,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.io.FileWriter;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
 
 /**
  * A Sapelli Collector Project (i.e. a survey consisting of one or more forms)
@@ -55,7 +54,7 @@ public class Project
 	
 	private String projectPath;
 	
-	private Settings transmissionSettings;
+	private TransmissionSettings transmissionSettings;
 	private boolean logging;
 	private final Schema heartbeatSchema;
 	private final List<Form> forms;
@@ -284,7 +283,7 @@ public class Project
 	/**
 	 * @return the transmissionSettings
 	 */
-	public Settings getTransmissionSettings()
+	public TransmissionSettings getTransmissionSettings()
 	{
 		return transmissionSettings;
 	}
@@ -292,7 +291,7 @@ public class Project
 	/**
 	 * @param transmissionSettings the transmissionSettings to set
 	 */
-	public void setTransmissionSettings(Settings transmissionSettings)
+	public void setTransmissionSettings(TransmissionSettings transmissionSettings)
 	{
 		this.transmissionSettings = transmissionSettings;
 	}

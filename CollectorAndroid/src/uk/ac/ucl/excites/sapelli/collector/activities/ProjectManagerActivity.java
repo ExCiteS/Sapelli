@@ -19,6 +19,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderClient;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.TransmissionSettings;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
@@ -30,7 +31,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -631,7 +631,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			public void onClick(DialogInterface dialog, int whichButton)
 			{
 				String inputStr = input.getText().toString();
-				project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? 	Settings.DEFAULT_PASSWORD /*Set the Default Password*/ :
+				project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? 	TransmissionSettings.DEFAULT_PASSWORD /*Set the Default Password*/ :
 																					inputStr);
 			}
 		});

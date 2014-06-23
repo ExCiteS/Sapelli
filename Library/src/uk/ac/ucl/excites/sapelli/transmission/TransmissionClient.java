@@ -21,6 +21,7 @@ public abstract class TransmissionClient extends StorageClient
 	static public final Model TRANSMISSION_MANAGEMENT_MODEL = new Model(TRANSMISSION_MANAGEMENT_MODEL_ID, "TransmissionManagement");
 
 	// DYNAMICS------------------------------------------------------
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
 	 */

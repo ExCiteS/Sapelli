@@ -1,18 +1,19 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.transmission;
+package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 
 /**
  * @author mstevens
  *
  */
-public class Settings
+public class TransmissionSettings
 {
 
 	//STATICS--------------------------------------------------------
@@ -21,6 +22,8 @@ public class Settings
 		BINARY,
 		TEXT
 	}
+	
+	static public final boolean DEFAULT_ALLOW_HEARTBEATS = false;
 	
 	static public final SMSMode DEFAULT_SMS_MODE = SMSMode.BINARY;
 	
@@ -36,6 +39,9 @@ public class Settings
 	static public final boolean DEFAULT_SMS_ALLOW_ROAMING = false;
 	
 	//DYNAMICS-------------------------------------------------------
+	
+	//Heartbeats-----------------------
+	protected boolean allowHeartbeats;
 	
 	//Encryption-----------------------
 	protected EncryptionSettings encryptionSettings;
@@ -61,8 +67,9 @@ public class Settings
 	// Receiving side:
 	protected List<SMSAgent> smsApprovedSenders;
 	
-	public Settings()
+	public TransmissionSettings()
 	{
+		allowHeartbeats = DEFAULT_ALLOW_HEARTBEATS;
 		encryptionSettings = new EncryptionSettings();
 		dropboxUpload = DEFAULT_DROPBOX_UPLOAD;
 		dropboxAllowMobileData = DEFAULT_DROPBOX_ALLOW_MOBILE_DATA;
@@ -82,7 +89,7 @@ public class Settings
 	 * 
 	 * @param another
 	 */
-	public Settings(Settings another)
+	public TransmissionSettings(TransmissionSettings another)
 	{
 		encryptionSettings = new EncryptionSettings(another.encryptionSettings);
 		dropboxUpload = another.dropboxUpload;
@@ -98,6 +105,22 @@ public class Settings
 		smsApprovedSenders = new ArrayList<SMSAgent>(another.smsApprovedSenders);
 	}
 	
+	/**
+	 * @return the allowHeartbeats
+	 */
+	public boolean isAllowHeartbeats()
+	{
+		return allowHeartbeats;
+	}
+
+	/**
+	 * @param allowHeartbeats the allowHeartbeats to set
+	 */
+	public void setAllowHeartbeats(boolean allowHeartbeats)
+	{
+		this.allowHeartbeats = allowHeartbeats;
+	}
+
 	/**
 	 * @return the encryptionSettings
 	 */
