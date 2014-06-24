@@ -146,6 +146,12 @@ public final class DeviceControl
 		}
 	}
 
+	/**
+	 * Returns the current battery level as a percentage.
+	 * 
+	 * @param context
+	 * @return
+	 */
 	public static float getBatteryLevel(Context context)
 	{
 		Intent batteryIntent = context.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
