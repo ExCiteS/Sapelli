@@ -13,7 +13,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Index;
+import uk.ac.ucl.excites.sapelli.storage.model.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -529,7 +529,7 @@ public class Form
 				// Device ID column:
 				schema.addColumn(COLUMN_DEVICE_ID);
 				// Add primary key on StartTime & DeviceID:
-				schema.addIndex(new Index(COLUMN_TIMESTAMP_START.getName() + "_" + COLUMN_DEVICE_ID.getName(), true, COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID), true);
+				schema.setPrimaryKey(new PrimaryKey(COLUMN_TIMESTAMP_START.getName() + "_" + COLUMN_DEVICE_ID.getName(), COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID));
 				
 				// Add user-defined columns
 				schema.addColumns(userDefinedColumns);

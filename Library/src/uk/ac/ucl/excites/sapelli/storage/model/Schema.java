@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
@@ -28,6 +29,8 @@ public class Schema implements Serializable
 	private static final long serialVersionUID = 2L;
 	
 	static protected final int UNKNOWN_COLUMN_POSITION = -1;
+	
+	static public final String COLUMN_AUTO_KEY_NAME = "AutoKey";
 	
 	/**
 	 * Identification of "internal" schemata (not part of a Model)
@@ -69,8 +72,8 @@ public class Schema implements Serializable
 	private final List<Column> realColumns = new ArrayList<Column>(); // only contains non-virtual ("real") columns
 	private final Map<String, Integer> columnNameToPosition = new LinkedHashMap<String, Integer>(); // only contains non-virtual ("real") columns
 	private Map<String, VirtualColumn> virtualColumnsByName;
-	private List<Index> indexes;
-	private Index primaryKey;
+	private PrimaryKey primaryKey;
+	private List<Index> indexes; // also includes the primary key
 	private transient List<Column> allColumns; // contains non-virtual and virtual columns
 	
 	/**
@@ -189,42 +192,77 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * Add an {@link Index} to the Schema, which may or may not be used as the primary key.
-	 * In case it is to be used as the primary key the index needs to be unique and should consist only of non-optional (i.e. non-nullable) columns.
-	 * 
-	 * Note: adding a primary key index is not allowed after the Schema has been sealed, adding normal indexes is allowed.
+	 * Add an {@link Index} to the Schema. If the Index is a primary key it is added as such (provided does not already have a primary key).
+	 * Adding indexes is possible after the Schema has been sealed (setting/changing the primary key is not).
 	 * 
 	 * @param index
-	 * @param useAsPrimaryKey
 	 */
-	public void addIndex(Index index, boolean useAsPrimaryKey)
+	public void addIndex(Index index)
 	{
-		if(sealed && useAsPrimaryKey)
-			throw new IllegalStateException("Cannot set the primary key of a sealed schema (adding normal indexes is allowed)!");
+		if(index instanceof PrimaryKey)
+			// set as primary key:
+			setPrimaryKey((PrimaryKey) index);
+		else
+			// add as normal index:
+			doAddIndex(index);
+	}
+	
+	/**
+	 * @param primaryKey
+	 */
+	public void setPrimaryKey(PrimaryKey primaryKey)
+	{
+		if(this.primaryKey != null)
+			throw new IllegalStateException("This Schema already has a primary key (there can be only 1)!");
+		if(sealed)
+			throw new IllegalStateException("Cannot set primary key on a sealed schema!");
+		// Also add as an index (+ do checks):
+		doAddIndex(primaryKey);
+		// Set primary key:
+		this.primaryKey = primaryKey;
+	}
+
+	private void doAddIndex(Index index)
+	{
+		// Null check:
 		if(index == null)
 			throw new NullPointerException("Index cannot be null!");
-		if(index.getNumberOfColumns(false) == 0)
-			throw new IllegalArgumentException("Index must cover at least 1 column!");
 		// Check if the indexed columns are columns of this Schema instance:
 		for(Column idxCol : index.getColumns(false))
 			if(!containsColumn(idxCol, false))
-				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before Indexes are added.");
-		if(useAsPrimaryKey)
-		{
-			if(primaryKey != null)
-				throw new IllegalStateException("This Schema already has a primary key (there can be only 1)!");
-			if(!index.isUnique())
-				throw new IllegalArgumentException("An Index needs to be unique to serve as the primary key!");
-			for(Column idxCol : index.getColumns(false))
-				if(idxCol.isOptional())
-					throw new IllegalArgumentException("An primary key index cannot contain optional (i.e. nullable) columns!");
-			primaryKey = index; // set the index as primary key
-		}
+				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before indexes are added or the primary key is set.");
+		// Initialise collection if needed:
 		if(indexes == null)
 			indexes = new ArrayList<Index>();
-		indexes.add(index); // add to the indexes
+		// Add to the indexes:
+		indexes.add(index);
 	}
-
+	
+	/**
+	 * Seals the schema. After this records can be created based on the schema, but no more columns can be added and the primary key cannot be set or changed.
+	 * <br/>
+	 * If an "external/client" schema has not received a primary key at this point an auto-incrementing integer primary key is added prior to sealing. For internal schemata does not happen.
+	 */
+	public void seal()
+	{
+		// Add automatic primary key to "external/client" schemata that don't have one yet:
+		if(!isInternal() && !hasPrimaryKey())
+		{
+			IntegerColumn intColumn = new IntegerColumn(COLUMN_AUTO_KEY_NAME, false, true, Long.SIZE); // signed 64 bit, based on ROWIDs in SQLite v3 and later (http://www.sqlite.org/version3.html)
+			setPrimaryKey(new AutoIncrementingPrimaryKey(name + "_Idx" + COLUMN_AUTO_KEY_NAME, intColumn));
+		}
+		// Seal:
+		this.sealed = true;
+	}
+	
+	/**
+	 * @return whether or not this schema is sealed
+	 */
+	public boolean isSealed()
+	{
+		return sealed;
+	}
+	
 	/**
 	 * @param name
 	 * @param checkVirtual whether or not to look in the schema's virtual columns
@@ -244,7 +282,7 @@ public class Schema implements Serializable
 	 * @param position
 	 * @return
 	 */
-	protected Column<?> getColumn(int position)
+	public Column<?> getColumn(int position)
 	{
 		if(position < 0 || position >= realColumns.size())
 			throw new ArrayIndexOutOfBoundsException("Invalid column position (" + position + ")");
@@ -320,8 +358,10 @@ public class Schema implements Serializable
 		Column myColumn = getColumn(column.getName(), checkVirtual);
 		return myColumn != null && myColumn.equals(column);
 	}
-
+	
 	/**
+	 * Returns all indexes (if there are any), including the primary key (if one is set).
+	 * 
 	 * @return the indexes
 	 */
 	public List<Index> getIndexes()
@@ -330,9 +370,21 @@ public class Schema implements Serializable
 	}
 
 	/**
+	 * @param includePrimaryKey
+	 * @return the indexes
+	 */
+	public List<Index> getIndexes(boolean includePrimaryKey)
+	{
+		List<Index> idxs = getIndexes();
+		if(!includePrimaryKey)
+			idxs.remove(primaryKey);
+		return idxs;
+	}
+
+	/**
 	 * @return the primaryKey
 	 */
-	public Index getPrimaryKey()
+	public PrimaryKey getPrimaryKey()
 	{
 		return primaryKey;
 	}
@@ -343,22 +395,6 @@ public class Schema implements Serializable
 	public boolean hasPrimaryKey()
 	{
 		return primaryKey != null;
-	}
-
-	/**
-	 * @return the sealed
-	 */
-	public boolean isSealed()
-	{
-		return sealed;
-	}
-
-	/**
-	 * seals the schema, after which records can be created based on it, but no more columns can be added
-	 */
-	public void seal()
-	{
-		this.sealed = true;
 	}
 
 	public Record createRecord()
@@ -457,7 +493,7 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * Check for equality based on schema ID (nothing else)
+	 * Check for equality
 	 * 
 	 * @param obj object to compare this one with
 	 * @return whether or not the given Object is a Schema with the same ID & version as this one
@@ -466,7 +502,7 @@ public class Schema implements Serializable
 	@Override
 	public boolean equals(Object obj)
 	{
-		return equals(obj, false, false, false); // check only schemaID
+		return equals(obj, true, true, true);
 	}
 
 	/**

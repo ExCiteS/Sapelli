@@ -4,7 +4,7 @@
 package uk.ac.ucl.excites.sapelli.collector.model.diagnostics;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.storage.model.Index;
+import uk.ac.ucl.excites.sapelli.storage.model.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -12,6 +12,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**
  * The schema for heartbeat records providing diagnostic information about the device and the usage of a specific project
@@ -49,7 +50,7 @@ public class HeartbeatSchema extends Schema
 		this.addColumn(COLUMN_LAST_KNOWN_LOCATION);
 		this.addColumn(COLUMN_PROJECT_LAST_OPENED_AT);
 		// Add primary key on LocalTime & DeviceID:
-		this.addIndex(new Index(COLUMN_LOCAL_TIME.getName() + "_" + COLUMN_DEVICE_ID.getName(), true, COLUMN_LOCAL_TIME, COLUMN_DEVICE_ID), true);
+		this.setPrimaryKey(new PrimaryKey(COLUMN_LOCAL_TIME.getName() + "_" + COLUMN_DEVICE_ID.getName(), COLUMN_LOCAL_TIME, COLUMN_DEVICE_ID));
 		// Seal the schema:
 		this.seal();
 	}

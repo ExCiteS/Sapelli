@@ -61,7 +61,7 @@ public class OrConstraint extends CompositeConstraint
 	public int hashCode()
 	{
 		int hash = super.hashCode(); // CompositeConstraint#hashCode()
-		hash = 31 * hash + "OR".hashCode(); // to differentiate from OrConstraint
+		hash = 31 * hash + "OR".hashCode(); // to differentiate from AndConstraint
 		return hash;
 	}
 

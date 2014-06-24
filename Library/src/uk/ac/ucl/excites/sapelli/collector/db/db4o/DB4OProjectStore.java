@@ -12,7 +12,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
@@ -160,7 +160,7 @@ public class DB4OProjectStore extends ProjectStore
 	}
 
 	@Override
-	public void storeHeldForeignKey(Relationship relationship, ForeignKey foreignKey)
+	public void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey)
 	{
 		if(!relationship.isHoldForeignRecord())
 			throw new IllegalArgumentException("This relationship is not allowed to hold on to foreign records");
@@ -171,7 +171,7 @@ public class DB4OProjectStore extends ProjectStore
 	}
 
 	@Override
-	public ForeignKey retrieveHeldForeignKey(Relationship relationship)
+	public RecordReference retrieveHeldForeignKey(Relationship relationship)
 	{
 		if(!relationship.isHoldForeignRecord())
 			throw new IllegalArgumentException("This relationship is not allowed to hold on to foreign records");
@@ -216,12 +216,12 @@ public class DB4OProjectStore extends ProjectStore
 	{
 		
 		Relationship relationship;
-		ForeignKey foreignKey;
+		RecordReference foreignKey;
 		/**
 		 * @param relationship
 		 * @param foreignKey
 		 */
-		public HeldForeignKey(Relationship relationship, ForeignKey foreignKey)
+		public HeldForeignKey(Relationship relationship, RecordReference foreignKey)
 		{
 			this.relationship = relationship;
 			this.foreignKey = foreignKey;

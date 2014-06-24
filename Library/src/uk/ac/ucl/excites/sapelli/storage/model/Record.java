@@ -172,6 +172,17 @@ public class Record implements Serializable
 		return true;
 	}
 	
+	/**
+	 * Returns a reference to the record. Only works if the schema has a primary key, otherwise 
+	 * 
+	 * @return a {@link RecordReference} instance pointing to this record
+	 * @throws NullPointerException	if the Schema of this Record does not have a primary key
+	 */
+	public RecordReference getReference() throws NullPointerException
+	{
+		return new RecordReference(this);
+	}
+	
 	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<Column<?>> skipColumns) throws IOException
 	{
 		try
@@ -282,6 +293,8 @@ public class Record implements Serializable
 	
 	public boolean equals(Object obj, boolean checkSchema)
 	{
+		if(this == obj)
+			return true;
 		if(obj instanceof Record)
 		{
 			Record other = (Record) obj;

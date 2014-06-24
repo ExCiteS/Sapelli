@@ -6,7 +6,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
-import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 
 /**
  * Interface for Project storage back-ends
@@ -78,9 +78,9 @@ public abstract class ProjectStore implements Store
 	 */
 	public abstract void delete(Project project);
 	
-	public abstract void storeHeldForeignKey(Relationship relationship, ForeignKey foreignKey);
+	public abstract void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey);
 	
-	public abstract ForeignKey retrieveHeldForeignKey(Relationship relationship);
+	public abstract RecordReference retrieveHeldForeignKey(Relationship relationship);
 	
 	public abstract void deleteHeldForeignKey(Relationship relationship);
 

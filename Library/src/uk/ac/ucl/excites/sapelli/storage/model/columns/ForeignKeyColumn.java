@@ -3,7 +3,7 @@
  */
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
-import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
@@ -13,7 +13,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class ForeignKeyColumn extends RecordColumn<ForeignKey>
+public class ForeignKeyColumn extends RecordColumn<RecordReference>
 {
 	
 	static private final long serialVersionUID = 2L;
@@ -28,7 +28,7 @@ public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 	 */
 	public ForeignKeyColumn(String name, Schema foreignSchema, boolean optional)
 	{
-		super(ForeignKey.class, name, foreignSchema.getPrimaryKey() /* Index instance, a subclass of Schema */, optional);
+		super(RecordReference.class, name, foreignSchema.getPrimaryKey() /* Index instance, a subclass of Schema */, optional);
 		this.foreignSchema = foreignSchema;
 	}
 
@@ -39,15 +39,15 @@ public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 	}
 
 	@Override
-	public ForeignKey getNewRecord()
+	public RecordReference getNewRecord()
 	{
-		return new ForeignKey(foreignSchema);
+		return new RecordReference(foreignSchema);
 	}
 
 	@Override
-	protected ForeignKey copy(ForeignKey value)
+	protected RecordReference copy(RecordReference value)
 	{
-		return new ForeignKey(value);
+		return new RecordReference(value);
 	}
 	
 	@Override

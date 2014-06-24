@@ -5,12 +5,14 @@ package uk.ac.ucl.excites.sapelli.storage.db.db4o;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
@@ -43,11 +45,15 @@ public class DB4ORecordStore extends RecordStore
 	private ObjectContainer db4o;
 	private String filename;
 	
+	private HashMap<Schema, Long> nextAutoIncrements;
+	
 	public DB4ORecordStore(StorageClient client, File folder, String baseFilename) throws Exception
 	{
 		super(client);
 		this.filename = baseFilename + DATABASE_NAME_SUFFIX;
 		this.db4o = DB4OConnector.open(DB4OConnector.getFile(folder, filename), Record.class, Schema.class);
+		
+		
 	}
 	
 	@Override
@@ -75,6 +81,11 @@ public class DB4ORecordStore extends RecordStore
 	protected boolean doStore(Record record) throws Exception
 	{
 		boolean insert = !db4o.ext().isStored(record);
+		// TODO autoIncr stuff
+//		if(	insert && record.getSchema().getPrimaryKey() instanceof AutoIncrementingPrimaryKey)
+//		{
+//			(IntegerColumn) record.getSchema().getPrimaryKey().getColumn(0)
+//		}
 		db4o.store(record);
 		return insert;
 	}
@@ -180,6 +191,46 @@ public class DB4ORecordStore extends RecordStore
 	{
 		db4o.commit();
 		db4o.ext().backup(DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName()).getAbsolutePath());
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doGetNextAutoIncrement(uk.ac.ucl.excites.sapelli.storage.model.Schema)
+	 */
+	@Override
+	protected long doGetNextAutoIncrement(Schema schema)
+	{
+		// TODO ...
+		return 0;
+	}
+	
+	/**
+	 * @author mstevens
+	 * 
+	 * TODO finish this with a clear mind!
+	 */
+	private class AutoIncrementDictionary extends HashMap<Schema, Long>
+	{
+		
+		public Long register(Schema schema)
+		{
+			if(!(schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey))
+				throw new IllegalArgumentException("Schema must have an auto-incrementing primary key");
+			if(!containsKey(schema))
+				return put(schema, 0l);
+			else
+				return get(schema);
+		}
+		
+		public Long increment(Schema schema)
+		{
+			if(!(schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey))
+				throw new IllegalArgumentException("Schema must have an auto-incrementing primary key");
+			if(!containsKey(schema))
+				return put(schema, 0l);
+			else
+				return put(schema, get(schema) + 1);
+		}
+		
 	}
 
 }

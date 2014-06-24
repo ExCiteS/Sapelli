@@ -7,6 +7,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
@@ -233,5 +234,30 @@ public abstract class RecordStore implements Store
 	 * @throws Exception
 	 */
 	protected abstract void doDelete(Record record) throws Exception;
+	
+	/**
+	 * Returns the primary key value for the next inserted record for the given schema, which must have an {@link AutoIncrementingPrimaryKey} set as its primary key.
+	 * 
+	 * @param schema (must have an auto-incrementing primary key)
+	 * @return the primary key value for the next inserted record
+	 */
+	public long getNextAutoIncrement(Schema schema)
+	{
+		// Some checks:
+		if(schema == null)
+			throw new NullPointerException("Please provide a non-null Schema");
+		if(!schema.hasPrimaryKey() || !(schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey))
+			throw new IllegalArgumentException("The given schema does not have an auto-incrementing primary key");
+		// Get value
+		return doGetNextAutoIncrement(schema);
+	}
+	
+	/**
+	 * Must return the primary key value for the next inserted record for the given schema, which is assured to have an {@link AutoIncrementingPrimaryKey} set as its primary key.
+	 * 
+	 * @param schema (has an auto-incrementing primary key)
+	 * @return the primary key value for the next inserted record
+	 */
+	protected abstract long doGetNextAutoIncrement(Schema schema);
 
 }
