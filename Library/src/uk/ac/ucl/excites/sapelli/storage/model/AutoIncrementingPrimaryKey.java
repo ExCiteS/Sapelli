@@ -23,6 +23,11 @@ public class AutoIncrementingPrimaryKey extends PrimaryKey
 	{
 		super(name, intColumn);
 	}
+	
+	public IntegerColumn getColumn()
+	{
+		return (IntegerColumn) getColumn(0);
+	}
 
 	@Override
     public boolean equals(Object obj)

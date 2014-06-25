@@ -265,9 +265,19 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 		return receiver;
 	}
 	
+	public boolean isReceiverSet()
+	{
+		return receiver != null;
+	}
+	
 	public SMSAgent getSender()
 	{
 		return sender;
+	}
+	
+	public boolean isSenderSet()
+	{
+		return sender != null;
 	}
 	
 	public DateTime getDeliveredAt()

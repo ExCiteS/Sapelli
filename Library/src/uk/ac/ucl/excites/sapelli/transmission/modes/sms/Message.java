@@ -2,6 +2,9 @@ package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+
 /**
  * Abstract class representing an SMS message which is one part of an {@link SMSTransmission}
  * 
@@ -10,7 +13,6 @@ import org.joda.time.DateTime;
 public abstract class Message implements Comparable<Message>
 {
 	
-	protected int sequentialID;
 	protected int payloadHash;
 	protected SMSTransmission<?> transmission;
 	
@@ -38,7 +40,6 @@ public abstract class Message implements Comparable<Message>
 		if(partNumber < 1 || totalParts < 1 || partNumber > totalParts)
 			throw new IllegalArgumentException("Invalid part number (" + partNumber + ") of total number of parts (" + totalParts + ").");
 		this.receiver = receiver;
-		//TODO seq id
 		this.payloadHash = transmission.getPayloadHash();
 		this.transmission = transmission;
 		this.partNumber  = partNumber;
@@ -201,5 +202,7 @@ public abstract class Message implements Comparable<Message>
 	}
 	
 	protected abstract boolean equalBody(Message another);
+	
+	public abstract void setBody(TransmissionStore store, Record transmissionPartRecord);
 	
 }

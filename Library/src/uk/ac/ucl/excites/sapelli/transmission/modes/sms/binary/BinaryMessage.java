@@ -14,8 +14,10 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
@@ -165,13 +167,13 @@ public class BinaryMessage extends Message
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
 			out = new BitWrapOutputStream(rawOut);
 	
-			//Write header:
+			// Write header:
 			// TODO seq id
 			Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, out);	// Payload hash
 			PART_NUMBER_FIELD.write(partNumber, out);					//Part number
 			PART_NUMBER_FIELD.write(totalParts, out);					//Total parts
 			
-			//Write payload:
+			// Write body:
 			out.write(body);
 			
 			// Flush, close & get bytes:
@@ -216,6 +218,12 @@ public class BinaryMessage extends Message
 	protected boolean equalBody(Message another)
 	{
 		return another instanceof BinaryMessage && body.equals(((BinaryMessage) another).body);
+	}
+
+	@Override
+	public void setBody(TransmissionStore store, Record transmissionPartRecord)
+	{
+		store.setPartBody(body, transmissionPartRecord);
 	}
 
 }

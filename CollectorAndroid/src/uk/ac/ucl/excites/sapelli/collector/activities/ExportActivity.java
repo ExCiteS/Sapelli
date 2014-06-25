@@ -358,9 +358,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 				// Schemas (when list stays empty all records of any schema/project/form will be fetched):
 				List<Schema> schemata = new ArrayList<Schema>();
 				if(project != null && radioSelectedProject.isChecked())
-					for(Form f : project.getForms())
-						if(f.isProducesRecords())
-							schemata.add(f.getSchema());
+					schemata.addAll(project.getModel().getSchemata());
 				// Date range:
 				AndConstraint constraints = new AndConstraint();
 				if(dateRange[DT_RANGE_IDX_FROM] != null)

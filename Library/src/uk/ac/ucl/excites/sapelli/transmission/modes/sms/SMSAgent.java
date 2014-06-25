@@ -8,6 +8,15 @@ package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
 public class SMSAgent
 {
 	
+	//Statics
+	static final char SEPARATOR = ';';
+	
+	static public SMSAgent Parse(String str)
+	{
+		String[] parts = str.split("\\" + SEPARATOR);
+		return new SMSAgent(parts[0]);
+	}
+	
 	//Dynamics
 	private String phoneNumber;
 	
@@ -39,6 +48,12 @@ public class SMSAgent
 			return phoneNumber.equals(((SMSAgent) o).phoneNumber);
 		else
 			return false;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return phoneNumber + SEPARATOR;
 	}
 
 }

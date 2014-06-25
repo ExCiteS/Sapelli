@@ -107,5 +107,11 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	{
 		return false;
 	}
-
+	
+	@Override
+	public Type getType()
+	{
+		return Type.BINARY_SMS;
+	}
+	
 }

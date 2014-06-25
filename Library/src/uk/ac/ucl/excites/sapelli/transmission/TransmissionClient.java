@@ -8,6 +8,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
  * @author mstevens
@@ -18,7 +19,6 @@ public abstract class TransmissionClient extends StorageClient
 
 	// STATICS-------------------------------------------------------
 	static public final long TRANSMISSION_MANAGEMENT_MODEL_ID = 0; // reserved!
-	static public final Model TRANSMISSION_MANAGEMENT_MODEL = new Model(TRANSMISSION_MANAGEMENT_MODEL_ID, "TransmissionManagement");
 
 	// DYNAMICS------------------------------------------------------
 	
@@ -29,7 +29,7 @@ public abstract class TransmissionClient extends StorageClient
 	public List<Model> getReserveredModels()
 	{
 		List<Model> reserved = super.getReserveredModels();
-		reserved.add(TRANSMISSION_MANAGEMENT_MODEL);
+		reserved.add(TransmissionStore.TRANSMISSION_MANAGEMENT_MODEL);
 		return reserved;
 	}
 	

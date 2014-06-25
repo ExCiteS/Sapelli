@@ -282,7 +282,7 @@ public class Schema implements Serializable
 	 * @param position
 	 * @return
 	 */
-	public Column<?> getColumn(int position)
+	protected Column<?> getColumn(int position)
 	{
 		if(position < 0 || position >= realColumns.size())
 			throw new ArrayIndexOutOfBoundsException("Invalid column position (" + position + ")");
@@ -326,7 +326,7 @@ public class Schema implements Serializable
 			}
 			return allColumns;
 		}
-		return realColumns;
+		return new ArrayList<Column>(realColumns);
 	}
 	
 	/**

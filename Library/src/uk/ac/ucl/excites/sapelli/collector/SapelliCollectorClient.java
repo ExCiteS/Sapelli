@@ -78,6 +78,9 @@ public class SapelliCollectorClient extends TransmissionClient
 		throw new UnknownModelException(schema.getModelID());
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getClientModel(long)
+	 */
 	@Override
 	public Model getClientModel(long modelID) throws UnknownModelException
 	{

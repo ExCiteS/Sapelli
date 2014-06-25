@@ -6,7 +6,9 @@ package uk.ac.ucl.excites.sapelli.transmission.modes.sms.text;
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
@@ -181,6 +183,12 @@ public class TextMessage extends Message
 	public boolean isMultiPart()
 	{
 		return false;
+	}
+
+	@Override
+	public void setBody(TransmissionStore store, Record transmissionPartRecord)
+	{
+		store.setPartBody(body, transmissionPartRecord);
 	}
 
 }

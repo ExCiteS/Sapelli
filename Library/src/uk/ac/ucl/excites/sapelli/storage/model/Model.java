@@ -132,6 +132,14 @@ public class Model implements Serializable
 		return no;
 	}
 	
+	/**
+	 * @return the schemata
+	 */
+	public List<Schema> getSchemata()
+	{
+		return new ArrayList<Schema>(schemata);
+	}
+
 	public int getNumberOfSchemata()
 	{
 		return schemata.size();

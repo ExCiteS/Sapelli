@@ -24,21 +24,36 @@ public abstract class Transmission
 {
 
 	// STATICS-------------------------------------------------------
-	static public final int SEQUENTIAL_ID_SIZE = 6; // bits
-	static public final IntegerRangeMapping SEQUENTIAL_ID_FIELD = IntegerRangeMapping.ForSize(0, SEQUENTIAL_ID_SIZE); // unsigned(!) 6 bit integer
+	public static enum Type
+	{
+		BINARY_SMS,
+		TEXTUAL_SMS,
+		HTTP,
+		// More later?
+	}
+	
+	static public final int TRANSMISSION_ID_SIZE = 24; // bits
+	static public final IntegerRangeMapping TRANSMISSION_ID_FIELD = IntegerRangeMapping.ForSize(0, TRANSMISSION_ID_SIZE); // unsigned(!) 24 bit integer
 	
 	static public final int PAYLOAD_HASH_SIZE = 16; // bits
 	static public final IntegerRangeMapping PAYLOAD_HASH_FIELD = IntegerRangeMapping.ForSize(0, PAYLOAD_HASH_SIZE); // unsigned(!) 16 bit integer
 	
 	static private final int PAYLOAD_HASH_NOT_SET = -1;
 	
+	static public final int CORRESPONDENT_MAX_LENGTH = 256;
+	
 	// DYNAMICS------------------------------------------------------
 	protected final TransmissionClient client;
 	
 	/**
-	 * ID by which this transmission is identified in the context of the local device/server storage alone
+	 * ID by which this transmission is identified in the context of the local device/server
 	 */
 	protected Integer localID;
+	
+	/**
+	 * ID by which this transmission is identified in the context of the remote device/server
+	 */
+	protected Integer remoteID;
 	
 	/**
 	 * Contents of the transmission
@@ -85,11 +100,31 @@ public abstract class Transmission
 		this.localID = id;
 	}
 	
+	public boolean isLocalIDSet()
+	{
+		return localID != null;
+	}
+	
 	public int getLocalID()
 	{
 		if(localID == null)
 			throw new IllegalStateException("LocalID has not been set yet");
 		return localID.intValue();
+	}
+	
+	/**
+	 * @return the remoteID
+	 */
+	public Integer getRemoteID()
+	{
+		if(remoteID == null)
+			throw new IllegalStateException("RemoteID has not been set yet");
+		return remoteID;
+	}
+
+	public boolean isPayloadSet()
+	{
+		return payload != null;
 	}
 	
 	public Payload getPayload()
@@ -234,5 +269,10 @@ public abstract class Transmission
 	 * @return whether (true) or not (false) the wrapping of the payload data in the transmission (as implemented by {@link #wrap(BitArray)}) can cause the data size to grow (e.g. due to escaping)
 	 */
 	public abstract boolean canWrapIncreaseSize();
+	
+	/**
+	 * @return
+	 */
+	public abstract Type getType();
 	
 }

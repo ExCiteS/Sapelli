@@ -58,7 +58,7 @@ public class Project
 	private boolean logging;
 	private final Schema heartbeatSchema;
 	private final List<Form> forms;
-	private transient Model model;
+	private final Model model;
 	private Form startForm;
 	
 	// For backwards compatibility:

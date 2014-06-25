@@ -81,6 +81,19 @@ public class HTTPTransmission extends Transmission
 		return body != null;
 	}
 	
+	public byte[] getBody()
+	{
+		return body;
+	}
+	
+	/**
+	 * @return the serverURL
+	 */
+	public String getServerURL()
+	{
+		return serverURL;
+	}
+
 	@Override
 	public int getMaxPayloadBits()
 	{
@@ -94,6 +107,12 @@ public class HTTPTransmission extends Transmission
 	public boolean canWrapIncreaseSize()
 	{
 		return false;
+	}
+
+	@Override
+	public Type getType()
+	{
+		return Type.HTTP;
 	}
 	
 }

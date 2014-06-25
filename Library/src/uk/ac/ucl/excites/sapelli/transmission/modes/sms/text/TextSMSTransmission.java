@@ -355,4 +355,10 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		return true;
 	}
 	
+	@Override
+	public Type getType()
+	{
+		return Type.TEXTUAL_SMS;
+	}
+	
 }
