@@ -63,7 +63,7 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	 * @param payloadHash
 	 * @param parts list of {@link Message}s
 	 */
-	public BinarySMSTransmission(TransmissionClient client, int localID, String sender, String receiver, int payloadHash, List<BinaryMessage> parts) 
+	public BinarySMSTransmission(TransmissionClient client, int localID, SMSAgent sender, SMSAgent receiver, int payloadHash, List<BinaryMessage> parts) 
 	{
 		super(client, localID, sender, receiver, payloadHash, parts);
 	}

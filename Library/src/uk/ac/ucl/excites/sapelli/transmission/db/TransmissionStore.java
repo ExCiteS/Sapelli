@@ -15,6 +15,11 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
@@ -84,10 +89,12 @@ public class TransmissionStore implements Store
 	}
 	
 	// DYNAMICS--------------------------------------------
+	private TransmissionClient client;
 	private RecordStore recordStore;
 
-	public TransmissionStore(RecordStore recordStore)
+	public TransmissionStore(TransmissionClient client, RecordStore recordStore)
 	{
+		this.client = client;
 		this.recordStore = recordStore;
 	}
 	
@@ -227,11 +234,43 @@ public class TransmissionStore implements Store
 		// TODO commit transaction
 	}
 	
+	/**
+	 * @param localID
+	 * @return the Transmission with the given {@code localID}, or {@code null} if no such transmission was found.
+	 */
 	public Transmission retrieveTransmission(int localID)
 	{
-		// TODO
-	
-		return null;
+		// Query for record:
+		Record tRec = recordStore.retrieveRecord(new FirstRecordQuery(new RecordsQuery(TRANSMISSION_SCHEMA, new RuleConstraint(TRANSMISSION_COLUMN_ID, Comparison.EQUAL, Long.valueOf(localID)))));
+		
+		// Null check:
+		if(tRec == null)
+			return null; // no such transmission found
+		
+		// Values:
+		String sender = TRANSMISSION_COLUMN_SENDER.retrieveValue(tRec);
+		String receiver = TRANSMISSION_COLUMN_RECEIVER.retrieveValue(tRec);
+		int payloadHash = TRANSMISSION_COLUMN_PAYLOAD_HASH.retrieveValue(tRec).intValue();
+		
+		// Construct object:
+		Transmission transmission;
+		switch(Transmission.Type.values()[TRANSMISSION_COLUMN_TYPE.retrieveValue(tRec).intValue()])
+		{
+		case BINARY_SMS:
+			//transmission = new BinarySMSTransmission(client, localID, SMSAgent.Parse(sender), receiver, payloadHash, parts)
+			break;
+		case TEXTUAL_SMS:
+			break;
+		case HTTP:
+			break;
+		default:
+			// TODO throw exception
+			break;
+			
+		}
+		
+		
+		return null; // transmission;
 	}
 	
 	public BinarySMSTransmission retrieveBinarySMSTransmission(SMSAgent correspondent, boolean sent, int payloadHash)

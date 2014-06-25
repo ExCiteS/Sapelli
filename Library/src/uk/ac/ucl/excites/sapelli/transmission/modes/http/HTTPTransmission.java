@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.sapelli.transmission.modes.http;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.joda.time.DateTime;
 
@@ -9,6 +10,9 @@ import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.Sender;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
@@ -30,7 +34,9 @@ public class HTTPTransmission extends Transmission
 	/**
 	 * To be called on the sending side.
 	 * 
+	 * @param client
 	 * @param serverURL
+	 * @param payload
 	 */
 	public HTTPTransmission(TransmissionClient client, String serverURL, Payload payload)
 	{
@@ -42,12 +48,32 @@ public class HTTPTransmission extends Transmission
 	 * To be called on the receiving side.
 	 * 
 	 * @param client
+	 * @param payloadHash
+	 * @param body
+	 * @param receivedAt
 	 */
 	public HTTPTransmission(TransmissionClient client, int payloadHash, byte[] body, DateTime receivedAt)
 	{
 		super(client, payloadHash);
 		this.body = body;
 		setReceivedAt(receivedAt);
+	}
+	
+	/**
+	 * Called when retrieving transmission from database
+	 * 
+	 * @param client
+	 * @param localID
+	 * @param serverURL
+	 * @param payloadHash
+	 * @param body
+	 */
+	public HTTPTransmission(TransmissionClient client, int localID, String serverURL, int payloadHash, byte[] body) 
+	{
+		super(client, payloadHash);
+		this.localID = localID;
+		this.serverURL = serverURL;
+		this.body = body;
 	}
 	
 	@Override

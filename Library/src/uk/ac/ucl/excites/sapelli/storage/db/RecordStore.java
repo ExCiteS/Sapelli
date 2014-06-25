@@ -153,10 +153,10 @@ public abstract class RecordStore implements Store
 	public abstract List<Record> retrieveRecords(RecordsQuery query);
 	
 	/**
-	 * Retrieve a single record by SingleRecordQuery 
+	 * Retrieve a single record by SingleRecordQuery.
 	 * 
 	 * @param query
-	 * @return
+	 * @return the resulting record or {@code null} if no matching record was found
 	 */
 	public abstract Record retrieveRecord(SingleRecordQuery query);
 

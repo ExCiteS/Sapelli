@@ -230,7 +230,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	 * @param payloadHash
 	 * @param parts list of {@link Message}s
 	 */
-	public TextSMSTransmission(TransmissionClient client, int localID, String sender, String receiver, int payloadHash, List<TextMessage> parts) 
+	public TextSMSTransmission(TransmissionClient client, int localID, SMSAgent sender, SMSAgent receiver, int payloadHash, List<TextMessage> parts) 
 	{
 		super(client, localID, sender, receiver, payloadHash, parts);
 	}

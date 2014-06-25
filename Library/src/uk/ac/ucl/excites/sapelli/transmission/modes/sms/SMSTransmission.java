@@ -66,14 +66,12 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * @param payloadHash
 	 * @param parts list of {@link Message}s
 	 */
-	public SMSTransmission(TransmissionClient client, int localID, String sender, String receiver, int payloadHash, List<M> parts) 
+	public SMSTransmission(TransmissionClient client, int localID, SMSAgent sender, SMSAgent receiver, int payloadHash, List<M> parts) 
 	{
 		super(client, payloadHash);
-		//TODO set seq id? (must come before setLocalID!)
-		setLocalID(localID);
-		
-		//TODO this.sender = sender;
-		//TODO this.receiver = receiver;
+		this.localID = localID;
+		this.sender = sender;
+		this.receiver = receiver;
 		if(parts != null)
 			for(M m : parts)
 				addPart(m);
