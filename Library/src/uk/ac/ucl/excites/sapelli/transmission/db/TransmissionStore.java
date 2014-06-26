@@ -19,6 +19,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
@@ -244,29 +245,37 @@ public class TransmissionStore implements Store
 			return null; // no such transmission found
 		
 		// Values:
+		Transmission.Type type = Transmission.Type.values()[TRANSMISSION_COLUMN_TYPE.retrieveValue(tRec).intValue()]; 
+		Integer remoteID = TRANSMISSION_COLUMN_REMOTE_ID.isValueSet(tRec) ? TRANSMISSION_COLUMN_REMOTE_ID.retrieveValue(tRec).intValue() : null; 
+		int payloadHash = TRANSMISSION_COLUMN_PAYLOAD_HASH.retrieveValue(tRec).intValue();
 		String sender = TRANSMISSION_COLUMN_SENDER.retrieveValue(tRec);
 		String receiver = TRANSMISSION_COLUMN_RECEIVER.retrieveValue(tRec);
-		int payloadHash = TRANSMISSION_COLUMN_PAYLOAD_HASH.retrieveValue(tRec).intValue();
+		TimeStamp sentAt = COLUMN_SENT_AT.retrieveValue(tRec);
+		TimeStamp receivedAt = COLUMN_RECEIVED_AT.retrieveValue(tRec);
+		
+		// Query for part records:
+		
+		
+		//List<Record> tPartRecs = recordStore.retrieveRecords(new RecordsQuery(TRANSMISSION_PART_SCHEMA, new RuleConstraint(TRANSMISSION_PART_COLUMN_TRANSMISSION_ID, 
 		
 		// Construct object:
-		Transmission transmission;
-		switch(Transmission.Type.values()[TRANSMISSION_COLUMN_TYPE.retrieveValue(tRec).intValue()])
+		switch(type)
 		{
-		case BINARY_SMS:
-			//transmission = new BinarySMSTransmission(client, localID, SMSAgent.Parse(sender), receiver, payloadHash, parts)
-			break;
-		case TEXTUAL_SMS:
-			break;
-		case HTTP:
-			break;
-		default:
-			// TODO throw exception
-			break;
+			case BINARY_SMS:
+			case TEXTUAL_SMS:
+				return createSMSTransmission(type, localID, remoteID, payloadHash, sender, receiver, sentAt, receivedAt);
+			case HTTP:
+				
+			default:
+				throw new IllegalStateException("Unsupported transmission type");
 			
 		}
+	}
+	
+	private SMSTransmission<?> createSMSTransmission(Transmission.Type type, int localID, Integer remoteID, int payloadHash, String sender, String receiver, TimeStamp sentAt, TimeStamp receivedAt)
+	{
+		return null;
 		
-		
-		return null; // transmission;
 	}
 	
 	public BinarySMSTransmission retrieveBinarySMSTransmission(SMSAgent correspondent, boolean sent, int payloadHash)

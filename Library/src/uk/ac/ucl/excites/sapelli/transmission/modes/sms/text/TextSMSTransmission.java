@@ -354,7 +354,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	@Override
 	public boolean canWrapIncreaseSize()
 	{
-		return true;
+		return true; // due to escaping mechanism
 	}
 	
 	@Override
