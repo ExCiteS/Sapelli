@@ -3,10 +3,12 @@
  */
 package uk.ac.ucl.excites.sapelli.transmission.modes.sms.text;
 
-import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
@@ -38,16 +40,22 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
 public class TextMessage extends Message
 {
 	
-	//Static
+	// STATICS-------------------------------------------------------
 	public static final boolean MULTIPART = false; // we use standard single-part SMS messages, because using 
 	public static final int MAX_TOTAL_CHARS = 160; // 	concatenated SMS would cause us to lose 7 chars per message
-	public static final int HEADER_CHARS = 8; // = 56 bits
-	public static final int MAX_PAYLOAD_CHARS = MAX_TOTAL_CHARS - HEADER_CHARS;
+	
+	private static final int HEADER_SEPARATOR_BIT = 1; // chosen such that the ESC character is never produced in the header
 	
 	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, TextSMSTransmission.MAX_TRANSMISSION_PARTS);
-	private static final int HEADER_SEPARATOR_BIT = 1; // chosen such that the ESC character is never produced in the header
+	
+	private static final int HEADER_CHARS = (Transmission.TRANSMISSION_ID_FIELD.getSize() +
+											Transmission.PAYLOAD_HASH_FIELD.getSize() +
+											PART_NUMBER_FIELD.getSize() +
+											PART_NUMBER_FIELD.getSize()) / (TextSMSTransmission.BITS_PER_CHAR - 1 /* for separator bit */); // = 8 chars
+	
+	public static final int MAX_PAYLOAD_CHARS = MAX_TOTAL_CHARS - HEADER_CHARS;	
 
-	//Dynamic
+	// DYNAMICS------------------------------------------------------
 	private String body;
 	
 	/**
@@ -94,23 +102,32 @@ public class TextMessage extends Message
 		super(sender, receivedAt);
 		
 		// Read header:
-		long[] headerParts = new long[HEADER_CHARS];
-		for(int h = 0; h < HEADER_CHARS; h++)
+		//	Convert from chars and remove separator bits:
+		BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
+		try
 		{
-			// Read header char (7 bits):
-			int c = TextSMSTransmission.GSM_0338_REVERSE_CHAR_TABLE.get(content.charAt(h));
-			// Check separator bit:
-			if(c >> (TextSMSTransmission.BITS_PER_CHAR - 1) != HEADER_SEPARATOR_BIT)
-				throw new Exception("Invalid message (illegal header).");
-			// Strip away the separator bit and store remaining 6 bit header part:
-			headerParts[h] = c - (HEADER_SEPARATOR_BIT << (TextSMSTransmission.BITS_PER_CHAR - 1));
+			for(int h = 0; h < HEADER_CHARS; h++)
+			{
+				// Read header char (7 bits):				
+				int c = TextSMSTransmission.GSM_0338_REVERSE_CHAR_TABLE.get(content.charAt(h));
+				// Check separator bit:
+				if(c >> (TextSMSTransmission.BITS_PER_CHAR - 1) != HEADER_SEPARATOR_BIT)
+					throw new Exception("Invalid message (illegal header).");
+				// Strip away the separator bit and write remaining 6 bit header part:
+				hdrFieldBitsOut.write(c - (HEADER_SEPARATOR_BIT << (TextSMSTransmission.BITS_PER_CHAR - 1)), TextSMSTransmission.BITS_PER_CHAR - 1, false); 
+			}
 		}
-		// Reassemble 24 bit header value out of 4 * 6 bit parts:
-		int header = (int) BinaryHelpers.mergeLong(headerParts, TextSMSTransmission.BITS_PER_CHAR - 1);
-		// Read header fields:
-		payloadHash = (header >> (PART_NUMBER_FIELD.getSize() * 2));
-		partNumber = (header >> PART_NUMBER_FIELD.getSize()) % (1 << PART_NUMBER_FIELD.getSize());
-		totalParts = header % (1 << PART_NUMBER_FIELD.getSize());
+		finally
+		{
+			hdrFieldBitsOut.close();
+		}
+		//	Read header fields:
+		BitArrayInputStream hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
+		sendingSideTransmissionID = (int) Transmission.TRANSMISSION_ID_FIELD.read(hdrFieldBitsIn);
+		payloadHash = (int) Transmission.PAYLOAD_HASH_FIELD.read(hdrFieldBitsIn);
+		partNumber = (int) PART_NUMBER_FIELD.read(hdrFieldBitsIn);
+		totalParts = (int) PART_NUMBER_FIELD.read(hdrFieldBitsIn);
+		hdrFieldBitsIn.close();
 		
 		// Set body:
 		body = content.substring(HEADER_CHARS);
@@ -154,20 +171,29 @@ public class TextMessage extends Message
 		StringBuilder blr = new StringBuilder();
 		
 		//Write header:
-		// Merge header fields to 24 bit value:
-		int header = (payloadHash << (PART_NUMBER_FIELD.getSize() * 2)) +	// Payload hash (= CRC16 hash): takes up first 16 bits
-					 (partNumber << (PART_NUMBER_FIELD.getSize())) +		// partNumber: takes up next 4 bits
-					 totalParts;											// totalParts: takes up last 4 bits
-		// Split header in 4 * 6 bit parts:
-		long[] headerParts = BinaryHelpers.splitLong(header, HEADER_CHARS, (TextSMSTransmission.BITS_PER_CHAR - 1));
-		// Insert a separator bit in front of each part and encode to a 7 bit character:
-		for(int h = 0; h < HEADER_CHARS; h++)
-		{	// Note: the chosen separator bit value (=1) ensures none of the header chars will ever be 'ESC'
-			int c = (HEADER_SEPARATOR_BIT << TextSMSTransmission.BITS_PER_CHAR - 1) + (int) headerParts[h];
-			if(c == TextSMSTransmission.ESCAPE_ESC)
-				throw new IllegalStateException("Cannot encode 0x1B ('ESC')!"); // (this should never happen)
-			// Add header char to content:
-			blr.append(TextSMSTransmission.GSM_0338_CHAR_TABLE[c]);
+		//	Write header fields:
+		BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
+		Transmission.TRANSMISSION_ID_FIELD.write(sendingSideTransmissionID, hdrFieldBitsOut);	// Sending-side localID: takes up the first 24 bits
+		Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, hdrFieldBitsOut);						// Payload hash (= CRC16 hash): takes up the next 16 bits
+		PART_NUMBER_FIELD.write(partNumber, hdrFieldBitsOut);									// partNumber: takes up next 4 bits
+		PART_NUMBER_FIELD.write(totalParts, hdrFieldBitsOut);									// totalParts: takes up last 4 bits
+		hdrFieldBitsOut.close();
+		//	Insert separator bits and convert to chars:
+		BitArrayInputStream hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
+		try
+		{
+			while(hdrFieldBitsIn.bitsAvailable() >= TextSMSTransmission.BITS_PER_CHAR - 1)
+			{
+				int c = (HEADER_SEPARATOR_BIT << TextSMSTransmission.BITS_PER_CHAR - 1) + (int) hdrFieldBitsIn.readInteger(TextSMSTransmission.BITS_PER_CHAR - 1, false);; // the separator bit ensures none of the header chars will ever be 'ESC'
+				if(c == TextSMSTransmission.ESCAPE_ESC)
+					throw new IllegalStateException("Cannot encode 0x1B (ESC)!"); // (this should never happen)
+				// Add header char to content:
+				blr.append(TextSMSTransmission.GSM_0338_CHAR_TABLE[c]);
+			}
+		}
+		finally
+		{
+			hdrFieldBitsIn.close();
 		}
 		
 		//Write body:

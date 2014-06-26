@@ -35,7 +35,7 @@ public final class BitArrayInputStream extends BitInputStream
 	 * @throws IOException if the stream is closed or another I/O error occurs
 	 * @throws EOFException when the next bit cannot be read because the end of stream is reached
 	 */
-	public boolean readBit() throws IOException, EOFException
+	protected boolean doReadBit() throws IOException, EOFException
 	{
 		if(currentIndex >= bitArray.length()) //also reads a new byte from underlying stream if needed! (will also check for closedness)
 			throw new EOFException("End of stream reached");

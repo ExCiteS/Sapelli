@@ -45,7 +45,6 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * To be called on the receiving side.
 	 * 
 	 * @param client
-	 * @param sender
 	 * @param firstReceivedPart
 	 */
 	public SMSTransmission(TransmissionClient client, M firstReceivedPart)

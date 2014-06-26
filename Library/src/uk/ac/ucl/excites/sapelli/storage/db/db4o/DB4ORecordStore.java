@@ -225,6 +225,7 @@ public class DB4ORecordStore extends RecordStore
 				throw new IllegalArgumentException("Schema must have an auto-incrementing primary key");
 			// Next id:
 			long next = (containsKey(schema) ? get(schema) : -1l) + 1;
+			// TODO deal with max reached!!!
 			// Store it:
 			put(schema, next); // hash map always keeps the last used id
 			// Return it:

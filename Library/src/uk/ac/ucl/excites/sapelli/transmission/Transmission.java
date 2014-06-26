@@ -85,6 +85,7 @@ public abstract class Transmission
 	 * To be called from the receiving side
 	 * 
 	 * @param client
+	 * @param sendingSideID
 	 * @param payloadHash
 	 */
 	public Transmission(TransmissionClient client, int sendingSideID, int payloadHash)

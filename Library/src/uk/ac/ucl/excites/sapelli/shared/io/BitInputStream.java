@@ -23,10 +23,12 @@ public abstract class BitInputStream extends InputStream
 	private static final Charset UTF16BE = Charset.forName("UTF-16BE");
 
 	//DYNAMIC
+	private int numberOfBitsRead;
 	protected boolean closed;
 
 	public BitInputStream()
 	{
+		numberOfBitsRead = 0;
 		closed = false;
 	}
 
@@ -38,7 +40,14 @@ public abstract class BitInputStream extends InputStream
 	 * @throws IOException if the stream is closed or another I/O error occurs
 	 * @throws EOFException when the next bit cannot be read because the end of stream is reached
 	 */
-	public abstract boolean readBit() throws IOException, EOFException;
+	public boolean readBit() throws IOException, EOFException
+	{
+		boolean bit = doReadBit();
+		numberOfBitsRead++;
+		return bit;
+	}
+	
+	protected abstract boolean doReadBit() throws IOException, EOFException;
 
 	/**
 	 * Reads exactly {@code numberOfBits} of bits from the input stream, and returns them as a boolean[]. 
@@ -488,6 +497,14 @@ public abstract class BitInputStream extends InputStream
 			return i;
 		}
 		return 0;
+	}
+
+	/**
+	 * @return the numberOfBitsRead (includes skipped bits/bytes)
+	 */
+	public int getNumberOfBitsRead()
+	{
+		return numberOfBitsRead;
 	}
 	
 }

@@ -32,7 +32,7 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
 public class BinaryMessage extends Message
 {
 
-	//Static
+	// STATICS-------------------------------------------------------
 	/**
 	 * Our {@link BinaryMessage}s can contain up to 133 bytes of data.
 	 * <br/>
@@ -63,7 +63,7 @@ public class BinaryMessage extends Message
 	
 	public static final int MAX_BODY_SIZE_BITS = (MAX_TOTAL_SIZE_BYTES * Byte.SIZE) - HEADER_SIZE_BITS;
 	
-	//Dynamic
+	// DYNAMICS------------------------------------------------------
 	private BitArray body;
 	
 	/**
