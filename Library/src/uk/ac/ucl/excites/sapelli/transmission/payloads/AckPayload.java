@@ -5,24 +5,27 @@ package uk.ac.ucl.excites.sapelli.transmission.payloads;
 
 import java.io.IOException;
 
-import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
+ * A Payload used to acknowledge the successful reception (& decoding, processing, etc.) of an other transmission.
+ * The receiver of that "subject" transmission will send this payload back to the original sender.
+ * 
  * @author mstevens
- *
  */
 public class AckPayload extends Payload
 {
 
+	private int subjectSenderSideID;
 	private int subjectPayloadHash;
-	private DateTime subjectReceivedAt;
+	private TimeStamp subjectReceivedAt;
 	
 	/**
 	 * To be called from receiving side
@@ -34,14 +37,15 @@ public class AckPayload extends Payload
 	}
 
 	/**
-	 * To be called from sending side
+	 * To be called from sending side (= which received the subject)
 	 * 
+	 * @param subject - the transmission whose successful reception (& decoding, processing, etc.) is being acknowledged
 	 */
-	public AckPayload(Transmission receivedTransmission)
+	public AckPayload(Transmission subject)
 	{
-		//TODO seq id
-		this.subjectPayloadHash = receivedTransmission.getPayloadHash();
-		this.subjectReceivedAt = receivedTransmission.getReceivedAt();
+		this.subjectSenderSideID = subject.getRemoteID();
+		this.subjectPayloadHash = subject.getPayloadHash();
+		this.subjectReceivedAt = subject.getReceivedAt();
 	}
 	
 	/* (non-Javadoc)
@@ -54,17 +58,27 @@ public class AckPayload extends Payload
 	}
 
 	@Override
-	protected void write(BitOutputStream bitsteam) throws IOException, TransmissionCapacityExceededException
+	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException
 	{
-		// TODO Auto-generated method stub
-		
+		Transmission.TRANSMISSION_ID_FIELD.write(subjectSenderSideID, bitstream);
+		Transmission.PAYLOAD_HASH_FIELD.write(subjectPayloadHash, bitstream);
+		TransmissionStore.COLUMN_RECEIVED_AT.writeValue(subjectReceivedAt, bitstream);
 	}
 
 	@Override
 	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException
 	{
-		// TODO Auto-generated method stub
-		
+		subjectSenderSideID = (int) Transmission.TRANSMISSION_ID_FIELD.read(bitstream);
+		subjectPayloadHash = (int) Transmission.PAYLOAD_HASH_FIELD.read(bitstream);
+		subjectReceivedAt = TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream); 
+	}
+
+	/**
+	 * @return the subjectSenderSideID
+	 */
+	public int getSubjectSenderSideID()
+	{
+		return subjectSenderSideID;
 	}
 
 	/**
@@ -78,7 +92,7 @@ public class AckPayload extends Payload
 	/**
 	 * @return the subjectReceivedAt
 	 */
-	public DateTime getSubjectReceivedAt()
+	public TimeStamp getSubjectReceivedAt()
 	{
 		return subjectReceivedAt;
 	}

@@ -1,8 +1,7 @@
 package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
 
-import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
@@ -13,19 +12,18 @@ import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 public abstract class Message implements Comparable<Message>
 {
 	
-	protected int payloadHash;
+	protected int sendingSideTransmissionID;
 	protected SMSTransmission<?> transmission;
+	protected int payloadHash;
 	
-	protected DateTime sentAt;		//only on sending side
-	protected DateTime deliveredAt;	//only on sending side
-	protected DateTime receivedAt;	//only on receiving side
+	protected TimeStamp sentAt;		 //only on sending side
+	protected TimeStamp deliveredAt; //only on sending side
+	protected TimeStamp receivedAt;	 //only on receiving side
 	
-	protected SMSAgent sender;
-	protected SMSAgent receiver;	
+	protected SMSAgent sender;	
 	
 	protected int partNumber;
 	protected int totalParts;
-	
 
 	/**
 	 * To be called on sending side.
@@ -35,13 +33,20 @@ public abstract class Message implements Comparable<Message>
 	 * @param partNumber
 	 * @param totalParts
 	 */
-	public Message(SMSAgent receiver, SMSTransmission<?> transmission, int partNumber, int totalParts)
+	public Message(SMSTransmission<?> transmission, int partNumber, int totalParts)
 	{
+		// Some checks:
+		if(!transmission.isLocalIDSet())
+			throw new IllegalStateException("Cannot create Messages for sending until local transmission ID is set by means of persistent storage.");
 		if(partNumber < 1 || totalParts < 1 || partNumber > totalParts)
 			throw new IllegalArgumentException("Invalid part number (" + partNumber + ") of total number of parts (" + totalParts + ").");
-		this.receiver = receiver;
-		this.payloadHash = transmission.getPayloadHash();
+		
+		// Transmission:
 		this.transmission = transmission;
+		this.sendingSideTransmissionID = transmission.getLocalID();
+		this.payloadHash = transmission.getPayloadHash();
+		
+		// Part numbers:
 		this.partNumber  = partNumber;
 		this.totalParts = totalParts;
 	}
@@ -51,20 +56,37 @@ public abstract class Message implements Comparable<Message>
 	 * 
 	 * @param sender
 	 */
-	public Message(SMSAgent sender, DateTime receivedAt)
+	public Message(SMSAgent sender, TimeStamp receivedAt)
 	{
 		this.sender = sender;
 		this.receivedAt = receivedAt;
 	}
 	
+	/**
+	 * Called when retrieving transmission from database
+	 * 
+	 * @param transmission
+	 * @param partNumber
+	 * @param totalParts
+	 * @param sentAt - may be null
+	 * @param deliverdAt - may be null
+	 * @param receivedAt - may be null
+	 */
+	protected Message(SMSTransmission<?> transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliverdAt, TimeStamp receivedAt)
+	{
+		this(transmission, partNumber, totalParts);
+		this.sentAt = sentAt;
+		this.deliveredAt = deliverdAt;
+		this.receivedAt = receivedAt;
+	}
+	
 	public abstract void send(SMSClient smsService);
 	
-	public void setTransmission(SMSTransmission<?> transmission)
+	protected void setTransmission(SMSTransmission<?> transmission)
 	{
-		if(this.transmission == null)
-			this.transmission = transmission;
-		else
+		if(this.transmission != null && this.transmission != transmission)
 			throw new IllegalStateException("Cannot change transmission.");
+		this.transmission = transmission;
 	}
 	
 	/**
@@ -96,14 +118,14 @@ public abstract class Message implements Comparable<Message>
 		return (sentAt != null);
 	}
 	
-	public DateTime getSentAt()
+	public TimeStamp getSentAt()
 	{
 		return sentAt;
 	}
 	
 	public void sentCallback()
 	{
-		sentAt = new DateTime(); //= now
+		sentAt = new TimeStamp(); //= now
 		transmission.partSent(this);
 	}
 	
@@ -112,7 +134,7 @@ public abstract class Message implements Comparable<Message>
 		return (receivedAt != null);
 	}
 	
-	public DateTime getReceivedAt()
+	public TimeStamp getReceivedAt()
 	{
 		return receivedAt;
 	}
@@ -122,20 +144,15 @@ public abstract class Message implements Comparable<Message>
 		return (deliveredAt != null);
 	}
 	
-	public DateTime getDeliveredAt()
+	public TimeStamp getDeliveredAt()
 	{
 		return deliveredAt;
 	}
 
 	public void deliveryCallback()
 	{
-		deliveredAt = new DateTime(); //TODO get actual time of reception by receiver?
+		deliveredAt = new TimeStamp();
 		transmission.partDelivered(this);
-	}
-	
-	public SMSAgent getReceiver()
-	{
-		return receiver;
 	}
 	
 	public SMSAgent getSender()
@@ -143,6 +160,14 @@ public abstract class Message implements Comparable<Message>
 		return sender;
 	}
 	
+	/**
+	 * @return the sendingSideTransmissionID
+	 */
+	public int getSendingSideTransmissionID()
+	{
+		return sendingSideTransmissionID;
+	}
+
 	public SMSTransmission<?> getTransmission()
 	{
 		return transmission;
@@ -158,7 +183,7 @@ public abstract class Message implements Comparable<Message>
 	
 	/**
 	 * hashCode() method
-	 * Ignores transmission (but not transmissionID), sentAt, deliveredAt & receivedAt
+	 * Deliberately ignores transmission (but not sendingSideTransmissionID), sentAt, deliveredAt & receivedAt.
 	 * 
 	 * @see java.lang.Object#hashCode()
 	 */
@@ -167,8 +192,7 @@ public abstract class Message implements Comparable<Message>
 	{
 		int hash = 1;
 		hash = 31 * hash + (sender == null ? 0 : sender.hashCode());
-		hash = 31 * hash + (receiver == null ? 0 : receiver.hashCode());
-		//TODO seq id
+		hash = 31 * hash + sendingSideTransmissionID;
 		hash = 31 * hash + payloadHash;
 		hash = 31 * hash + partNumber;
 		hash = 31 * hash + totalParts;
@@ -178,7 +202,7 @@ public abstract class Message implements Comparable<Message>
 	
 	/**
 	 * equals() method
-	 * Ignores transmission (but not transmissionID), sentAt, deliveredAt & receivedAt
+	 * Deliberately ignores transmission (but not sendingSideTransmissionID), sentAt, deliveredAt & receivedAt.
 	 * 
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
@@ -191,8 +215,7 @@ public abstract class Message implements Comparable<Message>
 		{
 			Message another = (Message) obj;
 			return	(this.sender == null ? another.sender == null : this.sender.equals(another.sender)) &&
-					(this.receiver == null ? another.receiver == null : this.receiver.equals(another.receiver)) &&
-					//TODO seq id
+					this.sendingSideTransmissionID == another.sendingSideTransmissionID &&
 					this.payloadHash == another.payloadHash &&
 					this.partNumber == another.partNumber &&
 					this.totalParts == another.totalParts &&

@@ -7,8 +7,7 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.joda.time.DateTime;
-
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
@@ -27,7 +26,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	
 	protected final SortedSet<M> parts = new TreeSet<M>();
 	
-	private DateTime deliveredAt;
+	private TimeStamp deliveredAt;
 	
 	/**
 	 * To be called on the sending side.
@@ -49,11 +48,10 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * @param sender
 	 * @param firstReceivedPart
 	 */
-	public SMSTransmission(TransmissionClient client, SMSAgent sender, M firstReceivedPart)
+	public SMSTransmission(TransmissionClient client, M firstReceivedPart)
 	{
-		super(client, firstReceivedPart.getPayloadHash());
-		this.sender = sender;
-		addPart(firstReceivedPart);
+		super(client, firstReceivedPart.getSendingSideTransmissionID(), firstReceivedPart.getPayloadHash()); // pass on the remoteID & payload hash
+		receivePart(firstReceivedPart);
 	}
 	
 	/**
@@ -61,20 +59,22 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * 
 	 * @param client
 	 * @param localID
-	 * @param sender may be null on sending side
-	 * @param receiver may be null on receiving side
+	 * @param remoteID - may be null
 	 * @param payloadHash
-	 * @param parts list of {@link Message}s
+	 * @param sentAt - may be null
+	 * @param receivedAt - may be null
+	 * @param sender - may be null on sending side
+	 * @param receiver - may be null on receiving side
+	 * @param parts - list of {@link Message}s
 	 */
-	public SMSTransmission(TransmissionClient client, int localID, SMSAgent sender, SMSAgent receiver, int payloadHash, List<M> parts) 
+	protected SMSTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, SMSAgent sender, SMSAgent receiver, List<M> parts) 
 	{
-		super(client, payloadHash);
-		this.localID = localID;
+		super(client, localID, remoteID, payloadHash, sentAt, receivedAt);
 		this.sender = sender;
 		this.receiver = receiver;
 		if(parts != null)
-			for(M m : parts)
-				addPart(m);
+			for(M msg : parts)
+				parts.add(msg);
 	}
 	
 	/**
@@ -82,26 +82,39 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * 
 	 * @param msg
 	 */
-	public void addPart(M msg)
+	public void receivePart(M msg)
 	{
 		if(parts.isEmpty())
-		{
-			//TODO set seq id?
+			// If this is the first part: register the sender
 			this.sender = msg.getSender();
-		}
 		else
-		{	//each following received message must have a matching transmission id, sender & partsTotal:
-			if(payloadHash != msg.getPayloadHash())
-				throw new IllegalArgumentException("This message does not belong to the same transmission (Payload hash mismatch)");
-			//TODO seq id check?
-			if(!sender.equals(msg.getSender()))
-				throw new IllegalArgumentException("This message originates from another sender.");
+		{	// Each following received message must have a matching remote transmission id, payload hash, sender & total # of parts:
+			String error = null;
+			if(remoteID != msg.getSendingSideTransmissionID())
+				error = "remote ID mismatch";
+			else if(payloadHash != msg.getPayloadHash())
+				error = "Payload hash mismatch";
+			else if(!sender.equals(msg.getSender()))
+				error = "sender mismatch";
+			else if(parts.first().getTotalParts() != msg.getTotalParts())
+				error = "different number of parts";
+			if(error != null)
+				throw new IllegalArgumentException("This message does not belong to the same transmission (" + error + ")");
 		}
-		if(!parts.contains(msg)) //check for duplicates
+		// Check for duplicates:
+		if(parts.contains(msg))
+			return; // discard duplicate
+		// Add the part:
+		parts.add(msg);
+		msg.setTransmission(this);
+		// If all parts are received, set overall reception time: 
+		if(isComplete())
 		{
-			parts.add(msg);
-			msg.setTransmission(this);
-			partReceived(); // to update receivedAt timestamp
+			TimeStamp lastReceivedAt = null;
+			for(Message m : parts)
+				if(lastReceivedAt == null || lastReceivedAt.isBefore(m.getReceivedAt()))
+					lastReceivedAt = m.getReceivedAt();
+			setReceivedAt(lastReceivedAt);
 		}
 	}
 	
@@ -185,25 +198,17 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * 
 	 * @param smsMessage
 	 */
-	public void partSent(Message smsMessage)
+	protected void partSent(Message smsMessage)
 	{
-		boolean allSent = true;
-		DateTime lastSentAt = null;
+		TimeStamp lastSentAt = null;
 		for(Message m : parts)
 		{
 			if(!m.isSent())
-			{
-				allSent = false;
-				break;
-			}
-			else
-			{
-				if(lastSentAt == null || lastSentAt.isBefore(m.getSentAt()))
-					lastSentAt = m.getSentAt();
-			}
+				return;
+			if(lastSentAt == null || lastSentAt.isBefore(m.getSentAt()))
+				lastSentAt = m.getSentAt();
 		}
-		if(allSent)
-			setSentAt(lastSentAt);
+		setSentAt(lastSentAt);
 	}
 	
 	/**
@@ -211,51 +216,17 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * 
 	 * @param smsMessage
 	 */
-	public void partDelivered(Message smsMessage)
+	protected void partDelivered(Message smsMessage)
 	{
-		boolean allDelivered = true;
-		DateTime lastDeliveredAt = null;
+		TimeStamp lastDeliveredAt = null;
 		for(Message m : parts)
 		{
 			if(!m.isReceived())
-			{
-				allDelivered = false;
-				break;
-			}
-			else
-			{
-				if(lastDeliveredAt == null || lastDeliveredAt.isBefore(m.getDeliveredAt()))
-					lastDeliveredAt = m.getDeliveredAt();
-			}
+				return;
+			if(lastDeliveredAt == null || lastDeliveredAt.isBefore(m.getDeliveredAt()))
+				lastDeliveredAt = m.getDeliveredAt();
 		}
-		if(allDelivered)
-			deliveredAt = lastDeliveredAt;		
-	}
-
-	/**
-	 * Part has been received by server (used only on server side, reception acknowledgements are per transmission)
-	 * 
-	 * @param smsMessage
-	 */
-	private void partReceived()
-	{
-		boolean allReceived = true;
-		DateTime lastReceivedAt = null;
-		for(Message m : parts)
-		{
-			if(!m.isReceived())
-			{
-				allReceived = false;
-				break;
-			}
-			else
-			{
-				if(lastReceivedAt == null || lastReceivedAt.isBefore(m.getReceivedAt()))
-					lastReceivedAt = m.getReceivedAt();
-			}
-		}
-		if(allReceived)
-			setReceivedAt(lastReceivedAt);
+		deliveredAt = lastDeliveredAt;		
 	}
 	
 	public SMSAgent getReceiver()
@@ -278,7 +249,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 		return sender != null;
 	}
 	
-	public DateTime getDeliveredAt()
+	public TimeStamp getDeliveredAt()
 	{
 		return deliveredAt;
 	}

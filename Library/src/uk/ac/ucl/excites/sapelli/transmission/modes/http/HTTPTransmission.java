@@ -1,18 +1,13 @@
 package uk.ac.ucl.excites.sapelli.transmission.modes.http;
 
 import java.io.IOException;
-import java.util.List;
-
-import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.Sender;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.Sender;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
@@ -48,13 +43,14 @@ public class HTTPTransmission extends Transmission
 	 * To be called on the receiving side.
 	 * 
 	 * @param client
+	 * @param sendingSideID
 	 * @param payloadHash
 	 * @param body
 	 * @param receivedAt
 	 */
-	public HTTPTransmission(TransmissionClient client, int payloadHash, byte[] body, DateTime receivedAt)
+	public HTTPTransmission(TransmissionClient client, int sendingSideID, int payloadHash, byte[] body, TimeStamp receivedAt)
 	{
-		super(client, payloadHash);
+		super(client, sendingSideID, payloadHash);
 		this.body = body;
 		setReceivedAt(receivedAt);
 	}
@@ -64,14 +60,16 @@ public class HTTPTransmission extends Transmission
 	 * 
 	 * @param client
 	 * @param localID
-	 * @param serverURL
+	 * @param remoteID - may be null
 	 * @param payloadHash
+	 * @param sentAt - may be null
+	 * @param receivedAt - may be null
+	 * @param serverURL - may be null on receiving side
 	 * @param body
 	 */
-	public HTTPTransmission(TransmissionClient client, int localID, String serverURL, int payloadHash, byte[] body) 
+	public HTTPTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, String serverURL, byte[] body) 
 	{
-		super(client, payloadHash);
-		this.localID = localID;
+		super(client, localID, remoteID, payloadHash, sentAt, receivedAt);
 		this.serverURL = serverURL;
 		this.body = body;
 	}

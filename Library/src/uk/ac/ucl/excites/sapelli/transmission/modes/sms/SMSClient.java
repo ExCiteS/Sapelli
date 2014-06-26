@@ -10,8 +10,8 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
 public interface SMSClient
 {
 
-	public boolean send(BinaryMessage binarySMS);
+	public boolean send(SMSAgent receiver, BinaryMessage binarySMS);
 	
-	public boolean send(TextMessage textSMS);
+	public boolean send(SMSAgent receiver, TextMessage textSMS);
 	
 }

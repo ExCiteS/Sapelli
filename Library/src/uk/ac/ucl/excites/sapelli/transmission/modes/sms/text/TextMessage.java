@@ -3,16 +3,14 @@
  */
 package uk.ac.ucl.excites.sapelli.transmission.modes.sms.text;
 
-import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 
 /**
  * Textual SMS message in which data in encoding as 7-bit characters using the default GSM 03.38 alphabet.
@@ -43,11 +41,11 @@ public class TextMessage extends Message
 	//Static
 	public static final boolean MULTIPART = false; // we use standard single-part SMS messages, because using 
 	public static final int MAX_TOTAL_CHARS = 160; // 	concatenated SMS would cause us to lose 7 chars per message
-	public static final int HEADER_CHARS = 4; // = 28 bits
+	public static final int HEADER_CHARS = 8; // = 56 bits
 	public static final int MAX_PAYLOAD_CHARS = MAX_TOTAL_CHARS - HEADER_CHARS;
 	
 	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, TextSMSTransmission.MAX_TRANSMISSION_PARTS);
-	private static final int HEADER_SEPARATOR_BIT = 1;
+	private static final int HEADER_SEPARATOR_BIT = 1; // chosen such that the ESC character is never produced in the header
 
 	//Dynamic
 	private String body;
@@ -56,20 +54,19 @@ public class TextMessage extends Message
 	 * To be called on the sending side.
 	 * Called by {@link TextSMSTransmission#wrap(uk.ac.ucl.excites.sapelli.shared.io.BitArray)}.
 	 * 
-	 * @param receiver
 	 * @param transmission
 	 * @param partNumber
 	 * @param totalParts
-	 * @param payload
+	 * @param body
 	 */
-	protected TextMessage(SMSAgent receiver, SMSTransmission<?> transmission, int partNumber, int totalParts, String payload)
+	protected TextMessage(TextSMSTransmission transmission, int partNumber, int totalParts, String body)
 	{
-		super(receiver, transmission, partNumber, totalParts);
-		if(payload == null)
+		super(transmission, partNumber, totalParts);
+		if(body == null)
 			throw new NullPointerException("Payload cannot be null!");
-		if(payload.length() > MAX_PAYLOAD_CHARS)
-			throw new IllegalArgumentException("Payload is too long (max: " + MAX_PAYLOAD_CHARS + " chars; got: " + payload.length() + " chars).");
-		this.body = payload;
+		if(body.length() > MAX_PAYLOAD_CHARS)
+			throw new IllegalArgumentException("Payload is too long (max: " + MAX_PAYLOAD_CHARS + " chars; got: " + body.length() + " chars).");
+		this.body = body;
 	}
 
 	/**
@@ -81,7 +78,7 @@ public class TextMessage extends Message
 	 */
 	public TextMessage(SMSAgent sender, String text) throws Exception
 	{
-		this(sender, text, new DateTime() /*received NOW*/);
+		this(sender, text, TimeStamp.now() /*received NOW*/);
 	}
 	
 	/**
@@ -92,7 +89,7 @@ public class TextMessage extends Message
 	 * @param receivedAt
 	 * @throws Exception
 	 */
-	public TextMessage(SMSAgent sender, String content, DateTime receivedAt) throws Exception
+	public TextMessage(SMSAgent sender, String content, TimeStamp receivedAt) throws Exception
 	{
 		super(sender, receivedAt);
 		
@@ -117,6 +114,23 @@ public class TextMessage extends Message
 		
 		// Set body:
 		body = content.substring(HEADER_CHARS);
+	}
+	
+	/**
+	 * Called when retrieving transmission from database
+	 * 
+	 * @param transmission
+	 * @param partNumber
+	 * @param totalParts
+	 * @param sentAt - may be null
+	 * @param deliverdAt - may be null
+	 * @param receivedAt - may be null
+	 * @param body
+	 */
+	protected TextMessage(TextSMSTransmission transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliverdAt, TimeStamp receivedAt, String body)
+	{
+		super(transmission, partNumber, totalParts, sentAt, deliverdAt, receivedAt);
+		this.body = body;
 	}
 
 	/**
@@ -165,7 +179,7 @@ public class TextMessage extends Message
 	@Override
 	public void send(SMSClient smsService)
 	{
-		smsService.send(this);
+		smsService.send(transmission.getReceiver(), this);
 	}
 	
 	@Override

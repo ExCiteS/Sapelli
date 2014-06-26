@@ -123,7 +123,7 @@ public abstract class Payload
 		return bits;
 	}
 	
-	protected abstract void write(BitOutputStream bitsteam) throws IOException, TransmissionCapacityExceededException, UnknownModelException;
+	protected abstract void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException;
 	
 	protected void deserialise(BitArray payloadBits) throws IllegalStateException, IOException, PayloadDecodeException, UnknownModelException
 	{

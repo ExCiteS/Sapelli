@@ -5,10 +5,9 @@ package uk.ac.ucl.excites.sapelli.transmission;
 
 import java.io.IOException;
 
-import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
@@ -24,6 +23,9 @@ public abstract class Transmission
 {
 
 	// STATICS-------------------------------------------------------
+	/**
+	 * The different (concrete) transmission types, reflecting different networks or modes of transport. 
+	 */
 	public static enum Type
 	{
 		BINARY_SMS,
@@ -37,8 +39,6 @@ public abstract class Transmission
 	
 	static public final int PAYLOAD_HASH_SIZE = 16; // bits
 	static public final IntegerRangeMapping PAYLOAD_HASH_FIELD = IntegerRangeMapping.ForSize(0, PAYLOAD_HASH_SIZE); // unsigned(!) 16 bit integer
-	
-	static private final int PAYLOAD_HASH_NOT_SET = -1;
 	
 	static public final int CORRESPONDENT_MAX_LENGTH = 256;
 	
@@ -63,10 +63,10 @@ public abstract class Transmission
 	/**
 	 * Computed as a CRC16 hash over the transmission payload (unsigned 16 bit int)
 	 */
-	protected int payloadHash = PAYLOAD_HASH_NOT_SET;
+	protected Integer payloadHash;
 	
-	protected DateTime sentAt = null; //used only on sending side
-	protected DateTime receivedAt = null; //used on receiving side, and TODO on sending side once we have acknowledgements working
+	protected TimeStamp sentAt; //used only on sending side
+	protected TimeStamp receivedAt; //used on receiving side, and on sending side if an acknowledgement was received
 	
 	/**
 	 * To be called from the sending side
@@ -87,10 +87,31 @@ public abstract class Transmission
 	 * @param client
 	 * @param payloadHash
 	 */
-	public Transmission(TransmissionClient client, int payloadHash)
+	public Transmission(TransmissionClient client, int sendingSideID, int payloadHash)
 	{
 		this.client = client;
+		this.remoteID = sendingSideID;
 		this.payloadHash = payloadHash;
+	}
+	
+	/**
+	 * To be called upon database retrieval only
+	 * 
+	 * @param client
+	 * @param localID
+	 * @param remoteID - may be null
+	 * @param payloadHash
+	 * @param sentAt - may be null
+	 * @param receivedAt - may be null
+	 */
+	protected Transmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
+	{
+		this.client = client;
+		this.localID = localID;
+		this.remoteID = remoteID; 
+		this.payloadHash = payloadHash;
+		this.sentAt = sentAt;
+		this.receivedAt = receivedAt;
 	}
 	
 	public void setLocalID(int id)
@@ -111,11 +132,11 @@ public abstract class Transmission
 			throw new IllegalStateException("LocalID has not been set yet");
 		return localID.intValue();
 	}
-	
+		
 	/**
 	 * @return the remoteID
 	 */
-	public Integer getRemoteID()
+	public int getRemoteID()
 	{
 		if(remoteID == null)
 			throw new IllegalStateException("RemoteID has not been set yet");
@@ -134,8 +155,8 @@ public abstract class Transmission
 	
 	public int getPayloadHash()
 	{	
-		if(payloadHash == PAYLOAD_HASH_NOT_SET)
-			throw new IllegalStateException("Payload hash has not been set yet");
+		if(payloadHash == null)
+			throw new IllegalStateException("Payload hash has not been set yet"); // Note: on the receiving side the hash is set before the actual payload
 		return payloadHash;
 	}
 	
@@ -192,7 +213,7 @@ public abstract class Transmission
 		
 		// Verify payload hash:
 		if(payloadHash != computePayloadHash(payloadBits))
-			throw new IncompleteTransmissionException(this, "Payload hash mismatch");
+			throw new IncompleteTransmissionException(this, "Payload hash mismatch!");
 		
 		// Set payload:
 		this.payload = Payload.New(client, payloadBits);
@@ -233,12 +254,12 @@ public abstract class Transmission
 		return sentAt != null;
 	}
 	
-	protected void setSentAt(DateTime sentAt)
+	protected void setSentAt(TimeStamp sentAt)
 	{
 		this.sentAt = sentAt;
 	}
 	
-	public DateTime getSentAt()
+	public TimeStamp getSentAt()
 	{
 		return sentAt;
 	}
@@ -248,12 +269,12 @@ public abstract class Transmission
 		return receivedAt != null;
 	}
 
-	public DateTime getReceivedAt()
+	public TimeStamp getReceivedAt()
 	{
 		return receivedAt;
 	}
 	
-	public void setReceivedAt(DateTime receivedAt)
+	public void setReceivedAt(TimeStamp receivedAt)
 	{
 		this.receivedAt = receivedAt;
 	}

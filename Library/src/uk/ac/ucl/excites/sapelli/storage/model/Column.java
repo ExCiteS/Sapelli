@@ -176,6 +176,14 @@ public abstract class Column<T> implements Serializable
 		writeValue((T) value, bitStream);
 	}
 	
+	/**
+	 * Writes the given value to the given {@link BitOutputStream}.
+	 * 
+	 * @param value
+	 * @param bitStream
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
 	public void writeValue(T value, BitOutputStream bitStream) throws IOException, IllegalArgumentException
 	{
 		if(optional)
@@ -204,6 +212,14 @@ public abstract class Column<T> implements Serializable
 		storeValue(record, readValue(bitStream));
 	}
 	
+	/**
+	 * Reads a value from the given {@link BitInputStream}
+	 * 
+	 * @param bitStream
+	 * @return
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
 	public final T readValue(BitInputStream bitStream) throws IOException, IllegalArgumentException
 	{
 		T value = null;

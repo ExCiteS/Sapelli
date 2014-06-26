@@ -6,10 +6,10 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
@@ -31,10 +31,10 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	
 	/**
 	 * To be called on the sending side.
-	 * 
-	 * @param receiver
+	 *
 	 * @param client
-	 * @param payloadType
+	 * @param receiver
+	 * @param payload
 	 */
 	public BinarySMSTransmission(TransmissionClient client, SMSAgent receiver, Payload payload)
 	{
@@ -45,12 +45,11 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	 * To be called on the receiving side.
 	 * 
 	 * @param client
-	 * @param sender
 	 * @param firstReceivedPart
 	 */
-	public BinarySMSTransmission(TransmissionClient client, SMSAgent sender, BinaryMessage firstReceivedPart)
+	public BinarySMSTransmission(TransmissionClient client, BinaryMessage firstReceivedPart)
 	{
-		super(client, sender, firstReceivedPart);
+		super(client, firstReceivedPart);
 	}
 	
 	/**
@@ -58,14 +57,17 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	 * 
 	 * @param client
 	 * @param localID
-	 * @param sender may be null on sending side
-	 * @param receiver may be null on receiving side
+	 * @param remoteID - may be null
 	 * @param payloadHash
-	 * @param parts list of {@link Message}s
-	 */
-	public BinarySMSTransmission(TransmissionClient client, int localID, SMSAgent sender, SMSAgent receiver, int payloadHash, List<BinaryMessage> parts) 
+	 * @param sentAt - may be null
+	 * @param receivedAt - may be null
+	 * @param sender - may be null on sending side
+	 * @param receiver - may be null on receiving side
+	 * @param parts - list of {@link BinaryMessage}s
+	 */	
+	public BinarySMSTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, SMSAgent sender, SMSAgent receiver, List<BinaryMessage> parts) 
 	{
-		super(client, localID, sender, receiver, payloadHash, parts);
+		super(client, localID, remoteID, payloadHash, sentAt, receivedAt, sender, receiver, parts);
 	}
 	
 	@Override
@@ -78,7 +80,7 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 		// Create parts:
 		BitArrayInputStream stream = new BitArrayInputStream(payloadBits);
 		for(int p = 0; p < numberOfParts; p++)
-			parts.add(new BinaryMessage(receiver, this, p + 1, numberOfParts, stream.readBitArray(Math.min(BinaryMessage.MAX_BODY_SIZE_BITS, stream.bitsAvailable()))));		
+			parts.add(new BinaryMessage(this, p + 1, numberOfParts, stream.readBitArray(Math.min(BinaryMessage.MAX_BODY_SIZE_BITS, stream.bitsAvailable()))));		
 		stream.close();
 	}
 
@@ -87,7 +89,7 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	{
 		BitArrayOutputStream stream = new BitArrayOutputStream();
 		for(BinaryMessage part : parts)
-			stream.write(((BinaryMessage) part).getBody());
+			stream.write(part.getBody());
 		stream.flush();
 		stream.close();
 		return stream.toBitArray();

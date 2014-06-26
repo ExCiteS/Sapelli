@@ -7,21 +7,19 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-import org.joda.time.DateTime;
-
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 
 /**
  * Binary SMS message
@@ -58,7 +56,8 @@ public class BinaryMessage extends Message
 	
 	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, BinarySMSTransmission.MAX_TRANSMISSION_PARTS);
 	
-	public static final int HEADER_SIZE_BITS =	Transmission.PAYLOAD_HASH_FIELD.getSize() /* Transmission ID */ +
+	public static final int HEADER_SIZE_BITS =	Transmission.TRANSMISSION_ID_FIELD.getSize() /* Transmission ID */ +
+												Transmission.PAYLOAD_HASH_FIELD.getSize() /* Payload hash */ +
 												PART_NUMBER_FIELD.getSize() /* Part number */ +
 												PART_NUMBER_FIELD.getSize() /* Parts total */; 
 	
@@ -71,15 +70,14 @@ public class BinaryMessage extends Message
 	 * To be called on the sending side.
 	 * Called by {@link BinarySMSTransmission#wrap(BitArray)}.
 	 * 
-	 * @param receiver
 	 * @param transmission
 	 * @param partNumber
 	 * @param totalParts
 	 * @param payload
 	 */
-	protected BinaryMessage(SMSAgent receiver, SMSTransmission<?> transmission, int partNumber, int totalParts, BitArray body)
+	protected BinaryMessage(BinarySMSTransmission transmission, int partNumber, int totalParts, BitArray body)
 	{
-		super(receiver, transmission, partNumber, totalParts);
+		super(transmission, partNumber, totalParts);
 		if(totalParts > BinarySMSTransmission.MAX_TRANSMISSION_PARTS)
 			throw new IllegalArgumentException("Max transmission length exceded (" + totalParts + "; max is " + BinarySMSTransmission.MAX_TRANSMISSION_PARTS + ").");
 		if(body.length() > MAX_BODY_SIZE_BITS)
@@ -96,7 +94,7 @@ public class BinaryMessage extends Message
 	 */
 	public BinaryMessage(SMSAgent sender, byte[] data) throws Exception
 	{
-		this(sender, data, new DateTime() /*received NOW*/);
+		this(sender, data, TimeStamp.now() /*received NOW*/);
 	}
 	
 	/**
@@ -107,10 +105,10 @@ public class BinaryMessage extends Message
 	 * @param receivedAt
 	 * @throws Exception
 	 */
-	public BinaryMessage(SMSAgent sender, byte[] data, DateTime receivedAt) throws Exception
+	public BinaryMessage(SMSAgent sender, byte[] data, TimeStamp receivedAt) throws Exception
 	{
 		super(sender, receivedAt);
-		//read data:
+		// Read data:
 		BitInputStream in = null;
 		try
 		{
@@ -118,10 +116,10 @@ public class BinaryMessage extends Message
 			in = new BitWrapInputStream(new ByteArrayInputStream(data));
 			
 			//Read header:
-			// TODO seq id
-			payloadHash = (int) Transmission.PAYLOAD_HASH_FIELD.read(in);	// Payload hash
-			partNumber = (int) PART_NUMBER_FIELD.read(in);					// Part number
-			totalParts = (int) PART_NUMBER_FIELD.read(in);					// Total parts
+			sendingSideTransmissionID = (int) Transmission.TRANSMISSION_ID_FIELD.read(in);	// transmission ID on sending side
+			payloadHash = (int) Transmission.PAYLOAD_HASH_FIELD.read(in);					// Payload hash
+			partNumber = (int) PART_NUMBER_FIELD.read(in);									// Part number
+			totalParts = (int) PART_NUMBER_FIELD.read(in);									// Total parts
 			
 			//Read payload:
 			body = in.readBitArray(in.bitsAvailable());
@@ -140,7 +138,24 @@ public class BinaryMessage extends Message
 			catch(Exception ignore) {}
 		}
 	}
-
+	
+	/**
+	 * Called when retrieving transmission from database
+	 * 
+	 * @param transmission
+	 * @param partNumber
+	 * @param totalParts
+	 * @param sentAt - may be null
+	 * @param deliverdAt - may be null
+	 * @param receivedAt - may be null
+	 * @param body
+	 */
+	protected BinaryMessage(BinarySMSTransmission transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliverdAt, TimeStamp receivedAt, BitArray body)
+	{
+		super(transmission, partNumber, totalParts, sentAt, deliverdAt, receivedAt);
+		this.body = body;
+	}
+	
 	/**
 	 * Called by {@link BinarySMSTransmission#unwrap()}
 	 * 
@@ -152,7 +167,7 @@ public class BinaryMessage extends Message
 	}
 	
 	/**
-	 * Called by sender
+	 * Called by SMSClient
 	 * 
 	 * @return the full message content (= header + payload)
 	 * @throws Exception
@@ -168,10 +183,10 @@ public class BinaryMessage extends Message
 			out = new BitWrapOutputStream(rawOut);
 	
 			// Write header:
-			// TODO seq id
-			Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, out);	// Payload hash
-			PART_NUMBER_FIELD.write(partNumber, out);					//Part number
-			PART_NUMBER_FIELD.write(totalParts, out);					//Total parts
+			Transmission.TRANSMISSION_ID_FIELD.write(sendingSideTransmissionID, out);	// transmission ID on sending side
+			Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, out);					// Payload hash
+			PART_NUMBER_FIELD.write(partNumber, out);									//Part number
+			PART_NUMBER_FIELD.write(totalParts, out);									//Total parts
 			
 			// Write body:
 			out.write(body);
@@ -205,7 +220,7 @@ public class BinaryMessage extends Message
 	@Override
 	public void send(SMSClient smsService)
 	{
-		smsService.send(this);
+		smsService.send(transmission.getReceiver(), this);
 	}
 
 	@Override

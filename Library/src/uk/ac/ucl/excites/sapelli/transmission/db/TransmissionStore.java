@@ -17,10 +17,8 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
-import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
@@ -45,8 +43,8 @@ public class TransmissionStore implements Store
 	static final public IntegerColumn TRANSMISSION_COLUMN_ID = new IntegerColumn("ID", false, Transmission.TRANSMISSION_ID_FIELD);
 	static final public IntegerColumn TRANSMISSION_COLUMN_REMOTE_ID = new IntegerColumn("RemoteID", true, Transmission.TRANSMISSION_ID_FIELD);
 	static final public IntegerColumn TRANSMISSION_COLUMN_TYPE = new IntegerColumn("Type", false, false, Integer.SIZE);
+	static final public IntegerColumn TRANSMISSION_COLUMN_PAYLOAD_HASH = new IntegerColumn("PayloadHash", false, Transmission.PAYLOAD_HASH_FIELD);
 	static final public IntegerColumn TRANSMISSION_COLUMN_PAYLOAD_TYPE = new IntegerColumn("PayloadType", true, Payload.PAYLOAD_TYPE_FIELD);
-	static final public IntegerColumn TRANSMISSION_COLUMN_PAYLOAD_HASH = new IntegerColumn("PayloadHash", true, Transmission.PAYLOAD_HASH_FIELD);
 	static final public StringColumn TRANSMISSION_COLUMN_SENDER = StringColumn.ForCharacterCount("Sender", false, Transmission.CORRESPONDENT_MAX_LENGTH);
 	static final public StringColumn TRANSMISSION_COLUMN_RECEIVER = StringColumn.ForCharacterCount("Receiver", false, Transmission.CORRESPONDENT_MAX_LENGTH);
 	static final public IntegerColumn TRANSMISSION_COLUMN_NUMBER_OF_PARTS = new IntegerColumn("NumberOfParts", false, false, Integer.SIZE);
@@ -58,8 +56,8 @@ public class TransmissionStore implements Store
 		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_ID);
 		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_REMOTE_ID);
 		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_TYPE);
-		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_PAYLOAD_TYPE);
 		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_PAYLOAD_HASH);
+		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_PAYLOAD_TYPE);
 		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_SENDER);
 		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_RECEIVER);
 		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_NUMBER_OF_PARTS);
@@ -114,13 +112,11 @@ public class TransmissionStore implements Store
 			TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());
 		TRANSMISSION_COLUMN_REMOTE_ID.storeValue(tRec, transmission.getRemoteID());
 		TRANSMISSION_COLUMN_TYPE.storeValue(tRec, transmission.getType().ordinal());
+		TRANSMISSION_COLUMN_PAYLOAD_HASH.storeValue(tRec, transmission.getPayloadHash()); // payload hash should always be set before storage
 		if(transmission.isPayloadSet())
-		{
 			TRANSMISSION_COLUMN_PAYLOAD_TYPE.storeValue(tRec, transmission.getPayload().getType());
-			TRANSMISSION_COLUMN_PAYLOAD_HASH.storeValue(tRec, transmission.getPayloadHash());
-		}
-		COLUMN_SENT_AT.storeValue(tRec, new TimeStamp(transmission.getSentAt()));
-		COLUMN_RECEIVED_AT.storeValue(tRec, new TimeStamp(transmission.getReceivedAt()));
+		COLUMN_SENT_AT.storeValue(tRec, transmission.getSentAt());
+		COLUMN_RECEIVED_AT.storeValue(tRec, transmission.getReceivedAt());
 		// Return:
 		return tRec;
 	}
@@ -182,9 +178,9 @@ public class TransmissionStore implements Store
 			TRANSMISSION_PART_COLUMN_TRANSMISSION_ID.storeValue(tPartRec, tRec.getReference()); // set foreign key
 			TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, msg.getPartNumber());
 			msg.setBody(this, tPartRec);
-			COLUMN_SENT_AT.storeValue(tPartRec, new TimeStamp(msg.getSentAt()));
-			TRANSMISSION_PART_COLUMN_DELIVERED_AT.storeValue(tPartRec, new TimeStamp(msg.getDeliveredAt()));
-			COLUMN_RECEIVED_AT.storeValue(tPartRec, new TimeStamp(msg.getReceivedAt()));
+			COLUMN_SENT_AT.storeValue(tPartRec, msg.getSentAt());
+			TRANSMISSION_PART_COLUMN_DELIVERED_AT.storeValue(tPartRec, msg.getDeliveredAt());
+			COLUMN_RECEIVED_AT.storeValue(tPartRec, msg.getReceivedAt());
 			
 			// Store part record:
 			recordStore.store(tPartRec);
