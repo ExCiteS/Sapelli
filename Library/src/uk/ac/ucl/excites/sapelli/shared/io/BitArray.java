@@ -5,6 +5,7 @@ package uk.ac.ucl.excites.sapelli.shared.io;
 
 import java.io.IOException;
 import java.util.BitSet;
+import java.util.Iterator;
 
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 
@@ -12,7 +13,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
  * @author mstevens
  * 
  */
-public class BitArray
+public class BitArray implements Iterable<Boolean>
 {
 
 	static public BitArray FromBytes(byte[] bytes)
@@ -66,6 +67,34 @@ public class BitArray
 		if(index >= 0 && index < length)
 			bits.set(index, value);
 		throw new IndexOutOfBoundsException("index (" + index + ") out of bounds [0, " + (length - 1) + "]!");
+	}
+	
+	@Override
+	public Iterator<Boolean> iterator()
+	{
+		return new Iterator<Boolean>()
+		{
+			
+			private int index = 0;
+
+			@Override
+			public boolean hasNext()
+			{
+				return index < length;
+			}
+
+			@Override
+			public Boolean next()
+			{
+				return get(index++);
+			}
+
+			@Override
+			public void remove()
+			{
+				throw new UnsupportedOperationException("Cannot remove items from BitArray");
+			}
+		};
 	}
 
 	/**
