@@ -59,14 +59,16 @@ public class BitArray implements Iterable<Boolean>
 	{
 		if(index >= 0 && index < length)
 			return bits.get(index);
-		throw new IndexOutOfBoundsException("index (" + index + ") out of bounds [0, " + (length - 1) + "]!");
+		else
+			throw new IndexOutOfBoundsException("index (" + index + ") out of bounds [0, " + (length - 1) + "]!");
 	}
 	
 	public void set(int index, boolean value)
 	{
 		if(index >= 0 && index < length)
 			bits.set(index, value);
-		throw new IndexOutOfBoundsException("index (" + index + ") out of bounds [0, " + (length - 1) + "]!");
+		else
+			throw new IndexOutOfBoundsException("index (" + index + ") out of bounds [0, " + (length - 1) + "]!");
 	}
 	
 	@Override
