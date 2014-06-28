@@ -26,13 +26,24 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
  * The binary data that is being sent is encoded to 7-bit characters from the default GSM 03.38 alphabet.
  * The encoding is done using 2 algorithms (both designed by Matthias Stevens):
  * <ul>
- * <li>one for the transmission part headers: see {@link TextMessage#getContent()} and {@link TextMessage#TextMessage(SMSAgent, String, org.joda.time.DateTime)};
- * <li>and another one for the transmission payload: see {@link #serialise(byte[])} and {@link #deserialise()}.
+ * <li>one for the message headers: see {@link TextMessage#getContent()} and {@link TextMessage#TextMessage(SMSAgent, String, TimeStamp)}</li>
+ * <li>and another one for the payload: see {@link #wrap(BitArray)} and {@link #unwrap()}.</li>
  * </ul>
- * The encoding algorithms are designed to avoid the reserved <code>ESC</code> character by means of escaping (thereby effectively avoiding that
- * escaping and use of the alphabet extension would be triggered on the lower Android level, which could cause messages to grow beyond part boundaries),
- * while keeping overhead to a strict minimum.
- * Header overhead is fixed at 4 bits (see {@link TextMessage}). Payload overhead is 1 bit per occurrence of a character that needs escaping (<code>SP</code> or <code>ESC</code>, i.e. 2 out of 128).
+ * Both encoding algorithms are designed to avoid ever producing the reserved {@code ESC} character, which plays a role in the SMS alphabet extension mechanism.
+ * Avoidance of this character is achieved by different strategies for the header and payload:
+ * <ul>
+ * <li>	the strategy used for the message headers is the insertion of an additional "separator bit" before every group of 6 header bits, this bit is chosen such that the
+ * 		none of the resulting 7 bit patterns will ever map to the {@code ESC} character (see {@link TextMessage#getContent()} and {@link TextMessage#TextMessage(SMSAgent, String, TimeStamp)}).
+ * <li> the strategy used for the payload is an escaping mechanism in which a 7 bit pattern that would normally map to {@code ESC} is instead encoded as {@code SP}. To differentiate which
+ * 		{@code SP} occurrences are "real" ones and which are the result of {@code ESC} avoidance an additional bit is inserted (i.e. the first bit of the pattern represented by the character
+ * 		which follows the {@code SP} occurrence), indicating how an {@code SP} occurance must be interpreted upon decoding. </li>
+ * </ul>
+ * Both strategies keep overhead to a strict minimum:
+ * Avoidance of this character is achieved by different strategies for the header and payload:
+ * <ul>
+ * <li>	Header overhead is fixed at 1 bit per 6 effective header bits (see {@link TextMessage}).</li>
+ * <li> Payload overhead is 1 additional bit for every occurrence in the payload data of the 7 bit "{@code ESC} pattern" or the 7 bit "{@code SP} pattern" (i.e. 2 out of 128).</li>
+ * </ul>
  * 
  * @author mstevens
  * 
@@ -291,11 +302,11 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		{
 			bis.close();
 		}
-		
+			
 		// Split up transmission payload in parts:
-		String[] payloadParts = payload.split("(?<=\\G.{" + TextMessage.MAX_PAYLOAD_CHARS + "})");
-		for(String payloadPart : payloadParts)
-			parts.add(new TextMessage(this, parts.size() + 1, payloadParts.length, payloadPart));
+		int partsTotal = (payload.length() + TextMessage.MAX_PAYLOAD_CHARS - 1) / TextMessage.MAX_PAYLOAD_CHARS;
+		for(int p = 0; p < partsTotal; p++)
+			parts.add(new TextMessage(this, p + 1, partsTotal, payload.substring(p * TextMessage.MAX_PAYLOAD_CHARS, Math.min((p + 1) * TextMessage.MAX_PAYLOAD_CHARS, payload.length()))));
 	}
 
 	@Override
@@ -345,7 +356,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	
 	public int getMaxPayloadBits()
 	{
-		return MAX_PAYLOAD_CHARS * BITS_PER_CHAR; 
+		return MAX_PAYLOAD_CHARS * BITS_PER_CHAR;
 	}
 	
 	/* (non-Javadoc)
