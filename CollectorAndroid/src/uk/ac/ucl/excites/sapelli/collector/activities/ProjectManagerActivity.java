@@ -40,6 +40,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.AssetManager;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
@@ -49,7 +50,9 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.view.ViewPager;
+import android.support.v4.widget.DrawerLayout;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
@@ -61,8 +64,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.astuetz.PagerSlidingTabStrip;
@@ -104,6 +109,9 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	private PagerAdapter adapter;
 	private Dialog encryptionDialog;
 	private DeviceID deviceID;
+	private ListView drawerList;
+	private ActionBarDrawerToggle mDrawerToggle;
+	private DrawerLayout drawerLayout;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -126,10 +134,11 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		// Hide soft keyboard on create
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 		setContentView(R.layout.activity_manage_project);
+		drawerList = (ListView) findViewById(R.id.left_drawer);
+		drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 		tabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
-//		tabs.setIndicatorColor(-14113335); // Sapelli colour
+		//		tabs.setIndicatorColor(-14113335); // Sapelli colour
 		pager = (ViewPager) findViewById(R.id.pager);
-
 		pageMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
 		addProjects = (TextView) findViewById(R.id.addProjects);
 		addProjects.setOnClickListener(new OnClickListener() {
@@ -140,6 +149,29 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 
 			}
 		});
+
+		// Set the drawer toggle as the DrawerListener
+		drawerLayout.setDrawerListener(mDrawerToggle);
+		// enable ActionBar app icon to behave as action to toggle nav drawer
+		getActionBar().setDisplayHomeAsUpEnabled(true);
+		getActionBar().setHomeButtonEnabled(true);
+		mDrawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
+
+			/** Called when a drawer has settled in a completely closed state. */
+			public void onDrawerClosed(View view) {
+				super.onDrawerClosed(view);
+				invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+			}
+
+			/** Called when a drawer has settled in a completely open state. */
+			public void onDrawerOpened(View drawerView) {
+				super.onDrawerOpened(drawerView);
+				invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+			}
+		};
+
+		// Set the drawer toggle as the DrawerListener
+		drawerLayout.setDrawerListener(mDrawerToggle);
 
 	}
 
@@ -300,6 +332,14 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	 * Retrieve all parsed projects from db and populate tabs
 	 */
 	public void populateTabs() {
+		String[] projectsArray = new String[projectStore.retrieveProjects().size()];
+		for (int i = 0; i < projectStore.retrieveProjects().size(); i++) {
+			projectsArray[i] = project.getName() + " " + project.getVersion();
+		}
+
+		// Set the adapter for the list view
+		drawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_list_item, projectsArray));
+
 		adapter = new PagerAdapter(getSupportFragmentManager(), projectStore.retrieveProjects());
 		pager.setAdapter(adapter);
 		if (!projectStore.retrieveProjects().isEmpty()) {
@@ -828,6 +868,31 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 				downloadFile.delete();
 			}
 		}
+	}
+
+	@Override
+	protected void onPostCreate(Bundle savedInstanceState) {
+		super.onPostCreate(savedInstanceState);
+		// Sync the toggle state after onRestoreInstanceState has occurred.
+		mDrawerToggle.syncState();
+	}
+
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+		mDrawerToggle.onConfigurationChanged(newConfig);
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		// Pass the event to ActionBarDrawerToggle, if it returns
+		// true, then it has handled the app icon touch event
+		if (mDrawerToggle.onOptionsItemSelected(item)) {
+			return true;
+		}
+		// Handle your other action bar items...
+
+		return super.onOptionsItemSelected(item);
 	}
 
 	/**
