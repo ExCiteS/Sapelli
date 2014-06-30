@@ -28,7 +28,7 @@ public class LineColumn extends ListColumn<Line, Location>
 	
 	private LineColumn(String name, Column<Location> locationCol, boolean optional)
 	{
-		super(name, locationCol, optional, Line.MIN_POINTS, GetMaxLengthForSizeFieldSize(Line.MIN_POINTS, SIZE_FIELD_BITS));
+		super(name, locationCol, optional, 0, GetMaxLengthForSizeFieldSize(0, SIZE_FIELD_BITS));
 	}
 	
 	@Override

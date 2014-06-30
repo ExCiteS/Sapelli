@@ -31,4 +31,18 @@ public class Polygon extends ArrayList<Location>
 		super(initialCapacity);
 	}
 	
+	@Override
+	public boolean add(Location point)
+	{
+		if(point != null)
+			return super.add(point);
+		else
+			throw new NullPointerException("Cannot add null point");
+	}
+	
+	public boolean isValid()
+	{
+		return size() >= MIN_POINTS; // TODO check shape, uniqueness of points, etc.
+	}
+	
 }

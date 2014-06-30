@@ -28,7 +28,7 @@ public class PolygonColumn extends ListColumn<Polygon, Location>
 	
 	private PolygonColumn(String name, Column<Location> locationCol, boolean optional)
 	{
-		super(name, locationCol, optional, Polygon.MIN_POINTS, GetMaxLengthForSizeFieldSize(Polygon.MIN_POINTS, SIZE_FIELD_BITS));
+		super(name, locationCol, optional, 0, GetMaxLengthForSizeFieldSize(0, SIZE_FIELD_BITS));
 	}
 	
 	@Override
