@@ -106,14 +106,15 @@ public class Project
 			}
 			catch(IOException ignore) {}
 		}
-		// Initialise Model:
-		this.model = new Model(SapelliCollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
-		// Heartbeat schema (Important: never put this before the model initialisation!):
-		this.heartbeatSchema = new HeartbeatSchema(this); // will add itself to the model
 		// Forms list:
 		this.forms = new ArrayList<Form>();
 		// Logging:
 		this.logging = DEFAULT_LOGGING;
+		
+		// Initialise Model (important this should remain last):
+		this.model = new Model(SapelliCollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
+		// Heartbeat schema (Important: never put this before the model initialisation!):
+		this.heartbeatSchema = new HeartbeatSchema(this); // will add itself to the model
 	}
 	
 	/**
@@ -490,6 +491,7 @@ public class Project
 	@Override
 	public int hashCode()
 	{
+		// Do not include the model here
 		int hash = 1;
 		hash = 31 * hash + id;
 		hash = 31 * hash + name.hashCode();

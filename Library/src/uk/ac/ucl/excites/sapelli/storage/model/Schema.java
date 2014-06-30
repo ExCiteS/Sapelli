@@ -97,9 +97,8 @@ public class Schema implements Serializable
 		if(internal == null)
 			throw new NullPointerException("Please specify an non-null Internal");
 		this.internal = internal;
+		this.model = null; // internal schemata never have a model
 		this.name = name;
-		// Internal schemata never have a model:
-		this.model = null;
 	}
 	
 	/**
@@ -114,10 +113,9 @@ public class Schema implements Serializable
 		if(model == null)
 			throw new NullPointerException("Please specify an non-null Model");
 		this.model = model;
-		int no = model.addSchema(this); // add oneself to the model!
-		this.name = (name == null || name.isEmpty() ? model.getName() + "_Schema" + no : name);
-		// External/client never have an "internal":
-		this.internal = null;
+		this.internal = null; // external/client never have an "internal"
+		this.name = (name == null || name.isEmpty() ? model.getName() + "_Schema" + (model.getNumberOfSchemata() - 1) : name);
+		model.addSchema(this); // add oneself to the model!
 	}
 	
 	/**

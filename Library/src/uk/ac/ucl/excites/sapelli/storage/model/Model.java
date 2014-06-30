@@ -86,7 +86,7 @@ public class Model implements Serializable
 		return name;
 	}
 	
-	public int addSchema(Schema schema) throws ModelFullException
+	protected int addSchema(Schema schema) throws ModelFullException
 	{
 		if(sealed)
 			throw new IllegalStateException("Cannot extend sealed model!");

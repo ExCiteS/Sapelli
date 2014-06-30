@@ -25,7 +25,7 @@ public class HeartbeatSchema extends Schema
 	static private final long serialVersionUID = 2L;
 	
 	static public final TimeStampColumn	COLUMN_LOCAL_TIME = TimeStampColumn.Century21("LocalTime", false, true);
-	static public final IntegerColumn	COLUMN_DEVICE_ID = new IntegerColumn("DeviceID", true, true, Long.SIZE);
+	static public final IntegerColumn	COLUMN_DEVICE_ID = new IntegerColumn("DeviceID", false, true, Long.SIZE);
 	static public final IntegerColumn	COLUMN_UPTIME_MS = new IntegerColumn("UptimeMS", true, false, 40); // 40 bits: allowing for uptimes of almost 35 years ;-)
 	static public final IntegerColumn	COLUMN_BATTERY_LEVEL = new IntegerColumn("BatteryLevel", true, 0, 100);
 	static public final LocationColumn	COLUMN_LAST_KNOWN_LOCATION = new LocationColumn("lastKnownLocation", true, true, true, false, false, true, true, true);
