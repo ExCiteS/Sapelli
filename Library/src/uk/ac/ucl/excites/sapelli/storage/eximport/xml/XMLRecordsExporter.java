@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
@@ -37,7 +38,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	// STATICS-------------------------------------------------------
 	static public final String TAG_RECORDS_EXPORT = "RecordsExport";
 	static public final boolean USES_XML_VERSION_11 = false; // whether to use XML v1.0 (false) or XML v1.1 (true)
-	static private Charset UTF8 = Charset.forName("UTF-8");
+	static private final Charset UTF8 = Charset.forName("UTF-8");
 
 	/**
 	 * Different ways of representing composite columns (i.e. {@link RecordColumn}s)
@@ -247,7 +248,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				See XMLRecordsImporter#characters(char[], int, int) for the corresponding import logic.
 				*/
 			String valueString = (leafColumn.getType() == String.class ? (String) leafColumn.retrieveValue(record) : leafColumn.retrieveValueAsString(record));
-			writer.writeLine(StringUtils.addTabsFront("<" + columnName + ">" + XMLUtils.escapeCharacters(valueString) + "</" + columnName + ">", tabs));
+			writer.writeLine(StringUtils.addTabsFront("<" + columnName + ">" + (USES_XML_VERSION_11 ? StringEscapeUtils.escapeXml11(valueString) : StringEscapeUtils.escapeXml10(valueString)) + "</" + columnName + ">", tabs));
 		}
 		else
 			writer.writeLine(StringUtils.addTabsFront(getNullRecordComment(columnName), tabs));

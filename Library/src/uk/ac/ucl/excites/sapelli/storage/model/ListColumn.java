@@ -23,8 +23,8 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	
 	static public final int DEFAULT_MINIMUM_LENGTH = 0; // list items
 	static public final int DEFAULT_MAXIMUM_LENGTH = Integer.MAX_VALUE; // like any List or other Collection (Collection#size() returns an int)
-	static public final char SERIALISATION_SEPARATOR = ',';
-	static public final char SERIALISATION_SEPARATOR_ESCAPE = '.';
+	static public final char SERIALISATION_SEPARATOR = ';';
+	static public final char SERIALISATION_SEPARATOR_ESCAPE = ':';
 	static public final char SERIALISATION_SEPARATOR_ESCAPE_PREFIX = '/';
 	
 	static protected int GetMaxLengthForSizeFieldSize(int minLength, int sizeBits)

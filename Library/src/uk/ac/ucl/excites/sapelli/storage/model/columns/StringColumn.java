@@ -28,7 +28,7 @@ public class StringColumn extends ComparatorColumn<String>
 	
 	static private final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 	static private final int DEFAULT_MAX_LENGTH_BYTES = 256; //bytes
-	static private final String SERIALISATION_QUOTE = "'";
+	static private final char SERIALISATION_QUOTE = '\'';
 	
 	/**
 	 * The number of characters that can fit in the given number of bytes when the given Charset is used to encode them.
@@ -132,15 +132,19 @@ public class StringColumn extends ComparatorColumn<String>
 	@Override
 	public String parse(String value) throws ParseException
 	{
-		if(!value.startsWith(SERIALISATION_QUOTE))
+		if(value.length() < 2)
 			throw new ParseException("String is not delimited by " + SERIALISATION_QUOTE + "s", 0);
-		if(!value.endsWith(SERIALISATION_QUOTE))
+		if(value.charAt(0) != SERIALISATION_QUOTE)
+			throw new ParseException("String is not delimited by " + SERIALISATION_QUOTE + "s", 0);
+		if(value.charAt(value.length() - 1) != SERIALISATION_QUOTE)
 			throw new ParseException("String is not delimited by " + SERIALISATION_QUOTE + "s", value.length() - 1);
 		return value.substring(1, value.length() - 1); // strip away the quotes
 	}
 	
 	/**
-	 * We wrap all Strings between {@link StringColumn#SERIALISATION_QUOTE}s to avoid that empty Strings are treated as null in {@link Column} and elsewhere
+	 * We wrap all Strings between {@link SERIALISATION_QUOTE}s to avoid that empty Strings are treated as null in {@link Column} and elsewhere
+	 * 
+	 * Warning, no escape takes place at this level! So occurrences of {@link SERIALISATION_QUOTE} within the value will be left unchanged.
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#toString(java.lang.Object)
 	 */
@@ -148,7 +152,6 @@ public class StringColumn extends ComparatorColumn<String>
 	public String toString(String value)
 	{
 		return SERIALISATION_QUOTE + value + SERIALISATION_QUOTE; // surround with quotes
-		//TODO escape!!!!!
 	}
 	
 	/**

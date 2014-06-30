@@ -22,7 +22,6 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
@@ -31,20 +30,21 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
 /**
  * Class to export {@link Record}s to XML files, which can be re-imported by {@link XMLRecordsImporter}.
  * 
- * The CSV will get a header with the column names separated by the separator, plus this:
- * 	*separator*schemaID=...*separator*
+ * Follows the CSV specification outlined in RFC 4180, except for the choice between different separators (comma, tab & semicolon).
+ * The CSV will get a header line with the column names separated by the separator, plus this: *separator*schemaID=...*separator*
  * 
  * @author mstevens
+ * @see <a href="http://www.ietf.org/rfc/rfc4180.txt">http://www.ietf.org/rfc/rfc4180.txt</a>
  */
 public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporter
 {
 
 	// STATICS------------------------------------------------------- 
-	static private Charset UTF8 = Charset.forName("UTF-8");
+	static private final Charset UTF8 = Charset.forName("UTF-8");
+	static private final char DOUBLE_QUOTE = '"';
 	
 	static public enum Separator
 	{
-		
 		COMMA,
 		SEMICOLON,
 		TAB;
@@ -60,16 +60,16 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 			return name().toLowerCase(Locale.getDefault());
 		}
 		
-		public String getSeparatorString()
+		public char getSeparatorChar()
 		{
 			switch(this)
 			{
 				case COMMA:
-					return ",";
+					return ',';
 				case SEMICOLON:
-					return ";";
+					return ';';
 				case TAB:
-					return "\t";
+					return '\t';
 				default:
 					throw new IllegalStateException("Unknown CSV sepator: " + name());
 			}
@@ -169,11 +169,11 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				writer.openTransaction(); // output will be buffered
 				try
 				{
-					// Column names (separatoed by the separator):
+					// Column names (separated by the separator):
 					for(ColumnPointer cp : columnPointers)
-						writer.write((!writer.isTransactionBufferEmpty() ? separator.getSeparatorString() : "") + cp.getQualifiedColumnName());
+						writer.write((!writer.isTransactionBufferEmpty() ? separator.getSeparatorChar() : "") + cp.getQualifiedColumnName());
 					// Postfix: separator+"schemeID="+...+separator	
-					writer.write(separator.getSeparatorString() + Schema.ATTRIBUTE_SCHEMA_ID + "=" + entry.getKey().getID() + separator.getSeparatorString());
+					writer.write(separator.getSeparatorChar() + Schema.ATTRIBUTE_SCHEMA_ID + "=" + entry.getKey().getID() + separator.getSeparatorChar());
 					writer.write('\n');
 				}
 				catch(Exception e)
@@ -192,20 +192,22 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 						for(ColumnPointer cp : columnPointers)
 						{
 							if(!writer.isTransactionBufferEmpty())
-								writer.write(separator.getSeparatorString());
+								writer.write(separator.getSeparatorChar());
 							Column<?> col = cp.getColumn();
 							Record rec = cp.getRecord(r, false);
-							if(rec != null && col.isValueSet(rec))
+							if(rec != null && col.isValueSet(rec)) // do write nothing when the value is not set (i.e. null is represented by an empty String)
 							{
-								writer.write(	(col instanceof VirtualColumn && ((VirtualColumn<?, ?>) col).getTargetColumn() instanceof StringColumn) ?				
-													(String) col.retrieveValue(rec) :
-													col.retrieveValueAsString(rec));
-								// TODO escape separator!
-								// TODO escape white space!
-								/* If the column is a VirtualColumn and its target column is a StringColumn then we can print the value as an unquoted String.
-								 * Unlike in the case of XMLRecordsExporter we can only do this for virtual StringColumns, because those will never be parsed
-								 * by CSVRecordsImporter anyway. If we'd do it for normal StringColumns (which would be parser upon importing) then we'd lose
-								 * the different between null and the empty String (which are not the same for StringColumns). */
+								/* Get String representing the column value...
+								 * 	If the column type is String (meaning it is a StringColumn or a VirtualColumn with a StringColumn as its target),
+								 * 	then we use the raw String value returned by StringColumn#retrieveValue() instead of the singe-quoted String returned
+								 * 	by StringColumn#retrieveValueAsString(). */
+								String valueString = (col.getType() == String.class ? (String) col.retrieveValue(rec) : col.retrieveValueAsString(rec));
+								/* Write value and escape/quote if necessary or required...
+								 * 	We force (double) quotes on StringColumns in order to maintain ability to differentiate null and empty String.
+								 * 	We don't need to do this on VirtualColumns with target type String because their values will get quoted when needed
+								 * 	(i.e. due to occurrence of double quote, new line or separator) but they don't need to maintain the difference between
+								 * 	null and empty String since virtual columns would be ignored if we ever implement a CSVRecordsImporter class. */	
+								writer.write(escape(valueString, col instanceof StringColumn));
 							}
 						}
 						writer.write('\n');
@@ -234,6 +236,21 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		}
 		// Success:
 		return ExportResult.Success(exported, exportFolder, csvFiles);
+	}
+	
+	private String escape(String valueString, boolean forceQuotes)
+	{
+		boolean needsQuotes = forceQuotes;
+		StringBuilder bldr = new StringBuilder(valueString.length());
+		for(char c : valueString.toCharArray())
+		{
+			if(c == DOUBLE_QUOTE)
+				bldr.append(DOUBLE_QUOTE); // escape double quote occurrences by doubling them
+			if(c == DOUBLE_QUOTE || c == '\r' || c == '\n' || c == separator.getSeparatorChar())
+				needsQuotes = true;
+			bldr.append(c);
+		}			
+		return (needsQuotes ? DOUBLE_QUOTE : "") + bldr.toString() + (needsQuotes ? DOUBLE_QUOTE : "");
 	}
 	
 	@Override

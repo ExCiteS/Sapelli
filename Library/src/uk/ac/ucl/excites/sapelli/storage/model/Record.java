@@ -28,8 +28,8 @@ public class Record implements Serializable
 	static private final long serialVersionUID = 2L;
 	
 	static public final String TAG_RECORD = "Record";
-	static final private char SERIALISATION_SEPARATOR = ';';
-	static final private char SERIALISATION_SEPARATOR_ESCAPE = ':';
+	static final private char SERIALISATION_SEPARATOR = ',';
+	static final private char SERIALISATION_SEPARATOR_ESCAPE = '.';
 	static final private char SERIALISATION_SEPARATOR_ESCAPE_PREFIX = '/';
 	
 	// Dynamics------------------------------------------------------
