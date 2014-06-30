@@ -163,6 +163,10 @@ public class TextMessage extends Message
 	/**
 	 * Called by sender
 	 * 
+	 * The header encoding is designed to avoid that the reserved {@code ESC} character is ever produced in the header characters.
+	 * The strategy is to insert an additional "separator bit" before every group of 6 header bits, this bit is chosen such that the
+	 * none of the resulting 7 bit patterns will ever map to the {@code ESC} character.
+	 * 
 	 * @return the full message content (= header + payload)
 	 * @throws Exception
 	 */
@@ -174,7 +178,7 @@ public class TextMessage extends Message
 		//	Write header fields:
 		BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
 		Transmission.TRANSMISSION_ID_FIELD.write(sendingSideTransmissionID, hdrFieldBitsOut);	// Sending-side localID: takes up the first 24 bits
-		Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, hdrFieldBitsOut);						// Payload hash (= CRC16 hash): takes up the next 16 bits
+		Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, hdrFieldBitsOut);					// Payload hash (= CRC16 hash): takes up the next 16 bits
 		PART_NUMBER_FIELD.write(partNumber, hdrFieldBitsOut);									// partNumber: takes up next 4 bits
 		PART_NUMBER_FIELD.write(totalParts, hdrFieldBitsOut);									// totalParts: takes up last 4 bits
 		hdrFieldBitsOut.close();

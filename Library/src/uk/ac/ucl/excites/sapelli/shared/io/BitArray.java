@@ -142,11 +142,11 @@ public class BitArray implements Iterable<Boolean>
 			return true;
 		if(obj instanceof BitArray)
 		{
-			BitArray other = (BitArray) obj;
-			if(this.length != other.length)
+			BitArray that = (BitArray) obj;
+			if(this.length != that.length)
 				return false;
 			for(int i = 0; i < length; i++)
-				if(this.get(i) != other.get(i))
+				if(this.get(i) != that.get(i))
 					return false;
 			return true;
 		}

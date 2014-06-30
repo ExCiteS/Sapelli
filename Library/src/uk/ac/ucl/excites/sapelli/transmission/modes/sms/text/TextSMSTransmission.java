@@ -264,21 +264,19 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 			throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_CHARS + " characters) exceeded by at least " + minNumberOfCharactersNeededFor(payloadBits.length()) + " characters");
 		
 		// Convert data bytes to transmission payload String:
-		String payload = null;
-		BitInputStream bis = null;
+		StringBuilder bld = new StringBuilder();
+		BitInputStream bitsIn = new BitArrayInputStream(payloadBits);
 		try
 		{
-			bis = new BitArrayInputStream(payloadBits);
 			Boolean escapeBit = null;
-			StringBuilder bld = new StringBuilder();
-			while(bis.bitsAvailable() + (escapeBit == null ? 0 : 1) > 0)
+			while(bitsIn.bitsAvailable() + (escapeBit == null ? 0 : 1) > 0)
 			{
 				// Check if there is room for one more character:
 				if(bld.length() + 1 > MAX_PAYLOAD_CHARS)					
-					throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_CHARS + " characters) exceeded by at least " + minNumberOfCharactersNeededFor(bis.bitsAvailable() + (escapeBit == null ? 0 : 1)) + " characters");
+					throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_CHARS + " characters) exceeded by at least " + minNumberOfCharactersNeededFor(bitsIn.bitsAvailable() + (escapeBit == null ? 0 : 1)) + " characters");
 				// Read 7, 6 or less bits and shift them to the right to fill 7 or 6 bits:
-				int readBits = Math.min(bis.bitsAvailable(), BITS_PER_CHAR - (escapeBit == null ? 0 : 1));
-				int c = (readBits > 0 ? (int) bis.readInteger(readBits, false) : 0) << (BITS_PER_CHAR - (escapeBit == null ? 0 : 1) - readBits);
+				int readBits = Math.min(bitsIn.bitsAvailable(), BITS_PER_CHAR - (escapeBit == null ? 0 : 1));
+				int c = (readBits > 0 ? (int) bitsIn.readInteger(readBits, false) : 0) << (BITS_PER_CHAR - (escapeBit == null ? 0 : 1) - readBits);
 				// Insert escape bit for previous character in most significant position (if needed):
 				if(escapeBit != null)
 					c += ((escapeBit ? 1 : 0) << (BITS_PER_CHAR - 1));
@@ -296,17 +294,17 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 				// Write character:
 				bld.append(TextSMSTransmission.GSM_0338_CHAR_TABLE[c]);
 			}
-			payload = bld.toString();
 		}
 		finally
 		{
-			bis.close();
+			bitsIn.close();
 		}
 			
 		// Split up transmission payload in parts:
-		int partsTotal = (payload.length() + TextMessage.MAX_PAYLOAD_CHARS - 1) / TextMessage.MAX_PAYLOAD_CHARS;
+		String payloadStr = bld.toString();
+		int partsTotal = (payloadStr.length() + TextMessage.MAX_PAYLOAD_CHARS - 1) / TextMessage.MAX_PAYLOAD_CHARS;
 		for(int p = 0; p < partsTotal; p++)
-			parts.add(new TextMessage(this, p + 1, partsTotal, payload.substring(p * TextMessage.MAX_PAYLOAD_CHARS, Math.min((p + 1) * TextMessage.MAX_PAYLOAD_CHARS, payload.length()))));
+			parts.add(new TextMessage(this, p + 1, partsTotal, payloadStr.substring(p * TextMessage.MAX_PAYLOAD_CHARS, Math.min((p + 1) * TextMessage.MAX_PAYLOAD_CHARS, payloadStr.length()))));
 	}
 
 	@Override
@@ -319,10 +317,9 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		String payloadString = blr.toString();
 
 		// Convert transmission payload String to byte array:
-		BitArrayOutputStream bos = null;
+		BitArrayOutputStream bitsOut = new BitArrayOutputStream();
 		try
 		{
-			bos = new BitArrayOutputStream();	
 			boolean prevPrevSP = false;
 			boolean prevSP = false;
 			for(int i = 0; i < payloadString.length(); i++)
@@ -332,25 +329,24 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 				if(!prevSP)
 				{
 					if(!currSP)
-						bos.write(c, BITS_PER_CHAR, false); //write all 7 bits for current
+						bitsOut.write(c, BITS_PER_CHAR, false); // write all 7 bits for current
 				}
 				else //prevSP = true
 				{
 					boolean escapeBit = ((c >> (BITS_PER_CHAR - 1)) == 1);
-					bos.write((escapeBit ? ESCAPE_ESC : ESCAPE_SP) % (1 << (BITS_PER_CHAR - (prevPrevSP ? 1 : 0))), (BITS_PER_CHAR - (prevPrevSP ? 1 : 0)), false); //write 7 or 6 bits for previous
+					bitsOut.write((escapeBit ? ESCAPE_ESC : ESCAPE_SP) % (1 << (BITS_PER_CHAR - (prevPrevSP ? 1 : 0))), (BITS_PER_CHAR - (prevPrevSP ? 1 : 0)), false); // write 7 or 6 bits for previous
 					if(!currSP)
-						bos.write(c % (1 << (BITS_PER_CHAR - 1)), BITS_PER_CHAR - 1, false); //write 6 remaining bits for current
+						bitsOut.write(c % (1 << (BITS_PER_CHAR - 1)), BITS_PER_CHAR - 1, false); // write 6 remaining bits for current
 				}
 				prevPrevSP = prevSP;
 				prevSP = currSP;
 			}
-			//Do *not* call bos.flush(), we only want whole bytes!
-			return bos.toBitArray();
+			bitsOut.close();
+			return bitsOut.toBitArray();
 		}
 		finally
 		{
-			if(bos != null)
-				bos.close();
+			bitsOut.close();
 		}
 	}
 	

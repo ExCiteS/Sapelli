@@ -32,7 +32,6 @@ public abstract class Payload
 	{
 		Records,
 		Files,
-		Heartbeat,
 		Ack
 		//... up to 16 different built-in types (ordinals 0 to 15)
 	}
@@ -48,7 +47,6 @@ public abstract class Payload
 			case Ack:
 				return new AckPayload();
 			case Files:
-			case Heartbeat:
 			default:
 				throw new IllegalArgumentException("Unsupport Payload type: " + type.name());
 		}
