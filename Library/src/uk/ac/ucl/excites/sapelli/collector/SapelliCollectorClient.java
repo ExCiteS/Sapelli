@@ -30,8 +30,8 @@ public class SapelliCollectorClient extends TransmissionClient
 	 */
 	static public long GetModelID(Project project)
 	{
-		return	((((long) project.hashCode()) & 0xffffffffL) << Project.PROJECT_ID_SIZE) +	// Project hash takes up first 32 bits
-				project.getID();															// Project id takes up next 24 bits
+		return	((((long) project.getFingerPrint()) & 0xffffffffL) << Project.PROJECT_ID_SIZE) + // Project finger print takes up first 32 bits
+				project.getID();																 // Project id takes up next 24 bits
 	}
 	
 	static public int GetProjectID(long modelID)
@@ -39,7 +39,7 @@ public class SapelliCollectorClient extends TransmissionClient
 		return (int) (modelID % (1 << Project.PROJECT_ID_SIZE));
 	}
 	
-	static public int GetProjectHash(long modelID)
+	static public int GetProjectFingerPrint(long modelID)
 	{
 		return (int) (modelID >> Project.PROJECT_ID_SIZE);
 	}
@@ -58,7 +58,7 @@ public class SapelliCollectorClient extends TransmissionClient
 	 */
 	public Project getProject(long modelID)
 	{
-		return projectStore.retrieveProject(GetProjectID(modelID), GetProjectHash(modelID));
+		return projectStore.retrieveProject(GetProjectID(modelID), GetProjectFingerPrint(modelID));
 	}
 	
 	/**

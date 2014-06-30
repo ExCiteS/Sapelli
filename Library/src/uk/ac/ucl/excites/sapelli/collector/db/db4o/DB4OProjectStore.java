@@ -141,10 +141,10 @@ public class DB4OProjectStore extends ProjectStore
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(int, int)
 	 */
 	@Override
-	public Project retrieveProject(int projectID, int projectHash)
+	public Project retrieveProject(int projectID, int projectFingerPrint)
 	{
 		for(Project p : retrieveProjectVersions(projectID))
-			if(p.hashCode() == projectHash)
+			if(p.getFingerPrint() == projectFingerPrint)
 				return p;
 		return null;
 	}

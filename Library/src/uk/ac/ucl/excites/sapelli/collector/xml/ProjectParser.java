@@ -17,8 +17,10 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.TransmissionSettings;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
+import uk.ac.ucl.excites.sapelli.shared.util.io.UnclosableBufferedInputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
+import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLHasher;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
@@ -74,6 +76,7 @@ public class ProjectParser extends DocumentParser
 	private final boolean createProjectFolder;
 	
 	private Format format = DEFAULT_FORMAT;
+	private Integer fingerPrint;
 	private Project project;
 	private String startFormID;
 	private HashMap<Relationship, String> relationshipToFormID;
@@ -94,16 +97,24 @@ public class ProjectParser extends DocumentParser
 	}
 
 	public Project parseProject(InputStream input) throws Exception
-	{
+	{		
 		// (Re)Initialise:
 		format = DEFAULT_FORMAT;
 		project = null;
+		fingerPrint = null;
 		startFormID = null;
 		relationshipToFormID.clear();
 		relationshipToConstraints.clear();
 		
+		// Get XML hash:
+		UnclosableBufferedInputStream ubInput = new UnclosableBufferedInputStream(input); // decorate stream to avoid it from being closed and to ensure we can use mark/reset
+		ubInput.mark(Integer.MAX_VALUE);
+		fingerPrint = (new XMLHasher()).getJavaHashCode(ubInput);
+		ubInput.reset();
+		ubInput.makeClosable();
+		
 		// Parse XML:
-		parse(input); //!!! TODO ensure stream is buffered?
+		parse(ubInput); //!!!
 		return project;
 	}
 
@@ -155,6 +166,7 @@ public class ProjectParser extends DocumentParser
 										attributes.getRequiredString(TAG_PROJECT, ATTRIBUTE_PROJECT_NAME, true, false),
 										attributes.getString(ATTRIBUTE_PROJECT_VARIANT, null, true, false),
 										attributes.getString(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, true, false),
+										fingerPrint,
 										basePath,
 										createProjectFolder);
 				

@@ -58,10 +58,10 @@ public abstract class ProjectStore implements Store
 	 * Retrieves specific Project, identified by id and hash
 	 * 
 	 * @param projectID
-	 * @param projectHash
+	 * @param projectFingerPrint
 	 * @return null if no such project was found
 	 */
-	public abstract Project retrieveProject(int projectID, int projectHash);
+	public abstract Project retrieveProject(int projectID, int projectFingerPrint);
 	
 	/**
 	 * Retrieves all project versions/variants which share a given ID

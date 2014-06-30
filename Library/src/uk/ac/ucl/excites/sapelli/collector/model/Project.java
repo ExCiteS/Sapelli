@@ -48,7 +48,8 @@ public class Project
 	
 	//DYNAMICS------------------------------------------------------------
 	private int id = Integer.MIN_VALUE; // don't init to 0 because that is an acceptable project id, nor -1 because that is used as temporary indication of a v1x project
-	private String name;
+	private final int fingerPrint;
+	private final String name;
 	private String variant;
 	private String version;
 	
@@ -64,13 +65,17 @@ public class Project
 	// For backwards compatibility:
 	private boolean v1xProject = false;
 	private int schemaVersion = -1; // don't init to 0 because that is an acceptable schema version
-	
-	public Project(int id, String name, String basePath)
-	{
-		this(id, name, null, DEFAULT_VERSION, basePath, false);
-	}
-	
-	public Project(int id, String name, String variant, String version, String basePath, boolean createSubfolder)
+		
+	/**
+	 * @param id
+	 * @param name
+	 * @param variant
+	 * @param version
+	 * @param fingerPrint - hash code computed against XML (ignoring comments and whitespace; see XMLHasher) 
+	 * @param basePath
+	 * @param createSubfolder
+	 */
+	public Project(int id, String name, String variant, String version, int fingerPrint, String basePath, boolean createSubfolder)
 	{
 		if(name == null || name.isEmpty() || basePath == null || basePath.isEmpty())
 			throw new IllegalArgumentException("Both a name and a valid path are required");
@@ -86,10 +91,15 @@ public class Project
 		else
 			setID(id); // checks if it fits in field	
 		
+		// Name, variant & version:
 		this.name = FileHelpers.makeValidFileName(name);
 		if(variant != null && !variant.isEmpty())
 			this.variant = variant;
 		this.version = version;
+		
+		// Finger print:
+		this.fingerPrint = fingerPrint;
+		
 		// Path:
 		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
 			basePath += File.separatorChar;
@@ -196,6 +206,14 @@ public class Project
 		return version;
 	}
 	
+	/**
+	 * @return the fingerPrint
+	 */
+	public int getFingerPrint()
+	{
+		return fingerPrint;
+	}
+
 	/**
 	 * Add a {@link Form} to the project
 	 * 
@@ -478,6 +496,7 @@ public class Project
 			return 	this.id == that.id &&
 					// no need to check the model here
 					equalSignature(that) && // checks name, variant & version
+					this.fingerPrint == that.fingerPrint &&
 					// TODO transmission settings?
 					this.logging == that.logging &&
 					this.forms.equals(that.forms) &&
@@ -497,6 +516,7 @@ public class Project
 		hash = 31 * hash + name.hashCode();
 		hash = 31 * hash + (variant == null ? 0 : variant.hashCode());
 		hash = 31 * hash + version.hashCode();
+		hash = 31 * hash + fingerPrint;
 		// TODO include transmission settings?
 		hash = 31 * hash + (logging ? 0 : 1);
 		hash = 31 * hash + forms.hashCode();

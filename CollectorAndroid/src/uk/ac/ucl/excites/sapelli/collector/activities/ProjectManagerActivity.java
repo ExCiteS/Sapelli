@@ -355,7 +355,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		if(selectedProject != null)
 		{
 			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_ID, selectedProject.getID());
-			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, selectedProject.hashCode());
+			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_FINGERPRINT, selectedProject.getFingerPrint());
 		}
 		i.setAction(Intent.ACTION_MAIN);
 		startActivity(i);
@@ -645,7 +645,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		Intent i = new Intent(getApplicationContext(), CollectorActivity.class);
 		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_ID, project.getID());
-		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, project.hashCode());
+		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_FINGERPRINT, project.getFingerPrint());
 		i.setAction(Intent.ACTION_MAIN);
 		return i;
 	}

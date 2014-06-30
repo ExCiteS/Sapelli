@@ -63,10 +63,10 @@ public class PrefProjectStore extends ProjectStore
 		// Check for project duplicates:
 		if(retrieveProject(project.getName(), project.getVariant(), project.getVersion()) != null)
 			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
-		// Check for id & hash collision (very unlikely, but highly problematic):
-		Project dupe = retrieveProject(project.getID(), project.hashCode());
+		// Check for id & finger print collision (very unlikely, but highly problematic):
+		Project dupe = retrieveProject(project.getID(), project.getFingerPrint());
 		if(dupe != null && !project.equals(dupe))
-			throw new DuplicateException("Project id & hashCode collision!");
+			throw new DuplicateException("Project id & finger print collision!");
 		// Store in prefs:
 		storeProjectPathPrefKey(project);
 		// Store in cache:
@@ -124,15 +124,15 @@ public class PrefProjectStore extends ProjectStore
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(int, int)
 	 */
 	@Override
-	public Project retrieveProject(int projectID, int projectHash)
+	public Project retrieveProject(int projectID, int projectFingerPrint)
 	{
 		// Get project from cache if it is there ...
-		Project cachedProject = getCachedProject(projectID, projectHash);
+		Project cachedProject = getCachedProject(projectID, projectFingerPrint);
 		if(cachedProject != null)
 			return cachedProject;
 		
 		// ... parse the project if not ...
-		String folderPath = preferences.getString(getProjectPathPrefKey(projectID, projectHash), null);
+		String folderPath = preferences.getString(getProjectPathPrefKey(projectID, projectFingerPrint), null);
 		if(folderPath != null)
 		{
 			Project p = parseProject(folderPath);
@@ -142,7 +142,7 @@ public class PrefProjectStore extends ProjectStore
 				return p;
 			}
 			else
-				removeProjectPathPrefKey(projectID, projectHash); // we were unable to parse a project at the path, so remove it from the preferences 
+				removeProjectPathPrefKey(projectID, projectFingerPrint); // we were unable to parse a project at the path, so remove it from the preferences 
 		}
 		
 		// Project not found:
@@ -184,17 +184,17 @@ public class PrefProjectStore extends ProjectStore
 			if(entry.getKey().startsWith(PREF_PROJECT_PATH_PREFIX) && entry.getKey().endsWith(PREF_PROJECT_PATH_POSTFIX))
 			{
 				int projectID = getProjectID(entry.getKey());
-				int projectHash = getProjectHash(entry.getKey());
-				if(getCachedProject(projectID, projectHash) == null)
+				int projectFingerPrint = getProjectFingerPrint(entry.getKey());
+				if(getCachedProject(projectID, projectFingerPrint) == null)
 				{	// Parse the project if it is not already in the cache:
 					Project p = parseProject(entry.getValue().toString());
 					if(p != null)
 					{
-						if(p.hashCode() != projectHash)
+						if(p.getFingerPrint() != projectFingerPrint)
 						{
-							Log.w(TAG, "Hash code of project " + p.toString() + " has changed, possibly the " + ProjectLoader.PROJECT_FILE + " file (located in " + entry.getValue().toString() + ") was manually edited or the parser has been changed!");
+							Log.w(TAG, "XML finger print of project " + p.toString() + " has changed, possibly the " + ProjectLoader.PROJECT_FILE + " file (located in " + entry.getValue().toString() + ") was manually edited!");
 							// Remove old pref key:
-							removeProjectPathPrefKey(projectID, projectHash);
+							removeProjectPathPrefKey(projectID, projectFingerPrint);
 							// Add new pref key:
 							storeProjectPathPrefKey(p);
 						}
@@ -215,14 +215,14 @@ public class PrefProjectStore extends ProjectStore
 	 * Gets project from cache if it is there, returns null otherwise
 	 * 
 	 * @param projectID
-	 * @param projectHash
+	 * @param projectFingerPrint
 	 * @return
 	 */
-	private Project getCachedProject(int projectID, int projectHash)
+	private Project getCachedProject(int projectID, int projectFingerPrint)
 	{
 		if(projectCache != null)
 			for(Project cachedProj : projectCache)
-				if(cachedProj.getID() == projectID && cachedProj.hashCode() == projectHash)
+				if(cachedProj.getID() == projectID && cachedProj.getFingerPrint() == projectFingerPrint)
 					return cachedProj;
 		return null;
 	}
@@ -232,9 +232,9 @@ public class PrefProjectStore extends ProjectStore
 		preferences.edit().remove(getProjectPathPrefKey(project)).commit();
 	}
 	
-	private void removeProjectPathPrefKey(int projectID, int projectHash)
+	private void removeProjectPathPrefKey(int projectID, int projectFingerPrint)
 	{
-		preferences.edit().remove(getProjectPathPrefKey(projectID, projectHash)).commit();
+		preferences.edit().remove(getProjectPathPrefKey(projectID, projectFingerPrint)).commit();
 	}
 	
 	private void storeProjectPathPrefKey(Project project)
@@ -244,14 +244,14 @@ public class PrefProjectStore extends ProjectStore
 	
 	private String getProjectPathPrefKey(Project project)
 	{
-		return getProjectPathPrefKey(project.getID(), project.hashCode());
+		return getProjectPathPrefKey(project.getID(), project.getFingerPrint());
 	}
 	
-	private String getProjectPathPrefKey(int projectID, int projectHash)
+	private String getProjectPathPrefKey(int projectID, int projectFingerPrint)
 	{
 		return 	PREF_PROJECT_PATH_PREFIX +
 				PREF_KEY_SEPARATOR + projectID +
-				PREF_KEY_SEPARATOR + projectHash +
+				PREF_KEY_SEPARATOR + projectFingerPrint +
 				PREF_PROJECT_PATH_POSTFIX;
 	}
 	
@@ -260,7 +260,7 @@ public class PrefProjectStore extends ProjectStore
 		return Integer.parseInt(projectPathPrefKey.split("\\" + PREF_KEY_SEPARATOR)[1]);
 	}
 	
-	private int getProjectHash(String projectPathPrefKey)
+	private int getProjectFingerPrint(String projectPathPrefKey)
 	{
 		return Integer.parseInt(projectPathPrefKey.split("\\" + PREF_KEY_SEPARATOR)[2]);
 	}
