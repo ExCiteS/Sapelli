@@ -5,10 +5,10 @@ package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
@@ -16,7 +16,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
-import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
@@ -26,22 +26,27 @@ import android.util.Log;
  * 
  * @author Michalis Vitos, mstevens
  */
+/**
+ * @author mstevens
+ *
+ */
 public class PrefProjectStore extends ProjectStore
 {
 	
 	// Statics----------------------------------------------
 	static protected final String TAG = "DB4OPrefDataAccess";
 	private static final String PREFERENCES_NAME = "PROJECT_STORAGE";
-	private static final String PREF_PROJECT_PATH_PREFIX = "PROJECT_";
-	private static final String PREF_PROJECT_PATH_MIDFIX = "_";
-	private static final String PREF_PROJECT_PATH_POSTFIX = "_PATH";
+	private static final String PREF_KEY_SEPARATOR = "_";
+	private static final String PREF_PROJECT_PATH_PREFIX = "PROJECT";
+	private static final String PREF_PROJECT_PATH_POSTFIX = "PATH";
 	private static final String HELD_FOREIGN_KEY_PREFIX = "RELATIONSHIP_";
 	private static final String HELD_FOREIGN_KEY_POSTFIX = "_HELD_FOREIGN_KEY";
 
 	// Dynamics---------------------------------------------
 	private Context context;
 	private SharedPreferences preferences;
-	private Map<Long,Project> projectCache;
+	private Set<Project> projectCache;
+	
 
 	public PrefProjectStore(Context context)
 	{
@@ -58,6 +63,10 @@ public class PrefProjectStore extends ProjectStore
 		// Check for project duplicates:
 		if(retrieveProject(project.getName(), project.getVariant(), project.getVersion()) != null)
 			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
+		// Check for id & hash collision (very unlikely, but highly problematic):
+		Project dupe = retrieveProject(project.getID(), project.hashCode());
+		if(dupe != null && !project.equals(dupe))
+			throw new DuplicateException("Project id & hashCode collision!");
 		// Store in prefs:
 		storeProjectPathPrefKey(project);
 		// Store in cache:
@@ -72,13 +81,8 @@ public class PrefProjectStore extends ProjectStore
 	@Override
 	public List<Project> retrieveProjects()
 	{
-		return new ArrayList<Project>(retrieveProjectsColl());
-	}
-	
-	private Collection<Project> retrieveProjectsColl()
-	{
 		updateProjectCache(); // will also call initProjectCache()
-		return projectCache.values();
+		return new ArrayList<Project>(projectCache);
 	}
 	
 	/**
@@ -89,7 +93,8 @@ public class PrefProjectStore extends ProjectStore
 	@Override
 	public Project retrieveProject(final String name, final String variant, final String version)
 	{
-		for(Project project : retrieveProjectsColl())
+		updateProjectCache(); // will also call initProjectCache()
+		for(Project project : projectCache)
 		{
 			if( project.getName().equalsIgnoreCase(name)
 				&& (variant != null ? variant.equals(project.getVariant()) : true)
@@ -105,7 +110,8 @@ public class PrefProjectStore extends ProjectStore
 	@Override
 	public Project retrieveV1Project(final int schemaID, final int schemaVersion)
 	{
-		for(Project project : retrieveProjectsColl())
+		updateProjectCache(); // will also call initProjectCache()
+		for(Project project : projectCache)
 			if(project.isV1xProject() && project.getID() == schemaID && project.getSchemaVersion() == schemaVersion)
 				return project;
 		return null;
@@ -118,15 +124,15 @@ public class PrefProjectStore extends ProjectStore
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(int, int)
 	 */
 	@Override
-	public Project retrieveProject(final int projectID, final int projectHash)
-	{		
+	public Project retrieveProject(int projectID, int projectHash)
+	{
 		// Get project from cache if it is there ...
-		if(projectCache != null) && projectCache.containsKey(projectHash))
-			return projectCache.get(projectHash);
+		Project cachedProject = getCachedProject(projectID, projectHash);
+		if(cachedProject != null)
+			return cachedProject;
 		
 		// ... parse the project if not ...
-		String prefKey = getProjectPathPrefKey(projectHash);
-		String folderPath = preferences.getString(prefKey, null);
+		String folderPath = preferences.getString(getProjectPathPrefKey(projectID, projectHash), null);
 		if(folderPath != null)
 		{
 			Project p = parseProject(folderPath);
@@ -136,7 +142,7 @@ public class PrefProjectStore extends ProjectStore
 				return p;
 			}
 			else
-				removeProjectPathPrefKey(projectHash); // we were unable to parse a project at the path, so remove it from the preferences 
+				removeProjectPathPrefKey(projectID, projectHash); // we were unable to parse a project at the path, so remove it from the preferences 
 		}
 		
 		// Project not found:
@@ -157,17 +163,16 @@ public class PrefProjectStore extends ProjectStore
 	@Override
 	public void delete(Project project)
 	{
-		// Remove from cache:
-		if(projectCache != null)
-			projectCache.remove(project.getHash());
-		// Remove from prefs:
-		removeProjectPathPrefKey(project);
+		// Try to remove from cache:
+		if(projectCache.remove(project))
+			// if it was in cache, remove from prefs as well:
+			removeProjectPathPrefKey(project);
 	}
 	
 	private void initProjectCache()
 	{
 		if(projectCache == null)
-			projectCache = new HashMap<Long, Project>();
+			projectCache = new HashSet<Project>();
 	}
 	
 	private void updateProjectCache()
@@ -178,17 +183,18 @@ public class PrefProjectStore extends ProjectStore
 		for(Map.Entry<String, ?> entry : preferences.getAll().entrySet())
 			if(entry.getKey().startsWith(PREF_PROJECT_PATH_PREFIX) && entry.getKey().endsWith(PREF_PROJECT_PATH_POSTFIX))
 			{
-				long projectHash = getProjectHash(entry.getKey());
-				if(!projectCache.containsKey(projectCache))
+				int projectID = getProjectID(entry.getKey());
+				int projectHash = getProjectHash(entry.getKey());
+				if(getCachedProject(projectID, projectHash) == null)
 				{	// Parse the project if it is not already in the cache:
 					Project p = parseProject(entry.getValue().toString());
 					if(p != null)
 					{
-						if(p.getHash() != projectHash)
+						if(p.hashCode() != projectHash)
 						{
-							Log.w(TAG, "Hash code of project " + p.toString() + " has changed, probably the " + ProjectLoader.PROJECT_FILE + " file (located in " + entry.getValue().toString() + ") was manually edited!");
+							Log.w(TAG, "Hash code of project " + p.toString() + " has changed, possibly the " + ProjectLoader.PROJECT_FILE + " file (located in " + entry.getValue().toString() + ") was manually edited or the parser has been changed!");
 							// Remove old pref key:
-							removeProjectPathPrefKey(projectHash);
+							removeProjectPathPrefKey(projectID, projectHash);
 							// Add new pref key:
 							storeProjectPathPrefKey(p);
 						}
@@ -202,7 +208,23 @@ public class PrefProjectStore extends ProjectStore
 	private void cacheProject(Project project)
 	{
 		initProjectCache(); //will create an empty cache if we don't have one yet
-		projectCache.put(project.getHash(), project);
+		projectCache.add(project);
+	}
+	
+	/**
+	 * Gets project from cache if it is there, returns null otherwise
+	 * 
+	 * @param projectID
+	 * @param projectHash
+	 * @return
+	 */
+	private Project getCachedProject(int projectID, int projectHash)
+	{
+		if(projectCache != null)
+			for(Project cachedProj : projectCache)
+				if(cachedProj.getID() == projectID && cachedProj.hashCode() == projectHash)
+					return cachedProj;
+		return null;
 	}
 	
 	private void removeProjectPathPrefKey(Project project)
@@ -210,9 +232,9 @@ public class PrefProjectStore extends ProjectStore
 		preferences.edit().remove(getProjectPathPrefKey(project)).commit();
 	}
 	
-	private void removeProjectPathPrefKey(long projectHash)
+	private void removeProjectPathPrefKey(int projectID, int projectHash)
 	{
-		preferences.edit().remove(getProjectPathPrefKey(projectHash)).commit();
+		preferences.edit().remove(getProjectPathPrefKey(projectID, projectHash)).commit();
 	}
 	
 	private void storeProjectPathPrefKey(Project project)
@@ -227,13 +249,20 @@ public class PrefProjectStore extends ProjectStore
 	
 	private String getProjectPathPrefKey(int projectID, int projectHash)
 	{
-		return PREF_PROJECT_PATH_PREFIX + projectID + PREF_PROJECT_PATH_MIDFIX + projectHash + PREF_PROJECT_PATH_POSTFIX;
+		return 	PREF_PROJECT_PATH_PREFIX +
+				PREF_KEY_SEPARATOR + projectID +
+				PREF_KEY_SEPARATOR + projectHash +
+				PREF_PROJECT_PATH_POSTFIX;
 	}
 	
-	private long getProjectHash(String projectPathPrefKey)
+	private int getProjectID(String projectPathPrefKey)
 	{
-		// TODO change!
-		return Long.parseLong(projectPathPrefKey.substring(PREF_PROJECT_PATH_PREFIX.length(), projectPathPrefKey.length() - PREF_PROJECT_PATH_POSTFIX.length()));
+		return Integer.parseInt(projectPathPrefKey.split("\\" + PREF_KEY_SEPARATOR)[1]);
+	}
+	
+	private int getProjectHash(String projectPathPrefKey)
+	{
+		return Integer.parseInt(projectPathPrefKey.split("\\" + PREF_KEY_SEPARATOR)[2]);
 	}
 	
 	private Project parseProject(String folderPath)
@@ -258,7 +287,18 @@ public class PrefProjectStore extends ProjectStore
 	}
 	
 	@Override
-	public void storeHeldForeignKey(Relationship relationship, ForeignKey foreignKey)
+	public List<Project> retrieveProjectVersions(int projectID)
+	{
+		updateProjectCache(); // will also call initProjectCache()
+		List<Project> projectVersions = new ArrayList<Project>();
+		for(Project project : projectCache)
+			if(project.getID() == projectID)
+				projectVersions.add(project);
+		return projectVersions;
+	}
+	
+	@Override
+	public void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey)
 	{
 		if(!relationship.isHoldForeignRecord())
 			throw new IllegalArgumentException("This relationship is not allowed to hold on to foreign records");
@@ -266,7 +306,7 @@ public class PrefProjectStore extends ProjectStore
 	}
 
 	@Override
-	public ForeignKey retrieveHeldForeignKey(Relationship relationship)
+	public RecordReference retrieveHeldForeignKey(Relationship relationship)
 	{
 		if(!relationship.isHoldForeignRecord())
 			throw new IllegalArgumentException("This relationship is not allowed to hold on to foreign records");
@@ -275,7 +315,7 @@ public class PrefProjectStore extends ProjectStore
 		if(serialisedForeignKey != null)
 			try
 			{
-				return (ForeignKey) (new ForeignKey(relationship.getRelatedForm().getSchema())).parse(serialisedForeignKey);
+				return (RecordReference) (new RecordReference(relationship.getRelatedForm().getSchema())).parse(serialisedForeignKey);
 			}
 			catch(Exception e)
 			{

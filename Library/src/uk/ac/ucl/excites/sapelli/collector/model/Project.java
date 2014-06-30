@@ -495,7 +495,7 @@ public class Project
 		hash = 31 * hash + name.hashCode();
 		hash = 31 * hash + (variant == null ? 0 : variant.hashCode());
 		hash = 31 * hash + version.hashCode();
-		// TODO include tranmssion settings?
+		// TODO include transmission settings?
 		hash = 31 * hash + (logging ? 0 : 1);
 		hash = 31 * hash + forms.hashCode();
 		hash = 31 * hash + (startForm == null ? 0 : startForm.hashCode());

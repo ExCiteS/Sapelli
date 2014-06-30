@@ -19,7 +19,6 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderClient;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.model.TransmissionSettings;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
@@ -573,10 +572,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			showErrorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
 		}
 		
-		// Encryption Check
-		if(project.getTransmissionSettings().isEncrypt())
-			requestEncryptionKey(project);
-
 		// Store the project object:
 		storeProject(project);
 
@@ -630,9 +625,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		{
 			public void onClick(DialogInterface dialog, int whichButton)
 			{
-				String inputStr = input.getText().toString();
-				project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? 	TransmissionSettings.DEFAULT_PASSWORD /*Set the Default Password*/ :
-																					inputStr);
+				//String inputStr = input.getText().toString();
+				//project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? 	EncryptionSettings.DEFAULT_PASSWORD /*Set the Default Password*/ :
+				//																	inputStr);
 			}
 		});
 		encryptionDialog = builder.create();
