@@ -42,3 +42,4 @@ local.properties
 /CollectorAndroid/res/raw/demo.excites
 /CollectorAndroid/ant.properties
 /CollectorAndroid/assets/demo.excites
+/CollectorAndroid/crashlytics.properties
