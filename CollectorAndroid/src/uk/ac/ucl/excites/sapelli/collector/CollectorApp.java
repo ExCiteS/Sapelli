@@ -49,6 +49,9 @@ public class CollectorApp extends Application implements StoreClient
 	static private final String DUMP_FOLDER = "Dumps" + File.separator;
 	static private final String EXPORT_FOLDER = "Export" + File.separator;
 	
+	static private final String CRASHLYTICS_VERSION_INFO = "VERSION_INFO";
+	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
+
 	/**
 	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on
 	 * an accessible (i.e. mounted) storage device
@@ -90,6 +93,8 @@ public class CollectorApp extends Application implements StoreClient
 
 		// Start Crashlytics for bugs reporting
 		Crashlytics.start(this);
+		Crashlytics.setString(CRASHLYTICS_VERSION_INFO, BuildInfo.getVersionInfo());
+		Crashlytics.setString(CRASHLYTICS_BUILD_INFO, BuildInfo.getBuildInfo());
 	
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();
