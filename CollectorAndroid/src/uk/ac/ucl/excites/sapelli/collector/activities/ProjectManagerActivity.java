@@ -64,6 +64,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.WindowManager;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -77,7 +78,7 @@ import com.ipaulpro.afilechooser.utils.FileUtils;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends ExportActivity implements ProjectLoaderClient, StoreClient, DeviceID.InitialisationCallback {
+public class ProjectManagerActivity extends ExportActivity implements ProjectLoaderClient, StoreClient, DeviceID.InitialisationCallback, ListView.OnItemClickListener {
 
 	// STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectManagerActivity";
@@ -100,6 +101,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 
 	// DYNAMICS-------------------------------------------------------
 	private ProjectStore projectStore;
+	private Project selectedProject;
 
 	// UI
 	private TextView addProjects;
@@ -110,7 +112,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	private Dialog encryptionDialog;
 	private DeviceID deviceID;
 	private ListView drawerList;
-	private ActionBarDrawerToggle mDrawerToggle;
+	private ActionBarDrawerToggle drawerToggle;
 	private DrawerLayout drawerLayout;
 
 	@Override
@@ -151,15 +153,17 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		});
 
 		// Set the drawer toggle as the DrawerListener
-		drawerLayout.setDrawerListener(mDrawerToggle);
-		// enable ActionBar app icon to behave as action to toggle nav drawer
+		drawerLayout.setDrawerListener(drawerToggle);
+		// enable ActionBar icon to behave as action to toggle drawer
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		getActionBar().setHomeButtonEnabled(true);
-		mDrawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
+		drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
 
 			/** Called when a drawer has settled in a completely closed state. */
 			public void onDrawerClosed(View view) {
 				super.onDrawerClosed(view);
+				if (selectedProject != null)
+					getActionBar().setTitle(selectedProject.getName());
 				invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
 			}
 
@@ -171,8 +175,10 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		};
 
 		// Set the drawer toggle as the DrawerListener
-		drawerLayout.setDrawerListener(mDrawerToggle);
+		drawerLayout.setDrawerListener(drawerToggle);
 
+		// Set the list's click listener
+		drawerList.setOnItemClickListener(this);
 	}
 
 	public void browse(MenuItem item) {
@@ -334,16 +340,18 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	public void populateTabs() {
 		String[] projectsArray = new String[projectStore.retrieveProjects().size()];
 		for (int i = 0; i < projectStore.retrieveProjects().size(); i++) {
-			projectsArray[i] = project.getName() + " " + project.getVersion();
+			projectsArray[i] = projectStore.retrieveProjects().get(i).getName() + " " + projectStore.retrieveProjects().get(i).getVersion();
 		}
 
 		// Set the adapter for the list view
 		drawerList.setAdapter(new ArrayAdapter<String>(this, R.layout.drawer_list_item, projectsArray));
 
-		adapter = new PagerAdapter(getSupportFragmentManager(), projectStore.retrieveProjects());
+		adapter = new PagerAdapter(getSupportFragmentManager());
 		pager.setAdapter(adapter);
 		if (!projectStore.retrieveProjects().isEmpty()) {
+			getActionBar().setTitle(projectStore.retrieveProjects().get(0).getName());
 			addProjects.setText("");
+			selectedProject = projectStore.retrieveProjects().get(0);
 			pager.setPageMargin(pageMargin);
 			tabs.setViewPager(pager);
 			tabs.setVisibility(View.VISIBLE);
@@ -354,12 +362,12 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	}
 
 	public Project getSelectedProject(boolean errorIfNull) {
-		if (projectStore.retrieveProjects().isEmpty()) {
+		if (selectedProject == null) {
 			if (errorIfNull)
 				showErrorDialog(R.string.selectProject, false);
 			return null;
 		}
-		return adapter.getProjects().get(pager.getCurrentItem());
+		return selectedProject;
 	}
 
 	public void runProject() {
@@ -874,20 +882,20 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	protected void onPostCreate(Bundle savedInstanceState) {
 		super.onPostCreate(savedInstanceState);
 		// Sync the toggle state after onRestoreInstanceState has occurred.
-		mDrawerToggle.syncState();
+		drawerToggle.syncState();
 	}
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
-		mDrawerToggle.onConfigurationChanged(newConfig);
+		drawerToggle.onConfigurationChanged(newConfig);
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// Pass the event to ActionBarDrawerToggle, if it returns
 		// true, then it has handled the app icon touch event
-		if (mDrawerToggle.onOptionsItemSelected(item)) {
+		if (drawerToggle.onOptionsItemSelected(item)) {
 			return true;
 		}
 		// Handle your other action bar items...
@@ -907,6 +915,15 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		if (netInfo != null && netInfo.isConnected())
 			return true;
 		return false;
+	}
+
+	@Override
+	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+		selectedProject = projectStore.retrieveProjects().get(position);
+		// TODO: open selected project
+		getActionBar().setTitle(selectedProject.getName());
+		drawerLayout.closeDrawer(drawerList);
+
 	}
 
 }
