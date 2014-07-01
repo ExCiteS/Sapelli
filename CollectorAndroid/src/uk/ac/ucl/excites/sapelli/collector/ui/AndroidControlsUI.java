@@ -18,7 +18,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;

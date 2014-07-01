@@ -1,16 +1,19 @@
-package uk.ac.ucl.excites.sapelli.shared.util.io;
+package uk.ac.ucl.excites.sapelli.shared.io;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
+import java.nio.charset.UnsupportedCharsetException;
+
+import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
 
 /**
  * Text-based file writer class (some code borrowed from NoiseTube Mobile; Licensed under LGPL v2.1)
  * 
  * @author mstevens
- * 
  */
 public class FileWriter
 {
@@ -34,7 +37,7 @@ public class FileWriter
 	 * @param fullPath
 	 *            The full filepath (e.g. "/my/path/myfile.raw")
 	 */
-	public FileWriter(String fullPath, String characterEncoding)
+	public FileWriter(String fullPath, String characterEncoding) throws IllegalCharsetNameException, UnsupportedCharsetException
 	{
 		this(fullPath, Charset.forName(characterEncoding));
 	}
@@ -58,6 +61,61 @@ public class FileWriter
 	public boolean isWritable()
 	{
 		return(writer != null);
+	}
+	
+	public void open(int fileExistsStrategy, int fileDoesNotExistStrategy) throws IOException
+	{
+		if(fileExistsStrategy < 0 || fileExistsStrategy > 4)
+			throw new IllegalArgumentException("Invalid file exists strategy");
+		if(fileDoesNotExistStrategy < 1 || fileDoesNotExistStrategy > 2)
+			throw new IllegalArgumentException("Invalid file does not exist strategy");
+		boolean append = false;
+		if(file.exists())
+		{	// file already exists
+			switch(fileExistsStrategy)
+			{
+				case (FileHelpers.FILE_EXISTS_STRATEGY_REPLACE):
+					break;
+				case (FileHelpers.FILE_EXISTS_STRATEGY_REJECT):
+					throw new IOException("Could not open FileWriter, file already exists");
+				case (FileHelpers.FILE_EXISTS_STRATEGY_CREATE_RENAMED_FILE):
+					// find a filename that does not exist yet (by adding a counter):
+					String extension = FileHelpers.getFileExtension(file);
+					String pathWithoutExtension = FileHelpers.trimFileExtensionAndDot(file.getAbsolutePath());
+					int i = 1; // counter
+					do
+					{
+						file = new File(pathWithoutExtension + "-" + i + "." + extension);
+						i++;
+					}
+					while(file.exists()); // try until non-existing file found
+					break;
+				case (FileHelpers.FILE_EXISTS_STRATEGY_APPEND):
+					append = true;
+					break;
+			}
+		}
+		else
+		{ // file does not exist
+			switch(fileDoesNotExistStrategy)
+			{
+			case (FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_REJECT):
+				throw new IOException("Could not open FileWriter, file does not exist");
+			case (FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE):
+				file.getParentFile().mkdirs(); // file will be created lower, but we need to make sure the folder is created here.
+				file.createNewFile();
+			}
+		}
+		
+		// Open file for writing:
+		FileOutputStream fos = new FileOutputStream(file, append);
+		
+		// If not appending, insert UTF-x BOM (the OutputStreamWriter does not do this!):
+		if(!append && UnicodeHelpers.getBom(charset) != null)
+			fos.write(UnicodeHelpers.getBom(charset));
+		
+		// Instantiate OutputStreamWriter:
+		writer = new OutputStreamWriter(fos, charset);
 	}
 
 	public void close()
@@ -155,54 +213,6 @@ public class FileWriter
 	protected void finalize()
 	{
 		dispose();
-	}
-
-	public void open(int fileExistsStrategy, int fileDoesNotExistStrategy) throws IOException
-	{
-		if(fileExistsStrategy < 0 || fileExistsStrategy > 4)
-			throw new IllegalArgumentException("Invalid file exists strategy");
-		if(fileDoesNotExistStrategy < 1 || fileDoesNotExistStrategy > 2)
-			throw new IllegalArgumentException("Invalid file does not exist strategy");
-		boolean seekToEOF = false;
-		if(file.exists())
-		{ // file already exists
-			switch(fileExistsStrategy)
-			{
-			case (FileHelpers.FILE_EXISTS_STRATEGY_REPLACE):
-				break;
-			case (FileHelpers.FILE_EXISTS_STRATEGY_REJECT):
-				throw new IOException("Could not open FileWriter, file already exists");
-			case (FileHelpers.FILE_EXISTS_STRATEGY_CREATE_RENAMED_FILE):
-				// find a filename that does not exist yet (by adding a counter):
-				String extension = FileHelpers.getFileExtension(file);
-				String pathWithoutExtension = FileHelpers.trimFileExtensionAndDot(file.getAbsolutePath());
-				int i = 1; // counter
-				do
-				{
-					file = new File(pathWithoutExtension + "-" + i + "." + extension);
-					i++;
-				}
-				while(file.exists()); // try until non-existing file found
-				break;
-			case (FileHelpers.FILE_EXISTS_STRATEGY_APPEND):
-				seekToEOF = true;
-				break;
-			}
-		}
-		else
-		{ // file does not exist
-			switch(fileDoesNotExistStrategy)
-			{
-			case (FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_REJECT):
-				throw new IOException("Could not open FileWriter, file does not exist");
-			case (FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE):
-				file.getParentFile().mkdirs(); // file will be created lower, but we need to make sure the folder is created here.
-				file.createNewFile();
-			}
-		}
-		
-		// Open file:
-		writer = new OutputStreamWriter(new FileOutputStream(file, seekToEOF), charset);
 	}
 
 	protected void _dispose()

@@ -16,7 +16,7 @@ import org.xml.sax.SAXException;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.shared.util.io.UnclosableBufferedInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.UnclosableBufferedInputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLHasher;

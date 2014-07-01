@@ -6,11 +6,12 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import java.io.File;
 import java.io.FileInputStream;
 
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.widget.ImageView;
+
 
 //import com.caverock.androidsvg.SVG;
 import com.larvalabs.svgandroid.SVG;

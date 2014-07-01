@@ -12,7 +12,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.db4o.DB4OProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.db4o.DB4ORecordStore;
 import uk.ac.ucl.excites.sapelli.util.Debug;

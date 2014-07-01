@@ -6,8 +6,8 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileWriter;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
 
 
 /**

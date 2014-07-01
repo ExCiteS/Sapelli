@@ -4,7 +4,6 @@
 package uk.ac.ucl.excites.sapelli.storage.eximport.xml;
 
 import java.io.File;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,10 +11,11 @@ import java.util.List;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileWriter;
+import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
@@ -38,7 +38,6 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	// STATICS-------------------------------------------------------
 	static public final String TAG_RECORDS_EXPORT = "RecordsExport";
 	static public final boolean USES_XML_VERSION_11 = false; // whether to use XML v1.0 (false) or XML v1.1 (true)
-	static private final Charset UTF8 = Charset.forName("UTF-8");
 
 	/**
 	 * Different ways of representing composite columns (i.e. {@link RecordColumn}s)
@@ -111,9 +110,9 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	private void openWriter(String description) throws Exception
 	{
 		DateTime timestamp = DateTime.now();
-		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".xml"), UTF8);
+		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".xml"), UnicodeHelpers.UTF8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
-		writer.writeLine(XMLUtils.header(UTF8.displayName(), USES_XML_VERSION_11));
+		writer.writeLine(XMLUtils.header(UnicodeHelpers.UTF8.displayName(), USES_XML_VERSION_11));
 		writer.writeLine("<" + TAG_RECORDS_EXPORT + " exportedAt=\"" + TimeUtils.getISOTimestamp(timestamp, false) + "\">");
 		//TODO add attributes: comment, device(?)
 	}

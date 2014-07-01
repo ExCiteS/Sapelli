@@ -1,7 +1,7 @@
 /**
  * 
  */
-package uk.ac.ucl.excites.sapelli.shared.util.io;
+package uk.ac.ucl.excites.sapelli.shared.io;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;

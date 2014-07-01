@@ -4,7 +4,6 @@
 package uk.ac.ucl.excites.sapelli.storage.eximport.csv;
 
 import java.io.File;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -13,9 +12,10 @@ import java.util.Map;
 
 import org.joda.time.DateTime;
 
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileWriter;
+import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
@@ -40,7 +40,6 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 {
 
 	// STATICS------------------------------------------------------- 
-	static private final Charset UTF8 = Charset.forName("UTF-8");
 	static private final char DOUBLE_QUOTE = '"';
 	
 	static public enum Separator
@@ -102,7 +101,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	
 	private void openWriter(String description, DateTime timestamp) throws Exception
 	{
-		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".csv"), UTF8);
+		writer = new FileWriter(exportFolder + File.separator + FileHelpers.makeValidFileName("Records_" + description + "_" + TimeUtils.getTimestampForFileName(timestamp) + ".csv"), UnicodeHelpers.UTF8);
 		writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);	
 	}
 	
@@ -207,7 +206,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 								 * 	We don't need to do this on VirtualColumns with target type String because their values will get quoted when needed
 								 * 	(i.e. due to occurrence of double quote, new line or separator) but they don't need to maintain the difference between
 								 * 	null and empty String since virtual columns would be ignored if we ever implement a CSVRecordsImporter class. */	
-								writer.write(escape(valueString, col instanceof StringColumn));
+								writer.write(escapeAndQuote(valueString, col instanceof StringColumn));
 							}
 						}
 						writer.write('\n');
@@ -238,7 +237,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		return ExportResult.Success(exported, exportFolder, csvFiles);
 	}
 	
-	private String escape(String valueString, boolean forceQuotes)
+	private String escapeAndQuote(String valueString, boolean forceQuotes)
 	{
 		boolean needsQuotes = forceQuotes;
 		StringBuilder bldr = new StringBuilder(valueString.length());

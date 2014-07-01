@@ -16,8 +16,6 @@ import java.util.Locale;
 public final class StringUtils
 {
 
-	static private Charset UTF8 = Charset.forName("UTF-8"); 
-	
 	private StringUtils() {}
 	
 	/**
@@ -39,7 +37,7 @@ public final class StringUtils
 	 */
 	static public int sizeBytes(String string)
 	{
-		return string.getBytes(UTF8).length;
+		return string.getBytes(UnicodeHelpers.UTF8).length;
 	}
 	
 	static public String addVariableFrontPadding(String str, int desiredLength, char padding)

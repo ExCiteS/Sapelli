@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.shared.util.io;
+package uk.ac.ucl.excites.sapelli.shared.io;
 
 import java.io.File;
 import java.io.FileInputStream;

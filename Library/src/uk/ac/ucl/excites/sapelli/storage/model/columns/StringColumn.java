@@ -10,6 +10,7 @@ import java.text.ParseException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
@@ -26,7 +27,7 @@ public class StringColumn extends ComparatorColumn<String>
 	//STATIC---------------------------------------------------------
 	static private final long serialVersionUID = 2L;
 	
-	static private final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
+	static private final Charset DEFAULT_CHARSET = UnicodeHelpers.UTF8;
 	static private final int DEFAULT_MAX_LENGTH_BYTES = 256; //bytes
 	static private final char SERIALISATION_QUOTE = '\'';
 	

@@ -7,7 +7,7 @@ import java.io.File;
 import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.collector.db.db4o.DB4ODataAccess;
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;

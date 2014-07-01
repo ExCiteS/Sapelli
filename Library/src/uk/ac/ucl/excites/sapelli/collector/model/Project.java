@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileWriter;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;

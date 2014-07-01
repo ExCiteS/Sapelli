@@ -11,8 +11,8 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
-import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.io.Unzipper;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.Unzipper;
 
 /**
  * Loader for .sapelli (or .excites or .sap) files, which are actually just renamed ZIP files
