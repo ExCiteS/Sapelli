@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2009 ZXing authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,6 +38,7 @@ import android.util.Log;
 
 /**
  * Taken from: https://code.google.com/p/zxing/source/browse/trunk/android-integration/src/com/google/zxing/integration/android
+ * Copyright 2009 ZXing authors; Licensed under the Apache License, Version 2.0
  * 
  * <p>
  * A utility class which helps ease integration with Barcode Scanner via {@link Intent}s. This is a simple way to invoke barcode scanning and receive the

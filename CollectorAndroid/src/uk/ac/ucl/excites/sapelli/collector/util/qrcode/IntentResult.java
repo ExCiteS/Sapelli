@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2009 ZXing authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +19,7 @@ package uk.ac.ucl.excites.sapelli.collector.util.qrcode;
 
 /**
  * Taken from: https://code.google.com/p/zxing/source/browse/trunk/android-integration/src/com/google/zxing/integration/android
+ * Copyright 2009 ZXing authors; Licensed under the Apache License, Version 2.0
  * 
  * <p>Encapsulates the result of a barcode scan invoked through {@link IntentIntegrator}.</p>
  *
