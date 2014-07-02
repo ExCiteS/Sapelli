@@ -5,14 +5,18 @@ package uk.ac.ucl.excites.sapelli.storage.db.db4o;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.debug.ReachableObjects;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
@@ -43,27 +47,36 @@ public class DB4ORecordStore extends RecordStore
 	private ObjectContainer db4o;
 	private String filename;
 	
+	private AutoIncrementDictionary autoIncrementDict;
+	
 	public DB4ORecordStore(StorageClient client, File folder, String baseFilename) throws Exception
 	{
 		super(client);
 		this.filename = baseFilename + DATABASE_NAME_SUFFIX;
 		this.db4o = DB4OConnector.open(DB4OConnector.getFile(folder, filename), Record.class, Schema.class);
+		
+		// Get or set the AutoIncrementDictionary:
+		ObjectSet<AutoIncrementDictionary> resultSet = db4o.query(AutoIncrementDictionary.class);
+		if(!resultSet.isEmpty())
+			this.autoIncrementDict = resultSet.get(0);
+		else
+			this.autoIncrementDict = new AutoIncrementDictionary();
 	}
 	
 	@Override
-	protected void startTransaction()
+	public void startTransaction()
 	{
 		// does nothing
 	}
 
 	@Override
-	protected void commitTransaction()
+	public void commitTransaction()
 	{
 		db4o.commit();
 	}
 
 	@Override
-	protected void rollbackTransaction()
+	public void rollbackTransaction()
 	{
 		db4o.rollback();
 	}
@@ -72,9 +85,27 @@ public class DB4ORecordStore extends RecordStore
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStore(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	protected void doStore(Record record) throws Exception
+	protected boolean doStore(Record record) throws Exception
 	{
+		(new ReachableObjects(record)).printInfo();
+		
+		boolean insert = !db4o.ext().isStored(record);
+		
+		// Deal with auto-incrementing primary keys:
+		if(record.getSchema().getPrimaryKey() instanceof AutoIncrementingPrimaryKey)
+		{
+			IntegerColumn autoIncrIDColumn = ((AutoIncrementingPrimaryKey) record.getSchema().getPrimaryKey()).getColumn();
+			// Set autoIncr ID:
+			if(!autoIncrIDColumn.isValueSet(record)) // equivalent to if(insert)
+			{
+				autoIncrIDColumn.storeValue(record, autoIncrementDict.getNextID(record.getSchema()));
+				// Store the the dictionary:
+				db4o.store(autoIncrementDict);
+			}
+		}
+		
 		db4o.store(record);
+		return insert;
 	}
 	
 	/* (non-Javadoc)
@@ -178,6 +209,32 @@ public class DB4ORecordStore extends RecordStore
 	{
 		db4o.commit();
 		db4o.ext().backup(DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName()).getAbsolutePath());
+	}
+	
+	/**
+	 * Helper class which does the book keeping for auto-incrementing primary keys
+	 * 
+	 * @author mstevens 
+	 */
+	private class AutoIncrementDictionary extends HashMap<Schema, Long>
+	{
+		
+		private static final long serialVersionUID = 2L;
+
+		public Long getNextID(Schema schema)
+		{
+			// Check for auto incrementing key:
+			if(!(schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey))
+				throw new IllegalArgumentException("Schema must have an auto-incrementing primary key");
+			// Next id:
+			long next = (containsKey(schema) ? get(schema) : -1l) + 1;
+			// TODO deal with max reached!!!
+			// Store it:
+			put(schema, next); // hash map always keeps the last used id
+			// Return it:
+			return next;
+		}
+		
 	}
 
 }

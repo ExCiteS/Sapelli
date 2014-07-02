@@ -60,5 +60,26 @@ public class NotConstraint extends Constraint
 	{
 		return negatedConstraint;
 	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof NotConstraint)
+		{
+			NotConstraint that = (NotConstraint) obj;
+			return this.negatedConstraint.equals(that.negatedConstraint);
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = negatedConstraint.hashCode();
+		hash = 31 * hash + "NOT".hashCode(); // to differentiate from the negatedConstraint itself
+		return hash;
+	}
 
 }

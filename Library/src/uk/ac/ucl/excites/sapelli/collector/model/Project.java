@@ -5,31 +5,31 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
 
 /**
+ * A Sapelli Collector Project (i.e. a survey consisting of one or more forms)
+ * 
  * @author mstevens
- *
  */
 public class Project
 {
 	
-	//STATICS-------------------------------------------------------------	
+	//STATICS-------------------------------------------------------------
 	static public final int PROJECT_ID_SIZE = Schema.V1X_SCHEMA_ID_SIZE; // = 24 bits (kept the same was the v1.x Schema#id, for backwards compatibility)
-	static public final IntegerRangeMapping PROJECT_ID_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_ID_SIZE); // unsigned 24bit integer (compatible with old schemaID)
+	static public final IntegerRangeMapping PROJECT_ID_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_ID_SIZE); // unsigned(!) 24bit integer (compatible with old schemaID)
 	
 	static public final String DEFAULT_VERSION = "0";
 	
 	static public final int PROJECT_HASH_SIZE = 32; //bits
-	static public final IntegerRangeMapping PROJECT_HASH_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_HASH_SIZE); // unsigned(!) 32bit integer
-	
-	static public final int MAX_FORMS = (int) Form.FORM_POSITION_FIELD.getHighBound() + 1; // = 15 + 1 = 16 forms allowed
-	
+	static public final IntegerRangeMapping PROJECT_HASH_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_HASH_SIZE); // signed(!) 32bit integer (like Java hashCodes)
 	
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
@@ -47,32 +47,40 @@ public class Project
 	static public final boolean DEFAULT_LOGGING = false;
 	
 	//DYNAMICS------------------------------------------------------------
-	private int id = Integer.MIN_VALUE; //don't init to 0 because that is an acceptable project id
-	private long hash; // unsigned(!) 32bit integer
-	private String name;
+	private int id = Integer.MIN_VALUE; // don't init to 0 because that is an acceptable project id, nor -1 because that is used as temporary indication of a v1x project
+	private final int fingerPrint;
+	private final String name;
 	private String variant;
 	private String version;
 	
 	private String projectPath;
 	
-	private Settings transmissionSettings;
+	private TransmissionSettings transmissionSettings;
 	private boolean logging;
-	private List<Form> forms;
+	private final Schema heartbeatSchema;
+	private final List<Form> forms;
+	private final Model model;
 	private Form startForm;
 	
 	// For backwards compatibility:
 	private boolean v1xProject = false;
-	private int schemaVersion = -1;
-	
-	public Project(int id, long hash, String name, String basePath)
-	{
-		this(id, hash, name, DEFAULT_VERSION, basePath, false);
-	}
-	
-	public Project(int id, long hash, String name, String version, String basePath, boolean createSubfolder)
+	private int schemaVersion = -1; // don't init to 0 because that is an acceptable schema version
+		
+	/**
+	 * @param id
+	 * @param name
+	 * @param variant
+	 * @param version
+	 * @param fingerPrint - hash code computed against XML (ignoring comments and whitespace; see XMLHasher) 
+	 * @param basePath
+	 * @param createSubfolder
+	 */
+	public Project(int id, String name, String variant, String version, int fingerPrint, String basePath, boolean createSubfolder)
 	{
 		if(name == null || name.isEmpty() || basePath == null || basePath.isEmpty())
 			throw new IllegalArgumentException("Both a name and a valid path are required");
+		if(version == null || version.isEmpty())
+			throw new IllegalArgumentException("A valid version is required");
 		
 		// Project id:
 		if(id == PROJECT_ID_V1X_TEMP)
@@ -81,16 +89,17 @@ public class Project
 			v1xProject = true;
 		}
 		else
-			setID(id); // checks if it fits in field
+			setID(id); // checks if it fits in field	
 		
-		// Project hash:
-		if(PROJECT_HASH_FIELD.fits(hash))
-			this.hash = hash;
-		else
-			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getLogicalRangeString() + ".");		
-		
+		// Name, variant & version:
 		this.name = FileHelpers.makeValidFileName(name);
+		if(variant != null && !variant.isEmpty())
+			this.variant = variant;
 		this.version = version;
+		
+		// Finger print:
+		this.fingerPrint = fingerPrint;
+		
 		// Path:
 		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
 			basePath += File.separatorChar;
@@ -107,10 +116,15 @@ public class Project
 			}
 			catch(IOException ignore) {}
 		}
-		// Forms collection:
+		// Forms list:
 		this.forms = new ArrayList<Form>();
 		// Logging:
 		this.logging = DEFAULT_LOGGING;
+		
+		// Initialise Model (important this should remain last):
+		this.model = new Model(SapelliCollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
+		// Heartbeat schema (Important: never put this before the model initialisation!):
+		this.heartbeatSchema = new HeartbeatSchema(this); // will add itself to the model
 	}
 	
 	/**
@@ -120,29 +134,12 @@ public class Project
 	 */
 	private void setID(int id)
 	{
+		if(PROJECT_ID_FIELD.fits(this.id)) // check is there is already a valid id set
+			throw new IllegalStateException("Project id cannot be changed after it has been set.");
 		if(PROJECT_ID_FIELD.fits(id))
 			this.id = id;
 		else
 			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getLogicalRangeString() + ".");
-	}
-	
-	/**
-	 * Backwards compatibility:
-	 * 	- project id will be set to schema id of 1st (and assumed only) form
-	 *  - schema version of that form will be stored in schemaVersion variable (to be able to parse old record export xml files)
-	 * 
-	 * @param schemaID
-	 * @param schemaVersion
-	 */
-	public void setSchema(int schemaID, int schemaVersion)
-	{
-		if(!v1xProject)
-			throw new IllegalStateException("Only allowed for v1.x projects (created with id=-1).");
-		setID(schemaID);
-		if(Schema.V1X_SCHEMA_VERSION_FIELD.fits(schemaVersion))
-			this.schemaVersion = schemaVersion;
-		else
-			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.V1X_SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
 	}
 	
 	/**
@@ -152,13 +149,43 @@ public class Project
 	{
 		return id;
 	}
-
+	
 	/**
-	 * @return the hash (computed from the Project's XML file)
+	 * @return the v1xProject
 	 */
-	public long getHash()
+	public boolean isV1xProject()
 	{
-		return hash;
+		return v1xProject;
+	}
+	
+	/**
+	 * Method for backwards compatibility with v1.x projects. Passes id & version of the schema of the (assumed only) form to the project.
+	 * 	- project id will be set to schema id of 1st (and assumed only) form
+	 *  - schema version of that form will be stored in schemaVersion variable (to be able to parse old record export xml files)
+	 * Can be used on v1.x projects only!
+	 * 
+	 * @param schemaID
+	 * @param schemaVersion
+	 */
+	public void setV1XSchemaInfo(int schemaID, int schemaVersion)
+	{
+		if(!v1xProject)
+			throw new IllegalStateException("Only allowed for v1.x projects (created with id=PROJECT_ID_V1X_TEMP).");
+		setID(schemaID); // schemaID of first (and only) form is also used as projectID
+		if(Schema.V1X_SCHEMA_VERSION_FIELD.fits(schemaVersion))
+			this.schemaVersion = schemaVersion;
+		else
+			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.V1X_SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
+	}
+	
+	/**
+	 * @return the schemaVersion
+	 */
+	public int getSchemaVersion()
+	{
+		if(!v1xProject)
+			throw new IllegalStateException("Only supported for v1.x projects.");
+		return schemaVersion;
 	}
 
 	public String getName()
@@ -174,40 +201,19 @@ public class Project
 		return variant;
 	}
 
-	/**
-	 * @param variant the variant to set
-	 */
-	public void setVariant(String variant)
-	{
-		if(this.variant != null)
-			throw new IllegalStateException("Variant cannot be changed after it has been set.");
-		if(!"".equals(variant))
-			this.variant = variant;
-	}
-
 	public String getVersion()
 	{
 		return version;
 	}
 	
 	/**
-	 * @return the v1xProject
+	 * @return the fingerPrint
 	 */
-	public boolean isV1xProject()
+	public int getFingerPrint()
 	{
-		return v1xProject;
+		return fingerPrint;
 	}
 
-	/**
-	 * @return the schemaVersion
-	 */
-	public int getSchemaVersion()
-	{
-		if(!v1xProject)
-			throw new IllegalStateException("Only supported for v1.x projects.");
-		return schemaVersion;
-	}
-	
 	/**
 	 * Add a {@link Form} to the project
 	 * 
@@ -215,8 +221,6 @@ public class Project
 	 */
 	public void addForm(Form frm)
 	{
-		if(forms.size() >= MAX_FORMS)
-			throw new IllegalStateException("Project cannot hold more than " + MAX_FORMS + " forms.");
 		forms.add(frm);
 		if(forms.size() == 1) //first form becomes startForm by default
 			startForm = frm;
@@ -227,6 +231,19 @@ public class Project
 		return forms;
 	}
 	
+	public Model getModel()
+	{
+		return model;
+	}
+	
+	/**
+	 * @return the heartbeatSchema
+	 */
+	public Schema getHeartbeatSchema()
+	{
+		return heartbeatSchema;
+	}
+
 	/**
 	 * @param position
 	 * @return	the {@link Form} with the specified {@code position}, or {@code null} if the project has no such form. 
@@ -285,7 +302,7 @@ public class Project
 	/**
 	 * @return the transmissionSettings
 	 */
-	public Settings getTransmissionSettings()
+	public TransmissionSettings getTransmissionSettings()
 	{
 		return transmissionSettings;
 	}
@@ -293,7 +310,7 @@ public class Project
 	/**
 	 * @param transmissionSettings the transmissionSettings to set
 	 */
-	public void setTransmissionSettings(Settings transmissionSettings)
+	public void setTransmissionSettings(TransmissionSettings transmissionSettings)
 	{
 		this.transmissionSettings = transmissionSettings;
 	}
@@ -461,6 +478,13 @@ public class Project
 		}
 	}
 	
+	public boolean equalSignature(Project other)
+	{
+		return 	this.name.equals(other.name)
+				&& (this.variant == null ? other.variant == null : variant.equals(other.variant))
+				&& this.version.equals(other.version);	
+	}
+	
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -468,13 +492,38 @@ public class Project
 			return true; // references to same object
 		if(obj instanceof Project)
 		{
-			Project other = (Project) obj;
-			return 	this.name.equals(other.name)
-					&& (this.variant == null ? other.variant == null : variant.equals(other.variant))
-					&& this.version.equals(other.version);			
+			Project that = (Project) obj;
+			return 	this.id == that.id &&
+					// no need to check the model here
+					equalSignature(that) && // checks name, variant & version
+					this.fingerPrint == that.fingerPrint &&
+					// TODO transmission settings?
+					this.logging == that.logging &&
+					this.forms.equals(that.forms) &&
+					(this.startForm != null ? this.startForm.equals(that.startForm) : that.startForm == null) &&
+					this.v1xProject == that.v1xProject &&
+					this.schemaVersion == that.schemaVersion;
 		}
-		else
-			return false;
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		// Do not include the model here
+		int hash = 1;
+		hash = 31 * hash + id;
+		hash = 31 * hash + name.hashCode();
+		hash = 31 * hash + (variant == null ? 0 : variant.hashCode());
+		hash = 31 * hash + version.hashCode();
+		hash = 31 * hash + fingerPrint;
+		// TODO include transmission settings?
+		hash = 31 * hash + (logging ? 0 : 1);
+		hash = 31 * hash + forms.hashCode();
+		hash = 31 * hash + (startForm == null ? 0 : startForm.hashCode());
+		hash = 31 * hash + (v1xProject ? 0 : 1);
+		hash = 31 * hash + schemaVersion;
+		return hash;
 	}
 	
 }

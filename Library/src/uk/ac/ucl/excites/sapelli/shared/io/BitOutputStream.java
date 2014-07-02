@@ -16,7 +16,7 @@ import java.nio.charset.Charset;
  * 
  * @author mstevens
  */
-public final class BitOutputStream extends OutputStream
+public abstract class BitOutputStream extends OutputStream
 {
 
 	//STATIC
@@ -24,20 +24,12 @@ public final class BitOutputStream extends OutputStream
 	private static final Charset UTF16BE = Charset.forName("UTF-16BE");
 	
 	//DYNAMIC
-	private boolean closed;
-	private OutputStream output; 		// Underlying byte stream to write to
-	private int currentByte; 			// Buffered bits stored as an int (always in the range 0x00 to 0xFF)
-	private int numBitsInCurrentByte; 	// Always between 0 and 7, inclusive
-	private int numberOfBitsWritten;
+	protected boolean closed;
+	protected int numberOfBitsWritten;
 	
-	public BitOutputStream(OutputStream out)
+	public BitOutputStream()
 	{
-		if(out == null)
-			throw new NullPointerException("Underlying OutputStream cannot be null!");
-		output = out;
 		closed = false;
-		currentByte = 0;
-		numBitsInCurrentByte = 0;
 		numberOfBitsWritten = 0;
 	}
 
@@ -51,18 +43,11 @@ public final class BitOutputStream extends OutputStream
 	{
 		if(closed)
 			throw new IOException("This stream is closed");
+		writeBit(bit);
 		numberOfBitsWritten++;
-		currentByte <<= 1;
-		if(bit)
-			currentByte++;
-		numBitsInCurrentByte++;
-		if(numBitsInCurrentByte == 8)
-		{
-			output.write(currentByte);
-			currentByte = 0;
-			numBitsInCurrentByte = 0;
-		}
 	}
+	
+	protected abstract void writeBit(boolean bit) throws IOException;
 	
 	/**
 	 * Writes an array series of bits (booleans) to the output
@@ -74,6 +59,17 @@ public final class BitOutputStream extends OutputStream
 	{
 		for(boolean bit : bits)
 			write(bit);
+	}
+	
+	/**
+	 * Writes the bits in a {@link BitArray} to the output
+	 * 
+	 * @param bits BitArray to be written
+	 * @throws IOException if an I/O error occurs
+	 */
+	public void write(BitArray bits) throws IOException
+	{
+		bits.writeTo(this);
 	}
 	
 	/**
@@ -319,36 +315,8 @@ public final class BitOutputStream extends OutputStream
 	 */
 	public void close() throws IOException
 	{
-		if(!closed)
-		{
-			writePadding();
-			output.close();
-			this.closed = true;
-		}
+		this.closed = true;
 	}
-	
-	/**
-	 * Write zeros (=false) as padding until a byte boundary is reached
-	 * 
-	 * @throws IOException if an I/O error occurs
-	 */
-	private void writePadding() throws IOException
-	{
-		while(numBitsInCurrentByte != 0)
-			write(false);
-	}
-
-    /**
-     * Flushes this and the underlying output stream and forces any buffered bits to be written out.
-     * 
-     * @throws IOException if an I/O error occurs
-     * @see java.io.OutputStream#flush()
-     */
-    public void flush() throws IOException
-    {
-    	writePadding();
-    	output.flush();
-    }
     
     public int getNumberOfBitsWritten()
     {

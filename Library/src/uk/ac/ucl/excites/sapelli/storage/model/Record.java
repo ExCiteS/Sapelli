@@ -14,6 +14,7 @@ import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 
 /**
@@ -37,7 +38,7 @@ public class Record implements Serializable
 	protected Object[] values;
 	
 	protected boolean exported = false;
-	protected boolean sent = false;
+	protected Long transmissionID;
 	
 	public Record(Schema schema)
 	{
@@ -171,6 +172,17 @@ public class Record implements Serializable
 		return true;
 	}
 	
+	/**
+	 * Returns a reference to the record. Only works if the schema has a primary key, otherwise 
+	 * 
+	 * @return a {@link RecordReference} instance pointing to this record
+	 * @throws NullPointerException	if the Schema of this Record does not have a primary key
+	 */
+	public RecordReference getReference() throws NullPointerException
+	{
+		return new RecordReference(this);
+	}
+	
 	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<Column<?>> skipColumns) throws IOException
 	{
 		try
@@ -212,7 +224,7 @@ public class Record implements Serializable
 		BitOutputStream out = null;
 		try
 		{
-			out = new BitOutputStream(new ByteArrayOutputStream());
+			out = new BitWrapOutputStream(new ByteArrayOutputStream());
 			this.writeToBitStream(out, includeVirtual, skipColumns);
 			return out.getNumberOfBitsWritten();
 		}
@@ -249,20 +261,19 @@ public class Record implements Serializable
 		this.exported = exported;
 	}
 
-	/**
-	 * @return the sent
-	 */
-	public boolean isSent()
+	public boolean isTransmissionIDSet()
 	{
-		return sent;
+		return transmissionID != null;
 	}
 
-	/**
-	 * @param sent the sent to set
-	 */
-	public void setSent(boolean sent)
+	public Long getTransmissionID()
 	{
-		this.sent = sent;
+		return transmissionID;
+	}
+
+	public void setTransmissionID(Long transmissionID)
+	{
+		this.transmissionID = transmissionID;
 	}
 
 	@Override
@@ -282,6 +293,8 @@ public class Record implements Serializable
 	
 	public boolean equals(Object obj, boolean checkSchema)
 	{
+		if(this == obj)
+			return true;
 		if(obj instanceof Record)
 		{
 			Record other = (Record) obj;
@@ -422,7 +435,7 @@ public class Record implements Serializable
 		{
 			//Output stream:
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-			out = new BitOutputStream(rawOut);
+			out = new BitWrapOutputStream(rawOut);
 				
 			//Write record:
 			this.writeToBitStream(out, false, Collections.<Column<?>> emptySet());

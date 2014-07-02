@@ -235,6 +235,18 @@ public class RecordsQuery
 	
 				@Override
 				public void accept(ConstraintVisitor visitor) { /* ignore */ }
+
+				@Override
+				public boolean equals(Object obj)
+				{
+					return true;
+				}
+
+				@Override
+				public int hashCode()
+				{
+					return sourceSchemata.hashCode();
+				}
 			};
 			if(constraints instanceof CompositeConstraint && !((CompositeConstraint) constraints).hasSubConstraints())
 				return schemaCheck;

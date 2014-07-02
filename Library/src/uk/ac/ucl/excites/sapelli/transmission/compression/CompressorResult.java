@@ -1,11 +1,11 @@
 package uk.ac.ucl.excites.sapelli.transmission.compression;
 
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.CompressionMode;
+import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
 
 public class CompressorResult
 {
 	
-	private CompressionMode mode;
+	private Compression mode;
 	private byte[] compressedData;
 	private float ratio;
 	
@@ -14,7 +14,7 @@ public class CompressorResult
 	 * @param compressedData
 	 * @param ratio
 	 */
-	public CompressorResult(CompressionMode mode, byte[] compressedData, float ratio)
+	public CompressorResult(Compression mode, byte[] compressedData, float ratio)
 	{
 		this.mode = mode;
 		this.compressedData = compressedData;
@@ -24,7 +24,7 @@ public class CompressorResult
 	/**
 	 * @return the mode
 	 */
-	public CompressionMode getMode()
+	public Compression getMode()
 	{
 		return mode;
 	}

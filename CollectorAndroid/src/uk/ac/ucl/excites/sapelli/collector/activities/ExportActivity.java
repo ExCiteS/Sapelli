@@ -13,9 +13,9 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
-import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter.Format;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter.Format;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separator;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
@@ -31,6 +31,7 @@ import android.app.AlertDialog.Builder;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -252,7 +253,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 	
 	private void queryCallback(List<Record> result)
 	{
-		if(result.isEmpty())
+		if(result == null || result.isEmpty())
 			showOKDialog(getString(R.string.title_activity_export), getString(R.string.exportNoRecordsFound));
 		else
 		{
@@ -358,9 +359,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 				// Schemas (when list stays empty all records of any schema/project/form will be fetched):
 				List<Schema> schemata = new ArrayList<Schema>();
 				if(project != null && radioSelectedProject.isChecked())
-					for(Form f : project.getForms())
-						if(f.isProducesRecords())
-							schemata.add(f.getSchema());
+					schemata.addAll(project.getModel().getSchemata());
 				// Date range:
 				AndConstraint constraints = new AndConstraint();
 				if(dateRange[DT_RANGE_IDX_FROM] != null)
@@ -373,6 +372,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 			catch(Exception e)
 			{
 				e.printStackTrace(System.err);
+				Log.d("QueryTask", ExceptionHelpers.getMessageAndCause(e));
 				failure = e;
 				return null;
 			}
@@ -382,10 +382,10 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		protected void onPostExecute(List<Record> result)
 		{
 			super.onPostExecute(result); // dismiss dialog
-			if(result != null)
-				queryCallback(result);
-			else
+			if(failure != null)
 				queryCallback(failure);
+			else
+				queryCallback(result);
 		}
 		
 	}
@@ -442,6 +442,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 			catch(Exception e)
 			{
 				e.printStackTrace(System.err);
+				Log.d("DeleteTask", ExceptionHelpers.getMessageAndCause(e));
 				failure = e;
 			}
 			return null;

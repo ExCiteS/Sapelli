@@ -56,5 +56,28 @@ public class EqualityConstraint extends Constraint
 	{
 		return value;
 	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof EqualityConstraint)
+		{
+			EqualityConstraint that = (EqualityConstraint) obj;
+			return	this.columnPointer.equals(that.columnPointer) &&
+					(this.value != null ? this.value.equals(that.value) : that.value == null);
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + columnPointer.hashCode();
+		hash = 31 * hash + (value != null ? value.hashCode() : 0);
+		return hash;
+	}
 
 }

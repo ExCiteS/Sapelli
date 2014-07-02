@@ -88,5 +88,28 @@ public class CheckBoxField extends Field
 	{
 		return collectorUI.createCheckBoxFieldUI(this);
 	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof CheckBoxField)
+		{
+			CheckBoxField that = (CheckBoxField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					this.initialValue == that.initialValue;
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + (initialValue ? 0 : 1);
+		return hash;
+	}
 
 }

@@ -11,7 +11,7 @@ import java.io.OutputStream;
 import lzma.sdk.lzma.Decoder;
 import lzma.sdk.lzma.Encoder;
 import uk.ac.ucl.excites.sapelli.transmission.compression.Compressor;
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.CompressionMode;
+import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
 
 /**
  * LZMA compressor.<br/>
@@ -28,11 +28,21 @@ import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Comp
 public class LZMACompressor extends Compressor
 {
 
+	static public final boolean USE_HEADER = false;
+	
 	private Encoder encoder;
 	private Decoder decoder;
+	private boolean useHeader;
 
 	public LZMACompressor()
 	{
+		this(USE_HEADER);
+	}
+	
+	public LZMACompressor(boolean useHeader)
+	{
+		this.useHeader = useHeader;
+		
 		// Encoder:
 		this.encoder = new Encoder();
 
@@ -70,13 +80,16 @@ public class LZMACompressor extends Compressor
 		OutputStream out = new BufferedOutputStream(byteArrayOutputStream);
 		try
 		{
-			// Write header with coder settings (optional, takes up 5 bytes)
-			//encoder.writeCoderProperties(out);
+			if(useHeader)
+			{
+				// Write header with coder settings (optional, takes up 5 bytes)
+				encoder.writeCoderProperties(out);
 
-			// Write header with uncompressed data size (optional, takes up 8 bytes):
-			//for(int i = 0; i < 8; i++)
-			//	out.write((int) (data.length >>> (8 * i)) & 0xFF);
-
+				// Write header with uncompressed data size (optional, takes up 8 bytes):
+				for(int i = 0; i < 8; i++)
+					out.write((int) (data.length >>> (8 * i)) & 0xFF);
+			}
+			
 			// Compress & write compressed bytes:
 			encoder.code(in, out, -1, -1, null);
 			out.flush();
@@ -98,25 +111,29 @@ public class LZMACompressor extends Compressor
 		InputStream in = new BufferedInputStream(new ByteArrayInputStream(compressedData));
 		try
 		{
-			// Read header with coder settings (optional):
-			//byte[] properties = new byte[5];
-			//if(in.read(properties) != 5)
-			//	throw new IOException("LZMA stream has no header!");
-			//if(!decoder.setDecoderProperties(properties))
-			//	throw new IOException("Decoder properties cannot be set!");
-
-			// Read header with uncompressed data size (optional):
-			//long outSize = 0;
-			//for(int i = 0; i < 8; i++)
-			//{
-			//	int v = in.read();
-			//	if(v < 0)
-			//		throw new IOException("Can't read stream size");
-			//	outSize |= ((long) v) << (8 * i);
-			//}
-
+			long outSize = -1;
+			if(useHeader)
+			{
+				// Read header with coder settings (optional):
+				byte[] properties = new byte[5];
+				if(in.read(properties) != 5)
+					throw new IOException("LZMA stream has no header!");
+				if(!decoder.setDecoderProperties(properties))
+					throw new IOException("Decoder properties cannot be set!");
+	
+				// Read header with uncompressed data size (optional):
+				outSize = 0;
+				for(int i = 0; i < 8; i++)
+				{
+					int v = in.read();
+					if(v < 0)
+						throw new IOException("Can't read stream size");
+					outSize |= ((long) v) << (8 * i);
+				}
+			}
+				
 			// Read compressed bytes & decompress:
-			if(!decoder.code(in, out, -1 /*outSize*/))
+			if(!decoder.code(in, out, outSize))
 				throw new IOException("Error in data stream");
 			out.flush();
 			out.close();
@@ -130,9 +147,9 @@ public class LZMACompressor extends Compressor
 	}
 
 	@Override
-	public CompressionMode getMode()
+	public Compression getMode()
 	{
-		return CompressionMode.LZMA;
+		return Compression.LZMA;
 	}
 
 }

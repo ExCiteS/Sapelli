@@ -2,7 +2,7 @@ package uk.ac.ucl.excites.sapelli.transmission.compression;
 
 import java.io.IOException;
 
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.CompressionMode;
+import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
 
 /**
  * Dummy compressor (leaves data unchanged)
@@ -26,9 +26,9 @@ public class DummyCompressor extends Compressor
 	}
 
 	@Override
-	public CompressionMode getMode()
+	public Compression getMode()
 	{
-		return CompressionMode.NONE;
+		return Compression.NONE;
 	}
 	
 }

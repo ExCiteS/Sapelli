@@ -12,7 +12,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
@@ -119,29 +119,36 @@ public class DB4OProjectStore extends ProjectStore
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(long)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProjectVersions(int)
 	 */
 	@Override
-	public Project retrieveProject(final long projectHash)
+	public List<Project> retrieveProjectVersions(final int projectID)
 	{
 		@SuppressWarnings("serial")
 		ObjectSet<Project> result = db4o.query(new Predicate<Project>()
 		{
 			public boolean match(Project project)
 			{
-				return project.getHash() == projectHash;
+				return project.getID() == projectID;
 			}
 		});
-		if(result.isEmpty())
-			return null;
-		else
-		{
-			Project p = result.get(0);
+		for(Project p : result)
 			db4o.activate(p, ACTIVATION_DEPTH);
-			return p;
-		}
+		return result;
 	}
-
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#retrieveProject(int, int)
+	 */
+	@Override
+	public Project retrieveProject(int projectID, int projectFingerPrint)
+	{
+		for(Project p : retrieveProjectVersions(projectID))
+			if(p.getFingerPrint() == projectFingerPrint)
+				return p;
+		return null;
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#delete(uk.ac.ucl.excites.sapelli.collector.model.Project)
 	 */
@@ -153,7 +160,7 @@ public class DB4OProjectStore extends ProjectStore
 	}
 
 	@Override
-	public void storeHeldForeignKey(Relationship relationship, ForeignKey foreignKey)
+	public void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey)
 	{
 		if(!relationship.isHoldForeignRecord())
 			throw new IllegalArgumentException("This relationship is not allowed to hold on to foreign records");
@@ -164,7 +171,7 @@ public class DB4OProjectStore extends ProjectStore
 	}
 
 	@Override
-	public ForeignKey retrieveHeldForeignKey(Relationship relationship)
+	public RecordReference retrieveHeldForeignKey(Relationship relationship)
 	{
 		if(!relationship.isHoldForeignRecord())
 			throw new IllegalArgumentException("This relationship is not allowed to hold on to foreign records");
@@ -209,12 +216,12 @@ public class DB4OProjectStore extends ProjectStore
 	{
 		
 		Relationship relationship;
-		ForeignKey foreignKey;
+		RecordReference foreignKey;
 		/**
 		 * @param relationship
 		 * @param foreignKey
 		 */
-		public HeldForeignKey(Relationship relationship, ForeignKey foreignKey)
+		public HeldForeignKey(Relationship relationship, RecordReference foreignKey)
 		{
 			this.relationship = relationship;
 			this.foreignKey = foreignKey;

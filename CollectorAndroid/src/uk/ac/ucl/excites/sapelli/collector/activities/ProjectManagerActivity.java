@@ -30,7 +30,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -354,7 +353,10 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		Project selectedProject = getSelectedProject(false);
 		Intent i = new Intent(getApplicationContext(), ExportActivity.class);
 		if(selectedProject != null)
-			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, selectedProject.getHash());
+		{
+			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_ID, selectedProject.getID());
+			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_FINGERPRINT, selectedProject.getFingerPrint());
+		}
 		i.setAction(Intent.ACTION_MAIN);
 		startActivity(i);
 		return true;
@@ -570,10 +572,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			showErrorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
 		}
 		
-		// Encryption Check
-		if(project.getTransmissionSettings().isEncrypt())
-			requestEncryptionKey(project);
-
 		// Store the project object:
 		storeProject(project);
 
@@ -627,9 +625,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		{
 			public void onClick(DialogInterface dialog, int whichButton)
 			{
-				String inputStr = input.getText().toString();
-				project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? 	Settings.DEFAULT_PASSWORD /*Set the Default Password*/ :
-																					inputStr);
+				//String inputStr = input.getText().toString();
+				//project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? 	EncryptionSettings.DEFAULT_PASSWORD /*Set the Default Password*/ :
+				//																	inputStr);
 			}
 		});
 		encryptionDialog = builder.create();
@@ -646,7 +644,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	private Intent getProjectRunIntent(Project project)
 	{
 		Intent i = new Intent(getApplicationContext(), CollectorActivity.class);
-		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, project.getHash());
+		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_ID, project.getID());
+		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_FINGERPRINT, project.getFingerPrint());
 		i.setAction(Intent.ACTION_MAIN);
 		return i;
 	}

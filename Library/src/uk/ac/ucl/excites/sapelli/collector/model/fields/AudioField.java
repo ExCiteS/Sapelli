@@ -21,17 +21,17 @@ public class AudioField extends MediaField
 {
 
 	static public final boolean DEFAULT_USE_NATIVE_APP = false;
-	private static final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
-	private static final String EXTENSION_3GPP = "3gp";
+	static private final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
+	static private final String EXTENSION_3GPP = "3gp";
 
+	private String startRecImageRelativePath;
+	private String stopRecImageRelativePath;
+	
 	public AudioField(Form form, String id, String caption)
 	{
 		super(form, id, caption);
 		useNativeApp = DEFAULT_USE_NATIVE_APP;
 	}
-
-	private String startRecImageRelativePath;
-	private String stopRecImageRelativePath;
 	
 	/**
 	 * @return the startRecImageRelativePath
@@ -94,6 +94,31 @@ public class AudioField extends MediaField
 	public <V, UI extends CollectorUI<V, UI>> AudioUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createAudioUI(this);
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof AudioField)
+		{
+			AudioField that = (AudioField) obj;
+			return	super.equals(that) && // MediaField#equals(Object)
+					(this.startRecImageRelativePath != null ? this.startRecImageRelativePath.equals(that.startRecImageRelativePath) : that.startRecImageRelativePath == null) &&
+					(this.stopRecImageRelativePath != null ? this.stopRecImageRelativePath.equals(that.stopRecImageRelativePath) : that.stopRecImageRelativePath == null);
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // MediaField#hashCode()
+		hash = 31 * hash + (startRecImageRelativePath == null ? 0 : startRecImageRelativePath.hashCode());
+		hash = 31 * hash + (stopRecImageRelativePath == null ? 0 : stopRecImageRelativePath.hashCode());
+		return hash;
 	}
 
 }

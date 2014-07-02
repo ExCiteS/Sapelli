@@ -5,21 +5,21 @@ package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Index;
+import uk.ac.ucl.excites.sapelli.storage.model.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -29,12 +29,6 @@ public class Form
 {
 
 	// Statics--------------------------------------------------------
-	/**
-	 * Allowed form indexes: 0 to {@link Project#MAX_FORMS} - 1
-	 */
-	public static final int FORM_POSITION_SIZE = Schema.SCHEMA_ID_SIZE /* 36 */ - Project.PROJECT_HASH_SIZE /* 32 */; // = 4 bits
-	public static final IntegerRangeMapping FORM_POSITION_FIELD = IntegerRangeMapping.ForSize(0, FORM_POSITION_SIZE);
-	
 	public static final boolean END_TIME_DEFAULT = false;
 
 	// Where to go next:
@@ -71,18 +65,18 @@ public class Form
 
 	// Dynamics-------------------------------------------------------
 	private final Project project;
-	private final int position;
+	private final String id;
+	private final short position;
 	private boolean producesRecords = true;
 	private boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	private Schema schema;
-	private final String id;
 
 	private transient List<String> warnings;
 	
 	// Fields
-	private Field start;
+	private Field startField;
 	private final List<Field> fields;
-	private final List<Trigger> triggers;
+	private List<Trigger> triggers;
 	
 	// Android shortcut:
 	private String shortcutImageRelativePath;
@@ -109,17 +103,14 @@ public class Form
 	
 	public Form(Project project, String id)
 	{
+		if(project == null || id == null || id.isEmpty())
+			throw new IllegalArgumentException("A project and non-empty id are required!");
+		
 		this.project = project;
 		this.id = id;
 		
 		this.fields = new ArrayList<Field>();
-		this.triggers = new ArrayList<Trigger>();
-		
-		// Set Form index & add it to the Project:
-		if(FORM_POSITION_FIELD.fits(project.getForms().size()))
-			this.position = project.getForms().size();
-		else
-			throw new IllegalArgumentException("Invalid form index, valid values are " + FORM_POSITION_FIELD.getLogicalRangeString() + " (up to " + Project.MAX_FORMS + " forms per project).");
+		this.position = (short) project.getForms().size();
 		project.addForm(this); //!!!
 	}
 
@@ -207,7 +198,7 @@ public class Form
 	 */
 	public Field getStartField()
 	{
-		return start;
+		return startField;
 	}
 
 	/**
@@ -216,11 +207,13 @@ public class Form
 	 */
 	public void setStartField(Field start)
 	{
-		this.start = start;
+		this.startField = start;
 	}
 
 	public void addTrigger(Trigger trigger)
 	{
+		if(triggers == null)
+			 triggers = new ArrayList<Trigger>();
 		triggers.add(trigger);
 	}
 
@@ -229,7 +222,7 @@ public class Form
 	 */
 	public List<Trigger> getTriggers()
 	{
-		return triggers;
+		return triggers != null ? triggers : Collections.<Trigger> emptyList();
 	}
 
 	/**
@@ -472,7 +465,7 @@ public class Form
 	/**
 	 * @return the position within the project
 	 */
-	public int getPosition()
+	public short getPosition()
 	{
 		return position;
 	}
@@ -487,25 +480,20 @@ public class Form
 		return producesRecords;
 	}
 	
-	public void initialiseStorage()
-	{
-		getSchema(); //this will also trigger all Columns to be created/initialised
-	}
-	
 	/**
-	 * The returned Schema object will contain all columns defined by fields in the form, plus the implicitly added
-	 * columns (StartTime & DeviceID, which together are used as the primary key, and the optional EndTime). However,
-	 * those implicit columns are only added if at least 1 user-defined field has a column. If there are no user-defined
-	 * fields with columns then no implicit columns are added and then the whole schema is pointless, therefore in that
-	 * case this method will return null instead of a columnless Schema object and the {@link #producesRecords} variable
-	 * will be set to {@code false}. 
+	 * Generates the {@link Schema} for this form. It will contain all columns defined by fields in the form, and the
+	 * implicitly added columns (StartTime & DeviceID, which together are used as the primary key, and the optional EndTime).
+	 * However, those implicit columns are only added if at least 1 user-defined field has a column. If there are no
+	 * user-defined fields with columns then no implicit columns are added and then the whole schema is pointless,
+	 * therefore in that case the {@link #producesRecords} variable will be set to {@code false} to avoid future attempts
+	 * at generating a schema.
 	 * 
-	 * @return
+	 * @throws ModelFullException
 	 */
-	public Schema getSchema()
+	public void initialiseStorage() throws ModelFullException
 	{
 		if(!producesRecords)
-			return null;
+			return;
 		if(schema == null)
 		{	
 			// Generate columns for user-defined fields:
@@ -522,13 +510,10 @@ public class Form
 				// this.schema stays null
 			}
 			else
-			{	
+			{
 				// Create new Schema:
-				schema = new Schema(SapelliCollectorClient.GetSchemaID(this), // combination of project hash and form index
-									project.getName() +
-									(project.getVariant() != null ? '_' + project.getVariant() : "") +
-									"_v" + project.getVersion() +
-									":" + id /* = form "name"*/);
+				schema = new Schema(project.getModel(),
+									project.getModel().getName() + ":" + id);
 				
 				/* Add implicit columns
 				 * 	StartTime & DeviceID together form the primary key of our records.
@@ -544,7 +529,7 @@ public class Form
 				// Device ID column:
 				schema.addColumn(COLUMN_DEVICE_ID);
 				// Add primary key on StartTime & DeviceID:
-				schema.addIndex(new Index(COLUMN_TIMESTAMP_START.getName() + "_" + COLUMN_DEVICE_ID.getName(), true, COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID), true);
+				schema.setPrimaryKey(new PrimaryKey(COLUMN_TIMESTAMP_START.getName() + "_" + COLUMN_DEVICE_ID.getName(), COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID));
 				
 				// Add user-defined columns
 				schema.addColumns(userDefinedColumns);
@@ -553,6 +538,17 @@ public class Form
 				schema.seal();
 			}
 		}
+	}
+	
+	/**
+	 * Gets the schema. Will return {@code null} in case of a non-data-producing form.
+	 * 
+	 * @return
+	 */
+	public Schema getSchema()
+	{
+		if(schema == null)
+			initialiseStorage();
 		return schema;
 	}
 	
@@ -665,6 +661,66 @@ public class Form
 	public String toString()
 	{
 		return id;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof Form)
+		{
+			Form that = (Form) obj;
+			return	this.id.equals(that.id) &&
+					this.project.toString().equals(that.project.toString()) && // DO NOT INCLUDE project ITSELF HERE (otherwise we create an endless loop!)
+					this.position == that.position &&
+					this.producesRecords == that.producesRecords &&
+					this.skipOnBack == that.skipOnBack &&
+					(this.schema != null ? this.schema.equals(that.schema, true, true, false) : that.schema == null) &&
+					(this.startField != null ? this.startField.equals(that.startField) : that.startField == null) &&
+					this.fields.equals(that.fields) &&
+					this.getTriggers().equals(that.getTriggers()) &&
+					(this.shortcutImageRelativePath != null ? this.shortcutImageRelativePath.equals(that.shortcutImageRelativePath) : that.shortcutImageRelativePath == null) &&
+					this.animation == that.animation &&
+					this.obfuscateMediaFiles == that.obfuscateMediaFiles &&
+					this.storeEndTime == that.storeEndTime &&
+					this.next == that.next &&
+					this.vibrateOnSave == that.vibrateOnSave &&
+					(this.saveSoundRelativePath != null ? this.saveSoundRelativePath.equals(that.saveSoundRelativePath) : that.saveSoundRelativePath == null) &&
+					this.buttonBackgroundColor.equals(that.backButtonImageRelativePath) &&
+					(this.backButtonImageRelativePath != null ? this.backButtonImageRelativePath.equals(that.backButtonImageRelativePath) : that.backButtonImageRelativePath == null) &&
+					(this.cancelButtonImageRelativePath != null ? this.cancelButtonImageRelativePath.equals(that.cancelButtonImageRelativePath) : that.cancelButtonImageRelativePath == null) &&
+					(this.forwardButtonImageRelativePath != null ? this.forwardButtonImageRelativePath.equals(that.forwardButtonImageRelativePath) : that.forwardButtonImageRelativePath == null);
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + id.hashCode();
+		hash = 31 * hash + project.toString().hashCode(); // DO NOT INCLUDE project ITSELF HERE (otherwise we create an endless loop!)
+		hash = 31 * hash + (int) position;
+		hash = 31 * hash + (producesRecords ? 0 : 1);
+		hash = 31 * hash + (skipOnBack ? 0 : 1);
+		hash = 31 * hash + (startField == null ? 0 : startField.hashCode());
+		hash = 31 * hash + fields.hashCode();
+		hash = 31 * hash + (triggers == null ? 0 : triggers.hashCode());
+		hash = 31 * hash + (shortcutImageRelativePath == null ? 0 : shortcutImageRelativePath.hashCode());
+		hash = 31 * hash + (animation ? 0 : 1);
+		hash = 31 * hash + (obfuscateMediaFiles ? 0 : 1);
+		hash = 31 * hash + (storeEndTime ? 0 : 1);
+		hash = 31 * hash + next.ordinal();
+		hash = 31 * hash + (vibrateOnSave ? 0 : 1);
+		hash = 31 * hash + (saveSoundRelativePath == null ? 0 : saveSoundRelativePath.hashCode());
+		hash = 31 * hash + buttonBackgroundColor.hashCode();
+		hash = 31 * hash + (backButtonImageRelativePath == null ? 0 : backButtonImageRelativePath.hashCode());
+		hash = 31 * hash + (cancelButtonImageRelativePath == null ? 0 : cancelButtonImageRelativePath.hashCode());
+		hash = 31 * hash + (forwardButtonImageRelativePath == null ? 0 : forwardButtonImageRelativePath.hashCode());
+		// There is no need to include the schema.hashCode() in this computation because the schema it is entirely inferred from things that are included in the computation.
+		return hash;
 	}
 
 }

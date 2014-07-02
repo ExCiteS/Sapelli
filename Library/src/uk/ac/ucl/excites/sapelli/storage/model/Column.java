@@ -11,6 +11,8 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
@@ -174,6 +176,14 @@ public abstract class Column<T> implements Serializable
 		writeValue((T) value, bitStream);
 	}
 	
+	/**
+	 * Writes the given value to the given {@link BitOutputStream}.
+	 * 
+	 * @param value
+	 * @param bitStream
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
 	public void writeValue(T value, BitOutputStream bitStream) throws IOException, IllegalArgumentException
 	{
 		if(optional)
@@ -202,6 +212,14 @@ public abstract class Column<T> implements Serializable
 		storeValue(record, readValue(bitStream));
 	}
 	
+	/**
+	 * Reads a value from the given {@link BitInputStream}
+	 * 
+	 * @param bitStream
+	 * @return
+	 * @throws IOException
+	 * @throws IllegalArgumentException
+	 */
 	public final T readValue(BitInputStream bitStream) throws IOException, IllegalArgumentException
 	{
 		T value = null;
@@ -281,7 +299,7 @@ public abstract class Column<T> implements Serializable
 		{
 			//Output stream:
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-			out = new BitOutputStream(rawOut);
+			out = new BitWrapOutputStream(rawOut);
 	
 			//Write value:
 			writeValue(value, out);
@@ -291,7 +309,7 @@ public abstract class Column<T> implements Serializable
 			out.close();
 	
 			//Input stream:
-			in = new BitInputStream(new ByteArrayInputStream(rawOut.toByteArray()));
+			in = new BitWrapInputStream(new ByteArrayInputStream(rawOut.toByteArray()));
 			
 			//Read value:
 			return readValue(in);
@@ -479,7 +497,7 @@ public abstract class Column<T> implements Serializable
 			return super.hashCode();
 		// else:
 		int hash = 1;
-		hash = 31 * hash + type.hashCode();
+		hash = 31 * hash + type.getName().hashCode(); // don't use type.hashCode() as it is not stable (Class does not implement hashCode() so Object.hashCode() is executed)
 		hash = 31 * hash + name.hashCode();
 		hash = 31 * hash + (optional ? 0 : 1);
 		hash = 31 * hash + (virtualVersions == null ? 0 : virtualVersions.hashCode());

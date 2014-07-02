@@ -9,7 +9,7 @@ import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.io.IOUtils;
 
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.CompressionMode;
+import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
 
 /**
  * GZIP compressor.
@@ -57,9 +57,9 @@ public class GZipCompressor extends Compressor
 	}
 
 	@Override
-	public CompressionMode getMode()
+	public Compression getMode()
 	{
-		return CompressionMode.GZIP;
+		return Compression.GZIP;
 	}
 
 

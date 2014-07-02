@@ -17,6 +17,12 @@ public final class BinaryHelpers
 	{
 	} // should not be instantiated
 
+	/**
+	 * @param array
+	 * @param offset inclusive!
+	 * @param length
+	 * @return
+	 */
 	static public byte[] subByteArray(byte[] array, int offset, int length)
 	{
 		int to = offset + length;

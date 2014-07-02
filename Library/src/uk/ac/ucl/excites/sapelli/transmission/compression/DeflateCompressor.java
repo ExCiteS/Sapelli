@@ -11,7 +11,7 @@ import java.util.zip.DeflaterOutputStream;
 
 import org.apache.commons.io.IOUtils;
 
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.CompressionMode;
+import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
 
 /**
  * DEFLATE compressor.
@@ -63,9 +63,9 @@ public class DeflateCompressor extends Compressor
 	}
 
 	@Override
-	public CompressionMode getMode()
+	public Compression getMode()
 	{
-		return CompressionMode.DEFLATE;
+		return Compression.DEFLATE;
 	}
 
 }

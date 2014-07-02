@@ -187,4 +187,29 @@ public class RuleConstraint extends Constraint
 		visitor.visit(this);
 	}
 	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof RuleConstraint)
+		{
+			RuleConstraint that = (RuleConstraint) obj;
+			return	this.columnPointer.equals(that.columnPointer) &&
+					this.comparison == that.comparison &&
+					(this.value != null ? this.value.equals(that.value) : that.value == null);
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + columnPointer.hashCode();
+		hash = 31 * hash + comparison.ordinal();
+		hash = 31 * hash + (value != null ? value.hashCode() : 0);
+		return hash;
+	}
+	
 }

@@ -19,8 +19,9 @@ import android.os.Bundle;
 public abstract class ProjectActivity extends BaseActivity implements StoreClient
 {
 
-	// INTENT PARAMETER:
-	public static final String INTENT_PARAM_PROJECT_HASH = "Project_Hash"; // used on "direct" intents (coming from ProjectManagerActivity) & shortcut intents
+	// INTENT PARAMETERS (used on "direct" intents; i.e. when coming from ProjectManagerActivity & in case of shortcut intents):
+	public static final String INTENT_PARAM_PROJECT_ID = "Project_Id";
+	public static final String INTENT_PARAM_PROJECT_FINGERPRINT = "Project_FingerPrint";
 	
 	protected ProjectStore projectStore;
 	protected RecordStore recordStore;
@@ -53,20 +54,20 @@ public abstract class ProjectActivity extends BaseActivity implements StoreClien
 	{
 		Bundle bundle = getIntent().getExtras();
 		// Get project hash from extras (the key is the same for both call-by-intent & call-by-shortcut scenarios):
-		if(bundle != null && bundle.containsKey(INTENT_PARAM_PROJECT_HASH))
-			loadProject(bundle.getLong(INTENT_PARAM_PROJECT_HASH), mandatory);
+		if(bundle != null && bundle.containsKey(INTENT_PARAM_PROJECT_ID) && bundle.containsKey(INTENT_PARAM_PROJECT_FINGERPRINT))
+			loadProject(bundle.getInt(INTENT_PARAM_PROJECT_ID), bundle.getInt(INTENT_PARAM_PROJECT_FINGERPRINT), mandatory);
 		else if(mandatory)
 			// show error (activity will be exited after used clicks OK in the dialog):
-			showErrorDialog("Activity started without '" + INTENT_PARAM_PROJECT_HASH + "' intent parameter, don't know which project to load!", true);
+			showErrorDialog("Activity started without '" + INTENT_PARAM_PROJECT_FINGERPRINT + "' intent parameter, don't know which project to load!", true);
 	}
 	
-	protected final void loadProject(long projectHash, boolean mandatory)
+	protected final void loadProject(int projectID, int projectFingerPrint, boolean mandatory)
 	{
-		this.project = projectStore.retrieveProject(projectHash);
+		this.project = projectStore.retrieveProject(projectID, projectFingerPrint);
 		if(project == null && mandatory)
 		{
 			// show error (activity will be exited after used clicks OK in the dialog):
-			showErrorDialog("Could not find project with hash: " + projectHash, true);
+			showErrorDialog("Could not find project with hash: " + projectFingerPrint, true);
 			return;
 		}
 		postLoadInitialisation();

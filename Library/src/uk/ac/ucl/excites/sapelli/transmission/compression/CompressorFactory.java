@@ -15,18 +15,18 @@ public class CompressorFactory
 	
 	static public final DecimalFormat RATIO_FORMAT = new DecimalFormat("##.00");
 	
-	static public enum CompressionMode
-	{	//Changing the order of the enum seems to cause problems (possibly only when using old DB4O databases), so don't
+	static public enum Compression
+	{
 		NONE,
+		DEFLATE,
 		GZIP,
+		LZMA,
 		LZMA2,
 		BZIP2,
-		DEFLATE,
-		LZMA
-		/*HUFFMAN*/
+		/*HUFFMAN,*/
 	}
 	
-	static public Compressor getCompressor(CompressionMode mode)
+	static public Compressor getCompressor(Compression mode)
 	{
 		switch(mode)
 		{
@@ -42,16 +42,16 @@ public class CompressorFactory
 	
 	static public void CompressionTest(byte[] data)
 	{
-		CompressionTest(data, CompressorFactory.CompressionMode.values()); // will test all modes
+		CompressionTest(data, CompressorFactory.Compression.values()); // will test all modes
 	}
 	
-	static public void CompressionTest(byte[] data, CompressionMode[] modes)
+	static public void CompressionTest(byte[] data, Compression[] modes)
 	{
-		CompressionMode best = CompressionMode.NONE;
+		Compression best = Compression.NONE;
 		int bestSize = data.length;
 		try
 		{
-			for(CompressionMode mode : modes)
+			for(Compression mode : modes)
 			{
 				Compressor compressor = CompressorFactory.getCompressor(mode);
 				byte[] compressedData = compressor.compress(data);
@@ -78,12 +78,12 @@ public class CompressorFactory
 
 	static public CompressorResult ApplyBestCompression(byte[] data)
 	{
-		return ApplyBestCompression(data, CompressorFactory.CompressionMode.values()); // will try all modes
+		return ApplyBestCompression(data, CompressorFactory.Compression.values()); // will try all supported modes
 	}
 	
 	private static final int NUM_CORES = Runtime.getRuntime().availableProcessors();
 	
-	static public CompressorResult ApplyBestCompression(byte[] data, CompressionMode[] modes)
+	static public CompressorResult ApplyBestCompression(byte[] data, Compression[] modes)
 	{
 		//TODO make this multi-threaded?
 		//CompressorResult[] results = new CompressorResult[modes.length];
@@ -92,7 +92,7 @@ public class CompressorFactory
 		CompressorResult best = null;
 		try
 		{
-			for(CompressionMode mode : modes)
+			for(Compression mode : modes)
 			{
 				Compressor compressor = CompressorFactory.getCompressor(mode);
 				byte[] compressedData = compressor.compress(data);
@@ -109,7 +109,7 @@ public class CompressorFactory
 		{
 			e.printStackTrace(System.err);
 		}
-		return best != null ? best : new CompressorResult(CompressionMode.NONE, data, 1.0f);
+		return best != null ? best : new CompressorResult(Compression.NONE, data, 1.0f);
 	}
 	
 }

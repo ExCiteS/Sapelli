@@ -258,5 +258,26 @@ public class ColumnPointer implements Comparator<Record>
 				(rhs == null ? 0 : Integer.MIN_VALUE) :
 				(rhs == null ? Integer.MAX_VALUE : ((ComparatorColumn) getColumn()).compare(lhs, rhs));		
 	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof ColumnPointer)
+		{
+			ColumnPointer that = (ColumnPointer) obj;
+			return columnStack.equals(that.columnStack);
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + columnStack.hashCode();
+		return hash;
+	}
 
 }

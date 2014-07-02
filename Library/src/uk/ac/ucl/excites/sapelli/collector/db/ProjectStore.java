@@ -6,7 +6,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
-import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 
 /**
  * Interface for Project storage back-ends
@@ -55,11 +55,21 @@ public abstract class ProjectStore implements Store
 	public abstract Project retrieveProject(String name, String variant, String version);
 
 	/**
-	 * Retrieves specific Project
+	 * Retrieves specific Project, identified by id and hash
 	 * 
-	 * @return null if project was not found
+	 * @param projectID
+	 * @param projectFingerPrint
+	 * @return null if no such project was found
 	 */
-	public abstract Project retrieveProject(long projectHash);
+	public abstract Project retrieveProject(int projectID, int projectFingerPrint);
+	
+	/**
+	 * Retrieves all project versions/variants which share a given ID
+	 * 
+	 * @param projectID
+	 * @return list of projects
+	 */
+	public abstract List<Project> retrieveProjectVersions(int projectID);
 
 	/**
 	 * Delete specific project
@@ -68,9 +78,9 @@ public abstract class ProjectStore implements Store
 	 */
 	public abstract void delete(Project project);
 	
-	public abstract void storeHeldForeignKey(Relationship relationship, ForeignKey foreignKey);
+	public abstract void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey);
 	
-	public abstract ForeignKey retrieveHeldForeignKey(Relationship relationship);
+	public abstract RecordReference retrieveHeldForeignKey(Relationship relationship);
 	
 	public abstract void deleteHeldForeignKey(Relationship relationship);
 

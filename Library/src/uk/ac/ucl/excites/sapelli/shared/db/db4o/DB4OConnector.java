@@ -6,15 +6,13 @@ package uk.ac.ucl.excites.sapelli.shared.db.db4o;
 import java.io.File;
 import java.io.IOException;
 
-import uk.ac.ucl.excites.sapelli.collector.db.db4o.DB4ODataAccess;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
 import com.db4o.config.EmbeddedConfiguration;
 
 /**
- * Helper class to open conenctions to DB4O ObjectContainers
+ * Helper class to open connections to DB4O ObjectContainers
  * 
  * @author mstevens
  */
@@ -22,6 +20,8 @@ public final class DB4OConnector
 {
 	
 	static public final String DB4O_FILE_EXTENSION = "db4o";
+	static public final int ACTIVATION_DEPTH = 40;
+	static public final int UPDATE_DEPTH = 40;
 	
 	static public File getFile(File folder, String filenameWithoutExtension) throws IOException
 	{
@@ -38,7 +38,7 @@ public final class DB4OConnector
 			// Configure the db:
 			EmbeddedConfiguration dbConfig = Db4oEmbedded.newConfiguration();
 			//dbConfig.file().readOnly(readOnly);
-			dbConfig.common().updateDepth(DB4ODataAccess.UPDATE_DEPTH);
+			dbConfig.common().updateDepth(UPDATE_DEPTH);
 			dbConfig.common().exceptionsOnNotStorable(true);
 			if(cascadeClasses != null)
 				for(Class<?> clazz : cascadeClasses)

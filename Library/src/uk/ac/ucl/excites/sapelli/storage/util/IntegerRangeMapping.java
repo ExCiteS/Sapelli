@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 
+import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 
@@ -141,6 +143,20 @@ public class IntegerRangeMapping implements Serializable
 		return toLogicalValue(from.readBigInteger(size, false));
 	}
 
+	public long read(BitArray array, int offset) throws IOException
+	{
+		BitArrayInputStream stream = new BitArrayInputStream(array);
+		try
+		{
+			stream.skipBits(offset);
+			return read(stream);
+		}
+		finally
+		{
+			stream.close();
+		}
+	}
+	
 	/**
 	 * This method checks if the given value is in the logical range
 	 * 

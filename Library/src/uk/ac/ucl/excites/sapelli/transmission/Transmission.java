@@ -4,249 +4,263 @@
 package uk.ac.ucl.excites.sapelli.transmission;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import org.joda.time.DateTime;
-
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
+import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
  * Abstract superclass for all Transmissions
- * 
- * TODO support for multi-schema transmissions? (containing records of more than 1 schema)
  * 
  * @author mstevens
  */
 public abstract class Transmission
 {
 
-	protected boolean full = false;
+	// STATICS-------------------------------------------------------
+	/**
+	 * The different (concrete) transmission types, reflecting different networks or modes of transport. 
+	 */
+	public static enum Type
+	{
+		BINARY_SMS,
+		TEXTUAL_SMS,
+		HTTP,
+		// More later?
+	}
 	
-	protected DateTime sentAt = null; //used only on sending side
-	protected DateTime receivedAt = null; //used on receiving side, and TODO on sending side once we have acknowledgements working
+	static public final int TRANSMISSION_ID_SIZE = 24; // bits
+	static public final IntegerRangeMapping TRANSMISSION_ID_FIELD = IntegerRangeMapping.ForSize(0, TRANSMISSION_ID_SIZE); // unsigned(!) 24 bit integer
 	
-	protected Settings settings;
-	protected TransmissionClient client; //only used on the receiving side
-	protected Schema schema;
-	protected Set<Column<?>> columnsToFactorOut;
-	protected Map<Column<?>, Object> factoredOutValues = null;
-	protected List<Record> records;
+	static public final int PAYLOAD_HASH_SIZE = 16; // bits
+	static public final IntegerRangeMapping PAYLOAD_HASH_FIELD = IntegerRangeMapping.ForSize(0, PAYLOAD_HASH_SIZE); // unsigned(!) 16 bit integer
+	
+	static public final int CORRESPONDENT_MAX_LENGTH = 256;
+	
+	// DYNAMICS------------------------------------------------------
+	protected final TransmissionClient client;
+	
+	/**
+	 * ID by which this transmission is identified in the context of the local device/server
+	 */
+	protected Integer localID;
+	
+	/**
+	 * ID by which this transmission is identified in the context of the remote device/server
+	 */
+	protected Integer remoteID;
+	
+	/**
+	 * Contents of the transmission
+	 */
+	protected Payload payload;
+	
+	/**
+	 * Computed as a CRC16 hash over the transmission payload (unsigned 16 bit int)
+	 */
+	protected Integer payloadHash;
+	
+	protected TimeStamp sentAt; //used only on sending side
+	protected TimeStamp receivedAt; //used on receiving side, and on sending side if an acknowledgement was received
+	
+	/**
+	 * To be called from the sending side
+	 * 
+	 * @param client
+	 * @param payload
+	 */
+	public Transmission(TransmissionClient client, Payload payload)
+	{
+		this.client = client;
+		this.payload = payload;
+		this.payload.setTransmission(this); // just in case
+	}
+	
+	/**
+	 * To be called from the receiving side
+	 * 
+	 * @param client
+	 * @param sendingSideID
+	 * @param payloadHash
+	 */
+	public Transmission(TransmissionClient client, int sendingSideID, int payloadHash)
+	{
+		this.client = client;
+		this.remoteID = sendingSideID;
+		this.payloadHash = payloadHash;
+	}
+	
+	/**
+	 * To be called upon database retrieval only
+	 * 
+	 * @param client
+	 * @param localID
+	 * @param remoteID - may be null
+	 * @param payloadHash
+	 * @param sentAt - may be null
+	 * @param receivedAt - may be null
+	 */
+	protected Transmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
+	{
+		this.client = client;
+		this.localID = localID;
+		this.remoteID = remoteID; 
+		this.payloadHash = payloadHash;
+		this.sentAt = sentAt;
+		this.receivedAt = receivedAt;
+	}
+	
+	public void setLocalID(int id)
+	{
+		if(localID != null && localID != id)
+			throw new IllegalStateException("LocalID has already been set!");
+		this.localID = id;
+	}
+	
+	public boolean isLocalIDSet()
+	{
+		return localID != null;
+	}
+	
+	public int getLocalID()
+	{
+		if(localID == null)
+			throw new IllegalStateException("LocalID has not been set yet");
+		return localID.intValue();
+	}
+		
+	/**
+	 * @return the remoteID
+	 */
+	public int getRemoteID()
+	{
+		if(remoteID == null)
+			throw new IllegalStateException("RemoteID has not been set yet");
+		return remoteID;
+	}
 
-	/**
-	 * To be called at the sending side.
-	 * 
-	 * @param schema
-	 * @param settings
-	 */
-	public Transmission(Schema schema, Settings settings)
+	public boolean isPayloadSet()
 	{
-		this(schema, null, settings);
+		return payload != null;
 	}
 	
-	/**
-	 * To be called at the sending side.
-	 * 
-	 * @param schema
-	 * @param columnsToFactorOut
-	 * @param settings
-	 */
-	public Transmission(Schema schema, Set<Column<?>> columnsToFactorOut, Settings settings)
+	public Payload getPayload()
 	{
-		this(); //!!!
-		if(schema == null)
-			throw new NullPointerException("Schema cannot be null on sending side.");
-		if(schema.isInternal())
-			throw new IllegalArgumentException("Cannot directly transmit records of internal schema.");
-		this.schema = schema;
-		setColumnsToFactorOut(columnsToFactorOut);
-		this.settings = settings;
+		return payload;
 	}
 	
-	/**
-	 * To be called at the receiving side.
-	 * 
-	 * @param modelProvider
-	 * @param settings
-	 */
-	public Transmission(TransmissionClient modelProvider)
-	{
-		this(); //!!!
-		if(modelProvider == null)
-			throw new NullPointerException("TransmissionClient cannot be null on receiving side.");
-		this.client = modelProvider;
+	public int getPayloadHash()
+	{	
+		if(payloadHash == null)
+			throw new IllegalStateException("Payload hash has not been set yet"); // Note: on the receiving side the hash is set before the actual payload
+		return payloadHash;
 	}
 	
-	private Transmission()
-	{
-		this.records = new ArrayList<Record>();
-	}
-	
-	protected void setColumnsToFactorOut(Set<Column<?>> columnsToFactorOut)
-	{
-		if(columnsToFactorOut == null)
-			columnsToFactorOut = Collections.<Column<?>>emptySet();
-		else
-			for(Column<?> c : columnsToFactorOut)
-				if(!schema.containsColumn(c.getName(), false)) 
-					throw new IllegalArgumentException("Column \"" + c.toString() + "\" does not belong to the given schema.");
-		this.columnsToFactorOut = columnsToFactorOut;
-	}
-	
-	public List<Record> getRecords()
-	{
-		return records;
-	}
-	
-	public boolean addRecord(Record record) throws Exception
-	{
-		if(record.getSchema() != schema)
-			throw new IllegalArgumentException("Schema mismatch");
-		
-		if(!record.isFilled())
-			return false;
-		
-		if(columnsToFactorOut != null)
-		{
-			if(records.isEmpty())
-			{
-				factoredOutValues = new HashMap<Column<?>, Object>();
-				//Store "factored out" values:
-				for(Column<?> c : columnsToFactorOut)
-					factoredOutValues.put(c, c.retrieveValue(record));
-			}
-			else
-			{	//Check if factored out values are the same
-				for(Column<?> c : columnsToFactorOut)
-				{
-					Object rValue = c.retrieveValue(record);
-					if(factoredOutValues.get(c) == null)
-					{
-						if(rValue != null)
-							throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
-					}
-					else
-					{
-						if(rValue == null || !rValue.equals(factoredOutValues.get(c)))
-							throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
-					}
-				}
-			}
-		}
-		
-		//Add the record:
-		records.add(record);
-		
-		//Try preparing messages:
-		try
-		{
-			preparePayload();
-		}
-		catch(TransmissionCapacityExceededException tcee)
-		{	//adding this record caused transmission capacity to be exceeded, so remove it and mark the transmission as full (unless there are no other records)
-			records.remove(record);
-			if(!records.isEmpty())
-				full = true;
-			return false;
-		}
-		
-		//Messages were successfully prepared...
-		//record.setTransmission(this); //set transmission on record
-		return true;
-	}
-	
-	public void send(TransmissionSender transmissionSender) throws Exception
+	public void send(Sender transmissionSender) throws IOException, TransmissionCapacityExceededException, UnknownModelException
 	{
 		//Some checks:
-		if(isSent())
-		{
-			System.out.println("This transmission (& all of its parts) has already been sent.");
-			return;
-		}
-		if(records.isEmpty())
-			throw new IllegalStateException("Transmission has no records. Add at least 1 record before sending the transmission .");
 		if(transmissionSender == null)
 			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
+		if(payload == null)
+			throw new NullPointerException("Cannot send transmission without payload");
+		if(isSent())
+		{
+			System.out.println("This transmission has already been sent.");
+			return;
+		}
 		
-		// Set sendingAttemptedAt for all records:
-//		DateTime now = new DateTime();
-//		for(Record r : records)
-//			r.setSendingAttemptedAt(now);
+		// Serialise payload:
+		BitArray payloadBits = payload.serialise();
 		
-		sendPayload(transmissionSender); // !!!
+		// Compute & store payload hash:
+		this.payloadHash = computePayloadHash(payloadBits); // must be set before wrap() is called!
+		
+		// Wrap payload for transmission:
+		wrap(payloadBits);
+		
+		// The actual sending:
+		doSend(transmissionSender);
 	}
 
-	public void resend(TransmissionSender sender) throws Exception
+	public void resend(Sender sender) throws Exception
 	{
-		//Clear early sentAt value (otherwise send() won't work):
+		// Clear early sentAt value (otherwise send() won't work):
 		sentAt = null;
 		
-		//Resend:
+		// Resend:
 		send(sender);
 	}
 	
-	protected abstract void sendPayload(TransmissionSender transmissionSender) throws Exception;
+	protected abstract void doSend(Sender transmissionSender);
 	
-	public void read() throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
+	public void receive() throws IncompleteTransmissionException, IOException, IllegalStateException, PayloadDecodeException, UnknownModelException
 	{
-		read(null, null);
-	}
-	
-	public void read(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
-	{
-		//Some checks:
-		if(!records.isEmpty())
+		// Some checks:
+		if(!isComplete())
+			throw new IncompleteTransmissionException(this);
+		if(this.payload != null)
 		{
-			if(schema == schemaToUse && settings == settingsToUse)
-			{
-				System.out.println("This SMSTransmission has already been received.");
-				return;
-			}
-			else
-				records.clear(); //Re-receiving with other schema/settings, so clear records
+			System.out.println("This transmission has already been received.");
+			return;
 		}
 		
-		//Read payload:
-		readPayload(schemaToUse, settingsToUse);
+		// Unwrap (reassemble/decode) payload:
+		BitArray payloadBits = unwrap();
+		
+		// Verify payload hash:
+		if(payloadHash != computePayloadHash(payloadBits))
+			throw new IncompleteTransmissionException(this, "Payload hash mismatch!");
+		
+		// Set payload:
+		this.payload = Payload.New(client, payloadBits);
+		this.payload.setTransmission(this); // !!!
+		
+		// Deserialise payload:
+		payload.deserialise(payloadBits);
+		
+		// set receivedAT?
 	}
 	
-	protected abstract void preparePayload() throws IOException, TransmissionCapacityExceededException;
+	/**
+	 * Wraps/encodes/splits the payload bits in a way they can be send by this transmission
+	 * 
+	 * @param payloadBits
+	 * @throws TransmissionCapacityExceededException
+	 * @throws IOException
+	 */
+	protected abstract void wrap(BitArray payloadBits) throws TransmissionCapacityExceededException, IOException;
 	
-	protected abstract void readPayload(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException;
+	/**
+	 * Unwraps/decoded/joins the payload bits
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
+	protected abstract BitArray unwrap() throws IOException;
 	
-	public boolean isFull()
+	protected int computePayloadHash(BitArray payloadBits)
 	{
-		return full;
+		return Hashing.getCRC16Hash(payloadBits.toByteArray());
 	}
 	
-	public boolean isEmpty()
-	{
-		return records.isEmpty();
-	}
-	
+	public abstract boolean isComplete();
+		
 	public boolean isSent()
 	{
 		return sentAt != null;
 	}
 	
-	protected void setSentAt(DateTime sentAt)
+	protected void setSentAt(TimeStamp sentAt)
 	{
-		for(Record r : records)
-		{
-			r.setSent(true);
-			//r.setSendingAttemptedAt(sentAt);
-		}
 		this.sentAt = sentAt;
 	}
 	
-	public DateTime getSentAt()
+	public TimeStamp getSentAt()
 	{
 		return sentAt;
 	}
@@ -256,24 +270,31 @@ public abstract class Transmission
 		return receivedAt != null;
 	}
 
-	public DateTime getReceivedAt()
+	public TimeStamp getReceivedAt()
 	{
 		return receivedAt;
 	}
 	
-	public void setReceivedAt(DateTime receivedAt)
+	public void setReceivedAt(TimeStamp receivedAt)
 	{
 		this.receivedAt = receivedAt;
 	}
 	
-	public Schema getSchema()
+	public TransmissionClient getClient()
 	{
-		return schema;
+		return client;
 	}
 	
-	public Settings getSettings()
-	{
-		return settings;
-	}
+	public abstract int getMaxPayloadBits();
+	
+	/**
+	 * @return whether (true) or not (false) the wrapping of the payload data in the transmission (as implemented by {@link #wrap(BitArray)}) can cause the data size to grow (e.g. due to escaping)
+	 */
+	public abstract boolean canWrapIncreaseSize();
+	
+	/**
+	 * @return
+	 */
+	public abstract Type getType();
 	
 }

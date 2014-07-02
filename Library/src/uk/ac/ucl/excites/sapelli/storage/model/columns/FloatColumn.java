@@ -20,7 +20,7 @@ public class FloatColumn extends ComparatorColumn<Double>
 	static private final long serialVersionUID = 2L;
 	
 	static public final boolean DEFAULT_DOUBLE_PRECISION = false; // 32 bit (float) by default
-	private static final boolean DEFAULT_SIGNEDNESS = true; //allow signed values by default
+	static private final boolean DEFAULT_SIGNEDNESS = true; //allow signed values by default
 	
 	private boolean doublePrecision;
 	private boolean signed;
@@ -142,7 +142,11 @@ public class FloatColumn extends ComparatorColumn<Double>
 	protected boolean equalRestrictions(Column<Double> otherColumn)
 	{
 		if(otherColumn instanceof FloatColumn)
-			return this.doublePrecision == ((FloatColumn) otherColumn).doublePrecision;
+		{
+			FloatColumn other = (FloatColumn) otherColumn;
+			return 	this.doublePrecision == other.doublePrecision &&
+					this.signed == other.signed;
+		}
 		return false;
 	}
 
@@ -180,6 +184,7 @@ public class FloatColumn extends ComparatorColumn<Double>
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + (doublePrecision ? 0 : 1);
+		hash = 31 * hash + (signed ? 0 : 1);
 		return hash;
 	}
 
