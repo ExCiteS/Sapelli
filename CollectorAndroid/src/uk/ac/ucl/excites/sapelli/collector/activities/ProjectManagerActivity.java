@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
@@ -67,6 +68,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.crashlytics.android.Crashlytics;
 import com.ipaulpro.afilechooser.utils.FileUtils;
 import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGBuilder;
@@ -232,6 +234,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	public void initialisationSuccess(DeviceID deviceID)
 	{
 		this.deviceID = deviceID;
+		Crashlytics.setLong(CollectorApp.CRASHLYTICS_DEVICE_ID_CRC32, deviceID.getIDAsCRC32Hash());
+		Crashlytics.setString(CollectorApp.CRASHLYTICS_DEVICE_ID_MD5, deviceID.getIDAsMD5Hash().toString());
 	}
 
 	@Override
