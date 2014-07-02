@@ -51,6 +51,8 @@ public class CollectorApp extends Application implements StoreClient
 	
 	static private final String CRASHLYTICS_VERSION_INFO = "VERSION_INFO";
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
+	static public final String CRASHLYTICS_DEVICE_ID_CRC32 = "SAPELLI_DEVICE_ID_CRC32";
+	static public final String CRASHLYTICS_DEVICE_ID_MD5 = "SAPELLI_DEVICE_ID_MD5";
 
 	/**
 	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on
@@ -92,9 +94,12 @@ public class CollectorApp extends Application implements StoreClient
 		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.getAllInfo());
 
 		// Start Crashlytics for bugs reporting
-		Crashlytics.start(this);
-		Crashlytics.setString(CRASHLYTICS_VERSION_INFO, BuildInfo.getVersionInfo());
-		Crashlytics.setString(CRASHLYTICS_BUILD_INFO, BuildInfo.getBuildInfo());
+		if(!BuildConfig.DEBUG)
+		{
+			Crashlytics.start(this);
+			Crashlytics.setString(CRASHLYTICS_VERSION_INFO, BuildInfo.getVersionInfo());
+			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, BuildInfo.getBuildInfo());
+		}
 	
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();
