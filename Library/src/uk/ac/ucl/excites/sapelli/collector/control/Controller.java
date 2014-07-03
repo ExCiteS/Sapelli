@@ -39,10 +39,6 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
  * 
  * @author mstevens, Michalis Vitos, Julia
  */
-/**
- * @author mstevens
- *
- */
 public abstract class Controller
 {
 	
