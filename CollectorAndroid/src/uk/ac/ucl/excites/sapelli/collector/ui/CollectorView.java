@@ -5,6 +5,7 @@ import java.util.HashMap;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.PageAnimation;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
@@ -29,6 +30,9 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidTextBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
+import android.animation.Animator;
+import android.animation.LayoutTransition;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
@@ -111,6 +115,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	 * 
 	 * @param field
 	 */
+	@SuppressLint("NewApi")
 	public void setField(Field field)
 	{
 		if(controller == null)
@@ -159,6 +164,28 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			}
 			// New becomes current:
 			fieldUIView = newFieldUIView;
+
+			// TODO Remove test code
+			controller.getCurrentForm().setPageAnimation(PageAnimation.HORIZONTAL);
+
+			// Animation:
+			final PageAnimation pageAnimation = controller.getCurrentForm().getPageAnimation();
+			if(pageAnimation != null)
+				switch(pageAnimation)
+				{
+				case HORIZONTAL:
+					Animator RightAnimation = ObjectAnimator.ofFloat(null, "translationX", ScreenMetrics.GetScreenWidth(activity), 0);
+					animatePage(RightAnimation);
+					break;
+
+				case VERTICAL:
+					Animator DownAnimation = ObjectAnimator.ofFloat(null, "translationY", ScreenMetrics.GetScreenHeight(activity), 0);
+					animatePage(DownAnimation);
+					break;
+
+				default:
+					break;
+				}
 		}
 		
 		// Set focus:
@@ -168,6 +195,16 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI.enable();
 	}
 	
+	@SuppressLint("NewApi")
+	private void animatePage(Animator animation)
+	{
+		LayoutTransition layoutTransition = new LayoutTransition();
+		layoutTransition.setAnimator(LayoutTransition.APPEARING, animation);
+		layoutTransition.setDuration(LayoutTransition.APPEARING, 400);
+		layoutTransition.setStartDelay(LayoutTransition.APPEARING, 0);
+		this.setLayoutTransition(layoutTransition);
+	}
+
 	public CollectorActivity getActivity()
 	{
 		return activity;
