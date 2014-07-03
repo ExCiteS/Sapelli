@@ -25,7 +25,6 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.shared.util.debug.ReachableObjects;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
@@ -102,8 +101,6 @@ public class DB4ORecordStore extends RecordStore
 	@Override
 	protected boolean doStore(Record record) throws Exception
 	{
-		(new ReachableObjects(record)).printInfo();
-		
 		boolean insert = !db4o.ext().isStored(record);
 		
 		// Deal with auto-incrementing primary keys:
