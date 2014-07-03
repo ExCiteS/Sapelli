@@ -121,6 +121,9 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		if(controller == null)
 			throw new IllegalStateException("CollectorView is not initialised.");
 		
+		// Clear the LayoutTransition:
+		this.setLayoutTransition(null);
+
 		// avoid layout shift (known Android bug when using full screen)
 		activity.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		
@@ -152,7 +155,49 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		
 		// Replace current view:
 		if(newFieldUIView != fieldUIView)
-		{	// the *new* view is different from the current one (which might be null)...
+		{
+			// TODO Remove test code
+			controller.getCurrentForm().setPageAnimation(PageAnimation.HORIZONTAL);
+
+			// Animation:
+			final PageAnimation pageAnimation = controller.getCurrentForm().getPageAnimation();
+			if(pageAnimation != null)
+			{
+				Animator animation;
+				switch(pageAnimation)
+				{
+				case HORIZONTAL:
+					// Check whether it is a a backwards or forwards direction and create Right or Left animation:
+					if(controller.isGoBack())
+						// Left:
+						animation = ObjectAnimator.ofFloat(null, "translationX", -ScreenMetrics.GetScreenWidth(activity), 0);
+					else
+						// Right:
+						animation = ObjectAnimator.ofFloat(null, "translationX", ScreenMetrics.GetScreenWidth(activity), 0);
+					
+					// Run the animation:
+					animatePage(animation);
+					break;
+
+				case VERTICAL:
+					// Check whether it is a a backwards or forwards direction and create Up or Down animation:
+					if(controller.isGoBack())
+						// Up:
+						animation = ObjectAnimator.ofFloat(null, "translationY", ScreenMetrics.GetScreenHeight(activity), 0);
+					else
+						// Down:
+						animation = ObjectAnimator.ofFloat(null, "translationY", -ScreenMetrics.GetScreenHeight(activity), 0);
+
+					// Run the animation:
+					animatePage(animation);
+					break;
+
+				default:
+					break;
+				}
+			}
+
+			// the *new* view is different from the current one (which might be null)...
 			// Remove the current (i.e. old) view...
 			if(fieldUIView != null) // if it is not null...
 				this.removeView(fieldUIView);
@@ -164,28 +209,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			}
 			// New becomes current:
 			fieldUIView = newFieldUIView;
-
-			// TODO Remove test code
-			controller.getCurrentForm().setPageAnimation(PageAnimation.HORIZONTAL);
-
-			// Animation:
-			final PageAnimation pageAnimation = controller.getCurrentForm().getPageAnimation();
-			if(pageAnimation != null)
-				switch(pageAnimation)
-				{
-				case HORIZONTAL:
-					Animator RightAnimation = ObjectAnimator.ofFloat(null, "translationX", ScreenMetrics.GetScreenWidth(activity), 0);
-					animatePage(RightAnimation);
-					break;
-
-				case VERTICAL:
-					Animator DownAnimation = ObjectAnimator.ofFloat(null, "translationY", ScreenMetrics.GetScreenHeight(activity), 0);
-					animatePage(DownAnimation);
-					break;
-
-				default:
-					break;
-				}
 		}
 		
 		// Set focus:

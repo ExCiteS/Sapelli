@@ -231,6 +231,16 @@ public abstract class Controller
 	}
 	
 	/**
+	 * Return whether the controller is moving backwards or forwards
+	 * 
+	 * @return true if going back and false otherwise
+	 */
+	public boolean isGoBack()
+	{
+		return handlingUserGoBackRequest;
+	}
+
+	/**
 	 * @param withinFormOnly
 	 * @return whether of not we can go back to a previous field or (if withinFormOnly=false) form
 	 */
