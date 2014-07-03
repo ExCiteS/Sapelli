@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.TransmissionFragment;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -15,8 +17,9 @@ public class PagerAdapter extends FragmentPagerAdapter {
 	public static String PROJECT = "Project";
 	public static String EXPORT = "Export";
 	public static String TRANSMISSION = "Transmission";
+	private Fragment[] fragments = new Fragment[] { new ProjectFragment(), new TransmissionFragment(), new ExportFragment() };
 
-	String[] tabs = { PROJECT, EXPORT, TRANSMISSION };
+	String[] tabs = { PROJECT, TRANSMISSION, EXPORT};
 
 	public PagerAdapter(FragmentManager fm) {
 		super(fm);
@@ -35,7 +38,8 @@ public class PagerAdapter extends FragmentPagerAdapter {
 
 	@Override
 	public Fragment getItem(int position) {
-		return ProjectFragment.newInstance(position);
+		return fragments[position];
+
 	}
 
 }
