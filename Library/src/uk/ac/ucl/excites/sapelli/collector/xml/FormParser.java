@@ -93,6 +93,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR = "buttonBackgroundColor";
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
 	static private final String ATTRIBUTE_FORM_ANIMATION = "animation";
+	static private final String ATTRIBUTE_FORM_PAGE_ANIMATION = "pageAnimation";
 	static private final String ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES = "obfuscateMediaFiles";
 	static private final String ATTRIBUTE_FORM_SINGLE_PAGE = "singlePage";
 	static private final String ATTRIBUTE_SKIP_ON_BACK = "skipOnBack"; // used on both FORM and FIELD
@@ -245,6 +246,15 @@ public class FormParser extends SubtreeParser
 			}
 			// Animation:
 			currentForm.setAnimation(attributes.getBoolean(ATTRIBUTE_FORM_ANIMATION, Form.DEFAULT_ANIMATION));
+			// PageAnimation:
+			try
+			{
+				currentForm.setPageAnimation(attributes.getString(ATTRIBUTE_FORM_PAGE_ANIMATION, Form.DEFAULT_PAGE_ANIMATION.name(), true, false));
+			}
+			catch(IllegalArgumentException iae)
+			{
+				addWarning("Invalid '" + ATTRIBUTE_FORM_PAGE_ANIMATION + "' attribute value on <" + TAG_FORM + ">. Default PageAnimation is going to be used.");
+			}
 			// Obfuscate Media Files:
 			currentForm.setObfuscateMediaFiles(attributes.getBoolean(ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES, Form.DEFAULT_OBFUSCATE_MEDIA_FILES));
 			// Control button images:

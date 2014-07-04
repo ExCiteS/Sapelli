@@ -156,9 +156,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		// Replace current view:
 		if(newFieldUIView != fieldUIView)
 		{
-			// TODO Remove test code
-			controller.getCurrentForm().setPageAnimation(PageAnimation.HORIZONTAL);
-
 			// Animation:
 			final PageAnimation pageAnimation = controller.getCurrentForm().getPageAnimation();
 			if(pageAnimation != null)

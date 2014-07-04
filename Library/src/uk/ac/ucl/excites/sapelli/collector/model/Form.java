@@ -267,12 +267,22 @@ public class Form
 	}
 
 	/**
-	 * @param pageAnimation
+	 * @param pageAnimationStr
 	 *            the pageAnimation to set
 	 */
-	public void setPageAnimation(PageAnimation pageAnimation)
+	public void setPageAnimation(String pageAnimationStr)
 	{
-		this.pageAnimation = pageAnimation;
+		if(pageAnimationStr == null)
+			return; // default pageAnimation will be used
+		pageAnimationStr = pageAnimationStr.toUpperCase(); // Make upper case
+		try
+		{
+			this.pageAnimation = PageAnimation.valueOf(pageAnimationStr);
+		}
+		catch(IllegalArgumentException iae)
+		{
+			throw iae;
+		}
 	}
 
 	/**
