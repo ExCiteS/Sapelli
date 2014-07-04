@@ -164,7 +164,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 				switch(pageAnimation)
 				{
 				case HORIZONTAL:
-					// Check whether it is a a backwards or forwards direction and create Right or Left animation:
+					// Check whether it is a backwards or forwards direction and create Right or Left animation:
 					if(controller.isGoBack())
 						// Left:
 						animation = ObjectAnimator.ofFloat(null, "translationX", -ScreenMetrics.GetScreenWidth(activity), 0);
@@ -177,7 +177,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 					break;
 
 				case VERTICAL:
-					// Check whether it is a a backwards or forwards direction and create Up or Down animation:
+					// Check whether it is a backwards or forwards direction and create Up or Down animation:
 					if(controller.isGoBack())
 						// Up:
 						animation = ObjectAnimator.ofFloat(null, "translationY", ScreenMetrics.GetScreenHeight(activity), 0);
