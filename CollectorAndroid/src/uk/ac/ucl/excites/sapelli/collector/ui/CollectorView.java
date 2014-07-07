@@ -172,7 +172,12 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 
 				case VERTICAL:
 					// Check whether it is a backwards or forwards direction and create Up or Down animation:
-					// TODO
+					if(controller.isGoBack())
+						// Down:
+						PageAnimator.slideDown(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+					else
+						// Up:
+						PageAnimator.slideUp(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
 					break;
 
 				default:
