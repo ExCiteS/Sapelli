@@ -83,6 +83,13 @@ public class Form
 	public static final String COLUMN_DEVICE_ID_NAME = "DeviceID";
 	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn(COLUMN_DEVICE_ID_NAME, false, false, 32);
 	
+	// The Animation type between different Screen Pages
+	public static enum PageAnimation
+	{
+		NONE, VERTICAL, HORIZONTAL
+	}
+
+	public static final PageAnimation DEFAULT_PAGE_ANIMATION = PageAnimation.NONE;
 
 	// Dynamics-------------------------------------------------------
 	private final Project project;
@@ -105,6 +112,9 @@ public class Form
 	// Animation:
 	private boolean animation = DEFAULT_ANIMATION;
 	
+	// PageAnimation:
+	private PageAnimation pageAnimation = DEFAULT_PAGE_ANIMATION;
+
 	// Obfuscate Media Files:
 	private boolean obfuscateMediaFiles = DEFAULT_OBFUSCATE_MEDIA_FILES;
 
@@ -261,6 +271,33 @@ public class Form
 	public void setAnimation(boolean animation)
 	{
 		this.animation = animation;
+	}
+
+	/**
+	 * @return the pageAnimation
+	 */
+	public PageAnimation getPageAnimation()
+	{
+		return pageAnimation;
+	}
+
+	/**
+	 * @param pageAnimationStr
+	 *            the pageAnimation to set
+	 */
+	public void setPageAnimation(String pageAnimationStr)
+	{
+		if(pageAnimationStr == null)
+			return; // default pageAnimation will be used
+		pageAnimationStr = pageAnimationStr.toUpperCase(); // Make upper case
+		try
+		{
+			this.pageAnimation = PageAnimation.valueOf(pageAnimationStr);
+		}
+		catch(IllegalArgumentException iae)
+		{
+			throw iae;
+		}
 	}
 
 	/**
