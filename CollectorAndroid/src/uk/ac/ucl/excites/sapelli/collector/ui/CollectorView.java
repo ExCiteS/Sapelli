@@ -35,7 +35,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.PageAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidButtonUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidCheckBoxUI;
@@ -181,20 +181,20 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 					// Check whether it is a backwards or forwards direction and create Right or Left animation:
 					if(controller.isGoBack())
 						// Right:
-						PageAnimator.slideRight(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ViewAnimator.slideRight(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
 					else
 						// Left:
-						PageAnimator.slideLeft(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ViewAnimator.slideLeft(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
 					break;
 
 				case VERTICAL:
 					// Check whether it is a backwards or forwards direction and create Up or Down animation:
 					if(controller.isGoBack())
 						// Down:
-						PageAnimator.slideDown(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ViewAnimator.slideDown(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
 					else
 						// Up:
-						PageAnimator.slideUp(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ViewAnimator.slideUp(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
 					break;
 
 				default:

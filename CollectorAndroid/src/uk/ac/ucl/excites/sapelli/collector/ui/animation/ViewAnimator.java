@@ -3,12 +3,13 @@ package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.content.Context;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
 import android.view.animation.AnimationSet;
 import android.view.animation.TranslateAnimation;
 
-public class PageAnimator
+public class ViewAnimator
 {
-	public PageAnimator()
+	public ViewAnimator()
 	{
 	}
 
@@ -158,5 +159,17 @@ public class PageAnimator
 		AnimationSet nextSet = new AnimationSet(true);
 		nextSet.addAnimation(nextAnimation);
 		nextView.startAnimation(nextSet);
+	}
+
+	public static void alphaAnimation(View view)
+	{
+		AlphaAnimation alpha = new AlphaAnimation((float) 1.0, (float) 0.5);
+		alpha.setDuration(400);
+
+		// Create an animation set
+		AnimationSet animationSet = new AnimationSet(true);
+		animationSet.addAnimation(alpha);
+
+		view.startAnimation(animationSet);
 	}
 }

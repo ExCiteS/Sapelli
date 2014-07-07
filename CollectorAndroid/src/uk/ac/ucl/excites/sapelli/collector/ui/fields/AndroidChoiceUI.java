@@ -29,6 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
@@ -136,6 +137,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		// Ignore click if child is disabled:
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return false;
+
+		// Apply an alpha animation to the long pressed view
+		ViewAnimator.alphaAnimation(childView);
 
 		// TODO check whether there is an audio file for the given ChoiceField and use that instead of the TTS
 
