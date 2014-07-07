@@ -21,8 +21,8 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -365,6 +365,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		// Set size & padding:
 		item.setPaddingPx(itemPaddingPx);
 		
+		// Set the description used for accessibility support
+		item.setDescription(child.getValue());
+
 		return item;
 	}
 	
