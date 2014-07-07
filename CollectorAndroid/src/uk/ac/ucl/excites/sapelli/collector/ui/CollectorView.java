@@ -134,7 +134,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	 * 
 	 * @param field
 	 */
-	@SuppressLint("NewApi")
 	public void setField(Field field)
 	{
 		if(controller == null)
