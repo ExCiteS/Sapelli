@@ -105,6 +105,9 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FORM_FORWARD_BUTTON_IMG = "forwardButtonImg";
 	static private final String ATTRIBUTE_FORM_CANCEL_BUTTON_IMG = "cancelButtonImg";
 	static private final String ATTRIBUTE_FORM_BACK_BUTTON_IMG = "backButtonImg";
+	static private final String ATTRIBUTE_FORM_FORWARD_BUTTON_DESC = "forwardButtonDesc";
+	static private final String ATTRIBUTE_FORM_CANCEL_BUTTON_DESC = "cancelButtonDesc";
+	static private final String ATTRIBUTE_FORM_BACK_BUTTON_DESC = "backButtonDesc";
 	static private final String ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR = "buttonBackgroundColor";
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
 	static private final String ATTRIBUTE_FORM_ANIMATION = "animation";
@@ -276,6 +279,10 @@ public class FormParser extends SubtreeParser
 			currentForm.setBackButtonImageRelativePath(attributes.getString(ATTRIBUTE_FORM_BACK_BUTTON_IMG, null, false, false));
 			currentForm.setCancelButtonImageRelativePath(attributes.getString(ATTRIBUTE_FORM_CANCEL_BUTTON_IMG, null, false, false));
 			currentForm.setForwardButtonImageRelativePath(attributes.getString(ATTRIBUTE_FORM_FORWARD_BUTTON_IMG, null, false, false));
+			// Control button descriptions:
+			currentForm.setBackButtonDescription(attributes.getString(ATTRIBUTE_FORM_BACK_BUTTON_DESC, Form.DEFAULT_BACK_BUTTON_DESCRIPTION, false, false));
+			currentForm.setCancelButtonDescription(attributes.getString(ATTRIBUTE_FORM_CANCEL_BUTTON_DESC, Form.DEFAULT_CANCEL_BUTTON_DESCRIPTION, false, false));
+			currentForm.setForwardButtonDescription(attributes.getString(ATTRIBUTE_FORM_FORWARD_BUTTON_DESC, Form.DEFAULT_FORWARD_BUTTON_DESCRIPTION, false, false));
 			// ButtonField background colour:
 			currentForm.setButtonBackgroundColor(attributes.getString(ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR, Form.DEFAULT_BUTTON_BACKGROUND_COLOR, true, false));
 			// Single page form (all fields will be added to a single page):

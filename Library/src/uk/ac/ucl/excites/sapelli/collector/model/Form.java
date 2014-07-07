@@ -89,7 +89,12 @@ public class Form
 		NONE, VERTICAL, HORIZONTAL
 	}
 
+	// PageAnimation
 	public static final PageAnimation DEFAULT_PAGE_ANIMATION = PageAnimation.NONE;
+	// Buttons Default Description Text (used for accessibility support)
+	public static final String DEFAULT_FORWARD_BUTTON_DESCRIPTION = "Forward";
+	public static final String DEFAULT_CANCEL_BUTTON_DESCRIPTION = "Cancel";
+	public static final String DEFAULT_BACK_BUTTON_DESCRIPTION = "Back";
 
 	// Dynamics-------------------------------------------------------
 	private final Project project;
@@ -129,8 +134,11 @@ public class Form
 	// Buttons:
 	private String buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
 	private String backButtonImageRelativePath;
+	private String backButtonDescription = DEFAULT_BACK_BUTTON_DESCRIPTION;
 	private String cancelButtonImageRelativePath;
+	private String cancelButtonDescription = DEFAULT_CANCEL_BUTTON_DESCRIPTION;
 	private String forwardButtonImageRelativePath;
+	private String forwardButtonDescription = DEFAULT_FORWARD_BUTTON_DESCRIPTION;
 	
 	public Form(Project project, String id)
 	{
@@ -351,6 +359,22 @@ public class Form
 	}
 
 	/**
+	 * @return the backButtonDescription
+	 */
+	public String getBackButtonDescription()
+	{
+		return backButtonDescription;
+	}
+
+	/**
+	 * @param backButtonDescription the backButtonDescription to set
+	 */
+	public void setBackButtonDescription(String backButtonDescription)
+	{
+		this.backButtonDescription = backButtonDescription;
+	}
+
+	/**
 	 * @return the cancelButtonImageRelativePath
 	 */
 	public String getCancelButtonImageRelativePath()
@@ -367,6 +391,22 @@ public class Form
 	}
 
 	/**
+	 * @return the cancelButtonDescription
+	 */
+	public String getCancelButtonDescription()
+	{
+		return cancelButtonDescription;
+	}
+
+	/**
+	 * @param cancelButtonDescription the cancelButtonDescription to set
+	 */
+	public void setCancelButtonDescription(String cancelButtonDescription)
+	{
+		this.cancelButtonDescription = cancelButtonDescription;
+	}
+
+	/**
 	 * @return the forwardButtonImageRelativePath
 	 */
 	public String getForwardButtonImageRelativePath()
@@ -380,6 +420,22 @@ public class Form
 	public void setForwardButtonImageRelativePath(String forwardButtonImageRelativePath)
 	{
 		this.forwardButtonImageRelativePath = forwardButtonImageRelativePath;
+	}
+	
+	/**
+	 * @return the forwardButtonDescription
+	 */
+	public String getForwardButtonDescription()
+	{
+		return forwardButtonDescription;
+	}
+
+	/**
+	 * @param forwardButtonDescription the forwardButtonDescription to set
+	 */
+	public void setForwardButtonDescription(String forwardButtonDescription)
+	{
+		this.forwardButtonDescription = forwardButtonDescription;
 	}
 
 	/**

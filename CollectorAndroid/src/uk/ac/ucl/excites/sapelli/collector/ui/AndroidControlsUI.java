@@ -224,14 +224,17 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 				case BACK:
 					imgRelativePath = form.getBackButtonImageRelativePath();
 					drawable = new HorizontalArrow(FOREGROUND_COLOR, true);
+					this.setDescription(form.getBackButtonDescription());
 					break;
 				case CANCEL:
 					imgRelativePath = form.getCancelButtonImageRelativePath();
 					drawable = new SaltireCross(FOREGROUND_COLOR);
+					this.setDescription(form.getCancelButtonDescription());
 					break;
 				case FORWARD:
 					imgRelativePath = form.getForwardButtonImageRelativePath();
 					drawable = new HorizontalArrow(FOREGROUND_COLOR, false);
+					this.setDescription(form.getForwardButtonDescription());
 					break;
 			}				
 			File imgFile = controller.getProject().getImageFile(imgRelativePath);
