@@ -76,8 +76,8 @@
     <string name="expand_transmission">Expand Transmission Settings</string>
     <string name="expand_export">Expand Export Settings</string>
     <string name="phone_number">Phone Number</string>
-    <string name="send">Send</string>
-    <string name="receive">Receive</string>
+    <string name="send">Send Data</string>
+    <string name="receive">Receive Data</string>
     <string name="add_project">Please add a project</string>
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>

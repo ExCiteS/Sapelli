@@ -16,6 +16,7 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment;
+import uk.ac.ucl.excites.sapelli.collector.fragments.ProjectFragment;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderClient;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -66,6 +67,7 @@ import android.view.View.OnClickListener;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -114,6 +116,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	private ListView drawerList;
 	private ActionBarDrawerToggle drawerToggle;
 	private DrawerLayout drawerLayout;
+	private Button runProject;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -135,20 +138,19 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		// Set-up UI...
 		// Hide soft keyboard on create
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-		setContentView(R.layout.activity_manage_project);
+		setContentView(R.layout.activity_projectmanager);
 		drawerList = (ListView) findViewById(R.id.left_drawer);
 		drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 		tabs = (PagerSlidingTabStrip) findViewById(R.id.tabs);
-		//		tabs.setIndicatorColor(-14113335); // Sapelli colour
 		pager = (ViewPager) findViewById(R.id.pager);
 		pageMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
 		addProjects = (TextView) findViewById(R.id.addProjects);
+		runProject = (Button) findViewById(R.id.btn_runProject);
 		addProjects.setOnClickListener(new OnClickListener() {
 
 			@Override
 			public void onClick(View v) {
-				// TODO Auto-generated method stub
-
+				browse();
 			}
 		});
 
@@ -162,8 +164,6 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 			/** Called when a drawer has settled in a completely closed state. */
 			public void onDrawerClosed(View view) {
 				super.onDrawerClosed(view);
-				if (selectedProject != null)
-					getActionBar().setTitle(selectedProject.getName());
 				invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
 			}
 
@@ -179,9 +179,10 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 
 		// Set the list's click listener
 		drawerList.setOnItemClickListener(this);
+
 	}
 
-	public void browse(MenuItem item) {
+	public void browse() {
 		// Use the GET_CONTENT intent from the utility class
 		Intent target = FileUtils.createGetContentIntent();
 		// Create the chooser Intent
@@ -190,6 +191,10 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
 		} catch (ActivityNotFoundException e) {
 		}
+	}
+
+	public void browse(MenuItem item) {
+		browse();
 	}
 
 	@Override
@@ -255,6 +260,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.projectmanager, menu);
+		menu.findItem(R.id.action_remove).setVisible(!projectStore.retrieveProjects().isEmpty());
 		return true;
 	}
 
@@ -291,11 +297,12 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		return true;
 	}
 
-	// TODO: Export all projects!!
+	// Export all projects!!
 	public boolean exportRecords(MenuItem item) {
 		ExportFragment exportFragment = ExportFragment.newInstance(true);
 		exportFragment.show(getSupportFragmentManager(), TAG);
 		getSupportFragmentManager().executePendingTransactions();
+		exportFragment.getExportLayout().setBackgroundResource(0);
 		exportFragment.getDialog().setTitle(R.string.exportAllProj);
 
 		return true;
@@ -350,15 +357,22 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		pager.setAdapter(adapter);
 		if (!projectStore.retrieveProjects().isEmpty()) {
 			getActionBar().setTitle(projectStore.retrieveProjects().get(0).getName());
-			addProjects.setText("");
 			selectedProject = projectStore.retrieveProjects().get(0);
 			pager.setPageMargin(pageMargin);
 			tabs.setViewPager(pager);
 			tabs.setVisibility(View.VISIBLE);
+			pager.setVisibility(View.VISIBLE);
+			runProject.setVisibility(View.VISIBLE);
+			addProjects.setVisibility(View.GONE);
 		} else {
+			getActionBar().setTitle(R.string.app_name);
 			tabs.setVisibility(View.GONE);
-			addProjects.setText(R.string.add_project);
+			pager.setVisibility(View.GONE);
+			runProject.setVisibility(View.GONE);
+			addProjects.setVisibility(View.VISIBLE);
+
 		}
+		invalidateOptionsMenu();
 	}
 
 	public Project getSelectedProject(boolean errorIfNull) {
@@ -370,7 +384,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		return selectedProject;
 	}
 
-	public void runProject() {
+	public void runProject(View view) {
 		Project project = getSelectedProject(true);
 		if (project != null)
 			startActivity(getProjectRunIntent(project));
@@ -920,8 +934,10 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 		selectedProject = projectStore.retrieveProjects().get(position);
-		// TODO: open selected project
-		getActionBar().setTitle(selectedProject.getName());
+		if (!projectStore.retrieveProjects().isEmpty())
+			getActionBar().setTitle(selectedProject.getName());
+		else
+			getActionBar().setTitle(R.string.app_name);
 		drawerLayout.closeDrawer(drawerList);
 
 	}

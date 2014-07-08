@@ -17,9 +17,9 @@ public class PagerAdapter extends FragmentPagerAdapter {
 	public static String PROJECT = "Project";
 	public static String EXPORT = "Export";
 	public static String TRANSMISSION = "Transmission";
-	private Fragment[] fragments = new Fragment[] { new ProjectFragment(), new TransmissionFragment(), new ExportFragment() };
+	private Fragment[] fragments = new Fragment[] { ProjectFragment.newInstance(), TransmissionFragment.newInstance(), ExportFragment.newInstance(false) };
 
-	String[] tabs = { PROJECT, TRANSMISSION, EXPORT};
+	String[] tabs = { PROJECT, TRANSMISSION, EXPORT };
 
 	public PagerAdapter(FragmentManager fm) {
 		super(fm);

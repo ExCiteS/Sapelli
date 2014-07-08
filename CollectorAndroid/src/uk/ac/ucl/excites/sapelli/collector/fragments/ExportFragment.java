@@ -32,6 +32,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.LinearLayout;
+import android.widget.LinearLayout.LayoutParams;
 import android.widget.Spinner;
 import android.widget.TimePicker;
 import android.widget.ViewSwitcher;
@@ -69,6 +70,7 @@ public class ExportFragment extends DialogFragment implements OnClickListener {
 	protected LinearLayout exportFragment;
 	private LayoutInflater inflater;
 	private ViewSwitcher viewSwitcher;
+	private LinearLayout rootLayout;
 
 	public static ExportFragment newInstance(boolean exportAll) {
 		ExportFragment myFragment = new ExportFragment();
@@ -94,7 +96,14 @@ public class ExportFragment extends DialogFragment implements OnClickListener {
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
 		this.inflater = inflater;
+
+		rootLayout = new LinearLayout(getActivity());
+		rootLayout.setOrientation(LinearLayout.VERTICAL);
+		rootLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		rootLayout.setPadding(10, 10, 10, 10);
 		exportFragment = (LinearLayout) inflater.inflate(R.layout.fragment_export, container, false);
+		rootLayout.addView(exportFragment);
+		exportFragment.setBackgroundResource(R.layout.drop_shadow);
 
 		// Time range:
 		btnFrom = (Button) ((ViewGroup) exportFragment).findViewById(R.id.btnExportFromDate);
@@ -148,7 +157,7 @@ public class ExportFragment extends DialogFragment implements OnClickListener {
 		((Button) ((ViewGroup) exportFragment).findViewById(R.id.btn_exportSettings)).setOnClickListener(this);
 		viewSwitcher = (ViewSwitcher) ((ViewGroup) exportFragment).findViewById(R.id.viewSwitcher);
 
-		return exportFragment;
+		return rootLayout;
 	}
 
 	@Override
@@ -262,6 +271,13 @@ public class ExportFragment extends DialogFragment implements OnClickListener {
 		// TODO Generate selection description String:
 		selectionDesc = "TODO";
 		return exporter;
+	}
+
+	/**
+	 * @return the rootLayout
+	 */
+	public LinearLayout getExportLayout() {
+		return exportFragment;
 	}
 
 }

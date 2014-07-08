@@ -3,7 +3,6 @@
     android:id="@+id/exportLayout"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:background="@layout/drop_shadow"
     android:orientation="vertical"
     android:padding="10dp" >
 

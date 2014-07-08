@@ -119,6 +119,7 @@ public class ExportActivity extends ProjectActivity {
 				// Schemas (when exportAll is set, all records of any schema/project/form will be fetched):
 				List<Schema> schemata = new ArrayList<Schema>();
 				if (selectedProject != null && exportAll)
+					
 					for (Form f : selectedProject.getForms())
 						if (f.isProducesRecords())
 							schemata.add(f.getSchema());
