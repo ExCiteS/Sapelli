@@ -19,7 +19,6 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
-import java.util.Locale;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
@@ -41,10 +40,8 @@ import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.content.Context;
 import android.graphics.Color;
-import android.speech.tts.TextToSpeech;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
@@ -64,14 +61,16 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	static public final float PAGE_CHOSEN_ITEM_MARGIN_DIP = 1.0f; // same margin all round
 	static public final float CROSS_THICKNESS = 0.02f;
 	
-	static private TextToSpeech tts;
-
 	private PageView pageView;
 	private ChoiceView choiceView;
+
+	private CollectorController controller;
 
 	public AndroidChoiceUI(ChoiceField choice, CollectorController controller, CollectorView collectorView)
 	{
 		super(choice, controller, collectorView);
+		
+		this.controller = controller;
 	}
 
 	@Override
@@ -144,47 +143,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		// TODO check whether there is an audio file for the given ChoiceField and use that instead of the TTS
 
 		// Use the Android TTS (Text-To-Speech) Engine
-		if(tts == null)
-			tts = new TextToSpeech(context, new TextToSpeech.OnInitListener()
-			{
-				@Override
-				public void onInit(int status)
-				{
-					if(status == TextToSpeech.SUCCESS)
-					{
-						int result = tts.setLanguage(Locale.UK);
-						if(result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED)
-						{
-							Debug.d("This Language is not supported");
-						}
-						else
-						{
-							textToSpeech(child);
-						}
-					}
-					else
-						Debug.d("Initilization Failed!");
-				}
-			});
-		else
-			textToSpeech(child);
+		controller.textToSpeech(child.getValue());
 
 		return true;
-	}
-
-	/**
-	 * Use the Android TTS (Text-To-Speech) Engine to speak the description (value) of a ChoiceField
-	 * 
-	 * @param child
-	 */
-	private void textToSpeech(final ChoiceField child)
-	{
-		String childDescription = child.getValue();
-
-		if(childDescription == null || "".equals(childDescription))
-			tts.speak("Content not available", TextToSpeech.QUEUE_FLUSH, null);
-		else
-			tts.speak(childDescription, TextToSpeech.QUEUE_FLUSH, null);
 	}
 
 	/**

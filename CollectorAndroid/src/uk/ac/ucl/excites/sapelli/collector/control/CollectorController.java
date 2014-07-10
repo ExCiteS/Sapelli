@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.control;
 import java.io.File;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
@@ -38,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
+import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.content.Context;
 import android.content.Intent;
@@ -46,6 +48,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
 /**
@@ -67,6 +70,8 @@ public class CollectorController extends Controller implements LocationListener,
 	private Location currentBestLocation = null;
 	private OrientationSensor orientationSensor;
 	private long deviceIDHash;
+
+	private TextToSpeech tts;
 
 	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, CollectorActivity activity)
 	{
@@ -109,6 +114,49 @@ public class CollectorController extends Controller implements LocationListener,
 		{
 			Log.d(TAG, "Stored record:");
 			Log.d(TAG, currFormSession.record.toString());
+		}
+	}
+
+	/**
+	 * Use the Android TTS (Text-To-Speech) Engine to speak the text
+	 * 
+	 * @param text
+	 */
+	public void textToSpeech(final String text)
+	{
+		if(tts == null)
+		{
+			tts = new TextToSpeech(activity, new TextToSpeech.OnInitListener()
+			{
+				@Override
+				public void onInit(int status)
+				{
+					if(status == TextToSpeech.SUCCESS)
+					{
+						int result = tts.setLanguage(Locale.UK);
+						if(result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED)
+						{
+							Debug.d("This Language is not supported");
+						}
+						else
+						{
+							if(text == null || "".equals(text))
+								tts.speak("Content not available", TextToSpeech.QUEUE_FLUSH, null);
+							else
+								tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
+						}
+					}
+					else
+						Debug.d("Initilization Failed!");
+				}
+			});
+		}
+		else
+		{
+			if(text == null || "".equals(text))
+				tts.speak("Content not available", TextToSpeech.QUEUE_FLUSH, null);
+			else
+				tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
 		}
 	}
 
