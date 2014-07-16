@@ -100,7 +100,6 @@ public class ExportFragment extends DialogFragment implements OnClickListener {
 		rootLayout = new LinearLayout(getActivity());
 		rootLayout.setOrientation(LinearLayout.VERTICAL);
 		rootLayout.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
-		rootLayout.setPadding(10, 10, 10, 10);
 		exportFragment = (LinearLayout) inflater.inflate(R.layout.fragment_export, container, false);
 		rootLayout.addView(exportFragment);
 		exportFragment.setBackgroundResource(R.layout.drop_shadow);

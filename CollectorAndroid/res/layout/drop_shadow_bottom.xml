@@ -35,9 +35,8 @@
 
     <!-- Background -->
     <item>
-	<shape>
+		<shape>
             <solid android:color="@color/white" />
-	    <corners android:radius="3dp" />
-	</shape>
+	    </shape>
     </item>
 </layer-list>
