@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
+import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
@@ -48,13 +49,14 @@ import android.hardware.Camera.PictureCallback;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
-import android.widget.RelativeLayout;
+import android.widget.LinearLayout;
 import android.widget.ViewSwitcher;
 
 /**
@@ -116,11 +118,9 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		static private final int PREVIEW_SIZE = 1024;
 		
 		// UI elements:
-		private RelativeLayout captureLayout;
-		private SurfaceView captureView;
-		private RelativeLayout reviewLayout;
 		private ImageView reviewView;
-		private RelativeLayout.LayoutParams buttonParams;
+		private LinearLayout captureLayout;
+		private LinearLayout reviewLayout;
 
 		// Camera & image data:
 		private CameraController cameraController;
@@ -149,35 +149,38 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			//	Set flash mode:
 			cameraController.setFlashMode(field.getFlashMode());
 			
-			// Capture UI:
-			captureLayout = new RelativeLayout(context);
-			captureView = new SurfaceView(context);
-			captureLayout.addView(captureView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-			// buttons are add in initialise
-			this.addView(captureLayout);
+			// --- Capture UI:
+			captureLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_capture, null);
 
-			// Review UI:
-			reviewLayout = new RelativeLayout(context);
-			reviewView = new ImageView(context);
-			reviewView.setScaleType(ScaleType.FIT_CENTER);
-			reviewLayout.addView(reviewView, LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
-			// buttons are add in initialise
-			this.addView(reviewLayout);
-
-			// Layout parameters for the buttons:
-			buttonParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT); // You might want to tweak these to WRAP_CONTENT
-			buttonParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+			// Create the surface for previewing the camera:
+			final SurfaceView surfaceView = (SurfaceView) captureLayout.findViewById(R.id.capture_layout_surface);
 
 			// Set-up surface holder:
-			SurfaceHolder holder = captureView.getHolder();
+			SurfaceHolder holder = surfaceView.getHolder();
 			holder.addCallback(cameraController);
 			holder.setKeepScreenOn(true);
 			// !!! Deprecated but cameraController preview crashes without it (at least on the XCover/Gingerbread):
 			holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
-			// Buttons
-			captureLayout.addView(new CaptureButtonView(getContext()), buttonParams);
-			reviewLayout.addView(new ReviewButtonView(getContext()), buttonParams);
+			// Add the Capture button:
+			final LinearLayout captureLayoutButtons = (LinearLayout) captureLayout.findViewById(R.id.capture_layout_buttons);
+			captureLayoutButtons.addView(new CaptureButtonView(getContext()));
+
+			// Add the CaptureLayout to the screen
+			this.addView(captureLayout);
+
+			
+			// --- Review UI:
+			reviewLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_review, null);
+			reviewView = (ImageView) reviewLayout.findViewById(R.id.review_layout_imageview);
+			reviewView.setScaleType(ScaleType.FIT_CENTER);
+
+			// Add the Capture button:
+			final LinearLayout reviewLayoutButtons = (LinearLayout) reviewLayout.findViewById(R.id.review_layout_buttons);
+			reviewLayoutButtons.addView(new ReviewButtonView(getContext()));
+
+			// Add the ReviewLayout to the screen
+			this.addView(reviewLayout);
 		}
 
 		@Override
@@ -262,10 +265,12 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 
 		private class CaptureButtonView extends CameraButtonView
 		{
+			private Context context;
 
 			public CaptureButtonView(Context context)
 			{
 				super(context);
+				this.context = context;
 			}
 
 			@Override
@@ -303,6 +308,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			public ReviewButtonView(Context context)
 			{
 				super(context);
+				setHorizontalSpacing(collectorUI.getSpacingPx());
 			}
 
 			@Override
@@ -342,9 +348,6 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		 */
 		private abstract class CameraButtonView extends PickerView
 		{
-
-			static public final float BUTTON_HEIGHT_DIP = 64;
-
 			private int buttonPadding;
 			private int buttonBackColor;
 			
@@ -360,7 +363,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				// Layout:
 				setBackgroundColor(Color.TRANSPARENT);
 				setGravity(Gravity.CENTER);
-				setPadding(0, 0, 0, collectorUI.getSpacingPx());
+				setPadding(0, collectorUI.getSpacingPx(), 0, 0);
 
 				// Columns
 				setNumColumns(getNumberOfColumns());
@@ -368,8 +371,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				// Images/buttons:
 
 				// Button size, padding & background colour:
-				int buttonSize = ScreenMetrics.ConvertDipToPx(context, BUTTON_HEIGHT_DIP);
-				this.setItemDimensionsPx(buttonSize, buttonSize);
+				this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(context, AndroidControlsUI.CONTROL_HEIGHT_DIP));
 				this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 				this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
 				
