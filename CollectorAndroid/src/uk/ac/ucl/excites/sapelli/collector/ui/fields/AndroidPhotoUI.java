@@ -326,7 +326,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				if(FileHelpers.isReadableFile(approveImgFile))
 					approveButton = new FileImageItem(approveImgFile);
 				else
-					approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.accept);
+					approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
 				approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				addButton(approveButton);
 				
@@ -336,7 +336,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				if(FileHelpers.isReadableFile(discardImgFile))
 					discardButton = new FileImageItem(discardImgFile);
 				else
-					discardButton = new ResourceImageItem(getContext().getResources(), R.drawable.delete);
+					discardButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_cross_svg);
 				discardButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				addButton(discardButton);
 			}
@@ -372,7 +372,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 
 				// Button size, padding & background colour:
 				this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(context, AndroidControlsUI.CONTROL_HEIGHT_DIP));
-				this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
+				this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP * 3);
 				this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
 				
 				// The addButtons() should be called after the button parameters (size, padding etc.) have been setup
