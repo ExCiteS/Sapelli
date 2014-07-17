@@ -293,7 +293,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				if(FileHelpers.isReadableFile(captureImgFile))
 					captureButton = new FileImageItem(captureImgFile);
 				else
-					captureButton = new ResourceImageItem(getContext().getResources(), R.drawable.take_photo);
+					captureButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_photo_svg);
 				captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				addButton(captureButton);
 			}
@@ -336,7 +336,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				if(FileHelpers.isReadableFile(discardImgFile))
 					discardButton = new FileImageItem(discardImgFile);
 				else
-					discardButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_cross_svg);
+					discardButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_delete_svg);
 				discardButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				addButton(discardButton);
 			}
