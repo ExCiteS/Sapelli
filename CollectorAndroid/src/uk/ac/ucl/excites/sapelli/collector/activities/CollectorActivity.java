@@ -465,8 +465,8 @@ public class CollectorActivity extends ProjectActivity
 		setIntent(intent);
 		
 		if(controller != null)
-			controller.cancelAndStop();
-		
+			controller.cancelAndRestartForm();
+
 		// Load the project (mandatory):
 		loadProject(true);
 	}
