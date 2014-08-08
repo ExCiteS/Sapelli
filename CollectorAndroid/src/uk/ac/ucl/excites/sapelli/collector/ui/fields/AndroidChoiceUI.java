@@ -391,7 +391,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		item.setPaddingPx(itemPaddingPx);
 		
 		// Set the description used for accessibility support
-		item.setDescription(child.getValue());
+		item.setDescription(child.getAltText());
 
 		return item;
 	}

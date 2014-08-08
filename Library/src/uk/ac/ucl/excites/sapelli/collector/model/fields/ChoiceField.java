@@ -133,10 +133,10 @@ public class ChoiceField extends Field implements DictionaryItem
 	{
 		if(altText != null)
 			return altText;
-		if(imageRelativePath != null)
-			return imageRelativePath;
 		if(value != null)
 			return value;
+		if(imageRelativePath != null)
+			return imageRelativePath;
 		return DEFAULT_ALT_TEXT;
 	}
 
