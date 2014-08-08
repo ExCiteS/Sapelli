@@ -23,7 +23,6 @@ import java.util.HashMap;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Form.PageAnimation;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
@@ -82,7 +81,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
 
 	// PageAnimation duration
-	static public final int PAGE_ANIMATION_DURATION = 800;
+	static public final int SCREEN_TRANSITION_DURATION = 800;
 
 	private CollectorActivity activity;
 	private CollectorController controller;
@@ -172,29 +171,29 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		if(newFieldUIView != fieldUIView)
 		{
 			// Animation:
-			final PageAnimation pageAnimation = controller.getCurrentForm().getPageAnimation();
-			if(pageAnimation != null)
+			final ScreenTransition screenTransition = controller.getCurrentForm().getScreenTransition();
+			if(screenTransition != null)
 			{
-				switch(pageAnimation)
+				switch(screenTransition)
 				{
 				case HORIZONTAL:
 					// Check whether it is a backwards or forwards direction and create Right or Left animation:
 					if(controller.isGoBack())
 						// Right:
-						ViewAnimator.slideRight(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ViewAnimator.slideRight(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					else
 						// Left:
-						ViewAnimator.slideLeft(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ViewAnimator.slideLeft(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					break;
 
 				case VERTICAL:
 					// Check whether it is a backwards or forwards direction and create Up or Down animation:
 					if(controller.isGoBack())
 						// Down:
-						ViewAnimator.slideDown(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ViewAnimator.slideDown(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					else
 						// Up:
-						ViewAnimator.slideUp(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ViewAnimator.slideUp(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					break;
 
 				default:
