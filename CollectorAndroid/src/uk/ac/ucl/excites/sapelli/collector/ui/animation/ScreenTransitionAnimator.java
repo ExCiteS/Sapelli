@@ -6,9 +6,9 @@ import android.view.View;
 import android.view.animation.AnimationSet;
 import android.view.animation.TranslateAnimation;
 
-public class PageAnimator
+public class ScreenTransitionAnimator
 {
-	public PageAnimator()
+	public ScreenTransitionAnimator()
 	{
 	}
 

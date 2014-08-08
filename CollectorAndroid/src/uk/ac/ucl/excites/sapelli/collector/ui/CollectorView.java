@@ -23,7 +23,7 @@ import java.util.HashMap;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Form.PageAnimation;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.ScreenTransition;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
@@ -35,7 +35,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.PageAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ScreenTransitionAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidButtonUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidCheckBoxUI;
@@ -81,8 +81,8 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final int COLOR_SEMI_TRANSPARENT_GRAY = Color.parseColor("#80777777");
 	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
 
-	// PageAnimation duration
-	static public final int PAGE_ANIMATION_DURATION = 800;
+	// ScreenTransition duration
+	static public final int SCREEN_TRANSITION_DURATION = 800;
 
 	private CollectorActivity activity;
 	private CollectorController controller;
@@ -171,30 +171,30 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		// Replace current view:
 		if(newFieldUIView != fieldUIView)
 		{
-			// Animation:
-			final PageAnimation pageAnimation = controller.getCurrentForm().getPageAnimation();
-			if(pageAnimation != null)
+			// Screen Transition Animation:
+			final ScreenTransition screenTransition = controller.getCurrentForm().getScreenTransition();
+			if(screenTransition != null)
 			{
-				switch(pageAnimation)
+				switch(screenTransition)
 				{
 				case HORIZONTAL:
 					// Check whether it is a backwards or forwards direction and create Right or Left animation:
 					if(controller.isGoBack())
 						// Right:
-						PageAnimator.slideRight(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ScreenTransitionAnimator.slideRight(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					else
 						// Left:
-						PageAnimator.slideLeft(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ScreenTransitionAnimator.slideLeft(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					break;
 
 				case VERTICAL:
 					// Check whether it is a backwards or forwards direction and create Up or Down animation:
 					if(controller.isGoBack())
 						// Down:
-						PageAnimator.slideDown(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ScreenTransitionAnimator.slideDown(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					else
 						// Up:
-						PageAnimator.slideUp(activity, fieldUIView, newFieldUIView, PAGE_ANIMATION_DURATION);
+						ScreenTransitionAnimator.slideUp(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					break;
 
 				default:
