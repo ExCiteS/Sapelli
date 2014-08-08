@@ -29,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
@@ -231,8 +231,8 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			};
 
 			// Execute the "press" animation if allowed, then perform the action: 
-			if(controller.getCurrentForm().isAnimation())
-				(new PressAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
+			if(controller.getCurrentForm().isClickAnimation())
+				(new ClickAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
 			else
 				action.run(); //perform task now (animation is disabled)
 		}

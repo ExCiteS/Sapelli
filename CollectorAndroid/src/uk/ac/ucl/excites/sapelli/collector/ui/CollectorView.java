@@ -23,6 +23,7 @@ import java.util.HashMap;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.ScreenTransition;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
@@ -80,7 +81,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final int COLOR_SEMI_TRANSPARENT_GRAY = Color.parseColor("#80777777");
 	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
 
-	// PageAnimation duration
+	// Screen Transition duration
 	static public final int SCREEN_TRANSITION_DURATION = 800;
 
 	private CollectorActivity activity;
