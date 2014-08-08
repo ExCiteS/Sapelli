@@ -25,22 +25,22 @@ import android.view.animation.AnimationSet;
 import android.view.animation.ScaleAnimation;
 
 /**
- * "Button press" animaton
+ * "Button click" animation
  * 
  * @author Michalis Vitos, mstevens
  *
  */
-public class PressAnimator extends Animator
+public class ClickAnimator extends Animator
 {
 
 	public static final int DURATION = 400; // ms
 	
-	public PressAnimator(Runnable taskAfterAnimation, View animateView, View blockView)
+	public ClickAnimator(Runnable taskAfterAnimation, View animateView, View blockView)
 	{
 		this(DURATION, taskAfterAnimation, animateView, blockView);
 	}
 	
-	public PressAnimator(long duration, Runnable taskAfterAnimation, View animateView, View blockView)
+	public ClickAnimator(long duration, Runnable taskAfterAnimation, View animateView, View blockView)
 	{
 		super(duration, taskAfterAnimation, animateView, blockView);
 	}

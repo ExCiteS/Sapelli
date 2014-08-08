@@ -107,8 +107,9 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FORM_BACK_BUTTON_IMG = "backButtonImg";
 	static private final String ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR = "buttonBackgroundColor";
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
-	static private final String ATTRIBUTE_FORM_ANIMATION = "animation";
-	static private final String ATTRIBUTE_FORM_PAGE_ANIMATION = "pageAnimation";
+	static private final String ATTRIBUTE_FORM_CLICK_ANIMATION = "clickAnimation";
+	static private final String ATTRIBUTE_FORM_ANIMATION = "animation"; // 1.x compatibility, the same as clickAnimation
+	static private final String ATTRIBUTE_FORM_SCREEN_TRANSITION = "screenTransition";
 	static private final String ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES = "obfuscateMediaFiles";
 	static private final String ATTRIBUTE_FORM_SINGLE_PAGE = "singlePage";
 	static private final String ATTRIBUTE_SKIP_ON_BACK = "skipOnBack"; // used on both FORM and FIELD
@@ -259,16 +260,16 @@ public class FormParser extends SubtreeParser
 				else
 					addWarning("Attributes '" + ATTRIBUTE_FIELD_SHOW_BACK + "', '" + ATTRIBUTE_FIELD_SHOW_CANCEL + "' & '" + ATTRIBUTE_FIELD_SHOW_FORWARD + "' are deprecated on <Form> in format >= 2.");
 			}
-			// Animation:
-			currentForm.setAnimation(attributes.getBoolean(ATTRIBUTE_FORM_ANIMATION, Form.DEFAULT_ANIMATION));
-			// PageAnimation:
+			// Click Animation:
+			currentForm.setClickAnimation(attributes.getBoolean(Form.DEFAULT_CLICK_ANIMATION, ATTRIBUTE_FORM_CLICK_ANIMATION, ATTRIBUTE_FORM_ANIMATION));
+			// Screen Transition:
 			try
 			{
-				currentForm.setPageAnimation(attributes.getString(ATTRIBUTE_FORM_PAGE_ANIMATION, Form.DEFAULT_PAGE_ANIMATION.name(), true, false));
+				currentForm.setScreenTransition(attributes.getString(ATTRIBUTE_FORM_SCREEN_TRANSITION, Form.DEFAULT_SCREEN_TRANSITION.name(), true, false));
 			}
 			catch(IllegalArgumentException iae)
 			{
-				addWarning("Invalid '" + ATTRIBUTE_FORM_PAGE_ANIMATION + "' attribute value on <" + TAG_FORM + ">. Default PageAnimation is going to be used.");
+				addWarning("Invalid '" + ATTRIBUTE_FORM_SCREEN_TRANSITION + "' attribute value on <" + TAG_FORM + ">. Default Screen Transition is going to be used.");
 			}
 			// Obfuscate Media Files:
 			currentForm.setObfuscateMediaFiles(attributes.getBoolean(ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES, Form.DEFAULT_OBFUSCATE_MEDIA_FILES));

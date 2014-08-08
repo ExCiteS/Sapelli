@@ -73,7 +73,7 @@ public class Form
 	public static final boolean DEFAULT_SINGLE_PAGE = false;
 	public static final boolean DEFAULT_VIBRATE = true;
 	public static final String DEFAULT_BUTTON_BACKGROUND_COLOR = "#BABABA"; // gray
-	public static final boolean DEFAULT_ANIMATION = true;
+	public static final boolean DEFAULT_CLICK_ANIMATION = true;
 	public static final boolean DEFAULT_OBFUSCATE_MEDIA_FILES = false;
 
 	public static final String COLUMN_TIMESTAMP_START_NAME = "StartTime";
@@ -83,13 +83,13 @@ public class Form
 	public static final String COLUMN_DEVICE_ID_NAME = "DeviceID";
 	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn(COLUMN_DEVICE_ID_NAME, false, false, 32);
 	
-	// The Animation type between different Screen Pages
-	public static enum PageAnimation
+	// The Screen Transition type between different Screens
+	public static enum ScreenTransition
 	{
 		NONE, VERTICAL, HORIZONTAL
 	}
 
-	public static final PageAnimation DEFAULT_PAGE_ANIMATION = PageAnimation.NONE;
+	public static final ScreenTransition DEFAULT_SCREEN_TRANSITION = ScreenTransition.NONE;
 
 	// Dynamics-------------------------------------------------------
 	private final Project project;
@@ -109,11 +109,11 @@ public class Form
 	// Android shortcut:
 	private String shortcutImageRelativePath;
 
-	// Animation:
-	private boolean animation = DEFAULT_ANIMATION;
+	// Click Animation:
+	private boolean clickAnimation = DEFAULT_CLICK_ANIMATION;
 	
-	// PageAnimation:
-	private PageAnimation pageAnimation = DEFAULT_PAGE_ANIMATION;
+	// ScreenTransition:
+	private ScreenTransition screenTransition = DEFAULT_SCREEN_TRANSITION;
 
 	// Obfuscate Media Files:
 	private boolean obfuscateMediaFiles = DEFAULT_OBFUSCATE_MEDIA_FILES;
@@ -258,41 +258,42 @@ public class Form
 	}
 
 	/**
-	 * @return the animation
+	 * @return the clickAnimation
 	 */
-	public boolean isAnimation()
+	public boolean isClickAnimation()
 	{
-		return animation;
+		return clickAnimation;
 	}
 
 	/**
-	 * @param animation the animation to set
+	 * @param clickAnimation
+	 *            the animation to set
 	 */
-	public void setAnimation(boolean animation)
+	public void setClickAnimation(boolean clickAnimation)
 	{
-		this.animation = animation;
+		this.clickAnimation = clickAnimation;
 	}
 
 	/**
-	 * @return the pageAnimation
+	 * @return the screenTransition
 	 */
-	public PageAnimation getPageAnimation()
+	public ScreenTransition getScreenTransition()
 	{
-		return pageAnimation;
+		return screenTransition;
 	}
 
 	/**
-	 * @param pageAnimationStr
-	 *            the pageAnimation to set
+	 * @param screenTransitionStr
+	 *            the screenTransition to set
 	 */
-	public void setPageAnimation(String pageAnimationStr)
+	public void setScreenTransition(String screenTransitionStr)
 	{
-		if(pageAnimationStr == null)
-			return; // default pageAnimation will be used
-		pageAnimationStr = pageAnimationStr.toUpperCase(); // Make upper case
+		if(screenTransitionStr == null)
+			return; // default ScreenTransition will be used
+		screenTransitionStr = screenTransitionStr.toUpperCase(); // Make upper case
 		try
 		{
-			this.pageAnimation = PageAnimation.valueOf(pageAnimationStr);
+			this.screenTransition = ScreenTransition.valueOf(screenTransitionStr);
 		}
 		catch(IllegalArgumentException iae)
 		{

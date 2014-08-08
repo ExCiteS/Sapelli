@@ -23,7 +23,7 @@ import java.io.File;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView.PickerAdapter;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
@@ -115,7 +115,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		 * 	the press animation leaves behind a trailing control view in some cases. The only workaround we've
 		 * 	found so far (other than disabling the press animation on the controls, which we don't want to do)
 		 * 	is to always create now views for the control items. */
-		view.setRecycleViews(!newForm.isAnimation());
+		view.setRecycleViews(!newForm.isClickAnimation());
 		
 		// Background colour:
 		int controlBackgroundColor = ColourHelpers.ParseColour(newForm.getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR); //default is light gray
@@ -178,8 +178,8 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		};
 
 		// Execute the "press" animation if allowed, then perform the action: 
-		if(controller.getCurrentForm().isAnimation())
-			(new PressAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
+		if(controller.getCurrentForm().isClickAnimation())
+			(new ClickAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
 		else
 			action.run(); //perform task now (animation is disabled)
 	}

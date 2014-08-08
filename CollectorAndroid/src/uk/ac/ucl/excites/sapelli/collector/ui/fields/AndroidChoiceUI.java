@@ -27,7 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
@@ -120,8 +120,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		};
 
 		// Execute the "press" animation if allowed, then perform the action: 
-		if(controller.getCurrentForm().isAnimation())
-			(new PressAnimator(action, childView, collectorUI)).execute(); //execute animation and the action afterwards
+		if(controller.getCurrentForm().isClickAnimation())
+			(new ClickAnimator(action, childView, collectorUI)).execute(); //execute animation and the action afterwards
 		else
 			action.run(); //perform task now (animation is disabled)	
 	}
@@ -233,8 +233,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			};
 
 			// Execute the "press" animation if allowed, then perform the action: 
-			if(controller.getCurrentForm().isAnimation())
-				(new PressAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
+			if(controller.getCurrentForm().isClickAnimation())
+				(new ClickAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
 			else
 				action.run(); //perform task now (animation is disabled)			
 		}
