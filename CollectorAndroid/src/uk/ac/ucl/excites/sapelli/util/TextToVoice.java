@@ -41,6 +41,11 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		if(status == TextToSpeech.SUCCESS)
 		{
 			int result = tts.setLanguage(locale);
+
+			// If the locale is missing, fall back to the default locale
+			if(result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED)
+				result = tts.setLanguage(DEFAULT_LOCALE);
+
 			if(result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED)
 				initialised = true;
 		}

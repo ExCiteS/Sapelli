@@ -87,7 +87,7 @@ public class CollectorController extends Controller implements LocationListener,
 		}
 
 		if(true /* TODO: Check project settings if tts is enabled */)
-			textToVoice = new TextToVoice(activity.getBaseContext());
+			textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
 	}
 
 	@Override
