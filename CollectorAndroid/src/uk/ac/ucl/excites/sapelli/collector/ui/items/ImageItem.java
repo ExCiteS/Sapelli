@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
 import android.content.Context;
 import android.view.View;
+import android.webkit.WebView;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 
@@ -33,17 +34,39 @@ public abstract class ImageItem extends Item
 	static public final boolean DEFAULT_KEEP_VECTOR_ASPECT_RATIO = true; 
 	
 	protected final boolean vectorBased;
+	protected final boolean animation;
 	protected boolean keepVectorAspectRatio = DEFAULT_KEEP_VECTOR_ASPECT_RATIO;
 	
 	public ImageItem(Integer id, boolean vectorBased)
 	{
 		super(id);
 		this.vectorBased = vectorBased;
+		this.animation = false;
+	}
+	
+	public ImageItem(Integer id, boolean vectorBased, boolean animation)
+	{
+		super(id);
+		this.vectorBased = vectorBased;
+		this.animation = animation;
 	}
 		
 	@Override
 	protected View createView(Context context, boolean recycleChildren)
 	{
+
+		if (animation) {
+			WebView animView = new WebView(context);
+			// Set image:
+			setImage(animView);
+			
+			// Set scaling (raster-based images are only scaled down, never up; vector-based ones can be scaled up or down):
+			//view.setScaleType(isVectorBased() ? (keepVectorAspectRatio ? ScaleType.FIT_CENTER : ScaleType.FIT_XY) : ScaleType.CENTER_INSIDE);
+			
+			return animView;
+		}
+		
+		// Just a still image:
 		ImageView view = new ImageView(context);
 		// Set image:
 		setImage(view);
@@ -54,6 +77,9 @@ public abstract class ImageItem extends Item
 	
 	protected abstract void setImage(ImageView view);
 	
+	protected abstract void setImage(WebView view); //for animations TODO
+
+	
 	/**
 	 * 
 	 * @return whether or not the image is vector-based (i.e. loaded from a SVG/SVGZ file)
@@ -62,6 +88,16 @@ public abstract class ImageItem extends Item
 	{
 		return vectorBased; 
 	}
+	
+	/**
+	 * 
+	 * @return whether or not the image is an animation
+	 */
+	public boolean isAnimation()
+	{
+		return animation; 
+	}
+	
 
 	/**
 	 * @return the keepVectorAspectRatio
