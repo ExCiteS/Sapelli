@@ -27,6 +27,7 @@ import com.larvalabs.svgandroid.SVGDrawable;
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.util.Log;
+import android.webkit.WebView;
 import android.widget.ImageView;
 
 /**
@@ -44,6 +45,7 @@ public class ResourceImageItem extends ImageItem
 
 	static private final String TAG = "ResourceImageItem";
 	static private final String SVG_SUFFIX = "_svg";
+	static private final String GIF_SUFFIX = "_gif";
 	
 	private Resources resources;
 	private int resourceID;
@@ -56,7 +58,11 @@ public class ResourceImageItem extends ImageItem
 	@SuppressLint("DefaultLocale")
 	public ResourceImageItem(Integer  id, Resources resources, int resourceId)
 	{
-		super(id, resources.getResourceEntryName(resourceId).toLowerCase().endsWith(SVG_SUFFIX));
+		super(
+				id,
+				resources.getResourceEntryName(resourceId).toLowerCase().endsWith(SVG_SUFFIX),
+				resources.getResourceEntryName(resourceId).toLowerCase().endsWith(GIF_SUFFIX)
+				);
 		this.resources = resources;
 		this.resourceID = resourceId;
 	}
@@ -87,6 +93,26 @@ public class ResourceImageItem extends ImageItem
 		catch(Exception e)
 		{
 			Log.e(TAG, "Could not load image from resource", e);
+		}
+	}
+	
+	@Override
+	protected void setAnim(WebView view)
+	{
+		try
+		{
+			String url = "android.resource://"+resources.getResourcePackageName(resourceID)+"/"+resourceID;
+			String html = "<html><body><img src=\"" + url + "\" width=\"100%\" \"/></body></html>"; //fit image to window
+			view.loadDataWithBaseURL(null,html, "text/html","UTF-8", null);
+			view.setScrollbarFadingEnabled(false); //disable scrollbars
+			
+			//TODO enforce "regular" click behaviour.
+			
+			//TODO test animations for resource images
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Could not load image from resource: android.resource://"+resources.getResourcePackageName(resourceID)+"/"+resourceID, e);
 		}
 	}
 

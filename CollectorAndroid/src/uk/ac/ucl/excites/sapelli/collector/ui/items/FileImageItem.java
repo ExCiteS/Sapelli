@@ -21,17 +21,22 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import java.io.File;
 import java.io.FileInputStream;
 
+import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.graphics.BitmapFactory;
 import android.util.Log;
+import android.view.MotionEvent;
+import android.view.View;
+import android.webkit.WebView;
 import android.widget.ImageView;
 
-
-//import com.caverock.androidsvg.SVG;
 import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGBuilder;
 import com.larvalabs.svgandroid.SVGDrawable;
+//import com.caverock.androidsvg.SVG;
 
 /**
  * An ImageItem subclass for images stored as files
@@ -44,6 +49,7 @@ public class FileImageItem extends ImageItem
 	static private final String TAG = "FileImageItem";
 
 	private File file;
+	private static final String FILE_PREFIX = "file://";
 	
 	public FileImageItem(File file)
 	{
@@ -53,7 +59,11 @@ public class FileImageItem extends ImageItem
 	@SuppressLint("DefaultLocale")
 	public FileImageItem(Integer id, File file)
 	{
-		super(id, FileHelpers.getFileExtension(file.getName()).toLowerCase().startsWith("svg")); //will also work for svgz files
+		super(
+				id,
+				FileHelpers.getFileExtension(file.getName()).toLowerCase().startsWith("svg"), //will also work for svgz files
+				FileHelpers.getFileExtension(file.getName()).toLowerCase().endsWith("gif") //if ends with "gif" then treat as animation
+				); 
 		this.file = file;
 	}
 	
@@ -83,5 +93,33 @@ public class FileImageItem extends ImageItem
 			Log.e(TAG, "Could not load image from file", e);
 		}
 	}
+	
+	@Override
+	protected void setAnim(WebView view)
+	{
+		try
+		{
+			String url = FILE_PREFIX + file.getAbsolutePath();
+			String html = "<html><body><img src=\"" + url + "\" width=\"100%\" \"/></body></html>"; //fit image to window
+			view.loadDataWithBaseURL(null,html, "text/html","UTF-8", null);
+			
+			view.setVerticalScrollBarEnabled(false); //disable scrollbars
+			view.setHorizontalScrollBarEnabled(false);
+
+			view.setOnTouchListener(new View.OnTouchListener() {
+			    @Override
+			    public boolean onTouch(View v, MotionEvent event) {
+			    	//TODO enforce "regular" click behaviour.
+			       return false;
+			    }  
+			});
+		}
+		catch(Exception e)
+		{
+			Log.e(TAG, "Could not load image from path "+FILE_PREFIX + file.getAbsolutePath(), e);
+		}
+	}
+	
+	
 
 }

@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.ImageView;
@@ -37,13 +38,6 @@ public abstract class ImageItem extends Item
 	protected final boolean animation;
 	protected boolean keepVectorAspectRatio = DEFAULT_KEEP_VECTOR_ASPECT_RATIO;
 	
-	public ImageItem(Integer id, boolean vectorBased)
-	{
-		super(id);
-		this.vectorBased = vectorBased;
-		this.animation = false;
-	}
-	
 	public ImageItem(Integer id, boolean vectorBased, boolean animation)
 	{
 		super(id);
@@ -54,19 +48,14 @@ public abstract class ImageItem extends Item
 	@Override
 	protected View createView(Context context, boolean recycleChildren)
 	{
-
+		
 		if (animation) {
-			WebView animView = new WebView(context);
-			// Set image:
-			setImage(animView);
-			
-			// Set scaling (raster-based images are only scaled down, never up; vector-based ones can be scaled up or down):
-			//view.setScaleType(isVectorBased() ? (keepVectorAspectRatio ? ScaleType.FIT_CENTER : ScaleType.FIT_XY) : ScaleType.CENTER_INSIDE);
-			
-			return animView;
+			WebView view = new WebView(context);
+			setAnim(view);
+			return view;
 		}
 		
-		// Just a still image:
+		//if just a still image:
 		ImageView view = new ImageView(context);
 		// Set image:
 		setImage(view);
@@ -77,8 +66,7 @@ public abstract class ImageItem extends Item
 	
 	protected abstract void setImage(ImageView view);
 	
-	protected abstract void setImage(WebView view); //for animations TODO
-
+	protected abstract void setAnim(WebView view);
 	
 	/**
 	 * 
@@ -97,7 +85,7 @@ public abstract class ImageItem extends Item
 	{
 		return animation; 
 	}
-	
+
 
 	/**
 	 * @return the keepVectorAspectRatio
