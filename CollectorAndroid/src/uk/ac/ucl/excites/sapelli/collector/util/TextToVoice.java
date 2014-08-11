@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.util;
+package uk.ac.ucl.excites.sapelli.collector.util;
 
 import java.util.Locale;
 
