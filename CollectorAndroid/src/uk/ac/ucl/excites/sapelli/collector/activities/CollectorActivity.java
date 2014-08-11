@@ -30,6 +30,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.R;
+import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
@@ -39,6 +40,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
+import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
@@ -137,6 +139,15 @@ public class CollectorActivity extends ProjectActivity
 		
 		// Load the project (mandatory):
 		loadProject(true);
+
+		// Enable HierarchyViewer in Debug versions
+		if(BuildConfig.DEBUG)
+		{
+			// Set content view, etc.
+			ViewServer.get(this).addWindow(this);
+			ViewServer.get(this).setFocusedWindow(this);
+			Debug.d("Enabled ViewServer for HierarchyView");
+		}
 	}
 
 	/*
@@ -458,8 +469,8 @@ public class CollectorActivity extends ProjectActivity
 		setIntent(intent);
 		
 		if(controller != null)
-			controller.cancelAndStop();
-		
+			controller.cancelAndRestartForm();
+
 		// Load the project (mandatory):
 		loadProject(true);
 	}

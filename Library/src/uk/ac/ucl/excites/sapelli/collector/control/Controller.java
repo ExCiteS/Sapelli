@@ -57,10 +57,6 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
  * 
  * @author mstevens, Michalis Vitos, Julia
  */
-/**
- * @author mstevens
- *
- */
 public abstract class Controller
 {
 	
@@ -252,6 +248,16 @@ public abstract class Controller
 			handlingUserGoBackRequest = false;
 	}
 	
+	/**
+	 * Return whether the controller is moving backwards or forwards
+	 * 
+	 * @return true if going back and false otherwise
+	 */
+	public boolean isGoBack()
+	{
+		return handlingUserGoBackRequest;
+	}
+
 	/**
 	 * @param withinFormOnly
 	 * @return whether of not we can go back to a previous field or (if withinFormOnly=false) form

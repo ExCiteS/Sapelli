@@ -18,6 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.util;
 
+import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
+import android.content.Intent;
+import android.os.Bundle;
 import android.util.Log;
 
 /**
@@ -28,8 +31,8 @@ import android.util.Log;
  */
 public class Debug
 {
-	private static final boolean DEBUG = true;
-	private final static String TAG = "ExCiteS_Debug";
+	private static final boolean DEBUG = BuildConfig.DEBUG;
+	private final static String TAG = "Sapelli";
 
 	public static void v(String tag, String msg)
 	{
@@ -143,5 +146,19 @@ public class Debug
 		info += "] ";
 
 		return info;
+	}
+
+	public static String printIntentExtras(Intent intent)
+	{
+		String txt = "";
+		final Bundle extras = intent.getExtras();
+
+		for(String key : extras.keySet())
+		{
+			Object value = extras.get(key);
+			txt += "\n" + String.format("%s %s (%s)", key + ":", value.toString(), value.getClass().getName()) + ",";
+		}
+
+		return txt;
 	}
 }
