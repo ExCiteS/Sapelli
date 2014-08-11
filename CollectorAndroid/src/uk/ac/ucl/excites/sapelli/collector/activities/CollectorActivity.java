@@ -415,6 +415,10 @@ public class CollectorActivity extends ProjectActivity
 
 			Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
+
+		// Release audio feedback resources
+		controller.disableAudioFeedback();
+
 		// super:
 		super.onPause();
 	}
@@ -448,6 +452,9 @@ public class CollectorActivity extends ProjectActivity
 			else
 				cancelExitFuture(); // cancel exit timer if needed
 		}
+		
+		// Enable audio feedback
+		controller.enableAudioFeedback();
 	}
 
 	@Override

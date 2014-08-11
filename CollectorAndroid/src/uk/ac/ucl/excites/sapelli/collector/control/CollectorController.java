@@ -85,9 +85,6 @@ public class CollectorController extends Controller implements LocationListener,
 		{
 			activity.showErrorDialog("DeviceID has not be initialised!", true);
 		}
-
-		if(true /* TODO: Check project settings if tts is enabled */)
-			textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
 	}
 
 	@Override
@@ -255,9 +252,20 @@ public class CollectorController extends Controller implements LocationListener,
 	@Override
 	protected void exitApp()
 	{
-		// Release the Android TTS (Text-To-Speech) Engine
-		textToVoice.destroy();
 		activity.finish();
+	}
+
+	public void enableAudioFeedback()
+	{
+		if(true /* TODO: Check project settings if tts is enabled */)
+			textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
+	}
+
+	public void disableAudioFeedback()
+	{
+		// Release the Android TTS (Text-To-Speech) Engine
+		if(textToVoice != null)
+			textToVoice.destroy();
 	}
 
 	@Override
