@@ -142,7 +142,13 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 
 		// TODO check whether there is an audio file for the given ChoiceField and use that instead of the TTS
 		// Use the Android TTS (Text-To-Speech) Engine
-		controller.textToVoice(child.getAltText());
+		if(true)
+		{
+			if(child.hasChoiceAudio())
+				controller.audioToVoice(controller.getProject().getSoundFolderPath() + child.getChoiceAudioRelativePath());
+		}
+		else
+			controller.textToVoice(child.getAltText());
 
 		return true;
 	}

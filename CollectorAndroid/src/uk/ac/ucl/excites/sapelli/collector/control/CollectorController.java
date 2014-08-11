@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.util.AudioToVoice;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
 import uk.ac.ucl.excites.sapelli.collector.util.TextToVoice;
@@ -70,6 +71,7 @@ public class CollectorController extends Controller implements LocationListener,
 	private long deviceIDHash;
 
 	private TextToVoice textToVoice;
+	private AudioToVoice audioToVoice;
 
 	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, CollectorActivity activity)
 	{
@@ -123,6 +125,16 @@ public class CollectorController extends Controller implements LocationListener,
 	public void textToVoice(String text)
 	{
 		textToVoice.speak(text);
+	}
+
+	/**
+	 * Use Media Player to speak a given audio file
+	 * 
+	 * @param soundFilePath
+	 */
+	public void audioToVoice(String soundFilePath)
+	{
+		audioToVoice.speak(soundFilePath);
 	}
 
 	public void onOrientationChanged(Orientation orientation)
@@ -258,6 +270,8 @@ public class CollectorController extends Controller implements LocationListener,
 	public void enableAudioFeedback()
 	{
 		if(true /* TODO: Check project settings if tts is enabled */)
+			audioToVoice = new AudioToVoice(activity.getBaseContext());
+		else
 			textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
 	}
 
@@ -266,6 +280,8 @@ public class CollectorController extends Controller implements LocationListener,
 		// Release the Android TTS (Text-To-Speech) Engine
 		if(textToVoice != null)
 			textToVoice.destroy();
+
+		// TODO release media player
 	}
 
 	@Override
