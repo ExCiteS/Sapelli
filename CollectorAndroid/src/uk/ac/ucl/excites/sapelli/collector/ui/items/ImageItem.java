@@ -19,11 +19,12 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.WebView;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
+import android.widget.RelativeLayout;
 
 /**
  * @author mstevens
@@ -50,9 +51,24 @@ public abstract class ImageItem extends Item
 	{
 		
 		if (animation) {
-			WebView view = new WebView(context);
+			//Use a RelativeLayout to house the WebView so that it can be associated with the Adapter's
+			//onItemClickListener method
+			RelativeLayout rl = new RelativeLayout(context);
+			
+			WebView view = new WebView(context); //house animation in a WebView
+			rl.addView(view);
+
 			setAnim(view);
-			return view;
+			
+			//vertically centre gif
+			RelativeLayout.LayoutParams lp = (RelativeLayout.LayoutParams)view.getLayoutParams();
+			lp.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
+			view.setLayoutParams(lp);
+
+			//prevent focus on WebView so LL can be clicked
+			rl.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+			
+			return rl;
 		}
 		
 		//if just a still image:

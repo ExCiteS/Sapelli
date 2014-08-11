@@ -20,15 +20,15 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
 //import com.caverock.androidsvg.SVG;
 
-import com.larvalabs.svgandroid.SVG;
-import com.larvalabs.svgandroid.SVGBuilder;
-import com.larvalabs.svgandroid.SVGDrawable;
-
 import android.annotation.SuppressLint;
 import android.content.res.Resources;
 import android.util.Log;
 import android.webkit.WebView;
 import android.widget.ImageView;
+
+import com.larvalabs.svgandroid.SVG;
+import com.larvalabs.svgandroid.SVGBuilder;
+import com.larvalabs.svgandroid.SVGDrawable;
 
 /**
  * An ImageItem subclass for images stored as app resources
@@ -45,7 +45,7 @@ public class ResourceImageItem extends ImageItem
 
 	static private final String TAG = "ResourceImageItem";
 	static private final String SVG_SUFFIX = "_svg";
-	static private final String GIF_SUFFIX = "_gif";
+	//static private final String GIF_SUFFIX = "_gif";
 	
 	private Resources resources;
 	private int resourceID;
@@ -61,7 +61,7 @@ public class ResourceImageItem extends ImageItem
 		super(
 				id,
 				resources.getResourceEntryName(resourceId).toLowerCase().endsWith(SVG_SUFFIX),
-				resources.getResourceEntryName(resourceId).toLowerCase().endsWith(GIF_SUFFIX)
+				false //TODO do not currently allow animated resources (not usually appropriate)
 				);
 		this.resources = resources;
 		this.resourceID = resourceId;
@@ -97,23 +97,41 @@ public class ResourceImageItem extends ImageItem
 	}
 	
 	@Override
-	protected void setAnim(WebView view)
+	protected void setAnim(WebView view) //will never be called
 	{
-		try
-		{
-			String url = "android.resource://"+resources.getResourcePackageName(resourceID)+"/"+resourceID;
-			String html = "<html><body><img src=\"" + url + "\" width=\"100%\" \"/></body></html>"; //fit image to window
-			view.loadDataWithBaseURL(null,html, "text/html","UTF-8", null);
-			view.setScrollbarFadingEnabled(false); //disable scrollbars
-			
-			//TODO enforce "regular" click behaviour.
-			
-			//TODO test animations for resource images
-		}
-		catch(Exception e)
-		{
-			Log.e(TAG, "Could not load image from resource: android.resource://"+resources.getResourcePackageName(resourceID)+"/"+resourceID, e);
-		}
+		//TODO
+//		try
+//		{
+//			String url = "android.resource://"+resources.getResourcePackageName(resourceID)+"/"+resources.getResourceTypeName(resourceID)+"/"+resources.getResourceEntryName(resourceID);
+//			Log.d("RII URI",url);
+//			String html = "<html><body><img src=\"" + url + "\" width=\"50px\" /></body></html>"; //fit image to window
+//			Log.d("RII URI",html);
+//			Log.d("Res",resources.getResourcePackageName(resourceID)+", "+resources.getResourceTypeName(resourceID)+", "+resources.getResourceEntryName(resourceID));
+//			Log.d("Res",resources.getResourceName(resourceID));
+//			view.loadDataWithBaseURL(null,html, "text/html","UTF-8", null);
+//			view.setScrollbarFadingEnabled(false); //disable scrollbars
+//			
+//			view.setOnTouchListener(new View.OnTouchListener() {
+//			    @SuppressLint("ClickableViewAccessibility")
+//				@Override
+//			    public boolean onTouch(View v, MotionEvent event) {
+//			    	//override normal WebView touch behaviour and pass click up to parent RelativeLayout
+//	
+//			    	RelativeLayout container = (RelativeLayout)v.getParent(); //find RelativeLayout by traversing up the view hierarchy
+//			    	AdapterView<?> grid = (AdapterView<?>)container.getParent(); //find AdapterView that holds it
+//			    	
+//			    	//Force the AdapterView's performItemClick on the Item corresponding to the animation
+//			    	return grid.performItemClick(
+//			    			container,
+//			    			grid.getPositionForView(container),
+//			    			grid.getItemIdAtPosition(grid.getPositionForView(container))
+//			    			);	
+//			    } 
+//		}
+//		catch(Exception e)
+//		{
+//			Log.e(TAG, "Could not load image from resource: android.resource://"+resources.getResourcePackageName(resourceID)+"/"+resourceID, e);
+//		}
 	}
 
 }

@@ -21,9 +21,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import java.io.File;
 import java.io.FileInputStream;
 
-import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.graphics.BitmapFactory;
@@ -31,7 +28,9 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.webkit.WebView;
+import android.widget.AdapterView;
 import android.widget.ImageView;
+import android.widget.RelativeLayout;
 
 import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGBuilder;
@@ -100,17 +99,27 @@ public class FileImageItem extends ImageItem
 		try
 		{
 			String url = FILE_PREFIX + file.getAbsolutePath();
-			String html = "<html><body><img src=\"" + url + "\" width=\"100%\" \"/></body></html>"; //fit image to window
+			String html = "<html><body><img src=\"" + url + "\" width=\"100%\"/></body></html>"; //fit image to window
 			view.loadDataWithBaseURL(null,html, "text/html","UTF-8", null);
 			
 			view.setVerticalScrollBarEnabled(false); //disable scrollbars
 			view.setHorizontalScrollBarEnabled(false);
 
 			view.setOnTouchListener(new View.OnTouchListener() {
-			    @Override
+			    @SuppressLint("ClickableViewAccessibility")
+				@Override
 			    public boolean onTouch(View v, MotionEvent event) {
-			    	//TODO enforce "regular" click behaviour.
-			       return false;
+			    	//override normal WebView touch behaviour and pass click up to parent RelativeLayout
+
+			    	RelativeLayout container = (RelativeLayout)v.getParent(); //find RelativeLayout by traversing up the view hierarchy
+			    	AdapterView<?> grid = (AdapterView<?>)container.getParent(); //find AdapterView that holds it
+			    	
+			    	//Force the AdapterView's performItemClick on the Item corresponding to the animation
+			    	return grid.performItemClick(
+			    			container,
+			    			grid.getPositionForView(container),
+			    			grid.getItemIdAtPosition(grid.getPositionForView(container))
+			    			);	
 			    }  
 			});
 		}
