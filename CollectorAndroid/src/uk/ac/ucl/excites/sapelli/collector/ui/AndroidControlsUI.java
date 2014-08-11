@@ -20,10 +20,11 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView.PickerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
@@ -46,7 +47,7 @@ import android.widget.AdapterView;
  * 
  * @author mstevens
  */
-public class AndroidControlsUI extends ControlsUI<View, CollectorView> implements AdapterView.OnItemClickListener
+public class AndroidControlsUI extends ControlsUI<View, CollectorView> implements AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener
 {
 	
 	// Statics-------------------------------------------------------
@@ -58,10 +59,13 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	// Dynamics------------------------------------------------------
 	private ControlItem[] controlItems;
 	private PickerView view;
+	private CollectorController controller;
 	
-	public AndroidControlsUI(Controller controller, CollectorView collectorView)
+	public AndroidControlsUI(CollectorController controller, CollectorView collectorView)
 	{
 		super(controller, collectorView);
+
+		this.controller = controller;
 		
 		// ControlItem array:
 		this.controlItems = new ControlItem[Control.values().length];
@@ -84,6 +88,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			
 			// Listen for clicks:
 			view.setOnItemClickListener(this);
+			view.setOnItemLongClickListener(this);
 		}
 			
 		return view;
@@ -184,6 +189,20 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			action.run(); //perform task now (animation is disabled)
 	}
 	
+	@Override
+	public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id)
+	{
+		// Apply an alpha animation to the long pressed view
+		ViewAnimator.alphaAnimation(v);
+
+		// TODO check whether there is an audio file for the given ChoiceField and use that instead of the TTS
+		// Use the Android TTS (Text-To-Speech) Engine
+		ControlItem test = (ControlItem) view.getAdapter().getItem(position);
+		controller.textToVoice(test.getDescription());
+
+		return true;
+	}
+
 	@Override
 	public int getCurrentHeightPx()
 	{
