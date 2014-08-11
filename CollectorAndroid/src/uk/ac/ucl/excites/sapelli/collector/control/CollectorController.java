@@ -137,6 +137,17 @@ public class CollectorController extends Controller implements LocationListener,
 		audioToVoice.speak(soundFilePath);
 	}
 
+	public void stopAudioFeedback()
+	{
+		// Stop the Media Player
+		if(audioToVoice != null)
+			audioToVoice.stop();
+
+		// Stop the Android TTS (Text-To-Speech) Engine
+		if(textToVoice != null)
+			textToVoice.stop();
+	}
+
 	public void onOrientationChanged(Orientation orientation)
 	{
 		if(getCurrentField() instanceof OrientationField)

@@ -70,6 +70,12 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 			tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
 	}
 
+	public void stop()
+	{
+		if(tts != null)
+			tts.stop();
+	}
+
 	public void destroy()
 	{
 		tts.stop();

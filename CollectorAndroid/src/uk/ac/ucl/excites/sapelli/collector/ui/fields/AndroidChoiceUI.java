@@ -115,6 +115,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return;
 		
+		// Stop the Audio Feedback if it was still playing
+		controller.stopAudioFeedback();
+
 		// Task to perform after animation has finished:
 		Runnable action = new Runnable()
 		{
@@ -144,6 +147,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		// Use the Android TTS (Text-To-Speech) Engine
 		if(true)
 		{
+			// If the choice has an audio, pass that audio to the Media Player
 			if(child.hasChoiceAudio())
 				controller.audioToVoice(controller.getProject().getSoundFolderPath() + child.getChoiceAudioRelativePath());
 		}

@@ -28,8 +28,7 @@ public class AudioToVoice
 	public void speak(String soundFilePath)
 	{
 		// Stop any previous playbacks
-		if(mediaPlayer != null && mediaPlayer.isPlaying())
-			mediaPlayer.stop();
+		stop();
 
 		// Create the Media Player
 		if(soundFilePath != null)
@@ -45,7 +44,8 @@ public class AudioToVoice
 	 */
 	public void stop()
 	{
-		mediaPlayer.stop();
+		if(mediaPlayer != null && mediaPlayer.isPlaying())
+			mediaPlayer.stop();
 	}
 
 	/**
