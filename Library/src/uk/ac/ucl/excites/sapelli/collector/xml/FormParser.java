@@ -122,6 +122,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_EDITABLE = "editable";
 	static private final String ATTRIBUTE_FIELD_ALT = "alt";
 	static private final String ATTRIBUTE_FIELD_IMG = "img";
+	static private final String ATTRIBUTE_FIELD_CHOICE_AUDIO = "choiceAudio";
 	static private final String ATTRIBUTE_FIELD_CAPTION = "caption";
 	static private final String ATTRIBUTE_FIELD_CAPTIONS = "captions";
 	static private final String ATTRIBUTE_FIELD_LABEL = "label"; // synonym for caption
@@ -314,6 +315,7 @@ public class FormParser extends SubtreeParser
 				choice.setNoColumn(attributes.getBoolean(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
 				// Other attributes:
 				choice.setImageRelativePath(attributes.getString(ATTRIBUTE_FIELD_IMG, null, false, false));
+				choice.setChoiceAudioRelativePath(attributes.getString(ATTRIBUTE_FIELD_CHOICE_AUDIO, null, false, false));
 				choice.setAltText(attributes.getString(ATTRIBUTE_FIELD_ALT, null, false, false));
 				choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
 				choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
