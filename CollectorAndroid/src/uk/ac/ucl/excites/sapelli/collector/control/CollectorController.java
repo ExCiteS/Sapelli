@@ -277,11 +277,13 @@ public class CollectorController extends Controller implements LocationListener,
 
 	public void disableAudioFeedback()
 	{
+		// Release the Media Player
+		if(audioToVoice != null)
+			audioToVoice.destroy();
+
 		// Release the Android TTS (Text-To-Speech) Engine
 		if(textToVoice != null)
 			textToVoice.destroy();
-
-		// TODO release media player
 	}
 
 	@Override

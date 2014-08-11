@@ -20,7 +20,6 @@ public class AudioToVoice
 		this.context = context;
 	}
 
-
 	/**
 	 * Use Media Player to speak a given audio file
 	 * 
@@ -41,13 +40,23 @@ public class AudioToVoice
 			mediaPlayer.start();
 	}
 
+	/**
+	 * Stop the Media Player
+	 */
 	public void stop()
 	{
-		// TODO
+		mediaPlayer.stop();
 	}
 
+	/**
+	 * Destroy the media player and release any resources
+	 */
 	public void destroy()
 	{
-		// TODO
+		if(mediaPlayer != null)
+		{
+			mediaPlayer.release();
+			mediaPlayer = null;
+		}
 	}
 }
