@@ -734,7 +734,8 @@ public class Form
 					this.fields.equals(that.fields) &&
 					this.getTriggers().equals(that.getTriggers()) &&
 					(this.shortcutImageRelativePath != null ? this.shortcutImageRelativePath.equals(that.shortcutImageRelativePath) : that.shortcutImageRelativePath == null) &&
-					this.animation == that.animation &&
+					this.clickAnimation == that.clickAnimation &&
+					this.screenTransition == that.screenTransition &&
 					this.obfuscateMediaFiles == that.obfuscateMediaFiles &&
 					this.storeEndTime == that.storeEndTime &&
 					this.next == that.next &&
@@ -762,7 +763,8 @@ public class Form
 		hash = 31 * hash + fields.hashCode();
 		hash = 31 * hash + (triggers == null ? 0 : triggers.hashCode());
 		hash = 31 * hash + (shortcutImageRelativePath == null ? 0 : shortcutImageRelativePath.hashCode());
-		hash = 31 * hash + (animation ? 0 : 1);
+		hash = 31 * hash + (clickAnimation ? 0 : 1);
+		hash = 31 * hash + screenTransition.ordinal();
 		hash = 31 * hash + (obfuscateMediaFiles ? 0 : 1);
 		hash = 31 * hash + (storeEndTime ? 0 : 1);
 		hash = 31 * hash + next.ordinal();
