@@ -549,11 +549,13 @@ public class Form
 			return;
 		if(schema == null)
 		{	
-			// Generate columns for user-defined fields:
+			// Generate columns for user-defined top-level fields:
 			List<Column<?>> userDefinedColumns = new ArrayList<Column<?>>();
 			for(Field f : fields)
 				/*	Important: do *NOT* check noColumn here and do *NOT* replace the call
-				 *  to Field#addColumnTo(List<Column<?>>) by a call to Field#getColumn()! */
+				 *  to Field#addColumnTo(List<Column<?>>) by a call to Field#getColumn()! 
+				 *  The reason (in both cases) is that composite fields like Pages, do not
+				 *  have a column of their own but their children do. */
 				f.addColumnTo(userDefinedColumns);
 	
 			// Check if there are user-defined columns at all, if not we don't need to generate a schema at all...
@@ -609,12 +611,17 @@ public class Form
 	 * Returns the column associated with the given field.
 	 * 
 	 * @param field
-	 * @return the (non-virtual) column for the given field, or null in case the field has no column or the schema has not been initialised yet(!)
+	 * @return the (non-virtual) column for the given field, or {@code null} in case the field has no column or the schema has not been initialised yet(!)
 	 */
 	public Column<?> getColumnFor(Field field)
 	{
-		if(!field.isNoColumn() && schema != null)
-			return schema.getColumn(field.getID(), false);
+		if(!field.isNoColumn() && producesRecords && schema != null)
+		{
+			Column<?> col = schema.getColumn(field.getID(), false);
+			if(col == null)
+				col = schema.getColumn(Column.SanitiseName(field.getID()), false); // try again with sanitised name!
+			return col; // may still be null
+		}
 		else
 			return null;
 	}

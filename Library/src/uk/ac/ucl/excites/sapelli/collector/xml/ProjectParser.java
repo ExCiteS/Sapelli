@@ -252,7 +252,7 @@ public class ProjectParser extends DocumentParser
 					{
 						throw new SAXException("This project contains more data-producing Forms than allowed.");
 					}
-					addWarnings(form.getWarnings());
+					addWarnings(form.getWarnings()); // !!!
 				}
 				// Seal project model:
 				project.getModel().seal();
@@ -352,7 +352,7 @@ public class ProjectParser extends DocumentParser
 			}
 			
 			// Get column:
-			ColumnPointer columnPointer = new ColumnPointer(form.getSchema(), columnName); // will throw IllegalArgumentException if no such column is found 
+			ColumnPointer columnPointer = new ColumnPointer(form.getSchema(), columnName); // will throw IllegalArgumentException if no such column is found (but name sanitation will be used first)
 			
 			// Column check:
 			if(!(columnPointer.getColumn() instanceof ComparatorColumn<?>))

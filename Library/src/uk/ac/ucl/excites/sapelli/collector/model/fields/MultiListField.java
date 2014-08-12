@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary.Dictionar
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MultiListUI;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.StringListMapper;
@@ -79,7 +80,7 @@ public class MultiListField extends Field
 		else if(level < captions.length)
 			return captions[level];
 		else
-			return captions[0].isEmpty() ? "" : UNKNOWN_LABEL_PREFIX + level;
+			return captions[captions.length - 1].isEmpty() ? "" : UNKNOWN_LABEL_PREFIX + level; // if last existing caption is "" then return "", otherwise return "LevelX"
 	}
 
 	/**
@@ -122,10 +123,10 @@ public class MultiListField extends Field
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected IntegerColumn createColumn()
+	protected IntegerColumn createColumn(String name)
 	{
 		// Initialise dictionary:
 		addLeaves(itemsRoot); // depth-first traversal
@@ -141,7 +142,7 @@ public class MultiListField extends Field
 			boolean opt = (optional != Optionalness.NEVER);
 			
 			//Create column:
-			IntegerColumn col = new IntegerColumn(id, opt, 0, values.size() - 1);
+			IntegerColumn col = new IntegerColumn(name, opt, 0, values.size() - 1);
 			
 			// Add virtual columns to it:
 			//	Find maximum level:
@@ -166,7 +167,8 @@ public class MultiListField extends Field
 						return parentAtLevel != null ? parentAtLevel.value : null;
 					}
 				}));
-				col.addVirtualVersion(StringColumn.ForCharacterCount(getCaption(level), opt, Math.max(levelValueMapper.getMaxStringLength(), 1)), levelValueMapper); // TODO ensure no illegal chars are in caption
+				String vColName = getCaption(level).trim().isEmpty() ? (name + '_' + l) : Column.SanitiseName(getCaption(level).trim()); // Remove any illegal chars in caption before using it as column name
+				col.addVirtualVersion(StringColumn.ForCharacterCount(vColName, opt, Math.max(levelValueMapper.getMaxStringLength(), 1)), levelValueMapper);
 			}
 
 			// Return the column:

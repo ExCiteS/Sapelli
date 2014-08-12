@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLNameEncoder;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
@@ -47,9 +48,81 @@ public abstract class Column<T> implements Serializable
 	// STATICS-------------------------------------------------------
 	private static final long serialVersionUID = 2L;
 	
+	static public final char ILLEGAL_NAME_CHAR_REPLACEMENT = '_';
+	
+	static public String SanitiseName(String name)
+	{
+		// Perform basic sanitation:
+		//	Detect & replace the most common illegal characters with a simple underscore; except those that come last, which are just removed
+		StringBuilder bldr = new StringBuilder();
+		int prevNeedsReplace = 0;
+		for(char c : name.toCharArray())
+			switch(c)
+			{
+				// Not allowed anywhere:
+				case '.'	:	/* not allowed at start of XML names, but nowhere in Sapelli column names because it is the RecordColumn.QUALIFIED_NAME_SEPARATOR */
+				case ','	:	/* not allowed anywhere in XML names */
+				case '?'	:	/* not allowed anywhere in XML names */
+				case '!'	:	/* not allowed anywhere in XML names */
+				case ':'	:	/* is allowed anywhere in XML names but we take it out anyway to avoid some XML tools recognising it as an XML namespace separator */
+				case ';'	:	/* not allowed anywhere in XML names */
+				case '\''	:	/* not allowed anywhere in XML names */
+				case '"'	:	/* not allowed anywhere in XML names */
+				case '/'	:	/* not allowed anywhere in XML names */
+				case '\\'	:	/* not allowed anywhere in XML names */
+				case '@'	:	/* not allowed anywhere in XML names */
+				case '('	:	/* not allowed anywhere in XML names */
+				case ')'	:	/* not allowed anywhere in XML names */
+				case '['	:	/* not allowed anywhere in XML names */
+				case ']'	:	/* not allowed anywhere in XML names */
+				case '{'	:	/* not allowed anywhere in XML names */
+				case '}'	:	/* not allowed anywhere in XML names */
+				case '&'	:	/* not allowed anywhere in XML names */
+				case '%'	:	/* not allowed anywhere in XML names */
+				case '$'	:	/* not allowed anywhere in XML names */
+				case '£'	:	/* not allowed anywhere in XML names */
+				case '+'	:	/* not allowed anywhere in XML names */
+				case '*'	:	/* not allowed anywhere in XML names */
+				case '#'	:	/* not allowed anywhere in XML names */
+				case '|'	:	/* not allowed anywhere in XML names */
+				case '~'	:	/* not allowed anywhere in XML names */
+				case ' '	:	/* not allowed anywhere in XML names */
+				case '\t'	:	/* not allowed anywhere in XML names */
+				case '\r'	:	/* not allowed anywhere in XML names */
+				case '\n'	:	/* not allowed anywhere in XML names */
+					prevNeedsReplace++;
+					break;
+					
+				// Not allowed at start, OK elsewhere:
+				case '-'	:	/* not allowed at start of XML names */
+					if(bldr.length() == 0)
+					{
+						prevNeedsReplace++;
+						break;
+					}
+				default		:
+					// Insert pending replacements:
+					for(int i = 0; i  < prevNeedsReplace; i++)
+						bldr.append(ILLEGAL_NAME_CHAR_REPLACEMENT);
+					prevNeedsReplace = 0;
+					// Insert unchanged char:
+					bldr.append(c);
+			}
+		name = bldr.toString();
+		
+		// Perform further XML-specific sanitation if needed:
+		//	Check if the result is (now) a valid XML name and if not, make it one (using more complex escape mechanism)
+		if(!XMLUtils.isValidName(name, XMLRecordsExporter.USES_XML_VERSION_11))
+			return XMLNameEncoder.encode(name);
+		else
+			return name;
+	}
+	
 	static public boolean IsValidName(String name)
 	{
-		return name.indexOf(RecordColumn.QUALIFIED_NAME_SEPARATOR) == -1 && XMLUtils.isValidName(name, XMLRecordsExporter.USES_XML_VERSION_11);
+		return 	name.indexOf(RecordColumn.QUALIFIED_NAME_SEPARATOR /* '.' */) == -1 &&
+				name.indexOf(':') == -1 &&
+				XMLUtils.isValidName(name, XMLRecordsExporter.USES_XML_VERSION_11);
 	}
 	
 	// DYNAMICS------------------------------------------------------
@@ -61,7 +134,7 @@ public abstract class Column<T> implements Serializable
 	public Column(Class<T> type, String name, boolean optional)
 	{
 		if(!IsValidName(name))
-			throw new IllegalArgumentException("Invalid column name: " + name);
+			throw new IllegalArgumentException("Invalid column name (" + name + "), please use static the Column#SanitiseName method.");
 		this.type = type;
 		this.name = name;
 		this.optional = optional;

@@ -324,9 +324,9 @@ public class LocationField extends Field implements Timeoutable
 	}
 
 	@Override
-	protected LocationColumn createColumn()
+	protected LocationColumn createColumn(String name)
 	{
-		return new LocationColumn(id, (optional != Optionalness.NEVER), doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, false, storeProvider); // we never store time (for now)
+		return new LocationColumn(name, (optional != Optionalness.NEVER), doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, false, storeProvider); // we never store time (for now)
 	}
 	
 	@Override

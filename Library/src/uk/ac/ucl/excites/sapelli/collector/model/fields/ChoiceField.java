@@ -304,7 +304,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 	
 	@Override
-	protected IntegerColumn createColumn()
+	protected IntegerColumn createColumn(String name)
 	{
 		if(!isRoot())
 			throw new IllegalStateException("createColumn() should only be called on a root ChoiceField object.");
@@ -320,7 +320,7 @@ public class ChoiceField extends Field implements DictionaryItem
 			boolean opt = (optional != Optionalness.NEVER);
 			
 			//Create column:
-			IntegerColumn col = new IntegerColumn(id, opt, 0, dictionary.size() - 1);
+			IntegerColumn col = new IntegerColumn(name, opt, 0, dictionary.size() - 1);
 			
 			// Add virtual columns to it:
 			//	Value String column:

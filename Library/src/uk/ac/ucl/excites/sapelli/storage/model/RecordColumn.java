@@ -49,7 +49,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	
 	static private final long serialVersionUID = 2L;
 
-	static public final char QUALIFIED_NAME_SEPARATOR = '.';
+	static public final char QUALIFIED_NAME_SEPARATOR = '.'; // Note: if this is ever changed Column#SanitiseName(String) may need changing too!
 	static public final boolean DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION = true;
 	static public final boolean DEFAULT_INCLUDE_VIRTUALCOLS_IN_BINARY_SERIALISATION = false;
 	static public final boolean DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION = true;

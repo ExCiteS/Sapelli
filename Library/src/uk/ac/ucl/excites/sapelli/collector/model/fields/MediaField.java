@@ -139,9 +139,9 @@ public abstract class MediaField extends Field
 	}
 	
 	@Override
-	protected IntegerColumn createColumn()
+	protected IntegerColumn createColumn(String name)
 	{
-		return new IntegerColumn(id, (optional != Optionalness.NEVER), (optional != Optionalness.NEVER ? 0 : 1), max);
+		return new IntegerColumn(name, (optional != Optionalness.NEVER), (optional != Optionalness.NEVER ? 0 : 1), max);
 	}
 	
 	public int getCount(Record record)

@@ -103,15 +103,15 @@ public class ButtonField extends Field
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected Column<?> createColumn()
+	protected Column<?> createColumn(String name)
 	{
 		switch(columnType)
 		{
-			case BOOLEAN : return new BooleanColumn(id, optional != Optionalness.NEVER);
-			case DATETIME : return TimeStampColumn.Century21NoMS(id, optional != Optionalness.NEVER, true);
+			case BOOLEAN : return new BooleanColumn(name, optional != Optionalness.NEVER);
+			case DATETIME : return TimeStampColumn.Century21NoMS(name, optional != Optionalness.NEVER, true);
 			/* case NONE */ default : return null;
 		}
 	}

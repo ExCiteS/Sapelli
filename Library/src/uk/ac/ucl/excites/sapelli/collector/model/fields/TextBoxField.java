@@ -278,10 +278,10 @@ public class TextBoxField extends Field
 	
 	/* (non-Javadoc)
 	 * 
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected Column<?> createColumn()
+	protected Column<?> createColumn(String name)
 	{
 		switch(content)
 		{
@@ -290,23 +290,23 @@ public class TextBoxField extends Field
 			case email :
 			case phonenumber :
 			default :
-				return StringColumn.ForCharacterCount(id, optional != Optionalness.NEVER, maxLength);
+				return StringColumn.ForCharacterCount(name, optional != Optionalness.NEVER, maxLength);
 			case unsignedint :
-				return new IntegerColumn(id, optional != Optionalness.NEVER, false, Integer.SIZE);
+				return new IntegerColumn(name, optional != Optionalness.NEVER, false, Integer.SIZE);
 			case signedint :
-				return new IntegerColumn(id, optional != Optionalness.NEVER, true, Integer.SIZE);
+				return new IntegerColumn(name, optional != Optionalness.NEVER, true, Integer.SIZE);
 			case unsignedlong :
-				return new IntegerColumn(id, optional != Optionalness.NEVER, false, Long.SIZE);
+				return new IntegerColumn(name, optional != Optionalness.NEVER, false, Long.SIZE);
 			case signedlong :
-				return new IntegerColumn(id, optional != Optionalness.NEVER, true, Long.SIZE);
+				return new IntegerColumn(name, optional != Optionalness.NEVER, true, Long.SIZE);
 			case unsignedfloat :
-				return new FloatColumn(id, optional != Optionalness.NEVER, false, false);
+				return new FloatColumn(name, optional != Optionalness.NEVER, false, false);
 			case signedfloat :
-				return new FloatColumn(id, optional != Optionalness.NEVER, true, false);
+				return new FloatColumn(name, optional != Optionalness.NEVER, true, false);
 			case unsigneddouble :
-				return new FloatColumn(id, optional != Optionalness.NEVER, false, true);
+				return new FloatColumn(name, optional != Optionalness.NEVER, false, true);
 			case signeddouble :
-				return new FloatColumn(id, optional != Optionalness.NEVER, true, true);
+				return new FloatColumn(name, optional != Optionalness.NEVER, true, true);
 		}
 	}
 

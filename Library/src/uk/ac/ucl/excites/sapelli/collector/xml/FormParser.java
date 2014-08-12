@@ -670,7 +670,7 @@ public class FormParser extends SubtreeParser
 			if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
 			{
 				if(currentPage == null || field.canJumpFromPage())
-					jumpSourceToJumpTargetId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // upper cased, for case insensitivity
+					jumpSourceToJumpTargetId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // trimmed (because id's on fields are too) & upper cased (for case insensitivity)
 				else if(currentPage != null)
 					addWarning("Field \"" + field.getID() + "\" tries to jump away from the page, but is not allowed.");
 			}

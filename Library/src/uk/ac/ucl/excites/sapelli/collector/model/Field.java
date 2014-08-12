@@ -28,7 +28,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
-import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 
 /**
@@ -47,9 +46,8 @@ public abstract class Field extends JumpSource
 	}
 	
 	static public String captionToID(String prefix, Form form, String caption)
-	{
-		// TODO remove chars that are illegal in XML tag names
-		return prefix + (caption.trim().isEmpty() ? form.getFields().size() : StringUtils.replaceWhitespace(caption.trim(), "_").replace(":", ""));
+	{	
+		return prefix + (caption.trim().isEmpty() ? form.getFields().size() : Column.SanitiseName(caption.trim())); // remove chars that are illegal in Column (& XML) names
 	}
 	
 	//Defaults:
@@ -98,11 +96,10 @@ public abstract class Field extends JumpSource
 	 */
 	public Field(Form form, String id, String caption)
 	{
-		//TODO check if id is valid column name
 		if(id == null || id.trim().isEmpty())
 			throw new NullPointerException("Top-level field ID cannot be null or empty.");
 		this.form = form;
-		this.id = id.trim();
+		this.id = id.trim(); // always trim id string!
 		this.caption = caption == null ? this.id : caption;
 		
 		// Construct a 2-dimensional boolean array (Controls * FormMode):
@@ -342,9 +339,21 @@ public abstract class Field extends JumpSource
 		Column<?> schemaCol = form.getColumnFor(this);
 		
 		if(schemaCol == null)
-			/* the form's schema is not yet initialised, and most likely this method was called as
-			 * part of the initialisation process, so return a newly created column for this field: */
-			return createColumn();
+		{	// there's no column yet, most likely the method was called as part of the schema initialisation process, so we create a column for this field
+			
+			//	Sanitise field id to remove characters that are illegal in column (& XML) names:
+			String colName = Column.SanitiseName(id);
+			//	Warn about illegal chars:
+			if(!colName.equals(id))
+				form.addWarning("Field ID \"" + id + "\" contains 1 or more characters that are illegal in a data column name. The column corresponding to this field will be named \"" + colName + "\" instead.");
+			// Create column:
+			Column<?> createdCol = createColumn(colName);
+			//	Check if createColumn() implementation respected the naming contract:
+			if(createdCol != null && !createdCol.getName().equals(colName))
+				throw new IllegalStateException("Unexpected column name (got: " + createdCol.getName() + "; expected: " + colName + ") , this indicates an incorrect createColumn(String) implementation.");
+			//	Return just created column...
+			return createdCol;
+		}
 		else
 			return schemaCol; // return previously created column
 	}
@@ -364,11 +373,11 @@ public abstract class Field extends JumpSource
 	/**
 	 * Important:<br/>
 	 * 	- it is assumed this method is *only* called if noColumn=false;<br/>
-	 * 	- it is assumed that the field.id will be used as the column's name.
+	 *	- it is assumed that the provided name String is used (unchanged!) as the column's name (instead of just using the field's id as before)
 	 * 
 	 * @return
 	 */
-	protected abstract Column<?> createColumn();
+	protected abstract Column<?> createColumn(String name);
 	
 	/**
 	 * Meant to be overridden in (some) subclasses

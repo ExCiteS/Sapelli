@@ -100,7 +100,7 @@ public class EndField extends UILessField
 	}
 
 	@Override
-	protected Column<?> createColumn()
+	protected Column<?> createColumn(String name)
 	{
 		return null;
 	}

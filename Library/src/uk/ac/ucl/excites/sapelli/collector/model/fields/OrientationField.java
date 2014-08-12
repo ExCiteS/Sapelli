@@ -104,9 +104,9 @@ public class OrientationField extends Field
 	}
 
 	@Override
-	protected OrientationColumn createColumn()
+	protected OrientationColumn createColumn(String name)
 	{
-		return new OrientationColumn(id, (optional != Optionalness.NEVER), storeAzimuth, storePitch, storeRoll);
+		return new OrientationColumn(name, (optional != Optionalness.NEVER), storeAzimuth, storePitch, storeRoll);
 	}
 
 	public void storeOrientation(Record record, Orientation orientation)

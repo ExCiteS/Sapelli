@@ -104,7 +104,7 @@ public class ColumnPointer implements Comparator<Record>
 		
 		// Build up stack:
 		if(columnName.indexOf(RecordColumn.QUALIFIED_NAME_SEPARATOR) == -1)
-			columnStack = constructPathTo(topLevelSchema, columnName); // Find by columnName (recursive, depth-first search)
+			columnStack = constructPathTo(topLevelSchema, columnName, true); // Find by columnName (recursive, depth-first search; columnName will be sanitised if not found as is)
 		else
 		{
 			columnStack = new Stack<Column<?>>();
@@ -117,10 +117,14 @@ public class ColumnPointer implements Comparator<Record>
 					schema = ((RecordColumn<?>) columnStack.peek()).getSchema();
 				// Deal with current column:
 				Column<?> col = schema.getColumn(colName, true);
-				if(col != null)
-					columnStack.push(col);
-				else
+				// If not found...
+				if(col == null)
+					col = schema.getColumn(Column.SanitiseName(colName), true); // ... try again with sanitised name
+				// If still not found...
+				if(col == null)
 					throw new IllegalArgumentException("Column \"" + columnName + "\" not found in " + topLevelSchema.toString());
+				// Found:
+				columnStack.push(col);
 			}
 		}
 	}
@@ -149,7 +153,7 @@ public class ColumnPointer implements Comparator<Record>
 
 	private Stack<Column<?>> constructPathTo(Schema topLevelSchema, Column<?> column)
 	{
-		Stack<Column<?>> path = constructPathTo(topLevelSchema, column.getName());
+		Stack<Column<?>> path = constructPathTo(topLevelSchema, column.getName(), false);
 		
 		// Check if we got the right one:
 		if(!column.equals(path.peek()))
@@ -158,12 +162,18 @@ public class ColumnPointer implements Comparator<Record>
 		return path;
 	}
 	
-	private Stack<Column<?>> constructPathTo(Schema topLevelSchema, String columnName)
+	private Stack<Column<?>> constructPathTo(Schema topLevelSchema, String columnName, boolean trySanitising)
 	{
+		// Find column & construct path to it:
 		Stack<Column<?>> path = new Stack<Column<?>>();
 		findColumn(path, topLevelSchema, columnName);
+		
 		if(path.isEmpty())
+		{	
+			if(trySanitising) // try again with sanitised name if allowed:
+				return constructPathTo(topLevelSchema, Column.SanitiseName(columnName), false); // pass false to avoid endless sanitation loop ;-)
 			throw new IllegalArgumentException("Column \"" + columnName + "\" not found in " + topLevelSchema.toString());
+		}
 		return path;
 	}
 

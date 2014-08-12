@@ -120,10 +120,10 @@ public class Page extends Field
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected Column<?> createColumn()
+	protected Column<?> createColumn(String name)
 	{
 		throw new UnsupportedOperationException("Page fields do not have a column of their own.");
 	}

@@ -78,12 +78,12 @@ public class CheckBoxField extends Field
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected Column<?> createColumn()
+	protected Column<?> createColumn(String name)
 	{
-		return new BooleanColumn(id, optional != Optionalness.NEVER);
+		return new BooleanColumn(name, optional != Optionalness.NEVER);
 	}
 
 	/* (non-Javadoc)
