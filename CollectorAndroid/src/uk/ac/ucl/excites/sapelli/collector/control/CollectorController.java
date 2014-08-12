@@ -29,6 +29,8 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
+import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -280,10 +282,35 @@ public class CollectorController extends Controller implements LocationListener,
 
 	public void enableAudioFeedback()
 	{
-		if(true /* TODO: Check project settings if tts is enabled */)
-			audioToVoice = new AudioToVoice(activity.getBaseContext());
-		else
-			textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
+		// Check if any of the forms has audio feedback enabled
+		for(Form f : project.getForms())
+		{
+			final AudioFeedback audioFeedback = f.getAudioFeedback();
+
+			if(audioFeedback != null)
+			{
+				switch(audioFeedback)
+				{
+				case LONG_CLICK_AUDIO_FILES:
+				case SEQUENTIAL_AUDIO_FILES:
+
+					// Enable Audio Files Feedback
+					if(audioToVoice == null)
+						audioToVoice = new AudioToVoice(activity.getBaseContext());
+					break;
+
+				case LONG_CLICK_TTS:
+				case SEQUENTIAL_TTS:
+
+					// Enable TTS Audio Feedback
+					if(textToVoice == null)
+						textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
+					break;
+
+				case NONE:
+				}
+			}
+		}
 	}
 
 	public void disableAudioFeedback()

@@ -91,6 +91,14 @@ public class Form
 
 	public static final ScreenTransition DEFAULT_SCREEN_TRANSITION = ScreenTransition.NONE;
 
+	// The Animation type between different Screen Pages
+	public static enum AudioFeedback
+	{
+		NONE, LONG_CLICK_AUDIO_FILES, LONG_CLICK_TTS, SEQUENTIAL_AUDIO_FILES, SEQUENTIAL_TTS
+	}
+
+	public static final AudioFeedback DEFAULT_AUDIO_FEEDBACK = AudioFeedback.NONE;
+
 	// Buttons Default Description Text (used for accessibility support)
 	public static final String DEFAULT_FORWARD_BUTTON_DESCRIPTION = "Forward";
 	public static final String DEFAULT_CANCEL_BUTTON_DESCRIPTION = "Cancel";
@@ -119,6 +127,9 @@ public class Form
 	
 	// Screen Transition:
 	private ScreenTransition screenTransition = DEFAULT_SCREEN_TRANSITION;
+
+	// Audio Feedback:
+	private AudioFeedback audioFeedback = DEFAULT_AUDIO_FEEDBACK;
 
 	// Obfuscate Media Files:
 	private boolean obfuscateMediaFiles = DEFAULT_OBFUSCATE_MEDIA_FILES;
@@ -302,6 +313,33 @@ public class Form
 		try
 		{
 			this.screenTransition = ScreenTransition.valueOf(screenTransitionStr);
+		}
+		catch(IllegalArgumentException iae)
+		{
+			throw iae;
+		}
+	}
+
+	/**
+	 * @return the audioFeedback
+	 */
+	public AudioFeedback getAudioFeedback()
+	{
+		return audioFeedback;
+	}
+
+	/**
+	 * @param audioFeedbackStr
+	 *            the audioFeedbackStr to set
+	 */
+	public void setAudioFeedback(String audioFeedbackStr)
+	{
+		if(audioFeedbackStr == null)
+			return; // default Audio Feedback will be used
+		audioFeedbackStr = audioFeedbackStr.toUpperCase(); // Make upper case
+		try
+		{
+			this.audioFeedback = AudioFeedback.valueOf(audioFeedbackStr);
 		}
 		catch(IllegalArgumentException iae)
 		{
