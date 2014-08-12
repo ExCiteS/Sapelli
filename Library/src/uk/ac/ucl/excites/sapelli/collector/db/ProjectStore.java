@@ -73,7 +73,7 @@ public abstract class ProjectStore implements Store
 	public abstract Project retrieveProject(String name, String variant, String version);
 
 	/**
-	 * Retrieves specific Project, identified by id and hash
+	 * Retrieves specific Project, identified by id and fingerprint
 	 * 
 	 * @param projectID
 	 * @param projectFingerPrint

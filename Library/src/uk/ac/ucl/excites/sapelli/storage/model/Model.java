@@ -41,7 +41,7 @@ public class Model implements Serializable
 	 *  This is only relevant for "external"/"client" schema instances because "internal"
 	 * 	schemata never belong to a model directly.
 	 * 	In the case of the Sapelli Collector the data model is a Project and the model ID corresponds
-	 * 	to the combination of the project ID (= 24 bits) and the project hash (= 32 bits), which are
+	 * 	to the combination of the project ID (= 24 bits) and the project fingerprint (= 32 bits), which are
 	 *  combined into one 56 bit value in SapelliCollectorClient. */
 	static public final int MODEL_ID_SIZE = 56; //bits
 	/**

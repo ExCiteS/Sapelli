@@ -49,11 +49,19 @@ public class SapelliCollectorClient extends TransmissionClient
 				project.getID();																 // Project id takes up next 24 bits
 	}
 	
+	/**
+	 * @param modelID
+	 * @return project ID (24 bit unsigned int)
+	 */
 	static public int GetProjectID(long modelID)
 	{
 		return (int) (modelID % (1 << Project.PROJECT_ID_SIZE));
 	}
 	
+	/**
+	 * @param modelID
+	 * @return project fingerprint (32 bit signed int)
+	 */
 	static public int GetProjectFingerPrint(long modelID)
 	{
 		return (int) (modelID >> Project.PROJECT_ID_SIZE);

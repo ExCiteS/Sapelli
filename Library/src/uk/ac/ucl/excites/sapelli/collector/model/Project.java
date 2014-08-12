@@ -46,8 +46,8 @@ public class Project
 	
 	static public final String DEFAULT_VERSION = "0";
 	
-	static public final int PROJECT_HASH_SIZE = 32; //bits
-	static public final IntegerRangeMapping PROJECT_HASH_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_HASH_SIZE); // signed(!) 32bit integer (like Java hashCodes)
+	static public final int PROJECT_FINGERPRINT_SIZE = 32; //bits
+	static public final IntegerRangeMapping PROJECT_FINGERPRINT_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_FINGERPRINT_SIZE); // signed(!) 32bit integer (like Java hashCodes)
 	
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
