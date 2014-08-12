@@ -57,11 +57,11 @@ public class Schema implements Serializable
 	 * This allows to differentiate "internal" schemata (& their records) from "external"/"client" schemata (& records).
 	 */
 	static public enum InternalKind
-	{				/* ordinal	-> schema id */
-		ANONYMOUS,	/*	0		->	-1 */
-		INDEX,		/*	1		->	-2 */
-		LOCATION,	/*	2		->	-3 */
-		ORIENTATION	/*	3		->	-4 */
+	{
+		ANONYMOUS,
+		INDEX,
+		LOCATION,
+		ORIENTATION,
 		// more later?
 	}
 	
