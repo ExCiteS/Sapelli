@@ -65,10 +65,21 @@ public abstract class RecordStore implements Store
 	 */
 	public void store(Record record) throws Exception
 	{
+		store(record, true);
+	}
+	
+	/**
+	 * @param record - the record to store or update; records of internal schemata will be rejected
+	 * @param useTransaction - whether or not to start & commit a transaction
+	 * @throws Exception
+	 */
+	public void store(Record record, boolean useTransaction) throws Exception
+	{
 		if(!isStorable(record))
 			throw new IllegalArgumentException(String.format("Record (%s) cannot be stored!", record.toString(false)));
 		Boolean insert = null;
-		startTransaction();
+		if(useTransaction)
+			startTransaction();
 		try
 		{
 			insert = doStore(record);
@@ -76,10 +87,12 @@ public abstract class RecordStore implements Store
 		catch(Exception e)
 		{
 			e.printStackTrace(System.err);
-			rollbackTransaction();
+			if(useTransaction)
+				rollbackTransaction();
 			throw e;
 		}
-		commitTransaction();
+		if(useTransaction)
+			commitTransaction();
 		// Inform client:
 		if(insert)
 			client.recordInserted(record);
@@ -93,8 +106,19 @@ public abstract class RecordStore implements Store
 	 */
 	public void store(List<Record> records) throws Exception
 	{
+		store(records, true);
+	}
+	
+	/**
+	 * @param records - the records to store or update
+	 * @param useTransaction - whether or not to start & commit a transaction
+	 * @throws Exception
+	 */
+	public void store(List<Record> records, boolean useTransaction) throws Exception
+	{
 		Boolean[] insert = new Boolean[records.size()]; 
-		startTransaction();
+		if(useTransaction)
+			startTransaction();
 		int r = 0;
 		try
 		{
@@ -107,10 +131,12 @@ public abstract class RecordStore implements Store
 		catch(Exception e)
 		{
 			e.printStackTrace(System.err);
-			rollbackTransaction();
+			if(useTransaction)
+				rollbackTransaction();
 			throw e;
 		}
-		commitTransaction();
+		if(useTransaction)
+			commitTransaction();
 		// Inform client:
 		r = 0;
 		for(Record record : records)
@@ -181,7 +207,18 @@ public abstract class RecordStore implements Store
 	 */
 	public void delete(Record record) throws Exception
 	{
-		startTransaction();
+		delete(record, true);
+	}
+	
+	/**
+	 * @param record - the record to delete
+	 * @param useTransaction - whether or not to start & commit a transaction
+	 * @throws Exception
+	 */
+	public void delete(Record record, boolean useTransaction) throws Exception
+	{
+		if(useTransaction)
+			startTransaction();
 		try
 		{
 			doDelete(record);
@@ -189,10 +226,12 @@ public abstract class RecordStore implements Store
 		catch(Exception e)
 		{
 			e.printStackTrace(System.err);
-			rollbackTransaction();
+			if(useTransaction)
+				rollbackTransaction();
 			throw e;
 		}
-		commitTransaction();
+		if(useTransaction)
+			commitTransaction();
 		// Inform client:
 		client.recordDeleted(record);
 	}
@@ -203,7 +242,18 @@ public abstract class RecordStore implements Store
 	 */
 	public void delete(List<Record> records) throws Exception
 	{
-		startTransaction();
+		delete(records, true);
+	}
+	
+	/**
+	 * @param records - the records to delete
+	 * @param useTransaction - whether or not to start & commit a transaction
+	 * @throws Exception
+	 */
+	public void delete(List<Record> records, boolean useTransaction) throws Exception
+	{
+		if(useTransaction)
+			startTransaction();
 		try
 		{
 			for(Record record : records)
@@ -212,10 +262,12 @@ public abstract class RecordStore implements Store
 		catch(Exception e)
 		{
 			e.printStackTrace(System.err);
-			rollbackTransaction();
+			if(useTransaction)
+				rollbackTransaction();
 			throw e;
 		}
-		commitTransaction();
+		if(useTransaction)
+			commitTransaction();
 		// Inform client:
 		for(Record record : records)
 			client.recordDeleted(record);

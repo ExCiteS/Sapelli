@@ -87,7 +87,7 @@ public class TransmissionStore implements Store
 	}
 	//	Transmission Part Schema
 	static final public Schema TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "TransmissionPart");
-	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_TRANSMISSION_ID = new ForeignKeyColumn("TransmissionID", TRANSMISSION_SCHEMA, false);
+	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_TRANSMISSION_ID = new ForeignKeyColumn(TRANSMISSION_SCHEMA.getName() + TRANSMISSION_COLUMN_ID.getName(), TRANSMISSION_SCHEMA, false);
 	static final public IntegerColumn TRANSMISSION_PART_COLUMN_NUMBER = new IntegerColumn("PartNumber", false, false, Integer.SIZE);
 	static final public TimeStampColumn TRANSMISSION_PART_COLUMN_DELIVERED_AT = TimeStampColumn.JavaMSTime("DeliveredAt", true, false);
 	static final public ByteArrayColumn TRANSMISSION_PART_COLUMN_BODY = new ByteArrayColumn("Body", false);
@@ -168,23 +168,23 @@ public class TransmissionStore implements Store
 	private void doStoreTransmission(Transmission transmission, Record transmissionRecord) throws Exception
 	{
 		// Store the transmission
-		recordStore.store(transmissionRecord);
+		recordStore.store(transmissionRecord, false);
 		
 		// Transmission ID should now be set in the record...
-		if(transmission.isLocalIDSet())
-		{
-			// Verify whether it matches the local transmissionID on the object:
+		if(transmission.isLocalIDSet()) // if the object already had a local transmissionID...
+		{	// then it should match the ID on the record, so let's verify:
 			if(transmission.getLocalID() != TRANSMISSION_COLUMN_ID.retrieveValue(transmissionRecord))
 				throw new IllegalStateException("Non-matching transmission ID"); // this should never happen
 		}
 		else
-			// Set transmissionID in object as the local one: 
+			// Set local transmissionID in object as on the record: 
 			transmission.setLocalID(TRANSMISSION_COLUMN_ID.retrieveValue(transmissionRecord).intValue());
 	}
 	
 	public void storeTransmission(SMSTransmission<?> smsTransmission) throws Exception
 	{
-		// TODO Start transaction
+		// Start transaction
+		recordStore.startTransaction();
 		
 		// Create & store record:
 		Record tRec = createTransmissionRecord(smsTransmission);
@@ -202,10 +202,11 @@ public class TransmissionStore implements Store
 			COLUMN_RECEIVED_AT.storeValue(tPartRec, msg.getReceivedAt());
 			
 			// Store part record:
-			recordStore.store(tPartRec);
+			recordStore.store(tPartRec, false);
 		}
 		
-		// TODO commit transaction
+		// Commit transaction
+		recordStore.commitTransaction();
 	}
 	
 	public void setPartBody(BitArray bodyBits, Record transmissionPartRecord)
@@ -223,7 +224,8 @@ public class TransmissionStore implements Store
 	
 	public void storeTransmission(HTTPTransmission httpTransmission) throws Exception
 	{
-		// TODO Start transaction
+		// Start transaction
+		recordStore.startTransaction();
 		
 		// Create record:
 		Record tRec = createTransmissionRecord(httpTransmission);
@@ -244,9 +246,10 @@ public class TransmissionStore implements Store
 		TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.storeValue(tPartRec, bytes.length * Byte.SIZE);
 		
 		// Store the part:
-		recordStore.store(tPartRec);
+		recordStore.store(tPartRec, false);
 		
-		// TODO commit transaction
+		// Commit transaction
+		recordStore.commitTransaction();
 	}
 	
 	/**
@@ -317,15 +320,13 @@ public class TransmissionStore implements Store
 	@Override
 	public void finalise()
 	{
-		// TODO Auto-generated method stub
-		
+		recordStore.finalise();
 	}
 
 	@Override
 	public void backup(File destinationFolder) throws Exception
 	{
-		// TODO Auto-generated method stub
-		
+		recordStore.backup(destinationFolder);
 	}
 	
 }
