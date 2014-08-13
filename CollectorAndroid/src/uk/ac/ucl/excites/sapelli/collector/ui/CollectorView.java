@@ -119,6 +119,9 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	{
 		this.controller = controller;
 
+		// Remove any previous views
+		this.removeAllViews();
+
 		// Clear cache:
 		fieldUICache.clear();
 
