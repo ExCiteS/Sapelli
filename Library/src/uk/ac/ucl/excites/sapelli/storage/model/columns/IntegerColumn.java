@@ -124,7 +124,7 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	{
 		super(Long.class, name, optional);
 		this.rangeMapping = rangeMapping;
-		this.size = rangeMapping.getSize();
+		this.size = rangeMapping.size();
 		this.signed = false;
 	}
 	
@@ -192,7 +192,7 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	protected void validate(Long value) throws IllegalArgumentException
 	{
 		if(rangeMapping != null && !rangeMapping.inRange(value))
-			throw new IllegalArgumentException("The value (" + value + ") is not in the allowed range of [" + rangeMapping.getLowBound() + ", " + rangeMapping.getHighBound() + "].");
+			throw new IllegalArgumentException("The value (" + value + ") is not in the allowed range of [" + rangeMapping.lowBound() + ", " + rangeMapping.highBound() + "].");
 		else
 		{
 			//Size checks:
@@ -214,7 +214,7 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	public long getMinValue()
 	{
 		if(rangeMapping != null)
-			return rangeMapping.getLowBound();
+			return rangeMapping.lowBound();
 		else
 			return (signed ?	(long) (- Math.pow(2, size - 1)) : 
 								0l);
@@ -223,7 +223,7 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	public long getMaxValue()
 	{
 		if(rangeMapping != null)
-			return rangeMapping.getHighBound();
+			return rangeMapping.highBound();
 		else
 			return (signed ?	(long) (Math.pow(2, size - 1) - 1) : 
 								(long) (Math.pow(2, size) - 1));

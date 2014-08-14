@@ -98,17 +98,26 @@ public class RecordsPayload extends Payload
 		recordsOfSchema.add(record);
 		
 		// Try serialising and check capacity:
-		try
-		{
-			serialise();
-		}
-		catch(TransmissionCapacityExceededException tcee)
-		{	// adding this record caused transmission capacity to be exceeded, so remove it and mark the transmission as full (unless there are no other records)
-			recordsOfSchema.remove(record);
-			if(recordsOfSchema.isEmpty())
-				recordsBySchema.remove(schema);
-			return false;
-		}
+//		try
+//		{
+//			//TODO!
+//			
+////			serialise();
+////			
+////			// Capacity checks: //TODO this happens once too many when sending, change!
+////			if(bits.length() > transmission.getMaxPayloadBits())
+////				throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + bits.length() + " bits; max for transmission: " + transmission.getMaxPayloadBits() + " bits");
+////			if(transmission.canWrapIncreaseSize()) // the the transmission is one in which payload size can grow upon wrapping (e.g. due to escaping), then ... 
+////				transmission.wrap(bits); // try wrapping the payload in the transmission, a TransmissionCapacityExceededException will be thrown when the size goes over the limit
+//
+//		}
+//		catch(TransmissionCapacityExceededException tcee)
+//		{	// adding this record caused transmission capacity to be exceeded, so remove it and mark the transmission as full (unless there are no other records)
+//			recordsOfSchema.remove(record);
+//			if(recordsOfSchema.isEmpty())
+//				recordsBySchema.remove(schema);
+//			return false;
+//		}
 		
 		// Record was added and payload could be serialised (and fits within transmission bounds)
 		return true;
@@ -290,7 +299,7 @@ public class RecordsPayload extends Payload
 			// Compute sum of field sizes (except last):
 			int sumOfFieldSizesExceptLast = 0;
 			for(int f = 0; f < fieldsForOrder.length - 1; f++)
-				sumOfFieldSizesExceptLast += fieldsForOrder[f].getSize();
+				sumOfFieldSizesExceptLast += fieldsForOrder[f].size();
 			// Better?
 			if(sumOfFieldSizesExceptLast < smallestSizeSum)
 			{
@@ -322,7 +331,7 @@ public class RecordsPayload extends Payload
 					field.write(numberOfRecords, out); // write number of records, but not for last schema
 			}
 			else
-				throw new TransmissionCapacityExceededException("Cannot fit " + numberOfRecords + " of schema " + schema.getName() + " (max allowed: " + field.getHighBound(false) + ").");	
+				throw new TransmissionCapacityExceededException("Cannot fit " + numberOfRecords + " of schema " + schema.getName() + " (max allowed: " + field.highBound(false) + ").");	
 		}
 		return schemataOrder;
 	}
@@ -559,8 +568,8 @@ public class RecordsPayload extends Payload
 		//	Compute number of bits left for the numberOfRecordPerSchemaFields (except last one) and the actual records:
 		int bitsAvailableForFieldsAndRecords =	transmission.getMaxPayloadBits()							// Payload bits available
 												- headerSizeBits											// Bits already used for the header
-												- (numberOfDifferentSchemataInTransmissionField == null ? 0 : numberOfDifferentSchemataInTransmissionField.getSize()) // will be written below
-												- (modelSchemaNumberField == null ? 0 : schemataOrder.length * modelSchemaNumberField.getSize());	// will be written below
+												- (numberOfDifferentSchemataInTransmissionField == null ? 0 : numberOfDifferentSchemataInTransmissionField.size()) // will be written below
+												- (modelSchemaNumberField == null ? 0 : schemataOrder.length * modelSchemaNumberField.size());	// will be written below
 		IntegerRangeMapping[] fields = new IntegerRangeMapping[schemataOrder.length];
 		
 		// Iterative process:
@@ -569,7 +578,7 @@ public class RecordsPayload extends Payload
 			// Compute the number of bits left for records:
 			int bitsAvailableForRecords = bitsAvailableForFieldsAndRecords;
 			for(int i = 0; i < fields.length - 1; i++) // length - 1! Because we do *not* reserve space for the field of the last schema in the schemataOrder
-				bitsAvailableForRecords -= (fields[i] == null ? 1 /*bit*/ : fields[i].getSize()); 
+				bitsAvailableForRecords -= (fields[i] == null ? 1 /*bit*/ : fields[i].size()); 
 			// Grow the size of the fields until a stable state is reached:
 			for(int x = 0; x < fields.length; x++)
 			{
@@ -583,7 +592,7 @@ public class RecordsPayload extends Payload
 				int maxRecordsOfSchemaX = bitsAvailableForRecordsOfSchemaX / schemaX.getMinimumSize(); 
 				IntegerRangeMapping recordsOfSchemaXField = new IntegerRangeMapping(1, maxRecordsOfSchemaX); // at least 1 record!
 				// If this is the first field for schemaX or it is larger than the previous one: make this the new field for schemaX 
-				if(fields[x] == null || fields[x].getSize() < recordsOfSchemaXField.getSize())
+				if(fields[x] == null || fields[x].size() < recordsOfSchemaXField.size())
 				{
 					fields[x] = recordsOfSchemaXField;
 					continue process; // not yet in a stable state

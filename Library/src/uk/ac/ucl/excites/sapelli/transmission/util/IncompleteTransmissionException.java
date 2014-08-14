@@ -32,22 +32,40 @@ public class IncompleteTransmissionException extends Exception
 
 	private Transmission transmission;
 	
+	/**
+	 * @param transmission
+	 */
 	public IncompleteTransmissionException(Transmission transmission)
 	{
 		this(transmission, "Incomplete transmission");
 	}
 	
+	/**
+	 * @param transmission
+	 */
 	public IncompleteTransmissionException(SMSTransmission<?> transmission)
 	{
 		this(transmission, "Incomplete transmission, " + (transmission.getTotalNumberOfParts() - transmission.getCurrentNumberOfParts()) + "/" + transmission.getTotalNumberOfParts() + " parts missing");
 	}
 
 	/**
+	 * @param transmission
 	 * @param detailMessage
 	 */
 	public IncompleteTransmissionException(Transmission transmission, String detailMessage)
 	{
 		super(detailMessage);
+		this.transmission = transmission;	
+	}
+	
+	/**
+	 * @param transmission
+	 * @param detailMessage
+	 * @param cause
+	 */
+	public IncompleteTransmissionException(Transmission transmission, String detailMessage, Throwable cause)
+	{
+		super(detailMessage, cause);
 		this.transmission = transmission;
 	}
 

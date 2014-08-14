@@ -72,7 +72,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	//Statics
 	public static final int BITS_PER_CHAR = 7;
 	public static final int MAX_TRANSMISSION_PARTS = 16;
-	public static final int MAX_PAYLOAD_CHARS = MAX_TRANSMISSION_PARTS * TextMessage.MAX_PAYLOAD_CHARS;
+	public static final int MAX_BODY_CHARS = MAX_TRANSMISSION_PARTS * TextMessage.MAX_BODY_CHARS;
 	
 	/*package*/ static final int ESCAPE_SP	= 0x20;
 	/*package*/ static final int ESCAPE_ESC	= 0x1B;
@@ -269,43 +269,51 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	}
 	
 	@Override
-	protected void wrap(BitArray payloadBits) throws TransmissionCapacityExceededException, IOException
+	protected void wrap(BitArray bodyBits) throws TransmissionCapacityExceededException, IOException
 	{
 		// Clear previously generated messages
 		parts.clear(); //!!!
 		
-		// Rough length check (does not taking escaping into account, hence the "at least"):
-		if(minNumberOfCharactersNeededFor(payloadBits.length()) > MAX_PAYLOAD_CHARS)
-			throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_CHARS + " characters) exceeded by at least " + minNumberOfCharactersNeededFor(payloadBits.length()) + " characters");
+		// Rough body length check (does not taking escaping into account, hence the "at least"):
+		if(minNumberOfCharactersNeededFor(bodyBits.length()) > MAX_BODY_CHARS)
+			throw new TransmissionCapacityExceededException("Maximum body size (" + MAX_BODY_CHARS + " characters) exceeded by at least " + minNumberOfCharactersNeededFor(bodyBits.length()) + " characters");
 		
-		// Convert data bytes to transmission payload String:
+		// Convert transmission body from BitArray to String:
 		StringBuilder bld = new StringBuilder();
-		BitInputStream bitsIn = new BitArrayInputStream(payloadBits);
+		BitInputStream bitsIn = new BitArrayInputStream(bodyBits);
 		try
 		{
 			Boolean escapeBit = null;
 			while(bitsIn.bitsAvailable() + (escapeBit == null ? 0 : 1) > 0)
 			{
 				// Check if there is room for one more character:
-				if(bld.length() + 1 > MAX_PAYLOAD_CHARS)					
-					throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_CHARS + " characters) exceeded by at least " + minNumberOfCharactersNeededFor(bitsIn.bitsAvailable() + (escapeBit == null ? 0 : 1)) + " characters");
+				if(bld.length() + 1 > MAX_BODY_CHARS)					
+					throw new TransmissionCapacityExceededException("Maximum body size (" + MAX_BODY_CHARS + " characters) exceeded by at least " + minNumberOfCharactersNeededFor(bitsIn.bitsAvailable() + (escapeBit == null ? 0 : 1)) + " characters");
 				// Read 7, 6 or less bits and shift them to the right to fill 7 or 6 bits:
 				int readBits = Math.min(bitsIn.bitsAvailable(), BITS_PER_CHAR - (escapeBit == null ? 0 : 1));
-				int c = (readBits > 0 ? (int) bitsIn.readInteger(readBits, false) : 0) << (BITS_PER_CHAR - (escapeBit == null ? 0 : 1) - readBits);
+				int c = (readBits > 0 ? (int) bitsIn.readInteger(readBits, false) : 0) << (BITS_PER_CHAR - (escapeBit == null ? 0 : 1) - readBits); // insert trailing 0s if less than 7 or 6 bits were read
 				// Insert escape bit for previous character in most significant position (if needed):
 				if(escapeBit != null)
-					c += ((escapeBit ? 1 : 0) << (BITS_PER_CHAR - 1));
-				// Escaping for current character: 
-				if(c == ESCAPE_ESC || c == ESCAPE_SP)
-				{	// Current character needs escaping:
-					escapeBit = (c == ESCAPE_ESC); //1: ESC; 0: SP
-					c = ESCAPE_SP; //we write SP instead of ESC and SP stays SP, the first bit of the next character will determine which of both it was
+					c += escapeBit ? (1 << (BITS_PER_CHAR - 1)) : 0;
+				/* Escaping for current character:
+				 * 	The escaping mechanism is only concerned with the characters ESC & SP.
+				 * 	The only "illegal" character is ESC, to avoid it we replace it by SP.
+				 * 	A normal occurrence of SP will stay SP. To differentiate both we insert
+				 * 	an "escapeBit" as the first bit of the next character (shifting the real
+				 * 	data bits over 1 position), the state of which indicates whether the
+				 * 	preceding character was ESC (escapeBit = 1) or SP (escapeBit = 0). */
+				switch(c)
+				{
+					case ESCAPE_ESC :		// ESC:
+						escapeBit = true;	//	escapeBit = 1 (true)
+						c = ESCAPE_SP;		//	write SP instead of ESC
+						break;
+					case ESCAPE_SP :		// SP:
+						escapeBit = false;	//	escapeBit = 0 (false)
+						break;
+					default :
+						escapeBit = null;	// character doesn't need escaping
 				}
-				else
-					escapeBit = null; //Current character doesn't need escaping			
-				// Error handling:
-				if(c == ESCAPE_ESC)
-					throw new IllegalStateException("Cannot encode 0x1B ('ESC')!"); // (this should never happen)
 				// Write character:
 				bld.append(TextSMSTransmission.GSM_0338_CHAR_TABLE[c]);
 			}
@@ -315,38 +323,38 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 			bitsIn.close();
 		}
 			
-		// Split up transmission payload in parts:
-		String payloadStr = bld.toString();
-		int partsTotal = (payloadStr.length() + TextMessage.MAX_PAYLOAD_CHARS - 1) / TextMessage.MAX_PAYLOAD_CHARS;
+		// Split up transmission body string in parts (each becoming the body of a separate TextMessage):
+		String transmissionBodyStr = bld.toString();
+		int partsTotal = (transmissionBodyStr.length() + TextMessage.MAX_BODY_CHARS - 1) / TextMessage.MAX_BODY_CHARS;
 		for(int p = 0; p < partsTotal; p++)
-			parts.add(new TextMessage(this, p + 1, partsTotal, payloadStr.substring(p * TextMessage.MAX_PAYLOAD_CHARS, Math.min((p + 1) * TextMessage.MAX_PAYLOAD_CHARS, payloadStr.length()))));
+			parts.add(new TextMessage(this, p + 1, partsTotal, transmissionBodyStr.substring(p * TextMessage.MAX_BODY_CHARS, Math.min((p + 1) * TextMessage.MAX_BODY_CHARS, transmissionBodyStr.length()))));
 	}
 
 	@Override
 	protected BitArray unwrap() throws IOException
 	{
-		// Assemble transmission payload String from part payload Strings:
+		// Assemble transmission body String from message body Strings:
 		StringBuilder blr = new StringBuilder();
 		for(TextMessage part : parts)
 			blr.append(part.getBody());
-		String payloadString = blr.toString();
+		String transmissionBodyStr = blr.toString();
 
-		// Convert transmission payload String to byte array:
+		// Convert transmission body from String to BitArray:
 		BitArrayOutputStream bitsOut = new BitArrayOutputStream();
 		try
 		{
 			boolean prevPrevSP = false;
 			boolean prevSP = false;
-			for(int i = 0; i < payloadString.length(); i++)
+			for(int i = 0, n = transmissionBodyStr.length(); i < n; i++)
 			{
-				int c = TextSMSTransmission.GSM_0338_REVERSE_CHAR_TABLE.get(payloadString.charAt(i));
+				int c = TextSMSTransmission.GSM_0338_REVERSE_CHAR_TABLE.get(transmissionBodyStr.charAt(i));
 				boolean currSP = (c == ESCAPE_SP);
 				if(!prevSP)
 				{
 					if(!currSP)
 						bitsOut.write(c, BITS_PER_CHAR, false); // write all 7 bits for current
 				}
-				else //prevSP = true
+				else // prevSP = true
 				{
 					boolean escapeBit = ((c >> (BITS_PER_CHAR - 1)) == 1);
 					bitsOut.write((escapeBit ? ESCAPE_ESC : ESCAPE_SP) % (1 << (BITS_PER_CHAR - (prevPrevSP ? 1 : 0))), (BITS_PER_CHAR - (prevPrevSP ? 1 : 0)), false); // write 7 or 6 bits for previous
@@ -357,7 +365,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 				prevSP = currSP;
 			}
 			bitsOut.close();
-			return bitsOut.toBitArray();
+			return bitsOut.toBitArray(); // return transmission body bits, possibly with some additional padding at the end (trailing 0s), this will be ignored in Transmission#receive()
 		}
 		finally
 		{
@@ -365,9 +373,9 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		}
 	}
 	
-	public int getMaxPayloadBits()
+	protected int getMaxBodyBits()
 	{
-		return MAX_PAYLOAD_CHARS * BITS_PER_CHAR;
+		return MAX_BODY_CHARS * BITS_PER_CHAR;
 	}
 	
 	/* (non-Javadoc)

@@ -60,7 +60,7 @@ public class Model implements Serializable
 	
 	static public int MaxSchemata()
 	{
-		return (int) MODEL_SCHEMA_NO_FIELD.getHighBound();
+		return (int) MODEL_SCHEMA_NO_FIELD.highBound();
 	}
 
 	// Dynamics-----------------------------------------------------------
@@ -111,7 +111,7 @@ public class Model implements Serializable
 		if(no != -1)
 			return no;
 		if(!MODEL_SCHEMA_NO_FIELD.fits(schemata.size()))
-			throw new ModelFullException("The model has reached the maximum of " + MODEL_SCHEMA_NO_FIELD.getHighBound() + " schemata.");
+			throw new ModelFullException("The model has reached the maximum of " + MODEL_SCHEMA_NO_FIELD.highBound() + " schemata.");
 		schemata.add(schema);
 		return schemata.size() - 1;
 	}

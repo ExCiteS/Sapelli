@@ -105,7 +105,7 @@ public class IntegerRangeMapping implements Serializable
 	/**
 	 * @return the number of bits needed to store values in this range
 	 */
-	public int getSize()
+	public int size()
 	{
 		return size;
 	}
@@ -113,7 +113,7 @@ public class IntegerRangeMapping implements Serializable
 	/**
 	 * @return the loBound (inclusive!)
 	 */
-	public long getLowBound()
+	public long lowBound()
 	{
 		return loBound;
 	}
@@ -121,16 +121,16 @@ public class IntegerRangeMapping implements Serializable
 	/**
 	 * @return the hiBound (inclusive!)
 	 */
-	public long getHighBound()
+	public long highBound()
 	{
-		return getHighBound(true);
+		return highBound(true);
 	}
 	
 	/**
 	 * @param strict indicates whether the specified (true) or effective (false) upper bound is returned
 	 * @return the hiBound (inclusive!)
 	 */
-	public long getHighBound(boolean strict)
+	public long highBound(boolean strict)
 	{
 		if(strict)
 			return hiBound;
@@ -190,7 +190,7 @@ public class IntegerRangeMapping implements Serializable
 	 */
 	public boolean inRange(long logicalValue, boolean strict)
 	{
-		return (getLowBound() <= logicalValue) && (logicalValue <= getHighBound(strict));
+		return (lowBound() <= logicalValue) && (logicalValue <= highBound(strict));
 	}
 
 	/**

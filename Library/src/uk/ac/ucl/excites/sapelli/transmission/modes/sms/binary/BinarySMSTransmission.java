@@ -45,7 +45,7 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	
 	// Static
 	public static final int MAX_TRANSMISSION_PARTS = 16;
-	public static final int MAX_PAYLOAD_SIZE_BITS = MAX_TRANSMISSION_PARTS * BinaryMessage.MAX_BODY_SIZE_BITS;
+	public static final int MAX_BODY_SIZE_BITS = MAX_TRANSMISSION_PARTS * BinaryMessage.MAX_BODY_SIZE_BITS;
 	
 	/**
 	 * To be called on the sending side.
@@ -89,14 +89,18 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	}
 	
 	@Override
-	protected void wrap(BitArray payloadBits) throws TransmissionCapacityExceededException, IOException
+	protected void wrap(BitArray bodyBits) throws TransmissionCapacityExceededException, IOException
 	{
-		parts.clear();  //!!! clear previously generated messages
-		if(payloadBits.length() > MAX_PAYLOAD_SIZE_BITS)
-			throw new TransmissionCapacityExceededException("Maximum payload size (" + MAX_PAYLOAD_SIZE_BITS + " bits), exceeded by " + (payloadBits.length() - MAX_PAYLOAD_SIZE_BITS) + " bits");
-		int numberOfParts = (payloadBits.length() + (BinaryMessage.MAX_BODY_SIZE_BITS - 1)) / BinaryMessage.MAX_BODY_SIZE_BITS;
-		// Create parts:
-		BitArrayInputStream stream = new BitArrayInputStream(payloadBits);
+		// Clear previously generated messages (!!!)
+		parts.clear();
+		
+		// Capacity check:
+		if(bodyBits.length() > MAX_BODY_SIZE_BITS)
+			throw new TransmissionCapacityExceededException("Maximum body size (" + MAX_BODY_SIZE_BITS + " bits), exceeded by " + (bodyBits.length() - MAX_BODY_SIZE_BITS) + " bits");
+		
+		// Split up transmission bodyBits in parts (each becoming the body of a separate BinaryMessage):
+		int numberOfParts = (bodyBits.length() + (BinaryMessage.MAX_BODY_SIZE_BITS - 1)) / BinaryMessage.MAX_BODY_SIZE_BITS;
+		BitArrayInputStream stream = new BitArrayInputStream(bodyBits);
 		for(int p = 0; p < numberOfParts; p++)
 			parts.add(new BinaryMessage(this, p + 1, numberOfParts, stream.readBitArray(Math.min(BinaryMessage.MAX_BODY_SIZE_BITS, stream.bitsAvailable()))));		
 		stream.close();
@@ -110,13 +114,13 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 			stream.write(part.getBody());
 		stream.flush();
 		stream.close();
-		return stream.toBitArray();
+		return stream.toBitArray(); // return transmission body bits, possibly with some additional padding at the end (trailing 0s), this will be ignored in Transmission#receive()
 	}
 
 	@Override
-	public int getMaxPayloadBits()
+	protected int getMaxBodyBits()
 	{
-		return MAX_PAYLOAD_SIZE_BITS;
+		return MAX_BODY_SIZE_BITS;
 	}
 
 	/* (non-Javadoc)

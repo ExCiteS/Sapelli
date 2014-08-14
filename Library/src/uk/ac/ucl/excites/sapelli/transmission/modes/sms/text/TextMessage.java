@@ -63,14 +63,17 @@ public class TextMessage extends Message
 	
 	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, TextSMSTransmission.MAX_TRANSMISSION_PARTS);
 	
-	private static final int HEADER_CHARS = (Transmission.TRANSMISSION_ID_FIELD.getSize() +
-											Transmission.PAYLOAD_HASH_FIELD.getSize() +
-											PART_NUMBER_FIELD.getSize() +
-											PART_NUMBER_FIELD.getSize()) / (TextSMSTransmission.BITS_PER_CHAR - 1 /* for separator bit */); // = 8 chars
+	private static final int HEADER_CHARS = (Transmission.TRANSMISSION_ID_FIELD.size() +
+											Transmission.PAYLOAD_HASH_FIELD.size() +
+											PART_NUMBER_FIELD.size() +
+											PART_NUMBER_FIELD.size()) / (TextSMSTransmission.BITS_PER_CHAR - 1 /* for separator bit */); // = 8 chars
 	
-	public static final int MAX_PAYLOAD_CHARS = MAX_TOTAL_CHARS - HEADER_CHARS;	
+	public static final int MAX_BODY_CHARS = MAX_TOTAL_CHARS - HEADER_CHARS;	
 
 	// DYNAMICS------------------------------------------------------
+	/**
+	 * the body of the message, i.e. a part of the whole transmission body.
+	 */
 	private String body;
 	
 	/**
@@ -87,8 +90,8 @@ public class TextMessage extends Message
 		super(transmission, partNumber, totalParts);
 		if(body == null)
 			throw new NullPointerException("Payload cannot be null!");
-		if(body.length() > MAX_PAYLOAD_CHARS)
-			throw new IllegalArgumentException("Payload is too long (max: " + MAX_PAYLOAD_CHARS + " chars; got: " + body.length() + " chars).");
+		if(body.length() > MAX_BODY_CHARS)
+			throw new IllegalArgumentException("Payload is too long (max: " + MAX_BODY_CHARS + " chars; got: " + body.length() + " chars).");
 		this.body = body;
 	}
 

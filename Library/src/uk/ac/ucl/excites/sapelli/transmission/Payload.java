@@ -43,7 +43,7 @@ public abstract class Payload
 {
 
 	// STATICS-------------------------------------------------------
-	static public final int PAYLOAD_TYPE_SIZE = 5; // bits
+	static public final int PAYLOAD_TYPE_SIZE = 5; // bits --> max 32 different types (first 16 of which are reserved for types built into the transmission framework)
 	static public final IntegerRangeMapping PAYLOAD_TYPE_FIELD = IntegerRangeMapping.ForSize(0, PAYLOAD_TYPE_SIZE); // unsigned(!) 5 bit integer
 	
 	static public enum BuiltinType
@@ -54,7 +54,7 @@ public abstract class Payload
 		//... up to 16 different built-in types (ordinals 0 to 15)
 	}
 	
-	static public final int MAX_BUILTIN_TYPES = 16;
+	static public final int MAX_BUILTIN_TYPES = (int) Math.pow(2, PAYLOAD_TYPE_SIZE - 1); // = 16
 	
 	static Payload New(BuiltinType type)
 	{
@@ -70,19 +70,17 @@ public abstract class Payload
 		}
 	}
 	
-	static Payload New(TransmissionClient client, BitArray payloadBits) throws IOException
+	static Payload New(TransmissionClient client, int payloadType) throws IllegalArgumentException
 	{
-		// Read payload type:
-		int type = (int) PAYLOAD_TYPE_FIELD.read(payloadBits, 0);
 		// Try to instantiate Payload object for the type: 
-		if(type >= MAX_BUILTIN_TYPES)
-			return client.newPayload(type);
+		if(payloadType >= MAX_BUILTIN_TYPES)
+			return client.newPayload(payloadType);
 		else
 		{
-			if(type < BuiltinType.values().length)
-				return New(BuiltinType.values()[type]);
+			if(payloadType < BuiltinType.values().length)
+				return New(BuiltinType.values()[payloadType]);
 			else
-				throw new IllegalArgumentException("Unsupport Payload type: " + type);
+				throw new IllegalArgumentException("Unsupport Payload type: " + payloadType);
 		}
 	}
 	
@@ -118,25 +116,12 @@ public abstract class Payload
 	
 		BitArrayOutputStream bitstream = new BitArrayOutputStream();
 		
-		// Write payload type:
-		PAYLOAD_TYPE_FIELD.write(getType(), bitstream);
-		
-		// Write payload payload:
+		// Serialise payload data:
 		write(bitstream);
 		
-		// Flush, close & get bits:
-		bitstream.flush();
+		// Close & return bits (no need for flush because it doesn't do anything on a BitArrayOutputStream):
 		bitstream.close();
-		BitArray bits = bitstream.toBitArray();
-		
-		// Capacity checks:
-		if(bits.length() > transmission.getMaxPayloadBits())
-			throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + bits.length() + " bits; max for transmission: " + transmission.getMaxPayloadBits() + " bits");
-		if(transmission.canWrapIncreaseSize()) // the the transmission is one in which payload size can grow upon wrapping (e.g. due to escaping), then ... 
-			transmission.wrap(bits); // try wrapping the payload in the transmission, a TransmissionCapacityExceededException will be thrown when the size goes over the limit
-		
-		// Return bits:
-		return bits;
+		return bitstream.toBitArray();
 	}
 	
 	protected abstract void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException;
@@ -150,12 +135,7 @@ public abstract class Payload
 		{
 			bitstream = new BitArrayInputStream(payloadBits);
 			
-			// Verify payload type:
-			int type = (int) PAYLOAD_TYPE_FIELD.read(bitstream); 
-			if(type != getType())
-				throw new IllegalStateException("Invalid payload type (" + type + "; expecting " + getType() + ")");
-			
-			// Deserialise payload:
+			// Deserialise payload data:
 			read(bitstream);
 		}
 		finally

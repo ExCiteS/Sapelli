@@ -205,18 +205,18 @@ public class StringColumn extends ComparatorColumn<String>
 	@Override
 	protected int _getMinimumSize()
 	{
-		return sizeField.getSize(); // when stored string is empty: just the size field
+		return sizeField.size(); // when stored string is empty: just the size field
 	}
 	
 	@Override
 	protected int _getMaximumSize()
 	{
-		return sizeField.getSize() + getMaximumBytes() * Byte.SIZE;
+		return sizeField.size() + getMaximumBytes() * Byte.SIZE;
 	}
 	
 	public int getMaximumBytes()
 	{
-		return (int) sizeField.getHighBound();
+		return (int) sizeField.highBound();
 	}
 	
 	/**

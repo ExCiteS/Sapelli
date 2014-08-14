@@ -144,13 +144,13 @@ public class ByteArrayColumn extends Column<byte[]>
 	@Override
 	protected int _getMinimumSize()
 	{
-		return sizeField.getSize(); // when stored array has 0 lengthy: just the size field is stored
+		return sizeField.size(); // when stored array has 0 lengthy: just the size field is stored
 	}
 	
 	@Override
 	protected int _getMaximumSize()
 	{
-		return sizeField.getSize() + ((int) sizeField.getHighBound()) * Byte.SIZE;
+		return sizeField.size() + ((int) sizeField.highBound()) * Byte.SIZE;
 	}
 
 	/* (non-Javadoc)

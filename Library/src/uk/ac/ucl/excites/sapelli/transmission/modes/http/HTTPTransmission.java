@@ -137,7 +137,7 @@ public class HTTPTransmission extends Transmission
 	}
 
 	@Override
-	public int getMaxPayloadBits()
+	protected int getMaxBodyBits()
 	{
 		return MAX_BODY_SIZE * Byte.SIZE;
 	}

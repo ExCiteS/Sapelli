@@ -275,7 +275,7 @@ public class TransmissionStore implements Store
 		TimeStamp receivedAt = COLUMN_RECEIVED_AT.retrieveValue(tRec);
 		
 		// Query for part records:
-		
+		//TODO
 		
 		//List<Record> tPartRecs = recordStore.retrieveRecords(new RecordsQuery(TRANSMISSION_PART_SCHEMA, new RuleConstraint(TRANSMISSION_PART_COLUMN_TRANSMISSION_ID, 
 		
@@ -295,25 +295,27 @@ public class TransmissionStore implements Store
 	
 	private SMSTransmission<?> createSMSTransmission(Transmission.Type type, int localID, Integer remoteID, int payloadHash, String sender, String receiver, TimeStamp sentAt, TimeStamp receivedAt)
 	{
+		//TODO
 		return null;
 		
 	}
 	
 	public BinarySMSTransmission retrieveBinarySMSTransmission(SMSAgent correspondent, boolean sent, int payloadHash)
 	{
+		//TODO
 		// throw special exception when not unique		
 		return null;
 	}
 	
 	public TextSMSTransmission retrieveTextSMSTransmission(SMSAgent correspondent, boolean sent, int payloadType, int payloadHash)
 	{
-		
+		//TODO
 		return null;
 	}
 
 	public HTTPTransmission retrieveHTTPTransmission(int payloadType, int payloadHash)
 	{
-		
+		//TODO
 		return null;
 	}
 

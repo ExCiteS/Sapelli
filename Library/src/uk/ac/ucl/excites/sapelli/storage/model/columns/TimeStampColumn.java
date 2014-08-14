@@ -298,7 +298,7 @@ public class TimeStampColumn extends ComparatorColumn<TimeStamp>
 	@Override
 	protected int _getMinimumSize()
 	{
-		return timeMapping.getSize() + (keepLocalTimezone ? TIMEZONE_QH_OFFSET_SIZE : 0);
+		return timeMapping.size() + (keepLocalTimezone ? TIMEZONE_QH_OFFSET_SIZE : 0);
 	}
 	
 	@Override
@@ -309,12 +309,12 @@ public class TimeStampColumn extends ComparatorColumn<TimeStamp>
 	
 	public TimeStamp getLowBound()
 	{
-		return new TimeStamp(timeMapping.getLowBound() * (keepMS ? 1 : 1000));
+		return new TimeStamp(timeMapping.lowBound() * (keepMS ? 1 : 1000));
 	}
 
 	public TimeStamp getHighBound()
 	{
-		return new TimeStamp(timeMapping.getHighBound(strict) * (keepMS ? 1 : 1000));
+		return new TimeStamp(timeMapping.highBound(strict) * (keepMS ? 1 : 1000));
 	}
 
 	@Override

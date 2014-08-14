@@ -18,10 +18,13 @@
 
 package uk.ac.ucl.excites.sapelli.transmission;
 
+import java.io.EOFException;
 import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
@@ -55,6 +58,14 @@ public abstract class Transmission
 	static public final int PAYLOAD_HASH_SIZE = 16; // bits
 	static public final IntegerRangeMapping PAYLOAD_HASH_FIELD = IntegerRangeMapping.ForSize(0, PAYLOAD_HASH_SIZE); // unsigned(!) 16 bit integer
 	
+	/**
+	 * Minimum number of bits needed to fit transmission body, composed of:
+	 * 	- payload type field: Payload.PAYLOAD_TYPE_SIZE (= 5) bits
+	 * 	- payload data bits length field: at least 1 bit
+	 * 	- the actual payload data bits: at least 1 bit  
+	 */
+	static private final int MIN_BODY_LENGTH_BITS = Payload.PAYLOAD_TYPE_SIZE + 1 + 1; // bits
+	
 	static public final int CORRESPONDENT_MAX_LENGTH = 256;
 	
 	// DYNAMICS------------------------------------------------------
@@ -69,6 +80,12 @@ public abstract class Transmission
 	 * ID by which this transmission is identified in the context of the remote device/server
 	 */
 	protected Integer remoteID;
+	
+	/**
+	 * The payloadBitsLengthField is an IntegerRangeMapping which will be used to read/write the length of the payload data (in number of bits).<br/>
+	 * It is initialised in {@link #initialise()}.
+	 */
+	private IntegerRangeMapping payloadBitsLengthField = null;
 	
 	/**
 	 * Contents of the transmission
@@ -94,6 +111,7 @@ public abstract class Transmission
 		this.client = client;
 		this.payload = payload;
 		this.payload.setTransmission(this); // just in case
+		initialise(); // !!!
 	}
 	
 	/**
@@ -108,6 +126,7 @@ public abstract class Transmission
 		this.client = client;
 		this.remoteID = sendingSideID;
 		this.payloadHash = payloadHash;
+		initialise(); // !!!
 	}
 	
 	/**
@@ -128,6 +147,46 @@ public abstract class Transmission
 		this.payloadHash = payloadHash;
 		this.sentAt = sentAt;
 		this.receivedAt = receivedAt;
+		initialise(); // !!!
+	}
+	
+	/**
+	 * Initialise method.
+	 * 
+	 * Instantiates the payloadBitsLengthField: an IntegerRangeMapping which is used to read/write the length of the
+	 * payload data (in number of bits). The size of this field is chosen such that it is *just* big enough space to hold
+	 * values of 0 up to (and including) the maximum number of payload data bits the transmission can contain. The latter
+	 * value is equal to total transmission body capacity (given by getMaxBodyBits()) decreased by the size of the
+	 * PAYLOAD_TYPE_FIELD and the size of the payloadBitsLengthField itself!
+	 * Hence, computing the field's size (and/or highbound) is a kind of "chicken or the egg" problem. The answer lies in
+	 * in the logarithmic equation explained in the method code.
+	 * 
+	 * @return the payloadBitsLengthField
+	 */
+	private void initialise()
+	{
+		// Transmission capacity check:
+		if(getMaxBodyBits() < MIN_BODY_LENGTH_BITS)
+			throw new IllegalStateException("Transmission capacity (max body size) is too small! It is " + getMaxBodyBits() + " bits; while the minimum is " + MIN_BODY_LENGTH_BITS + " bits.");
+		
+		// Helper variable: a = bits available for length field (at least 1) + the actual data bits (at least 1)
+		int a = getMaxBodyBits() - Payload.PAYLOAD_TYPE_SIZE;
+		
+		/* The payloadBitlengthField must be *just* big enough to contain values from [0, b], where b (the field's
+		 * 	strict highbound) is the maximum number of actual payload data bits with can store.
+		 * This means that:
+		 * 												/ 0	in most cases --> no bits wasted
+		 * 		a - payloadBitlengthField.size() - b = { 
+		 * 												\ 1	in rare cases (6 times for 2 <= a <= 100) --> 1 bit wasted
+		 * This is achieved by the following equation:
+		 * 		b = a - floor(log2(a - floor(log2(a)))) - 1
+		 * However, because ...
+		 * 		floor(log2(x)) = 31 - Integer.numberOfLeadingZeros(x) = Integer.SIZE - 1 - Integer.numberOfLeadingZeros(x)
+		 * ... this equation can be reduced to: */
+		int b = a - Integer.SIZE + Integer.numberOfLeadingZeros(a - Integer.SIZE + 1 + Integer.numberOfLeadingZeros(a));
+		
+		// Construct payloadBitsLengthField:
+		payloadBitsLengthField = new IntegerRangeMapping(0, b);
 	}
 	
 	public void setLocalID(int id)
@@ -189,16 +248,37 @@ public abstract class Transmission
 			return;
 		}
 		
-		// Serialise payload:
+		// Open input stream:
+		BitArrayOutputStream bitstream = new BitArrayOutputStream();
+		
+		// Write payload type:
+		Payload.PAYLOAD_TYPE_FIELD.write(payload.getType(), bitstream);
+		
+		// Get serialised payload bits:
 		BitArray payloadBits = payload.serialise();
 		
+		// Capacity check:
+		if(payloadBits.length() > getMaxPayloadBits())
+			throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + payloadBits.length() + " bits; max for this type of transmission: " + getMaxPayloadBits() + " bits");
+		
 		// Compute & store payload hash:
-		this.payloadHash = computePayloadHash(payloadBits); // must be set before wrap() is called!
+		this.payloadHash = computePayloadHash(payloadBits); // must be set before wrap() is called!	
 		
-		// Wrap payload for transmission:
-		wrap(payloadBits);
+		// Write payload bits length:
+		payloadBitsLengthField.write(payloadBits.length(), bitstream);
 		
-		// The actual sending:
+		// Write the actual payload bits:
+		bitstream.write(payloadBits);
+		
+		// Flush, close & get body bits:
+		bitstream.flush();
+		bitstream.close();
+		BitArray bodyBits = bitstream.toBitArray();
+		
+		// Wrap body for transmission:
+		wrap(bodyBits);
+		
+		// Do the actual sending:
 		doSend(transmissionSender);
 	}
 
@@ -213,7 +293,7 @@ public abstract class Transmission
 	
 	protected abstract void doSend(Sender transmissionSender);
 	
-	public void receive() throws IncompleteTransmissionException, IOException, IllegalStateException, PayloadDecodeException, UnknownModelException
+	public void receive() throws IncompleteTransmissionException, IOException, IllegalArgumentException, IllegalStateException, PayloadDecodeException, UnknownModelException
 	{
 		// Some checks:
 		if(!isComplete())
@@ -224,31 +304,72 @@ public abstract class Transmission
 			return;
 		}
 		
-		// Unwrap (reassemble/decode) payload:
-		BitArray payloadBits = unwrap();
+		// Unwrap (reassemble/decode) body:
+		BitArray bodyBits = unwrap();
+		
+		// Length check:
+		if(bodyBits.length() < MIN_BODY_LENGTH_BITS - 1) // - 1 because in an extreme case it could be that the payload data is empty (0 bits long)
+			throw new IncompleteTransmissionException(this, "Transmission body length (" + bodyBits.length() + " bits) for this to be a valid transmission.");
+		
+		// Open input stream:
+		BitArrayInputStream bitstream = new BitArrayInputStream(bodyBits);
+		
+		// Read payload type & instantiate Payload object:
+		this.payload = Payload.New(client, (int) Payload.PAYLOAD_TYPE_FIELD.read(bitstream));
+		this.payload.setTransmission(this); // !!!
+		
+		// Read payload bits length:
+		int payloadBitsLength = (int) payloadBitsLengthField.read(bitstream);
+		
+		// Read the actual payload bits:
+		BitArray payloadBits;
+		try
+		{
+			payloadBits = bitstream.readBitArray(payloadBitsLength);
+		}
+		catch(EOFException eofe)
+		{	// not enough bits could be read (i.e. less than payloadBitsLength)
+			throw new IncompleteTransmissionException(this, "Transmission body is incomplete, could not read all of the expected " + payloadBitsLength + " payload data bits.");
+		}
+		
+		// Close stream:
+		bitstream.close();
 		
 		// Verify payload hash:
 		if(payloadHash != computePayloadHash(payloadBits))
 			throw new IncompleteTransmissionException(this, "Payload hash mismatch!");
 		
-		// Set payload:
-		this.payload = Payload.New(client, payloadBits);
-		this.payload.setTransmission(this); // !!!
-		
 		// Deserialise payload:
 		payload.deserialise(payloadBits);
 		
-		// set receivedAT?
+		// TODO set receivedAT?
+	}
+	
+	/**
+	 * The maximum length of the body of this transmission (in number of bits).
+	 * 
+	 * @return
+	 */
+	protected abstract int getMaxBodyBits();
+	
+	/**
+	 * The maximum length of the payload data (in number of bits) which can be fitted into this transmission.
+	 * 
+	 * @return
+	 */
+	public int getMaxPayloadBits()
+	{
+		return (int) payloadBitsLengthField.highBound(true);
 	}
 	
 	/**
 	 * Wraps/encodes/splits the payload bits in a way they can be send by this transmission
 	 * 
-	 * @param payloadBits
+	 * @param bodyBits
 	 * @throws TransmissionCapacityExceededException
 	 * @throws IOException
 	 */
-	protected abstract void wrap(BitArray payloadBits) throws TransmissionCapacityExceededException, IOException;
+	protected abstract void wrap(BitArray bodyBits) throws TransmissionCapacityExceededException, IOException;
 	
 	/**
 	 * Unwraps/decoded/joins the payload bits
@@ -299,8 +420,6 @@ public abstract class Transmission
 	{
 		return client;
 	}
-	
-	public abstract int getMaxPayloadBits();
 	
 	/**
 	 * @return whether (true) or not (false) the wrapping of the payload data in the transmission (as implemented by {@link #wrap(BitArray)}) can cause the data size to grow (e.g. due to escaping)

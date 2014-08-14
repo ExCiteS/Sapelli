@@ -23,6 +23,8 @@ public final class BitArrayInputStream extends BitInputStream
 	public BitArrayInputStream(BitArray bitArray)
 	{
 		super();
+		if(bitArray == null)
+			throw new NullPointerException("bitArray cannot be null!");
 		this.bitArray = bitArray;
 		currentIndex = 0;
 	}

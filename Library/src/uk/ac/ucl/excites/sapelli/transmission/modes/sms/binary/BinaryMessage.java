@@ -71,14 +71,17 @@ public class BinaryMessage extends Message
 	
 	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, BinarySMSTransmission.MAX_TRANSMISSION_PARTS);
 	
-	public static final int HEADER_SIZE_BITS =	Transmission.TRANSMISSION_ID_FIELD.getSize() /* Transmission ID */ +
-												Transmission.PAYLOAD_HASH_FIELD.getSize() /* Payload hash */ +
-												PART_NUMBER_FIELD.getSize() /* Part number */ +
-												PART_NUMBER_FIELD.getSize() /* Parts total */; 
+	public static final int HEADER_SIZE_BITS =	Transmission.TRANSMISSION_ID_FIELD.size() +		// Transmission ID
+												Transmission.PAYLOAD_HASH_FIELD.size() +		// Payload hash
+												PART_NUMBER_FIELD.size() +						// Part number
+												PART_NUMBER_FIELD.size();						// Parts total
 	
 	public static final int MAX_BODY_SIZE_BITS = (MAX_TOTAL_SIZE_BYTES * Byte.SIZE) - HEADER_SIZE_BITS;
 	
 	// DYNAMICS------------------------------------------------------
+	/**
+	 * the body of the message, i.e. a part of the whole transmission body.
+	 */
 	private BitArray body;
 	
 	/**
@@ -137,7 +140,7 @@ public class BinaryMessage extends Message
 			totalParts = (int) PART_NUMBER_FIELD.read(in);									// Total parts
 			
 			//Read payload:
-			body = in.readBitArray(in.bitsAvailable());
+			body = in.readBitArray(in.bitsAvailable()); // may include trailing 0 padding if this is the last message in the transmission
 		}
 		catch(IOException ioe)
 		{
@@ -198,16 +201,16 @@ public class BinaryMessage extends Message
 			out = new BitWrapOutputStream(rawOut);
 	
 			// Write header:
-			Transmission.TRANSMISSION_ID_FIELD.write(sendingSideTransmissionID, out);	// transmission ID on sending side
+			Transmission.TRANSMISSION_ID_FIELD.write(sendingSideTransmissionID, out);	// Transmission ID on sending side
 			Transmission.PAYLOAD_HASH_FIELD.write(payloadHash, out);					// Payload hash
-			PART_NUMBER_FIELD.write(partNumber, out);									//Part number
-			PART_NUMBER_FIELD.write(totalParts, out);									//Total parts
+			PART_NUMBER_FIELD.write(partNumber, out);									// Part number
+			PART_NUMBER_FIELD.write(totalParts, out);									// Total parts
 			
 			// Write body:
 			out.write(body);
 			
 			// Flush, close & get bytes:
-			out.flush();
+			out.flush(); // will use padding (insertion of trailing 0s) if not at Byte boundary (only happens on last message in transmission)
 			out.close();
 	
 			data = rawOut.toByteArray();
