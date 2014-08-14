@@ -39,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.StringListMapper;
+import android.util.Log;
 
 
 /**
@@ -52,6 +53,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	static public final int DEFAULT_NUM_COLS = 1;
 	static public final int DEFAULT_NUM_ROWS = 2;
 	static public final String DEFAULT_ALT_TEXT = "?";
+	static public final float DEFAULT_ALT_HEIGHT = 0;
 	static public final boolean DEFAULT_CROSSED = false;
 	static public final String DEFAULT_CROSS_COLOR = "#A5FF0000"; // Red with 65% alpha
 	
@@ -62,6 +64,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	private int cols;
 	private int rows;
 	private String altText;
+	private float altHeight;
 	private boolean crossed;
 	private String crossColor;
 	private String value;
@@ -139,6 +142,16 @@ public class ChoiceField extends Field implements DictionaryItem
 			return value;
 		return DEFAULT_ALT_TEXT;
 	}
+	
+	/**
+	 * @return the altHeight
+	 */
+	public float getAltHeight()
+	{
+		if(altHeight != Float.NaN) //TODO
+			return altHeight;
+		return DEFAULT_ALT_HEIGHT;
+	}
 
 	/**
 	 * @param altText the altText to set
@@ -146,6 +159,15 @@ public class ChoiceField extends Field implements DictionaryItem
 	public void setAltText(String altText)
 	{
 		this.altText = altText;
+	}
+	
+	/**
+	 * @param altHeight the altHeight to set, as a decimal (for example, 0.2 for
+	 * the text box to take up the lower 20% of the height of the combined item)
+	 */
+	public void setAltHeight(float altHeight)
+	{
+		this.altHeight = altHeight;
 	}
 	
 	/**

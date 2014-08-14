@@ -30,7 +30,6 @@ import android.view.View;
 import android.webkit.WebView;
 import android.widget.AdapterView;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 
 import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGBuilder;
@@ -40,7 +39,7 @@ import com.larvalabs.svgandroid.SVGDrawable;
 /**
  * An ImageItem subclass for images stored as files
  * 
- * @author mstevens
+ * @author mstevens, benelliott
  */
 public class FileImageItem extends ImageItem
 {
@@ -49,6 +48,9 @@ public class FileImageItem extends ImageItem
 
 	private File file;
 	private static final String FILE_PREFIX = "file://";
+	
+	private View grid; //handle to AdapterView up the view hierarchy, for WebView onTouch
+	private View container; //handle to child of the GridView
 	
 	public FileImageItem(File file)
 	{
@@ -109,16 +111,22 @@ public class FileImageItem extends ImageItem
 			    @SuppressLint("ClickableViewAccessibility")
 				@Override
 			    public boolean onTouch(View v, MotionEvent event) {
-			    	//override normal WebView touch behaviour and pass click up to parent RelativeLayout
-
-			    	RelativeLayout container = (RelativeLayout)v.getParent(); //find RelativeLayout by traversing up the view hierarchy
-			    	AdapterView<?> grid = (AdapterView<?>)container.getParent(); //find AdapterView that holds it
+			    	//override normal WebView touch behaviour and pass click up to AdapterView
 			    	
-			    	//Force the AdapterView's performItemClick on the Item corresponding to the animation
-			    	return grid.performItemClick(
+			    	if (grid == null) { //only search on first touch
+						container = (View) v.getParent();
+						grid = (View) container.getParent();
+						//proceed up the View hierarchy until AdapterView is found:
+						while (!(grid instanceof AdapterView)) {
+							container = (View) container.getParent();
+							grid = (View) grid.getParent();
+						}
+					}
+					//Force the AdapterView's performItemClick on the Item corresponding to the animation		    	
+			    	return ((AdapterView<?>)grid).performItemClick(
 			    			container,
-			    			grid.getPositionForView(container),
-			    			grid.getItemIdAtPosition(grid.getPositionForView(container))
+			    			((AdapterView<?>)grid).getPositionForView(container),
+			    			((AdapterView<?>)grid).getItemIdAtPosition(((AdapterView<?>)grid).getPositionForView(container))
 			    			);	
 			    }  
 			});

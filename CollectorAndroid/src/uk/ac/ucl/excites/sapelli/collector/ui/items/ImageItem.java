@@ -27,7 +27,7 @@ import android.widget.ImageView.ScaleType;
 import android.widget.RelativeLayout;
 
 /**
- * @author mstevens
+ * @author mstevens, benelliott
  *
  */
 public abstract class ImageItem extends Item

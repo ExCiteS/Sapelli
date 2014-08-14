@@ -57,6 +57,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
+import android.util.Log;
 
 /**
  * A {@link SubtreeParser} for <Form>s
@@ -118,6 +119,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
 	static private final String ATTRIBUTE_FIELD_EDITABLE = "editable";
 	static private final String ATTRIBUTE_FIELD_ALT = "alt";
+	static private final String ATTRIBUTE_FIELD_ALT_HEIGHT = "altHeight"; //use to adjust height of text box in combined item
 	static private final String ATTRIBUTE_FIELD_IMG = "img";
 	static private final String ATTRIBUTE_FIELD_CAPTION = "caption";
 	static private final String ATTRIBUTE_FIELD_CAPTIONS = "captions";
@@ -308,6 +310,7 @@ public class FormParser extends SubtreeParser
 				// Other attributes:
 				choice.setImageRelativePath(attributes.getString(ATTRIBUTE_FIELD_IMG, null, false, false));
 				choice.setAltText(attributes.getString(ATTRIBUTE_FIELD_ALT, null, false, false));
+				choice.setAltHeight(attributes.getFloat(ATTRIBUTE_FIELD_ALT_HEIGHT, ChoiceField.DEFAULT_ALT_HEIGHT));
 				choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
 				choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
 				choice.setCrossed(attributes.getBoolean("crossed", ChoiceField.DEFAULT_CROSSED));

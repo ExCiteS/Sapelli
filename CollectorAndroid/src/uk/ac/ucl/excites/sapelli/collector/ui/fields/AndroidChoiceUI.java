@@ -21,8 +21,8 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageTextItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.TextItem;
@@ -41,6 +42,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
@@ -332,8 +334,12 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	{
 		File imageFile = controller.getProject().getImageFile(child.getImageRelativePath());
 		Item item = null;
-		if(FileHelpers.isReadableFile(imageFile))
-			item = new FileImageItem(imageFile);
+		if(FileHelpers.isReadableFile(imageFile)){
+			Log.d("AndroidChoiceUI","altText: "+child.getAltText()+" alt height:" +child.getAltHeight());
+			if (child.getAltHeight() == 0) item = new FileImageItem(imageFile); //if no height given to "alt text box", just use an ImageItem
+			else // non-zero height for alt text box, so create a combined item for the image and the alt text:
+				item = new ImageTextItem(imageFile, child.getAltText(),child.getAltHeight());
+		}
 		else
 			item = new TextItem(child.getAltText()); //render alt text instead of image
 		
