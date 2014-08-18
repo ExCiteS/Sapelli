@@ -38,6 +38,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -424,8 +425,37 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			@Override
 			protected Bitmap doInBackground(Void... params)
 			{
-				Bitmap picture = BitmapFactory.decodeByteArray(data, 0, data.length);
-				return scaleAndRotate(picture);
+				Bitmap picture = null;
+
+				try
+				{
+					// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
+
+					// Decode image size, do not create the actual bitmap (picture is null)
+					BitmapFactory.Options options = new BitmapFactory.Options();
+					options.inJustDecodeBounds = true;
+					picture = BitmapFactory.decodeByteArray(data, 0, data.length, options);
+
+					// Find the preview size
+					int previewWidth = (ScreenMetrics.GetScreenWidth(getContext()) > 0) ? ScreenMetrics.GetScreenWidth(getContext()) : PREVIEW_SIZE;
+					int previewHeight = (ScreenMetrics.GetScreenHeight(getContext()) > 0) ? ScreenMetrics.GetScreenHeight(getContext()) : PREVIEW_SIZE;
+
+					// Decode with inSampleSize and get the correct, scaled image
+					options.inJustDecodeBounds = false;
+					options.inSampleSize = calculateInSampleSize(options, previewWidth, previewHeight);
+					picture = BitmapFactory.decodeByteArray(data, 0, data.length, options);
+
+					// Rotate
+					Matrix bitmapMatrix = new Matrix();
+					bitmapMatrix.postRotate(90);
+					picture = Bitmap.createBitmap(picture, 0, 0, picture.getWidth(), picture.getHeight(), bitmapMatrix, false);
+				}
+				catch(Exception e)
+				{
+					Debug.e(e);
+				}
+
+				return picture;
 			}
 
 			@Override
@@ -443,23 +473,30 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				dialog.cancel();
 			}
 
-			protected Bitmap scaleAndRotate(Bitmap picture)
+			/**
+			 * http://developer.android.com/training/displaying-bitmaps/load-bitmap.html
+			 * 
+			 * @param options
+			 * @param reqWidth
+			 * @param reqHeight
+			 * @return
+			 */
+			public int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight)
 			{
-				// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
+				// Raw height and width of image
+				final int height = options.outHeight;
+				final int width = options.outWidth;
+				int inSampleSize = 1;
 
-				// Find the Aspect Ratio
-				Float width = Float.valueOf(picture.getWidth());
-				Float height = Float.valueOf(picture.getHeight());
-				Float ratio = width / height;
+				if(height > reqHeight || width > reqWidth)
+				{
+					// Calculate the largest inSampleSize value that is a power of 2 and keeps both
+					// height and width larger than the requested height and width.
+					while((height / inSampleSize) > reqHeight && (width / inSampleSize) > reqWidth)
+						inSampleSize *= 2;
+				}
 
-				// Scale
-				picture = Bitmap.createScaledBitmap(picture, (int) (PREVIEW_SIZE * ratio), PREVIEW_SIZE, false);
-
-				// Rotate
-				Matrix bitmapMatrix = new Matrix();
-				bitmapMatrix.postRotate(90);
-
-				return Bitmap.createBitmap(picture, 0, 0, picture.getWidth(), picture.getHeight(), bitmapMatrix, false);
+				return inSampleSize;
 			}
 		}
 
