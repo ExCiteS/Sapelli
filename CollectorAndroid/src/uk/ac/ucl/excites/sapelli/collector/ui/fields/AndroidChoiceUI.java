@@ -26,15 +26,16 @@ import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.FontFitTextView.Coordinator;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.PressAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageTextItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.SplitItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.TextItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
@@ -173,7 +174,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				this.removeView(chosenView);
 			
 			// New chosenView
-			chosenView = createItem(chosenField, chosenPaddingPx, !isEnabled()).getView(getContext());
+			chosenView = createItem(chosenField, chosenPaddingPx, !isEnabled(), null).getView(getContext());
 			
 			// Set margins on layoutparams:
 			LayoutParams chosenLP = new LinearLayout.LayoutParams(chosenSizePx, chosenSizePx);
@@ -281,10 +282,13 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 								collectorUI.getFieldUIPartHeightPx(field.getRows()));
 			int itemPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 
+			// Coordinator for dynamic font sizes:
+			Coordinator coordinator = new Coordinator();
+			
 			// Add items for children:
 			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
-				adapter.addItem(createItem(child, itemPaddingPx, !controller.isFieldEnabled(child)));
+				adapter.addItem(createItem(child, itemPaddingPx, !controller.isFieldEnabled(child), coordinator));
 			// Click listeners:
 			setOnItemClickListener(this);
 			setOnItemLongClickListener(this);
@@ -329,17 +333,25 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param grayedOut
 	 * @return
 	 */
-	public Item createItem(ChoiceField child, int itemPaddingPx, boolean grayedOut)
+	public Item createItem(ChoiceField child, int itemPaddingPx, boolean grayedOut, Coordinator fontSizeCoordinator)
 	{
 		File imageFile = controller.getProject().getImageFile(child.getImageRelativePath());
 		Item item = null;
-		if(FileHelpers.isReadableFile(imageFile)){
-			if (child.getAltHeight() == 0) item = new FileImageItem(imageFile); //if no height given to "alt text box", just use an ImageItem
-			else // non-zero height for alt text box, so create a combined item for the image and the alt text:
-				item = new ImageTextItem(imageFile, child.getAltText(),child.getAltHeight());
+		if(FileHelpers.isReadableFile(imageFile))
+		{
+			Item imgItem = new FileImageItem(imageFile);
+			// Show alt as well?
+			if(child.getAltHeight() > 0)
+			{	// image shown with alt text caption underneath
+				item = (new SplitItem(SplitItem.VERTICAL))
+						.addItem(imgItem, 1f - child.getAltHeight())
+						.addItem(new TextItem(child.getAltText(), fontSizeCoordinator), child.getAltHeight()); //render alt text underneath image
+			}
+			else
+				item = imgItem; //if no height given to "alt text box", just use an ImageItem
 		}
 		else
-			item = new TextItem(child.getAltText()); //render alt text instead of image
+			item = new TextItem(child.getAltText(), fontSizeCoordinator); //render alt text instead of image
 		
 		// Set background colour:
 		item.setBackgroundColor(ColourHelpers.ParseColour(child.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));

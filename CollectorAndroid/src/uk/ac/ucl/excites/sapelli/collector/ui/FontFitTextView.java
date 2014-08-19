@@ -18,9 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.content.Context;
 import android.graphics.Paint;
-import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.widget.TextView;
 
@@ -34,33 +37,36 @@ public class FontFitTextView extends TextView
 {
 
 	private Paint testPaint;
+	private Coordinator coordinator;
 	
 	public FontFitTextView(Context context)
 	{
-		super(context);
-		initialise();
+		this(context, null);
 	}
-
-	public FontFitTextView(Context context, AttributeSet attrs)
+	
+	public FontFitTextView(Context context, Coordinator coordinator)
 	{
-		super(context, attrs);
+		super(context);
+		this.coordinator = coordinator;
 		initialise();
 	}
 
 	private void initialise()
 	{
+		if(coordinator != null)
+			coordinator.register(this);
 		testPaint = new Paint();
 		testPaint.set(this.getPaint());
 		// max size defaults to the initially specified text size unless it is too small
 	}
 
 	/**
-	 * Resize the font so the specified text fits in the text box assuming the text box is the specified width.
+	 * Compute maximum font size which makes the specified text fits in the text box assuming the text box is the specified width.
 	 */
-	private void refitText(String text, int textWidth)
+	private float refitText(String text, int textWidth)
 	{
 		if(textWidth <= 0)
-			return;
+			return this.getTextSize();
 		int targetWidth = textWidth - this.getPaddingLeft() - this.getPaddingRight();
 		float hi = 100;
 		float lo = 2;
@@ -78,7 +84,7 @@ public class FontFitTextView extends TextView
 				lo = size; // too small
 		}
 		// Use lo so that we undershoot rather than overshoot
-		this.setTextSize(TypedValue.COMPLEX_UNIT_PX, lo);
+		return lo;
 	}
 
 	@Override
@@ -86,8 +92,10 @@ public class FontFitTextView extends TextView
 	{
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 		int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
-		int height = getMeasuredHeight();
-		refitText(this.getText().toString(), parentWidth);
+		int height = getMeasuredHeight(); // ???
+		this.setTextSize(TypedValue.COMPLEX_UNIT_PX, refitText(this.getText().toString(), parentWidth));
+		if(coordinator != null)
+			coordinator.refitted(this);
 		this.setMeasuredDimension(parentWidth, height);
 	}
 
@@ -104,6 +112,41 @@ public class FontFitTextView extends TextView
 		{
 			refitText(this.getText().toString(), w);
 		}
+	}
+	
+	/**
+	 * @author mstevens, Ben
+	 *
+	 */
+	static public class Coordinator
+	{
+		
+		private List<FontFitTextView> views;
+		private float minMaxFontSize = Float.MAX_VALUE;
+		
+		public Coordinator()
+		{
+			this.views = new ArrayList<FontFitTextView>();
+		}
+		
+		public void register(FontFitTextView view)
+		{
+			views.add(view);
+		}
+		
+		public void refitted(FontFitTextView view)
+		{
+			if(view.getTextSize() < minMaxFontSize)
+			{
+				minMaxFontSize = view.getTextSize();
+				for(FontFitTextView v : views)
+					if(v != view)
+						v.setTextSize(TypedValue.COMPLEX_UNIT_PX, minMaxFontSize);
+			}
+			else if(view.getTextSize() > minMaxFontSize)
+				view.setTextSize(TypedValue.COMPLEX_UNIT_PX, minMaxFontSize);
+		}
+		
 	}
 
 }

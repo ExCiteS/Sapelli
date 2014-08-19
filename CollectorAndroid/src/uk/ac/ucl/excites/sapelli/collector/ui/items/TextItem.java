@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
 import uk.ac.ucl.excites.sapelli.collector.ui.FontFitTextView;
+import uk.ac.ucl.excites.sapelli.collector.ui.FontFitTextView.Coordinator;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.Gravity;
@@ -33,22 +34,24 @@ public class TextItem extends Item
 {
 
 	private String text;
+	private final Coordinator fontSizeCoordinator; // may be null
 	
-	public TextItem(String text)
+	public TextItem(String text, Coordinator fontSizeCoordinator)
 	{
-		this(null, text);
+		this(null, text, fontSizeCoordinator);
 	}
 	
-	public TextItem(Integer id, String text)
+	public TextItem(Integer id, String text, Coordinator fontSizeCoordinator)
 	{
 		super(id);
 		this.text = text;
+		this.fontSizeCoordinator = fontSizeCoordinator;
 	}
 	
 	@Override
 	protected View createView(Context context, boolean recycleChildren)
 	{
-		TextView txtView = new FontFitTextView(context);
+		TextView txtView = new FontFitTextView(context, fontSizeCoordinator);
 		txtView.setTextColor(Color.BLACK);
 		txtView.setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
 		txtView.setIncludeFontPadding(false);
