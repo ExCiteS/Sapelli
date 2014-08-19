@@ -20,14 +20,15 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
 //import com.caverock.androidsvg.SVG;
 
-import com.larvalabs.svgandroid.SVG;
-import com.larvalabs.svgandroid.SVGBuilder;
-import com.larvalabs.svgandroid.SVGDrawable;
-
 import android.annotation.SuppressLint;
+import android.content.Context;
 import android.content.res.Resources;
 import android.util.Log;
 import android.widget.ImageView;
+
+import com.larvalabs.svgandroid.SVG;
+import com.larvalabs.svgandroid.SVGBuilder;
+import com.larvalabs.svgandroid.SVGDrawable;
 
 /**
  * An ImageItem subclass for images stored as app resources
@@ -63,7 +64,7 @@ public class ResourceImageItem extends ImageItem
 
 	//@SuppressLint("NewApi")
 	@Override
-	protected void setImage(ImageView view)
+	protected void setImage(Context context, ImageView view)
 	{
 		try
 		{

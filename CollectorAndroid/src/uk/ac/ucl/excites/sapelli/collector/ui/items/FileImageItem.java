@@ -21,12 +21,15 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import java.io.File;
 import java.io.FileInputStream;
 
+import uk.ac.ucl.excites.sapelli.collector.util.BitmapUtils;
+import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Log;
 import android.widget.ImageView;
-
 
 //import com.caverock.androidsvg.SVG;
 import com.larvalabs.svgandroid.SVG;
@@ -42,6 +45,7 @@ public class FileImageItem extends ImageItem
 {
 	
 	static private final String TAG = "FileImageItem";
+	static private final int MAX_ITEM_WIDTH = 1200;
 
 	private File file;
 	
@@ -58,13 +62,31 @@ public class FileImageItem extends ImageItem
 	}
 	
 	@Override
-	protected void setImage(ImageView view)
+	protected void setImage(Context context, ImageView view)
 	{
 		try
 		{
 			if(!isVectorBased())
-			{	// Raster image (PNG, JPG, GIF, ...):
-				view.setImageBitmap(BitmapFactory.decodeFile(file.getAbsolutePath()));
+			{
+				// Raster image (PNG, JPG, GIF, ...):
+				Bitmap imageBitmap = null;
+
+				// Decode image size, do not create the actual bitmap (picture is null)
+				BitmapFactory.Options options = new BitmapFactory.Options();
+				options.inJustDecodeBounds = true;
+				imageBitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+
+				// Find the preview size
+				int previewWidth = (ScreenMetrics.GetScreenWidth(context) > 0) ? ScreenMetrics.GetScreenWidth(context) : MAX_ITEM_WIDTH;
+				int previewHeight = (ScreenMetrics.GetScreenHeight(context) > 0) ? ScreenMetrics.GetScreenHeight(context) : MAX_ITEM_WIDTH;
+
+				// Decode with inSampleSize and get the correct, scaled image
+				options.inJustDecodeBounds = false;
+				options.inSampleSize = BitmapUtils.calculateInSampleSize(options, previewWidth, previewHeight);
+				imageBitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+
+				// Set the image
+				view.setImageBitmap(imageBitmap);
 			}
 			else
 			{	// Vector image (SVG or SVGZ):

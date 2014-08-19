@@ -46,13 +46,13 @@ public abstract class ImageItem extends Item
 	{
 		ImageView view = new ImageView(context);
 		// Set image:
-		setImage(view);
+		setImage(context, view);
 		// Set scaling (raster-based images are only scaled down, never up; vector-based ones can be scaled up or down):
 		view.setScaleType(isVectorBased() ? (keepVectorAspectRatio ? ScaleType.FIT_CENTER : ScaleType.FIT_XY) : ScaleType.CENTER_INSIDE);
 		return view;
 	}
 	
-	protected abstract void setImage(ImageView view);
+	protected abstract void setImage(Context context, ImageView view);
 	
 	/**
 	 * 
