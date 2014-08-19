@@ -42,7 +42,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
@@ -335,7 +334,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		File imageFile = controller.getProject().getImageFile(child.getImageRelativePath());
 		Item item = null;
 		if(FileHelpers.isReadableFile(imageFile)){
-			Log.d("AndroidChoiceUI","altText: "+child.getAltText()+" alt height:" +child.getAltHeight());
 			if (child.getAltHeight() == 0) item = new FileImageItem(imageFile); //if no height given to "alt text box", just use an ImageItem
 			else // non-zero height for alt text box, so create a combined item for the image and the alt text:
 				item = new ImageTextItem(imageFile, child.getAltText(),child.getAltHeight());

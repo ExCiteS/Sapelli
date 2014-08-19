@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import java.io.File;
 
 import android.content.Context;
-import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
 
@@ -61,7 +60,8 @@ public class ImageTextItem extends Item
 				0,
 				1f - altHeight //altHeight determines height of text box
 				);
-		Log.d("ImageTextItem","weight: "+lllp.weight);
+
+		//Log.d("ImageTextItem","weight: "+lllp.weight);
 		imgView.setLayoutParams(lllp);
 		
 		//Obtain text box View, set weight accordingly, then add to LinearLayout
@@ -71,9 +71,8 @@ public class ImageTextItem extends Item
 				0,
 				altHeight
 				);
+		textView.setLayoutParams(lllp);
 		ll.addView(textView);
-		
 		return ll;
 	}
-
 }
