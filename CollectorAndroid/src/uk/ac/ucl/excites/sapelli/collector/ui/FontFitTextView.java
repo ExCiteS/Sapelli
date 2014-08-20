@@ -97,6 +97,7 @@ public class FontFitTextView extends TextView
 		if(coordinator != null)
 			coordinator.refitted(this);
 		this.setMeasuredDimension(parentWidth, height);
+		Log.d("FontFitTextView","onMeasure");
 	}
 
 	@Override

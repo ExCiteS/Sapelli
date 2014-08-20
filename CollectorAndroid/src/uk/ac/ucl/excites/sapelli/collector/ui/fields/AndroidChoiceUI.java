@@ -49,6 +49,7 @@ import android.view.View.OnFocusChangeListener;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.RelativeLayout.LayoutParams;
 
 /**
  * The UI for ChoiceFields
@@ -159,9 +160,12 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			
 			// Add label:
 			label = new TextView(getContext());
+			label.setLayoutParams( //ensure that the label text is not truncated by setting width to WRAP_CONTENT
+					new LinearLayout.LayoutParams(
+							LinearLayout.LayoutParams.WRAP_CONTENT,
+							LinearLayout.LayoutParams.WRAP_CONTENT));
 			label.setText(field.getCaption());
 			this.addView(label);
-			
 			chosenSizePx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_SIZE_DIP);
 			chosenPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 			chosenMarginPx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_MARGIN_DIP);
