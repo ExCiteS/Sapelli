@@ -41,7 +41,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
-import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
@@ -223,9 +222,6 @@ public class RecordsPayload extends Payload
 			throw new IllegalStateException("Payload contains no records. Add at least 1 record before serialising.");
 		try
 		{
-			EncryptionSettings encryptionSettings = transmission.getClient().getEncryptionSettingsFor(model);
-			boolean encrypt = encryptionSettings.isAllowEncryption() && !encryptionSettings.getKeys().isEmpty();
-			
 			int numberOfDifferentSchemataInTransmission = getSchemata().size();
 			Schema[] schemataInT = new Schema[numberOfDifferentSchemataInTransmission];
 			
@@ -247,8 +243,6 @@ public class RecordsPayload extends Payload
 				else
 					out.write(false); // no records of this schema appear in this transmission payload
 			}
-			//	Encryption flag (1 bit):
-			out.write(encrypt);
 
 			// Encode records -----------------------------
 			BitArray recordBits = encodeRecords(schemataInT);
@@ -260,24 +254,13 @@ public class RecordsPayload extends Payload
 				if(comprResults[c].length < comprResults[bestComprIdx].length)
 					bestComprIdx = c;
 			
-			// Encrypt record bits if needed:
-			if(encrypt)
-			{
-				//TODO Encrypt
-			}
-
 			// Write HEADER PART 2 ------------------------
-			//	Encryption related fields (x bits):
-			if(encrypt)
-			{
-				// TODO write encryption related fields
-			}
 			//	Compression flag (2 bits):
 			COMPRESSION_FLAG_FIELD.write(bestComprIdx, out);
 
-			// Write BODY: the encoded, compressed & encrypted records
-			if(COMPRESSION_MODES[bestComprIdx] != Compression.NONE || encrypt) // if compressed and/or encrypted: write byte array (may involve padding if only encrypted) 
-				out.write(/*encrypt ? encrypt(comprResults[bestComprIdx]) : TODO*/ comprResults[bestComprIdx]); // write byte array, first encrypting it as needed
+			// Write BODY: the encoded & compressed records
+			if(COMPRESSION_MODES[bestComprIdx] != Compression.NONE) // if compressed : write byte array 
+				out.write(comprResults[bestComprIdx]); // write byte array
 			else
 				recordBits.writeTo(out); // write bit array (avoid padding to byte boundary)
 		}
@@ -307,23 +290,16 @@ public class RecordsPayload extends Payload
 			throw new RecordsPayloadDecodeException(this, "Unsupported payload format version: " + format + " (highest supported version: " + HIGHEST_SUPPORTED_FORMAT + ").");
 		//	Read schema identification:
 		Schema[] schemataOrder = null; // TODO readSchemaIdentification(in); // sets model, returns schemataOrder
-		// 	Encryption flag:
-		boolean encrypted = in.readBit();
-		if(encrypted)
-		{
-			// TODO read encryption related fields
-		}
 		//	Compression flag:
 		int compressionMode = (int) COMPRESSION_FLAG_FIELD.read(in);
 		
-		// Read encoded records, possibly encrypted & possibly compressed:
+		// Read encoded records, possibly compressed:
 		BitArray recordBits;
-		if(COMPRESSION_MODES[compressionMode] == Compression.NONE && !encrypted)
-			recordBits = in.readBitArray(in.bitsAvailable()); // not compressed, not encrypted
+		if(COMPRESSION_MODES[compressionMode] == Compression.NONE)
+			recordBits = in.readBitArray(in.bitsAvailable()); // not compressed
 		else
 		{
 			byte[] recordBytes = in.readBytes(in.available());
-			// TODO Decrypt:
 			
 			// Decompress:
 			recordBytes = decompress(recordBytes, COMPRESSION_MODES[compressionMode]);
@@ -534,10 +510,7 @@ public class RecordsPayload extends Payload
 				- FORMAT_VERSION_SIZE				// Format version
 				- Model.MODEL_ID_SIZE				// Model ID
 				- model.getNumberOfSchemata()		// Schema occurence bitmask
-				- 1									// Encryption flag
-				- COMPRESSION_FLAG_FIELD.size()		// Compression flag
-				/* TODO encryption related fields (optional) */
-				;
+				- COMPRESSION_FLAG_FIELD.size();	// Compression flag
 	}
 	
 	/**

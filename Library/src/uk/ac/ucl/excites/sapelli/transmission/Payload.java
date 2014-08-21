@@ -165,16 +165,4 @@ public abstract class Payload
 		return CompressorFactory.getCompressor(mode).decompress(compressedData);
 	}
 	
-	protected byte[] encrypt(byte[] data, EncryptionSettings.Key key) throws IOException
-	{
-		//TODO encryption	
-		return data;
-	}
-
-	protected byte[] decrypt(byte[] data, EncryptionSettings[] settings) throws IOException
-	{
-		//TODO decryption
-		return data;
-	}
-	
 }
