@@ -54,18 +54,23 @@ public class BinaryMessage extends Message
 	 * <b>Explanation:</b><br/>
 	 * 	The body (called <code>TP_UD</code>) of an SMS message can contain up to 160 7-bit characters or the equivalent 140 bytes (octets)
 	 * 	Even though the GSM/3GPP standards actually support the sending of "binary" SMSs (i.e. containing 8-bit bytes instead of 7-bit characters)
-	 * 	_without_ requiring an UDH (User Data Header) to be inserted in the body this type of functionality does not seem to be exposed in Android.
+	 * 	_without_ requiring an UDH (User Data Header) to be inserted in the body, this type of functionality does not seem to be exposed in Android.
 	 *  Instead Android only allows sending "data messages" by means of the "Application port addressing scheme", which requires an UDH to be
-	 *  inserted in the body. This scheme exists in 2 varieties, one using 8-bit port numbers (UDH IEI = 04), the other using 16-bit port numbers (UDH IEI = 05).
-	 * 	In the former case the UDH takes up 5 bytes, in the later 7 bytes. However it is unclear whether Android will actually use a 5 byte header if a small
-	 * 	enough (i.e. needing <= 8 bit) port number is specified, or whether it always uses the 7 byte header.<br/>
+	 *  inserted in the body (taking up space that cannot be used to send actual user data). This scheme exists in 2 varieties, one using 8-bit port
+	 *  numbers (UDH IEI = 04), the other using 16-bit port numbers (UDH IEI = 05). In the former case the UDH takes up 5 bytes, in the later 7 bytes.<br/>
 	 *  <br/>
-	 *  For now we will assume a 7 byte UDH is (or could be) used and therefore limit the usable message contents to 133 (= 140 - 7) bytes.
-	 * 	
+	 *  Sadly however, current Android versions default to using 16-bit port numbers even if the actual port number(s) would fit in 8-bits. This means
+	 *  the UDH is always 7 bytes (and not 5) meaning there is only 133 bytes left for user data (and not 135).<br/>
+	 *  By studying the Android source I found that support for 8-bit port addressing (and 5-byte UDH) is essentially there, but it is not used because
+	 *  no size check on the destination port number is done. I've reported this problem to the Android developer mailing list (see link below).<br/>
+	 *  <br/>
+	 *  For now we have no choice but to always assume a 7 byte UDH is used and therefore we limit the usable message contents to 133 (= 140 - 7) bytes.
+	 *  
 	 * 	@see <a href="http://en.wikipedia.org/wiki/Short_Message_Service">SMS</a>
 	 *  @see <a href="http://en.wikipedia.org/wiki/User_Data_Header">User Data Header (UDH)</a>
 	 *  @see <a href="http://en.wikipedia.org/wiki/GSM_03.40">GSM 03.40 / 3GPP TS 23.040</a>
 	 *  @see <a href="http://en.wikipedia.org/wiki/GSM_03.38#GSM_8_bit_data_encoding">GSM 03.38 / 3GPP TS 23.038: 8-bit data encoding</a>
+	 *  @see <a href="https://code.google.com/p/android/issues/detail?id=75047">Bug report about lack of support for 8-bit port addressing</a>
 	 */
 	public static final int MAX_TOTAL_SIZE_BYTES = 133; //in bytes
 	

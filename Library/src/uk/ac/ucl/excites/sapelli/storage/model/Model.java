@@ -43,7 +43,7 @@ public class Model implements Serializable
 	 * 	In the case of the Sapelli Collector the data model is a Project and the model ID corresponds
 	 * 	to the combination of the project ID (= 24 bits) and the project fingerprint (= 32 bits), which are
 	 *  combined into one 56 bit value in SapelliCollectorClient. */
-	static public final int MODEL_ID_SIZE = 56; //bits
+	static public final int MODEL_ID_SIZE = 56; // bits
 	/**
 	 * Model ID: unsigned(!) 56 bit integer
 	 */
@@ -51,12 +51,13 @@ public class Model implements Serializable
 	
 	/*	the Model Schema Number signifies the number, position or index of a schema within the model it belongs to.
 	 * 	In the case of the Sapelli Collector it the value corresponds to the position within the project of the 
-	 * 	form the schema corresponds to. */
-	static public final int MODEL_SCHEMA_NO_SIZE = 4; //bits
+	 * 	form the schema corresponds to. Model schema numbers start at 0, meaning that the first schema added to
+	 * a model gets schema number 0 (not 1). */
+	static public final int MODEL_SCHEMA_NO_SIZE = 4; // bits
 	/**
 	 * Model schema number: unsigned(!) 4 bit integer
 	 */
-	static public final IntegerRangeMapping MODEL_SCHEMA_NO_FIELD = IntegerRangeMapping.ForSize(0, MODEL_SCHEMA_NO_SIZE);
+	static public final IntegerRangeMapping MODEL_SCHEMA_NO_FIELD = IntegerRangeMapping.ForSize(0, MODEL_SCHEMA_NO_SIZE); // [0, 15]
 	
 	static public int MaxSchemata()
 	{
@@ -101,16 +102,20 @@ public class Model implements Serializable
 		return name;
 	}
 	
+	/**
+	 * Adds a given schema to the model (provided it is not sealed, nor full)
+	 * 
+	 * @param schema the schema to add
+	 * @return the schema number which has been assigned to the added schema 
+	 * @throws ModelFullException
+	 */
 	protected int addSchema(Schema schema) throws ModelFullException
 	{
 		if(sealed)
 			throw new IllegalStateException("Cannot extend sealed model!");
 		if(schema == null)
 			throw new NullPointerException("Cannot add null Schema");
-		int no = schemata.indexOf(schema);
-		if(no != -1)
-			return no;
-		if(!MODEL_SCHEMA_NO_FIELD.fits(schemata.size()))
+		if(schemata.size() > MODEL_SCHEMA_NO_FIELD.highBound())
 			throw new ModelFullException("The model has reached the maximum of " + MODEL_SCHEMA_NO_FIELD.highBound() + " schemata.");
 		schemata.add(schema);
 		return schemata.size() - 1;
@@ -148,7 +153,7 @@ public class Model implements Serializable
 	}
 	
 	/**
-	 * @return the schemata
+	 * @return the schemata, in order of increasing schema number
 	 */
 	public List<Schema> getSchemata()
 	{

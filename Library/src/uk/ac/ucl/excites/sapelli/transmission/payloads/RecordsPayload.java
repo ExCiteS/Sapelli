@@ -46,14 +46,49 @@ import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Comp
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
+/**
+ * @author mstevens
+ *
+ */
 public class RecordsPayload extends Payload
 {
 
-	static protected final Compression[] COMPRESSION_MODES = { Compression.NONE, Compression.DEFLATE, Compression.LZMA };
-	static protected final IntegerRangeMapping COMPRESSION_FLAG_FIELD = new IntegerRangeMapping(0, COMPRESSION_MODES.length - 1); 
+	// STATIC----------------------------------------------
+	/**
+	 * Records payload format V2, which was introduced in Sapelli v2.0.
+	 * This not in compatible with the format used in v1.x, which is no longer supported in Sapelli v2.0.
+	 * V2 is currently the only support format but in the future variations/extension could be introduced.
+	 */
+	static protected final short V2_FORMAT = 2;
 	
-	protected final Map<Schema,List<Record>> recordsBySchema;
+	/**
+	 * The default Records payload format version being used.
+	 */
+	static protected final short DEFAULT_FORMAT = V2_FORMAT;
+	
+	/**
+	 * The highest supported Records payload format version
+	 */
+	static protected final short HIGHEST_SUPPORTED_FORMAT = V2_FORMAT;
+	
+	/**
+	 * We use 2 bits to store the format version This means up to 4 versions can be differentiated.
+	 * Currently only 1 supported format exists (= V2). If we ever get to V5 it would be best if an
+	 * additional flag is added to enable future extensions beyond V5. 
+	 */
+	static protected final short FORMAT_VERSION_SIZE = 2; // bits
+	
+	/**
+	 * The field used to indicate the version of the Records payload format which is being used.
+	 */
+	static protected final IntegerRangeMapping FORMAT_VERSION_FIELD = IntegerRangeMapping.ForSize(V2_FORMAT, FORMAT_VERSION_SIZE); // can take values from [2, 5] (but stored binary as [0, 3])
+	
+	static protected final Compression[] COMPRESSION_MODES = { Compression.NONE, Compression.DEFLATE, Compression.LZMA };
+	static protected final IntegerRangeMapping COMPRESSION_FLAG_FIELD = new IntegerRangeMapping(0, COMPRESSION_MODES.length - 1);
+	
+	// DYNAMIC---------------------------------------------
 	protected Model model;
+	protected final Map<Schema, List<Record>> recordsBySchema;
 	
 	public RecordsPayload()
 	{
@@ -185,9 +220,9 @@ public class RecordsPayload extends Payload
 			boolean encrypt = encryptionSettings.isAllowEncryption() && !encryptionSettings.getKeys().isEmpty();
 			
 			// Write HEADER PART 1 ------------------------
-			//  Write format version:
-			//TODO format version!
-			//	Write schema identification & get schemataOrder:
+			//  Format version (2 bits):
+			FORMAT_VERSION_FIELD.write(DEFAULT_FORMAT, out);
+			//	Schema identification:
 			Schema[] schemataOrder = writeSchemaIdentification(out);
 			//	Encryption flag (1 bit):
 			out.write(encrypt);
@@ -201,20 +236,26 @@ public class RecordsPayload extends Payload
 			for(int c = 1; c < COMPRESSION_MODES.length; c++)
 				if(comprResults[c].length < comprResults[bestComprIdx].length)
 					bestComprIdx = c;
-
-			// Write HEADER PART 2 ------------------------
-			//	Compression flag (2 bits):
-			COMPRESSION_FLAG_FIELD.write(bestComprIdx, out);
+			
 			if(encrypt)
 			{
-				// TODO encryption related fields	
+				//TODO Encrypt
 			}
-			
+
+			// Write HEADER PART 2 ------------------------
+			//	Encryption related fields (x bits):
+			if(encrypt)
+			{
+				// TODO write encryption related fields
+			}
+			//	Compression flag (2 bits):
+			COMPRESSION_FLAG_FIELD.write(bestComprIdx, out);
+
 			// Write BODY: the encoded, compressed & encrypted records
-			if(COMPRESSION_MODES[bestComprIdx] != Compression.NONE || encrypt)
+			if(COMPRESSION_MODES[bestComprIdx] != Compression.NONE || encrypt) // if compressed and/or encrypted: write byte array (may involve padding if only encrypted) 
 				out.write(/*encrypt ? encrypt(comprResults[bestComprIdx]) : TODO*/ comprResults[bestComprIdx]); // write byte array, first encrypting it as needed
 			else
-				recordBits.writeTo(out); // write bit array (avoid padding to byte boundary)			
+				recordBits.writeTo(out); // write bit array (avoid padding to byte boundary)
 		}
 		catch(IOException e)
 		{
@@ -233,35 +274,42 @@ public class RecordsPayload extends Payload
 	 * @see uk.ac.ucl.excites.sapelli.transmission.Payload#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream)
 	 */
 	@Override
-	protected void read(BitInputStream in) throws IOException, PayloadDecodeException, UnknownModelException
+	protected void read(BitInputStream in) throws IOException, RecordsPayloadDecodeException, UnknownModelException
 	{
-//			// Deserialise payload:
-//			//byte[] payloadBytes // = deserialise();
-//			
-//			// Input stream:
-//			ByteArrayInputStream rawIn = new ByteArrayInputStream(payloadBytes);
-//			in = new BitWrapInputStream(rawIn);
-//			
-//			// Read Schema ID:
-//			modelID = Schema.MODEL_ID_FIELD.read(in); // 56 bits
-//
-//			// Read flags:
-//			// 	Encryption flag (1 bit):
-//			boolean encrypted = in.readBit();
-//			//	Compression flag (2 bits):
-//			int compressionMode = (int) COMPRESSION_FLAG_FIELD.read(in);
-//			
-//			// Read encrypted, compressed & encoded records:
-//			byte[] recordBytes = in.readBytes(in.available());
-//			
-//			// Decrypt records
-//			recordBytes = decrypt(recordBytes); //TODO make use of encrypted flag to decrypt or not	
-//			
-//			// Decompress records
-//			recordBytes = decompress(recordBytes); // TODO use Compression flag!
-//			
-//			// Decode records
-//			decodeRecords(recordBytes);
+		// Read HEADER ------------------------------------
+		//	Read format version:
+		short format = (short) FORMAT_VERSION_FIELD.read(in);
+		if(format > HIGHEST_SUPPORTED_FORMAT)
+			throw new RecordsPayloadDecodeException(this, "Unsupported payload format version: " + format + " (highest supported version: " + HIGHEST_SUPPORTED_FORMAT + ").");
+		//	Read schema identification:
+		Schema[] schemataOrder = null; // TODO readSchemaIdentification(in); // sets model, returns schemataOrder
+		// 	Encryption flag:
+		boolean encrypted = in.readBit();
+		if(encrypted)
+		{
+			// TODO read encryption related fields
+		}
+		//	Compression flag:
+		int compressionMode = (int) COMPRESSION_FLAG_FIELD.read(in);
+		
+		// Read encoded records, possibly encrypted & possibly compressed:
+		BitArray recordBits;
+		if(COMPRESSION_MODES[compressionMode] == Compression.NONE && !encrypted)
+			recordBits = in.readBitArray(in.bitsAvailable()); // not compressed, not encrypted
+		else
+		{
+			byte[] recordBytes = in.readBytes(in.available());
+			// TODO Decrypt:
+			
+			// Decompress:
+			recordBytes = decompress(recordBytes, COMPRESSION_MODES[compressionMode]);
+			
+			// To bit array:
+			recordBits = BitArray.FromBytes(recordBytes);
+		}
+		
+		// Decode records
+		//TODO decodeRecords(recordBits);
 	}
 	
 	/**
@@ -312,13 +360,19 @@ public class RecordsPayload extends Payload
 		// Write schema identification:
 		// 	Write Model ID (56 bits):
 		Model.MODEL_ID_FIELD.write(model.getID(), out);
+		
 		// 	Write the number of different schemata (unless there is only 1 schema in the model):
-		if(numberOfDifferentSchemataInTransmissionField != null)
-			numberOfDifferentSchemataInTransmissionField.write(numberOfDifferentSchemataInTransmission, out);
-		//	Write the modelSchemaNumbers of the schemata occurring in the transmission (unless there is only 1 schema in the model):
-		if(modelSchemaNoField != null)
-			for(Schema schema : schemataOrder)
-				modelSchemaNoField.write(schema.getModelSchemaNumber(), out);
+//		if(numberOfDifferentSchemataInTransmissionField != null)
+//			numberOfDifferentSchemataInTransmissionField.write(numberOfDifferentSchemataInTransmission, out);
+//		//	Write the modelSchemaNumbers of the schemata occurring in the transmission (unless there is only 1 schema in the model):
+//		if(modelSchemaNoField != null)
+//			for(Schema schema : schemataOrder)
+//				modelSchemaNoField.write(schema.getModelSchemaNumber(), out);
+		
+		//	Write bitmask indicating from schemata of the model we have records (schemata in model order):
+		for(Schema sInM : model.getSchemata())
+			out.write(recordsBySchema.get(sInM) != null); // 1 bit per schema in model. Value of bit X = whether or not the transmission contains at least 1 record of schema with model schema number X 
+		
 		//	Check & write the number of records per schema (except the last one is not written):
 		int f = 0;
 		for(Schema schema : schemataOrder)
@@ -578,7 +632,7 @@ public class RecordsPayload extends Payload
 			// Compute the number of bits left for records:
 			int bitsAvailableForRecords = bitsAvailableForFieldsAndRecords;
 			for(int i = 0; i < fields.length - 1; i++) // length - 1! Because we do *not* reserve space for the field of the last schema in the schemataOrder
-				bitsAvailableForRecords -= (fields[i] == null ? 1 /*bit*/ : fields[i].size()); 
+				bitsAvailableForRecords -= (fields[i] == null ? 1 /*bit*/ : fields[i].size());
 			// Grow the size of the fields until a stable state is reached:
 			for(int x = 0; x < fields.length; x++)
 			{
