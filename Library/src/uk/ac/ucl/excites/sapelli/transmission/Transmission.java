@@ -251,6 +251,12 @@ public abstract class Transmission
 		// Open input stream:
 		BitArrayOutputStream bitstream = new BitArrayOutputStream();
 		
+		// TODO transmission format version?
+		
+		// TODO anonymous / user-cred
+		
+		// TODO encrypted flag + encryption-related fields
+		
 		// Write payload type:
 		Payload.PAYLOAD_TYPE_FIELD.write(payload.getType(), bitstream);
 		
@@ -276,7 +282,7 @@ public abstract class Transmission
 		BitArray bodyBits = bitstream.toBitArray();
 		
 		// Wrap body for transmission:
-		wrap(bodyBits);
+		wrap(bodyBits); // note: payloadHash must be set before this call
 		
 		// Do the actual sending:
 		doSend(transmissionSender);
