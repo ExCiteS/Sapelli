@@ -27,14 +27,52 @@ public class UnknownModelException extends Exception
 
 	private static final long serialVersionUID = 2L;
 
+	private Long modelID;
+	private Integer schemaID;
+	private Integer schemaVersion;
+	
+	/**
+	 * @param modelID
+	 */
 	public UnknownModelException(long modelID)
 	{
 		super(String.format("Unknown model (ID = %d).", modelID));
+		this.modelID = modelID;
 	}
 	
+	/**
+	 * @param schemaID
+	 * @param schemaVersion
+	 */
 	public UnknownModelException(int schemaID, int schemaVersion)
 	{
 		super(String.format("Unknown model/schema (schemaID = %d; schemaVersion = %d).", schemaID, schemaVersion));
+		this.schemaID = schemaID;
+		this.schemaVersion = schemaVersion;
 	}
 
+	/**
+	 * @return the modelID
+	 */
+	public Long getModelID()
+	{
+		return modelID;
+	}
+
+	/**
+	 * @return the schemaID
+	 */
+	public Integer getSchemaID()
+	{
+		return schemaID;
+	}
+
+	/**
+	 * @return the schemaVersion
+	 */
+	public Integer getSchemaVersion()
+	{
+		return schemaVersion;
+	}
+	
 }
