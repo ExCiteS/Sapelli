@@ -4,6 +4,8 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.ui.Switch;
+import uk.ac.ucl.excites.sapelli.visualisation.MapActivity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -12,6 +14,7 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
@@ -33,6 +36,7 @@ public class ProjectFragment extends Fragment implements OnClickListener {
 	private RelativeLayout rootLayout;
 	private Button addShortcut;
 	private Button removeShortcut;
+	private ImageButton openMapView;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -48,6 +52,8 @@ public class ProjectFragment extends Fragment implements OnClickListener {
 		addShortcut.setOnClickListener(this);
 		removeShortcut = (Button) ((ViewGroup) rootLayout).findViewById(R.id.removeShortcut);
 		removeShortcut.setOnClickListener(this);
+		openMapView = (ImageButton) ((ViewGroup) rootLayout).findViewById(R.id.mapView);
+		openMapView.setOnClickListener(this);
 
 		// Shortcut
 		//		Switch shortcutSwitch = (Switch) ((ViewGroup) rootLayout).findViewById(R.id.btn_shortcut);
@@ -77,7 +83,9 @@ public class ProjectFragment extends Fragment implements OnClickListener {
 		case R.id.removeShortcut:
 			((ProjectManagerActivity) getActivity()).removeShortcut();
 			break;
-
+		case R.id.mapView:
+			((ProjectManagerActivity) getActivity()).openMapView();
+			break;
 		}
 
 	}

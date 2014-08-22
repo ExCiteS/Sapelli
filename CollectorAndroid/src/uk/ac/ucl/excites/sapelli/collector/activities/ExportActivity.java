@@ -26,7 +26,8 @@ import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 /**
  * Activty that handles the export of Sapelli Collector records
  * 
- *  !! IMPORTANT !!! don't move Async Tasks to ExportFragment to avoid state loss on detach
+ * !! IMPORTANT !!! don't move Async Tasks to ExportFragment to avoid state loss
+ * on detach
  * 
  * @author mstevens, Julia
  */
@@ -118,11 +119,11 @@ public class ExportActivity extends ProjectActivity {
 			try {
 				// Schemas (when exportAll is set, all records of any schema/project/form will be fetched):
 				List<Schema> schemata = new ArrayList<Schema>();
-				if (selectedProject != null && exportAll)
-					
+				if (selectedProject != null && !exportAll) {
 					for (Form f : selectedProject.getForms())
 						if (f.isProducesRecords())
 							schemata.add(f.getSchema());
+				}
 				// Date range:
 				AndConstraint constraints = new AndConstraint();
 				if (dateRange[ExportFragment.DT_RANGE_IDX_FROM] != null)

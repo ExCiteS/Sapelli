@@ -34,14 +34,39 @@
                     style="?android:attr/buttonStyleSmall"
                     android:layout_width="80dp"
                     android:layout_height="wrap_content"
-                    android:text="Add" />
+                    android:text="@string/add" />
 
                 <Button
                     android:id="@+id/removeShortcut"
                     style="?android:attr/buttonStyleSmall"
                     android:layout_width="80dp"
                     android:layout_height="wrap_content"
-                    android:text="Remove" />
+                    android:text="@string/remove" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@layout/drop_shadow"
+                android:gravity="center_vertical"
+                android:orientation="horizontal" >
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:padding="10dp"
+                    android:text="@string/map_view" />
+
+                <ImageButton
+                    android:id="@+id/mapView"
+                    style="?android:attr/buttonStyleSmall"
+                    android:layout_width="80dp"
+                    android:layout_height="wrap_content"
+                    android:contentDescription="@string/show_map_view"
+                    android:minHeight="0dp"
+                    android:minWidth="0dp"
+                    android:src="@drawable/ic_sapellimapslogo" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

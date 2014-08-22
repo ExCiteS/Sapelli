@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.transmission.Settings;
+import uk.ac.ucl.excites.sapelli.visualisation.MapActivity;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -940,6 +941,17 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 			getActionBar().setTitle(R.string.app_name);
 		drawerLayout.closeDrawer(drawerList);
 
+	}
+	
+	public void openMapView(MenuItem item){
+		Intent intent = new Intent(this, MapActivity.class);
+		startActivity(intent);
+	}
+	
+	public void openMapView(){
+		Intent intent = new Intent(this, MapActivity.class);
+		intent.putExtra(MapActivity.PROJECTHASH, selectedProject.getHash());
+		startActivity(intent);
 	}
 
 }

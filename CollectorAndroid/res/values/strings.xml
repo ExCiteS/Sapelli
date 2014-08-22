@@ -81,5 +81,9 @@
     <string name="add_project">Please add a project</string>
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>
+    <string name="show_map_view">Show Map View</string>
+    <string name="map_view">Map View</string>
+    <string name="add">Add</string>
+    <string name="remove">Remove</string>
 
 </resources>

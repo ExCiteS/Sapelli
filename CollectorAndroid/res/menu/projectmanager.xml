@@ -21,10 +21,14 @@
                 android:id="@+id/export_all"
                 android:onClick="exportRecords"
                 android:title="@string/exportAllProj"/>
-            <item 
+            <item
                 android:id="@+id/scan_qr"
                 android:onClick="scanQR"
                 android:title="@string/scan_qr_code"/>
+            <item
+                android:id="@+id/map_view"
+                android:onClick="openMapView"
+                android:title="@string/show_map_view"/>
             <item
                 android:id="@+id/about"
                 android:onClick="openAboutDialog"
@@ -56,7 +60,7 @@
         android:icon="@android:drawable/ic_menu_save"
         android:onClick="copyDBtoSD"
         android:showAsAction="always"
-        android:title="@string/copy_db_menuitem"/>
+        android:title="@string/copy_db_menuitem"/>
     -->
 
 </menu>
