@@ -118,11 +118,11 @@ public class ExportActivity extends ProjectActivity {
 			try {
 				// Schemas (when exportAll is set, all records of any schema/project/form will be fetched):
 				List<Schema> schemata = new ArrayList<Schema>();
-				if (selectedProject != null && exportAll)
-					
+				if (selectedProject != null && !exportAll) {
 					for (Form f : selectedProject.getForms())
 						if (f.isProducesRecords())
 							schemata.add(f.getSchema());
+				}
 				// Date range:
 				AndConstraint constraints = new AndConstraint();
 				if (dateRange[ExportFragment.DT_RANGE_IDX_FROM] != null)
