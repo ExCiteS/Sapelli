@@ -251,11 +251,10 @@ public abstract class Transmission
 		// Open input stream:
 		BitArrayOutputStream bitstream = new BitArrayOutputStream();
 		
-		// TODO transmission format version?
+		// TODO transmission format version !!!
 		
-		// TODO anonymous / user-cred
-		
-		// TODO encrypted flag + encryption-related fields
+		// TODO anonymous / user-cred (maybe only for next transmission format version?)
+		// TODO encrypted flag + encryption-related fields (maybe only for next transmission format version?)
 		
 		// Write payload type:
 		Payload.PAYLOAD_TYPE_FIELD.write(payload.getType(), bitstream);

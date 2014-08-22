@@ -55,7 +55,12 @@ public abstract class StorageClient
 		return new ArrayList<Model>();
 	}
 		
-	public abstract Model getClientModel(long modelID) throws UnknownModelException;
+	/**
+	 * @param modelID
+	 * @return
+	 * @throws UnknownModelException
+	 */
+	protected abstract Model getClientModel(long modelID) throws UnknownModelException;
 	
 	/**
 	 * @param schemaID

@@ -18,9 +18,13 @@
 
 package uk.ac.ucl.excites.sapelli.collector;
 
+import java.util.Collections;
+import java.util.Set;
+
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -105,7 +109,7 @@ public class SapelliCollectorClient extends TransmissionClient
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getClientModel(long)
 	 */
 	@Override
-	public Model getClientModel(long modelID) throws UnknownModelException
+	protected Model getClientModel(long modelID) throws UnknownModelException
 	{
 		Project project = getProject(modelID);
 		if(project != null)
@@ -177,6 +181,12 @@ public class SapelliCollectorClient extends TransmissionClient
 	public Payload newPayload(int nonBuiltinType)
 	{
 		return null; // for now there are no Sapelli Collector-specific transmission payloads
+	}
+
+	@Override
+	public Set<Column<?>> getNonTransmittableColumns(Schema schema)
+	{
+		return Collections.<Column<?>>emptySet(); // TODO pass transmission & export related columns
 	}
 
 }

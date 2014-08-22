@@ -164,10 +164,12 @@ public abstract class Column<T> implements Serializable
 	public abstract T parse(String value) throws ParseException, IllegalArgumentException, NullPointerException;
 	
 	/**
+	 * Stores the given Object value in this column on the given record.
+	 * 
 	 * @param record
-	 * @param value (as object
-	 * @throws IllegalArgumentException
-	 * @throws NullPointerException
+	 * @param value (as object, may be null if column is optional)
+	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
+	 * @throws NullPointerException if value is null on an non-optional column
 	 */
 	@SuppressWarnings("unchecked")
 	public void storeObject(Record record, Object value) throws IllegalArgumentException, NullPointerException
@@ -176,10 +178,12 @@ public abstract class Column<T> implements Serializable
 	}
 	
 	/**
+	 * Stores the given <T> value in this column on the given record.
+	 * 
 	 * @param record
-	 * @param value
-	 * @throws IllegalArgumentException
-	 * @throws NullPointerException
+	 * @param value (may be null if column is optional)
+	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
+	 * @throws NullPointerException if value is null on an non-optional column
 	 */
 	public void storeValue(Record record, T value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
 	{
@@ -191,7 +195,7 @@ public abstract class Column<T> implements Serializable
 				throw new NullPointerException("Cannot set null value for non-optional column \"" + getName() + "\"!");
 		}
 		else
-			validate(value); //throws IllegalArgumentException if invalid
+			validate(value); // throws IllegalArgumentException if invalid
 		record.setValue(this, value); // also store null (to overwrite earlier non-values)
 	}
 	
@@ -199,7 +203,7 @@ public abstract class Column<T> implements Serializable
 	 * Retrieves previously stored value for this column at a given record and casts it to the relevant native type (T)
 	 * 
 	 * @param record
-	 * @return stored value
+	 * @return stored value (may be null)
 	 */
 	@SuppressWarnings("unchecked")
 	public T retrieveValue(Record record)
@@ -256,40 +260,54 @@ public abstract class Column<T> implements Serializable
 		writeValue(retrieveValue(record), bitStream);		
 	}
 
+	/**
+	 * Writes the given Object value to the given {@link BitOutputStream}.
+	 * The value will be casted to type <T>.
+	 * 
+	 * @param value (may be null, if column is optional)
+	 * @param bitStream the {@link BitOutputStream} to write to
+	 * @throws ClassCastException if the Object cannot be casted to type <T>
+	 * @throws NullPointerException if value is null on an non-optional column
+	 * @throws IllegalArgumentException if the value does not pass the validation test
+	 * @throws IOException if an I/O error happens upon writing to the bitStream
+	 */
 	@SuppressWarnings("unchecked")
-	public void writeObject(Object value, BitOutputStream bitStream) throws IOException, IllegalArgumentException
+	public void writeObject(Object value, BitOutputStream bitStream) throws ClassCastException, NullPointerException, IOException, IllegalArgumentException
 	{
 		writeValue((T) value, bitStream);
 	}
 	
 	/**
-	 * Writes the given value to the given {@link BitOutputStream}.
+	 * Writes the given <T> value to the given {@link BitOutputStream}.
 	 * 
-	 * @param value
-	 * @param bitStream
-	 * @throws IOException
-	 * @throws IllegalArgumentException
+	 * @param value (may be null, if column is optional)
+	 * @param bitStream the {@link BitOutputStream} to write to
+	 * @throws NullPointerException if value is null on an non-optional column
+	 * @throws IllegalArgumentException if the value does not pass the validation test
+	 * @throws IOException if an I/O error happens upon writing to the bitStream
 	 */
-	public void writeValue(T value, BitOutputStream bitStream) throws IOException, IllegalArgumentException
+	public void writeValue(T value, BitOutputStream bitStream) throws NullPointerException, IOException, IllegalArgumentException
 	{
 		if(optional)
-			bitStream.write(value != null); //write "presence"-bit
+			bitStream.write(value != null); // write "presence"-bit
 		else
 		{
 			if(value == null)
-				throw new IOException("Non-optional value is null!");
+				throw new NullPointerException("Non-optional value is null!");
 		}
 		if(value != null)
 		{
-			validate(value); //just in case, throws IllegalArgumentException if invalid
-			write(value, bitStream); //handled by subclass
+			validate(value); // just in case, throws IllegalArgumentException if invalid
+			write(value, bitStream); // handled by subclass
 		}
 	}
 	
 	/**
+	 * Writes the given (non-null) value to the given {@link BitOutputStream} without checks.
+	 * 
 	 * @param value assumed to be non-null!
-	 * @param bitStream
-	 * @throws IOException
+	 * @param bitStream the {@link BitOutputStream} to write to
+	 * @throws IOException if an I/O error happens upon writing to the bitStream
 	 */
 	protected abstract void write(T value, BitOutputStream bitStream) throws IOException;
 	
@@ -299,12 +317,12 @@ public abstract class Column<T> implements Serializable
 	}
 	
 	/**
-	 * Reads a value from the given {@link BitInputStream}
+	 * Reads a value from the given {@link BitInputStream}.
 	 * 
-	 * @param bitStream
+	 * @param bitStream the {@link BitInputStream} to read from
 	 * @return
-	 * @throws IOException
-	 * @throws IllegalArgumentException
+	 * @throws IOException if an I/O error happens upon reading from the bitStream
+	 * @throws IllegalArgumentException if the value does not pass the validation test
 	 */
 	public final T readValue(BitInputStream bitStream) throws IOException, IllegalArgumentException
 	{
@@ -320,9 +338,11 @@ public abstract class Column<T> implements Serializable
 	}
 	
 	/**
-	 * @param bitStream
+	 * Reads a value from the given {@link BitInputStream} without checks.
+	 * 
+	 * @param bitStream the {@link BitInputStream} to read from
 	 * @return
-	 * @throws IOException
+	 * @throws IOException if an I/O error happens upon reading from the bitStream
 	 */
 	protected abstract T read(BitInputStream bitStream) throws IOException;
 	

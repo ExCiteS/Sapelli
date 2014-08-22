@@ -19,9 +19,12 @@
 package uk.ac.ucl.excites.sapelli.transmission;
 
 import java.util.List;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
@@ -51,5 +54,14 @@ public abstract class TransmissionClient extends StorageClient
 	public abstract EncryptionSettings getEncryptionSettingsFor(Model model) throws UnknownModelException;
 	
 	public abstract Payload newPayload(int nonBuiltinType);
+	
+	/**
+	 * Returns columns from ther given schema that should not be transmitted.
+	 * It is assumed these are optional columns, or (TODO once this is supported) non-optional columns with a default value.
+	 * 
+	 * @param schema
+	 * @return
+	 */
+	public abstract Set<Column<?>> getNonTransmittableColumns(Schema schema);
 	
 }

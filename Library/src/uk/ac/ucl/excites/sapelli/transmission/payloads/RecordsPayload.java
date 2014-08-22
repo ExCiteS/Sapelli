@@ -18,23 +18,21 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.payloads;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
-import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
-import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -43,7 +41,6 @@ import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
-import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
@@ -74,7 +71,7 @@ public class RecordsPayload extends Payload
 	/**
 	 * We use 2 bits to store the format version This means up to 4 versions can be differentiated.
 	 * Currently only 1 supported format exists (= V2). If we ever get to V5 it would be best if an
-	 * additional flag is added to enable future extensions beyond V5. 
+	 * additional flag is added to enable future extensions beyond V5.
 	 */
 	static protected final short FORMAT_VERSION_SIZE = 2; // bits
 	
@@ -103,59 +100,64 @@ public class RecordsPayload extends Payload
 	/**
 	 * To be called from the sending side
 	 * 
-	 * @param record
-	 * @return
+	 * @param records to try adding
+	 * @return the subset of records that were actually added
 	 * @throws Exception
 	 */
-	public boolean addRecord(Record record) throws Exception
+	public List<Record> addRecords(List<Record> records) throws Exception
 	{
 		if(!isTansmissionSet())
 			throw new IllegalStateException("No transmission set!");
-		if(!record.isFilled())
-			return false; // record is not fully filled (non-optional values are still null)
-		Schema schema = record.getSchema();
-		if(schema.isInternal())
-			throw new IllegalArgumentException("Cannot directly transmit records of an internal schema.");
-		if(recordsBySchema.isEmpty())
-			// set model ID:
-			model = schema.getModel();
-		//	Check model ID:
-		else if(model != schema.getModel())
-			throw new IllegalArgumentException("The schemata of the records in a single Transmission must all belong to the same model.");
-
-		// Add the record:
-		List<Record> recordsOfSchema = recordsBySchema.get(schema);
-		if(recordsOfSchema == null)
+		
+		for(Record record : records)
 		{
-			recordsOfSchema = new ArrayList<Record>();
-			recordsBySchema.put(schema, recordsOfSchema);
+			if(!record.isFilled())
+				continue; // record is not fully filled (non-optional values are still null) TODO throw exception instead of just skipping?
+			Schema schema = record.getSchema();
+			if(schema.isInternal())
+				throw new IllegalArgumentException("Cannot directly transmit records of an internal schema.");
+			
+			// Model:
+			if(recordsBySchema.isEmpty())
+				// set model ID:
+				model = schema.getModel();
+			//	Check model ID:
+			else if(model != schema.getModel())
+				throw new IllegalArgumentException("The schemata of the records in a single Transmission must all belong to the same model.");
+	
+			// Add the record:
+			List<Record> recordsOfSchema = recordsBySchema.get(schema);
+			if(recordsOfSchema == null)
+			{
+				recordsOfSchema = new ArrayList<Record>();
+				recordsBySchema.put(schema, recordsOfSchema);
+			}
+			recordsOfSchema.add(record);
+			
+			// Try serialising and check capacity:
+//			try
+//			{
+//				//TODO!
+//				
+////				serialise();
+////				
+////				// Capacity checks: //TODO this happens once too many when sending, change!
+////				if(bits.length() > transmission.getMaxPayloadBits())
+////					throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + bits.length() + " bits; max for transmission: " + transmission.getMaxPayloadBits() + " bits");
+////				if(transmission.canWrapIncreaseSize()) // the the transmission is one in which payload size can grow upon wrapping (e.g. due to escaping), then ... 
+////					transmission.wrap(bits); // try wrapping the payload in the transmission, a TransmissionCapacityExceededException will be thrown when the size goes over the limit
+	//
+//			}
+//			catch(TransmissionCapacityExceededException tcee)
+//			{	// adding this record caused transmission capacity to be exceeded, so remove it and mark the transmission as full (unless there are no other records)
+//				recordsOfSchema.remove(record);
+//				if(recordsOfSchema.isEmpty())
+//					recordsBySchema.remove(schema);
+//				return false;
+//			}
 		}
-		recordsOfSchema.add(record);
 		
-		// Try serialising and check capacity:
-//		try
-//		{
-//			//TODO!
-//			
-////			serialise();
-////			
-////			// Capacity checks: //TODO this happens once too many when sending, change!
-////			if(bits.length() > transmission.getMaxPayloadBits())
-////				throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + bits.length() + " bits; max for transmission: " + transmission.getMaxPayloadBits() + " bits");
-////			if(transmission.canWrapIncreaseSize()) // the the transmission is one in which payload size can grow upon wrapping (e.g. due to escaping), then ... 
-////				transmission.wrap(bits); // try wrapping the payload in the transmission, a TransmissionCapacityExceededException will be thrown when the size goes over the limit
-//
-//		}
-//		catch(TransmissionCapacityExceededException tcee)
-//		{	// adding this record caused transmission capacity to be exceeded, so remove it and mark the transmission as full (unless there are no other records)
-//			recordsOfSchema.remove(record);
-//			if(recordsOfSchema.isEmpty())
-//				recordsBySchema.remove(schema);
-//			return false;
-//		}
-		
-		// Record was added and payload could be serialised (and fits within transmission bounds)
-		return true;
+		return getRecords();
 	}
 	
 	/**
@@ -225,16 +227,16 @@ public class RecordsPayload extends Payload
 			int numberOfDifferentSchemataInTransmission = getSchemata().size();
 			Schema[] schemataInT = new Schema[numberOfDifferentSchemataInTransmission];
 			
-			// Write HEADER PART 1 ------------------------
+			// Write HEADER PART 1 ----------------------------------
 			//  Format version (2 bits):
 			FORMAT_VERSION_FIELD.write(DEFAULT_FORMAT, out);
 			//	Model & schema identification:
 			// 		Write Model ID (56 bits):
 			Model.MODEL_ID_FIELD.write(model.getID(), out);
-			//		Write bitmask indicating from schemata of the model we have records (schemata in model order):
+			//		Write schema occurrence bits:
 			int s = 0;
 			for(Schema sInM : model.getSchemata())
-			{	// 1 bit per schema in model
+			{	// 1 bit per schema in model, indicating for which schemata this payload contains records (schemata in model order):
 				if(containsRecordsOf(sInM))
 				{
 					out.write(true); // transmission payload contains at least 1 record for this schema
@@ -244,25 +246,25 @@ public class RecordsPayload extends Payload
 					out.write(false); // no records of this schema appear in this transmission payload
 			}
 
-			// Encode records -----------------------------
-			BitArray recordBits = encodeRecords(schemataInT);
+			// Encode records ---------------------------------------
+			BitArray recordsBits = encodeRecords(schemataInT);
 			// Compress record bits with various compression modes:
-			byte[][] comprResults = compress(recordBits, COMPRESSION_MODES);
+			byte[][] comprResults = compress(recordsBits, COMPRESSION_MODES);
 			// Determine most space-efficient compression mode:
 			int bestComprIdx = 0;
 			for(int c = 1; c < COMPRESSION_MODES.length; c++)
 				if(comprResults[c].length < comprResults[bestComprIdx].length)
 					bestComprIdx = c;
 			
-			// Write HEADER PART 2 ------------------------
+			// Write HEADER PART 2 ----------------------------------
 			//	Compression flag (2 bits):
 			COMPRESSION_FLAG_FIELD.write(bestComprIdx, out);
 
-			// Write BODY: the encoded & compressed records
+			// Write BODY: the encoded & compressed records ---------
 			if(COMPRESSION_MODES[bestComprIdx] != Compression.NONE) // if compressed : write byte array 
 				out.write(comprResults[bestComprIdx]); // write byte array
 			else
-				recordBits.writeTo(out); // write bit array (avoid padding to byte boundary)
+				recordsBits.writeTo(out); // write bit array (avoid padding to byte boundary)
 		}
 		catch(IOException e)
 		{
@@ -283,38 +285,39 @@ public class RecordsPayload extends Payload
 	@Override
 	protected void read(BitInputStream in) throws IOException, RecordsPayloadDecodeException, UnknownModelException
 	{
-		// Read HEADER ------------------------------------
+		// Read HEADER ----------------------------------------------
 		//	Read format version:
 		short format = (short) FORMAT_VERSION_FIELD.read(in);
 		if(format > HIGHEST_SUPPORTED_FORMAT)
 			throw new RecordsPayloadDecodeException(this, "Unsupported payload format version: " + format + " (highest supported version: " + HIGHEST_SUPPORTED_FORMAT + ").");
 		//	Read schema identification:
-		Schema[] schemataOrder = null; // TODO readSchemaIdentification(in); // sets model, returns schemataOrder
+		//		Read Model ID & loop-up model:
+		this.model = transmission.getClient().getModel(Model.MODEL_ID_FIELD.read(in));
+		//		Read schema occurrence bits:
+		List<Schema> schemataInT = new ArrayList<Schema>();
+		for(Schema sInM : model.getSchemata())
+			if(in.readBit())
+				schemataInT.add(sInM);
 		//	Compression flag:
 		int compressionMode = (int) COMPRESSION_FLAG_FIELD.read(in);
-		
-		// Read encoded records, possibly compressed:
-		BitArray recordBits;
+
+		// Read BODY: encoded records, possibly compressed ----------
+		BitArray recordsBits;
 		if(COMPRESSION_MODES[compressionMode] == Compression.NONE)
-			recordBits = in.readBitArray(in.bitsAvailable()); // not compressed
+			recordsBits = in.readBitArray(in.bitsAvailable()); // not compressed: read as bits
 		else
-		{
-			byte[] recordBytes = in.readBytes(in.available());
-			
-			// Decompress:
-			recordBytes = decompress(recordBytes, COMPRESSION_MODES[compressionMode]);
-			
-			// To bit array:
-			recordBits = BitArray.FromBytes(recordBytes);
+		{	// Read compressed data as bytes & decompress them:
+			byte[] recordBytes = decompress(in.readBytes(in.available()), COMPRESSION_MODES[compressionMode]);
+			// Convert to bit array:
+			recordsBits = BitArray.FromBytes(recordBytes);
 		}
 		
-		// Decode records
-		//TODO decodeRecords(recordBits);
+		// Decode records:
+		decodeRecords(schemataInT, recordsBits);
 	}
 	
 	/**
 	 * @param schemataInT
-	 * @param mberOfRecordsPerSchemaField
 	 * @return
 	 * @throws IOException
 	 * @throws TransmissionCapacityExceededException
@@ -329,7 +332,11 @@ public class RecordsPayload extends Payload
 			
 			// Encode records per schema...
 			for(Schema schema : schemataInT)
-			{				
+			{
+				// Get columns which should *not* be transmitted:
+				Set<Column<?>> nonTransmittableColumns = transmission.getClient().getNonTransmittableColumns(schema);
+				
+				// Get records:
 				List<Record> records = recordsBySchema.get(schema);
 				
 				// Write number of records:
@@ -338,56 +345,66 @@ public class RecordsPayload extends Payload
 				else
 					throw new TransmissionCapacityExceededException("Cannot fit " + records.size() + " of schema " + schema.getName() + " (max allowed: " + numberOfRecordsPerSchemaField.highBound(false) + ").");
 				
-				// Get factored out values ...
+				// Factoring-out logic ...
 				Map<Column<?>, Object> factoredOutValues = Collections.<Column<?>, Object> emptyMap();
 				if(records.size() > 1)
-				{
-					factoredOutValues = new LinkedHashMap<Column<?>, Object>();
+				{	// Only if there is more than 1 record for this schema:
+					// 	Get factored out values ...
+					factoredOutValues = new HashMap<Column<?>, Object>();
 					boolean first = true;
 					for(Record r : records)
 					{
 						if(first)
-						{	// get values of first record:
+						{	// Get values of first record:
 							for(Column<?> c : schema.getColumns(false))
-								factoredOutValues.put(c, c.retrieveValue(records.get(0))); // treat all columns as potentially factored-out
+								if(!nonTransmittableColumns.contains(c)) // ignore non-transmittable columns
+									factoredOutValues.put(c, c.retrieveValue(records.get(0))); // treat all columns as potentially factored-out
 							first = false;
 						}
 						else
-						{	//Check if these values are these same in subsequent records:
+						{	// Check if these values are these same in subsequent records:
 							for(Column<?> factoredOutCol : factoredOutValues.keySet())
-								if(!factoredOutValues.get(factoredOutCol).equals(factoredOutCol.retrieveValue(r)))
+								if(!Record.EqualValues(factoredOutValues.get(factoredOutCol), factoredOutCol.retrieveValue(r)))
 									factoredOutValues.remove(factoredOutCol); // value mismatch -> this column can not be factored out
 							if(factoredOutValues.isEmpty())
 								break; // no factored-out columns left -> no need to loop over rest of the records
 						}
 					}
+					//	Write factoring-out header (including factored-out values, if used):
+					if(!factoredOutValues.isEmpty())
+					{
+						// Write flag which indicates that factoring-out is used:
+						out.write(true);
+						// Write factored-out flags & the actual factored out values:
+						for(Column<?> c : schema.getColumns(false))
+						{	// for all transmittable columns:
+							if(!nonTransmittableColumns.contains(c))
+							{
+								if(factoredOutValues.containsKey(c))
+								{	// Column is factored out:
+									out.write(true); // write factored-out flag = true
+									c.writeObject(factoredOutValues.get(c), out); // // Write factored out value
+								}
+								else
+									// Column is *not* factored out:
+									out.write(false); // write factored-out flag = false
+							}
+						}
+					}
+					else
+						// Write flag which indicates that factoring-out is *not* used:
+						out.write(false);
 				}
 				
-				// Write factoring-out header (& factored-out values, if used):
-				if(!factoredOutValues.isEmpty())
-				{
-					// Write flag which indicates that factoring-out is used:
-					out.write(true);
-					// Write flags which indicate which columns are factored out (= 1) and which are not (= 0):
-					for(Column<?> c : schema.getColumns(false))
-						out.write(factoredOutValues.containsKey(c));
-					// Write factored out values:
-					for(Entry<Column<?>, Object> fEntry : factoredOutValues.entrySet())
-						fEntry.getKey().writeObject(fEntry.getValue(), out);
-				}
-				else
-					// Write flag which indicates that factoring-out is *not* used:
-					out.write(false);
-				
-				// Write record data, skipping virtual columns and factored-out columns:
+				// Write record data, skipping ...
+				Set<Column<?>> skipColumns = new HashSet<Column<?>>(nonTransmittableColumns); 	// ... non-transmittable,
+				skipColumns.addAll(factoredOutValues.keySet());									// factored-out, ...
 				for(Record r : recordsBySchema.get(schema))
-					r.writeToBitStream(out, false /* do not include virtual columns */, factoredOutValues.keySet());
+					r.writeToBitStream(out, false /* ... and virtual columns */, skipColumns);
 			}
 			
-			//Flush & close the stream and get bytes:
-			out.flush();
+			// Close the stream & return bits:
 			out.close();
-			
 			return out.toBitArray();
 		}
 		catch(Exception e)
@@ -405,80 +422,69 @@ public class RecordsPayload extends Payload
 		}
 	}
 	
-	protected void decodeRecords(byte[] data) throws RecordsPayloadDecodeException
+	/**
+	 * @param schemataInT
+	 * @param recordsBits
+	 * @throws RecordsPayloadDecodeException
+	 */
+	protected void decodeRecords(List<Schema> schemataInT, BitArray recordsBits) throws RecordsPayloadDecodeException
 	{		
 		BitInputStream in = null;
 		Record record = null;
 		try
 		{
-			//Input stream:
-			ByteArrayInputStream rawIn = new ByteArrayInputStream(data);
-			in = new BitWrapInputStream(rawIn);
+			in = new BitArrayInputStream(recordsBits);
+			IntegerRangeMapping numberOfRecordsPerSchemaField = getNumberOfRecordsPerSchemaField();
 			
-//			// Read schema identification...
-//			// 	the number of different schemata:
-//			IntegerRangeMapping numberOfDifferentSchemataInTransmissionField = getNumberOfDifferentSchemataInTransmissionField();
-//			int numberOfDifferentSchemata = numberOfDifferentSchemataInTransmissionField != null ?
-//												(int) numberOfDifferentSchemataInTransmissionField.read(in) :
-//												1;
-//			Schema[] schemata = new Schema[numberOfDifferentSchemata];
-//			//	the model schema numbers:
-//			IntegerRangeMapping modelSchemaNoField = getModelSchemaNoField();
-//			if(modelSchemaNoField != null)
-//				for(int i = 0; i < numberOfDifferentSchemata; i++)
-//					schemata[i] = model.getSchema((int) modelSchemaNoField.read(in));
-//			else
-//				schemata[0] = model.getSchema(0); // there is only 1 schema in the model so its number is 0
-//			
-//			//	the number of records per schema:
-//			IntegerRangeMapping[] numberOfRecordsPerSchemaFields = getNumberOfRecordsPerSchemaFields(numberOfDifferentSchemataInTransmissionField, modelSchemaNoField, schemata);
-//			int[] numberOfRecordsPerSchema = new int[numberOfDifferentSchemata];
-//			for(int s = 0; s < numberOfDifferentSchemata; s++)
-//				// // read number of records for each each schema except for the last one (the number of records for that one is not stored in the header)
-//				numberOfRecordsPerSchema[s] =	s < numberOfDifferentSchemata - 1 ?
-//													(int) numberOfRecordsPerSchemaFields[s].read(in) :
-//													Integer.MAX_VALUE; // no limit, reading of records will be limited by available bits (see below)
-//
-//			// Per schema...
-//			for(int s = 0; s < schemata.length; s++)
-//			{
-//				Schema schema = schemata[s];
-//				Map<Column<?>, Object> factoredOutValues = Collections.<Column<?>, Object> emptyMap();
-//				
-//				// Read factoring-out header (& factored-out values, if used)...
-//				if(in.readBit()) //	read flag that indicates whether or not some columns are factored-out
-//				{
-//					List<Column<?>> factoredOutColumns = new ArrayList<Column<?>>();
-//					// Read which columns are factored out:
-//					for(Column<?> c : schema.getColumns(false))
-//						if(in.readBit())
-//							factoredOutColumns.add(c);
-//					// Read factored out values:
-//					factoredOutValues = new HashMap<Column<?>, Object>();
-//					for(Column<?> fCol : factoredOutColumns)
-//						factoredOutValues.put(fCol, fCol.readValue(in));
-//				}
-//				
-//				// Create & store list for the records that will be decoded:
-//				List<Record> recordsOfSchema = recordsBySchema.get(schema);
-//				recordsBySchema.put(schema, recordsOfSchema);
-//				
-//				// Read record data:
-//				while(	recordsOfSchema.size() < numberOfRecordsPerSchema[s] &&					
-//						in.bitsAvailable() >= schema.getMinimumSize(false /* do not include virtual columns */, factoredOutValues.keySet()))
-//				{
-//					// Get new Record instance:
-//					record = schema.createRecord();
-//					// Read record values from the stream, skipping virtual columns and factored-out columns:
-//					record.readFromBitStream(in, false /* do not include virtual columns */, factoredOutValues.keySet());
-//					// Set factored out values:
-//					if(!factoredOutValues.isEmpty())
-//						for(Entry<Column<?>, Object> fEntry : factoredOutValues.entrySet())
-//							fEntry.getKey().storeObject(record, fEntry.getValue());
-//					// Add the record:
-//					recordsOfSchema.add(record);				
-//				}
-//			}
+			// Per schema...
+			for(Schema schema : schemataInT)
+			{
+				// Get columns which should *not* be transmitted:
+				Set<Column<?>> nonTransmittableColumns = transmission.getClient().getNonTransmittableColumns(schema);
+				
+				// Create & store list for the records that will be decoded:
+				List<Record> records = new ArrayList<Record>();
+				recordsBySchema.put(schema, records);
+				
+				// Read number of records:
+				int numberOfRecordsForSchema = (int) numberOfRecordsPerSchemaField.read(in);
+				
+				// Factoring-out logic ...
+				Map<Column<?>, Object> factoredOutValues = Collections.<Column<?>, Object> emptyMap();
+				if(numberOfRecordsForSchema > 1)
+				{	// Only if there is more than 1 record for this schema:
+					// 	Read factoring-out header (including factored-out values, if used) ...
+					if(in.readBit()) //	read flag that indicates whether or not some columns are factored-out
+					{
+						factoredOutValues = new HashMap<Column<?>, Object>();
+						for(Column<?> c : schema.getColumns(false))
+						{	// for all transmittable columns:
+							if(!nonTransmittableColumns.contains(c))
+							{
+								if(in.readBit()) // Read factored-out flag, indicating whether column is factored-out; if = true: 
+									factoredOutValues.put(c, c.readValue(in)); // read factored out value
+							}
+						}
+					}
+				}
+				
+				// Read record data, skipping ...
+				Set<Column<?>> skipColumns = new HashSet<Column<?>>(nonTransmittableColumns); 	// ... non-transmittable,
+				skipColumns.addAll(factoredOutValues.keySet());									// factored-out, ...
+				while(	records.size() < numberOfRecordsForSchema &&					
+						in.bitsAvailable() >= schema.getMinimumSize(false /* ... and virtual columns */, skipColumns))
+				{
+					// Get new Record instance:
+					record = schema.createRecord();
+					// Read record values from the stream, skipping virtual columns and factored-out columns:
+					record.readFromBitStream(in, false /* ... and virtual columns */, skipColumns);
+					// Set factored-out values:
+					for(Entry<Column<?>, Object> fEntry : factoredOutValues.entrySet())
+						fEntry.getKey().storeObject(record, fEntry.getValue());
+					// Add the record:
+					records.add(record);				
+				}
+			}
 		}
 		catch(Exception e)
 		{
@@ -499,17 +505,17 @@ public class RecordsPayload extends Payload
 	}
 	
 	/**
-	 * TODO
-	 * Note "without compression" should *not* be interpreted as "before compression"
+	 * The number of bits available to encode all records (*including* the space used by the "numberOfRecordPerSchemaFields"),
+	 * under the assumption no compression will be used (i.e. "without compression" should *not* be interpreted as "before compression").
 	 * 
-	 * @return
+	 * @return number of bits
 	 */
-	private int getMaxRecordsBitSizeWithoutCompression()
+	private int getMaxUncompressedRecordsBits()
 	{
 		return	transmission.getMaxPayloadBits()
 				- FORMAT_VERSION_SIZE				// Format version
 				- Model.MODEL_ID_SIZE				// Model ID
-				- model.getNumberOfSchemata()		// Schema occurence bitmask
+				- model.getNumberOfSchemata()		// Schema occurrence bits
 				- COMPRESSION_FLAG_FIELD.size();	// Compression flag
 	}
 	
@@ -526,7 +532,7 @@ public class RecordsPayload extends Payload
 	 */
 	private IntegerRangeMapping getNumberOfRecordsPerSchemaField()
 	{
-		return new IntegerRangeMapping(1, getMaxRecordsBitSizeWithoutCompression() * 2 / recordsBySchema.size());
+		return new IntegerRangeMapping(1, getMaxUncompressedRecordsBits() * 2 / recordsBySchema.size());
 	}
 	
 }
