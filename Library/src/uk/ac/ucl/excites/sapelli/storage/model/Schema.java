@@ -18,6 +18,10 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,10 +33,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
+import uk.ac.ucl.excites.sapelli.transmission.compression.LZMACompressor;
 
 /**
  * A Schema holds a set of ordered {@link Column}s
@@ -58,6 +65,7 @@ public class Schema implements Serializable
 	 */
 	static public enum InternalKind
 	{
+		META_SCHEMA,
 		ANONYMOUS,
 		INDEX,
 		LOCATION,
@@ -79,6 +87,67 @@ public class Schema implements Serializable
 	// 	Note the XML attributes below have inconsistent naming (for everything else we've been using CamelCase instead of dashes), won't fix because no longer used in v2.x
 	static public final String V1X_ATTRIBUTE_SCHEMA_ID = "schema-id";
 	static public final String V1X_ATTRIBUTE_SCHEMA_VERSION = "schema-version";
+	
+	// Meta Schema
+	static public final Schema META_SCHEMA = new Schema(InternalKind.META_SCHEMA);
+	static private final IntegerColumn META_MODEL_ID_COLUMN = new IntegerColumn("modelID", false, Model.MODEL_ID_FIELD);
+	static private final IntegerColumn META_SCHEMA_NUMBER_COLUMN = new IntegerColumn("modelSchemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD);
+	static private final StringColumn META_NAME_COLUMN = StringColumn.ForCharacterCount("name", true, 128);
+	static private final ByteArrayColumn META_OBJECT_SERIALISATION_COLUMN = new ByteArrayColumn("serialisedObject_LZMA", false);
+	static private final IntegerColumn META_OBJECT_HASHCODE_COLUMN = new IntegerColumn("hashCode", false, true, Integer.SIZE);
+	static
+	{
+		META_SCHEMA.addColumn(META_MODEL_ID_COLUMN);
+		META_SCHEMA.addColumn(META_SCHEMA_NUMBER_COLUMN);
+		META_SCHEMA.setPrimaryKey(new PrimaryKey("modelID_SchemaNumber", META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));
+		META_SCHEMA.addColumn(META_NAME_COLUMN);
+		META_SCHEMA.addColumn(META_OBJECT_SERIALISATION_COLUMN);
+		META_SCHEMA.addColumn(META_OBJECT_HASHCODE_COLUMN);
+		META_SCHEMA.seal();
+	}
+	
+	static public Record GetMetaRecord(Schema schema) throws Exception
+	{
+		Record metaRecord = META_SCHEMA.createRecord();
+		
+		// Store id, name & hashcode:
+		META_MODEL_ID_COLUMN.storeValue(metaRecord, schema.getModelID());
+		META_SCHEMA_NUMBER_COLUMN.storeValue(metaRecord, schema.getModelSchemaNumber());
+		META_NAME_COLUMN.storeValue(metaRecord, schema.name);
+		META_OBJECT_HASHCODE_COLUMN.storeValue(metaRecord, schema.hashCode());
+		
+		// Serialise Schema object:
+		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
+		ObjectOutputStream objOut = new ObjectOutputStream(rawOut);
+		objOut.writeObject(schema);
+		objOut.flush();
+		objOut.close();
+		
+		// Store LZMA-compress serialised bytes:
+		META_OBJECT_SERIALISATION_COLUMN.storeValue(metaRecord, new LZMACompressor().compress(rawOut.toByteArray()));
+		
+		return metaRecord;
+	}
+	
+	static public Schema FromMetaRecord(Record metaRecord) throws Exception
+	{
+		if(metaRecord == null)
+			throw new NullPointerException("The metaRecord cannot be null!");
+		if(metaRecord.getSchema() != META_SCHEMA)
+			throw new IllegalArgumentException("The given record is a not a " + META_SCHEMA.name + " record!");
+		
+		// Decompress & deserialise Schema object bytes:
+		ByteArrayInputStream rawIn = new ByteArrayInputStream(new LZMACompressor().decompress(META_OBJECT_SERIALISATION_COLUMN.retrieveValue(metaRecord)));
+		ObjectInputStream objIn = new ObjectInputStream(rawIn);
+		Schema schema = (Schema) objIn.readObject();
+		
+		// Perform check:
+		if(schema.hashCode() != META_OBJECT_HASHCODE_COLUMN.retrieveValue(metaRecord))
+			throw new IllegalStateException("Schema hashCode mismatch");
+		// Note: if hashCode matches then id, name should match as well
+		
+		return schema;
+	}
 	
 	// Dynamics-----------------------------------------------------------
 	protected final Model model;

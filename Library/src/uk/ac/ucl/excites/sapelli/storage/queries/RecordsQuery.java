@@ -46,7 +46,7 @@ public class RecordsQuery
 	
 	public RecordsQuery()
 	{
-		this(null, (ColumnPointer) null, DEFAULT_ORDER, NO_LIMIT, (Constraint[]) null);
+		this((List<Schema>) null, (ColumnPointer) null, DEFAULT_ORDER, NO_LIMIT, (Constraint[]) null);
 	}
 	
 	public RecordsQuery(Schema sourceSchema)
@@ -66,17 +66,17 @@ public class RecordsQuery
 	
 	public RecordsQuery(ColumnPointer orderBy, boolean orderAsc)
 	{
-		this(null, orderBy, orderAsc, NO_LIMIT, (Constraint[]) null);
+		this((List<Schema>) null, orderBy, orderAsc, NO_LIMIT, (Constraint[]) null);
 	}
 	
 	public RecordsQuery(int limit)
 	{
-		this(null, (ColumnPointer) null, DEFAULT_ORDER, limit, (Constraint[]) null);
+		this((List<Schema>) null, (ColumnPointer) null, DEFAULT_ORDER, limit, (Constraint[]) null);
 	}
 	
 	public RecordsQuery(Constraint... constraints)
 	{
-		this(null, (ColumnPointer) null, DEFAULT_ORDER, NO_LIMIT, constraints);
+		this((List<Schema>) null, (ColumnPointer) null, DEFAULT_ORDER, NO_LIMIT, constraints);
 	}
 	
 	public RecordsQuery(Schema sourceSchema, Constraint... constraints)
@@ -126,7 +126,7 @@ public class RecordsQuery
 	
 	public RecordsQuery(ColumnPointer orderBy, boolean orderAsc, Constraint... constraints)
 	{
-		this(null, orderBy, orderAsc, NO_LIMIT, constraints);
+		this((List<Schema>) null, orderBy, orderAsc, NO_LIMIT, constraints);
 	}
 	
 	public RecordsQuery(Schema sourceSchema, int limit)
@@ -141,7 +141,7 @@ public class RecordsQuery
 	
 	public RecordsQuery(int limit, Constraint... constraints)
 	{
-		this(null, (ColumnPointer) null, DEFAULT_ORDER, limit, constraints);
+		this((List<Schema>) null, (ColumnPointer) null, DEFAULT_ORDER, limit, constraints);
 	}
 	
 	public RecordsQuery(Schema sourceSchema, int limit, Constraint... constraints)
@@ -161,7 +161,7 @@ public class RecordsQuery
 	
 	public RecordsQuery(ColumnPointer orderBy, boolean orderAsc, int limit)
 	{
-		this(null, orderBy, orderAsc, limit, (Constraint[]) null);
+		this((List<Schema>) null, orderBy, orderAsc, limit, (Constraint[]) null);
 	}
 	
 	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderAsc, int limit)
@@ -187,6 +187,11 @@ public class RecordsQuery
 	public RecordsQuery(List<Schema> sourceSchemata, ComparatorColumn<?> orderBy, boolean orderAsc, int limit, Constraint... constraints)
 	{
 		this(sourceSchemata, new ColumnPointer(orderBy), orderAsc, limit, constraints);
+	}
+	
+	public RecordsQuery(Schema sourceSchema, ColumnPointer orderBy, boolean orderAsc, int limit, Constraint... constraints)
+	{
+		this(Collections.<Schema> singletonList(sourceSchema), orderBy, orderAsc, limit, constraints);
 	}
 	
 	/**
