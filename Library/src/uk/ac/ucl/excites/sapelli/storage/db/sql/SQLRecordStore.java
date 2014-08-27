@@ -1,7 +1,22 @@
 /**
+ * Sapelli data collection platform: http://sapelli.org
  * 
+ * Copyright 2012-2014 University College London - ExCiteS group
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and 
+ * limitations under the License.
  */
-package uk.ac.ucl.excites.sapelli.storage.db;
+
+package uk.ac.ucl.excites.sapelli.storage.db.sql;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
@@ -30,7 +46,9 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public abstract class SQLRecordStore extends RecordStore
 {
 	
-	private final Map<Schema,SchemaInfo> schemaInfos;
+	static private final String SCHEMATA_TABLE_NAME = "Schemata";
+	
+	private Map<Schema,SchemaInfo> schemaInfos;
 
 	/**
 	 * @param client
@@ -46,7 +64,7 @@ public abstract class SQLRecordStore extends RecordStore
 		SchemaInfo schemaInfo = schemaInfos.get(schema);
 		if(schemaInfo == null)
 		{
-			schemaInfo = new SchemaInfo(schema, getSchemaInfoGenerator());
+			schemaInfo = new SchemaInfo(schema);
 			schemaInfos.put(schema, schemaInfo);
 		}
 		return schemaInfo;
@@ -54,12 +72,16 @@ public abstract class SQLRecordStore extends RecordStore
 	
 	protected abstract SchemaInfoGenerator getSchemaInfoGenerator();
 	
-	protected abstract ValueStringGenerator getValueStringGenerator();
+	protected List<Schema> getKnownSchemata()
+	{
+		
+		return null;
+	}
 	
 	protected String getTableName(Schema schema)
 	{
 		if(schema == Schema.META_SCHEMA)
-			return "Schemata";
+			return SCHEMATA_TABLE_NAME;
 		return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber();
 	}
 	
@@ -91,8 +113,7 @@ public abstract class SQLRecordStore extends RecordStore
 	{		
 		if(!doesTableExist(getTableName(schema)))
 		{				
-			//TODO start transaction
-			
+			startTransaction();
 			try
 			{
 				// Insert new record in schemata table, but not for meta schema because in that case the schemata table doesn't exist yet!
@@ -104,43 +125,48 @@ public abstract class SQLRecordStore extends RecordStore
 			}
 			catch(Exception e)
 			{
-				// TODO rollback transaction
-				
+				rollbackTransaction();
 				throw e; // re-throw
 			}
-			
-			// TODO commit transaction
+			commitTransaction();
 		}
-	}
-	
-	protected List<Schema> getKnownSchemata()
-	{
-		// SELECT * FROM getTableName(Schema.META_SCHEMA);
-		return null;
-	}
-	
-	protected void insert(Record record) throws Exception
-	{
-		executeQuery(getSchemaInfo(record.getSchema()).getInsertStatement(record));
-	}
-	
-	protected void insertOrUpdate(Record record)
-	{
-		// TODO
 	}
 	
 	protected void uponDatabaseCreation() throws Exception
 	{
 		registerSchema(Schema.META_SCHEMA); // create the table to store schemata
 	}
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#store(uk.ac.ucl.excites.sapelli.storage.model.Record)
-	 */
-	@Override
-	public void store(Record record)
+
+	protected void update(Record record) throws Exception
 	{
-		insertOrUpdate(record);
+		// TODO
+	}
+	
+	protected void insert(Record record) throws Exception
+	{
+		// Register schema if we don't know it yet:
+		if(!schemaInfos.containsKey(record.getSchema()))
+			registerSchema(record.getSchema());
+		// Insert record:
+		executeQuery(getSchemaInfo(record.getSchema()).getInsertStatement(record));
+	}
+	
+	@Override
+	protected boolean doStore(Record record) throws Exception
+	{
+		boolean newRec = true; // TODO insert or update?
+		if(newRec)
+			insert(record);
+		else
+			update(record);
+		return newRec;
+	}
+
+	@Override
+	protected void doDelete(Record record) throws Exception
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 	/* (non-Javadoc)
@@ -158,7 +184,7 @@ public abstract class SQLRecordStore extends RecordStore
 	
 	private void queryForRecords(Schema schema, RecordsQuery query, List<Record> result)
 	{
-		String selectStatement = "SELECT * FROM " + getTableName(schema) + (new WhereClauseGenerator(getSchemaInfo(schema), query.getConstraints(), getValueStringGenerator())).getClause(); // + (query.getOrderBy() != null ? 
+		String selectStatement = "SELECT * FROM " + getTableName(schema) + (new WhereClauseGenerator(getSchemaInfo(schema), query.getConstraints())).getClause(); // + (query.getOrderBy() != null ? 
 		
 		// TODO generate & execute SELECT query + process & add to result list
 	}
@@ -173,56 +199,46 @@ public abstract class SQLRecordStore extends RecordStore
 				
 		return null;
 	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#deleteAllRecords()
-	 */
-	@Override
-	public void deleteAllRecords()
-	{
-		// TODO Auto-generated method stub
-
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#delete(uk.ac.ucl.excites.sapelli.storage.model.Record)
-	 */
-	@Override
-	public void delete(Record record)
-	{
-		// TODO Auto-generated method stub
-
-	}
 	
 	protected class SchemaInfo
 	{
 		
-		Schema schema;
-		List<ColumnPointer> storedColumns; // in order
-		Map<ColumnPointer,String> columnNames;
-		Map<ColumnPointer,String> columnTypes;
+		private final Schema schema;
+		private final List<StoredColumn<?>> storedColumns; // in order
+		private final Map<ColumnPointer, StoredColumn<?>> columnMapping;
 		
-		public SchemaInfo(Schema schema, SchemaInfoGenerator generator)
+		public SchemaInfo(Schema schema)
 		{
 			this.schema = schema;
-			this.storedColumns = new ArrayList<ColumnPointer>();
-			this.columnNames = new HashMap<ColumnPointer, String>();
-			this.columnTypes = new HashMap<ColumnPointer, String>();
-			generator.initialise(this);
+			this.storedColumns = new ArrayList<StoredColumn<?>>();
+			this.columnMapping = new HashMap<ColumnPointer, StoredColumn<?>>();
+			getSchemaInfoGenerator().initialise(this);
 		}
 		
-		public void addColumn(ColumnPointer columnPointer, String name, String type)
+		public void addStoredColumn(StoredColumn<?> storedCol)
 		{
-			storedColumns.add(columnPointer);
-			columnNames.put(columnPointer, name);
-			columnTypes.put(columnPointer, type);
+			storedColumns.add(storedCol);
+			columnMapping.put(storedCol.sourceColumnPointer, storedCol);
 		}
 		
 		public String getCreateTableStatement()
 		{
-			// name, type, nullable, indexed ...
-			
-			return null;
+			StringBuilder bldr = new StringBuilder();
+			bldr.append("CREATE TABLE ");
+			bldr.append(getTableName(schema));
+			bldr.append(" (");
+			for(StoredColumn<?> c : storedColumns)
+			{
+				if(c != storedColumns.get(0))
+					bldr.append(", ");
+				bldr.append(c.name);
+				bldr.append(' ');
+				bldr.append(c.sqlType);
+				// TODO nullable, indexed ...
+			}
+			// TODO primary key ...
+			bldr.append(");");
+			return bldr.toString();
 		}
 		
 		public String getInsertStatement(Record record)
@@ -231,22 +247,31 @@ public abstract class SQLRecordStore extends RecordStore
 			bldr.append("INSERT INTO ");
 			bldr.append(getTableName(record.getSchema()));
 			bldr.append(" (");
-			for(ColumnPointer cp : storedColumns)
+			for(StoredColumn<?> c : storedColumns)
 			{
-				// not needed if we always write a value for each col (in order!)
+				if(c != storedColumns.get(0))
+					bldr.append(", ");
+				bldr.append(c.name);
 			}
 			bldr.append(") VALUES (");
-			for(ColumnPointer cp : storedColumns)
+			for(StoredColumn<?> c : storedColumns)
 			{
-				
+				if(c != storedColumns.get(0))
+					bldr.append(", ");
+				bldr.append(c.getStorableValueString(record));
 			}
 			bldr.append(");");
 			return bldr.toString();
 		}
 		
-		public String getColumnName(ColumnPointer columnPointer)
+		public StoredColumn<?> getStoredColumn(ColumnPointer columnPointer)
 		{
-			return columnNames.get(columnPointer);
+			return columnMapping.get(columnPointer);
+		}
+		
+		public Schema getSchema()
+		{
+			return schema;
 		}
 		
 	}
@@ -264,39 +289,18 @@ public abstract class SQLRecordStore extends RecordStore
 		
 	}
 	
-	public abstract class ValueStringGenerator implements ColumnVisitor
-	{
-		
-		protected Object value;
-		protected String valueString;
-		
-		public String getValueString(ColumnPointer columnPointer, Object value)
-		{
-			this.value = value;
-			this.valueString = null;
-			
-			// Get string for column type:
-			columnPointer.getColumn().accept(this);
-			
-			return this.valueString;
-		}
-		
-	}
-	
 	private class WhereClauseGenerator implements ConstraintVisitor
 	{
 
 		SchemaInfo schemaInfo;
-		ValueStringGenerator valueStringGenerator;
 		StringBuilder bldr;
 		
-		public WhereClauseGenerator(SchemaInfo schemaInfo, Constraint constraint, ValueStringGenerator valueStringGenerator)
+		public WhereClauseGenerator(SchemaInfo schemaInfo, Constraint constraint)
 		{
 			this.schemaInfo = schemaInfo;
 			if(constraint != null)
 			{
 				this.bldr = new StringBuilder();
-				this.valueStringGenerator = valueStringGenerator;
 				constraint.accept(this);
 			}
 		}
@@ -337,17 +341,19 @@ public abstract class SQLRecordStore extends RecordStore
 		@Override
 		public void visit(EqualityConstraint equalityQuery)
 		{
-			bldr.append(schemaInfo.getColumnName(equalityQuery.getColumnPointer()));
+			StoredColumn<?> storedCol = schemaInfo.getStoredColumn(equalityQuery.getColumnPointer());
+			bldr.append(storedCol.name);
 			bldr.append(" " + getComparisonOperator(RuleConstraint.Comparison.EQUAL) + " ");
-			bldr.append(valueStringGenerator.getValueString(equalityQuery.getColumnPointer(), equalityQuery.getValue())); //TODO what if this cp does not exist as such in the table? Consult SchemaInfo for mapping?
+			bldr.append(storedCol.getStorableValueString(equalityQuery.getValue()));
 		}
 
 		@Override
 		public void visit(RuleConstraint ruleQuery)
 		{
-			bldr.append(schemaInfo.getColumnName(ruleQuery.getColumnPointer()));
+			StoredColumn<?> storedCol = schemaInfo.getStoredColumn(ruleQuery.getColumnPointer());
+			bldr.append(storedCol.name);
 			bldr.append(" " + getComparisonOperator(ruleQuery.getComparison()) + " ");
-			bldr.append(valueStringGenerator.getValueString(ruleQuery.getColumnPointer(), ruleQuery.getValue())); //TODO what if this cp does not exist as such in the table? Consult SchemaInfo for mapping?
+			bldr.append(storedCol.getStorableValueString(ruleQuery.getValue()));
 		}
 		
 		public String getClause()

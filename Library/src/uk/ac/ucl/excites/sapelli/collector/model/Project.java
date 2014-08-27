@@ -75,9 +75,9 @@ public class Project
 	
 	private TransmissionSettings transmissionSettings;
 	private boolean logging;
-	private final Schema heartbeatSchema;
+	private Schema heartbeatSchema;
 	private final List<Form> forms;
-	private final Model model;
+	private Model model;
 	private Form startForm;
 	
 	// For backwards compatibility:
@@ -107,7 +107,7 @@ public class Project
 			v1xProject = true;
 		}
 		else
-			setID(id); // checks if it fits in field	
+			initialise(id); // checks if it fits in field	
 		
 		// Name, variant & version:
 		this.name = FileHelpers.makeValidFileName(name);
@@ -138,11 +138,6 @@ public class Project
 		this.forms = new ArrayList<Form>();
 		// Logging:
 		this.logging = DEFAULT_LOGGING;
-		
-		// Initialise Model (important this should remain last):
-		this.model = new Model(SapelliCollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
-		// Heartbeat schema (Important: never put this before the model initialisation!):
-		this.heartbeatSchema = new HeartbeatSchema(this); // will add itself to the model
 	}
 	
 	/**
@@ -150,14 +145,21 @@ public class Project
 	 * 
 	 * @param id
 	 */
-	private void setID(int id)
+	private void initialise(int id)
 	{
+		// Check & set id:
 		if(PROJECT_ID_FIELD.fits(this.id)) // check is there is already a valid id set
 			throw new IllegalStateException("Project id cannot be changed after it has been set.");
 		if(PROJECT_ID_FIELD.fits(id))
 			this.id = id;
 		else
 			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getLogicalRangeString() + ".");
+		
+		// Initialise Model (important this should remain last):
+		this.model = new Model(SapelliCollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
+		
+		// Heartbeat schema (Important: never put this before the model initialisation!):
+		this.heartbeatSchema = new HeartbeatSchema(this); // will add itself to the model
 	}
 	
 	/**
@@ -189,7 +191,7 @@ public class Project
 	{
 		if(!v1xProject)
 			throw new IllegalStateException("Only allowed for v1.x projects (created with id=PROJECT_ID_V1X_TEMP).");
-		setID(schemaID); // schemaID of first (and only) form is also used as projectID
+		initialise(schemaID); // schemaID of first (and only) form is also used as projectID
 		if(Schema.V1X_SCHEMA_VERSION_FIELD.fits(schemaVersion))
 			this.schemaVersion = schemaVersion;
 		else
