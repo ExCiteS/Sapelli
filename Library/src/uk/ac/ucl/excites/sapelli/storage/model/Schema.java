@@ -333,8 +333,9 @@ public class Schema implements Serializable
 		// Add automatic primary key to "external/client" schemata that don't have one yet:
 		if(!isInternal() && !hasPrimaryKey())
 		{
-			IntegerColumn intColumn = new IntegerColumn(COLUMN_AUTO_KEY_NAME, false, true, Long.SIZE); // signed 64 bit, based on ROWIDs in SQLite v3 and later (http://www.sqlite.org/version3.html)
-			setPrimaryKey(new AutoIncrementingPrimaryKey(name + "_Idx" + COLUMN_AUTO_KEY_NAME, intColumn));
+			IntegerColumn autoKeyCol = new IntegerColumn(COLUMN_AUTO_KEY_NAME, false, true, Long.SIZE); // signed 64 bit, based on ROWIDs in SQLite v3 and later (http://www.sqlite.org/version3.html)
+			addColumn(autoKeyCol, false);
+			setPrimaryKey(new AutoIncrementingPrimaryKey(name + "_Idx" + COLUMN_AUTO_KEY_NAME, autoKeyCol));
 		}
 		// Seal:
 		this.sealed = true;
