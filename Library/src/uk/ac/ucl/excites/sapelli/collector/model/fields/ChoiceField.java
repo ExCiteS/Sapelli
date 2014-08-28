@@ -56,8 +56,11 @@ public class ChoiceField extends Field implements DictionaryItem
 	static public final boolean DEFAULT_CROSSED = false;
 	static public final String DEFAULT_CROSS_COLOR = "#A5FF0000"; // Red with 65% alpha
 	
-	private final ChoiceField parent;
-	private final ChoiceField root;
+	static public final String IMAGE_VIRTUAL_COLOMN_TARGET_NAME = "Image";
+	static public final String VALUE_VIRTUAL_COLOMN_TARGET_NAME = "Value";
+	
+	private ChoiceField parent;
+	private ChoiceField root;
 	private List<ChoiceField> children;
 	private String imageRelativePath;
 	private int cols = DEFAULT_NUM_COLS;
@@ -332,7 +335,7 @@ public class ChoiceField extends Field implements DictionaryItem
 					return item.value;
 				}
 			}));
-			col.addVirtualVersion(StringColumn.ForCharacterCount("Value", opt, Math.max(itemValueMapper.getMaxStringLength(), 1)), itemValueMapper);
+			col.addVirtualVersion(StringColumn.ForCharacterCount(VALUE_VIRTUAL_COLOMN_TARGET_NAME, opt, Math.max(itemValueMapper.getMaxStringLength(), 1)), itemValueMapper);
 			//	Image path column:
 			StringListMapper itemImgMapper = new StringListMapper(dictionary.serialise(new DictionarySerialiser<ChoiceField>()
 			{
@@ -342,7 +345,7 @@ public class ChoiceField extends Field implements DictionaryItem
 					return item.imageRelativePath;
 				}
 			}));
-			col.addVirtualVersion(StringColumn.ForCharacterCount("Image", opt, Math.max(itemImgMapper.getMaxStringLength(), 1)), itemImgMapper);
+			col.addVirtualVersion(StringColumn.ForCharacterCount(IMAGE_VIRTUAL_COLOMN_TARGET_NAME, opt, Math.max(itemImgMapper.getMaxStringLength(), 1)), itemImgMapper);
 			
 			// Return the column:
 			return col;
