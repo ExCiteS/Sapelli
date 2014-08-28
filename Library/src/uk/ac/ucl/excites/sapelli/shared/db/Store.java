@@ -23,8 +23,8 @@ import java.io.File;
 public interface Store
 {
 
-	public void finalise();
+	public void finalise() throws DBException;
 	
-	public void backup(File destinationFolder) throws Exception;
+	public void backup(File destinationFolder) throws DBException;
 	
 }

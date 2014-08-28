@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -78,46 +79,67 @@ public class DB4ORecordStore extends RecordStore
 	}
 	
 	@Override
-	public void startTransaction()
+	protected void doStartTransaction()
 	{
 		// does nothing
 	}
 
 	@Override
-	public void commitTransaction()
+	protected void doCommitTransaction() throws DBException
 	{
-		db4o.commit();
+		try
+		{
+			db4o.commit();
+		}
+		catch(Exception e)
+		{
+			throw new DBException("Could not commit changes to DB4O file", e);
+		}
 	}
 
 	@Override
-	public void rollbackTransaction()
+	protected void doRollbackTransaction() throws DBException
 	{
-		db4o.rollback();
+		try
+		{
+			db4o.rollback();
+		}
+		catch(Exception e)
+		{
+			throw new DBException("Could not roll back changes to DB4O file", e);
+		}
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStore(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	protected boolean doStore(Record record) throws Exception
+	protected boolean doStore(Record record) throws DBException
 	{
-		boolean insert = !db4o.ext().isStored(record);
-		
-		// Deal with auto-incrementing primary keys:
-		if(record.getSchema().getPrimaryKey() instanceof AutoIncrementingPrimaryKey)
+		try
 		{
-			IntegerColumn autoIncrIDColumn = ((AutoIncrementingPrimaryKey) record.getSchema().getPrimaryKey()).getColumn();
-			// Set autoIncr ID:
-			if(!autoIncrIDColumn.isValueSet(record)) // equivalent to if(insert)
+			boolean insert = !db4o.ext().isStored(record);
+			
+			// Deal with auto-incrementing primary keys:
+			if(record.getSchema().getPrimaryKey() instanceof AutoIncrementingPrimaryKey)
 			{
-				autoIncrIDColumn.storeValue(record, autoIncrementDict.getNextID(record.getSchema()));
-				// Store the the dictionary:
-				db4o.store(autoIncrementDict);
+				IntegerColumn autoIncrIDColumn = ((AutoIncrementingPrimaryKey) record.getSchema().getPrimaryKey()).getColumn();
+				// Set autoIncr ID:
+				if(!autoIncrIDColumn.isValueSet(record)) // equivalent to if(insert)
+				{
+					autoIncrIDColumn.storeValue(record, autoIncrementDict.getNextID(record.getSchema()));
+					// Store the the dictionary:
+					db4o.store(autoIncrementDict);
+				}
 			}
+			db4o.store(record);
+			
+			return insert;
 		}
-		
-		db4o.store(record);
-		return insert;
+		catch(Exception e)
+		{
+			throw new DBException("DB4O exception", e, record);
+		}
 	}
 	
 	/* (non-Javadoc)
@@ -205,22 +227,49 @@ public class DB4ORecordStore extends RecordStore
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doDelete(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	public void doDelete(Record record) throws Exception
+	public void doDelete(Record record) throws DBException
 	{
-		db4o.delete(record);
+		try
+		{
+			db4o.delete(record);
+		}
+		catch(Exception e)
+		{
+			throw new DBException("Error upon deleting record", e, record);
+		}
+	}
+	
+	@Override
+	public void finalise() throws DBException
+	{
+		commitTransaction(); // because DB4O does not have explicit opening of transactions (it is always using one) we should always commit before closing.
+		super.finalise();
 	}
 
 	@Override
-	public void finalise()
+	protected void doFinalise() throws DBException
 	{
-		db4o.close();
+		try
+		{
+			db4o.close();
+		}
+		catch(Exception e)
+		{
+			throw new DBException("Exception upon closing DB4O file", e);
+		}
 	}
 
 	@Override
-	public void backup(File destinationFolder) throws Exception
+	protected void doBackup(File destinationFolder) throws DBException
 	{
-		db4o.commit();
-		db4o.ext().backup(DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName()).getAbsolutePath());
+		try
+		{
+			db4o.ext().backup(DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName()).getAbsolutePath());
+		}
+		catch(Exception e)
+		{
+			throw new DBException("Exception upon backing-up the DB4O file", e);
+		}
 	}
 	
 	/**

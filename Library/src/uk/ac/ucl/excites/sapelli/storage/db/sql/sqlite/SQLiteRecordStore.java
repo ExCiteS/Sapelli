@@ -16,10 +16,11 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.db;
+package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
 import java.io.File;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
@@ -39,10 +40,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 
 /**
  * @author mstevens
- * @param <T>
  *
  */
-public class SQLiteRecordStore extends SQLRecordStore
+public abstract class SQLiteRecordStore extends SQLRecordStore
 {
 	
 	// Statics----------------------------------------------
@@ -67,57 +67,56 @@ public class SQLiteRecordStore extends SQLRecordStore
 		initialise(newDB);
 	}
 
+	/**
+	 * In SQlite basic transactions (those controlled with BEGIN...COMMIT/ROLLBACK) cannot
+	 * be nested (for that one needs to use the SAVEPOINT and RELEASE commands, which we won't
+	 * use here). However, for flexibility reasons we will pretend that it is possible (i.e. we
+	 * don't throw an exception if a request arrives to open a 2nd, 3rd, etc. transaction).
+	 * 
+	 * @see <a href="http://sqlite.org/lang_transaction.html">http://sqlite.org/lang_transaction.html</a>
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStartTransaction()
+	 */
 	@Override
-	public void startTransaction()
+	protected void doStartTransaction() throws DBException
 	{
-		try
-		{
-			executeQuery("BEGIN TRANSACTION");
-		}
-		catch(Exception ex)
-		{
-			ex.printStackTrace(System.err);
-		}
+		if(!isInTransaction())
+			try
+			{
+				executeQuery("BEGIN TRANSACTION;");
+			}
+			catch(Exception ex)
+			{
+				throw new DBException("Could not open SQLite transaction", ex);
+			}
 	}
 
 	@Override
-	public void commitTransaction()
+	protected void doCommitTransaction() throws DBException
 	{
-		try
-		{
-			executeQuery("COMMIT TRANSACTION");
-		}
-		catch(Exception ex)
-		{
-			ex.printStackTrace(System.err);
-		}
+		if(getOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
+			try
+			{
+				executeQuery("COMMIT TRANSACTION;");
+			}
+			catch(Exception ex)
+			{
+				throw new DBException("Could not commit SQLite transaction", ex);
+			}
 	}
 
 	@Override
-	public void rollbackTransaction()
+	protected void doRollbackTransaction() throws DBException
 	{
-		try
-		{
-			executeQuery("ROLLBACK TRANSACTION");
-		}
-		catch(Exception ex)
-		{
-			ex.printStackTrace(System.err);
-		}
-	}
-	
-	@Override
-	public void finalise()
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void backup(File destinationFolder) throws Exception
-	{
-		// TODO Auto-generated method stub
-		
+		if(getOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
+			try
+			{
+				executeQuery("ROLLBACK TRANSACTION;");
+			}
+			catch(Exception ex)
+			{
+				throw new DBException("Could not roll-back SQLite transaction", ex);
+			}
 	}
 
 	@Override
@@ -126,12 +125,6 @@ public class SQLiteRecordStore extends SQLRecordStore
 		// TODO Auto-generated method stub
 		return false;
 		// SELECT name FROM sqlite_master WHERE type='table' AND name='table_name';
-	}
-
-	@Override
-	protected void executeQuery(String sql) throws Exception
-	{
-		System.out.println("Execute SQL: " + sql);
 	}
 	
 	@Override

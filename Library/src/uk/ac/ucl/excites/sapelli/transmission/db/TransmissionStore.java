@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.transmission.db;
 import java.io.File;
 import java.nio.charset.Charset;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
@@ -48,6 +49,13 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextSMSTransmission;
 
+/**
+ * Class to handle storage of transmissions and their parts. Based on {@link RecordStore}.
+ * 
+ * TODO delete methods
+ * 
+ * @author mstevens, Michalis Vitos
+ */
 public class TransmissionStore implements Store
 {
 	
@@ -168,7 +176,7 @@ public class TransmissionStore implements Store
 	private void doStoreTransmission(Transmission transmission, Record transmissionRecord) throws Exception
 	{
 		// Store the transmission
-		recordStore.store(transmissionRecord, false);
+		recordStore.store(transmissionRecord);
 		
 		// Transmission ID should now be set in the record...
 		if(transmission.isLocalIDSet()) // if the object already had a local transmissionID...
@@ -186,23 +194,31 @@ public class TransmissionStore implements Store
 		// Start transaction
 		recordStore.startTransaction();
 		
-		// Create & store record:
-		Record tRec = createTransmissionRecord(smsTransmission);
-		doStoreTransmission(smsTransmission, tRec); // after this the localID should always be known
-		
-		// Parts...
-		for(Message msg : smsTransmission.getParts())
+		try
 		{
-			Record tPartRec = TRANSMISSION_PART_SCHEMA.createRecord();
-			TRANSMISSION_PART_COLUMN_TRANSMISSION_ID.storeValue(tPartRec, tRec.getReference()); // set foreign key
-			TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, msg.getPartNumber());
-			msg.setBody(this, tPartRec);
-			COLUMN_SENT_AT.storeValue(tPartRec, msg.getSentAt());
-			TRANSMISSION_PART_COLUMN_DELIVERED_AT.storeValue(tPartRec, msg.getDeliveredAt());
-			COLUMN_RECEIVED_AT.storeValue(tPartRec, msg.getReceivedAt());
+			// Create & store record:
+			Record tRec = createTransmissionRecord(smsTransmission);
+			doStoreTransmission(smsTransmission, tRec); // after this the localID should always be known
 			
-			// Store part record:
-			recordStore.store(tPartRec, false);
+			// Parts...
+			for(Message msg : smsTransmission.getParts())
+			{
+				Record tPartRec = TRANSMISSION_PART_SCHEMA.createRecord();
+				TRANSMISSION_PART_COLUMN_TRANSMISSION_ID.storeValue(tPartRec, tRec.getReference()); // set foreign key
+				TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, msg.getPartNumber());
+				msg.setBody(this, tPartRec);
+				COLUMN_SENT_AT.storeValue(tPartRec, msg.getSentAt());
+				TRANSMISSION_PART_COLUMN_DELIVERED_AT.storeValue(tPartRec, msg.getDeliveredAt());
+				COLUMN_RECEIVED_AT.storeValue(tPartRec, msg.getReceivedAt());
+				
+				// Store part record:
+				recordStore.store(tPartRec);
+			}
+		}
+		catch(Exception e)
+		{
+			recordStore.rollbackTransactions();
+			throw e;
 		}
 		
 		// Commit transaction
@@ -227,26 +243,34 @@ public class TransmissionStore implements Store
 		// Start transaction
 		recordStore.startTransaction();
 		
-		// Create record:
-		Record tRec = createTransmissionRecord(httpTransmission);
-		
-		// Set receiver (= serverURL) and number of parts (always = 1):
-		TRANSMISSION_COLUMN_RECEIVER.storeValue(tRec, httpTransmission.getServerURL());
-		TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, 1);
-		
-		// Store the transmission record:
-		doStoreTransmission(httpTransmission, tRec); // after this the localID should always be known
-		
-		// Create a single transmission part (only used to store the body):
-		Record tPartRec = TRANSMISSION_PART_SCHEMA.createRecord();
-		TRANSMISSION_PART_COLUMN_TRANSMISSION_ID.storeValue(tPartRec, tRec.getReference()); // set foreign key
-		TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, 1);
-		byte[] bytes = httpTransmission.getBody();
-		TRANSMISSION_PART_COLUMN_BODY.storeValue(tPartRec, bytes);
-		TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.storeValue(tPartRec, bytes.length * Byte.SIZE);
-		
-		// Store the part:
-		recordStore.store(tPartRec, false);
+		try
+		{
+			// Create record:
+			Record tRec = createTransmissionRecord(httpTransmission);
+			
+			// Set receiver (= serverURL) and number of parts (always = 1):
+			TRANSMISSION_COLUMN_RECEIVER.storeValue(tRec, httpTransmission.getServerURL());
+			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, 1);
+			
+			// Store the transmission record:
+			doStoreTransmission(httpTransmission, tRec); // after this the localID should always be known
+			
+			// Create a single transmission part (only used to store the body):
+			Record tPartRec = TRANSMISSION_PART_SCHEMA.createRecord();
+			TRANSMISSION_PART_COLUMN_TRANSMISSION_ID.storeValue(tPartRec, tRec.getReference()); // set foreign key
+			TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, 1);
+			byte[] bytes = httpTransmission.getBody();
+			TRANSMISSION_PART_COLUMN_BODY.storeValue(tPartRec, bytes);
+			TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.storeValue(tPartRec, bytes.length * Byte.SIZE);
+			
+			// Store the part:
+			recordStore.store(tPartRec);
+		}
+		catch(Exception e)
+		{
+			recordStore.rollbackTransactions();
+			throw e;
+		}
 		
 		// Commit transaction
 		recordStore.commitTransaction();
@@ -320,13 +344,13 @@ public class TransmissionStore implements Store
 	}
 
 	@Override
-	public void finalise()
+	public void finalise() throws DBException
 	{
 		recordStore.finalise();
 	}
 
 	@Override
-	public void backup(File destinationFolder) throws Exception
+	public void backup(File destinationFolder) throws DBException
 	{
 		recordStore.backup(destinationFolder);
 	}

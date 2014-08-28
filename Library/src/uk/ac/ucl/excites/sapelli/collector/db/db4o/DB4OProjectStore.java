@@ -25,6 +25,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -251,10 +252,17 @@ public class DB4OProjectStore extends ProjectStore
 	}
 
 	@Override
-	public void backup(File destinationFolder) throws Exception
+	public void backup(File destinationFolder) throws DBException
 	{
-		db4o.commit();
-		db4o.ext().backup(DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName()).getAbsolutePath());
+		try
+		{
+			db4o.commit();
+			db4o.ext().backup(DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName()).getAbsolutePath());
+		}
+		catch(Exception e)
+		{
+			throw new DBException("Error upon backup up project store");
+		}
 	}
 	
 }

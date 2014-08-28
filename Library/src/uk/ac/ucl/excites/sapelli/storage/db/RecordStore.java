@@ -18,8 +18,11 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db;
 
+import java.io.File;
+import java.util.Collection;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -41,17 +44,122 @@ public abstract class RecordStore implements Store
 
 	protected StorageClient client;
 	
+	/**
+	 * Few DBMSs support nested transactions, but this counter allows us to simulate them,
+	 * which enables us to keep code that deals with transactions simpler. 
+	 */
+	private int openTransactions = 0;
+	
 	public RecordStore(StorageClient client)
 	{
 		this.client = client;
 	}
 	
-	public abstract void startTransaction();
+	/**
+	 * Starts a new transaction.
+	 * 
+	 * @throws DBException
+	 */
+	public void startTransaction() throws DBException
+	{
+		try
+		{
+			doStartTransaction();
+		}
+		catch(DBException dbE)
+		{
+			throw dbE;
+		}
+		openTransactions++; // !!!
+	}
 	
-	public abstract void commitTransaction();
+	protected abstract void doStartTransaction() throws DBException;
 	
-	public abstract void rollbackTransaction();
+	/**
+	 * Commits the current transaction.
 
+	 * @throws DBException
+	 */
+	public void commitTransaction() throws DBException
+	{
+		if(openTransactions > 0)
+		{
+			try
+			{
+				doCommitTransaction();
+			}
+			catch(DBException dbE)
+			{
+				throw dbE;
+			}
+			openTransactions--; // !!!
+		}
+		else
+			System.err.println("Warning: there is no open transaction to commit!");
+	}
+	
+	protected abstract void doCommitTransaction() throws DBException;
+	
+	/**
+	 * Rolls back all(!) transactions.
+	 * 
+	 * @throws DBException
+	 */
+	public void rollbackTransactions() throws DBException
+	{
+		if(openTransactions == 0)
+			System.err.println("Warning: there is no open transaction to roll back!");
+		while(openTransactions > 0)
+			rollbackTransaction();
+	}
+	
+	/**
+	 * Rolls back the current transaction.
+	 * 
+	 * @throws DBException
+	 */
+	public void rollbackTransaction() throws DBException
+	{
+		if(openTransactions > 0)
+		{
+			try
+			{
+				doRollbackTransaction();
+			}
+			catch(DBException dbE)
+			{
+				throw dbE;
+			}
+			openTransactions--; // !!!
+		}
+		else
+			System.err.println("Warning: there is no open transaction to roll back!");
+	}
+	
+	protected abstract void doRollbackTransaction() throws DBException;
+
+	/**
+	 * @return whether or not there is an open transaction
+	 */
+	public boolean isInTransaction()
+	{
+		return openTransactions > 0;
+	}
+	
+	/**
+	 * @return the number of currently open (possibly simulated) transactions
+	 */
+	protected int getOpenTransactions()
+	{
+		return openTransactions;
+	}
+	
+	/**
+	 * Verifies if a given record can be stored.
+	 * 
+	 * @param record
+	 * @return whether of not the given record can be stored in this RecordStore 
+	 */
 	public boolean isStorable(Record record)
 	{
 		return 	record != null &&					// obviously it makes no sense to store null records
@@ -59,40 +167,28 @@ public abstract class RecordStore implements Store
 	}
 	
 	/**
-	 * @param record - the record to store or update; records of internal schemata will be rejected
+	 * Stores a single record.
+	 * Note that this method does not start a new transaction. If this is a desired the client code should take care of that by first calling {@link #startTransaction()}.
+	 * However, if an error occurs any open transaction will be rolled back!
 	 * 
-	 * @throws Exception
-	 */
-	public void store(Record record) throws Exception
-	{
-		store(record, true);
-	}
-	
-	/**
 	 * @param record - the record to store or update; records of internal schemata will be rejected
-	 * @param useTransaction - whether or not to start & commit a transaction
-	 * @throws Exception
+	 * @throws DBException
 	 */
-	public void store(Record record, boolean useTransaction) throws Exception
+	public void store(Record record) throws DBException
 	{
 		if(!isStorable(record))
 			throw new IllegalArgumentException(String.format("Record (%s) cannot be stored!", record.toString(false)));
 		Boolean insert = null;
-		if(useTransaction)
-			startTransaction();
 		try
 		{
 			insert = doStore(record);
 		}
-		catch(Exception e)
+		catch(DBException e)
 		{
 			e.printStackTrace(System.err);
-			if(useTransaction)
-				rollbackTransaction();
+			rollbackTransactions(); // !!!
 			throw e;
 		}
-		if(useTransaction)
-			commitTransaction();
 		// Inform client:
 		if(insert)
 			client.recordInserted(record);
@@ -101,24 +197,16 @@ public abstract class RecordStore implements Store
 	}
 	
 	/**
+	 * Store a list of records. A transaction will be used. If there is a problem with storing one 
+	 * of the records the whole operation will be rolled back.
+	 * 
 	 * @param records - the records to store or update
-	 * @throws Exception
+	 * @throws DBException
 	 */
-	public void store(List<Record> records) throws Exception
-	{
-		store(records, true);
-	}
-	
-	/**
-	 * @param records - the records to store or update
-	 * @param useTransaction - whether or not to start & commit a transaction
-	 * @throws Exception
-	 */
-	public void store(List<Record> records, boolean useTransaction) throws Exception
+	public void store(List<Record> records) throws DBException
 	{
 		Boolean[] insert = new Boolean[records.size()]; 
-		if(useTransaction)
-			startTransaction();
+		startTransaction();
 		int r = 0;
 		try
 		{
@@ -131,12 +219,10 @@ public abstract class RecordStore implements Store
 		catch(Exception e)
 		{
 			e.printStackTrace(System.err);
-			if(useTransaction)
-				rollbackTransaction();
-			throw e;
+			rollbackTransactions();
+			throw new DBException(e);
 		}
-		if(useTransaction)
-			commitTransaction();
+		commitTransaction();
 		// Inform client:
 		r = 0;
 		for(Record record : records)
@@ -148,10 +234,10 @@ public abstract class RecordStore implements Store
 	
 	/**
 	 * @param record - the record to store or update; can be assumed to be non-null and not of an internal schema
-	 * @throws Exception
+	 * @throws DBException
 	 * @return whether the record was new (i.e. it was INSERTed; returns true), or not (i.e. it was UPDATEd; returns false)
 	 */
-	protected abstract boolean doStore(Record record) throws Exception;
+	protected abstract boolean doStore(Record record) throws DBException;
 	
 	/**
 	 * Retrieve all Records (of any schema)
@@ -202,72 +288,51 @@ public abstract class RecordStore implements Store
 	public abstract Record retrieveRecord(SingleRecordQuery query);
 
 	/**
+	 * Deletes a single record.
+	 * Note that this method does not start a new transaction. If this is a desired the client code should take care of that by first calling {@link #startTransaction()}.
+	 * However, if an error occurs any open transaction will be rolled back!
+	 * 
 	 * @param record - the record to delete
-	 * @throws Exception
+	 * @throws DBException
 	 */
-	public void delete(Record record) throws Exception
+	public void delete(Record record) throws DBException
 	{
-		delete(record, true);
-	}
-	
-	/**
-	 * @param record - the record to delete
-	 * @param useTransaction - whether or not to start & commit a transaction
-	 * @throws Exception
-	 */
-	public void delete(Record record, boolean useTransaction) throws Exception
-	{
-		if(useTransaction)
-			startTransaction();
 		try
 		{
 			doDelete(record);
 		}
-		catch(Exception e)
+		catch(DBException e)
 		{
 			e.printStackTrace(System.err);
-			if(useTransaction)
-				rollbackTransaction();
+			rollbackTransactions(); // !!!
 			throw e;
 		}
-		if(useTransaction)
-			commitTransaction();
 		// Inform client:
 		client.recordDeleted(record);
 	}
-
-	/**
-	 * @param records - the records to delete
-	 * @throws Exception
-	 */
-	public void delete(List<Record> records) throws Exception
-	{
-		delete(records, true);
-	}
 	
 	/**
+	 * Deletes a series of records.
+	 * A transaction will be used. Upon an error the whole operation will be rolled back.
+	 * 
 	 * @param records - the records to delete
-	 * @param useTransaction - whether or not to start & commit a transaction
-	 * @throws Exception
+	 * @throws DBException
 	 */
-	public void delete(List<Record> records, boolean useTransaction) throws Exception
+	public void delete(Collection<Record> records) throws DBException
 	{
-		if(useTransaction)
-			startTransaction();
+		startTransaction();
 		try
 		{
 			for(Record record : records)
 				doDelete(record);
 		}
-		catch(Exception e)
+		catch(DBException e)
 		{
 			e.printStackTrace(System.err);
-			if(useTransaction)
-				rollbackTransaction();
+			rollbackTransactions();
 			throw e;
 		}
-		if(useTransaction)
-			commitTransaction();
+		commitTransaction();
 		// Inform client:
 		for(Record record : records)
 			client.recordDeleted(record);
@@ -277,9 +342,11 @@ public abstract class RecordStore implements Store
 	 * Deletes *ALL* records.
 	 * USE WITH CARE!
 	 * 
-	 * @throws Exception
+	 * A transaction will be used. Upon an error the whole operation will be rolled back.
+	 * 
+	 * @throws DBException
 	 */
-	public void deleteAllRecords() throws Exception
+	public void deleteAllRecords() throws DBException
 	{
 		delete(retrieveAllDeletableRecords());
 	}
@@ -297,8 +364,29 @@ public abstract class RecordStore implements Store
 	
 	/**
 	 * @param record - the record to delete
-	 * @throws Exception
+	 * @throws DBException
 	 */
-	protected abstract void doDelete(Record record) throws Exception;
+	protected abstract void doDelete(Record record) throws DBException;
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
+	 */
+	public void finalise() throws DBException
+	{
+		if(isInTransaction())
+			System.err.println("Warning: record store is being closed but there is an uncommited transaction (changes my be lost)!");
+		doFinalise();
+	}
+	
+	protected abstract void doFinalise() throws DBException;
+	
+	public void backup(File destinationFolder) throws DBException
+	{
+		if(isInTransaction())
+			throw new DBException("Cannot back-up database due to uncommited transaction!");
+		doBackup(destinationFolder);
+	}
+	
+	protected abstract void doBackup(File destinationFolder) throws DBException;
 
 }

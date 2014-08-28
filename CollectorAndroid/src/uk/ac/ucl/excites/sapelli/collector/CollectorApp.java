@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.db4o.DB4OProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
@@ -268,7 +269,11 @@ public class CollectorApp extends Application implements StoreClient
 		// Finalise if no longer used by other clients:
 		if(clients == null || clients.isEmpty())
 		{
-			store.finalise();
+			try
+			{
+				store.finalise();
+			}
+			catch(DBException ignore) { }
 			storeClients.remove(store); // remove empty set
 
 			//Slightly dirty but acceptable:

@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -106,7 +107,7 @@ public class Schema implements Serializable
 		META_SCHEMA.seal();
 	}
 	
-	static public Record GetMetaRecord(Schema schema) throws Exception
+	static public Record GetMetaRecord(Schema schema) throws IOException
 	{
 		Record metaRecord = META_SCHEMA.createRecord();
 		
@@ -129,7 +130,7 @@ public class Schema implements Serializable
 		return metaRecord;
 	}
 	
-	static public Schema FromMetaRecord(Record metaRecord) throws Exception
+	static public Schema FromMetaRecord(Record metaRecord) throws NullPointerException, IllegalArgumentException, IOException, ClassNotFoundException
 	{
 		if(metaRecord == null)
 			throw new NullPointerException("The metaRecord cannot be null!");
@@ -481,6 +482,20 @@ public class Schema implements Serializable
 	public boolean hasPrimaryKey()
 	{
 		return primaryKey != null;
+	}
+	
+	/**
+	 * Finds the (first, and presumed only) index on/containing the given column. If the column is not indexed {@code null} is returned.
+	 * 
+	 * @param column
+	 * @return the (first) index on the given column, or null if it is not indexed
+	 */
+	public Index getIndex(Column<?> column)
+	{
+		for(Index idx : getIndexes())
+			if(idx.containsColumn(column, false))
+				return idx;
+		return null;
 	}
 
 	public Record createRecord()
