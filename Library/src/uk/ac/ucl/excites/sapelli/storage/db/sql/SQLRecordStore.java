@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
@@ -59,6 +60,27 @@ public abstract class SQLRecordStore extends RecordStore
 		this.schemaInfos = new HashMap<Schema, SQLRecordStore.SchemaInfo>();
 	}
 	
+	/**
+	 * Must be called from subclass constructor!
+	 * 
+	 * @param newDB whether or not the database file is new (i.e. empty)
+	 * @throws Exception
+	 */
+	protected void initialise(boolean newDB) throws Exception
+	{
+		if(newDB)
+			registerSchema(Schema.META_SCHEMA); // create the table to store schemata
+		else
+		{
+			// Initialise schemaInfos:
+			for(Record metaSchemaRec : retrieveRecords(Schema.META_SCHEMA))
+			{
+				Schema schema = Schema.FromMetaRecord(metaSchemaRec);
+				schemaInfos.put(schema, new SchemaInfo(schema));
+			}
+		}
+	}
+	
 	private SchemaInfo getSchemaInfo(Schema schema)
 	{
 		SchemaInfo schemaInfo = schemaInfos.get(schema);
@@ -72,10 +94,9 @@ public abstract class SQLRecordStore extends RecordStore
 	
 	protected abstract SchemaInfoGenerator getSchemaInfoGenerator();
 	
-	protected List<Schema> getKnownSchemata()
+	protected Set<Schema> getKnownSchemata()
 	{
-		
-		return null;
+		return schemaInfos.keySet();
 	}
 	
 	protected String getTableName(Schema schema)
@@ -83,26 +104,6 @@ public abstract class SQLRecordStore extends RecordStore
 		if(schema == Schema.META_SCHEMA)
 			return SCHEMATA_TABLE_NAME;
 		return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber();
-	}
-	
-	/**
-	 * Get subclasses may need to override this because some SQL dialects use != instead of <> (Note: SQLite supports both)
-	 * 
-	 * @param comparison
-	 * @return
-	 */
-	public String getComparisonOperator(RuleConstraint.Comparison comparison)
-	{
-		switch(comparison)
-		{
-			case SMALLER : return "<";
-			case SMALLER_OR_EQUAL : return "<=";
-			case EQUAL : return "=";
-			case NOT_EQUAL : return "<>";
-			case GREATER_OR_EQUAL : return ">=";
-			case GREATER : return ">";
-		}
-		return null; // this should never happen
 	}
 	
 	protected abstract boolean doesTableExist(String tableName);
@@ -130,11 +131,6 @@ public abstract class SQLRecordStore extends RecordStore
 			}
 			commitTransaction();
 		}
-	}
-	
-	protected void uponDatabaseCreation() throws Exception
-	{
-		registerSchema(Schema.META_SCHEMA); // create the table to store schemata
 	}
 
 	protected void update(Record record) throws Exception
@@ -233,7 +229,7 @@ public abstract class SQLRecordStore extends RecordStore
 					bldr.append(", ");
 				bldr.append(c.name);
 				bldr.append(' ');
-				bldr.append(c.sqlType);
+				bldr.append(c.spec);
 				// TODO nullable, indexed ...
 			}
 			// TODO primary key ...
@@ -364,6 +360,26 @@ public abstract class SQLRecordStore extends RecordStore
 				return "";
 		}
 		
+	}
+	
+	/**
+	 * Get subclasses may need to override this because some SQL dialects use != instead of <> (Note: SQLite supports both)
+	 * 
+	 * @param comparison
+	 * @return
+	 */
+	public String getComparisonOperator(RuleConstraint.Comparison comparison)
+	{
+		switch(comparison)
+		{
+			case SMALLER : return "<";
+			case SMALLER_OR_EQUAL : return "<=";
+			case EQUAL : return "=";
+			case NOT_EQUAL : return "<>";
+			case GREATER_OR_EQUAL : return ">=";
+			case GREATER : return ">";
+		}
+		return null; // this should never happen
 	}
 
 }

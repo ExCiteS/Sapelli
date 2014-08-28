@@ -44,13 +44,27 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
  */
 public class SQLiteRecordStore extends SQLRecordStore
 {
+	
+	// Statics----------------------------------------------
+	static public final String DATABASE_NAME_SUFFIX = "_Data";
+	static public final String BACKUP_SUFFIX = "_Backup";
+	static public final String FILE_EXTENSION = "sqlite";
 
-	public SQLiteRecordStore(StorageClient client) throws Exception
+	// Dynamics---------------------------------------------
+	private String filename;
+	
+	public SQLiteRecordStore(StorageClient client, File folder, String baseFilename) throws Exception
 	{
 		super(client);
-		// TODO Auto-generated constructor stub
+		this.filename = baseFilename + DATABASE_NAME_SUFFIX;
+		File dbFile = new File(folder.getAbsolutePath() + File.separator + filename + '.' + FILE_EXTENSION);
 		
-		uponDatabaseCreation(); // TODO only when new file
+		boolean newDB = !dbFile.exists(); 
+		if(newDB)
+		{
+			dbFile.createNewFile();
+		}
+		initialise(newDB);
 	}
 
 	@Override

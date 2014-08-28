@@ -33,13 +33,13 @@ public abstract class StoredColumn<T>
 	
 	final ColumnPointer sourceColumnPointer;
 	final String name;
-	final String sqlType;
+	final String spec;
 	
-	public StoredColumn(Schema schema, Column<T> sourceColum, String name, String sqlType)
+	public StoredColumn(Schema schema, Column<T> sourceColum, String name, String spec)
 	{
 		this.sourceColumnPointer = new ColumnPointer(schema, sourceColum);
 		this.name = name;
-		this.sqlType = sqlType;
+		this.spec = spec;
 	}
 	
 	@SuppressWarnings("unchecked")
