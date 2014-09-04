@@ -37,7 +37,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	@Override
-	protected void executeQuery(String sql) throws DBException
+	protected void executeSQL(String sql) throws DBException
 	{
 		System.out.println("Execute SQL: " + sql);
 	}

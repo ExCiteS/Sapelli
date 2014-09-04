@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
-import uk.ac.ucl.excites.sapelli.storage.db.sql.StoredColumn;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.TableSpec.ColumnSpec;
 import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Index;
@@ -31,12 +31,12 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
  *
  * @param <T>
  */
-public abstract class SQLiteStoredColumn<T> extends StoredColumn<T>
+public abstract class SQLiteStoredColumn<T> extends ColumnSpec<T>
 {
 	
-	static private <T> String GetColSpec(Schema schema, Column<T> sourceColum, String name, String sqlType)
+	static private <T> String GetConstraint(Schema schema, Column<T> sourceColum, String name)
 	{
-		StringBuilder bldr = new StringBuilder(sqlType);
+		StringBuilder bldr = new StringBuilder();
 		
 		// Primary key:
 		PrimaryKey pk = schema.getPrimaryKey();
@@ -49,7 +49,7 @@ public abstract class SQLiteStoredColumn<T> extends StoredColumn<T>
 				bldr.append(" AUTOINCREMENT");
 		}
 		
-		// Regular single-column, unique index:
+		// Regular single-column, unique index (unnamed):
 		Index idx = schema.getIndex(sourceColum);
 		if(idx != null && !idx.isMultiColumn() && idx.isUnique())
 		{
@@ -74,7 +74,7 @@ public abstract class SQLiteStoredColumn<T> extends StoredColumn<T>
 
 	public SQLiteStoredColumn(Schema schema, Column<T> sourceColum, String name, String sqlType)
 	{
-		super(schema, sourceColum, name, GetColSpec(schema, sourceColum, name, sqlType));
+		super(schema, sourceColum, name, sqlType, GetConstraint(schema, sourceColum, name));
 	}
 
 	@Override

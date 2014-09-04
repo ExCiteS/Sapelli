@@ -19,11 +19,13 @@
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
 import java.io.File;
+import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
@@ -55,7 +57,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 	
 	public SQLiteRecordStore(StorageClient client, File folder, String baseFilename) throws Exception
 	{
-		super(client);
+		super(client, new SQLiteSchemaInfoFactory());
 		this.filename = baseFilename + DATABASE_NAME_SUFFIX;
 		File dbFile = new File(folder.getAbsolutePath() + File.separator + filename + '.' + FILE_EXTENSION);
 		
@@ -83,7 +85,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		if(!isInTransaction())
 			try
 			{
-				executeQuery("BEGIN TRANSACTION;");
+				executeSQL("BEGIN TRANSACTION;");
 			}
 			catch(Exception ex)
 			{
@@ -97,7 +99,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		if(getOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
 			try
 			{
-				executeQuery("COMMIT TRANSACTION;");
+				executeSQL("COMMIT TRANSACTION;");
 			}
 			catch(Exception ex)
 			{
@@ -111,7 +113,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		if(getOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
 			try
 			{
-				executeQuery("ROLLBACK TRANSACTION;");
+				executeSQL("ROLLBACK TRANSACTION;");
 			}
 			catch(Exception ex)
 			{
@@ -127,187 +129,190 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		// SELECT name FROM sqlite_master WHERE type='table' AND name='table_name';
 	}
 	
-	@Override
-	protected SchemaInfoGenerator getSchemaInfoGenerator()
+	static class SQLiteSchemaInfoFactory extends TableSpecFactory
 	{
-		return new SchemaInfoGenerator()
+		
+		@Override
+		public void visit(TimeStampColumn dateTimeCol)
 		{
+			// TODO Auto-generated method stub
 			
-			@Override
-			public void visit(TimeStampColumn dateTimeCol)
+		}
+		
+		@Override
+		public void visit(ByteArrayColumn byteArrayCol)
+		{	
+			addColumnSpec(new SQLiteStoredColumn<byte[]>(schema, byteArrayCol, byteArrayCol.getName(), "BLOB")
 			{
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void visit(ByteArrayColumn byteArrayCol)
-			{	
-				schemaInfo.addStoredColumn(new SQLiteStoredColumn<byte[]>(schemaInfo.getSchema(), byteArrayCol, byteArrayCol.getName(), "BLOB")
-				{
 
-					@Override
-					public String toStorableValueString(byte[] value)
-					{
-						return null; // TODO
-					}
-				});
-			}
-			
-			@Override
-			public void visit(StringColumn stringCol)
-			{
-				schemaInfo.addStoredColumn(new SQLiteStoredColumn<String>(schemaInfo.getSchema(), stringCol, stringCol.getName(), "TEXT")
+				@Override
+				public String toStorableValueString(byte[] value)
 				{
-
-					@Override
-					public String toStorableValueString(String value)
-					{
-						return '\'' + value.replace("'", "''") + '\''; // TODO charset conversion?
-					}
-				});
-			}
-			
-			@Override
-			public void visit(IntegerColumn intCol)
+					return null; // TODO
+				}
+			});
+		}
+		
+		@Override
+		public void visit(StringColumn stringCol)
+		{
+			addColumnSpec(new SQLiteStoredColumn<String>(schema, stringCol, stringCol.getName(), "TEXT")
 			{
-				schemaInfo.addStoredColumn(new SQLiteStoredColumn<Long>(schemaInfo.getSchema(), intCol, intCol.getName(), "INTEGER")
+
+				@Override
+				public String toStorableValueString(String value)
 				{
-
-					@Override
-					public String toStorableValueString(Long value)
-					{
-						return value.toString();
-					}
-				});
-			}
-			
-			@Override
-			public void visit(FloatColumn floatCol)
+					return '\'' + value.replace("'", "''") + '\''; // TODO charset conversion?
+				}
+			});
+		}
+		
+		@Override
+		public void visit(IntegerColumn intCol)
+		{
+			addColumnSpec(new SQLiteStoredColumn<Long>(schema, intCol, intCol.getName(), "INTEGER")
 			{
-				schemaInfo.addStoredColumn(new SQLiteStoredColumn<Double>(schemaInfo.getSchema(), floatCol, floatCol.getName(), "REAL")
+
+				@Override
+				public String toStorableValueString(Long value)
 				{
-
-					@Override
-					public String toStorableValueString(Double value)
-					{
-						return value.toString();
-					}
-				});
-			}
-			
-			/* (non-Javadoc)
-			 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn)
-			 * @see Section 1.1 in http://www.sqlite.org/datatype3.html
-			 */
-			@Override
-			public void visit(BooleanColumn boolCol)
+					return value.toString();
+				}
+			});
+		}
+		
+		@Override
+		public void visit(FloatColumn floatCol)
+		{
+			addColumnSpec(new SQLiteStoredColumn<Double>(schema, floatCol, floatCol.getName(), "REAL")
 			{
-				schemaInfo.addStoredColumn(new SQLiteStoredColumn<Boolean>(schemaInfo.getSchema(), boolCol, boolCol.getName(), "BOOLEAN")
+
+				@Override
+				public String toStorableValueString(Double value)
 				{
+					return value.toString();
+				}
+			});
+		}
+		
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn)
+		 * @see Section 1.1 in http://www.sqlite.org/datatype3.html
+		 */
+		@Override
+		public void visit(BooleanColumn boolCol)
+		{
+			addColumnSpec(new SQLiteStoredColumn<Boolean>(schema, boolCol, boolCol.getName(), "BOOLEAN")
+			{
 
-					@Override
-					public String toStorableValueString(Boolean value)
-					{
-						return value ? "1" : "0";
-					}
-				});
-			}
+				@Override
+				public String toStorableValueString(Boolean value)
+				{
+					return value ? "1" : "0";
+				}
+			});
+		}
+		
+		@Override
+		public void visit(PolygonColumn polyCol)
+		{
+			// TODO Auto-generated method stub
 			
-			@Override
-			public void visit(PolygonColumn polyCol)
-			{
-				// TODO Auto-generated method stub
-				
-			}
+		}
+		
+		@Override
+		public void visit(LineColumn lineCol)
+		{
+			// TODO Auto-generated method stub
 			
-			@Override
-			public void visit(LineColumn lineCol)
-			{
-				// TODO Auto-generated method stub
-				
-			}
+		}
+		
+		@Override
+		public void visit(IntegerListColumn intListCol)
+		{
+			// TODO Auto-generated method stub
 			
-			@Override
-			public void visit(IntegerListColumn intListCol)
-			{
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public boolean allowOrientationSelfTraversal()
-			{
-				return true;
-			}
-			
-			@Override
-			public boolean allowLocationSelfTraversal()
-			{
-				return true;
-			}
-			
-			@Override
-			public boolean allowForeignKeySelfTraversal()
-			{
-				return true;
-			}
-			
-			@Override
-			public boolean skipNonBinarySerialisedOrientationSubColumns()
-			{
-				return false;
-			}
-			
-			@Override
-			public boolean skipNonBinarySerialisedLocationSubColumns()
-			{
-				return false;
-			}
-			
-			@Override
-			public boolean includeVirtualColumns()
-			{
-				return false;
-			}
-			
-			@Override
-			public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol)
-			{
-				// never called
-			}
-			
-			@Override
-			public void visit(OrientationColumn orCol)
-			{
-				// never called
-			}
-			
-			@Override
-			public void visit(LocationColumn locCol)
-			{
-				// never called
-			}
-			
-			@Override
-			public void visit(ForeignKeyColumn foreignKeyCol)
-			{
-				// never called
-			}
-			
-			@Override
-			public void enter(RecordColumn<?> recordCol)
-			{
-				// do nothing
-			}
-			
-			@Override
-			public void leave(RecordColumn<?> recordCol)
-			{
-				// do nothing	
-			}
-			
-		};
+		}
+		
+		@Override
+		public boolean allowOrientationSelfTraversal()
+		{
+			return true;
+		}
+		
+		@Override
+		public boolean allowLocationSelfTraversal()
+		{
+			return true;
+		}
+		
+		@Override
+		public boolean allowForeignKeySelfTraversal()
+		{
+			return true;
+		}
+		
+		@Override
+		public boolean skipNonBinarySerialisedOrientationSubColumns()
+		{
+			return false;
+		}
+		
+		@Override
+		public boolean skipNonBinarySerialisedLocationSubColumns()
+		{
+			return false;
+		}
+		
+		@Override
+		public boolean includeVirtualColumns()
+		{
+			return false;
+		}
+		
+		@Override
+		public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol)
+		{
+			// never called
+		}
+		
+		@Override
+		public void visit(OrientationColumn orCol)
+		{
+			// never called
+		}
+		
+		@Override
+		public void visit(LocationColumn locCol)
+		{
+			// never called
+		}
+		
+		@Override
+		public void visit(ForeignKeyColumn foreignKeyCol)
+		{
+			// never called
+		}
+		
+		@Override
+		public void enter(RecordColumn<?> recordCol)
+		{
+			// do nothing
+		}
+		
+		@Override
+		public void leave(RecordColumn<?> recordCol)
+		{
+			// do nothing	
+		}
+
+		@Override
+		protected List<String> getTableConstraints(Schema schema)
+		{
+			// TODO Auto-generated method stub
+			return null;
+		}
+		
 	}
-
+	
 }
