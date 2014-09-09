@@ -32,7 +32,5 @@ public abstract class SQLiteStatement extends SQLStatement
 	public abstract void bindString(int paramIdx, String value);
 	
 	public abstract void bindNull(int paramIdx);
-	
-	public abstract void clearAllBindings();
 
 }

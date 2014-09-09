@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
@@ -34,46 +35,45 @@ public class AndroidSQLiteStatement extends SQLiteStatement
 
 	static public final char PARAM_PLACEHOLDER = '?';
 	
-	private final SQLiteProgram program;
+	private final android.database.sqlite.SQLiteStatement androidSQLiteSt;
 	
 	/**
-	 * @param db
 	 * @param sql
 	 * @throws SQLException
 	 */
 	public AndroidSQLiteStatement(SQLiteDatabase db, String sql) throws SQLException
 	{
-		program = db.compileStatement(sql);
+		androidSQLiteSt = db.compileStatement(sql);
 	}
 
 	@Override
 	public void bindBlob(int paramIdx, byte[] value)
 	{
-		program.bindBlob(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes 
+		androidSQLiteSt.bindBlob(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes 
 	}
 
 	@Override
 	public void bindLong(int paramIdx, Long value)
 	{
-		program.bindLong(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes
+		androidSQLiteSt.bindLong(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes
 	}
 
 	@Override
 	public void bindDouble(int paramIdx, Double value)
 	{
-		program.bindDouble(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes
+		androidSQLiteSt.bindDouble(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes
 	}
 
 	@Override
 	public void bindString(int paramIdx, String value)
 	{
-		program.bindString(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes
+		androidSQLiteSt.bindString(paramIdx + 1, value); // SQLiteProgram uses 1-based parameter indexes
 	}
 
 	@Override
 	public void bindNull(int paramIdx)
 	{
-		program.bindNull(paramIdx + 1); // SQLiteProgram uses 1-based parameter indexes
+		androidSQLiteSt.bindNull(paramIdx + 1); // SQLiteProgram uses 1-based parameter indexes
 	}
 
 	/**
@@ -92,7 +92,14 @@ public class AndroidSQLiteStatement extends SQLiteStatement
 	@Override
 	public void clearAllBindings()
 	{
-		program.clearBindings();
+		androidSQLiteSt.clearBindings();
 	}
 
+	@Override
+	public void execute() throws DBException
+	{
+		androidSQLiteSt.executeInsert();
+		// TODO androidSQLiteSt.executeUpdateDelete();
+	}
+	
 }

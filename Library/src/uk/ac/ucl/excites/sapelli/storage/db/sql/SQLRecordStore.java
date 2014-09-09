@@ -155,7 +155,6 @@ public abstract class SQLRecordStore extends RecordStore
 	@Override
 	protected boolean doStore(Record record) throws DBException
 	{
-		
 		// Register schema if we don't know it yet:
 		if(!isSchemaKnown(record.getSchema()))
 			registerSchema(record.getSchema());
@@ -208,17 +207,16 @@ public abstract class SQLRecordStore extends RecordStore
 		List<Record> result = new ArrayList<Record>();
 		for(Schema s : query.isAnySchema() ? getKnownSchemata() : query.getSourceSchemata())
 			// run subqueries for each schema in the query, or all known schemata (if the query for "any" schema):
-			queryForRecords(s, query, result);
+			queryForRecords(getTable(s), query, result);
 		return result;
 	}
 	
-	private void queryForRecords(Schema schema, RecordsQuery query, List<Record> result)
-	{
-		String selectStatement = "SELECT * FROM " + getTableName(schema) + (new WhereClauseGenerator(getTable(schema), query.getConstraints())).getClause(); 
-		// TODO + (query.getOrderBy() != null ? 
-		// TODO limit
-		// TODO generate & execute SELECT query + process & add to result list
-	}
+	/**
+	 * @param schema
+	 * @param query
+	 * @param result
+	 */
+	protected abstract void queryForRecords(SQLTable table, RecordsQuery query, List<Record> result);
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveRecord(uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery)
@@ -231,15 +229,21 @@ public abstract class SQLRecordStore extends RecordStore
 		return null;
 	}
 	
-	private class WhereClauseGenerator implements ConstraintVisitor
+	/**
+	 * @author mstevens
+	 *
+	 */
+	protected class WhereClauseGenerator implements ConstraintVisitor
 	{
 
-		SQLTable schemaInfo;
+		SQLTable table;
 		StringBuilder bldr;
+		boolean includeWhere;
 		
-		public WhereClauseGenerator(SQLTable schemaInfo, Constraint constraint)
+		public WhereClauseGenerator(SQLTable table, Constraint constraint, boolean includeWhere)
 		{
-			this.schemaInfo = schemaInfo;
+			this.table = table;
+			this.includeWhere = includeWhere;
 			if(constraint != null)
 			{
 				this.bldr = new StringBuilder();
@@ -303,7 +307,7 @@ public abstract class SQLRecordStore extends RecordStore
 		public String getClause()
 		{
 			if(bldr != null && bldr.length() > 0)
-				return "WHERE " + bldr.toString();
+				return (includeWhere ? "WHERE " : "") + bldr.toString();
 			else
 				return "";
 		}

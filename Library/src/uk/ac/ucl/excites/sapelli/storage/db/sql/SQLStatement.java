@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+
 /**
  * @author mstevens
  *
@@ -43,5 +45,9 @@ public abstract class SQLStatement
 	 * @param literalValue
 	 */
 	public abstract void bindLiteral(int paramIdx, String literalValue);
+	
+	public abstract void execute() throws DBException;
+	
+	public abstract void clearAllBindings();
 	
 }

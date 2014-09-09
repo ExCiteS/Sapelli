@@ -68,5 +68,14 @@ public abstract class SQLiteColumn<SQLT> extends SQLColumn<SQLT, SQLiteStatement
 	{
 		return "''";
 	}
+	
+	public SQLT readFrom(ISQLiteCursor cursor, int columnIdx)
+	{
+		if(cursor.isNull(columnIdx))
+			return null;
+		return getFrom(cursor, columnIdx);
+	}
+	
+	protected abstract SQLT getFrom(ISQLiteCursor cursor, int columnIdx);
 
 }

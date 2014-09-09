@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+
 /**
  * @author mstevens
  *
@@ -27,13 +29,15 @@ public class SQLStringStatement extends SQLStatement
 
 	static public final char PARAM_PLACEHOLDER = '?';
 	
+	private SQLRecordStore store;
 	private String sql;
 	
 	/**
 	 * 
 	 */
-	public SQLStringStatement(String sql)
+	public SQLStringStatement(SQLRecordStore store, String sql)
 	{
+		this.store = store;
 		this.sql = sql;
 	}
 
@@ -45,6 +49,19 @@ public class SQLStringStatement extends SQLStatement
 	{
 		// TODO Auto-generated method stub
 
+	}
+
+	@Override
+	public void execute() throws DBException
+	{
+		store.executeSQL(sql);
+	}
+
+	@Override
+	public void clearAllBindings()
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 }

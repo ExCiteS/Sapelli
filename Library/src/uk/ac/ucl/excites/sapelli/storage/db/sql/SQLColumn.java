@@ -27,7 +27,7 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql;
 public abstract class SQLColumn<SQLT, SQLS extends SQLStatement>
 {
 
-	protected final String name;
+	public final String name;
 	protected final String type;
 	protected final String constraint;
 	protected final boolean needsQuotes;

@@ -312,6 +312,14 @@ public class RecordsQuery
 		return limit;
 	}
 	
+	/**
+	 * @return where or not the query is limited to a certain number of resulting records
+	 */
+	public boolean isLimited()
+	{
+		return limit != null;
+	}
+	
 	public boolean isAnySchema()
 	{
 		return sourceSchemata.isEmpty();

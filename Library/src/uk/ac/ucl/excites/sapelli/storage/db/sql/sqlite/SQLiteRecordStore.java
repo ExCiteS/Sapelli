@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
-import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
@@ -53,29 +52,13 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 public abstract class SQLiteRecordStore extends SQLRecordStore
 {
 	
-	// Statics----------------------------------------------
-	static public final String DATABASE_NAME_SUFFIX = "_Data";
-	static public final String BACKUP_SUFFIX = "_Backup";
-	static public final String FILE_EXTENSION = "sqlite";
-
 	// Dynamics---------------------------------------------
-	private String filename;
 	private final SQLiteTableFactory factory;
 	
-	public SQLiteRecordStore(StorageClient client, File folder, String baseFilename) throws Exception
+	public SQLiteRecordStore(StorageClient client) throws Exception
 	{
 		super(client);
-		this.filename = baseFilename + DATABASE_NAME_SUFFIX;
-		File dbFile = new File(folder.getAbsolutePath() + File.separator + filename + '.' + FILE_EXTENSION);
-		
 		factory = new SQLiteTableFactory();
-		
-		boolean newDB = !dbFile.exists(); 
-		if(newDB)
-		{
-			dbFile.createNewFile();
-		}
-		initialise(newDB);
 	}
 
 	/* (non-Javadoc)
@@ -203,7 +186,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		@Override
 		protected SQLTable constructTableSpec(String tableName, Schema schema)
 		{
-			return new SQLiteTableSpec(tableName, schema, SQLiteRecordStore.this);
+			return new SQLiteTable(tableName, schema, SQLiteRecordStore.this);
 		}
 		
 		protected List<String> getTableConstraints(Schema schema)

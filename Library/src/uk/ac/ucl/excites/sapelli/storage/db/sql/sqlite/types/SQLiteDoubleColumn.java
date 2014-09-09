@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
 
@@ -43,6 +44,12 @@ public class SQLiteDoubleColumn extends SQLiteColumn<Double>
 	protected void bind(SQLiteStatement statement, int paramIdx, Double value)
 	{
 		statement.bindDouble(paramIdx, value);
+	}
+
+	@Override
+	public Double getFrom(ISQLiteCursor cursor, int columnIdx)
+	{
+		return cursor.getDouble(columnIdx);
 	}
 
 }

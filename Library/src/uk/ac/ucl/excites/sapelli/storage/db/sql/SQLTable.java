@@ -34,15 +34,15 @@ import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 public abstract class SQLTable
 {
 
-	private final String tableName;
-	private final Schema schema;
+	public final String name;
+	public final Schema schema;
 	private final Map<ColumnPointer, ColumnMapping<?, ?>> sap2ColMap;
 	private final Map<SQLColumn<?, ?>, ColumnMapping<?, ?>> sql2ColMap;
 	private List<String> tableConstraints = Collections.<String> emptyList();
 	
 	public SQLTable(String tableName, Schema schema)
 	{
-		this.tableName = tableName;
+		this.name = tableName;
 		this.schema = schema;
 		// Init collections:
 		sap2ColMap = new LinkedHashMap<ColumnPointer, ColumnMapping<?,?>>();
@@ -64,7 +64,7 @@ public abstract class SQLTable
 	{
 		StringBuilder bldr = new StringBuilder();
 		bldr.append("CREATE TABLE ");
-		bldr.append(tableName);
+		bldr.append(name);
 		bldr.append(" (");
 		// Columns:
 		boolean first = true;
@@ -95,14 +95,16 @@ public abstract class SQLTable
 	
 	public SQLStatement getInsertStatement()
 	{
-		return new SQLStringStatement(generateInsertStatement(SQLStringStatement.PARAM_PLACEHOLDER));
+		return null;
+		// TODO
+		//return new SQLStringStatement(generateInsertStatement(SQLStringStatement.PARAM_PLACEHOLDER));
 	}
 	
 	protected String generateInsertStatement(char paramPlaceholder)
 	{
 		StringBuilder bldr = new StringBuilder();
 		bldr.append("INSERT INTO ");
-		bldr.append(tableName);
+		bldr.append(name);
 		bldr.append(" (");
 		// Columns:
 		boolean first = true;

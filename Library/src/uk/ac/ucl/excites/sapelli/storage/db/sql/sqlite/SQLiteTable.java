@@ -25,13 +25,13 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
  * @author mstevens
  *
  */
-public class SQLiteTableSpec extends SQLTable
+public class SQLiteTable extends SQLTable
 {
 
 	private SQLiteRecordStore store;
 	private SQLiteStatement insertStatement;
 
-	public SQLiteTableSpec(String tableName, Schema schema, SQLiteRecordStore store)
+	public SQLiteTable(String tableName, Schema schema, SQLiteRecordStore store)
 	{
 		super(tableName, schema);
 		this.store = store;

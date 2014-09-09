@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
 
@@ -43,6 +44,12 @@ public class SQLiteBlobColumn extends SQLiteColumn<byte[]>
 	protected void bind(SQLiteStatement statement, int paramIdx, byte[] value)
 	{
 		statement.bindBlob(paramIdx, value);
+	}
+
+	@Override
+	public byte[] getFrom(ISQLiteCursor cursor, int columnIdx)
+	{
+		return cursor.getBlob(columnIdx);
 	}
 	
 	//TODO override toLiteralString?
