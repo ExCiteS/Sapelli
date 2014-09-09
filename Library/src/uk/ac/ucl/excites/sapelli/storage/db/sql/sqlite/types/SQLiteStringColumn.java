@@ -16,35 +16,33 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.db.sql;
+package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
+
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
+
 
 /**
  * @author mstevens
  *
  */
-public class SQLStringStatement extends SQLStatement
+public class SQLiteStringColumn extends SQLiteColumn<String>
 {
 
-	static public final char PARAM_PLACEHOLDER = '?';
-	
-	private String sql;
+	public SQLiteStringColumn(String name, String constraint)
+	{
+		super(name, "TEXT", constraint, true);
+	}
 	
 	/**
-	 * 
-	 */
-	public SQLStringStatement(String sql)
-	{
-		this.sql = sql;
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql2.SQLStatement#bindLiteral(int, java.lang.String)
+	 * @param statement
+	 * @param paramIdx
+	 * @param value non-null
 	 */
 	@Override
-	public void bindLiteral(int paramIdx, String literalValue)
+	protected void bind(SQLiteStatement statement, int paramIdx, String value)
 	{
-		// TODO Auto-generated method stub
-
+		statement.bindString(paramIdx, value);
 	}
 
 }

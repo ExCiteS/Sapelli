@@ -1,0 +1,58 @@
+/**
+ * Sapelli data collection platform: http://sapelli.org
+ * 
+ * Copyright 2012-2014 University College London - ExCiteS group
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and 
+ * limitations under the License.
+ */
+
+package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
+
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
+
+
+/**
+ * @author mstevens
+ *
+ */
+public class SQLiteIntegerColumn extends SQLiteColumn<Long>
+{
+	
+	public static SQLiteIntegerColumn newBooleanColumn(String name, String constraint)
+	{
+		return new SQLiteIntegerColumn(name, "BOOLEAN", constraint);
+	}
+
+	public SQLiteIntegerColumn(String name, String constraint)
+	{
+		this(name, "INTEGER", constraint);
+	}
+	
+	private SQLiteIntegerColumn(String name, String type, String constraint)
+	{
+		super(name, type, constraint, false);
+	}
+	
+	/**
+	 * @param statement
+	 * @param paramIdx
+	 * @param value non-null
+	 */
+	@Override
+	protected void bind(SQLiteStatement statement, int paramIdx, Long value)
+	{
+		statement.bindLong(paramIdx, value);
+	}
+
+}

@@ -16,35 +16,23 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.db.sql;
+package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
-/**
- * @author mstevens
- *
- */
-public class SQLStringStatement extends SQLStatement
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLStatement;
+
+public abstract class SQLiteStatement extends SQLStatement
 {
-
-	static public final char PARAM_PLACEHOLDER = '?';
 	
-	private String sql;
+	public abstract void bindBlob(int paramIdx, byte[] value);
 	
-	/**
-	 * 
-	 */
-	public SQLStringStatement(String sql)
-	{
-		this.sql = sql;
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql2.SQLStatement#bindLiteral(int, java.lang.String)
-	 */
-	@Override
-	public void bindLiteral(int paramIdx, String literalValue)
-	{
-		// TODO Auto-generated method stub
-
-	}
+	public abstract void bindLong(int paramIdx, Long value);
+	
+	public abstract void bindDouble(int paramIdx, Double value);
+	
+	public abstract void bindString(int paramIdx, String value);
+	
+	public abstract void bindNull(int paramIdx);
+	
+	public abstract void clearAllBindings();
 
 }

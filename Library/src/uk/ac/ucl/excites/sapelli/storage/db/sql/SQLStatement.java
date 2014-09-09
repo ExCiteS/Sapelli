@@ -18,8 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql;
 
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
-
 /**
  * @author mstevens
  *
@@ -27,13 +25,23 @@ import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 public abstract class SQLStatement
 {
 
-	protected String statement;
-	
-	public SQLStatement(String statement)
+	/**
+	 * @param paramIdx
+	 * @param column
+	 * @param value
+	 */
+	public <SQLT> void bind(int paramIdx, SQLColumn<SQLT, SQLStatement> column, SQLT value)
 	{
-		this.statement = statement;
+		if(value != null)
+			column.bind(this, paramIdx, value);
+		else
+			column.bindNull(this, paramIdx);
 	}
 	
-	public abstract void execute(SQLRecordStore store) throws DBException;
+	/**
+	 * @param paramIdx
+	 * @param literalValue
+	 */
+	public abstract void bindLiteral(int paramIdx, String literalValue);
 	
 }

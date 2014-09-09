@@ -23,10 +23,18 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.ColumnMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLTable;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBlobColumn;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteDoubleColumn;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteIntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteStringColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Index;
+import uk.ac.ucl.excites.sapelli.storage.model.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
@@ -34,8 +42,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
@@ -54,12 +60,15 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 
 	// Dynamics---------------------------------------------
 	private String filename;
+	private final SQLiteTableFactory factory;
 	
 	public SQLiteRecordStore(StorageClient client, File folder, String baseFilename) throws Exception
 	{
-		super(client, new SQLiteSchemaInfoFactory());
+		super(client);
 		this.filename = baseFilename + DATABASE_NAME_SUFFIX;
 		File dbFile = new File(folder.getAbsolutePath() + File.separator + filename + '.' + FILE_EXTENSION);
+		
+		factory = new SQLiteTableFactory();
 		
 		boolean newDB = !dbFile.exists(); 
 		if(newDB)
@@ -67,6 +76,15 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 			dbFile.createNewFile();
 		}
 		initialise(newDB);
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#getTableFactory()
+	 */
+	@Override
+	protected TableFactory getTableFactory()
+	{
+		return factory;
 	}
 
 	/**
@@ -129,8 +147,69 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		// SELECT name FROM sqlite_master WHERE type='table' AND name='table_name';
 	}
 	
-	static class SQLiteSchemaInfoFactory extends TableSpecFactory
+	/**
+	 * @param sql
+	 * @return
+	 */
+	protected abstract SQLiteStatement createStatement(String sql);
+	
+	protected abstract char getParamPlaceholder();
+	
+	static private <T> String GetColumnConstraint(Schema schema, Column<T> sourceColum)
 	{
+		StringBuilder bldr = new StringBuilder();
+		
+		// Primary key:
+		PrimaryKey pk = schema.getPrimaryKey();
+		if(pk != null /* just in case*/ && !pk.isMultiColumn() && pk.containsColumn(sourceColum, false))
+		{
+			bldr.append(" PRIMARY KEY");
+			// ASC/DESC?
+			// conflict-clause?
+			if(pk instanceof AutoIncrementingPrimaryKey)
+				bldr.append(" AUTOINCREMENT");
+		}
+		
+		// Regular single-column, unique index (unnamed):
+		Index idx = schema.getIndex(sourceColum);
+		if(idx != null && !idx.isMultiColumn() && idx.isUnique())
+		{
+			bldr.append(" UNIQUE");
+			// conflict-clause?
+		}
+			
+		// Optionality:
+		if(sourceColum.isOptional())
+			bldr.append(" NOT NULL");
+		
+		// TODO Default value?
+		
+		// TODO foreign-key-clause?
+		if(sourceColum instanceof ForeignKeyColumn)
+		{
+			// ...
+		}
+		
+		return bldr.toString();
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	protected class SQLiteTableFactory extends TableFactory
+	{
+		
+		@Override
+		protected SQLTable constructTableSpec(String tableName, Schema schema)
+		{
+			return new SQLiteTableSpec(tableName, schema, SQLiteRecordStore.this);
+		}
+		
+		protected List<String> getTableConstraints(Schema schema)
+		{
+			return null;
+		}
 		
 		@Override
 		public void visit(TimeStampColumn dateTimeCol)
@@ -142,13 +221,19 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		@Override
 		public void visit(ByteArrayColumn byteArrayCol)
 		{	
-			addColumnSpec(new SQLiteStoredColumn<byte[]>(schema, byteArrayCol, byteArrayCol.getName(), "BLOB")
+			tableSpec.addColumnMapping(new ColumnMapping<byte[], byte[]>(schema, byteArrayCol, new SQLiteBlobColumn(byteArrayCol.getName(), GetColumnConstraint(schema, byteArrayCol)))
 			{
 
 				@Override
-				public String toStorableValueString(byte[] value)
+				protected byte[] toDatabaseType(byte[] value)
 				{
-					return null; // TODO
+					return value;
+				}
+
+				@Override
+				protected byte[] toSapelliType(byte[] value)
+				{
+					return value;
 				}
 			});
 		}
@@ -156,41 +241,61 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		@Override
 		public void visit(StringColumn stringCol)
 		{
-			addColumnSpec(new SQLiteStoredColumn<String>(schema, stringCol, stringCol.getName(), "TEXT")
+			tableSpec.addColumnMapping(new ColumnMapping<String, String>(schema, stringCol, new SQLiteStringColumn(stringCol.getName(), GetColumnConstraint(schema, stringCol)))
 			{
 
 				@Override
-				public String toStorableValueString(String value)
+				protected String toDatabaseType(String value)
 				{
-					return '\'' + value.replace("'", "''") + '\''; // TODO charset conversion?
+					return value;
 				}
+
+				@Override
+				protected String toSapelliType(String value)
+				{
+					return value;
+				}
+
 			});
 		}
 		
 		@Override
 		public void visit(IntegerColumn intCol)
 		{
-			addColumnSpec(new SQLiteStoredColumn<Long>(schema, intCol, intCol.getName(), "INTEGER")
+			tableSpec.addColumnMapping(new ColumnMapping<Long, Long>(schema, intCol, new SQLiteIntegerColumn(intCol.getName(), GetColumnConstraint(schema, intCol)))
 			{
 
 				@Override
-				public String toStorableValueString(Long value)
+				protected Long toDatabaseType(Long value)
 				{
-					return value.toString();
+					return value;
 				}
+
+				@Override
+				protected Long toSapelliType(Long value)
+				{
+					return value;
+				}
+
 			});
 		}
 		
 		@Override
 		public void visit(FloatColumn floatCol)
 		{
-			addColumnSpec(new SQLiteStoredColumn<Double>(schema, floatCol, floatCol.getName(), "REAL")
+			tableSpec.addColumnMapping(new ColumnMapping<Double, Double>(schema, floatCol, new SQLiteDoubleColumn(floatCol.getName(), GetColumnConstraint(schema, floatCol)))
 			{
 
 				@Override
-				public String toStorableValueString(Double value)
+				protected Double toDatabaseType(Double value)
 				{
-					return value.toString();
+					return value;
+				}
+
+				@Override
+				protected Double toSapelliType(Double value)
+				{
+					return value;
 				}
 			});
 		}
@@ -201,15 +306,22 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		 */
 		@Override
 		public void visit(BooleanColumn boolCol)
-		{
-			addColumnSpec(new SQLiteStoredColumn<Boolean>(schema, boolCol, boolCol.getName(), "BOOLEAN")
+		{	
+			tableSpec.addColumnMapping(new ColumnMapping<Boolean, Long>(schema, boolCol, SQLiteIntegerColumn.newBooleanColumn(boolCol.getName(), GetColumnConstraint(schema, boolCol)))
 			{
 
 				@Override
-				public String toStorableValueString(Boolean value)
+				protected Long toDatabaseType(Boolean value)
 				{
-					return value ? "1" : "0";
+					return (long) (value ? 1 : 0);
 				}
+
+				@Override
+				protected Boolean toSapelliType(Long value)
+				{
+					return value == 1;
+				}
+
 			});
 		}
 		
@@ -232,85 +344,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		{
 			// TODO Auto-generated method stub
 			
-		}
-		
-		@Override
-		public boolean allowOrientationSelfTraversal()
-		{
-			return true;
-		}
-		
-		@Override
-		public boolean allowLocationSelfTraversal()
-		{
-			return true;
-		}
-		
-		@Override
-		public boolean allowForeignKeySelfTraversal()
-		{
-			return true;
-		}
-		
-		@Override
-		public boolean skipNonBinarySerialisedOrientationSubColumns()
-		{
-			return false;
-		}
-		
-		@Override
-		public boolean skipNonBinarySerialisedLocationSubColumns()
-		{
-			return false;
-		}
-		
-		@Override
-		public boolean includeVirtualColumns()
-		{
-			return false;
-		}
-		
-		@Override
-		public <VT, ST> void visit(VirtualColumn<VT, ST> virtCol)
-		{
-			// never called
-		}
-		
-		@Override
-		public void visit(OrientationColumn orCol)
-		{
-			// never called
-		}
-		
-		@Override
-		public void visit(LocationColumn locCol)
-		{
-			// never called
-		}
-		
-		@Override
-		public void visit(ForeignKeyColumn foreignKeyCol)
-		{
-			// never called
-		}
-		
-		@Override
-		public void enter(RecordColumn<?> recordCol)
-		{
-			// do nothing
-		}
-		
-		@Override
-		public void leave(RecordColumn<?> recordCol)
-		{
-			// do nothing	
-		}
-
-		@Override
-		protected List<String> getTableConstraints(Schema schema)
-		{
-			// TODO Auto-generated method stub
-			return null;
 		}
 		
 	}

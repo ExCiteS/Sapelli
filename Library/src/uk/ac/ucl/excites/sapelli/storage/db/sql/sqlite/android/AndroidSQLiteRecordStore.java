@@ -16,13 +16,15 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.db;
+package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
+import android.database.sqlite.SQLiteDatabase;
 
 /**
  * @author mstevens
@@ -30,6 +32,8 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
  */
 public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 {
+	
+	private SQLiteDatabase db;
 	
 	public AndroidSQLiteRecordStore(StorageClient client, File folder, String baseFilename) throws Exception
 	{
@@ -60,6 +64,18 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	protected boolean supportsConcurrentConnections()
 	{
 		return false;
+	}
+
+	@Override
+	protected SQLiteStatement createStatement(String sql)
+	{
+		return new AndroidSQLiteStatement(db, sql);
+	}
+
+	@Override
+	protected char getParamPlaceholder()
+	{
+		return AndroidSQLiteStatement.PARAM_PLACEHOLDER;
 	}
 
 }

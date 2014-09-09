@@ -16,35 +16,35 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.db.sql;
+package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
+
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLTable;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 
 /**
  * @author mstevens
  *
  */
-public class SQLStringStatement extends SQLStatement
+public class SQLiteTableSpec extends SQLTable
 {
 
-	static public final char PARAM_PLACEHOLDER = '?';
-	
-	private String sql;
-	
-	/**
-	 * 
-	 */
-	public SQLStringStatement(String sql)
+	private SQLiteRecordStore store;
+	private SQLiteStatement insertStatement;
+
+	public SQLiteTableSpec(String tableName, Schema schema, SQLiteRecordStore store)
 	{
-		this.sql = sql;
+		super(tableName, schema);
+		this.store = store;
 	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql2.SQLStatement#bindLiteral(int, java.lang.String)
-	 */
+	
 	@Override
-	public void bindLiteral(int paramIdx, String literalValue)
+	public SQLiteStatement getInsertStatement()
 	{
-		// TODO Auto-generated method stub
-
+		if(insertStatement == null)
+			insertStatement = store.createStatement(generateInsertStatement(store.getParamPlaceholder()));
+		else
+			insertStatement.clearAllBindings();
+		return insertStatement;
 	}
 
 }

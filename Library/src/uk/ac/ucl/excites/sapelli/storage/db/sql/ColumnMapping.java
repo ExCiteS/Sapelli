@@ -18,33 +18,37 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql;
 
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
+
 /**
  * @author mstevens
  *
+ * @param <SapT, SQLT>
  */
-public class SQLStringStatement extends SQLStatement
+public abstract class ColumnMapping<SapT, SQLT>
 {
-
-	static public final char PARAM_PLACEHOLDER = '?';
 	
-	private String sql;
+	final ColumnPointer sourceColumnPointer;
+	final SQLColumn<SQLT, ?> databaseColumn;
+	
+	public ColumnMapping(Schema schema, Column<SapT> sapelliColum, SQLColumn<SQLT, ?> databaseColumn)
+	{
+		this.sourceColumnPointer = new ColumnPointer(schema, sapelliColum);
+		this.databaseColumn = databaseColumn;
+	}
+
+	/**
+	 * @param value
+	 * @return
+	 */
+	protected abstract SQLT toDatabaseType(SapT value);
 	
 	/**
-	 * 
+	 * @param value
+	 * @return
 	 */
-	public SQLStringStatement(String sql)
-	{
-		this.sql = sql;
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql2.SQLStatement#bindLiteral(int, java.lang.String)
-	 */
-	@Override
-	public void bindLiteral(int paramIdx, String literalValue)
-	{
-		// TODO Auto-generated method stub
-
-	}
-
+	protected abstract SapT toSapelliType(SQLT value);
+	
 }
