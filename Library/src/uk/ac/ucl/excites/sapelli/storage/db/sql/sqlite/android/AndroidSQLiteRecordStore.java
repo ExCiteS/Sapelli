@@ -20,8 +20,10 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
 import java.io.File;
 import java.util.List;
+
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLTable;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
@@ -31,12 +33,13 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteCursorDriver;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteQuery;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteQuery;
 import android.os.Build;
 import android.util.Log;
 
@@ -62,17 +65,17 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	{
 		super(client);
 		
-		CursorFactory cursorFactory =  null;
-//			new CursorFactory()
-//		{
-//			
-//			@Override
-//			public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery, String editTable, SQLiteQuery query)
-//			{
-//				return new AndroidSQLiteCursor(db, editTable,
-//			}
-//		};
+		// Custom cursor factory:
+		CursorFactory cursorFactory =  new CursorFactory()
+		{
+			@Override
+			public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery, String editTable, SQLiteQuery query)
+			{
+				return AndroidSQLiteCursor.newCursor(db, masterQuery, editTable, query);
+			}
+		};
 		
+		// Open database:
 		this.db = new SQLiteOpenHelper(context, dbName, cursorFactory, DATABASE_VERSION)
 		{
 			
@@ -90,14 +93,24 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			}
 		}.getWritableDatabase();
 		
+		System.out.println("Got db?: " + (db != null ? "yes" : "no"));
+		
 		initialise(newDBFile);
 	}
 	
 	@Override
 	protected void executeSQL(String sql) throws DBException
 	{
-		Log.d("SQLite Exec", sql); // TODO remove debug logging
-		db.execSQL(sql);
+		Log.d("SQLite_Exec", sql); // TODO remove debug logging
+		try
+		{
+			db.execSQL(sql);
+		}
+		catch(SQLException sqlE)
+		{
+			sqlE.printStackTrace(System.err);
+			throw new DBException(sqlE);
+		}
 	}
 	
 	/**
@@ -154,6 +167,37 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	@Override
+	protected boolean doStore(Record record) throws DBException
+	{
+		
+		
+		return false;
+	}
+
+	@Override
+	protected void doDelete(Record record) throws DBException
+	{
+		// TODO Auto-generated method stub
+		
+	}
+	
+	@Override
+	protected void queryForRecords(SQLTable table, RecordsQuery query, List<Record> result)
+	{
+		WhereClauseGenerator selector = new WhereClauseGenerator(table, query.getConstraints(), false);
+		SQLColumn<?, ?> orderBy = table.getDatabaseColumn(query.getOrderBy());
+		AndroidSQLiteCursor cursor = (AndroidSQLiteCursor) db.query(table.name, null, selector.getClauseOrNull(), /* TODO selector.getValues() */ null, null, (orderBy != null ? orderBy.name : null), query.isLimited() ? "LIMIT " + query.getLimit() : null);
+		while (cursor.moveToNext())
+		{
+			Record record = table.schema.createRecord();
+			// TODO set values:
+			
+			result.add(record);
+		}
+		cursor.close();
+	}
+	
+	@Override
 	protected void doBackup(File destinationFolder) throws DBException
 	{
 		// TODO Auto-generated method stub
@@ -183,29 +227,26 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	{
 		return AndroidSQLiteStatement.PARAM_PLACEHOLDER;
 	}
-
-	@Override
-	protected void queryForRecords(SQLTable table, RecordsQuery query, List<Record> result)
-	{
-		WhereClauseGenerator selector = new WhereClauseGenerator(table, query.getConstraints(), false);
-		Cursor cursor = db.query(table.name, null, selector.getClause(), /* TODO selector.getValues() */ null, null, table.getDatabaseColumn(query.getOrderBy()).name, query.isLimited() ? "LIMIT " + query.getLimit() : null);
-		
-		while (cursor.moveToNext())
-		{
-			// TODO
-		}
-	}
 	
-	private class AndroidSQLiteCursor extends SQLiteCursor implements ISQLiteCursor
+	static private class AndroidSQLiteCursor extends SQLiteCursor implements ISQLiteCursor
 	{
 
+		public static AndroidSQLiteCursor newCursor(SQLiteDatabase db, SQLiteCursorDriver driver, String editTable, SQLiteQuery query)
+		{
+			if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+				return new AndroidSQLiteCursor(driver, editTable, query);
+			else
+				return new AndroidSQLiteCursor(db, driver, editTable, query);
+		}
+		
 		@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-		public AndroidSQLiteCursor(SQLiteCursorDriver driver, String editTable, SQLiteQuery query)
+		private AndroidSQLiteCursor(SQLiteCursorDriver driver, String editTable, SQLiteQuery query)
 		{
 			super(driver, editTable, query);
 		}
 		
-		public AndroidSQLiteCursor (SQLiteDatabase db, SQLiteCursorDriver driver, String editTable, SQLiteQuery query) 
+		@SuppressWarnings("deprecation")
+		private AndroidSQLiteCursor(SQLiteDatabase db, SQLiteCursorDriver driver, String editTable, SQLiteQuery query) 
 		{
 			super(db, driver, editTable, query);
 		}

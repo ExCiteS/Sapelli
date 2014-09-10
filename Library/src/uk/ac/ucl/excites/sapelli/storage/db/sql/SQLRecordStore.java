@@ -49,11 +49,11 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * @author mstevens
  *
  */
-public abstract class SQLRecordStore extends RecordStore
+public abstract class SQLRecordStore<Table extends SQLTable> extends RecordStore
 {
 	
 	static private final String SCHEMATA_TABLE_NAME = "Schemata";
-	private Map<Schema, SQLTable> TableSpecs;
+	private Map<Schema, Table> TableSpecs;
 
 	/**
 	 * @param client
@@ -62,7 +62,7 @@ public abstract class SQLRecordStore extends RecordStore
 	public SQLRecordStore(StorageClient client)
 	{
 		super(client);
-		this.TableSpecs = new HashMap<Schema, SQLTable>();
+		this.TableSpecs = new HashMap<Schema, Table>();
 	}
 	
 	/**
@@ -82,7 +82,7 @@ public abstract class SQLRecordStore extends RecordStore
 			for(Record metaSchemaRec : retrieveRecords(Schema.META_SCHEMA))
 			{
 				Schema schema = Schema.FromMetaRecord(metaSchemaRec);
-				TableSpecs.put(schema, tableFactory.generateTableSpec(schema));
+				TableSpecs.put(schema, tableFactory.generateTable(schema));
 			}
 		}
 	}
@@ -139,63 +139,29 @@ public abstract class SQLRecordStore extends RecordStore
 		{
 			// Insert new record in schemata table, but not for meta schema because in that case the schemata table doesn't exist yet!
 			if(schema != Schema.META_SCHEMA)
-				insert(Schema.GetMetaRecord(schema));
+				doStore(Schema.GetMetaRecord(schema));
 			
 			// Create table for records of this schema:
 			executeSQL(getTable(schema).getCreateTableStatement());				
 		}
 		catch(Exception e)
 		{
+			e.printStackTrace();
 			rollbackTransactions();
 			// TODO throw e; // re-throw
 		}
 		commitTransaction();
 	}
-	
-	@Override
-	protected boolean doStore(Record record) throws DBException
-	{
-		// Register schema if we don't know it yet:
-		if(!isSchemaKnown(record.getSchema()))
-			registerSchema(record.getSchema());
-		
-		boolean newRec = true; // TODO insert or update?
-		if(newRec)
-			insert(record);
-		else
-			update(record);
-		return newRec;
-	}
 
-	protected void update(Record record) throws DBException
+	protected Table getTable(Schema schema)
 	{
-		// TODO
-	}
-	
-	protected void insert(Record record) throws DBException
-	{
-		SQLTable table = getTable(record.getSchema());
-		SQLStatement insert = table.getInsertStatement();
-		// TODO bind record column values to statement params
-		// TODO execute statement
-	}
-
-	private SQLTable getTable(Schema schema)
-	{
-		SQLTable schemaInfo = TableSpecs.get(schema);
-		if(schemaInfo == null)
+		Table sqlTable = TableSpecs.get(schema);
+		if(sqlTable == null)
 		{
-			schemaInfo = getTableFactory().generateTableSpec(schema);
-			TableSpecs.put(schema, schemaInfo);
+			sqlTable = getTableFactory().generateTable(schema);
+			TableSpecs.put(schema, sqlTable);
 		}
-		return schemaInfo;
-	}
-	
-	@Override
-	protected void doDelete(Record record) throws DBException
-	{
-		// TODO Auto-generated method stub
-		
+		return sqlTable;
 	}
 
 	/* (non-Javadoc)
@@ -253,14 +219,16 @@ public abstract class SQLRecordStore extends RecordStore
 		
 		private void visitAndOr(boolean and, List<Constraint> subConstraints)
 		{
-			bldr.append(" (");
+			if(subConstraints.isEmpty())
+				return;
+			bldr.append("(");
 			boolean first = true;
 			for(Constraint subConstraint : subConstraints)
 			{
 				if(first)
 					first = false;
 				else
-					bldr.append("" + (and ? "AND" : "OR"));
+					bldr.append(" " + (and ? "AND" : "OR") + " ");
 				subConstraint.accept(this);
 			}
 			bldr.append(")");
@@ -312,6 +280,12 @@ public abstract class SQLRecordStore extends RecordStore
 				return "";
 		}
 		
+		public String getClauseOrNull()
+		{
+			String clause = getClause();
+			return clause.isEmpty() ? null : clause;
+		}
+		
 	}
 	
 	/**
@@ -341,14 +315,14 @@ public abstract class SQLRecordStore extends RecordStore
 	{
 		
 		protected Schema schema;
-		protected SQLTable tableSpec;
+		protected Table tableSpec;
 		
-		public SQLTable generateTableSpec(Schema schema)
+		public Table generateTable(Schema schema)
 		{
 			return generateTableSpec(schema.getName(), schema);
 		}
 		
-		public SQLTable generateTableSpec(String tableName, Schema schema)
+		public Table generateTableSpec(String tableName, Schema schema)
 		{
 			this.schema = schema;
 			tableSpec = constructTableSpec(tableName, schema);
@@ -364,7 +338,7 @@ public abstract class SQLRecordStore extends RecordStore
 		 * @param tableConstraints
 		 * @return
 		 */
-		protected abstract SQLTable constructTableSpec(String tableName, Schema schema);
+		protected abstract Table constructTableSpec(String tableName, Schema schema);
 		
 		/**
 		 * @return

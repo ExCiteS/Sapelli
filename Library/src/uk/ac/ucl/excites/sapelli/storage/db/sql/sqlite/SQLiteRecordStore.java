@@ -18,13 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
+import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.ColumnMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLTable;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBlobColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteDoubleColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteIntegerColumn;
@@ -49,7 +48,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
  * @author mstevens
  *
  */
-public abstract class SQLiteRecordStore extends SQLRecordStore
+public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteTable>
 {
 	
 	// Dynamics---------------------------------------------
@@ -146,7 +145,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		PrimaryKey pk = schema.getPrimaryKey();
 		if(pk != null /* just in case*/ && !pk.isMultiColumn() && pk.containsColumn(sourceColum, false))
 		{
-			bldr.append(" PRIMARY KEY");
+			bldr.append("PRIMARY KEY");
 			// ASC/DESC?
 			// conflict-clause?
 			if(pk instanceof AutoIncrementingPrimaryKey)
@@ -157,13 +156,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		Index idx = schema.getIndex(sourceColum);
 		if(idx != null && !idx.isMultiColumn() && idx.isUnique())
 		{
-			bldr.append(" UNIQUE");
+			bldr.append((bldr.length() > 0 ? " " : "") + "UNIQUE");
 			// conflict-clause?
 		}
 			
 		// Optionality:
 		if(sourceColum.isOptional())
-			bldr.append(" NOT NULL");
+			bldr.append((bldr.length() > 0 ? " " : "") + "NOT NULL");
 		
 		// TODO Default value?
 		
@@ -184,14 +183,15 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 	{
 		
 		@Override
-		protected SQLTable constructTableSpec(String tableName, Schema schema)
+		protected SQLiteTable constructTableSpec(String tableName, Schema schema)
 		{
 			return new SQLiteTable(tableName, schema, SQLiteRecordStore.this);
 		}
 		
 		protected List<String> getTableConstraints(Schema schema)
 		{
-			return null;
+			// TODO indexes, etc.
+			return Collections.<String> emptyList();
 		}
 		
 		@Override
@@ -204,7 +204,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		@Override
 		public void visit(ByteArrayColumn byteArrayCol)
 		{	
-			tableSpec.addColumnMapping(new ColumnMapping<byte[], byte[]>(schema, byteArrayCol, new SQLiteBlobColumn(byteArrayCol.getName(), GetColumnConstraint(schema, byteArrayCol)))
+			tableSpec.addColumnMapping(tableSpec.new ColumnMapping<byte[], byte[]>(schema, byteArrayCol, new SQLiteBlobColumn(byteArrayCol.getName(), GetColumnConstraint(schema, byteArrayCol)))
 			{
 
 				@Override
@@ -224,7 +224,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		@Override
 		public void visit(StringColumn stringCol)
 		{
-			tableSpec.addColumnMapping(new ColumnMapping<String, String>(schema, stringCol, new SQLiteStringColumn(stringCol.getName(), GetColumnConstraint(schema, stringCol)))
+			tableSpec.addColumnMapping(tableSpec.new ColumnMapping<String, String>(schema, stringCol, new SQLiteStringColumn(stringCol.getName(), GetColumnConstraint(schema, stringCol)))
 			{
 
 				@Override
@@ -245,7 +245,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		@Override
 		public void visit(IntegerColumn intCol)
 		{
-			tableSpec.addColumnMapping(new ColumnMapping<Long, Long>(schema, intCol, new SQLiteIntegerColumn(intCol.getName(), GetColumnConstraint(schema, intCol)))
+			tableSpec.addColumnMapping(tableSpec.new ColumnMapping<Long, Long>(schema, intCol, new SQLiteIntegerColumn(intCol.getName(), GetColumnConstraint(schema, intCol)))
 			{
 
 				@Override
@@ -266,7 +266,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		@Override
 		public void visit(FloatColumn floatCol)
 		{
-			tableSpec.addColumnMapping(new ColumnMapping<Double, Double>(schema, floatCol, new SQLiteDoubleColumn(floatCol.getName(), GetColumnConstraint(schema, floatCol)))
+			tableSpec.addColumnMapping(tableSpec.new ColumnMapping<Double, Double>(schema, floatCol, new SQLiteDoubleColumn(floatCol.getName(), GetColumnConstraint(schema, floatCol)))
 			{
 
 				@Override
@@ -290,7 +290,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore
 		@Override
 		public void visit(BooleanColumn boolCol)
 		{	
-			tableSpec.addColumnMapping(new ColumnMapping<Boolean, Long>(schema, boolCol, SQLiteIntegerColumn.newBooleanColumn(boolCol.getName(), GetColumnConstraint(schema, boolCol)))
+			tableSpec.addColumnMapping(tableSpec.new ColumnMapping<Boolean, Long>(schema, boolCol, SQLiteIntegerColumn.newBooleanColumn(boolCol.getName(), GetColumnConstraint(schema, boolCol)))
 			{
 
 				@Override

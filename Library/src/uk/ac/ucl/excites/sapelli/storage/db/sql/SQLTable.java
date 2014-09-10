@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
@@ -139,6 +140,42 @@ public abstract class SQLTable
 	public Schema getSchema()
 	{
 		return schema;
+	}
+	
+	public String toString()
+	{
+		return "Database table: " + name;
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <SapT, SQLT>
+	 */
+	public abstract class ColumnMapping<SapT, SQLT>
+	{
+		
+		final ColumnPointer sourceColumnPointer;
+		final SQLColumn<SQLT, ?> databaseColumn;
+		
+		public ColumnMapping(Schema schema, Column<SapT> sapelliColum, SQLColumn<SQLT, ?> databaseColumn)
+		{
+			this.sourceColumnPointer = new ColumnPointer(schema, sapelliColum);
+			this.databaseColumn = databaseColumn;
+		}
+
+		/**
+		 * @param value
+		 * @return
+		 */
+		protected abstract SQLT toDatabaseType(SapT value);
+		
+		/**
+		 * @param value
+		 * @return
+		 */
+		protected abstract SapT toSapelliType(SQLT value);
+		
 	}
 
 }
