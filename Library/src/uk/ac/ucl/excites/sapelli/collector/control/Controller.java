@@ -498,7 +498,7 @@ public abstract class Controller
 		for(Field f : page.getFields())
 		{	
 			if(!isFieldToBeShown(f))
-				addLogLine("SKIPPING", getCurrentField().getID(), "not shown on " + currFormSession.mode.name());
+				addLogLine("SKIPPING", f.getID(), "not shown on " + currFormSession.mode.name());
 			else
 				f.enter(this, FieldParameters.EMPTY, true); // enter with page (but don't pass on the arguments)
 		}
