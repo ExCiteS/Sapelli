@@ -19,7 +19,9 @@
 package uk.ac.ucl.excites.sapelli.storage.db.sql;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -27,6 +29,7 @@ import java.util.Set;
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -43,17 +46,18 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.NotConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.OrConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
  * @author mstevens
  *
  */
-public abstract class SQLRecordStore<Table extends SQLTable> extends RecordStore
+public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>, Table extends SQLRecordStore<SQLRS,Table>.SQLTable> extends RecordStore
 {
 	
 	static private final String SCHEMATA_TABLE_NAME = "Schemata";
-	private Map<Schema, Table> TableSpecs;
+	private Map<Schema, Table> sqlTables;
 
 	/**
 	 * @param client
@@ -62,7 +66,7 @@ public abstract class SQLRecordStore<Table extends SQLTable> extends RecordStore
 	public SQLRecordStore(StorageClient client)
 	{
 		super(client);
-		this.TableSpecs = new HashMap<Schema, Table>();
+		this.sqlTables = new HashMap<Schema, Table>();
 	}
 	
 	/**
@@ -82,45 +86,16 @@ public abstract class SQLRecordStore<Table extends SQLTable> extends RecordStore
 			for(Record metaSchemaRec : retrieveRecords(Schema.META_SCHEMA))
 			{
 				Schema schema = Schema.FromMetaRecord(metaSchemaRec);
-				TableSpecs.put(schema, tableFactory.generateTable(schema));
+				sqlTables.put(schema, tableFactory.generateTable(schema));
 			}
 		}
 	}
-	
-	protected abstract TableFactory getTableFactory();
-	
-	protected String getTableName(Schema schema)
-	{
-		if(schema == Schema.META_SCHEMA)
-			return SCHEMATA_TABLE_NAME;
-		return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber();
-	}
-	
-	protected Set<Schema> getKnownSchemata()
-	{
-		return TableSpecs.keySet();
-	}
-	
-	protected abstract void executeSQL(String sql) throws DBException;
-	
-	/**
-	 * @return whether or not the DBMS supports concurrent connections
-	 */
-	protected abstract boolean supportsConcurrentConnections();
-	
-	/**
-	 * Checks whether a table with the given name exists in the database.
-	 * 
-	 * @param tableName
-	 * @return
-	 */
-	protected abstract boolean doesTableExist(String tableName);
 	
 	/**
 	 * Checks whether the given {@link Schema} is known, which implies that records of it
 	 * can be accepted for storage (i.e. a table has been created to store them).
 	 * In this default implementation it is assumed if the DBMS does *not* support concurrent
-	 * connections {@link #TableSpecs} will always in sync with the actual tables existing
+	 * connections {@link #sqlTables} will always in sync with the actual tables existing
 	 * in the database (so no further checks are needed). 
 	 * 
 	 * @param schema
@@ -128,7 +103,7 @@ public abstract class SQLRecordStore<Table extends SQLTable> extends RecordStore
 	 */
 	protected boolean isSchemaKnown(Schema schema)
 	{
-		return	TableSpecs.containsKey(schema)
+		return	sqlTables.containsKey(schema)
 				&& (!supportsConcurrentConnections() || doesTableExist(getTableName(schema)));
 	}
 	
@@ -155,14 +130,43 @@ public abstract class SQLRecordStore<Table extends SQLTable> extends RecordStore
 
 	protected Table getTable(Schema schema)
 	{
-		Table sqlTable = TableSpecs.get(schema);
+		Table sqlTable = sqlTables.get(schema);
 		if(sqlTable == null)
 		{
 			sqlTable = getTableFactory().generateTable(schema);
-			TableSpecs.put(schema, sqlTable);
+			sqlTables.put(schema, sqlTable);
 		}
 		return sqlTable;
 	}
+	
+	protected abstract TableFactory getTableFactory();
+	
+	protected String getTableName(Schema schema)
+	{
+		if(schema == Schema.META_SCHEMA)
+			return SCHEMATA_TABLE_NAME;
+		return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber();
+	}
+	
+	protected Set<Schema> getKnownSchemata()
+	{
+		return sqlTables.keySet();
+	}
+	
+	protected abstract void executeSQL(String sql) throws DBException;
+	
+	/**
+	 * @return whether or not the DBMS supports concurrent connections
+	 */
+	protected abstract boolean supportsConcurrentConnections();
+	
+	/**
+	 * Checks whether a table with the given name exists in the database.
+	 * 
+	 * @param tableName
+	 * @return
+	 */
+	protected abstract boolean doesTableExist(String tableName);
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveRecords(uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery)
@@ -172,7 +176,7 @@ public abstract class SQLRecordStore<Table extends SQLTable> extends RecordStore
 	{
 		List<Record> result = new ArrayList<Record>();
 		for(Schema s : query.isAnySchema() ? getKnownSchemata() : query.getSourceSchemata())
-			// run subqueries for each schema in the query, or all known schemata (if the query for "any" schema):
+			// Run subqueries for each schema in the query, or all known schemata (if the query for "any" schema):
 			queryForRecords(getTable(s), query, result);
 		return result;
 	}
@@ -191,7 +195,7 @@ public abstract class SQLRecordStore<Table extends SQLTable> extends RecordStore
 	public Record retrieveRecord(SingleRecordQuery query)
 	{
 		// TODO generate & execute SELECT query + process & return result
-				
+		
 		return null;
 	}
 	
@@ -306,6 +310,158 @@ public abstract class SQLRecordStore<Table extends SQLTable> extends RecordStore
 			case GREATER : return ">";
 		}
 		return null; // this should never happen
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	public abstract class SQLTable
+	{
+
+		public final String name;
+		public final Schema schema;
+		private final Map<ColumnPointer, ColumnMapping<?, ?>> sap2ColMap;
+		private final Map<SQLColumn<?, ?>, ColumnMapping<?, ?>> sql2ColMap;
+		private List<String> tableConstraints = Collections.<String> emptyList();
+		
+		public SQLTable(String tableName, Schema schema)
+		{
+			this.name = tableName;
+			this.schema = schema;
+			// Init collections:
+			sap2ColMap = new LinkedHashMap<ColumnPointer, ColumnMapping<?, ?>>();
+			sql2ColMap = new LinkedHashMap<SQLColumn<?, ?>, ColumnMapping<?, ?>>();
+		}
+		
+		public void addColumnMapping(ColumnMapping<?, ?> columnMapping)
+		{
+			sap2ColMap.put(columnMapping.sourceColumnPointer, columnMapping);
+			sql2ColMap.put(columnMapping.databaseColumn, columnMapping);
+		}
+		
+		public void setTableConstraint(List<String> tableConstraints)
+		{
+			this.tableConstraints = new ArrayList<String>(tableConstraints);
+		}
+		
+		public String getCreateTableStatement()
+		{
+			StringBuilder bldr = new StringBuilder();
+			bldr.append("CREATE TABLE ");
+			bldr.append(name);
+			bldr.append(" (");
+			// Columns:
+			boolean first = true;
+			for(SQLColumn<?, ?> sqlCol : sql2ColMap.keySet())
+			{
+				if(first)
+					first = false;
+				else
+					bldr.append(", ");
+				bldr.append(sqlCol.name);
+				bldr.append(' ');
+				bldr.append(sqlCol.type);
+				if(sqlCol.constraint != null && !sqlCol.constraint.isEmpty())
+				{
+					bldr.append(' ');
+					bldr.append(sqlCol.constraint);
+				}
+			}
+			// Table constraints:
+			for(String tConstr : tableConstraints)
+			{
+				bldr.append(", ");
+				bldr.append(tConstr);
+			}		
+			bldr.append(");");
+			return bldr.toString();
+		}
+		
+		public SQLStatement getInsertStatement()
+		{
+			return null;
+			// TODO
+			//return new SQLStringStatement(generateInsertStatement(SQLStringStatement.PARAM_PLACEHOLDER));
+		}
+		
+		protected String generateInsertStatement(char paramPlaceholder)
+		{
+			StringBuilder bldr = new StringBuilder();
+			bldr.append("INSERT INTO ");
+			bldr.append(name);
+			bldr.append(" (");
+			// Columns:
+			boolean first = true;
+			for(SQLColumn<?, ?> sqlCol : sql2ColMap.keySet())
+			{
+				if(first)
+					first = false;
+				else
+					bldr.append(", ");
+				bldr.append(sqlCol.name);
+			}
+			bldr.append(") VALUES (");
+			first = true;
+			for(int i = 0; i < sql2ColMap.size(); i++)
+			{
+				if(i > 0)
+					bldr.append(", ");
+				bldr.append(paramPlaceholder);
+			}
+			bldr.append(");");
+			return bldr.toString();
+		}
+		
+		public SQLColumn<?, ?> getDatabaseColumn(ColumnPointer columnPointer)
+		{
+			ColumnMapping<?, ?> colMap = sap2ColMap.get(columnPointer);
+			if(colMap != null)
+				return colMap.databaseColumn;
+			return null;
+		}
+		
+		public Schema getSchema()
+		{
+			return schema;
+		}
+		
+		public String toString()
+		{
+			return "Database table: " + name;
+		}
+		
+		/**
+		 * @author mstevens
+		 *
+		 * @param <SapT, SQLT>
+		 */
+		public abstract class ColumnMapping<SapT, SQLT>
+		{
+			
+			final ColumnPointer sourceColumnPointer;
+			final SQLColumn<SQLT, ?> databaseColumn;
+			
+			public ColumnMapping(Schema schema, Column<SapT> sapelliColum, SQLColumn<SQLT, ?> databaseColumn)
+			{
+				this.sourceColumnPointer = new ColumnPointer(schema, sapelliColum);
+				this.databaseColumn = databaseColumn;
+			}
+
+			/**
+			 * @param value
+			 * @return
+			 */
+			protected abstract SQLT toDatabaseType(SapT value);
+			
+			/**
+			 * @param value
+			 * @return
+			 */
+			protected abstract SapT toSapelliType(SQLT value);
+			
+		}
+
 	}
 	
 	/**

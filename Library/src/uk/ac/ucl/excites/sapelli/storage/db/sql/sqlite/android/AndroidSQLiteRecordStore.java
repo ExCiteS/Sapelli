@@ -24,7 +24,6 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLColumn;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLTable;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
@@ -169,6 +168,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected boolean doStore(Record record) throws DBException
 	{
+		SQLiteTable table = getTable(record.getSchema());
 		
 		
 		return false;
