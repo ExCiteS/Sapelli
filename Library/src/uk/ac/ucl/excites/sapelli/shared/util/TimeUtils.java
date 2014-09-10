@@ -39,7 +39,7 @@ public final class TimeUtils
 
 	public static final DateTimeFormatter ISOWithMSFormatter = ISODateTimeFormat.dateTime();
 	public static final DateTimeFormatter ISOWithoutMSFormatter = ISODateTimeFormat.dateTimeNoMillis();
-	public static final DateTimeFormatter FileTimestampFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HHmmss");
+	public static final DateTimeFormatter FileTimestampFormatter = DateTimeFormat.forPattern("yyyy-MM-dd'T'HH.mm.ss");
 	public static final DateTimeFormatter PrettyTimestampWithoutMSFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm:ss");
 	public static final DateTimeFormatter PrettyTimestampWithMSFormatter = DateTimeFormat.forPattern("yyyy-MM-dd' 'HH:mm:ss.SSS");
 
