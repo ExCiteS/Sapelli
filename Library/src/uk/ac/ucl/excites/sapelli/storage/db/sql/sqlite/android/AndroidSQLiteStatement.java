@@ -32,7 +32,7 @@ import android.database.sqlite.SQLiteDatabase;
 public class AndroidSQLiteStatement extends SQLiteStatement
 {
 
-	static public final char PARAM_PLACEHOLDER = '?';
+	static public final String PARAM_PLACEHOLDER = "?";
 	
 	private final android.database.sqlite.SQLiteStatement androidSQLiteSt;
 	

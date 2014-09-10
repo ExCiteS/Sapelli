@@ -21,10 +21,9 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql;
 /**
  * @author mstevens
  *
- * @param <SQLT>
- * @param <SQLS>
+ * @param <SQLType>
  */
-public abstract class SQLColumn<SQLT, SQLS extends SQLStatement>
+public abstract class SQLColumn<SQLType>
 {
 
 	public final String name;
@@ -40,7 +39,7 @@ public abstract class SQLColumn<SQLT, SQLS extends SQLStatement>
 		this.needsQuotes = needsQuotes;
 	}
 	
-	public String toLiteralString(SQLT value)
+	public String toLiteralString(SQLType value)
 	{
 		if(value != null)
 			return (needsQuotes ?
@@ -55,24 +54,5 @@ public abstract class SQLColumn<SQLT, SQLS extends SQLStatement>
 	protected abstract String getQuoteChar();
 	
 	protected abstract String getQuoteEscape();
-	
-	/**
-	 * @param statement
-	 * @param paramIdx
-	 * @param value non-null
-	 */
-	protected void bind(SQLS statement, int paramIdx, SQLT value)
-	{
-		statement.bindLiteral(paramIdx, toLiteralString(value));
-	}
-	
-	/**
-	 * @param statement
-	 * @param paramIdx
-	 */
-	protected void bindNull(SQLS statement, int paramIdx)
-	{
-		statement.bindLiteral(paramIdx, getNullString());
-	}
 	
 }

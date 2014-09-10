@@ -23,10 +23,9 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLColumn;
 /**
  * @author mstevens
  *
- * @param <SQLT>
- * @param <SQLS>
+ * @param <SQLType>
  */
-public abstract class SQLiteColumn<SQLT> extends SQLColumn<SQLT, SQLiteStatement>
+public abstract class SQLiteColumn<SQLType> extends SQLColumn<SQLType>
 {
 
 	public SQLiteColumn(String name, String type, String constraint, boolean needsQuotes)
@@ -34,18 +33,8 @@ public abstract class SQLiteColumn<SQLT> extends SQLColumn<SQLT, SQLiteStatement
 		super(name, type, constraint, needsQuotes);
 	}
 	
-	/**
-	 * Make abstract to avoid bindLiteral() is ever called on SQLiteStatements
-	 *  
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLColumn#bind(uk.ac.ucl.excites.sapelli.storage.db.sql2.SQLStatement, int, java.lang.Object)
-	 */
-	@Override
-	protected abstract void bind(SQLiteStatement statement, int paramIdx, SQLT value);
+	protected abstract void bind(SQLiteStatement statement, int paramIdx, SQLType value);
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql2.SQLColumn#bindNull(uk.ac.ucl.excites.sapelli.storage.db.sql2.SQLStatement, int)
-	 */
-	@Override
 	protected void bindNull(SQLiteStatement statement, int paramIdx)
 	{
 		statement.bindNull(paramIdx);
@@ -69,13 +58,13 @@ public abstract class SQLiteColumn<SQLT> extends SQLColumn<SQLT, SQLiteStatement
 		return "''";
 	}
 	
-	public SQLT readFrom(ISQLiteCursor cursor, int columnIdx)
+	public SQLType readFrom(ISQLiteCursor cursor, int columnIdx)
 	{
 		if(cursor.isNull(columnIdx))
 			return null;
 		return getFrom(cursor, columnIdx);
 	}
 	
-	protected abstract SQLT getFrom(ISQLiteCursor cursor, int columnIdx);
+	protected abstract SQLType getFrom(ISQLiteCursor cursor, int columnIdx);
 
 }

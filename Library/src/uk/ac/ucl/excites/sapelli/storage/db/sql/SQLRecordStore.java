@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -117,7 +118,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 				doStore(Schema.GetMetaRecord(schema));
 			
 			// Create table for records of this schema:
-			executeSQL(getTable(schema).getCreateTableStatement());				
+			getTable(schema).create();				
 		}
 		catch(Exception e)
 		{
@@ -168,6 +169,29 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 	 */
 	protected abstract boolean doesTableExist(String tableName);
 
+	/**
+	 * Default implementation for SQL databases: first do a SELECT based on the key to verify whether the
+	 * record exists, then do either UPDATE or INSERT.
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStore(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 */
+	@Override
+	protected boolean doStore(Record record) throws DBException
+	{
+		boolean newRec = retrieveRecord(record.getReference().getRecordQuery()) == null;
+		if(newRec)
+			getTable(record.getSchema()).insert(record);
+		else
+			getTable(record.getSchema()).update(record);
+		return newRec;
+	}
+
+	@Override
+	protected void doDelete(Record record) throws DBException
+	{
+		getTable(record.getSchema()).delete(record);
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveRecords(uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery)
 	 */
@@ -186,7 +210,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 	 * @param query
 	 * @param result
 	 */
-	protected abstract void queryForRecords(SQLTable table, RecordsQuery query, List<Record> result);
+	protected abstract void queryForRecords(Table table, RecordsQuery query, List<Record> result);
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveRecord(uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery)
@@ -194,9 +218,12 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 	@Override
 	public Record retrieveRecord(SingleRecordQuery query)
 	{
-		// TODO generate & execute SELECT query + process & return result
+		// TODO Now the reduction happens in Java, we should let the database do the work instead! I.e. generate appropriate SQL to do selection & reduction in 1 query
 		
-		return null;
+		// Run the RecordsQuery:
+		List<Record> records = retrieveRecords(query.getRecordsQuery());
+		// Execute the SingleRecordQuery (reducing the list to 1 record), without re-running the recordsQuery, and then return the result:
+		return query.execute(records, false);
 	}
 	
 	/**
@@ -205,20 +232,41 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 	 */
 	protected class WhereClauseGenerator implements ConstraintVisitor
 	{
-
-		SQLTable table;
-		StringBuilder bldr;
-		boolean includeWhere;
 		
-		public WhereClauseGenerator(SQLTable table, Constraint constraint, boolean includeWhere)
+		Table table;
+		StringBuilder bldr;
+		String valuePlaceHolder;
+		List<String> arguments;
+		
+		/**
+		 * Creates a WhereClauseGenerator that will produce a selection clause with literal values.
+		 * 
+		 * @param table
+		 * @param constraint
+		 * @param valuePlaceHolder placeholder for parameters, null if literal clause is being generated
+		 */
+		public WhereClauseGenerator(Table table, Constraint constraint)
 		{
+			this(table, constraint, null);
+		}
+		
+		/**
+		 * Creates a WhereClauseGenerator that will produce a selection clause with parameterised values (unless valuePlaceHolder is null)
+		 * 
+		 * @param table
+		 * @param constraint
+		 * @param valuePlaceHolder
+		 */
+		public WhereClauseGenerator(Table table, Constraint constraint, String valuePlaceHolder)
+		{
+			if(constraint == null)
+				return;
 			this.table = table;
-			this.includeWhere = includeWhere;
-			if(constraint != null)
-			{
-				this.bldr = new StringBuilder();
-				constraint.accept(this);
-			}
+			this.valuePlaceHolder = valuePlaceHolder;
+			if(valuePlaceHolder != null)
+				this.arguments = new ArrayList<String>();
+			this.bldr = new StringBuilder();
+			constraint.accept(this);
 		}
 		
 		private void visitAndOr(boolean and, List<Constraint> subConstraints)
@@ -276,7 +324,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 //			bldr.append(storedCol.getStorableValueString(ruleQuery.getValue()));
 		}
 		
-		public String getClause()
+		public String getClause(boolean includeWhere)
 		{
 			if(bldr != null && bldr.length() > 0)
 				return (includeWhere ? "WHERE " : "") + bldr.toString();
@@ -284,10 +332,18 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 				return "";
 		}
 		
-		public String getClauseOrNull()
+		public String getClauseOrNull(boolean includeWhere)
 		{
-			String clause = getClause();
+			String clause = getClause(includeWhere);
 			return clause.isEmpty() ? null : clause;
+		}
+		
+		public String[] getArguments()
+		{
+			if(valuePlaceHolder != null)
+				return arguments.toArray(new String[arguments.size()]);
+			else
+				return null;
 		}
 		
 	}
@@ -322,7 +378,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 		public final String name;
 		public final Schema schema;
 		private final Map<ColumnPointer, ColumnMapping<?, ?>> sap2ColMap;
-		private final Map<SQLColumn<?, ?>, ColumnMapping<?, ?>> sql2ColMap;
+		private final Map<SQLColumn<?>, ColumnMapping<?, ?>> sql2ColMap;
 		private List<String> tableConstraints = Collections.<String> emptyList();
 		
 		public SQLTable(String tableName, Schema schema)
@@ -331,7 +387,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 			this.schema = schema;
 			// Init collections:
 			sap2ColMap = new LinkedHashMap<ColumnPointer, ColumnMapping<?, ?>>();
-			sql2ColMap = new LinkedHashMap<SQLColumn<?, ?>, ColumnMapping<?, ?>>();
+			sql2ColMap = new LinkedHashMap<SQLColumn<?>, ColumnMapping<?, ?>>();
 		}
 		
 		public void addColumnMapping(ColumnMapping<?, ?> columnMapping)
@@ -345,7 +401,17 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 			this.tableConstraints = new ArrayList<String>(tableConstraints);
 		}
 		
-		public String getCreateTableStatement()
+		/**
+		 * Default implementation, can be overriden by subclasses
+		 * 
+		 * @throws DBException
+		 */
+		public void create() throws DBException
+		{
+			executeSQL(generateCreateTableStatement());
+		}
+		
+		protected String generateCreateTableStatement()
 		{
 			StringBuilder bldr = new StringBuilder();
 			bldr.append("CREATE TABLE ");
@@ -353,7 +419,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 			bldr.append(" (");
 			// Columns:
 			boolean first = true;
-			for(SQLColumn<?, ?> sqlCol : sql2ColMap.keySet())
+			for(SQLColumn<?> sqlCol : sql2ColMap.keySet())
 			{
 				if(first)
 					first = false;
@@ -378,22 +444,24 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 			return bldr.toString();
 		}
 		
-		public SQLStatement getInsertStatement()
+		public void insert(Record record) throws DBException
 		{
-			return null;
-			// TODO
-			//return new SQLStringStatement(generateInsertStatement(SQLStringStatement.PARAM_PLACEHOLDER));
+			List<String> values = null;
+			// TODO get (quoted) string values
+			executeSQL(generateInsertStatement(values));
 		}
 		
-		protected String generateInsertStatement(char paramPlaceholder)
+		protected String generateInsertStatement(List<String> values)
 		{
+			if(values.size() != sql2ColMap.size())
+				throw new IllegalArgumentException("Invalid number of values");
 			StringBuilder bldr = new StringBuilder();
 			bldr.append("INSERT INTO ");
 			bldr.append(name);
 			bldr.append(" (");
 			// Columns:
 			boolean first = true;
-			for(SQLColumn<?, ?> sqlCol : sql2ColMap.keySet())
+			for(SQLColumn<?> sqlCol : sql2ColMap.keySet())
 			{
 				if(first)
 					first = false;
@@ -402,18 +470,22 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 				bldr.append(sqlCol.name);
 			}
 			bldr.append(") VALUES (");
-			first = true;
-			for(int i = 0; i < sql2ColMap.size(); i++)
-			{
-				if(i > 0)
-					bldr.append(", ");
-				bldr.append(paramPlaceholder);
-			}
+			bldr.append(StringUtils.join(values, ", "));
 			bldr.append(");");
 			return bldr.toString();
 		}
 		
-		public SQLColumn<?, ?> getDatabaseColumn(ColumnPointer columnPointer)
+		public void update(Record record) throws DBException
+		{
+			
+		}
+		
+		public void delete(Record record) throws DBException
+		{
+			// TODO
+		}
+		
+		public SQLColumn<?> getDatabaseColumn(ColumnPointer columnPointer)
 		{
 			ColumnMapping<?, ?> colMap = sap2ColMap.get(columnPointer);
 			if(colMap != null)
@@ -436,13 +508,13 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 		 *
 		 * @param <SapT, SQLT>
 		 */
-		public abstract class ColumnMapping<SapT, SQLT>
+		public abstract class ColumnMapping<SapT, SQLType>
 		{
 			
 			final ColumnPointer sourceColumnPointer;
-			final SQLColumn<SQLT, ?> databaseColumn;
+			final SQLColumn<SQLType> databaseColumn;
 			
-			public ColumnMapping(Schema schema, Column<SapT> sapelliColum, SQLColumn<SQLT, ?> databaseColumn)
+			public ColumnMapping(Schema schema, Column<SapT> sapelliColum, SQLColumn<SQLType> databaseColumn)
 			{
 				this.sourceColumnPointer = new ColumnPointer(schema, sapelliColum);
 				this.databaseColumn = databaseColumn;
@@ -452,13 +524,13 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 			 * @param value
 			 * @return
 			 */
-			protected abstract SQLT toDatabaseType(SapT value);
+			protected abstract SQLType toDatabaseType(SapT value);
 			
 			/**
 			 * @param value
 			 * @return
 			 */
-			protected abstract SapT toSapelliType(SQLT value);
+			protected abstract SapT toSapelliType(SQLType value);
 			
 		}
 

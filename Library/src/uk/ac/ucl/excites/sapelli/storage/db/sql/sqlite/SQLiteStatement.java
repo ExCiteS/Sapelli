@@ -18,10 +18,23 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
-import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLStatement;
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 
-public abstract class SQLiteStatement extends SQLStatement
+public abstract class SQLiteStatement
 {
+	
+	/**
+	 * @param paramIdx
+	 * @param column
+	 * @param value
+	 */
+	public <SQLT> void bind(int paramIdx, SQLiteColumn<SQLT> column, SQLT value)
+	{
+		if(value != null)
+			column.bind(this, paramIdx, value);
+		else
+			column.bindNull(this, paramIdx);
+	}
 	
 	public abstract void bindBlob(int paramIdx, byte[] value);
 	
@@ -32,5 +45,17 @@ public abstract class SQLiteStatement extends SQLStatement
 	public abstract void bindString(int paramIdx, String value);
 	
 	public abstract void bindNull(int paramIdx);
+	
+	/**
+	 * TODO remove ?
+	 * 
+	 * @param paramIdx
+	 * @param literalValue
+	 */
+	public abstract void bindLiteral(int paramIdx, String literalValue);
+	
+	public abstract void execute() throws DBException;
+	
+	public abstract void clearAllBindings();
 
 }

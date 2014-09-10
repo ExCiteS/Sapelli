@@ -166,27 +166,11 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	@Override
-	protected boolean doStore(Record record) throws DBException
+	protected void queryForRecords(SQLiteTable table, RecordsQuery query, List<Record> result)
 	{
-		SQLiteTable table = getTable(record.getSchema());
-		
-		
-		return false;
-	}
-
-	@Override
-	protected void doDelete(Record record) throws DBException
-	{
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
-	protected void queryForRecords(SQLTable table, RecordsQuery query, List<Record> result)
-	{
-		WhereClauseGenerator selector = new WhereClauseGenerator(table, query.getConstraints(), false);
-		SQLColumn<?, ?> orderBy = table.getDatabaseColumn(query.getOrderBy());
-		AndroidSQLiteCursor cursor = (AndroidSQLiteCursor) db.query(table.name, null, selector.getClauseOrNull(), /* TODO selector.getValues() */ null, null, (orderBy != null ? orderBy.name : null), query.isLimited() ? "LIMIT " + query.getLimit() : null);
+		WhereClauseGenerator selector = new WhereClauseGenerator(table, query.getConstraints(), AndroidSQLiteStatement.PARAM_PLACEHOLDER);
+		SQLColumn<?> orderBy = table.getDatabaseColumn(query.getOrderBy());
+		AndroidSQLiteCursor cursor = (AndroidSQLiteCursor) db.query(table.name, null, selector.getClauseOrNull(false), selector.getArguments(), null, (orderBy != null ? orderBy.name : null), query.isLimited() ? "LIMIT " + query.getLimit() : null);
 		while (cursor.moveToNext())
 		{
 			Record record = table.schema.createRecord();
@@ -220,12 +204,6 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	protected SQLiteStatement createStatement(String sql)
 	{
 		return new AndroidSQLiteStatement(db, sql);
-	}
-
-	@Override
-	protected char getParamPlaceholder()
-	{
-		return AndroidSQLiteStatement.PARAM_PLACEHOLDER;
 	}
 	
 	static private class AndroidSQLiteCursor extends SQLiteCursor implements ISQLiteCursor
