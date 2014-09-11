@@ -54,6 +54,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  *
  * @param <SQLRS>
  * @param <STable>
+ * @param <SColumn>
  */
 public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable, SColumn>, STable extends SQLRecordStore<SQLRS, STable, SColumn>.SQLTable, SColumn extends SQLColumn<?, ?>> extends RecordStore
 {

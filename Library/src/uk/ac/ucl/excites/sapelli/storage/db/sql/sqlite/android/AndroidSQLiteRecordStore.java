@@ -43,8 +43,8 @@ import android.os.Build;
 import android.util.Log;
 
 /**
+ * 
  * @author mstevens
- *
  */
 public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 {
@@ -215,6 +215,10 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		return new AndroidSQLiteStatement(db, sql);
 	}
 	
+	/**
+	 * @author mstevens
+	 *
+	 */
 	static private class AndroidSQLiteCursor extends SQLiteCursor implements ISQLiteCursor
 	{
 
