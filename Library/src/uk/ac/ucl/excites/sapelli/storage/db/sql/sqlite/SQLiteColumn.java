@@ -19,18 +19,43 @@
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLColumn;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
  * @author mstevens
  *
  * @param <SQLType>
+ * @param <SapType>
  */
-public abstract class SQLiteColumn<SQLType> extends SQLColumn<SQLType>
+public abstract class SQLiteColumn<SQLType, SapType> extends SQLColumn<SQLType, SapType>
 {
 
-	public SQLiteColumn(String name, String type, String constraint, boolean needsQuotes)
+	/**
+	 * @param type
+	 * @param constraint
+	 * @param sourceSchema
+	 * @param sourceColumn
+	 * @param mapping - may be null in case SQLType = SapType
+	 */
+	public SQLiteColumn(String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
 	{
-		super(name, type, constraint, needsQuotes);
+		this(sourceColumn.getName(), type, constraint, new ColumnPointer(sourceSchema, sourceColumn), mapping);
+	}
+	
+	/**
+	 * @param name
+	 * @param type
+	 * @param constraint
+	 * @param sourceColumnPointer
+	 * @param mapping - may be null in case SQLType = SapType
+	 */
+	public SQLiteColumn(String name, String type, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
+	{
+		super(name, type, constraint, sourceColumnPointer, mapping);
 	}
 	
 	protected abstract void bind(SQLiteStatement statement, int paramIdx, SQLType value);
@@ -56,6 +81,16 @@ public abstract class SQLiteColumn<SQLType> extends SQLColumn<SQLType>
 	protected String getQuoteEscape()
 	{
 		return "''";
+	}
+	
+	/**
+	 * @param record
+	 * @param cursor
+	 * @param columnIdx
+	 */
+	public void storeFrom(Record record, ISQLiteCursor cursor, int columnIdx)
+	{
+		store(record, readFrom(cursor, columnIdx));
 	}
 	
 	public SQLType readFrom(ISQLiteCursor cursor, int columnIdx)

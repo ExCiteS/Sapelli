@@ -18,31 +18,105 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql;
 
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
+
 /**
  * @author mstevens
  *
  * @param <SQLType>
  */
-public abstract class SQLColumn<SQLType>
+public abstract class SQLColumn<SQLType, SapType>
 {
 
 	public final String name;
 	protected final String type;
 	protected final String constraint;
-	protected final boolean needsQuotes;
+	protected final ColumnPointer sourceColumnPointer;
+	protected final TypeMapping<SQLType, SapType> mapping;
 	
-	public SQLColumn(String name, String type, String constraint, boolean needsQuotes)
+	/**
+	 * @param name
+	 * @param type
+	 * @param constraint
+	 * @param sourceColumnPointer
+	 * @param sourceMapping
+	 */
+	@SuppressWarnings("unchecked")
+	public SQLColumn(String name, String type, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
 	{
 		this.name = name;
 		this.type = type;
 		this.constraint = constraint;
-		this.needsQuotes = needsQuotes;
+		this.sourceColumnPointer = sourceColumnPointer;
+		this.mapping = mapping != null ? mapping : (TypeMapping<SQLType, SapType>) TypeMapping.<SQLType> Transparent();
 	}
 	
-	public String toLiteralString(SQLType value)
+	/**
+	 * @param value
+	 * @param quotedIfNeeded
+	 * @return
+	 */
+	public String sapToLiteral(SapType value, boolean quotedIfNeeded)
+	{
+		return sqlToLiteral(mapping.toSQLType(value), quotedIfNeeded);
+	}
+	
+	/**
+	 * @param value
+	 * @param quotedIfNeeded
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public String sapObjectToLiteral(Object value, boolean quotedIfNeeded)
+	{
+		return sqlToLiteral(mapping.toSQLType((SapType) value), quotedIfNeeded);
+	}
+	
+	/**
+	 * @param record
+	 * @param quotedIfNeeded
+	 * @return
+	 */
+	public String retrieveAsLiteral(Record record, boolean quotedIfNeeded)
+	{
+		return sqlToLiteral(retrieve(record), quotedIfNeeded);
+	}
+	
+	/**
+	 * @param record
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public SQLType retrieve(Record record)
+	{
+		return mapping.toSQLType((SapType) sourceColumnPointer.retrieveValue(record));
+	}
+	
+	/**
+	 * @param record
+	 * @param value
+	 */
+	public void store(Record record, SQLType value)
+	{
+		sourceColumnPointer.getColumn().storeObject(record, mapping.toSapelliType(value));
+	}
+	
+	/**
+	 * To be overridden when quotes are needed (e.g. on Strings)
+	 * 
+	 * @return
+	 */
+	protected boolean needsQuotedLiterals()
+	{
+		return false;
+	}
+	
+	protected String sqlToLiteral(SQLType value, boolean quotedIfNeeded)
 	{
 		if(value != null)
-			return (needsQuotes ?
+			return (quotedIfNeeded && needsQuotedLiterals() ?
 						getQuoteChar() + value.toString().replace(getQuoteChar(), getQuoteEscape()) + getQuoteChar() :
 						value.toString());
 		else

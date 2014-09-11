@@ -28,7 +28,7 @@ public abstract class SQLiteStatement
 	 * @param column
 	 * @param value
 	 */
-	public <SQLT> void bind(int paramIdx, SQLiteColumn<SQLT> column, SQLT value)
+	public <SQLT> void bind(int paramIdx, SQLiteColumn<SQLT, ?> column, SQLT value)
 	{
 		if(value != null)
 			column.bind(this, paramIdx, value);
@@ -45,14 +45,6 @@ public abstract class SQLiteStatement
 	public abstract void bindString(int paramIdx, String value);
 	
 	public abstract void bindNull(int paramIdx);
-	
-	/**
-	 * TODO remove ?
-	 * 
-	 * @param paramIdx
-	 * @param literalValue
-	 */
-	public abstract void bindLiteral(int paramIdx, String literalValue);
 	
 	public abstract void execute() throws DBException;
 	

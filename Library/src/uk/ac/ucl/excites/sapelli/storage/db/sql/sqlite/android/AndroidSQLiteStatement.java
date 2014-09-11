@@ -75,19 +75,6 @@ public class AndroidSQLiteStatement extends SQLiteStatement
 		androidSQLiteSt.bindNull(paramIdx + 1); // SQLiteProgram uses 1-based parameter indexes
 	}
 
-	/**
-	 * This should never happen because bindLiteral() is only called from
-	 * SQLColumn#bind() and SQLColumn#bindNull(), both over which are overriden
-	 * in SQLiteColumn.
-	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLStatement#bindLiteral(int, java.lang.String)
-	 */
-	@Override
-	public void bindLiteral(int paramIdx, String literalValue)
-	{
-		throw new UnsupportedOperationException("bindLiteral() is not supported on an AndroidSQLiteStatement.");
-	}
-
 	@Override
 	public void clearAllBindings()
 	{

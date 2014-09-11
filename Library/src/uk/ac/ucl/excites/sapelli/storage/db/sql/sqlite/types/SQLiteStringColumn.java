@@ -18,21 +18,45 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 
 /**
  * @author mstevens
  *
+ * @param <SapType>
  */
-public class SQLiteStringColumn extends SQLiteColumn<String>
+public class SQLiteStringColumn<SapType> extends SQLiteColumn<String, SapType>
 {
 
-	public SQLiteStringColumn(String name, String constraint)
+	static public final String SQLITE_DATA_TYPE = "TEXT";
+	
+	/**
+	 * @param constraint
+	 * @param sourceSchema
+	 * @param sourceColumn
+	 * @param mapping - may be null in case SQLType = SapType
+	 */
+	public SQLiteStringColumn(String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<String, SapType> mapping)
 	{
-		super(name, "TEXT", constraint, true);
+		super(SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
+	}
+
+	/**
+	 * @param name
+	 * @param constraint
+	 * @param sourceColumnPointer
+	 * @param mapping - may be null in case SQLType = SapType
+	 */
+	public SQLiteStringColumn(String name, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<String, SapType> mapping)
+	{
+		super(name, SQLITE_DATA_TYPE, constraint, sourceColumnPointer, mapping);
 	}
 	
 	/**
@@ -50,6 +74,12 @@ public class SQLiteStringColumn extends SQLiteColumn<String>
 	protected String getFrom(ISQLiteCursor cursor, int columnIdx)
 	{
 		return cursor.getString(columnIdx);
+	}
+	
+	@Override
+	protected boolean needsQuotedLiterals()
+	{
+		return true; // !!!
 	}
 
 }

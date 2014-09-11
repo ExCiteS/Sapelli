@@ -30,7 +30,6 @@ import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -53,12 +52,14 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 /**
  * @author mstevens
  *
+ * @param <SQLRS>
+ * @param <STable>
  */
-public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>, Table extends SQLRecordStore<SQLRS,Table>.SQLTable> extends RecordStore
+public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable, SColumn>, STable extends SQLRecordStore<SQLRS, STable, SColumn>.SQLTable, SColumn extends SQLColumn<?, ?>> extends RecordStore
 {
 	
 	static private final String SCHEMATA_TABLE_NAME = "Schemata";
-	private Map<Schema, Table> sqlTables;
+	private Map<Schema, STable> sqlTables;
 
 	/**
 	 * @param client
@@ -67,7 +68,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 	public SQLRecordStore(StorageClient client)
 	{
 		super(client);
-		this.sqlTables = new HashMap<Schema, Table>();
+		this.sqlTables = new HashMap<Schema, STable>();
 	}
 	
 	/**
@@ -129,9 +130,9 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 		commitTransaction();
 	}
 
-	protected Table getTable(Schema schema)
+	protected STable getTable(Schema schema)
 	{
-		Table sqlTable = sqlTables.get(schema);
+		STable sqlTable = sqlTables.get(schema);
 		if(sqlTable == null)
 		{
 			sqlTable = getTableFactory().generateTable(schema);
@@ -210,7 +211,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 	 * @param query
 	 * @param result
 	 */
-	protected abstract void queryForRecords(Table table, RecordsQuery query, List<Record> result);
+	protected abstract void queryForRecords(STable table, RecordsQuery query, List<Record> result);
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveRecord(uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery)
@@ -224,128 +225,6 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 		List<Record> records = retrieveRecords(query.getRecordsQuery());
 		// Execute the SingleRecordQuery (reducing the list to 1 record), without re-running the recordsQuery, and then return the result:
 		return query.execute(records, false);
-	}
-	
-	/**
-	 * @author mstevens
-	 *
-	 */
-	protected class WhereClauseGenerator implements ConstraintVisitor
-	{
-		
-		Table table;
-		StringBuilder bldr;
-		String valuePlaceHolder;
-		List<String> arguments;
-		
-		/**
-		 * Creates a WhereClauseGenerator that will produce a selection clause with literal values.
-		 * 
-		 * @param table
-		 * @param constraint
-		 * @param valuePlaceHolder placeholder for parameters, null if literal clause is being generated
-		 */
-		public WhereClauseGenerator(Table table, Constraint constraint)
-		{
-			this(table, constraint, null);
-		}
-		
-		/**
-		 * Creates a WhereClauseGenerator that will produce a selection clause with parameterised values (unless valuePlaceHolder is null)
-		 * 
-		 * @param table
-		 * @param constraint
-		 * @param valuePlaceHolder
-		 */
-		public WhereClauseGenerator(Table table, Constraint constraint, String valuePlaceHolder)
-		{
-			if(constraint == null)
-				return;
-			this.table = table;
-			this.valuePlaceHolder = valuePlaceHolder;
-			if(valuePlaceHolder != null)
-				this.arguments = new ArrayList<String>();
-			this.bldr = new StringBuilder();
-			constraint.accept(this);
-		}
-		
-		private void visitAndOr(boolean and, List<Constraint> subConstraints)
-		{
-			if(subConstraints.isEmpty())
-				return;
-			bldr.append("(");
-			boolean first = true;
-			for(Constraint subConstraint : subConstraints)
-			{
-				if(first)
-					first = false;
-				else
-					bldr.append(" " + (and ? "AND" : "OR") + " ");
-				subConstraint.accept(this);
-			}
-			bldr.append(")");
-		}
-		@Override
-		public void visit(AndConstraint andConstr)
-		{
-			visitAndOr(true, andConstr.getSubConstraints());
-		}
-
-		@Override
-		public void visit(OrConstraint orConstr)
-		{
-			visitAndOr(false, orConstr.getSubConstraints());	
-		}
-
-		@Override
-		public void visit(NotConstraint notConstr)
-		{
-			bldr.append(" NOT ");
-			notConstr.getNegatedConstraint().accept(this);
-		}
-
-		@Override
-		public void visit(EqualityConstraint equalityQuery)
-		{
-			// TODO
-//			ColumnSpec<?> storedCol = schemaInfo.getStoredColumn(equalityQuery.getColumnPointer());
-//			bldr.append(storedCol.name);
-//			bldr.append(" " + getComparisonOperator(RuleConstraint.Comparison.EQUAL) + " ");
-//			bldr.append(storedCol.getStorableValueString(equalityQuery.getValue()));
-		}
-
-		@Override
-		public void visit(RuleConstraint ruleQuery)
-		{
-			// TODO
-//			ColumnSpec<?> storedCol = schemaInfo.getStoredColumn(ruleQuery.getColumnPointer());
-//			bldr.append(storedCol.name);
-//			bldr.append(" " + getComparisonOperator(ruleQuery.getComparison()) + " ");
-//			bldr.append(storedCol.getStorableValueString(ruleQuery.getValue()));
-		}
-		
-		public String getClause(boolean includeWhere)
-		{
-			if(bldr != null && bldr.length() > 0)
-				return (includeWhere ? "WHERE " : "") + bldr.toString();
-			else
-				return "";
-		}
-		
-		public String getClauseOrNull(boolean includeWhere)
-		{
-			String clause = getClause(includeWhere);
-			return clause.isEmpty() ? null : clause;
-		}
-		
-		public String[] getArguments()
-		{
-			if(valuePlaceHolder != null)
-				return arguments.toArray(new String[arguments.size()]);
-			else
-				return null;
-		}
-		
 	}
 	
 	/**
@@ -377,23 +256,20 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 
 		public final String name;
 		public final Schema schema;
-		private final Map<ColumnPointer, ColumnMapping<?, ?>> sap2ColMap;
-		private final Map<SQLColumn<?>, ColumnMapping<?, ?>> sql2ColMap;
-		private List<String> tableConstraints = Collections.<String> emptyList();
+		public final Map<ColumnPointer, SColumn> sqlColumns;
+		List<String> tableConstraints = Collections.<String> emptyList();
 		
 		public SQLTable(String tableName, Schema schema)
 		{
 			this.name = tableName;
 			this.schema = schema;
 			// Init collections:
-			sap2ColMap = new LinkedHashMap<ColumnPointer, ColumnMapping<?, ?>>();
-			sql2ColMap = new LinkedHashMap<SQLColumn<?>, ColumnMapping<?, ?>>();
+			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>();
 		}
 		
-		public void addColumnMapping(ColumnMapping<?, ?> columnMapping)
+		public void addColumn(SColumn sqlColumn)
 		{
-			sap2ColMap.put(columnMapping.sourceColumnPointer, columnMapping);
-			sql2ColMap.put(columnMapping.databaseColumn, columnMapping);
+			sqlColumns.put(sqlColumn.sourceColumnPointer, sqlColumn);
 		}
 		
 		public void setTableConstraint(List<String> tableConstraints)
@@ -419,7 +295,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 			bldr.append(" (");
 			// Columns:
 			boolean first = true;
-			for(SQLColumn<?> sqlCol : sql2ColMap.keySet())
+			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
 			{
 				if(first)
 					first = false;
@@ -444,16 +320,24 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 			return bldr.toString();
 		}
 		
+		/**
+		 * May be overriden
+		 * 
+		 * @param record
+		 * @throws DBException
+		 */
 		public void insert(Record record) throws DBException
 		{
-			List<String> values = null;
-			// TODO get (quoted) string values
+			List<String> values = new ArrayList<String>();
+			// Get literal values (quoted if needed):
+			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
+				values.add(sqlCol.retrieveAsLiteral(record, true));
 			executeSQL(generateInsertStatement(values));
 		}
 		
 		protected String generateInsertStatement(List<String> values)
 		{
-			if(values.size() != sql2ColMap.size())
+			if(values.size() != sqlColumns.size())
 				throw new IllegalArgumentException("Invalid number of values");
 			StringBuilder bldr = new StringBuilder();
 			bldr.append("INSERT INTO ");
@@ -461,7 +345,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 			bldr.append(" (");
 			// Columns:
 			boolean first = true;
-			for(SQLColumn<?> sqlCol : sql2ColMap.keySet())
+			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
 			{
 				if(first)
 					first = false;
@@ -475,22 +359,31 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 			return bldr.toString();
 		}
 		
+		/**
+		 * May be overriden
+		 * 
+		 * @param record
+		 * @throws DBException
+		 */
 		public void update(Record record) throws DBException
 		{
 			
 		}
 		
+		/**
+		 * May be overriden
+		 * 
+		 * @param record
+		 * @throws DBException
+		 */
 		public void delete(Record record) throws DBException
 		{
 			// TODO
 		}
 		
-		public SQLColumn<?> getDatabaseColumn(ColumnPointer columnPointer)
+		public SColumn getSQLColumn(ColumnPointer columnPointer)
 		{
-			ColumnMapping<?, ?> colMap = sap2ColMap.get(columnPointer);
-			if(colMap != null)
-				return colMap.databaseColumn;
-			return null;
+			return sqlColumns.get(columnPointer);
 		}
 		
 		public Schema getSchema()
@@ -502,61 +395,79 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 		{
 			return "Database table: " + name;
 		}
-		
-		/**
-		 * @author mstevens
-		 *
-		 * @param <SapT, SQLT>
-		 */
-		public abstract class ColumnMapping<SapT, SQLType>
-		{
-			
-			final ColumnPointer sourceColumnPointer;
-			final SQLColumn<SQLType> databaseColumn;
-			
-			public ColumnMapping(Schema schema, Column<SapT> sapelliColum, SQLColumn<SQLType> databaseColumn)
-			{
-				this.sourceColumnPointer = new ColumnPointer(schema, sapelliColum);
-				this.databaseColumn = databaseColumn;
-			}
-
-			/**
-			 * @param value
-			 * @return
-			 */
-			protected abstract SQLType toDatabaseType(SapT value);
-			
-			/**
-			 * @param value
-			 * @return
-			 */
-			protected abstract SapT toSapelliType(SQLType value);
-			
-		}
 
 	}
 	
 	/**
 	 * @author mstevens
+	 *
 	 */
-	public abstract class TableFactory implements ColumnVisitor
+	static public abstract class TypeMapping<SQLType, SapType>
 	{
 		
-		protected Schema schema;
-		protected Table tableSpec;
+		static public <SameType> TypeMapping<SameType, SameType> Transparent()
+		{
+			return new TypeMapping<SameType, SameType>()
+			{
+
+				@Override
+				public SameType toSQLType(SameType value)
+				{
+					return value;
+				}
+
+				@Override
+				public SameType toSapelliType(SameType value)
+				{
+					return value;
+				}
+			};
+		}
+
+		public abstract SQLType toSQLType(SapType value);
 		
-		public Table generateTable(Schema schema)
+		public abstract SapType toSapelliType(SQLType value);
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	public abstract class TableFactory
+	{
+		
+		public STable generateTable(Schema schema)
 		{
 			return generateTableSpec(schema.getName(), schema);
 		}
 		
-		public Table generateTableSpec(String tableName, Schema schema)
+		public abstract STable generateTableSpec(String tableName, Schema schema);
+		
+	}
+	
+	/**
+	 * This TableFactory implementation uses a column visitor and assumes all
+	 * non-composite Sapelli columns will be represented by by exactly 1 SQLColumn.
+	 * Composites (i.e. RecordColumns) will be mapped to sets of SQLColumns, each
+	 * corresponding to exactly 1 subcolumn. 
+	 * 
+	 * @author mstevens
+	 */
+	public abstract class BasicTableFactory extends TableFactory implements ColumnVisitor
+	{
+		
+		protected Schema schema;
+		protected STable table;
+		
+		@Override
+		public STable generateTableSpec(String tableName, Schema schema)
 		{
 			this.schema = schema;
-			tableSpec = constructTableSpec(tableName, schema);
+			table = constructTableSpec(tableName, schema);
 			schema.accept(this); // traverse schema --> columnSpecs will be added to TableSpec
-			tableSpec.setTableConstraint(getTableConstraints(schema));
-			return tableSpec;
+			table.setTableConstraint(getTableConstraints());
+			return table;
 		}
 		
 		/**
@@ -566,12 +477,12 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 		 * @param tableConstraints
 		 * @return
 		 */
-		protected abstract Table constructTableSpec(String tableName, Schema schema);
+		protected abstract STable constructTableSpec(String tableName, Schema schema);
 		
 		/**
 		 * @return
 		 */
-		protected abstract List<String> getTableConstraints(Schema schema);
+		protected abstract List<String> getTableConstraints();
 		
 		@Override
 		public boolean allowOrientationSelfTraversal()
@@ -643,6 +554,142 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, Table>,
 		public void leave(RecordColumn<?> recordCol)
 		{
 			// do nothing	
+		}
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	protected class WhereClauseGenerator implements ConstraintVisitor
+	{
+		
+		STable table;
+		StringBuilder bldr;
+		String valuePlaceHolder;
+		List<String> arguments;
+		boolean quoteArgumentsIfNeeded;
+		
+		/**
+		 * Creates a WhereClauseGenerator that will produce a selection clause with literal values.
+		 * 
+		 * @param table
+		 * @param constraint
+		 * @param valuePlaceHolder placeholder for parameters, null if literal clause is being generated
+		 */
+		public WhereClauseGenerator(STable table, Constraint constraint)
+		{
+			this(table, constraint, null, true);
+		}
+		
+		/**
+		 * Creates a WhereClauseGenerator that will produce a selection clause with parameterised values (unless valuePlaceHolder is null)
+		 * 
+		 * @param table
+		 * @param constraint
+		 * @param valuePlaceHolder
+		 * @param quoteArgumentsIfNeeded
+		 */
+		public WhereClauseGenerator(STable table, Constraint constraint, String valuePlaceHolder, boolean quoteArgumentsIfNeeded)
+		{
+			if(constraint == null)
+				return;
+			this.table = table;
+			this.valuePlaceHolder = valuePlaceHolder;
+			this.quoteArgumentsIfNeeded = quoteArgumentsIfNeeded;
+			if(isParameterised())
+				this.arguments = new ArrayList<String>();
+			this.bldr = new StringBuilder();
+			constraint.accept(this);
+		}
+		
+		protected boolean isParameterised()
+		{
+			return valuePlaceHolder != null;
+		}
+		
+		private void visitAndOr(boolean and, List<Constraint> subConstraints)
+		{
+			if(subConstraints.isEmpty())
+				return;
+			bldr.append("(");
+			boolean first = true;
+			for(Constraint subConstraint : subConstraints)
+			{
+				if(first)
+					first = false;
+				else
+					bldr.append(" " + (and ? "AND" : "OR") + " ");
+				subConstraint.accept(this);
+			}
+			bldr.append(")");
+		}
+		@Override
+		public void visit(AndConstraint andConstr)
+		{
+			visitAndOr(true, andConstr.getSubConstraints());
+		}
+
+		@Override
+		public void visit(OrConstraint orConstr)
+		{
+			visitAndOr(false, orConstr.getSubConstraints());	
+		}
+
+		@Override
+		public void visit(NotConstraint notConstr)
+		{
+			bldr.append(" NOT ");
+			notConstr.getNegatedConstraint().accept(this);
+		}
+
+		@Override
+		public void visit(EqualityConstraint equalityQuery)
+		{
+			// TODO
+//			ColumnSpec<?> storedCol = schemaInfo.getStoredColumn(equalityQuery.getColumnPointer());
+//			bldr.append(storedCol.name);
+//			bldr.append(" " + getComparisonOperator(RuleConstraint.Comparison.EQUAL) + " ");
+//			bldr.append(storedCol.getStorableValueString(equalityQuery.getValue()));
+		}
+
+		@Override
+		public void visit(RuleConstraint ruleQuery)
+		{
+			SQLColumn<?, ?> sqlCol = table.getSQLColumn(ruleQuery.getColumnPointer());
+			String literalValue = sqlCol.sapObjectToLiteral(ruleQuery.getValue(), quoteArgumentsIfNeeded);
+			bldr.append(sqlCol.name);
+			bldr.append(" " + getComparisonOperator(ruleQuery.getComparison()) + " ");
+			if(isParameterised())
+			{
+				bldr.append(valuePlaceHolder);
+				arguments.add(literalValue);
+			}
+			else
+				bldr.append(literalValue);
+		}
+		
+		public String getClause(boolean includeWhere)
+		{
+			if(bldr != null && bldr.length() > 0)
+				return (includeWhere ? "WHERE " : "") + bldr.toString();
+			else
+				return "";
+		}
+		
+		public String getClauseOrNull(boolean includeWhere)
+		{
+			String clause = getClause(includeWhere);
+			return clause.isEmpty() ? null : clause;
+		}
+		
+		public String[] getArguments()
+		{
+			if(isParameterised())
+				return arguments.toArray(new String[arguments.size()]);
+			else
+				return null;
 		}
 		
 	}

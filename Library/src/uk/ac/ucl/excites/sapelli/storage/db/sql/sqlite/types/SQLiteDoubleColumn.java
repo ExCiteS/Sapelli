@@ -18,21 +18,44 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
-
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
  * @author mstevens
  *
+ * @param <SapType>
  */
-public class SQLiteDoubleColumn extends SQLiteColumn<Double>
+public class SQLiteDoubleColumn<SapType> extends SQLiteColumn<Double, SapType>
 {
 
-	public SQLiteDoubleColumn(String name, String constraint)
+	static public final String SQLITE_DATA_TYPE = "REAL";
+	
+	/**
+	 * @param constraint
+	 * @param sourceSchema
+	 * @param sourceColumn
+	 * @param mapping - may be null in case SQLType = SapType
+	 */
+	public SQLiteDoubleColumn(String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Double, SapType> mapping)
 	{
-		super(name, "REAL", constraint, false);
+		super(SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
+	}
+
+	/**
+	 * @param name
+	 * @param constraint
+	 * @param sourceColumnPointer
+	 * @param mapping - may be null in case SQLType = SapType
+	 */
+	public SQLiteDoubleColumn(String name, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<Double, SapType> mapping)
+	{
+		super(name, SQLITE_DATA_TYPE, constraint, sourceColumnPointer, mapping);
 	}
 	
 	/**

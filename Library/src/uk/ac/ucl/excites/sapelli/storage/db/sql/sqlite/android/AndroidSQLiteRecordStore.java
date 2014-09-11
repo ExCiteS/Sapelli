@@ -23,8 +23,8 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -168,14 +168,15 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected void queryForRecords(SQLiteTable table, RecordsQuery query, List<Record> result)
 	{
-		WhereClauseGenerator selector = new WhereClauseGenerator(table, query.getConstraints(), AndroidSQLiteStatement.PARAM_PLACEHOLDER);
-		SQLColumn<?> orderBy = table.getDatabaseColumn(query.getOrderBy());
+		WhereClauseGenerator selector = new WhereClauseGenerator(table, query.getConstraints(), AndroidSQLiteStatement.PARAM_PLACEHOLDER, false); // TODO must the literals be quoted?
+		SQLiteColumn<?, ?> orderBy = table.getSQLColumn(query.getOrderBy());
 		AndroidSQLiteCursor cursor = (AndroidSQLiteCursor) db.query(table.name, null, selector.getClauseOrNull(false), selector.getArguments(), null, (orderBy != null ? orderBy.name : null), query.isLimited() ? "LIMIT " + query.getLimit() : null);
-		while (cursor.moveToNext())
+		while(cursor.moveToNext())
 		{
 			Record record = table.schema.createRecord();
-			// TODO set values:
-			
+			int i = 0;
+			for(SQLiteColumn<?, ?> sqliteCol : table.sqlColumns.values())
+				sqliteCol.storeFrom(record, cursor, i++);
 			result.add(record);
 		}
 		cursor.close();

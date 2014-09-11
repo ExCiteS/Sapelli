@@ -18,23 +18,46 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
-
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
  * @author mstevens
  *
+ * @param <SapType>
  */
-public class SQLiteBlobColumn extends SQLiteColumn<byte[]>
+public class SQLiteBlobColumn<SapType> extends SQLiteColumn<byte[], SapType>
 {
 
-	public SQLiteBlobColumn(String name, String constraint)
-	{
-		super(name, "BLOB", constraint, false);
-	}
+	static public final String SQLITE_DATA_TYPE = "BLOB";
 	
+	/**
+	 * @param constraint
+	 * @param sourceSchema
+	 * @param sourceColumn
+	 * @param mapping - may be null in case SQLType = SapType
+	 */
+	public SQLiteBlobColumn(String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<byte[], SapType> mapping)
+	{
+		super(SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
+	}
+
+	/**
+	 * @param name
+	 * @param constraint
+	 * @param sourceColumnPointer
+	 * @param mapping - may be null in case SQLType = SapType
+	 */
+	public SQLiteBlobColumn(String name, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<byte[], SapType> mapping)
+	{
+		super(name, SQLITE_DATA_TYPE, constraint, sourceColumnPointer, mapping);
+	}
+
 	/**
 	 * @param statement
 	 * @param paramIdx
