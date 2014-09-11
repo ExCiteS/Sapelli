@@ -140,19 +140,24 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return false;
 
-		// Apply an alpha animation to the long pressed view
-		ViewAnimator.alphaAnimation(childView);
-
 		// TODO check whether there is an audio file for the given ChoiceField and use that instead of the TTS
 		// Use the Android TTS (Text-To-Speech) Engine
 		if(true)
 		{
 			// If the choice has an audio, pass that audio to the Media Player
 			if(child.hasChoiceAudio())
+			{
 				controller.audioToVoice(controller.getProject().getSoundFolderPath() + child.getChoiceAudioRelativePath());
+				// Apply an alpha animation to the long pressed view
+				ViewAnimator.alphaAnimation(childView);
+			}
 		}
 		else
+		{
 			controller.textToVoice(child.getAltText());
+			// Apply an alpha animation to the long pressed view
+			ViewAnimator.alphaAnimation(childView);
+		}
 
 		return true;
 	}
