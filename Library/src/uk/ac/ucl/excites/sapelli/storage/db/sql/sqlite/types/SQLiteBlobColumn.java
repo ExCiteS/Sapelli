@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -64,7 +64,7 @@ public class SQLiteBlobColumn<SapType> extends SQLiteColumn<byte[], SapType>
 	 * @param value non-null
 	 */
 	@Override
-	protected void bind(SQLiteStatement statement, int paramIdx, byte[] value)
+	protected void bindNonNull(ISQLiteStatement statement, int paramIdx, byte[] value)
 	{
 		statement.bindBlob(paramIdx, value);
 	}

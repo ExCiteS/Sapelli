@@ -26,7 +26,7 @@ import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import android.annotation.TargetApi;
@@ -202,7 +202,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 
 	@Override
-	protected SQLiteStatement createStatement(String sql)
+	protected ISQLiteStatement createStatement(String sql)
 	{
 		return new AndroidSQLiteStatement(db, sql);
 	}

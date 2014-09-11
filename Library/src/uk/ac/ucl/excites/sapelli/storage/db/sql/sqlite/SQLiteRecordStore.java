@@ -136,12 +136,12 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @param sql
 	 * @return
 	 */
-	protected abstract SQLiteStatement createStatement(String sql);
+	protected abstract ISQLiteStatement createStatement(String sql);
 	
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteColumn<?, ?>>.SQLTable
 	{
 
-		private SQLiteStatement insertStatement;
+		private ISQLiteStatement insertStatement;
 
 		public SQLiteTable(String tableName, Schema schema)
 		{
@@ -162,8 +162,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			}
 			else
 				insertStatement.clearAllBindings();
-			
-			// TODO Bind params:
+
+			// Bind parameters:
+			int i = 0;
+			for(SQLiteColumn<?, ?> sqliteCol : sqlColumns.values())
+				sqliteCol.retrieveAndBind(insertStatement, i++, record);
 			
 			// Execute:
 			insertStatement.execute();

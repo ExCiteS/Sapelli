@@ -26,6 +26,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
  * @author mstevens
  *
  * @param <SQLType>
+ * @param <SapType>
  */
 public abstract class SQLColumn<SQLType, SapType>
 {
@@ -103,16 +104,6 @@ public abstract class SQLColumn<SQLType, SapType>
 		sourceColumnPointer.getColumn().storeObject(record, mapping.toSapelliType(value));
 	}
 	
-	/**
-	 * To be overridden when quotes are needed (e.g. on Strings)
-	 * 
-	 * @return
-	 */
-	protected boolean needsQuotedLiterals()
-	{
-		return false;
-	}
-	
 	protected String sqlToLiteral(SQLType value, boolean quotedIfNeeded)
 	{
 		if(value != null)
@@ -121,6 +112,16 @@ public abstract class SQLColumn<SQLType, SapType>
 						value.toString());
 		else
 			return getNullString();
+	}
+	
+	/**
+	 * To be overridden when quotes are needed (e.g. on Strings)
+	 * 
+	 * @return
+	 */
+	protected boolean needsQuotedLiterals()
+	{
+		return false;
 	}
 	
 	protected abstract String getNullString();

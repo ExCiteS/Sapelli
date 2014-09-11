@@ -58,12 +58,30 @@ public abstract class SQLiteColumn<SQLType, SapType> extends SQLColumn<SQLType, 
 		super(name, type, constraint, sourceColumnPointer, mapping);
 	}
 	
-	protected abstract void bind(SQLiteStatement statement, int paramIdx, SQLType value);
-	
-	protected void bindNull(SQLiteStatement statement, int paramIdx)
+	/**
+	 * @param statement
+	 * @param paramIdx
+	 * @param record
+	 */
+	public void retrieveAndBind(ISQLiteStatement statement, int paramIdx, Record record)
 	{
-		statement.bindNull(paramIdx);
+		bind(statement, paramIdx, retrieve(record));
 	}
+	
+	/**
+	 * @param paramIdx
+	 * @param column
+	 * @param value
+	 */
+	public void bind(ISQLiteStatement statement, int paramIdx, SQLType value)
+	{
+		if(value != null)
+			bindNonNull(statement, paramIdx, value);
+		else
+			statement.bindNull(paramIdx);
+	}
+	
+	protected abstract void bindNonNull(ISQLiteStatement statement, int paramIdx, SQLType value);
 
 	@Override
 	protected String getNullString()

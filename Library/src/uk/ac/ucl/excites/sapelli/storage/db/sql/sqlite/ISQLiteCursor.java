@@ -1,5 +1,9 @@
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
+/**
+ * @author mstevens
+ *
+ */
 public interface ISQLiteCursor
 {
 
@@ -12,7 +16,5 @@ public interface ISQLiteCursor
 	public String getString(int columnIdx);
 	
 	public boolean isNull(int columnIdx);
-	
-	
 
 }

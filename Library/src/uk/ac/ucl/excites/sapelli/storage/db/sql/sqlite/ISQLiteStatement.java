@@ -20,34 +20,25 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 
-public abstract class SQLiteStatement
+/**
+ * @author mstevens
+ *
+ */
+public interface ISQLiteStatement
 {
 	
-	/**
-	 * @param paramIdx
-	 * @param column
-	 * @param value
-	 */
-	public <SQLT> void bind(int paramIdx, SQLiteColumn<SQLT, ?> column, SQLT value)
-	{
-		if(value != null)
-			column.bind(this, paramIdx, value);
-		else
-			column.bindNull(this, paramIdx);
-	}
+	public void bindBlob(int paramIdx, byte[] value);
 	
-	public abstract void bindBlob(int paramIdx, byte[] value);
+	public void bindLong(int paramIdx, Long value);
 	
-	public abstract void bindLong(int paramIdx, Long value);
+	public void bindDouble(int paramIdx, Double value);
 	
-	public abstract void bindDouble(int paramIdx, Double value);
+	public void bindString(int paramIdx, String value);
 	
-	public abstract void bindString(int paramIdx, String value);
+	public void bindNull(int paramIdx);
 	
-	public abstract void bindNull(int paramIdx);
+	public boolean execute() throws DBException;
 	
-	public abstract void execute() throws DBException;
-	
-	public abstract void clearAllBindings();
+	public void clearAllBindings();
 
 }

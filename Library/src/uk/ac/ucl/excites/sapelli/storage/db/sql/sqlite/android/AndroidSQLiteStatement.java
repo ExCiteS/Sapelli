@@ -19,9 +19,12 @@
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
+import android.annotation.TargetApi;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteStatement;
+import android.os.Build;
 
 /**
  * @author mstevens
@@ -29,12 +32,21 @@ import android.database.sqlite.SQLiteDatabase;
  * @see android.database.sqlite.SQLiteDatabase
  * @see android.database.sqlite.SQLiteProgram
  */
-public class AndroidSQLiteStatement extends SQLiteStatement
+public class AndroidSQLiteStatement implements ISQLiteStatement
 {
 
 	static public final String PARAM_PLACEHOLDER = "?";
 	
-	private final android.database.sqlite.SQLiteStatement androidSQLiteSt;
+	public enum Kind
+	{
+		INSERT,
+		UPDATE,
+		DELETE,
+		// others later?
+	}
+	
+	private final SQLiteStatement androidSQLiteSt;
+	private Kind kind; 
 	
 	/**
 	 * @param sql
@@ -43,6 +55,14 @@ public class AndroidSQLiteStatement extends SQLiteStatement
 	public AndroidSQLiteStatement(SQLiteDatabase db, String sql) throws SQLException
 	{
 		androidSQLiteSt = db.compileStatement(sql);
+		for(Kind k : Kind.values())
+			if(k.name().equalsIgnoreCase(sql.substring(0, k.name().length())))
+			{
+				this.kind = k;
+				break;
+			}
+		if(kind == null)
+			throw new IllegalArgumentException("Unsupported kind of SQL statement: " + sql);
 	}
 
 	@Override
@@ -81,11 +101,38 @@ public class AndroidSQLiteStatement extends SQLiteStatement
 		androidSQLiteSt.clearBindings();
 	}
 
+	
 	@Override
-	public void execute() throws DBException
+	public boolean execute() throws DBException
 	{
-		androidSQLiteSt.executeInsert();
-		// TODO androidSQLiteSt.executeUpdateDelete();
+		try
+		{
+			switch(kind)
+			{
+				case INSERT :
+					return androidSQLiteSt.executeInsert() != -1;
+				case UPDATE : 
+				case DELETE :
+					if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) /* API level 11 */
+					{
+						executeUpdateDeleteNew();
+						return true;
+					}
+				default :
+					androidSQLiteSt.execute();
+					return true;
+			}
+		}
+		catch(SQLException sqlE)
+		{
+			throw new DBException("Failed to execute " + kind.name() + " statement", sqlE);
+		}
+	}
+	
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	private void executeUpdateDeleteNew()
+	{
+		androidSQLiteSt.executeUpdateDelete();
 	}
 	
 }
