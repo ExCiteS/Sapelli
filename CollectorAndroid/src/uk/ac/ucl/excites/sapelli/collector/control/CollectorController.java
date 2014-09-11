@@ -127,6 +127,7 @@ public class CollectorController extends Controller implements LocationListener,
 	public void textToVoice(String text)
 	{
 		textToVoice.speak(text);
+		addLogLine("TEXT_TO_VOICE", text);
 	}
 
 	/**
@@ -137,6 +138,7 @@ public class CollectorController extends Controller implements LocationListener,
 	public void audioToVoice(String soundFilePath)
 	{
 		audioToVoice.speak(soundFilePath);
+		addLogLine("AUDIO_TO_VOICE", soundFilePath);
 	}
 
 	public void stopAudioFeedback()
