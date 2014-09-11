@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
@@ -140,21 +141,33 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return false;
 
-		// TODO check whether there is an audio file for the given ChoiceField and use that instead of the TTS
-		// Use the Android TTS (Text-To-Speech) Engine
-		if(true)
+		// Check whether AudioFeedback is supported for the current form
+		AudioFeedback audioFeedback = controller.getCurrentForm().getAudioFeedback();
+
+		if(audioFeedback != null)
 		{
-			// If the choice has an audio, pass that audio to the Media Player
-			if(child.hasChoiceAudio())
+			switch(audioFeedback)
 			{
-				controller.audioToVoice(controller.getProject().getSoundFolderPath() + child.getChoiceAudioRelativePath());
-				// Apply an alpha animation to the long pressed view
-				ViewAnimator.alphaAnimation(childView);
+			case LONG_CLICK_AUDIO_FILES:
+			case SEQUENTIAL_AUDIO_FILES:
+
+				// If the choice has an audio, pass that audio to the Media Player
+				if(child.hasChoiceAudio())
+					controller.audioToVoice(controller.getProject().getSoundFolderPath() + child.getChoiceAudioRelativePath());
+				break;
+
+			case LONG_CLICK_TTS:
+			case SEQUENTIAL_TTS:
+
+				// Enable TTS Audio Feedback
+				controller.textToVoice(child.getAltText());
+				break;
+
+			case NONE:
+				controller.addLogLine("LONG_CLICK", "LongClick on " + child.getAltText() + " but AudioFeedback is disabled");
+				return false;
 			}
-		}
-		else
-		{
-			controller.textToVoice(child.getAltText());
+
 			// Apply an alpha animation to the long pressed view
 			ViewAnimator.alphaAnimation(childView);
 		}
