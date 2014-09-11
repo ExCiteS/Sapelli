@@ -91,11 +91,29 @@ public class ColumnPointer implements Comparator<Record>
 		}
 	}
 	
+	/**
+	 * Copy constructor
+	 * 
+	 * @param columnStack
+	 */
+	private ColumnPointer(Stack<Column<?>> columnStack)
+	{
+		this.columnStack = columnStack;
+	}
+	
+	/**
+	 * @param topLevelSchema
+	 * @param column
+	 */
 	public ColumnPointer(Schema topLevelSchema, Column<?> column)
 	{
 		columnStack = constructPathTo(topLevelSchema, column);
 	}
 	
+	/**
+	 * @param topLevelSchema
+	 * @param columnName
+	 */
 	public ColumnPointer(Schema topLevelSchema, String columnName)
 	{	
 		// Null & empty check:
@@ -229,6 +247,22 @@ public class ColumnPointer implements Comparator<Record>
 	}
 	
 	/**
+	 * @return whether or not the ColumnPointer points to a top-level (root) column, i.e. one that is directly contained in a/the schema
+	 */
+	public boolean isTopLevelColumn()
+	{
+		return columnStack.size() == 1; 
+	}
+	
+	/**
+	 * @return whether or not the ColumnPointer points to a column which is a child of a composite column
+	 */
+	public boolean isSubColumn()
+	{
+		return columnStack.size() > 1;
+	}
+	
+	/**
 	 * @return the column this ColumnPointer points to
 	 */
 	public Column<?> getColumn()
@@ -236,6 +270,22 @@ public class ColumnPointer implements Comparator<Record>
 		if(columnStack.isEmpty())
 			return null;
 		return columnStack.peek();
+	}
+	
+	/**
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public ColumnPointer getParentPointer()
+	{
+		if(isSubColumn())
+		{
+			Stack<Column<?>> parentStack = (Stack<Column<?>>) columnStack.clone();
+			parentStack.pop();
+			return new ColumnPointer(parentStack);
+		}
+		else
+			return null;
 	}
 	
 	/**

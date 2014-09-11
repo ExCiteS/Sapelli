@@ -25,12 +25,13 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteStatement;
 import android.os.Build;
+import android.util.Log;
 
 /**
  * @author mstevens
  *
  * @see android.database.sqlite.SQLiteDatabase
- * @see android.database.sqlite.SQLiteProgram
+ * @see android.database.sqlite.SQLiteStatement
  */
 public class AndroidSQLiteStatement implements ISQLiteStatement
 {
@@ -55,6 +56,7 @@ public class AndroidSQLiteStatement implements ISQLiteStatement
 	public AndroidSQLiteStatement(SQLiteDatabase db, String sql) throws SQLException
 	{
 		androidSQLiteSt = db.compileStatement(sql);
+		Log.d("SQLite_Compile", sql); // TODO remove debug logging
 		for(Kind k : Kind.values())
 			if(k.name().equalsIgnoreCase(sql.substring(0, k.name().length())))
 			{

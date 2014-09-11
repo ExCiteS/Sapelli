@@ -70,6 +70,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			@Override
 			public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery, String editTable, SQLiteQuery query)
 			{
+				Log.d("SQLite_Exec", query.toString()); // TODO remove debug logging
 				return AndroidSQLiteCursor.newCursor(db, masterQuery, editTable, query);
 			}
 		};
@@ -92,7 +93,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			}
 		}.getWritableDatabase();
 		
-		System.out.println("Got db?: " + (db != null ? "yes" : "no"));
+		System.out.println("Got db?: " + (db != null ? "yes" : "no")); // TODO remove debug logging
 		
 		initialise(newDBFile);
 	}
@@ -168,18 +169,25 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected void queryForRecords(SQLiteTable table, RecordsQuery query, List<Record> result)
 	{
-		WhereClauseGenerator selector = new WhereClauseGenerator(table, query.getConstraints(), AndroidSQLiteStatement.PARAM_PLACEHOLDER, false); // TODO must the literals be quoted?
-		SQLiteColumn<?, ?> orderBy = table.getSQLColumn(query.getOrderBy());
-		AndroidSQLiteCursor cursor = (AndroidSQLiteCursor) db.query(table.name, null, selector.getClauseOrNull(false), selector.getArguments(), null, (orderBy != null ? orderBy.name : null), query.isLimited() ? "LIMIT " + query.getLimit() : null);
-		while(cursor.moveToNext())
+		try
 		{
-			Record record = table.schema.createRecord();
-			int i = 0;
-			for(SQLiteColumn<?, ?> sqliteCol : table.sqlColumns.values())
-				sqliteCol.storeFrom(record, cursor, i++);
-			result.add(record);
+			WhereClauseGenerator selector = new WhereClauseGenerator(table, query.getConstraints(), AndroidSQLiteStatement.PARAM_PLACEHOLDER, false); // TODO must the literals be quoted?
+			SQLiteColumn<?, ?> orderBy = table.getSQLColumn(query.getOrderBy());
+			AndroidSQLiteCursor cursor = (AndroidSQLiteCursor) db.query(table.name, null, selector.getClauseOrNull(false), selector.getArguments(), null, (orderBy != null ? orderBy.name : null), query.isLimited() ? "LIMIT " + query.getLimit() : null);
+			while(cursor.moveToNext())
+			{
+				Record record = table.schema.createRecord();
+				int i = 0;
+				for(SQLiteColumn<?, ?> sqliteCol : table.sqlColumns.values())
+					sqliteCol.storeFrom(record, cursor, i++);
+				result.add(record);
+			}
+			cursor.close();
 		}
-		cursor.close();
+		catch(Exception e)
+		{
+			Log.e("SQLite_Error", "Failed to query for records", e);
+		}
 	}
 	
 	@Override
@@ -202,7 +210,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 
 	@Override
-	protected ISQLiteStatement createStatement(String sql)
+	protected ISQLiteStatement newSQLiteStatement(String sql)
 	{
 		return new AndroidSQLiteStatement(db, sql);
 	}

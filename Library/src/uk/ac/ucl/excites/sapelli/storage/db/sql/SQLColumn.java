@@ -70,7 +70,7 @@ public abstract class SQLColumn<SQLType, SapType>
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	public String sapObjectToLiteral(Object value, boolean quotedIfNeeded)
+	public String sapelliObjectToLiteral(Object value, boolean quotedIfNeeded)
 	{
 		return sqlToLiteral(mapping.toSQLType((SapType) value), quotedIfNeeded);
 	}

@@ -210,6 +210,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 	 * @param schema
 	 * @param query
 	 * @param result
+	 * @throws DBException 
 	 */
 	protected abstract void queryForRecords(STable table, RecordsQuery query, List<Record> result);
 
@@ -256,7 +257,18 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 
 		public final String name;
 		public final Schema schema;
+		
+		/**
+		 * Mapping of Sapelli ColumnPointers (usually leaf columns) to corresponding  SQLColumns.
+		 */
 		public final Map<ColumnPointer, SColumn> sqlColumns;
+		
+		/**
+		 * Mapping of composite Sapelli columns to a list of SQLColumns which they correspond to.
+		 * E.g. Location --> (Lat, Lon, ...) 
+		 */
+		public final Map<RecordColumn<?>, List<SColumn>> composite2SqlColumns;
+		
 		List<String> tableConstraints = Collections.<String> emptyList();
 		
 		public SQLTable(String tableName, Schema schema)
@@ -265,16 +277,45 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 			this.schema = schema;
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>();
+			composite2SqlColumns = new HashMap<RecordColumn<?>, List<SColumn>>();
 		}
 		
 		public void addColumn(SColumn sqlColumn)
 		{
-			sqlColumns.put(sqlColumn.sourceColumnPointer, sqlColumn);
+			ColumnPointer sourceCP = sqlColumn.sourceColumnPointer;
+			sqlColumns.put(sourceCP, sqlColumn);
+			// Deal with composites...
+			while(sourceCP.isSubColumn())
+			{
+				ColumnPointer parentCP = sourceCP.getParentPointer();
+				RecordColumn<?> parentCol = (RecordColumn<?>) parentCP.getColumn();
+				List<SColumn> subSQLCols;
+				if(composite2SqlColumns.containsKey(parentCol))
+					subSQLCols = composite2SqlColumns.get(parentCol);
+				else
+				{
+					subSQLCols = new ArrayList<SColumn>();
+					composite2SqlColumns.put(parentCol, subSQLCols);
+				}
+				subSQLCols.add(sqlColumn);
+				// Next parent...
+				sourceCP = parentCP;
+			}
 		}
 		
 		public void setTableConstraint(List<String> tableConstraints)
 		{
 			this.tableConstraints = new ArrayList<String>(tableConstraints);
+		}
+		
+		public SColumn getSQLColumn(ColumnPointer columnPointer)
+		{
+			return sqlColumns.get(columnPointer);
+		}
+		
+		public List<SColumn> getSQLColumns(RecordColumn<?> compositeColumn)
+		{
+			return composite2SqlColumns.get(compositeColumn);
 		}
 		
 		/**
@@ -379,16 +420,6 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 		public void delete(Record record) throws DBException
 		{
 			// TODO
-		}
-		
-		public SColumn getSQLColumn(ColumnPointer columnPointer)
-		{
-			return sqlColumns.get(columnPointer);
-		}
-		
-		public Schema getSchema()
-		{
-			return schema;
 		}
 		
 		public String toString()
@@ -570,6 +601,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 		String valuePlaceHolder;
 		List<String> arguments;
 		boolean quoteArgumentsIfNeeded;
+		private DBException exception = null;
 		
 		/**
 		 * Creates a WhereClauseGenerator that will produce a selection clause with literal values.
@@ -645,22 +677,53 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 		}
 
 		@Override
-		public void visit(EqualityConstraint equalityQuery)
+		public void visit(EqualityConstraint equalityConstr)
 		{
-			// TODO
-//			ColumnSpec<?> storedCol = schemaInfo.getStoredColumn(equalityQuery.getColumnPointer());
-//			bldr.append(storedCol.name);
-//			bldr.append(" " + getComparisonOperator(RuleConstraint.Comparison.EQUAL) + " ");
-//			bldr.append(storedCol.getStorableValueString(equalityQuery.getValue()));
+			ColumnPointer cp = equalityConstr.getColumnPointer();
+			SColumn sqlCol = table.getSQLColumn(cp);
+			if(sqlCol != null)
+			{	// Equality constraint on leaf column...
+				String literalValue = sqlCol.sapelliObjectToLiteral(equalityConstr.getValue(), quoteArgumentsIfNeeded);
+				bldr.append(sqlCol.name);
+				bldr.append(" " + getComparisonOperator(RuleConstraint.Comparison.EQUAL) + " ");
+				if(isParameterised())
+				{
+					bldr.append(valuePlaceHolder);
+					arguments.add(literalValue);
+				}
+				else
+					bldr.append(literalValue);
+				return; // !!!
+			}
+			else if(cp.getColumn() instanceof RecordColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof Record)
+			{	// Equality constraint on composite column...
+				List<SColumn> subSqlCols = table.getSQLColumns((RecordColumn<?>) cp.getColumn());
+				if(subSqlCols != null)
+				{
+					Record valueRecord = (Record) equalityConstr.getValue();
+					AndConstraint andConstr = new AndConstraint();
+					for(SColumn subSqlCol : subSqlCols)
+						andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, subSqlCol.sourceColumnPointer.retrieveValue(valueRecord)));
+					visit(andConstr);
+					return; // !!!
+				}
+			}
+			// else...
+			exception = new DBException("Failed to generate SQL for equalityConstraint on column " + equalityConstr.getColumnPointer().getQualifiedColumnName(table.schema));
 		}
 
 		@Override
-		public void visit(RuleConstraint ruleQuery)
+		public void visit(RuleConstraint ruleConstr)
 		{
-			SQLColumn<?, ?> sqlCol = table.getSQLColumn(ruleQuery.getColumnPointer());
-			String literalValue = sqlCol.sapObjectToLiteral(ruleQuery.getValue(), quoteArgumentsIfNeeded);
+			SColumn sqlCol = table.getSQLColumn(ruleConstr.getColumnPointer());
+			if(sqlCol == null)
+			{
+				new DBException("Failed to generate SQL for ruleConstraint on column " + ruleConstr.getColumnPointer().getQualifiedColumnName(table.schema));
+				return;
+			}
+			String literalValue = sqlCol.sapelliObjectToLiteral(ruleConstr.getValue(), quoteArgumentsIfNeeded);
 			bldr.append(sqlCol.name);
-			bldr.append(" " + getComparisonOperator(ruleQuery.getComparison()) + " ");
+			bldr.append(" " + getComparisonOperator(ruleConstr.getComparison()) + " ");
 			if(isParameterised())
 			{
 				bldr.append(valuePlaceHolder);
@@ -670,15 +733,17 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 				bldr.append(literalValue);
 		}
 		
-		public String getClause(boolean includeWhere)
+		public String getClause(boolean includeWhere) throws DBException
 		{
+			if(exception != null)
+				throw exception;
 			if(bldr != null && bldr.length() > 0)
 				return (includeWhere ? "WHERE " : "") + bldr.toString();
 			else
 				return "";
 		}
 		
-		public String getClauseOrNull(boolean includeWhere)
+		public String getClauseOrNull(boolean includeWhere) throws DBException
 		{
 			String clause = getClause(includeWhere);
 			return clause.isEmpty() ? null : clause;

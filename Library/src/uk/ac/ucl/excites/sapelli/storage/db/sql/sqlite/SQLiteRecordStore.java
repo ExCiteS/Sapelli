@@ -136,7 +136,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @param sql
 	 * @return
 	 */
-	protected abstract ISQLiteStatement createStatement(String sql);
+	protected abstract ISQLiteStatement newSQLiteStatement(String sql);
 	
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteColumn<?, ?>>.SQLTable
 	{
