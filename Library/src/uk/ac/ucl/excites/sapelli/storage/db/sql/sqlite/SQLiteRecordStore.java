@@ -18,12 +18,14 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBlobColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteDoubleColumn;
@@ -46,12 +48,13 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
  * @author mstevens
  *
  */
-public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteColumn<?, ?>>
+public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>
 {
 	
 	// Dynamics---------------------------------------------
@@ -138,14 +141,23 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 */
 	protected abstract ISQLiteStatement newSQLiteStatement(String sql);
 	
-	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteColumn<?, ?>>.SQLTable
+	/**
+	 * @return String used to mark unbound parameters in parameterised statements/queries
+	 */
+	protected abstract String getParameterPlaceHolder();
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
 		private ISQLiteStatement insertStatement;
 
-		public SQLiteTable(String tableName, Schema schema)
+		public SQLiteTable(Schema schema)
 		{
-			super(tableName, schema);
+			super(schema);
 		}
 
 		/* (non-Javadoc)
@@ -155,13 +167,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public void insert(Record record) throws DBException
 		{
 			if(insertStatement == null)
-			{
-//				List<String> params = new ArrayList<String>();
-//				Collections.fill(params, SQLiteRecordStore.this.getParamPlaceholder());
-				//insertStatement = SQLiteRecordStore.this.createStatement(generateInsertStatement());
-			}
+				insertStatement = newSQLiteStatement(generateInsertStatement(getParameterPlaceHolder()));
 			else
-				insertStatement.clearAllBindings();
+				insertStatement.clearAllBindings(); // clear bindings for reuse
 
 			// Bind parameters:
 			int i = 0;
@@ -174,7 +182,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		
 		public void upsert(Record record) throws DBException
 		{
-			// TODO
+			// TODO first read http://stackoverflow.com/questions/3634984/insert-if-not-exists-else-update 
+			// and http://stackoverflow.com/questions/418898/sqlite-upsert-not-insert-or-replace
 		}
 
 		/* (non-Javadoc)
@@ -202,19 +211,130 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	/**
 	 * @author mstevens
 	 *
+	 * @param <SQLType>
+	 * @param <SapType>
+	 */
+	public abstract class SQLiteColumn<SQLType, SapType> extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<SQLType, SapType>>.SQLColumn<SQLType, SapType>
+	{
+
+		/**
+		 * @param type
+		 * @param constraint
+		 * @param sourceSchema
+		 * @param sourceColumn
+		 * @param mapping - may be null in case SQLType = SapType
+		 */
+		public SQLiteColumn(String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
+		{
+			super(type, constraint, sourceSchema, sourceColumn, mapping);
+		}
+		
+		/**
+		 * @param name
+		 * @param type
+		 * @param constraint
+		 * @param sourceColumnPointer
+		 * @param mapping - may be null in case SQLType = SapType
+		 */
+		public SQLiteColumn(String name, String type, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
+		{
+			super(name, type, constraint, sourceColumnPointer, mapping);
+		}
+
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLColumn#sanitiseName(java.lang.String)
+		 */
+		@Override
+		protected String sanitiseIdentifier(String name)
+		{
+			// RegEx: [a-zA-Z_]+[0-9a-zA-Z_]*
+			
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		/**
+		 * @param statement
+		 * @param paramIdx
+		 * @param record
+		 */
+		public void retrieveAndBind(ISQLiteStatement statement, int paramIdx, Record record)
+		{
+			bind(statement, paramIdx, retrieve(record));
+		}
+		
+		/**
+		 * @param paramIdx
+		 * @param column
+		 * @param value
+		 */
+		public void bind(ISQLiteStatement statement, int paramIdx, SQLType value)
+		{
+			if(value != null)
+				bindNonNull(statement, paramIdx, value);
+			else
+				statement.bindNull(paramIdx);
+		}
+		
+		protected abstract void bindNonNull(ISQLiteStatement statement, int paramIdx, SQLType value);
+
+		@Override
+		protected String getNullString()
+		{
+			return "null";
+		}
+
+		@Override
+		protected String getQuoteChar()
+		{
+			return "'";
+		}
+
+		@Override
+		protected String getQuoteEscape()
+		{
+			return "''";
+		}
+		
+		/**
+		 * @param record
+		 * @param cursor
+		 * @param columnIdx
+		 */
+		public void storeFrom(Record record, ISQLiteCursor cursor, int columnIdx)
+		{
+			store(record, readFrom(cursor, columnIdx));
+		}
+		
+		public SQLType readFrom(ISQLiteCursor cursor, int columnIdx)
+		{
+			if(cursor.isNull(columnIdx))
+				return null;
+			return getFrom(cursor, columnIdx);
+		}
+		
+		protected abstract SQLType getFrom(ISQLiteCursor cursor, int columnIdx);
+
+	}
+	
+	/**
+	 * @author mstevens
+	 *
 	 */
 	protected class SQLiteTableFactory extends BasicTableFactory
 	{
 		
+		private List<Index> singleColumnIndexes = new ArrayList<Index>();
+		
 		@Override
-		protected SQLiteTable constructTableSpec(String tableName, Schema schema)
+		protected SQLiteTable newTableSpec(Schema schema)
 		{
-			return new SQLiteTable(tableName, schema);
+			return new SQLiteTable(schema);
 		}
 		
 		private <SapT> String getColumnConstraint(Column<SapT> sourceColum)
 		{
-			StringBuilder bldr = new StringBuilder();
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
 			
 			// Primary key:
 			PrimaryKey pk = schema.getPrimaryKey();
@@ -224,20 +344,22 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				// ASC/DESC?
 				// conflict-clause?
 				if(pk instanceof AutoIncrementingPrimaryKey)
-					bldr.append(" AUTOINCREMENT");
+					bldr.append("AUTOINCREMENT");
 			}
 			
 			// Regular single-column, unique index (unnamed):
 			Index idx = schema.getIndex(sourceColum);
 			if(idx != null && !idx.isMultiColumn() && idx.isUnique())
 			{
-				bldr.append((bldr.length() > 0 ? " " : "") + "UNIQUE");
+				bldr.append("UNIQUE");
 				// conflict-clause?
+				// Remember that this index has been handled:
+				singleColumnIndexes.add(idx);
 			}
 				
 			// Optionality:
-			if(sourceColum.isOptional())
-				bldr.append((bldr.length() > 0 ? " " : "") + "NOT NULL");
+			if(!sourceColum.isOptional())
+				bldr.append("NOT NULL");
 			
 			// TODO Default value?
 			
@@ -252,9 +374,16 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		
 		protected List<String> getTableConstraints()
 		{
-			
 			// TODO indexes, etc.
-			return Collections.<String> emptyList();
+			
+			List<String> tConstraints = new ArrayList<String>();
+			for(Index idx : schema.getIndexes())
+				if(!singleColumnIndexes.contains(idx))
+				{
+					// TODO
+				}
+			
+			return tConstraints;
 		}
 		
 		/* (non-Javadoc)
@@ -263,53 +392,53 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 */
 		@Override
 		public void visit(BooleanColumn boolCol)
-		{	
-			table.addColumn(new SQLiteBooleanColumn(getColumnConstraint(boolCol), schema, boolCol));
+		{
+			//table.addColumn(new SQLiteBooleanColumn(getColumnConstraint(boolCol), schema, boolCol));
 		}
 		
 		@Override
 		public void visit(final TimeStampColumn timeStampCol)
 		{
-			table.addColumn(new SQLiteStringColumn<TimeStamp>(getColumnConstraint(timeStampCol), schema, timeStampCol, new TypeMapping<String, TimeStamp>()
-			{
-
-				@Override
-				public String toSQLType(TimeStamp value)
-				{
-					return timeStampCol.toString(value);
-				}
-
-				@Override
-				public TimeStamp toSapelliType(String value)
-				{
-					return timeStampCol.parse(value);
-				}
-				
-			}));
+//			table.addColumn(new SQLiteStringColumn<TimeStamp>(getColumnConstraint(timeStampCol), schema, timeStampCol, new TypeMapping<String, TimeStamp>()
+//			{
+//
+//				@Override
+//				public String toSQLType(TimeStamp value)
+//				{
+//					return timeStampCol.toString(value);
+//				}
+//
+//				@Override
+//				public TimeStamp toSapelliType(String value)
+//				{
+//					return timeStampCol.parse(value);
+//				}
+//				
+//			}));
 		}
 		
 		@Override
 		public void visit(ByteArrayColumn byteArrayCol)
 		{
-			table.addColumn(new SQLiteBlobColumn<byte[]>(getColumnConstraint(byteArrayCol), schema, byteArrayCol, null));
+			//table.addColumn(new SQLiteBlobColumn<byte[]>(getColumnConstraint(byteArrayCol), schema, byteArrayCol, null));
 		}
 		
 		@Override
 		public void visit(StringColumn stringCol)
 		{
-			table.addColumn(new SQLiteStringColumn<String>(getColumnConstraint(stringCol), schema, stringCol, null));
+			//table.addColumn(new SQLiteStringColumn<String>(getColumnConstraint(stringCol), schema, stringCol, null));
 		}
 		
 		@Override
 		public void visit(IntegerColumn intCol)
 		{
-			table.addColumn(new SQLiteIntegerColumn<Long>(getColumnConstraint(intCol), schema, intCol, null));
+			//table.addColumn(new SQLiteIntegerColumn<Long>(getColumnConstraint(intCol), schema, intCol, null));
 		}
 		
 		@Override
 		public void visit(FloatColumn floatCol)
 		{
-			table.addColumn(new SQLiteDoubleColumn<Double>(getColumnConstraint(floatCol), schema, floatCol, null));
+			//table.addColumn(new SQLiteDoubleColumn<Double>(getColumnConstraint(floatCol), schema, floatCol, null));
 		}
 		
 		@Override

@@ -36,8 +36,6 @@ import android.util.Log;
 public class AndroidSQLiteStatement implements ISQLiteStatement
 {
 
-	static public final String PARAM_PLACEHOLDER = "?";
-	
 	public enum Kind
 	{
 		INSERT,
@@ -56,7 +54,7 @@ public class AndroidSQLiteStatement implements ISQLiteStatement
 	public AndroidSQLiteStatement(SQLiteDatabase db, String sql) throws SQLException
 	{
 		androidSQLiteSt = db.compileStatement(sql);
-		Log.d("SQLite_Compile", sql); // TODO remove debug logging
+		Log.d("SQLite", "Compile statement: " + sql); // TODO remove debug logging
 		for(Kind k : Kind.values())
 			if(k.name().equalsIgnoreCase(sql.substring(0, k.name().length())))
 			{

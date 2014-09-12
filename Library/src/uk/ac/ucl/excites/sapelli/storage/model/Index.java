@@ -55,7 +55,7 @@ public class Index extends Schema
 	}
 	
 	@Override
-	public <T> void addColumn(Column<T> column) throws UnsupportedOperationException
+	public <C extends Column<T>, T> C addColumn(C column) throws UnsupportedOperationException
 	{
 		throw new UnsupportedOperationException("adding columns to an existing index is not allowed");
 	}

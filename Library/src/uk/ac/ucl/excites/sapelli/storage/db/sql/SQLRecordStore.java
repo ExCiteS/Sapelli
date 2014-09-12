@@ -21,15 +21,17 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
-import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -52,24 +54,28 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 /**
  * @author mstevens
  *
- * @param <SQLRS>
+ * @param <SRS>
  * @param <STable>
  * @param <SColumn>
  */
-public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable, SColumn>, STable extends SQLRecordStore<SQLRS, STable, SColumn>.SQLTable, SColumn extends SQLColumn<?, ?>> extends RecordStore
+public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
 	
 	static private final String SCHEMATA_TABLE_NAME = "Schemata";
-	private Map<Schema, STable> sqlTables;
+	static protected final String SPACE = " ";	
+	
+	private Map<Schema, STable> tables;
+	private STable schemataTable;
 
 	/**
 	 * @param client
 	 * @param tableSpecFactory
+	 * @throws DBException 
 	 */
-	public SQLRecordStore(StorageClient client)
+	public SQLRecordStore(StorageClient client) throws DBException
 	{
 		super(client);
-		this.sqlTables = new HashMap<Schema, STable>();
+		this.tables = new HashMap<Schema, STable>();
 	}
 	
 	/**
@@ -80,80 +86,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 	 */
 	protected void initialise(boolean newDB) throws Exception
 	{
-		if(newDB)
-			registerSchema(Schema.META_SCHEMA); // create the table to store schemata
-		else
-		{
-			TableFactory tableFactory = getTableFactory();
-			// Initialise schemaInfos:
-			for(Record metaSchemaRec : retrieveRecords(Schema.META_SCHEMA))
-			{
-				Schema schema = Schema.FromMetaRecord(metaSchemaRec);
-				sqlTables.put(schema, tableFactory.generateTable(schema));
-			}
-		}
-	}
-	
-	/**
-	 * Checks whether the given {@link Schema} is known, which implies that records of it
-	 * can be accepted for storage (i.e. a table has been created to store them).
-	 * In this default implementation it is assumed if the DBMS does *not* support concurrent
-	 * connections {@link #sqlTables} will always in sync with the actual tables existing
-	 * in the database (so no further checks are needed). 
-	 * 
-	 * @param schema
-	 * @return
-	 */
-	protected boolean isSchemaKnown(Schema schema)
-	{
-		return	sqlTables.containsKey(schema)
-				&& (!supportsConcurrentConnections() || doesTableExist(getTableName(schema)));
-	}
-	
-	protected void registerSchema(Schema schema) throws DBException
-	{		
-		startTransaction();
-		try
-		{
-			// Insert new record in schemata table, but not for meta schema because in that case the schemata table doesn't exist yet!
-			if(schema != Schema.META_SCHEMA)
-				doStore(Schema.GetMetaRecord(schema));
-			
-			// Create table for records of this schema:
-			getTable(schema).create();				
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-			rollbackTransactions();
-			// TODO throw e; // re-throw
-		}
-		commitTransaction();
-	}
-
-	protected STable getTable(Schema schema)
-	{
-		STable sqlTable = sqlTables.get(schema);
-		if(sqlTable == null)
-		{
-			sqlTable = getTableFactory().generateTable(schema);
-			sqlTables.put(schema, sqlTable);
-		}
-		return sqlTable;
-	}
-	
-	protected abstract TableFactory getTableFactory();
-	
-	protected String getTableName(Schema schema)
-	{
-		if(schema == Schema.META_SCHEMA)
-			return SCHEMATA_TABLE_NAME;
-		return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber();
-	}
-	
-	protected Set<Schema> getKnownSchemata()
-	{
-		return sqlTables.keySet();
+		this.schemataTable = getTable(Schema.META_SCHEMA, newDB); // creates the Schemata table if it doesn't exist yet (i.e. for a new database)
 	}
 	
 	protected abstract void executeSQL(String sql) throws DBException;
@@ -172,6 +105,104 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 	protected abstract boolean doesTableExist(String tableName);
 
 	/**
+	 * 
+	 * @param schema
+	 * @param createWhenNotInDB
+	 * @return
+	 * @throws DBException 
+	 */
+	protected STable getTable(Schema schema, boolean createWhenNotInDB) throws DBException
+	{
+		// Check cache of known tables:
+		STable table =
+			(schema == Schema.META_SCHEMA ?
+				schemataTable /* may still be null if getTable() was called from initialise() */ :
+				tables.get(schema));
+		
+		// If not found, generate new SQLTable object for the Schema:
+		if(table == null)
+		{
+			table = getTableFactory().generateTable(schema);
+			if(schema != Schema.META_SCHEMA) // the "tables" map is only for tables of "real" schemata!
+				tables.put(schema, table);
+		}
+		
+		// If requested then create the actual table in the database if it is not there:
+		if(createWhenNotInDB && !table.isInDB())
+			createAndRegisterTable(table);
+		
+		return table;
+	}
+	
+	/**
+	 * @param table
+	 * @throws DBException
+	 */
+	private void createAndRegisterTable(STable table) throws DBException
+	{		
+		startTransaction();
+		try
+		{
+			// Create the table itself:
+			table.create();
+
+			// Register the schema (which the table corresponds to) in the schemataTable; unless the table it is the schemataTable itself:
+			if(table.schema != Schema.META_SCHEMA)
+				schemataTable.insert(Schema.GetMetaRecord(table.schema));
+		}
+		catch(Exception e)
+		{
+			rollbackTransactions();
+			throw new DBException("Exception upon creating and registering " + table.toString(), e);
+		}
+		commitTransaction();
+	}
+	
+	/**
+	 * TODO use this upon close on empty tables?
+	 * 
+	 * @param table
+	 * @throws DBException
+	 */
+	private void dropAndForgetTable(STable table) throws DBException
+	{
+		if(table == schemataTable)
+			throw new IllegalArgumentException("Cannot drop the " + SCHEMATA_TABLE_NAME + " table");
+		startTransaction();
+		try
+		{
+			// Unregister (i.e. forget) the schema (which the table corresponds to) in the schemataTable:
+			schemataTable.delete(Schema.GetMetaRecord(table.schema));
+			
+			// Drop the table itself:
+			table.drop();
+		}
+		catch(Exception e)
+		{
+			rollbackTransactions();
+			throw new DBException("Exception upon creating and registering " + table.toString(), e);
+		}
+		commitTransaction();
+	}
+	
+	protected Set<Schema> getAllKnownSchemata()
+	{
+		// TODO query for all schemata in schemataTable in DB !!!!
+		
+//		for(Record metaSchemaRec : retrieveRecords(Schema.META_SCHEMA))
+//		{
+//			Schema schema = Schema.FromMetaRecord(metaSchemaRec);
+//			
+//			
+//			tables.put(schema, getTableFactory().generateTable(schema));
+//		}
+		
+		return tables.keySet();
+	}
+	
+	protected abstract TableFactory getTableFactory();
+	
+	/**
 	 * Default implementation for SQL databases: first do a SELECT based on the key to verify whether the
 	 * record exists, then do either UPDATE or INSERT.
 	 * 
@@ -181,17 +212,20 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 	protected boolean doStore(Record record) throws DBException
 	{
 		boolean newRec = retrieveRecord(record.getReference().getRecordQuery()) == null;
+		STable table = getTable(record.getSchema(), true);
 		if(newRec)
-			getTable(record.getSchema()).insert(record);
+			table.insert(record);
 		else
-			getTable(record.getSchema()).update(record);
+			table.update(record);
 		return newRec;
 	}
 
 	@Override
 	protected void doDelete(Record record) throws DBException
 	{
-		getTable(record.getSchema()).delete(record);
+		STable table = getTable(record.getSchema(), false); // no need to create the table in the db if it isn't there!
+		if(table.isInDB()) // !!!
+			table.delete(record);
 	}
 	
 	/* (non-Javadoc)
@@ -201,9 +235,15 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 	public List<Record> retrieveRecords(RecordsQuery query)
 	{
 		List<Record> result = new ArrayList<Record>();
-		for(Schema s : query.isAnySchema() ? getKnownSchemata() : query.getSourceSchemata())
-			// Run subqueries for each schema in the query, or all known schemata (if the query for "any" schema):
-			queryForRecords(getTable(s), query, result);
+		// Run subqueries for each schema in the query, or all known schemata (if the query for "any" schema):
+		for(Schema s : query.isAnySchema() ? getAllKnownSchemata() : query.getSourceSchemata())
+			try
+			{
+				STable table = getTable(s, false); // won't throw DBException becausewe don't allow table creation (so we ignore them below)
+				if(table.isInDB())
+					queryForRecords(table, query, result);
+			}
+			catch(DBException ignore) {}
 		return result;
 	}
 	
@@ -258,6 +298,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 
 		public final String name;
 		public final Schema schema;
+		private Boolean existsInDB;
 		
 		/**
 		 * Mapping of Sapelli ColumnPointers (usually leaf columns) to corresponding  SQLColumns.
@@ -272,9 +313,11 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 		
 		List<String> tableConstraints = Collections.<String> emptyList();
 		
-		public SQLTable(String tableName, Schema schema)
+		public SQLTable(Schema schema)
 		{
-			this.name = tableName;
+			this.name = schema == Schema.META_SCHEMA ?
+					SCHEMATA_TABLE_NAME :
+					"Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber();
 			this.schema = schema;
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>();
@@ -319,7 +362,15 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 			return composite2SqlColumns.get(compositeColumn);
 		}
 		
+		public boolean isInDB()
+		{
+			if(existsInDB == null)
+				existsInDB = doesTableExist(name);
+			return existsInDB;
+		}
+		
 		/**
+		 * Create table in database.
 		 * Default implementation, can be overriden by subclasses
 		 * 
 		 * @throws DBException
@@ -327,49 +378,66 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 		public void create() throws DBException
 		{
 			executeSQL(generateCreateTableStatement());
+			existsInDB = true; // !!!
 		}
 		
 		protected String generateCreateTableStatement()
 		{
-			StringBuilder bldr = new StringBuilder();
-			bldr.append("CREATE TABLE ");
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+			bldr.append("CREATE TABLE");
 			bldr.append(name);
-			bldr.append(" (");
+			bldr.append("(");
+			bldr.openTransaction(", ");
 			// Columns:
-			boolean first = true;
 			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
 			{
-				if(first)
-					first = false;
-				else
-					bldr.append(", ");
+				bldr.openTransaction(SPACE);
 				bldr.append(sqlCol.name);
-				bldr.append(' ');
 				bldr.append(sqlCol.type);
-				if(sqlCol.constraint != null && !sqlCol.constraint.isEmpty())
-				{
-					bldr.append(' ');
-					bldr.append(sqlCol.constraint);
-				}
+				bldr.append(sqlCol.constraint);
+				bldr.commitTransaction();
 			}
 			// Table constraints:
 			for(String tConstr : tableConstraints)
-			{
-				bldr.append(", ");
 				bldr.append(tConstr);
-			}		
-			bldr.append(");");
+			bldr.commitTransaction(false);
+			bldr.append(");", false);
 			return bldr.toString();
 		}
 		
 		/**
-		 * May be overriden
+		 * Drop the table from the database.
+		 * Default implementation, can be overridden by subclasses
+		 * 
+		 * @throws DBException
+		 */
+		public void drop() throws DBException
+		{
+			executeSQL(generateDropTableStatement());
+			existsInDB = false; // !!!
+		}
+		
+		protected String generateDropTableStatement()
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+			bldr.append("DROP TABLE");
+			bldr.append(name);
+			bldr.append(");", false);
+			return bldr.toString();
+		}
+		
+		/**
+		 * Insert new record in database
+		 * 
+		 * May be overridden
 		 * 
 		 * @param record
 		 * @throws DBException
 		 */
 		public void insert(Record record) throws DBException
 		{
+			if(!isInDB())
+				throw new DBException("Insert failed: " + toString() + " does not exist in database!");
 			List<String> values = new ArrayList<String>();
 			// Get literal values (quoted if needed):
 			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
@@ -381,23 +449,37 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 		{
 			if(values.size() != sqlColumns.size())
 				throw new IllegalArgumentException("Invalid number of values");
-			StringBuilder bldr = new StringBuilder();
-			bldr.append("INSERT INTO ");
+			return generateInsertStatement(values, null);
+		}
+		
+		protected String generateInsertStatement(String valuePlaceHolder)
+		{
+			return generateInsertStatement(null, valuePlaceHolder);
+		}
+		
+		/**
+		 * @param values - if null valuePlaceHolder should not be
+		 * @param valuePlaceHolder - if null values should not be
+		 * @return
+		 */
+		private String generateInsertStatement(List<String> values, String valuePlaceHolder)
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+			bldr.append("INSERT INTO");
 			bldr.append(name);
-			bldr.append(" (");
+			bldr.append("(");
 			// Columns:
-			boolean first = true;
+			bldr.openTransaction(", ");
 			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
-			{
-				if(first)
-					first = false;
-				else
-					bldr.append(", ");
 				bldr.append(sqlCol.name);
-			}
-			bldr.append(") VALUES (");
-			bldr.append(StringUtils.join(values, ", "));
-			bldr.append(");");
+			bldr.commitTransaction(false);
+			// Values:
+			bldr.append(") VALUES (", false);
+			bldr.openTransaction(", ");
+			for(int v = 0, s = sqlColumns.size(); v < s; v++)
+				bldr.append(values != null ? values.get(v) : valuePlaceHolder);
+			bldr.commitTransaction(false);
+			bldr.append(");", false);
 			return bldr.toString();
 		}
 		
@@ -409,7 +491,8 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 		 */
 		public void update(Record record) throws DBException
 		{
-			
+			if(!isInDB())
+				throw new DBException("Update failed: " + toString() + " does not exist in database!");
 		}
 		
 		/**
@@ -425,9 +508,147 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 		
 		public String toString()
 		{
-			return "Database table: " + name;
+			return "database table '" + name + "'";
 		}
 
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 * @param <SQLType>
+	 * @param <SapType>
+	 */
+	public abstract class SQLColumn<SQLType, SapType>
+	{
+		
+		static public final char QUALIFIED_COLUMN_NAME_SEPARATOR = '_'; 
+		
+		public final String name;
+		protected final String type;
+		protected final String constraint;
+		protected final ColumnPointer sourceColumnPointer;
+		protected final TypeMapping<SQLType, SapType> mapping;
+		
+		/**
+		 * @param type
+		 * @param constraint
+		 * @param sourceSchema
+		 * @param sourceColumn
+		 * @param mapping
+		 */
+		public SQLColumn(String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
+		{
+			this(type, constraint, new ColumnPointer(sourceSchema, sourceColumn), mapping);
+		}
+		
+		/**
+		 * @param type
+		 * @param constraint
+		 * @param sourceColumnPointer
+		 * @param mapping
+		 */
+		private SQLColumn(String type, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
+		{
+			this(sourceColumnPointer.getQualifiedColumnName(QUALIFIED_COLUMN_NAME_SEPARATOR), type, constraint, sourceColumnPointer, mapping);
+		}
+		
+		/**
+		 * @param name
+		 * @param type
+		 * @param constraint
+		 * @param sourceColumnPointer
+		 * @param sourceMapping
+		 */
+		@SuppressWarnings("unchecked")
+		public SQLColumn(String name, String type, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
+		{
+			this.name = sanitiseIdentifier(name);
+			this.type = type;
+			this.constraint = constraint;
+			this.sourceColumnPointer = sourceColumnPointer;
+			this.mapping = mapping != null ? mapping : (TypeMapping<SQLType, SapType>) TypeMapping.<SQLType> Transparent();
+		}
+		
+		protected abstract String sanitiseIdentifier(String name);
+
+		/**
+		 * @param value
+		 * @param quotedIfNeeded
+		 * @return
+		 */
+		public String sapToLiteral(SapType value, boolean quotedIfNeeded)
+		{
+			return sqlToLiteral(mapping.toSQLType(value), quotedIfNeeded);
+		}
+		
+		/**
+		 * @param value
+		 * @param quotedIfNeeded
+		 * @return
+		 */
+		@SuppressWarnings("unchecked")
+		public String sapelliObjectToLiteral(Object value, boolean quotedIfNeeded)
+		{
+			return sqlToLiteral(mapping.toSQLType((SapType) value), quotedIfNeeded);
+		}
+		
+		/**
+		 * @param record
+		 * @param quotedIfNeeded
+		 * @return
+		 */
+		public String retrieveAsLiteral(Record record, boolean quotedIfNeeded)
+		{
+			return sqlToLiteral(retrieve(record), quotedIfNeeded);
+		}
+		
+		/**
+		 * @param record
+		 * @return
+		 */
+		@SuppressWarnings("unchecked")
+		public SQLType retrieve(Record record)
+		{
+			SapType value = (SapType) sourceColumnPointer.retrieveValue(record);
+			return value != null ? mapping.toSQLType(value) : null;
+		}
+		
+		/**
+		 * @param record
+		 * @param value
+		 */
+		public void store(Record record, SQLType value)
+		{
+			sourceColumnPointer.getColumn().storeObject(record, mapping.toSapelliType(value));
+		}
+		
+		protected String sqlToLiteral(SQLType value, boolean quotedIfNeeded)
+		{
+			if(value != null)
+				return (quotedIfNeeded && needsQuotedLiterals() ?
+							getQuoteChar() + value.toString().replace(getQuoteChar(), getQuoteEscape()) + getQuoteChar() :
+							value.toString());
+			else
+				return getNullString();
+		}
+		
+		/**
+		 * To be overridden when quotes are needed (e.g. on Strings)
+		 * 
+		 * @return
+		 */
+		protected boolean needsQuotedLiterals()
+		{
+			return false;
+		}
+		
+		protected abstract String getNullString();
+
+		protected abstract String getQuoteChar();
+		
+		protected abstract String getQuoteEscape();
+		
 	}
 	
 	/**
@@ -469,12 +690,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 	public abstract class TableFactory
 	{
 		
-		public STable generateTable(Schema schema)
-		{
-			return generateTableSpec(schema.getName(), schema);
-		}
-		
-		public abstract STable generateTableSpec(String tableName, Schema schema);
+		public abstract STable generateTable(Schema schema);
 		
 	}
 	
@@ -493,25 +709,24 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 		protected STable table;
 		
 		@Override
-		public STable generateTableSpec(String tableName, Schema schema)
+		public STable generateTable(Schema schema)
 		{
 			this.schema = schema;
-			table = constructTableSpec(tableName, schema);
+			table = newTableSpec(schema);
 			schema.accept(this); // traverse schema --> columnSpecs will be added to TableSpec
 			table.setTableConstraint(getTableConstraints());
 			return table;
 		}
 		
 		/**
-		 * @param tableName
 		 * @param schema
-		 * @param columnSpecs
-		 * @param tableConstraints
 		 * @return
 		 */
-		protected abstract STable constructTableSpec(String tableName, Schema schema);
+		protected abstract STable newTableSpec(Schema schema);
 		
 		/**
+		 * This method is assumed to be called only after all columns have been added to the table!
+		 * 
 		 * @return
 		 */
 		protected abstract List<String> getTableConstraints();
@@ -594,47 +809,46 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 	 * @author mstevens
 	 *
 	 */
-	protected class WhereClauseGenerator implements ConstraintVisitor
+	protected class SelectionClauseBuilder implements ConstraintVisitor
 	{
 		
 		STable table;
-		StringBuilder bldr;
+		TransactionalStringBuilder bldr;
 		String valuePlaceHolder;
 		List<String> arguments;
 		boolean quoteArgumentsIfNeeded;
 		private DBException exception = null;
 		
 		/**
-		 * Creates a WhereClauseGenerator that will produce a selection clause with literal values.
+		 * Creates a SelectionClauseBuilder that will produce a selection clause with literal values.
 		 * 
 		 * @param table
 		 * @param constraint
 		 * @param valuePlaceHolder placeholder for parameters, null if literal clause is being generated
 		 */
-		public WhereClauseGenerator(STable table, Constraint constraint)
+		public SelectionClauseBuilder(STable table, Constraint constraint)
 		{
 			this(table, constraint, null, true);
 		}
 		
 		/**
-		 * Creates a WhereClauseGenerator that will produce a selection clause with parameterised values (unless valuePlaceHolder is null)
+		 * Creates a SelectionClauseBuilder that will produce a selection clause with parameterised values (unless valuePlaceHolder is null)
 		 * 
 		 * @param table
 		 * @param constraint
 		 * @param valuePlaceHolder
 		 * @param quoteArgumentsIfNeeded
 		 */
-		public WhereClauseGenerator(STable table, Constraint constraint, String valuePlaceHolder, boolean quoteArgumentsIfNeeded)
+		public SelectionClauseBuilder(STable table, Constraint constraint, String valuePlaceHolder, boolean quoteArgumentsIfNeeded)
 		{
-			if(constraint == null)
-				return;
 			this.table = table;
 			this.valuePlaceHolder = valuePlaceHolder;
 			this.quoteArgumentsIfNeeded = quoteArgumentsIfNeeded;
 			if(isParameterised())
 				this.arguments = new ArrayList<String>();
-			this.bldr = new StringBuilder();
-			constraint.accept(this);
+			this.bldr = new TransactionalStringBuilder(SPACE); // pass space as connective
+			if(constraint != null)
+				constraint.accept(this);
 		}
 		
 		protected boolean isParameterised()
@@ -642,22 +856,6 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 			return valuePlaceHolder != null;
 		}
 		
-		private void visitAndOr(boolean and, List<Constraint> subConstraints)
-		{
-			if(subConstraints.isEmpty())
-				return;
-			bldr.append("(");
-			boolean first = true;
-			for(Constraint subConstraint : subConstraints)
-			{
-				if(first)
-					first = false;
-				else
-					bldr.append(" " + (and ? "AND" : "OR") + " ");
-				subConstraint.accept(this);
-			}
-			bldr.append(")");
-		}
 		@Override
 		public void visit(AndConstraint andConstr)
 		{
@@ -669,12 +867,54 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 		{
 			visitAndOr(false, orConstr.getSubConstraints());	
 		}
-
+		
+		private void visitAndOr(boolean and, List<Constraint> subConstraints)
+		{
+			// Set-up "outer" and "mid" buffers:
+			bldr.openTranaction(); // open "outer" buffer: for "(" and ")" (empty string as connective)
+			bldr.append("(");
+			bldr.openTransaction(and ? "AND" : "OR"); // open "mid" buffer: for subConstraints & AND/OR connectives
+			
+			// Loop over subconstraints:
+			Iterator<Constraint> iterConstr = subConstraints.iterator();
+			while(iterConstr.hasNext())
+			{
+				bldr.openTransaction(SPACE); // open "inner" buffer: for individual subConstraint
+				iterConstr.next().accept(this); // visit subConstraint
+				bldr.commitTransaction(); // commit "inner" buffer, result is added to "mid" buffer and connective is insert when needed
+			}
+			
+			// Handle buffers:
+			if(!bldr.isCurrentTransactionEmpty()) // check if "mid" buffer has content
+			{
+				bldr.commitTransaction(); // commit "mid" buffer
+				bldr.append(")");
+				bldr.commitTransaction(); // commit "outer" buffer
+			}
+			else
+				bldr.rollbackTransactions(2); // discard "mid" and "outer" buffer (this And/Or constraint did not produce any SQL)
+		}
+		
 		@Override
 		public void visit(NotConstraint notConstr)
 		{
-			bldr.append(" NOT ");
+			// Set-up buffers:
+			bldr.openTranaction(); // open "outer" buffer: for "NOT (" and ")" (empty string as connective)
+			bldr.append("NOT (");
+			bldr.openTransaction(SPACE); // open "inner" buffer for negated constraint
+			
+			// Visit negated constraint:
 			notConstr.getNegatedConstraint().accept(this);
+			
+			// Handle buffers:
+			if(!bldr.isCurrentTransactionEmpty()) // check if "inner" buffer has content
+			{
+				bldr.commitTransaction(); // commit "inner" buffer
+				bldr.append(")");
+				bldr.commitTransaction(); // commit "outer" buffer
+			}
+			else
+				bldr.rollbackTransactions(2); // discard "mid" and "outer" buffer (this Not constraint did not produce any SQL)
 		}
 
 		@Override
@@ -686,7 +926,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 			{	// Equality constraint on leaf column...
 				String literalValue = sqlCol.sapelliObjectToLiteral(equalityConstr.getValue(), quoteArgumentsIfNeeded);
 				bldr.append(sqlCol.name);
-				bldr.append(" " + getComparisonOperator(RuleConstraint.Comparison.EQUAL) + " ");
+				bldr.append(getComparisonOperator(RuleConstraint.Comparison.EQUAL));
 				if(isParameterised())
 				{
 					bldr.append(valuePlaceHolder);
@@ -694,7 +934,6 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 				}
 				else
 					bldr.append(literalValue);
-				return; // !!!
 			}
 			else if(cp.getColumn() instanceof RecordColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof Record)
 			{	// Equality constraint on composite column...
@@ -706,11 +945,12 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 					for(SColumn subSqlCol : subSqlCols)
 						andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, subSqlCol.sourceColumnPointer.retrieveValue(valueRecord)));
 					visit(andConstr);
-					return; // !!!
 				}
 			}
-			// else...
-			exception = new DBException("Failed to generate SQL for equalityConstraint on column " + equalityConstr.getColumnPointer().getQualifiedColumnName(table.schema));
+			else
+			{
+				exception = new DBException("Failed to generate SQL for equalityConstraint on column " + equalityConstr.getColumnPointer().getQualifiedColumnName(table.schema));
+			}
 		}
 
 		@Override
@@ -724,7 +964,7 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 			}
 			String literalValue = sqlCol.sapelliObjectToLiteral(ruleConstr.getValue(), quoteArgumentsIfNeeded);
 			bldr.append(sqlCol.name);
-			bldr.append(" " + getComparisonOperator(ruleConstr.getComparison()) + " ");
+			bldr.append(getComparisonOperator(ruleConstr.getComparison()));
 			if(isParameterised())
 			{
 				bldr.append(valuePlaceHolder);
@@ -734,20 +974,23 @@ public abstract class SQLRecordStore<SQLRS extends SQLRecordStore<SQLRS, STable,
 				bldr.append(literalValue);
 		}
 		
-		public String getClause(boolean includeWhere) throws DBException
+		public String getWhereClause() throws DBException
+		{
+			String clause = getClause();
+			return clause.isEmpty() ? "" : "WHERE " + clause;
+		}
+		
+		public String getClauseOrNull() throws DBException
+		{
+			String clause = getClause();
+			return clause.isEmpty() ? null : clause;
+		}
+		
+		public String getClause() throws DBException
 		{
 			if(exception != null)
 				throw exception;
-			if(bldr != null && bldr.length() > 0)
-				return (includeWhere ? "WHERE " : "") + bldr.toString();
-			else
-				return "";
-		}
-		
-		public String getClauseOrNull(boolean includeWhere) throws DBException
-		{
-			String clause = getClause(includeWhere);
-			return clause.isEmpty() ? null : clause;
+			return bldr.toString();
 		}
 		
 		public String[] getArguments()

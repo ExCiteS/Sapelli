@@ -50,6 +50,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 {
 	
 	static public final int DATABASE_VERSION = 2;
+	static public final String PARAM_PLACEHOLDER = "?";
 	
 	private SQLiteDatabase db;
 	private boolean newDBFile = false;
@@ -70,7 +71,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			@Override
 			public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery, String editTable, SQLiteQuery query)
 			{
-				Log.d("SQLite_Exec", query.toString()); // TODO remove debug logging
+				Log.d("SQLite", "CursorQuery: " + query.toString()); // TODO remove debug logging
 				return AndroidSQLiteCursor.newCursor(db, masterQuery, editTable, query);
 			}
 		};
@@ -101,14 +102,13 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected void executeSQL(String sql) throws DBException
 	{
-		Log.d("SQLite_Exec", sql); // TODO remove debug logging
+		Log.d("SQLite", "Raw execute: " + sql); // TODO remove debug logging
 		try
 		{
 			db.execSQL(sql);
 		}
 		catch(SQLException sqlE)
 		{
-			sqlE.printStackTrace(System.err);
 			throw new DBException(sqlE);
 		}
 	}
@@ -171,9 +171,9 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	{
 		try
 		{
-			WhereClauseGenerator selector = new WhereClauseGenerator(table, query.getConstraints(), AndroidSQLiteStatement.PARAM_PLACEHOLDER, false); // TODO must the literals be quoted?
+			SelectionClauseBuilder selector = new SelectionClauseBuilder(table, query.getConstraints(), PARAM_PLACEHOLDER, false); // TODO must the literals be quoted?
 			SQLiteColumn<?, ?> orderBy = table.getSQLColumn(query.getOrderBy());
-			AndroidSQLiteCursor cursor = (AndroidSQLiteCursor) db.query(table.name, null, selector.getClauseOrNull(false), selector.getArguments(), null, (orderBy != null ? orderBy.name : null), query.isLimited() ? "LIMIT " + query.getLimit() : null);
+			AndroidSQLiteCursor cursor = (AndroidSQLiteCursor) db.query(table.name, null, selector.getClauseOrNull(), selector.getArguments(), null, (orderBy != null ? orderBy.name : null), query.isLimited() ? "LIMIT " + query.getLimit() : null);
 			while(cursor.moveToNext())
 			{
 				Record record = table.schema.createRecord();
@@ -206,13 +206,22 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected boolean supportsConcurrentConnections()
 	{
-		return false;
+		return false; // TODO really?
 	}
 
 	@Override
 	protected ISQLiteStatement newSQLiteStatement(String sql)
 	{
 		return new AndroidSQLiteStatement(db, sql);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#getParameterPlaceHolder()
+	 */
+	@Override
+	protected String getParameterPlaceHolder()
+	{
+		return PARAM_PLACEHOLDER;
 	}
 	
 	/**

@@ -293,13 +293,31 @@ public class ColumnPointer implements Comparator<Record>
 	 */
 	public String getQualifiedColumnName()
 	{
-		return getQualifiedColumnName(null);
+		return getQualifiedColumnName(null, RecordColumn.QUALIFIED_NAME_SEPARATOR);
+	}
+
+	/**
+	 * @param separator to put between column names in qualified name
+	 * @return the qualified name of the column this ColumnPointer points to (can be incomplete if parent column(s) are unknown!)
+	 */
+	public String getQualifiedColumnName(char separator)
+	{
+		return getQualifiedColumnName(null, separator);
 	}
 	
 	/**
 	 * @return the qualified name of the column this ColumnPointer points to (can be incomplete if parent column(s) are unknown and no non-null topLevelSchema is given)
 	 */
 	public String getQualifiedColumnName(Schema topLevelSchema)
+	{
+		return getQualifiedColumnName(topLevelSchema, RecordColumn.QUALIFIED_NAME_SEPARATOR);
+	}
+	
+	/**
+	 * @param separator to put between column names in qualified name
+	 * @return the qualified name of the column this ColumnPointer points to (can be incomplete if parent column(s) are unknown and no non-null topLevelSchema is given)
+	 */
+	public String getQualifiedColumnName(Schema topLevelSchema, char separator)
 	{
 		Stack<Column<?>> path = columnStack;
 		
@@ -311,7 +329,7 @@ public class ColumnPointer implements Comparator<Record>
 		for(Column<?> col : path)
 		{
 			if(col != path.firstElement())
-				bldr.append(RecordColumn.QUALIFIED_NAME_SEPARATOR);
+				bldr.append(separator);
 			bldr.append(col.getName());				
 		}
 		return bldr.toString();
