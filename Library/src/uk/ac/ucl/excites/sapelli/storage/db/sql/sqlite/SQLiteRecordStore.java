@@ -50,9 +50,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
@@ -353,13 +350,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	protected class SQLiteTableFactory extends BasicTableFactory
 	{
 		
-		private List<Index> indexesToProcess;
-		
 		@Override
 		protected void initialiseTable()
 		{
 			table = new SQLiteTable(schema);
-			indexesToProcess = new ArrayList<Index>(schema.getIndexes(true)); // including the primary key
 		}
 		
 		private String getColumnConstraint(Column<?> sourceColum)
@@ -440,7 +434,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				// Continue generating constraint definition for primary key or unique index:
 				bldr.append("(");
 				bldr.openTransaction(", ");
-				// List columns:
+				// List indexed columns:
 				for(Column<?> idxCol : idx.getColumns(false))
 					bldr.append(table.getSQLColumn(new ColumnPointer(schema, idxCol)).name);
 				bldr.commitTransaction(false);

@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
@@ -304,6 +305,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 
 		public final String tableName;
 		public final Schema schema;
+		private List<String> tableConstraints = Collections.<String> emptyList();
+		private List<Index> explicitIndexes;
 		private Boolean existsInDB;
 		
 		/**
@@ -316,8 +319,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * E.g. Location --> (Lat, Lon, ...) 
 		 */
 		public final Map<RecordColumn<?>, List<SColumn>> composite2SqlColumns;
-		
-		List<String> tableConstraints = Collections.<String> emptyList();
 		
 		public SQLTable(Schema schema)
 		{
@@ -356,6 +357,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.tableConstraints = new ArrayList<String>(tableConstraints);
 		}
 		
+		public void setExplicitIndexes(List<Index> indexes)
+		{
+			this.explicitIndexes = indexes;
+		}
+		
 		public SColumn getSQLColumn(ColumnPointer columnPointer)
 		{
 			return sqlColumns.get(columnPointer);
@@ -374,8 +380,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * Create table in database.
-		 * Default implementation, can be overriden by subclasses
+		 * Create table in database, as well as any explicit indexes on its columns.
+		 * Default implementation, may be overridden by subclasses
 		 * 
 		 * @throws DBException
 		 */
@@ -383,12 +389,22 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			executeSQL(generateCreateTableStatement());
 			existsInDB = true; // !!!
+			// Create explicit indexes:
+			for(Index idx : explicitIndexes)
+				executeSQL(generateCreateIndexStatement(idx));
 		}
 		
+		/**
+		 * @return sql statement to create database table
+		 * 
+		 * @see http://www.w3schools.com/sql/sql_create_table.asp
+		 * @see http://www.sqlite.org/lang_createtable.html
+		 */
 		protected String generateCreateTableStatement()
 		{
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
 			bldr.append("CREATE TABLE");
+			// "IF NOT EXISTS"? (probably SQLite specific)
 			bldr.append(tableName);
 			bldr.append("(");
 			bldr.openTransaction(", ");
@@ -404,6 +420,34 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Table constraints:
 			for(String tConstr : tableConstraints)
 				bldr.append(tConstr);
+			bldr.commitTransaction(false);
+			bldr.append(");", false);
+			return bldr.toString();
+		}
+		
+		/**
+		 * @param idx
+		 * @return sql statement to create database table index
+		 * 
+		 * @see http://www.w3schools.com/sql/sql_create_index.asp
+		 * @see http://www.sqlite.org/lang_createindex.html
+		 */
+		protected String generateCreateIndexStatement(Index idx)
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+			bldr.append("CREATE");
+			if(idx.isUnique())
+				bldr.append("UNIQUE");
+			bldr.append("INDEX");
+			// "IF NOT EXISTS"? (probably SQLite specific)
+			bldr.append(sanitiseIdentifier(idx.getName()));
+			bldr.append("ON");
+			bldr.append(tableName);
+			bldr.append("(");
+			bldr.openTransaction(", ");
+			// List indexed columns:
+			for(Column<?> idxCol : idx.getColumns(false))
+				bldr.append(getSQLColumn(new ColumnPointer(schema, idxCol)).name);
 			bldr.commitTransaction(false);
 			bldr.append(");", false);
 			return bldr.toString();
@@ -773,15 +817,23 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 		
 		protected Schema schema;
+		protected List<Index> indexesToProcess;
 		protected STable table;
 		
 		@Override
 		public STable generateTable(Schema schema)
 		{
 			this.schema = schema;
-			initialiseTable();
+			indexesToProcess = new ArrayList<Index>(schema.getIndexes(true)); // copy list of all indexes, including the primary key
+			initialiseTable(); // instantiates the table object
+			
 			schema.accept(this); // traverse schema --> columnSpecs will be added to TableSpec
-			table.setTableConstraint(getTableConstraints());
+			table.setTableConstraint(getTableConstraints()); // generate additional table constraints
+			
+			/* indexes that will be implicitly created as part of the table (and columns) definitions
+			 * will have been removed from the list at this point. Any indexes that are left will have
+			 * to be created explicitly: */
+			table.setExplicitIndexes(indexesToProcess);
 			return table;
 		}
 		
