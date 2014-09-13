@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
+import org.apache.commons.codec.binary.Hex;
+
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
@@ -77,6 +79,20 @@ public class SQLiteBlobColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<by
 		return cursor.getBlob(columnIdx);
 	}
 	
-	//TODO override toLiteralString?
-
+	/**
+	 * @param value
+	 * @param quotedIfNeeded
+	 * @return SQLite-compliant blob-literal
+	 * 
+	 * @see http://www.sqlite.org/lang_expr.html
+	 */
+	@Override
+	protected String sqlToLiteral(byte[] value, boolean quotedIfNeeded)
+	{
+		if(value != null)
+			return 'x' + getQuoteChar() + Hex.encodeHexString(value) + getQuoteChar();
+		else
+			return getNullString();
+	}
+	
 }
