@@ -32,14 +32,17 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.PrimaryKey;
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
@@ -760,7 +763,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * This TableFactory implementation uses a column visitor and assumes all
 	 * non-composite Sapelli columns will be represented by by exactly 1 SQLColumn.
 	 * Composites (i.e. RecordColumns) will be mapped to sets of SQLColumns, each
-	 * corresponding to exactly 1 subcolumn. 
+	 * corresponding to exactly 1 subcolumn.
+	 * 
+	 * The different kinds of ListColumns are all handled the same.
 	 * 
 	 * @author mstevens
 	 */
@@ -794,6 +799,35 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @return
 		 */
 		protected abstract List<String> getTableConstraints();
+		
+		/**
+		 * TODO implement ListColumns using normalisation:
+		 * 		generate Schema for a "subtable" with FK to this one --> generate table for it ... etc.
+		 * 		Table will then how a ListCol -> Table map ...
+		 * 		This will require additional creates/inserts/updates/deletes to be executed...
+		 * 		Difficult but not impossible!
+		 * 
+		 * @param listCol
+		 */
+		public abstract <L extends List<T>, T> void visitListColumn(ListColumn<L, T> listCol);
+		
+		@Override
+		public void visit(IntegerListColumn intListCol)
+		{
+			visitListColumn(intListCol);
+		}
+		
+		@Override
+		public void visit(PolygonColumn polyCol)
+		{
+			visitListColumn(polyCol);
+		}
+		
+		@Override
+		public void visit(LineColumn lineCol)
+		{
+			visitListColumn(lineCol);
+		}
 		
 		@Override
 		public boolean allowOrientationSelfTraversal()

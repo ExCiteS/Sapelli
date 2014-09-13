@@ -18,12 +18,19 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
@@ -35,6 +42,7 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteStringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Index;
+import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
@@ -506,24 +514,71 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			table.addColumn(new SQLiteDoubleColumn<Double>(SQLiteRecordStore.this, getColumnConstraint(floatCol), schema, floatCol, null));
 		}
 		
+		/**
+		 * For now (until we implement a solution based on normalisation) we store the values of ListColumns as Blobs.
+		 * 
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.BasicTableFactory#visitListColumn(uk.ac.ucl.excites.sapelli.storage.model.ListColumn)
+		 */
 		@Override
-		public void visit(PolygonColumn polyCol)
+		public <L extends List<T>, T> void visitListColumn(final ListColumn<L, T> listCol)
 		{
-			// TODO Auto-generated method stub
-			
-		}
-		
-		@Override
-		public void visit(LineColumn lineCol)
-		{
-			// TODO Auto-generated method stub
-			
-		}
-		
-		@Override
-		public void visit(IntegerListColumn intListCol)
-		{
-			// TODO Auto-generated method stub
+			table.addColumn(new SQLiteBlobColumn<L>(SQLiteRecordStore.this, getColumnConstraint(listCol), schema, listCol, new TypeMapping<byte[], L>()
+			{
+
+				@Override
+				public byte[] toSQLType(L value)
+				{
+					BitOutputStream bos = null;
+					try
+					{
+						ByteArrayOutputStream baos = new ByteArrayOutputStream(); 
+						bos = new BitWrapOutputStream(baos);
+						listCol.writeValue(value, bos);
+						bos.flush();
+						return baos.toByteArray();
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace(System.err);
+						return null;
+					}
+					finally
+					{
+						if(bos != null)
+							try
+							{
+								bos.close();
+							}
+							catch(IOException ignore) { }
+					}
+				}
+
+				@Override
+				public L toSapelliType(byte[] value)
+				{
+					BitInputStream bis = null;
+					try
+					{
+						bis = new BitWrapInputStream(new ByteArrayInputStream(value));
+						return listCol.readValue(bis);
+					}
+					catch(Exception e)
+					{
+						e.printStackTrace(System.err);
+						return null;
+					}
+					finally
+					{
+						if(bis != null)
+							try
+							{
+								bis.close();
+							}
+							catch(IOException ignore) { }
+					}
+				}
+				
+			}));
 			
 		}
 		
