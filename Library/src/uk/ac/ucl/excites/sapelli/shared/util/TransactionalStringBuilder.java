@@ -27,7 +27,7 @@ import java.util.List;
  * Each "transaction" behaves as a separate StringBuilder. There is always 1 "root" transaction,
  * which is opened as part of the construction of the TransactionalStringBuilder and which cannot
  * be closed (i.e. committed or rolled-back) from outside.
- * A new transaction can be opened using {@link #openTranaction()}, after which it becomes the current
+ * A new transaction can be opened using {@link #openTransaction()}, after which it becomes the current
  * transaction.
  * Calls to the append(String) method result in the current (i.e. most recently opened) transaction being
  * extended (i.e. the argument will be appended to the corresponding StringBuilder). 
@@ -59,6 +59,11 @@ public class TransactionalStringBuilder
 		this(DEFAULT_CONNECTIVE);
 	}
 	
+	/**
+	 * New TransactionalStringBuilder using the given connective.
+	 * 
+	 * @param baseConnective
+	 */
 	public TransactionalStringBuilder(String baseConnective)
 	{
 		builders = new ArrayList<StringBuilder>();
@@ -66,11 +71,19 @@ public class TransactionalStringBuilder
 		openTransaction(baseConnective); // open root transaction
 	}
 	
-	public void openTranaction()
+	/**
+	 * Open a new transaction using the 'base' connective specified at construction time.
+	 */
+	public void openTransaction()
 	{
-		openTransaction(DEFAULT_CONNECTIVE);
+		openTransaction(connectives.get(0));
 	}
 	
+	/**
+	 * Open a new transaction in which to use the given connective
+	 * 
+	 * @param connective
+	 */
 	public void openTransaction(String connective)
 	{
 		if(connective == null)

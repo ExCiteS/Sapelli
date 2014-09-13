@@ -19,13 +19,14 @@
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBlobColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteDoubleColumn;
@@ -34,7 +35,6 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteStringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Index;
-import uk.ac.ucl.excites.sapelli.storage.model.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
@@ -56,6 +56,24 @@ import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
  */
 public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>
 {
+	
+	// Statics----------------------------------------------
+	/**
+	 * @see http://catalogue.pearsoned.co.uk/samplechapter/067232685X.pdf
+	 */
+	static public final Pattern identifierPattern = Pattern.compile("[a-zA-Z_]+[0-9a-zA-Z_]*");
+	
+	/**
+	 * Test method
+	 */
+	/*static public void testIdentifierPattern()
+	{
+		String[] identifiersToTest =
+				new String[] {	"mytable", "my_field", "xyz123", "_table14343", "_1col", "a", // all valid
+								"my table", "my-field", "my.table", "123xyz", "_abc?col", "2" }; // all invalid
+		for(String identifier : identifiersToTest)
+			System.out.println(identifier + "\t" + identifierPattern.matcher(identifier).matches());
+	}*/
 	
 	// Dynamics---------------------------------------------
 	private final SQLiteTableFactory factory;
@@ -133,6 +151,20 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		// TODO Auto-generated method stub
 		return false;
 		// SELECT name FROM sqlite_master WHERE type='table' AND name='table_name';
+	}
+	
+	/**
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#sanitiseIdentifier(java.lang.String)
+	 * @see http://catalogue.pearsoned.co.uk/samplechapter/067232685X.pdf
+	 */
+	@Override
+	protected String sanitiseIdentifier(String identifier)
+	{
+		if(identifierPattern.matcher(identifier).matches())
+			return identifier;
+		else
+			return '[' + identifier + ']';
 	}
 	
 	/**
@@ -214,7 +246,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @param <SQLType>
 	 * @param <SapType>
 	 */
-	public abstract class SQLiteColumn<SQLType, SapType> extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<SQLType, SapType>>.SQLColumn<SQLType, SapType>
+	public abstract class SQLiteColumn<SQLType, SapType> extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLColumn<SQLType, SapType>
 	{
 
 		/**
@@ -239,18 +271,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public SQLiteColumn(String name, String type, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
 		{
 			super(name, type, constraint, sourceColumnPointer, mapping);
-		}
-
-		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLColumn#sanitiseName(java.lang.String)
-		 */
-		@Override
-		protected String sanitiseIdentifier(String name)
-		{
-			// RegEx: [a-zA-Z_]+[0-9a-zA-Z_]*
-			
-			// TODO Auto-generated method stub
-			return null;
 		}
 
 		/**
@@ -320,43 +340,59 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	/**
 	 * @author mstevens
 	 *
+	 * @see http://www.sqlite.org/lang_createtable.html
 	 */
 	protected class SQLiteTableFactory extends BasicTableFactory
 	{
 		
-		private List<Index> singleColumnIndexes = new ArrayList<Index>();
+		private List<Index> indexesToProcess;
 		
 		@Override
-		protected SQLiteTable newTableSpec(Schema schema)
+		protected void initialiseTable()
 		{
-			return new SQLiteTable(schema);
+			table = new SQLiteTable(schema);
+			indexesToProcess = new ArrayList<Index>(schema.getIndexes(true)); // including the primary key
 		}
 		
-		private <SapT> String getColumnConstraint(Column<SapT> sourceColum)
+		private String getColumnConstraint(Column<?> sourceColum)
 		{
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-			
-			// Primary key:
-			PrimaryKey pk = schema.getPrimaryKey();
-			if(pk != null /* just in case*/ && !pk.isMultiColumn() && pk.containsColumn(sourceColum, false))
+		
+			// Primary key & unique indexes:
+			Iterator<Index> idxIter = indexesToProcess.iterator();
+			while(idxIter.hasNext()) // we use an iterator instead of a for-each loop to allow save remove of items during iteration
 			{
-				bldr.append("PRIMARY KEY");
-				// ASC/DESC?
-				// conflict-clause?
-				if(pk instanceof AutoIncrementingPrimaryKey)
-					bldr.append("AUTOINCREMENT");
+				Index idx = idxIter.next();
+				if(idx.containsColumn(sourceColum, false) && !idx.isMultiColumn())
+				{	// the sourceColumn is indexed (on its own) ...
+					bldr.openTransaction();
+					// Check which kind of index it is:
+					if(idx == schema.getPrimaryKey())
+					{	// the sourceColumn is the primary key
+						bldr.append("PRIMARY KEY");
+						// ASC/DESC?
+						// conflict-clause?
+						if(idx instanceof AutoIncrementingPrimaryKey)
+							bldr.append("AUTOINCREMENT");
+					}
+					else if(idx.isUnique())
+					{	//Regular single-column, unique index (unnamed)
+						bldr.append("UNIQUE");
+						// conflict-clause?
+					}
+					// else : index will have to be created separately (outside of column & table definition)
+					
+					if(!bldr.isCurrentTransactionEmpty())
+					{
+						bldr.commitTransaction();
+						// We are done processing this index:
+						idxIter.remove();
+					}
+					else
+						bldr.rollbackTransaction();
+				}
 			}
-			
-			// Regular single-column, unique index (unnamed):
-			Index idx = schema.getIndex(sourceColum);
-			if(idx != null && !idx.isMultiColumn() && idx.isUnique())
-			{
-				bldr.append("UNIQUE");
-				// conflict-clause?
-				// Remember that this index has been handled:
-				singleColumnIndexes.add(idx);
-			}
-				
+	
 			// Optionality:
 			if(!sourceColum.isOptional())
 				bldr.append("NOT NULL");
@@ -374,14 +410,43 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		
 		protected List<String> getTableConstraints()
 		{
-			// TODO indexes, etc.
-			
 			List<String> tConstraints = new ArrayList<String>();
-			for(Index idx : schema.getIndexes())
-				if(!singleColumnIndexes.contains(idx))
-				{
-					// TODO
-				}
+			
+			// Primary key & unique indexes:
+			Iterator<Index> idxIter = indexesToProcess.iterator();
+			while(idxIter.hasNext()) // we use an iterator instead of a for-each loop to allow save remove of items during iteration
+			{
+				Index idx = idxIter.next();
+				TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+				// Check which kind of index it is:
+				if(idx == schema.getPrimaryKey())
+					// index is the primary key:
+					bldr.append("PRIMARY KEY");
+				else if(idx.isUnique())
+					// index is a regular, unique index:
+					bldr.append("UNIQUE");
+				else
+					// index will have to be created separately (outside of table definition)
+					continue;
+				
+				// Continue generating constraint definition for primary key or unique index:
+				bldr.append("(");
+				bldr.openTransaction(", ");
+				// List columns:
+				for(Column<?> idxCol : idx.getColumns(false))
+					bldr.append(table.getSQLColumn(new ColumnPointer(schema, idxCol)).name);
+				bldr.commitTransaction(false);
+				bldr.append(")", false);
+				// conflict-clause?
+				
+				// Add constraint:
+				tConstraints.add(bldr.toString());
+				
+				// We are done processing this index:
+				idxIter.remove();
+			}
+			
+			// TODO foreign-key-clause?
 			
 			return tConstraints;
 		}
@@ -393,52 +458,52 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public void visit(BooleanColumn boolCol)
 		{
-			//table.addColumn(new SQLiteBooleanColumn(getColumnConstraint(boolCol), schema, boolCol));
+			table.addColumn(new SQLiteBooleanColumn(SQLiteRecordStore.this, getColumnConstraint(boolCol), schema, boolCol));
 		}
 		
 		@Override
 		public void visit(final TimeStampColumn timeStampCol)
 		{
-//			table.addColumn(new SQLiteStringColumn<TimeStamp>(getColumnConstraint(timeStampCol), schema, timeStampCol, new TypeMapping<String, TimeStamp>()
-//			{
-//
-//				@Override
-//				public String toSQLType(TimeStamp value)
-//				{
-//					return timeStampCol.toString(value);
-//				}
-//
-//				@Override
-//				public TimeStamp toSapelliType(String value)
-//				{
-//					return timeStampCol.parse(value);
-//				}
-//				
-//			}));
+			table.addColumn(new SQLiteStringColumn<TimeStamp>(SQLiteRecordStore.this, getColumnConstraint(timeStampCol), schema, timeStampCol, new TypeMapping<String, TimeStamp>()
+			{
+
+				@Override
+				public String toSQLType(TimeStamp value)
+				{
+					return timeStampCol.toString(value);
+				}
+
+				@Override
+				public TimeStamp toSapelliType(String value)
+				{
+					return timeStampCol.parse(value);
+				}
+				
+			}));
 		}
 		
 		@Override
 		public void visit(ByteArrayColumn byteArrayCol)
 		{
-			//table.addColumn(new SQLiteBlobColumn<byte[]>(getColumnConstraint(byteArrayCol), schema, byteArrayCol, null));
+			table.addColumn(new SQLiteBlobColumn<byte[]>(SQLiteRecordStore.this, getColumnConstraint(byteArrayCol), schema, byteArrayCol, null));
 		}
 		
 		@Override
 		public void visit(StringColumn stringCol)
 		{
-			//table.addColumn(new SQLiteStringColumn<String>(getColumnConstraint(stringCol), schema, stringCol, null));
+			table.addColumn(new SQLiteStringColumn<String>(SQLiteRecordStore.this, getColumnConstraint(stringCol), schema, stringCol, null));
 		}
 		
 		@Override
 		public void visit(IntegerColumn intCol)
 		{
-			//table.addColumn(new SQLiteIntegerColumn<Long>(getColumnConstraint(intCol), schema, intCol, null));
+			table.addColumn(new SQLiteIntegerColumn<Long>(SQLiteRecordStore.this, getColumnConstraint(intCol), schema, intCol, null));
 		}
 		
 		@Override
 		public void visit(FloatColumn floatCol)
 		{
-			//table.addColumn(new SQLiteDoubleColumn<Double>(getColumnConstraint(floatCol), schema, floatCol, null));
+			table.addColumn(new SQLiteDoubleColumn<Double>(SQLiteRecordStore.this, getColumnConstraint(floatCol), schema, floatCol, null));
 		}
 		
 		@Override

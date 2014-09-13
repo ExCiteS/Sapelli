@@ -20,8 +20,8 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -31,31 +31,33 @@ import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
  *
  * @param <SapType>
  */
-public class SQLiteDoubleColumn<SapType> extends SQLiteColumn<Double, SapType>
+public class SQLiteDoubleColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<Double, SapType>
 {
 
 	static public final String SQLITE_DATA_TYPE = "REAL";
 	
 	/**
+	 * @param store
 	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteDoubleColumn(String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Double, SapType> mapping)
+	public SQLiteDoubleColumn(SQLiteRecordStore store, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Double, SapType> mapping)
 	{
-		super(SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
+		store.super(SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
 	}
 
 	/**
+	 * @param store
 	 * @param name
 	 * @param constraint
 	 * @param sourceColumnPointer
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteDoubleColumn(String name, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<Double, SapType> mapping)
+	public SQLiteDoubleColumn(SQLiteRecordStore store, String name, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<Double, SapType> mapping)
 	{
-		super(name, SQLITE_DATA_TYPE, constraint, sourceColumnPointer, mapping);
+		store.super(name, SQLITE_DATA_TYPE, constraint, sourceColumnPointer, mapping);
 	}
 	
 	/**

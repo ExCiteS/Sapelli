@@ -20,8 +20,8 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -31,59 +31,63 @@ import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
  * @author mstevens
  *
  */
-public class SQLiteIntegerColumn<SapType> extends SQLiteColumn<Long, SapType>
+public class SQLiteIntegerColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<Long, SapType>
 {
 
 	static public final String SQLITE_DATA_TYPE = "INTEGER";
 	
 	/**
+	 * @param store
 	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteIntegerColumn(String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping)
+	public SQLiteIntegerColumn(SQLiteRecordStore store, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping)
 	{
-		super(SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
+		store.super(SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
 	}
 
 	/**
+	 * @param store
 	 * @param name
 	 * @param constraint
 	 * @param sourceColumnPointer
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteIntegerColumn(String name, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<Long, SapType> mapping)
+	public SQLiteIntegerColumn(SQLiteRecordStore store, String name, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<Long, SapType> mapping)
 	{
-		super(name, SQLITE_DATA_TYPE, constraint, sourceColumnPointer, mapping);
+		store.super(name, SQLITE_DATA_TYPE, constraint, sourceColumnPointer, mapping);
 	}
 	
 	/**
 	 * For boolean
 	 * 
+	 * @param store
 	 * @param type
 	 * @param constraint
 	 * @param sourceSchema
 	 * @param sourceColumn
 	 * @param mapping
 	 */
-	/*package*/ SQLiteIntegerColumn(String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping)
+	/*package*/ SQLiteIntegerColumn(SQLiteRecordStore store, String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<Long, SapType> mapping)
 	{
-		super(type, constraint, sourceSchema, sourceColumn, mapping);
+		store.super(type, constraint, sourceSchema, sourceColumn, mapping);
 	}
 
 	/**
 	 * For boolean
 	 * 
+	 * @param store
 	 * @param name
 	 * @param type
 	 * @param constraint
 	 * @param sourceColumnPointer
 	 * @param mapping
 	 */
-	/*package*/ SQLiteIntegerColumn(String name, String type, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<Long, SapType> mapping)
+	/*package*/ SQLiteIntegerColumn(SQLiteRecordStore store, String name, String type, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<Long, SapType> mapping)
 	{
-		super(name, type, constraint, sourceColumnPointer, mapping);
+		store.super(name, type, constraint, sourceColumnPointer, mapping);
 	}
 
 	/**

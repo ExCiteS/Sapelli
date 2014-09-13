@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -90,6 +91,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	protected abstract void executeSQL(String sql) throws DBException;
+	
+	protected abstract String sanitiseIdentifier(String identifier);
 	
 	/**
 	 * @return whether or not the DBMS supports concurrent connections
@@ -296,7 +299,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	public abstract class SQLTable
 	{
 
-		public final String name;
+		public final String tableName;
 		public final Schema schema;
 		private Boolean existsInDB;
 		
@@ -315,9 +318,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		public SQLTable(Schema schema)
 		{
-			this.name = schema == Schema.META_SCHEMA ?
-					SCHEMATA_TABLE_NAME :
-					"Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber();
+			this.tableName = sanitiseIdentifier(schema == Schema.META_SCHEMA ? SCHEMATA_TABLE_NAME : "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber());
 			this.schema = schema;
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>();
@@ -365,7 +366,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public boolean isInDB()
 		{
 			if(existsInDB == null)
-				existsInDB = doesTableExist(name);
+				existsInDB = doesTableExist(tableName);
 			return existsInDB;
 		}
 		
@@ -385,7 +386,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
 			bldr.append("CREATE TABLE");
-			bldr.append(name);
+			bldr.append(tableName);
 			bldr.append("(");
 			bldr.openTransaction(", ");
 			// Columns:
@@ -421,7 +422,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
 			bldr.append("DROP TABLE");
-			bldr.append(name);
+			bldr.append(tableName);
 			bldr.append(");", false);
 			return bldr.toString();
 		}
@@ -466,7 +467,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
 			bldr.append("INSERT INTO");
-			bldr.append(name);
+			bldr.append(tableName);
 			bldr.append("(");
 			// Columns:
 			bldr.openTransaction(", ");
@@ -493,6 +494,54 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			if(!isInDB())
 				throw new DBException("Update failed: " + toString() + " does not exist in database!");
+			
+		}
+		
+		protected String generateUpdateStatement(List<String> values)
+		{
+			if(values.size() != sqlColumns.size())
+				throw new IllegalArgumentException("Invalid number of values");
+			return generateUpdateStatement(values, null);
+		}
+		
+		protected String generateUpdateStatement(String valuePlaceHolder)
+		{
+			return generateUpdateStatement(null, valuePlaceHolder);
+		}
+		
+		/**
+		 * @param values - if null valuePlaceHolder should not be
+		 * @param valuePlaceHolder - if null values should not be
+		 * @return
+		 */
+		private String generateUpdateStatement(List<String> values, String valuePlaceHolder)
+		{
+			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+			bldr.append("UPDATE");
+			bldr.append(tableName);
+			bldr.append("SET");
+			
+			
+//			PrimaryKey pk = schema.getPrimaryKey();
+//			AndConstraint whereConstraint = new 
+//			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
+//			{
+//				if()
+//			}
+			
+			// Columns & values (except primary key parts):
+//			bldr.openTransaction(", ");
+//			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
+//				bldr.append(sqlCol.name);
+//			bldr.commitTransaction(false);
+//			// Values:
+//			bldr.append(") VALUES (", false);
+//			bldr.openTransaction(", ");
+//			for(int v = 0, s = sqlColumns.size(); v < s; v++)
+//				bldr.append(values != null ? values.get(v) : valuePlaceHolder);
+//			bldr.commitTransaction(false);
+//			bldr.append(");", false);
+			return bldr.toString();
 		}
 		
 		/**
@@ -503,12 +552,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public void delete(Record record) throws DBException
 		{
+			if(!isInDB())
+				return; // the table doesn't exist in the database so there is no record to delete
 			// TODO
 		}
 		
 		public String toString()
 		{
-			return "database table '" + name + "'";
+			return "database table '" + tableName + "'";
 		}
 
 	}
@@ -569,8 +620,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.sourceColumnPointer = sourceColumnPointer;
 			this.mapping = mapping != null ? mapping : (TypeMapping<SQLType, SapType>) TypeMapping.<SQLType> Transparent();
 		}
-		
-		protected abstract String sanitiseIdentifier(String name);
 
 		/**
 		 * @param value
@@ -590,7 +639,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@SuppressWarnings("unchecked")
 		public String sapelliObjectToLiteral(Object value, boolean quotedIfNeeded)
 		{
-			return sqlToLiteral(mapping.toSQLType((SapType) value), quotedIfNeeded);
+			return sqlToLiteral(value != null ? mapping.toSQLType((SapType) value) : null, quotedIfNeeded);
 		}
 		
 		/**
@@ -623,6 +672,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			sourceColumnPointer.getColumn().storeObject(record, mapping.toSapelliType(value));
 		}
 		
+		/**
+		 * @param value
+		 * @param quotedIfNeeded
+		 * @return
+		 */
 		protected String sqlToLiteral(SQLType value, boolean quotedIfNeeded)
 		{
 			if(value != null)
@@ -677,8 +731,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			};
 		}
 
+		/**
+		 * @param value assumed to be non-null!
+		 * @return
+		 */
 		public abstract SQLType toSQLType(SapType value);
 		
+		/**
+		 * @param value assumed to be non-null!
+		 * @return
+		 */
 		public abstract SapType toSapelliType(SQLType value);
 		
 	}
@@ -712,18 +774,20 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public STable generateTable(Schema schema)
 		{
 			this.schema = schema;
-			table = newTableSpec(schema);
+			initialiseTable();
 			schema.accept(this); // traverse schema --> columnSpecs will be added to TableSpec
 			table.setTableConstraint(getTableConstraints());
 			return table;
 		}
 		
 		/**
-		 * @param schema
+		 * Initialises the table variable with a new STable object.
+		 * Assumes schema has been set beforehand!
+		 * 
 		 * @return
 		 */
-		protected abstract STable newTableSpec(Schema schema);
-		
+		protected abstract void initialiseTable();
+				
 		/**
 		 * This method is assumed to be called only after all columns have been added to the table!
 		 * 
@@ -871,7 +935,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		private void visitAndOr(boolean and, List<Constraint> subConstraints)
 		{
 			// Set-up "outer" and "mid" buffers:
-			bldr.openTranaction(); // open "outer" buffer: for "(" and ")" (empty string as connective)
+			bldr.openTransaction(""); // open "outer" buffer: for "(" and ")" (empty string as connective)
 			bldr.append("(");
 			bldr.openTransaction(and ? "AND" : "OR"); // open "mid" buffer: for subConstraints & AND/OR connectives
 			
@@ -899,7 +963,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public void visit(NotConstraint notConstr)
 		{
 			// Set-up buffers:
-			bldr.openTranaction(); // open "outer" buffer: for "NOT (" and ")" (empty string as connective)
+			bldr.openTransaction(""); // open "outer" buffer: for "NOT (" and ")" (empty string as connective)
 			bldr.append("NOT (");
 			bldr.openTransaction(SPACE); // open "inner" buffer for negated constraint
 			
