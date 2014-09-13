@@ -329,19 +329,19 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param cursor
 		 * @param columnIdx
 		 */
-		public void storeFrom(Record record, ISQLiteCursor cursor, int columnIdx)
+		public void store(Record record, ISQLiteCursor cursor, int columnIdx)
 		{
-			store(record, readFrom(cursor, columnIdx));
+			store(record, getValueOrNull(cursor, columnIdx));
 		}
 		
-		public SQLType readFrom(ISQLiteCursor cursor, int columnIdx)
+		public SQLType getValueOrNull(ISQLiteCursor cursor, int columnIdx)
 		{
 			if(cursor.isNull(columnIdx))
 				return null;
-			return getFrom(cursor, columnIdx);
+			return getValue(cursor, columnIdx);
 		}
 		
-		protected abstract SQLType getFrom(ISQLiteCursor cursor, int columnIdx);
+		protected abstract SQLType getValue(ISQLiteCursor cursor, int columnIdx);
 
 	}
 	

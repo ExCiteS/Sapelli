@@ -72,7 +72,7 @@ public class SQLiteBlobColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<by
 	}
 
 	@Override
-	public byte[] getFrom(ISQLiteCursor cursor, int columnIdx)
+	public byte[] getValue(ISQLiteCursor cursor, int columnIdx)
 	{
 		return cursor.getBlob(columnIdx);
 	}

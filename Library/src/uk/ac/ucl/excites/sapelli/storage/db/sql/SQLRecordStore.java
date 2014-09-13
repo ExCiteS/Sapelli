@@ -631,7 +631,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public String sapToLiteral(SapType value, boolean quotedIfNeeded)
 		{
-			return sqlToLiteral(mapping.toSQLType(value), quotedIfNeeded);
+			return sqlToLiteral(value != null ? mapping.toSQLType(value) : null, quotedIfNeeded);
 		}
 		
 		/**
@@ -672,7 +672,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public void store(Record record, SQLType value)
 		{
-			sourceColumnPointer.getColumn().storeObject(record, mapping.toSapelliType(value));
+			sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getRecord(record, true), value != null ? mapping.toSapelliType(value) : null);
 		}
 		
 		/**

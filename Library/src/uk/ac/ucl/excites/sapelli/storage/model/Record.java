@@ -303,10 +303,16 @@ public class Record implements Serializable
 	@Override
 	public boolean equals(Object obj)
 	{
-		return equals(obj, true);
+		return equals(obj, true, false);
 	}
 	
-	public boolean equals(Object obj, boolean checkSchema)
+	/**
+	 * @param obj
+	 * @param checkSchema
+	 * @param asStoredBinary whether or not to compare values as if they've been writen/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
+	 * @return
+	 */
+	public boolean equals(Object obj, boolean checkSchema, boolean asStoredBinary)
 	{
 		if(this == obj)
 			return true;
@@ -324,12 +330,17 @@ public class Record implements Serializable
 					return false;
 			}
 			// Compare values for each column (using values as if decoded from binary stream):
-			return hasEqualValues(other, true);
+			return hasEqualValues(other, asStoredBinary);
 		}
 		else
 			return false;
 	}
 	
+	/**
+	 * @param other
+	 * @param asStoredBinary whether or not to compare values as if they've been writen/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
+	 * @return
+	 */
 	public boolean hasEqualValues(Record other, boolean asStoredBinary)
 	{
 		return hasEqualValues(other, this.schema.getColumns(false), asStoredBinary); // compare all non-virtual columns
@@ -341,7 +352,7 @@ public class Record implements Serializable
 	 * 
 	 * @param other
 	 * @param columns
-	 * @param asStoredBinary
+	 * @param asStoredBinary whether or not to compare values as if they've been writen/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
 	@SuppressWarnings("rawtypes")

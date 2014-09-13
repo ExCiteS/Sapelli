@@ -72,7 +72,7 @@ public class SQLiteDoubleColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<
 	}
 
 	@Override
-	public Double getFrom(ISQLiteCursor cursor, int columnIdx)
+	public Double getValue(ISQLiteCursor cursor, int columnIdx)
 	{
 		return cursor.getDouble(columnIdx);
 	}

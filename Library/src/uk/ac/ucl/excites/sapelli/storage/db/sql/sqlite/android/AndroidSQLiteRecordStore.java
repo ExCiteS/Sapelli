@@ -178,7 +178,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 				Record record = table.schema.createRecord();
 				int i = 0;
 				for(SQLiteColumn<?, ?> sqliteCol : table.sqlColumns.values())
-					sqliteCol.storeFrom(record, cursor, i++);
+					sqliteCol.store(record, cursor, i++);
 				result.add(record);
 			}
 			cursor.close();

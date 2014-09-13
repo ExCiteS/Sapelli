@@ -102,7 +102,7 @@ public class SQLiteIntegerColumn<SapType> extends SQLiteRecordStore.SQLiteColumn
 	}
 
 	@Override
-	protected Long getFrom(ISQLiteCursor cursor, int columnIdx)
+	protected Long getValue(ISQLiteCursor cursor, int columnIdx)
 	{
 		return cursor.getLong(columnIdx);
 	}

@@ -73,7 +73,7 @@ public class SQLiteStringColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<
 	}
 
 	@Override
-	protected String getFrom(ISQLiteCursor cursor, int columnIdx)
+	protected String getValue(ISQLiteCursor cursor, int columnIdx)
 	{
 		return cursor.getString(columnIdx);
 	}
