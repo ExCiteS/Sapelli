@@ -20,17 +20,22 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
+
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
@@ -63,6 +68,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 {
 	
 	// Statics----------------------------------------------
+	static public final String DATABASE_FILE_EXTENSION = "sqlite3";
+	static public final String BACKUP_SUFFIX = "_Backup";
+	
 	/**
 	 * @see http://catalogue.pearsoned.co.uk/samplechapter/067232685X.pdf
 	 */
@@ -171,6 +179,30 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		else
 			return '[' + identifier + ']';
 	}
+
+	@Override
+	protected void doBackup(File destinationFolder) throws DBException
+	{
+		// TODO only when not in transaction?
+		File currentDB = getDatabaseFile();
+		String extension = FileHelpers.getFileExtension(currentDB);
+		File backupDB = new File(destinationFolder, FileHelpers.trimFileExtensionAndDot(currentDB.getName()) + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName() + (extension.isEmpty() ? DATABASE_FILE_EXTENSION : extension));
+		if(currentDB != null && currentDB.exists() && destinationFolder.canWrite())
+		{	// File copy:			
+			try
+			{
+				FileUtils.copyFile(currentDB, backupDB);
+			}
+			catch(IOException e)
+			{
+				throw new DBException("Failed to back-up SQLite database", e);
+			}
+		}
+		else
+			throw new DBException("Failed to back-up SQLite database");
+	}
+	
+	protected abstract File getDatabaseFile();
 	
 	/**
 	 * @param sql
@@ -395,9 +427,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				}
 			}
 	
-			// Optionality:
+			// Optionality:			 
 			if(!sourceColum.isOptional())
 				bldr.append("NOT NULL");
+			// TODO Reassess this: it could be a bad idea because it means we cannot persistently store incomplete records (which was no problem with DB4O.
 			
 			// TODO Default value?
 			

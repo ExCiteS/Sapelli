@@ -47,55 +47,48 @@ import android.util.Log;
  */
 public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 {
-	
+
+	// Statics----------------------------------------------	
 	static public final int DATABASE_VERSION = 2;
 	static public final String PARAM_PLACEHOLDER = "?";
-	
-	private SQLiteDatabase db;
-	private boolean newDBFile = false;
 
+	// Dynamics---------------------------------------------
+	private SQLiteDatabase db;
+	private boolean newDB = false;
+	
 	/**
 	 * @param client
 	 * @param context
 	 * @param dbName
 	 * @throws Exception 
 	 */
-	public AndroidSQLiteRecordStore(StorageClient client, Context context, String dbName) throws Exception
+	public AndroidSQLiteRecordStore(StorageClient client, Context context, String baseName) throws Exception
 	{
 		super(client);
 		
-		// Custom cursor factory:
-		CursorFactory cursorFactory =  new CursorFactory()
+		// Helper:
+		SQLiteOpenHelper helper = new SQLiteOpenHelper(context, baseName + DATABASE_NAME_SUFFIX, new AndroidSQLiteCursorFactory(), DATABASE_VERSION)
 		{
 			@Override
-			public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery, String editTable, SQLiteQuery query)
+			public void onCreate(SQLiteDatabase db)
 			{
-				Log.d("SQLite", "CursorQuery: " + query.toString()); // TODO remove debug logging
-				return AndroidSQLiteCursor.newCursor(db, masterQuery, editTable, query);
+				newDB = true;
 			}
-		};
-		
-		// Open database:
-		this.db = new SQLiteOpenHelper(context, dbName, cursorFactory, DATABASE_VERSION)
-		{
 			
 			@Override
 			public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
 			{
-				// TODO Auto-generated method stub
-				
+				// TODO what to do here?
 			}
-			
-			@Override
-			public void onCreate(SQLiteDatabase db)
-			{
-				newDBFile = true;
-			}
-		}.getWritableDatabase();
+		};
 		
-		System.out.println("Got db?: " + (db != null ? "yes" : "no")); // TODO remove debug logging
+		// Open writable database:
+		this.db = helper.getWritableDatabase();
 		
-		initialise(newDBFile);
+		Log.d("SQLite", "Got db?: " + (db != null ? db.getPath() : "no")); // TODO remove debug logging
+		
+		// Initialise:
+		initialise(newDB);
 	}
 	
 	@Override
@@ -190,16 +183,15 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	@Override
-	protected void doBackup(File destinationFolder) throws DBException
-	{
-		// TODO Auto-generated method stub
-		
-	}
-	
-	@Override
 	protected void doFinalise() throws DBException
 	{
 		db.close();
+	}
+	
+	@Override
+	protected File getDatabaseFile()
+	{
+		return new File(db.getPath());
 	}
 
 	@Override
@@ -221,6 +213,22 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	protected String getParameterPlaceHolder()
 	{
 		return PARAM_PLACEHOLDER;
+	}
+	
+	/**
+	 * Custom cursor factory
+	 * 
+	 * @author mstevens
+	 */
+	static private class AndroidSQLiteCursorFactory implements CursorFactory
+	{
+	
+		@Override
+		public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery, String editTable, SQLiteQuery query)
+		{
+			Log.d("SQLite", "CursorQuery: " + query.toString()); // TODO remove debug logging
+			return AndroidSQLiteCursor.newCursor(db, masterQuery, editTable, query);
+		}
 	}
 	
 	/**

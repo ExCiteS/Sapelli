@@ -42,6 +42,9 @@ import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 public abstract class RecordStore implements Store
 {
 
+	static public final String DATABASE_NAME_SUFFIX = "-records";
+	static public final String BACKUP_SUFFIX = "_Backup";
+	
 	protected StorageClient client;
 	
 	/**

@@ -53,8 +53,6 @@ public class DB4ORecordStore extends RecordStore
 {
 
 	// Statics----------------------------------------------
-	static public final String DATABASE_NAME_SUFFIX = "_Data";
-	static public final String BACKUP_SUFFIX = "_Backup";
 	static public final int ACTIVATION_DEPTH = 40;
 	static public final int UPDATE_DEPTH = 40;
 
