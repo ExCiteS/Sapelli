@@ -57,6 +57,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
@@ -157,14 +158,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				throw new DBException("Could not roll-back SQLite transaction", ex);
 			}
 	}
-
-	@Override
-	protected boolean doesTableExist(String tableName)
-	{
-		// TODO Auto-generated method stub
-		return false;
-		// SELECT name FROM sqlite_master WHERE type='table' AND name='table_name';
-	}
 	
 	/**
 	 * 
@@ -181,12 +174,50 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	}
 
 	@Override
+	protected boolean doesTableExist(String tableName)
+	{
+		ISQLiteCursor cursor = rawQuery("SELECT name FROM sqlite_master WHERE type=? AND name=?", new String[] { "table", tableName });;
+		return cursor != null && cursor.hasRow();
+	}
+	
+	@Override
+	protected void queryForRecords(SQLiteTable table, RecordsQuery query, List<Record> result)
+	{
+		ISQLiteCursor cursor = queryForRecords(table, query);
+		if(cursor == null)
+			return;
+		while(cursor.moveToNext())
+		{
+			Record record = table.schema.createRecord();
+			int i = 0;
+			for(SQLiteColumn<?, ?> sqliteCol : table.sqlColumns.values())
+				sqliteCol.store(record, cursor, i++);
+			result.add(record);
+		}
+		cursor.close();
+	}
+	
+	/**
+	 * @param table
+	 * @param query
+	 * @return a cursor to iterator over results
+	 */
+	protected abstract ISQLiteCursor queryForRecords(SQLiteTable table, RecordsQuery query);
+	
+	/**
+	 * @param sql
+	 * @param selectionArgs
+	 * @return a cursor to iterator over results
+	 */
+	protected abstract ISQLiteCursor rawQuery(String sql, String[] selectionArgs);
+
+	@Override
 	protected void doBackup(File destinationFolder) throws DBException
 	{
 		// TODO only when not in transaction?
 		File currentDB = getDatabaseFile();
 		String extension = FileHelpers.getFileExtension(currentDB);
-		File backupDB = new File(destinationFolder, FileHelpers.trimFileExtensionAndDot(currentDB.getName()) + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName() + (extension.isEmpty() ? DATABASE_FILE_EXTENSION : extension));
+		File backupDB = new File(destinationFolder, FileHelpers.trimFileExtensionAndDot(currentDB.getName()) + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName() + "." + (extension.isEmpty() ? DATABASE_FILE_EXTENSION : extension));
 		if(currentDB != null && currentDB.exists() && destinationFolder.canWrite())
 		{	// File copy:			
 			try

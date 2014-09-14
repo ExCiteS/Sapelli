@@ -19,14 +19,12 @@
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
 import java.io.File;
-import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -42,6 +40,7 @@ import android.os.Build;
 import android.util.Log;
 
 /**
+ * A RecordStore class which uses Android's SQLite facilities to store records.
  * 
  * @author mstevens
  */
@@ -78,14 +77,12 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			@Override
 			public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
 			{
-				// TODO what to do here?
+				// TODO what to do here??
 			}
 		};
 		
 		// Open writable database:
 		this.db = helper.getWritableDatabase();
-		
-		Log.d("SQLite", "Got db?: " + (db != null ? db.getPath() : "no")); // TODO remove debug logging
 		
 		// Initialise:
 		initialise(newDB);
@@ -157,28 +154,34 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 				throw new DBException("Could not roll-back SQLite transaction", ex);
 			}
 	}
-	
+
 	@Override
-	protected void queryForRecords(SQLiteTable table, RecordsQuery query, List<Record> result)
+	protected ISQLiteCursor queryForRecords(SQLiteTable table, RecordsQuery query)
 	{
 		try
 		{
 			SelectionClauseBuilder selector = new SelectionClauseBuilder(table, query.getConstraints(), PARAM_PLACEHOLDER, false); // TODO must the literals be quoted?
 			SQLiteColumn<?, ?> orderBy = table.getSQLColumn(query.getOrderBy());
-			AndroidSQLiteCursor cursor = (AndroidSQLiteCursor) db.query(table.tableName, null, selector.getClauseOrNull(), selector.getArguments(), null, (orderBy != null ? orderBy.name : null), query.isLimited() ? "LIMIT " + query.getLimit() : null);
-			while(cursor.moveToNext())
-			{
-				Record record = table.schema.createRecord();
-				int i = 0;
-				for(SQLiteColumn<?, ?> sqliteCol : table.sqlColumns.values())
-					sqliteCol.store(record, cursor, i++);
-				result.add(record);
-			}
-			cursor.close();
+			return (AndroidSQLiteCursor) db.query(table.tableName, null, selector.getClauseOrNull(), selector.getArguments(), null, (orderBy != null ? orderBy.name : null), query.isLimited() ? "LIMIT " + query.getLimit() : null);
 		}
 		catch(Exception e)
 		{
 			Log.e("SQLite_Error", "Failed to query for records", e);
+			return null;
+		}
+	}
+
+	@Override
+	protected ISQLiteCursor rawQuery(String sql, String[] selectionArgs)
+	{
+		try
+		{
+			return (AndroidSQLiteCursor) db.rawQuery(sql, selectionArgs);
+		}
+		catch(SQLException e)
+		{
+			Log.e("SQLite_Error", "Failed to execute raw query (" + sql + ").", e);
+			return null;
 		}
 	}
 	
@@ -216,7 +219,8 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	/**
-	 * Custom cursor factory
+	 * Custom cursor factory, this enables us to our custom cursor class ({@link AndroidSQLiteCursor}) when processing query results.
+	 * Another helpful aspect is the ability to log queries for debugging.
 	 * 
 	 * @author mstevens
 	 */
@@ -226,14 +230,19 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		@Override
 		public Cursor newCursor(SQLiteDatabase db, SQLiteCursorDriver masterQuery, String editTable, SQLiteQuery query)
 		{
-			Log.d("SQLite", "CursorQuery: " + query.toString()); // TODO remove debug logging
+			Log.d("SQLite", query.toString()); // TODO remove debug logging
 			return AndroidSQLiteCursor.newCursor(db, masterQuery, editTable, query);
 		}
 	}
 	
 	/**
+	 * Our custom cursor class, which behaves identical to the {@link SQLiteCursor} super class. The only difference
+	 * is it implements the {@link ISQLiteCursor} interface. Apart from {@link #hasRow()} all methods declared in
+	 * the interface already exist in the {@link SQLiteCursor}. The purpose of this strategy is to allow non-Android
+	 * specific classes (i.e. at the level of the Sapelli Library), notably the typed SQLiteColumn subclasses, to
+	 * call methods on cursor instances.
+	 * 
 	 * @author mstevens
-	 *
 	 */
 	static private class AndroidSQLiteCursor extends SQLiteCursor implements ISQLiteCursor
 	{
@@ -256,6 +265,12 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		private AndroidSQLiteCursor(SQLiteDatabase db, SQLiteCursorDriver driver, String editTable, SQLiteQuery query) 
 		{
 			super(db, driver, editTable, query);
+		}
+
+		@Override
+		public boolean hasRow()
+		{
+			return getCount() > 0;
 		}
 		
 	}

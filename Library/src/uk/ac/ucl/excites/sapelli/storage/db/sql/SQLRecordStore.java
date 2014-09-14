@@ -66,7 +66,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
 	
-	static private final String SCHEMATA_TABLE_NAME = "Schemata";
+	static protected final String SCHEMATA_TABLE_NAME = "Schemata";
 	static protected final String SPACE = " ";	
 	
 	private Map<Schema, STable> tables;
@@ -246,7 +246,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		for(Schema s : query.isAnySchema() ? getAllKnownSchemata() : query.getSourceSchemata())
 			try
 			{
-				STable table = getTable(s, false); // won't throw DBException becausewe don't allow table creation (so we ignore them below)
+				STable table = getTable(s, false); // won't throw DBException because we don't allow table creation (so we ignore exception below)
 				if(table.isInDB())
 					queryForRecords(table, query, result);
 			}
