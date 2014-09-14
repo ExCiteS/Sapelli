@@ -341,9 +341,9 @@ public final class FileHelpers
 	static public String getFileExtension(File file)
 	{
 		if(file.isFile())
-			return getFileExtension(file.getAbsolutePath());
+			return getFileExtension(file.getName());
 		else
-			return File.separator;
+			return "";
 	}
 
 	/**
