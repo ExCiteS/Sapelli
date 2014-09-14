@@ -321,7 +321,7 @@ public class Record implements Serializable
 			Record other = (Record) obj;
 			if(checkSchema)
 			{	// Check if records have the same (or 100% equivalent) schema
-				if(this.schema.equals(other.schema))
+				if(!this.schema.equals(other.schema))
 					return false;
 			}
 			else
