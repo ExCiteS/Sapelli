@@ -39,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.statements.ISQLiteCUDStatement;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBlobColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteDoubleColumn;
@@ -71,6 +72,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	// Statics----------------------------------------------
 	static public final String DATABASE_FILE_EXTENSION = "sqlite3";
 	static public final String BACKUP_SUFFIX = "_Backup";
+	static public final String PARAM_PLACEHOLDER = "?";
 	
 	/**
 	 * @see http://catalogue.pearsoned.co.uk/samplechapter/067232685X.pdf
@@ -176,14 +178,37 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	@Override
 	protected boolean doesTableExist(String tableName)
 	{
-		ISQLiteCursor cursor = rawQuery("SELECT name FROM sqlite_master WHERE type=? AND name=?", new String[] { "table", tableName });;
-		return cursor != null && cursor.hasRow();
+		return false;
+		//ISQLiteCursor cursor = rawQuery("SELECT name FROM sqlite_master WHERE type=? AND name=?", new String[] { "table", tableName });;
+		//return cursor != null && cursor.hasRow();
 	}
 	
 	@Override
-	protected void queryForRecords(SQLiteTable table, RecordsQuery query, List<Record> result)
+	protected void queryForRecords(SQLiteTable table, RecordsQuery query, List<Record> result) throws DBException
 	{
-		ISQLiteCursor cursor = queryForRecords(table, query);
+		// Build SELECT query:
+		SelectionClause selection = new SelectionClause(table, query.getConstraints(), PARAM_PLACEHOLDER);
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
+		bldr.append("SELECT * FROM");
+		bldr.append(table.tableName);
+		bldr.append(selection.getWhereClause());
+		SQLiteColumn<?, ?> orderBy = table.getSQLColumn(query.getOrderBy());
+		if(orderBy != null)
+		{
+			bldr.append(orderBy.name);
+			bldr.append(query.isOrderAsc() ? "ASC" : "DESC");
+		}
+		if(query.isLimited())
+		{
+			bldr.append("LIMIT");
+			bldr.append(Integer.toString(query.getLimit()));
+		}
+		bldr.append(";", false);
+		
+		// Execute (also binds parameters) and get cursor:
+		ISQLiteCursor cursor = executeQuery(bldr.toString(), selection.getParamsAndArgs());
+		
+		// Process results to create records:
 		if(cursor == null)
 			return;
 		while(cursor.moveToNext())
@@ -194,22 +219,16 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				sqliteCol.store(record, cursor, i++);
 			result.add(record);
 		}
-		cursor.close();
+		cursor.close(); // !!!
 	}
 	
 	/**
-	 * @param table
-	 * @param query
-	 * @return a cursor to iterator over results
-	 */
-	protected abstract ISQLiteCursor queryForRecords(SQLiteTable table, RecordsQuery query);
-	
-	/**
 	 * @param sql
-	 * @param selectionArgs
-	 * @return a cursor to iterator over results
+	 * @param paramsAndArgs
+	 * @return
+	 * @throws DBException
 	 */
-	protected abstract ISQLiteCursor rawQuery(String sql, String[] selectionArgs);
+	protected abstract ISQLiteCursor executeQuery(String sql, SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.StatementParametersWithArguments paramsAndArgs) throws DBException;
 
 	@Override
 	protected void doBackup(File destinationFolder) throws DBException
@@ -219,7 +238,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		String extension = FileHelpers.getFileExtension(currentDB);
 		File backupDB = new File(destinationFolder, FileHelpers.trimFileExtensionAndDot(currentDB.getName()) + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName() + "." + (extension.isEmpty() ? DATABASE_FILE_EXTENSION : extension));
 		if(currentDB != null && currentDB.exists() && destinationFolder.canWrite())
-		{	// File copy:			
+		{	// File copy:
 			try
 			{
 				FileUtils.copyFile(currentDB, backupDB);
@@ -239,7 +258,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @param sql
 	 * @return
 	 */
-	protected abstract ISQLiteStatement newSQLiteStatement(String sql);
+	protected abstract ISQLiteCUDStatement newCUDStatement(String sql) throws DBException;
 	
 	/**
 	 * @return String used to mark unbound parameters in parameterised statements/queries
@@ -253,7 +272,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
-		private ISQLiteStatement insertStatement;
+		private ISQLiteCUDStatement insertStatement;
+		private ISQLiteCUDStatement updateStatement;
+		private ISQLiteCUDStatement upsertStatement;
+		private ISQLiteCUDStatement deleteStatement;
 
 		public SQLiteTable(Schema schema)
 		{
@@ -267,7 +289,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public void insert(Record record) throws DBException
 		{
 			if(insertStatement == null)
-				insertStatement = newSQLiteStatement(generateInsertStatement(getParameterPlaceHolder()));
+				insertStatement = newCUDStatement(generateInsertStatement(getParameterPlaceHolder()));
 			else
 				insertStatement.clearAllBindings(); // clear bindings for reuse
 
@@ -277,7 +299,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				sqliteCol.retrieveAndBind(insertStatement, i++, record);
 			
 			// Execute:
-			insertStatement.execute();
+			insertStatement.executeCUD();
 		}
 		
 		public void upsert(Record record) throws DBException
@@ -349,6 +371,17 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public void retrieveAndBind(ISQLiteStatement statement, int paramIdx, Record record)
 		{
 			bind(statement, paramIdx, retrieve(record));
+		}
+		
+		/**
+		 * @param statement
+		 * @param paramIdx
+		 * @param sapValue
+		 */
+		@SuppressWarnings("unchecked")
+		public void bindSapelliObject(ISQLiteStatement statement, int paramIdx, Object sapValue)
+		{
+			bind(statement, paramIdx, sapValue != null ? mapping.toSQLType((SapType) sapValue) : null);
 		}
 		
 		/**

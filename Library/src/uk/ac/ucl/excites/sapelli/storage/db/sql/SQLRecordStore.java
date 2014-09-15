@@ -62,6 +62,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * @param <SRS>
  * @param <STable>
  * @param <SColumn>
+ * 
  */
 public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
@@ -250,7 +251,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				if(table.isInDB())
 					queryForRecords(table, query, result);
 			}
-			catch(DBException ignore) {}
+			catch(DBException dbE)
+			{
+				dbE.printStackTrace(System.err);
+			}
 		return result;
 	}
 	
@@ -260,7 +264,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @param result
 	 * @throws DBException 
 	 */
-	protected abstract void queryForRecords(STable table, RecordsQuery query, List<Record> result);
+	protected abstract void queryForRecords(STable table, RecordsQuery query, List<Record> result) throws DBException;
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveRecord(uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery)
@@ -679,14 +683,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * @param value
+		 * @param sapValue
 		 * @param quotedIfNeeded
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
-		public String sapelliObjectToLiteral(Object value, boolean quotedIfNeeded)
+		public String sapelliObjectToLiteral(Object sapValue, boolean quotedIfNeeded)
 		{
-			return sqlToLiteral(value != null ? mapping.toSQLType((SapType) value) : null, quotedIfNeeded);
+			return sqlToLiteral(sapValue != null ? mapping.toSQLType((SapType) sapValue) : null, quotedIfNeeded);
 		}
 		
 		/**
@@ -959,14 +963,87 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @author mstevens
 	 *
 	 */
-	protected class SelectionClauseBuilder implements ConstraintVisitor
+	protected class StatementParameters
+	{
+		
+		List<SColumn> parameterColumns;
+		
+		public StatementParameters()
+		{
+			this.parameterColumns = new ArrayList<SColumn>();
+		}
+		
+		/**
+		 * @return list of columns or null if not in parameterised mode
+		 */
+		public List<SColumn> getParameterColumns()
+		{
+			return parameterColumns;
+		}
+		
+		public void addColumn(SColumn column)
+		{
+			parameterColumns.add(column);
+		}
+
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	public class StatementParametersWithArguments extends StatementParameters
+	{
+		
+		List<Object> sapArguments;
+		
+		public StatementParametersWithArguments()
+		{
+			super();
+			this.sapArguments = new ArrayList<Object>();
+		}
+		
+		public void addColumnAndValue(SColumn column, Object sapValue)
+		{
+			super.addColumn(column);
+			sapArguments.add(sapValue);
+		}
+		
+		/**
+		 * @return list of Objects (SapType values) or null if not in parameterised mode
+		 */
+		public List<Object> getSapArguments()
+		{
+			return sapArguments;
+		}
+		
+		/**
+		 * @param quotedIfNeeded
+		 * @return
+		 */
+		public String[] getArgumentStrings(boolean quotedIfNeeded)
+		{
+			String[] argStrings = new String[parameterColumns.size()];
+			for(int p = 0; p < argStrings.length; p++)
+				argStrings[p] = parameterColumns.get(p).sapelliObjectToLiteral(sapArguments.get(p), quotedIfNeeded);
+			return argStrings;
+		}
+		
+	}
+	
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	protected class SelectionClause implements ConstraintVisitor
 	{
 		
 		STable table;
 		TransactionalStringBuilder bldr;
+		StatementParametersWithArguments paramsAndArgs;
 		String valuePlaceHolder;
-		List<String> arguments;
-		boolean quoteArgumentsIfNeeded;
+		
 		private DBException exception = null;
 		
 		/**
@@ -976,9 +1053,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @param constraint
 		 * @param valuePlaceHolder placeholder for parameters, null if literal clause is being generated
 		 */
-		public SelectionClauseBuilder(STable table, Constraint constraint)
+		public SelectionClause(STable table, Constraint constraint)
 		{
-			this(table, constraint, null, true);
+			this(table, constraint, null);
 		}
 		
 		/**
@@ -987,15 +1064,13 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @param table
 		 * @param constraint
 		 * @param valuePlaceHolder
-		 * @param quoteArgumentsIfNeeded
 		 */
-		public SelectionClauseBuilder(STable table, Constraint constraint, String valuePlaceHolder, boolean quoteArgumentsIfNeeded)
+		public SelectionClause(STable table, Constraint constraint, String valuePlaceHolder)
 		{
 			this.table = table;
 			this.valuePlaceHolder = valuePlaceHolder;
-			this.quoteArgumentsIfNeeded = quoteArgumentsIfNeeded;
 			if(isParameterised())
-				this.arguments = new ArrayList<String>();
+				this.paramsAndArgs = new StatementParametersWithArguments();
 			this.bldr = new TransactionalStringBuilder(SPACE); // pass space as connective
 			if(constraint != null)
 				constraint.accept(this);
@@ -1074,16 +1149,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			SColumn sqlCol = table.getSQLColumn(cp);
 			if(sqlCol != null)
 			{	// Equality constraint on leaf column...
-				String literalValue = sqlCol.sapelliObjectToLiteral(equalityConstr.getValue(), quoteArgumentsIfNeeded);
+				Object sapValue = equalityConstr.getValue();
 				bldr.append(sqlCol.name);
 				bldr.append(getComparisonOperator(RuleConstraint.Comparison.EQUAL));
 				if(isParameterised())
 				{
 					bldr.append(valuePlaceHolder);
-					arguments.add(literalValue);
+					paramsAndArgs.addColumnAndValue(sqlCol, sapValue);
 				}
 				else
-					bldr.append(literalValue);
+					bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
 			}
 			else if(cp.getColumn() instanceof RecordColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof Record)
 			{	// Equality constraint on composite column...
@@ -1112,16 +1187,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				new DBException("Failed to generate SQL for ruleConstraint on column " + ruleConstr.getColumnPointer().getQualifiedColumnName(table.schema));
 				return;
 			}
-			String literalValue = sqlCol.sapelliObjectToLiteral(ruleConstr.getValue(), quoteArgumentsIfNeeded);
+			Object sapValue = ruleConstr.getValue();
 			bldr.append(sqlCol.name);
 			bldr.append(getComparisonOperator(ruleConstr.getComparison()));
 			if(isParameterised())
 			{
 				bldr.append(valuePlaceHolder);
-				arguments.add(literalValue);
+				paramsAndArgs.addColumnAndValue(sqlCol, sapValue);
 			}
 			else
-				bldr.append(literalValue);
+				bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
 		}
 		
 		public String getWhereClause() throws DBException
@@ -1142,15 +1217,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				throw exception;
 			return bldr.toString();
 		}
-		
-		public String[] getArguments()
+
+		/**
+		 * @return the paramsAndArgs
+		 */
+		public StatementParametersWithArguments getParamsAndArgs()
 		{
-			if(isParameterised())
-				return arguments.toArray(new String[arguments.size()]);
-			else
-				return null;
+			return paramsAndArgs;
 		}
-		
+				
 	}
 
 }

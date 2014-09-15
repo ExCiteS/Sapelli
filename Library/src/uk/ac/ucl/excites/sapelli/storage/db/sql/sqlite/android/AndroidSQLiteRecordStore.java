@@ -24,7 +24,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.statements.ISQLiteCUDStatement;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import android.annotation.TargetApi;
 import android.content.Context;
@@ -49,7 +49,6 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 
 	// Statics----------------------------------------------	
 	static public final int DATABASE_VERSION = 2;
-	static public final String PARAM_PLACEHOLDER = "?";
 
 	// Dynamics---------------------------------------------
 	private SQLiteDatabase db;
@@ -155,28 +154,17 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			}
 	}
 
+	/**
+	 * @param sql
+	 * @param paramsAndArgs
+	 * @return
+	 */
 	@Override
-	protected ISQLiteCursor queryForRecords(SQLiteTable table, RecordsQuery query)
+	protected ISQLiteCursor executeQuery(String sql, uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.StatementParametersWithArguments paramsAndArgs) throws DBException
 	{
 		try
 		{
-			SelectionClauseBuilder selector = new SelectionClauseBuilder(table, query.getConstraints(), PARAM_PLACEHOLDER, false); // TODO must the literals be quoted?
-			SQLiteColumn<?, ?> orderBy = table.getSQLColumn(query.getOrderBy());
-			return (AndroidSQLiteCursor) db.query(table.tableName, null, selector.getClauseOrNull(), selector.getArguments(), null, (orderBy != null ? orderBy.name : null), query.isLimited() ? "LIMIT " + query.getLimit() : null);
-		}
-		catch(Exception e)
-		{
-			Log.e("SQLite_Error", "Failed to query for records", e);
-			return null;
-		}
-	}
-
-	@Override
-	protected ISQLiteCursor rawQuery(String sql, String[] selectionArgs)
-	{
-		try
-		{
-			return (AndroidSQLiteCursor) db.rawQuery(sql, selectionArgs);
+			return (AndroidSQLiteCursor) db.rawQuery(sql, paramsAndArgs.getArgumentStrings(false)); // TODO must the literals be quoted?
 		}
 		catch(SQLException e)
 		{
@@ -204,9 +192,9 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 
 	@Override
-	protected ISQLiteStatement newSQLiteStatement(String sql)
+	protected ISQLiteCUDStatement newCUDStatement(String sql)
 	{
-		return new AndroidSQLiteStatement(db, sql);
+		return new AndroidSQLiteCUDStatement(db, sql);
 	}
 	
 	/* (non-Javadoc)

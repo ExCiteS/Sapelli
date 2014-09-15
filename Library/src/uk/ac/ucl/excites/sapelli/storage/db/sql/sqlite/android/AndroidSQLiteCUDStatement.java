@@ -19,7 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.statements.ISQLiteCUDStatement;
 import android.annotation.TargetApi;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
@@ -33,9 +33,9 @@ import android.util.Log;
  * @see android.database.sqlite.SQLiteDatabase
  * @see android.database.sqlite.SQLiteStatement
  */
-public class AndroidSQLiteStatement implements ISQLiteStatement
+public class AndroidSQLiteCUDStatement implements ISQLiteCUDStatement
 {
-
+	
 	public enum Kind
 	{
 		INSERT,
@@ -51,7 +51,7 @@ public class AndroidSQLiteStatement implements ISQLiteStatement
 	 * @param sql
 	 * @throws SQLException
 	 */
-	public AndroidSQLiteStatement(SQLiteDatabase db, String sql) throws SQLException
+	public AndroidSQLiteCUDStatement(SQLiteDatabase db, String sql) throws SQLException
 	{
 		androidSQLiteSt = db.compileStatement(sql);
 		Log.d("SQLite", "Compile statement: " + sql); // TODO remove debug logging
@@ -100,10 +100,9 @@ public class AndroidSQLiteStatement implements ISQLiteStatement
 	{
 		androidSQLiteSt.clearBindings();
 	}
-
 	
 	@Override
-	public boolean execute() throws DBException
+	public boolean executeCUD() throws DBException
 	{
 		try
 		{

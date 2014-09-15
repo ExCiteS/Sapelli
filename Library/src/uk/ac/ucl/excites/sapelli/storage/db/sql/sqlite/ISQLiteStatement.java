@@ -37,8 +37,6 @@ public interface ISQLiteStatement
 	
 	public void bindNull(int paramIdx);
 	
-	public boolean execute() throws DBException;
-	
 	public void clearAllBindings();
 
 }
