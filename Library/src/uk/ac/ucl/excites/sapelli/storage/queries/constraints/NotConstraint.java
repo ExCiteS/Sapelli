@@ -34,7 +34,9 @@ public class NotConstraint extends Constraint
 	 */
 	static Constraint Negate(Constraint constraintToNegate)
 	{
-		if(constraintToNegate instanceof NotConstraint)
+		if(constraintToNegate == null)
+			return null;
+		else if(constraintToNegate instanceof NotConstraint)
 			// Avoid double-negations:
 			return ((NotConstraint) constraintToNegate).negatedConstraint;
 		else

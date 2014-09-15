@@ -185,7 +185,7 @@ public class DB4ORecordStore extends RecordStore
 		{
 			Record r = resultSet.next();
 			db4o.activate(r, ACTIVATION_DEPTH);
-			if(constraints.isValid(r)) // Filter by constraint(s) (for some reason the DB4O query doesn't work if this happens inside the Predicate's match() method)
+			if(constraints == null || constraints.isValid(r)) // Filter by constraint(s) (for some reason the DB4O query doesn't work if this happens inside the Predicate's match() method)
 				result.add(r);
 		}
 		

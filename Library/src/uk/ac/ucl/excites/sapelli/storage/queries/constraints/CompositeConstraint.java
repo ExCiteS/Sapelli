@@ -61,13 +61,15 @@ public abstract class CompositeConstraint extends Constraint
 	}
 
 	/**
-	 * AND/OR of 1 subconstraint --> return that subconstraint by itself
+	 * Reduce unnecessary (Composite)constraint instances
 	 * 
 	 * @return
 	 */
 	public Constraint reduce()
 	{
-		if(getSubConstraints().size() == 1)
+		if(constraints == null)
+			return null;
+		else if(constraints.size() == 1)
 			return getSubConstraints().get(0);
 		else
 			return this;

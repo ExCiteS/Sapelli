@@ -224,7 +224,9 @@ public class RecordsQuery
 		List<Record> records = sourceRecords;
 		
 		// Apply constraints:
-		records = getInMemoryConstraits().filter(records);
+		Constraint inMemoryConstraints = getInMemoryConstraits();
+		if(inMemoryConstraints != null)
+			records = inMemoryConstraints.filter(records);
 		
 		// Sort:
 		sort(records);
@@ -271,7 +273,7 @@ public class RecordsQuery
 					return sourceSchemata.hashCode();
 				}
 			};
-			if(constraints instanceof CompositeConstraint && !((CompositeConstraint) constraints).hasSubConstraints())
+			if(constraints == null)
 				return schemaCheck;
 			else
 				return new AndConstraint(schemaCheck, constraints); // nested AND will be flattened
@@ -279,7 +281,7 @@ public class RecordsQuery
 	}
 
 	/**
-	 * @return the constraints
+	 * @return the constraints (may be null)
 	 */
 	public Constraint getConstraints()
 	{
