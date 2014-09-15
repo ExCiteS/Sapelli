@@ -23,12 +23,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
+import android.util.Log;
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
@@ -178,35 +180,29 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	@Override
 	protected boolean doesTableExist(String tableName)
 	{
-		return false;
-		//ISQLiteCursor cursor = rawQuery("SELECT name FROM sqlite_master WHERE type=? AND name=?", new String[] { "table", tableName });;
-		//return cursor != null && cursor.hasRow();
+		Log.d("SQLite", "does table exist?");
+		try
+		{
+			ISQLiteCursor cursor = executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+												Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, (ColumnPointer) null, null)),
+												Collections.<Object> singletonList(tableName));
+			return cursor != null && cursor.hasRow();
+		}
+		catch(DBException e)
+		{
+			e.printStackTrace(System.err);
+			return false;
+		}		
 	}
 	
 	@Override
 	protected void queryForRecords(SQLiteTable table, RecordsQuery query, List<Record> result) throws DBException
 	{
 		// Build SELECT query:
-		SelectionClause selection = new SelectionClause(table, query.getConstraints(), PARAM_PLACEHOLDER);
-		TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-		bldr.append("SELECT * FROM");
-		bldr.append(table.tableName);
-		bldr.append(selection.getWhereClause());
-		SQLiteColumn<?, ?> orderBy = table.getSQLColumn(query.getOrderBy());
-		if(orderBy != null)
-		{
-			bldr.append(orderBy.name);
-			bldr.append(query.isOrderAsc() ? "ASC" : "DESC");
-		}
-		if(query.isLimited())
-		{
-			bldr.append("LIMIT");
-			bldr.append(Integer.toString(query.getLimit()));
-		}
-		bldr.append(";", false);
+		RecordSelection selection = new RecordSelection(table, query, PARAM_PLACEHOLDER);
 		
 		// Execute (also binds parameters) and get cursor:
-		ISQLiteCursor cursor = executeQuery(bldr.toString(), selection.getParamsAndArgs());
+		ISQLiteCursor cursor = executeQuery(selection.getQuery(), selection.getParameterColumns(), selection.getSapArguments());
 		
 		// Process results to create records:
 		if(cursor == null)
@@ -224,11 +220,12 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	
 	/**
 	 * @param sql
-	 * @param paramsAndArgs
-	 * @return
+	 * @param paramCols list of SQLiteColumns which the parameters (?s) in the sql correspond to
+	 * @param sapArguments list of SapType object which are the values to be bound to the parameters
+	 * @return an cursor to iterate over the results
 	 * @throws DBException
 	 */
-	protected abstract ISQLiteCursor executeQuery(String sql, SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.StatementParametersWithArguments paramsAndArgs) throws DBException;
+	protected abstract ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException;
 
 	@Override
 	protected void doBackup(File destinationFolder) throws DBException

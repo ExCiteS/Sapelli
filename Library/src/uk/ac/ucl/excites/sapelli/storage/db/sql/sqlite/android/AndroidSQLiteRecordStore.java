@@ -19,13 +19,13 @@
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
 import java.io.File;
+import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.statements.ISQLiteCUDStatement;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.database.Cursor;
@@ -154,22 +154,23 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			}
 	}
 
-	/**
-	 * @param sql
-	 * @param paramsAndArgs
-	 * @return
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#executeQuery(java.lang.String, java.util.List, java.util.List)
 	 */
 	@Override
-	protected ISQLiteCursor executeQuery(String sql, uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.StatementParametersWithArguments paramsAndArgs) throws DBException
+	protected ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException
 	{
 		try
 		{
-			return (AndroidSQLiteCursor) db.rawQuery(sql, paramsAndArgs.getArgumentStrings(false)); // TODO must the literals be quoted?
+			String[] argStrings = new String[paramCols.size()];
+			for(int p = 0; p < argStrings.length; p++)
+				argStrings[p] = paramCols.get(p).sapelliObjectToLiteral(sapArguments.get(p), false); // TODO must the literals be quoted?
+			return (AndroidSQLiteCursor) db.rawQuery(sql, argStrings);
 		}
 		catch(SQLException e)
 		{
 			Log.e("SQLite_Error", "Failed to execute raw query (" + sql + ").", e);
-			return null;
+			throw new DBException("Failed to execute selection query: " + sql, e);
 		}
 	}
 	

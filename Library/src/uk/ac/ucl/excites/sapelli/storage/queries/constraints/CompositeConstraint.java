@@ -60,6 +60,19 @@ public abstract class CompositeConstraint extends Constraint
 		return constraints != null ? constraints : Collections.<Constraint> emptyList();
 	}
 
+	/**
+	 * AND/OR of 1 subconstraint --> return that subconstraint by itself
+	 * 
+	 * @return
+	 */
+	public Constraint reduce()
+	{
+		if(getSubConstraints().size() == 1)
+			return getSubConstraints().get(0);
+		else
+			return this;
+	}
+	
 	public boolean hasSubConstraints()
 	{
 		return !constraints.isEmpty();

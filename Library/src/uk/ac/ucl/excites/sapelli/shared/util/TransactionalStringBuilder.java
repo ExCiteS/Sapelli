@@ -139,7 +139,7 @@ public class TransactionalStringBuilder
 	}
 	
 	/**
-	 * Discard (i.e. rollback) multiple transactions
+	 * Rollback multiple transactions
 	 * 
 	 * @param numberOfTransactionsToRollback
 	 * @throws IllegalArgumentException when there are not enough transactions to rollback
@@ -189,6 +189,32 @@ public class TransactionalStringBuilder
 		if(!hasOpenTransactions())
 			throw new IllegalStateException("There is no transaction to commit.");
 		return commitToString(useConnective);
+	}
+	
+	/**
+	 * Commit multiple transactions.
+	 * 
+	 * @param numberOfTransactionsToCommit
+	 * @throws IllegalArgumentException when there are not enough transactions to commit
+	 */
+	public void commitTransactions(int numberOfTransactionsToCommit) throws IllegalArgumentException
+	{
+		commitTransactions(numberOfTransactionsToCommit, true);
+	}
+
+	/**
+	 * Commit multiple transactions.
+	 * 
+	 * @param numberOfTransactionsToCommit
+	 * @param useConnective whether or not to insert the connective (if needed) when appending to previous transaction
+	 * @throws IllegalArgumentException when there are not enough transactions to commit
+	 */
+	public void commitTransactions(int numberOfTransactionsToCommit, boolean useConnective) throws IllegalArgumentException
+	{
+		if(numberOfTransactionsToCommit > numberOfOpenTransactions())
+			throw new IllegalStateException("There are not enough transactions to commit (current open transactions: " + numberOfOpenTransactions() + "; requested to rollback: " + numberOfTransactionsToCommit + ").");
+		for(int t = 0; t < numberOfTransactionsToCommit; t++)
+			commitTransaction(useConnective);
 	}
 	
 	/**

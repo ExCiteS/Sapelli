@@ -205,8 +205,8 @@ public class RecordsQuery
 	{
 		this.sourceSchemata = (sourceSchemata != null ? sourceSchemata : Collections.<Schema> emptyList());
 		this.constraints = constraints != null && constraints.length == 1 ?
-							constraints[0] : 
-							new AndConstraint(constraints); // can deal with the array or one of its elements being null, nested ANDs will be flattened
+							(constraints[0] instanceof CompositeConstraint ? ((CompositeConstraint) constraints[0]).reduce() : constraints[0]) : 
+							new AndConstraint(constraints).reduce(); // can deal with the array or one of its elements being null, nested ANDs will be flattened
 		this.orderBy = orderBy;
 		this.orderAsc = orderAsc;
 		if(limit < NO_LIMIT || limit == 0)

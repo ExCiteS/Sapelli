@@ -572,7 +572,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append(tableName);
 			bldr.append("SET");
 			
-			
 //			PrimaryKey pk = schema.getPrimaryKey();
 //			AndConstraint whereConstraint = new 
 //			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
@@ -963,117 +962,73 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @author mstevens
 	 *
 	 */
-	protected class StatementParameters
-	{
-		
-		List<SColumn> parameterColumns;
-		
-		public StatementParameters()
-		{
-			this.parameterColumns = new ArrayList<SColumn>();
-		}
-		
-		/**
-		 * @return list of columns or null if not in parameterised mode
-		 */
-		public List<SColumn> getParameterColumns()
-		{
-			return parameterColumns;
-		}
-		
-		public void addColumn(SColumn column)
-		{
-			parameterColumns.add(column);
-		}
-
-	}
-	
-	/**
-	 * @author mstevens
-	 *
-	 */
-	public class StatementParametersWithArguments extends StatementParameters
-	{
-		
-		List<Object> sapArguments;
-		
-		public StatementParametersWithArguments()
-		{
-			super();
-			this.sapArguments = new ArrayList<Object>();
-		}
-		
-		public void addColumnAndValue(SColumn column, Object sapValue)
-		{
-			super.addColumn(column);
-			sapArguments.add(sapValue);
-		}
-		
-		/**
-		 * @return list of Objects (SapType values) or null if not in parameterised mode
-		 */
-		public List<Object> getSapArguments()
-		{
-			return sapArguments;
-		}
-		
-		/**
-		 * @param quotedIfNeeded
-		 * @return
-		 */
-		public String[] getArgumentStrings(boolean quotedIfNeeded)
-		{
-			String[] argStrings = new String[parameterColumns.size()];
-			for(int p = 0; p < argStrings.length; p++)
-				argStrings[p] = parameterColumns.get(p).sapelliObjectToLiteral(sapArguments.get(p), quotedIfNeeded);
-			return argStrings;
-		}
-		
-	}
-	
-	
-	/**
-	 * @author mstevens
-	 *
-	 */
-	protected class SelectionClause implements ConstraintVisitor
+	protected class RecordSelection implements ConstraintVisitor
 	{
 		
 		STable table;
 		TransactionalStringBuilder bldr;
-		StatementParametersWithArguments paramsAndArgs;
+		List<SColumn> parameterColumns;
+		List<Object> sapArguments;
 		String valuePlaceHolder;
 		
 		private DBException exception = null;
 		
 		/**
-		 * Creates a SelectionClauseBuilder that will produce a selection clause with literal values.
-		 * 
 		 * @param table
-		 * @param constraint
-		 * @param valuePlaceHolder placeholder for parameters, null if literal clause is being generated
+		 * @param recordsQuery
 		 */
-		public SelectionClause(STable table, Constraint constraint)
+		public RecordSelection(STable table, RecordsQuery recordsQuery)
 		{
-			this(table, constraint, null);
+			this(table, recordsQuery, null);
 		}
 		
 		/**
-		 * Creates a SelectionClauseBuilder that will produce a selection clause with parameterised values (unless valuePlaceHolder is null)
-		 * 
 		 * @param table
-		 * @param constraint
+		 * @param recordQuery
 		 * @param valuePlaceHolder
 		 */
-		public SelectionClause(STable table, Constraint constraint, String valuePlaceHolder)
+		public RecordSelection(STable table, RecordsQuery recordsQuery, String valuePlaceHolder)
 		{
+			// Init variables:
 			this.table = table;
 			this.valuePlaceHolder = valuePlaceHolder;
 			if(isParameterised())
-				this.paramsAndArgs = new StatementParametersWithArguments();
+			{
+				this.parameterColumns = new ArrayList<SColumn>();
+				this.sapArguments = new ArrayList<Object>();
+			}
+			
+			// Build query:
 			this.bldr = new TransactionalStringBuilder(SPACE); // pass space as connective
-			if(constraint != null)
-				constraint.accept(this);
+			bldr.append("SELECT * FROM");
+			bldr.append(table.tableName);
+			// 	WHERE
+			if(recordsQuery.getConstraints() != null)
+			{
+				bldr.openTransaction();
+				bldr.append("WHERE");
+				bldr.openTransaction();
+				recordsQuery.getConstraints().accept(this); // start visiting of constraint(s)
+				if(!bldr.isCurrentTransactionEmpty())
+					bldr.commitTransactions(2);
+				else
+					bldr.rollbackTransactions(2);
+			}
+			// 	GROUP BY
+			//		not supported so far
+			//	ORDER BY
+			if(recordsQuery.getOrderBy() != null)
+			{				
+				bldr.append(table.getSQLColumn(recordsQuery.getOrderBy()).name);
+				bldr.append(recordsQuery.isOrderAsc() ? "ASC" : "DESC");
+			}
+			//	LIMIT
+			if(recordsQuery.isLimited())
+			{
+				bldr.append("LIMIT");
+				bldr.append(Integer.toString(recordsQuery.getLimit()));
+			}
+			bldr.append(";", false);
 		}
 		
 		protected boolean isParameterised()
@@ -1155,7 +1110,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				if(isParameterised())
 				{
 					bldr.append(valuePlaceHolder);
-					paramsAndArgs.addColumnAndValue(sqlCol, sapValue);
+					addColumnAndValue(sqlCol, sapValue);
 				}
 				else
 					bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
@@ -1193,39 +1148,41 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(isParameterised())
 			{
 				bldr.append(valuePlaceHolder);
-				paramsAndArgs.addColumnAndValue(sqlCol, sapValue);
+				addColumnAndValue(sqlCol, sapValue);
 			}
 			else
 				bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
 		}
 		
-		public String getWhereClause() throws DBException
+		public void addColumnAndValue(SColumn column, Object sapValue)
 		{
-			String clause = getClause();
-			return clause.isEmpty() ? "" : "WHERE " + clause;
+			parameterColumns.add(column);
+			sapArguments.add(sapValue);
 		}
 		
-		public String getClauseOrNull() throws DBException
-		{
-			String clause = getClause();
-			return clause.isEmpty() ? null : clause;
-		}
-		
-		public String getClause() throws DBException
+		public String getQuery() throws DBException
 		{
 			if(exception != null)
 				throw exception;
 			return bldr.toString();
 		}
+		
+		/**
+		 * @return list of columns or null if not in parameterised mode
+		 */
+		public List<SColumn> getParameterColumns()
+		{
+			return parameterColumns;
+		}
 
 		/**
-		 * @return the paramsAndArgs
+		 * @return list of Objects (SapType values) or null if not in parameterised mode
 		 */
-		public StatementParametersWithArguments getParamsAndArgs()
+		public List<Object> getSapArguments()
 		{
-			return paramsAndArgs;
+			return sapArguments;
 		}
-				
+		
 	}
 
 }
