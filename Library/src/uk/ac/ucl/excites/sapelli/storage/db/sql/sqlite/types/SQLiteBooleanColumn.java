@@ -22,7 +22,6 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
-import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 
 /**
@@ -58,18 +57,19 @@ public class SQLiteBooleanColumn extends SQLiteIntegerColumn<Boolean>
 	 */
 	public SQLiteBooleanColumn(SQLiteRecordStore store, String constraint, Schema sourceSchema, BooleanColumn sourceColumn)
 	{
-		super(store, SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, boolIntMapping);
+		super(store, constraint, sourceSchema, sourceColumn, boolIntMapping, SQLITE_DATA_TYPE);
 	}
 
 	/**
 	 * @param store
 	 * @param name
 	 * @param constraint
-	 * @param sourceColumnPointer
+	 * @param sourceSchema
+	 * @param sourceColumn
 	 */
-	public SQLiteBooleanColumn(SQLiteRecordStore store, String name, String constraint, ColumnPointer sourceColumnPointer)
+	public SQLiteBooleanColumn(SQLiteRecordStore store, String name, String constraint, Schema sourceSchema, BooleanColumn sourceColumn)
 	{
-		super(store, name, SQLITE_DATA_TYPE, constraint, sourceColumnPointer, boolIntMapping);
+		super(store, name, constraint, sourceSchema, sourceColumn, boolIntMapping, SQLITE_DATA_TYPE);
 	}
 	
 }

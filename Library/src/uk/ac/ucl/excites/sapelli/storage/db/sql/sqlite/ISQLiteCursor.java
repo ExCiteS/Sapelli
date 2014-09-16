@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+
 /**
  * Interface for a cursor use to process SQLite query results.
  * 
@@ -32,15 +34,15 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 public interface ISQLiteCursor
 {
 
-	public byte[] getBlob(int columnIdx);
+	public byte[] getBlob(int columnIdx) throws DBException;
 	
-	public long getLong(int columnIdx);
+	public long getLong(int columnIdx) throws DBException;
 	
-	public double getDouble(int columnIdx);
+	public double getDouble(int columnIdx) throws DBException;
 	
-	public String getString(int columnIdx);
+	public String getString(int columnIdx) throws DBException;
 	
-	public boolean isNull(int columnIdx);
+	public boolean isNull(int columnIdx) throws DBException;
 	
 	public boolean hasRow();
 	

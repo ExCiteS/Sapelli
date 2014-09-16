@@ -18,13 +18,13 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 
 /**
@@ -53,12 +53,13 @@ public class SQLiteStringColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<
 	 * @param store
 	 * @param name
 	 * @param constraint
-	 * @param sourceColumnPointer
+	 * @param sourceSchema
+	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteStringColumn(SQLiteRecordStore store, String name, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<String, SapType> mapping)
+	public SQLiteStringColumn(SQLiteRecordStore store, String name, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<String, SapType> mapping)
 	{
-		store.super(name, SQLITE_DATA_TYPE, constraint, sourceColumnPointer, mapping);
+		store.super(name, SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
 	}
 	
 	/**
@@ -67,13 +68,13 @@ public class SQLiteStringColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<
 	 * @param value non-null
 	 */
 	@Override
-	protected void bindNonNull(ISQLiteStatement statement, int paramIdx, String value)
+	protected void bindNonNull(ISQLiteStatement statement, int paramIdx, String value) throws DBException
 	{
 		statement.bindString(paramIdx, value);
 	}
 
 	@Override
-	protected String getValue(ISQLiteCursor cursor, int columnIdx)
+	protected String getValue(ISQLiteCursor cursor, int columnIdx) throws DBException
 	{
 		return cursor.getString(columnIdx);
 	}

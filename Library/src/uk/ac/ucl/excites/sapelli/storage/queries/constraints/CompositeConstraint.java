@@ -29,7 +29,7 @@ import java.util.List;
 public abstract class CompositeConstraint extends Constraint
 {
 
-	protected List<Constraint> constraints;
+	private List<Constraint> constraints;
 
 	/**
 	 * @param constraints
@@ -43,21 +43,24 @@ public abstract class CompositeConstraint extends Constraint
 	
 	public void addConstraint(Constraint constraint)
 	{
+		// Reduce if possible:
+		constraint = Constraint.Reduce(constraint);
+		// Null check:
 		if(constraint == null)
 			return;
-		if(constraints == null)
-			this.constraints = new ArrayList<Constraint>();
-		if(this.getClass().isInstance(constraint) && isAssociative())
-			// Flatten instance of same CompositeConstraint subclass when associative:
+		// Flatten instance of same CompositeConstraint subclass when associative:
+		else if(this.getClass().isInstance(constraint) && isAssociative())
+		{
 			for(Constraint subConstraint : ((CompositeConstraint) constraint).constraints)
-				this.constraints.add(subConstraint);
+				addConstraint(subConstraint); // recursive call
+		}
+		// Add real subconstraint:
 		else
-			this.constraints.add(constraint);
-	}
-
-	public List<Constraint> getSubConstraints()
-	{
-		return constraints != null ? constraints : Collections.<Constraint> emptyList();
+		{
+			if(constraints == null) // create collection if necessary
+				constraints = new ArrayList<Constraint>();
+			constraints.add(constraint);
+		}
 	}
 
 	/**
@@ -65,19 +68,25 @@ public abstract class CompositeConstraint extends Constraint
 	 * 
 	 * @return
 	 */
+	@Override
 	public Constraint reduce()
 	{
-		if(constraints == null)
+		if(!hasSubConstraints())
 			return null;
 		else if(constraints.size() == 1)
-			return getSubConstraints().get(0);
+			return getSubConstraints().get(0).reduce();
 		else
 			return this;
 	}
 	
+	public List<Constraint> getSubConstraints()
+	{
+		return constraints != null ? constraints : Collections.<Constraint> emptyList();
+	}
+	
 	public boolean hasSubConstraints()
 	{
-		return !constraints.isEmpty();
+		return constraints != null; // no need to check isEmpty(), the constraints collection is private and only created if there is at least 1 subConstraint
 	}
 	
 	protected abstract boolean isAssociative();

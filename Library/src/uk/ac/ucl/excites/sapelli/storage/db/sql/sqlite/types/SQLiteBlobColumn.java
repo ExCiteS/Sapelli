@@ -20,13 +20,13 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types;
 
 import org.apache.commons.codec.binary.Hex;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
  * @author mstevens
@@ -54,12 +54,13 @@ public class SQLiteBlobColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<by
 	 * @param store
 	 * @param name
 	 * @param constraint
-	 * @param sourceColumnPointer
+	 * @param sourceSchema
+	 * @param sourceColumn
 	 * @param mapping - may be null in case SQLType = SapType
 	 */
-	public SQLiteBlobColumn(SQLiteRecordStore store, String name, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<byte[], SapType> mapping)
+	public SQLiteBlobColumn(SQLiteRecordStore store, String name, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<byte[], SapType> mapping)
 	{
-		store.super(name, SQLITE_DATA_TYPE, constraint, sourceColumnPointer, mapping);
+		store.super(name, SQLITE_DATA_TYPE, constraint, sourceSchema, sourceColumn, mapping);
 	}
 
 	/**
@@ -68,13 +69,13 @@ public class SQLiteBlobColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<by
 	 * @param value non-null
 	 */
 	@Override
-	protected void bindNonNull(ISQLiteStatement statement, int paramIdx, byte[] value)
+	protected void bindNonNull(ISQLiteStatement statement, int paramIdx, byte[] value) throws DBException
 	{
 		statement.bindBlob(paramIdx, value);
 	}
 
 	@Override
-	public byte[] getValue(ISQLiteCursor cursor, int columnIdx)
+	public byte[] getValue(ISQLiteCursor cursor, int columnIdx) throws DBException
 	{
 		return cursor.getBlob(columnIdx);
 	}

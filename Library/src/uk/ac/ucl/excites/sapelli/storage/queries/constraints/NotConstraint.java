@@ -32,24 +32,33 @@ public class NotConstraint extends Constraint
 	 * @param constraintToNegate
 	 * @return
 	 */
-	static Constraint Negate(Constraint constraintToNegate)
+	/*package*/ static Constraint Negate(Constraint constraintToNegate)
 	{
-		if(constraintToNegate == null)
-			return null;
-		else if(constraintToNegate instanceof NotConstraint)
-			// Avoid double-negations:
-			return ((NotConstraint) constraintToNegate).negatedConstraint;
-		else
-			return new NotConstraint(constraintToNegate);
+		return new NotConstraint(constraintToNegate).reduce();
 	}
 
 	private final Constraint negatedConstraint;
 	
 	private NotConstraint(Constraint negatedConstraint)
 	{
+		this.negatedConstraint = Constraint.Reduce(negatedConstraint);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint#reduce()
+	 */
+	@Override
+	public Constraint reduce()
+	{
+		// Null check:
 		if(negatedConstraint == null)
-			throw new NullPointerException("negatedConstraint cannot be null!");
-		this.negatedConstraint = negatedConstraint;
+			return null; // NOT (no-constraint) --> no-constraint
+		// Avoid double negations:
+		else if(negatedConstraint instanceof NotConstraint)
+			return ((NotConstraint) negatedConstraint).negatedConstraint.reduce(); // NOT (NOT x) --> x
+		// Nothing to reduce:
+		else
+			return this; // NOT (y) --> NOT (y)
 	}
 
 	/* (non-Javadoc)

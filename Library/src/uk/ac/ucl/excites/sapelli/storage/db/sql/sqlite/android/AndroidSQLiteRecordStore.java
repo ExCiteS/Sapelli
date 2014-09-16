@@ -162,9 +162,11 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	{
 		try
 		{
+			// Build selectionArgs array:
 			String[] argStrings = new String[paramCols.size()];
 			for(int p = 0; p < argStrings.length; p++)
 				argStrings[p] = paramCols.get(p).sapelliObjectToLiteral(sapArguments.get(p), false); // TODO must the literals be quoted?
+			// Execute
 			return (AndroidSQLiteCursor) db.rawQuery(sql, argStrings);
 		}
 		catch(SQLException e)

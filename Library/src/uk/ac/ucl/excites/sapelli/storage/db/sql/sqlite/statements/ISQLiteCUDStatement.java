@@ -13,6 +13,6 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
 public interface ISQLiteCUDStatement extends ISQLiteStatement
 {
 
-	public boolean executeCUD() throws DBException;
+	public void executeCUD() throws DBException;
 	
 }

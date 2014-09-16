@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -339,7 +339,7 @@ public class ColumnPointer implements Comparator<Record>
 	@Override
 	public int compare(Record lhs, Record rhs)
 	{
-		if(!(getColumn() instanceof ComparatorColumn))
+		if(!(getColumn() instanceof ComparableColumn))
 			throw new IllegalStateException("This ColumnPointer does not point to a ComparatorColumn");
 		
 		// Get sub records:
@@ -349,7 +349,7 @@ public class ColumnPointer implements Comparator<Record>
 		// Compare:
 		return lhs == null ?
 				(rhs == null ? 0 : Integer.MIN_VALUE) :
-				(rhs == null ? Integer.MAX_VALUE : ((ComparatorColumn) getColumn()).compare(lhs, rhs));		
+				(rhs == null ? Integer.MAX_VALUE : ((ComparableColumn) getColumn()).compare(lhs, rhs));		
 	}
 	
 	@Override

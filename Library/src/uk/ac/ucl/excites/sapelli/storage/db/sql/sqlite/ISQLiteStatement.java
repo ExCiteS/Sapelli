@@ -27,15 +27,15 @@ import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 public interface ISQLiteStatement
 {
 	
-	public void bindBlob(int paramIdx, byte[] value);
+	public void bindBlob(int paramIdx, byte[] value) throws DBException;
 	
-	public void bindLong(int paramIdx, Long value);
+	public void bindLong(int paramIdx, Long value) throws DBException;
 	
-	public void bindDouble(int paramIdx, Double value);
+	public void bindDouble(int paramIdx, Double value) throws DBException;
 	
-	public void bindString(int paramIdx, String value);
+	public void bindString(int paramIdx, String value) throws DBException;
 	
-	public void bindNull(int paramIdx);
+	public void bindNull(int paramIdx) throws DBException;
 	
 	public void clearAllBindings();
 

@@ -36,7 +36,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.UnclosableBufferedInputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLHasher;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -355,7 +355,7 @@ public class ProjectParser extends DocumentParser
 			ColumnPointer columnPointer = new ColumnPointer(form.getSchema(), columnName); // will throw IllegalArgumentException if no such column is found (but name sanitation will be used first)
 			
 			// Column check:
-			if(!(columnPointer.getColumn() instanceof ComparatorColumn<?>))
+			if(!(columnPointer.getColumn() instanceof ComparableColumn<?>))
 				throw new SAXException("Constraint refers to a column (\"" + columnName + "\") which is not comparable.");
 			
 			// Return RuleConstraint:

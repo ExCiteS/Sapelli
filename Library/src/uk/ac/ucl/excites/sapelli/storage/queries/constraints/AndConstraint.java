@@ -40,7 +40,7 @@ public class AndConstraint extends CompositeConstraint
 	protected boolean _isValid(Record record)
 	{
 		if(hasSubConstraints())
-			for(Constraint subConstraint : constraints)
+			for(Constraint subConstraint : getSubConstraints())
 				if(!subConstraint._isValid(record))
 					return false;
 		return true; // also if we didn't have any subConstraints

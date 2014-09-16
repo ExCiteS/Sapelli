@@ -21,11 +21,10 @@ package uk.ac.ucl.excites.sapelli.storage.queries;
 import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
-import uk.ac.ucl.excites.sapelli.storage.queries.constraints.CompositeConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
@@ -59,7 +58,7 @@ public class RecordsQuery
 		this(sourceSchemata, (ColumnPointer) null, DEFAULT_ORDER, NO_LIMIT, (Constraint[]) null);
 	}
 	
-	public RecordsQuery(ComparatorColumn<?> orderBy, boolean orderAsc)
+	public RecordsQuery(ComparableColumn<?> orderBy, boolean orderAsc)
 	{
 		this((List<Schema>) null, orderBy, orderAsc, NO_LIMIT, (Constraint[]) null);
 	}
@@ -89,7 +88,7 @@ public class RecordsQuery
 		this(sourceSchemata, (ColumnPointer) null, DEFAULT_ORDER, NO_LIMIT, constraints);
 	}
 	
-	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderAsc)
+	public RecordsQuery(Schema sourceSchema, ComparableColumn<?> orderBy, boolean orderAsc)
 	{
 		this(sourceSchema, orderBy, orderAsc, NO_LIMIT, (Constraint[]) null);
 	}
@@ -104,7 +103,7 @@ public class RecordsQuery
 		this(sourceSchemata, orderBy, orderAsc, NO_LIMIT, (Constraint[]) null);
 	}
 	
-	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderAsc, Constraint... constraints)
+	public RecordsQuery(Schema sourceSchema, ComparableColumn<?> orderBy, boolean orderAsc, Constraint... constraints)
 	{
 		this(sourceSchema, orderBy, orderAsc, NO_LIMIT, constraints);
 	}
@@ -119,7 +118,7 @@ public class RecordsQuery
 		this(sourceSchemata, orderBy, orderAsc, NO_LIMIT, constraints);
 	}
 	
-	public RecordsQuery(ComparatorColumn<?> orderBy, boolean orderAsc, Constraint... constraints)
+	public RecordsQuery(ComparableColumn<?> orderBy, boolean orderAsc, Constraint... constraints)
 	{
 		this((List<Schema>) null, orderBy, orderAsc, NO_LIMIT, constraints);
 	}
@@ -154,7 +153,7 @@ public class RecordsQuery
 		this(sourceSchemata, (ColumnPointer) null, DEFAULT_ORDER, limit, constraints);
 	}
 	
-	public RecordsQuery(ComparatorColumn<?> orderBy, boolean orderAsc, int limit)
+	public RecordsQuery(ComparableColumn<?> orderBy, boolean orderAsc, int limit)
 	{
 		this((List<Schema>) null, orderBy, orderAsc, limit, (Constraint[]) null);
 	}
@@ -164,7 +163,7 @@ public class RecordsQuery
 		this((List<Schema>) null, orderBy, orderAsc, limit, (Constraint[]) null);
 	}
 	
-	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderAsc, int limit)
+	public RecordsQuery(Schema sourceSchema, ComparableColumn<?> orderBy, boolean orderAsc, int limit)
 	{
 		this(sourceSchema, orderBy, orderAsc, limit, (Constraint[]) null);
 	}
@@ -179,12 +178,12 @@ public class RecordsQuery
 		this(sourceSchemata, orderBy, orderAsc, limit, (Constraint[]) null);
 	}
 	
-	public RecordsQuery(Schema sourceSchema, ComparatorColumn<?> orderBy, boolean orderAsc, int limit, Constraint... constraints)
+	public RecordsQuery(Schema sourceSchema, ComparableColumn<?> orderBy, boolean orderAsc, int limit, Constraint... constraints)
 	{
 		this(Collections.<Schema> singletonList(sourceSchema), orderBy, orderAsc, limit, constraints);
 	}
 	
-	public RecordsQuery(List<Schema> sourceSchemata, ComparatorColumn<?> orderBy, boolean orderAsc, int limit, Constraint... constraints)
+	public RecordsQuery(List<Schema> sourceSchemata, ComparableColumn<?> orderBy, boolean orderAsc, int limit, Constraint... constraints)
 	{
 		this(sourceSchemata, new ColumnPointer(orderBy), orderAsc, limit, constraints);
 	}
@@ -205,7 +204,7 @@ public class RecordsQuery
 	{
 		this.sourceSchemata = (sourceSchemata != null ? sourceSchemata : Collections.<Schema> emptyList());
 		this.constraints = constraints != null && constraints.length == 1 ?
-							(constraints[0] instanceof CompositeConstraint ? ((CompositeConstraint) constraints[0]).reduce() : constraints[0]) : 
+							Constraint.Reduce(constraints[0]) : 
 							new AndConstraint(constraints).reduce(); // can deal with the array or one of its elements being null, nested ANDs will be flattened
 		this.orderBy = orderBy;
 		this.orderAsc = orderAsc;

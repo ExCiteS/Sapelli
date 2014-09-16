@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -28,9 +29,11 @@ import java.util.Map;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
@@ -53,6 +56,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.NotConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.OrConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -366,9 +370,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.explicitIndexes = indexes;
 		}
 		
-		public SColumn getSQLColumn(ColumnPointer columnPointer)
+		public SColumn getSQLColumn(ColumnPointer sapColumnPointer)
 		{
-			return sqlColumns.get(columnPointer);
+			return getSQLColumn(sapColumnPointer.getColumn());
+		}
+		
+		public SColumn getSQLColumn(Column<?> sapColumn)
+		{
+			return sqlColumns.get(new ColumnPointer(schema, sapColumn));
 		}
 		
 		public List<SColumn> getSQLColumns(RecordColumn<?> compositeColumn)
@@ -474,139 +483,62 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
 			bldr.append("DROP TABLE");
 			bldr.append(tableName);
-			bldr.append(");", false);
+			bldr.append(";", false);
 			return bldr.toString();
 		}
 		
 		/**
-		 * Insert new record in database
+		 * Insert new record in database table
 		 * 
 		 * May be overridden
 		 * 
 		 * @param record
 		 * @throws DBException
 		 */
+		@SuppressWarnings("unchecked")
 		public void insert(Record record) throws DBException
 		{
 			if(!isInDB())
-				throw new DBException("Insert failed: " + toString() + " does not exist in database!");
-			List<String> values = new ArrayList<String>();
-			// Get literal values (quoted if needed):
-			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
-				values.add(sqlCol.retrieveAsLiteral(record, true));
-			executeSQL(generateInsertStatement(values));
-		}
-		
-		protected String generateInsertStatement(List<String> values)
-		{
-			if(values.size() != sqlColumns.size())
-				throw new IllegalArgumentException("Invalid number of values");
-			return generateInsertStatement(values, null);
-		}
-		
-		protected String generateInsertStatement(String valuePlaceHolder)
-		{
-			return generateInsertStatement(null, valuePlaceHolder);
+				throw new DBException("Insert failed: " + toString() + " does not exist in database!"); // shouldn't happen
+			executeSQL(new RecordInsertHelper((STable) this, record).getQuery());
 		}
 		
 		/**
-		 * @param values - if null valuePlaceHolder should not be
-		 * @param valuePlaceHolder - if null values should not be
-		 * @return
-		 */
-		private String generateInsertStatement(List<String> values, String valuePlaceHolder)
-		{
-			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-			bldr.append("INSERT INTO");
-			bldr.append(tableName);
-			bldr.append("(");
-			// Columns:
-			bldr.openTransaction(", ");
-			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
-				bldr.append(sqlCol.name);
-			bldr.commitTransaction(false);
-			// Values:
-			bldr.append(") VALUES (", false);
-			bldr.openTransaction(", ");
-			for(int v = 0, s = sqlColumns.size(); v < s; v++)
-				bldr.append(values != null ? values.get(v) : valuePlaceHolder);
-			bldr.commitTransaction(false);
-			bldr.append(");", false);
-			return bldr.toString();
-		}
-		
-		/**
-		 * May be overriden
+		 * Update existing record in database table
+		 * 
+		 * May be overridden
 		 * 
 		 * @param record
 		 * @throws DBException
 		 */
+		@SuppressWarnings("unchecked")
 		public void update(Record record) throws DBException
 		{
 			if(!isInDB())
-				throw new DBException("Update failed: " + toString() + " does not exist in database!");
-			
-		}
-		
-		protected String generateUpdateStatement(List<String> values)
-		{
-			if(values.size() != sqlColumns.size())
-				throw new IllegalArgumentException("Invalid number of values");
-			return generateUpdateStatement(values, null);
-		}
-		
-		protected String generateUpdateStatement(String valuePlaceHolder)
-		{
-			return generateUpdateStatement(null, valuePlaceHolder);
+				throw new DBException("Update failed: " + toString() + " does not exist in database!"); // shouldn't happen
+			executeSQL(new RecordUpdateHelper((STable) this, record).getQuery());
 		}
 		
 		/**
-		 * @param values - if null valuePlaceHolder should not be
-		 * @param valuePlaceHolder - if null values should not be
-		 * @return
-		 */
-		private String generateUpdateStatement(List<String> values, String valuePlaceHolder)
-		{
-			TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
-			bldr.append("UPDATE");
-			bldr.append(tableName);
-			bldr.append("SET");
-			
-//			PrimaryKey pk = schema.getPrimaryKey();
-//			AndConstraint whereConstraint = new 
-//			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
-//			{
-//				if()
-//			}
-			
-			// Columns & values (except primary key parts):
-//			bldr.openTransaction(", ");
-//			for(SQLColumn<?, ?> sqlCol : sqlColumns.values())
-//				bldr.append(sqlCol.name);
-//			bldr.commitTransaction(false);
-//			// Values:
-//			bldr.append(") VALUES (", false);
-//			bldr.openTransaction(", ");
-//			for(int v = 0, s = sqlColumns.size(); v < s; v++)
-//				bldr.append(values != null ? values.get(v) : valuePlaceHolder);
-//			bldr.commitTransaction(false);
-//			bldr.append(");", false);
-			return bldr.toString();
-		}
-		
-		/**
-		 * May be overriden
+		 * Delete existing record in database table
+		 * 
+		 * May be overridden
 		 * 
 		 * @param record
 		 * @throws DBException
 		 */
+		@SuppressWarnings("unchecked")
 		public void delete(Record record) throws DBException
 		{
 			if(!isInDB())
 				return; // the table doesn't exist in the database so there is no record to delete
-			// TODO
+			executeSQL(new RecordDeleteHelper((STable) this, record).getQuery());
 		}
 		
+		/* (non-Javadoc)
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
 		public String toString()
 		{
 			return "database table '" + tableName + "'";
@@ -636,41 +568,31 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @param constraint
 		 * @param sourceSchema
 		 * @param sourceColumn
-		 * @param mapping
+		 * @param mapping - may be null in case SQLType = SapType
 		 */
 		public SQLColumn(String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
 		{
-			this(type, constraint, new ColumnPointer(sourceSchema, sourceColumn), mapping);
+			this(null, type, constraint, sourceSchema, sourceColumn, mapping);
 		}
-		
-		/**
-		 * @param type
-		 * @param constraint
-		 * @param sourceColumnPointer
-		 * @param mapping
-		 */
-		private SQLColumn(String type, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
-		{
-			this(sourceColumnPointer.getQualifiedColumnName(QUALIFIED_COLUMN_NAME_SEPARATOR), type, constraint, sourceColumnPointer, mapping);
-		}
-		
+
 		/**
 		 * @param name
 		 * @param type
 		 * @param constraint
-		 * @param sourceColumnPointer
-		 * @param sourceMapping
+		 * @param sourceSchema - may be null in specific hackish cases (e.g. {@link SQLiteRecordStore#doesTableExist(String)}) and on the condition that name is not null
+		 * @param sourceColumn - may be null in specific hackish cases (e.g. {@link SQLiteRecordStore#doesTableExist(String)}) and on the condition that name is not null
+		 * @param mapping - may be null in case SQLType = SapType
 		 */
 		@SuppressWarnings("unchecked")
-		public SQLColumn(String name, String type, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
+		public SQLColumn(String name, String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
 		{
-			this.name = sanitiseIdentifier(name);
+			this.sourceColumnPointer = (sourceSchema != null && sourceColumn != null) ? new ColumnPointer(sourceSchema, sourceColumn) : null;
+			this.name = sanitiseIdentifier(name != null ? name : (sourceColumnPointer.getQualifiedColumnName(QUALIFIED_COLUMN_NAME_SEPARATOR)));
 			this.type = type;
 			this.constraint = constraint;
-			this.sourceColumnPointer = sourceColumnPointer;
 			this.mapping = mapping != null ? mapping : (TypeMapping<SQLType, SapType>) TypeMapping.<SQLType> Transparent();
 		}
-
+		
 		/**
 		 * @param value
 		 * @param quotedIfNeeded
@@ -962,16 +884,311 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @author mstevens
 	 *
 	 */
-	protected class RecordSelection implements ConstraintVisitor
+	protected abstract class StatementHelper
 	{
 		
-		STable table;
-		TransactionalStringBuilder bldr;
-		List<SColumn> parameterColumns;
-		List<Object> sapArguments;
-		String valuePlaceHolder;
+		protected STable table;
+		protected TransactionalStringBuilder bldr;
+		protected List<SColumn> parameterColumns;
+		protected String valuePlaceHolder;
 		
-		private DBException exception = null;
+		protected DBException exception = null;
+		
+		/**
+		 * @param table
+		 */
+		public StatementHelper(STable table)
+		{
+			this(table, null);
+		}
+		
+		/**
+		 * @param table
+		 * @param valuePlaceHolder
+		 */
+		public StatementHelper(STable table, String valuePlaceHolder)
+		{
+			this.table = table;
+			this.valuePlaceHolder = valuePlaceHolder;
+			if(isParameterised())
+				this.parameterColumns = new ArrayList<SColumn>();
+			this.bldr = new TransactionalStringBuilder(SPACE); // use SPACE as connective!
+		}
+		
+		protected boolean isParameterised()
+		{
+			return valuePlaceHolder != null;
+		}
+
+		protected void addParameterColumn(SColumn column)
+		{
+			parameterColumns.add(column);
+		}
+		
+		public String getQuery() throws DBException
+		{
+			if(exception != null)
+				throw exception;
+			return bldr.toString();
+		}
+		
+		/**
+		 * @return list of columns or null if not in parameterised mode
+		 */
+		public List<SColumn> getParameterColumns()
+		{
+			return parameterColumns;
+		}
+				
+	}
+	
+	/**
+	 * Helper class to build INSERT statements (parameterised or literal)
+	 * 
+	 * @author mstevens
+	 */
+	protected class RecordInsertHelper extends StatementHelper
+	{
+		
+		/**
+		 * Parameterised
+		 * 
+		 * @param table
+		 */
+		public RecordInsertHelper(STable table, String valuePlaceHolder)
+		{
+			this(table, null, valuePlaceHolder);
+		}
+		
+		/**
+		 * Not parameterised: using literal values for given record
+		 * 
+		 * @param table
+		 * @param record
+		 */
+		public RecordInsertHelper(STable table, Record record)
+		{
+			this(table, record, null);
+		}
+		
+		/**
+		 * @param table
+		 * @param valuePlaceHolder
+		 */
+		public RecordInsertHelper(STable table, Record record, String valuePlaceHolder)
+		{
+			// Initialise
+			super(table, valuePlaceHolder);
+			
+			// Build statement:
+			bldr.append("INSERT INTO");
+			bldr.append(table.tableName);
+			bldr.append("(");
+			// Columns names:
+			bldr.openTransaction(", ");
+			for(SColumn sqlCol : table.sqlColumns.values())
+				bldr.append(sqlCol.name);
+			bldr.commitTransaction(false);
+			// Values:
+			bldr.append(") VALUES (", false);
+			bldr.openTransaction(", ");
+			for(SColumn sqlCol : table.sqlColumns.values())
+				if(isParameterised())
+				{
+					bldr.append(valuePlaceHolder);
+					addParameterColumn(sqlCol);
+				}
+				else
+					bldr.append(sqlCol.retrieveAsLiteral(record, true));
+			bldr.commitTransaction(false);
+			bldr.append(");", false);
+		}
+		
+	}
+	
+	/**
+	 * Abstract super class for RecordUpdateHelper and RecordDeleteHelper
+	 * 
+	 * @author mstevens
+	 */
+	protected abstract class RecordUpdateDeleteHelper extends StatementHelper
+	{
+		
+		Set<SColumn> keyPartSqlCols;
+		
+		/**
+		 * @param table
+		 * @param valuePlaceHolder
+		 */
+		public RecordUpdateDeleteHelper(STable table, String valuePlaceHolder)
+		{
+			super(table, valuePlaceHolder);
+			keyPartSqlCols = new HashSet<SColumn>();
+			for(Column<?> sapKeyPartCol : table.schema.getPrimaryKey().getColumns(false))
+				CollectionUtils.addIgnoreNull(keyPartSqlCols, table.getSQLColumn(sapKeyPartCol));
+		}
+		
+		protected void appendWhereClause(Record record)
+		{
+			bldr.append("WHERE");
+			if(keyPartSqlCols.size() > 1)
+				bldr.append("(");
+			bldr.openTransaction(" AND ");
+			for(SColumn keyPartSqlCol : keyPartSqlCols)
+			{
+				bldr.openTransaction(SPACE);
+				bldr.append(keyPartSqlCol.name);
+				bldr.append("=");
+				if(isParameterised())
+				{
+					bldr.append(valuePlaceHolder);
+					addParameterColumn(keyPartSqlCol);
+				}
+				else
+					bldr.append(keyPartSqlCol.retrieveAsLiteral(record, true));
+				bldr.commitTransaction();
+			}
+			bldr.commitTransaction(keyPartSqlCols.size() == 1); // no space after "(" if it is there
+			if(keyPartSqlCols.size() > 1)
+				bldr.append(")", false); // no space before ")"
+		}
+		
+	}
+	
+	/**
+	 * Helper class to build UPDATE statements (parameterised or literal)
+	 * 
+	 * @author mstevens
+	 */
+	protected class RecordUpdateHelper extends RecordUpdateDeleteHelper
+	{
+		
+		/**
+		 * Parameterised
+		 * 
+		 * @param table
+		 */
+		public RecordUpdateHelper(STable table, String valuePlaceHolder)
+		{
+			this(table, null, valuePlaceHolder);
+		}
+		
+		/**
+		 * Not parameterised: using literal values for given record
+		 * 
+		 * @param table
+		 * @param record
+		 */
+		public RecordUpdateHelper(STable table, Record record)
+		{
+			this(table, record, null);
+		}
+		
+		/**
+		 * @param table
+		 * @param valuePlaceHolder
+		 */
+		public RecordUpdateHelper(STable table, Record record, String valuePlaceHolder)
+		{
+			// Initialise
+			super(table, valuePlaceHolder);
+			
+			// Build statement:			
+			bldr.append("UPDATE");
+			bldr.append(table.tableName);
+			bldr.append("SET");
+			// Columns names & values (except primary key parts):
+			bldr.openTransaction(", ");
+			for(SColumn sqlCol : table.sqlColumns.values())
+				if(!keyPartSqlCols.contains(sqlCol))
+				{
+					bldr.openTransaction(SPACE);
+					bldr.append(sqlCol.name);
+					bldr.append("=");
+					if(isParameterised())
+					{
+						bldr.append(valuePlaceHolder);
+						addParameterColumn(sqlCol);
+					}
+					else
+						bldr.append(sqlCol.retrieveAsLiteral(record, true));
+					bldr.commitTransaction();
+				}
+			bldr.commitTransaction();
+			// WHERE clause:
+			appendWhereClause(record);
+			bldr.append(";", false);
+		}
+		
+	}
+	
+	/**
+	 * Helper class to build DELETE statements (parameterised or literal)
+	 * 
+	 * @author mstevens
+	 */
+	protected class RecordDeleteHelper extends RecordUpdateDeleteHelper
+	{
+		
+		/**
+		 * Parameterised
+		 * 
+		 * @param table
+		 */
+		public RecordDeleteHelper(STable table, String valuePlaceHolder)
+		{
+			this(table, null, valuePlaceHolder);
+		}
+		
+		/**
+		 * Not parameterised: using literal values for given record
+		 * 
+		 * @param table
+		 * @param record
+		 */
+		public RecordDeleteHelper(STable table, Record record)
+		{
+			this(table, record, null);
+		}
+		
+		/**
+		 * @param table
+		 * @param valuePlaceHolder
+		 */
+		public RecordDeleteHelper(STable table, Record record, String valuePlaceHolder)
+		{
+			// Initialise
+			super(table, valuePlaceHolder);
+			
+			// Build statement:			
+			bldr.append("DELETE FROM");
+			bldr.append(table.tableName);
+			// WHERE clause:
+			appendWhereClause(record);
+			bldr.append(";", false);
+		}
+		
+	}
+	
+	/**
+	 * Helper class to build SELECT queries (parameterised or literal)
+	 * 
+	 * Important note regarding null comparisons in WHERE clauses:
+	 * 	If the comparison value of the EqualityConstraint is null we must generate "col IS NULL" and never "col = null".
+	 * 	The reason is that in SQL a comparison between a null value and any other value (including another null) using a
+	 * 	logical operator (e.g. =, !=, <, etc) will result in a null, which is considered as false for the purposes of a
+	 * 	where clause. The reasoning is that a null means "unknown", so the result of any comparison to a null is also
+	 * 	"unknown". So while "col = null" would not cause errors no rows would ever match it.
+	 * 
+	 * @see http://stackoverflow.com/a/9581790/1084488
+	 * 
+	 * @author mstevens
+	 *
+	 */
+	protected class RecordSelection extends StatementHelper implements ConstraintVisitor
+	{
+		
+		protected List<Object> sapArguments;
 		
 		/**
 		 * @param table
@@ -989,17 +1206,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public RecordSelection(STable table, RecordsQuery recordsQuery, String valuePlaceHolder)
 		{
-			// Init variables:
-			this.table = table;
-			this.valuePlaceHolder = valuePlaceHolder;
+			// Initialise
+			super(table, valuePlaceHolder);
 			if(isParameterised())
-			{
-				this.parameterColumns = new ArrayList<SColumn>();
 				this.sapArguments = new ArrayList<Object>();
-			}
 			
-			// Build query:
-			this.bldr = new TransactionalStringBuilder(SPACE); // pass space as connective
+			// Build query:			
 			bldr.append("SELECT * FROM");
 			bldr.append(table.tableName);
 			// 	WHERE
@@ -1031,9 +1243,18 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append(";", false);
 		}
 		
-		protected boolean isParameterised()
+		protected void addParameterColumnAndValue(SColumn column, Object sapValue)
 		{
-			return valuePlaceHolder != null;
+			addParameterColumn(column);
+			sapArguments.add(sapValue);
+		}
+
+		/**
+		 * @return list of Objects (SapType values) or null if not in parameterised mode
+		 */
+		public List<Object> getSapArguments()
+		{
+			return sapArguments;
 		}
 		
 		@Override
@@ -1050,51 +1271,33 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		private void visitAndOr(boolean and, List<Constraint> subConstraints)
 		{
-			// Set-up "outer" and "mid" buffers:
-			bldr.openTransaction(""); // open "outer" buffer: for "(" and ")" (empty string as connective)
 			bldr.append("(");
-			bldr.openTransaction(and ? "AND" : "OR"); // open "mid" buffer: for subConstraints & AND/OR connectives
+			bldr.openTransaction(" " + (and ? "AND" : "OR") + " "); // open outer transaction for subConstraints & AND/OR connectives
 			
 			// Loop over subconstraints:
 			Iterator<Constraint> iterConstr = subConstraints.iterator();
 			while(iterConstr.hasNext())
 			{
-				bldr.openTransaction(SPACE); // open "inner" buffer: for individual subConstraint
+				bldr.openTransaction(SPACE); // open inner transaction for individual subConstraint (using with SPACE as connective again)
 				iterConstr.next().accept(this); // visit subConstraint
-				bldr.commitTransaction(); // commit "inner" buffer, result is added to "mid" buffer and connective is insert when needed
+				bldr.commitTransaction(); // commit inner transaction, result is added to outer transaction with connective (AND/OR) inserted as needed
 			}
-			
-			// Handle buffers:
-			if(!bldr.isCurrentTransactionEmpty()) // check if "mid" buffer has content
-			{
-				bldr.commitTransaction(); // commit "mid" buffer
-				bldr.append(")");
-				bldr.commitTransaction(); // commit "outer" buffer
-			}
-			else
-				bldr.rollbackTransactions(2); // discard "mid" and "outer" buffer (this And/Or constraint did not produce any SQL)
+
+			bldr.commitTransaction(false); // commit outer transaction, without inserting connective (i.e. no space after '(')
+			bldr.append(")", false); // no connective inserted (i.e. no space before ')')
 		}
 		
 		@Override
 		public void visit(NotConstraint notConstr)
 		{
-			// Set-up buffers:
-			bldr.openTransaction(""); // open "outer" buffer: for "NOT (" and ")" (empty string as connective)
 			bldr.append("NOT (");
-			bldr.openTransaction(SPACE); // open "inner" buffer for negated constraint
+			bldr.openTransaction(SPACE); // open transaction for negated constraint
 			
 			// Visit negated constraint:
 			notConstr.getNegatedConstraint().accept(this);
 			
-			// Handle buffers:
-			if(!bldr.isCurrentTransactionEmpty()) // check if "inner" buffer has content
-			{
-				bldr.commitTransaction(); // commit "inner" buffer
-				bldr.append(")");
-				bldr.commitTransaction(); // commit "outer" buffer
-			}
-			else
-				bldr.rollbackTransactions(2); // discard "mid" and "outer" buffer (this Not constraint did not produce any SQL)
+			bldr.commitTransaction(false); // commit transaction, without inserting connective (i.e. no space after '(')
+			bldr.append(")", false); // no connective inserted (i.e. no space before ')')
 		}
 
 		@Override
@@ -1105,82 +1308,69 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(sqlCol != null)
 			{	// Equality constraint on leaf column...
 				Object sapValue = equalityConstr.getValue();
+				// TODO if we start supporting default values we may have to(?) replace a null value by the default value if there is one
 				bldr.append(sqlCol.name);
-				bldr.append(getComparisonOperator(RuleConstraint.Comparison.EQUAL));
-				if(isParameterised())
+				if(sapValue != null)
 				{
-					bldr.append(valuePlaceHolder);
-					addColumnAndValue(sqlCol, sapValue);
+					bldr.append(getComparisonOperator(equalityConstr.isEqual() ? Comparison.EQUAL : Comparison.NOT_EQUAL));
+					if(isParameterised())
+					{
+						bldr.append(valuePlaceHolder);
+						addParameterColumnAndValue(sqlCol, sapValue);
+					}
+					else
+						bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
 				}
 				else
-					bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
+				{	// Null comparisons: see class javadoc
+					bldr.append("IS");
+					if(!equalityConstr.isEqual())
+						bldr.append("NOT");
+					bldr.append("NULL");
+				}
 			}
 			else if(cp.getColumn() instanceof RecordColumn<?> && /* just to be sure: */ equalityConstr.getValue() instanceof Record)
 			{	// Equality constraint on composite column...
 				List<SColumn> subSqlCols = table.getSQLColumns((RecordColumn<?>) cp.getColumn());
 				if(subSqlCols != null)
-				{
+				{	// ...  which is split up in the SQLTable...
 					Record valueRecord = (Record) equalityConstr.getValue();
 					AndConstraint andConstr = new AndConstraint();
 					for(SColumn subSqlCol : subSqlCols)
 						andConstr.addConstraint(new EqualityConstraint(subSqlCol.sourceColumnPointer, subSqlCol.sourceColumnPointer.retrieveValue(valueRecord)));
-					visit(andConstr);
+					andConstr.reduce().accept(this);
 				}
 			}
 			else
-			{
 				exception = new DBException("Failed to generate SQL for equalityConstraint on column " + equalityConstr.getColumnPointer().getQualifiedColumnName(table.schema));
-			}
 		}
 
 		@Override
 		public void visit(RuleConstraint ruleConstr)
 		{
+			Object sapValue = ruleConstr.getValue();
+			// Check for null comparison (see class javadoc):
+			if(sapValue == null && (ruleConstr.getComparison() == Comparison.EQUAL || ruleConstr.getComparison() == Comparison.NOT_EQUAL)) // RuleConstraint only accepts null values in combination with in/equality comparison, so we don't need to check other cases
+			{
+				new EqualityConstraint(ruleConstr.getColumnPointer(), null, ruleConstr.getComparison() == Comparison.EQUAL).accept(this);
+				return;
+			}
+			// All other cases:
 			SColumn sqlCol = table.getSQLColumn(ruleConstr.getColumnPointer());
 			if(sqlCol == null)
 			{
 				new DBException("Failed to generate SQL for ruleConstraint on column " + ruleConstr.getColumnPointer().getQualifiedColumnName(table.schema));
 				return;
 			}
-			Object sapValue = ruleConstr.getValue();
 			bldr.append(sqlCol.name);
 			bldr.append(getComparisonOperator(ruleConstr.getComparison()));
 			if(isParameterised())
 			{
 				bldr.append(valuePlaceHolder);
-				addColumnAndValue(sqlCol, sapValue);
+				addParameterColumnAndValue(sqlCol, sapValue);
 			}
 			else
 				bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
-		}
-		
-		public void addColumnAndValue(SColumn column, Object sapValue)
-		{
-			parameterColumns.add(column);
-			sapArguments.add(sapValue);
-		}
-		
-		public String getQuery() throws DBException
-		{
-			if(exception != null)
-				throw exception;
-			return bldr.toString();
-		}
-		
-		/**
-		 * @return list of columns or null if not in parameterised mode
-		 */
-		public List<SColumn> getParameterColumns()
-		{
-			return parameterColumns;
-		}
-
-		/**
-		 * @return list of Objects (SapType values) or null if not in parameterised mode
-		 */
-		public List<Object> getSapArguments()
-		{
-			return sapArguments;
 		}
 		
 	}

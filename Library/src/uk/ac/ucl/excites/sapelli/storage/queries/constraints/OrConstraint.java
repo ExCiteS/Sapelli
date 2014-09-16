@@ -41,7 +41,7 @@ public class OrConstraint extends CompositeConstraint
 	{
 		if(!hasSubConstraints())
 			return true; // if we do not have subConstraints then any record is valid.
-		for(Constraint subConstraint : constraints)
+		for(Constraint subConstraint : getSubConstraints())
 			if(subConstraint._isValid(record))
 				return true;
 		return false; // if we *do* have subconstraints then reaching this line means none of them caused us to return true above, so return false.

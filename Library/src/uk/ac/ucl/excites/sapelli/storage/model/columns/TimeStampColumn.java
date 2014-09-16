@@ -28,7 +28,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
@@ -40,7 +40,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class TimeStampColumn extends ComparatorColumn<TimeStamp>
+public class TimeStampColumn extends ComparableColumn<TimeStamp>
 {
 	
 	// STATICS-------------------------------------------------------

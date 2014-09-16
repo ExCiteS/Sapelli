@@ -23,7 +23,7 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -32,7 +32,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class FloatColumn extends ComparatorColumn<Double>
+public class FloatColumn extends ComparableColumn<Double>
 {	
 	
 	static private final long serialVersionUID = 2L;

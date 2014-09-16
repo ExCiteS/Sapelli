@@ -20,7 +20,7 @@ package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 
 import java.text.ParseException;
 
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
@@ -33,17 +33,31 @@ public class RuleConstraint extends Constraint
 {
 	
 	// STATICS-------------------------------------------------------
-	public static enum Comparison
+	static public enum Comparison
 	{
 		SMALLER, 			/* < */
 		SMALLER_OR_EQUAL,	/* <= */
 		EQUAL,				/* = */
 		NOT_EQUAL,			/* != */
 		GREATER_OR_EQUAL,	/* >= */
-		GREATER				/* > */
+		GREATER;			/* > */
+		
+		public Comparison negate()
+		{
+			switch(this)
+			{
+				case SMALLER : return Comparison.GREATER_OR_EQUAL;
+				case SMALLER_OR_EQUAL : return Comparison.GREATER;
+				case EQUAL : return Comparison.NOT_EQUAL;
+				case NOT_EQUAL : return Comparison.EQUAL;
+				case GREATER_OR_EQUAL : return Comparison.SMALLER;
+				case GREATER : return Comparison.SMALLER_OR_EQUAL;
+			}
+			return null; // should never happen
+		}
 	}
 	
-	public static final String[] COMPARISON_STRINGS = new String[]
+	static public final String[] COMPARISON_STRINGS = new String[]
 	{	
 		"smaller",
 		"smallerEqual",
@@ -53,7 +67,7 @@ public class RuleConstraint extends Constraint
 		"greater"
 	};
 	
-	public static Comparison parseComparisonString(String comparisonString) throws ParseException
+	static public Comparison parseComparisonString(String comparisonString) throws ParseException
 	{
 		if(COMPARISON_STRINGS[0].equalsIgnoreCase(comparisonString))
 			return Comparison.SMALLER;
@@ -70,6 +84,7 @@ public class RuleConstraint extends Constraint
 		throw new ParseException("Unrecognised comparison", 0);
 	}
 	
+	
 	/**
 	 * @param compareColumn
 	 * @param comparison
@@ -79,7 +94,7 @@ public class RuleConstraint extends Constraint
 	 * @throws NullPointerException
 	 * @throws ParseException
 	 */
-	public static RuleConstraint FromString(ComparatorColumn<?> compareColumn, Comparison comparison, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
+	public static RuleConstraint FromString(ComparableColumn<?> compareColumn, Comparison comparison, String valueString) throws IllegalArgumentException, NullPointerException, ParseException
 	{
 		return FromString(new ColumnPointer(compareColumn), comparison, valueString);
 	}
@@ -110,7 +125,7 @@ public class RuleConstraint extends Constraint
 	 * @param comparison
 	 * @param value
 	 */
-	public RuleConstraint(ComparatorColumn<?> compareColumn, Comparison comparison, Object value)
+	public RuleConstraint(ComparableColumn<?> compareColumn, Comparison comparison, Object value)
 	{
 		this(new ColumnPointer(compareColumn), comparison, value);
 	}
@@ -122,13 +137,26 @@ public class RuleConstraint extends Constraint
 	 */
 	public RuleConstraint(ColumnPointer columnPointer, Comparison comparison, Object value)
 	{
-		if(!(columnPointer.getColumn() instanceof ComparatorColumn))
-			throw new IllegalArgumentException("Rules can only be applied to " + ComparatorColumn.class.getSimpleName() + "s!");
+		if(!(columnPointer.getColumn() instanceof ComparableColumn))
+			throw new IllegalArgumentException("Rules can only be applied to " + ComparableColumn.class.getSimpleName() + "s!");
+		if(value == null && comparison != Comparison.EQUAL && comparison != Comparison.NOT_EQUAL)
+			throw new NullPointerException("Value cannot be null unless comparison is equality or inequality.");
 		this.columnPointer = columnPointer;
 		this.comparison = comparison;
 		this.value = value;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint#negate()
+	 */
+	@Override
+	public RuleConstraint negate()
+	{
+		return new RuleConstraint(	columnPointer,
+									comparison.negate(), // e.g. NOT (col <= x) --> col > x
+									value);
+	}
+
 	/**
 	 * @return the columnPointer
 	 */
@@ -140,9 +168,9 @@ public class RuleConstraint extends Constraint
 	/**
 	 * @return the compareColumn
 	 */
-	public ComparatorColumn<?> getCompareColumn()
+	public ComparableColumn<?> getCompareColumn()
 	{
-		return (ComparatorColumn<?>) columnPointer.getColumn();
+		return (ComparableColumn<?>) columnPointer.getColumn();
 	}
 
 	/**

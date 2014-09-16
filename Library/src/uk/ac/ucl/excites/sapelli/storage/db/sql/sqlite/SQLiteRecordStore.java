@@ -184,7 +184,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		try
 		{
 			ISQLiteCursor cursor = executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-												Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, (ColumnPointer) null, null)),
+												Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null, null, null)),
 												Collections.<Object> singletonList(tableName));
 			return cursor != null && cursor.hasRow();
 		}
@@ -269,9 +269,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
+		private RecordInsertHelper insertHelper;
 		private ISQLiteCUDStatement insertStatement;
+		
 		private ISQLiteCUDStatement updateStatement;
+		
 		private ISQLiteCUDStatement upsertStatement;
+		
 		private ISQLiteCUDStatement deleteStatement;
 
 		public SQLiteTable(Schema schema)
@@ -286,14 +290,17 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public void insert(Record record) throws DBException
 		{
 			if(insertStatement == null)
-				insertStatement = newCUDStatement(generateInsertStatement(getParameterPlaceHolder()));
+			{
+				insertHelper = new RecordInsertHelper(this, PARAM_PLACEHOLDER);
+				insertStatement = newCUDStatement(insertHelper.getQuery()); //TODO store list of param cols in statement so we don't need to keep the insertHelper!
+			}
 			else
 				insertStatement.clearAllBindings(); // clear bindings for reuse
 
 			// Bind parameters:
-			int i = 0;
-			for(SQLiteColumn<?, ?> sqliteCol : sqlColumns.values())
-				sqliteCol.retrieveAndBind(insertStatement, i++, record);
+			int p = 0;
+			for(SQLiteColumn<?, ?> sqliteCol : insertHelper.getParameterColumns())
+				sqliteCol.retrieveAndBind(insertStatement, p++, record);
 			
 			// Execute:
 			insertStatement.executeCUD();
@@ -347,25 +354,26 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			super(type, constraint, sourceSchema, sourceColumn, mapping);
 		}
-		
+
 		/**
 		 * @param name
 		 * @param type
 		 * @param constraint
-		 * @param sourceColumnPointer
+		 * @param sourceSchema
+		 * @param sourceColumn
 		 * @param mapping - may be null in case SQLType = SapType
 		 */
-		public SQLiteColumn(String name, String type, String constraint, ColumnPointer sourceColumnPointer, TypeMapping<SQLType, SapType> mapping)
+		public SQLiteColumn(String name, String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
 		{
-			super(name, type, constraint, sourceColumnPointer, mapping);
+			super(name, type, constraint, sourceSchema, sourceColumn, mapping);
 		}
-
 		/**
 		 * @param statement
 		 * @param paramIdx
 		 * @param record
+		 * @throws DBException
 		 */
-		public void retrieveAndBind(ISQLiteStatement statement, int paramIdx, Record record)
+		public void retrieveAndBind(ISQLiteStatement statement, int paramIdx, Record record) throws DBException
 		{
 			bind(statement, paramIdx, retrieve(record));
 		}
@@ -374,19 +382,21 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param statement
 		 * @param paramIdx
 		 * @param sapValue
+		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		public void bindSapelliObject(ISQLiteStatement statement, int paramIdx, Object sapValue)
+		public void bindSapelliObject(ISQLiteStatement statement, int paramIdx, Object sapValue) throws DBException
 		{
 			bind(statement, paramIdx, sapValue != null ? mapping.toSQLType((SapType) sapValue) : null);
 		}
 		
 		/**
+		 * @param statement
 		 * @param paramIdx
-		 * @param column
 		 * @param value
+		 * @throws DBException
 		 */
-		public void bind(ISQLiteStatement statement, int paramIdx, SQLType value)
+		public void bind(ISQLiteStatement statement, int paramIdx, SQLType value) throws DBException
 		{
 			if(value != null)
 				bindNonNull(statement, paramIdx, value);
@@ -394,7 +404,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				statement.bindNull(paramIdx);
 		}
 		
-		protected abstract void bindNonNull(ISQLiteStatement statement, int paramIdx, SQLType value);
+		/**
+		 * @param statement
+		 * @param paramIdx
+		 * @param value
+		 * @throws DBException
+		 */
+		protected abstract void bindNonNull(ISQLiteStatement statement, int paramIdx, SQLType value) throws DBException;
 
 		@Override
 		protected String getNullString()
@@ -418,20 +434,33 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param record
 		 * @param cursor
 		 * @param columnIdx
+		 * @throws DBException
 		 */
-		public void store(Record record, ISQLiteCursor cursor, int columnIdx)
+		public void store(Record record, ISQLiteCursor cursor, int columnIdx) throws DBException
 		{
 			store(record, getValueOrNull(cursor, columnIdx));
 		}
 		
-		public SQLType getValueOrNull(ISQLiteCursor cursor, int columnIdx)
+		/**
+		 * @param cursor
+		 * @param columnIdx
+		 * @return
+		 * @throws DBException
+		 */
+		public SQLType getValueOrNull(ISQLiteCursor cursor, int columnIdx) throws DBException
 		{
 			if(cursor.isNull(columnIdx))
 				return null;
 			return getValue(cursor, columnIdx);
 		}
 		
-		protected abstract SQLType getValue(ISQLiteCursor cursor, int columnIdx);
+		/**
+		 * @param cursor
+		 * @param columnIdx
+		 * @return
+		 * @throws DBException
+		 */
+		protected abstract SQLType getValue(ISQLiteCursor cursor, int columnIdx) throws DBException;
 
 	}
 	
@@ -530,7 +559,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				bldr.openTransaction(", ");
 				// List indexed columns:
 				for(Column<?> idxCol : idx.getColumns(false))
-					bldr.append(table.getSQLColumn(new ColumnPointer(schema, idxCol)).name);
+					bldr.append(table.getSQLColumn(idxCol).name);
 				bldr.commitTransaction(false);
 				bldr.append(")", false);
 				// conflict-clause?

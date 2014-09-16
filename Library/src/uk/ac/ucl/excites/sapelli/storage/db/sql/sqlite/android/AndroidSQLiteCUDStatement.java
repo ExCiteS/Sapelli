@@ -102,24 +102,25 @@ public class AndroidSQLiteCUDStatement implements ISQLiteCUDStatement
 	}
 	
 	@Override
-	public boolean executeCUD() throws DBException
+	public void executeCUD() throws DBException
 	{
 		try
 		{
 			switch(kind)
 			{
 				case INSERT :
-					return androidSQLiteSt.executeInsert() != -1;
+					if(androidSQLiteSt.executeInsert() == -1)
+						throw new DBException("Execution of " + Kind.INSERT + " statement failed");
+					break;
 				case UPDATE : 
 				case DELETE :
 					if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) /* API level 11 */
 					{
 						executeUpdateDeleteNew();
-						return true;
+						break;
 					}
 				default :
 					androidSQLiteSt.execute();
-					return true;
 			}
 		}
 		catch(SQLException sqlE)

@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.queries;
 import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
@@ -32,12 +32,12 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 {
 
 	// STATICS-------------------------------------------------------
-	static public ExtremeValueRecordQuery Max(ComparatorColumn<?> column)
+	static public ExtremeValueRecordQuery Max(ComparableColumn<?> column)
 	{
 		return Max(column, null);
 	}
 	
-	static public ExtremeValueRecordQuery Max(ComparatorColumn<?> column, RecordsQuery recordsQuery)
+	static public ExtremeValueRecordQuery Max(ComparableColumn<?> column, RecordsQuery recordsQuery)
 	{
 		return Max(new ColumnPointer(column), recordsQuery);
 	}
@@ -52,12 +52,12 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 		return new ExtremeValueRecordQuery(columnPointer, true, recordsQuery);
 	}
 	
-	static public ExtremeValueRecordQuery Min(ComparatorColumn<?> column)
+	static public ExtremeValueRecordQuery Min(ComparableColumn<?> column)
 	{
 		return Min(column, null);
 	}
 	
-	static public ExtremeValueRecordQuery Min(ComparatorColumn<?> column, RecordsQuery recordsQuery)
+	static public ExtremeValueRecordQuery Min(ComparableColumn<?> column, RecordsQuery recordsQuery)
 	{
 		return Min(new ColumnPointer(column));
 	}
@@ -79,8 +79,8 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	private ExtremeValueRecordQuery(ColumnPointer columnPointer, boolean max, RecordsQuery recordQuery)
 	{
 		super(recordQuery);
-		if(!(columnPointer.getColumn() instanceof ComparatorColumn))
-			throw new IllegalArgumentException("Min/max values can only be determined for a " + ComparatorColumn.class.getSimpleName() + "!");
+		if(!(columnPointer.getColumn() instanceof ComparableColumn))
+			throw new IllegalArgumentException("Min/max values can only be determined for a " + ComparableColumn.class.getSimpleName() + "!");
 		this.columnPointer = columnPointer;
 		this.max = max;
 	}
@@ -96,9 +96,9 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	/**
 	 * @return the compareColumn
 	 */
-	public ComparatorColumn<?> getCompareColumn()
+	public ComparableColumn<?> getCompareColumn()
 	{
-		return (ComparatorColumn<?>) columnPointer.getColumn();
+		return (ComparableColumn<?>) columnPointer.getColumn();
 	}
 	
 	/**

@@ -429,6 +429,15 @@ public class Schema implements Serializable
 	{
 		return virtualColumnsByName == null ? Collections.<VirtualColumn> emptyList() : virtualColumnsByName.values();
 	}
+
+	/**
+	 * @param name the name of a column
+	 * @return
+	 */
+	public boolean containsColumn(String name)
+	{
+		return containsColumn(name, false);
+	}
 	
 	/**
 	 * @param name the name of a column
@@ -438,6 +447,16 @@ public class Schema implements Serializable
 	public boolean containsColumn(String name, boolean checkVirtual)
 	{
 		return columnNameToPosition.containsKey(name) || (checkVirtual && virtualColumnsByName != null && virtualColumnsByName.containsKey(name));
+	}
+
+	/**
+	 * 
+	 * @param column
+	 * @return	whether or not this Schema contains the given Column or an exact equivalent of it
+	 */
+	public boolean containsColumn(Column column)
+	{
+		return containsColumn(column, false);
 	}
 	
 	/**

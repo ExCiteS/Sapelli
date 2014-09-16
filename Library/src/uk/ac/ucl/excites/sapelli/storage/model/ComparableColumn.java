@@ -26,12 +26,12 @@ import java.util.Comparator;
  * @param <T>
  * @author mstevens
  */
-public abstract class ComparatorColumn<T> extends Column<T> implements Comparator<Record>
+public abstract class ComparableColumn<T> extends Column<T> implements Comparator<Record>
 {
 	
 	static private final long serialVersionUID = 2L;
 
-	public ComparatorColumn(Class<T> type, String name, boolean optional)
+	public ComparableColumn(Class<T> type, String name, boolean optional)
 	{
 		super(type, name, optional);
 	}
