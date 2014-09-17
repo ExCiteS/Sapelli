@@ -22,6 +22,7 @@ import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView.PickerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
@@ -192,13 +193,38 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	@Override
 	public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id)
 	{
-		// Apply an alpha animation to the long pressed view
-		ViewAnimator.shakeAnimation(v);
+		// Get the pressed ControlItem
+		ControlItem item = (ControlItem) view.getAdapter().getItem(position);
 
-		// TODO check whether there is an audio file for the given ChoiceField and use that instead of the TTS
-		// Use the Android TTS (Text-To-Speech) Engine
-		ControlItem test = (ControlItem) view.getAdapter().getItem(position);
-		controller.textToVoice(test.getDescription());
+		// Check whether AudioFeedback is supported for the current form
+		AudioFeedback audioFeedback = controller.getCurrentForm().getAudioFeedback();
+
+		if(audioFeedback != null)
+		{
+			switch(audioFeedback)
+			{
+			case LONG_CLICK_AUDIO_FILES:
+			case SEQUENTIAL_AUDIO_FILES:
+
+				// If the choice has an audio, pass that audio to the Media Player
+				// TODO
+				return true;
+
+			case LONG_CLICK_TTS:
+			case SEQUENTIAL_TTS:
+
+				// Enable TTS Audio Feedback
+				controller.textToVoice(item.getDescription());
+				break;
+
+			case NONE:
+				controller.addLogLine("LONG_CLICK", "LongClick on " + item.getDescription() + " but AudioFeedback is disabled");
+				return true;
+			}
+
+			// Apply an alpha animation to the long pressed view
+			ViewAnimator.shakeAnimation(v);
+		}
 
 		return true;
 	}
