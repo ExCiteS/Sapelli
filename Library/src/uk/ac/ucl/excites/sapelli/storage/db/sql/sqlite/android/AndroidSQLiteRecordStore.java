@@ -195,7 +195,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 
 	@Override
-	protected ISQLiteCUDStatement newCUDStatement(String sql, List<SQLiteColumn<?, ?>> paramCols)
+	protected ISQLiteCUDStatement getCUDStatement(String sql, List<SQLiteColumn<?, ?>> paramCols)
 	{
 		return new AndroidSQLiteCUDStatement(db, sql, paramCols);
 	}

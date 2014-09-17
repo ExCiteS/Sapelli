@@ -50,7 +50,7 @@ public class AndroidSQLiteCUDStatement implements ISQLiteCUDStatement
 	
 	private final SQLiteStatement androidSQLiteSt;
 	private Kind kind;
-	private List<SQLiteColumn<?, ?>> paramCols; 
+	private List<SQLiteColumn<?, ?>> paramCols;
 	
 	/**
 	 * @param sql

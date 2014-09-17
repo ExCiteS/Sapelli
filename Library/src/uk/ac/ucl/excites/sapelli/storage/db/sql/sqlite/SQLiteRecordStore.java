@@ -231,7 +231,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @param sql
 	 * @return
 	 */
-	protected abstract ISQLiteCUDStatement newCUDStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
+	protected abstract ISQLiteCUDStatement getCUDStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#getParameterPlaceHolder()
@@ -268,7 +268,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			if(insertStatement == null)
 			{
 				RecordInsertHelper insertHelper = new RecordInsertHelper(this, PARAM_PLACEHOLDER);
-				insertStatement = newCUDStatement(insertHelper.getQuery(), insertHelper.getParameterColumns());
+				insertStatement = getCUDStatement(insertHelper.getQuery(), insertHelper.getParameterColumns());
 			}
 			else
 				insertStatement.clearAllBindings(); // clear bindings for reuse
@@ -289,7 +289,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			if(updateStatement == null)
 			{
 				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this, PARAM_PLACEHOLDER);
-				updateStatement = newCUDStatement(updateHelper.getQuery(), updateHelper.getParameterColumns());
+				updateStatement = getCUDStatement(updateHelper.getQuery(), updateHelper.getParameterColumns());
 			}
 			else
 				updateStatement.clearAllBindings(); // clear bindings for reuse
@@ -316,7 +316,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			if(deleteStatement == null)
 			{
 				RecordDeleteHelper deleteHelper = new RecordDeleteHelper(this, PARAM_PLACEHOLDER);
-				deleteStatement = newCUDStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
+				deleteStatement = getCUDStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
 			}
 			else
 				deleteStatement.clearAllBindings(); // clear bindings for reuse
@@ -329,7 +329,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		@Override
-		protected List<Record> executeSelection(RecordSelectHelper selection) throws DBException
+		protected List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException
 		{
 			// Execute (also binds parameters) and get cursor:
 			ISQLiteCursor cursor = executeQuery(selection.getQuery(), selection.getParameterColumns(), selection.getSapArguments());

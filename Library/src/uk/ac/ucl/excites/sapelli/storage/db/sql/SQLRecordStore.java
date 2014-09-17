@@ -76,7 +76,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
 	
-	static protected final String MODELS_TABLE_NAME = "Models";
+	static protected final String MODELS_TABLE_NAME = "Models"; // TODO meta Model records!
 	static protected final String SCHEMATA_TABLE_NAME = "Schemata";
 	static protected final String SPACE = " ";	
 	
@@ -581,7 +581,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@SuppressWarnings("unchecked")
 		protected List<Record> select(RecordsQuery query) throws DBException
 		{
-			return executeSelection(new RecordSelectHelper((STable) this, query, getParameterPlaceHolder()));
+			return executeRecordSelection(new RecordSelectHelper((STable) this, query, getParameterPlaceHolder()));
 		}
 		
 		/**
@@ -601,7 +601,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				@Override
 				public List<Record> execute(ExtremeValueRecordQuery extremeValueRecordQuery) throws DBException
 				{
-					return executeSelection(new RecordSelectHelper((STable) SQLTable.this, extremeValueRecordQuery, getParameterPlaceHolder())); 
+					return executeRecordSelection(new RecordSelectHelper((STable) SQLTable.this, extremeValueRecordQuery, getParameterPlaceHolder())); 
 				}
 				
 				@Override
@@ -621,12 +621,20 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			return results != null /* just in case */ && !results.isEmpty() ? results.get(0) : null;
 		}
 		
+		protected int getRecordCount()
+		{
+			//new RecordCountHelper(this)
+			
+			// TODO how to read results from cursor?
+			return 0;
+		}
+		
 		/**
 		 * @param selection
 		 * @return list of records (possibly empty)
 		 * @throws DBException
 		 */
-		protected abstract List<Record> executeSelection(RecordSelectHelper selection) throws DBException;
+		protected abstract List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException;
 		
 		/* (non-Javadoc)
 		 * @see java.lang.Object#toString()
@@ -1339,6 +1347,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append(projection);
 			bldr.append("FROM");
 			bldr.append(table.tableName);
+			// if there is not recordsQuery we are done here:
+			if(recordsQuery == null)
+				return;
+			//else:
 			// 	WHERE
 			if(recordsQuery.getConstraints() != null)
 			{
@@ -1495,6 +1507,29 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			else
 				bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
+		}
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	protected class RecordCountHelper extends RecordSelectHelper
+	{
+
+		public RecordCountHelper(STable table)
+		{
+			this(table, null, null);
+		}
+		
+		public RecordCountHelper(STable table, RecordsQuery recordsQuery, String valuePlaceHolder)
+		{
+			super(table, valuePlaceHolder);
+			
+			// Build SELECT query:
+			buildQuery(recordsQuery, "COUNT(*)");
+			bldr.append(";", false);
 		}
 		
 	}
