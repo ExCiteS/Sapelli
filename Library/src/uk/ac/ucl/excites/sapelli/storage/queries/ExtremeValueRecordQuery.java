@@ -23,6 +23,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
@@ -34,7 +35,7 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	// STATICS-------------------------------------------------------
 	static public ExtremeValueRecordQuery Max(ComparableColumn<?> column)
 	{
-		return Max(column, null);
+		return Max(column, (RecordsQuery) null);
 	}
 	
 	static public ExtremeValueRecordQuery Max(ComparableColumn<?> column, RecordsQuery recordsQuery)
@@ -52,14 +53,24 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 		return new ExtremeValueRecordQuery(columnPointer, true, recordsQuery);
 	}
 	
+	static public ExtremeValueRecordQuery Max(ComparableColumn<?> column, Schema sourceSchema)
+	{
+		return Max(new ColumnPointer(sourceSchema, column), sourceSchema);
+	}
+	
+	static public ExtremeValueRecordQuery Max(ColumnPointer columnPointer, Schema sourceSchema)
+	{
+		return new ExtremeValueRecordQuery(columnPointer, true, new RecordsQuery(sourceSchema));
+	}
+	
 	static public ExtremeValueRecordQuery Min(ComparableColumn<?> column)
 	{
-		return Min(column, null);
+		return Min(column, (RecordsQuery) null);
 	}
 	
 	static public ExtremeValueRecordQuery Min(ComparableColumn<?> column, RecordsQuery recordsQuery)
 	{
-		return Min(new ColumnPointer(column));
+		return Min(new ColumnPointer(column), recordsQuery);
 	}
 	
 	static public ExtremeValueRecordQuery Min(ColumnPointer columnPointer)
@@ -70,6 +81,16 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	static public ExtremeValueRecordQuery Min(ColumnPointer columnPointer, RecordsQuery recordsQuery)
 	{
 		return new ExtremeValueRecordQuery(columnPointer, false, recordsQuery);
+	}
+	
+	static public ExtremeValueRecordQuery Min(ComparableColumn<?> column, Schema sourceSchema)
+	{
+		return Min(new ColumnPointer(sourceSchema, column), sourceSchema);
+	}
+	
+	static public ExtremeValueRecordQuery Min(ColumnPointer columnPointer, Schema sourceSchema)
+	{
+		return new ExtremeValueRecordQuery(columnPointer, false, new RecordsQuery(sourceSchema));
 	}
 	
 	// DYNAMICS------------------------------------------------------
@@ -116,7 +137,7 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	}
 
 	@Override
-	public Record acceptExecutor(Executor executor)
+	public <R, E extends Throwable> R acceptExecutor(Executor<R, E> executor) throws E
 	{
 		return executor.execute(this);
 	}

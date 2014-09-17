@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.queries;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 
 /**
  * Query resulting in a single record instance
@@ -37,10 +38,15 @@ public abstract class SingleRecordQuery
 		this(new RecordsQuery());
 	}
 	
+	public SingleRecordQuery(Schema sourceSchema)
+	{
+		this(new RecordsQuery(sourceSchema));
+	}
+	
 	public SingleRecordQuery(RecordsQuery recordsQuery)
 	{
 		if(recordsQuery == null)
-			this.recordsQuery = new RecordsQuery();
+			this.recordsQuery = new RecordsQuery(); // query across all schemata without constraints
 		else
 			this.recordsQuery = recordsQuery;
 	}
@@ -76,16 +82,26 @@ public abstract class SingleRecordQuery
 		if(executeRecordQuery)
 			records = recordsQuery.execute(records);
 		
-		if(!records.isEmpty())
-			// Reduce & return:
-			return reduce(records);
+		if(records != null && !records.isEmpty())
+		{
+			if(records.size() == 1)
+				return records.get(0);
+			else
+			{
+				// Sort:
+				recordsQuery.sort(records);
+				
+				 // Reduce & return:
+				return reduce(records);
+			}
+		}
 		else
 			// There are no records, return null
 			return null;
 	}
 	
 	/**
-	 * @param records list of records to select from, guaranteed non-empty
+	 * @param records list of records to select from, guaranteed non-null & non-empty
 	 * @return
 	 */
 	protected abstract Record reduce(List<Record> records);
@@ -101,19 +117,38 @@ public abstract class SingleRecordQuery
 	/**
 	 * @param executor
 	 * @return
+	 * @throws E
 	 */
-	public abstract Record acceptExecutor(Executor executor);
+	public abstract <R, E extends Throwable> R acceptExecutor(Executor<R, E> executor) throws E;
 	
 	/**
-	 * 
 	 * @author mstevens
+	 *
+	 * @param <R> some result
+	 * @param <E> a Throwable
 	 */
-	public interface Executor
+	public interface Executor<R, E extends Throwable>
 	{
 
-		public Record execute(FirstRecordQuery firstRecordQuery);
+		/**
+		 * @param firstRecordQuery
+		 * @return
+		 * @throws E
+		 */
+		public R execute(FirstRecordQuery firstRecordQuery) throws E;
 		
-		public Record execute(ExtremeValueRecordQuery extremeValueRecordQuery);
+		/**
+		 * @param extremeValueRecordQuery
+		 * @return
+		 * @throws E
+		 */
+		public R execute(ExtremeValueRecordQuery extremeValueRecordQuery) throws E;
+
+		/**
+		 * @param nullRecordQuery
+		 * @return
+		 */
+		public R execute(NullRecordQuery nullRecordQuery);
 
 	}
 	

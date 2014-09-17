@@ -22,6 +22,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 
 /**
@@ -96,6 +97,12 @@ public class RecordReference extends Record
 	 * @return a query that looks for the record this reference points to
 	 */
 	public SingleRecordQuery getRecordQuery()
+	{		
+		// Single record query:
+		return new FirstRecordQuery(new RecordsQuery(referencedSchema, 1, getRecordQueryConstraint()));
+	}
+	
+	public Constraint getRecordQueryConstraint()
 	{
 		if(!isFilled())
 			throw new IllegalStateException("All values of the key must be set before a query can be created!");
@@ -106,8 +113,7 @@ public class RecordReference extends Record
 		for(Object keyPart : values)
 			constraints.addConstraint(new EqualityConstraint(schema.getColumn(c++), keyPart));
 		
-		// Single record query:
-		return new FirstRecordQuery(new RecordsQuery(referencedSchema, constraints));
+		return constraints;
 	}
 	
 	@Override

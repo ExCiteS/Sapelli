@@ -30,11 +30,17 @@ public class FirstRecordQuery extends SingleRecordQuery
 {
 
 	/**
-	 * @param recordsQuery
+	 * @param recordsQuery, which will be limited to 1 if it isn't already!
 	 */
 	public FirstRecordQuery(RecordsQuery recordsQuery)
 	{
-		super(recordsQuery);
+		super(recordsQuery.getLimit() == 1 ?
+				recordsQuery :
+				new RecordsQuery(	recordsQuery.getSourceSchemata(),
+									recordsQuery.getOrderBy(),
+									recordsQuery.isOrderAsc(),
+									1, // !!! ensure limit of 1
+									recordsQuery.getConstraints()));
 	}
 
 	/* (non-Javadoc)
@@ -47,7 +53,7 @@ public class FirstRecordQuery extends SingleRecordQuery
 	}
 
 	@Override
-	public Record acceptExecutor(Executor executor)
+	public <R, E extends Throwable> R acceptExecutor(Executor<R, E> executor) throws E
 	{
 		return executor.execute(this);
 	}

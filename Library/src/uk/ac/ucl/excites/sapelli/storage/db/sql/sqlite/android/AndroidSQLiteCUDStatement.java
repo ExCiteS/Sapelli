@@ -18,8 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
+import java.util.List;
+
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.statements.ISQLiteCUDStatement;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.annotation.TargetApi;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
@@ -45,13 +49,14 @@ public class AndroidSQLiteCUDStatement implements ISQLiteCUDStatement
 	}
 	
 	private final SQLiteStatement androidSQLiteSt;
-	private Kind kind; 
+	private Kind kind;
+	private List<SQLiteColumn<?, ?>> paramCols; 
 	
 	/**
 	 * @param sql
 	 * @throws SQLException
 	 */
-	public AndroidSQLiteCUDStatement(SQLiteDatabase db, String sql) throws SQLException
+	public AndroidSQLiteCUDStatement(SQLiteDatabase db, String sql, List<SQLiteColumn<?, ?>> paramCols) throws SQLException
 	{
 		androidSQLiteSt = db.compileStatement(sql);
 		Log.d("SQLite", "Compile statement: " + sql); // TODO remove debug logging
@@ -63,8 +68,17 @@ public class AndroidSQLiteCUDStatement implements ISQLiteCUDStatement
 			}
 		if(kind == null)
 			throw new IllegalArgumentException("Unsupported kind of SQL statement: " + sql);
+		this.paramCols = paramCols;
 	}
-
+	
+	@Override
+	public void retrieveAndBindAll(Record record) throws DBException
+	{
+		int p = 0;
+		for(SQLiteColumn<?, ?> sqliteCol : paramCols)
+			sqliteCol.retrieveAndBind(this, p++, record);
+	}
+	
 	@Override
 	public void bindBlob(int paramIdx, byte[] value)
 	{

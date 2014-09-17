@@ -39,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
@@ -47,8 +48,12 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
+import uk.ac.ucl.excites.sapelli.storage.queries.ExtremeValueRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.NullRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery.Executor;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor;
@@ -71,6 +76,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SColumn>, STable extends SQLRecordStore<SRS, STable, SColumn>.SQLTable, SColumn extends SQLRecordStore<SRS, STable, SColumn>.SQLColumn<?, ?>> extends RecordStore
 {
 	
+	static protected final String MODELS_TABLE_NAME = "Models";
 	static protected final String SCHEMATA_TABLE_NAME = "Schemata";
 	static protected final String SPACE = " ";	
 	
@@ -184,7 +190,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		try
 		{
 			// Unregister (i.e. forget) the schema (which the table corresponds to) in the schemataTable:
-			schemataTable.delete(Schema.GetMetaRecord(table.schema));
+			schemataTable.delete(Schema.GetMetaRecordReference(table.schema));
 			
 			// Drop the table itself:
 			table.drop();
@@ -199,16 +205,23 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	
 	protected Set<Schema> getAllKnownSchemata()
 	{
-		// TODO query for all schemata in schemataTable in DB !!!!
-		
-//		for(Record metaSchemaRec : retrieveRecords(Schema.META_SCHEMA))
-//		{
-//			Schema schema = Schema.FromMetaRecord(metaSchemaRec);
-//			
-//			
-//			tables.put(schema, getTableFactory().generateTable(schema));
-//		}
-		
+		// Construct constraint to filter out schemata we already have cached:
+		AndConstraint filterCachedSchemata = new AndConstraint();
+		for(Schema cachedSchema : tables.keySet())
+			filterCachedSchemata.addConstraint(Schema.GetMetaRecordReference(cachedSchema).getRecordQueryConstraint().negate());
+		// Query Schemata table & process results:
+		for(Record metaSchemaRec : retrieveRecords(new RecordsQuery(Schema.META_SCHEMA, filterCachedSchemata)))
+		{
+			try
+			{
+				Schema schema = Schema.FromMetaRecord(metaSchemaRec);
+				tables.put(schema, getTableFactory().generateTable(schema));
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace(System.err);
+			}
+		}
 		return tables.keySet();
 	}
 	
@@ -224,7 +237,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected boolean doStore(Record record) throws DBException
 	{
 		boolean newRec = retrieveRecord(record.getReference().getRecordQuery()) == null;
-		STable table = getTable(record.getSchema(), true);
+		STable table = getTable(record.getSchema(), true); // will create table in db if it is not there
 		if(newRec)
 			table.insert(record);
 		else
@@ -236,8 +249,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected void doDelete(Record record) throws DBException
 	{
 		STable table = getTable(record.getSchema(), false); // no need to create the table in the db if it isn't there!
-		if(table.isInDB()) // !!!
-			table.delete(record);
+		if(table.isInDB())
+			table.delete(record.getReference());
 	}
 	
 	/* (non-Javadoc)
@@ -246,29 +259,31 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	public List<Record> retrieveRecords(RecordsQuery query)
 	{
-		List<Record> result = new ArrayList<Record>();
-		// Run subqueries for each schema in the query, or all known schemata (if the query for "any" schema):
+		List<Record> resultAcc = null;
+		// Run subqueries for each schema in the query, or all known schemata (if the query is for "any" schema):
 		for(Schema s : query.isAnySchema() ? getAllKnownSchemata() : query.getSourceSchemata())
+		{
 			try
 			{
-				STable table = getTable(s, false); // won't throw DBException because we don't allow table creation (so we ignore exception below)
-				if(table.isInDB())
-					queryForRecords(table, query, result);
+				STable table = getTable(s, false);
+				if(!table.isInDB())
+					continue;
+				List<Record> subResult = table.select(query);
+				if(!subResult.isEmpty())
+				{
+					if(resultAcc == null)
+						resultAcc = subResult;
+					else
+						resultAcc.addAll(subResult);
+				}
 			}
 			catch(DBException dbE)
 			{
 				dbE.printStackTrace(System.err);
 			}
-		return result;
+		}
+		return resultAcc != null ? resultAcc : Collections.<Record> emptyList();
 	}
-	
-	/**
-	 * @param schema
-	 * @param query
-	 * @param result
-	 * @throws DBException 
-	 */
-	protected abstract void queryForRecords(STable table, RecordsQuery query, List<Record> result) throws DBException;
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#retrieveRecord(uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery)
@@ -276,12 +291,30 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	public Record retrieveRecord(SingleRecordQuery query)
 	{
-		// TODO Now the reduction happens in Java, we should let the database do the work instead! I.e. generate appropriate SQL to do selection & reduction in 1 query
-		
-		// Run the RecordsQuery:
-		List<Record> records = retrieveRecords(query.getRecordsQuery());
-		// Execute the SingleRecordQuery (reducing the list to 1 record), without re-running the recordsQuery, and then return the result:
-		return query.execute(records, false);
+		List<Record> candidates = null;
+		// Run subqueries for each schema in the query, or all known schemata (if the query is for "any" schema):
+		RecordsQuery recsQuery = query.getRecordsQuery();
+		for(Schema s : recsQuery.isAnySchema() ? getAllKnownSchemata() : recsQuery.getSourceSchemata())
+		{
+			try
+			{
+				STable table = getTable(s, false);
+				if(!table.isInDB())
+					continue;
+				Record candidate = table.select(query);
+				if(candidate != null)
+				{
+					if(candidates == null)
+						candidates = new ArrayList<Record>();
+					candidates.add(candidate);
+				}
+			}
+			catch(DBException dbE)
+			{
+				dbE.printStackTrace(System.err);
+			}
+		}
+		return query.execute(candidates, false); // reduce to 1 record (execute() will return null when passed a null list)
 	}
 	
 	/**
@@ -303,6 +336,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		return null; // this should never happen
 	}
+	
+	/**
+	 * @return String used to mark unbound parameters in parameterised statements/queries, or null if only literal values are supported
+	 */
+	protected abstract String getParameterPlaceHolder();
 	
 	/**
 	 * @author mstevens
@@ -453,7 +491,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				bldr.append("UNIQUE");
 			bldr.append("INDEX");
 			// "IF NOT EXISTS"? (probably SQLite specific)
-			bldr.append(sanitiseIdentifier(idx.getName()));
+			bldr.append(sanitiseIdentifier(tableName + "_" + idx.getName()));
 			bldr.append("ON");
 			bldr.append(tableName);
 			bldr.append("(");
@@ -489,6 +527,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * Insert new record in database table
+		 * Assumes the table exists in the database.
 		 * 
 		 * May be overridden
 		 * 
@@ -498,13 +537,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@SuppressWarnings("unchecked")
 		public void insert(Record record) throws DBException
 		{
-			if(!isInDB())
-				throw new DBException("Insert failed: " + toString() + " does not exist in database!"); // shouldn't happen
 			executeSQL(new RecordInsertHelper((STable) this, record).getQuery());
 		}
 		
 		/**
 		 * Update existing record in database table
+		 * Assumes the table exists in the database.
 		 * 
 		 * May be overridden
 		 * 
@@ -514,26 +552,81 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@SuppressWarnings("unchecked")
 		public void update(Record record) throws DBException
 		{
-			if(!isInDB())
-				throw new DBException("Update failed: " + toString() + " does not exist in database!"); // shouldn't happen
 			executeSQL(new RecordUpdateHelper((STable) this, record).getQuery());
 		}
 		
 		/**
-		 * Delete existing record in database table
+		 * Delete existing record (identified by a RecordReference) in database table
+		 * Assumes the table exists in the database.
 		 * 
 		 * May be overridden
 		 * 
-		 * @param record
+		 * @param recordRef
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		public void delete(Record record) throws DBException
+		public void delete(RecordReference recordRef) throws DBException
 		{
-			if(!isInDB())
-				return; // the table doesn't exist in the database so there is no record to delete
-			executeSQL(new RecordDeleteHelper((STable) this, record).getQuery());
+			executeSQL(new RecordDeleteHelper((STable) this, recordRef).getQuery());
 		}
+		
+		/**
+		 * Selects records from the database table based on a RecordsQuery.
+		 * Assumes the table exists in the database. 
+		 * 
+		 * @param query
+		 * @return a list, possibly empty
+		 * @throws DBException
+		 */
+		@SuppressWarnings("unchecked")
+		protected List<Record> select(RecordsQuery query) throws DBException
+		{
+			return executeSelection(new RecordSelectHelper((STable) this, query, getParameterPlaceHolder()));
+		}
+		
+		/**
+		 * Selects a single record from the database table based on a SingleRecordQuery.
+		 * Assumes the table exists in the database. 
+		 * 
+		 * @param query
+		 * @param result record or null
+		 * @throws DBException 
+		 */
+		protected Record select(SingleRecordQuery query) throws DBException
+		{
+			List<Record> results = query.<List<Record>, DBException> acceptExecutor(new Executor<List<Record>, DBException>()
+			{
+				
+				@SuppressWarnings("unchecked")
+				@Override
+				public List<Record> execute(ExtremeValueRecordQuery extremeValueRecordQuery) throws DBException
+				{
+					return executeSelection(new RecordSelectHelper((STable) SQLTable.this, extremeValueRecordQuery, getParameterPlaceHolder())); 
+				}
+				
+				@Override
+				public List<Record> execute(FirstRecordQuery firstRecordQuery) throws DBException
+				{	// Execute as regular select query: the RecordsQuery held by the firstRecordQuery will always be limited to 1!
+					return select(firstRecordQuery.getRecordsQuery());
+				}
+
+				@Override
+				public List<Record> execute(NullRecordQuery nullRecordQuery)
+				{
+					return Collections.<Record> emptyList();
+				}
+				
+			});
+			
+			return results != null /* just in case */ && !results.isEmpty() ? results.get(0) : null;
+		}
+		
+		/**
+		 * @param selection
+		 * @return list of records (possibly empty)
+		 * @throws DBException
+		 */
+		protected abstract List<Record> executeSelection(RecordSelectHelper selection) throws DBException;
 		
 		/* (non-Javadoc)
 		 * @see java.lang.Object#toString()
@@ -896,15 +989,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * @param table
-		 */
-		public StatementHelper(STable table)
-		{
-			this(table, null);
-		}
-		
-		/**
-		 * @param table
-		 * @param valuePlaceHolder
+		 * @param valuePlaceHolder - may be null if no parameters are to be used (only literal values)
 		 */
 		public StatementHelper(STable table, String valuePlaceHolder)
 		{
@@ -973,7 +1058,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * @param table
-		 * @param valuePlaceHolder
+		 * @param valuePlaceHolder - may be null if no parameters are to be used (only literal values)
 		 */
 		public RecordInsertHelper(STable table, Record record, String valuePlaceHolder)
 		{
@@ -1014,11 +1099,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected abstract class RecordUpdateDeleteHelper extends StatementHelper
 	{
 		
-		Set<SColumn> keyPartSqlCols;
+		protected Set<SColumn> keyPartSqlCols;
 		
 		/**
 		 * @param table
-		 * @param valuePlaceHolder
+		 * @param valuePlaceHolder - may be null if no parameters are to be used (only literal values)
 		 */
 		public RecordUpdateDeleteHelper(STable table, String valuePlaceHolder)
 		{
@@ -1086,7 +1171,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * @param table
-		 * @param valuePlaceHolder
+		 * @param valuePlaceHolder - may be null if no parameters are to be used (only literal values)
 		 */
 		public RecordUpdateHelper(STable table, Record record, String valuePlaceHolder)
 		{
@@ -1129,7 +1214,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 */
 	protected class RecordDeleteHelper extends RecordUpdateDeleteHelper
 	{
-		
+	
 		/**
 		 * Parameterised
 		 * 
@@ -1146,16 +1231,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @param table
 		 * @param record
 		 */
-		public RecordDeleteHelper(STable table, Record record)
+		public RecordDeleteHelper(STable table, RecordReference recordRef)
 		{
-			this(table, record, null);
+			this(table, recordRef, null);
 		}
 		
 		/**
 		 * @param table
-		 * @param valuePlaceHolder
+		 * @param valuePlaceHolder - may be null if no parameters are to be used (only literal values)
 		 */
-		public RecordDeleteHelper(STable table, Record record, String valuePlaceHolder)
+		public RecordDeleteHelper(STable table, RecordReference recordRef, String valuePlaceHolder)
 		{
 			// Initialise
 			super(table, valuePlaceHolder);
@@ -1164,7 +1249,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("DELETE FROM");
 			bldr.append(table.tableName);
 			// WHERE clause:
-			appendWhereClause(record);
+			appendWhereClause(recordRef);
 			bldr.append(";", false);
 		}
 		
@@ -1185,34 +1270,74 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @author mstevens
 	 *
 	 */
-	protected class RecordSelection extends StatementHelper implements ConstraintVisitor
+	protected class RecordSelectHelper extends StatementHelper implements ConstraintVisitor
 	{
 		
 		protected List<Object> sapArguments;
 		
 		/**
 		 * @param table
-		 * @param recordsQuery
+		 * @param recordQuery
+		 * @param valuePlaceHolder - may be null if no parameters are to be used (only literal values)
 		 */
-		public RecordSelection(STable table, RecordsQuery recordsQuery)
+		public RecordSelectHelper(STable table, RecordsQuery recordsQuery, String valuePlaceHolder)
 		{
-			this(table, recordsQuery, null);
+			this(table, valuePlaceHolder);
+			
+			// Build SELECT query:
+			buildQuery(recordsQuery, "*"); // * = select all columns
+			bldr.append(";", false);
+		}
+
+		/**
+		 * @param table
+		 * @param extremeValueRecordQuery
+		 * @param valuePlaceHolder - may be null if no parameters are to be used (only literal values)
+		 */
+		public RecordSelectHelper(STable table, ExtremeValueRecordQuery extremeValueRecordQuery, String valuePlaceHolder)
+		{
+			this(table, valuePlaceHolder);
+			
+			SColumn extremeValueSqlCol = table.getSQLColumn(extremeValueRecordQuery.getColumnPointer());
+			if(extremeValueSqlCol == null)
+			{
+				exception = new DBException("Failed to generate SQL for extremeValueRecordQuery on column " + extremeValueRecordQuery.getColumnPointer().getQualifiedColumnName(table.schema));
+				return;
+			}
+			
+			// Build outer query:
+			bldr.append("SELECT * FROM");
+			bldr.append(table.tableName);
+			bldr.append("WHERE");
+			bldr.append(extremeValueSqlCol.name);
+			bldr.append(getComparisonOperator(Comparison.EQUAL));
+			bldr.append("(");
+			bldr.openTransaction(SPACE);
+			// Build subquery:
+			buildQuery(extremeValueRecordQuery.getRecordsQuery(), (extremeValueRecordQuery.isMax() ? "MAX" : "MIN") + "(" + extremeValueSqlCol.name + ")");
+			// Complete outer query:
+			bldr.commitTransaction(false);
+			bldr.append(")", false);
+			bldr.append("LIMIT 1;");
 		}
 		
 		/**
 		 * @param table
-		 * @param recordQuery
-		 * @param valuePlaceHolder
+		 * @param valuePlaceHolder - may be null if no parameters are to be used (only literal values)
 		 */
-		public RecordSelection(STable table, RecordsQuery recordsQuery, String valuePlaceHolder)
+		protected RecordSelectHelper(STable table, String valuePlaceHolder)
 		{
-			// Initialise
 			super(table, valuePlaceHolder);
 			if(isParameterised())
 				this.sapArguments = new ArrayList<Object>();
-			
+		}
+		
+		protected void buildQuery(RecordsQuery recordsQuery, String projection)
+		{
 			// Build query:			
-			bldr.append("SELECT * FROM");
+			bldr.append("SELECT");
+			bldr.append(projection);
+			bldr.append("FROM");
 			bldr.append(table.tableName);
 			// 	WHERE
 			if(recordsQuery.getConstraints() != null)
@@ -1240,7 +1365,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				bldr.append("LIMIT");
 				bldr.append(Integer.toString(recordsQuery.getLimit()));
 			}
-			bldr.append(";", false);
 		}
 		
 		protected void addParameterColumnAndValue(SColumn column, Object sapValue)

@@ -107,6 +107,13 @@ public class Schema implements Serializable
 		META_SCHEMA.seal();
 	}
 	
+	/**
+	 * Returns "meta" record which describes the schema (and contains a serialised version of it)
+	 * 
+	 * @param schema
+	 * @return
+	 * @throws IOException
+	 */
 	static public Record GetMetaRecord(Schema schema) throws IOException
 	{
 		Record metaRecord = META_SCHEMA.createRecord();
@@ -128,6 +135,21 @@ public class Schema implements Serializable
 		META_OBJECT_SERIALISATION_COLUMN.storeValue(metaRecord, new LZMACompressor().compress(rawOut.toByteArray()));
 		
 		return metaRecord;
+	}
+	
+	/**
+	 * Returns a RecordReference pointing to a (hypothetical) meta record of the given schema,
+	 * but avoids actually instantiating the meta record itself. 
+	 * 
+	 * @param schema
+	 * @return
+	 */
+	static public RecordReference GetMetaRecordReference(Schema schema)
+	{
+		RecordReference ref = new RecordReference(META_SCHEMA);
+		META_MODEL_ID_COLUMN.storeValue(ref, schema.getModelID());
+		META_SCHEMA_NUMBER_COLUMN.storeValue(ref, schema.getModelSchemaNumber());
+		return ref;
 	}
 	
 	static public Schema FromMetaRecord(Record metaRecord) throws NullPointerException, IllegalArgumentException, IOException, ClassNotFoundException

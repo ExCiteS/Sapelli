@@ -43,9 +43,9 @@ public class NullRecordQuery extends SingleRecordQuery
 	 * @see uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery#acceptExecutor(uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery.Executor)
 	 */
 	@Override
-	public Record acceptExecutor(Executor executor)
+	public <R, E extends Throwable> R acceptExecutor(Executor<R, E> executor)
 	{
-		return null;
+		return executor.execute(this);
 	}
 
 }

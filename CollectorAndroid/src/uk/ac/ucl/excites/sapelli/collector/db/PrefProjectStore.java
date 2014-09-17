@@ -61,7 +61,6 @@ public class PrefProjectStore extends ProjectStore
 	private Context context;
 	private SharedPreferences preferences;
 	private Set<Project> projectCache;
-	
 
 	public PrefProjectStore(Context context)
 	{

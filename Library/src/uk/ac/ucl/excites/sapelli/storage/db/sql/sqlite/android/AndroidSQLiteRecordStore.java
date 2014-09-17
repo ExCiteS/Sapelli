@@ -195,18 +195,9 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 
 	@Override
-	protected ISQLiteCUDStatement newCUDStatement(String sql)
+	protected ISQLiteCUDStatement newCUDStatement(String sql, List<SQLiteColumn<?, ?>> paramCols)
 	{
-		return new AndroidSQLiteCUDStatement(db, sql);
-	}
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#getParameterPlaceHolder()
-	 */
-	@Override
-	protected String getParameterPlaceHolder()
-	{
-		return PARAM_PLACEHOLDER;
+		return new AndroidSQLiteCUDStatement(db, sql, paramCols);
 	}
 	
 	/**
@@ -261,6 +252,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		@Override
 		public boolean hasRow()
 		{
+			// TODO do this differently, getCount() is expensive! http://stackoverflow.com/a/16186513/1084488
 			return getCount() > 0;
 		}
 		

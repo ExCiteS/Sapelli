@@ -32,7 +32,25 @@ public class OrConstraint extends CompositeConstraint
 	{
 		super(constraints);
 	}
-
+	
+	/**
+	 * Applies De Morgan's laws
+	 * 
+	 * @see http://en.wikipedia.org/wiki/De_Morgan's_laws
+	 * @see http://math.stackexchange.com/a/320689/176790
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint#negate()
+	 */
+	@Override
+	public Constraint negate()
+	{
+		if(!hasSubConstraints())
+			return super.negate();
+		AndConstraint andConstr = new AndConstraint();
+		for(Constraint subConstraint : getSubConstraints())
+			andConstr.addConstraint(subConstraint.negate());
+		return andConstr;
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint#_isValid(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */

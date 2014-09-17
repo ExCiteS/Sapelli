@@ -141,7 +141,7 @@ public class Project
 	}
 	
 	/**
-	 * Must be stay private!
+	 * Must stay private!
 	 * 
 	 * @param id
 	 */

@@ -52,6 +52,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
@@ -60,9 +61,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
  * @author mstevens
@@ -195,29 +194,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}		
 	}
 	
-	@Override
-	protected void queryForRecords(SQLiteTable table, RecordsQuery query, List<Record> result) throws DBException
-	{
-		// Build SELECT query:
-		RecordSelection selection = new RecordSelection(table, query, PARAM_PLACEHOLDER);
-		
-		// Execute (also binds parameters) and get cursor:
-		ISQLiteCursor cursor = executeQuery(selection.getQuery(), selection.getParameterColumns(), selection.getSapArguments());
-		
-		// Process results to create records:
-		if(cursor == null)
-			return;
-		while(cursor.moveToNext())
-		{
-			Record record = table.schema.createRecord();
-			int i = 0;
-			for(SQLiteColumn<?, ?> sqliteCol : table.sqlColumns.values())
-				sqliteCol.store(record, cursor, i++);
-			result.add(record);
-		}
-		cursor.close(); // !!!
-	}
-	
 	/**
 	 * @param sql
 	 * @param paramCols list of SQLiteColumns which the parameters (?s) in the sql correspond to
@@ -255,12 +231,16 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @param sql
 	 * @return
 	 */
-	protected abstract ISQLiteCUDStatement newCUDStatement(String sql) throws DBException;
+	protected abstract ISQLiteCUDStatement newCUDStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
 	
-	/**
-	 * @return String used to mark unbound parameters in parameterised statements/queries
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#getParameterPlaceHolder()
 	 */
-	protected abstract String getParameterPlaceHolder();
+	@Override
+	protected String getParameterPlaceHolder()
+	{
+		return PARAM_PLACEHOLDER;
+	}
 	
 	/**
 	 * @author mstevens
@@ -269,13 +249,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
-		private RecordInsertHelper insertHelper;
 		private ISQLiteCUDStatement insertStatement;
-		
 		private ISQLiteCUDStatement updateStatement;
-		
 		private ISQLiteCUDStatement upsertStatement;
-		
 		private ISQLiteCUDStatement deleteStatement;
 
 		public SQLiteTable(Schema schema)
@@ -291,19 +267,38 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			if(insertStatement == null)
 			{
-				insertHelper = new RecordInsertHelper(this, PARAM_PLACEHOLDER);
-				insertStatement = newCUDStatement(insertHelper.getQuery()); //TODO store list of param cols in statement so we don't need to keep the insertHelper!
+				RecordInsertHelper insertHelper = new RecordInsertHelper(this, PARAM_PLACEHOLDER);
+				insertStatement = newCUDStatement(insertHelper.getQuery(), insertHelper.getParameterColumns());
 			}
 			else
 				insertStatement.clearAllBindings(); // clear bindings for reuse
 
 			// Bind parameters:
-			int p = 0;
-			for(SQLiteColumn<?, ?> sqliteCol : insertHelper.getParameterColumns())
-				sqliteCol.retrieveAndBind(insertStatement, p++, record);
+			insertStatement.retrieveAndBindAll(record);
 			
 			// Execute:
 			insertStatement.executeCUD();
+		}
+
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#update(uk.ac.ucl.excites.sapelli.storage.model.Record)
+		 */
+		@Override
+		public void update(Record record) throws DBException
+		{
+			if(updateStatement == null)
+			{
+				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this, PARAM_PLACEHOLDER);
+				updateStatement = newCUDStatement(updateHelper.getQuery(), updateHelper.getParameterColumns());
+			}
+			else
+				updateStatement.clearAllBindings(); // clear bindings for reuse
+
+			// Bind parameters:
+			updateStatement.retrieveAndBindAll(record);
+			
+			// Execute:
+			updateStatement.executeCUD();
 		}
 		
 		public void upsert(Record record) throws DBException
@@ -313,23 +308,57 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#update(uk.ac.ucl.excites.sapelli.storage.model.Record)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.RecordReference)
 		 */
 		@Override
-		public void update(Record record) throws DBException
+		public void delete(RecordReference recordRef) throws DBException
 		{
-			// TODO Auto-generated method stub
-			super.update(record);
+			if(deleteStatement == null)
+			{
+				RecordDeleteHelper deleteHelper = new RecordDeleteHelper(this, PARAM_PLACEHOLDER);
+				deleteStatement = newCUDStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
+			}
+			else
+				deleteStatement.clearAllBindings(); // clear bindings for reuse
+
+			// Bind parameters:
+			deleteStatement.retrieveAndBindAll(recordRef);
+			
+			// Execute:
+			deleteStatement.executeCUD();
 		}
 
-		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.Record)
-		 */
 		@Override
-		public void delete(Record record) throws DBException
+		protected List<Record> executeSelection(RecordSelectHelper selection) throws DBException
 		{
-			// TODO Auto-generated method stub
-			super.delete(record);
+			// Execute (also binds parameters) and get cursor:
+			ISQLiteCursor cursor = executeQuery(selection.getQuery(), selection.getParameterColumns(), selection.getSapArguments());
+			
+			// Process cursor and create records:
+			try
+			{
+				if(cursor == null || !cursor.hasRow())
+					return Collections.<Record> emptyList();
+				else
+				{
+					List<Record> result = new ArrayList<Record>();
+					// TODO return singleton list if there is only one
+					while(cursor.moveToNext()) // TODO is there the right way? no movetofirst? not do {} while(moveToNext()) ? http://stackoverflow.com/questions/10081631/android-cursor-movetonext
+					{
+						Record record = schema.createRecord();
+						int i = 0;
+						for(SQLiteColumn<?, ?> sqliteCol : sqlColumns.values())
+							sqliteCol.store(record, cursor, i++);
+						result.add(record);
+					}
+					return result;
+				}
+			}
+			finally
+			{
+				if(cursor != null)
+					cursor.close(); // !!!
+			}
 		}
 
 	}
