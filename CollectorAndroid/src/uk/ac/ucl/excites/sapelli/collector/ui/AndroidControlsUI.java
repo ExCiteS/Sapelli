@@ -193,7 +193,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id)
 	{
 		// Apply an alpha animation to the long pressed view
-		ViewAnimator.alphaAnimation(v);
+		ViewAnimator.shakeAnimation(v);
 
 		// TODO check whether there is an audio file for the given ChoiceField and use that instead of the TTS
 		// Use the Android TTS (Text-To-Speech) Engine

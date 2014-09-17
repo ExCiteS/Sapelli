@@ -169,7 +169,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			}
 
 			// Apply an alpha animation to the long pressed view
-			ViewAnimator.alphaAnimation(childView);
+			ViewAnimator.shakeAnimation(childView);
 		}
 
 		return true;

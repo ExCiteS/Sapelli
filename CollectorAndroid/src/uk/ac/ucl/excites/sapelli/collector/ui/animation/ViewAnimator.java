@@ -5,6 +5,7 @@ import android.content.Context;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.AnimationSet;
+import android.view.animation.CycleInterpolator;
 import android.view.animation.TranslateAnimation;
 
 public class ViewAnimator
@@ -169,6 +170,21 @@ public class ViewAnimator
 		// Create an animation set
 		AnimationSet animationSet = new AnimationSet(true);
 		animationSet.addAnimation(alpha);
+
+		view.startAnimation(animationSet);
+	}
+
+	public static void shakeAnimation(View view)
+	{
+		// Create the animation set
+		AnimationSet animationSet = new AnimationSet(true);
+		animationSet.setInterpolator(new CycleInterpolator(3)); // Repeat 3 times
+
+		// Create movement
+		TranslateAnimation shake = new TranslateAnimation(0, 2, 0, 0);
+		shake.setDuration(600);
+
+		animationSet.addAnimation(shake);
 
 		view.startAnimation(animationSet);
 	}
