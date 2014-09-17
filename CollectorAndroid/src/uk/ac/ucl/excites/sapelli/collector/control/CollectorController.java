@@ -140,7 +140,7 @@ public class CollectorController extends Controller implements LocationListener,
 	 */
 	public void audioToVoice(String soundFilePath)
 	{
-		if(textToVoice == null)
+		if(audioToVoice == null)
 			return;
 
 		audioToVoice.speak(soundFilePath);
