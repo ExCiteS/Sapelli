@@ -51,7 +51,7 @@ public interface ISQLiteCursor
 	 * public int getCount();
 	 */
 	
-	public boolean moveToNext();
+	public boolean moveToNext() throws DBException;
 	
 	public void close();
 

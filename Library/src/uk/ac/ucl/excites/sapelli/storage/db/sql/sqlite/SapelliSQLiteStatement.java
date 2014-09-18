@@ -38,7 +38,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class SapelliSQLiteStatement
 {
 	
-	private final List<SQLiteColumn<?, ?>> paramCols;
+	protected final List<SQLiteColumn<?, ?>> paramCols;
 	
 	public SapelliSQLiteStatement()
 	{

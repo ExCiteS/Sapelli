@@ -75,11 +75,11 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException
 	{
+		// Get statement:
 		JavaSQLiteStatement selectStatement = getStatement(sql, paramCols);
 		
 		// Bind parameters:
-		for(int p = 0, count = paramCols.size(); p < count; p++) // TODO add method in statement to do this (taking object list)
-			paramCols.get(p).bindSapelliObject(selectStatement, p, sapArguments.get(p));
+		selectStatement.bindAll(sapArguments);
 		
 		// Execute and return cursor:
 		return selectStatement.executeSelectRows();

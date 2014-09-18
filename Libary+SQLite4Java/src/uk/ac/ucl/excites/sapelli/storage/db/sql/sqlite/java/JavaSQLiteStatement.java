@@ -44,18 +44,34 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 
 	private final SQLiteConnection db;
 	private final SQLiteStatement javaSQLiteSt;
-	private Boolean execStep = false;
+	private Boolean firstStep = null;
 	
 	/**
 	 * @param javaSQLiteSt
 	 * @param paramCols
 	 * @throws DBException
 	 */
-	public JavaSQLiteStatement(SQLiteConnection db, SQLiteStatement javaSQLiteSt, List<SQLiteColumn<?, ?>> paramCols) throws DBException
+	public JavaSQLiteStatement(SQLiteConnection db, SQLiteStatement javaSQLiteSt, List<SQLiteColumn<?, ?>> paramCols) throws SQLiteException
 	{
 		super(paramCols);
 		this.db = db;
-		this.javaSQLiteSt = javaSQLiteSt;
+		this.javaSQLiteSt = javaSQLiteSt; // not necessarily a new SQLiteStatement (may have been cached), therefore...
+		// ... reset & clear bindings if necessary:
+		if(javaSQLiteSt.hasStepped() || javaSQLiteSt.hasBindings())
+			javaSQLiteSt.reset(true);
+	}
+	
+	/**
+	 * @param arguments
+	 * @throws DBException
+	 */
+	public void bindAll(List<Object> arguments) throws DBException
+	{
+		if(paramCols != null)
+		{
+			for(int p = 0, count = paramCols.size(); p < count; p++)
+				paramCols.get(p).bindSapelliObject(this, p, arguments.get(p));
+		}
 	}
 
 	@Override
@@ -136,12 +152,24 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 	}
 	
+	/**
+	 * Insert a record
+	 * 
+	 * Implementation note:
+	 * No reset() call to needed before or after the step() call. This is because this kind of statement
+	 * does not return a SQLITE_ROW and we are using SQLite 3.7 or higher. See hyperlinks for more info.
+	 *  
+	 * @throws DBException 
+	 * 
+	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
+	 * @see http://www.sqlite.org/c3ref/step.html	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeInsert()
+	 */
 	@Override
 	public long executeInsert() throws DBException
 	{
 		try
 		{
-			// TODO reset if hasstepped?
 			javaSQLiteSt.step();
 			return db.getLastInsertId();
 		}
@@ -151,12 +179,24 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 	}
 
+	/**
+	 * Update a record
+	 * 
+	 * Implementation note:
+	 * No reset() call to needed before or after the step() call. This is because this kind of statement
+	 * does not return a SQLITE_ROW and we are using SQLite 3.7 or higher. See hyperlinks for more info.
+	 *  
+	 * @throws DBException 
+	 * 
+	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
+	 * @see http://www.sqlite.org/c3ref/step.html	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeUpdate()
+	 */
 	@Override
 	public int executeUpdate() throws DBException
 	{
 		try
 		{
-			// TODO reset if hasstepped?
 			javaSQLiteSt.step();
 			return db.getChanges();
 		}
@@ -166,12 +206,24 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 	}
 
+	/**
+	 * Delete a record
+	 * 
+	 * Implementation note:
+	 * No reset() call to needed before or after the step() call. This is because this kind of statement
+	 * does not return a SQLITE_ROW and we are using SQLite 3.7 or higher. See hyperlinks for more info.
+	 *  
+	 * @throws DBException 
+	 * 
+	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
+	 * @see http://www.sqlite.org/c3ref/step.html	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeDelete()
+	 */
 	@Override
 	public int executeDelete() throws DBException
 	{
 		try
 		{
-			// TODO reset if hasstepped?
 			javaSQLiteSt.step();
 			return db.getChanges();
 		}
@@ -186,10 +238,12 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	{
 		try
 		{
-			// TODO reset if hasstepped?
-			javaSQLiteSt.step();
-			if(javaSQLiteSt.hasRow())
-				return javaSQLiteSt.columnLong(0);
+			if(javaSQLiteSt.step())
+			{
+				long result = javaSQLiteSt.columnLong(0);
+				javaSQLiteSt.reset();
+				return result;
+			}
 			else
 				throw new DBException("Simple long query returned no results");
 		}
@@ -200,7 +254,8 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	}
 	
 	/**
-	 * Execute an "R" operation (from "CRUD"), i.e. the Reading (= SELECT)) of a record.
+	 * Executes a SQL SELECT row query, i.e. the reading (the "R" in "CRUD") of (partial) records from a database table.
+	 * The results (0, 1 or more rows) are made accessible through a returned {@link ISQLiteCursor} instance.
 	 * 
 	 * @return an {@link ISQLiteCursor} (effectively "this") to iterate over results
 	 * @throws DBException
@@ -211,46 +266,39 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	@Override
 	public ISQLiteCursor executeSelectRows() throws DBException
 	{
-		// TODO Auto-generated method stub
-	
-		// TODO reset if hasstepped?
-//		execStep = javaSQLiteSt.step();
-//		//return execStep;
-		
-		return this;
+		try
+		{
+			if(javaSQLiteSt.hasStepped())
+			{
+				firstStep = null;
+				javaSQLiteSt.reset(false); // don't clear bindings!
+			}
+			firstStep = moveToNext();
+			return this; // act as cursor
+		}
+		catch(SQLiteException /* from javaSQLiteSt.reset(boolean) */ | DBException /* from moveToNext(), we could throw this as-is but msg is confusing */ e)
+		{
+			throw new DBException("Failed to execute SELECT rows query", e instanceof DBException ? e.getCause() : e);
+		}
 	}
 	
 	@Override
-	public boolean moveToNext()
-	{
-		// TODO get this right...
-		if(execStep)
-		{	// first moveToNext() call after execute()
-			execStep = false;
-			return true;
-		}
-		try
-		{
-			return javaSQLiteSt.step();
-		}
-		catch(SQLiteException e)
-		{
-			// TODO throw DBException (change signature accordingly)
-			e.printStackTrace();
-			return false;
-		}
-	}
-
-	@Override
-	public void close()
+	public boolean moveToNext() throws DBException
 	{
 		try
 		{
-			javaSQLiteSt.reset();
+			if(firstStep != null)
+			{
+				boolean holdFirstStep = firstStep;
+				firstStep = null; // !!!
+				return holdFirstStep;
+			}
+			else
+				return javaSQLiteSt.step();
 		}
 		catch(SQLiteException e)
 		{
-			e.printStackTrace(System.err);
+			throw new DBException("Failed to move cursor to next position", e);
 		}
 	}
 
@@ -258,6 +306,20 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	public boolean hasRow()
 	{
 		return javaSQLiteSt.hasRow();
+	}
+
+	@Override
+	public void close()
+	{
+		try
+		{
+			firstStep = null;
+			javaSQLiteSt.reset(false); // don't clear bindings
+		}
+		catch(SQLiteException e)
+		{
+			e.printStackTrace(System.err);
+		}
 	}
 
 	@Override
