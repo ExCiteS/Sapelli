@@ -80,7 +80,7 @@ public class Record implements Serializable
 	}
 	
 	/**
-	 * Copy contructor
+	 * Copy constructor
 	 * 
 	 * @param another
 	 */

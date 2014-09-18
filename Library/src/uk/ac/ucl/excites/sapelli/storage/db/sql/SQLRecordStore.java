@@ -44,6 +44,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
@@ -232,16 +233,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	protected boolean doStore(Record record) throws DBException
 	{
-		Schema schema = record.getSchema();
-		boolean newRec = (schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey ? // TODO possibly reassess this 
-							!((AutoIncrementingPrimaryKey) record.getSchema().getPrimaryKey()).getColumn().isValueSet(record) :
-							retrieveRecord(record.getReference().getRecordQuery()) == null);
-		STable table = getTable(record.getSchema(), true); // will create table in db if it is not there
-		if(newRec)
-			table.insert(record);
-		else
-			table.update(record);
-		return newRec;
+		return getTable(record.getSchema(), true).store(record); // will create table in db if it is not there
 	}
 
 	@Override
@@ -353,6 +345,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		private List<String> tableConstraints = Collections.<String> emptyList();
 		private List<Index> explicitIndexes;
 		private Boolean existsInDB;
+		protected final IntegerColumn autoIncrementKeyColumn;
 		
 		/**
 		 * Mapping of Sapelli ColumnPointers (usually leaf columns) to corresponding  SQLColumns.
@@ -372,6 +365,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Init collections:
 			sqlColumns = new LinkedHashMap<ColumnPointer, SColumn>();
 			composite2SqlColumns = new HashMap<RecordColumn<?>, List<SColumn>>();
+			// Deal with auto-increment key:
+			this.autoIncrementKeyColumn = schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey ? ((AutoIncrementingPrimaryKey) schema.getPrimaryKey()).getColumn() : null;
 		}
 		
 		public void addColumn(SColumn sqlColumn)
@@ -524,6 +519,25 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append(tableName);
 			bldr.append(";", false);
 			return bldr.toString();
+		}
+		
+		/**
+		 * Store a record by INSERTing, if it is new, or UPDATEing if it existed.
+		 * 
+		 * @param record
+		 * @return whether or not the record was new
+		 * @throws DBException
+		 */
+		public boolean store(Record record) throws DBException
+		{
+			boolean newRec = (autoIncrementKeyColumn == null) ?
+								(select(record.getReference().getRecordQuery()) == null) : // TODO maybe optimise this by keeping holder of prepared query?
+								!autoIncrementKeyColumn.isValueSet(record);
+			if(newRec)
+				insert(record);
+			else
+				update(record);
+			return newRec;
 		}
 		
 		/**
