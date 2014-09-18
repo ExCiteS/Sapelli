@@ -238,12 +238,10 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	{
 		try
 		{
+			if(javaSQLiteSt.hasStepped())
+				javaSQLiteSt.reset(false);
 			if(javaSQLiteSt.step())
-			{
-				long result = javaSQLiteSt.columnLong(0);
-				javaSQLiteSt.reset();
-				return result;
-			}
+				return javaSQLiteSt.columnLong(0);
 			else
 				throw new DBException("Simple long query returned no results");
 		}

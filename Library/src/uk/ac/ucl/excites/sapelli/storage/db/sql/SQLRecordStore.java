@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
+import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
@@ -188,7 +189,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			schemataTable.delete(Schema.GetMetaRecordReference(table.schema));
 			
 			// Drop the table itself:
-			table.drop();
+			table.drop(); // TODO only when exisiting in db!
 		}
 		catch(Exception e)
 		{
@@ -231,7 +232,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	@Override
 	protected boolean doStore(Record record) throws DBException
 	{
-		boolean newRec = retrieveRecord(record.getReference().getRecordQuery()) == null;
+		Schema schema = record.getSchema();
+		boolean newRec = (schema.getPrimaryKey() instanceof AutoIncrementingPrimaryKey ? // TODO possibly reassess this 
+							!((AutoIncrementingPrimaryKey) record.getSchema().getPrimaryKey()).getColumn().isValueSet(record) :
+							retrieveRecord(record.getReference().getRecordQuery()) == null);
 		STable table = getTable(record.getSchema(), true); // will create table in db if it is not there
 		if(newRec)
 			table.insert(record);
@@ -501,7 +505,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * Drop the table from the database.
-		 * Default implementation, can be overridden by subclasses
+		 * Assumes the table exists in the database!
+		 * 
+		 * May be overridden.
 		 * 
 		 * @throws DBException
 		 */
@@ -521,10 +527,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * Insert new record in database table
-		 * Assumes the table exists in the database.
+		 * Insert new record in database table.
+		 * Assumes the table exists in the database!
 		 * 
-		 * May be overridden
+		 * May be overridden.
 		 * 
 		 * @param record
 		 * @throws DBException
@@ -533,13 +539,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public void insert(Record record) throws DBException
 		{
 			executeSQL(new RecordInsertHelper((STable) this, record).getQuery());
+			// TODO set autoincrement key value
 		}
 		
 		/**
-		 * Update existing record in database table
-		 * Assumes the table exists in the database.
+		 * Update existing record in database table.
+		 * Assumes the table exists in the database!
 		 * 
-		 * May be overridden
+		 * May be overridden.
 		 * 
 		 * @param record
 		 * @throws DBException
@@ -551,10 +558,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * Delete existing record (identified by a RecordReference) in database table
-		 * Assumes the table exists in the database.
+		 * Delete existing record (identified by a RecordReference) in database table.
+		 * Assumes the table exists in the database!
 		 * 
-		 * May be overridden
+		 * May be overridden.
 		 * 
 		 * @param recordRef
 		 * @throws DBException
@@ -567,27 +574,27 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * Selects records from the database table based on a RecordsQuery.
-		 * Assumes the table exists in the database. 
+		 * Assumes the table exists in the database!
 		 * 
 		 * @param query
 		 * @return a list, possibly empty
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		protected List<Record> select(RecordsQuery query) throws DBException
+		public List<Record> select(RecordsQuery query) throws DBException
 		{
 			return executeRecordSelection(new RecordSelectHelper((STable) this, query, getParameterPlaceHolder()));
 		}
 		
 		/**
 		 * Selects a single record from the database table based on a SingleRecordQuery.
-		 * Assumes the table exists in the database. 
+		 * Assumes the table exists in the database!
 		 * 
 		 * @param query
 		 * @param result record or null
 		 * @throws DBException 
 		 */
-		protected Record select(SingleRecordQuery query) throws DBException
+		public Record select(SingleRecordQuery query) throws DBException
 		{
 			List<Record> results = query.<List<Record>, DBException> acceptExecutor(new Executor<List<Record>, DBException>()
 			{
@@ -616,13 +623,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			return results != null /* just in case */ && !results.isEmpty() ? results.get(0) : null;
 		}
 		
-		protected int getRecordCount()
-		{
-			//new RecordCountHelper(this)
-			
-			// TODO how to read results from cursor?
-			return 0;
-		}
+		/**
+		 * Counts the number of records currently in the database table.
+		 * Assumes the table exists in the database!
+		 * 
+		 * @return the number of records in the table
+		 * @throws DBException 
+		 */
+		public abstract long getRecordCount() throws DBException;
 		
 		/**
 		 * @param selection

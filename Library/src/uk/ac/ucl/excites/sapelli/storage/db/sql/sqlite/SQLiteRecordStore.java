@@ -234,7 +234,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	
 	/**
 	 * @param sql
+	 * @param paramCols - may be null
 	 * @return
+	 * @throws DBException
 	 */
 	protected abstract SapelliSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
 	
@@ -258,6 +260,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		private SapelliSQLiteStatement updateStatement;
 		private SapelliSQLiteStatement upsertStatement;
 		private SapelliSQLiteStatement deleteStatement;
+		private SapelliSQLiteStatement countStatement;
 
 		public SQLiteTable(Schema schema)
 		{
@@ -333,6 +336,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			deleteStatement.executeDelete();
 		}
 
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#executeRecordSelection(uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.RecordSelectHelper)
+		 */
 		@Override
 		protected List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException
 		{
@@ -347,8 +353,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				else
 				{
 					List<Record> result = new ArrayList<Record>();
-					// TODO return singleton list if there is only one
-					while(cursor.moveToNext()) // TODO is there the right way? no movetofirst? not do {} while(moveToNext()) ? http://stackoverflow.com/questions/10081631/android-cursor-movetonext
+					while(cursor.moveToNext())
 					{
 						Record record = schema.createRecord();
 						int i = 0;
@@ -364,6 +369,17 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				if(cursor != null)
 					cursor.close(); // !!!
 			}
+		}
+		
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#getRecordCount()
+		 */
+		@Override
+		public long getRecordCount() throws DBException
+		{
+			if(countStatement == null)
+				countStatement = getStatement(new RecordCountHelper(this).getQuery(), null);
+			return countStatement.executeLongQuery();
 		}
 
 	}
