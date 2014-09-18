@@ -23,7 +23,7 @@ import org.apache.commons.codec.binary.Hex;
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.TypeMapping;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteStatement;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -69,7 +69,7 @@ public class SQLiteBlobColumn<SapType> extends SQLiteRecordStore.SQLiteColumn<by
 	 * @param value non-null
 	 */
 	@Override
-	protected void bindNonNull(ISQLiteStatement statement, int paramIdx, byte[] value) throws DBException
+	protected void bindNonNull(SapelliSQLiteStatement statement, int paramIdx, byte[] value) throws DBException
 	{
 		statement.bindBlob(paramIdx, value);
 	}

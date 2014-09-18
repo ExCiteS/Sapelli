@@ -78,7 +78,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	
 	static protected final String MODELS_TABLE_NAME = "Models"; // TODO meta Model records!
 	static protected final String SCHEMATA_TABLE_NAME = "Schemata";
-	static protected final String SPACE = " ";	
+	static protected final String SPACE = " ";
 	
 	private Map<Schema, STable> tables;
 	private STable schemataTable;
@@ -108,11 +108,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected abstract void executeSQL(String sql) throws DBException;
 	
 	protected abstract String sanitiseIdentifier(String identifier);
-	
-	/**
-	 * @return whether or not the DBMS supports concurrent connections
-	 */
-	protected abstract boolean supportsConcurrentConnections();
 	
 	/**
 	 * Checks whether a table with the given name exists in the database.

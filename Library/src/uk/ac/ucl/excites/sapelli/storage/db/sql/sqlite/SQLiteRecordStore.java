@@ -41,7 +41,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.statements.ISQLiteCUDStatement;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBlobColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteDoubleColumn;
@@ -180,18 +179,24 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	protected boolean doesTableExist(String tableName)
 	{
 		Log.d("SQLite", "does table exist?");
+		ISQLiteCursor cursor = null;
 		try
 		{
-			ISQLiteCursor cursor = executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-												Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null, null, null)),
-												Collections.<Object> singletonList(tableName));
+			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+									Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null, null, null)),
+									Collections.<Object> singletonList(tableName));
 			return cursor != null && cursor.hasRow();
 		}
 		catch(DBException e)
 		{
 			e.printStackTrace(System.err);
 			return false;
-		}		
+		}
+		finally
+		{
+			if(cursor != null)
+				cursor.close();
+		}
 	}
 	
 	/**
@@ -231,7 +236,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @param sql
 	 * @return
 	 */
-	protected abstract ISQLiteCUDStatement getCUDStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
+	protected abstract SapelliSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#getParameterPlaceHolder()
@@ -249,10 +254,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
-		private ISQLiteCUDStatement insertStatement;
-		private ISQLiteCUDStatement updateStatement;
-		private ISQLiteCUDStatement upsertStatement;
-		private ISQLiteCUDStatement deleteStatement;
+		private SapelliSQLiteStatement insertStatement;
+		private SapelliSQLiteStatement updateStatement;
+		private SapelliSQLiteStatement upsertStatement;
+		private SapelliSQLiteStatement deleteStatement;
 
 		public SQLiteTable(Schema schema)
 		{
@@ -268,7 +273,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			if(insertStatement == null)
 			{
 				RecordInsertHelper insertHelper = new RecordInsertHelper(this, PARAM_PLACEHOLDER);
-				insertStatement = getCUDStatement(insertHelper.getQuery(), insertHelper.getParameterColumns());
+				insertStatement = getStatement(insertHelper.getQuery(), insertHelper.getParameterColumns());
 			}
 			else
 				insertStatement.clearAllBindings(); // clear bindings for reuse
@@ -277,7 +282,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			insertStatement.retrieveAndBindAll(record);
 			
 			// Execute:
-			insertStatement.executeCUD();
+			insertStatement.executeInsert();
 		}
 
 		/* (non-Javadoc)
@@ -289,7 +294,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			if(updateStatement == null)
 			{
 				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this, PARAM_PLACEHOLDER);
-				updateStatement = getCUDStatement(updateHelper.getQuery(), updateHelper.getParameterColumns());
+				updateStatement = getStatement(updateHelper.getQuery(), updateHelper.getParameterColumns());
 			}
 			else
 				updateStatement.clearAllBindings(); // clear bindings for reuse
@@ -298,7 +303,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			updateStatement.retrieveAndBindAll(record);
 			
 			// Execute:
-			updateStatement.executeCUD();
+			updateStatement.executeUpdate();
 		}
 		
 		public void upsert(Record record) throws DBException
@@ -316,7 +321,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			if(deleteStatement == null)
 			{
 				RecordDeleteHelper deleteHelper = new RecordDeleteHelper(this, PARAM_PLACEHOLDER);
-				deleteStatement = getCUDStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
+				deleteStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
 			}
 			else
 				deleteStatement.clearAllBindings(); // clear bindings for reuse
@@ -325,7 +330,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			deleteStatement.retrieveAndBindAll(recordRef);
 			
 			// Execute:
-			deleteStatement.executeCUD();
+			deleteStatement.executeDelete();
 		}
 
 		@Override
@@ -402,7 +407,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param record
 		 * @throws DBException
 		 */
-		public void retrieveAndBind(ISQLiteStatement statement, int paramIdx, Record record) throws DBException
+		public void retrieveAndBind(SapelliSQLiteStatement statement, int paramIdx, Record record) throws DBException
 		{
 			bind(statement, paramIdx, retrieve(record));
 		}
@@ -414,7 +419,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		public void bindSapelliObject(ISQLiteStatement statement, int paramIdx, Object sapValue) throws DBException
+		public void bindSapelliObject(SapelliSQLiteStatement statement, int paramIdx, Object sapValue) throws DBException
 		{
 			bind(statement, paramIdx, sapValue != null ? mapping.toSQLType((SapType) sapValue) : null);
 		}
@@ -425,7 +430,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param value
 		 * @throws DBException
 		 */
-		public void bind(ISQLiteStatement statement, int paramIdx, SQLType value) throws DBException
+		public void bind(SapelliSQLiteStatement statement, int paramIdx, SQLType value) throws DBException
 		{
 			if(value != null)
 				bindNonNull(statement, paramIdx, value);
@@ -439,7 +444,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param value
 		 * @throws DBException
 		 */
-		protected abstract void bindNonNull(ISQLiteStatement statement, int paramIdx, SQLType value) throws DBException;
+		protected abstract void bindNonNull(SapelliSQLiteStatement statement, int paramIdx, SQLType value) throws DBException;
 
 		@Override
 		protected String getNullString()

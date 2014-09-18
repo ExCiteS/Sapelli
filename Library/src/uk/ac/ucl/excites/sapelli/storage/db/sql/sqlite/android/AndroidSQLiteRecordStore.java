@@ -25,7 +25,6 @@ import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.statements.ISQLiteCUDStatement;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.database.Cursor;
@@ -34,6 +33,7 @@ import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteCursorDriver;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteDatabase.CursorFactory;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQuery;
 import android.os.Build;
@@ -189,15 +189,45 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 
 	@Override
-	protected boolean supportsConcurrentConnections()
+	protected AndroidSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException
 	{
-		return false; // TODO really?
+		try
+		{
+			Log.d("SQLite", "Compile statement: " + sql); // TODO remove debug logging
+			return new AndroidSQLiteStatement(this, db.compileStatement(sql), paramCols);
+		}
+		catch(SQLException sqlE)
+		{
+			throw new DBException("Exception upon compiling SQL: " + sql, sqlE);
+		}
 	}
-
-	@Override
-	protected ISQLiteCUDStatement getCUDStatement(String sql, List<SQLiteColumn<?, ?>> paramCols)
+	
+	/**
+	 * Returns the number of database rows that were changed or inserted or deleted by the most recently completed INSERT, DELETE, or UPDATE statement
+	 * 
+	 * @return the number of affected database rows
+	 * @throws SQLiteException
+	 * 
+	 * @see http://www.sqlite.org/lang_corefunc.html#changes
+	 * @see http://stackoverflow.com/a/6659693/1084488
+	 * @see http://stackoverflow.com/a/18441056/1084488
+	 */
+	public int getNumberOfAffectedRows() throws SQLException
 	{
-		return new AndroidSQLiteCUDStatement(db, sql, paramCols);
+		Cursor cursor = null;
+		try
+		{
+		    cursor = db.rawQuery("SELECT changes();", null);
+		    if(cursor != null && cursor.moveToFirst())
+		        return (int) cursor.getLong(0);
+		    else
+		    	throw new SQLException("Failure on execution of changes() query");
+		}
+		finally
+		{
+		    if(cursor != null)
+		        cursor.close();
+		}
 	}
 	
 	/**
@@ -252,7 +282,6 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		@Override
 		public boolean hasRow()
 		{
-			// TODO do this differently, getCount() is expensive! http://stackoverflow.com/a/16186513/1084488
 			return getCount() > 0;
 		}
 		
