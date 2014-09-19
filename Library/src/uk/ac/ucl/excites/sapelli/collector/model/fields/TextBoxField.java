@@ -31,7 +31,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
-import android.annotation.SuppressLint;
 
 /**
  * A Field class representing a text box
@@ -201,7 +200,6 @@ public class TextBoxField extends Field
 	/**
 	 * @param contentStr the content (as String) to set
 	 */
-	@SuppressLint("DefaultLocale")
 	public void setContent(String contentStr)
 	{
 		if(contentStr == null)
@@ -261,7 +259,6 @@ public class TextBoxField extends Field
 	/**
 	 * @param capitalistationStr the capitalisation (as String) to set
 	 */
-	@SuppressLint("DefaultLocale")
 	public void setCapitalisation(String capitalisationStr)
 	{
 		if(capitalisationStr == null)
