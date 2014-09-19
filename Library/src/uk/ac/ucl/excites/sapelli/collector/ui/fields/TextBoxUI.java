@@ -1,18 +1,18 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
- * 
+ *
  * Copyright 2012-2014 University College London - ExCiteS group
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and 
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
@@ -36,16 +36,16 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 {
 
 	// STATIC -------------------------------------------------------
-	static protected final String NULL_MODE_CREATE = "— Touch to set —"; //TODO multilang
-	static protected final String NULL_MODE_EDIT = "— Touch to edit —"; //TODO multilang
+	static protected final String NULL_MODE_CREATE = "â€” Touch to set â€”"; //TODO multilang
+	static protected final String NULL_MODE_EDIT = "â€” Touch to edit â€”"; //TODO multilang
 	static protected final String NULL_MODE_DISABED = "(no value set)"; //TODO multilang
-	
+
 	// DYNAMIC ------------------------------------------------------
 	public TextBoxUI(TextBoxField textBox, Controller controller, UI collectorUI)
 	{
 		super(textBox, controller, collectorUI);
 	}
-	
+
 	@Override
 	public boolean isValid(Record record)
 	{
@@ -106,10 +106,10 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 			return false;
 		}
 	}
-	
+
 	/**
-	 * 
-	 * @throws Exception 
+	 *
+	 * @throws Exception
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.NonSelfLeavingFieldUI#storeValue(Record)
 	 */
 	@Override
@@ -134,7 +134,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 				field.getColumn().parseAndStoreValue(record, getValue()); break; // parse number & store it
 		}
 	}
-	
+
 	protected String retrieveValue(Record record)
 	{
 		if(!field.getColumn().isValueSet(record))
@@ -158,11 +158,11 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 				return field.getColumn().retrieveValueAsString(record); // retrieve as String
 		}
 	}
-	
+
 	protected abstract String getValue();
-	
+
 	protected abstract void setValidationError(String errorDescr);
-	
+
 	protected abstract void clearValidationError();
 
 }

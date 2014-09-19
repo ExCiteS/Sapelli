@@ -1,18 +1,18 @@
 /**
  * Sapelli data collection platform: http://sapelli.org
- * 
+ *
  * Copyright 2012-2014 University College London - ExCiteS group
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and 
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
@@ -37,19 +37,19 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
- * Abstract class representing database schema/table column of generic type {@code T}.  
- * 
+ * Abstract class representing database schema/table column of generic type {@code T}.
+ *
  * @param <T>
  * @author mstevens
  */
 public abstract class Column<T> implements Serializable
 {
-	
+
 	// STATICS-------------------------------------------------------
 	private static final long serialVersionUID = 2L;
-	
+
 	static public final char ILLEGAL_NAME_CHAR_REPLACEMENT = '_';
-	
+
 	static public String SanitiseName(String name)
 	{
 		// Perform basic sanitation:
@@ -60,39 +60,39 @@ public abstract class Column<T> implements Serializable
 			switch(c)
 			{
 				// Not allowed anywhere:
-				case '.'	:	/* not allowed at start of XML names, but nowhere in Sapelli column names because it is the RecordColumn.QUALIFIED_NAME_SEPARATOR */
-				case ','	:	/* not allowed anywhere in XML names */
-				case '?'	:	/* not allowed anywhere in XML names */
-				case '!'	:	/* not allowed anywhere in XML names */
-				case ':'	:	/* is allowed anywhere in XML names but we take it out anyway to avoid some XML tools recognising it as an XML namespace separator */
-				case ';'	:	/* not allowed anywhere in XML names */
-				case '\''	:	/* not allowed anywhere in XML names */
-				case '"'	:	/* not allowed anywhere in XML names */
-				case '/'	:	/* not allowed anywhere in XML names */
-				case '\\'	:	/* not allowed anywhere in XML names */
-				case '@'	:	/* not allowed anywhere in XML names */
-				case '('	:	/* not allowed anywhere in XML names */
-				case ')'	:	/* not allowed anywhere in XML names */
-				case '['	:	/* not allowed anywhere in XML names */
-				case ']'	:	/* not allowed anywhere in XML names */
-				case '{'	:	/* not allowed anywhere in XML names */
-				case '}'	:	/* not allowed anywhere in XML names */
-				case '&'	:	/* not allowed anywhere in XML names */
-				case '%'	:	/* not allowed anywhere in XML names */
-				case '$'	:	/* not allowed anywhere in XML names */
-				case '£'	:	/* not allowed anywhere in XML names */
-				case '+'	:	/* not allowed anywhere in XML names */
-				case '*'	:	/* not allowed anywhere in XML names */
-				case '#'	:	/* not allowed anywhere in XML names */
-				case '|'	:	/* not allowed anywhere in XML names */
-				case '~'	:	/* not allowed anywhere in XML names */
-				case ' '	:	/* not allowed anywhere in XML names */
-				case '\t'	:	/* not allowed anywhere in XML names */
-				case '\r'	:	/* not allowed anywhere in XML names */
-				case '\n'	:	/* not allowed anywhere in XML names */
+				case '.'		:	/* not allowed at start of XML names, but nowhere in Sapelli column names because it is the RecordColumn.QUALIFIED_NAME_SEPARATOR */
+				case ','		:	/* not allowed anywhere in XML names */
+				case '?'		:	/* not allowed anywhere in XML names */
+				case '!'		:	/* not allowed anywhere in XML names */
+				case ':'		:	/* is allowed anywhere in XML names but we take it out anyway to avoid some XML tools recognising it as an XML namespace separator */
+				case ';'		:	/* not allowed anywhere in XML names */
+				case '\''		:	/* not allowed anywhere in XML names */
+				case '"'		:	/* not allowed anywhere in XML names */
+				case '/'		:	/* not allowed anywhere in XML names */
+				case '\\'		:	/* not allowed anywhere in XML names */
+				case '@'		:	/* not allowed anywhere in XML names */
+				case '('		:	/* not allowed anywhere in XML names */
+				case ')'		:	/* not allowed anywhere in XML names */
+				case '['		:	/* not allowed anywhere in XML names */
+				case ']'		:	/* not allowed anywhere in XML names */
+				case '{'		:	/* not allowed anywhere in XML names */
+				case '}'		:	/* not allowed anywhere in XML names */
+				case '&'		:	/* not allowed anywhere in XML names */
+				case '%'		:	/* not allowed anywhere in XML names */
+				case '$'		:	/* not allowed anywhere in XML names */
+				case '\u00A3'	:	/* (Pound sign) not allowed anywhere in XML names */
+				case '+'		:	/* not allowed anywhere in XML names */
+				case '*'		:	/* not allowed anywhere in XML names */
+				case '#'		:	/* not allowed anywhere in XML names */
+				case '|'		:	/* not allowed anywhere in XML names */
+				case '~'		:	/* not allowed anywhere in XML names */
+				case ' '		:	/* not allowed anywhere in XML names */
+				case '\t'		:	/* not allowed anywhere in XML names */
+				case '\r'		:	/* not allowed anywhere in XML names */
+				case '\n'		:	/* not allowed anywhere in XML names */
 					prevNeedsReplace++;
 					break;
-					
+
 				// Not allowed at start, OK elsewhere:
 				case '-'	:	/* not allowed at start of XML names */
 					if(bldr.length() == 0)
@@ -109,7 +109,7 @@ public abstract class Column<T> implements Serializable
 					bldr.append(c);
 			}
 		name = bldr.toString();
-		
+
 		// Perform further XML-specific sanitation if needed:
 		//	Check if the result is (now) a valid XML name and if not, make it one (using more complex escape mechanism)
 		if(!XMLUtils.isValidName(name, XMLRecordsExporter.USES_XML_VERSION_11))
@@ -117,20 +117,20 @@ public abstract class Column<T> implements Serializable
 		else
 			return name;
 	}
-	
+
 	static public boolean IsValidName(String name)
 	{
 		return 	name.indexOf(RecordColumn.QUALIFIED_NAME_SEPARATOR /* '.' */) == -1 &&
 				name.indexOf(':') == -1 &&
 				XMLUtils.isValidName(name, XMLRecordsExporter.USES_XML_VERSION_11);
 	}
-	
+
 	// DYNAMICS------------------------------------------------------
 	private final Class<T> type;
 	protected final String name;
 	protected final boolean optional;
 	protected List<VirtualColumn<?, T>> virtualVersions;
-	
+
 	public Column(Class<T> type, String name, boolean optional)
 	{
 		if(!IsValidName(name))
@@ -139,12 +139,12 @@ public abstract class Column<T> implements Serializable
 		this.name = name;
 		this.optional = optional;
 	}
-	
+
 	/**
 	 * @return a copy of this Column
 	 */
 	public abstract Column<T> copy();
-	
+
 	public void parseAndStoreValue(Record record, String value) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		T parsedValue;
@@ -154,7 +154,7 @@ public abstract class Column<T> implements Serializable
 			parsedValue = parse(value);
 		storeValue(record, parsedValue);
 	}
-	
+
 	/**
 	 * @param value the String to parse, is expected to be neither null nor ""!
 	 * @return the parsed value
@@ -162,10 +162,10 @@ public abstract class Column<T> implements Serializable
 	 * @throws IllegalArgumentException
 	 */
 	public abstract T parse(String value) throws ParseException, IllegalArgumentException, NullPointerException;
-	
+
 	/**
 	 * Stores the given Object value in this column on the given record.
-	 * 
+	 *
 	 * @param record
 	 * @param value (as object, may be null if column is optional)
 	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
@@ -174,12 +174,12 @@ public abstract class Column<T> implements Serializable
 	@SuppressWarnings("unchecked")
 	public void storeObject(Record record, Object value) throws IllegalArgumentException, NullPointerException
 	{
-		storeValue(record, (T) value); 
+		storeValue(record, (T) value);
 	}
-	
+
 	/**
 	 * Stores the given <T> value in this column on the given record.
-	 * 
+	 *
 	 * @param record
 	 * @param value (may be null if column is optional)
 	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
@@ -198,10 +198,10 @@ public abstract class Column<T> implements Serializable
 			validate(value); // throws IllegalArgumentException if invalid
 		record.setValue(this, value); // also store null (to overwrite earlier non-values)
 	}
-	
+
 	/**
 	 * Retrieves previously stored value for this column at a given record and casts it to the relevant native type (T)
-	 * 
+	 *
 	 * @param record
 	 * @return stored value (may be null)
 	 */
@@ -212,10 +212,10 @@ public abstract class Column<T> implements Serializable
 			throw new IllegalArgumentException("Schema mismatch.");
 		return (T) record.getValue(this);
 	}
-	
+
 	/**
 	 * Checks whether a value (non-null) for this column is set in the given record.
-	 * 
+	 *
 	 * @param record
 	 * @return whether or not a (non-null) value is set
 	 */
@@ -223,7 +223,7 @@ public abstract class Column<T> implements Serializable
 	{
 		return retrieveValue(record) != null;
 	}
-	
+
 	/**
 	 * @param record
 	 * @return
@@ -236,7 +236,7 @@ public abstract class Column<T> implements Serializable
 		else
 			return null;
 	}
-	
+
 	/**
 	 * @param value
 	 * @return a String representation of the value, or null if the value was null
@@ -248,22 +248,22 @@ public abstract class Column<T> implements Serializable
 			return null;
 		return toString((T) value);
 	}
-	
+
 	/**
 	 * @param value assumed to be non-null!
 	 * @return
 	 */
 	public abstract String toString(T value);
-	
+
 	public final void retrieveAndWriteValue(Record record, BitOutputStream bitStream) throws IOException, IllegalArgumentException
 	{
-		writeValue(retrieveValue(record), bitStream);		
+		writeValue(retrieveValue(record), bitStream);
 	}
 
 	/**
 	 * Writes the given Object value to the given {@link BitOutputStream}.
 	 * The value will be casted to type <T>.
-	 * 
+	 *
 	 * @param value (may be null, if column is optional)
 	 * @param bitStream the {@link BitOutputStream} to write to
 	 * @throws ClassCastException if the Object cannot be casted to type <T>
@@ -276,10 +276,10 @@ public abstract class Column<T> implements Serializable
 	{
 		writeValue((T) value, bitStream);
 	}
-	
+
 	/**
 	 * Writes the given <T> value to the given {@link BitOutputStream}.
-	 * 
+	 *
 	 * @param value (may be null, if column is optional)
 	 * @param bitStream the {@link BitOutputStream} to write to
 	 * @throws NullPointerException if value is null on an non-optional column
@@ -301,24 +301,24 @@ public abstract class Column<T> implements Serializable
 			write(value, bitStream); // handled by subclass
 		}
 	}
-	
+
 	/**
 	 * Writes the given (non-null) value to the given {@link BitOutputStream} without checks.
-	 * 
+	 *
 	 * @param value assumed to be non-null!
 	 * @param bitStream the {@link BitOutputStream} to write to
 	 * @throws IOException if an I/O error happens upon writing to the bitStream
 	 */
 	protected abstract void write(T value, BitOutputStream bitStream) throws IOException;
-	
+
 	public final void readAndStoreValue(Record record, BitInputStream bitStream) throws IOException, IllegalArgumentException, NullPointerException
 	{
 		storeValue(record, readValue(bitStream));
 	}
-	
+
 	/**
 	 * Reads a value from the given {@link BitInputStream}.
-	 * 
+	 *
 	 * @param bitStream the {@link BitInputStream} to read from
 	 * @return
 	 * @throws IOException if an I/O error happens upon reading from the bitStream
@@ -336,19 +336,19 @@ public abstract class Column<T> implements Serializable
 		}
 		return value;
 	}
-	
+
 	/**
 	 * Reads a value from the given {@link BitInputStream} without checks.
-	 * 
+	 *
 	 * @param bitStream the {@link BitInputStream} to read from
 	 * @return
 	 * @throws IOException if an I/O error happens upon reading from the bitStream
 	 */
 	protected abstract T read(BitInputStream bitStream) throws IOException;
-	
+
 	/**
-	 * Perform checks (e.g.: not too big for size restrictions, no invalid content, etc.) on potential value 
-	 * 
+	 * Perform checks (e.g.: not too big for size restrictions, no invalid content, etc.) on potential value
+	 *
 	 * @param value
 	 * @return whether or not the value is valid
 	 */
@@ -367,10 +367,10 @@ public abstract class Column<T> implements Serializable
 		}
 		return true;
 	}
-	
+
 	/**
 	 * Perform checks (e.g.: not too big for size restrictions, no invalid content, etc.) on potential value, given as a String to be parsed
-	 * 
+	 *
 	 * @param value
 	 * @return whether or not the value is valid
 	 */
@@ -387,16 +387,16 @@ public abstract class Column<T> implements Serializable
 			return false;
 		}
 	}
-	
+
 	/**
-	 * Perform checks on potential value (e.g.: not too big for size restrictions, no invalid content, etc.) 
+	 * Perform checks on potential value (e.g.: not too big for size restrictions, no invalid content, etc.)
 	 * Argument is assumed to be non-null! Hence, null checks should happen before any call of this method.
-	 * 
+	 *
 	 * @param value
 	 * @throws IllegalArgumentException	in case of invalid value
 	 */
 	protected abstract void validate(T value) throws IllegalArgumentException;
-	
+
 	public T getValueAsStoredBinary(T value)
 	{
 		BitOutputStream out = null;
@@ -406,17 +406,17 @@ public abstract class Column<T> implements Serializable
 			//Output stream:
 			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
 			out = new BitWrapOutputStream(rawOut);
-	
+
 			//Write value:
 			writeValue(value, out);
-			
+
 			// Flush, close & get bytes:
 			out.flush();
 			out.close();
-	
+
 			//Input stream:
 			in = new BitWrapInputStream(new ByteArrayInputStream(rawOut.toByteArray()));
-			
+
 			//Read value:
 			return readValue(in);
 		}
@@ -438,12 +438,12 @@ public abstract class Column<T> implements Serializable
 			catch(Exception ignore) {}
 		}
 	}
-	
+
 	public T retrieveValueAsStoredBinary(Record record)
 	{
 		return getValueAsStoredBinary(retrieveValue(record));
 	}
-	
+
 	/**
 	 * @return the name
 	 */
@@ -464,7 +464,7 @@ public abstract class Column<T> implements Serializable
 	{
 		return	getTypeString() + "Column";
 	}
-	
+
 	public String getSpecification()
 	{
 		return toString() + " [" +
@@ -473,31 +473,31 @@ public abstract class Column<T> implements Serializable
 		    				+ (this instanceof VirtualColumn ? "virtual; " : "")
 		    				+ getMinimumSize() + (isVariableSize() ? "-" + getMaximumSize() : "") + " bits]";
 	}
-	
+
 	public String getTypeString()
 	{
 		return type.getSimpleName();
 	}
-	
+
 	public Class<T> getType()
 	{
 		return type;
 	}
-	
+
 	public T retrieveValueCopy(Record record)
 	{
 		T value = retrieveValue(record);
 		return (value == null ? null : copy(value));
 	}
-	
+
 	/**
 	 * Returns a (deep, depending on necessity) copy of the value
-	 * 
+	 *
 	 * @param value - assumed to be non-null!
 	 * @return
 	 */
 	protected abstract T copy(T value);
-	
+
 	/**
 	 * @return whether or not the size taken up by binary stored values for this column varies at run-time (i.e. depending on input)
 	 */
@@ -505,27 +505,27 @@ public abstract class Column<T> implements Serializable
 	{
 		return optional ? true : (_getMinimumSize() != _getMaximumSize());
 	}
-	
+
 	/**
 	 * Returns the maximum effective number of bits values for this column take up when written to a binary representation, including the presence-bit in case of an optional column.
-	 * 
+	 *
 	 * @return
 	 */
 	public int getMaximumSize()
 	{
 		return (optional ? 1 : 0) + _getMaximumSize();
 	}
-	
+
 	/**
 	 * Returns the maximum number of bits values for this column take up when written to a binary representation, _without_ the presence-bit in case of an optional column.
-	 * 
+	 *
 	 * @return
 	 */
 	protected abstract int _getMaximumSize();
-	
+
 	/**
 	 * Returns the minimum effective number of bits values for this column take up when written to a binary representation, including the presence-bit in case of an optional column.
-	 * 
+	 *
 	 * @return
 	 */
 	public int getMinimumSize()
@@ -535,17 +535,17 @@ public abstract class Column<T> implements Serializable
 		else
 			return _getMinimumSize();
 	}
-	
+
 	/**
 	 * Returns the minimum number of bits values for this column take up when written to a binary representation, _without_ the presence-bit in case of an optional column.
-	 * 
+	 *
 	 * @return
 	 */
 	protected abstract int _getMinimumSize();
-	
+
 	/**
 	 * Equality check, compares optionalness, type and size/content restrictions but not the column name
-	 * 
+	 *
 	 * @param obj object to compare this one with
 	 * @return whether or not the given Object is an identical Column (except for its name)
 	 * @see java.lang.Object#equals(java.lang.Object)
@@ -555,10 +555,10 @@ public abstract class Column<T> implements Serializable
 	{
 		return equals(obj, false, true); // do not check name by default, but do check restrictions by default
 	}
-	
+
 	/**
 	 * Equality check, compares optionalness, type and size/content restrictions, AND if checkName is true also the column name
-	 * 
+	 *
 	 * @param obj object to compare this one with
 	 * @param checkName whether or not to compare the column name
 	 * @param whether or not to check the restrictions
@@ -590,11 +590,11 @@ public abstract class Column<T> implements Serializable
 		else
 			return false;
 	}
-	
+
 	protected abstract boolean equalRestrictions(Column<T> otherColumn);
-	
+
 	public abstract void accept(ColumnVisitor visitor);
-	
+
 	@Override
     public int hashCode()
 	{
@@ -609,15 +609,15 @@ public abstract class Column<T> implements Serializable
 		hash = 31 * hash + (virtualVersions == null ? 0 : virtualVersions.hashCode());
 		return hash;
 	}
-	
+
 	/**
 	 * Add a virtual version of this column.
 	 * A VirtualColumn instance will be created with this column as the "real" sourceColumn
 	 * and the given targetColumn as its "virtual" counterpart.
-	 * 
+	 *
 	 * Note: this should happen *before* the column is added to a schema! This is indirectly
 	 * enforced due to the way {@link Schema#getColumns(boolean)} works.
-	 * 
+	 *
 	 * @param targetColumn
 	 * @param valueMapper
 	 */
@@ -630,17 +630,17 @@ public abstract class Column<T> implements Serializable
 
 	/**
 	 * Returns all virtual versions of this column (empty list if there are none).
-	 * 
+	 *
 	 * @return the virtualVersions
 	 */
 	public List<VirtualColumn<?, T>> getVirtualVersions()
 	{
 		return virtualVersions == null ? Collections.<VirtualColumn<?, T>> emptyList() : virtualVersions;
 	}
-	
+
 	/**
 	 * Returns a specific virtual version of this column (null if not found).
-	 * 
+	 *
 	 * @param targetColumnName
 	 * @return
 	 */
@@ -651,5 +651,5 @@ public abstract class Column<T> implements Serializable
 				return vCol;
 		return null;
 	}
-	
+
 }
