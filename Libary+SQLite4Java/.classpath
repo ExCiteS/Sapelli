@@ -16,6 +16,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry combineaccessrules="false" kind="src" path="/Sapelli Library"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Sapelli Library"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

@@ -531,7 +531,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public boolean store(Record record) throws DBException
 		{
 			boolean newRec = (autoIncrementKeyColumn == null) ?
-								(select(record.getReference().getRecordQuery()) == null) : // TODO maybe optimise this by keeping holder of prepared query?
+								(select(record.getReference().getRecordQuery()) == null) : // TODO maybe optimise this by keeping hold of prepared query?
 								!autoIncrementKeyColumn.isValueSet(record);
 			if(newRec)
 				insert(record);
