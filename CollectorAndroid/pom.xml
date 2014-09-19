@@ -1,0 +1,249 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>uk.ac.ucl.excites.sapelli</groupId>
+	<artifactId>collector-android</artifactId>
+	<name>Sapelli Collector for Android</name>
+	<version>2.0.0-SNAPSHOT</version>
+	<packaging>apk</packaging>
+
+	<properties>
+		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
+	</properties>
+
+	<repositories>
+		<repository>
+			<id>crashlytics-repo</id>
+			<url>http://download.crashlytics.com/maven</url>
+		</repository>
+	</repositories>
+
+	<pluginRepositories>
+		<pluginRepository>
+			<id>crashlytics-plugin-repo</id>
+			<url>http://download.crashlytics.com/maven</url>
+		</pluginRepository>
+	</pluginRepositories>
+
+	<dependencies>
+
+		<!-- <dependency> <groupId>android</groupId> <artifactId>android</artifactId> 
+			<version>4.4.2_r3</version> <scope>provided</scope> </dependency> -->
+
+		<dependency>
+			<groupId>com.google.android</groupId>
+			<artifactId>android</artifactId>
+			<version>4.1.1.4</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>uk.ac.ucl.excites.sapelli</groupId>
+			<artifactId>library</artifactId>
+			<version>2.0.0-SNAPSHOT</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.github.japgolly.android</groupId>
+			<artifactId>svg-android</artifactId>
+			<version>2.0.6</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.google.android</groupId>
+			<artifactId>support-v4</artifactId>
+			<version>r7</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.crashlytics.android</groupId>
+			<artifactId>crashlytics</artifactId>
+			<version>[1.1.11,)</version>
+		</dependency>
+
+		<!-- <dependency> <groupId>net.rdrei.android.dirchooser</groupId> <artifactId>library</artifactId> 
+			<version>1.0-pre-v11</version> <type>aar</type> </dependency> -->
+
+		<!-- <dependency> <groupId>com.dropbox</groupId> <artifactId>dropbox-android-sync-sdk</artifactId> 
+			<version>2.1.2</version> <type>apklib</type> </dependency> <dependency> <groupId>com.dropbox</groupId> 
+			<artifactId>dropbox-android-sync-sdk</artifactId> <version>2.1.2</version> 
+			<type>jar</type> </dependency> -->
+
+	</dependencies>
+
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+		<finalName>${project.artifactId}</finalName>
+		<pluginManagement>
+			<plugins>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.1</version>
+					<configuration>
+						<source>1.6</source>
+						<target>1.6</target>
+						<!-- TODO reinclude sender code at some point! -->
+						<excludes>
+							<exclude>uk/ac/ucl/excites/sapelli/sender/**</exclude>
+						</excludes>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-antrun-plugin</artifactId>
+					<version>1.7</version>
+					<dependencies>
+						<dependency>
+							<groupId>org.apache.ant</groupId>
+							<artifactId>ant</artifactId>
+							<version>[1.9.4,)</version>
+						</dependency>
+						<dependency>
+							<groupId>ant-contrib</groupId>
+							<artifactId>ant-contrib</artifactId>
+							<version>1.0b3</version>
+						</dependency>
+					</dependencies>
+					<configuration>
+						<target>
+							<!-- This default configuration is used when antrun is called from 
+								command line ("mvn antrun:run"), as done by the custom builder on the Eclipse 
+								project. The lack of the "mvn-phase" property, which we do set when antrun 
+								is called as part of maven's generate-sources build phase (see below), tells 
+								the script to output the BuildInfo.java file to gen/, where Eclipse expects 
+								generated sources. -->
+							<ant antfile="${buildinfo.antfile}" />
+						</target>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<!-- make m2e ignore the antrun execution -->
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.apache.maven.plugins</groupId>
+										<artifactId>maven-antrun-plugin</artifactId>
+										<versionRange>[1.7,)</versionRange>
+										<goals>
+											<goal>run</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore />
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											com.crashlytics
+										</groupId>
+										<artifactId>
+											crashlytics-maven
+										</artifactId>
+										<versionRange>
+											[1.9.2,)
+										</versionRange>
+										<goals>
+											<goal>
+												GenerateResources
+											</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+
+		<plugins>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-eclipse-plugin</artifactId>
+				<version>2.9</version>
+				<configuration>
+					<sourceExcludes>
+						<sourceExclude>uk/ac/ucl/excites/sapelli/sender/**</sourceExclude>
+					</sourceExcludes>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+				<artifactId>android-maven-plugin</artifactId>
+				<version>3.9.0-rc.3</version>
+				<configuration>
+					<sdk>
+						<!-- <path>${sdk-home}</path> -->
+						<platform>19</platform>
+					</sdk>
+					<deleteConflictingFiles>true</deleteConflictingFiles>
+					<undeployBeforeDeploy>true</undeployBeforeDeploy>
+				</configuration>
+				<extensions>true</extensions>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>buildinfo</id>
+						<phase>generate-sources</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+						<configuration>
+							<target>
+								<!-- This configuration is used when antrun is called as part of 
+									maven's generate-sources build phase. The "mvn-phase" property tells the 
+									script to output the BuildInfo.java file to target/generated-classes/r/, 
+									such that it is compiled when building the apk using Maven. -->
+								<ant antfile="${buildinfo.antfile}">
+									<property name="mvn-phase" value="true" />
+								</ant>
+							</target>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>com.crashlytics</groupId>
+				<artifactId>crashlytics-maven</artifactId>
+				<version>1.9.2</version>
+				<executions>
+					<execution>
+						<id>GenerateResources</id>
+						<goals>
+							<goal>GenerateResources</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>CleanupResources</id>
+						<goals>
+							<goal>CleanupResources</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+		</plugins>
+	</build>
+
+</project>
