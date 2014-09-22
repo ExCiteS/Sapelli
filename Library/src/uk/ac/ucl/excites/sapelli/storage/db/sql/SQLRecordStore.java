@@ -544,7 +544,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Insert new record in database table.
 		 * Assumes the table exists in the database!
 		 * 
-		 * May be overridden.
+		 * *Must* be overridden in order to support auto incrementing keys.
 		 * 
 		 * @param record
 		 * @throws DBException
@@ -553,7 +553,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public void insert(Record record) throws DBException
 		{
 			executeSQL(new RecordInsertHelper((STable) this, record).getQuery());
-			// TODO set autoincrement key value
+			if(autoIncrementKeyColumn != null)
+				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values."); 
 		}
 		
 		/**
@@ -1097,19 +1098,23 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			// Columns names:
 			bldr.openTransaction(", ");
 			for(SColumn sqlCol : table.sqlColumns.values())
-				bldr.append(sqlCol.name);
+				if(sqlCol.sourceColumnPointer.getColumn() != table.autoIncrementKeyColumn) // skip auto-incrementing key
+					bldr.append(sqlCol.name);
 			bldr.commitTransaction(false);
 			// Values:
 			bldr.append(") VALUES (", false);
 			bldr.openTransaction(", ");
 			for(SColumn sqlCol : table.sqlColumns.values())
-				if(isParameterised())
+				if(sqlCol.sourceColumnPointer.getColumn() != table.autoIncrementKeyColumn) // skip auto-incrementing key
 				{
-					bldr.append(valuePlaceHolder);
-					addParameterColumn(sqlCol);
+					if(isParameterised())
+					{
+						bldr.append(valuePlaceHolder);
+						addParameterColumn(sqlCol);
+					}
+					else
+						bldr.append(sqlCol.retrieveAsLiteral(record, true));
 				}
-				else
-					bldr.append(sqlCol.retrieveAsLiteral(record, true));
 			bldr.commitTransaction(false);
 			bldr.append(");", false);
 		}

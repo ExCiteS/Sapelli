@@ -283,7 +283,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			insertStatement.retrieveAndBindAll(record);
 			
 			// Execute:
-			insertStatement.executeInsert();
+			long rowID = insertStatement.executeInsert();
+			
+			// Set auto-incrementing key value:
+			if(autoIncrementKeyColumn != null)
+				autoIncrementKeyColumn.storeValue(record, rowID);
 		}
 
 		/* (non-Javadoc)
