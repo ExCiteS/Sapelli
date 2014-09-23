@@ -371,7 +371,7 @@ public final class FileHelpers
 		int lastIndex = filePath.lastIndexOf(".");
 		if(lastIndex == -1)
 			return filePath;
-		return filePath.substring(0, lastIndex - 1);
+		return filePath.substring(0, lastIndex);
 	}
 
 	/**
