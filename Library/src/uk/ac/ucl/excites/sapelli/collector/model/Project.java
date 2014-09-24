@@ -100,6 +100,12 @@ public class Project
 		if(version == null || version.isEmpty())
 			throw new IllegalArgumentException("A valid version is required");
 		
+		// Name, variant & version:
+		this.name = FileHelpers.makeValidFileName(name);
+		if(variant != null && !variant.isEmpty())
+			this.variant = variant;
+		this.version = version;
+		
 		// Project id:
 		if(id == PROJECT_ID_V1X_TEMP)
 		{	//Backwards compatibility
@@ -108,12 +114,6 @@ public class Project
 		}
 		else
 			initialise(id); // checks if it fits in field	
-		
-		// Name, variant & version:
-		this.name = FileHelpers.makeValidFileName(name);
-		if(variant != null && !variant.isEmpty())
-			this.variant = variant;
-		this.version = version;
 		
 		// Finger print:
 		this.fingerPrint = fingerPrint;
@@ -285,7 +285,7 @@ public class Project
 		for(Form f : forms)
 			if(f.getID().equalsIgnoreCase(id)) // form IDs are treated as case insensitive
 				return f;
-		return null; //no such form
+		return null; // no such form
 	}
 	
 	/**
