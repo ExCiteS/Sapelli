@@ -122,9 +122,14 @@ public abstract class SapelliSQLiteStatement
 	 * Executes a SQL SELECT query which results in a single (1x1) integer value.
 	 * E.g.: "SELECT COUNT(*) FROM SomeTable;"
 	 * 
-	 * @return
+	 * @return the result of the query or null if it returned 0 rows
 	 * @throws DBException
 	 */
-	public abstract long executeLongQuery() throws DBException;
+	public abstract Long executeLongQuery() throws DBException;
+	
+	/**
+	 * Releases resources, statement is no longer usable afterwards.
+	 */
+	public abstract void close();
 
 }

@@ -22,10 +22,13 @@ import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 
+import com.almworks.sqlite4java.SQLiteBackup;
 import com.almworks.sqlite4java.SQLiteConnection;
 import com.almworks.sqlite4java.SQLiteException;
 
@@ -37,7 +40,6 @@ import com.almworks.sqlite4java.SQLiteException;
 public class JavaSQLiteRecordStore extends SQLiteRecordStore
 {
 
-	// Dynamics---------------------------------------------
 	private SQLiteConnection db;
 	
 	/**
@@ -91,7 +93,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	{
 		try
 		{
-			System.out.println("SQLite> Compile statement: " + sql); // TODO remove debug logging
+			System.out.println("SQLite> Compile/reuse statement: " + sql); // TODO remove debug logging
 			return new JavaSQLiteStatement(db, db.prepare(sql, true /* use cache! */), paramCols);
 		}
 		catch(SQLiteException sqliteE)
@@ -101,24 +103,45 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	@Override
-	protected void doFinalise() throws DBException
+	protected void close() throws DBException
 	{
 		db.dispose();
+	}
+	
+	/**
+	 * Performs a back-up of the database using the SQLite Online Backup API
+	 * 
+	 * @see com.almworks.sqlite4java.SQLiteBackup
+	 * @see <a href="http://www.sqlite.org/c3ref/backup_finish.html#sqlite3backupinit"> SQLite Online Backup API</a>
+	 * @see <a href="http://www.sqlite.org/backup.html">Using the SQLite Online Backup API</a>
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#doBackup(java.io.File)
+	 */
+	@Override
+	protected void doBackup(File destinationFolder) throws DBException
+	{
+		File dstFile = new File(destinationFolder, FileHelpers.trimFileExtensionAndDot(db.getDatabaseFile().getName()) + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName() + "." + DATABASE_FILE_EXTENSION);
+		SQLiteBackup backup = null;
+		try
+		{
+			backup = db.initializeBackup(dstFile);
+			while(!backup.isFinished())
+				backup.backupStep(32);
+		}
+		catch(SQLiteException e)
+		{
+			throw new DBException("Failed to back-up SQLite database to: " + dstFile.getAbsolutePath(), e);
+		}
+		finally
+		{
+			if(backup != null)
+				backup.dispose();
+		}
 	}
 	
 	@Override
 	protected File getDatabaseFile()
 	{
 		return db.getDatabaseFile();
-	}
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#getParameterPlaceHolder()
-	 */
-	@Override
-	protected String getParameterPlaceHolder()
-	{
-		return PARAM_PLACEHOLDER;
 	}
 
 }

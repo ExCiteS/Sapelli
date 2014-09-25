@@ -144,12 +144,6 @@ public abstract class SingleRecordQuery
 		 */
 		public R execute(ExtremeValueRecordQuery extremeValueRecordQuery) throws E;
 
-		/**
-		 * @param nullRecordQuery
-		 * @return
-		 */
-		public R execute(NullRecordQuery nullRecordQuery);
-
 	}
 	
 }

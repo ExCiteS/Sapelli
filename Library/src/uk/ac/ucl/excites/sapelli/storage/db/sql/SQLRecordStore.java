@@ -27,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
@@ -52,7 +53,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.ExtremeValueRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.NullRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery.Executor;
@@ -82,8 +82,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	static protected final String SCHEMATA_TABLE_NAME = "Schemata";
 	static protected final String SPACE = " ";
 	
-	private Map<Schema, STable> tables;
 	private STable schemataTable;
+	private Map<Schema, STable> tables;
 
 	/**
 	 * @param client
@@ -138,7 +138,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		if(table == null)
 		{
 			table = getTableFactory().generateTable(schema);
-			if(schema != Schema.META_SCHEMA) // the "tables" map is only for tables of "real" schemata!
+			if(schema != Schema.META_SCHEMA) // the "tables" map is only for tables of "real" (non-meta) schemata!
 				tables.put(schema, table);
 		}
 		
@@ -154,7 +154,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @throws DBException
 	 */
 	private void createAndRegisterTable(STable table) throws DBException
-	{		
+	{
 		startTransaction();
 		try
 		{
@@ -172,32 +172,61 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		commitTransaction();
 	}
-	
+
 	/**
-	 * TODO use this upon close on empty tables?
+	 * Finds schema tables that have become empty and drops them, along with
+	 * deleting the corresponding row from the Schemata table.
 	 * 
-	 * @param table
-	 * @throws DBException
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#cleanup()
 	 */
-	private void dropAndForgetTable(STable table) throws DBException
+	protected void cleanup() throws DBException
 	{
-		if(table == schemataTable)
-			throw new IllegalArgumentException("Cannot drop the " + SCHEMATA_TABLE_NAME + " table");
-		startTransaction();
-		try
+		// Find empty tables:
+		List<STable> emptyTables = null;
+		for(STable table : tables.values())
+			try
+			{
+				if(table.isInDB() && table.getRecordCount() == 0)
+				{
+					if(emptyTables == null)
+						emptyTables = new ArrayList<STable>();
+					emptyTables.add(table);
+				}
+			}
+			catch(DBException dbE)
+			{
+				dbE.printStackTrace(System.err);
+				continue;
+			}
+		// Drop & forget them...
+		if(emptyTables != null)
 		{
-			// Unregister (i.e. forget) the schema (which the table corresponds to) in the schemataTable:
-			schemataTable.delete(Schema.GetMetaRecordReference(table.schema));
-			
-			// Drop the table itself:
-			table.drop(); // TODO only when exisiting in db!
+			startTransaction();
+			try
+			{
+				for(STable emptyTable : emptyTables)
+				{
+					// Unregister (i.e. forget) the schema (which the table corresponds to) in the schemataTable:
+					schemataTable.delete(Schema.GetMetaRecordReference(emptyTable.schema));
+					
+					// Drop the table itself:
+					emptyTable.drop();
+				}
+			}
+			catch(DBException dbE)
+			{
+				try
+				{
+					rollbackTransactions();
+				}
+				catch(DBException dbE2)
+				{
+					dbE2.printStackTrace(System.err);
+				}
+				throw dbE;
+			}
+			commitTransaction();
 		}
-		catch(Exception e)
-		{
-			rollbackTransactions();
-			throw new DBException("Exception upon creating and registering " + table.toString(), e);
-		}
-		commitTransaction();
 	}
 	
 	protected Set<Schema> getAllKnownSchemata()
@@ -530,14 +559,29 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public boolean store(Record record) throws DBException
 		{
-			boolean newRec = (autoIncrementKeyColumn == null) ?
-								(select(record.getReference().getRecordQuery()) == null) : // TODO maybe optimise this by keeping hold of prepared query?
-								!autoIncrementKeyColumn.isValueSet(record);
+			boolean newRec = !isRecordInDB(record);
 			if(newRec)
 				insert(record);
 			else
 				update(record);
 			return newRec;
+		}
+		
+		/**
+		 * Checks if the given record already exists in the database table.
+		 * 
+		 * May be overridden.
+		 * 
+		 * @param record
+		 * @return
+		 * @throws NullPointerException
+		 * @throws DBException
+		 */
+		public boolean isRecordInDB(Record record) throws DBException
+		{
+			return (autoIncrementKeyColumn == null) ?
+						(select(record.getReference().getRecordQuery()) == null) :
+						!autoIncrementKeyColumn.isValueSet(record);
 		}
 		
 		/**
@@ -552,9 +596,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@SuppressWarnings("unchecked")
 		public void insert(Record record) throws DBException
 		{
-			executeSQL(new RecordInsertHelper((STable) this, record).getQuery());
 			if(autoIncrementKeyColumn != null)
-				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values."); 
+				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values.");
+			executeSQL(new RecordInsertHelper((STable) this, record).getQuery());
 		}
 		
 		/**
@@ -625,12 +669,6 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				public List<Record> execute(FirstRecordQuery firstRecordQuery) throws DBException
 				{	// Execute as regular select query: the RecordsQuery held by the firstRecordQuery will always be limited to 1!
 					return select(firstRecordQuery.getRecordsQuery());
-				}
-
-				@Override
-				public List<Record> execute(NullRecordQuery nullRecordQuery)
-				{
-					return Collections.<Record> emptyList();
 				}
 				
 			});
@@ -843,7 +881,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	public abstract class TableFactory
 	{
 		
-		public abstract STable generateTable(Schema schema);
+		public abstract STable generateTable(Schema schema) throws DBException;
 		
 	}
 	
@@ -863,9 +901,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		protected Schema schema;
 		protected List<Index> indexesToProcess;
 		protected STable table;
+		protected final Stack<Column<?>> parents = new Stack<Column<?>>();
 		
 		@Override
-		public STable generateTable(Schema schema)
+		public STable generateTable(Schema schema) throws DBException
 		{
 			this.schema = schema;
 			indexesToProcess = new ArrayList<Index>(schema.getIndexes(true)); // copy list of all indexes, including the primary key
@@ -886,8 +925,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Assumes schema has been set beforehand!
 		 * 
 		 * @return
+		 * @throws DBException 
 		 */
-		protected abstract void initialiseTable();
+		protected abstract void initialiseTable() throws DBException;
 				
 		/**
 		 * This method is assumed to be called only after all columns have been added to the table!
@@ -988,13 +1028,13 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@Override
 		public void enter(RecordColumn<?> recordCol)
 		{
-			// do nothing
+			parents.push(recordCol);
 		}
 		
 		@Override
 		public void leave(RecordColumn<?> recordCol)
 		{
-			// do nothing	
+			parents.pop();
 		}
 		
 	}
@@ -1268,6 +1308,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * @param table
+		 * @param recordRef
 		 * @param valuePlaceHolder - may be null if no parameters are to be used (only literal values)
 		 */
 		public RecordDeleteHelper(STable table, RecordReference recordRef, String valuePlaceHolder)

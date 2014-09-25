@@ -32,8 +32,8 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement;
 /**
  * A sqlite4java-specific {@link SapelliSQLiteStatement} subclass. It is a thin wrapper around sqlite4java's {@link SQLiteStatement} class.
  * 
- * Supports SQL INSERT, UPDATE, and DELETE operations (i.e. "CUD" from "CRUD"), as well as SQL SELECT row queries (i.e. "R" from "CRUD")
- * and "simple" SELECT queries resulting in a 1x1 long value. In addition it also acts as a cursor and thus also implements the {@link ISQLiteCursor} interface.
+ * Supports SQL INSERT, UPDATE, and DELETE operations (i.e. "CUD" from "CRUD"), as well as SQL SELECT row queries (i.e. "R" from "CRUD") and
+ * "simple" SELECT queries resulting in a 1x1 long value. In addition it also acts as a cursor and thus also implements the {@link ISQLiteCursor} interface.
  * 
  * @author mstevens
  *
@@ -139,12 +139,25 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 	}
 
+	/**
+	 * Clears all existing bindings
+	 * 
+	 * If the statement has stepped we also do a reset. This is because other wise subsequent calls to bind* methods result in errors.
+	 * The reason is that (copied from SQLite C interface docs) "if any of the sqlite3_bind_*() routines are called [...] with a prepared
+	 * statement for which sqlite3_step() has been called more recently than sqlite3_reset(), then the call will return SQLITE_MISUSE."
+	 * 
+	 * @see http://www.sqlite.org/c3ref/bind_blob.html
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#clearAllBindings()
+	 */
 	@Override
 	public void clearAllBindings() throws DBException
 	{
 		try
 		{
-			javaSQLiteSt.clearBindings();
+			if(javaSQLiteSt.hasStepped())
+				javaSQLiteSt.reset(true); // also clears bindings
+			else
+				javaSQLiteSt.clearBindings();
 		}
 		catch(SQLiteException e)
 		{
@@ -154,15 +167,10 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	
 	/**
 	 * Insert a record
-	 * 
-	 * Implementation note:
-	 * No reset() call to needed before or after the step() call. This is because this kind of statement
-	 * does not return a SQLITE_ROW and we are using SQLite 3.7 or higher. See hyperlinks for more info.
 	 *  
 	 * @throws DBException 
 	 * 
 	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
-	 * @see http://www.sqlite.org/c3ref/step.html	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeInsert()
 	 */
 	@Override
@@ -175,21 +183,16 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 		catch(SQLiteException e)
 		{
-			throw new DBException("Failed to execute INSERT statement", e);
+			throw new DBException("Failed to execute INSERT statement (e)", e);
 		}
 	}
 
 	/**
 	 * Update a record
-	 * 
-	 * Implementation note:
-	 * No reset() call to needed before or after the step() call. This is because this kind of statement
-	 * does not return a SQLITE_ROW and we are using SQLite 3.7 or higher. See hyperlinks for more info.
-	 *  
+	 *   
 	 * @throws DBException 
 	 * 
 	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
-	 * @see http://www.sqlite.org/c3ref/step.html	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeUpdate()
 	 */
 	@Override
@@ -208,15 +211,10 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 
 	/**
 	 * Delete a record
-	 * 
-	 * Implementation note:
-	 * No reset() call to needed before or after the step() call. This is because this kind of statement
-	 * does not return a SQLITE_ROW and we are using SQLite 3.7 or higher. See hyperlinks for more info.
 	 *  
 	 * @throws DBException 
 	 * 
 	 * @see http://almworks.com/sqlite4java/javadoc/com/almworks/sqlite4java/SQLiteStatement.html#step()
-	 * @see http://www.sqlite.org/c3ref/step.html	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeDelete()
 	 */
 	@Override
@@ -234,7 +232,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	}
 
 	@Override
-	public long executeLongQuery() throws DBException
+	public Long executeLongQuery() throws DBException
 	{
 		try
 		{
@@ -243,7 +241,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 			if(javaSQLiteSt.step())
 				return javaSQLiteSt.columnLong(0);
 			else
-				throw new DBException("Simple long query returned no results");
+				return null;
 		}
 		catch(SQLiteException e)
 		{
@@ -305,21 +303,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	{
 		return javaSQLiteSt.hasRow();
 	}
-
-	@Override
-	public void close()
-	{
-		try
-		{
-			firstStep = null;
-			javaSQLiteSt.reset(false); // don't clear bindings
-		}
-		catch(SQLiteException e)
-		{
-			e.printStackTrace(System.err);
-		}
-	}
-
+	
 	@Override
 	public byte[] getBlob(int columnIdx) throws DBException
 	{
@@ -383,6 +367,18 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		{
 			throw new DBException("Exception upon checking for null in column " + columnIdx, e);
 		}
+	}
+
+	@Override
+	public void close()
+	{
+		javaSQLiteSt.dispose(); // Although it is somewhat counterintuitive this allows the prepared statement to be returned to the cache for future re-use
+	}
+	
+	@Override
+	public boolean isClosed()
+	{
+		return javaSQLiteSt.isDisposed();
 	}
 	
 }

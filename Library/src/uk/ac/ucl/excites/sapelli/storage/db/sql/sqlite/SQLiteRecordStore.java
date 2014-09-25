@@ -55,7 +55,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
@@ -121,7 +120,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	@Override
 	protected void doStartTransaction() throws DBException
 	{
-		if(!isInTransaction())
+		if(!isInTransaction()) // TODO re-assess this for android/java
 			try
 			{
 				executeSQL("BEGIN TRANSACTION;");
@@ -180,7 +179,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		ISQLiteCursor cursor = null;
 		try
 		{
-			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
 									Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null, null, null)),
 									Collections.<Object> singletonList(tableName));
 			return cursor != null && cursor.hasRow();
@@ -209,7 +208,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	@Override
 	protected void doBackup(File destinationFolder) throws DBException
 	{
-		// TODO only when not in transaction?
 		File currentDB = getDatabaseFile();
 		String extension = FileHelpers.getFileExtension(currentDB);
 		File backupDB = new File(destinationFolder, FileHelpers.trimFileExtensionAndDot(currentDB.getName()) + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName() + "." + (extension.isEmpty() ? DATABASE_FILE_EXTENSION : extension));
@@ -221,7 +219,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			}
 			catch(IOException e)
 			{
-				throw new DBException("Failed to back-up SQLite database", e);
+				throw new DBException("Failed to back-up SQLite database to: " + backupDB.getAbsolutePath(), e);
 			}
 		}
 		else
@@ -254,9 +252,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public class SQLiteTable extends SQLRecordStore<SQLiteRecordStore, SQLiteRecordStore.SQLiteTable, SQLiteRecordStore.SQLiteColumn<?, ?>>.SQLTable
 	{
 
+		private SapelliSQLiteStatement existsStatement;
 		private SapelliSQLiteStatement insertStatement;
 		private SapelliSQLiteStatement updateStatement;
-		private SapelliSQLiteStatement upsertStatement;
 		private SapelliSQLiteStatement deleteStatement;
 		private SapelliSQLiteStatement countStatement;
 
@@ -265,6 +263,32 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			super(schema);
 		}
 
+		/* (non-Javadoc)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#isRecordInDB(uk.ac.ucl.excites.sapelli.storage.model.Record)
+		 */
+		@Override
+		public boolean isRecordInDB(Record record) throws DBException
+		{
+			if(autoIncrementKeyColumn != null)
+				return autoIncrementKeyColumn.isValueSet(record);
+			else
+			{
+				if(existsStatement == null)
+				{
+					SelectROWIDHelper selectROWIDHelper = new SelectROWIDHelper(this);
+					existsStatement = getStatement(selectROWIDHelper.getQuery(), selectROWIDHelper.getParameterColumns());
+				}
+				else
+					existsStatement.clearAllBindings();
+				
+				// Bind parameters:
+				existsStatement.retrieveAndBindAll(record);
+				
+				// Execute:
+				return existsStatement.executeLongQuery() != null;
+			}
+		}
+		
 		/* (non-Javadoc)
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#insert(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
@@ -344,16 +368,18 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		protected List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException
 		{
-			// Execute (also binds parameters) and get cursor:
-			ISQLiteCursor cursor = executeQuery(selection.getQuery(), selection.getParameterColumns(), selection.getSapArguments());
+			ISQLiteCursor cursor = null;
 			
-			// Process cursor and create records:
 			try
 			{
+				// Execute query (also binds parameters) to get cursor:
+				cursor = executeQuery(selection.getQuery(), selection.getParameterColumns(), selection.getSapArguments());
+				// Deal with cursor:
 				if(cursor == null || !cursor.hasRow())
+					// No results:
 					return Collections.<Record> emptyList();
 				else
-				{
+				{	// Process cursor rows and create corresponding records:
 					List<Record> result = new ArrayList<Record>();
 					while(cursor.moveToNext())
 					{
@@ -382,6 +408,25 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			if(countStatement == null)
 				countStatement = getStatement(new RecordCountHelper(this).getQuery(), null);
 			return countStatement.executeLongQuery();
+		}
+		
+		@Override
+		public void drop() throws DBException
+		{
+			// Release resources:
+			if(existsStatement != null)
+				existsStatement.close();
+			if(insertStatement != null)
+				insertStatement.close();
+			if(updateStatement != null)
+				updateStatement.close();
+			if(deleteStatement != null)
+				deleteStatement.close();
+			if(countStatement != null)
+				countStatement.close();
+			
+			// Drop table:
+			super.drop();
 		}
 
 	}
@@ -525,7 +570,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	{
 		
 		@Override
-		protected void initialiseTable()
+		protected void initialiseTable() throws DBException
 		{
 			table = new SQLiteTable(schema);
 		}
@@ -569,18 +614,27 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				}
 			}
 	
-			// Optionality:			 
-			if(!sourceColum.isOptional())
+			// Optionality:
+			boolean optional = sourceColum.isOptional();
+			// Check parents, if one of them is optional the subcolumn in the DB should be too:
+			if(!optional)
+				for(Column<?> parent : parents) // iteraters through the stack from bottom to top! (But that's fine in this case)
+					if(parent.isOptional())
+					{
+						optional = true;
+						break;
+					}
+			if(!optional)
 				bldr.append("NOT NULL");
-			// TODO Reassess this: it could be a bad idea because it means we cannot persistently store incomplete records (which was no problem with DB4O.
+			// TODO Reassess this: it could be a bad idea because it means we cannot persistently store incomplete records (which was no problem with DB4O).
 			
 			// TODO Default value?
 			
-			// TODO foreign-key-clause?
-			if(sourceColum instanceof ForeignKeyColumn)
+			// foreign-key-clause?
+			/*if(sourceColum instanceof ForeignKeyColumn)
 			{
 				// ...
-			}
+			}*/
 			
 			return bldr.toString();
 		}
@@ -623,7 +677,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				idxIter.remove();
 			}
 			
-			// TODO foreign-key-clause?
+			// foreign-key-clause?
 			
 			return tConstraints;
 		}
@@ -749,6 +803,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				
 			}));
 			
+		}
+		
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	protected class SelectROWIDHelper extends RecordUpdateDeleteHelper
+	{
+
+		public SelectROWIDHelper(SQLiteTable table)
+		{
+			// Initialise
+			super(table, PARAM_PLACEHOLDER);
+			
+			// Build statement:			
+			bldr.append("SELECT ROWID FROM");
+			bldr.append(table.tableName);
+			// WHERE clause:
+			appendWhereClause(null);
+			bldr.append(";", false);
 		}
 		
 	}

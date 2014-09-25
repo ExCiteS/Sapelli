@@ -23,10 +23,6 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.storage.queries.ExtremeValueRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.NullRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 
@@ -105,24 +101,6 @@ public abstract class Relationship extends UILessField
 		return constraints;
 	}
 	
-	/**
-	 * Returns a SingleRecordQuery that can be used to find (or verify)
-	 * the "held" record (the most recent record that meets the constraints).
-	 * 
-	 * If this relationship does not hold on to foreign records a dummy query
-	 * will be returns which always returns a null record upon execution.
-	 * 
-	 * TODO check for deviceID / source:local/remote ...
-	 * 
-	 * @return
-	 */
-	public SingleRecordQuery getHeldRecordQuery()
-	{
-		if(!holdForeignRecord)
-			return new NullRecordQuery();
-		return ExtremeValueRecordQuery.Max(Form.COLUMN_TIMESTAMP_START, new RecordsQuery(relatedForm.getSchema(), constraints));
-	}
-
 	/**
 	 * @return the relatedForm
 	 */

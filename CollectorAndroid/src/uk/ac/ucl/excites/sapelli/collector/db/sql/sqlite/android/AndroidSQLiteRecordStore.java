@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
+package uk.ac.ucl.excites.sapelli.collector.db.sql.sqlite.android;
 
 import java.io.File;
 import java.util.List;
@@ -177,7 +177,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	@Override
-	protected void doFinalise() throws DBException
+	protected void close()
 	{
 		db.close();
 	}

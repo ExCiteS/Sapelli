@@ -54,5 +54,7 @@ public interface ISQLiteCursor
 	public boolean moveToNext() throws DBException;
 	
 	public void close();
+	
+	public boolean isClosed();
 
 }

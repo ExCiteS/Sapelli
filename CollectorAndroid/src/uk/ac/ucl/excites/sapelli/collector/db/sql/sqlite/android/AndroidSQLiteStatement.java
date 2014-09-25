@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
+package uk.ac.ucl.excites.sapelli.collector.db.sql.sqlite.android;
 
 import java.util.List;
 
@@ -102,7 +102,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		{
 			long rowID = androidSQLiteSt.executeInsert();
 			if(rowID == -1)
-				throw new DBException("Execution of INSERT statement failed (ROWID = -1)");
+				throw new DBException("Execution of INSERT statement failed (returned ROWID = -1)");
 			return rowID;
 		}
 		catch(SQLException sqlE)
@@ -156,7 +156,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 	}
 	
 	@Override
-	public long executeLongQuery() throws DBException
+	public Long executeLongQuery() throws DBException
 	{
 		try
 		{
@@ -164,8 +164,14 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		}
 		catch(SQLiteDoneException e)
 		{
-			throw new DBException("Failed to execute simple long query", e);
+			return null;
 		}
+	}
+
+	@Override
+	public void close()
+	{
+		androidSQLiteSt.close();
 	}
 	
 }

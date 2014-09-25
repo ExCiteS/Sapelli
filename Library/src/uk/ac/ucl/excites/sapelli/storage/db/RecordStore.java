@@ -35,8 +35,6 @@ import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
  * 
  * Note: Records of internal schemata are not to be stored/retrieved directly. 
  * 
- * TODO explicit retrieval (and implicit storage) or Schema instances
- * 
  * @author mstevens
  */
 public abstract class RecordStore implements Store
@@ -221,7 +219,6 @@ public abstract class RecordStore implements Store
 		}
 		catch(Exception e)
 		{
-			e.printStackTrace(System.err);
 			rollbackTransactions();
 			throw new DBException(e);
 		}
@@ -377,16 +374,27 @@ public abstract class RecordStore implements Store
 	public void finalise() throws DBException
 	{
 		if(isInTransaction())
-			System.err.println("Warning: record store is being closed but there is an uncommited transaction (changes my be lost)!");
-		doFinalise();
+			System.err.println("Warning: record store is being closed but there is an uncommited transaction (changes may be lost)!");
+		// Clean-up:
+		cleanup();
+		// Close:
+		close();
 	}
 	
-	protected abstract void doFinalise() throws DBException;
+	/**
+	 * May be overridden
+	 */
+	protected void cleanup() throws DBException
+	{
+		// does nothing by default
+	}
+	
+	protected abstract void close() throws DBException;
 	
 	public void backup(File destinationFolder) throws DBException
 	{
 		if(isInTransaction())
-			throw new DBException("Cannot back-up database due to uncommited transaction!");
+			throw new DBException("Cannot back-up database due to uncommited transaction!"); // TODO remove this?
 		doBackup(destinationFolder);
 	}
 	

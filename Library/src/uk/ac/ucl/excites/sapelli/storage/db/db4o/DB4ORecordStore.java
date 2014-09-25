@@ -245,7 +245,7 @@ public class DB4ORecordStore extends RecordStore
 	}
 
 	@Override
-	protected void doFinalise() throws DBException
+	protected void close() throws DBException
 	{
 		try
 		{
