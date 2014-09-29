@@ -38,11 +38,11 @@ import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.os.EnvironmentCompat;
 import android.util.Log;
 
 import com.crashlytics.android.Crashlytics;
-
-import de.jockels.open.Environment2;
 
 /**
  * Application App to keep the db4o object throughout the life-cycle of the Collector
@@ -73,19 +73,6 @@ public class CollectorApp extends Application implements StoreClient
 	static public final String CRASHLYTICS_DEVICE_ID_CRC32 = "SAPELLI_DEVICE_ID_CRC32";
 	static public final String CRASHLYTICS_DEVICE_ID_MD5 = "SAPELLI_DEVICE_ID_MD5";
 
-	/**
-	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on
-	 * an accessible (i.e. mounted) storage device
-	 * 
-	 * @return
-	 */
-	static public boolean isStorageMounted()
-	{
-		if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
-			return true;
-		return false;
-	}
-	
 	/**
 	 * Returns a prefix to be used on storage identifiers (DB4O filenames, SharedPref's names, etc.) when in demo mode
 	 * (if not in demo mode the prefix is empty).
@@ -123,9 +110,6 @@ public class CollectorApp extends Application implements StoreClient
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();
 		
-		// Sapelli folder (created on SD card or internal mass storage):
-		sapelliFolder = new File(getStorageDirectory().getAbsolutePath() + File.separator + SAPELLI_FOLDER);
-		
 		// Set up a CrashReporter to the Sapelli/crash Folder
 		try
 		{
@@ -143,30 +127,55 @@ public class CollectorApp extends Application implements StoreClient
 		super.onConfigurationChanged(newConfig);
 		// Debug.d(newConfig.toString());
 	}
-	
-	/**
-	 * Uses Environment2 library to get the path of the actual SD card if there is one,
-	 * if not it gets the path of the emulated SD card/internal mass storage
-	 * 
-	 * @return the directory as a file object
-	 */
-	public File getStorageDirectory()
-	{
-		return Environment2.getCardDirectory();
-	}
 
 	/**
-	 * @return creates the Sapelli folder on the filesystem, and returns it as a File object
+	 * @return finds/creates the Sapelli folder on the filesystem, and returns it as a File object
 	 */
 	public File getSapelliFolder()
 	{
-		if(!isStorageMounted() || !FileHelpers.isReadableWritableDirectory(getStorageDirectory()))
-			throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
-		if(!sapelliFolder.exists())
+		if(sapelliFolder == null)
 		{
-			if(!sapelliFolder.mkdirs())
-				throw new IllegalStateException("Cannot create Sapelli folder");
+			// Using application-specific folder (will be removed upon app uninstall!):
+			File[] paths = ContextCompat.getExternalFilesDirs(this, null);
+			if(paths != null)
+			{
+				// We count backwards because we prefer secondary external storage (which is likely to be on an SD card rather unremovable memory)
+				for(int p = paths.length - 1; p >= 0; p--)
+					if(Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(paths[p])))
+					{
+						sapelliFolder = paths[p];
+						break;
+					}
+			}
+			// Fall-back: try to get write access to external storage (preferably SD card) root and create Sapelli folder if it doesn't exist yet:
+			if(sapelliFolder == null)
+			{
+				File extStorageRoot = null;
+				
+				/* Old way: Using Environment2 library to get the path of the actual SD card if there is one,
+				 * 			if not it gets the path of the emulated SD card/internal mass storage */
+				//if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
+				//	cardDirectory = Environment2.getCardDirectory();
+				
+				// Using proper API (will not always return the real SD card path):
+				if(Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(Environment.getExternalStorageDirectory())))
+					extStorageRoot = Environment.getExternalStorageDirectory();
+				
+				// Check if writable:
+				if(!FileHelpers.isReadableWritableDirectory(extStorageRoot))
+					throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
+				
+				// Make Sapelli folder:
+				sapelliFolder = new File(extStorageRoot.getAbsolutePath() + File.separator + SAPELLI_FOLDER);
+				if(!sapelliFolder.exists())
+				{
+					if(!sapelliFolder.mkdirs())
+						throw new IllegalStateException("Cannot create Sapelli folder");
+				}
+			}
 		}
+		
+		// Return folder:
 		return sapelliFolder;
 	}
 

@@ -298,6 +298,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
+		super.onCreateOptionsMenu(menu);
 		getMenuInflater().inflate(R.menu.projectmanager, menu);
 		return true;
 	}
