@@ -85,8 +85,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
 					<excludes>
-						<exclude>**/Android*.java</exclude>
-						<exclude>**/Android*.java</exclude>
+						<!-- <exclude></exclude> -->
+						<!-- <exclude></exclude> -->
 					</excludes>
 				</configuration>
 			</plugin>

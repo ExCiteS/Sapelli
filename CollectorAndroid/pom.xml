@@ -7,16 +7,27 @@
 	<artifactId>collector-android</artifactId>
 	<name>Sapelli Collector for Android</name>
 	<version>2.0.0-SNAPSHOT</version>
+	<url>http://sapelli.org</url>
 	<packaging>apk</packaging>
 
 	<properties>
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
+		<!-- To be provided on command line using -D arguments, e.g.: mvn install -Psign -Dsign.keystore=... -->
+		<sign.keystore></sign.keystore>
+		<sign.storepass></sign.storepass>
+		<sign.alias></sign.alias>
+		<sign.keypass></sign.keypass>
 	</properties>
 
 	<repositories>
 		<repository>
 			<id>crashlytics-repo</id>
 			<url>http://download.crashlytics.com/maven</url>
+		</repository>
+		
+		<repository><!-- for aFileChooser -->
+			<id>UIQ3</id>
+			<url>http://uiq3.sourceforge.net/Repository</url>
 		</repository>
 	</repositories>
 
@@ -29,16 +40,28 @@
 
 	<dependencies>
 
-		<!-- <dependency> <groupId>android</groupId> <artifactId>android</artifactId> 
-			<version>4.4.2_r3</version> <scope>provided</scope> </dependency> -->
-
 		<dependency>
-			<groupId>com.google.android</groupId>
+			<groupId>android</groupId>
 			<artifactId>android</artifactId>
-			<version>4.1.1.4</version>
+			<version>4.4.2_r4</version>
 			<scope>provided</scope>
 		</dependency>
-
+		
+		<dependency>
+			<groupId>android.support</groupId>
+			<artifactId>compatibility-v4</artifactId>
+			<version>20.0.0</version>
+			<type>jar</type>
+			<scope>compile</scope>
+		</dependency>
+		
+<!-- 		<dependency>
+			<groupId>android.support</groupId>
+			<artifactId>compatibility-v7-appcompat</artifactId>
+			<version>20.0.0</version>
+			<type>apklib</type>
+		</dependency> -->
+		
 		<dependency>
 			<groupId>uk.ac.ucl.excites.sapelli</groupId>
 			<artifactId>library</artifactId>
@@ -50,17 +73,25 @@
 			<artifactId>svg-android</artifactId>
 			<version>2.0.6</version>
 		</dependency>
-
-		<dependency>
-			<groupId>com.google.android</groupId>
-			<artifactId>support-v4</artifactId>
-			<version>r7</version>
-		</dependency>
-
+	
 		<dependency>
 			<groupId>com.crashlytics.android</groupId>
 			<artifactId>crashlytics</artifactId>
 			<version>[1.1.11,)</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.ipaulpro</groupId>
+			<artifactId>afilechooser-library</artifactId>
+			<version>2.4</version>
+			<scope>compile</scope>
+			<type>apklib</type>
+			<exclusions>
+			    <exclusion>
+					<groupId>android.support</groupId>
+					<artifactId>compatibility-v4</artifactId>
+			    </exclusion>			    
+			</exclusions>
 		</dependency>
 
 		<!-- <dependency> <groupId>net.rdrei.android.dirchooser</groupId> <artifactId>library</artifactId> 
@@ -73,9 +104,61 @@
 
 	</dependencies>
 
+	<profiles>
+		<profile>
+			<id>sign</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-jarsigner-plugin</artifactId>
+						<version>1.3.2</version>
+						<executions>
+							<execution>
+								<id>signing</id>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+								<phase>package</phase>
+								<inherited>true</inherited>
+								<configuration>
+									<archiveDirectory></archiveDirectory>
+									<includes>
+										<include>${project.build.directory}/*.apk</include>
+									</includes>
+									<keystore>${sign.keystore}</keystore>
+									<storepass>${sign.storepass}</storepass>
+									<alias>${sign.alias}</alias>
+									<keypass>${sign.keypass}</keypass>
+									<arguments>
+										<argument>-sigalg</argument>
+										<argument>MD5withRSA</argument>
+										<argument>-digestalg</argument>
+										<argument>SHA1</argument>
+									</arguments>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+						<artifactId>android-maven-plugin</artifactId>
+						<inherited>true</inherited>
+						<configuration>
+							<sign>
+								<debug>false</debug>
+							</sign>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 	<build>
 		<sourceDirectory>src</sourceDirectory>
 		<finalName>${project.artifactId}</finalName>
+
 		<pluginManagement>
 			<plugins>
 
@@ -123,13 +206,14 @@
 				</plugin>
 
 				<plugin>
-					<!-- make m2e ignore the antrun execution -->
+
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
 					<version>1.0.0</version>
 					<configuration>
 						<lifecycleMappingMetadata>
 							<pluginExecutions>
+								<!-- make m2e ignore the antrun execution -->
 								<pluginExecution>
 									<pluginExecutionFilter>
 										<groupId>org.apache.maven.plugins</groupId>
@@ -187,7 +271,7 @@
 			<plugin>
 				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 				<artifactId>android-maven-plugin</artifactId>
-				<version>3.9.0-rc.3</version>
+				<version>4.0.0-rc.1</version>
 				<configuration>
 					<sdk>
 						<!-- <path>${sdk-home}</path> -->
@@ -195,6 +279,11 @@
 					</sdk>
 					<deleteConflictingFiles>true</deleteConflictingFiles>
 					<undeployBeforeDeploy>true</undeployBeforeDeploy>
+					<androidManifestFile>${project.basedir}/AndroidManifest.xml</androidManifestFile>
+					<mergeManifests>true</mergeManifests>
+					<assetsDirectory>${project.basedir}/assets</assetsDirectory>
+					<!-- <genDirectory>${project.basedir}/gen</genDirectory> -->
+					<resourceDirectory>${project.basedir}/res</resourceDirectory>
 				</configuration>
 				<extensions>true</extensions>
 			</plugin>
