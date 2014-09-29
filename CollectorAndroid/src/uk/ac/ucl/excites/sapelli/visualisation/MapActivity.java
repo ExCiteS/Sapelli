@@ -14,6 +14,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -130,7 +131,7 @@ public class MapActivity extends ProjectActivity {
 					CalloutStyle style = callout.getStyle();
 					DisplayMetrics metrics = getResources().getDisplayMetrics();
 					style.setMaxHeight(metrics.heightPixels);
-					style.setMaxWidth(metrics.widthPixels*2);
+					style.setMaxWidth(metrics.widthPixels * 2);
 
 					// Sets custom content view to Callout
 					callout.setContent(loadView(gr));
@@ -177,11 +178,12 @@ public class MapActivity extends ProjectActivity {
 		int counter = 0;
 		for (Record record : records) {
 			SimpleMarkerSymbol sms = new SimpleMarkerSymbol(colour, 10, STYLE.DIAMOND);
-			Location location = (Location) record.getSchema().getColumn("Location", true).retrieveValue(record);
-			Point pnt = new Point(location.getLongitude(), location.getLatitude());
+			//			Location location = (Location) record.getSchema().getColumn("Location", true).retrieveValue(record);
+			//			Point pnt = new Point(location.getLongitude(), location.getLatitude());
 
 			Map<String, Object> imgPaths = new HashMap<String, Object>();
 
+			Point pnt = null;
 			for (Form form : project.getForms()) {
 				for (Field field : form.getFields()) {
 					if (field instanceof ChoiceField && !field.isNoColumn()) {
@@ -192,6 +194,11 @@ public class MapActivity extends ProjectActivity {
 							imgPaths.put(IMG_PATH + counter, project.getImageFolderPath() + relPath);
 							counter++;
 						}
+					}
+
+					if (field instanceof LocationField) {
+						LocationField lf = (LocationField) field;
+						pnt = new Point(lf.getColumn().retrieveValue(record).getLongitude(), lf.getColumn().retrieveValue(record).getLatitude());
 					}
 				}
 			}
@@ -216,7 +223,6 @@ public class MapActivity extends ProjectActivity {
 				}
 			}
 		});
-
 	}
 
 	// Creates custom content view with 'Graphic' attributes
