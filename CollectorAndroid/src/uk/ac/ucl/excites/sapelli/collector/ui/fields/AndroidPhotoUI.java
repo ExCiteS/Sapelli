@@ -226,15 +226,13 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 								{ // Save photo to file:
 									File photoFile = field.getNewTempFile(controller.getCurrentRecord());
 									FileOutputStream fos = new FileOutputStream(photoFile);
-									if (field.isMultiple()) {
-										// create an ImageItem from the capture so it can be shown in a PickerView
-										imgItem = new FileImageItem(photoFile);
-										reviewPicker.getAdapter().addItem(imgItem);
-									}
 									fos.write(reviewPhotoData);
 									fos.close();
 									if (field.isMultiple()){
 										mediaAddedButNotDone(photoFile);
+										// create an ImageItem from the capture so it can be shown in a PickerView
+										imgItem = new FileImageItem(photoFile);
+										reviewPicker.getAdapter().addItem(imgItem);
 										//show multi-preview panel
 										showNext();
 									}
@@ -476,11 +474,6 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 					options.inJustDecodeBounds = false;
 					options.inSampleSize = BitmapUtils.calculateInSampleSize(options, previewWidth, previewHeight);
 					picture = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-
-					// Rotate
-					Matrix bitmapMatrix = new Matrix();
-					bitmapMatrix.postRotate(90);
-					picture = Bitmap.createBitmap(picture, 0, 0, picture.getWidth(), picture.getHeight(), bitmapMatrix, false);
 				}
 				catch(Exception e)
 				{
