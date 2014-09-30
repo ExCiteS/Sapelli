@@ -39,12 +39,11 @@
     <uses-feature android:name="android.hardware.camera.any" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
     <uses-feature android:name="android.hardware.camera.flash" />
+    <uses-feature
+        android:glEsVersion="0x00020000"
+        android:required="true" />
 
-    
-<uses-feature android:glEsVersion="0x00020000" android:required="true"/> 
-
-
-<application
+    <application
         android:name="uk.ac.ucl.excites.sapelli.collector.CollectorApp"
         android:allowBackup="true"
         android:icon="@drawable/ic_excites_grey"
@@ -68,11 +67,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name="uk.ac.ucl.excites.sapelli.visualisation.MapActivity"
-            android:launchMode="singleTask"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         </activity>
         <activity
             android:name="uk.ac.ucl.excites.sapelli.sender.DataSenderActivity"
@@ -128,10 +122,7 @@
             android:name="uk.ac.ucl.excites.sapelli.sender.DataSenderService"
             android:icon="@drawable/ic_excites_grey"
             android:label="@string/service_name" >
-        </service>
-
-
-
+        </service>
         -->
 
         <service
@@ -148,10 +139,7 @@
             <intent-filter android:priority="9999999999" >
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
-        </receiver>
-
-
-
+        </receiver>
         -->
         <activity
             android:name="uk.ac.ucl.excites.sapelli.collector.fragments.ExportFragment"
@@ -160,6 +148,8 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity" />
+        </activity>
+        <activity android:name="uk.ac.ucl.excites.sapelli.visualisation.MapActivity" >
         </activity>
     </application>
 
