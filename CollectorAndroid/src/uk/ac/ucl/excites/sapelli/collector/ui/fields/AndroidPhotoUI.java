@@ -126,6 +126,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		
 		// Objects for multi-photo review:
 		private FileImageItem imgItem;
+		private LinearLayout pickerLayout;
 		private PickerView reviewPicker;
 
 		// Camera & image data:
@@ -174,7 +175,6 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 
 			// Add the CaptureLayout to the screen
 			this.addView(captureLayout);
-
 			
 			// --- Review UI:
 			reviewLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_review, null);
@@ -184,23 +184,31 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			// Add the confirm/cancel buttons:
 			final LinearLayout reviewLayoutButtons = (LinearLayout) reviewLayout.findViewById(R.id.review_layout_buttons);
 			reviewLayoutButtons.addView(new ReviewButtonView(getContext()));
-		
-			if (field.isMultiple()) {
-			// Multiple photos can be taken, so use a PickerView for review
-				reviewPicker = new PickerView(context);
-								
-				// Number of columns:
-				reviewPicker.setNumColumns(3); //TODO
-				// Item size & padding:
-				reviewPicker.setItemDimensionsPx(collectorUI.getFieldUIPartWidthPx(3), //TODO
-									collectorUI.getFieldUIPartHeightPx(3)); //TODO
-			}
-	
 			
 			// Add the ReviewLayout to the screen
 			this.addView(reviewLayout);
-			
-			this.addView(reviewPicker); //TODO rem
+		
+			if (field.isMultiple()) {
+				// Multiple photos can be taken, so use a PickerView for review after confirmation
+				pickerLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_picker, null);
+				
+				// Add the confirm/cancel buttons:
+				final LinearLayout pickerLayoutButtons = (LinearLayout) pickerLayout.findViewById(R.id.picker_layout_buttons);
+				pickerLayoutButtons.addView(new ReviewButtonView(getContext())); //currently just using review buttons
+				final LinearLayout pickerViewContainer = (LinearLayout) pickerLayout.findViewById(R.id.picker_layout_picker_container);
+				reviewPicker = new PickerView(context);
+				pickerViewContainer.addView(reviewPicker);
+				// Number of columns:
+				reviewPicker.setNumColumns(3); //TODO make columns configurable?
+				// Item size & padding:
+				reviewPicker.setItemDimensionsPx(
+						collectorUI.getFieldUIPartWidthPx(3), //TODO
+						collectorUI.getFieldUIPartHeightPx(3)); //TODO
+				
+				
+				// Add the picker too (may want to change how this works)
+				this.addView(pickerLayout);
+			}
 		}
 
 		@Override
