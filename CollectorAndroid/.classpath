@@ -8,5 +8,6 @@
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="src" path="/appcompat_v7"/>
+	<classpathentry kind="lib" path="libs/droidinspectorserver.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

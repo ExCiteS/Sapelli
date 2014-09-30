@@ -15,6 +15,7 @@ import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 /**
@@ -30,7 +31,7 @@ public class ProjectFragment extends Fragment implements OnClickListener {
 	}
 
 	// Layouts
-	private RelativeLayout rootLayout;
+	private ScrollView rootLayout;
 	private Button addShortcut;
 	private Button removeShortcut;
 
@@ -43,7 +44,7 @@ public class ProjectFragment extends Fragment implements OnClickListener {
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		super.onCreateView(inflater, container, savedInstanceState);
-		rootLayout = (RelativeLayout) inflater.inflate(R.layout.fragment_project, container, false);
+		rootLayout = (ScrollView) inflater.inflate(R.layout.fragment_project, container, false);
 		addShortcut = (Button) ((ViewGroup) rootLayout).findViewById(R.id.addShortcut);
 		addShortcut.setOnClickListener(this);
 		removeShortcut = (Button) ((ViewGroup) rootLayout).findViewById(R.id.removeShortcut);

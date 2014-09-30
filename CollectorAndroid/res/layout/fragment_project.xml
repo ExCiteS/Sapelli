@@ -1,49 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/project_rootLayout"
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <ScrollView
+    <LinearLayout
+        android:id="@+id/shortcutHeader"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent"
+        android:background="@layout/drop_shadow"
+        android:gravity="center_vertical"
+        android:orientation="horizontal" >
 
-        <LinearLayout
-            android:id="@+id/scrollableView"
-            android:layout_width="match_parent"
+        <TextView
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:orientation="vertical" >
+            android:layout_weight="1"
+            android:padding="10dp"
+            android:text="@string/shortcut" />
 
-            <LinearLayout
-                android:id="@+id/shortcutHeader"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:background="@layout/drop_shadow"
-                android:gravity="center_vertical"
-                android:orientation="horizontal" >
+        <Button
+            android:id="@+id/addShortcut"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:text="Add" />
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:padding="10dp"
-                    android:text="@string/shortcut" />
+        <Button
+            android:id="@+id/removeShortcut"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="80dp"
+            android:layout_height="wrap_content"
+            android:text="Remove" />
+    </LinearLayout>
 
-                <Button
-                    android:id="@+id/addShortcut"
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:text="Add" />
-
-                <Button
-                    android:id="@+id/removeShortcut"
-                    style="?android:attr/buttonStyleSmall"
-                    android:layout_width="80dp"
-                    android:layout_height="wrap_content"
-                    android:text="Remove" />
-            </LinearLayout>
-        </LinearLayout>
-    </ScrollView>
-
-</RelativeLayout>
+</ScrollView>
