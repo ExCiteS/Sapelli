@@ -326,8 +326,10 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				Item approveButton = null;
 				File approveImgFile = controller.getProject().getImageFile(field.getApproveButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(approveImgFile))
+					// If capture button image is specified in project, use that:
 					approveButton = new FileImageItem(approveImgFile);
 				else
+					// Else use default resource:
 					approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
 				approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				addButton(approveButton);
