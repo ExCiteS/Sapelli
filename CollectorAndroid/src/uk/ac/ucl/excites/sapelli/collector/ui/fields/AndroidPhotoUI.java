@@ -194,7 +194,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				
 				// Add the confirm/cancel buttons:
 				final LinearLayout pickerLayoutButtons = (LinearLayout) pickerLayout.findViewById(R.id.picker_layout_buttons);
-				pickerLayoutButtons.addView(new ReviewButtonView(getContext())); //currently just using review buttons
+				pickerLayoutButtons.addView(new PickerButtonView(getContext()));
 				final LinearLayout pickerViewContainer = (LinearLayout) pickerLayout.findViewById(R.id.picker_layout_picker_container);
 				reviewPicker = new PickerView(context);
 				pickerViewContainer.addView(reviewPicker);
@@ -205,12 +205,18 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 						collectorUI.getFieldUIPartWidthPx(3), //TODO
 						collectorUI.getFieldUIPartHeightPx(3)); //TODO
 				
+				// Add a "capture more photos" button to the picker by default:
+                reviewPicker.getAdapter().addItem(
+                		new ResourceImageItem(
+                				getContext().getResources(), R.drawable.button_photo_svg));
 				
 				// Add the picker too (may want to change how this works)
 				this.addView(pickerLayout);
 			}
 		}
-
+		
+		// TODO ask Matthias if this can be split into the respective classes (i.e. give them each 
+		// a bespoke OnItemClickListener)
 		@Override
 		public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
 		{
@@ -227,46 +233,51 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 							cameraController.takePicture(CameraView.this);
 						}
 						else
-						{ // in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
-							if(position == 0)
-							{ // photo approved
-								try
-								{ // Save photo to file:
-									File photoFile = field.getNewTempFile(controller.getCurrentRecord());
-									FileOutputStream fos = new FileOutputStream(photoFile);
-									fos.write(reviewPhotoData);
-									fos.close();
-									if (field.isMultiple()){
-										mediaAddedButNotDone(photoFile);
-										// create an ImageItem from the capture so it can be shown in a PickerView
-										imgItem = new FileImageItem(photoFile);
-										reviewPicker.getAdapter().addItem(imgItem);
-										//show multi-preview panel
-										showNext();
-									}
-									else {
-										mediaDone(photoFile, true);
-									}
-									
-								}
-								catch(Exception e)
-								{
-									Log.e(TAG, "Could not save photo.", e);
-									mediaDone(null, true);
-								}
-								finally
-								{
-									cameraController.close();
-								}
+						{
+							if (getCurrentView() == reviewLayout) {
+								// in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
+	                            if (position == 0) { // photo approved
+		                            try { // Save photo to file:
+			                            File photoFile =
+			                                    field.getNewTempFile(controller
+			                                            .getCurrentRecord());
+			                            FileOutputStream fos =
+			                                    new FileOutputStream(photoFile);
+			                            fos.write(reviewPhotoData);
+			                            fos.close();
+			                            if (field.isMultiple()) {
+				                            mediaAddedButNotDone(photoFile);
+				                            // create an ImageItem from the capture so it can be shown in a PickerView
+				                            imgItem =
+				                                    new FileImageItem(photoFile);
+				                            reviewPicker.getAdapter().addItem(
+				                                    imgItem);
+				                            //show multi-preview panel
+				                            showNext();
+			                            } else {
+				                            mediaDone(photoFile, true);
+			                            }
+
+		                            } catch (Exception e) {
+			                            Log.e(TAG, "Could not save photo.", e);
+			                            mediaDone(null, true);
+		                            } finally {
+			                            cameraController.close();
+		                            }
+	                            } else
+	                            // if(position == 1)
+	                            { // photo discarded
+		                            showPrevious(); // switch back to capture mode
+		                            cameraController.startPreview();
+		                            handlingClick = false;
+	                            }
+	                            reviewPhotoData = null;
+                            }
+							else {
+								//current view is pickerLayout --> there is only an "approve" button
+								mediaDone(null, true);  
+								cameraController.close();
 							}
-							else
-							// if(position == 1)
-							{ // photo discarded
-								showPrevious(); // switch back to capture mode
-								cameraController.startPreview();
-								handlingClick = false;
-							}
-							reviewPhotoData = null;
 						}
 					}
 				}
@@ -381,6 +392,36 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			}
 
 		}
+		
+		private class PickerButtonView extends CameraButtonView
+		{
+
+			public PickerButtonView(Context context)
+			{
+				super(context);
+			}
+
+			@Override
+			protected int getNumberOfColumns()
+			{
+				return 1;
+			}
+
+			@Override
+			protected void addButtons()
+			{
+				// Approve button:
+				Item approveButton = null;
+				File approveImgFile = controller.getProject().getImageFile(field.getApproveButtonImageRelativePath());
+				if(FileHelpers.isReadableFile(approveImgFile))
+					approveButton = new FileImageItem(approveImgFile);
+				else
+					approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
+				approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+				addButton(approveButton);
+			}
+		}
+
 
 		/**
 		 * @author mstevens
