@@ -59,7 +59,7 @@ import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
-import android.widget.ViewSwitcher;
+import android.widget.ViewFlipper;
 
 /**
  * Built-in camera view
@@ -112,7 +112,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		}
 	}
 	
-	private class CameraView extends ViewSwitcher implements AdapterView.OnItemClickListener, PictureCallback
+	private class CameraView extends ViewFlipper implements AdapterView.OnItemClickListener, PictureCallback
 	{
 
 		static private final String TAG = "CameraView";
@@ -120,9 +120,13 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		static private final int PREVIEW_SIZE = 1024;
 		
 		// UI elements:
-		private ImageView reviewView;
 		private LinearLayout captureLayout;
-		private LinearLayout reviewLayout;
+		private LinearLayout reviewLayout; // Layout for reviewing single photos
+		private ImageView reviewView; // Container for the newly taken image
+		
+		// Objects for multi-photo review:
+		private FileImageItem imgItem;
+		private PickerView reviewPicker;
 
 		// Camera & image data:
 		private CameraController cameraController;
@@ -176,13 +180,27 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			reviewLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_review, null);
 			reviewView = (ImageView) reviewLayout.findViewById(R.id.review_layout_imageview);
 			reviewView.setScaleType(ScaleType.FIT_CENTER);
-
-			// Add the Capture button:
+			
+			// Add the confirm/cancel buttons:
 			final LinearLayout reviewLayoutButtons = (LinearLayout) reviewLayout.findViewById(R.id.review_layout_buttons);
 			reviewLayoutButtons.addView(new ReviewButtonView(getContext()));
-
+		
+			if (field.isMultiple()) {
+			// Multiple photos can be taken, so use a PickerView for review
+				reviewPicker = new PickerView(context);
+								
+				// Number of columns:
+				reviewPicker.setNumColumns(3); //TODO
+				// Item size & padding:
+				reviewPicker.setItemDimensionsPx(collectorUI.getFieldUIPartWidthPx(3), //TODO
+									collectorUI.getFieldUIPartHeightPx(3)); //TODO
+			}
+	
+			
 			// Add the ReviewLayout to the screen
 			this.addView(reviewLayout);
+			
+			this.addView(reviewPicker); //TODO rem
 		}
 
 		@Override
@@ -208,9 +226,22 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 								{ // Save photo to file:
 									File photoFile = field.getNewTempFile(controller.getCurrentRecord());
 									FileOutputStream fos = new FileOutputStream(photoFile);
+									if (field.isMultiple()) {
+										// create an ImageItem from the capture so it can be shown in a PickerView
+										imgItem = new FileImageItem(photoFile);
+										reviewPicker.getAdapter().addItem(imgItem);
+									}
 									fos.write(reviewPhotoData);
 									fos.close();
-									mediaDone(photoFile, true);
+									if (field.isMultiple()){
+										mediaAddedButNotDone(photoFile);
+										//show multi-preview panel
+										showNext();
+									}
+									else {
+										mediaDone(photoFile, true);
+									}
+									
 								}
 								catch(Exception e)
 								{
@@ -225,7 +256,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 							else
 							// if(position == 1)
 							{ // photo discarded
-								showNext(); // switch back to capture mode
+								showPrevious(); // switch back to capture mode
 								cameraController.startPreview();
 								handlingClick = false;
 							}
@@ -326,10 +357,8 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				Item approveButton = null;
 				File approveImgFile = controller.getProject().getImageFile(field.getApproveButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(approveImgFile))
-					// If capture button image is specified in project, use that:
 					approveButton = new FileImageItem(approveImgFile);
 				else
-					// Else use default resource:
 					approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
 				approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				addButton(approveButton);
@@ -466,7 +495,6 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			{
 				// Display rotated picture
 				reviewView.setImageBitmap(picture);
-
 				// Switch to review mode:
 				showNext();
 				handlingClick = false;

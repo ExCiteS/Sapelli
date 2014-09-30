@@ -23,6 +23,7 @@ import java.util.Hashtable;
 import java.util.Map.Entry;
 import java.util.Stack;
 
+import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
@@ -159,6 +160,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
 	static private final String ATTRIBUTE_BUTTON_COLUMN = "column";
 	static private final String ATTRIBUTE_MEDIA_MAX = "max";
+	static private final String ATTRIBUTE_MEDIA_MULTIPLE = "multiple";
 	static private final String ATTRIBUTE_TRIGGER_KEY = "key";
 	static private final String ATTRIBUTE_TRIGGER_KEYS = "keys";
 	static private final String ATTRIBUTE_TRIGGER_FIXED_TIMER = "fixedTimer";
@@ -347,7 +349,7 @@ public class FormParser extends SubtreeParser
 			// <Photo>
 			else if(qName.equals(TAG_PHOTO))
 			{
-				PhotoField photoField = new PhotoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_PHOTO, false));
+				PhotoField photoField = new PhotoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getBoolean(ATTRIBUTE_MEDIA_MULTIPLE, false), readCaption(attributes, TAG_PHOTO, false));
 				newMediaField(photoField, attributes);
 				photoField.setUseNativeApp(attributes.getBoolean("useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP));
 				// Camera options (only used when useNativeApp=false):
@@ -373,7 +375,7 @@ public class FormParser extends SubtreeParser
 			// <Audio>
 			else if(qName.equals(TAG_AUDIO))
 			{
-				AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_AUDIO, false));
+				AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getBoolean(ATTRIBUTE_MEDIA_MULTIPLE, false), readCaption(attributes, TAG_AUDIO, false));
 				newMediaField(audioField, attributes);
 				audioField.setStartRecImageRelativePath(attributes.getString("startRecImg", null, false, false));
 				audioField.setStopRecImageRelativePath(attributes.getString("stopRecImg", null, false, false));

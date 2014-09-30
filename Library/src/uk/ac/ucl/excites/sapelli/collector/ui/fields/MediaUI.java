@@ -61,8 +61,23 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 				// at least one attachment is required & we have none:
 				controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE); // stay at this field ("return;" is not enough because if we are using a native app it needs to be restarted)
 			else
-				controller.goForward(userRequested); // goto next/jump field //TODO this needs changing when we allow review of photos/audio
+				controller.goForward(userRequested); // goto next/jump field
 		}
+	}
+	
+	public void mediaAddedButNotDone(File mediaAttachment)
+	{
+		//TODO ask Matthias about this
+		if(mediaAttachment != null && mediaAttachment.exists())
+		{
+			controller.addLogLine("ATTACHMENT", field.getID(), mediaAttachment.getName());
+			
+			field.incrementCount(controller.getCurrentRecord()); // Store/increase number of pictures/recordings taken
+			
+			// Store file:
+			controller.addMediaAttachment(mediaAttachment);
+		}
+		// do NOT go to next/jump field
 	}
 	
 	protected boolean showCreateButton()
