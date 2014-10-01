@@ -39,10 +39,10 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
  */
 public class CrashReporter implements UncaughtExceptionHandler
 {
-
 	private UncaughtExceptionHandler defaultUEH;
 	private String localPath;
 	private String namePrefix;
+	private DeviceID deviceID;
 
 	public CrashReporter(String localPath, String namePrefix)
 	{
@@ -63,6 +63,14 @@ public class CrashReporter implements UncaughtExceptionHandler
 		printWriter.close();
 
 		// Add build information to the stacktrace
+		if(deviceID != null)
+		{
+			stacktrace = "Sapelli DeviceID (CRC32): " + deviceID.getIDAsCRC32Hash() 
+					+ "\n" 
+					+ "Sapelli DeviceID (MD5): " + deviceID.getIDAsMD5Hash().toString() 
+					+ "\n\n" 
+					+ stacktrace;
+		}
 		stacktrace = BuildInfo.getAllInfo() + "\n\n" + stacktrace;
 
 		String filename = namePrefix + "_" + TimeUtils.getTimestampForFileName() + ".stacktrace";
@@ -70,6 +78,15 @@ public class CrashReporter implements UncaughtExceptionHandler
 			writeToFile(stacktrace, filename);
 
 		defaultUEH.uncaughtException(t, e);
+	}
+
+	/**
+	 * @param deviceID
+	 *            the deviceID to set
+	 */
+	public void setDeviceID(DeviceID deviceID)
+	{
+		this.deviceID = deviceID;
 	}
 
 	private void writeToFile(String stacktrace, String filename)
