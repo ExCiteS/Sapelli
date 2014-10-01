@@ -15,6 +15,7 @@ public class BootReceiver extends BroadcastReceiver
 	{
 		if(intent.getAction().equals("android.intent.action.BOOT_COMPLETED"))
 		{
+			// Check if projects require data transmission and set up alarms for the DataSenderService
 			ProjectStore projectStore = null;
 			try
 			{
