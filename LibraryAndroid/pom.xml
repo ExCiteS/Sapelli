@@ -1,0 +1,75 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	
+	<groupId>uk.ac.ucl.excites.sapelli</groupId>
+	<artifactId>library-android</artifactId>
+	<version>2.0.0-SNAPSHOT</version>
+	<name>Sapelli Library for Android</name>
+	<packaging>apklib</packaging>
+	
+
+	<dependencies>
+
+		<dependency>
+			<groupId>android</groupId>
+			<artifactId>android</artifactId>
+			<version>4.4.2_r4</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>uk.ac.ucl.excites.sapelli</groupId>
+			<artifactId>library</artifactId>
+			<version>2.0.0-SNAPSHOT</version>
+		</dependency>
+
+	</dependencies>
+	
+	<build>
+	    <sourceDirectory>${project.basedir}/src</sourceDirectory>
+		<finalName>${project.artifactId}</finalName>
+
+		<pluginManagement>
+			<plugins>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.1</version>
+					<configuration>
+						<source>1.6</source>
+						<target>1.6</target>
+						<excludes>
+							<!-- <exclude>...</exclude> -->
+						</excludes>
+					</configuration>
+				</plugin>
+
+			</plugins>
+		</pluginManagement>
+
+		<plugins>
+
+			<plugin>
+				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+				<artifactId>android-maven-plugin</artifactId>
+				<version>4.0.0-rc.1</version>
+				<configuration>
+					<sdk>
+						<!-- <path>${sdk-home}</path> -->
+						<platform>19</platform>
+					</sdk>
+					<deleteConflictingFiles>true</deleteConflictingFiles>
+					<androidManifestFile>${project.basedir}/AndroidManifest.xml</androidManifestFile>
+					<mergeManifests>true</mergeManifests>
+					<assetsDirectory>${project.basedir}/assets</assetsDirectory>
+					<genDirectory>${project.basedir}/gen</genDirectory>
+					<resourceDirectory>${project.basedir}/res</resourceDirectory>
+				</configuration>
+				<extensions>true</extensions>
+			</plugin>
+
+		</plugins>
+	</build>
+</project>
