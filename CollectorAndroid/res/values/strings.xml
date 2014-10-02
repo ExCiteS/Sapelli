@@ -81,5 +81,8 @@
     <string name="add_project">Please add a project</string>
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>
+    <string name="add">Add</string>
+    <string name="remove">Remove</string>
+    <string name="load_projects">Loading Projects</string>
 
 </resources>

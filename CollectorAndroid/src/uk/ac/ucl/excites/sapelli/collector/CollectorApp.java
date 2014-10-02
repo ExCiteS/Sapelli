@@ -16,9 +16,9 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.db4o.DB4ORecordStore;
-import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.Application;
 import android.content.res.Configuration;
+import android.os.Debug;
 import android.os.Environment;
 import android.util.Log;
 import de.jockels.open.Environment2;
@@ -82,7 +82,9 @@ public class CollectorApp extends Application implements StoreClient {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.getAllInfo());
+//		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.getAllInfo());
+	    // start tracing to "/sdcard/calc.trace"
+	    Debug.startMethodTracing("calc");
 
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();
@@ -152,7 +154,7 @@ public class CollectorApp extends Application implements StoreClient {
 	@Override
 	public void onLowMemory() {
 		super.onLowMemory();
-		Debug.d("onLowMemory() called!");
+//		Debug.d("onLowMemory() called!");
 	}
 
 	@Override
@@ -161,7 +163,7 @@ public class CollectorApp extends Application implements StoreClient {
 		// This method is for use in emulated process environments. It will never be called on
 		// a production Android device, where processes are removed by simply killing them; no
 		// user code (including this callback) is executed when doing so.
-		Debug.d("Should never be called!");
+//		Debug.d("Should never be called!");
 	}
 
 	/**

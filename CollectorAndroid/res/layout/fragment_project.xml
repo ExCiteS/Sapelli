@@ -7,7 +7,7 @@
     <LinearLayout
         android:id="@+id/shortcutHeader"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:background="@layout/drop_shadow"
         android:gravity="center_vertical"
         android:orientation="horizontal" >
@@ -24,14 +24,14 @@
             style="?android:attr/buttonStyleSmall"
             android:layout_width="80dp"
             android:layout_height="wrap_content"
-            android:text="Add" />
+            android:text="@string/add" />
 
         <Button
             android:id="@+id/removeShortcut"
             style="?android:attr/buttonStyleSmall"
             android:layout_width="80dp"
             android:layout_height="wrap_content"
-            android:text="Remove" />
+            android:text="@string/remove" />
     </LinearLayout>
 
 </ScrollView>

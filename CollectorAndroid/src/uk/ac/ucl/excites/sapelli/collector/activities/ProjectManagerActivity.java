@@ -23,6 +23,7 @@ import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderClient;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.ui.PagerAdapter;
+import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
@@ -53,6 +54,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Debug;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.view.ViewPager;
 import android.support.v4.widget.DrawerLayout;
@@ -106,6 +108,8 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	// DYNAMICS-------------------------------------------------------
 	private ProjectStore projectStore;
 	private Project selectedProject;
+	private String[] projectsArray;
+	private List<Project> parsedProjects;
 
 	// UI
 	private TextView addProjects;
@@ -119,6 +123,8 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	private ActionBarDrawerToggle drawerToggle;
 	private DrawerLayout drawerLayout;
 	private Button runProject;
+
+	private Menu menu;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -221,8 +227,11 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		if (BuildInfo.DEMO_BUILD)
 			demoMode();
 		else
-			populateTabs(); // Update project list
+			new retrieveProjectsTask().execute(); // Update project list
 		// TODO remember & re-select last selected project
+
+		// stop tracing
+		Debug.stopMethodTracing();
 	}
 
 	@Override
@@ -265,8 +274,9 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
+		this.menu = menu;
 		getMenuInflater().inflate(R.menu.projectmanager, menu);
-		menu.findItem(R.id.action_remove).setVisible(!projectStore.retrieveProjects().isEmpty());
+
 		return true;
 	}
 
@@ -351,9 +361,9 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	 * Retrieve all parsed projects from db and populate tabs
 	 */
 	public void populateTabs() {
-		String[] projectsArray = new String[projectStore.retrieveProjects().size()];
-		for (int i = 0; i < projectStore.retrieveProjects().size(); i++) {
-			projectsArray[i] = projectStore.retrieveProjects().get(i).getName() + " " + projectStore.retrieveProjects().get(i).getVersion();
+		projectsArray = new String[parsedProjects.size()];
+		for (int i = 0; i < parsedProjects.size(); i++) {
+			projectsArray[i] = parsedProjects.get(i).getName() + " " + parsedProjects.get(i).getVersion();
 		}
 
 		// Set the adapter for the list view
@@ -378,6 +388,8 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 			addProjects.setVisibility(View.VISIBLE);
 
 		}
+		//		if (menu != null)
+		menu.findItem(R.id.action_remove).setVisible(!parsedProjects.isEmpty());
 		invalidateOptionsMenu();
 	}
 
@@ -402,7 +414,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 			return;
 		removeShortcut();
 		projectStore.delete(p);
-		populateTabs();
+		new retrieveProjectsTask().execute();
 
 		// TODO Re-enable the service at same point
 		// Restart the DataSenderService to stop monitoring the deleted project
@@ -502,7 +514,8 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		storeProject(project);
 
 		// Update project list:
-		populateTabs();
+		new retrieveProjectsTask().execute();
+		;
 
 		// TODO Re-enable the service at same point
 		// Restart the DataSenderService to start monitoring the new project
@@ -945,6 +958,27 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		else
 			getActionBar().setTitle(R.string.app_name);
 		drawerLayout.closeDrawer(drawerList);
+
+	}
+
+	private class retrieveProjectsTask extends AsyncTaskWithWaitingDialog<Void, Void, List<Project>> {
+
+		public retrieveProjectsTask() {
+			super(ProjectManagerActivity.this, getString(R.string.load_projects));
+		}
+
+		@Override
+		protected List<Project> doInBackground(Void... params) {
+			return projectStore.retrieveProjects();
+		}
+
+		@Override
+		protected void onPostExecute(List<Project> result) {
+			parsedProjects = result;
+			super.onPostExecute(result); // dismiss dialog
+			populateTabs();
+
+		}
 
 	}
 
