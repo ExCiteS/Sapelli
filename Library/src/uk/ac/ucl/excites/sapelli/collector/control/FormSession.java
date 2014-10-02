@@ -186,6 +186,12 @@ public class FormSession
 			mediaAttachments = new ArrayList<File>();
 		mediaAttachments.add(mediaAttachment);
 	}
+	
+	public void removeMediaAttachment(File mediaAttachment)
+	{
+		if(mediaAttachments != null)
+			mediaAttachments.remove(mediaAttachment);
+	}
 
 	/**
 	 * @return the mediaAttachments

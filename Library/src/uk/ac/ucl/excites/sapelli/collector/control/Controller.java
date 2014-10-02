@@ -832,6 +832,11 @@ public abstract class Controller
 		currFormSession.addMediaAttachment(mediaAttachment);
 	}
 	
+	public void removeMediaAttachment(File mediaAttachment)
+	{
+		currFormSession.removeMediaAttachment(mediaAttachment);
+	}
+	
 	protected abstract void vibrate(int durationMS);
 	
 	protected abstract void playSound(File soundFile);

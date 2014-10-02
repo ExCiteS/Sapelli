@@ -136,7 +136,6 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		private HandleImage handleImage;
 		private byte[] reviewPhotoData;
 		
-		//private volatile boolean handlingClick;
 		private Semaphore handlingClick;
 
 		@SuppressWarnings("deprecation")
@@ -240,6 +239,8 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			private static final int NUM_ROWS = 3;
 			
 			private Context context;
+			private LinearLayout deletePhotoLayout;
+			private int photoPosition;
 
 			public PhotoPickerView(Context context) {
 	            this(context, true);
@@ -272,19 +273,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 						}
 						else {
 							// a photo has been clicked, so show it and offer deletion
-							LinearLayout deletePhotoLayout = (LinearLayout) LayoutInflater.from(PhotoPickerView.this.context).inflate(R.layout.collector_camera_review, PhotoPickerView.this, false);
-							ImageView deletePhotoView = (ImageView) deletePhotoLayout.findViewById(R.id.review_layout_imageview);
-							deletePhotoView.setScaleType(ScaleType.FIT_CENTER);
-							File photoFile = ((FileImageItem)getAdapter().getItem(position)).getFile();
-							deletePhotoView.setImageURI(Uri.fromFile(photoFile));
-							
-							// Add the confirm/cancel buttons:
-							final LinearLayout deleteLayoutButtons = (LinearLayout) deletePhotoLayout.findViewById(R.id.review_layout_buttons);
-							deleteLayoutButtons.addView(new ReviewButtonView(getContext()));
-							//TODO delete buttons
-							ViewGroup parentView = (ViewGroup)CameraView.this.getParent();
-							parentView.removeView(CameraView.this);
-							parentView.addView(deletePhotoLayout);
+							showPhotoDeleteLayout(position);
 						}
                     }
                 	
@@ -292,6 +281,40 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				
             }
 			
+			private void showPhotoDeleteLayout(int photoPosition) {
+				this.photoPosition = photoPosition;
+				deletePhotoLayout = (LinearLayout) LayoutInflater.from(PhotoPickerView.this.context).inflate(R.layout.collector_camera_review, PhotoPickerView.this, false);
+				ImageView deletePhotoView = (ImageView) deletePhotoLayout.findViewById(R.id.review_layout_imageview);
+				deletePhotoView.setScaleType(ScaleType.FIT_CENTER);
+				File currentPhoto = ((FileImageItem)getAdapter().getItem(photoPosition)).getFile();
+				deletePhotoView.setImageURI(Uri.fromFile(currentPhoto));
+				
+				// Add the confirm/cancel buttons:
+				final LinearLayout deleteLayoutButtons = (LinearLayout) deletePhotoLayout.findViewById(R.id.review_layout_buttons);
+				deleteLayoutButtons.addView(new DeleteButtonView(getContext()));
+
+				// Show the view:
+				ViewGroup flipperParent = (ViewGroup)CameraView.this.getParent();
+				flipperParent.removeView(CameraView.this);
+				flipperParent.addView(deletePhotoLayout);
+			}
+			
+			
+			protected void deleteCurrentPhoto() {
+				FileImageItem currentPhotoItem = (FileImageItem)getAdapter().getItem(photoPosition);
+				File currentPhotoFile = currentPhotoItem.getFile();
+				removeMedia(currentPhotoFile);
+				getAdapter().removeItem(currentPhotoItem);
+				returnToPicker();
+			}
+			
+			protected void returnToPicker() {
+				// called when a photo is in "delete" mode, to return to the picker
+				ViewGroup flipperParent = (ViewGroup)deletePhotoLayout.getParent();
+				flipperParent.removeView(deletePhotoLayout);
+				flipperParent.addView(CameraView.this);
+				getAdapter().notifyDataSetChanged(); // in case an item was deleted
+			}
 		}
 
 		private class CaptureButtonView extends CameraButtonView
@@ -472,6 +495,69 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				addButton(approveButton);
 			}
+		}
+		
+		/**
+		 * @author mstevens
+		 */
+		private class DeleteButtonView extends CameraButtonView
+		{
+
+			public DeleteButtonView(Context context)
+			{
+				super(context);
+				setHorizontalSpacing(collectorUI.getSpacingPx());
+				
+				buttonAction = new Runnable() {
+					@Override
+                    public void run() {
+						if (handlingClick.tryAcquire()) {
+							//there are 2 buttons: approve (pos=0) & delete (pos=1)
+                            if (position == 0) { 
+                            	// "approve" selected, just return to picker
+                            	photoPicker.returnToPicker();
+                            } 
+                            else  { 
+                            	// "delete" selected, delete photo
+                            	photoPicker.deleteCurrentPhoto();
+                            }
+                            handlingClick.release();
+						}
+                    }
+				};
+				
+			}
+
+			@Override
+			protected int getNumberOfColumns()
+			{
+				return 2;
+			}
+
+			@Override
+			protected void addButtons()
+			{
+				// Approve button:
+				Item approveButton = null;
+				File approveImgFile = controller.getProject().getImageFile(field.getApproveButtonImageRelativePath());
+				if(FileHelpers.isReadableFile(approveImgFile))
+					approveButton = new FileImageItem(approveImgFile);
+				else
+					approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
+				approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+				addButton(approveButton);
+				
+				// Delete button:
+				Item deleteButton = null;
+//				File discardImgFile = controller.getProject().getImageFile(field.getDiscardButtonImageRelativePath());
+//				if(FileHelpers.isReadableFile(discardImgFile))
+//					deleteButton = new FileImageItem(discardImgFile);
+//				else
+					deleteButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_trash_svg);
+				deleteButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+				addButton(deleteButton);
+			}
+
 		}
 
 

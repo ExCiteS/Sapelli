@@ -80,6 +80,16 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		// do NOT go to next/jump field
 	}
 	
+	public void removeMedia(File mediaAttachment)
+	{
+		//TODO ask Matthias if this is correct
+			controller.addLogLine("ATTACHMENT REMOVED", field.getID(), mediaAttachment.getName());
+			
+			field.decrementCount(controller.getCurrentRecord()); // Store/increase number of pictures/recordings taken
+			
+			controller.removeMediaAttachment(mediaAttachment);
+	}
+	
 	protected boolean showCreateButton()
 	{
 		return !field.isMaxReached(controller.getCurrentRecord());

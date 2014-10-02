@@ -174,6 +174,14 @@ public abstract class MediaField extends Field
 			throw new IllegalStateException("Maximum # of attachments (" + max + ") reached.");
 		((IntegerColumn) form.getColumnFor(this)).storeValue(record, ++currentCount);
 	}
+	
+	public void decrementCount(Record record)
+	{
+		int currentCount = getCount(record);	
+		if(currentCount <= 0)
+			throw new IllegalStateException("No attachments exist to delete.");
+		((IntegerColumn) form.getColumnFor(this)).storeValue(record, --currentCount);
+	}
 
 	public File getNewTempFile(Record record) throws IOException
 	{
