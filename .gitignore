@@ -15,6 +15,7 @@ distro/
 dist/
 build/
 target/
+CollectorAndroid/res/values/buildinfo.xml
 
 # temp folders and files
 tmp/**
@@ -39,9 +40,12 @@ local.properties
 
 /Dependencies/Android FileChooser/lint.xml
 /CollectorAndroid/*.excites
+/CollectorAndroid/*.sap
+/CollectorAndroid/res/raw/demo.sap
 /CollectorAndroid/res/raw/demo.excites
 /CollectorAndroid/ant.properties
 /CollectorAndroid/assets/demo.excites
+/CollectorAndroid/assets/demo.sap
 /CollectorAndroid/assets/crashlytics-build.properties
 /CollectorAndroid/crashlytics.properties
 /CollectorAndroid/res/values/com_crashlytics_export_strings.xml

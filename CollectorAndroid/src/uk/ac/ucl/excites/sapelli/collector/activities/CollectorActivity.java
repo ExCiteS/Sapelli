@@ -30,7 +30,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
-import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
@@ -104,7 +103,7 @@ public class CollectorActivity extends ProjectActivity
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState); // sets app, projectStore & recordStore members!
-
+		
 		// Retrieve the tmpPhotoLocation for the saved state
 		if(savedInstanceState != null && savedInstanceState.containsKey(TEMP_PHOTO_PATH_KEY))
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
@@ -171,8 +170,8 @@ public class CollectorActivity extends ProjectActivity
 		controller.startProject();
 		
 		// Show demo disclaimer if needed:
-		if(BuildInfo.DEMO_BUILD)
-			showOKDialog("Disclaimer", "This is " + getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
+		if(app.getBuildInfo().isDemoBuild())
+			showOKDialog("Disclaimer", "This is " + getString(R.string.app_name) + " " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
 	}
 
 	/**
@@ -206,7 +205,7 @@ public class CollectorActivity extends ProjectActivity
 				collectorView.getControlsUI().handleControlEvent(Control.FORWARD, true);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
-				if(BuildInfo.DEMO_BUILD)
+				if(app.getBuildInfo().isDemoBuild())
 					//TODO export
 					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".");
 				return true;

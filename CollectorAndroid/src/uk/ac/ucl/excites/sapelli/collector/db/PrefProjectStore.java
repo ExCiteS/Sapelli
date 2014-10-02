@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
@@ -64,8 +63,13 @@ public class PrefProjectStore extends ProjectStore
 
 	public PrefProjectStore(Context context)
 	{
+		this(context, "");
+	}
+	
+	public PrefProjectStore(Context context, String prefix)
+	{
 		this.context = context;
-		this.preferences = this.context.getSharedPreferences(CollectorApp.getDemoPrefix() /*will be "" if not in demo mode*/ + PREFERENCES_NAME, Context.MODE_PRIVATE);
+		this.preferences = this.context.getSharedPreferences(prefix + PREFERENCES_NAME, Context.MODE_PRIVATE);
 	}
 	
 	/**

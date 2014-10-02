@@ -12,7 +12,7 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry excluding="uk/ac/ucl/excites/sapelli/sender/" kind="src" output="bin/classes" path="src">
+	<classpathentry kind="src" output="bin/classes" path="src">
 		<attributes>
 			<attribute name="optional" value="true"/>
 			<attribute name="maven.pomderived" value="true"/>

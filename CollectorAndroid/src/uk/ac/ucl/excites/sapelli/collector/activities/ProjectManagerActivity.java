@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
@@ -132,7 +131,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-
+		
 		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
@@ -143,8 +142,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
 			return;
 		}
-				
-		if(BuildInfo.DEMO_BUILD)
+		
+		if(app.getBuildInfo().isDemoBuild())
 			return;
 		//else ...
 		// Only if not in demo mode:
@@ -240,7 +239,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		}
 		
 		// And finally...
-		if(BuildInfo.DEMO_BUILD)
+		if(app.getBuildInfo().isDemoBuild())
 			demoMode();
 		else
 			populateProjectList(); 	// Update project list
@@ -345,8 +344,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		infoLbl.setClickable(true);
 		infoLbl.setMovementMethod(LinkMovementMethod.getInstance());
 		infoLbl.setText(Html.fromHtml(
-				"<p>" + getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".</p>" +
-				"<p>" + BuildInfo.getBuildInfo() + ".</p>" +
+				"<p>" + getString(R.string.app_name) + " " + app.getBuildInfo().getVersionInfo() + ".</p>" +
+				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
 				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
 				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));		
 		ImageView iconImg = (ImageView) view.findViewById(R.id.aboutIcon);

@@ -71,20 +71,9 @@ public class CollectorApp extends Application implements StoreClient
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
 	static public final String CRASHLYTICS_DEVICE_ID_CRC32 = "SAPELLI_DEVICE_ID_CRC32";
 	static public final String CRASHLYTICS_DEVICE_ID_MD5 = "SAPELLI_DEVICE_ID_MD5";
-
-	/**
-	 * Returns a prefix to be used on storage identifiers (DB4O filenames, SharedPref's names, etc.) when in demo mode
-	 * (if not in demo mode the prefix is empty).
-	 * The goal is to separate demo-mode storage from non-demo-mode installations and previous demo installations.
-	 * 
-	 * @return
-	 */
-	static public String getDemoPrefix()
-	{
-		return (BuildInfo.DEMO_BUILD ? DEMO_PREFIX + FileHelpers.makeValidFileName(BuildInfo.TIMESTAMP) : "");
-	}
 	
 	// DYNAMICS-----------------------------------------------------------
+	private BuildInfo buildInfo;
 	private File sapelliFolder;
 	
 	private ProjectStore projectStore = null;
@@ -96,14 +85,18 @@ public class CollectorApp extends Application implements StoreClient
 	public void onCreate()
 	{
 		super.onCreate();
-		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.getAllInfo());
+		
+		// Build info:
+		this.buildInfo = BuildInfo.GetInstance(getApplicationContext());
+		
+		Debug.d("CollectorApp started.\nBuild info:\n" + buildInfo.getAllInfo());
 
 		// Start Crashlytics for bugs reporting
 		if(!BuildConfig.DEBUG)
 		{
 			Crashlytics.start(this);
-			Crashlytics.setString(CRASHLYTICS_VERSION_INFO, BuildInfo.getVersionInfo());
-			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, BuildInfo.getBuildInfo());
+			Crashlytics.setString(CRASHLYTICS_VERSION_INFO, buildInfo.getVersionInfo());
+			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
 		}
 	
 		// Store clients:
@@ -125,6 +118,23 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		super.onConfigurationChanged(newConfig);
 		// Debug.d(newConfig.toString());
+	}
+	
+	public BuildInfo getBuildInfo()
+	{
+		return buildInfo;
+	}
+
+	/**
+	 * Returns a prefix to be used on storage identifiers (DB4O filenames, SharedPref's names, etc.) when in demo mode
+	 * (if not in demo mode the prefix is empty).
+	 * The goal is to separate demo-mode storage from non-demo-mode installations and previous demo installations.
+	 * 
+	 * @return
+	 */
+	public String getDemoPrefix()
+	{
+		return (buildInfo.isDemoBuild() ? DEMO_PREFIX + FileHelpers.makeValidFileName(buildInfo.getTimeStampStr()) : "");
 	}
 
 	/**
@@ -231,7 +241,7 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		if(projectStore == null)
 		{
-			projectStore = /*USE_PREFS_FOR_PROJECT_STORAGE ?*/ new PrefProjectStore(this); //: new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			projectStore = /*USE_PREFS_FOR_PROJECT_STORAGE ?*/ new PrefProjectStore(this, getDemoPrefix()); //: new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			storeClients.put(projectStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(projectStore).add(client); //add to set of clients currently using the projectStore

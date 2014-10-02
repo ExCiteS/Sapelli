@@ -63,7 +63,9 @@ public class CrashReporter implements UncaughtExceptionHandler
 		printWriter.close();
 
 		// Add build information to the stacktrace
-		stacktrace = BuildInfo.getAllInfo() + "\n\n" + stacktrace;
+		BuildInfo buildInfo = BuildInfo.GetInstance();
+		if(buildInfo != null)
+			stacktrace = buildInfo.getAllInfo() + "\n\n" + stacktrace;
 
 		String filename = namePrefix + "_" + TimeUtils.getTimestampForFileName() + ".stacktrace";
 		if(localPath != null)
