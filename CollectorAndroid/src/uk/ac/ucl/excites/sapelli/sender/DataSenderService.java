@@ -33,11 +33,9 @@ import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.db.DataAccess;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.sender.dropbox.DropboxSync;
 import uk.ac.ucl.excites.sapelli.sender.gsm.SMSSender;
 import uk.ac.ucl.excites.sapelli.sender.gsm.SignalMonitor;
 import uk.ac.ucl.excites.sapelli.sender.util.Constants;
@@ -47,14 +45,13 @@ import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
+import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.TransmissionSender;
-import uk.ac.ucl.excites.sapelli.transmission.http.HTTPClient;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSService;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.sms.binary.BinarySMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.sms.text.TextSMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.Sender;
+import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPClient;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.app.Notification;
@@ -72,7 +69,7 @@ import android.util.Log;
  * @author Michalis Vitos, mstevens
  * 
  */
-public class DataSenderService extends Service implements TransmissionSender, StoreClient
+public class DataSenderService extends Service implements Sender, StoreClient
 {
 
 	// Statics-------------------------------------------------------
@@ -85,7 +82,7 @@ public class DataSenderService extends Service implements TransmissionSender, St
 	
 	// Dynamics------------------------------------------------------
 	private SignalMonitor gsmMonitor;
-	private List<DropboxSync> folderObservers;
+	//private List<DropboxSync> folderObservers;
 	private SMSSender smsSender;
 	private int startMode = START_STICKY; // indicates how to behave if the service is killed
 	private boolean allowRebind; // indicates whether onRebind should be used
@@ -107,7 +104,7 @@ public class DataSenderService extends Service implements TransmissionSender, St
 		scheduleTaskExecutor = Executors.newScheduledThreadPool(1);
 		
 		// Folder observers:
-		folderObservers = new ArrayList<DropboxSync>();
+		//folderObservers = new ArrayList<DropboxSync>();
 		
 		// Wait for the Debugger to be attached
 		//android.os.Debug.waitForDebugger();
@@ -120,8 +117,16 @@ public class DataSenderService extends Service implements TransmissionSender, St
 		setServiceForeground(this);
 		
 		// DataAccess instance:
-		projectStore = ((CollectorApp) getApplication()).getProjectStore(this);
-		recordStore = ((CollectorApp) getApplication()).getRecordStore(this);
+		try
+		{
+			projectStore = ((CollectorApp) getApplication()).getProjectStore(this);
+			recordStore = ((CollectorApp) getApplication()).getRecordStore(this);
+		}
+		catch(Exception e1)
+		{
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 				
 		// Get the preferences
 		final int timeSchedule = DataSenderPreferences.getTimeSchedule(this);
@@ -147,36 +152,36 @@ public class DataSenderService extends Service implements TransmissionSender, St
 				}
 			}
 
-			Settings settings = p.getTransmissionSettings(); 
+			//Settings settings = p.getTransmissionSettings(); 
 			// Upload via SMS
-			if(smsUpload && settings.isSMSUpload())
-			{
-				projectWithSMSEnabled = true;
-				if(!settings.isSMSIntroductionSent())
-				{	//TODO send introduction
-					
-				}
-			}
-			
-			// Upload to Dropbox
-			if(dropboxUpload && settings.isDropboxUpload())
-			{
-				try
-				{
-					DropboxSync observer = new DropboxSync(getApplicationContext(), p.getDataFolder(), ((CollectorApp) getApplication()).getSapelliFolder().getAbsolutePath()); 
-					folderObservers.add(observer);
-					observer.startWatching();
-				}
-				catch(Exception e)
-				{
-					Debug.d("Could not set up Dropbox Observer for project " + p.getName());
-				}
-			}
+//			if(smsUpload && settings.isSMSUpload())
+//			{
+//				projectWithSMSEnabled = true;
+//				if(!settings.isSMSIntroductionSent())
+//				{	//TODO send introduction
+//					
+//				}
+//			}
+//			
+//			// Upload to Dropbox
+//			if(dropboxUpload && settings.isDropboxUpload())
+//			{
+//				try
+//				{
+//					DropboxSync observer = new DropboxSync(getApplicationContext(), p.getDataFolder(), ((CollectorApp) getApplication()).getSapelliFolder().getAbsolutePath()); 
+//					folderObservers.add(observer);
+//					observer.startWatching();
+//				}
+//				catch(Exception e)
+//				{
+//					Debug.d("Could not set up Dropbox Observer for project " + p.getName());
+//				}
+//			}
 		}
 
 		//if at least one project needs SMS sending:
 		if(projectWithSMSEnabled)
-			smsSender = new SMSSender(this, dao);
+			smsSender = new SMSSender(this);
 		else
 			Debug.d("SMS Uploading is not enabled");
 		
@@ -208,7 +213,7 @@ public class DataSenderService extends Service implements TransmissionSender, St
 		
 		// Go to AirplaneMode if needed:
 		if(DataSenderPreferences.getAirplaneMode(this) && !DeviceControl.inAirplaneMode(this))
-			DeviceControl.toggleAirplaneMode(this);
+			DeviceControl.enableAirplaneMode(this);
 		
 		// The service is no longer used and is being destroyed
 		if(scheduledFuture != null)
@@ -241,7 +246,7 @@ public class DataSenderService extends Service implements TransmissionSender, St
 				//Come out of airplane more if needed
 				if(DataSenderPreferences.getAirplaneMode(context) && DeviceControl.inAirplaneMode(context))
 				{
-					DeviceControl.toggleAirplaneMode(context);
+					DeviceControl.disableAirplaneMode(context);
 					Debug.d("Phone was in AirplaneMode and try to get it out.");
 
 					//Wait for connectivity to become available
@@ -278,7 +283,7 @@ public class DataSenderService extends Service implements TransmissionSender, St
 				//Generate transmissions...
 				for(Project p : projectStore.retrieveProjects())
 				{
-					Settings settings = p.getTransmissionSettings();
+					//Settings settings = p.getTransmissionSettings();
 					
 					//Log signal strength & roaming:
 					loggers.get(p).addLine("Current cellular signal strength: " + gsmMonitor.getSignalStrength());
@@ -290,16 +295,16 @@ public class DataSenderService extends Service implements TransmissionSender, St
 					{		
 						Schema schema = f.getSchema();
 						
-						List<Record> records = new ArrayList<Record>(dao.retrieveUnsentRecords(schema, RECORD_SENDING_ATTEMPT_TIMEOUT_MIN));
-						Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version " + p.getVersion() + ").");
-						
-						if(records.isEmpty())
-						{
-							loggers.get(p).addLine("No records to send for form " + f.getName());
-							continue;
-						}
-						else
-							loggers.get(p).addLine(records.size() + " records to send for form " + f.getName());
+						List<Record> records = new ArrayList<Record>(); //dao.retrieveUnsentRecords(schema, RECORD_SENDING_ATTEMPT_TIMEOUT_MIN));
+//						Debug.d("Found " + records.size() + " records without a transmission for form " + f.getName() + " of project " + p.getName() + " (version " + p.getVersion() + ").");
+//						
+//						if(records.isEmpty())
+//						{
+//							loggers.get(p).addLine("No records to send for form " + f.getName());
+//							continue;
+//						}
+//						else
+//							loggers.get(p).addLine(records.size() + " records to send for form " + f.getName());
 						
 						//Decide on transmission mode
 						//TODO
@@ -315,7 +320,7 @@ public class DataSenderService extends Service implements TransmissionSender, St
 						Log.d(TAG, "gsm service roaming: " + gsmMonitor.isRoaming());
 						Log.d(TAG, "roaming decision: " + (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()));*/
 						
-						if(DataSenderPreferences.getSMSUpload(DataSenderService.this) && settings.isSMSUpload() && gsmMonitor.isInService() && (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming()))
+						if(DataSenderPreferences.getSMSUpload(DataSenderService.this) /*&& settings.isSMSUpload() && gsmMonitor.isInService() && (settings.isSMSAllowRoaming() || !gsmMonitor.isRoaming())*/)
 						{
 							Log.d(TAG, "Attempting SMS transmission generation");
 							
@@ -323,14 +328,14 @@ public class DataSenderService extends Service implements TransmissionSender, St
 							List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records.iterator());
 							
 							//Store transmission(s) & update records so associated transmission is stored
-							for(Transmission t : smsTransmissions)
-							{
-								Log.d(TAG, "Transmission " + ((SMSTransmission) t).getID());
-								
-								for(Record r : t.getRecords())
-									dao.store(r);
-								dao.store(t);
-							}
+//							for(Transmission t : smsTransmissions)
+//							{
+//								Log.d(TAG, "Transmission " + ((SMSTransmission) t).getID());
+//								
+//								for(Record r : t.getRecords())
+//									dao.store(r);
+//								dao.store(t);
+//							}
 							
 							// TODO fetch unsent existing sms transmissions from db
 							
@@ -340,8 +345,8 @@ public class DataSenderService extends Service implements TransmissionSender, St
 							{
 								try
 								{
-									loggers.get(p).addLine("Sending SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalNumberOfParts() + " messages");
-									Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalNumberOfParts() + " messages");
+									//loggers.get(p).addLine("Sending SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalNumberOfParts() + " messages");
+									//Log.d(TAG, "Trying to send SMSTransmission with ID " + t.getID() + ", containing " + t.getRecords().size() + " records (compression ratio " + (t.getCompressionRatio() * 100) + "%), stored in " + t.getTotalNumberOfParts() + " messages");
 									t.send(DataSenderService.this);
 
 //									try
@@ -381,7 +386,7 @@ public class DataSenderService extends Service implements TransmissionSender, St
 						//TODO rollback(?) & return
 					}
 
-					DeviceControl.toggleAirplaneMode(context);
+					DeviceControl.enableAirplaneMode(context);
 					Debug.d("Phone must go in AirplaneMode and try to get it in.");
 				}
 
@@ -399,7 +404,7 @@ public class DataSenderService extends Service implements TransmissionSender, St
 	private List<SMSTransmission> generateSMSTransmissions(Project project, Schema schema, Iterator<Record> records)
 	{
 		//Settings:
-		Settings settings = project.getTransmissionSettings();
+		//Settings settings = project.getTransmissionSettings();
 		
 		//Columns to factor out:
 		Set<Column<?>> factorOut = new HashSet<Column<?>>();
@@ -411,28 +416,28 @@ public class DataSenderService extends Service implements TransmissionSender, St
 		{
 			// Create transmission:			
 			SMSTransmission t = null;
-			switch(settings.getSMSMode())
-			{
-				case BINARY : t = new BinarySMSTransmission(schema, factorOut, settings.getSMSRelay(), settings); break;
-				case TEXT : t = new TextSMSTransmission(schema, factorOut, settings.getSMSRelay(), settings); break;
-			}
+//			switch(settings.getSMSMode())
+//			{
+//				case BINARY : t = new BinarySMSTransmission(schema, factorOut, settings.getSMSRelay(), settings); break;
+//				case TEXT : t = new TextSMSTransmission(schema, factorOut, settings.getSMSRelay(), settings); break;
+//			}
 			
 			// Add as many records as possible:
-			while(records.hasNext() && !t.isFull())
-			{
-				Record r = records.next();
-				try
-				{
-					t.addRecord(r);
-				}
-				catch(Exception e)
-				{
-					loggers.get(project).addLine("Error upon adding record: " + r.toString());
-					Log.e(TAG, "Error upon adding record", e);
-				}
-			}
-			if(!t.isEmpty())
-				transmissions.add(t);
+//			while(records.hasNext() && !t.isFull())
+//			{
+//				Record r = records.next();
+//				try
+//				{
+//					t.addRecord(r);
+//				}
+//				catch(Exception e)
+//				{
+//					loggers.get(project).addLine("Error upon adding record: " + r.toString());
+//					Log.e(TAG, "Error upon adding record", e);
+//				}
+//			}
+//			if(!t.isEmpty())
+//				transmissions.add(t);
 		}
 		return transmissions;
 	}
@@ -491,7 +496,7 @@ public class DataSenderService extends Service implements TransmissionSender, St
 	}
 
 	@Override
-	public SMSService getSMSService()
+	public SMSClient getSMSService()
 	{
 		return smsSender;
 	}
