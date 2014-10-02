@@ -147,7 +147,8 @@ public class CollectorApp extends Application implements StoreClient
 	 */
 	public void setDeviceID(DeviceID deviceID)
 	{
-		crashReporter.setDeviceID(deviceID);
+		if(crashReporter != null)
+			crashReporter.setDeviceID(deviceID);
 	}
 
 	@Override
