@@ -45,7 +45,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.Matrix;
 import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
 import android.os.AsyncTask;
@@ -68,7 +67,7 @@ import android.widget.ViewFlipper;
  * 
  * TODO Fix white "blocks" briefly appearing where the button(s) should be when view is loaded for 2nd time (on Android v2.x only?)
  * 
- * @author mstevens, Michalis Vitos
+ * @author mstevens, Michalis Vitos, benelliott
  */
 public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 {
@@ -112,7 +111,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		}
 	}
 	
-	private class CameraView extends ViewFlipper implements AdapterView.OnItemClickListener, PictureCallback
+	private class CameraView extends ViewFlipper implements PictureCallback
 	{
 
 		static private final String TAG = "CameraView";
@@ -127,7 +126,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		// Objects for multi-photo review:
 		private FileImageItem imgItem;
 		private LinearLayout pickerLayout;
-		private PickerView reviewPicker;
+		private PhotoPickerView photoPicker;
 
 		// Camera & image data:
 		private CameraController cameraController;
@@ -196,98 +195,12 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				final LinearLayout pickerLayoutButtons = (LinearLayout) pickerLayout.findViewById(R.id.picker_layout_buttons);
 				pickerLayoutButtons.addView(new PickerButtonView(getContext()));
 				final LinearLayout pickerViewContainer = (LinearLayout) pickerLayout.findViewById(R.id.picker_layout_picker_container);
-				reviewPicker = new PickerView(context);
-				pickerViewContainer.addView(reviewPicker);
-				// Number of columns:
-				reviewPicker.setNumColumns(3); //TODO make columns configurable?
-				// Item size & padding:
-				reviewPicker.setItemDimensionsPx(
-						collectorUI.getFieldUIPartWidthPx(3), //TODO
-						collectorUI.getFieldUIPartHeightPx(3)); //TODO
-				
-				// Add a "capture more photos" button to the picker by default:
-                reviewPicker.getAdapter().addItem(
-                		new ResourceImageItem(
-                				getContext().getResources(), R.drawable.button_photo_svg));
+				photoPicker = new PhotoPickerView(context);
+				pickerViewContainer.addView(photoPicker);
 				
 				// Add the picker too (may want to change how this works)
 				this.addView(pickerLayout);
 			}
-		}
-		
-		// TODO ask Matthias if this can be split into the respective classes (i.e. give them each 
-		// a bespoke OnItemClickListener)
-		@Override
-		public void onItemClick(AdapterView<?> parent, View v, final int position, long id)
-		{
-			// Task to perform after animation has finished:
-			Runnable action = new Runnable()
-			{
-				public void run()
-				{
-					if(!handlingClick) // only handle one click at the time
-					{
-						handlingClick = true;
-						if(getCurrentView() == captureLayout)
-						{ // in Capture mode --> there is (currently) only one button here: the one to take a photo
-							cameraController.takePicture(CameraView.this);
-						}
-						else
-						{
-							if (getCurrentView() == reviewLayout) {
-								// in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
-	                            if (position == 0) { // photo approved
-		                            try { // Save photo to file:
-			                            File photoFile =
-			                                    field.getNewTempFile(controller
-			                                            .getCurrentRecord());
-			                            FileOutputStream fos =
-			                                    new FileOutputStream(photoFile);
-			                            fos.write(reviewPhotoData);
-			                            fos.close();
-			                            if (field.isMultiple()) {
-				                            mediaAddedButNotDone(photoFile);
-				                            // create an ImageItem from the capture so it can be shown in a PickerView
-				                            imgItem =
-				                                    new FileImageItem(photoFile);
-				                            reviewPicker.getAdapter().addItem(
-				                                    imgItem);
-				                            //show multi-preview panel
-				                            showNext();
-			                            } else {
-				                            mediaDone(photoFile, true);
-			                            }
-
-		                            } catch (Exception e) {
-			                            Log.e(TAG, "Could not save photo.", e);
-			                            mediaDone(null, true);
-		                            } finally {
-			                            cameraController.close();
-		                            }
-	                            } else
-	                            // if(position == 1)
-	                            { // photo discarded
-		                            showPrevious(); // switch back to capture mode
-		                            cameraController.startPreview();
-		                            handlingClick = false;
-	                            }
-	                            reviewPhotoData = null;
-                            }
-							else {
-								//current view is pickerLayout --> there is only an "approve" button
-								mediaDone(null, true);  
-								cameraController.close();
-							}
-						}
-					}
-				}
-			};
-
-			// Execute the "press" animation if allowed, then perform the action: 
-			if(controller.getCurrentForm().isClickAnimation())
-				(new ClickAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
-			else
-				action.run(); //perform task now (animation is disabled)
 		}
 		
 		public void update()
@@ -312,15 +225,51 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			handleImage = new HandleImage(data, reviewView);
 			handleImage.execute();
 		}
+		
+		private class PhotoPickerView extends PickerView {
+			
+			private static final int NUM_COLUMNS = 3; //TODO make configurable?
+			private static final int NUM_ROWS = 3;
+
+			public PhotoPickerView(Context context) {
+	            this(context, true);
+            }
+			
+			public PhotoPickerView(Context context, Boolean recycleViews) {
+	            super(context, recycleViews);
+	        
+				// Number of columns:
+	            setNumColumns(NUM_COLUMNS);
+				// Item size & padding:
+				setItemDimensionsPx(
+						collectorUI.getFieldUIPartWidthPx(NUM_COLUMNS),
+						collectorUI.getFieldUIPartHeightPx(NUM_ROWS));
+				
+				// Add a "capture more photos" button to the picker by default:
+                getAdapter().addItem(new ResourceImageItem(
+                				getContext().getResources(), R.drawable.button_photo_svg));
+				
+            }
+			
+		}
 
 		private class CaptureButtonView extends CameraButtonView
 		{
-			private Context context;
 
 			public CaptureButtonView(Context context)
 			{
 				super(context);
-				this.context = context;
+
+				buttonAction = new Runnable() {
+					@Override
+                    public void run() {
+						if (!handlingClick) {
+							handlingClick = true;
+							cameraController.takePicture(CameraView.this);	
+						}
+                    }
+				};
+				
 			}
 
 			@Override
@@ -359,6 +308,52 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			{
 				super(context);
 				setHorizontalSpacing(collectorUI.getSpacingPx());
+				
+				buttonAction = new Runnable() {
+					@Override
+                    public void run() {
+						if (!handlingClick) {
+							//there are 2 buttons: approve (pos=0) & discard (pos=1)
+							handlingClick = true;
+                            if (position == 0) { // photo approved
+	                            try { // Save photo to file:
+		                            File photoFile =
+		                                    field.getNewTempFile(controller
+		                                            .getCurrentRecord());
+		                            FileOutputStream fos =
+		                                    new FileOutputStream(photoFile);
+		                            fos.write(reviewPhotoData);
+		                            fos.close();
+		                            if (field.isMultiple()) {
+			                            mediaAddedButNotDone(photoFile);
+			                            // create an ImageItem from the capture so it can be shown in a PickerView
+			                            imgItem =
+			                                    new FileImageItem(photoFile);
+			                            photoPicker.getAdapter().addItem(
+			                                    imgItem);
+			                            //show multi-preview panel
+			                            showNext();
+		                            } else {
+			                            mediaDone(photoFile, true);
+		                            }
+
+	                            } catch (Exception e) {
+		                            Log.e(TAG, "Could not save photo.", e);
+		                            mediaDone(null, true);
+	                            } finally {
+		                            cameraController.close();
+	                            }
+                            } else 
+                            { // position == 1, photo discarded
+	                            showPrevious(); // switch back to capture mode
+	                            cameraController.startPreview();
+	                            handlingClick = false;
+                            }
+                            reviewPhotoData = null;
+						}
+                    }
+				};
+				
 			}
 
 			@Override
@@ -399,6 +394,20 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			public PickerButtonView(Context context)
 			{
 				super(context);
+				
+				buttonAction = new Runnable() {
+					@Override
+                    public void run() {
+						if (!handlingClick) {
+							handlingClick = true;
+							//current view is pickerLayout --> there is only an "approve" button
+							mediaDone(null, true);  
+							cameraController.close();
+							handlingClick = false;
+						}
+                    }
+				};
+				
 			}
 
 			@Override
@@ -430,15 +439,27 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		{
 			private int buttonPadding;
 			private int buttonBackColor;
-			
+			Runnable buttonAction;
+			int position;
 			/**
 			 * @param context
 			 */
 			public CameraButtonView(Context context)
 			{
 				super(context);
-						
-				setOnItemClickListener(CameraView.this);
+										
+				this.setOnItemClickListener(new OnItemClickListener() {
+					@Override
+                    public void onItemClick(AdapterView<?> parent, View view,
+                            int position, long id) {
+						CameraButtonView.this.position = position;
+						// Execute the "press" animation if allowed, then perform the action: 
+						if(controller.getCurrentForm().isClickAnimation())
+							(new ClickAnimator(buttonAction, view, collectorUI)).execute(); //execute animation and the action afterwards
+						else
+							buttonAction.run(); //perform task now (animation is disabled)
+                    }	
+				});
 
 				// Layout:
 				setBackgroundColor(Color.TRANSPARENT);
