@@ -171,7 +171,7 @@
 	
 	<target name="GenerateBuildInfo" depends="-settings,-create-dir,-git,-demo">
 		<tstamp>
-			<format property="TIMESTAMP" pattern="yyyy-MM-dd HH:mm:ss z" locale="ENGLISH, UK"/>
+			<format property="TIMESTAMP" pattern="yyyy-MM-dd'T'HH:mm:ssZ"/>
 		</tstamp>
 		<echo>Generating ${resourcename}.xml resource file...</echo>
 		<echo>	User: ${user.name}</echo>

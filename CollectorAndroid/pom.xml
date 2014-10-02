@@ -12,7 +12,8 @@
 
 	<properties>
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
-		<!-- To be provided on command line using -D arguments, e.g.: mvn install -Psign -Dsign.keystore=... -->
+		<!-- To be provided on command line using -D arguments, e.g.: mvn install 
+			-Prelease -Dsign.keystore=... -->
 		<sign.keystore></sign.keystore>
 		<sign.storepass></sign.storepass>
 		<sign.alias></sign.alias>
@@ -23,11 +24,6 @@
 		<repository>
 			<id>crashlytics-repo</id>
 			<url>http://download.crashlytics.com/maven</url>
-		</repository>
-		
-		<repository><!-- for aFileChooser -->
-			<id>UIQ3</id>
-			<url>http://uiq3.sourceforge.net/Repository</url>
 		</repository>
 	</repositories>
 
@@ -46,7 +42,7 @@
 			<version>4.4.2_r4</version>
 			<scope>provided</scope>
 		</dependency>
-		
+
 		<dependency>
 			<groupId>android.support</groupId>
 			<artifactId>compatibility-v4</artifactId>
@@ -54,17 +50,13 @@
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
-		
-<!-- 		<dependency>
-			<groupId>android.support</groupId>
-			<artifactId>compatibility-v7-appcompat</artifactId>
-			<version>20.0.0</version>
-			<type>apklib</type>
-		</dependency> -->
-		
+
+		<!-- <dependency> <groupId>android.support</groupId> <artifactId>compatibility-v7-appcompat</artifactId> 
+			<version>20.0.0</version> <type>apklib</type> </dependency> -->
+
 		<dependency>
 			<groupId>uk.ac.ucl.excites.sapelli</groupId>
-			<artifactId>library-DB4O-backend</artifactId>
+			<artifactId>library</artifactId>
 			<version>2.0.0-SNAPSHOT</version>
 		</dependency>
 
@@ -73,19 +65,12 @@
 			<artifactId>svg-android</artifactId>
 			<version>2.0.6</version>
 		</dependency>
-	
+
 		<dependency>
 			<groupId>com.crashlytics.android</groupId>
 			<artifactId>crashlytics</artifactId>
 			<version>[1.1.11,)</version>
 		</dependency>
-
-<!-- 		<dependency>
-			<groupId>com.ipaulpro</groupId>
-			<artifactId>afilechooser-library</artifactId>
-			<version>2.4</version>
-			<type>apklib</type>
-		</dependency> -->
 
 		<!-- <dependency> <groupId>net.rdrei.android.dirchooser</groupId> <artifactId>library</artifactId> 
 			<version>1.0-pre-v11</version> <type>aar</type> </dependency> -->
@@ -98,8 +83,44 @@
 	</dependencies>
 
 	<profiles>
+
 		<profile>
-			<id>sign</id>
+			<id>maven</id>
+			<activation>
+				<property>
+					<name>!m2e.version</name>
+				</property>
+			</activation>
+			<repositories>
+				<repository>
+					<id>UIQ3</id>
+					<url>http://uiq3.sourceforge.net/Repository</url>
+				</repository>
+			</repositories>
+			<dependencies>
+				<dependency>
+					<groupId>com.ipaulpro</groupId>
+					<artifactId>afilechooser-library</artifactId>
+					<version>2.4</version>
+					<type>apklib</type>
+				</dependency>
+			</dependencies>
+		</profile>
+
+		<profile>
+			<id>eclipse</id>
+			<activation>
+				<property>
+					<name>m2e.version</name>
+				</property>
+			</activation>
+			<dependencies>
+				<!-- nothing for now -->
+			</dependencies>
+		</profile>
+
+		<profile>
+			<id>release</id>
 			<build>
 				<plugins>
 					<plugin>
@@ -111,13 +132,15 @@
 								<id>signing</id>
 								<goals>
 									<goal>sign</goal>
+									<goal>verify</goal>
 								</goals>
 								<phase>package</phase>
 								<inherited>true</inherited>
 								<configuration>
-									<archiveDirectory></archiveDirectory>
+									<removeExistingSignatures>true</removeExistingSignatures>
+									<archiveDirectory />
 									<includes>
-										<include>${project.build.directory}/*.apk</include>
+										<include>${project.build.directory}/${project.artifactId}.apk</include>
 									</includes>
 									<keystore>${sign.keystore}</keystore>
 									<storepass>${sign.storepass}</storepass>
@@ -129,19 +152,37 @@
 										<argument>-digestalg</argument>
 										<argument>SHA1</argument>
 									</arguments>
+									<verbose>true</verbose>
 								</configuration>
 							</execution>
 						</executions>
 					</plugin>
+
 					<plugin>
 						<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 						<artifactId>android-maven-plugin</artifactId>
 						<inherited>true</inherited>
 						<configuration>
+							<release>true</release>
 							<sign>
 								<debug>false</debug>
 							</sign>
+							<zipalign>
+								<verbose>true</verbose>
+								<inputApk>${project.build.directory}/${project.artifactId}.apk</inputApk>
+								<outputApk>${project.build.directory}/${project.artifactId}-signed-aligned.apk</outputApk>
+								<skip>false</skip>
+							</zipalign>
 						</configuration>
+						<executions>
+							<execution>
+								<id>alignApk</id>
+								<phase>package</phase>
+								<goals>
+									<goal>zipalign</goal>
+								</goals>
+							</execution>
+						</executions>
 					</plugin>
 				</plugins>
 			</build>
@@ -150,7 +191,95 @@
 
 	<build>
 		<sourceDirectory>src</sourceDirectory>
+
 		<finalName>${project.artifactId}</finalName>
+
+		<plugins>
+
+			<plugin>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>buildinfo</id>
+						<phase>initialize</phase>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>build-helper-maven-plugin</artifactId>
+				<version>1.9.1</version>
+				<executions>
+					<execution>
+						<id>parse-version</id>
+						<goals>
+							<goal>parse-version</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+				<artifactId>android-maven-plugin</artifactId>
+				<version>4.0.0-rc.1</version>
+				<configuration>
+					<sdk>
+						<!-- <path>${sdk-home}</path> -->
+						<platform>19</platform>
+					</sdk>
+					<deleteConflictingFiles>true</deleteConflictingFiles>
+					<undeployBeforeDeploy>true</undeployBeforeDeploy>
+					<androidManifestFile>${project.basedir}/AndroidManifest.xml</androidManifestFile>
+					<mergeManifests>true</mergeManifests>
+					<assetsDirectory>${project.basedir}/assets</assetsDirectory>
+					<resourceDirectory>${project.basedir}/res</resourceDirectory>
+				</configuration>
+				<extensions>true</extensions>
+
+				<executions>
+					<execution>
+						<id>update-manifest</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>manifest-update</goal>
+						</goals>
+						<configuration>
+							<manifest>
+								<versionName>${project.version}</versionName>
+								<versionCode>${parsedVersion.majorVersion}${parsedVersion.minorVersion}${parsedVersion.incrementalVersion}</versionCode>
+							</manifest>
+						</configuration>
+					</execution>
+				</executions>
+
+			</plugin>
+
+			<plugin>
+				<groupId>com.crashlytics</groupId>
+				<artifactId>crashlytics-maven</artifactId>
+				<version>1.10.0</version>
+				<executions>
+					<execution>
+						<id>GenerateResources</id>
+						<goals>
+							<goal>GenerateResources</goal>
+						</goals>
+					</execution>
+					<execution>
+						<id>CleanupResources</id>
+						<goals>
+							<goal>CleanupResources</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+		</plugins>
 
 		<pluginManagement>
 			<plugins>
@@ -162,6 +291,7 @@
 					<configuration>
 						<source>1.6</source>
 						<target>1.6</target>
+						<encoding>UTF-8</encoding>
 					</configuration>
 				</plugin>
 
@@ -183,19 +313,12 @@
 					</dependencies>
 					<configuration>
 						<target>
-							<!-- This default configuration is used when antrun is called from 
-								command line ("mvn antrun:run"), as done by the custom builder on the Eclipse 
-								project. The lack of the "mvn-phase" property, which we do set when antrun 
-								is called as part of maven's generate-sources build phase (see below), tells 
-								the script to output the BuildInfo.java file to gen/, where Eclipse expects 
-								generated sources. -->
 							<ant antfile="${buildinfo.antfile}" />
 						</target>
 					</configuration>
 				</plugin>
 
 				<plugin>
-
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
 					<version>1.0.0</version>
@@ -214,7 +337,7 @@
 									</pluginExecutionFilter>
 									<action>
 										<execute>
-										    <runOnIncremental>false</runOnIncremental>
+											<runOnIncremental>true</runOnIncremental>
 										</execute>
 									</action>
 								</pluginExecution>
@@ -236,7 +359,49 @@
 										</goals>
 									</pluginExecutionFilter>
 									<action>
-										<ignore></ignore>
+										<execute />
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											com.jayway.maven.plugins.android.generation2
+										</groupId>
+										<artifactId>
+											android-maven-plugin
+										</artifactId>
+										<versionRange>
+											[4.0.0-rc.1,)
+										</versionRange>
+										<goals>
+											<goal>manifest-update</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute>
+										    <runOnIncremental>false</runOnIncremental>
+										</execute>
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.codehaus.mojo
+										</groupId>
+										<artifactId>
+											build-helper-maven-plugin
+										</artifactId>
+										<versionRange>
+											[1.9.1,)
+										</versionRange>
+										<goals>
+											<goal>parse-version</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute>
+										    <runOnIncremental>false</runOnIncremental>
+										</execute>
 									</action>
 								</pluginExecution>
 							</pluginExecutions>
@@ -246,73 +411,6 @@
 			</plugins>
 		</pluginManagement>
 
-		<plugins>
-
-			<plugin>
-				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
-				<artifactId>android-maven-plugin</artifactId>
-				<version>4.0.0-rc.1</version>
-				<configuration>
-					<sdk>
-						<!-- <path>${sdk-home}</path> -->
-						<platform>19</platform>
-					</sdk>
-					<deleteConflictingFiles>true</deleteConflictingFiles>
-					<undeployBeforeDeploy>true</undeployBeforeDeploy>
-					<androidManifestFile>${project.basedir}/AndroidManifest.xml</androidManifestFile>
-					<mergeManifests>true</mergeManifests>
-					<assetsDirectory>${project.basedir}/assets</assetsDirectory>
-					<!-- <genDirectory>${project.basedir}/gen</genDirectory> -->
-					<resourceDirectory>${project.basedir}/res</resourceDirectory>
-				</configuration>
-				<extensions>true</extensions>
-			</plugin>
-
-			<plugin>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<executions>
-					<execution>
-						<id>buildinfo</id>
-						<phase>generate-sources</phase>
-						<goals>
-							<goal>run</goal>
-						</goals>
-						<configuration>
-							<target>
-								<!-- This configuration is used when antrun is called as part of 
-									maven's generate-sources build phase. The "mvn-phase" property tells the 
-									script to output the BuildInfo.java file to target/generated-classes/r/, 
-									such that it is compiled when building the apk using Maven. -->
-								<ant antfile="${buildinfo.antfile}">
-									<property name="mvn-phase" value="true" />
-								</ant>
-							</target>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>com.crashlytics</groupId>
-				<artifactId>crashlytics-maven</artifactId>
-				<version>1.9.2</version>
-				<executions>
-					<execution>
-						<id>GenerateResources</id>
-						<goals>
-							<goal>GenerateResources</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>CleanupResources</id>
-						<goals>
-							<goal>CleanupResources</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-
-		</plugins>
 	</build>
 
 </project>

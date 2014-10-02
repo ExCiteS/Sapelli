@@ -21,6 +21,8 @@ package uk.ac.ucl.excites.sapelli.collector;
 import java.io.IOException;
 import java.util.zip.ZipFile;
 
+import org.joda.time.DateTime;
+
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -29,7 +31,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 
 /**
- * Loads build information for resources.
+ * Loads build information for Resources, PackageInfo & ApplicationInfo.
  * Requires the res/values/buildinfo.xml to have been generated at compile time.
  * 
  * @author mstevens
@@ -77,17 +79,17 @@ public class BuildInfo
 		return res.getString(R.buildinfo.username);
 	}
 	
-	public String getTimeStampStr()
+	public DateTime getTimeStamp()
 	{
 		ZipFile zf = null;
 		try
 		{
 			zf = new ZipFile(ai.sourceDir);			
-			return TimeUtils.getISOTimestamp(zf.getEntry("classes.dex").getTime(), false);
+			return new DateTime(zf.getEntry("classes.dex").getTime());
 		}
 		catch(Exception e)
 		{
-			return res.getString(R.buildinfo.timestamp);
+			return TimeUtils.ISOWithoutMSFormatter.withOffsetParsed().parseDateTime(res.getString(R.buildinfo.timestamp));
 		}
 		finally
 		{
@@ -97,7 +99,13 @@ public class BuildInfo
 					zf.close();
 				}
 				catch(IOException ignore) {}
-		}		
+		}
+	}
+	
+	public String getTimeStampString()
+	{
+		DateTime ts = getTimeStamp();
+		return TimeUtils.ISOWithoutMSFormatter.withZone(ts.getZone()).print(ts);
 	}
 	
 	public String getBranch()
@@ -134,7 +142,7 @@ public class BuildInfo
 	
 	public String getBuildInfo()
 	{
-		return	"Built by " + getUsername()  + " on " + getTimeStampStr() + " using " + getBranch() + " branch, revision " + getLastCommitHash() + " with" + (isChangesSinceLastCommit() ? "" : "out") + " changes";
+		return	"Built by " + getUsername()  + " on " + getTimeStampString() + " using " + getBranch() + " branch, revision " + getLastCommitHash() + " with" + (isChangesSinceLastCommit() ? "" : "out") + " changes";
 	}
 	
 	public String getAllInfo()
