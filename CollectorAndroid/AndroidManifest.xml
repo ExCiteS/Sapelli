@@ -23,7 +23,7 @@
 
     <uses-sdk
         android:minSdkVersion="10"
-        android:targetSdkVersion="19" />
+        android:targetSdkVersion="11" />
 
     <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
