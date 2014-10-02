@@ -105,5 +105,9 @@ public class FileImageItem extends ImageItem
 			Log.e(TAG, "Could not load image from file", e);
 		}
 	}
+	
+	public File getFile() {
+		return file;
+	}
 
 }

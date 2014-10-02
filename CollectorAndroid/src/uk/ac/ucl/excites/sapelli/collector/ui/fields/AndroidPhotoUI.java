@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.concurrent.Semaphore;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
@@ -47,6 +48,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.view.Gravity;
@@ -54,6 +56,7 @@ import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
@@ -133,12 +136,15 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		private HandleImage handleImage;
 		private byte[] reviewPhotoData;
 		
-		private volatile boolean handlingClick;
+		//private volatile boolean handlingClick;
+		private Semaphore handlingClick;
 
 		@SuppressWarnings("deprecation")
 		public CameraView(Context context)
 		{
 			super(context);
+			
+			handlingClick = new Semaphore(1);
 			
 			// Set up cameraController:
 			//	Camera controller & camera selection:
@@ -205,10 +211,12 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		
 		public void update()
 		{
-			this.handlingClick = false;
+			handlingClick = new Semaphore(1);
 			// Switch back to capture layout if needed:
-			if(getCurrentView() == reviewLayout)
+			if (getCurrentView() == reviewLayout)
 				showPrevious();
+			else if(getCurrentView() == pickerLayout)
+				showNext();
 		}
 		
 		public void finalise()
@@ -220,8 +228,8 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		@Override
 		public void onPictureTaken(byte[] data, Camera camera)
 		{
+			Log.d("CameraView","Picture received");
 			this.reviewPhotoData = data;
-
 			handleImage = new HandleImage(data, reviewView);
 			handleImage.execute();
 		}
@@ -230,6 +238,8 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			
 			private static final int NUM_COLUMNS = 3; //TODO make configurable?
 			private static final int NUM_ROWS = 3;
+			
+			private Context context;
 
 			public PhotoPickerView(Context context) {
 	            this(context, true);
@@ -237,6 +247,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			
 			public PhotoPickerView(Context context, Boolean recycleViews) {
 	            super(context, recycleViews);
+	            this.context = context;
 	        
 				// Number of columns:
 	            setNumColumns(NUM_COLUMNS);
@@ -248,6 +259,36 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				// Add a "capture more photos" button to the picker by default:
                 getAdapter().addItem(new ResourceImageItem(
                 				getContext().getResources(), R.drawable.button_photo_svg));
+                
+                setOnItemClickListener(new OnItemClickListener() {
+
+					@Override
+                    public void onItemClick(AdapterView<?> parent, View view,
+                            int position, long id) {
+						if (position == 0) {
+							// camera button clicked, return to camera interface
+							showNext();
+                            cameraController.startPreview();
+						}
+						else {
+							// a photo has been clicked, so show it and offer deletion
+							LinearLayout deletePhotoLayout = (LinearLayout) LayoutInflater.from(PhotoPickerView.this.context).inflate(R.layout.collector_camera_review, PhotoPickerView.this, false);
+							ImageView deletePhotoView = (ImageView) deletePhotoLayout.findViewById(R.id.review_layout_imageview);
+							deletePhotoView.setScaleType(ScaleType.FIT_CENTER);
+							File photoFile = ((FileImageItem)getAdapter().getItem(position)).getFile();
+							deletePhotoView.setImageURI(Uri.fromFile(photoFile));
+							
+							// Add the confirm/cancel buttons:
+							final LinearLayout deleteLayoutButtons = (LinearLayout) deletePhotoLayout.findViewById(R.id.review_layout_buttons);
+							deleteLayoutButtons.addView(new ReviewButtonView(getContext()));
+							//TODO delete buttons
+							ViewGroup parentView = (ViewGroup)CameraView.this.getParent();
+							parentView.removeView(CameraView.this);
+							parentView.addView(deletePhotoLayout);
+						}
+                    }
+                	
+                });
 				
             }
 			
@@ -263,9 +304,9 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				buttonAction = new Runnable() {
 					@Override
                     public void run() {
-						if (!handlingClick) {
-							handlingClick = true;
-							cameraController.takePicture(CameraView.this);	
+						if (handlingClick.tryAcquire()) {
+							Log.d("CaptureButtonView","Permits left: "+handlingClick.availablePermits()+". Taking picture...");
+							cameraController.takePicture(CameraView.this);
 						}
                     }
 				};
@@ -312,9 +353,8 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				buttonAction = new Runnable() {
 					@Override
                     public void run() {
-						if (!handlingClick) {
+						if (handlingClick.tryAcquire()) {
 							//there are 2 buttons: approve (pos=0) & discard (pos=1)
-							handlingClick = true;
                             if (position == 0) { // photo approved
 	                            try { // Save photo to file:
 		                            File photoFile =
@@ -331,25 +371,29 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			                                    new FileImageItem(photoFile);
 			                            photoPicker.getAdapter().addItem(
 			                                    imgItem);
+			                            photoPicker.getAdapter().notifyDataSetChanged();
+			                            //TODO: determine whether or not max photos reached
+			                            
 			                            //show multi-preview panel
 			                            showNext();
 		                            } else {
 			                            mediaDone(photoFile, true);
+			                            cameraController.close();
 		                            }
 
 	                            } catch (Exception e) {
 		                            Log.e(TAG, "Could not save photo.", e);
 		                            mediaDone(null, true);
-	                            } finally {
 		                            cameraController.close();
 	                            }
                             } else 
                             { // position == 1, photo discarded
 	                            showPrevious(); // switch back to capture mode
 	                            cameraController.startPreview();
-	                            handlingClick = false;
                             }
                             reviewPhotoData = null;
+            				Log.d("ReviewButton","Released semaphore, permits: "+handlingClick.availablePermits());
+                            handlingClick.release();
 						}
                     }
 				};
@@ -398,12 +442,11 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				buttonAction = new Runnable() {
 					@Override
                     public void run() {
-						if (!handlingClick) {
-							handlingClick = true;
+						if (handlingClick.tryAcquire()) {
 							//current view is pickerLayout --> there is only an "approve" button
 							mediaDone(null, true);  
 							cameraController.close();
-							handlingClick = false;
+							handlingClick.release();
 						}
                     }
 				};
@@ -452,6 +495,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 					@Override
                     public void onItemClick(AdapterView<?> parent, View view,
                             int position, long id) {
+						Log.d("CameraButtonView","Button "+position+" pressed.");
 						CameraButtonView.this.position = position;
 						// Execute the "press" animation if allowed, then perform the action: 
 						if(controller.getCurrentForm().isClickAnimation())
@@ -547,6 +591,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				}
 				catch(Exception e)
 				{
+					Log.e("Handle image", "Image capture failed");
 					Debug.e(e);
 				}
 
@@ -560,8 +605,8 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				reviewView.setImageBitmap(picture);
 				// Switch to review mode:
 				showNext();
-				handlingClick = false;
-
+				handlingClick.release();
+				Log.d("AsyncTask","Released semaphore, permits: "+handlingClick.availablePermits());
 				cameraController.stopPreview();
 				// Close the dialog
 				dialog.cancel();
