@@ -404,9 +404,16 @@ public class Project
 		return folder;
 	}
 	
+	@Override
 	public String toString()
 	{
-		return name + (variant != null ? (" " + variant) : "") + (version != DEFAULT_VERSION ? " (v" + version + ")" : "");
+		return toString(false);
+	}
+	
+	public String toString(boolean verbose)
+	{
+		return 	name + (variant != null ? (" " + variant) : "") + (version != DEFAULT_VERSION ? " (v" + version + ")" : "")
+				+ (verbose ? (" [id: " + id + "; fingerprint: " + fingerPrint + "]") : "");
 	}
 	
 	private void checkFolder(File folder) throws IOException

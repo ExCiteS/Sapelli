@@ -171,7 +171,7 @@ public class CollectorActivity extends ProjectActivity
 		
 		// Show demo disclaimer if needed:
 		if(app.getBuildInfo().isDemoBuild())
-			showOKDialog("Disclaimer", "This is " + getString(R.string.app_name) + " " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
+			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
 	}
 
 	/**
@@ -425,6 +425,10 @@ public class CollectorActivity extends ProjectActivity
 
 			Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
+
+		// Release audio feedback resources
+		controller.disableAudioFeedback();
+
 		// super:
 		super.onPause();
 	}
@@ -458,6 +462,9 @@ public class CollectorActivity extends ProjectActivity
 			else
 				cancelExitFuture(); // cancel exit timer if needed
 		}
+		
+		// Enable audio feedback
+		controller.enableAudioFeedback();
 	}
 
 	@Override

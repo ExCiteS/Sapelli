@@ -135,9 +135,9 @@ public class BuildInfo
 	
 	public String getVersionInfo()
 	{
-		if(pi == null)
-			return "[Version unknown]";
-		return "v" + pi.versionName + " (version-code: " + pi.versionCode + (isDemoBuild() ? "; demo-build" : "") + ")";
+		return 	res.getString(R.string.app_name) + " " +
+				(pi != null ?	("v" + pi.versionName + " (version-code: " + pi.versionCode + (isDemoBuild() ? "; demo-build" : "") + ")") :
+								"[Version unknown]");
 	}
 	
 	public String getBuildInfo()

@@ -72,6 +72,7 @@ public class CollectorApp extends Application implements StoreClient
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
 	static public final String CRASHLYTICS_DEVICE_ID_CRC32 = "SAPELLI_DEVICE_ID_CRC32";
 	static public final String CRASHLYTICS_DEVICE_ID_MD5 = "SAPELLI_DEVICE_ID_MD5";
+	static public final String PROPERTY_LAST_PROJECT = "SAPELLI_LAST_RUNNING_PROJECT"; // used as a System property as well as on Crashlytics
 	
 	// DYNAMICS-----------------------------------------------------------
 	private BuildInfo buildInfo;
@@ -113,7 +114,7 @@ public class CollectorApp extends Application implements StoreClient
 			Log.e(TAG, "Could not set-up DefaultUncaughtExceptionHandler", e);
 		}
 	}
-	
+
 	@Override
 	public void onConfigurationChanged(Configuration newConfig)
 	{

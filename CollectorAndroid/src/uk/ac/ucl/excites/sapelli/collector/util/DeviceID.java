@@ -42,9 +42,7 @@ import android.telephony.TelephonyManager;
 /**
  * Class that provides various ways to uniquely (or as unique as possible) identify an Android device<br/>
  * 
- * Based on: <a
- * href="http://www.pocketmagic.net/2011/02/android-unique-device-id/#.USeA7KXvh8H">http://www.pocketmagic.net/2011/02/android-unique-device-id/#.USeA7KXvh8H
- * </a>
+ * Based on: <a href="http://www.pocketmagic.net/2011/02/android-unique-device-id/#.USeA7KXvh8H">http://www.pocketmagic.net/2011/02/android-unique-device-id/#.USeA7KXvh8H</a>
  * 
  * @author mstevens, Michalis Vitos
  */
@@ -52,7 +50,6 @@ public class DeviceID
 {
 
 	// Statics ------------------------------------------------------
-	private static final char SEPARATOR = '|';
 
 	// Preferences
 	private static final String PREFERENCES = "DEVICEID_PREFERENCES";
@@ -64,18 +61,72 @@ public class DeviceID
 	private static final String PREF_HARWARE_SERIAL = "DEVICEID_HARWARE_SERIAL";
 	private static final String[] DEVICE_ID_SOURCE_PREF_ORDER = { PREF_IMEI, PREF_WIFI_MAC, PREF_BLUETOOTH_MAC, PREF_ANDROID_ID, PREF_HARWARE_SERIAL };
 
+	private static DeviceID INSTANCE = null;
+	
 	static public void Initialise(Context context, InitialisationCallback client)
 	{
 		new Initialiser(context, client); // may start async task!
 	}
 	
+	static public DeviceID GetInstanceOrNull()
+	{
+		return INSTANCE;
+	}
+	
 	static public DeviceID GetInstance(Context context) throws IllegalStateException
 	{
-		DeviceID id = new DeviceID(context);
-		if(id.isInitialised())
-			return id;
+		if(INSTANCE == null)
+		{
+			DeviceID id = new DeviceID(context);
+			if(id.isInitialised())
+				INSTANCE = id;
+		}
+		if(INSTANCE != null)
+			return INSTANCE;
 		else
 			throw new IllegalStateException("DeviceID was not initialised. Please call Initialise() first.");
+	}
+	
+	/**
+	 * Returns a string with device hardware info.
+	 * This method is static and therefore does not require an initialised DeviceID object 
+	 * 
+	 * @param separator
+	 * @return
+	 */
+	static public String getHardwareInfo(String separator)
+	{
+		StringBuilder bldr = new StringBuilder();
+		bldr.append("Brand: " + Build.BRAND + separator);
+		bldr.append("Model: " + Build.MODEL + separator);
+		bldr.append("Product: " + Build.PRODUCT + separator);
+		bldr.append("Device: " + Build.DEVICE + separator);
+		bldr.append("Hardware: " + Build.HARDWARE + separator);
+		bldr.append("Board: " + Build.BOARD + separator);
+		bldr.append("Display: " + Build.DISPLAY + separator);
+		bldr.append("ID: " + Build.ID + separator);
+		bldr.append("CPU_ABI: " + Build.CPU_ABI + separator);
+		bldr.append("CPU_ABI2: " + Build.CPU_ABI2);
+		return bldr.toString();
+	}
+	
+	/**
+	 * Returns a string with device software info.
+	 * This method is static and therefore does not require an initialised DeviceID object 
+	 * 
+	 * @param separator
+	 * @return
+	 */
+	static public String getSoftwareInfo(String separator)
+	{
+		StringBuilder bldr = new StringBuilder();
+		bldr.append("Release: " + Build.VERSION.RELEASE + separator);
+		bldr.append("API level: " + Build.VERSION.SDK_INT + separator);
+		bldr.append("Codename/REL: " + Build.VERSION.CODENAME + separator);
+		bldr.append("Incremental: " + Build.VERSION.INCREMENTAL + separator);
+		bldr.append("Bootloader: " + Build.BOOTLOADER + separator);
+		bldr.append("Build fingerprint: " + Build.FINGERPRINT);
+		return bldr.toString();
 	}
 	
 	// Dynamics -----------------------------------------------------
@@ -87,14 +138,6 @@ public class DeviceID
 		
 		// Debug
 		//printInfo();
-	}
-
-	public String getDeviceInfo()
-	{
-		return Build.BRAND + SEPARATOR + Build.MANUFACTURER + SEPARATOR + Build.MODEL + SEPARATOR + Build.PRODUCT + SEPARATOR + Build.DEVICE + SEPARATOR
-				+ Build.DISPLAY + SEPARATOR + Build.ID + SEPARATOR + Build.BOARD + SEPARATOR + Build.HARDWARE + SEPARATOR + Build.CPU_ABI + SEPARATOR
-				+ Build.CPU_ABI2 + SEPARATOR + Build.VERSION.CODENAME + SEPARATOR + Build.VERSION.INCREMENTAL + SEPARATOR + Build.VERSION.SDK_INT + SEPARATOR
-				+ Build.BOOTLOADER + SEPARATOR + Build.FINGERPRINT + SEPARATOR;
 	}
 	
 	private void saveStingPreference(String key, String value)
@@ -242,7 +285,7 @@ public class DeviceID
 		// AsyncTask Result Codes
 		private static final int RESULT_OK = 0;
 		private static final int RESULT_AIRPLANE_MODE = -1;
-		
+				
 		// Dynamics -------------------------------------------------
 		private DeviceID id;
 		private InitialisationCallback caller;
@@ -334,7 +377,10 @@ public class DeviceID
 					
 					// Callback caller:
 					if(id.isInitialised())
+					{
+						INSTANCE = id;
 						caller.initialisationSuccess(id);
+					}
 					else
 						caller.initialisationFailure(id);
 					break;

@@ -86,6 +86,19 @@ public class Form
 	public static final ScreenTransition DEFAULT_SCREEN_TRANSITION = ScreenTransition.NONE;
 
 	// Dynamics-------------------------------------------------------
+	public static enum AudioFeedback
+	{
+		NONE, LONG_CLICK_AUDIO_FILES, LONG_CLICK_TTS, SEQUENTIAL_AUDIO_FILES, SEQUENTIAL_TTS
+	}
+
+	public static final AudioFeedback DEFAULT_AUDIO_FEEDBACK = AudioFeedback.NONE;
+
+	// Buttons Default Description Text (used for accessibility support)
+	public static final String DEFAULT_FORWARD_BUTTON_DESCRIPTION = "Forward";
+	public static final String DEFAULT_CANCEL_BUTTON_DESCRIPTION = "Cancel";
+	public static final String DEFAULT_BACK_BUTTON_DESCRIPTION = "Back";
+
+	// Dynamics-------------------------------------------------------
 	private final Project project;
 	private final String id;
 	private final short position;
@@ -110,6 +123,9 @@ public class Form
 	private ScreenTransition screenTransition = DEFAULT_SCREEN_TRANSITION;
 
 	// Obfuscate Media Files:
+	private AudioFeedback audioFeedback = DEFAULT_AUDIO_FEEDBACK;
+
+	// Obfuscate Media Files:
 	private boolean obfuscateMediaFiles = DEFAULT_OBFUSCATE_MEDIA_FILES;
 
 	// Timestamps
@@ -123,8 +139,11 @@ public class Form
 	// Buttons:
 	private String buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
 	private String backButtonImageRelativePath;
+	private String backButtonDescription = DEFAULT_BACK_BUTTON_DESCRIPTION;
 	private String cancelButtonImageRelativePath;
+	private String cancelButtonDescription = DEFAULT_CANCEL_BUTTON_DESCRIPTION;
 	private String forwardButtonImageRelativePath;
+	private String forwardButtonDescription = DEFAULT_FORWARD_BUTTON_DESCRIPTION;
 	
 	public Form(Project project, String id)
 	{
@@ -297,6 +316,33 @@ public class Form
 	/**
 	 * @return the obfuscateMediaFiles
 	 */
+	public AudioFeedback getAudioFeedback()
+	{
+		return audioFeedback;
+	}
+
+	/**
+	 * @param audioFeedbackStr
+	 *            the audioFeedbackStr to set
+	 */
+	public void setAudioFeedback(String audioFeedbackStr)
+	{
+		if(audioFeedbackStr == null)
+			return; // default Audio Feedback will be used
+		audioFeedbackStr = audioFeedbackStr.toUpperCase(); // Make upper case
+		try
+		{
+			this.audioFeedback = AudioFeedback.valueOf(audioFeedbackStr);
+		}
+		catch(IllegalArgumentException iae)
+		{
+			throw iae;
+		}
+	}
+
+	/**
+	 * @return the obfuscateMediaFiles
+	 */
 	public boolean isObfuscateMediaFiles()
 	{
 		return obfuscateMediaFiles;
@@ -347,6 +393,22 @@ public class Form
 	/**
 	 * @return the cancelButtonImageRelativePath
 	 */
+	public String getBackButtonDescription()
+	{
+		return backButtonDescription;
+	}
+
+	/**
+	 * @param backButtonDescription the backButtonDescription to set
+	 */
+	public void setBackButtonDescription(String backButtonDescription)
+	{
+		this.backButtonDescription = backButtonDescription;
+	}
+
+	/**
+	 * @return the cancelButtonImageRelativePath
+	 */
 	public String getCancelButtonImageRelativePath()
 	{
 		return cancelButtonImageRelativePath;
@@ -363,6 +425,22 @@ public class Form
 	/**
 	 * @return the forwardButtonImageRelativePath
 	 */
+	public String getCancelButtonDescription()
+	{
+		return cancelButtonDescription;
+	}
+
+	/**
+	 * @param cancelButtonDescription the cancelButtonDescription to set
+	 */
+	public void setCancelButtonDescription(String cancelButtonDescription)
+	{
+		this.cancelButtonDescription = cancelButtonDescription;
+	}
+
+	/**
+	 * @return the forwardButtonImageRelativePath
+	 */
 	public String getForwardButtonImageRelativePath()
 	{
 		return forwardButtonImageRelativePath;
@@ -374,6 +452,22 @@ public class Form
 	public void setForwardButtonImageRelativePath(String forwardButtonImageRelativePath)
 	{
 		this.forwardButtonImageRelativePath = forwardButtonImageRelativePath;
+	}
+
+	/**
+	 * @return the buttonBackgroundColor
+	 */
+	public String getForwardButtonDescription()
+	{
+		return forwardButtonDescription;
+	}
+
+	/**
+	 * @param forwardButtonDescription the forwardButtonDescription to set
+	 */
+	public void setForwardButtonDescription(String forwardButtonDescription)
+	{
+		this.forwardButtonDescription = forwardButtonDescription;
 	}
 
 	/**
