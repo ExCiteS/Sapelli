@@ -105,11 +105,15 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FORM_FORWARD_BUTTON_IMG = "forwardButtonImg";
 	static private final String ATTRIBUTE_FORM_CANCEL_BUTTON_IMG = "cancelButtonImg";
 	static private final String ATTRIBUTE_FORM_BACK_BUTTON_IMG = "backButtonImg";
+	static private final String ATTRIBUTE_FORM_FORWARD_BUTTON_DESC = "forwardButtonDesc";
+	static private final String ATTRIBUTE_FORM_CANCEL_BUTTON_DESC = "cancelButtonDesc";
+	static private final String ATTRIBUTE_FORM_BACK_BUTTON_DESC = "backButtonDesc";
 	static private final String ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR = "buttonBackgroundColor";
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
 	static private final String ATTRIBUTE_FORM_CLICK_ANIMATION = "clickAnimation";
 	static private final String ATTRIBUTE_FORM_ANIMATION = "animation"; // 1.x compatibility, the same as clickAnimation
 	static private final String ATTRIBUTE_FORM_SCREEN_TRANSITION = "screenTransition";
+	static private final String ATTRIBUTE_FORM_AUDIO_FEEDBACK = "audioFeedback";
 	static private final String ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES = "obfuscateMediaFiles";
 	static private final String ATTRIBUTE_FORM_SINGLE_PAGE = "singlePage";
 	static private final String ATTRIBUTE_SKIP_ON_BACK = "skipOnBack"; // used on both FORM and FIELD
@@ -120,6 +124,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_EDITABLE = "editable";
 	static private final String ATTRIBUTE_FIELD_ALT = "alt";
 	static private final String ATTRIBUTE_FIELD_IMG = "img";
+	static private final String ATTRIBUTE_FIELD_CHOICE_AUDIO = "choiceAudio";
 	static private final String ATTRIBUTE_FIELD_CAPTION = "caption";
 	static private final String ATTRIBUTE_FIELD_CAPTIONS = "captions";
 	static private final String ATTRIBUTE_FIELD_LABEL = "label"; // synonym for caption
@@ -272,11 +277,24 @@ public class FormParser extends SubtreeParser
 				addWarning("Invalid '" + ATTRIBUTE_FORM_SCREEN_TRANSITION + "' attribute value on <" + TAG_FORM + ">. Default Screen Transition is going to be used.");
 			}
 			// Obfuscate Media Files:
+			try
+			{
+				currentForm.setAudioFeedback(attributes.getString(ATTRIBUTE_FORM_AUDIO_FEEDBACK, Form.DEFAULT_AUDIO_FEEDBACK.name(), true, false));
+			}
+			catch(IllegalArgumentException iae)
+			{
+				addWarning("Invalid '" + ATTRIBUTE_FORM_AUDIO_FEEDBACK + "' attribute value on <" + TAG_FORM + ">. Default Audio Feedback is going to be used.");
+			}
+			// Obfuscate Media Files:
 			currentForm.setObfuscateMediaFiles(attributes.getBoolean(ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES, Form.DEFAULT_OBFUSCATE_MEDIA_FILES));
 			// Control button images:
 			currentForm.setBackButtonImageRelativePath(attributes.getString(ATTRIBUTE_FORM_BACK_BUTTON_IMG, null, false, false));
 			currentForm.setCancelButtonImageRelativePath(attributes.getString(ATTRIBUTE_FORM_CANCEL_BUTTON_IMG, null, false, false));
 			currentForm.setForwardButtonImageRelativePath(attributes.getString(ATTRIBUTE_FORM_FORWARD_BUTTON_IMG, null, false, false));
+			// ButtonField background colour:
+			currentForm.setBackButtonDescription(attributes.getString(ATTRIBUTE_FORM_BACK_BUTTON_DESC, Form.DEFAULT_BACK_BUTTON_DESCRIPTION, false, false));
+			currentForm.setCancelButtonDescription(attributes.getString(ATTRIBUTE_FORM_CANCEL_BUTTON_DESC, Form.DEFAULT_CANCEL_BUTTON_DESCRIPTION, false, false));
+			currentForm.setForwardButtonDescription(attributes.getString(ATTRIBUTE_FORM_FORWARD_BUTTON_DESC, Form.DEFAULT_FORWARD_BUTTON_DESCRIPTION, false, false));
 			// ButtonField background colour:
 			currentForm.setButtonBackgroundColor(attributes.getString(ATTRIBUTE_FORM_BUTTON_BACKGROUND_COLOR, Form.DEFAULT_BUTTON_BACKGROUND_COLOR, true, false));
 			// Single page form (all fields will be added to a single page):
@@ -308,6 +326,7 @@ public class FormParser extends SubtreeParser
 				choice.setNoColumn(attributes.getBoolean(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
 				// Other attributes:
 				choice.setImageRelativePath(attributes.getString(ATTRIBUTE_FIELD_IMG, null, false, false));
+				choice.setChoiceAudioRelativePath(attributes.getString(ATTRIBUTE_FIELD_CHOICE_AUDIO, null, false, false));
 				choice.setAltText(attributes.getString(ATTRIBUTE_FIELD_ALT, null, false, false));
 				choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
 				choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));

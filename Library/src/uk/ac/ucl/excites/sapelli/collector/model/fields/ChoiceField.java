@@ -62,6 +62,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	private ChoiceField root;
 	private List<ChoiceField> children;
 	private String imageRelativePath;
+	private String choiceAudioRelativePath;
 	private int cols;
 	private int rows;
 	private String altText;
@@ -130,16 +131,38 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 
 	/**
+	 * @return the choiceAudioRelativePath
+	 */
+	public String getChoiceAudioRelativePath()
+	{
+		return choiceAudioRelativePath;
+	}
+
+	/**
+	 * @param choiceAudioRelativePath
+	 *            the choiceAudioRelativePath to set
+	 */
+	public void setChoiceAudioRelativePath(String choiceAudioRelativePath)
+	{
+		this.choiceAudioRelativePath = choiceAudioRelativePath;
+	}
+
+	public boolean hasChoiceAudio()
+	{
+		return choiceAudioRelativePath != null;
+	}
+
+	/**
 	 * @return the altText
 	 */
 	public String getAltText()
 	{
 		if(altText != null)
 			return altText;
-		if(imageRelativePath != null)
-			return imageRelativePath;
 		if(value != null)
 			return value;
+		if(imageRelativePath != null)
+			return imageRelativePath;
 		return DEFAULT_ALT_TEXT;
 	}
 
