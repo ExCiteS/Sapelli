@@ -29,13 +29,17 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
+import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.util.AudioToVoice;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
+import uk.ac.ucl.excites.sapelli.collector.util.TextToVoice;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
@@ -67,6 +71,9 @@ public class CollectorController extends Controller implements LocationListener,
 	private Location currentBestLocation = null;
 	private OrientationSensor orientationSensor;
 	private long deviceIDHash;
+
+	private TextToVoice textToVoice;
+	private AudioToVoice audioToVoice;
 
 	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, CollectorActivity activity)
 	{
@@ -110,6 +117,45 @@ public class CollectorController extends Controller implements LocationListener,
 			Log.d(TAG, "Stored record:");
 			Log.d(TAG, currFormSession.record.toString());
 		}
+	}
+
+	/**
+	 * Use the Android TTS (Text-To-Speech) Engine to speak the text
+	 * 
+	 * @param text
+	 */
+	public void textToVoice(String text)
+	{
+		if(textToVoice == null)
+			return;
+
+		textToVoice.speak(text);
+		addLogLine("TEXT_TO_VOICE", text);
+	}
+
+	/**
+	 * Use Media Player to speak a given audio file
+	 * 
+	 * @param soundFilePath
+	 */
+	public void audioToVoice(String soundFilePath)
+	{
+		if(audioToVoice == null)
+			return;
+
+		audioToVoice.speak(soundFilePath);
+		addLogLine("AUDIO_TO_VOICE", soundFilePath);
+	}
+
+	public void stopAudioFeedback()
+	{
+		// Stop the Media Player
+		if(audioToVoice != null)
+			audioToVoice.stop();
+
+		// Stop the Android TTS (Text-To-Speech) Engine
+		if(textToVoice != null)
+			textToVoice.stop();
 	}
 
 	public void onOrientationChanged(Orientation orientation)
@@ -238,8 +284,52 @@ public class CollectorController extends Controller implements LocationListener,
 
 	@Override
 	protected void exitApp()
-	{		
+	{
 		activity.finish();
+	}
+
+	public void enableAudioFeedback()
+	{
+		// Check if any of the forms has audio feedback enabled
+		for(Form f : project.getForms())
+		{
+			final AudioFeedback audioFeedback = f.getAudioFeedback();
+
+			if(audioFeedback != null)
+			{
+				switch(audioFeedback)
+				{
+				case LONG_CLICK_AUDIO_FILES:
+				case SEQUENTIAL_AUDIO_FILES:
+
+					// Enable Audio Files Feedback
+					if(audioToVoice == null)
+						audioToVoice = new AudioToVoice(activity.getBaseContext());
+					break;
+
+				case LONG_CLICK_TTS:
+				case SEQUENTIAL_TTS:
+
+					// Enable TTS Audio Feedback
+					if(textToVoice == null)
+						textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
+					break;
+
+				case NONE:
+				}
+			}
+		}
+	}
+
+	public void disableAudioFeedback()
+	{
+		// Release the Media Player
+		if(audioToVoice != null)
+			audioToVoice.destroy();
+
+		// Release the Android TTS (Text-To-Speech) Engine
+		if(textToVoice != null)
+			textToVoice.destroy();
 	}
 
 	@Override

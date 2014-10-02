@@ -199,11 +199,16 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 						if(getCurrentView() == captureLayout)
 						{ // in Capture mode --> there is (currently) only one button here: the one to take a photo
 							cameraController.takePicture(CameraView.this);
+
+							controller.addLogLine("CLICK_CAMERA_TAKE_PICTURE");
 						}
 						else
 						{ // in Review mode --> there are 2 buttons: approve (pos=0) & discard (pos=1)
 							if(position == 0)
 							{ // photo approved
+
+								controller.addLogLine("CLICK_CAMERA_APPROVE_PICTURE");
+
 								try
 								{ // Save photo to file:
 									File photoFile = field.getNewTempFile(controller.getCurrentRecord());
@@ -225,6 +230,9 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 							else
 							// if(position == 1)
 							{ // photo discarded
+
+								controller.addLogLine("CLICK_CAMERA_DISCARD_PICURE");
+
 								showNext(); // switch back to capture mode
 								cameraController.startPreview();
 								handlingClick = false;

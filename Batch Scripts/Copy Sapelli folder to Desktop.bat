@@ -1,0 +1,1 @@
+adb pull /mnt/sdcard/Sapelli "%USERPROFILE%\Desktop\Sapelli"

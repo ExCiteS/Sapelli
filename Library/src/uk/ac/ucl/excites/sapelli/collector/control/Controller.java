@@ -126,6 +126,10 @@ public abstract class Controller
 			try
 			{
 				logger = new Logger(project.getLogFolder().getAbsolutePath(), LOG_PREFIX);
+
+				// Log the DeviceID
+				logger.addLine("DeviceID (CRC32)", String.valueOf(getDeviceID()));
+				logger.addBlankLine();
 	
 				// Log the start of the project
 				logger.addLine("PROJECT_START", project.toString());
