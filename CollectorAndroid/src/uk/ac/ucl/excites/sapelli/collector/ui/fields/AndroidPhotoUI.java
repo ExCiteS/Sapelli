@@ -156,7 +156,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			cameraController.setFlashMode(field.getFlashMode());
 			
 			// --- Capture UI:
-			captureLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_capture, null);
+			captureLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_capture, this, false);
 
 			// Create the surface for previewing the camera:
 			final SurfaceView surfaceView = (SurfaceView) captureLayout.findViewById(R.id.capture_layout_surface);
@@ -176,7 +176,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			this.addView(captureLayout);
 			
 			// --- Review UI:
-			reviewLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_review, null);
+			reviewLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_review, this, false);
 			reviewView = (ImageView) reviewLayout.findViewById(R.id.review_layout_imageview);
 			reviewView.setScaleType(ScaleType.FIT_CENTER);
 			
@@ -189,7 +189,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		
 			if (field.isMultiple()) {
 				// Multiple photos can be taken, so use a PickerView for review after confirmation
-				pickerLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_picker, null);
+				pickerLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_picker, this, false);
 				
 				// Add the confirm/cancel buttons:
 				final LinearLayout pickerLayoutButtons = (LinearLayout) pickerLayout.findViewById(R.id.picker_layout_buttons);
