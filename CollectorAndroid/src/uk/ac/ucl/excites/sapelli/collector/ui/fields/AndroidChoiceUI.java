@@ -116,7 +116,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return;
 		
-		// Stop the Audio Feedback if it was still playing
+		// Task to perform after animation has finished:
 		controller.stopAudioFeedback();
 
 		// Task to perform after animation has finished:

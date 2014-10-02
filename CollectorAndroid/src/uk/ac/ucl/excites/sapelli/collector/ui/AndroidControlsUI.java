@@ -65,9 +65,9 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	public AndroidControlsUI(CollectorController controller, CollectorView collectorView)
 	{
 		super(controller, collectorView);
-
-		this.controller = controller;
 		
+		this.controller = controller;
+		// ControlItem array:
 		// ControlItem array:
 		this.controlItems = new ControlItem[Control.values().length];
 	}

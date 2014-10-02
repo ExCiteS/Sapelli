@@ -81,7 +81,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final int COLOR_SEMI_TRANSPARENT_GRAY = Color.parseColor("#80777777");
 	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
 
-	// Screen Transition duration
+	// ScreenTransition duration
 	static public final int SCREEN_TRANSITION_DURATION = 800;
 
 	private CollectorActivity activity;
@@ -174,7 +174,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		// Replace current view:
 		if(newFieldUIView != fieldUIView)
 		{
-			// Animation:
+			// Screen Transition Animation:
 			final ScreenTransition screenTransition = controller.getCurrentForm().getScreenTransition();
 			if(screenTransition != null)
 			{

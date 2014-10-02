@@ -518,11 +518,27 @@ public abstract class Column<T> implements Serializable
 	}
 
 	/**
+	 * Returns all virtual versions of this column (empty list if there are none).
+	 * 
 	 * @return the virtualVersions
 	 */
-	protected List<VirtualColumn<?, T>> getVirtualVersions()
+	public List<VirtualColumn<?, T>> getVirtualVersions()
 	{
-		return virtualVersions == null ? Collections.<VirtualColumn<?, T>>emptyList() : virtualVersions;
+		return virtualVersions == null ? Collections.<VirtualColumn<?, T>> emptyList() : virtualVersions;
+	}
+	
+	/**
+	 * Returns a specific virtual version of this column (null if not found).
+	 * 
+	 * @param targetColumnName
+	 * @return
+	 */
+	public VirtualColumn<?, T> getVirtualVersion(String targetColumnName)
+	{
+		for(VirtualColumn<?, T> vCol : getVirtualVersions())
+			if(vCol.getTargetColumn().getName().equals(targetColumnName))
+				return vCol;
+		return null;
 	}
 	
 }

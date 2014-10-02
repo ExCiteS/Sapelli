@@ -83,7 +83,7 @@ public class Form
 	public static final String COLUMN_DEVICE_ID_NAME = "DeviceID";
 	public static final IntegerColumn COLUMN_DEVICE_ID = new IntegerColumn(COLUMN_DEVICE_ID_NAME, false, false, 32);
 	
-	// The Animation type between different Screen Pages
+	// The Screen Transition type between different Screens
 	public static enum ScreenTransition
 	{
 		NONE, VERTICAL, HORIZONTAL
@@ -91,7 +91,7 @@ public class Form
 
 	public static final ScreenTransition DEFAULT_SCREEN_TRANSITION = ScreenTransition.NONE;
 
-	// The Animation type between different Screen Pages
+	// Dynamics-------------------------------------------------------
 	public static enum AudioFeedback
 	{
 		NONE, LONG_CLICK_AUDIO_FILES, LONG_CLICK_TTS, SEQUENTIAL_AUDIO_FILES, SEQUENTIAL_TTS
@@ -122,13 +122,13 @@ public class Form
 	// Android shortcut:
 	private String shortcutImageRelativePath;
 
-	// Animation:
+	// Click Animation:
 	private boolean clickAnimation = DEFAULT_CLICK_ANIMATION;
 	
-	// Screen Transition:
+	// ScreenTransition:
 	private ScreenTransition screenTransition = DEFAULT_SCREEN_TRANSITION;
 
-	// Audio Feedback:
+	// Obfuscate Media Files:
 	private AudioFeedback audioFeedback = DEFAULT_AUDIO_FEEDBACK;
 
 	// Obfuscate Media Files:
@@ -308,7 +308,7 @@ public class Form
 	public void setScreenTransition(String screenTransitionStr)
 	{
 		if(screenTransitionStr == null)
-			return; // default pageAnimation will be used
+			return; // default ScreenTransition will be used
 		screenTransitionStr = screenTransitionStr.toUpperCase(); // Make upper case
 		try
 		{
@@ -321,7 +321,7 @@ public class Form
 	}
 
 	/**
-	 * @return the audioFeedback
+	 * @return the obfuscateMediaFiles
 	 */
 	public AudioFeedback getAudioFeedback()
 	{
@@ -398,7 +398,7 @@ public class Form
 	}
 
 	/**
-	 * @return the backButtonDescription
+	 * @return the cancelButtonImageRelativePath
 	 */
 	public String getBackButtonDescription()
 	{
@@ -430,7 +430,7 @@ public class Form
 	}
 
 	/**
-	 * @return the cancelButtonDescription
+	 * @return the forwardButtonImageRelativePath
 	 */
 	public String getCancelButtonDescription()
 	{
@@ -460,9 +460,9 @@ public class Form
 	{
 		this.forwardButtonImageRelativePath = forwardButtonImageRelativePath;
 	}
-	
+
 	/**
-	 * @return the forwardButtonDescription
+	 * @return the buttonBackgroundColor
 	 */
 	public String getForwardButtonDescription()
 	{

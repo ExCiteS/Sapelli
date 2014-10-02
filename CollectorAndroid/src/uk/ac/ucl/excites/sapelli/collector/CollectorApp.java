@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.db4o.DB4OProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
+import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
@@ -71,7 +72,9 @@ public class CollectorApp extends Application implements StoreClient
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
 	static public final String CRASHLYTICS_DEVICE_ID_CRC32 = "SAPELLI_DEVICE_ID_CRC32";
 	static public final String CRASHLYTICS_DEVICE_ID_MD5 = "SAPELLI_DEVICE_ID_MD5";
-
+	
+	static private CrashReporter crashReporter;
+	
 	/**
 	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on
 	 * an accessible (i.e. mounted) storage device
@@ -128,7 +131,8 @@ public class CollectorApp extends Application implements StoreClient
 		// Set up a CrashReporter to the Sapelli/crash Folder
 		try
 		{
-			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name)));
+			crashReporter = new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name));
+			Thread.setDefaultUncaughtExceptionHandler(crashReporter);
 		}
 		catch(Exception e)
 		{
@@ -136,6 +140,17 @@ public class CollectorApp extends Application implements StoreClient
 		}
 	}
 	
+	/**
+	 * Set the DeviceID to the Crash Reporter
+	 * 
+	 * @param deviceID
+	 */
+	public void setDeviceID(DeviceID deviceID)
+	{
+		if(crashReporter != null)
+			crashReporter.setDeviceID(deviceID);
+	}
+
 	@Override
 	public void onConfigurationChanged(Configuration newConfig)
 	{

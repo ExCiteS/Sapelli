@@ -276,7 +276,7 @@ public class FormParser extends SubtreeParser
 			{
 				addWarning("Invalid '" + ATTRIBUTE_FORM_SCREEN_TRANSITION + "' attribute value on <" + TAG_FORM + ">. Default Screen Transition is going to be used.");
 			}
-			// Audio Feedback:
+			// Obfuscate Media Files:
 			try
 			{
 				currentForm.setAudioFeedback(attributes.getString(ATTRIBUTE_FORM_AUDIO_FEEDBACK, Form.DEFAULT_AUDIO_FEEDBACK.name(), true, false));
@@ -291,7 +291,7 @@ public class FormParser extends SubtreeParser
 			currentForm.setBackButtonImageRelativePath(attributes.getString(ATTRIBUTE_FORM_BACK_BUTTON_IMG, null, false, false));
 			currentForm.setCancelButtonImageRelativePath(attributes.getString(ATTRIBUTE_FORM_CANCEL_BUTTON_IMG, null, false, false));
 			currentForm.setForwardButtonImageRelativePath(attributes.getString(ATTRIBUTE_FORM_FORWARD_BUTTON_IMG, null, false, false));
-			// Control button descriptions:
+			// ButtonField background colour:
 			currentForm.setBackButtonDescription(attributes.getString(ATTRIBUTE_FORM_BACK_BUTTON_DESC, Form.DEFAULT_BACK_BUTTON_DESCRIPTION, false, false));
 			currentForm.setCancelButtonDescription(attributes.getString(ATTRIBUTE_FORM_CANCEL_BUTTON_DESC, Form.DEFAULT_CANCEL_BUTTON_DESCRIPTION, false, false));
 			currentForm.setForwardButtonDescription(attributes.getString(ATTRIBUTE_FORM_FORWARD_BUTTON_DESC, Form.DEFAULT_FORWARD_BUTTON_DESCRIPTION, false, false));

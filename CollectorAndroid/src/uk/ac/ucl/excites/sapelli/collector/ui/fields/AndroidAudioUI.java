@@ -195,6 +195,8 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 					{
 						case BUTTON_INDEX_START:
 						{
+							controller.addLogLine("CLICK_START_RECORDING");
+							
 							if(field.isUseNativeApp())
 								collectorUI.getActivity().startAudioRecorderApp(AndroidAudioUI.this);
 							else if(startRecording())
@@ -206,6 +208,8 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 						}
 						case BUTTON_INDEX_STOP:
 						{
+							controller.addLogLine("CLICK_STOP_RECORDING");
+							
 							if(audioRecorder == null)
 								mediaDone(null, true); // "stop" means "skip" because we are not yet recording
 							else

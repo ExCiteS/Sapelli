@@ -254,6 +254,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		this.deviceID = deviceID;
 		Crashlytics.setLong(CollectorApp.CRASHLYTICS_DEVICE_ID_CRC32, deviceID.getIDAsCRC32Hash());
 		Crashlytics.setString(CollectorApp.CRASHLYTICS_DEVICE_ID_MD5, deviceID.getIDAsMD5Hash().toString());
+		((CollectorApp) getApplication()).setDeviceID(deviceID);
 	}
 
 	@Override
