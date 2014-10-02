@@ -26,14 +26,13 @@ import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.db.db4o.DB4OProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.db.sql.sqlite.android.AndroidSQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.db4o.DB4ORecordStore;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.Application;
 import android.content.res.Configuration;
@@ -60,7 +59,7 @@ public class CollectorApp extends Application implements StoreClient
 	static private final String DATABASE_BASENAME = "Sapelli";
 	static private final String DEMO_PREFIX = "Demo_";
 	
-	static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
+	//static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
 	
 	static private final String PROJECT_FOLDER = "Projects" + File.separator;
 	static private final String TEMP_FOLDER = "Temp" + File.separator;
@@ -232,7 +231,7 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		if(projectStore == null)
 		{
-			projectStore = USE_PREFS_FOR_PROJECT_STORAGE ? new PrefProjectStore(this) : new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			projectStore = /*USE_PREFS_FOR_PROJECT_STORAGE ?*/ new PrefProjectStore(this); //: new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			storeClients.put(projectStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(projectStore).add(client); //add to set of clients currently using the projectStore
@@ -252,7 +251,8 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		if(recordStore == null)
 		{
-			recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			//recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			recordStore = new AndroidSQLiteRecordStore(getCollectorClient(client), this, getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			storeClients.put(recordStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(recordStore).add(client); //add to set of clients currently using the projectStore
