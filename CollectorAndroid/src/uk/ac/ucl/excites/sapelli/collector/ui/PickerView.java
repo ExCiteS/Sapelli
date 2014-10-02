@@ -110,6 +110,10 @@ public class PickerView extends GridView
 			items.add(item);
 		}
 		
+		public void addItemAt(int location, Item item) {
+	        items.add(location, item);
+        }
+		
 		public void removeItem(Item item)
 		{
 			items.remove(item);

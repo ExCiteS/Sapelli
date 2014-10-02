@@ -32,8 +32,11 @@ import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.BitmapUtils;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
@@ -198,9 +201,10 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				
 				// Add the confirm/cancel buttons:
 				final LinearLayout pickerLayoutButtons = (LinearLayout) pickerLayout.findViewById(R.id.picker_layout_buttons);
-				pickerLayoutButtons.addView(new PickerButtonView(getContext()));
+				PickerButtonView pickerButtonView = new PickerButtonView(getContext());
+				pickerLayoutButtons.addView(pickerButtonView);
 				final LinearLayout pickerViewContainer = (LinearLayout) pickerLayout.findViewById(R.id.picker_layout_picker_container);
-				photoPicker = new PhotoPickerView(context);
+				photoPicker = new PhotoPickerView(context, pickerButtonView);
 				pickerViewContainer.addView(photoPicker);
 				
 				// Add the picker too (may want to change how this works)
@@ -239,16 +243,15 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			private static final int NUM_ROWS = 3;
 			
 			private Context context;
+			private PickerButtonView buttons;
+						
 			private LinearLayout deletePhotoLayout;
 			private int photoPosition;
 
-			public PhotoPickerView(Context context) {
-	            this(context, true);
-            }
-			
-			public PhotoPickerView(Context context, Boolean recycleViews) {
-	            super(context, recycleViews);
+			public PhotoPickerView(Context context, PickerButtonView buttons) {
+	            super(context);
 	            this.context = context;
+	            this.buttons = buttons;
 	        
 				// Number of columns:
 	            setNumColumns(NUM_COLUMNS);
@@ -256,27 +259,15 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				setItemDimensionsPx(
 						collectorUI.getFieldUIPartWidthPx(NUM_COLUMNS),
 						collectorUI.getFieldUIPartHeightPx(NUM_ROWS));
-				
-				// Add a "capture more photos" button to the picker by default:
-                getAdapter().addItem(new ResourceImageItem(
-                				getContext().getResources(), R.drawable.button_photo_svg));
-                
+				              
                 setOnItemClickListener(new OnItemClickListener() {
-
 					@Override
                     public void onItemClick(AdapterView<?> parent, View view,
                             int position, long id) {
-						if (position == 0) {
-							// camera button clicked, return to camera interface
-							showNext();
-                            cameraController.startPreview();
-						}
-						else {
-							// a photo has been clicked, so show it and offer deletion
-							showPhotoDeleteLayout(position);
-						}
-                    }
-                	
+						// a photo has been clicked, so show it and offer deletion
+						showPhotoDeleteLayout(position);
+					
+                    }	
                 });
 				
             }
@@ -305,6 +296,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				File currentPhotoFile = currentPhotoItem.getFile();
 				removeMedia(currentPhotoFile);
 				getAdapter().removeItem(currentPhotoItem);
+				buttons.enableCaptureButton(); // have now deleted a photo, so cannot have reached max
 				returnToPicker();
 			}
 			
@@ -314,6 +306,10 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				flipperParent.removeView(deletePhotoLayout);
 				flipperParent.addView(CameraView.this);
 				getAdapter().notifyDataSetChanged(); // in case an item was deleted
+			}
+			
+			protected void disableCaptureButton() {
+				buttons.disableCaptureButton();
 			}
 		}
 
@@ -395,7 +391,10 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			                            photoPicker.getAdapter().addItem(
 			                                    imgItem);
 			                            photoPicker.getAdapter().notifyDataSetChanged();
-			                            //TODO: determine whether or not max photos reached
+			                            if (field.isMaxReached(controller.getCurrentRecord())) {
+			                            	// cannot take any more photos until some are deleted
+			                            	photoPicker.disableCaptureButton();
+			                            }
 			                            
 			                            //show multi-preview panel
 			                            showNext();
@@ -458,33 +457,94 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		private class PickerButtonView extends CameraButtonView
 		{
 
+			private Item captureButton;
+			private boolean captureButtonDisabled = false;
+			
 			public PickerButtonView(Context context)
 			{
 				super(context);
+				setHorizontalSpacing(collectorUI.getSpacingPx());
 				
 				buttonAction = new Runnable() {
 					@Override
                     public void run() {
 						if (handlingClick.tryAcquire()) {
-							//current view is pickerLayout --> there is only an "approve" button
-							mediaDone(null, true);  
-							cameraController.close();
-							handlingClick.release();
+							if (position == 0) {
+	 							// camera button clicked, return to camera interface
+    							showNext();
+                                cameraController.startPreview();
+                                
+                            } else {
+	                            //approve button clicked, so proceed to next field
+	                            mediaDone(null, true);
+	                            cameraController.close();
+                            }
+							
+                            handlingClick.release();
 						}
                     }
 				};
 				
 			}
 
+			protected void disableCaptureButton() {
+				if (!captureButtonDisabled) {
+					Log.d("PickerButtonView","Disabling capture button...");
+					captureButtonDisabled = true;
+					LayeredItem layeredItem = new LayeredItem();
+					layeredItem.addLayer(createCaptureButton(), false);
+
+					// Make background of layered stack gray:
+					layeredItem.setBackgroundColor(CollectorView.COLOR_GRAY);
+					// Add grayed-out layer:
+					Item grayOutOverlay = new EmptyItem();
+					grayOutOverlay.setBackgroundColor(CollectorView.COLOR_SEMI_TRANSPARENT_GRAY);
+					layeredItem.addLayer(grayOutOverlay, false);	
+					
+					// Swap buttons out:
+					getAdapter().removeItem(captureButton);
+					getAdapter().addItemAt(0,layeredItem);
+					//TODO fix this
+					captureButton = layeredItem;
+					getAdapter().notifyDataSetChanged();
+					
+					//TODO change onClick
+				}
+            }
+			
+			protected void enableCaptureButton() {
+				if (captureButtonDisabled) {
+					captureButtonDisabled = false;
+					getAdapter().removeItem(captureButton);
+					captureButton = createCaptureButton();
+					getAdapter().addItemAt(0, captureButton);
+					getAdapter().notifyDataSetChanged();
+				}
+            }
+			
+			private ImageItem createCaptureButton() {
+				ImageItem captureButton = null;
+				File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
+				if(FileHelpers.isReadableFile(captureImgFile))
+					captureButton = new FileImageItem(captureImgFile);
+				else
+					captureButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_photo_svg);
+				captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+				return captureButton;
+			}
+
 			@Override
 			protected int getNumberOfColumns()
 			{
-				return 1;
+				return 2;
 			}
 
 			@Override
 			protected void addButtons()
 			{
+				// Capture button:
+				addButton(createCaptureButton());
+				
 				// Approve button:
 				Item approveButton = null;
 				File approveImgFile = controller.getProject().getImageFile(field.getApproveButtonImageRelativePath());
