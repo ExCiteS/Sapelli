@@ -152,7 +152,7 @@
 										<argument>-digestalg</argument>
 										<argument>SHA1</argument>
 									</arguments>
-									<verbose>true</verbose>
+									<verbose>false</verbose>
 								</configuration>
 							</execution>
 						</executions>
@@ -168,7 +168,7 @@
 								<debug>false</debug>
 							</sign>
 							<zipalign>
-								<verbose>true</verbose>
+								<verbose>false</verbose>
 								<inputApk>${project.build.directory}/${project.artifactId}.apk</inputApk>
 								<outputApk>${project.build.directory}/${project.artifactId}-signed-aligned.apk</outputApk>
 								<skip>false</skip>
@@ -343,19 +343,11 @@
 								</pluginExecution>
 								<pluginExecution>
 									<pluginExecutionFilter>
-										<groupId>
-											com.crashlytics
-										</groupId>
-										<artifactId>
-											crashlytics-maven
-										</artifactId>
-										<versionRange>
-											[1.9.2,)
-										</versionRange>
+										<groupId>com.crashlytics</groupId>
+										<artifactId>crashlytics-maven</artifactId>
+										<versionRange>[1.9.2,)</versionRange>
 										<goals>
-											<goal>
-												GenerateResources
-											</goal>
+											<goal>GenerateResources</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>
@@ -364,15 +356,9 @@
 								</pluginExecution>
 								<pluginExecution>
 									<pluginExecutionFilter>
-										<groupId>
-											com.jayway.maven.plugins.android.generation2
-										</groupId>
-										<artifactId>
-											android-maven-plugin
-										</artifactId>
-										<versionRange>
-											[4.0.0-rc.1,)
-										</versionRange>
+										<groupId>com.jayway.maven.plugins.android.generation2</groupId>
+										<artifactId>android-maven-plugin</artifactId>
+										<versionRange>[4.0.0-rc.1,)</versionRange>
 										<goals>
 											<goal>manifest-update</goal>
 										</goals>
@@ -385,15 +371,9 @@
 								</pluginExecution>
 								<pluginExecution>
 									<pluginExecutionFilter>
-										<groupId>
-											org.codehaus.mojo
-										</groupId>
-										<artifactId>
-											build-helper-maven-plugin
-										</artifactId>
-										<versionRange>
-											[1.9.1,)
-										</versionRange>
+										<groupId>org.codehaus.mojo</groupId>
+										<artifactId>build-helper-maven-plugin</artifactId>
+										<versionRange>[1.9.1,)</versionRange>
 										<goals>
 											<goal>parse-version</goal>
 										</goals>
