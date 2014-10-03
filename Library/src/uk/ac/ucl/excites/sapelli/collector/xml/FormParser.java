@@ -125,6 +125,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_FIELD_ALT = "alt";
 	static private final String ATTRIBUTE_FIELD_IMG = "img";
 	static private final String ATTRIBUTE_FIELD_ANSWER_DESC = "answerDesc";
+	static private final String ATTRIBUTE_FIELD_QUESTION_DESC = "questionDesc";
 	static private final String ATTRIBUTE_FIELD_CAPTION = "caption";
 	static private final String ATTRIBUTE_FIELD_CAPTIONS = "captions";
 	static private final String ATTRIBUTE_FIELD_LABEL = "label"; // synonym for caption
@@ -327,6 +328,7 @@ public class FormParser extends SubtreeParser
 				// Other attributes:
 				choice.setImageRelativePath(attributes.getString(ATTRIBUTE_FIELD_IMG, null, false, false));
 				choice.setAnswerDesc(attributes.getString(ATTRIBUTE_FIELD_ANSWER_DESC, null, false, false));
+				choice.setQuestionDesc(attributes.getString(ATTRIBUTE_FIELD_QUESTION_DESC, null, false, false));
 				choice.setAltText(attributes.getString(ATTRIBUTE_FIELD_ALT, null, false, false));
 				choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
 				choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));

@@ -64,6 +64,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	private List<ChoiceField> children;
 	private String imageRelativePath;
 	private String answerDesc;
+	private String questionDesc;
 	private int cols;
 	private int rows;
 	private String altText;
@@ -151,6 +152,28 @@ public class ChoiceField extends Field implements DictionaryItem
 	public boolean hasAudioAnswerDesc()
 	{
 		return answerDesc != null && FileHelpers.isAudioFileName(answerDesc);
+	}
+
+	/**
+	 * @return the questionDesc
+	 */
+	public String getQuestionDesc()
+	{
+		return questionDesc;
+	}
+
+	/**
+	 * @param questionDesc
+	 *            the questionDesc to set
+	 */
+	public void setQuestionDesc(String questionDesc)
+	{
+		this.questionDesc = questionDesc;
+	}
+
+	public boolean hasQuestionDesc()
+	{
+		return questionDesc != null && FileHelpers.isAudioFileName(questionDesc);
 	}
 
 	/**
