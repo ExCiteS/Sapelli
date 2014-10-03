@@ -6,8 +6,10 @@
         android:id="@+id/action_add"
         android:icon="@drawable/ic_action_new"
         android:onClick="browse"
-        android:showAsAction="always"/>
+        android:showAsAction="always"
+        android:title="@string/add_project"/>
     <item
+        android:title="@string/remove_project"
         android:id="@+id/action_remove"
         android:icon="@drawable/ic_action_discard"
         android:onClick="removeDialog"
@@ -15,13 +17,14 @@
     <item
         android:id="@+id/action_settings"
         android:icon="@drawable/ic_action_overflow"
-        android:showAsAction="always">
+        android:showAsAction="always"
+        android:title="@string/settings">
         <menu>
             <item
                 android:id="@+id/export_all"
                 android:onClick="exportRecords"
                 android:title="@string/exportAllProj"/>
-            <item 
+            <item
                 android:id="@+id/scan_qr"
                 android:onClick="scanQR"
                 android:title="@string/scan_qr_code"/>
@@ -56,7 +59,7 @@
         android:icon="@android:drawable/ic_menu_save"
         android:onClick="copyDBtoSD"
         android:showAsAction="always"
-        android:title="@string/copy_db_menuitem"/>
+        android:title="@string/copy_db_menuitem"/>
     -->
 
 </menu>

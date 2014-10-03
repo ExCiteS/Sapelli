@@ -16,16 +16,15 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.util.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.db4o.DB4ORecordStore;
+import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.Application;
 import android.content.res.Configuration;
-import android.os.Debug;
 import android.os.Environment;
 import android.util.Log;
 import de.jockels.open.Environment2;
 
 /**
- * Application App to keep the db4o object throughout the life-cycle of the
- * Collector
+ * Application App to keep the db4o object throughout the life-cycle of the Collector
  * 
  * @author Michalis Vitos, mstevens
  * 
@@ -48,8 +47,7 @@ public class CollectorApp extends Application implements StoreClient {
 	static private final String EXPORT_FOLDER = "Export" + File.separator;
 
 	/**
-	 * Uses Environment2 library to check whether the directory returned by
-	 * getStorageDirectory() is on an accessible (i.e. mounted) storage device
+	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on an accessible (i.e. mounted) storage device
 	 * 
 	 * @return
 	 */
@@ -60,10 +58,7 @@ public class CollectorApp extends Application implements StoreClient {
 	}
 
 	/**
-	 * Returns a prefix to be used on storage identifiers (DB4O filenames,
-	 * SharedPref's names, etc.) when in demo mode (if not in demo mode the
-	 * prefix is empty). The goal is to separate demo-mode storage from
-	 * non-demo-mode installations and previous demo installations.
+	 * Returns a prefix to be used on storage identifiers (DB4O filenames, SharedPref's names, etc.) when in demo mode (if not in demo mode the prefix is empty). The goal is to separate demo-mode storage from non-demo-mode installations and previous demo installations.
 	 * 
 	 * @return
 	 */
@@ -76,15 +71,13 @@ public class CollectorApp extends Application implements StoreClient {
 
 	private ProjectStore projectStore = null;
 	private RecordStore recordStore = null;
-	//private TransmissionStore transmissionStore = null; 
+	// private TransmissionStore transmissionStore = null;
 	private Map<Store, Set<StoreClient>> storeClients;
 
 	@Override
 	public void onCreate() {
 		super.onCreate();
-//		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.getAllInfo());
-	    // start tracing to "/sdcard/calc.trace"
-	    Debug.startMethodTracing("calc");
+		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.getAllInfo());
 
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();
@@ -103,13 +96,11 @@ public class CollectorApp extends Application implements StoreClient {
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
-		// Debug.d(newConfig.toString());
+		 Debug.d(newConfig.toString());
 	}
 
 	/**
-	 * Uses Environment2 library to get the path of the actual SD card if there
-	 * is one, if not it gets the path of the emulated SD card/internal mass
-	 * storage
+	 * Uses Environment2 library to get the path of the actual SD card if there is one, if not it gets the path of the emulated SD card/internal mass storage
 	 * 
 	 * @return the directory as a file object
 	 */
@@ -118,8 +109,7 @@ public class CollectorApp extends Application implements StoreClient {
 	}
 
 	/**
-	 * @return creates the Sapelli folder on the filesystem, and returns it as a
-	 *         File object
+	 * @return creates the Sapelli folder on the filesystem, and returns it as a File object
 	 */
 	public File getSapelliFolder() {
 		if (!isStorageMounted() || !FileHelpers.isReadableWritableDirectory(getStorageDirectory()))
@@ -154,7 +144,7 @@ public class CollectorApp extends Application implements StoreClient {
 	@Override
 	public void onLowMemory() {
 		super.onLowMemory();
-//		Debug.d("onLowMemory() called!");
+		 Debug.d("onLowMemory() called!");
 	}
 
 	@Override
@@ -163,7 +153,7 @@ public class CollectorApp extends Application implements StoreClient {
 		// This method is for use in emulated process environments. It will never be called on
 		// a production Android device, where processes are removed by simply killing them; no
 		// user code (including this callback) is executed when doing so.
-//		Debug.d("Should never be called!");
+		 Debug.d("Should never be called!");
 	}
 
 	/**
@@ -176,18 +166,11 @@ public class CollectorApp extends Application implements StoreClient {
 	public ProjectStore getProjectStore(StoreClient client) throws Exception {
 		if (projectStore == null) {
 			projectStore = USE_PREFS_FOR_PROJECT_STORAGE ? new PrefProjectStore(this) : new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*
-																																			 * will
-																																			 * be
-																																			 * ""
-																																			 * if
-																																			 * not
-																																			 * in
-																																			 * demo
-																																			 * mode
+																																			 * will be "" if not in demo mode
 																																			 */+ DATABASE_BASENAME);
 			storeClients.put(projectStore, new HashSet<StoreClient>());
 		}
-		storeClients.get(projectStore).add(client); //add to set of clients currently using the projectStore
+		storeClients.get(projectStore).add(client); // add to set of clients currently using the projectStore
 		return projectStore;
 	}
 
@@ -202,24 +185,16 @@ public class CollectorApp extends Application implements StoreClient {
 	public RecordStore getRecordStore(StoreClient client) throws Exception {
 		if (recordStore == null) {
 			recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*
-																										 * will
-																										 * be
-																										 * ""
-																										 * if
-																										 * not
-																										 * in
-																										 * demo
-																										 * mode
+																										 * will be "" if not in demo mode
 																										 */+ DATABASE_BASENAME);
 			storeClients.put(recordStore, new HashSet<StoreClient>());
 		}
-		storeClients.get(recordStore).add(client); //add to set of clients currently using the projectStore
+		storeClients.get(recordStore).add(client); // add to set of clients currently using the projectStore
 		return recordStore;
 	}
 
 	/**
-	 * Called by a DataAccessClient to signal it will no longer use its
-	 * DataAccess object
+	 * Called by a DataAccessClient to signal it will no longer use its DataAccess object
 	 * 
 	 * @param store
 	 * @param client
@@ -238,13 +213,13 @@ public class CollectorApp extends Application implements StoreClient {
 			store.finalise();
 			storeClients.remove(store); // remove empty set
 
-			//Slightly dirty but acceptable:
+			// Slightly dirty but acceptable:
 			if (store == projectStore)
 				projectStore = null;
 			else if (store == recordStore)
 				recordStore = null;
-			//else if(store == transmissionStore)
-			//	transmissionStore = null;
+			// else if(store == transmissionStore)
+			// transmissionStore = null;
 		}
 	}
 

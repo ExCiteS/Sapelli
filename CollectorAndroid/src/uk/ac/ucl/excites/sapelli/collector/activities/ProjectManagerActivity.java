@@ -124,8 +124,6 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	private DrawerLayout drawerLayout;
 	private Button runProject;
 
-	private Menu menu;
-
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -134,7 +132,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 
 		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try {
-			app.getSapelliFolder(); //throws IllegalStateException if not accessible or not create-able
+			app.getSapelliFolder(); // throws IllegalStateException if not accessible or not create-able
 		} catch (IllegalStateException ise) { // Inform the user and close the application
 			showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
 			return;
@@ -142,7 +140,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 
 		if (BuildInfo.DEMO_BUILD)
 			return;
-		//else ...
+		// else ...
 		// Only if not in demo mode:
 
 		// Set-up UI...
@@ -274,9 +272,10 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		this.menu = menu;
 		getMenuInflater().inflate(R.menu.projectmanager, menu);
-
+		if (parsedProjects != null) {
+			menu.findItem(R.id.action_remove).setVisible(!parsedProjects.isEmpty());
+		}
 		return true;
 	}
 
@@ -292,7 +291,8 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		TextView infoLbl = (TextView) view.findViewById(R.id.aboutInfo);
 		infoLbl.setClickable(true);
 		infoLbl.setMovementMethod(LinkMovementMethod.getInstance());
-		infoLbl.setText(Html.fromHtml("<p>" + getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".</p>" + "<p>" + BuildInfo.getBuildInfo() + ".</p>" + "<p>" + getString(R.string.by_ucl_excites_html) + "</p>" + "<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));
+		infoLbl.setText(Html.fromHtml("<p>" + getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".</p>" + "<p>" + BuildInfo.getBuildInfo() + ".</p>" + "<p>" + getString(R.string.by_ucl_excites_html) + "</p>" + "<p>" + "Device ID (CRC32): "
+				+ (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));
 		ImageView iconImg = (ImageView) view.findViewById(R.id.aboutIcon);
 		iconImg.setOnClickListener(new OnClickListener() {
 			@Override
@@ -346,16 +346,16 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		return true;
 	}
 
-	//	public void browse(View view) {
-	//		// Use the GET_CONTENT intent from the utility class
-	//		Intent target = FileUtils.createGetContentIntent();
-	//		// Create the chooser Intent
-	//		Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
-	//		try {
-	//			startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
-	//		} catch (ActivityNotFoundException e) {
-	//		}
-	//	}
+	// public void browse(View view) {
+	// // Use the GET_CONTENT intent from the utility class
+	// Intent target = FileUtils.createGetContentIntent();
+	// // Create the chooser Intent
+	// Intent intent = Intent.createChooser(target, getString(R.string.chooseSapelliFile));
+	// try {
+	// startActivityForResult(intent, RETURN_BROWSE_FOR_PROJECT_LOAD);
+	// } catch (ActivityNotFoundException e) {
+	// }
+	// }
 
 	/**
 	 * Retrieve all parsed projects from db and populate tabs
@@ -371,9 +371,9 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 
 		adapter = new PagerAdapter(getSupportFragmentManager());
 		pager.setAdapter(adapter);
-		if (!projectStore.retrieveProjects().isEmpty()) {
-			getActionBar().setTitle(projectStore.retrieveProjects().get(0).getName());
-			selectedProject = projectStore.retrieveProjects().get(0);
+		if (!parsedProjects.isEmpty()) {
+			getActionBar().setTitle(parsedProjects.get(0).getName());
+			selectedProject = parsedProjects.get(0);
 			pager.setPageMargin(pageMargin);
 			tabs.setViewPager(pager);
 			tabs.setVisibility(View.VISIBLE);
@@ -388,8 +388,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 			addProjects.setVisibility(View.VISIBLE);
 
 		}
-		//		if (menu != null)
-		menu.findItem(R.id.action_remove).setVisible(!parsedProjects.isEmpty());
+
 		invalidateOptionsMenu();
 	}
 
@@ -450,7 +449,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 			return;
 		}
 
-		//Add project
+		// Add project
 		if (project != null) // check to be sure
 			addProject(project);
 		else
@@ -556,10 +555,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 			public void onClick(DialogInterface dialog, int whichButton) {
 				String inputStr = input.getText().toString();
 				project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? Settings.DEFAULT_PASSWORD /*
-																											 * Set
-																											 * the
-																											 * Default
-																											 * Password
+																											 * Set the Default Password
 																											 */: inputStr);
 			}
 		});
@@ -591,9 +587,9 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 			// Icon image file:
 			File shortcutImageFile = project.getImageFile(project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
 
-			//-----------------------------------------------------
+			// -----------------------------------------------------
 			// Create a shortcut in standard Android Home Launcher
-			//-----------------------------------------------------
+			// -----------------------------------------------------
 			Intent androidLauncherIntent = getShortcutCreationIntent(project, false);
 			// Get up icon bitmap:
 			Drawable iconResource = FileHelpers.isReadableFile(shortcutImageFile) ? Drawable.createFromPath(shortcutImageFile.getAbsolutePath()) : getResources().getDrawable(R.drawable.ic_excites_grey);
@@ -601,23 +597,23 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 			// Resize the icon bitmap according to the default size:
 			int maxIconSize = (int) getResources().getDimension(android.R.dimen.app_icon_size); // Get standard system icon size
 			if (icon.getWidth() > maxIconSize || icon.getHeight() > maxIconSize)
-				icon = Bitmap.createScaledBitmap(icon, maxIconSize, maxIconSize, true); //TODO make this keep aspect ratio?
+				icon = Bitmap.createScaledBitmap(icon, maxIconSize, maxIconSize, true); // TODO make this keep aspect ratio?
 			// Set up shortcut icon:
 			androidLauncherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, icon);
 			// Fire the intent:
 			sendBroadcast(androidLauncherIntent);
-			//-----------------------------------------------------
+			// -----------------------------------------------------
 
-			//-----------------------------------------------------
+			// -----------------------------------------------------
 			// Create an shortcut in the Sapelli Launcher
-			//-----------------------------------------------------
+			// -----------------------------------------------------
 			Intent sapelliLauncherIntent = getShortcutCreationIntent(project, true);
 			// Set up shortcut icon path:
 			sapelliLauncherIntent.putExtra(SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH, FileHelpers.isReadableFile(shortcutImageFile) ? shortcutImageFile.getAbsolutePath() : null); // launcher will use default Sapelli icon when path is null
 			// Fire the intent:
 			sendBroadcast(sapelliLauncherIntent);
 		}
-		//-----------------------------------------------------
+		// -----------------------------------------------------
 	}
 
 	private Intent getShortcutCreationIntent(Project projectToRun, boolean sapelliLauncher) {
@@ -629,7 +625,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		shortcutCreationIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, getProjectRunIntent(projectToRun));
 		// Shortcut name:
 		shortcutCreationIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, projectToRun.toString());
-		// 	Do not allow duplicate shortcuts:
+		// Do not allow duplicate shortcuts:
 		if (!sapelliLauncher)
 			shortcutCreationIntent.putExtra("duplicate", false); // only needed for Android Home Launcher (although Sapelli Launcher would just ignore it)
 
@@ -705,35 +701,31 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 						showParserWarnings(importer.getWarnings());
 
 						/*
-						 * //TEST CODE (export again to compare with imported
-						 * file): RecordsExporter exporter = new
-						 * RecordsExporter(((CollectorApp)
-						 * getApplication()).getDumpFolderPath(), dao);
-						 * exporter.export(records);
+						 * //TEST CODE (export again to compare with imported file): RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao); exporter.export(records);
 						 */
 
-						//Store the records:
-						//for(Record r : records)
-						//	dao.store(r); //TODO avoid duplicates!
+						// Store the records:
+						// for(Record r : records)
+						// dao.store(r); //TODO avoid duplicates!
 
-						//User feedback:
-						showInfoDialog("Succesfully imported " + records.size() + " records."); //TODO report skipped duplicates
+						// User feedback:
+						showInfoDialog("Succesfully imported " + records.size() + " records."); // TODO report skipped duplicates
 					} catch (Exception e) {
 						showErrorDialog("Error upon importing records: " + e.getMessage(), false);
 					}
 				}
 
 				break;
-			//			// QR Reader
-			//			case IntentIntegrator.REQUEST_CODE:
-			//				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-			//				if (scanResult != null) {
-			//					String fileUrl = data.getStringExtra("SCAN_RESULT");
-			//					enterURL.setText(fileUrl);
-			//					// Move the cursor to the end
-			//					enterURL.setSelection(fileUrl.length());
-			//				}
-			//				break;
+			// // QR Reader
+			// case IntentIntegrator.REQUEST_CODE:
+			// IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+			// if (scanResult != null) {
+			// String fileUrl = data.getStringExtra("SCAN_RESULT");
+			// enterURL.setText(fileUrl);
+			// // Move the cursor to the end
+			// enterURL.setSelection(fileUrl.length());
+			// }
+			// break;
 			}
 	}
 
@@ -780,10 +772,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		/**
 		 * Downloads the file
 		 * 
-		 * Note: We do not use
-		 * Environment.getExternalStoragePublicDirectory(Environment
-		 * .DIRECTORY_DOWNLOADS); as the download folder because it does not
-		 * seem to be writable on the Xcover.
+		 * Note: We do not use Environment.getExternalStoragePublicDirectory(Environment .DIRECTORY_DOWNLOADS); as the download folder because it does not seem to be writable on the Xcover.
 		 * 
 		 * @param downloadUrl
 		 * @param filename
@@ -879,8 +868,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		}
 
 		/**
-		 * After completing background task Dismiss the progress dialog and
-		 * parse the project
+		 * After completing background task Dismiss the progress dialog and parse the project
 		 * **/
 		@Override
 		protected void onPostExecute(Boolean downloadFinished) {
@@ -952,8 +940,8 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-		selectedProject = projectStore.retrieveProjects().get(position);
-		if (!projectStore.retrieveProjects().isEmpty())
+		selectedProject = parsedProjects.get(position);
+		if (!parsedProjects.isEmpty())
 			getActionBar().setTitle(selectedProject.getName());
 		else
 			getActionBar().setTitle(R.string.app_name);
