@@ -451,9 +451,9 @@ public abstract class Controller
 	 */
 	public boolean enterMediaField(MediaField mf, FieldParameters arguments)
 	{
-		if(mf.isMaxReached(currFormSession.record))
-		{ // Maximum number of attachments for this field is reached:
-			goForward(false); // skip field //TODO this needs to change if we allow to delete previously generated media
+		if(mf.isMaxReached(currFormSession.record ) && !mf.isMultiple())
+		{ // Maximum number of attachments for this field is reached and picker is disabled:
+			goForward(false); // skip field
 			return false;
 		}
 		return true;

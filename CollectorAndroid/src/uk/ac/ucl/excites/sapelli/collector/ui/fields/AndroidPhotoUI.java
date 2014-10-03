@@ -298,6 +298,9 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 					adapter.addItem(imgItem);
 				}
 				setAdapter(adapter);
+				if (photoFiles.size() >= field.getMax()) {
+					disableCaptureButton();
+				}
 			}
 			
 			private void showPhotoDeleteLayout(int photoPosition) {
@@ -494,7 +497,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			{
 				super(context);
 				setHorizontalSpacing(collectorUI.getSpacingPx());
-				
+								
 				buttonAction = new Runnable() {
 					@Override
                     public void run() {
@@ -521,23 +524,21 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			}
 
 			protected void enableCaptureButton() {
-				if (captureButtonDisabled) {
-					captureButtonDisabled = false;
-					// Remove stale buttons:
-					removeButtons();
-					// Add new buttons now that captureButtonDisabled changed:
-					addButtons();
-				}
+				captureButtonDisabled = false;
+				// Remove stale buttons:
+				removeButtons();
+				// Add new buttons now that captureButtonDisabled changed:
+				addButtons();
+				getAdapter().notifyDataSetChanged();
             }
 
 			protected void disableCaptureButton() {
-				if (!captureButtonDisabled) {
-					captureButtonDisabled = true;
-					// Remove stale buttons:
-					removeButtons();
-					// Add new buttons now that captureButtonDisabled changed:
-					addButtons();
-				}
+				captureButtonDisabled = true;
+				// Remove stale buttons:
+				removeButtons();
+				// Add new buttons now that captureButtonDisabled changed:
+				addButtons();
+				getAdapter().notifyDataSetChanged();
             }
 			
 			private void removeButtons() {
@@ -545,7 +546,6 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				getAdapter().removeItem(captureButton);
 				// Approve button:
 				getAdapter().removeItem(approveButton);
-				getAdapter().notifyDataSetChanged();
 	            
             }
 			

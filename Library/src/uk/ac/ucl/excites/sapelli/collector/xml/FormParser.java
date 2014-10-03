@@ -23,7 +23,6 @@ import java.util.Hashtable;
 import java.util.Map.Entry;
 import java.util.Stack;
 
-import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
