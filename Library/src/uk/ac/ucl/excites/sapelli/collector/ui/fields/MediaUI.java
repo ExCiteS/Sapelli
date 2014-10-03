@@ -76,8 +76,10 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 			
 			// Store file:
 			controller.addMediaAttachment(mediaAttachment);
+			
 		}
 		// do NOT go to next/jump field
+		controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 	}
 	
 	public void removeMedia(File mediaAttachment)
