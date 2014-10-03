@@ -479,7 +479,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				if(FileHelpers.isReadableFile(discardImgFile))
 					discardButton = new FileImageItem(discardImgFile);
 				else
-					discardButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_delete_svg);
+					discardButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_trash_svg);
 				discardButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				addButton(discardButton);
 			}
