@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
@@ -29,6 +30,7 @@ import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 
@@ -71,12 +73,39 @@ public class Record implements Serializable
 		if(values != null)
 		{	
 			if(this.values.length == values.length)
+			{
 				// Init from given values:
-				for(int i = 0; i < values.length; i++)
-					this.values[i] = values[i];
+				for(int c = 0; c < this.values.length; c++)
+				{
+					Column<?> col = schema.getColumn(c);
+					col.storeObject(this, values[c]);
+				}
+			}
 			else
 				throw new IllegalArgumentException("Unexpected number of values (given: " + values.length + "; expected: " + this.values.length + ").");
 		}
+	}
+	
+	/**
+	 * @param schema
+	 * @param serialisedValues without virtual columns!
+	 * @throws Exception 
+	 */
+	public Record(Schema schema, String serialisedValues) throws Exception
+	{
+		this(schema);
+		parse(serialisedValues);
+	}
+
+	/**
+	 * @param schema
+	 * @param serialisedValues without virtual columns!
+	 * @throws Exception 
+	 */
+	public Record(Schema schema, byte[] serialisedValues) throws Exception
+	{
+		this(schema);
+		fromBytes(serialisedValues);
 	}
 	
 	/**
@@ -89,8 +118,11 @@ public class Record implements Serializable
 		this(another.schema);
 		
 		//(Deep) copy of values:
-		for(Column<?> c : this.schema.getColumns(false))
-			setValue(c, c.retrieveValueCopy(another));
+		for(int c = 0; c < this.values.length; c++)
+		{
+			Column<?> col = schema.getColumn(c);
+			this.values[c] = col.copyObject(another.values[c]);
+		}
 	}
 	
 	/**
@@ -198,6 +230,172 @@ public class Record implements Serializable
 		return new RecordReference(this);
 	}
 	
+	/**
+	 * @return the exported
+	 */
+	public boolean isExported()
+	{
+		return exported;
+	}
+
+	/**
+	 * @param exported the exported to set
+	 */
+	public void setExported(boolean exported)
+	{
+		this.exported = exported;
+	}
+
+	public boolean isTransmissionIDSet()
+	{
+		return transmissionID != null;
+	}
+
+	public Long getTransmissionID()
+	{
+		return transmissionID;
+	}
+
+	public void setTransmissionID(Long transmissionID)
+	{
+		this.transmissionID = transmissionID;
+	}
+	
+	@Override
+	public String toString()
+	{
+		return toString(true);
+	}
+	
+	public String toString(boolean includeVirtual)
+	{
+		StringBuffer bff = new StringBuffer();
+		bff.append(schema.toString());
+		for(Column<?> c : schema.getColumns(includeVirtual))
+			bff.append("|" + c.getName() + ": " + c.retrieveValueAsString(this));
+		return bff.toString();
+	}
+	
+	/**
+	 * Serialise the Record to a String, excluding virtual columns
+	 * 
+	 * @return
+	 */
+	public String serialise()
+	{
+		return serialise(false, Collections.<Column<?>> emptySet());
+	}
+	
+	/**
+	 * Serialise the Record to a String
+	 * 
+	 * @param includeVirtual
+	 * @param skipColumns
+	 * @return
+	 */
+	public String serialise(boolean includeVirtual, Set<Column<?>> skipColumns)
+	{
+		StringBuilder bldr = new StringBuilder();
+		boolean first = true;
+		for(Column<?> col : schema.getColumns(includeVirtual))
+		{
+			// Separator:
+			if(first)
+				first = false;
+			else
+				bldr.append(SERIALISATION_SEPARATOR); // also when value is skipped below!
+			// Value:
+			if(!skipColumns.contains(col))
+			{
+				String valueString = col.retrieveValueAsString(this);
+				bldr.append(valueString == null ? "" : StringUtils.escape(valueString, SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
+			}
+		}
+		return bldr.toString();
+	}
+	
+	/**
+	 * Deserialise the values of a Record from a String, not expecting virual columns
+	 * 
+	 * @param serialisedRecord
+	 * @throws Exception
+	 * @return the Record itself
+	 */
+	public Record parse(String serialisedRecord) throws Exception
+	{
+		return parse(serialisedRecord, false, Collections.<Column<?>> emptySet());
+	}
+	
+	/**
+	 * Deserialise the values of a Record from a String
+	 * 
+	 * @param serialisedRecord
+	 * @param includeVirtual
+	 * @param skipColumns
+	 * @return
+	 * @throws ParseException
+	 * @throws IllegalArgumentException
+	 * @throws NullPointerException
+	 */
+	public Record parse(String serialisedRecord, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
+	{
+		String[] parts = serialisedRecord.split("\\" + SERIALISATION_SEPARATOR);
+		if(parts.length != schema.getNumberOfColumns(includeVirtual))
+			throw new IllegalArgumentException("Unexpected number of values (got: " + parts.length + "; expected: " + schema.getNumberOfColumns(includeVirtual) + ") in serialised record (" + serialisedRecord +  ").");
+		int p = 0;
+		for(Column<?> col : schema.getColumns(includeVirtual))
+		{
+			if(!(col instanceof VirtualColumn) && !skipColumns.contains(col)) // skip virtual columns & skipColumns (but *do* increment the counter p!)
+				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
+			p++;
+		}
+		return this;
+	}
+	
+	/**
+	 * Serialise the Record to a byte array, excluding virtual columns
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
+	public byte[] toBytes() throws IOException
+	{
+		BitOutputStream out = null;
+		try
+		{
+			// Output stream:
+			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
+			out = new BitWrapOutputStream(rawOut);
+				
+			// Write record:
+			this.writeToBitStream(out, false, Collections.<Column<?>> emptySet());
+			
+			// Flush & close the stream and get bytes:
+			out.flush();
+			out.close();
+			return rawOut.toByteArray();
+		}
+		catch(Exception e)
+		{
+			throw new IOException("Error on encoding record.", e);
+		}
+		finally
+		{
+			try
+			{
+				if(out != null)
+					out.close();
+			}
+			catch(Exception ignore) {}
+		}
+	}
+	
+	/**
+	 * @param bitStream
+	 * @param includeVirtual
+	 * @param skipColumns
+	 * @throws IOException
+	 */
 	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<Column<?>> skipColumns) throws IOException
 	{
 		try
@@ -212,6 +410,47 @@ public class Record implements Serializable
 		}
 	}
 	
+	/**
+	 * Deserialise the Record from a byte array, excluding virtual columns
+	 * 
+	 * @param bytes
+	 * @return the record itself
+	 * @throws IOException
+	 */
+	public Record fromBytes(byte[] bytes) throws IOException
+	{
+		BitInputStream in = null;
+		try
+		{
+			// Input stream:
+			ByteArrayInputStream rawIn = new ByteArrayInputStream(bytes);
+			in = new BitWrapInputStream(rawIn);
+				
+			// Read record:
+			this.readFromBitStream(in, false, Collections.<Column<?>> emptySet());
+		}
+		catch(Exception e)
+		{
+			throw new IOException("Error on decoding record.", e);
+		}
+		finally
+		{
+			try
+			{
+				if(in != null)
+					in.close();
+			}
+			catch(Exception ignore) {}
+		}
+		return this;
+	}
+	
+	/**
+	 * @param bitStream
+	 * @param includeVirtual
+	 * @param skipColumns
+	 * @throws IOException
+	 */
 	public void readFromBitStream(BitInputStream bitStream, boolean includeVirtual, Set<Column<?>> skipColumns) throws IOException
 	{
 		try
@@ -260,37 +499,6 @@ public class Record implements Serializable
 		}
 	}
 	
-	/**
-	 * @return the exported
-	 */
-	public boolean isExported()
-	{
-		return exported;
-	}
-
-	/**
-	 * @param exported the exported to set
-	 */
-	public void setExported(boolean exported)
-	{
-		this.exported = exported;
-	}
-
-	public boolean isTransmissionIDSet()
-	{
-		return transmissionID != null;
-	}
-
-	public Long getTransmissionID()
-	{
-		return transmissionID;
-	}
-
-	public void setTransmissionID(Long transmissionID)
-	{
-		this.transmissionID = transmissionID;
-	}
-
 	@Override
     public int hashCode()
 	{
@@ -365,125 +573,6 @@ public class Record implements Serializable
 				return false;
 		}
 		return true;
-	}
-	
-	@Override
-	public String toString()
-	{
-		return toString(true);
-	}
-	
-	public String toString(boolean includeVirtual)
-	{
-		StringBuffer bff = new StringBuffer();
-		bff.append(schema.toString());
-		for(Column<?> c : schema.getColumns(includeVirtual))
-			bff.append("|" + c.getName() + ": " + c.retrieveValueAsString(this));
-		return bff.toString();
-	}
-	
-	/**
-	 * Serialise a the Record to a String
-	 * 
-	 * @return
-	 */
-	public String serialise()
-	{
-		return serialise(false, Collections.<Column<?>>emptySet());
-	}
-	
-	/**
-	 * Serialise a the Record to a String
-	 * 
-	 * @param skipColumns
-	 * @return
-	 */
-	public String serialise(boolean includeVirtual, Set<Column<?>> skipColumns)
-	{
-		StringBuilder bldr = new StringBuilder();
-		boolean first = true;
-		for(Column<?> col : schema.getColumns(includeVirtual))
-		{
-			// Separator:
-			if(first)
-				first = false;
-			else
-				bldr.append(SERIALISATION_SEPARATOR); // also when value is skipped below!
-			// Value:
-			if(!skipColumns.contains(col))
-			{
-				String valueString = col.retrieveValueAsString(this);
-				bldr.append(valueString == null ? "" : StringUtils.escape(valueString, SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
-			}
-		}
-		return bldr.toString();
-	}
-	
-	/**
-	 * Deserialise the values of a Record from a String
-	 * 
-	 * @param serialisedRecord
-	 * @throws Exception
-	 * @return the Record itself
-	 */
-	public Record parse(String serialisedRecord) throws Exception
-	{
-		return parse(serialisedRecord, false, Collections.<Column<?>>emptySet());
-	}
-	
-	/**
-	 * Deserialise the values of a Record from a String
-	 * 
-	 * @param serialisedRecord
-	 * @param skipColumns
-	 * @throws Exception
-	 * @return the Record itself
-	 */
-	public Record parse(String serialisedRecord, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
-	{
-		String[] parts = serialisedRecord.split("\\" + SERIALISATION_SEPARATOR);
-		if(parts.length != schema.getNumberOfColumns(includeVirtual))
-			throw new IllegalArgumentException("Unexpected number of values (got: " + parts.length + "; expected: " + schema.getNumberOfColumns(includeVirtual) + ") in serialised record (" + serialisedRecord +  ").");
-		int p = 0;
-		for(Column<?> col : schema.getColumns(includeVirtual))
-		{
-			if(!(col instanceof VirtualColumn) && !skipColumns.contains(col)) // skip virtual columns & skipColumns (but *do* increment the counter p!)
-				col.parseAndStoreValue(this, StringUtils.deescape(parts[p], SERIALISATION_SEPARATOR, SERIALISATION_SEPARATOR_ESCAPE, SERIALISATION_SEPARATOR_ESCAPE_PREFIX));
-			p++;
-		}
-		return this;
-	}
-	
-	public byte[] toBytes() throws IOException
-	{
-		BitOutputStream out = null;
-		try
-		{
-			//Output stream:
-			ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-			out = new BitWrapOutputStream(rawOut);
-				
-			//Write record:
-			this.writeToBitStream(out, false, Collections.<Column<?>> emptySet());
-			
-			//Flush & close the stream and get bytes:
-			out.flush();
-			out.close();
-			return rawOut.toByteArray();
-		}
-		catch(Exception e)
-		{
-			throw new IOException("Error on encoding record.", e);
-		}
-		finally
-		{
-			try
-			{
-				if(out != null)
-					out.close();
-			}
-			catch(Exception ignore) {}
-		}
 	}
 	
 	/**

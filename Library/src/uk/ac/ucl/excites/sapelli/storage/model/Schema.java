@@ -550,6 +550,31 @@ public class Schema implements Serializable
 		return new Record(this);
 	}
 	
+	public Record createRecord(Object... values)
+	{
+		return new Record(this, values);
+	}
+	
+	/**
+	 * @param serialisedValues without virtual columns!
+	 * @return
+	 * @throws Exception 
+	 */
+	public Record createRecord(String serialisedValues) throws Exception
+	{
+		return new Record(this, serialisedValues);
+	}
+	
+	/**
+	 * @param serialisedValues without virtual columns!
+	 * @return
+	 * @throws Exception 
+	 */
+	public Record createRecord(byte[] serialisedValues) throws Exception
+	{
+		return new Record(this, serialisedValues);
+	}
+	
 	/**
 	 * @return the name
 	 */

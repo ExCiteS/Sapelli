@@ -489,6 +489,12 @@ public abstract class Column<T> implements Serializable
 		T value = retrieveValue(record);
 		return (value == null ? null : copy(value));
 	}
+	
+	@SuppressWarnings("unchecked")
+	public T copyObject(Object value)
+	{
+		return copy((T) value);
+	}
 
 	/**
 	 * Returns a (deep, depending on necessity) copy of the value
