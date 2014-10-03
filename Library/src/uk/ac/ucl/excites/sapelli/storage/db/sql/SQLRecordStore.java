@@ -798,7 +798,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public void store(Record record, SQLType value)
 		{
-			sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getRecord(record, true), value != null ? mapping.toSapelliType(value) : null);
+			if(value != null)
+				sourceColumnPointer.getColumn().storeObject(sourceColumnPointer.getRecord(record, true), mapping.toSapelliType(value));
 		}
 		
 		/**
