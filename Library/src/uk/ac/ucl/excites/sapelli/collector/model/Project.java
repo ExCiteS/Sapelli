@@ -46,7 +46,7 @@ public class Project
 	
 	static public final String DEFAULT_VERSION = "0";
 	
-	static public final int PROJECT_FINGERPRINT_SIZE = 32; //bits
+	static public final int PROJECT_FINGERPRINT_SIZE = 32; // bits
 	static public final IntegerRangeMapping PROJECT_FINGERPRINT_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_FINGERPRINT_SIZE); // signed(!) 32bit integer (like Java hashCodes)
 	
 	// Backwards compatibility:
@@ -110,6 +110,9 @@ public class Project
 			this.variant = variant;
 		this.version = version;
 		
+		// Finger print:
+		this.fingerPrint = fingerPrint; // must be set before initialise() is called!
+		
 		// Project id:
 		if(id == PROJECT_ID_V1X_TEMP)
 		{	//Backwards compatibility
@@ -118,9 +121,6 @@ public class Project
 		}
 		else
 			initialise(id); // checks if it fits in field	
-		
-		// Finger print:
-		this.fingerPrint = fingerPrint;
 		
 		// Path:
 		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
