@@ -46,6 +46,8 @@ public class Form
 	// Statics--------------------------------------------------------
 	public static final boolean END_TIME_DEFAULT = false;
 
+	public static final int MAX_FIELDS = 512;
+	
 	// Where to go next:
 	static public enum Next
 	{
@@ -166,8 +168,14 @@ public class Form
 		return project;
 	}
 
-	public void addField(Field f)
+	/**
+	 * @param f
+	 * @throws IllegalStateException when the maximum number of forms is reached
+	 */
+	public void addField(Field f) throws IllegalStateException
 	{
+		 if(fields.size() == MAX_FIELDS)
+			throw new IllegalStateException("Maximum number of fields reached");
 		fields.add(f);
 	}
 
@@ -224,7 +232,7 @@ public class Form
 	}
 	
 	/**
-	 * Find a field of the form by its ID 
+	 * Find a field of the form by its ID
 	 * 
 	 * @param fieldID
 	 * @return the field with the specified ID, or null if no such field exists in this form
@@ -235,6 +243,24 @@ public class Form
 			if(f.getID().equalsIgnoreCase(fieldID)) // field IDs are treated as case insensitive
 				return f;
 		return null;
+	}
+	
+	/**
+	 * Find a field of the form by its position
+	 * 
+	 * @param fieldPosition
+	 * @return the field at the specified position, or null if no such field exists in this form
+	 */
+	public Field getField(int fieldPosition)
+	{
+		try
+		{
+			return fields.get(fieldPosition);
+		}
+		catch(IndexOutOfBoundsException e)
+		{
+			return null;
+		}
 	}
 
 	/**
@@ -678,7 +704,7 @@ public class Form
 				// Device ID column:
 				schema.addColumn(COLUMN_DEVICE_ID);
 				// Add primary key on StartTime & DeviceID:
-				schema.setPrimaryKey(new PrimaryKey(COLUMN_TIMESTAMP_START.getName() + "_" + COLUMN_DEVICE_ID.getName(), COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID));
+				schema.setPrimaryKey(PrimaryKey.WithColumnNames(COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID));
 				
 				// Add user-defined columns
 				schema.addColumns(userDefinedColumns);

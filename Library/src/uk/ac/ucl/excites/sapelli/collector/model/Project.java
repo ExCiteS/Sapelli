@@ -28,9 +28,9 @@ import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 
 /**
  * A Sapelli Collector Project (i.e. a survey consisting of one or more forms)
@@ -63,6 +63,10 @@ public class Project
 	static public final String NO_MEDIA_FILE = ".nomedia"; //Info: http://www.makeuseof.com/tag/hide-private-picture-folders-gallery-android
 	
 	static public final boolean DEFAULT_LOGGING = false;
+		
+	static public final int MAX_FORMS = 32;
+	
+	static public final int MAX_RECORD_PRODUCING_FORMS = Math.min(MAX_FORMS, Model.MODEL_SCHEMA_NO_FIELD.numberOfPossibleValues().intValue() - 1); // subtract 1 for the heartbeatSchema
 	
 	//DYNAMICS------------------------------------------------------------
 	private int id = Integer.MIN_VALUE; // don't init to 0 because that is an acceptable project id, nor -1 because that is used as temporary indication of a v1x project
@@ -124,7 +128,7 @@ public class Project
 		this.projectPath = basePath;
 		if(createSubfolder)
 		{
-			this.projectPath += this.name + File.separatorChar + "v" + version + File.separatorChar;
+			this.projectPath += this.name + File.separatorChar + "v" + version + File.separatorChar; // TODO include variant
 			if(!FileHelpers.createFolder(projectPath))
 				throw new IllegalArgumentException("Could not create folder: " + projectPath);
 			// Create .nomedia file:
@@ -238,9 +242,12 @@ public class Project
 	 * Add a {@link Form} to the project
 	 * 
 	 * @param frm
+	 * @throws IllegalStateException when the maximum number of forms is reached
 	 */
-	public void addForm(Form frm)
+	public void addForm(Form frm) throws IllegalStateException
 	{
+		if(forms.size() == MAX_FORMS)
+			throw new IllegalStateException("Maximum number of forms reached");
 		forms.add(frm);
 		if(forms.size() == 1) //first form becomes startForm by default
 			startForm = frm;
@@ -273,7 +280,7 @@ public class Project
 		if(position >= 0 && position < forms.size())
 			return forms.get(position);
 		else
-			return null; //no such form
+			return null; // no such form
 	}
 	
 	/**

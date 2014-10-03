@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.util;
+package uk.ac.ucl.excites.sapelli.shared.util;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -108,6 +108,27 @@ public class IntegerRangeMapping implements Serializable
 	public int size()
 	{
 		return size;
+	}
+	
+	/**
+	 * The number of distinct values that can fit in this range
+	 * 
+	 * @return
+	 */
+	public BigInteger numberOfPossibleValues()
+	{
+		return numberOfPossibleValues(true);
+	}
+	
+	/**
+	 * The number of distinct values that can fit in this range
+	 * 
+	 * @param strict indicates whether the specified (true) or effective (false) upper bound is used
+	 * @return
+	 */
+	public BigInteger numberOfPossibleValues(boolean strict)
+	{
+		return BigInteger.valueOf(highBound(strict)).subtract(BigInteger.valueOf(loBound)).add(BigInteger.valueOf(1l));
 	}
 	
 	/**

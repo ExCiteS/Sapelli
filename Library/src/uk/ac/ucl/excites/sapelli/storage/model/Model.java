@@ -22,7 +22,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**

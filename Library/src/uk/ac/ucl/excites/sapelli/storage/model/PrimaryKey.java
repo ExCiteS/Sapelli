@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model;
 
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
+
 /**
  * A class representing a primary key on a schema, implemented as a subclass of {@link Index}.
  * The index is always a unique one and all included columns must be non-optional (i.e. not "nullable").
@@ -27,12 +29,29 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 public class PrimaryKey extends Index
 {
 	
-	private static final long serialVersionUID = 2L;
+	// STATICS-------------------------------------------------------
+	static private final long serialVersionUID = 2L;
+
+	static public final String COLUMN_NAME_SEPARATOR = "_";
 	
+	static public PrimaryKey WithColumnNames(Column<?>... columns)
+	{
+		if(columns == null || columns.length == 0)
+			throw new IllegalArgumentException("Primary key needs to span at least 1 column");
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder(COLUMN_NAME_SEPARATOR);
+		for(Column<?> c : columns)
+			bldr.append(c.name);
+		return new PrimaryKey(bldr.toString(), columns);
+	}
+	
+	// DYNAMICS------------------------------------------------------
 	public PrimaryKey(String name, Column<?>... columns)
 	{
 		super(name, true, columns); // always unique!!!
-		// Check if non of the columns are optional:
+		// Check if we have at least 1 column:
+		if(columns == null || columns.length == 0)
+			throw new IllegalArgumentException("Primary key needs to span at least 1 column");
+		// Check if none of the columns are optional:
 		for(Column<?> idxCol : getColumns(false))
 			if(idxCol.isOptional())
 				throw new IllegalArgumentException("An primary key cannot contain optional (i.e. nullable) columns!");

@@ -236,7 +236,7 @@ public class FormParser extends SubtreeParser
 				else
 					throw new SAXException("Only single-Form v1.x projects are supported");
 			}
-			currentForm = new Form(project, id); // the form will add itself to the project and take the next available form index
+			currentForm = new Form(project, id); // the form will add itself to the project and take the next available form position
 			// Shortcut image:
 			currentForm.setShortcutImageRelativePath(attributes.getString(ATTRIBUTE_FORM_SHORTCUT_IMAGE, null, false, false));
 			// Next/end:
@@ -628,97 +628,104 @@ public class FormParser extends SubtreeParser
 	 */
 	private void newField(Field field, XMLAttributes attributes) throws SAXException
 	{
-		// Warn about IDs starting with '_': //TODO test if no invalid XML chars
-		if(field.getID().startsWith("_"))
+		try
 		{
-			// For really stupid cases ;-):
-			for(EndField ef : EndField.GetEndFields(currentForm))
-				if(ef.getID().equals(field.getID()))
-					throw new SAXException(field.getID() + " is a reserved ID, don't use it for user-defined fields.");
-			addWarning("Please avoid field IDs starting with '_' (" + field.getID() + ")."); 
-		}
-		
-		// Get current page if there is one:
-		Page currentPage = getCurrentPage();
-		
-		// If the field is a root field (note: even elements on a page are root fields)...
-		if(field.isRoot())
-		{
-			// Add it to the form or page:
-			if(currentPage == null)
-			{	// field is top-level (directly contained within the form, and not in a page first)...
-				currentForm.addField(field);
-				// ... and therefore it can be jumped to, so remember its ID (upper cased, for case insensitivity):
-				if(idToField.put(field.getID().toUpperCase(), field) != null)
-					throw new SAXException("Duplicate field ID '" + field.getID() + "' in Form '" + currentForm.getID() + "'! (Note: field and form IDs are case insensitive)");
-			}
-			else
-				// the field is contained by a page:
-				currentPage.addField(field);
-			
-			if(attributes != null)
+			// Warn about IDs starting with '_': //TODO test if no invalid XML chars
+			if(field.getID().startsWith("_"))
 			{
-				// Set optionalness:
-				String optText = attributes.getValue(ATTRIBUTE_FIELD_OPTIONAL);
-				Optionalness opt = currentPage == null ? Field.DEFAULT_OPTIONAL : currentPage.getOptional(); // use default optionalness or that of the containing page
-				if(optText != null && !optText.trim().isEmpty())
-				{	
-					optText = optText.trim();
-					if("always".equalsIgnoreCase(optText) || Boolean.TRUE.toString().equalsIgnoreCase(optText))
-						opt = Optionalness.ALWAYS;
-					else if("notIfReached".equalsIgnoreCase(optText))
-						opt = Optionalness.NOT_IF_REACHED;
-					else if("never".equalsIgnoreCase(optText) || Boolean.FALSE.toString().equalsIgnoreCase(optText))
-						opt = Optionalness.NEVER;
+				// For really stupid cases ;-):
+				for(EndField ef : EndField.GetEndFields(currentForm))
+					if(ef.getID().equals(field.getID()))
+						throw new SAXException(field.getID() + " is a reserved ID, don't use it for user-defined fields.");
+				addWarning("Please avoid field IDs starting with '_' (" + field.getID() + ")."); 
+			}
+			
+			// Get current page if there is one:
+			Page currentPage = getCurrentPage();
+			
+			// If the field is a root field (note: even elements on a page are root fields)...
+			if(field.isRoot())
+			{
+				// Add it to the form or page:
+				if(currentPage == null)
+				{	// field is top-level (directly contained within the form, and not in a page first)...
+					currentForm.addField(field);
+					// ... and therefore it can be jumped to, so remember its ID (upper cased, for case insensitivity):
+					if(idToField.put(field.getID().toUpperCase(), field) != null)
+						throw new SAXException("Duplicate field ID '" + field.getID() + "' in Form '" + currentForm.getID() + "'! (Note: field and form IDs are case insensitive)");
 				}
-				field.setOptional(opt);
+				else
+					// the field is contained by a page:
+					currentPage.addField(field);
 				
-				// Show on create/edit:
-				field.setShowOnCreate(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_ON_CREATE, Field.DEFAULT_SHOW_ON_CREATE));
-				field.setShowOnEdit(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_ON_EDIT, Field.DEFAULT_SHOW_ON_EDIT));
+				if(attributes != null)
+				{
+					// Set optionalness:
+					String optText = attributes.getValue(ATTRIBUTE_FIELD_OPTIONAL);
+					Optionalness opt = currentPage == null ? Field.DEFAULT_OPTIONAL : currentPage.getOptional(); // use default optionalness or that of the containing page
+					if(optText != null && !optText.trim().isEmpty())
+					{	
+						optText = optText.trim();
+						if("always".equalsIgnoreCase(optText) || Boolean.TRUE.toString().equalsIgnoreCase(optText))
+							opt = Optionalness.ALWAYS;
+						else if("notIfReached".equalsIgnoreCase(optText))
+							opt = Optionalness.NOT_IF_REACHED;
+						else if("never".equalsIgnoreCase(optText) || Boolean.FALSE.toString().equalsIgnoreCase(optText))
+							opt = Optionalness.NEVER;
+					}
+					field.setOptional(opt);
+					
+					// Show on create/edit:
+					field.setShowOnCreate(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_ON_CREATE, Field.DEFAULT_SHOW_ON_CREATE));
+					field.setShowOnEdit(attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_ON_EDIT, Field.DEFAULT_SHOW_ON_EDIT));
+					
+					// Set editable (inherit from page if on page):
+					field.setEditable(attributes.getBoolean(ATTRIBUTE_FIELD_EDITABLE, currentPage == null ? Field.DEFAULT_EDITABLE : currentPage.isEditable()));
+				}
+			}
+		
+			// Read various optional Field attributes: 
+			if(attributes != null)
+			{	
+				// Remember jumps (always "intra-Form", and not leaving a page unless this type of field is allowed to do that):
+				if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
+				{
+					if(currentPage == null || field.canJumpFromPage())
+						jumpSourceToJumpTargetId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // trimmed (because id's on fields are too) & upper cased (for case insensitivity)
+					else if(currentPage != null)
+						addWarning("Field \"" + field.getID() + "\" tries to jump away from the page, but is not allowed.");
+				}
 				
-				// Set editable (inherit from page if on page):
-				field.setEditable(attributes.getBoolean(ATTRIBUTE_FIELD_EDITABLE, currentPage == null ? Field.DEFAULT_EDITABLE : currentPage.isEditable()));
+				// Skip on back:
+				field.setSkipOnBack(attributes.getBoolean(ATTRIBUTE_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK));
+				
+				// Background colour:
+				field.setBackgroundColor(attributes.getString(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, true, false));
+				
+				// Which buttons are allowed to show...
+				// 	Mode-specific:
+				field.setShowControlOnMode(Control.BACK, Mode.CREATE, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_BACK_ON_CREATE, Field.DEFAULT_SHOW_BACK));
+				field.setShowControlOnMode(Control.BACK, Mode.EDIT, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_BACK_ON_EDIT, Field.DEFAULT_SHOW_BACK));
+				field.setShowControlOnMode(Control.CANCEL, Mode.CREATE, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL_ON_CREATE, Field.DEFAULT_SHOW_CANCEL));
+				field.setShowControlOnMode(Control.CANCEL, Mode.EDIT, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL_ON_EDIT, Field.DEFAULT_SHOW_CANCEL));
+				field.setShowControlOnMode(Control.FORWARD, Mode.CREATE, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD_ON_CREATE, Field.DEFAULT_SHOW_FORWARD));
+				field.setShowControlOnMode(Control.FORWARD, Mode.EDIT, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD_ON_EDIT, Field.DEFAULT_SHOW_FORWARD));		
+				//	Across all modes (overrules mode-specific settings) + with backwards compatibility for v1.0 forms which may have shopBack/showCancel/showForward at the form level:
+				if(attributes.contains(ATTRIBUTE_FIELD_SHOW_BACK) || v1xFormShowBack != null)
+					field.setShowBack((v1xFormShowBack != null ? v1xFormShowBack : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_BACK, Field.DEFAULT_SHOW_BACK));
+				if(attributes.contains(ATTRIBUTE_FIELD_SHOW_CANCEL) || v1xFormShowCancel != null)
+					field.setShowCancel((v1xFormShowCancel != null ? v1xFormShowCancel : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));
+				if(attributes.contains(ATTRIBUTE_FIELD_SHOW_FORWARD) || v1xFormShowForward != null)
+					field.setShowForward((v1xFormShowForward != null ? v1xFormShowForward : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
 			}
+			
+			// Remember current field:
+			openFields.push(field); //!!!
 		}
-		
-		// Read various optional Field attributes: 
-		if(attributes != null)
-		{	
-			// Remember jumps (always "intra-Form", and not leaving a page unless this type of field is allowed to do that):
-			if(attributes.getValue(ATTRIBUTE_FIELD_JUMP) != null)
-			{
-				if(currentPage == null || field.canJumpFromPage())
-					jumpSourceToJumpTargetId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // trimmed (because id's on fields are too) & upper cased (for case insensitivity)
-				else if(currentPage != null)
-					addWarning("Field \"" + field.getID() + "\" tries to jump away from the page, but is not allowed.");
-			}
-			
-			// Skip on back:
-			field.setSkipOnBack(attributes.getBoolean(ATTRIBUTE_SKIP_ON_BACK, Field.DEFAULT_SKIP_ON_BACK));
-			
-			// Background colour:
-			field.setBackgroundColor(attributes.getString(ATTRIBUTE_FIELD_BACKGROUND_COLOR, Field.DEFAULT_BACKGROUND_COLOR, true, false));
-			
-			// Which buttons are allowed to show...
-			// 	Mode-specific:
-			field.setShowControlOnMode(Control.BACK, Mode.CREATE, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_BACK_ON_CREATE, Field.DEFAULT_SHOW_BACK));
-			field.setShowControlOnMode(Control.BACK, Mode.EDIT, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_BACK_ON_EDIT, Field.DEFAULT_SHOW_BACK));
-			field.setShowControlOnMode(Control.CANCEL, Mode.CREATE, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL_ON_CREATE, Field.DEFAULT_SHOW_CANCEL));
-			field.setShowControlOnMode(Control.CANCEL, Mode.EDIT, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL_ON_EDIT, Field.DEFAULT_SHOW_CANCEL));
-			field.setShowControlOnMode(Control.FORWARD, Mode.CREATE, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD_ON_CREATE, Field.DEFAULT_SHOW_FORWARD));
-			field.setShowControlOnMode(Control.FORWARD, Mode.EDIT, attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD_ON_EDIT, Field.DEFAULT_SHOW_FORWARD));		
-			//	Across all modes (overrules mode-specific settings) + with backwards compatibility for v1.0 forms which may have shopBack/showCancel/showForward at the form level:
-			if(attributes.contains(ATTRIBUTE_FIELD_SHOW_BACK) || v1xFormShowBack != null)
-				field.setShowBack((v1xFormShowBack != null ? v1xFormShowBack : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_BACK, Field.DEFAULT_SHOW_BACK));
-			if(attributes.contains(ATTRIBUTE_FIELD_SHOW_CANCEL) || v1xFormShowCancel != null)
-				field.setShowCancel((v1xFormShowCancel != null ? v1xFormShowCancel : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));
-			if(attributes.contains(ATTRIBUTE_FIELD_SHOW_FORWARD) || v1xFormShowForward != null)
-				field.setShowForward((v1xFormShowForward != null ? v1xFormShowForward : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
+		catch(Exception e)
+		{
+			throw new SAXException("Error on parsing field '" + field.getID() + "'", e);
 		}
-		
-		// Remember current field:
-		openFields.push(field); //!!!
 	}
 	
 	private void newTrigger(Trigger trigger, XMLAttributes attributes)

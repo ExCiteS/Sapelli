@@ -62,8 +62,9 @@ public class TransmissionStore implements Store
 	// STATICS---------------------------------------------
 	static private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
 	
+	// Transmission storage model:
+	//	Model:
 	static public final Model TRANSMISSION_MANAGEMENT_MODEL = new Model(TransmissionClient.TRANSMISSION_MANAGEMENT_MODEL_ID, "TransmissionManagement");
-	
 	// Schema(s) & columns:
 	//	Transmission Schema
 	static final public Schema TRANSMISSION_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Transmission");
@@ -78,8 +79,9 @@ public class TransmissionStore implements Store
 	//	Columns shared with TransmisionPart:
 	static final public TimeStampColumn COLUMN_SENT_AT = TimeStampColumn.JavaMSTime("SentAt", true, false);
 	static final public TimeStampColumn COLUMN_RECEIVED_AT = TimeStampColumn.JavaMSTime("ReceivedAt", true, false);
+	//	Add columns and index to Transmission Schema & seal it:
 	static
-	{	// Add columns and index to Transmission Schema & seal it:
+	{
 		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_ID);
 		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_REMOTE_ID);
 		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_TYPE);

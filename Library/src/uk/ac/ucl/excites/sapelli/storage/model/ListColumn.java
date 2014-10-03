@@ -24,8 +24,8 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 
 /**
  * @author mstevens

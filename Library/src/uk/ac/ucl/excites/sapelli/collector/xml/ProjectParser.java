@@ -250,7 +250,7 @@ public class ProjectParser extends DocumentParser
 					}
 					catch(ModelFullException e)
 					{
-						throw new SAXException("This project contains more data-producing Forms than allowed.");
+						throw new SAXException("This project contains more data-producing Forms than allowed (maximum: " + Project.MAX_RECORD_PRODUCING_FORMS + ").");
 					}
 					addWarnings(form.getWarnings()); // !!!
 				}

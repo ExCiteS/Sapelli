@@ -22,12 +22,12 @@ import java.text.ParseException;
 
 import org.joda.time.DateTimeZone;
 
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 
 
 /**

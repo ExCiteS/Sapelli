@@ -428,7 +428,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	/**
 	 * Retrieve all parsed projects from db and populate list
 	 */
-	public void populateProjectList()
+	private void populateProjectList()
 	{
 		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list_item, android.R.id.text1, new ArrayList<Project>(projectStore.retrieveProjects())));
 		if(!projectList.getAdapter().isEmpty())

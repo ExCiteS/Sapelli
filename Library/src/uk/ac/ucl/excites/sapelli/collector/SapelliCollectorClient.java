@@ -19,8 +19,10 @@
 package uk.ac.ucl.excites.sapelli.collector;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -77,6 +79,17 @@ public class SapelliCollectorClient extends TransmissionClient
 	public SapelliCollectorClient(ProjectStore projectStore)
 	{
 		this.projectStore = projectStore;
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
+	 */
+	@Override
+	public List<Model> getReserveredModels()
+	{
+		List<Model> reserved = super.getReserveredModels();
+		reserved.add(ProjectRecordStore.COLLECTOR_MANAGEMENT_MODEL);
+		return reserved;
 	}
 	
 	/**

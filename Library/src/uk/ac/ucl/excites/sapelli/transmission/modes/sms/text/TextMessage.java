@@ -20,9 +20,9 @@ package uk.ac.ucl.excites.sapelli.transmission.modes.sms.text;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;

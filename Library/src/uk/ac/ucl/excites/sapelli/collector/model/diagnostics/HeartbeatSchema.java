@@ -65,7 +65,7 @@ public class HeartbeatSchema extends Schema
 		this.addColumn(COLUMN_LAST_KNOWN_LOCATION);
 		this.addColumn(COLUMN_PROJECT_LAST_OPENED_AT);
 		// Add primary key on LocalTime & DeviceID:
-		this.setPrimaryKey(new PrimaryKey(COLUMN_LOCAL_TIME.getName() + "_" + COLUMN_DEVICE_ID.getName(), COLUMN_LOCAL_TIME, COLUMN_DEVICE_ID));
+		this.setPrimaryKey(PrimaryKey.WithColumnNames(COLUMN_LOCAL_TIME, COLUMN_DEVICE_ID));
 		// Seal the schema:
 		this.seal();
 	}

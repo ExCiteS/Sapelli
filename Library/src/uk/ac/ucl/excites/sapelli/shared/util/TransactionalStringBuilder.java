@@ -233,7 +233,7 @@ public class TransactionalStringBuilder
 	}
 
 	/**
-	 * Append a String to the current transaction (possibly the root)
+	 * Append a String to the current transaction (possibly the root), connective will be used
 	 * 
 	 * @param str
 	 * @return

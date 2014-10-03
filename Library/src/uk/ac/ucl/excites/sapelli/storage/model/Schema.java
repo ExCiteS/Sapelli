@@ -34,10 +34,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 import uk.ac.ucl.excites.sapelli.transmission.compression.LZMACompressor;
@@ -100,7 +100,7 @@ public class Schema implements Serializable
 	{
 		META_SCHEMA.addColumn(META_MODEL_ID_COLUMN);
 		META_SCHEMA.addColumn(META_SCHEMA_NUMBER_COLUMN);
-		META_SCHEMA.setPrimaryKey(new PrimaryKey("modelID_SchemaNumber", META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));
+		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));
 		META_SCHEMA.addColumn(META_NAME_COLUMN);
 		META_SCHEMA.addColumn(META_OBJECT_SERIALISATION_COLUMN);
 		META_SCHEMA.addColumn(META_OBJECT_HASHCODE_COLUMN);
