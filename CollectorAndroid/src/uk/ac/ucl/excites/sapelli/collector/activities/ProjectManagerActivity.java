@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -430,7 +429,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	 */
 	private void populateProjectList()
 	{
-		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list_item, android.R.id.text1, new ArrayList<Project>(projectStore.retrieveProjects())));
+		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list_item, android.R.id.text1, projectStore.retrieveProjects()));
 		if(!projectList.getAdapter().isEmpty())
 		{
 			runBtn.setEnabled(true);
