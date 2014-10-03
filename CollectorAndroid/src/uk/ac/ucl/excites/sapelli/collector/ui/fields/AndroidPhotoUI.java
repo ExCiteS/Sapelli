@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
@@ -109,8 +110,13 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				photoView = new CameraView(collectorUI.getContext());
 			
 			// Init/reset the view:
-			photoView.update();
-			
+			if ( field.isMultiple() && (field.getCount(controller.getCurrentRecord()) > 0)) {
+				// if already some photos to show, show picker
+				photoView.update(true);
+			} else {
+				// else just show capture UI
+				photoView.update(false);
+			}
 			// Return view:
 			return photoView;
 		}
@@ -211,14 +217,27 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			}
 		}
 		
-		public void update()
+		public void update(boolean goToPicker)
 		{
 			handlingClick = new Semaphore(1);
-			// Switch back to capture layout if needed:
-			if (getCurrentView() == reviewLayout)
-				showPrevious();
-			else if(getCurrentView() == pickerLayout)
-				showNext();
+			if (!goToPicker || !field.isMultiple()) {
+				// either show capture layout...
+				if (getCurrentView() == reviewLayout) {
+					showPrevious();
+				}
+				if (getCurrentView() == pickerLayout) {
+					showNext();
+				}
+			} else {
+				// or show picker...
+				if (getCurrentView() == reviewLayout) {
+					showNext();
+				}
+				if (getCurrentView() == captureLayout) {
+					showPrevious();
+				}
+				photoPicker.loadPhotos(); // reload photos from disk
+			}
 		}
 		
 		public void finalise()
@@ -270,6 +289,16 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
                 });
 				
             }
+			
+			protected void loadPhotos() {
+				PickerAdapter adapter = new PickerAdapter();
+				List<File> photoFiles = controller.getMediaAttachments();
+				for (File f : photoFiles) {
+					FileImageItem imgItem = new FileImageItem(f);
+					adapter.addItem(imgItem);
+				}
+				setAdapter(adapter);
+			}
 			
 			private void showPhotoDeleteLayout(int photoPosition) {
 				this.photoPosition = photoPosition;
@@ -414,8 +443,8 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 	                            cameraController.startPreview();
                             }
                             reviewPhotoData = null;
-            				Log.d("ReviewButton","Released semaphore, permits: "+handlingClick.availablePermits());
                             handlingClick.release();
+            				Log.d("ReviewButton","Released semaphore, permits: "+handlingClick.availablePermits());
 						}
                     }
 				};
@@ -503,7 +532,6 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 
 			protected void disableCaptureButton() {
 				if (!captureButtonDisabled) {
-					Log.d("PickerButtonView","Disabling capture button...");
 					captureButtonDisabled = true;
 					// Remove stale buttons:
 					removeButtons();
