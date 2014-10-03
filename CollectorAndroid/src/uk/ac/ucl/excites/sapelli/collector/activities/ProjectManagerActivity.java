@@ -11,8 +11,6 @@ import java.net.URL;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import com.sriramramani.droid.inspector.server.ViewServer;
-
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
@@ -128,8 +126,6 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		ViewServer.get(this).addWindow(this);
-
 		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try {
 			app.getSapelliFolder(); // throws IllegalStateException if not accessible or not create-able
@@ -208,8 +204,6 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	@Override
 	protected void onResume() {
 		super.onResume();
-		ViewServer.get(this).setFocusedWindow(this);
-
 		// Initialise DeviceID:
 		DeviceID.Initialise(this, this); // will post a callback upon completion (success/failure)
 
@@ -263,7 +257,6 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 
 	@Override
 	protected void onDestroy() {
-		ViewServer.get(this).removeWindow(this);
 		// clean up:
 		app.discardStoreUsage(projectStore, this); // signal that the activity no longer needs the DAO
 		// super:
