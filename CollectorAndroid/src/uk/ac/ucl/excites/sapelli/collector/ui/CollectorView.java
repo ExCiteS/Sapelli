@@ -79,6 +79,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final float PADDING_DIP = 2.0f;
 
 	static public final int COLOR_SEMI_TRANSPARENT_GRAY = Color.parseColor("#80777777");
+	static public final int COLOR_MOSTLY_OPAQUE_GRAY = Color.parseColor("#CC777777");
 	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
 
 	// ScreenTransition duration

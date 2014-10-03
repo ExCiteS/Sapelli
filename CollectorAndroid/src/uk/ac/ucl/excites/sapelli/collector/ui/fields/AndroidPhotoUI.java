@@ -34,7 +34,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
@@ -306,6 +305,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				flipperParent.removeView(deletePhotoLayout);
 				flipperParent.addView(CameraView.this);
 				getAdapter().notifyDataSetChanged(); // in case an item was deleted
+				buttons.getAdapter().notifyDataSetChanged(); //if item deleted, capture button may change
 			}
 			
 			protected void disableCaptureButton() {
@@ -458,6 +458,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		{
 
 			private Item captureButton;
+			private Item approveButton;
 			private boolean captureButtonDisabled = false;
 			
 			public PickerButtonView(Context context)
@@ -471,15 +472,18 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 						if (handlingClick.tryAcquire()) {
 							if (position == 0) {
 	 							// camera button clicked, return to camera interface
-    							showNext();
-                                cameraController.startPreview();
-                                
+    							if (!captureButtonDisabled) {
+									showNext();
+	                                cameraController.startPreview();
+    							}
+    							else {
+    								// handle user pressing camera button when max reached?
+    							}
                             } else {
 	                            //approve button clicked, so proceed to next field
 	                            mediaDone(null, true);
 	                            cameraController.close();
                             }
-							
                             handlingClick.release();
 						}
                     }
@@ -487,50 +491,60 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				
 			}
 
+			protected void enableCaptureButton() {
+				if (captureButtonDisabled) {
+					captureButtonDisabled = false;
+					// Remove stale buttons:
+					removeButtons();
+					// Add new buttons now that captureButtonDisabled changed:
+					addButtons();
+				}
+            }
+
 			protected void disableCaptureButton() {
 				if (!captureButtonDisabled) {
 					Log.d("PickerButtonView","Disabling capture button...");
 					captureButtonDisabled = true;
-					LayeredItem layeredItem = new LayeredItem();
-					layeredItem.addLayer(createCaptureButton(), false);
-
-					// Make background of layered stack gray:
-					layeredItem.setBackgroundColor(CollectorView.COLOR_GRAY);
-					// Add grayed-out layer:
-					Item grayOutOverlay = new EmptyItem();
-					grayOutOverlay.setBackgroundColor(CollectorView.COLOR_SEMI_TRANSPARENT_GRAY);
-					layeredItem.addLayer(grayOutOverlay, false);	
-					
-					// Swap buttons out:
-					getAdapter().removeItem(captureButton);
-					getAdapter().addItemAt(0,layeredItem);
-					//TODO fix this
-					captureButton = layeredItem;
-					getAdapter().notifyDataSetChanged();
-					
-					//TODO change onClick
+					// Remove stale buttons:
+					removeButtons();
+					// Add new buttons now that captureButtonDisabled changed:
+					addButtons();
 				}
             }
 			
-			protected void enableCaptureButton() {
-				if (captureButtonDisabled) {
-					captureButtonDisabled = false;
-					getAdapter().removeItem(captureButton);
-					captureButton = createCaptureButton();
-					getAdapter().addItemAt(0, captureButton);
-					getAdapter().notifyDataSetChanged();
-				}
+			private void removeButtons() {
+				// Capture button:
+				getAdapter().removeItem(captureButton);
+				// Approve button:
+				getAdapter().removeItem(approveButton);
+				getAdapter().notifyDataSetChanged();
+	            
             }
 			
-			private ImageItem createCaptureButton() {
-				ImageItem captureButton = null;
+			private Item createCaptureButton() {
+				Item captureButton = null;
 				File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(captureImgFile))
 					captureButton = new FileImageItem(captureImgFile);
 				else
 					captureButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_photo_svg);
 				captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-				return captureButton;
+				if (captureButtonDisabled) {
+					LayeredItem layeredItem = new LayeredItem();
+					layeredItem.addLayer(captureButton, false);
+					
+					// Make background of layered stack gray:
+					layeredItem.setBackgroundColor(CollectorView.COLOR_GRAY);
+					// Add grayed-out layer:
+					Item grayOutOverlay = new EmptyItem();
+					grayOutOverlay.setBackgroundColor(CollectorView.COLOR_MOSTLY_OPAQUE_GRAY);
+					layeredItem.addLayer(grayOutOverlay, false);	
+					
+					return layeredItem;
+				}
+				else {
+					return captureButton;
+				}
 			}
 
 			@Override
@@ -543,10 +557,11 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			protected void addButtons()
 			{
 				// Capture button:
-				addButton(createCaptureButton());
+				captureButton = createCaptureButton();
+				addButton(captureButton);
 				
 				// Approve button:
-				Item approveButton = null;
+				approveButton = null;
 				File approveImgFile = controller.getProject().getImageFile(field.getApproveButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(approveImgFile))
 					approveButton = new FileImageItem(approveImgFile);
@@ -657,7 +672,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				setPadding(0, collectorUI.getSpacingPx(), 0, 0);
 
 				// Columns
-				setNumColumns(getNumberOfColumns());
+				setNumColumns(getNumberOfColumns()); //TODO necessary?
 
 				// Images/buttons:
 
