@@ -804,6 +804,14 @@ public abstract class Controller
 		return currFormSession.getCurrentField();
 	}
 	
+	/**
+	 * @return the current FieldArguments
+	 */
+	public FieldParameters getCurrentFieldArguments()
+	{
+		return currFormSession.getCurrentFieldArguments();
+	}
+	
 	public void addLogLine(String... fields)
 	{
 		if(logger != null)
