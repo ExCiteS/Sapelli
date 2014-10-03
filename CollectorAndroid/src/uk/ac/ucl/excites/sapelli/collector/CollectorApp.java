@@ -96,7 +96,7 @@ public class CollectorApp extends Application implements StoreClient {
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
-		 Debug.d(newConfig.toString());
+		Debug.d(newConfig.toString());
 	}
 
 	/**
@@ -144,7 +144,7 @@ public class CollectorApp extends Application implements StoreClient {
 	@Override
 	public void onLowMemory() {
 		super.onLowMemory();
-		 Debug.d("onLowMemory() called!");
+		Debug.d("onLowMemory() called!");
 	}
 
 	@Override
@@ -153,7 +153,7 @@ public class CollectorApp extends Application implements StoreClient {
 		// This method is for use in emulated process environments. It will never be called on
 		// a production Android device, where processes are removed by simply killing them; no
 		// user code (including this callback) is executed when doing so.
-		 Debug.d("Should never be called!");
+		Debug.d("Should never be called!");
 	}
 
 	/**
