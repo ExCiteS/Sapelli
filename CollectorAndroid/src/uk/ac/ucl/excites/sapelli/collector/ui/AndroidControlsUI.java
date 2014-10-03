@@ -203,18 +203,18 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		{
 			switch(audioFeedback)
 			{
-			case LONG_CLICK_AUDIO_FILES:
-			case SEQUENTIAL_AUDIO_FILES:
+
+			case LONG_CLICK:
+
+				// TODO: decide TTS / MediaPlayer
 
 				// If the choice has an audio, pass that audio to the Media Player
-				// TODO
-				return true;
+				if(false)
+					return true;
+				else
+					// Enable TTS Audio Feedback
+					controller.textToVoice(item.getDescription());
 
-			case LONG_CLICK_TTS:
-			case SEQUENTIAL_TTS:
-
-				// Enable TTS Audio Feedback
-				controller.textToVoice(item.getDescription());
 				break;
 
 			case NONE:

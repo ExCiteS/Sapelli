@@ -94,7 +94,7 @@ public class Form
 	// Dynamics-------------------------------------------------------
 	public static enum AudioFeedback
 	{
-		NONE, LONG_CLICK_AUDIO_FILES, LONG_CLICK_TTS, SEQUENTIAL_AUDIO_FILES, SEQUENTIAL_TTS
+		NONE, LONG_CLICK, SEQUENTIAL
 	}
 
 	public static final AudioFeedback DEFAULT_AUDIO_FEEDBACK = AudioFeedback.NONE;
