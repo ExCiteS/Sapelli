@@ -149,15 +149,17 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			switch(audioFeedback)
 			{
 			case LONG_CLICK:
-
-				// TODO: decide TTS / MediaPlayer
+			case SEQUENTIAL:
 
 				// If the choice has an audio, pass that audio to the Media Player
-				if(child.hasChoiceAudio())
-					controller.audioToVoice(controller.getProject().getSoundFolderPath() + child.getChoiceAudioRelativePath());
+				if(child.hasAudioAnswerDesc())
+					controller.audioToVoice(controller.getProject().getSoundFolderPath() + child.getAnswerDesc());
+				else if(child.getAnswerDesc() != null)
+					// Enable TTS Audio Feedback
+					controller.textToVoice(child.getAnswerDesc());
 				else
-				// Enable TTS Audio Feedback
-				controller.textToVoice(child.getAltText());
+					// Enable TTS Audio Feedback
+					controller.textToVoice(child.getAltText());
 
 				break;
 

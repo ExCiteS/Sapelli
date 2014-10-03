@@ -205,6 +205,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			{
 
 			case LONG_CLICK:
+			case SEQUENTIAL:
 
 				// TODO: decide TTS / MediaPlayer
 
