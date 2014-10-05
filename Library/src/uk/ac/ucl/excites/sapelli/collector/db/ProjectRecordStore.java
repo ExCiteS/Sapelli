@@ -59,12 +59,12 @@ public class ProjectRecordStore extends ProjectStore
 	//	Held Foreign Key (HFK) schema: to store "held" foreign keys (RecordReferences) on Relationship fields
 	static public final Schema HFK_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "HeldForeignKey");
 	//		Columns:
-	static private final ForeignKeyColumn HFK_PROJECT_KEY_COLUMN = new ForeignKeyColumn("project", PROJECT_SCHEMA, false);
+	static private final ForeignKeyColumn HFK_PROJECT_KEY_COLUMN = new ForeignKeyColumn(PROJECT_SCHEMA, false);
 	static private final IntegerColumn HFK_FORM_POSITION_COLUMN = new IntegerColumn("formPosition", false, 0, Project.MAX_FORMS - 1);
 	static private final IntegerColumn HFK_RELATIONSHIP_FIELD_POSITION_COLUMN = new IntegerColumn("relationshipFieldPosition", false, 0, Form.MAX_FIELDS - 1);
 	static private final StringColumn HFK_SERIALISED_RECORD_REFERENCE = StringColumn.ForCharacterCount("serialisedRecordReference", false, 256);
 	//		Primary key:
-	static private final PrimaryKey HFK_KEY = PrimaryKey.WithColumnNames(PROJECT_ID_COLUMN, PROJECT_FINGERPRINT_COLUMN);
+	static private final PrimaryKey HFK_KEY = PrimaryKey.WithColumnNames(HFK_PROJECT_KEY_COLUMN, HFK_FORM_POSITION_COLUMN, HFK_RELATIONSHIP_FIELD_POSITION_COLUMN);
 	//		Add columns and primary key to HFK schema & seal it:
 	static
 	{
