@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 
 import com.db4o.ObjectContainer;
@@ -165,7 +166,9 @@ public class DB4ORecordStore extends RecordStore
 	 */
 	@Override
 	public List<Record> retrieveRecords(final RecordsQuery query)
-	{		
+	{
+		final Source source = query.getSource();
+		
 		// Query for records:
 		ObjectSet<Record> resultSet = db4o.query(new Predicate<Record>()
 		{
@@ -173,8 +176,8 @@ public class DB4ORecordStore extends RecordStore
 
 			public boolean match(Record record)
 			{
-				return	!record.getSchema().isInternal()													/* filter out records of internal schemas */
-						&& (query.isAnySchema() || query.getSourceSchemata().contains(record.getSchema()));	/* Schema check */
+				return	!record.getSchema().isInternal()	/* filter out records of internal schemas */
+						&& (source.isValid(record));		/* Schema check */
 			}
 		});
 		
@@ -190,7 +193,7 @@ public class DB4ORecordStore extends RecordStore
 		}
 		
 		// Sort result:
-		query.sort(result);
+		query.getOrder().sort(result);
 		
 		// Apply limit if necessary & return result:
 		int limit = query.getLimit();

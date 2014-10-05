@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.db;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
@@ -29,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 
 /**
  * Abstract superclass for Record storage back-ends
@@ -246,7 +248,7 @@ public abstract class RecordStore implements Store
 	 */
 	public List<Record> retrieveAllRecords()
 	{
-		return retrieveRecords(new RecordsQuery());
+		return retrieveRecords(RecordsQuery.ALL);
 	}
 	
 	/**
@@ -257,7 +259,7 @@ public abstract class RecordStore implements Store
 	 */
 	public List<Record> retrieveRecords(Schema schema)
 	{
-		return retrieveRecords(new RecordsQuery(schema));
+		return retrieveRecords(new RecordsQuery(Source.From(schema)));
 	}
 	
 	/**
@@ -266,9 +268,9 @@ public abstract class RecordStore implements Store
 	 * @param schemata
 	 * @return
 	 */
-	public List<Record> retrieveRecords(List<Schema> schemata)
+	public List<Record> retrieveRecords(Set<Schema> schemata)
 	{
-		return retrieveRecords(new RecordsQuery(schemata));
+		return retrieveRecords(new RecordsQuery(Source.From(schemata)));
 	}
 
 	/**

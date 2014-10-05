@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 
 import com.almworks.sqlite4java.SQLiteBackup;
 import com.almworks.sqlite4java.SQLiteConnection;
@@ -57,7 +58,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		db.open(true);
 		
 		// Initialise:
-		initialise(!doesTableExist(SCHEMATA_TABLE_NAME));
+		initialise(!doesTableExist(client.getTableName(Model.MODEL_SCHEMA)));
 	}
 	
 	@Override

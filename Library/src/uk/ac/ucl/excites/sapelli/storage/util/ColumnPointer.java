@@ -34,7 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
  * 
  * @author mstevens
  */
-public class ColumnPointer implements Comparator<Record>
+public class ColumnPointer
 {
 	
 	private final Stack<Column<?>> columnStack;
@@ -334,23 +334,6 @@ public class ColumnPointer implements Comparator<Record>
 		}
 		return bldr.toString();
 	}
-
-	@SuppressWarnings("rawtypes")
-	@Override
-	public int compare(Record lhs, Record rhs)
-	{
-		if(!(getColumn() instanceof ComparableColumn))
-			throw new IllegalStateException("This ColumnPointer does not point to a ComparatorColumn");
-		
-		// Get sub records:
-		lhs = getRecord(lhs, false);
-		rhs = getRecord(rhs, false);
-		
-		// Compare:
-		return lhs == null ?
-				(rhs == null ? 0 : Integer.MIN_VALUE) :
-				(rhs == null ? Integer.MAX_VALUE : ((ComparableColumn) getColumn()).compare(lhs, rhs));		
-	}
 	
 	@Override
 	public boolean equals(Object obj)
@@ -371,6 +354,36 @@ public class ColumnPointer implements Comparator<Record>
 		int hash = 1;
 		hash = 31 * hash + columnStack.hashCode();
 		return hash;
+	}
+	
+	public Comparator<Record> getComparator()
+	{
+		Column<?> col = getColumn();
+		if(col == null)
+			return null;
+		if(col instanceof ComparableColumn)
+		{
+			final ComparableColumn<?> compCol = (ComparableColumn<?>) col;
+			return new Comparator<Record>()
+			{
+				
+				@Override
+				public int compare(Record lhs, Record rhs)
+				{
+					// Get sub records:
+					lhs = getRecord(lhs, false);
+					rhs = getRecord(rhs, false);
+					
+					// Compare:
+					return lhs == null ?
+							(rhs == null ? 0 : Integer.MIN_VALUE) :
+							(rhs == null ? Integer.MAX_VALUE : compCol.compare(lhs, rhs));
+				}
+				
+			};
+		}
+		else
+			throw new IllegalArgumentException("ColumnPointer does not point to a ComparatorColumn");
 	}
 
 }

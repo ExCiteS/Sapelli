@@ -182,13 +182,11 @@ public abstract class Column<T> implements Serializable
 	 *
 	 * @param record
 	 * @param value (may be null if column is optional)
-	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
+	 * @throws IllegalArgumentException when this column is not part of the record's schema, nor compatible with a column by the same name that is, or when the given value is invalid
 	 * @throws NullPointerException if value is null on an non-optional column
 	 */
 	public void storeValue(Record record, T value) throws IllegalArgumentException, NullPointerException, UnsupportedOperationException
 	{
-		if(!record.getSchema().containsColumn(this, false))
-			throw new IllegalArgumentException("Schema mismatch.");
 		if(value == null)
 		{
 			if(!optional)
@@ -200,16 +198,15 @@ public abstract class Column<T> implements Serializable
 	}
 
 	/**
-	 * Retrieves previously stored value for this column at a given record and casts it to the relevant native type (T)
+	 * Retrieves previously stored value for this column at a given record and casts it to the relevant native type (T).
 	 *
 	 * @param record
 	 * @return stored value (may be null)
+	 * @throws IllegalArgumentException when this column is not part of the record's schema, nor compatible with a column by the same name that is
 	 */
 	@SuppressWarnings("unchecked")
-	public T retrieveValue(Record record)
+	public T retrieveValue(Record record) throws IllegalArgumentException
 	{
-		if(!record.getSchema().containsColumn(this, false))
-			throw new IllegalArgumentException("Schema mismatch.");
 		return (T) record.getValue(this);
 	}
 
@@ -218,8 +215,9 @@ public abstract class Column<T> implements Serializable
 	 *
 	 * @param record
 	 * @return whether or not a (non-null) value is set
+	 * @throws IllegalArgumentException when this column is not part of the record's schema, nor compatible with a column by the same name that is
 	 */
-	public boolean isValueSet(Record record)
+	public boolean isValueSet(Record record) throws IllegalArgumentException
 	{
 		return retrieveValue(record) != null;
 	}
@@ -559,7 +557,7 @@ public abstract class Column<T> implements Serializable
 	@Override
 	public boolean equals(Object obj)
 	{
-		return equals(obj, false, true); // do not check name by default, but do check restrictions by default
+		return equals(obj, true, true);
 	}
 
 	/**
@@ -593,6 +591,21 @@ public abstract class Column<T> implements Serializable
 			// Check restrictions (size/content):
 			return !checkRestrictions || equalRestrictions(other);
 		}
+		else
+			return false;
+	}
+	
+	/**
+	 * Checks if this column is compatible with another in terms of type, optionality & restrictions
+	 * 
+	 * @param another
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	protected boolean isCompatible(Column<?> another)
+	{
+		if(this.getClass().isInstance(another))
+			return this.optional == another.optional && equalRestrictions((Column<T>) another);
 		else
 			return false;
 	}

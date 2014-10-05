@@ -94,7 +94,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	
 	public SQLiteRecordStore(StorageClient client) throws Exception
 	{
-		super(client);
+		super(client, PARAM_PLACEHOLDER);
 		factory = new SQLiteTableFactory();
 	}
 
@@ -236,15 +236,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 */
 	protected abstract SapelliSQLiteStatement getStatement(String sql, List<SQLiteColumn<?, ?>> paramCols) throws DBException;
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore#getParameterPlaceHolder()
-	 */
-	@Override
-	protected String getParameterPlaceHolder()
-	{
-		return PARAM_PLACEHOLDER;
-	}
-	
 	/**
 	 * @author mstevens
 	 *
@@ -297,7 +288,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			if(insertStatement == null)
 			{
-				RecordInsertHelper insertHelper = new RecordInsertHelper(this, PARAM_PLACEHOLDER);
+				RecordInsertHelper insertHelper = new RecordInsertHelper(this);
 				insertStatement = getStatement(insertHelper.getQuery(), insertHelper.getParameterColumns());
 			}
 			else
@@ -322,7 +313,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			if(updateStatement == null)
 			{
-				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this, PARAM_PLACEHOLDER);
+				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this);
 				updateStatement = getStatement(updateHelper.getQuery(), updateHelper.getParameterColumns());
 			}
 			else
@@ -349,7 +340,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		{
 			if(deleteStatement == null)
 			{
-				RecordDeleteHelper deleteHelper = new RecordDeleteHelper(this, PARAM_PLACEHOLDER);
+				RecordDeleteHelper deleteHelper = new RecordDeleteHelper(this);
 				deleteStatement = getStatement(deleteHelper.getQuery(), deleteHelper.getParameterColumns());
 			}
 			else
@@ -811,13 +802,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 * @author mstevens
 	 *
 	 */
-	protected class SelectROWIDHelper extends RecordUpdateDeleteHelper
+	protected class SelectROWIDHelper extends RecordByPrimaryKeyHelper
 	{
 
 		public SelectROWIDHelper(SQLiteTable table)
 		{
 			// Initialise
-			super(table, PARAM_PLACEHOLDER);
+			super(table);
 			
 			// Build statement:			
 			bldr.append("SELECT ROWID FROM");

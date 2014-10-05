@@ -51,6 +51,19 @@ public abstract class TransmissionClient extends StorageClient
 		return reserved;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
+	 */
+	@Override
+	public String getTableName(Schema schema)
+	{
+		if(schema == TransmissionStore.TRANSMISSION_SCHEMA)
+			return "Transmissions";
+		if(schema == TransmissionStore.TRANSMISSION_PART_SCHEMA)
+			return "Transmission_Parts";
+		return super.getTableName(schema);
+	}
+	
 	public abstract EncryptionSettings getEncryptionSettingsFor(Model model) throws UnknownModelException;
 	
 	public abstract Payload newPayload(int nonBuiltinType);

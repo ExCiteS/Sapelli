@@ -35,7 +35,8 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Order;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
@@ -285,7 +286,7 @@ public class TransmissionStore implements Store
 	public Transmission retrieveTransmission(int localID)
 	{
 		// Query for record:
-		Record tRec = recordStore.retrieveRecord(new FirstRecordQuery(new RecordsQuery(TRANSMISSION_SCHEMA, new RuleConstraint(TRANSMISSION_COLUMN_ID, Comparison.EQUAL, Long.valueOf(localID)))));
+		Record tRec = recordStore.retrieveRecord(new FirstRecordQuery(Source.From(TRANSMISSION_SCHEMA), Order.UNDEFINED, new RuleConstraint(TRANSMISSION_COLUMN_ID, Comparison.EQUAL, Long.valueOf(localID))));
 		
 		// Null check:
 		if(tRec == null)

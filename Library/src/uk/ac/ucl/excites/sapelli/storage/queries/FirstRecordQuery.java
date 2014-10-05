@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.queries;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 
 /**
  * @author mstevens
@@ -30,17 +31,13 @@ public class FirstRecordQuery extends SingleRecordQuery
 {
 
 	/**
-	 * @param recordsQuery, which will be limited to 1 if it isn't already!
+	 * @param source
+	 * @param order
+	 * @param constraints
 	 */
-	public FirstRecordQuery(RecordsQuery recordsQuery)
+	public FirstRecordQuery(Source source, Order order, Constraint... constraints)
 	{
-		super(recordsQuery.getLimit() == 1 ?
-				recordsQuery :
-				new RecordsQuery(	recordsQuery.getSourceSchemata(),
-									recordsQuery.getOrderBy(),
-									recordsQuery.isOrderAsc(),
-									1, // !!! ensure limit of 1
-									recordsQuery.getConstraints()));
+		super(new RecordsQuery(source, order, 1, constraints));
 	}
 
 	/* (non-Javadoc)

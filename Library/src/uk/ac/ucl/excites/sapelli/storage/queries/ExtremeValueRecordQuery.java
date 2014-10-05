@@ -60,7 +60,7 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	
 	static public ExtremeValueRecordQuery Max(ColumnPointer columnPointer, Schema sourceSchema)
 	{
-		return new ExtremeValueRecordQuery(columnPointer, true, new RecordsQuery(sourceSchema));
+		return new ExtremeValueRecordQuery(columnPointer, true, new RecordsQuery(Source.From(sourceSchema)));
 	}
 	
 	static public ExtremeValueRecordQuery Min(ComparableColumn<?> column)
@@ -90,7 +90,7 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	
 	static public ExtremeValueRecordQuery Min(ColumnPointer columnPointer, Schema sourceSchema)
 	{
-		return new ExtremeValueRecordQuery(columnPointer, false, new RecordsQuery(sourceSchema));
+		return new ExtremeValueRecordQuery(columnPointer, false, new RecordsQuery(Source.From(sourceSchema)));
 	}
 	
 	// DYNAMICS------------------------------------------------------
@@ -133,7 +133,7 @@ public class ExtremeValueRecordQuery extends SingleRecordQuery
 	@Override
 	protected Record reduce(List<Record> records)
 	{
-		return max ? Collections.max(records, columnPointer) : Collections.min(records, columnPointer);
+		return max ? Collections.max(records, columnPointer.getComparator()) : Collections.min(records, columnPointer.getComparator());
 	}
 
 	@Override

@@ -54,6 +54,26 @@ public abstract class StorageClient
 	{
 		return new ArrayList<Model>();
 	}
+	
+	/**
+	 * Returns the name to be used for a table which will contain records of the given schema in
+	 * back-end (relational) database storage (i.e. through a RecordStore implementation).
+	 * 
+	 * May be overridden by subclasses to add additional exceptional cases.
+	 * 
+	 * @return
+	 */
+	public String getTableName(Schema schema)
+	{
+		if(schema == Model.MODEL_SCHEMA)
+			return "Models";
+		if(schema == Schema.META_SCHEMA)
+			return "Schemata";
+		if(!schema.isInternal())
+			return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber(); // we don't use schema#name to avoid name clashes and illegal characters
+		else
+			return schema.internal.name(); // unlikely to ever used as a table name because records of "internal" schemata cannot be stored directly by RecordStore implementations
+	}
 		
 	/**
 	 * @param modelID

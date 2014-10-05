@@ -35,18 +35,18 @@ public abstract class SingleRecordQuery
 	
 	public SingleRecordQuery()
 	{
-		this(new RecordsQuery());
+		this((RecordsQuery) null);
 	}
 	
 	public SingleRecordQuery(Schema sourceSchema)
 	{
-		this(new RecordsQuery(sourceSchema));
+		this(new RecordsQuery(Source.From(sourceSchema)));
 	}
 	
 	public SingleRecordQuery(RecordsQuery recordsQuery)
 	{
 		if(recordsQuery == null)
-			this.recordsQuery = new RecordsQuery(); // query across all schemata without constraints
+			this.recordsQuery = RecordsQuery.ALL; // query across all schemata without constraints
 		else
 			this.recordsQuery = recordsQuery;
 	}
@@ -89,7 +89,7 @@ public abstract class SingleRecordQuery
 			else
 			{
 				// Sort:
-				recordsQuery.sort(records);
+				recordsQuery.order.sort(records);
 				
 				 // Reduce & return:
 				return reduce(records);

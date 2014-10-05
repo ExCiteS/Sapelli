@@ -27,19 +27,10 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
  */
 public class NotConstraint extends Constraint
 {
-	
-	/**
-	 * @param constraintToNegate
-	 * @return
-	 */
-	/*package*/ static Constraint Negate(Constraint constraintToNegate)
-	{
-		return new NotConstraint(constraintToNegate).reduce();
-	}
 
 	private final Constraint negatedConstraint;
 	
-	private NotConstraint(Constraint negatedConstraint)
+	public NotConstraint(Constraint negatedConstraint)
 	{
 		this.negatedConstraint = Constraint.Reduce(negatedConstraint);
 	}

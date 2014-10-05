@@ -19,14 +19,15 @@
 package uk.ac.ucl.excites.sapelli.storage.model;
 
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 
 /**
- * Class representing a reference to another {@link Record}, identified by the value of its primary key.
+ * Class representing a reference to another {@link Record}, identified by the value(s) of its primary key.
  * This is equivalent to a foreign key, as used to reference a record of another ("foreign") schema.
  * 
  * Implemented as a Record subclass, with an {@link PrimaryKey} instance (i.e. the primary key of the referenced, or "foreign" schema) as its schema.
@@ -48,7 +49,19 @@ public class RecordReference extends Record
 	 */
 	public RecordReference(Schema referencedSchema) throws NullPointerException
 	{
-		super(referencedSchema.getPrimaryKey()); // We use the recordSchema's primary key as the schema for this record
+		this(referencedSchema, (Object []) null);
+	}
+	
+	/**
+	 * Creates a new RecordReference, to be used for referencing a record of the given schema, which is initialised with the given key part values. 
+	 * 
+	 * @param referencedSchema (also called "foreign" schema)
+	 * @param keyPartPalues to initialise the recordReference, the number of values must match number of columns in primary key of the referencedSchema
+	 * @throws NullPointerException	if the referencedSchema does not have a primary key
+	 */
+	public RecordReference(Schema referencedSchema, Object... keyPartPalues) throws NullPointerException
+	{
+		super(referencedSchema.getPrimaryKey(), keyPartPalues); // We use the recordSchema's primary key as the schema for this record (i.e. for the recordReference, which is "a record" in its own right)
 		this.referencedSchema = referencedSchema;
 	}
 	
@@ -67,7 +80,7 @@ public class RecordReference extends Record
 		{
 			Object keyPartValue = keyPartCol.retrieveValueCopy(record);
 			if(keyPartValue == null)
-				throw new IllegalArgumentException("Cannot construct ForeignKey from record because key part \"" + keyPartCol.getName() + "\" has not been set");
+				throw new IllegalArgumentException("Cannot construct RecordReference from record because key part \"" + keyPartCol.getName() + "\" has not been set");
 			setValue(keyPartCol, keyPartValue);
 		}
 	}
@@ -92,17 +105,24 @@ public class RecordReference extends Record
 	}
 	
 	/**
-	 * Returns a {@link SingleRecordQuery} which can be used to find the reference record.
+	 * Returns a {@link SingleRecordQuery} which can be used to find the referenced record in a RecordStore or Collection.
 	 * 
 	 * @return a query that looks for the record this reference points to
+	 * @throws IllegalStateException when not all columns of this recordReference have been assigned a value
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getRecordQuery()
 	 */
-	public SingleRecordQuery getRecordQuery()
-	{		
-		// Single record query:
-		return new FirstRecordQuery(new RecordsQuery(referencedSchema, 1, getRecordQueryConstraint()));
+	public SingleRecordQuery getRecordQuery() throws IllegalStateException
+	{
+		return new FirstRecordQuery(Source.From(referencedSchema), Order.UNDEFINED, getRecordQueryConstraint());
 	}
 	
-	public Constraint getRecordQueryConstraint()
+	/**
+	 * Returns a {@link Constraint} that matches on the referenced record's primary key values.
+	 * 
+	 * @throws IllegalStateException when not all columns of this recordReference have been assigned a value
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getRecordQueryConstraint()
+	 */
+	public Constraint getRecordQueryConstraint() throws IllegalStateException
 	{
 		if(!isFilled())
 			throw new IllegalStateException("All values of the key must be set before a query can be created!");
@@ -113,7 +133,7 @@ public class RecordReference extends Record
 		for(Object keyPart : values)
 			constraints.addConstraint(new EqualityConstraint(schema.getColumn(c++), keyPart));
 		
-		return constraints;
+		return constraints.reduce();
 	}
 	
 	@Override

@@ -34,7 +34,7 @@ public class ProjectRecordStore extends ProjectStore
 	//	Model:
 	static public final Model COLLECTOR_MANAGEMENT_MODEL = new Model(SapelliCollectorClient.COLLECTOR_MANAGEMENT_MODEL_ID, "CollectorManagement");
 	//	 Project schema:
-	static private final Schema PROJECT_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "Project");
+	static public final Schema PROJECT_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "Project");
 	//		Columns:
 	static private final IntegerColumn PROJECT_ID_COLUMN = new IntegerColumn("id", false, Project.PROJECT_ID_FIELD);
 	static private final IntegerColumn PROJECT_FINGERPRINT_COLUMN = new IntegerColumn("fingerprint", false, Project.PROJECT_FINGERPRINT_FIELD);
@@ -56,8 +56,8 @@ public class ProjectRecordStore extends ProjectStore
 		PROJECT_SCHEMA.setPrimaryKey(PROJECT_KEY);
 		PROJECT_SCHEMA.seal(); // !!!
 	}
-	//	Held Foreign Key (HFK) schema
-	static private final Schema HFK_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "HeldForeignKey");
+	//	Held Foreign Key (HFK) schema: to store "held" foreign keys (RecordReferences) on Relationship fields
+	static public final Schema HFK_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "HeldForeignKey");
 	//		Columns:
 	static private final ForeignKeyColumn HFK_PROJECT_KEY_COLUMN = new ForeignKeyColumn("project", PROJECT_SCHEMA, false);
 	static private final IntegerColumn HFK_FORM_POSITION_COLUMN = new IntegerColumn("formPosition", false, 0, Project.MAX_FORMS - 1);

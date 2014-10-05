@@ -19,8 +19,9 @@
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -40,7 +41,9 @@ import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
@@ -375,7 +378,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 			try
 			{
 				// Schemas (when list stays empty all records of any schema/project/form will be fetched):
-				List<Schema> schemata = new ArrayList<Schema>();
+				Set<Schema> schemata = new HashSet<Schema>();
 				if(project != null && radioSelectedProject.isChecked())
 					schemata.addAll(project.getModel().getSchemata());
 				// Date range:
@@ -385,7 +388,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 				if(dateRange[DT_RANGE_IDX_TO] != null)
 					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
 				// Retrieve by query:
-				return recordStore.retrieveRecords(new RecordsQuery(schemata, constraints));
+				return recordStore.retrieveRecords(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, RecordsQuery.NO_LIMIT, constraints));
 			}
 			catch(Exception e)
 			{

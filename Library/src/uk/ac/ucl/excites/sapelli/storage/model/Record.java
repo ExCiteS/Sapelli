@@ -33,6 +33,13 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Order;
+import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 
 /**
  * A class representing records of a certain Schema
@@ -57,7 +64,12 @@ public class Record implements Serializable
 	protected boolean exported = false;
 	protected Long transmissionID;
 	
-	public Record(Schema schema)
+	/**
+	 * Creates a new "empty" record of the given schema
+	 * 
+	 * @param schema
+	 */
+	protected Record(Schema schema)
 	{
 		if(schema == null)
 			throw new NullPointerException("Schema cannot be null!");
@@ -67,7 +79,13 @@ public class Record implements Serializable
 		values = new Object[schema.getNumberOfColumns(false)];
 	}
 	
-	public Record(Schema schema, Object... values)
+	/**
+	 * Creates an initialised record
+	 * 
+	 * @param schema
+	 * @param values to initialise record, number of values must match number of (real) columns in the schema and each value must be valid for the corresponding column
+	 */
+	protected Record(Schema schema, Object... values)
 	{
 		this(schema);
 		if(values != null)
@@ -87,22 +105,26 @@ public class Record implements Serializable
 	}
 	
 	/**
+	 * Creates an initialised record
+	 * 
 	 * @param schema
-	 * @param serialisedValues without virtual columns!
+	 * @param serialisedValues String to initialise record (should not contain values of virtual columns, i.e. the String must be as produced by {@link #serialise()})
 	 * @throws Exception 
 	 */
-	public Record(Schema schema, String serialisedValues) throws Exception
+	protected Record(Schema schema, String serialisedValues) throws Exception
 	{
 		this(schema);
 		parse(serialisedValues);
 	}
 
 	/**
+	 * Creates an initialised record
+	 * 
 	 * @param schema
-	 * @param serialisedValues without virtual columns!
+	 * @param serialisedValues byte array to initialise record (should not contain values of virtual columns, i.e. the String must be as produced by {@link #toBytes()})
 	 * @throws Exception 
 	 */
-	public Record(Schema schema, byte[] serialisedValues) throws Exception
+	protected Record(Schema schema, byte[] serialisedValues) throws Exception
 	{
 		this(schema);
 		fromBytes(serialisedValues);
@@ -138,6 +160,7 @@ public class Record implements Serializable
 	 * 
 	 * @param newSchema
 	 * @throws IllegalArgumentException - when the new schema is incompatible with the old one
+	 * @deprecated probably unsafe, avoid this unless there is a very good reason and you know what you are doing
 	 */
 	public void setSchema(Schema newSchema) throws IllegalArgumentException
 	{
@@ -151,6 +174,7 @@ public class Record implements Serializable
 	 * @param force - if true the old and new schema are *not* compared, but the number of columns of the new schema must *always* match the number of values!
 	 * @throws IndexOutOfBoundsException - when the new schema has a different number of columns than the number of values in the record
 	 * @throws IllegalArgumentException - when the new schema is incompatible with the old one
+	 * @deprecated probably unsafe, avoid this unless there is a very good reason and you know what you are doing
 	 */
 	public void setSchema(Schema newSchema, boolean force) throws IndexOutOfBoundsException, IllegalArgumentException
 	{
@@ -171,56 +195,85 @@ public class Record implements Serializable
 	 * To be called from {@link Column#storeValue(Record, Object)}
 	 * 
 	 * @param column
-	 * @param value
+	 * @param value the value to set
+	 * @throws IllegalArgumentException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
 	 */
-	protected void setValue(Column<?> column, Object value)
+	protected void setValue(Column<?> column, Object value) throws IllegalArgumentException
 	{
-		// Deal with virtual columns:
-		if(column instanceof VirtualColumn)
-			throw new IllegalArgumentException("Records do not hold values of virtual columns!"); // this should never happen
-		// Get column position:
-		int position = schema.getColumnPosition(column);
-		// Check position:
-		if(position == Schema.UNKNOWN_COLUMN_POSITION)
-			throw new IllegalArgumentException("The schema of this record has no such column (\"" + column.name + "\").");
-		// Get value:
-		values[position] = value;
+		values[getPosition(column)] = value; // set value in array
 	}
 	
 	/**
 	 * To be called from {@link Column#retrieveValue(Record)}
 	 * 
 	 * @param column
+	 * @param the current value
+	 * @throws IllegalArgumentException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
 	 */
-	protected Object getValue(Column<?> column)
+	protected Object getValue(Column<?> column) throws IllegalArgumentException
 	{
-		// Deal with virtual columns:
-		if(column instanceof VirtualColumn)
-			throw new IllegalArgumentException("Records do not hold values of virtual columns!"); // this should never happen
-		// Get column position:
-		int position = schema.getColumnPosition(column);
+		return values[getPosition(column)]; // return value from array
+	}
+	
+	/**
+	 * Returns the index (= position) at which the given column's value can be found in the values array.
+	 * 
+	 * @param column
+	 * @return values array index
+	 * @throws IllegalArgumentException when the column does not exist in the record's schema, because it is virtual, or because it is incompatible with the schema column by the same name
+	 */
+	private int getPosition(Column<?> column) throws IllegalArgumentException
+	{
+		// Get column position by its name:
+		int position = schema.getColumnPosition(column.name);
 		// Check position:
 		if(position == Schema.UNKNOWN_COLUMN_POSITION)
-			throw new IllegalArgumentException("The schema of this record has no such column (\"" + column.name + "\").");
-		// Set value:
-		return values[position];
+		{
+			if(column instanceof VirtualColumn)
+				throw new IllegalArgumentException("Records do not hold values of virtual columns!"); // this should never happen because VirtualColumn overrides Column#retrieveValue(Record) 
+			else
+				throw new IllegalArgumentException("The schema of this record has no such column (\"" + column.name + "\").");
+		}
+		// Compatibility check:
+		Column<?> schemaColumn = schema.getColumn(position);
+		if(column != schemaColumn && !column.isCompatible(schemaColumn))
+			throw new IllegalArgumentException("Schema mismatch: incompatible column.");
+		// All OK, return position:
+		return position;
 	}
 
 	/**
-	 * Checks whether all non-optional columns have been assigned a (non-null) value
+	 * Checks whether all non-optional columns have been assigned a (non-null) value in this record.
 	 * 
-	 * @return
+	 * @return whether of the all non-optional columns are filled
 	 */
 	public boolean isFilled()
 	{
-		for(Column<?> c : schema.getColumns(false))
-			if(getValue(c) == null && !c.isOptional())
+		for(int c = 0; c < values.length; c++)
+			if(values[c] == null && !schema.getColumn(c).isOptional())
 				return false; // null value in non-optional column	
 		return true;
 	}
 	
 	/**
-	 * Returns a reference to the record. Only works if the schema has a primary key, otherwise 
+	 * Checks whether all non-optional columns from the given schema have been assigned a (non-null) value in this record.
+	 * The given schema must be a subset of the record's schema or the record's schema itself.
+	 * This method was added for the purpose of checking whether primary keys (which are a subset of a schema's columns) have been set.
+	 * 
+	 * @param schema (subset of) the record's schema
+	 * @return whether of the all non-optional columns are filled
+	 * @throws IllegalArgumentException when the given schema contains a column(s) which is not part of the record's schema
+	 */
+	protected boolean isFilled(Schema schema) throws IllegalStateException
+	{
+		for(Column<?> col : schema.getColumns(false))
+			if(getValue(col) == null && !col.isOptional())
+				return false; // null value in non-optional column	
+		return true;
+	}
+	
+	/**
+	 * Returns a reference to the record. Only works if the schema has a primary key.
 	 * 
 	 * @return a {@link RecordReference} instance pointing to this record
 	 * @throws NullPointerException	if the Schema of this Record does not have a primary key
@@ -228,6 +281,36 @@ public class Record implements Serializable
 	public RecordReference getReference() throws NullPointerException
 	{
 		return new RecordReference(this);
+	}
+	
+	/**
+	 * Returns a {@link SingleRecordQuery} which can be used to find this record in a RecordStore or Collection, by matching the primary key (and no other columns!).
+	 * 
+	 * @return a query that looks for this record
+	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
+	 */
+	public SingleRecordQuery getRecordQuery() throws IllegalStateException
+	{
+		return new FirstRecordQuery(Source.From(schema), Order.UNDEFINED, getRecordQueryConstraint());
+	}
+	
+	/**
+	 * Returns a {@link Constraint} that matches on the Record's primary key values.
+	 * 
+	 * @return
+	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
+	 */
+	public Constraint getRecordQueryConstraint() throws IllegalStateException
+	{
+		if(!isFilled(schema.getPrimaryKey()))
+			throw new IllegalStateException("All values of the key must be set before a query can be created!");
+		
+		// Match for key parts:
+		AndConstraint constraints = new AndConstraint();
+		for(Column<?> keyPartCol : schema.getPrimaryKey().getColumns(false))
+			constraints.addConstraint(new EqualityConstraint(keyPartCol, getValue(keyPartCol)));
+		
+		return constraints.reduce();
 	}
 	
 	/**
@@ -529,7 +612,7 @@ public class Record implements Serializable
 			Record other = (Record) obj;
 			if(checkSchema)
 			{	// Check if records have the same (or 100% equivalent) schema
-				if(!this.schema.equals(other.schema))
+				if(!this.schema.equals(other.schema, true, true, false)) // there's no point in checking indexes for this purpose
 					return false;
 			}
 			else
@@ -537,8 +620,11 @@ public class Record implements Serializable
 				if(this.schema.getNumberOfColumns(false) != other.schema.getNumberOfColumns(false))
 					return false;
 			}
-			// Compare values for each column (using values as if decoded from binary stream):
-			return hasEqualValues(other, asStoredBinary);
+			// Compare values for each column:
+			if(asStoredBinary)
+				return hasEqualValues(other, true); // using values as if decoded from binary stream
+			else
+				return Arrays.equals(this.values, other.values);
 		}
 		else
 			return false;
@@ -560,7 +646,7 @@ public class Record implements Serializable
 	 * 
 	 * @param other
 	 * @param columns
-	 * @param asStoredBinary whether or not to compare values as if they've been writen/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
+	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
 	@SuppressWarnings("rawtypes")

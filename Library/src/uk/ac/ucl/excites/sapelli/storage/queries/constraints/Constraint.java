@@ -85,7 +85,7 @@ public abstract class Constraint
 	
 	public Constraint negate()
 	{
-		return NotConstraint.Negate(this); // will avoid double negations
+		return new NotConstraint(this).reduce(); // will avoid double negations
 	}
 	
 	@Override

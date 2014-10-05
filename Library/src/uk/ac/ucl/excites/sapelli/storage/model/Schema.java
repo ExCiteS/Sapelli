@@ -18,11 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,12 +30,11 @@ import java.util.Map;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
-import uk.ac.ucl.excites.sapelli.transmission.compression.LZMACompressor;
 
 /**
  * A Schema holds a set of ordered {@link Column}s
@@ -67,6 +61,7 @@ public class Schema implements Serializable
 	static public enum InternalKind
 	{
 		META_SCHEMA,
+		MODEL,
 		ANONYMOUS,
 		INDEX,
 		LOCATION,
@@ -89,92 +84,51 @@ public class Schema implements Serializable
 	static public final String V1X_ATTRIBUTE_SCHEMA_ID = "schema-id";
 	static public final String V1X_ATTRIBUTE_SCHEMA_VERSION = "schema-version";
 	
-	// Meta Schema
+	// Meta Schema: a Schema to describe other Schema's
 	static public final Schema META_SCHEMA = new Schema(InternalKind.META_SCHEMA);
-	static private final IntegerColumn META_MODEL_ID_COLUMN = new IntegerColumn("modelID", false, Model.MODEL_ID_FIELD);
-	static private final IntegerColumn META_SCHEMA_NUMBER_COLUMN = new IntegerColumn("modelSchemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD);
-	static private final StringColumn META_NAME_COLUMN = StringColumn.ForCharacterCount("name", true, 128);
-	static private final ByteArrayColumn META_OBJECT_SERIALISATION_COLUMN = new ByteArrayColumn("serialisedObject_LZMA", false);
-	static private final IntegerColumn META_OBJECT_HASHCODE_COLUMN = new IntegerColumn("hashCode", false, true, Integer.SIZE);
+	static public final ForeignKeyColumn META_MODEL_ID_COLUMN = new ForeignKeyColumn("modelID", Model.MODEL_SCHEMA, false);
+	static public final IntegerColumn META_SCHEMA_NUMBER_COLUMN = new IntegerColumn("modelSchemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD);
+	static public final StringColumn META_NAME_COLUMN = StringColumn.ForCharacterCount("name", true, 256);
 	static
 	{
 		META_SCHEMA.addColumn(META_MODEL_ID_COLUMN);
 		META_SCHEMA.addColumn(META_SCHEMA_NUMBER_COLUMN);
-		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));
 		META_SCHEMA.addColumn(META_NAME_COLUMN);
-		META_SCHEMA.addColumn(META_OBJECT_SERIALISATION_COLUMN);
-		META_SCHEMA.addColumn(META_OBJECT_HASHCODE_COLUMN);
+		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));
 		META_SCHEMA.seal();
 	}
 	
 	/**
-	 * Returns "meta" record which describes the schema (and contains a serialised version of it)
+	 * Returns "meta" record which describes the given schema (and contains a serialised version of it)
 	 * 
 	 * @param schema
 	 * @return
-	 * @throws IOException
 	 */
-	static public Record GetMetaRecord(Schema schema) throws IOException
+	static public Record GetMetaRecord(Schema schema)
 	{
-		Record metaRecord = META_SCHEMA.createRecord();
-		
-		// Store id, name & hashcode:
-		META_MODEL_ID_COLUMN.storeValue(metaRecord, schema.getModelID());
-		META_SCHEMA_NUMBER_COLUMN.storeValue(metaRecord, schema.getModelSchemaNumber());
-		META_NAME_COLUMN.storeValue(metaRecord, schema.name);
-		META_OBJECT_HASHCODE_COLUMN.storeValue(metaRecord, schema.hashCode());
-		
-		// Serialise Schema object:
-		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
-		ObjectOutputStream objOut = new ObjectOutputStream(rawOut);
-		objOut.writeObject(schema);
-		objOut.flush();
-		objOut.close();
-		
-		// Store LZMA-compress serialised bytes:
-		META_OBJECT_SERIALISATION_COLUMN.storeValue(metaRecord, new LZMACompressor().compress(rawOut.toByteArray()));
-		
-		return metaRecord;
+		if(schema.isInternal())
+			throw new IllegalStateException("Internal schemata cannot be described by a meta record.");
+		return META_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name);
 	}
 	
 	/**
 	 * Returns a RecordReference pointing to a (hypothetical) meta record of the given schema,
-	 * but avoids actually instantiating the meta record itself. 
+	 * but avoids actually instantiating the whole meta record itself. 
 	 * 
 	 * @param schema
 	 * @return
 	 */
 	static public RecordReference GetMetaRecordReference(Schema schema)
 	{
-		RecordReference ref = new RecordReference(META_SCHEMA);
-		META_MODEL_ID_COLUMN.storeValue(ref, schema.getModelID());
-		META_SCHEMA_NUMBER_COLUMN.storeValue(ref, schema.getModelSchemaNumber());
-		return ref;
-	}
-	
-	static public Schema FromMetaRecord(Record metaRecord) throws NullPointerException, IllegalArgumentException, IOException, ClassNotFoundException
-	{
-		if(metaRecord == null)
-			throw new NullPointerException("The metaRecord cannot be null!");
-		if(metaRecord.getSchema() != META_SCHEMA)
-			throw new IllegalArgumentException("The given record is a not a " + META_SCHEMA.name + " record!");
-		
-		// Decompress & deserialise Schema object bytes:
-		ByteArrayInputStream rawIn = new ByteArrayInputStream(new LZMACompressor().decompress(META_OBJECT_SERIALISATION_COLUMN.retrieveValue(metaRecord)));
-		ObjectInputStream objIn = new ObjectInputStream(rawIn);
-		Schema schema = (Schema) objIn.readObject();
-		
-		// Perform check:
-		if(schema.hashCode() != META_OBJECT_HASHCODE_COLUMN.retrieveValue(metaRecord))
-			throw new IllegalStateException("Schema hashCode mismatch");
-		// Note: if hashCode matches then id, name should match as well
-		
-		return schema;
+		if(schema.isInternal())
+			throw new IllegalStateException("Internal schemata cannot be described by a meta record.");
+		return new RecordReference(META_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
 	}
 	
 	// Dynamics-----------------------------------------------------------
-	protected final Model model;
-	protected final InternalKind internal;
+	public final Model model;
+	public final int modelSchemaNumber;
+	public final InternalKind internal;
 	protected final String name;
 	private boolean sealed = false;
 	
@@ -208,6 +162,7 @@ public class Schema implements Serializable
 			throw new NullPointerException("Please specify an non-null Internal");
 		this.internal = internal;
 		this.model = null; // internal schemata never have a model
+		this.modelSchemaNumber = -1;
 		this.name = name;
 	}
 	
@@ -225,7 +180,7 @@ public class Schema implements Serializable
 		this.model = model;
 		this.internal = null; // external/client never have an "internal"
 		this.name = (name == null || name.isEmpty() ? model.getName() + "_Schema" + (model.getNumberOfSchemata() - 1) : name);
-		model.addSchema(this); // add oneself to the model!
+		this.modelSchemaNumber = model.addSchema(this); // add oneself to the model!
 	}
 	
 	/**
@@ -263,7 +218,9 @@ public class Schema implements Serializable
 	 */
 	public int getModelSchemaNumber()
 	{
-		return getModel().getSchemaNumber(this);
+		if(isInternal())
+			throw new IllegalStateException("Internal schemata do not belong to a model.");
+		return modelSchemaNumber;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -353,8 +310,7 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * Seals the schema. After this records can be created based on the schema, but no more columns can be added and the primary key cannot be set or changed.
-	 * <br/>
+	 * Seals the schema. After this records can be created based on the schema, but no more columns can be added and the primary key cannot be set or changed (indexes can still be added though).<br/>
 	 * If an "external/client" schema has not received a primary key at this point an auto-incrementing integer primary key is added prior to sealing. For internal schemata does not happen.
 	 */
 	public void seal()
@@ -392,7 +348,8 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * Returns the non-virtual ("real") column at the given position
+	 * Returns the non-virtual ("real") column at the given position.
+	 * Virtual columns cannot be found this way!
 	 * 
 	 * @param position
 	 * @return
@@ -405,15 +362,16 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * Returns the position of a given non-virtual column.
-	 * Null is returned if the schema doesn't contain the column at all, but also if the column is virtual (even if the source is contained by the schema).
+	 * Returns the position of a non-virtual(!) column with the given name.
+	 * Null is returned if the schema does not contain such a column.
+	 * Virtual columns cannot be found this way!
 	 * 
 	 * @param realColumn a non-virtual column
-	 * @return	the position of the given {@link Column} instance within this Schema, or {@link #UNKNOWN_COLUMN_POSITION} if the Schema contains no such column
+	 * @return	the position of the given {@link Column} instance within this Schema, or {@link #UNKNOWN_COLUMN_POSITION} if the Schema contains no such column.
 	 */
-	protected int getColumnPosition(Column realColumn)
+	protected int getColumnPosition(String realColumnName)
 	{
-		Integer idx = columnNameToPosition.get(realColumn.getName());
+		Integer idx = columnNameToPosition.get(realColumnName);
 		if(idx == null)
 			return UNKNOWN_COLUMN_POSITION;
 		return idx.intValue();
@@ -431,17 +389,17 @@ public class Schema implements Serializable
 					allColumns.add(nonVirtualCol); // "real" column
 					// insert virtual versions of real column after it (if they are known by the schema):
 					for(VirtualColumn<?, ?> vCol : nonVirtualCol.getVirtualVersions())
-						/* check if this vCol was added through addColumn(), because it might have been
-						 * added to its "real" parent after the latter had been added to the schema).
-						 * We use vCol == getColumn(...) instead of containsColumn(vCol) because we
-						 * that would use equals() instead of ==. */
+						/* check if this vCol was added to the schema (when its "real" owner was added to the schema
+						 * through addColumn()), we must check this because the vCol might have been added to its owner
+						 * _after_ the latter had been added to the schema).
+						 * We use vCol == getColumn(...) instead of containsColumn(vCol) because we that would use equals() instead of ==. */
 						if(vCol == getColumn(vCol.getName(), true))
 							allColumns.add(vCol);
 				}
 			}
 			return allColumns;
 		}
-		return new ArrayList<Column>(realColumns);
+		return Collections.unmodifiableList(realColumns);
 	}
 	
 	/**
@@ -449,7 +407,7 @@ public class Schema implements Serializable
 	 */
 	public Collection<VirtualColumn> getVirtualColumns()
 	{
-		return virtualColumnsByName == null ? Collections.<VirtualColumn> emptyList() : virtualColumnsByName.values();
+		return virtualColumnsByName == null ? Collections.<VirtualColumn> emptyList() : Collections.unmodifiableCollection(virtualColumnsByName.values());
 	}
 
 	/**
@@ -490,7 +448,7 @@ public class Schema implements Serializable
 	public boolean containsColumn(Column column, boolean checkVirtual)
 	{
 		Column myColumn = getColumn(column.getName(), checkVirtual);
-		return myColumn != null && myColumn.equals(column);
+		return myColumn != null && myColumn.equals(column, false, true); // name is already checked
 	}
 	
 	/**
@@ -500,7 +458,7 @@ public class Schema implements Serializable
 	 */
 	public List<Index> getIndexes()
 	{
-		return indexes == null ? Collections.<Index> emptyList() : indexes;
+		return getIndexes(true);
 	}
 
 	/**
@@ -509,10 +467,18 @@ public class Schema implements Serializable
 	 */
 	public List<Index> getIndexes(boolean includePrimaryKey)
 	{
-		List<Index> idxs = getIndexes();
-		if(!includePrimaryKey)
-			idxs.remove(primaryKey);
-		return idxs;
+		if(indexes == null)
+			// No indexes (yet):
+			return Collections.<Index> emptyList();
+		if(includePrimaryKey)
+			// including PK:
+			return Collections.unmodifiableList(indexes);
+		// Excluding PK:
+		List<Index> indexesWithoutPK = new ArrayList<Index>();
+		for(Index idx : indexes)
+			if(idx != primaryKey)
+				indexesWithoutPK.add(idx);
+		return Collections.unmodifiableList(indexesWithoutPK);
 	}
 
 	/**
@@ -582,7 +548,7 @@ public class Schema implements Serializable
 	{
 		return name;
 	}
-	
+
 	public int getNumberOfColumns(boolean includeVirtual)
 	{
 		return realColumns.size() + (includeVirtual && virtualColumnsByName != null ? virtualColumnsByName.size() : 0);
@@ -706,22 +672,22 @@ public class Schema implements Serializable
 			if(checkColumns)
 			{
 				// Check number of (real) columns:
-				if(realColumns.size() != other.realColumns.size())
+				if(this.realColumns.size() != other.realColumns.size())
 					return false;
 				// Compare columns:
-				Iterator<Column> myCols = realColumns.iterator();
+				Iterator<Column> myCols = this.realColumns.iterator();
 				Iterator<Column> otherCols = other.realColumns.iterator();
 				while(myCols.hasNext() /* && otherCols.hasNext() */)
 					if(!myCols.next().equals(otherCols.next(), checkNames, true))
 						return false;
 			}
-			if(checkIndexes)
+			if(checkIndexes) // also checks primary key
 			{
 				// Check number of indexes:
-				if(getIndexes().size() != other.getIndexes().size())
+				if(this.getIndexes().size() != other.getIndexes().size())
 					return false;
 				// Compare indexes:
-				Iterator<Index> myIndexes = getIndexes().iterator();
+				Iterator<Index> myIndexes = this.getIndexes().iterator();
 				Iterator<Index> otherIndexes = other.getIndexes().iterator();
 				while(myIndexes.hasNext() /** otherIndexes.hasNext() */)
 					if(!myIndexes.next().equals(otherIndexes.next(), checkNames, checkColumns, false))
@@ -738,11 +704,11 @@ public class Schema implements Serializable
 	{
 		int hash = 1;
 		hash = 31 * hash + (model == null ? 0 : (int)(model.getID() ^ (model.getID() >>> 32))); // do not use model.hashCode() here!
+		hash = 31 * hash + modelSchemaNumber;
 		hash = 31 * hash + (internal == null ? 0 : internal.ordinal());
 		hash = 31 * hash + (name == null ? 0 : name.hashCode());
 		hash = 31 * hash + realColumns.hashCode();
-		hash = 31 * hash + getIndexes().hashCode();
-		hash = 31 * hash + (primaryKey == null ? 0 : primaryKey.hashCode());
+		hash = 31 * hash + getIndexes().hashCode(); // contains primary key
 		hash = 31 * hash + (sealed ? 0 : 1);
 		return hash;
 	}

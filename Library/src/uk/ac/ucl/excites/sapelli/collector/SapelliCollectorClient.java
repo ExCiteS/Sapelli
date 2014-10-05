@@ -30,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
@@ -44,6 +45,8 @@ public class SapelliCollectorClient extends TransmissionClient
 	
 	// STATICS-------------------------------------------------------
 	static public final long COLLECTOR_MANAGEMENT_MODEL_ID = TRANSMISSION_MANAGEMENT_MODEL_ID + 1; // = 1
+	
+	//static public final Source ALL_COLLECTOR_RECORDS = Source.NotFrom(Transmission.)
 	
 	/**
 	 * @param project
@@ -90,6 +93,19 @@ public class SapelliCollectorClient extends TransmissionClient
 		List<Model> reserved = super.getReserveredModels();
 		reserved.add(ProjectRecordStore.COLLECTOR_MANAGEMENT_MODEL);
 		return reserved;
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
+	 */
+	@Override
+	public String getTableName(Schema schema)
+	{
+		if(schema == ProjectRecordStore.PROJECT_SCHEMA)
+			return "Sapelli_Projects";
+		if(schema == ProjectRecordStore.HFK_SCHEMA)
+			return "Relationship_HFKs";
+		return super.getTableName(schema);
 	}
 	
 	/**

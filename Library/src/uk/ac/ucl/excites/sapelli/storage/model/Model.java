@@ -18,12 +18,23 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema.InternalKind;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
+import uk.ac.ucl.excites.sapelli.transmission.compression.LZMACompressor;
 
 /**
  * A Model groups a series of {@link Schema}s that belong together.
@@ -59,13 +70,89 @@ public class Model implements Serializable
 	 */
 	static public final IntegerRangeMapping MODEL_SCHEMA_NO_FIELD = IntegerRangeMapping.ForSize(0, MODEL_SCHEMA_NO_SIZE); // [0, 15]
 	
-	static public int MaxSchemata()
+	static public final int MAX_SCHEMATA = MODEL_SCHEMA_NO_FIELD.numberOfPossibleValues().intValue(); // = 16
+	
+	// Model Schema: a "meta" schema for records that describe a Model
+	static public final Schema MODEL_SCHEMA = new Schema(InternalKind.MODEL);
+	static public final IntegerColumn MODEL_ID_COLUMN = new IntegerColumn("ID", false, Model.MODEL_ID_FIELD);
+	static private final StringColumn MODEL_NAME_COLUMN = StringColumn.ForCharacterCount("name", false, 128);
+	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = new ByteArrayColumn("serialisedObject_LZMA", false);
+	static private final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = new IntegerColumn("hashCode", false, true, Integer.SIZE);
+	static
 	{
-		return (int) MODEL_SCHEMA_NO_FIELD.highBound();
+		MODEL_SCHEMA.addColumn(MODEL_ID_COLUMN);
+		MODEL_SCHEMA.addColumn(MODEL_NAME_COLUMN);
+		MODEL_SCHEMA.addColumn(MODEL_OBJECT_SERIALISATION_COLUMN);
+		MODEL_SCHEMA.addColumn(MODEL_OBJECT_HASHCODE_COLUMN);
+		MODEL_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(MODEL_ID_COLUMN));
+		MODEL_SCHEMA.seal();
+	}
+	
+	/**
+	 * Returns "model record" which describes the given model (and contains a serialised version of it)
+	 * 
+	 * @param schema
+	 * @return
+	 * @throws IOException
+	 */
+	static public Record GetModelRecord(Model model) throws IOException
+	{
+		// Serialise Model object:
+		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
+		ObjectOutputStream objOut = new ObjectOutputStream(rawOut);
+		objOut.writeObject(model);
+		objOut.flush();
+		objOut.close();
+		byte[] lzmaObjectBytes = new LZMACompressor().compress(rawOut.toByteArray());
+		
+		return MODEL_SCHEMA.createRecord(model.id, model.name, lzmaObjectBytes, model.hashCode());
+	}
+	
+	/**
+	 * Returns a RecordReference pointing to a (hypothetical) model record, describing the given model,
+	 * but avoids actually instantiating the whole model record itself. 
+	 * 
+	 * @param model
+	 * @return
+	 */
+	static public RecordReference GetModelRecordReference(Model model)
+	{
+		return new RecordReference(MODEL_SCHEMA, model.id);
+	}
+	
+	/**
+	 * Returns a RecordReference pointing to a (hypothetical) model record, describing a model with the given ID.
+	 * 
+	 * @param modelID
+	 * @return
+	 */
+	static public RecordReference GetModelRecordReference(long modelID)
+	{
+		return new RecordReference(MODEL_SCHEMA, modelID);
+	}
+	
+	static public Model FromModelRecord(Record modelRecord) throws NullPointerException, IllegalArgumentException, IOException, ClassNotFoundException
+	{
+		if(modelRecord == null)
+			throw new NullPointerException("The modelRecord cannot be null!");
+		if(modelRecord.getSchema() != MODEL_SCHEMA)
+			throw new IllegalArgumentException("The given record is a not a " + MODEL_SCHEMA.name + " record!");
+		
+		// Decompress & deserialise Schema object bytes:
+		ByteArrayInputStream rawIn = new ByteArrayInputStream(new LZMACompressor().decompress(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord)));
+		ObjectInputStream objIn = new ObjectInputStream(rawIn);
+		Model model = (Model) objIn.readObject();
+		
+		// Perform check:
+		if(model.hashCode() != MODEL_OBJECT_HASHCODE_COLUMN.retrieveValue(modelRecord))
+			throw new IllegalStateException("Model hashCode mismatch");
+		// Note: if hashCode matches then id, name should match as well
+		
+		return model;
 	}
 
 	// Dynamics-----------------------------------------------------------
-	private final long id;
+	public final long id;
 	private final String name;
 	private final List<Schema> schemata = new ArrayList<Schema>();
 	private boolean sealed = false;
@@ -106,7 +193,7 @@ public class Model implements Serializable
 	 * Adds a given schema to the model (provided it is not sealed, nor full)
 	 * 
 	 * @param schema the schema to add
-	 * @return the schema number which has been assigned to the added schema 
+	 * @return the schema number which has been assigned to the added schema
 	 * @throws ModelFullException
 	 */
 	protected int addSchema(Schema schema) throws ModelFullException
@@ -115,8 +202,8 @@ public class Model implements Serializable
 			throw new IllegalStateException("Cannot extend sealed model!");
 		if(schema == null)
 			throw new NullPointerException("Cannot add null Schema");
-		if(schemata.size() > MODEL_SCHEMA_NO_FIELD.highBound())
-			throw new ModelFullException("The model has reached the maximum of " + MODEL_SCHEMA_NO_FIELD.highBound() + " schemata.");
+		if(schemata.size() == MAX_SCHEMATA)
+			throw new ModelFullException("The model has reached the maximum of " + MAX_SCHEMATA + " schemata.");
 		schemata.add(schema);
 		return schemata.size() - 1;
 	}
@@ -137,6 +224,10 @@ public class Model implements Serializable
 		this.sealed = true;
 	}
 
+	/**
+	 * @param schemaNumber
+	 * @return
+	 */
 	public Schema getSchema(int schemaNumber)
 	{
 		if(schemaNumber < 0 || schemaNumber > schemata.size())
@@ -144,11 +235,17 @@ public class Model implements Serializable
 		return schemata.get(schemaNumber);
 	}
 	
+	/**
+	 * @param schema
+	 * @return
+	 */
 	public int getSchemaNumber(Schema schema)
 	{
+		if(schema.getModel() != this)
+			throw new IllegalArgumentException("This schema does not belong to this model");
 		int no = schemata.indexOf(schema);
 		if(no == -1 || schema.getModel() != this)
-			throw new IllegalArgumentException("This schema does not belong to this model");
+			throw new IllegalArgumentException("This schema does not belong to this model"); // shouldn't happen
 		return no;
 	}
 	
@@ -157,7 +254,7 @@ public class Model implements Serializable
 	 */
 	public List<Schema> getSchemata()
 	{
-		return new ArrayList<Schema>(schemata);
+		return Collections.unmodifiableList(schemata);
 	}
 
 	public int getNumberOfSchemata()

@@ -66,7 +66,7 @@ public class Project
 		
 	static public final int MAX_FORMS = 32;
 	
-	static public final int MAX_RECORD_PRODUCING_FORMS = Math.min(MAX_FORMS, Model.MODEL_SCHEMA_NO_FIELD.numberOfPossibleValues().intValue() - 1); // subtract 1 for the heartbeatSchema
+	static public final int MAX_RECORD_PRODUCING_FORMS = Math.min(MAX_FORMS, Model.MAX_SCHEMATA - 1 /* subtract 1 for the heartbeatSchema */);
 	
 	//DYNAMICS------------------------------------------------------------
 	private int id = Integer.MIN_VALUE; // don't init to 0 because that is an acceptable project id, nor -1 because that is used as temporary indication of a v1x project
