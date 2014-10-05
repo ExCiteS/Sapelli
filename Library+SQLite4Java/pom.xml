@@ -105,39 +105,6 @@
 				</configuration>
 			</plugin>
 
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>appassembler-maven-plugin</artifactId>
-				<version>1.8.1</version>
-				<executions>
-					<execution>
-						<id>assemble</id>
-						<phase>package</phase>
-						<goals>
-							<goal>assemble</goal>
-						</goals>
-						<configuration>
-							<extraJvmArguments>-Dsqlite4java.library.path=lib</extraJvmArguments>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-
-			<plugin>
-				<groupId>org.codehaus.mojo</groupId>
-				<artifactId>exec-maven-plugin</artifactId>
-				<version>1.3.2</version>
-				<configuration>
-					<executable>java</executable>
-					<arguments>
-						<argument>-Djava.library.path=${project.build.directory}/lib</argument>
-						<argument>-classpath</argument>
-						<classpath />
-						<argument>uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.java.test.V1XImportTestSQLite</argument>
-					</arguments>
-				</configuration>
-			</plugin>
-
 		</plugins>
 		<pluginManagement>
 			<plugins>
