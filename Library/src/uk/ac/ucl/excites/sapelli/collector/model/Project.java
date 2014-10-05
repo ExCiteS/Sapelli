@@ -62,7 +62,7 @@ public class Project
 	
 	static public final String NO_MEDIA_FILE = ".nomedia"; //Info: http://www.makeuseof.com/tag/hide-private-picture-folders-gallery-android
 	
-	static public final boolean DEFAULT_LOGGING = false;
+	static public final boolean DEFAULT_LOGGING = true;
 		
 	static public final int MAX_FORMS = 32;
 	
