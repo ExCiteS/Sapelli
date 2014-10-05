@@ -157,6 +157,35 @@ public class CollectorApp extends Application implements StoreClient
 						sapelliFolder = paths[p];
 						break;
 					}
+				
+//				// HACK HACK HACK
+//				if(sapelliFolder != null)
+//				{
+//					//									Android 		/   data		/ packagename	/ files
+//					File extStorageRoot = sapelliFolder.getParentFile().getParentFile().getParentFile().getParentFile();
+//					
+//					/* Old way: Using Environment2 library to get the path of the actual SD card if there is one,
+//					 * 			if not it gets the path of the emulated SD card/internal mass storage */
+//					//if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
+//					//	cardDirectory = Environment2.getCardDirectory();
+//					
+//					// Using proper API (will not always return the real SD card path):
+//					if(Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(Environment.getExternalStorageDirectory())))
+//						extStorageRoot = Environment.getExternalStorageDirectory();
+//					
+//					// Check if writable:
+//					if(!FileHelpers.isReadableWritableDirectory(extStorageRoot))
+//						throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
+//					
+//					// Make Sapelli folder:
+//					sapelliFolder = new File(extStorageRoot.getAbsolutePath() + File.separator + SAPELLI_FOLDER);
+//					if(!sapelliFolder.exists())
+//					{
+//						if(!sapelliFolder.mkdirs())
+//							throw new IllegalStateException("Cannot create Sapelli folder");
+//					}
+//				}
+				
 			}
 			// Fall-back: try to get write access to external storage (preferably SD card) root and create Sapelli folder if it doesn't exist yet:
 			if(sapelliFolder == null)
