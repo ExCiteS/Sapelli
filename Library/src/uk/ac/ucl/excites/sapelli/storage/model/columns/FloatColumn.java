@@ -76,20 +76,17 @@ public class FloatColumn extends ComparableColumn<Double>
 	}
 	
 	/**
-	 * Stores the given Object value in this column on the given record.
-	 * Overridden to deal with Float's (and perhaps other Numbers) being passed a Objects.
-	 *
-	 * @param record
-	 * @param value (as object, may be null if column is optional)
-	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
-	 * @throws NullPointerException if value is null on an non-optional column
+	 * Converts Numbers (Floats, Integers, Shorts, etc.) to Doubles
 	 * 
-	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#storeObject(uk.ac.ucl.excites.sapelli.storage.model.Record, java.lang.Object)
+	 * @param value possibly null
+	 * @return
+	 * @throws ClassCastException when the value is not a {@link Number}
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#convert(java.lang.Object)
 	 */
 	@Override
-	public void storeObject(Record record, Object value) throws IllegalArgumentException, NullPointerException, ClassCastException
+	protected Object convert(Object value)
 	{
-		super.storeObject(record, ((Number) value).doubleValue());
+		return value == null ? null : (value instanceof Double ? value : Double.valueOf(((Number) value).doubleValue()));
 	}
 	
 	/**

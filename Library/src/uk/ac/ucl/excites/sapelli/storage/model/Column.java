@@ -170,12 +170,12 @@ public abstract class Column<T> implements Serializable
 	 * @param value (as object, may be null if column is optional)
 	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
 	 * @throws NullPointerException if value is null on an non-optional column
-	 * @throws ClassCastException when the Object cannot be cast to the column's type <T>
+	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
 	 */
 	@SuppressWarnings("unchecked")
 	public void storeObject(Record record, Object value) throws IllegalArgumentException, NullPointerException, ClassCastException
 	{
-		storeValue(record, (T) value);
+		storeValue(record, (T) convert(value));
 	}
 
 	/**
@@ -239,13 +239,27 @@ public abstract class Column<T> implements Serializable
 	/**
 	 * @param value
 	 * @return a String representation of the value, or null if the value was null
+	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
 	 */
 	@SuppressWarnings("unchecked")
-	public String objectToString(Object value)
+	public String objectToString(Object value) throws ClassCastException
 	{
 		if(value == null)
 			return null;
-		return toString((T) value);
+		return toString((T) convert(value));
+	}
+	
+	/**
+	 * Does nothing by default.
+	 * To be overridden by subclasses which need to perform additional conversion in order to accept a wider range of value types.
+	 * 
+	 * @param value possibly null
+	 * @return
+	 * @throws ClassCastException
+	 */
+	protected Object convert(Object value) throws ClassCastException
+	{
+		return value;
 	}
 
 	/**
@@ -269,11 +283,12 @@ public abstract class Column<T> implements Serializable
 	 * @throws NullPointerException if value is null on an non-optional column
 	 * @throws IllegalArgumentException if the value does not pass the validation test
 	 * @throws IOException if an I/O error happens upon writing to the bitStream
+	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
 	 */
 	@SuppressWarnings("unchecked")
 	public void writeObject(Object value, BitOutputStream bitStream) throws ClassCastException, NullPointerException, IOException, IllegalArgumentException
 	{
-		writeValue((T) value, bitStream);
+		writeValue((T) convert(value), bitStream);
 	}
 
 	/**
@@ -358,9 +373,9 @@ public abstract class Column<T> implements Serializable
 			return optional == true;
 		try
 		{
-			validate((T) value);
+			validate((T) convert(value));
 		}
-		catch(Exception iae)
+		catch(Exception e)
 		{
 			return false;
 		}
@@ -489,10 +504,15 @@ public abstract class Column<T> implements Serializable
 		return (value == null ? null : copy(value));
 	}
 	
+	/**
+	 * @param value
+	 * @return
+	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
+	 */
 	@SuppressWarnings("unchecked")
-	public T copyObject(Object value)
+	public T copyObject(Object value) throws ClassCastException
 	{
-		return copy((T) value);
+		return copy((T) convert(value));
 	}
 
 	/**

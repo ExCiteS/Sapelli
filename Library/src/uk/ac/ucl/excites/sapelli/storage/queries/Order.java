@@ -8,8 +8,11 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 
 /**
+ * Class to represent the desired ordering of RecordsQuery results 
+ * 
+ * TODO multicol ordering, ordering by schema
+ * 
  * @author mstevens
- *
  */
 public class Order
 {

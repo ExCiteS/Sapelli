@@ -388,7 +388,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 				if(dateRange[DT_RANGE_IDX_TO] != null)
 					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
 				// Retrieve by query:
-				return recordStore.retrieveRecords(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, RecordsQuery.NO_LIMIT, constraints));
+				return recordStore.retrieveRecords(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
 			}
 			catch(Exception e)
 			{

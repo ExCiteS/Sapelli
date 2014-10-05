@@ -274,7 +274,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				filterSkipSchemata.addConstraint(Schema.GetMetaRecordReference(cachedSchema).getRecordQueryConstraint().negate());
 			
 			// Query schemata table, filtering out the undesired ones:
-			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.META_SCHEMA), Order.UNDEFINED, RecordsQuery.NO_LIMIT, filterSkipSchemata));
+			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.META_SCHEMA), filterSkipSchemata));
 			if(schemaMetaRecords.isEmpty())
 				return Collections.<Schema> emptyList(); // we're done here
 			

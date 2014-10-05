@@ -30,7 +30,7 @@ public class NotConstraint extends Constraint
 
 	private final Constraint negatedConstraint;
 	
-	public NotConstraint(Constraint negatedConstraint)
+	/*package*/ NotConstraint(Constraint negatedConstraint)
 	{
 		this.negatedConstraint = Constraint.Reduce(negatedConstraint);
 	}

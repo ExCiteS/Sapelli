@@ -53,6 +53,85 @@ public class RecordsQuery
 	}
 	
 	/**
+	 * Query all records of any known schema and order them
+	 * 
+	 * @param source
+	 * @param order
+	 */
+	public RecordsQuery(Order order)
+	{
+		this(Source.ANY, order, NO_LIMIT, NO_CONSTRAINTS);
+	}
+	
+	/**
+	 * Query all records of any known schema which meet the constraints
+	 * 
+	 * @param constraints
+	 */
+	public RecordsQuery(Constraint... constraints)
+	{
+		this(Source.ANY, Order.UNDEFINED, NO_LIMIT, constraints);
+	}
+	
+	/**
+	 * Query with defined source and order
+	 * 
+	 * @param source
+	 * @param order
+	 */
+	public RecordsQuery(Source source, Order order)
+	{
+		this(source, order, NO_LIMIT, NO_CONSTRAINTS);
+	}
+	
+	/**
+	 * Query with defined source and constraints
+	 * 
+	 * @param source
+	 * @param constraints
+	 */
+	public RecordsQuery(Source source, Constraint... constraints)
+	{
+		this(source, Order.UNDEFINED, NO_LIMIT, constraints);
+	}
+	
+	/**
+	 * Query with defined source, limit and constraints
+	 * 
+	 * @param source
+	 * @param limit
+	 * @param constraints
+	 */
+	public RecordsQuery(Source source, int limit, Constraint... constraints)
+	{
+		this(source, Order.UNDEFINED, limit, constraints);
+	}
+	
+	/**
+	 * Query with defined source, order and limit
+	 * 
+	 * @param source
+	 * @param order
+	 * @param limit
+	 */
+	public RecordsQuery(Source source, Order order, int limit)
+	{
+		this(source, order, limit, NO_CONSTRAINTS);
+	}
+	
+	/**
+	 * Query with defined source, order and constraints
+	 * 
+	 * @param source
+	 * @param order
+	 * @param constraints
+	 */
+	public RecordsQuery(Source source, Order order, Constraint... constraints)
+	{
+		this(source, order, NO_LIMIT, constraints);
+	}
+	
+	/**
 	 * Query with defined source, order, limit and constraints
 	 * 
 	 * @param source

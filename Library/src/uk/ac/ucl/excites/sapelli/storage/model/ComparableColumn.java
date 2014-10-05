@@ -36,6 +36,9 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 		super(type, name, optional);
 	}
 	
+	/* (non-Javadoc)
+	 * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
+	 */
 	@Override
 	public int compare(Record lhs, Record rhs)
 	{
@@ -47,22 +50,35 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 	 * 
 	 * @param record1
 	 * @param record2
-	 * @return
+	 * @return comparison result
 	 */
 	public int retrieveAndCompareValues(Record record1, Record record2)
 	{
 		return compare(record1, record2);
 	}
 	
+	/**
+	 * @param record
+	 * @param value
+	 * @return comparison result
+	 */
 	public int retrieveAndCompareToValue(Record record, T value)
 	{
 		return compareValues(retrieveValue(record), value);
 	}
 	
+	/**
+	 * @param record
+	 * @param value (as object, may be null if column is optional)
+	 * @return comparison result
+	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
+	 * @throws NullPointerException if value is null on an non-optional column
+	 * @throws ClassCastException when the value cannot be converted/casted to the column's type <T>
+	 */
 	@SuppressWarnings("unchecked")
-	public int retrieveAndCompareToObject(Record record, Object value)
+	public int retrieveAndCompareToObject(Record record, Object value) throws ClassCastException
 	{
-		return compareValues(retrieveValue(record), (T) value);
+		return compareValues(retrieveValue(record), (T) convert(value));
 	}
 	
 	/**
