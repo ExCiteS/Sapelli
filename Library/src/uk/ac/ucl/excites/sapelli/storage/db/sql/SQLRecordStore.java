@@ -113,7 +113,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 		// create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database)
 		this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);
-		this.schemataTable = getTable(Schema.META_SCHEMA, newDB);
+		this.schemataTable = getTable(Model.META_SCHEMA, newDB);
 	}
 	
 	protected abstract void executeSQL(String sql) throws DBException;
@@ -141,7 +141,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		Record schemaMetaRecord = null;
 		if(schema == Model.MODEL_SCHEMA)
 			table = modelsTable; // may still be null if getTable() was called from initialise()
-		else if(schema == Schema.META_SCHEMA)
+		else if(schema == Model.META_SCHEMA)
 			table = schemataTable; // may still be null if getTable() was called from initialise()
 		else
 		{
@@ -153,7 +153,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		if(table == null)
 		{
 			table = getTableFactory().generateTable(schema);
-			if(schema != Model.MODEL_SCHEMA && schema != Schema.META_SCHEMA) // the "tables" map is only for tables of "real" (non-meta) schemata!
+			if(schema != Model.MODEL_SCHEMA && schema != Model.META_SCHEMA) // the "tables" map is only for tables of "real" (non-meta) schemata!
 				tables.put(schemaMetaRecord, table);
 		}
 		
@@ -167,7 +167,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				table.create();
 
 				// Register the schema & its model; unless the table it is the modelsTable or the schemataTable itself:
-				if(schema != Model.MODEL_SCHEMA && schema != Schema.META_SCHEMA)
+				if(schema != Model.MODEL_SCHEMA && schema != Model.META_SCHEMA)
 				{
 					if(!modelsTable.isRecordInDB(Model.GetModelRecordReference(schema.getModel()))) // check if model is already known (due to one of its other schemata being present)
 						modelsTable.insert(Model.GetModelRecord(schema.getModel()));
@@ -274,7 +274,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				filterSkipSchemata.addConstraint(Schema.GetMetaRecordReference(cachedSchema).getRecordQueryConstraint().negate());
 			
 			// Query schemata table, filtering out the undesired ones:
-			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Schema.META_SCHEMA), Order.UNDEFINED, RecordsQuery.NO_LIMIT, filterSkipSchemata));
+			List<Record> schemaMetaRecords = schemataTable.select(new RecordsQuery(Source.From(Model.META_SCHEMA), Order.UNDEFINED, RecordsQuery.NO_LIMIT, filterSkipSchemata));
 			if(schemaMetaRecords.isEmpty())
 				return Collections.<Schema> emptyList(); // we're done here
 			
@@ -296,7 +296,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				}
 				else
 				{	// No cached table, we will have to consult the models ...
-					RecordReference modelRef = Schema.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
+					RecordReference modelRef = Model.META_MODEL_ID_COLUMN.retrieveValue(schemaMetaRecord);
 					// ... first check the model cache:
 					Model model = modelCache.get(Model.MODEL_ID_COLUMN.retrieveValue(modelRef));
 					if(model == null)
@@ -305,7 +305,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 						modelCache.put(model.id, model); // remember model in cache
 					}
 					// Get the schema from the model object:
-					schema = model.getSchema(Schema.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
+					schema = model.getSchema(Model.META_SCHEMA_NUMBER_COLUMN.retrieveValue(schemaMetaRecord).intValue());
 				}
 				
 				// Add schema to list:
@@ -341,7 +341,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 		STable table = getTable(record.getSchema(), false); // no need to create the table in the db if it isn't there!
 		if(table.isInDB())
-			table.delete(record.getReference());
+			table.delete(record);
 	}
 	
 	protected Collection<Schema> getSchemata(Source source)
@@ -516,9 +516,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			return sqlColumns.get(new ColumnPointer(schema, sapColumn));
 		}
 		
-		public List<SColumn> getSQLColumns(RecordColumn<?> compositeColumn)
+		public List<SColumn> getSQLColumns(Column<?> sapColumn)
 		{
-			return composite2SqlColumns.get(compositeColumn);
+			if(sapColumn instanceof RecordColumn)
+				return composite2SqlColumns.get((RecordColumn<?>) sapColumn);
+			else
+				return Collections.singletonList(getSQLColumn(sapColumn));
 		}
 		
 		public boolean isInDB()
@@ -695,16 +698,17 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		/**
 		 * Delete existing record (identified by a RecordReference) in database table.
 		 * Assumes the table exists in the database!
+		 * Also works for recordReferences to records of this table's schema!
 		 * 
 		 * May be overridden.
 		 * 
-		 * @param recordRef
+		 * @param record a {@link Record} or {@link RecordReference} instance
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		public void delete(RecordReference recordRef) throws DBException
+		public void delete(Record record) throws DBException
 		{
-			executeSQL(new RecordDeleteHelper((STable) this, recordRef).getQuery());
+			executeSQL(new RecordDeleteHelper((STable) this, record).getQuery());
 		}
 		
 		/**
@@ -1360,9 +1364,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * @param table
-		 * @param record
+		 * @param record a {@link Record} or {@link RecordReference} instance
 		 */
-		public RecordDeleteHelper(STable table, RecordReference recordRef)
+		public RecordDeleteHelper(STable table, Record record)
 		{
 			// Initialise
 			super(table);
@@ -1371,7 +1375,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.append("DELETE FROM");
 			bldr.append(table.tableName);
 			// WHERE clause:
-			appendWhereClause(recordRef);
+			appendWhereClause(record);
 			bldr.append(";", false);
 		}
 		

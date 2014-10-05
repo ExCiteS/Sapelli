@@ -31,6 +31,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema.InternalKind;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
@@ -86,6 +87,20 @@ public class Model implements Serializable
 		MODEL_SCHEMA.addColumn(MODEL_OBJECT_HASHCODE_COLUMN);
 		MODEL_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(MODEL_ID_COLUMN));
 		MODEL_SCHEMA.seal();
+	}
+	
+	// Meta Schema: a Schema to describe other Schema's
+	static public final Schema META_SCHEMA = new Schema(InternalKind.META_SCHEMA);
+	static public final ForeignKeyColumn META_MODEL_ID_COLUMN = new ForeignKeyColumn("modelID", Model.MODEL_SCHEMA, false);
+	static public final IntegerColumn META_SCHEMA_NUMBER_COLUMN = new IntegerColumn("modelSchemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD);
+	static public final StringColumn META_NAME_COLUMN = StringColumn.ForCharacterCount("name", true, 256);
+	static
+	{
+		META_SCHEMA.addColumn(META_MODEL_ID_COLUMN);
+		META_SCHEMA.addColumn(META_SCHEMA_NUMBER_COLUMN);
+		META_SCHEMA.addColumn(META_NAME_COLUMN);
+		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));
+		META_SCHEMA.seal();
 	}
 	
 	/**

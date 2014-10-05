@@ -67,7 +67,7 @@ public abstract class StorageClient
 	{
 		if(schema == Model.MODEL_SCHEMA)
 			return "Models";
-		if(schema == Schema.META_SCHEMA)
+		if(schema == Model.META_SCHEMA)
 			return "Schemata";
 		if(!schema.isInternal())
 			return "Table_" + schema.getModelID() + '_' + schema.getModelSchemaNumber(); // we don't use schema#name to avoid name clashes and illegal characters

@@ -50,7 +50,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
@@ -333,10 +332,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		}
 
 		/* (non-Javadoc)
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.RecordReference)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#delete(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public void delete(RecordReference recordRef) throws DBException
+		public void delete(Record record) throws DBException
 		{
 			if(deleteStatement == null)
 			{
@@ -347,7 +346,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				deleteStatement.clearAllBindings(); // clear bindings for reuse
 
 			// Bind parameters:
-			deleteStatement.retrieveAndBindAll(recordRef);
+			deleteStatement.retrieveAndBindAll(record);
 			
 			// Execute:
 			deleteStatement.executeDelete();
@@ -656,7 +655,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				bldr.openTransaction(", ");
 				// List indexed columns:
 				for(Column<?> idxCol : idx.getColumns(false))
-					bldr.append(table.getSQLColumn(idxCol).name);
+					for(SQLiteColumn<?, ?> idxSCol : table.getSQLColumns(idxCol))
+						bldr.append(idxSCol.name);
 				bldr.commitTransaction(false);
 				bldr.append(")", false);
 				// conflict-clause?

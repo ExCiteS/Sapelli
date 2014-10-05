@@ -30,9 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -84,20 +82,6 @@ public class Schema implements Serializable
 	static public final String V1X_ATTRIBUTE_SCHEMA_ID = "schema-id";
 	static public final String V1X_ATTRIBUTE_SCHEMA_VERSION = "schema-version";
 	
-	// Meta Schema: a Schema to describe other Schema's
-	static public final Schema META_SCHEMA = new Schema(InternalKind.META_SCHEMA);
-	static public final ForeignKeyColumn META_MODEL_ID_COLUMN = new ForeignKeyColumn("modelID", Model.MODEL_SCHEMA, false);
-	static public final IntegerColumn META_SCHEMA_NUMBER_COLUMN = new IntegerColumn("modelSchemaNumber", false, Model.MODEL_SCHEMA_NO_FIELD);
-	static public final StringColumn META_NAME_COLUMN = StringColumn.ForCharacterCount("name", true, 256);
-	static
-	{
-		META_SCHEMA.addColumn(META_MODEL_ID_COLUMN);
-		META_SCHEMA.addColumn(META_SCHEMA_NUMBER_COLUMN);
-		META_SCHEMA.addColumn(META_NAME_COLUMN);
-		META_SCHEMA.setPrimaryKey(PrimaryKey.WithColumnNames(META_MODEL_ID_COLUMN, META_SCHEMA_NUMBER_COLUMN));
-		META_SCHEMA.seal();
-	}
-	
 	/**
 	 * Returns "meta" record which describes the given schema (and contains a serialised version of it)
 	 * 
@@ -108,7 +92,7 @@ public class Schema implements Serializable
 	{
 		if(schema.isInternal())
 			throw new IllegalStateException("Internal schemata cannot be described by a meta record.");
-		return META_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name);
+		return Model.META_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name);
 	}
 	
 	/**
@@ -122,7 +106,7 @@ public class Schema implements Serializable
 	{
 		if(schema.isInternal())
 			throw new IllegalStateException("Internal schemata cannot be described by a meta record.");
-		return new RecordReference(META_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
+		return new RecordReference(Model.META_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
 	}
 	
 	// Dynamics-----------------------------------------------------------

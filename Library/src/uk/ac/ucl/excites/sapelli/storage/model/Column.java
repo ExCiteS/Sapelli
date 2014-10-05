@@ -170,9 +170,10 @@ public abstract class Column<T> implements Serializable
 	 * @param value (as object, may be null if column is optional)
 	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
 	 * @throws NullPointerException if value is null on an non-optional column
+	 * @throws ClassCastException when the Object cannot be cast to the column's type <T>
 	 */
 	@SuppressWarnings("unchecked")
-	public void storeObject(Record record, Object value) throws IllegalArgumentException, NullPointerException
+	public void storeObject(Record record, Object value) throws IllegalArgumentException, NullPointerException, ClassCastException
 	{
 		storeValue(record, (T) value);
 	}

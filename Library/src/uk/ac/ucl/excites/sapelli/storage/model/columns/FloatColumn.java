@@ -76,6 +76,23 @@ public class FloatColumn extends ComparableColumn<Double>
 	}
 	
 	/**
+	 * Stores the given Object value in this column on the given record.
+	 * Overridden to deal with Float's (and perhaps other Numbers) being passed a Objects.
+	 *
+	 * @param record
+	 * @param value (as object, may be null if column is optional)
+	 * @throws IllegalArgumentException in case of a schema mismatch or invalid value
+	 * @throws NullPointerException if value is null on an non-optional column
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#storeObject(uk.ac.ucl.excites.sapelli.storage.model.Record, java.lang.Object)
+	 */
+	@Override
+	public void storeObject(Record record, Object value) throws IllegalArgumentException, NullPointerException, ClassCastException
+	{
+		super.storeObject(record, ((Number) value).doubleValue());
+	}
+	
+	/**
 	 * @param record
 	 * @param nullReplacement
 	 * @return
