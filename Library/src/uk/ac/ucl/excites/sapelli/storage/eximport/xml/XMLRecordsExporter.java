@@ -162,7 +162,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 					//Open tag:
 					writer.writeLine(StringUtils.addTabsFront("<" + Record.TAG_RECORD + " " +
 							Schema.ATTRIBUTE_SCHEMA_NAME + "=\"" + XMLUtils.escapeCharacters(r.getSchema().getName()) + "\" " +
-							Schema.ATTRIBUTE_MODEL_ID + "=\"" + r.getSchema().getModelID() + "\"" +
+							Schema.ATTRIBUTE_MODEL_ID + "=\"" + r.getSchema().getModelID() + "\" " +
 							Schema.ATTRIBUTE_MODEL_SCHEMA_NUMBER + "=\"" + r.getSchema().getModelSchemaNumber() + "\"" +
 							">", tabs));
 							//TODO transmission/sent
