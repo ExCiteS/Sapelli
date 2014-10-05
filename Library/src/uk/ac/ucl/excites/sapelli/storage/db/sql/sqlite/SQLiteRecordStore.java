@@ -608,7 +608,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			boolean optional = sourceColum.isOptional();
 			// Check parents, if one of them is optional the subcolumn in the DB should be too:
 			if(!optional)
-				for(Column<?> parent : parents) // iteraters through the stack from bottom to top! (But that's fine in this case)
+				for(Column<?> parent : parents) // iterates through the stack from bottom to top! (But that's fine in this case)
 					if(parent.isOptional())
 					{
 						optional = true;
@@ -647,14 +647,15 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 					// index is a regular, unique index:
 					bldr.append("UNIQUE");
 				else
-					// index will have to be created separately (outside of table definition)
-					continue;
+					// index is a not the primary key, nor unique, these cannot be created as part of the SQLite table definition
+					continue; // will be created separately from the table
 				
 				// Continue generating constraint definition for primary key or unique index:
 				bldr.append("(");
 				bldr.openTransaction(", ");
 				// List indexed columns:
 				for(Column<?> idxCol : idx.getColumns(false))
+					// idxCol may be a composite (like a ForeignKeyColumn), so loop over each SQLiteColumn that represents part of it:
 					for(SQLiteColumn<?, ?> idxSCol : table.getSQLColumns(idxCol))
 						bldr.append(idxSCol.name);
 				bldr.commitTransaction(false);

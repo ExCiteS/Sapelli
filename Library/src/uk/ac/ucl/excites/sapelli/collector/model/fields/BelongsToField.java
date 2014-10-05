@@ -62,7 +62,7 @@ public class BelongsToField extends Relationship
 	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected Column<?> createColumn(String name)
+	protected ForeignKeyColumn createColumn(String name)
 	{	
 		return new ForeignKeyColumn(name, relatedForm.getSchema(), (optional != Optionalness.NEVER)); // (BelongsTo)
 	}

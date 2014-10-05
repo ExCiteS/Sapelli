@@ -68,7 +68,7 @@ public class Location extends Record
 	
 	// Schema(s) & columns
 	//	Default Schema (used for Location instances), which uses 64 bit floats (doubles) for latitude, longitude & altitude:
-	static final public Schema SCHEMA = new Schema(Schema.InternalKind.LOCATION);
+	static final public Schema SCHEMA = new Schema(Schema.InternalKind.Location);
 	static final public FloatColumn COLUMN_LATITUDE = new FloatColumn("Latitude", false, true, true);			// non-optional signed 64 bit float
 	static final public FloatColumn COLUMN_LONGITUDE = new FloatColumn("Longitude", false, true, true);			// non-optional signed 64 bit float
 	static final public FloatColumn COLUMN_ALTITUDE = new FloatColumn("Altitude", true, true, true);			// optional signed 64 bit float

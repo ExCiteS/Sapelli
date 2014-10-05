@@ -60,7 +60,7 @@ public class Order
 	 */
 	private Order(ColumnPointer by, boolean direction)
 	{
-		if(!(by.getColumn() instanceof ComparableColumn))
+		if(by != null && !(by.getColumn() instanceof ComparableColumn))
 			throw new IllegalArgumentException("ColumnPointer does not point to a ComparatorColumn");
 		this.by = by;
 		this.direction = direction;

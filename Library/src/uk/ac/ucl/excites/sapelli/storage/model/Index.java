@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model;
 
+
 /**
  * Class representing a database index spanning one or more columns.
  * Implemented as a subclass of {@link Schema}.
@@ -33,7 +34,7 @@ public class Index extends Schema
 	
 	public Index(String name, boolean unique, Column<?>... columns)
 	{
-		super(InternalKind.INDEX, name);
+		super(InternalKind.Index, name);
 		
 		// We need at least one column:
 		if(columns == null || columns.length < 1)

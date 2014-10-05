@@ -58,8 +58,8 @@ import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery.Executor;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.ConstraintVisitor;
@@ -599,7 +599,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			bldr.openTransaction(", ");
 			// List indexed columns:
 			for(Column<?> idxCol : idx.getColumns(false))
-				bldr.append(getSQLColumn(new ColumnPointer(schema, idxCol)).name);
+				// idxCol may be a composite (like a ForeignKeyColumn), so loop over each SColumn that represents part of it:
+				for(SColumn idxSCol : getSQLColumns(idxCol))
+					bldr.append(idxSCol.name);
 			bldr.commitTransaction(false);
 			bldr.append(");", false);
 			return bldr.toString();
@@ -1255,7 +1257,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			super(table);
 			keyPartSqlCols = new HashSet<SColumn>();
 			for(Column<?> sapKeyPartCol : table.schema.getPrimaryKey().getColumns(false))
-				CollectionUtils.addIgnoreNull(keyPartSqlCols, table.getSQLColumn(sapKeyPartCol));
+				// sapKeyPartCol may be a composite (like a ForeignKeyColumn), so loop over each SColumn that represents part of it:
+				for(SColumn sqlKeyPartCol : table.getSQLColumns(sapKeyPartCol))
+					CollectionUtils.addIgnoreNull(keyPartSqlCols, sqlKeyPartCol);
 		}
 		
 		/**
@@ -1558,7 +1562,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			ColumnPointer cp = equalityConstr.getColumnPointer();
 			SColumn sqlCol = table.getSQLColumn(cp);
 			if(sqlCol != null)
-			{	// Equality constraint on leaf column...
+			{	// Equality constraint on non-composite (leaf) column...
 				Object sapValue = equalityConstr.getValue();
 				// TODO if we start supporting default values we may have to(?) replace a null value by the default value if there is one
 				bldr.append(sqlCol.name);

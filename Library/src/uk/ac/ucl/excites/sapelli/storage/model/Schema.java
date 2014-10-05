@@ -58,12 +58,12 @@ public class Schema implements Serializable
 	 */
 	static public enum InternalKind
 	{
-		META_SCHEMA,
-		MODEL,
-		ANONYMOUS,
-		INDEX,
-		LOCATION,
-		ORIENTATION,
+		MetaSchema,
+		Model,
+		Anonymous,
+		Index,
+		Location,
+		Orientation,
 		// more later?
 	}
 	

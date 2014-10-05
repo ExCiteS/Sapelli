@@ -192,7 +192,7 @@ public class FloatColumn extends ComparableColumn<Double>
 	}
 	
 	/**
-	 * Even though the type is actually Double we have called this column an "FloatColumn" 
+	 * Even though the type is actually Double we have called this column a "FloatColumn" 
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#getTypeString()
 	 */
