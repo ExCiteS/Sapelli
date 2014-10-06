@@ -1,4 +1,4 @@
-# built application files
+lea# built application files
 *.apk
 *.ap_
 
@@ -49,3 +49,4 @@ local.properties
 /CollectorAndroid/assets/crashlytics-build.properties
 /CollectorAndroid/crashlytics.properties
 /CollectorAndroid/res/values/com_crashlytics_export_strings.xml
+/CollectorAndroid/release.bat
