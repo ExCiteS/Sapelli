@@ -1,13 +1,13 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<groupId>uk.ac.ucl.excites</groupId>
-	<artifactId>sapelli</artifactId>
-	<version>2.0.0-beta-4</version>
-	<packaging>pom</packaging>
-	<name>Sapelli</name>
-	<description>Sapelli is a mobile data collection and sharing platform designed with a specific focus on non-literate and illiterate users with little or no prior ICT experience.</description>
-	<url>http://sapelli.org</url>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>uk.ac.ucl.excites</groupId>
+  <artifactId>sapelli</artifactId>
+  <version>2.0.0-beta-5</version>
+  <packaging>pom</packaging>
+  <name>Sapelli</name>
+  <description>Sapelli is a mobile data collection and sharing platform designed with a specific focus on non-literate and illiterate users with little or no prior ICT experience.</description>
+  <url>http://sapelli.org</url>
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
