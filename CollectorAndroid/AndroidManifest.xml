@@ -5,7 +5,7 @@
     android:versionName="2.0" >
 
     <uses-sdk
-        android:minSdkVersion="14"
+        android:minSdkVersion="10"
         android:targetSdkVersion="14" />
 
     <!-- For more information on permission: http://developer.android.com/reference/android/Manifest.permission.html -->
@@ -62,7 +62,7 @@
         <activity
             android:name="uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity"
             android:launchMode="singleTask"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
+            android:theme="@style/Theme.AppCompat.Light" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>

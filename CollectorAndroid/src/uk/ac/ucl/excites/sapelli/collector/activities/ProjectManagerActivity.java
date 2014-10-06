@@ -25,6 +25,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
+import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
@@ -66,6 +67,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -150,6 +152,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		pageMargin = (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 4, getResources().getDisplayMetrics());
 		addProjects = (TextView) findViewById(R.id.addProjects);
 		runProject = (Button) findViewById(R.id.btn_runProject);
+
 		addProjects.setOnClickListener(new OnClickListener() {
 
 			@Override
@@ -161,20 +164,20 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		// Set the drawer toggle as the DrawerListener
 		drawerLayout.setDrawerListener(drawerToggle);
 		// enable ActionBar icon to behave as action to toggle drawer
-		getActionBar().setDisplayHomeAsUpEnabled(true);
-		getActionBar().setHomeButtonEnabled(true);
+		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+		getSupportActionBar().setHomeButtonEnabled(true);
 		drawerToggle = new ActionBarDrawerToggle(this, drawerLayout, R.drawable.ic_drawer, R.string.drawer_open, R.string.drawer_close) {
 
 			/** Called when a drawer has settled in a completely closed state. */
 			public void onDrawerClosed(View view) {
 				super.onDrawerClosed(view);
-				invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+				supportInvalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
 			}
 
 			/** Called when a drawer has settled in a completely open state. */
 			public void onDrawerOpened(View drawerView) {
 				super.onDrawerOpened(drawerView);
-				invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+				supportInvalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
 			}
 		};
 
@@ -298,7 +301,8 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
 		dialogBuilder.setPositiveButton(getString(android.R.string.ok), null); // click will dismiss the dialog (BACK press will too)
 		AlertDialog aboutDialog = dialogBuilder.create();
-		aboutDialog.setView(view, 0, 0, 0, 0); // no margins
+		aboutDialog.setView(view, 0, 10, 0, 0);
+		aboutDialog.setTitle(R.string.software_and_device_info);
 
 		// Show the dialog:
 		aboutDialog.show();
@@ -313,6 +317,15 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		getSupportFragmentManager().executePendingTransactions();
 		exportFragment.getExportLayout().setBackgroundResource(0);
 		exportFragment.getDialog().setTitle(R.string.exportAllProj);
+
+		// Grab the window of the dialog, and change the width
+		WindowManager.LayoutParams lp = new WindowManager.LayoutParams();
+		Window window = exportFragment.getDialog().getWindow();
+		lp.copyFrom(window.getAttributes());
+		// This makes the dialog take up the full width
+		lp.width = WindowManager.LayoutParams.MATCH_PARENT;
+		lp.height = WindowManager.LayoutParams.WRAP_CONTENT;
+		window.setAttributes(lp);
 
 		return true;
 	}
@@ -365,7 +378,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 		adapter = new PagerAdapter(getSupportFragmentManager());
 		pager.setAdapter(adapter);
 		if (!parsedProjects.isEmpty()) {
-			getActionBar().setTitle(parsedProjects.get(0).getName());
+			getSupportActionBar().setTitle(parsedProjects.get(0).getName());
 			selectedProject = parsedProjects.get(0);
 			pager.setPageMargin(pageMargin);
 			tabs.setViewPager(pager);
@@ -374,7 +387,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 			runProject.setVisibility(View.VISIBLE);
 			addProjects.setVisibility(View.GONE);
 		} else {
-			getActionBar().setTitle(R.string.app_name);
+			getSupportActionBar().setTitle(R.string.app_name);
 			tabs.setVisibility(View.GONE);
 			pager.setVisibility(View.GONE);
 			runProject.setVisibility(View.GONE);
@@ -382,7 +395,7 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 
 		}
 
-		invalidateOptionsMenu();
+		supportInvalidateOptionsMenu();
 	}
 
 	public Project getSelectedProject(boolean errorIfNull) {
@@ -709,16 +722,14 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 				}
 
 				break;
-			// // QR Reader
-			// case IntentIntegrator.REQUEST_CODE:
-			// IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-			// if (scanResult != null) {
-			// String fileUrl = data.getStringExtra("SCAN_RESULT");
-			// enterURL.setText(fileUrl);
-			// // Move the cursor to the end
-			// enterURL.setSelection(fileUrl.length());
-			// }
-			// break;
+			// QR Reader
+			case IntentIntegrator.REQUEST_CODE:
+				IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+				if (scanResult != null) {
+					String fileUrl = data.getStringExtra("SCAN_RESULT");
+					loadFile(fileUrl);
+				}
+				break;
 			}
 	}
 
@@ -935,9 +946,9 @@ public class ProjectManagerActivity extends ExportActivity implements ProjectLoa
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 		selectedProject = parsedProjects.get(position);
 		if (!parsedProjects.isEmpty())
-			getActionBar().setTitle(selectedProject.getName());
+			getSupportActionBar().setTitle(selectedProject.getName());
 		else
-			getActionBar().setTitle(R.string.app_name);
+			getSupportActionBar().setTitle(R.string.app_name);
 		drawerLayout.closeDrawer(drawerList);
 
 	}

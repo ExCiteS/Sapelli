@@ -29,22 +29,22 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:text="@string/add_project"
-            android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large"
+            android:textAppearance="?attr/textAppearanceLargePopupMenu"
             android:textColor="@android:color/darker_gray" />
 
         <View
             android:layout_width="match_parent"
-            android:layout_height="2dip"
+            android:layout_height="1dp"
             android:layout_above="@+id/btn_runProject"
-            android:background="?android:attr/dividerVertical" />
+            android:background="@android:color/darker_gray" />
 
         <Button
             android:id="@+id/btn_runProject"
-            style="?android:attr/buttonBarButtonStyle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
+            android:background="@layout/button_style"
             android:onClick="runProject"
             android:padding="10dp"
             android:text="@string/run_project" />

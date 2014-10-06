@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/exportLayout"
-    android:layout_width="wrap_content"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical" >
 
@@ -12,7 +12,7 @@
 
         <LinearLayout
             android:id="@+id/setExportDate"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="10dp"
@@ -57,8 +57,7 @@
                 <Button
                     android:id="@+id/btnDestination"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@android:style/TextAppearance.Small" />
+                    android:layout_height="wrap_content" />
             </LinearLayout>
 
             <LinearLayout
@@ -136,30 +135,35 @@
 
     <View
         android:layout_width="match_parent"
-        android:layout_height="1dip"
-        android:background="?android:attr/dividerVertical" />
+        android:layout_height="1dp"
+        android:background="@android:color/darker_gray" />
 
     <LinearLayout
         android:id="@+id/layoutExportOKCancel"
-        style="?android:attr/buttonBarStyle"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
+        android:divider="?android:attr/dividerVertical"
         android:orientation="horizontal" >
 
         <Button
             android:id="@+id/btnExportOK"
-            style="?android:attr/buttonBarButtonStyle"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@layout/button_style"
             android:text="@string/export" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@android:color/darker_gray" />
 
         <Button
             android:id="@+id/btn_exportSettings"
-            style="?android:attr/buttonBarButtonStyle"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:background="@layout/button_style"
             android:text="@string/output" />
     </LinearLayout>
 

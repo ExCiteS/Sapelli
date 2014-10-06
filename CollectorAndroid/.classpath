@@ -2,11 +2,10 @@
 <classpath>
 	<classpathentry excluding="uk/ac/ucl/excites/sapelli/sender/" kind="src" path="src"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Environment2"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Sapelli Library"/>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
-	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
-	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/android-support-v7-appcompat"/>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Sapelli Library"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/Environment2"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

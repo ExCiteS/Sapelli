@@ -1,21 +1,15 @@
 package uk.ac.ucl.excites.sapelli.collector.fragments;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
-import uk.ac.ucl.excites.sapelli.collector.ui.Switch;
-import android.opengl.Visibility;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 /**
@@ -24,8 +18,6 @@ import android.widget.TextView;
  * @author Julia
  */
 public class TransmissionFragment extends Fragment implements OnClickListener {
-
-	private static final String PAGE_POSITION = "position";
 
 	// Layouts
 	private LinearLayout sendDataHeader;
@@ -137,4 +129,13 @@ public class TransmissionFragment extends Fragment implements OnClickListener {
 		checkbox.setPadding(checkbox.getPaddingLeft() + (int) (30.0f * this.getResources().getDisplayMetrics().density + 0.5f), checkbox.getPaddingTop(), checkbox.getPaddingRight(), checkbox.getPaddingBottom());
 	}
 
+	@Override
+	public void onResume() {
+		super.onResume();
+		if (checkSend.isChecked())
+			((ImageView) ((ViewGroup) sendDataHeader).getChildAt(1)).setVisibility(View.VISIBLE);
+		if (checkReceive.isChecked())
+			((ImageView) ((ViewGroup) receiveDataHeader).getChildAt(1)).setVisibility(View.VISIBLE);
+
+	}
 }

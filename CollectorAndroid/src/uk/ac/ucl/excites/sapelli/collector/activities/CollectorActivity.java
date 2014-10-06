@@ -107,6 +107,10 @@ public class CollectorActivity extends ProjectActivity {
 		requestWindowFeature(Window.FEATURE_NO_TITLE); // Remove title
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); // Lock the orientation
 		getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN); // Set to FullScreen
+		// Hide the action bar
+		if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.HONEYCOMB) {
+			getSupportActionBar().hide();
+		}
 
 		// Set-up root layout
 		collectorView = new CollectorView(this);
