@@ -25,7 +25,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.AudioUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 
 /**
@@ -106,7 +106,7 @@ public class AudioField extends MediaField
 	}
 
 	@Override
-	public <V, UI extends CollectorUI<V, UI>> AudioUI<V, UI> createUI(UI collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> MediaUI<AudioField,V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createAudioUI(this);
 	}

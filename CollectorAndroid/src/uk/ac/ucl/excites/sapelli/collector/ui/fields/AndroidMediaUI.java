@@ -46,10 +46,10 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.ViewSwitcher;
@@ -127,17 +127,17 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	}
 	
 	
-	public abstract void onCapture();
+	public abstract boolean onCapture();
 	
 	public abstract void onMediaSaved();
 	
 	public abstract void onCaptureStarted();
 	
-	public abstract void populateCaptureLayout(View layoutContainer);
+	public abstract void populateCaptureLayout(ViewGroup captureLayout);
 	
-	public abstract void populateReviewLayout(View layoutContainer);
+	public abstract void populateReviewLayout(ViewGroup reviewLayout);
 
-	public abstract void populateDeleteLayout(View layoutContainer, File mediaFile);
+	public abstract void populateDeleteLayout(ViewGroup deleteLayout, File mediaFile);
 	
 	public abstract void finalise();
 		
@@ -152,44 +152,41 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		static private final String TAG = "CaptureView";
 
 		// UI elements:
-		private LinearLayout captureLayout;
-		private LinearLayout reviewLayout; // Layout for reviewing single items
-		
-		private Context context;
-		
+		private LinearLayout captureLayoutContainer;
+		private LinearLayout reviewLayoutContainer; // Layout for reviewing single items
+				
 		public CaptureView(Context context)
 		{
 			super(context);
-			this.context = context;
 			// --- Capture UI:
-			captureLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_capture, this, false);
+			captureLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_capture, this, false);
+			LinearLayout captureLayout = (LinearLayout) captureLayoutContainer.getChildAt(0);
 			AndroidMediaUI.this.populateCaptureLayout(captureLayout);
 
 			// Add the Capture button:
-			final LinearLayout captureLayoutButtons = (LinearLayout) captureLayout.findViewById(R.id.capture_layout_buttons);
-			if (context == null) Log.d("CaptureView","null context");
-			else Log.d("CaptureView","context not null");
+			final LinearLayout captureLayoutButtons = (LinearLayout) captureLayoutContainer.findViewById(R.id.capture_layout_buttons);
 			captureLayoutButtons.addView(new CaptureButtonView(context));
 
 			// Add the CaptureLayout to the screen
-			this.addView(captureLayout);
+			this.addView(captureLayoutContainer);
 
 			// --- Review UI:
-			reviewLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_review, this, false);
+			reviewLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_review, this, false);
+			LinearLayout reviewLayout = (LinearLayout) reviewLayoutContainer.getChildAt(0);
 			AndroidMediaUI.this.populateReviewLayout(reviewLayout);
 
 			// Add the confirm/cancel buttons:
-			final LinearLayout reviewLayoutButtons = (LinearLayout) reviewLayout.findViewById(R.id.review_layout_buttons);
+			final LinearLayout reviewLayoutButtons = (LinearLayout) reviewLayoutContainer.findViewById(R.id.review_layout_buttons);
 			reviewLayoutButtons.addView(new ReviewButtonView(getContext()));
 
 			// Add the ReviewLayout to the screen
-			this.addView(reviewLayout);
+			this.addView(reviewLayoutContainer);
 		}
 
 		public void update()
 		{
 			// switch back to capture UI if necessary:
-			if (getCurrentView() == reviewLayout)
+			if (getCurrentView() == reviewLayoutContainer)
 				showNext();
 		}
 		
@@ -200,18 +197,20 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 		private class CaptureButtonView extends MediaButtonView
 		{
-			private Context context;
 
 			public CaptureButtonView(Context context)
 			{
 				super(context);
-				this.context = context;
 
 				buttonAction = new Runnable() {
 					@Override
 					public void run() {
 						goToCapture = false; //just made a capture, so go to gallery instead (unless multiple disabled)
-						AndroidMediaUI.this.onCapture();
+						if (AndroidMediaUI.this.onCapture()) 
+							// if returns true, a capture has been made (rather than just started)
+							dataReceived();
+						else
+							handlingClick.release();
 					}
 				};
 			}
@@ -317,8 +316,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		
 		private Context context;
 
-		private LinearLayout pickerLayout;
+		private LinearLayout pickerLayoutContainer;
 		private MediaPickerView mediaPicker;
+		private LinearLayout deleteLayoutContainer;
 		private LinearLayout deleteLayout;
 		private LinearLayout pickerLayoutButtons;
 		
@@ -329,28 +329,29 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			this.context = context;
 
 			// Multiple pieces of media can be taken, so use a PickerView for review after confirmation:
-			pickerLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_picker, this, false);
+			pickerLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_picker, this, false);
 
 			// Add the confirm/cancel buttons:
-			pickerLayoutButtons = (LinearLayout) pickerLayout.findViewById(R.id.picker_layout_buttons);
+			pickerLayoutButtons = (LinearLayout) pickerLayoutContainer.findViewById(R.id.picker_layout_buttons);
 			pickerLayoutButtons.addView(new PickerButtonView(context));
-			final LinearLayout pickerViewContainer = (LinearLayout) pickerLayout.findViewById(R.id.picker_layout_picker_container);
+			final LinearLayout pickerViewContainer = (LinearLayout) pickerLayoutContainer.findViewById(R.id.picker_layout_picker_container);
 			refreshPickerButtons();
 			mediaPicker = new MediaPickerView(context);
 			pickerViewContainer.addView(mediaPicker);
 			mediaPicker.loadMedia();
 			// Add the picker:
-			this.addView(pickerLayout);
+			this.addView(pickerLayoutContainer);
 
 			// Add the layout for media review/deletion after capture:
-			deleteLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_review, this, false);
+			deleteLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_review, this, false);
 
+			deleteLayout = (LinearLayout) deleteLayoutContainer.getChildAt(0);
 			// Add the confirm/cancel buttons:
-			final LinearLayout deleteLayoutButtons = (LinearLayout) deleteLayout.findViewById(R.id.review_layout_buttons);
+			final LinearLayout deleteLayoutButtons = (LinearLayout) deleteLayoutContainer.findViewById(R.id.review_layout_buttons);
 			deleteLayoutButtons.addView(new DeleteButtonView(getContext()));
 
 			// Add the view:
-			addView(deleteLayout);
+			addView(deleteLayoutContainer);
 		}
 
 		public void update() {

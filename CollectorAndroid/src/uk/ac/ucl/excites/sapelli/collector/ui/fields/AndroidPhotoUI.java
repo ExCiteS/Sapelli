@@ -30,7 +30,7 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 
@@ -50,7 +50,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	
 	@SuppressWarnings("deprecation")
     @Override
-    public void populateCaptureLayout(View captureLayout) {
+    public void populateCaptureLayout(ViewGroup captureLayout) {
 		// Set up cameraController:
 		//	Camera controller & camera selection:
 		cameraController = new CameraController(field.isUseFrontFacingCamera());
@@ -67,7 +67,8 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		cameraController.setFlashMode(field.getFlashMode());
 
 		// Create the surface for previewing the camera:
-		final SurfaceView surfaceView = (SurfaceView) captureLayout.findViewById(R.id.capture_layout_surface);
+		final SurfaceView surfaceView = new SurfaceView(captureLayout.getContext());
+		captureLayout.addView(surfaceView);
 
 		// Set-up surface holder:
 		SurfaceHolder holder = surfaceView.getHolder();
@@ -78,14 +79,16 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
     }
 	
 	@Override
-    public void populateReviewLayout(View reviewLayout) {
-		reviewView = (ImageView) reviewLayout.findViewById(R.id.review_layout_imageview);
+    public void populateReviewLayout(ViewGroup reviewLayout) {
+		reviewView = new ImageView(reviewLayout.getContext());
 		reviewView.setScaleType(ScaleType.FIT_CENTER);
+		reviewLayout.addView(reviewView);
     }
 
 	@Override
-    public void onCapture() {
-		cameraController.takePicture(this);	    
+    public boolean onCapture() {
+		cameraController.takePicture(this);
+		return false; // capture is only made when picture returns
     }
 
 	@Override
@@ -99,11 +102,12 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
     }
 
 	@Override
-    public void populateDeleteLayout(View deleteLayout, File mediaFile) {
-		ImageView deletePhotoView = (ImageView) deleteLayout.findViewById(R.id.review_layout_imageview);
+    public void populateDeleteLayout(ViewGroup deleteLayout, File mediaFile) {
+		ImageView deletePhotoView = new ImageView(deleteLayout.getContext());
 		deletePhotoView.setScaleType(ScaleType.FIT_CENTER);
 		// set the ImageView to the provided photo file:
-		deletePhotoView.setImageURI(Uri.fromFile(mediaFile));	    
+		deletePhotoView.setImageURI(Uri.fromFile(mediaFile));
+		deleteLayout.addView(deletePhotoView);
     }
 
 	@Override
@@ -115,8 +119,6 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	@Override
     public ImageItem getCaptureButton(Context context) {
 		ImageItem captureButton = null;
-		if (context == null) Log.d("PhotoUI","null context");
-		else Log.d("PhotoUI","context not null");
 		File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
 		if(FileHelpers.isReadableFile(captureImgFile))
 			captureButton = new FileImageItem(captureImgFile);

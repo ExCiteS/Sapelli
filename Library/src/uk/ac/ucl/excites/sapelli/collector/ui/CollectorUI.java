@@ -51,7 +51,7 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 
 	public MediaUI<PhotoField,V, UI> createPhotoUI(PhotoField pf);
 
-	public AudioUI<V, UI> createAudioUI(AudioField af);
+	public MediaUI<AudioField,V, UI> createAudioUI(AudioField af);
 
 	public LocationUI<V, UI> createLocationUI(LocationField lf);
 	
