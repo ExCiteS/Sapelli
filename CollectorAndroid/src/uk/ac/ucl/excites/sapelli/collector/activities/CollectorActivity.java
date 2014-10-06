@@ -44,6 +44,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.util.Debug;
+import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -208,8 +209,10 @@ public class CollectorActivity extends ProjectActivity
 				if(app.getBuildInfo().isDemoBuild())
 					//TODO export
 					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".");
+			DeviceControl.safeDecreaseMediaVolume(this);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_UP:
+				DeviceControl.increaseMediaVolume(this);
 				return true;
 		}
 		

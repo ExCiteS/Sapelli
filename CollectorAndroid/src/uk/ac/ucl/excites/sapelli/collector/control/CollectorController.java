@@ -306,20 +306,17 @@ public class CollectorController extends Controller implements LocationListener,
 			{
 				switch(audioFeedback)
 				{
-				case LONG_CLICK_AUDIO_FILES:
-				case SEQUENTIAL_AUDIO_FILES:
+				case LONG_CLICK:
+				case SEQUENTIAL:
 
 					// Enable Audio Files Feedback
 					if(audioToVoice == null)
 						audioToVoice = new AudioToVoice(activity.getBaseContext());
-					break;
-
-				case LONG_CLICK_TTS:
-				case SEQUENTIAL_TTS:
 
 					// Enable TTS Audio Feedback
 					if(textToVoice == null)
 						textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
+
 					break;
 
 				case NONE:

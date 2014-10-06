@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary.Dictionar
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -63,7 +64,8 @@ public class ChoiceField extends Field implements DictionaryItem
 	private ChoiceField root;
 	private List<ChoiceField> children;
 	private String imageRelativePath;
-	private String choiceAudioRelativePath;
+	private String answerDesc;
+	private String questionDesc;
 	private int cols = DEFAULT_NUM_COLS;
 	private int rows = DEFAULT_NUM_ROWS;
 	private String altText;
@@ -133,25 +135,47 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 
 	/**
-	 * @return the choiceAudioRelativePath
+	 * @return the answerDesc
 	 */
-	public String getChoiceAudioRelativePath()
+	public String getAnswerDesc()
 	{
-		return choiceAudioRelativePath;
+		return answerDesc;
 	}
 
 	/**
-	 * @param choiceAudioRelativePath
-	 *            the choiceAudioRelativePath to set
+	 * @param answerDesc
+	 *            the answerDesc to set
 	 */
-	public void setChoiceAudioRelativePath(String choiceAudioRelativePath)
+	public void setAnswerDesc(String answerDesc)
 	{
-		this.choiceAudioRelativePath = choiceAudioRelativePath;
+		this.answerDesc = answerDesc;
 	}
 
-	public boolean hasChoiceAudio()
+	public boolean hasAudioAnswerDesc()
 	{
-		return choiceAudioRelativePath != null;
+		return answerDesc != null && FileHelpers.isAudioFileName(answerDesc);
+	}
+
+	/**
+	 * @return the questionDesc
+	 */
+	public String getQuestionDesc()
+	{
+		return questionDesc;
+	}
+
+	/**
+	 * @param questionDesc
+	 *            the questionDesc to set
+	 */
+	public void setQuestionDesc(String questionDesc)
+	{
+		this.questionDesc = questionDesc;
+	}
+
+	public boolean hasQuestionDesc()
+	{
+		return questionDesc != null && FileHelpers.isAudioFileName(questionDesc);
 	}
 
 	/**
