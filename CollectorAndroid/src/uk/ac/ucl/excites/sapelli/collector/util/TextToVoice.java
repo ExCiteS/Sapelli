@@ -78,8 +78,11 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 
 	public void destroy()
 	{
-		tts.stop();
-		tts.shutdown();
-		tts = null;
+		if(tts != null)
+		{
+			tts.stop();
+			tts.shutdown();
+			tts = null;
+		}
 	}
 }
