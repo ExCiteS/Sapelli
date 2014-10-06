@@ -343,7 +343,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		infoLbl.setClickable(true);
 		infoLbl.setMovementMethod(LinkMovementMethod.getInstance());
 		infoLbl.setText(Html.fromHtml(
-				"<p>" + getString(R.string.app_name) + " " + app.getBuildInfo().getVersionInfo() + ".</p>" +
+				"<p>" + app.getBuildInfo().getVersionInfo() + ".</p>" +
 				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
 				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
 				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));		

@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <metadata>
-  <groupId>com.db4o</groupId>
-  <artifactId>nqopt-java5</artifactId>
+  <groupId>decaf</groupId>
+  <artifactId>annotations</artifactId>
   <versioning>
     <release>8.1.322.16154</release>
     <versions>
       <version>8.1.322.16154</version>
     </versions>
-    <lastUpdated>20141006152100</lastUpdated>
+    <lastUpdated>20141006141324</lastUpdated>
   </versioning>
 </metadata>

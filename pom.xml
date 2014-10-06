@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>uk.ac.ucl.excites</groupId>
+	<artifactId>sapelli</artifactId>
+	<version>2.0.0-beta-4</version>
+	<packaging>pom</packaging>
+	<name>Sapelli</name>
+	<description>Sapelli is a mobile data collection and sharing platform designed with a specific focus on non-literate and illiterate users with little or no prior ICT experience.</description>
+	<url>http://sapelli.org</url>
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+    </license>
+  </licenses>
+  <scm>
+    <connection>scm:git:https://github.com/ExCiteS/Sapelli</connection>
+    <developerConnection>scm:git:https://github.com/ExCiteS/Sapelli</developerConnection>
+    <url>https://github.com/ExCiteS/Sapelli</url>
+  </scm>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>uk.ac.ucl.excites</groupId>
+        <artifactId>sapelli-library</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.1</version>
+          <configuration>
+            <encoding>UTF-8</encoding>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+  <modules>
+    <module>Library</module>
+    <module>LibraryAndroid</module>
+    <module>CollectorAndroid</module>
+    <module>Library+DB4O</module>
+    <module>Library+SQLite4Java</module>
+  </modules>
+</project>
