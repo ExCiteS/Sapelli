@@ -6,27 +6,19 @@
     android:gravity="center"
     android:orientation="vertical" >
 
-    <RelativeLayout
+    <ImageView
+        android:id="@+id/aboutIcon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_margin="4dp" >
+        android:contentDescription="@string/app_name"
+        android:src="@drawable/ic_excites_transparent" />
 
-        <ImageView
-            android:id="@+id/aboutIcon"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_alignParentLeft="true"
-            android:layout_alignParentTop="true"
-            android:contentDescription="@string/app_name"
-            android:src="@drawable/ic_excites_transparent" />
-
-        <TextView
-            android:id="@+id/aboutInfo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_toRightOf="@id/aboutIcon"
-            android:textColor="@color/black"
-            android:textSize="12sp" />
-    </RelativeLayout>
+    <TextView
+        android:id="@+id/aboutInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:textColor="@color/black"
+        android:textSize="12sp" />
 
 </LinearLayout>
