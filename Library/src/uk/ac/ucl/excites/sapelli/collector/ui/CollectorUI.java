@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.LabelUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.LocationUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MultiListUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.OrientationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
@@ -48,7 +49,7 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 
 	public ChoiceUI<V, UI> createChoiceUI(ChoiceField cf);
 
-	public PhotoUI<V, UI> createPhotoUI(PhotoField pf);
+	public MediaUI<PhotoField,V, UI> createPhotoUI(PhotoField pf);
 
 	public AudioUI<V, UI> createAudioUI(AudioField af);
 

@@ -20,6 +20,8 @@ package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -27,8 +29,10 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.xml.FormParser;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.ROT13;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -47,6 +51,10 @@ public abstract class MediaField extends Field
 	static public final char FILENAME_ELEMENT_SEPARATOR = '_';
 	
 	static private final Pattern OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
+	
+	private String captureButtonImageRelativePath;
+	private String approveButtonImageRelativePath;
+	private String discardButtonImageRelativePath;
 	
 	//protected int min;
 	protected boolean useNativeApp;
@@ -272,4 +280,62 @@ public abstract class MediaField extends Field
 		return true;
 	}
 	
+	/**
+	 * @return the captureButtonImageRelativePath
+	 */
+	public String getCaptureButtonImageRelativePath()
+	{
+		return captureButtonImageRelativePath;
+	}
+
+	/**
+	 * @param captureButtonImageRelativePath the captureButtonImageRelativePath to set
+	 */
+	public void setCaptureButtonImageRelativePath(String captureButtonImageRelativePath)
+	{
+		this.captureButtonImageRelativePath = captureButtonImageRelativePath;
+	}
+
+	/**
+	 * @return the approveButtonImageRelativePath
+	 */
+	public String getApproveButtonImageRelativePath()
+	{
+		return approveButtonImageRelativePath;
+	}
+
+	/**
+	 * @param approveButtonImageRelativePath the approveButtonImageRelativePath to set
+	 */
+	public void setApproveButtonImageRelativePath(String approveButtonImageRelativePath)
+	{
+		this.approveButtonImageRelativePath = approveButtonImageRelativePath;
+	}
+
+	/**
+	 * @return the discardButtonImageRelativePath
+	 */
+	public String getDiscardButtonImageRelativePath()
+	{
+		return discardButtonImageRelativePath;
+	}
+
+	/**
+	 * @param discardButtonImageRelativePath the discardButtonImageRelativePath to set
+	 */
+	public void setDiscardButtonImageRelativePath(String discardButtonImageRelativePath)
+	{
+		this.discardButtonImageRelativePath = discardButtonImageRelativePath;
+	}
+	
+
+	@Override
+	public List<File> getFiles(Project project)
+	{
+		List<File> paths = new ArrayList<File>();
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(captureButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(approveButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(discardButtonImageRelativePath));
+		return paths;
+	}
 }

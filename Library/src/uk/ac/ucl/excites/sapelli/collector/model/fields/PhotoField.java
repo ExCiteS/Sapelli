@@ -18,15 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.PhotoUI;
-import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -54,9 +48,7 @@ public class PhotoField extends MediaField
 	private boolean useFrontFacingCamera;
 	private FlashMode flashMode;
 	
-	private String captureButtonImageRelativePath;
-	private String approveButtonImageRelativePath;
-	private String discardButtonImageRelativePath;
+
 	
 	public PhotoField(Form form, String id, boolean multiple, String caption)
 	{
@@ -98,53 +90,7 @@ public class PhotoField extends MediaField
 		this.flashMode = flashMode;
 	}
 
-	/**
-	 * @return the captureButtonImageRelativePath
-	 */
-	public String getCaptureButtonImageRelativePath()
-	{
-		return captureButtonImageRelativePath;
-	}
 
-	/**
-	 * @param captureButtonImageRelativePath the captureButtonImageRelativePath to set
-	 */
-	public void setCaptureButtonImageRelativePath(String captureButtonImageRelativePath)
-	{
-		this.captureButtonImageRelativePath = captureButtonImageRelativePath;
-	}
-
-	/**
-	 * @return the approveButtonImageRelativePath
-	 */
-	public String getApproveButtonImageRelativePath()
-	{
-		return approveButtonImageRelativePath;
-	}
-
-	/**
-	 * @param approveButtonImageRelativePath the approveButtonImageRelativePath to set
-	 */
-	public void setApproveButtonImageRelativePath(String approveButtonImageRelativePath)
-	{
-		this.approveButtonImageRelativePath = approveButtonImageRelativePath;
-	}
-
-	/**
-	 * @return the discardButtonImageRelativePath
-	 */
-	public String getDiscardButtonImageRelativePath()
-	{
-		return discardButtonImageRelativePath;
-	}
-
-	/**
-	 * @param discardButtonImageRelativePath the discardButtonImageRelativePath to set
-	 */
-	public void setDiscardButtonImageRelativePath(String discardButtonImageRelativePath)
-	{
-		this.discardButtonImageRelativePath = discardButtonImageRelativePath;
-	}
 
 	@Override
 	public String getMediaType()
@@ -157,19 +103,9 @@ public class PhotoField extends MediaField
 	{
 		return EXTENSION_JPEG;
 	}
-
-	@Override
-	public List<File> getFiles(Project project)
-	{
-		List<File> paths = new ArrayList<File>();
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(captureButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(approveButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(discardButtonImageRelativePath));
-		return paths;
-	}
 	
 	@Override
-	public <V, UI extends CollectorUI<V, UI>> PhotoUI<V, UI> createUI(UI collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> MediaUI<PhotoField,V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createPhotoUI(this);
 	}

@@ -41,7 +41,7 @@ import com.larvalabs.svgandroid.SVGDrawable;
  * 
  * @author mstevens
  */
-public class FileImageItem extends ImageItem
+public class FileImageItem extends ImageItem implements FileItem
 {
 	
 	static private final String TAG = "FileImageItem";
