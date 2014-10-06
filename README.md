@@ -2,7 +2,7 @@ Sapelli
 =======
 
 ### What? ###
-[Sapelli](http://sapelli.org) is a mobile data collection and sharing platform designed with a particular focus on non-literate and illiterate users with little or no prior ICT experience.
+[Sapelli](http://sapelli.org) is a mobile data collection and sharing platform designed with a specific focus on non-literate and illiterate users with little or no prior ICT experience.
 
 It supports the creation of surveys (called "projects"), composed of 1 or more forms. Forms can be entirely text-free, using the concept of pictorial decision trees, or have a more conventional appearance consisting of standard UI widgets. Sapelli supports data exchange using a highly efficient protocol that can work across SMS and HTTP.
 
