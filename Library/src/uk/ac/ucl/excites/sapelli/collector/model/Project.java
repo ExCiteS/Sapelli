@@ -25,9 +25,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -52,13 +50,15 @@ public class Project
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
 	
+	// Projects folder:
+	static public final String PROJECTS_FOLDER = "Projects";
+	static public final String DATA_FOLDER = "Data";
+	static public final String LOGS_FOLDER = "Logs";
+
 	// Subfolders:
 	static public final String IMAGE_FOLDER = "img";
 	static public final String SOUND_FOLDER = "snd";
-	static public final String DATA_FOLDER = "data";
 	static public final String TEMP_FOLDER = "temp";
-	static public final String LOG_FOLDER = "logs"; //subfolder of data/
-	static public final String DOCS_FOLDER = "docs";
 	
 	static public final String NO_MEDIA_FILE = ".nomedia"; //Info: http://www.makeuseof.com/tag/hide-private-picture-folders-gallery-android
 	
@@ -75,6 +75,7 @@ public class Project
 	private String variant;
 	private String version;
 	
+	private String basePath;
 	private String projectPath;
 	
 	private TransmissionSettings transmissionSettings;
@@ -94,7 +95,7 @@ public class Project
 	 * @param variant
 	 * @param version
 	 * @param fingerPrint - hash code computed against XML (ignoring comments and whitespace; see XMLHasher) 
-	 * @param basePath
+	 * @param basePath - The Sapelli base path
 	 * @param createSubfolder
 	 */
 	public Project(int id, String name, String variant, String version, int fingerPrint, String basePath, boolean createSubfolder)
@@ -122,13 +123,17 @@ public class Project
 		else
 			initialise(id); // checks if it fits in field	
 		
-		// Path:
+		// Base Path:
 		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
 			basePath += File.separatorChar;
-		this.projectPath = basePath;
+		
+		this.basePath = basePath;
+
+		// Compose the Base Project path
+		this.projectPath = basePath + PROJECTS_FOLDER;
 		if(createSubfolder)
 		{
-			this.projectPath += this.name + File.separatorChar + "v" + version + File.separatorChar; // TODO include variant
+			this.projectPath += this.name + File.separatorChar + "v" + version + File.separatorChar + variant + File.separatorChar;
 			if(!FileHelpers.createFolder(projectPath))
 				throw new IllegalArgumentException("Could not create folder: " + projectPath);
 			// Create .nomedia file:
@@ -450,28 +455,12 @@ public class Project
 	
 	public String getLogFolderPath() throws IOException
 	{
-		return getDataFolder().getAbsolutePath() + File.separator + LOG_FOLDER + File.separator;
+		return basePath + LOGS_FOLDER + File.separator;
 	}
 	
 	public File getLogFolder() throws IOException
 	{
 		File folder = new File(getLogFolderPath());
-		checkFolder(folder);
-		return folder;
-	}
-	
-	public String getDocsFolderPath()
-	{
-		return projectPath + DOCS_FOLDER + File.separator;
-	}
-	
-	/**
-	 * @return File object pointing to the docs folder for this project
-	 * @throws IOException - when the folder cannot be created or is not writable
-	 */
-	public File getDocsFolder() throws IOException
-	{
-		File folder = new File(getDocsFolderPath());
 		checkFolder(folder);
 		return folder;
 	}
@@ -489,28 +478,28 @@ public class Project
 		return invalidFiles;
 	}
 	
-	/**
-	 * For now this only generates CSV files that document the indexed values for ChoiceFields
-	 * 
-	 * @throws IOException
-	 */
-	public void generateDocumentation() throws IOException
-	{
-		File docsFolder = getDocsFolder();
-		for(Form form : forms)
-		{
-			for(Field field : form.getFields())
-			{
-				if(!field.isNoColumn() && field instanceof ChoiceField)
-				{					
-					FileWriter writer = new FileWriter(docsFolder.getAbsolutePath() + File.separator + form.getName() + "_" + field.getID() + ".csv");
-					writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
-					writer.write(((ChoiceField) field).getDictionary().toCSV(";"));
-					writer.close();
-				}
-			}
-		}
-	}
+	// /**
+	// * For now this only generates CSV files that document the indexed values for ChoiceFields
+	// *
+	// * @throws IOException
+	// */
+	// public void generateDocumentation() throws IOException
+	// {
+	// File docsFolder = getDocsFolder();
+	// for(Form form : forms)
+	// {
+	// for(Field field : form.getFields())
+	// {
+	// if(!field.isNoColumn() && field instanceof ChoiceField)
+	// {
+	// FileWriter writer = new FileWriter(docsFolder.getAbsolutePath() + File.separator + form.getName() + "_" + field.getID() + ".csv");
+	// writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
+	// writer.write(((ChoiceField) field).getDictionary().toCSV(";"));
+	// writer.close();
+	// }
+	// }
+	// }
+	// }
 	
 	public boolean equalSignature(Project other)
 	{

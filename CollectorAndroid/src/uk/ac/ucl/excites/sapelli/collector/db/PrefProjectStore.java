@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
@@ -287,7 +288,7 @@ public class PrefProjectStore extends ProjectStore
 	{
 		File xmlFile = new File(folderPath.toString() + ProjectLoader.PROJECT_FILE);
 		// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
-		ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
+		ProjectParser parser = new ProjectParser(((CollectorApp) context.getApplicationContext()).getSapelliFolder().getAbsolutePath(), false);
 		try
 		{
 			return parser.parseProject(xmlFile);

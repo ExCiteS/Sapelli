@@ -27,6 +27,7 @@ import java.util.Set;
 import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.sql.sqlite.android.AndroidSQLiteRecordStore;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
@@ -62,11 +63,14 @@ public class CollectorApp extends Application implements StoreClient
 	
 	//static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
 	
-	static private final String PROJECT_FOLDER = "Projects" + File.separator;
+	static private final String PROJECT_FOLDER = Project.PROJECTS_FOLDER + File.separator;
+	static private final String DATA_FOLDER = Project.DATA_FOLDER + File.separator;
+	static private final String LOG_FOLDER = Project.LOGS_FOLDER + File.separator;
 	static private final String TEMP_FOLDER = "Temp" + File.separator;
 	static private final String DOWNLOAD_FOLDER = "Downloads" + File.separator;
 	static private final String DUMP_FOLDER = "Dumps" + File.separator;
 	static private final String EXPORT_FOLDER = "Export" + File.separator;
+
 	
 	static private final String CRASHLYTICS_VERSION_INFO = "VERSION_INFO";
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
@@ -152,7 +156,7 @@ public class CollectorApp extends Application implements StoreClient
 			{
 				// We count backwards because we prefer secondary external storage (which is likely to be on an SD card rather unremovable memory)
 				for(int p = paths.length - 1; p >= 0; p--)
-					if(paths[p] != null && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(paths[p])))
+					if(paths[p] !=null && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(paths[p])))
 					{
 						sapelliFolder = paths[p];
 						break;
@@ -242,6 +246,16 @@ public class CollectorApp extends Application implements StoreClient
 	public String getExportFolderPath()
 	{
 		return getSapelliFolder().getAbsolutePath() + File.separator + EXPORT_FOLDER;
+	}
+
+	public String getDataFolderPath()
+	{
+		return getSapelliFolder().getAbsolutePath() + File.separator + DATA_FOLDER;
+	}
+
+	public String getLogFolderPath()
+	{
+		return getSapelliFolder().getAbsolutePath() + File.separator + LOG_FOLDER;
 	}
 
 	@Override

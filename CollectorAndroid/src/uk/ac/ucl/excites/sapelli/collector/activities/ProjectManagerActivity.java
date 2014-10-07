@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.collector.activities;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -268,7 +267,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			Project p = null;
 			if(projects.isEmpty())
 			{	// Use /mnt/sdcard/Sapelli/ as the basePath:
-				ProjectLoader loader = new ProjectLoader(this, app.getProjectFolderPath(), app.getTempFolderPath());
+				ProjectLoader loader = new ProjectLoader(this, app.getSapelliFolder().getAbsolutePath(), app.getTempFolderPath());
 				p = loader.load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
 				storeProject(p);
 			}
@@ -535,7 +534,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		try
 		{
 			// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
-			ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
+			ProjectParser parser = new ProjectParser(((CollectorApp) getApplication()).getSapelliFolder().getAbsolutePath(), false);
 			Project parsedProject = parser.parseProject(xmlFile);
 			// Show parser warnings if needed:
 			showParserWarnings(parser.getWarnings());
@@ -552,7 +551,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		try
 		{
-			ProjectLoader loader = new ProjectLoader(this, app.getProjectFolderPath(), app.getTempFolderPath());
+			ProjectLoader loader = new ProjectLoader(this, app.getSapelliFolder().getAbsolutePath(), app.getTempFolderPath());
 			Project loadedProject = loader.load(sapelliFile);
 			// Show parser warnings if needed:
 			showParserWarnings(loader.getParserWarnings());
@@ -583,15 +582,16 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		if(!invalidFiles.isEmpty())
 			showWarningDialog("The following files could not be found or read in the project path (" + project.getProjectFolderPath() + "): " + StringUtils.join(invalidFiles, ", "));
 		
-		// Generate documentation
-		try
-		{
-			project.generateDocumentation();
-		}
-		catch(IOException e)
-		{
-			showErrorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
-		}
+		// TODO Delete?
+		// // Generate documentation
+		// try
+		// {
+		// project.generateDocumentation();
+		// }
+		// catch(IOException e)
+		// {
+		// showErrorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
+		// }
 		
 		// Store the project object:
 		storeProject(project);
