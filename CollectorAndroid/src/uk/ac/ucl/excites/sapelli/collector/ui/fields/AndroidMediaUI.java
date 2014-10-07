@@ -79,16 +79,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	}
 
 	@Override
-	protected void cancel()
-	{
-		if(captureView != null)
-		{
-			onCancel();
-			captureView = null;
-		}
-	}
-
-	@Override
 	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{
 		//TODO take "enabled" into account
@@ -143,11 +133,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * What to do when a new piece of media is discarded upon review.
 	 */
 	abstract void onDiscard();
-	
-	/**
-	 * What to do when this field is cancelled.
-	 */
-	abstract void onCancel();
 		
 	/**
 	 * 
@@ -188,8 +173,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		
 	private class CaptureView extends ViewSwitcher
 	{
-
-		static private final String TAG = "CaptureView";
 
 		// UI elements:
 		private LinearLayout captureLayoutContainer;

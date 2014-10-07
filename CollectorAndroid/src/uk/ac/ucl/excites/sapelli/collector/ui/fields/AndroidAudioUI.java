@@ -14,6 +14,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.AudioItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
@@ -23,10 +24,13 @@ import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.AdapterView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.TextView;
 
@@ -39,6 +43,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	
 	private File audioFile;
 	private AudioRecorder audioRecorder;
+	
+	private ViewGroup captureLayout;
 
 	public AndroidAudioUI(AudioField field, Controller controller,
             CollectorView collectorUI) {
@@ -52,12 +58,23 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
         	recording = false;
         	stopRecording();
         	Log.d("AudioUI","Stopped recording");
+        	if (captureLayout != null) {
+        		captureLayout.removeViewAt(1); // remove spinner
+        	}
         	return true; // data has been captured, so return true
         } else {
         	// start recording
         	recording = true;
         	startRecording();
         	Log.d("AudioUI","Started recording");
+        	
+        	if (captureLayout != null) {
+				LinearLayout waitView = new LinearLayout(captureLayout.getContext());
+				waitView.setGravity(Gravity.CENTER);
+				waitView.addView(new ProgressBar(captureLayout.getContext(), null, android.R.attr.progressBarStyleLarge));
+				captureLayout.addView(waitView);
+        	}
+        	
         	// TODO change button image to "stop"
         	return false; // we have only started capturing data, so return false
         }
@@ -65,24 +82,28 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 	@Override
     void onApprove() {
-		//TODO
+		if (audioFile != null) {
+			// add the file to the field's attachments:
+			if (field.isMultiple()) {
+				mediaAddedButNotDone(audioFile);
+			}
+			else {
+				mediaDone(audioFile, true);
+			}
+			audioFile = null;
+		}
     }
 
 	@Override
     void onDiscard() {
-		//TODO 
+		//TODO -- currently just does nothing, assuming temp file will be deleted eventually
     }
 
 	@Override
     void populateDeleteLayout(ViewGroup deleteLayout, File mediaFile) {
 		//TODO
     }
-
-	@Override
-    void onCancel() {
-		//TODO
-    }
-
+	
 	@Override
     ImageItem getCaptureButton(Context context) {
 		ImageItem captureButton = null;
@@ -101,7 +122,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	    List<File> files = controller.getMediaAttachments();
 	    List<Item> items = new ArrayList<Item>();
 	    for (File f : files) {
-	    	items.add(new FileImageItem(f));
+	    	items.add(new AudioItem(f));
 	    }
 	    return items;
     }
@@ -156,7 +177,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	
     @Override
     void populateCaptureLayout(ViewGroup captureLayout) {
-    	// TODO some illustration of audio levels	
+    	// TODO some illustration of audio levels
+    	this.captureLayout = captureLayout;
     	TextView placeholder = new TextView(captureLayout.getContext());
     	placeholder.setText("Levels go here");
     	captureLayout.addView(placeholder);

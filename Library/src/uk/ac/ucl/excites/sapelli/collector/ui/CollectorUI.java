@@ -23,14 +23,13 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.AudioUI;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ButtonUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.CheckBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
@@ -41,7 +40,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MultiListUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.OrientationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.PageUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.PhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.TextBoxUI;
 
 public interface CollectorUI<V, UI extends CollectorUI<V, UI>>

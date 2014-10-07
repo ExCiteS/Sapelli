@@ -6,6 +6,7 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import android.content.Context;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 
 import com.larvalabs.svgandroid.SVG;
 import com.larvalabs.svgandroid.SVGBuilder;
@@ -27,7 +28,9 @@ public class AudioItem extends Item implements FileItem {
 	@Override
 	protected View createView(Context context, boolean recycleChildren) {
 		ImageView image = new ImageView(context);
+		//TODO allow for custom
 		SVG audioSvg = new SVGBuilder().readFromResource(context.getResources(), R.drawable.audio_item_svg).build();
+		image.setScaleType(ScaleType.FIT_CENTER);
 		image.setImageDrawable(new SVGDrawable(audioSvg));
 		return image;
 	}

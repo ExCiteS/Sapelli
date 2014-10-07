@@ -104,11 +104,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		deleteLayout.addView(deletePhotoView);
 	}
 
-	@Override
-	void onCancel() {
-		if(cameraController != null)
-			cameraController.close();	    
-	}
+
 
 	@Override
 	ImageItem getCaptureButton(Context context) {
@@ -162,7 +158,13 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	
 	@Override
 	void onDiscard() {
-		cameraController.startPreview();    
+		cameraController.startPreview(); // restart the viewfinder
+	}
+	
+	@Override
+    protected void cancel() {
+		if(cameraController != null)
+			cameraController.close();	    
 	}
 	
 	@Override
