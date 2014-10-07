@@ -33,14 +33,12 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ImageView.ScaleType;
 
 public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements PictureCallback {
 
 	static private final int PREVIEW_SIZE = 1024;
 
-	private ImageView reviewView;
 	// Camera & image data:
 	private CameraController cameraController;
 	private HandleImage handleImage;
@@ -81,30 +79,19 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	}
 
 	@Override
-	void populateReviewLayout(ViewGroup reviewLayout) {
-		reviewView = new ImageView(reviewLayout.getContext());
-		reviewView.setScaleType(ScaleType.FIT_CENTER);
-		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
-		reviewView.setLayoutParams(params);
-		reviewLayout.addView(reviewView);
-	}
-
-	@Override
 	boolean onCapture() {
 		cameraController.takePicture(this);
-		return false; // capture is only made when picture returns
+		return false; // only allow new clicks once photo has been received
 	}
 
 	@Override
-	void populateDeleteLayout(ViewGroup deleteLayout, File mediaFile) {
-		ImageView deletePhotoView = new ImageView(deleteLayout.getContext());
-		deletePhotoView.setScaleType(ScaleType.FIT_CENTER);
+	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
+		ImageView reviewView = new ImageView(reviewLayout.getContext());
+		reviewView.setScaleType(ScaleType.FIT_CENTER);
 		// set the ImageView to the provided photo file:
-		deletePhotoView.setImageURI(Uri.fromFile(mediaFile));
-		deleteLayout.addView(deletePhotoView);
+		reviewView.setImageURI(Uri.fromFile(mediaFile));
+		reviewLayout.addView(reviewView);
 	}
-
-
 
 	@Override
 	ImageItem getCaptureButton(Context context) {
@@ -131,26 +118,16 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	@Override
 	void onApprove() {
 		try {
-			Log.d("AndroidPhotoUI","Approved a capture");
-			File mediaFile =
-					field.getNewTempFile(controller
-							.getCurrentRecord());
-			FileOutputStream fos =
-					new FileOutputStream(mediaFile);
-			fos.write(capturedMediaData);
-			fos.close();
+
 			if (multipleCapturesAllowed) {
-				Log.d("ReviewButtonView","Is multiple");
-				mediaAddedButNotDone(mediaFile);										
+				mediaAddedButNotDone(lastCaptureFile);										
 			} else {
-				Log.d("ReviewButtonView","Is not multiple");
-				mediaDone(mediaFile, true);
+				mediaDone(lastCaptureFile, true);
 				cameraController.close(); 
 			}
 
 		} catch (Exception e) {
 			mediaDone(null, true);
-			Log.d("ReviewButtonView","Exception on save");
 			e.printStackTrace();
 			cameraController.close(); 
 		}
@@ -158,11 +135,11 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	
 	@Override
 	void onDiscard() {
-		cameraController.startPreview(); // restart the viewfinder
+		//TODO
 	}
 	
 	@Override
-    protected void cancel() {
+    protected void finalise() {
 		if(cameraController != null)
 			cameraController.close();	    
 	}
@@ -170,8 +147,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	@Override
 	public void onPictureTaken(byte[] data, Camera camera)
 	{
-		capturedMediaData = data;
-		handleImage = new HandleImage(data, reviewView, getContext());
+		handleImage = new HandleImage(data, getContext());
 		handleImage.execute();
 	}
 
@@ -185,13 +161,11 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	{
 		private ProgressDialog dialog;
 		private byte[] data;
-		private ImageView reviewView;
 		private Context context;
 
-		public HandleImage(byte[] data, ImageView reviewView, Context context)
+		public HandleImage(byte[] data, Context context)
 		{
 			this.data = data;
-			this.reviewView = reviewView;
 			this.context = context;
 		}
 
@@ -225,6 +199,14 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 				options.inJustDecodeBounds = false;
 				options.inSampleSize = BitmapUtils.calculateInSampleSize(options, previewWidth, previewHeight);
 				picture = BitmapFactory.decodeByteArray(data, 0, data.length, options);
+				
+				// write to temporary file right away, but don't attach it unless approved
+				// may eventually run out of storage but makes media code easier - should be fixed 
+				// when temp file stuff is refactored --- TODO
+				lastCaptureFile = field.getNewTempFile(controller.getCurrentRecord());
+				FileOutputStream fos = new FileOutputStream(lastCaptureFile);
+				fos.write(data);
+				fos.close();
 			}
 			catch(Exception e)
 			{
@@ -237,15 +219,17 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		@Override
 		protected void onPostExecute(Bitmap picture)
 		{
-			// Display rotated picture
-			reviewView.setImageBitmap(picture);
-			// Switch to review mode:
 			cameraController.stopPreview();
 			// Close the dialog
 			dialog.cancel();
 			dataReceived();
 		}
 	}
+
+	@Override
+    void onInitialiseCaptureMode() {
+		cameraController.startPreview();
+    }
 
 
 }

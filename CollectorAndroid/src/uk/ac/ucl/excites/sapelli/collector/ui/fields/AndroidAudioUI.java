@@ -61,7 +61,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
         	if (captureLayout != null) {
         		captureLayout.removeViewAt(1); // remove spinner
         	}
-        	return true; // data has been captured, so return true
+        	dataReceived();
         } else {
         	// start recording
         	recording = true;
@@ -76,8 +76,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
         	}
         	
         	// TODO change button image to "stop"
-        	return false; // we have only started capturing data, so return false
         }
+    	return true; // always allow other click events after this completes (so recording can be stopped)
 	}
 
 	@Override
@@ -99,10 +99,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		//TODO -- currently just does nothing, assuming temp file will be deleted eventually
     }
 
-	@Override
-    void populateDeleteLayout(ViewGroup deleteLayout, File mediaFile) {
-		//TODO
-    }
 	
 	@Override
     ImageItem getCaptureButton(Context context) {
@@ -185,7 +181,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
     }
 	
 	@Override
-    void populateReviewLayout(ViewGroup reviewLayout) {
+    void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
 		// create a button for playing the newly captured audio:
 		Context context = reviewLayout.getContext();
 				
@@ -256,5 +252,17 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		buttonPicker.getAdapter().addItem(playAudioButton);
 		// add picker to container:
 		reviewLayout.addView(buttonPicker);
+    }
+
+	@Override
+    void onInitialiseCaptureMode() {
+	    // TODO Auto-generated method stub
+	    
+    }
+
+	@Override
+    void finalise() {
+	    // TODO Auto-generated method stub
+	    
     }
 }
