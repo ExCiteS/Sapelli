@@ -3,11 +3,13 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-
 import android.content.Context;
 import android.view.View;
 import android.widget.ImageView;
+
+import com.larvalabs.svgandroid.SVG;
+import com.larvalabs.svgandroid.SVGBuilder;
+import com.larvalabs.svgandroid.SVGDrawable;
 
 public class AudioItem extends Item implements FileItem {
 	
@@ -25,7 +27,8 @@ public class AudioItem extends Item implements FileItem {
 	@Override
 	protected View createView(Context context, boolean recycleChildren) {
 		ImageView image = new ImageView(context);
-		image.setImageResource(R.drawable.audio_item_svg);
+		SVG audioSvg = new SVGBuilder().readFromResource(context.getResources(), R.drawable.audio_item_svg).build();
+		image.setImageDrawable(new SVGDrawable(audioSvg));
 		return image;
 	}
 

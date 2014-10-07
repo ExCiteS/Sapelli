@@ -19,7 +19,6 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -46,6 +45,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -83,7 +83,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	{
 		if(captureView != null)
 		{
-			finalise();
+			onCancel();
 			captureView = null;
 		}
 	}
@@ -126,24 +126,64 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		return (captureView == null) ? null : captureView.getContext();
 	}
 	
+	/**
+	 * What to do when the capture button has been pressed.
+	 * @return a boolean indicating whether or not any data was
+	 * captured on this press and thus whether the review UI should now
+	 * be shown.
+	 */
+	abstract boolean onCapture();
 	
-	public abstract boolean onCapture();
+	/**
+	 * What to do when a new piece of media is approved upon review.
+	 */
+	abstract void onApprove();
 	
-	public abstract void onMediaSaved();
+	/**
+	 * What to do when a new piece of media is discarded upon review.
+	 */
+	abstract void onDiscard();
 	
-	public abstract void onCaptureStarted();
-	
-	public abstract void populateCaptureLayout(ViewGroup captureLayout);
-	
-	public abstract void populateReviewLayout(ViewGroup reviewLayout);
-
-	public abstract void populateDeleteLayout(ViewGroup deleteLayout, File mediaFile);
-	
-	public abstract void finalise();
+	/**
+	 * What to do when this field is cancelled.
+	 */
+	abstract void onCancel();
 		
-	public abstract List<Item> getMediaItems();
+	/**
+	 * 
+	 * @return a list of the media items captured in this field.
+	 */
+	abstract List<Item> getMediaItems();
 	
-	protected abstract ImageItem getCaptureButton(Context context);
+	/**
+	 * Generate a "capture" button (may vary by media, e.g. microphone
+	 * for audio and camera for photo).
+	 * @param context
+	 * @return an ImageItem housing an appropriate "capture" button for the media.
+	 */
+	abstract ImageItem getCaptureButton(Context context);
+	
+	/**
+	 * Populate a container with views as appropriate to create an interface
+	 * for media capture (e.g. viewfinder for camera).
+	 * @param captureLayout - the container to populate.
+	 */
+	abstract void populateCaptureLayout(ViewGroup captureLayout);
+	
+	/**
+	 * Populate a container with views as appropriate to create an interface for
+	 * media review (e.g. full-page photo when one has been taken).
+	 * @param reviewLayout - the container to populate.
+	 */
+	abstract void populateReviewLayout(ViewGroup reviewLayout);
+
+	/**
+	 * Populate a container with views as appropriate to create an interface for 
+	 * the review and deletion of already-approved media (e.g. full-page photo).
+	 * @param deleteLayout - the container to populate.
+	 * @param mediaFile - the media being considered for review.
+	 */
+	abstract void populateDeleteLayout(ViewGroup deleteLayout, File mediaFile);
 
 		
 	private class CaptureView extends ViewSwitcher
@@ -206,9 +246,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					@Override
 					public void run() {
 						goToCapture = false; //just made a capture, so go to gallery instead (unless multiple disabled)
-						if (AndroidMediaUI.this.onCapture()) 
+						if (AndroidMediaUI.this.onCapture()) {
 							// if returns true, a capture has been made (rather than just started)
 							dataReceived();
+							Log.d("CaptureButtonView","Made a capture");
+						}
 						else
 							handlingClick.release();
 					}
@@ -249,30 +291,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					@Override
 					public void run() {
 						//there are 2 buttons: approve (pos=0) & discard (pos=1)
-						if (position == 0) { // media approved
-							try { // Save media to file:
-								File mediaFile =
-										field.getNewTempFile(controller
-												.getCurrentRecord());
-								FileOutputStream fos =
-										new FileOutputStream(mediaFile);
-								fos.write(capturedMediaData);
-								fos.close();
-								if (field.isMultiple()) {
-									mediaAddedButNotDone(mediaFile);										
-								} else {
-									mediaDone(mediaFile, true);
-									AndroidMediaUI.this.onMediaSaved();
-								}
-
-							} catch (Exception e) {
-								mediaDone(null, true);
-								AndroidMediaUI.this.onMediaSaved();
-							}
-						} else 
+						if (position == 0) // media approved
+							onApprove();
+						else 
 						{ // position == 1, media discarded
+							onDiscard();
 							showNext(); // switch back to capture mode
-							AndroidMediaUI.this.onCaptureStarted();
 						}
 						capturedMediaData = null;
 						handlingClick.release();
@@ -442,6 +466,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						} 
 						else  { 
 							// "delete" selected, delete media
+							// TODO move to abstract onDelete?
 							mediaPicker.deleteCurrentMedia();
 							if (field.getCount(controller.getCurrentRecord()) == 0) {
 								// no media left, so go back to capture

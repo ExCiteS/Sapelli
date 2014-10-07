@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,25 +33,26 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ImageView.ScaleType;
 
 public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements PictureCallback {
-	
+
 	static private final int PREVIEW_SIZE = 1024;
-	
+
 	private ImageView reviewView;
 	// Camera & image data:
 	private CameraController cameraController;
 	private HandleImage handleImage;
 
 	public AndroidPhotoUI(PhotoField field, Controller controller,
-            CollectorView collectorUI) {
-	    super(field, controller, collectorUI);
-    }
-	
+			CollectorView collectorUI) {
+		super(field, controller, collectorUI);
+	}
+
 	@SuppressWarnings("deprecation")
-    @Override
-    public void populateCaptureLayout(ViewGroup captureLayout) {
+	@Override
+	void populateCaptureLayout(ViewGroup captureLayout) {
 		// Set up cameraController:
 		//	Camera controller & camera selection:
 		cameraController = new CameraController(field.isUseFrontFacingCamera());
@@ -76,48 +78,40 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		holder.setKeepScreenOn(true);
 		// !!! Deprecated but cameraController preview crashes without it (at least on the XCover/Gingerbread):
 		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-    }
-	
+	}
+
 	@Override
-    public void populateReviewLayout(ViewGroup reviewLayout) {
+	void populateReviewLayout(ViewGroup reviewLayout) {
 		reviewView = new ImageView(reviewLayout.getContext());
 		reviewView.setScaleType(ScaleType.FIT_CENTER);
+		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+		reviewView.setLayoutParams(params);
 		reviewLayout.addView(reviewView);
-    }
+	}
 
 	@Override
-    public boolean onCapture() {
+	boolean onCapture() {
 		cameraController.takePicture(this);
 		return false; // capture is only made when picture returns
-    }
+	}
 
 	@Override
-    public void onMediaSaved() {
-	    cameraController.close(); 
-    }
-
-	@Override
-    public void onCaptureStarted() {
-		cameraController.startPreview();    
-    }
-
-	@Override
-    public void populateDeleteLayout(ViewGroup deleteLayout, File mediaFile) {
+	void populateDeleteLayout(ViewGroup deleteLayout, File mediaFile) {
 		ImageView deletePhotoView = new ImageView(deleteLayout.getContext());
 		deletePhotoView.setScaleType(ScaleType.FIT_CENTER);
 		// set the ImageView to the provided photo file:
 		deletePhotoView.setImageURI(Uri.fromFile(mediaFile));
 		deleteLayout.addView(deletePhotoView);
-    }
+	}
 
 	@Override
-    public void finalise() {
+	void onCancel() {
 		if(cameraController != null)
 			cameraController.close();	    
-    }
+	}
 
 	@Override
-    public ImageItem getCaptureButton(Context context) {
+	ImageItem getCaptureButton(Context context) {
 		ImageItem captureButton = null;
 		File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
 		if(FileHelpers.isReadableFile(captureImgFile))
@@ -126,18 +120,51 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_photo_svg);
 		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		return captureButton;
-    }
+	}
 
 	@Override
-    public List<Item> getMediaItems() {
-	    List<File> files = controller.getMediaAttachments();
-	    List<Item> items = new ArrayList<Item>();
-	    for (File f : files) {
-	    	items.add(new FileImageItem(f));
-	    }
-	    return items;
-    }
+	List<Item> getMediaItems() {
+		List<File> files = controller.getMediaAttachments();
+		List<Item> items = new ArrayList<Item>();
+		for (File f : files) {
+			items.add(new FileImageItem(f));
+		}
+		return items;
+	}
 
+	@Override
+	void onApprove() {
+		try {
+			Log.d("AndroidPhotoUI","Approved a capture");
+			File mediaFile =
+					field.getNewTempFile(controller
+							.getCurrentRecord());
+			FileOutputStream fos =
+					new FileOutputStream(mediaFile);
+			fos.write(capturedMediaData);
+			fos.close();
+			if (field.isMultiple()) {
+				Log.d("ReviewButtonView","Is multiple");
+				mediaAddedButNotDone(mediaFile);										
+			} else {
+				Log.d("ReviewButtonView","Is not multiple");
+				mediaDone(mediaFile, true);
+				cameraController.close(); 
+			}
+
+		} catch (Exception e) {
+			mediaDone(null, true);
+			Log.d("ReviewButtonView","Exception on save");
+			e.printStackTrace();
+			cameraController.close(); 
+		}
+	}
+	
+	@Override
+	void onDiscard() {
+		cameraController.startPreview();    
+	}
+	
 	@Override
 	public void onPictureTaken(byte[] data, Camera camera)
 	{
@@ -217,4 +244,6 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			dataReceived();
 		}
 	}
+
+
 }
