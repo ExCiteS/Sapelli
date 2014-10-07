@@ -139,7 +139,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 					new FileOutputStream(mediaFile);
 			fos.write(capturedMediaData);
 			fos.close();
-			if (field.isMultiple()) {
+			if (multipleCapturesAllowed) {
 				Log.d("ReviewButtonView","Is multiple");
 				mediaAddedButNotDone(mediaFile);										
 			} else {

@@ -84,7 +84,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
     void onApprove() {
 		if (audioFile != null) {
 			// add the file to the field's attachments:
-			if (field.isMultiple()) {
+			if (multipleCapturesAllowed) {
 				mediaAddedButNotDone(audioFile);
 			}
 			else {

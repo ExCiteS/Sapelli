@@ -58,15 +58,13 @@ public abstract class MediaField extends Field
 	
 	//protected int min;
 	protected boolean useNativeApp;
-	protected boolean multiple;
 	protected int max;
 	protected ChoiceField disableChoice;
 
-	public MediaField(Form form, String id, boolean multiple, String caption)
+	public MediaField(Form form, String id, String caption)
 	{
 		super(form, id, caption);
 		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);		
-		this.multiple = multiple;
 	}
 	
 	public abstract String getMediaType();
@@ -138,14 +136,6 @@ public abstract class MediaField extends Field
 	public ChoiceField getDisableChoice()
 	{
 		return disableChoice;
-	}
-	
-	/**
-	 * @return whether or not multiple pieces of media can be captured
-	 */
-	public boolean isMultiple()
-	{
-		return multiple;
 	}
 
 	/**

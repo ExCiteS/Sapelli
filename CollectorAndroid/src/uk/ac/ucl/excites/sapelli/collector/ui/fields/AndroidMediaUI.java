@@ -71,11 +71,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 	private Semaphore handlingClick = new Semaphore(1);
 	private boolean goToCapture = false; // flag used to jump straight to capture from gallery 
-	protected byte[] capturedMediaData;
+	byte[] capturedMediaData;
+	boolean multipleCapturesAllowed;
 
 	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
+		multipleCapturesAllowed = (field.getMax() > 1);
+		Log.d("AndroidMediaUI","Multiple captures allowed: "+multipleCapturesAllowed);
 	}
 
 	@Override
@@ -93,7 +96,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				captureView = new CaptureView(collectorUI.getContext());
 			captureView.update();
 
-			if (field.getCount(controller.getCurrentRecord()) == 0 || !field.isMultiple() || goToCapture) {
+			if (field.getCount(controller.getCurrentRecord()) == 0 || !multipleCapturesAllowed || goToCapture) {
 				// if no media, not multiple, or just came from gallery then go to capture UI
 				return captureView;
 			}

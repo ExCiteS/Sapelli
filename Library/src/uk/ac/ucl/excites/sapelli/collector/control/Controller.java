@@ -451,7 +451,7 @@ public abstract class Controller
 	 */
 	public boolean enterMediaField(MediaField mf, FieldParameters arguments)
 	{
-		if(mf.isMaxReached(currFormSession.record ) && !mf.isMultiple())
+		if(mf.isMaxReached(currFormSession.record ) && mf.getMax() == 1)
 		{ // Maximum number of attachments for this field is reached and picker is disabled:
 			goForward(false); // skip field
 			return false;
