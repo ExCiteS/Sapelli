@@ -152,7 +152,7 @@ public class CollectorApp extends Application implements StoreClient
 			{
 				// We count backwards because we prefer secondary external storage (which is likely to be on an SD card rather unremovable memory)
 				for(int p = paths.length - 1; p >= 0; p--)
-					if(Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(paths[p])))
+					if(paths[p] != null && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(paths[p])))
 					{
 						sapelliFolder = paths[p];
 						break;
