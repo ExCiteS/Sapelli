@@ -111,6 +111,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		mediaFlipper.showCaptureForReview();
 	}
 	
+	/**
+	 * Attaches the most recently captured media file to the MediaField.
+	 */
 	void attachMediaFile() {
 		try {
 			if (multipleCapturesAllowed) {
@@ -191,15 +194,19 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	/**
 	 * Flipper that holds two or three views depending on the maximum number of attachments of the media field.
 	 * <br>
+	 * <br>
 	 * If max == 1, flipper holds:
 	 * <br>
-	 * (1) Capture UI <---> (2) Review/Discard UI
+	 * (1) Capture UI <---> (2) Single-item Review UI
 	 * <br>
 	 * Else (max > 1), flipper holds:
 	 * <br>
-	 * (1) Capture UI <---> (2) Review/Delete UI <---> (3) Gallery UI
+	 * (1) Capture UI <---> (2) Single-item Review UI <---> (3) Gallery UI
 	 * <br>
 	 * If the showNext()/showPrevious() calls are unclear, refer back to this!
+	 * <br>
+	 * <br>
+	 * Note: If the Gallery UI is enabled, then captures will skip (2) when they have just been made.
 	 * 
 	 * @author Ben
 	 *

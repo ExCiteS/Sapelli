@@ -47,6 +47,8 @@ public class AudioField extends MediaField
 
 	private String startRecImageRelativePath;
 	private String stopRecImageRelativePath;
+	private String playAudioImageRelativePath;
+	private String stopAudioImageRelativePath;
 	
 	/**
 	 * @return the startRecImageRelativePath
@@ -79,6 +81,40 @@ public class AudioField extends MediaField
 	{
 		this.stopRecImageRelativePath = stopRecImageRelativePath;
 	}
+	
+	/**
+	 * @return the playAudioImageRelativePath
+	 */
+	public String getPlayAudioImageRelativePath()
+	{
+		return playAudioImageRelativePath;
+	}
+
+	/**
+	 * @param playAudioImageRelativePath the playAudioImageRelativePath to set
+	 */
+	public void setPlayAudioImageRelativePath(String playAudioImageRelativePath)
+	{
+		this.playAudioImageRelativePath = playAudioImageRelativePath;
+	}
+	
+	/**
+	 * @return the stopAudioImageRelativePath
+	 */
+	public String getStopAudioImageRelativePath()
+	{
+		return stopAudioImageRelativePath;
+	}
+
+	/**
+	 * @param stopAudioImageRelativePath the stopAudioImageRelativePath to set
+	 */
+	public void setStopAudioImageRelativePath(String stopAudioImageRelativePath)
+	{
+		this.stopAudioImageRelativePath = stopAudioImageRelativePath;
+	}
+
+
 
 	@Override
 	public String getMediaType()
