@@ -562,7 +562,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		private class GalleryButtonView extends MediaButtonView
 		{
 
-			private Item captureButton;
+			private Item plusButton;
 			private Item approveButton;
 
 			public GalleryButtonView(Context context)
@@ -589,13 +589,19 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				};
 			}
 
-			private Item createCaptureButton() {
-				// gets a "normal" capture button and then disables it if max reached. TODO: change to "add"
-				Item captureButton = generateCaptureButton(this.getContext());
-				captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+			private Item createPlusButton() {
+				// creates a "normal" plus button and then disables it if max reached.
+				Item plusButton = null;
+				File plusImgFile = controller.getProject().getImageFile(field.getPlusButtonImageRelativePath());
+				if(FileHelpers.isReadableFile(plusImgFile))
+					plusButton = new FileImageItem(plusImgFile);
+				else
+					plusButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_plus_svg);
+				plusButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+
 				if (maxReached) {
 					LayeredItem layeredItem = new LayeredItem();
-					layeredItem.addLayer(captureButton, false);
+					layeredItem.addLayer(plusButton, false);
 
 					// Make background of layered stack gray:
 					layeredItem.setBackgroundColor(CollectorView.COLOR_GRAY);
@@ -607,7 +613,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					return layeredItem;
 				}
 				else {
-					return captureButton;
+					return plusButton;
 				}
 			}
 
@@ -621,8 +627,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			protected void addButtons()
 			{
 				// Capture button:
-				captureButton = createCaptureButton();
-				addButton(captureButton);
+				plusButton = createPlusButton();
+				addButton(plusButton);
 
 				// Approve button:
 				approveButton = null;
