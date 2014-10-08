@@ -20,7 +20,7 @@
 
     <string name="app_name">Sapelli Collector</string>
     <string name="by_ucl_excites_html">&lt;a href=&quot;http://sapelli.org&quot;&gt;Sapelli&lt;/a&gt; is a project by &lt;a href=&quot;http://ucl.ac.uk/excites&quot;&gt;UCL ExCiteS&lt;/a&gt; &amp; collaborators.</string>
-    <string name="license">Source code available under the &lt;a href=&quot;http://www.apache.org/licenses/LICENSE-2.0&quot;&gt;Apache License, Version 2.0&lt;/a&gt;.</string>
+    <string name="license">&lt;a href=&quot;http://github.com/ExCiteS/Sapelli&quot;&gt;Source code available&lt;/a&gt; under the terms of the &lt;a href=&quot;http://www.apache.org/licenses/LICENSE-2.0&quot;&gt;Apache License, Version 2.0&lt;/a&gt;.</string>
     <string name="project_manager">Project Manager</string>
     <string name="available_projects">Available projects</string>
     <string name="run_project">Run project</string>

@@ -351,10 +351,10 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		infoLbl.setText(Html.fromHtml(
 				"<p><b>" + app.getBuildInfo().getVersionInfo() + "</b></p>" +
 				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
-				"<p>" + "This is a " + ((BuildConfig.DEBUG) ? "debug" : "release") + " version" + ".</p>" +
 				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
 				"<p>" + getString(R.string.license)  + "</p>" +
-				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));		
+				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));	
+		infoLbl.setPadding(2, 2, 6, 2);
 		ImageView iconImg = (ImageView) view.findViewById(R.id.aboutIcon);
 		iconImg.setOnClickListener(new OnClickListener()
 		{

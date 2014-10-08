@@ -146,17 +146,15 @@ public class BuildInfo
 		if(pi != null)
 		{
 			bldr.append("v" + pi.versionName);
-			if(includeVersionCode || isDemoBuild())
-			{
-				bldr.append("(");
-				bldr.openTransaction("; ");
-				if(includeVersionCode)
-					bldr.append("version-code: " + pi.versionCode);
-				if(isDemoBuild())
-					bldr.append("demo");
-				bldr.commitTransaction(false);
-				bldr.append(")", false);
-			}
+			bldr.append("(");
+			bldr.openTransaction("; ");
+			if(includeVersionCode)
+				bldr.append("version-code: " + pi.versionCode);
+			bldr.append(BuildConfig.DEBUG ? "debug" : "release");
+			if(isDemoBuild())
+				bldr.append("demo");
+			bldr.commitTransaction(false);
+			bldr.append(")", false);
 		}
 		else
 			bldr.append("[version unknown]");

@@ -14,7 +14,7 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
- --><manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="200" android:versionName="2.0.0-beta-5" package="uk.ac.ucl.excites.sapelli.collector">
+ --><manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="200" android:versionName="2.0.0-beta-6" package="uk.ac.ucl.excites.sapelli.collector">
 
     <uses-sdk android:minSdkVersion="10" android:targetSdkVersion="11"/>
 
@@ -51,7 +51,7 @@
     <uses-feature android:name="android.hardware.camera.autofocus"/>
     <uses-feature android:name="android.hardware.camera.flash"/>
 
-    <application android:allowBackup="true" android:icon="@drawable/ic_excites_grey" android:label="@string/app_name" android:name="uk.ac.ucl.excites.sapelli.collector.CollectorApp" android:theme="@style/AppTheme" android:largeHeap="true" >
+    <application android:allowBackup="true" android:icon="@drawable/ic_excites_grey" android:label="@string/app_name" android:largeHeap="true" android:name="uk.ac.ucl.excites.sapelli.collector.CollectorApp" android:theme="@style/AppTheme">
         <activity android:icon="@drawable/ic_excites_grey" android:label="@string/app_name" android:launchMode="singleTask" android:name="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity" android:theme="@android:style/Theme.Light">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
