@@ -133,15 +133,27 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	}
 
 	@Override
-	ImageItem getCaptureButton(Context context) {
+	ImageItem generateCaptureButton(Context context) {
 		ImageItem captureButton = null;
-		File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
-		if(FileHelpers.isReadableFile(captureImgFile))
-			// use a custom audio capture image if available
-			captureButton = new FileImageItem(captureImgFile);
-		else
-			// otherwise just use the default resource
-			captureButton = new ResourceImageItem(context.getResources(), R.drawable.audio_item_svg);
+		if (!recording) {
+			// recording hasn't started yet, so present "record" button
+			File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
+			if(FileHelpers.isReadableFile(captureImgFile))
+				// use a custom audio capture image if available
+				captureButton = new FileImageItem(captureImgFile);
+			else
+				// otherwise just use the default resource
+				captureButton = new ResourceImageItem(context.getResources(), R.drawable.audio_item_svg);
+
+		}
+		else {
+			// recording started, so present "stop" button instead
+			File stopImgFile = controller.getProject().getImageFile(field.getStopAudioImageRelativePath());
+			if(FileHelpers.isReadableFile(stopImgFile))
+				captureButton = new FileImageItem(stopImgFile);
+			else
+				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_stop_audio_svg);
+		}
 		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		return captureButton;
 	}

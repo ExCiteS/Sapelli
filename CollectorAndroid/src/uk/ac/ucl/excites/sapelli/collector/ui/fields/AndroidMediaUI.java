@@ -174,7 +174,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @param context
 	 * @return an ImageItem housing an appropriate "capture" button for the media.
 	 */
-	abstract ImageItem getCaptureButton(Context context);
+	abstract ImageItem generateCaptureButton(Context context);
 	
 	/**
 	 * Populate a container with views as appropriate to create an interface
@@ -219,6 +219,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		private MediaGalleryView gallery;
 		
 		private LinearLayout galleryLayoutButtonContainer;
+		private LinearLayout captureLayoutButtonContainer;
 		
 		public MediaFlipper(Context context) {
 			super(context);
@@ -228,8 +229,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			LinearLayout captureLayout = (LinearLayout) captureLayoutContainer.getChildAt(0);
 			populateCaptureLayout(captureLayout);
 			// Add the Capture button:
-			final LinearLayout captureLayoutButtons = (LinearLayout) captureLayoutContainer.findViewById(R.id.capture_layout_buttons);
-			captureLayoutButtons.addView(new CaptureButtonView(context));
+			captureLayoutButtonContainer = (LinearLayout) captureLayoutContainer.findViewById(R.id.capture_layout_buttons);
+			captureLayoutButtonContainer.addView(new CaptureButtonView(context));
 			// Add the CaptureLayout to the screen
 			this.addView(captureLayoutContainer);
 			
@@ -277,9 +278,16 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		}
 
 		private void refreshGalleryButtons() {
+			// recreate gallery buttons in case of change
 			galleryLayoutButtonContainer.removeAllViews();
 			galleryLayoutButtonContainer.addView(new GalleryButtonView(getContext()));
         }
+		
+		private void refreshCaptureButton() {
+			// recreate capture button in case of change
+			captureLayoutButtonContainer.removeAllViews();
+			captureLayoutButtonContainer.addView(new CaptureButtonView(getContext()));
+		}
 		
 		private void showCaptureLayout() {
 			if (getCurrentView() == captureLayoutContainer) {
@@ -306,7 +314,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				showNext();
 			}
 		}
-		
+
 		private class MediaGalleryView extends PickerView {
 
 			private static final int NUM_COLUMNS = 3; //TODO make configurable?
@@ -446,6 +454,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 							// if returns true, allow other clicks to occur after onCapture returned
 							handlingClick.release();
 						}
+						refreshCaptureButton(); // TODO if performance issues, may not want to do this on every press
 					}
 				};
 			}
@@ -465,7 +474,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			protected void addButtons()
 			{
 				// Capture button:
-				addButton(getCaptureButton(this.getContext()));
+				addButton(generateCaptureButton(getContext()));
 			}
 		}
 		
@@ -582,7 +591,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 			private Item createCaptureButton() {
 				// gets a "normal" capture button and then disables it if max reached. TODO: change to "add"
-				Item captureButton = getCaptureButton(this.getContext());
+				Item captureButton = generateCaptureButton(this.getContext());
 				captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				if (maxReached) {
 					LayeredItem layeredItem = new LayeredItem();

@@ -104,7 +104,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	}
 
 	@Override
-	ImageItem getCaptureButton(Context context) {
+	ImageItem generateCaptureButton(Context context) {
 		ImageItem captureButton = null;
 		File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
 		if(FileHelpers.isReadableFile(captureImgFile))
