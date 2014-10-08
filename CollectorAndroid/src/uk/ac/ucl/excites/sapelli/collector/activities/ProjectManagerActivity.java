@@ -28,7 +28,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
 import java.util.regex.Pattern;
-
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
@@ -47,6 +46,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -82,7 +82,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-
 import com.crashlytics.android.Crashlytics;
 import com.ipaulpro.afilechooser.utils.FileUtils;
 import com.larvalabs.svgandroid.SVG;
@@ -335,6 +334,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return true;
 	}
 
+	@SuppressLint("InflateParams")
 	public boolean openAboutDialog(MenuItem item)
 	{
 		// Set-up UI:
@@ -343,9 +343,10 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		infoLbl.setClickable(true);
 		infoLbl.setMovementMethod(LinkMovementMethod.getInstance());
 		infoLbl.setText(Html.fromHtml(
-				"<p>" + app.getBuildInfo().getVersionInfo() + ".</p>" +
+				"<p><b>" + app.getBuildInfo().getVersionInfo() + "</b></p>" +
 				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
 				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
+				"<p>" + getString(R.string.license)  + "</p>" +
 				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));		
 		ImageView iconImg = (ImageView) view.findViewById(R.id.aboutIcon);
 		iconImg.setOnClickListener(new OnClickListener()
