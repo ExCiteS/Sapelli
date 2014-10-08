@@ -66,12 +66,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 {
 
 	private MediaFlipper mediaFlipper;
-
 	private Semaphore handlingClick = new Semaphore(1);
 	private boolean goToCapture = false; // flag used to jump straight to capture from gallery 
 	boolean multipleCapturesAllowed; // whether or not multiple pieces of media can be associated with this field
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
-	File lastCaptureFile;
+	File lastCaptureFile; // file that holds the most recently captured media
 
 	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI)
 	{
@@ -108,12 +107,26 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		}
 	}
 	
-	protected void dataReceived() {
-		// reset media file for next capture:
-		mediaFlipper.dataReceived();
+	void showCaptureForReview() {
+		mediaFlipper.showCaptureForReview();
 	}
 	
-	protected Context getContext() {
+	void attachMediaFile() {
+		try {
+			if (multipleCapturesAllowed) {
+				mediaAddedButNotDone(lastCaptureFile);										
+			} else {
+				mediaDone(lastCaptureFile, true);
+				finalise(); 
+			}
+		} catch (Exception e) {
+			mediaDone(null, true);
+			e.printStackTrace();
+			finalise();
+		}
+	}
+	
+	Context getContext() {
 		return (mediaFlipper == null) ? null : mediaFlipper.getContext();
 	}
 	
@@ -127,31 +140,23 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		}
 	}
 
+	/**
+	 * What to do when entering capture mode (e.g. start camera viewfinder).
+	 */
+	abstract void onInitialiseCaptureMode();
 	
 	/**
 	 * What to do when the capture button has been pressed.
 	 * @return a boolean indicating whether or not to process
-	 * click events once this method returns (i.e. whether the click
-	 * is processed immediately or not).
+	 * other click events as soon as this method returns (i.e. whether the task
+	 * is finished immediately or whether we must wait for some event before
+	 * interaction can continue - such as a picture callback).
 	 */
 	abstract boolean onCapture();
-	
-	/**
-	 * What to do when a new piece of media is approved upon review.
-	 */
-	abstract void onApprove();
-	
-	/**
-	 * What to do when a new piece of media is discarded upon review.
-	 */
-	abstract void onDiscard();
-	
-	/**
-	 * What to do when entering capture mode (e.g. start viewfinder).
-	 */
-	abstract void onInitialiseCaptureMode();
 		
-	
+	/**
+	 * What to do on exit of this field (e.g. release resources).
+	 */
 	abstract void finalise();
 	
 	/**
@@ -190,7 +195,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * <br>
 	 * (1) Capture UI <---> (2) Review/Discard UI
 	 * <br>
-	 * Else flipper holds:
+	 * Else (max > 1), flipper holds:
 	 * <br>
 	 * (1) Capture UI <---> (2) Review/Delete UI <---> (3) Gallery UI
 	 * <br>
@@ -246,15 +251,15 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			}
 		}
 		
-		public void updateGallery() {
+		private void updateGallery() {
 			gallery.loadMedia();	        
 		}
 		
-		private void dataReceived() {
+		private void showCaptureForReview() {
 			// TODO don't run on UI thread?
 			// data has been received from capture, so present it for review
 			if (multipleCapturesAllowed) {
-				onApprove(); // implicitly approve media so it can be reviewed in gallery
+				attachMediaFile(); // implicitly approve media so it can be reviewed in gallery
 				updateGallery(); // refresh gallery to show the new item
 			}
 			else {
@@ -264,7 +269,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			handlingClick.release();
 		}
 
-		public void refreshGalleryButtons() {
+		private void refreshGalleryButtons() {
 			galleryLayoutButtonContainer.removeAllViews();
 			galleryLayoutButtonContainer.addView(new GalleryButtonView(getContext()));
         }
@@ -324,7 +329,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				});
 			}
 
-			protected void loadMedia() {
+			private void loadMedia() {
 				PickerAdapter adapter = new PickerAdapter();
 				for (Item item : getMediaItems()) {
 					adapter.addItem(item);
@@ -337,7 +342,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				getAdapter().notifyDataSetChanged();
 			}
 
-			protected void deleteCurrentMedia() {
+			private void deleteCurrentMedia() {
 				Item currentMediaItem = getAdapter().getItem(itemPosition);
 				File currentMediaFile = ((FileItem)currentMediaItem).getFile();
 				removeMedia(currentMediaFile);
@@ -475,7 +480,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						if (position == 0) // media approved
 							if (!multipleCapturesAllowed) {
 								// only reviewing the most recent photo, so save it
-								onApprove();
+								attachMediaFile();
 							}
 							else {
 								// looking at photo after selecting from gallery, so just return to gallery
@@ -485,7 +490,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						{ // position == 1, media discarded / deleted
 							if (!multipleCapturesAllowed) {
 								// reviewing after capture, so discard
-								onDiscard();
+								//onDiscard(); TODO: with current method for saving files, temp files eventually discarded automatically.
 								showPrevious(); //switch back to capture mode
 							}
 							else {
@@ -556,7 +561,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 							// camera button clicked, return to camera interface
 							if (!maxReached) {
 								goToCapture = true;
-								controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE); //TODO ask Matthias
+								controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 							}
 						} else {
 							//approve button clicked, so proceed to next field
@@ -569,6 +574,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			}
 
 			private Item createCaptureButton() {
+				// gets a "normal" capture button and then disables it if max reached. TODO: change to "add"
 				Item captureButton = getCaptureButton(this.getContext());
 				captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 				if (maxReached) {

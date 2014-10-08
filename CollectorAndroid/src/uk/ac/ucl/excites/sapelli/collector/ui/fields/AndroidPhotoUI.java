@@ -33,6 +33,7 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ImageView.ScaleType;
 
 public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements PictureCallback {
@@ -77,6 +78,11 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		// !!! Deprecated but cameraController preview crashes without it (at least on the XCover/Gingerbread):
 		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 	}
+	
+	@Override
+    void onInitialiseCaptureMode() {
+		cameraController.startPreview();
+    }
 
 	@Override
 	boolean onCapture() {
@@ -86,8 +92,12 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 
 	@Override
 	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
+		// add an ImageView to the review UI:
 		ImageView reviewView = new ImageView(reviewLayout.getContext());
 		reviewView.setScaleType(ScaleType.FIT_CENTER);
+		// make sure the image takes up all the available space:
+		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+		reviewView.setLayoutParams(params);
 		// set the ImageView to the provided photo file:
 		reviewView.setImageURI(Uri.fromFile(mediaFile));
 		reviewLayout.addView(reviewView);
@@ -98,8 +108,10 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		ImageItem captureButton = null;
 		File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
 		if(FileHelpers.isReadableFile(captureImgFile))
+			// return a custom photo capture button if it exists
 			captureButton = new FileImageItem(captureImgFile);
 		else
+			// otherwise just use the default resource
 			captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_photo_svg);
 		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		return captureButton;
@@ -107,39 +119,17 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 
 	@Override
 	List<Item> getMediaItems() {
+		// TODO: assumes all attachments (regardless of type) are relevant to this field!
 		List<File> files = controller.getMediaAttachments();
 		List<Item> items = new ArrayList<Item>();
 		for (File f : files) {
-			items.add(new FileImageItem(f));
+			items.add(new FileImageItem(f)); //TODO will fail if file is audio -- should change when refactored
 		}
 		return items;
 	}
-
-	@Override
-	void onApprove() {
-		try {
-
-			if (multipleCapturesAllowed) {
-				mediaAddedButNotDone(lastCaptureFile);										
-			} else {
-				mediaDone(lastCaptureFile, true);
-				cameraController.close(); 
-			}
-
-		} catch (Exception e) {
-			mediaDone(null, true);
-			e.printStackTrace();
-			cameraController.close(); 
-		}
-	}
 	
 	@Override
-	void onDiscard() {
-		//TODO
-	}
-	
-	@Override
-    protected void finalise() {
+    void finalise() {
 		if(cameraController != null)
 			cameraController.close();	    
 	}
@@ -222,14 +212,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			cameraController.stopPreview();
 			// Close the dialog
 			dialog.cancel();
-			dataReceived();
+			showCaptureForReview();
 		}
 	}
-
-	@Override
-    void onInitialiseCaptureMode() {
-		cameraController.startPreview();
-    }
-
-
 }

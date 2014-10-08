@@ -41,7 +41,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	
 	static private final String TAG = "AndroidAudioUI";
 	
-	private File audioFile;
 	private AudioRecorder audioRecorder;
 	
 	private ViewGroup captureLayout;
@@ -50,85 +49,13 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
             CollectorView collectorUI) {
 	    super(field, controller, collectorUI);
     }
-
-	@Override
-    boolean onCapture() {
-        if (recording) {
-        	// stop recording
-        	recording = false;
-        	stopRecording();
-        	Log.d("AudioUI","Stopped recording");
-        	if (captureLayout != null) {
-        		captureLayout.removeViewAt(1); // remove spinner
-        	}
-        	dataReceived();
-        } else {
-        	// start recording
-        	recording = true;
-        	startRecording();
-        	Log.d("AudioUI","Started recording");
-        	
-        	if (captureLayout != null) {
-				LinearLayout waitView = new LinearLayout(captureLayout.getContext());
-				waitView.setGravity(Gravity.CENTER);
-				waitView.addView(new ProgressBar(captureLayout.getContext(), null, android.R.attr.progressBarStyleLarge));
-				captureLayout.addView(waitView);
-        	}
-        	
-        	// TODO change button image to "stop"
-        }
-    	return true; // always allow other click events after this completes (so recording can be stopped)
-	}
-
-	@Override
-    void onApprove() {
-		if (audioFile != null) {
-			// add the file to the field's attachments:
-			if (multipleCapturesAllowed) {
-				mediaAddedButNotDone(audioFile);
-			}
-			else {
-				mediaDone(audioFile, true);
-			}
-			audioFile = null;
-		}
-    }
-
-	@Override
-    void onDiscard() {
-		//TODO -- currently just does nothing, assuming temp file will be deleted eventually
-    }
-
 	
-	@Override
-    ImageItem getCaptureButton(Context context) {
-		ImageItem captureButton = null;
-		File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
-		if(FileHelpers.isReadableFile(captureImgFile))
-			captureButton = new FileImageItem(captureImgFile);
-		else
-			captureButton = new ResourceImageItem(context.getResources(), R.drawable.audio_item_svg);
-		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		return captureButton;
-    }
-
-	@Override
-    List<Item> getMediaItems() {
-		// TODO make this specific to audio
-	    List<File> files = controller.getMediaAttachments();
-	    List<Item> items = new ArrayList<Item>();
-	    for (File f : files) {
-	    	items.add(new AudioItem(f));
-	    }
-	    return items;
-    }
-
 	private boolean startRecording()
 	{
 		try
 		{
-			audioFile = field.getNewTempFile(controller.getCurrentRecord());
-			audioRecorder = new AudioRecorder(audioFile);
+			lastCaptureFile = field.getNewTempFile(controller.getCurrentRecord());
+			audioRecorder = new AudioRecorder(lastCaptureFile);
 			audioRecorder.start();
 		}
 		catch(IOException ioe)
@@ -167,10 +94,69 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	{
 		if(audioRecorder != null)
 			stopRecording();
-		audioFile = null;
+		lastCaptureFile = null;
 	}
 	
+
+	@Override
+    void onInitialiseCaptureMode() {
+	    // TODO Auto-generated method stub   
+    }
+
+	@Override
+    boolean onCapture() {
+        if (recording) {
+        	// stop recording
+        	recording = false;
+        	stopRecording();
+        	Log.d("AudioUI","Stopped recording");
+        	if (captureLayout != null) {
+        		captureLayout.removeViewAt(1); // remove spinner
+        	}
+        	showCaptureForReview();
+        } else {
+        	// start recording
+        	recording = true;
+        	startRecording();
+        	Log.d("AudioUI","Started recording");
+        	
+        	if (captureLayout != null) {
+				LinearLayout waitView = new LinearLayout(captureLayout.getContext());
+				waitView.setGravity(Gravity.CENTER);
+				waitView.addView(new ProgressBar(captureLayout.getContext(), null, android.R.attr.progressBarStyleLarge));
+				captureLayout.addView(waitView);
+        	}
+        	
+        	// TODO change button image to "stop"
+        }
+    	return true; // always allow other click events after this completes (so recording can be stopped by pressing again)
+	}
 	
+	@Override
+    ImageItem getCaptureButton(Context context) {
+		ImageItem captureButton = null;
+		File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
+		if(FileHelpers.isReadableFile(captureImgFile))
+			// use a custom audio capture image if available
+			captureButton = new FileImageItem(captureImgFile);
+		else
+			// otherwise just use the default resource
+			captureButton = new ResourceImageItem(context.getResources(), R.drawable.audio_item_svg);
+		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+		return captureButton;
+    }
+
+	@Override
+    List<Item> getMediaItems() {
+		// TODO: assumes all attachments (regardless of type) are relevant to this field!
+	    List<File> files = controller.getMediaAttachments();
+	    List<Item> items = new ArrayList<Item>();
+	    for (File f : files) {
+	    	items.add(new AudioItem(f)); //TODO will fail if file is a photo -- should change when refactored
+	    }
+	    return items;
+    }
+
     @Override
     void populateCaptureLayout(ViewGroup captureLayout) {
     	// TODO some illustration of audio levels
@@ -252,12 +238,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		buttonPicker.getAdapter().addItem(playAudioButton);
 		// add picker to container:
 		reviewLayout.addView(buttonPicker);
-    }
-
-	@Override
-    void onInitialiseCaptureMode() {
-	    // TODO Auto-generated method stub
-	    
     }
 
 	@Override
