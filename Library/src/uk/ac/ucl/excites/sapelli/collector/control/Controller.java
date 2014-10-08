@@ -37,7 +37,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;

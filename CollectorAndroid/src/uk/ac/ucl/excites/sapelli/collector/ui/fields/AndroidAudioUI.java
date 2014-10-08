@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
@@ -23,30 +25,38 @@ import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.util.Log;
+import android.view.SurfaceHolder;
+import android.view.SurfaceHolder.Callback;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ProgressBar;
+import android.widget.LinearLayout;
 
 public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 	private volatile Boolean recording = false;
 
-	static private final String TAG = "AndroidAudioUI";
+	private static final String TAG = "AndroidAudioUI";
+	private static final int VOLUME_DISPLAY_HEIGHT_DP = 80;
 
 	private AudioRecorder audioRecorder;
 	private AudioReviewPicker audioReviewPicker;
+	private VolumeDisplaySurfaceView volumeDisplay;
 
 	private ViewGroup captureLayout;
 
 	public AndroidAudioUI(AudioField field, Controller controller,
 			CollectorView collectorUI) {
-		super(field, controller, collectorUI);
+		super(field, controller, collectorUI, true); // want to skip preview on add
 	}
 
 	private boolean startRecording()
@@ -56,6 +66,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			lastCaptureFile = field.getNewTempFile(controller.getCurrentRecord());
 			audioRecorder = new AudioRecorder(lastCaptureFile);
 			audioRecorder.start();
+			volumeDisplay.start();
 		}
 		catch(IOException ioe)
 		{
@@ -76,6 +87,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	{
 		try
 		{
+			volumeDisplay.stop();
 			audioRecorder.stop();
 		}
 		catch(Exception e)
@@ -99,7 +111,11 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 	@Override
 	void onInitialiseCaptureMode() {
-		// nothing to do here 
+		Log.d(TAG,"onInititaliseCaptureMode");
+		volumeDisplay = new VolumeDisplaySurfaceView(captureLayout.getContext());
+		int height = ScreenMetrics.ConvertDipToPx(captureLayout.getContext(), VOLUME_DISPLAY_HEIGHT_DP);
+		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,height);
+		captureLayout.addView(volumeDisplay, params);
 	}
 
 	@Override
@@ -108,22 +124,12 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			if (!recording) {
 				// start recording
 				startRecording();
-				Log.d("AudioUI","Started recording");
-				// add spinner:
-				if (captureLayout != null) {
-					ProgressBar progress = new ProgressBar(captureLayout.getContext(), null, android.R.attr.progressBarStyleLarge);
-					captureLayout.addView(progress);
-				}
 				recording = true;
 			} else {
 				// stop recording
 				stopRecording();
-				Log.d("AudioUI","Stopped recording");
-				// remove spinner:
-				if (captureLayout != null) {
-					captureLayout.removeViewAt(0); 
-				}
 				// a capture has been made so show it for review:
+				captureLayout.removeAllViews(); // remove volume levels
 				showCaptureForReview();
 				recording = false;
 			}
@@ -131,7 +137,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
 		return true; 
 	}
-	
+
 	@Override
 	void onDiscard() {
 		if (audioReviewPicker != null)
@@ -150,7 +156,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			else
 				// otherwise just use the default resource
 				captureButton = new ResourceImageItem(context.getResources(), R.drawable.audio_item_svg);
-
 		}
 		else {
 			// recording started, so present "stop" button instead
@@ -177,13 +182,12 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 	@Override
 	void populateCaptureLayout(ViewGroup captureLayout) {
-		// TODO some illustration of audio levels
 		this.captureLayout = captureLayout;
+		// TODO sort out populateCaptureLayout vs onInitialiseCaptureMode
 	}
 
 	@Override
 	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
-		Log.d("AudioUI","Populating review layout...");
 		reviewLayout.removeAllViews();
 		// create buttons for playing the newly captured audio:
 		audioReviewPicker = new AudioReviewPicker(reviewLayout.getContext(), mediaFile);
@@ -198,7 +202,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	}
 
 	private class AudioReviewPicker extends PickerView implements OnItemClickListener, MediaPlayer.OnCompletionListener {
-		
+
 		private MediaPlayer mediaPlayer = new MediaPlayer();
 		private Runnable buttonAction;
 		private final ImageItem playAudioButton;
@@ -208,16 +212,15 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 		public AudioReviewPicker(Context context, File audioFile) {
 			super(context);
-			
+
 			try {
-				Log.d("AudioReviewPicker","Initialising mediaPlayer...");
-	            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-	            mediaPlayer.setDataSource(context, Uri.fromFile(audioFile));
-	            mediaPlayer.setOnCompletionListener(this);
-            } catch (IOException e) {
-	            Log.e(TAG, "Could not play audio file.");
-	            e.printStackTrace();
-            }
+				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+				mediaPlayer.setDataSource(context, Uri.fromFile(audioFile));
+				mediaPlayer.setOnCompletionListener(this);
+			} catch (IOException e) {
+				Log.e(TAG, "Could not play audio file.");
+				e.printStackTrace();
+			}
 			File playImgFile = controller.getProject().getImageFile(field.getPlayAudioImageRelativePath());
 			if(FileHelpers.isReadableFile(playImgFile))
 				playAudioButton = new FileImageItem(playImgFile);
@@ -242,7 +245,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			// height of picker = available UI height - height of bottom control bar
 
 			setOnItemClickListener(this);
-			
+
 			buttonAction = new Runnable() {
 				// only one button - the play/stop button
 				public void run() {
@@ -269,16 +272,15 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		public void onItemClick(AdapterView<?> parent, View view, int position,
 				long id) {
 			if (handlingClick.tryAcquire()) {
-			// Execute the "press" animation if allowed, then perform the action: 
-			if(controller.getCurrentForm().isClickAnimation())
-				(new ClickAnimator(buttonAction, view, collectorUI)).execute(); //execute animation and the action afterwards
-			else
-				buttonAction.run(); //perform task now (animation is disabled)
+				// Execute the "press" animation if allowed, then perform the action: 
+				if(controller.getCurrentForm().isClickAnimation())
+					(new ClickAnimator(buttonAction, view, collectorUI)).execute(); //execute animation and the action afterwards
+				else
+					buttonAction.run(); //perform task now (animation is disabled)
 			}
 		}
-		
+
 		private void stopAudio() {
-			Log.d("AudioReviewPicker","stop");
 			// stop the audio:
 			mediaPlayer.stop();
 			// present the play button to the user:
@@ -286,25 +288,23 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			getAdapter().addItem(playAudioButton);
 			getAdapter().notifyDataSetChanged();
 		}
-		
+
 		private void playAudio() {
-			Log.d("AudioReviewPicker","play");
 			// play the audio: 
 			try {
 				mediaPlayer.prepare();
 				mediaPlayer.start();
-            } catch (IOException e) {
-	            Log.e(TAG, "Could not play audio file.");
-	            e.printStackTrace();
-            }
+			} catch (IOException e) {
+				Log.e(TAG, "Could not play audio file.");
+				e.printStackTrace();
+			}
 			// present the play button to the user:
 			getAdapter().clear();
 			getAdapter().addItem(stopAudioButton);
 			getAdapter().notifyDataSetChanged();
 		}
-		
+
 		private void finalise() {
-			Log.d("AudioReviewPicker","finalise");
 			synchronized(playing) {
 				if (mediaPlayer != null)
 					mediaPlayer.release();
@@ -314,14 +314,108 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		}
 
 		@Override
-        public void onCompletion(MediaPlayer mp) {
-	        // called when the media player finishes playing its media file
-			Log.d("AudioReviewPicker","on completion");
+		public void onCompletion(MediaPlayer mp) {
+			// called when the media player finishes playing its media file
 			synchronized(playing) {
 				// go from PlaybackCompleted to Stopped
 				stopAudio();
 				playing = false;
 			}
-        }
+		}
+	}
+
+	private class VolumeDisplaySurfaceView extends SurfaceView {
+
+		private static final int COLOR_BACKGROUND = Color.BLACK;
+		private static final int COLOR_INACTIVE_LEVEL = Color.DKGRAY;
+		private static final int COLOR_ACTIVE_LEVEL = Color.BLUE;
+		private static final int UPDATE_FREQUENCY_MILLISEC = 100;
+		private static final double MAX_AMPLITUDE = 20000D; // TODO might need tweaking
+		private static final int NUM_LEVELS = 50;
+		private static final int LEVEL_PADDING = 5;
+		Timer timer;
+		private Paint paint;
+		private int amplitude;
+		private int levelsToIlluminate;
+		private float levelWidth;
+
+		public VolumeDisplaySurfaceView(Context context) {
+			super(context);
+			paint = new Paint();
+			getHolder().addCallback(new Callback(){
+
+				@Override
+				public void surfaceCreated(SurfaceHolder holder) {
+
+				}
+
+				@Override
+				public void surfaceChanged(SurfaceHolder holder, int format,
+						int width, int height) {
+					Canvas c = holder.lockCanvas(null);
+					onDraw(c);
+					holder.unlockCanvasAndPost(c);
+					levelWidth = ((float)getWidth() / NUM_LEVELS) - LEVEL_PADDING;
+				}
+
+				@Override
+				public void surfaceDestroyed(SurfaceHolder holder) {
+					// TODO Auto-generated method stub
+
+				}});
+		}
+
+		@Override
+		protected void onDraw(Canvas canvas) {
+			// wipe everything off: 
+			canvas.drawColor(COLOR_BACKGROUND);
+			// draw the levels:
+			paint.setColor(COLOR_ACTIVE_LEVEL);
+			
+			for (int i = 0; i < NUM_LEVELS; i++) {
+				
+				if (i == levelsToIlluminate)
+					paint.setColor(COLOR_INACTIVE_LEVEL);
+				
+				float left = i * (levelWidth + LEVEL_PADDING);
+				canvas.drawRect(left, 0, left + levelWidth, this.getHeight(), paint);
+			}
+
+		}
+		
+		private void start() {
+			timer = new Timer();
+			timer.schedule(new VolumeDisplayTask(), 0, UPDATE_FREQUENCY_MILLISEC);
+		}
+		
+		private void stop() {
+			timer.cancel();
+			timer = null;
+		}
+
+		private class VolumeDisplayTask extends TimerTask {
+
+			@Override
+			public void run() {
+				amplitude = audioRecorder.getMaxAmplitude();
+				// see how loud it currently is relative to MAX_AMPLITUDE, then multiply that fraction
+				// by the number of available levels:
+				levelsToIlluminate = (int) (((double)amplitude / MAX_AMPLITUDE) * (double) NUM_LEVELS);
+				if (levelsToIlluminate > NUM_LEVELS)
+					levelsToIlluminate = NUM_LEVELS;
+				Canvas c = null;
+				try {
+					c = getHolder().lockCanvas();
+					synchronized (getHolder()) {
+						onDraw(c);
+					}
+				} finally {
+					if (c != null) {
+						getHolder().unlockCanvasAndPost(c);
+					}
+				}
+			}	
+
+		}
 	}
 }

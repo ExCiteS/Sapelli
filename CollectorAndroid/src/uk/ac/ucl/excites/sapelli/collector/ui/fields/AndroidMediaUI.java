@@ -45,6 +45,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -64,6 +65,7 @@ import android.widget.ViewFlipper;
  */
 public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, View, CollectorView>
 {
+	private static final String TAG = "AndroidMediaUI";
 
 	private MediaFlipper mediaFlipper;
 	Semaphore handlingClick = new Semaphore(1);
@@ -71,12 +73,17 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	boolean multipleCapturesAllowed; // whether or not multiple pieces of media can be associated with this field
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
 	File lastCaptureFile; // file that holds the most recently captured media
-
-	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI)
+	private boolean skipPreviewOnAdd; // whether or not to start capturing media immediately when the "plus" button is pressed
+	
+	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI) {
+		this(field, controller, collectorUI, false);
+	}
+	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI, boolean skipPreviewOnAdd)
 	{
 		super(field, controller, collectorUI);
 		multipleCapturesAllowed = (field.getMax() > 1);	
 		maxReached = (field.getCount(controller.getCurrentRecord()) >= field.getMax());
+		this.skipPreviewOnAdd = skipPreviewOnAdd;
 	}
 	
 	@Override
@@ -97,6 +104,16 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				// if no media, not multiple, or just came from gallery then go to capture UI
 				mediaFlipper.showCaptureLayout();
 				onInitialiseCaptureMode();
+				
+				if (skipPreviewOnAdd && field.getCount(controller.getCurrentRecord()) > 0) {
+					// skipPreviewOnAdd is enabled and there is already some media, so start capture immediately
+					try {
+						handlingClick.acquire();
+						mediaFlipper.performCapture();
+					} catch (InterruptedException e) {
+						Log.d(TAG,"Interrupted while trying to perform auto-capture.");
+					}
+				}
 			}
 			else {
 				// else go to gallery or review (if max = 1)
@@ -285,6 +302,15 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			gallery.loadMedia();	        
 		}
 		
+        private void performCapture() {
+			goToCapture = false; //just made a capture, so go to gallery instead (unless multiple disabled)
+			if (onCapture()) {
+				// if returns true, allow other clicks to occur after onCapture returned
+				handlingClick.release();
+			}
+			refreshCaptureButton(); // TODO if performance issues, may not want to do this on every press
+        
+		}
 		private void showCaptureForReview() {
 			// TODO don't run on UI thread?
 			// data has been received from capture, so present it for review
@@ -353,6 +379,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 			private static final int NUM_COLUMNS = 3; //TODO make configurable?
 			private static final int NUM_ROWS = 3;
+			private int buttonPadding;
 
 			private int itemPosition;
 
@@ -365,6 +392,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				setItemDimensionsPx(
 						collectorUI.getFieldUIPartWidthPx(NUM_COLUMNS),
 						collectorUI.getFieldUIPartHeightPx(NUM_ROWS));
+				
+				this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP * 3);
 
 				setOnItemClickListener(new OnItemClickListener() {
 					@Override
@@ -381,6 +410,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			private void loadMedia() {
 				PickerAdapter adapter = new PickerAdapter();
 				for (Item item : getMediaItems()) {
+					item.setPaddingPx(buttonPadding);
 					adapter.addItem(item);
 				}
 				setAdapter(adapter);
@@ -483,12 +513,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				buttonAction = new Runnable() {
 					@Override
 					public void run() {
-						goToCapture = false; //just made a capture, so go to gallery instead (unless multiple disabled)
-						if (onCapture()) {
-							// if returns true, allow other clicks to occur after onCapture returned
-							handlingClick.release();
-						}
-						refreshCaptureButton(); // TODO if performance issues, may not want to do this on every press
+						performCapture();
 					}
 				};
 			}

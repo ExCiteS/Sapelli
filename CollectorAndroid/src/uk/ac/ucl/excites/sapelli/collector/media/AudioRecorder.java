@@ -82,4 +82,10 @@ public class AudioRecorder
 		}
 	}
 	
+	public int getMaxAmplitude() {
+		if (isRecording) {
+			return mediaRecorder.getMaxAmplitude();
+		}
+		return -1;
+	}
 }
