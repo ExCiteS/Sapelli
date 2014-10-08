@@ -27,9 +27,11 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.Inflater;
+import java.util.zip.InflaterInputStream;
 
-import uk.ac.ucl.excites.sapelli.shared.compression.Compressor;
-import uk.ac.ucl.excites.sapelli.shared.compression.DeflateCompressor;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema.InternalKind;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
@@ -104,14 +106,14 @@ public class Model implements Serializable
 		META_SCHEMA.seal();
 	}
 	
-	private static Compressor COMPRESSOR;
-	
-	private static Compressor GetCompressor()
-	{
-		if(COMPRESSOR == null)
-			COMPRESSOR =  new DeflateCompressor();
-		return COMPRESSOR;
-	}
+//	private static Compressor COMPRESSOR;
+//	
+//	private static Compressor GetCompressor()
+//	{
+//		if(COMPRESSOR == null)
+//			COMPRESSOR =  new DeflateCompressor();
+//		return COMPRESSOR;
+//	}
 	
 	/**
 	 * Returns "model record" which describes the given model (and contains a serialised version of it)
@@ -123,16 +125,13 @@ public class Model implements Serializable
 	static public Record GetModelRecord(Model model) throws IOException
 	{
 		// Serialise Model object:
-		ByteArrayOutputStream rawOut = new ByteArrayOutputStream(); //TODO use compressing stream for lower memory usage?
-		ObjectOutputStream objOut = new ObjectOutputStream(rawOut);
+		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();		
+		ObjectOutputStream objOut = new ObjectOutputStream(new DeflaterOutputStream(rawOut, new Deflater(Deflater.BEST_COMPRESSION, true))); // DEFLATE compress output
 		objOut.writeObject(model);
 		objOut.flush();
 		objOut.close();
-		System.out.println("Model object uncompressed size: " + rawOut.toByteArray().length + " bytes");
-		byte[] compressedSerialisedObject = GetCompressor().compress(rawOut.toByteArray());
-		System.out.println("Model object compressed size: " + compressedSerialisedObject.length + " bytes");
 		// Return new Model record:
-		return MODEL_SCHEMA.createRecord(model.id, model.name, compressedSerialisedObject, model.hashCode());
+		return MODEL_SCHEMA.createRecord(model.id, model.name, rawOut.toByteArray(), model.hashCode());
 	}
 	
 	/**
@@ -166,9 +165,9 @@ public class Model implements Serializable
 			throw new IllegalArgumentException("The given record is a not a " + MODEL_SCHEMA.name + " record!");
 		
 		// Decompress & deserialise Schema object bytes:
-		ByteArrayInputStream rawIn = new ByteArrayInputStream(GetCompressor().decompress(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord)));
-		ObjectInputStream objIn = new ObjectInputStream(rawIn);
+		ObjectInputStream objIn = new ObjectInputStream(new InflaterInputStream(new ByteArrayInputStream(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord)),  new Inflater(true)));
 		Model model = (Model) objIn.readObject();
+		objIn.close();
 		
 		// Perform check:
 		if(model.hashCode() != MODEL_OBJECT_HASHCODE_COLUMN.retrieveValue(modelRecord))
