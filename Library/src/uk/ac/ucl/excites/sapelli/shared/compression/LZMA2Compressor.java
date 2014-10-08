@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.compression;
+package uk.ac.ucl.excites.sapelli.shared.compression;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,8 +29,8 @@ import org.tukaani.xz.FinishableOutputStream;
 import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.UnsupportedOptionsException;
 
-import uk.ac.ucl.excites.sapelli.transmission.compression.Compressor;
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
+import uk.ac.ucl.excites.sapelli.shared.compression.Compressor;
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 
 /**
  * LZMA2 compressor.
@@ -91,7 +91,6 @@ public class LZMA2Compressor extends Compressor
         return out.toByteArray();
 	}
 
-	
 	public class WrappedOutputStream extends FinishableOutputStream
 	{
 		

@@ -20,6 +20,8 @@ package uk.ac.ucl.excites.sapelli.transmission;
 
 import java.io.IOException;
 
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory;
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
@@ -27,8 +29,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory;
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.transmission.payloads.AckPayload;
 import uk.ac.ucl.excites.sapelli.transmission.payloads.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;

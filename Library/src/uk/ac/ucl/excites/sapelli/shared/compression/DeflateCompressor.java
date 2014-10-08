@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.compression;
+package uk.ac.ucl.excites.sapelli.shared.compression;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,7 +29,7 @@ import java.util.zip.DeflaterOutputStream;
 
 import org.apache.commons.io.IOUtils;
 
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 
 /**
  * DEFLATE compressor.

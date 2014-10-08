@@ -28,6 +28,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.compression.Compressor;
+import uk.ac.ucl.excites.sapelli.shared.compression.DeflateCompressor;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema.InternalKind;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
@@ -35,7 +37,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
-import uk.ac.ucl.excites.sapelli.transmission.compression.LZMACompressor;
 
 /**
  * A Model groups a series of {@link Schema}s that belong together.
@@ -77,7 +78,7 @@ public class Model implements Serializable
 	static public final Schema MODEL_SCHEMA = new Schema(InternalKind.Model);
 	static public final IntegerColumn MODEL_ID_COLUMN = new IntegerColumn("ID", false, Model.MODEL_ID_FIELD);
 	static private final StringColumn MODEL_NAME_COLUMN = StringColumn.ForCharacterCount("name", false, 128);
-	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = new ByteArrayColumn("serialisedObject_LZMA", false);
+	static private final ByteArrayColumn MODEL_OBJECT_SERIALISATION_COLUMN = new ByteArrayColumn("compressedSerialisedObject", false);
 	static private final IntegerColumn MODEL_OBJECT_HASHCODE_COLUMN = new IntegerColumn("hashCode", false, true, Integer.SIZE);
 	static
 	{
@@ -103,6 +104,15 @@ public class Model implements Serializable
 		META_SCHEMA.seal();
 	}
 	
+	private static Compressor COMPRESSOR;
+	
+	private static Compressor GetCompressor()
+	{
+		if(COMPRESSOR == null)
+			COMPRESSOR =  new DeflateCompressor();
+		return COMPRESSOR;
+	}
+	
 	/**
 	 * Returns "model record" which describes the given model (and contains a serialised version of it)
 	 * 
@@ -113,14 +123,16 @@ public class Model implements Serializable
 	static public Record GetModelRecord(Model model) throws IOException
 	{
 		// Serialise Model object:
-		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();
+		ByteArrayOutputStream rawOut = new ByteArrayOutputStream(); //TODO use compressing stream for lower memory usage?
 		ObjectOutputStream objOut = new ObjectOutputStream(rawOut);
 		objOut.writeObject(model);
 		objOut.flush();
 		objOut.close();
-		byte[] lzmaObjectBytes = new LZMACompressor().compress(rawOut.toByteArray());
-		
-		return MODEL_SCHEMA.createRecord(model.id, model.name, lzmaObjectBytes, model.hashCode());
+		System.out.println("Model object uncompressed size: " + rawOut.toByteArray().length + " bytes");
+		byte[] compressedSerialisedObject = GetCompressor().compress(rawOut.toByteArray());
+		System.out.println("Model object compressed size: " + compressedSerialisedObject.length + " bytes");
+		// Return new Model record:
+		return MODEL_SCHEMA.createRecord(model.id, model.name, compressedSerialisedObject, model.hashCode());
 	}
 	
 	/**
@@ -154,7 +166,7 @@ public class Model implements Serializable
 			throw new IllegalArgumentException("The given record is a not a " + MODEL_SCHEMA.name + " record!");
 		
 		// Decompress & deserialise Schema object bytes:
-		ByteArrayInputStream rawIn = new ByteArrayInputStream(new LZMACompressor().decompress(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord)));
+		ByteArrayInputStream rawIn = new ByteArrayInputStream(GetCompressor().decompress(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord)));
 		ObjectInputStream objIn = new ObjectInputStream(rawIn);
 		Model model = (Model) objIn.readObject();
 		

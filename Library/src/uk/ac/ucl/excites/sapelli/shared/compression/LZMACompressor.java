@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.compression;
+package uk.ac.ucl.excites.sapelli.shared.compression;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -28,8 +28,8 @@ import java.io.OutputStream;
 
 import lzma.sdk.lzma.Decoder;
 import lzma.sdk.lzma.Encoder;
-import uk.ac.ucl.excites.sapelli.transmission.compression.Compressor;
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
+import uk.ac.ucl.excites.sapelli.shared.compression.Compressor;
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 
 /**
  * LZMA compressor.<br/>
@@ -60,34 +60,42 @@ public class LZMACompressor extends Compressor
 	public LZMACompressor(boolean useHeader)
 	{
 		this.useHeader = useHeader;
-		
-		// Encoder:
-		this.encoder = new Encoder();
-
-		// Properties:
-		encoder.setDictionarySize(1 << 23);
-		encoder.setEndMarkerMode(true); // takes up 5 bytes, but if we don't do it decoding fails (even if we pass it the data size instead of -1; see below)
-		encoder.setMatchFinder(Encoder.EMatchFinderTypeBT4);
-		encoder.setNumFastBytes(0x20);
-
-		// Decoder:
-		this.decoder = new Decoder();
-		if(!decoder.setDecoderProperties(getProperties()))
-			throw new IllegalArgumentException("Incorrect stream properties");
 	}
 
-	private byte[] getProperties()
+	private Encoder getEncoder()
 	{
-		ByteArrayOutputStream propertiesStream = new ByteArrayOutputStream();
-		try
+		if(encoder == null)
 		{
-			encoder.writeCoderProperties(propertiesStream);
+			this.encoder = new Encoder();
+
+			// Properties:
+			encoder.setDictionarySize(1 << 23);
+			encoder.setEndMarkerMode(true); // takes up 5 bytes, but if we don't do it decoding fails (even if we pass it the data size instead of -1; see below)
+			encoder.setMatchFinder(Encoder.EMatchFinderTypeBT4);
+			encoder.setNumFastBytes(0x20);
 		}
-		catch(IOException ioe)
+		return encoder;
+	}
+	
+	private Decoder getDecoder()
+	{
+		if(decoder == null)
 		{
-			ioe.printStackTrace(System.err);
+			this.decoder = new Decoder();
+			
+			ByteArrayOutputStream propertiesStream = new ByteArrayOutputStream();
+			try
+			{
+				getEncoder().writeCoderProperties(propertiesStream);
+			}
+			catch(IOException ioe)
+			{
+				ioe.printStackTrace(System.err);
+			}
+			if(!decoder.setDecoderProperties(propertiesStream.toByteArray()))
+				throw new IllegalArgumentException("Incorrect stream properties");
 		}
-		return propertiesStream.toByteArray();
+		return decoder;
 	}
 
 	@Override
@@ -98,10 +106,11 @@ public class LZMACompressor extends Compressor
 		OutputStream out = new BufferedOutputStream(byteArrayOutputStream);
 		try
 		{
+			Encoder enc = getEncoder();
 			if(useHeader)
 			{
 				// Write header with coder settings (optional, takes up 5 bytes)
-				encoder.writeCoderProperties(out);
+				enc.writeCoderProperties(out);
 
 				// Write header with uncompressed data size (optional, takes up 8 bytes):
 				for(int i = 0; i < 8; i++)
@@ -109,7 +118,7 @@ public class LZMACompressor extends Compressor
 			}
 			
 			// Compress & write compressed bytes:
-			encoder.code(in, out, -1, -1, null);
+			enc.code(in, out, -1, -1, null);
 			out.flush();
 			out.close();
 			in.close();
@@ -130,13 +139,14 @@ public class LZMACompressor extends Compressor
 		try
 		{
 			long outSize = -1;
+			Decoder dec = getDecoder();
 			if(useHeader)
 			{
 				// Read header with coder settings (optional):
 				byte[] properties = new byte[5];
 				if(in.read(properties) != 5)
 					throw new IOException("LZMA stream has no header!");
-				if(!decoder.setDecoderProperties(properties))
+				if(!dec.setDecoderProperties(properties))
 					throw new IOException("Decoder properties cannot be set!");
 	
 				// Read header with uncompressed data size (optional):
@@ -151,7 +161,7 @@ public class LZMACompressor extends Compressor
 			}
 				
 			// Read compressed bytes & decompress:
-			if(!decoder.code(in, out, outSize))
+			if(!dec.code(in, out, outSize))
 				throw new IOException("Error in data stream");
 			out.flush();
 			out.close();

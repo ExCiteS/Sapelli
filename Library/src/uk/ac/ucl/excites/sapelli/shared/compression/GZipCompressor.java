@@ -16,45 +16,43 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.compression;
+package uk.ac.ucl.excites.sapelli.shared.compression;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.io.IOUtils;
-import org.itadaki.bzip2.BZip2InputStream;
-import org.itadaki.bzip2.BZip2OutputStream;
 
-import uk.ac.ucl.excites.sapelli.transmission.compression.Compressor;
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 
 /**
- * BZIP2 compressor.
- * Uses the jbzip2 library (MIT licensed).
+ * GZIP compressor.
+ * Uses Java SE's implementation (java.util.zip).
  * 
  * @author mstevens
- * @see <a href="http://en.wikipedia.org/wiki/Bzip2">http://en.wikipedia.org/wiki/Bzip2</a>
- * @see <a href="http://code.google.com/p/jbzip2">http://code.google.com/p/jbzip2</a>
+ * @see <a href="http://en.wikipedia.org/wiki/Gzip">http://en.wikipedia.org/wiki/Gzip</a>
+ * @see <a href="http://docs.oracle.com/javase/6/docs/api/java/util/zip/package-summary.html">http://docs.oracle.com/javase/6/docs/api/java/util/zip/package-summary.html</a>
  */
-public class BZIP2Compressor extends Compressor
+public class GZipCompressor extends Compressor
 {
-	
+
 	@Override
 	public byte[] compress(byte[] data) throws IOException
 	{
 		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try
         {
-        	OutputStream out = new BZip2OutputStream(byteArrayOutputStream);
-            out.write(data);
-            out.close();
+            GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream);
+            gzipOutputStream.write(data);
+            gzipOutputStream.close();
         }
         catch(IOException ioe)
         {
-        	throw new IOException("Error upon " + getMode() + " compression", ioe);
+            throw new IOException("Error upon " + getMode() + " compression", ioe);
         }
         return byteArrayOutputStream.toByteArray();
 	}
@@ -62,10 +60,10 @@ public class BZIP2Compressor extends Compressor
 	@Override
 	public byte[] decompress(byte[] compressedData) throws IOException
 	{
-        ByteArrayOutputStream out = new ByteArrayOutputStream();   
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
         try
         {
-        	InputStream in = new BZip2InputStream(new ByteArrayInputStream(compressedData), false);
+        	InputStream in = new GZIPInputStream(new ByteArrayInputStream(compressedData));
             IOUtils.copy(in, out);
             in.close();
         }
@@ -79,7 +77,8 @@ public class BZIP2Compressor extends Compressor
 	@Override
 	public Compression getMode()
 	{
-		return Compression.BZIP2;
+		return Compression.GZIP;
 	}
+
 
 }
