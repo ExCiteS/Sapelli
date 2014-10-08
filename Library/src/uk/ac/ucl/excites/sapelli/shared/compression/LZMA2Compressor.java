@@ -18,18 +18,14 @@
 
 package uk.ac.ucl.excites.sapelli.shared.compression;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.apache.commons.io.IOUtils;
 import org.tukaani.xz.FinishableOutputStream;
 import org.tukaani.xz.LZMA2Options;
 import org.tukaani.xz.UnsupportedOptionsException;
 
-import uk.ac.ucl.excites.sapelli.shared.compression.Compressor;
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 
 /**
@@ -49,46 +45,26 @@ public class LZMA2Compressor extends Compressor
 	{
 		try
 		{
-			options = new LZMA2Options(LZMA2Options.PRESET_MAX);
+			options = new LZMA2Options(6);
+			options.setDictSize(1 << 20); // dictSize at present 6 is too high
+			//options.setNiceLen(LZMA2Options.NICE_LEN_MAX); // = "NumFastBytes" on LZMA(1)
 		}
 		catch(UnsupportedOptionsException e)
 		{
 			e.printStackTrace();
 		}
 	}
-
+	
 	@Override
-	public byte[] compress(byte[] data) throws IOException
+	public OutputStream getOutputStream(OutputStream sink)
 	{
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        try
-        {
-        	OutputStream out = options.getOutputStream(new WrappedOutputStream(byteArrayOutputStream));
-            out.write(data);
-            out.close();
-        }
-        catch(IOException ioe)
-        {
-        	throw new IOException("Error upon " + getMode() + " compression", ioe);
-        }
-        return byteArrayOutputStream.toByteArray();
+		return options.getOutputStream(new WrappedOutputStream(sink));
 	}
-
+	
 	@Override
-	public byte[] decompress(byte[] compressedData) throws IOException
+	public InputStream getInputStream(InputStream source) throws IOException
 	{
-        ByteArrayOutputStream out = new ByteArrayOutputStream();   
-        try
-        {
-        	InputStream in = options.getInputStream(new ByteArrayInputStream(compressedData));
-            IOUtils.copy(in, out);
-            in.close();
-        }
-        catch(IOException ioe)
-        {
-        	throw new IOException("Error upon " + getMode() + " decompression", ioe);
-        }
-        return out.toByteArray();
+		return options.getInputStream(source);
 	}
 
 	public class WrappedOutputStream extends FinishableOutputStream
@@ -105,6 +81,24 @@ public class LZMA2Compressor extends Compressor
 		public void write(int b) throws IOException
 		{
 			wrappedStream.write(b);
+		}
+
+		/* (non-Javadoc)
+		 * @see java.io.OutputStream#flush()
+		 */
+		@Override
+		public void flush() throws IOException
+		{
+			wrappedStream.flush();
+		}
+
+		/* (non-Javadoc)
+		 * @see java.io.OutputStream#close()
+		 */
+		@Override
+		public void close() throws IOException
+		{
+			wrappedStream.close();
 		}
 
 	}

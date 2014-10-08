@@ -18,14 +18,6 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 	</properties>
 	
-	<repositories>
-		<repository>
-			<id>in-project</id>
-			<name>In-Project Repository</name>
-			<url>file://${project.basedir}/repo</url>
-		</repository>
-	</repositories>
-	
 	<dependencies>
 		<dependency>
 			<groupId>joda-time</groupId>
@@ -58,9 +50,9 @@
 			<version>1.3</version>
 		</dependency>
 		<dependency>
-			<groupId>org.itadaki</groupId>
-			<artifactId>jbzip2</artifactId>
-			<version>0.9.1</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-compress</artifactId>
+			<version>1.8.1</version>
 		</dependency>
 		<!-- <dependency> <groupId>com.madgag.spongycastle</groupId> <artifactId>core</artifactId> 
 			<version>1.50.0.0</version> </dependency> -->

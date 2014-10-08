@@ -18,16 +18,13 @@
 
 package uk.ac.ucl.excites.sapelli.shared.compression;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.zip.Deflater;
+import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
-import java.util.zip.DeflaterOutputStream;
-
-import org.apache.commons.io.IOUtils;
 
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 
@@ -42,42 +39,36 @@ import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compressio
 public class DeflateCompressor extends Compressor
 {
 	
-	static private final boolean NO_HEADER = true;
-
-	@Override
-	public byte[] compress(byte[] data) throws IOException
+	static public final boolean DEFAULT_HEADERLESS = true;
+	
+	private final boolean headerless;
+	
+	/**
+	 * 
+	 */
+	public DeflateCompressor()
 	{
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		Deflater deflater = new Deflater(Deflater.BEST_COMPRESSION, NO_HEADER); // best compression & no header
-        try
-        {
-        	DeflaterOutputStream deflateOutputStream = new DeflaterOutputStream(byteArrayOutputStream, deflater);
-        	deflateOutputStream.write(data);
-        	deflateOutputStream.close();
-        }
-        catch(IOException ioe)
-        {
-            throw new IOException("Error upon " + getMode() + " compression", ioe);
-        }
-        return byteArrayOutputStream.toByteArray();
+		this(DEFAULT_HEADERLESS);
+	}
+	
+	/**
+	 * @param headerless
+	 */
+	public DeflateCompressor(boolean headerless)
+	{
+		this.headerless = headerless;
+	}
+	
+	@Override
+	public OutputStream getOutputStream(OutputStream sink) throws IOException
+	{
+		return new DeflaterOutputStream(sink, new Deflater(Deflater.BEST_COMPRESSION, headerless)); // best compression & no header)
 	}
 
 	@Override
-	public byte[] decompress(byte[] compressedData) throws IOException
+	public InputStream getInputStream(InputStream source) throws IOException
 	{
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        Inflater inflater = new Inflater(NO_HEADER);
-        try
-        {
-        	InputStream in = new InflaterInputStream(new ByteArrayInputStream(compressedData), inflater);
-            IOUtils.copy(in, out);
-            in.close();
-        }
-        catch(IOException ioe)
-        {
-        	throw new IOException("Error upon " + getMode() + " decompression", ioe);
-        }
-        return out.toByteArray();
+		return new InflaterInputStream(source, new Inflater(headerless));
 	}
 
 	@Override

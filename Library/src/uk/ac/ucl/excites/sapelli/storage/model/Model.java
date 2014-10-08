@@ -27,11 +27,9 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.Inflater;
-import java.util.zip.InflaterInputStream;
 
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory;
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema.InternalKind;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
@@ -74,6 +72,10 @@ public class Model implements Serializable
 	 */
 	static public final IntegerRangeMapping MODEL_SCHEMA_NO_FIELD = IntegerRangeMapping.ForSize(0, MODEL_SCHEMA_NO_SIZE); // [0, 15]
 	
+	
+	/**
+	 * Maximum number of schemata in a model
+	 */
 	static public final int MAX_SCHEMATA = MODEL_SCHEMA_NO_FIELD.numberOfPossibleValues().intValue(); // = 16
 	
 	// Model Schema: a "meta" schema for records that describe a Model
@@ -106,14 +108,7 @@ public class Model implements Serializable
 		META_SCHEMA.seal();
 	}
 	
-//	private static Compressor COMPRESSOR;
-//	
-//	private static Compressor GetCompressor()
-//	{
-//		if(COMPRESSOR == null)
-//			COMPRESSOR =  new DeflateCompressor();
-//		return COMPRESSOR;
-//	}
+	private static Compression OBJECT_COMPRESSION = Compression.DEFLATE;
 	
 	/**
 	 * Returns "model record" which describes the given model (and contains a serialised version of it)
@@ -125,8 +120,8 @@ public class Model implements Serializable
 	static public Record GetModelRecord(Model model) throws IOException
 	{
 		// Serialise Model object:
-		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();		
-		ObjectOutputStream objOut = new ObjectOutputStream(new DeflaterOutputStream(rawOut, new Deflater(Deflater.BEST_COMPRESSION, true))); // DEFLATE compress output
+		ByteArrayOutputStream rawOut = new ByteArrayOutputStream();	
+		ObjectOutputStream objOut = new ObjectOutputStream(CompressorFactory.getCompressorOutputStream(OBJECT_COMPRESSION, rawOut));
 		objOut.writeObject(model);
 		objOut.flush();
 		objOut.close();
@@ -165,7 +160,7 @@ public class Model implements Serializable
 			throw new IllegalArgumentException("The given record is a not a " + MODEL_SCHEMA.name + " record!");
 		
 		// Decompress & deserialise Schema object bytes:
-		ObjectInputStream objIn = new ObjectInputStream(new InflaterInputStream(new ByteArrayInputStream(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord)),  new Inflater(true)));
+		ObjectInputStream objIn = new ObjectInputStream(CompressorFactory.getCompressorInputStream(OBJECT_COMPRESSION, new ByteArrayInputStream(MODEL_OBJECT_SERIALISATION_COLUMN.retrieveValue(modelRecord))));
 		Model model = (Model) objIn.readObject();
 		objIn.close();
 		

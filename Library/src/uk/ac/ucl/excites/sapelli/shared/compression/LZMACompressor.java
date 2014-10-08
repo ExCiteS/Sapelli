@@ -18,26 +18,23 @@
 
 package uk.ac.ucl.excites.sapelli.shared.compression;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.SequenceInputStream;
 
 import lzma.sdk.lzma.Decoder;
 import lzma.sdk.lzma.Encoder;
-import uk.ac.ucl.excites.sapelli.shared.compression.Compressor;
+import lzma.streams.LzmaInputStream;
+import lzma.streams.LzmaOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
+import uk.ac.ucl.excites.sapelli.shared.io.HeaderEatingOutputStream;
 
 /**
  * LZMA compressor.<br/>
  * Uses the lzma-java library by Julien Ponge (jponge) et al. (Apache License 2.0).
- * 
- * We do not use the LZMAOutputStream and LZMAInputStream classes (also provided by the lzma-java library)
- * because they write a header (containing encoder settings and uncompressed data length) which we do not
- * need here, this saves us 18 bytes (5 for the settings, 8 for the length).
  * 
  * @author mstevens
  * @see <a href="http://en.wikipedia.org/wiki/LZMA">http://en.wikipedia.org/wiki/LZMA</a>
@@ -45,135 +42,65 @@ import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compressio
  */
 public class LZMACompressor extends Compressor
 {
-
-	static public final boolean USE_HEADER = false;
 	
-	private Encoder encoder;
-	private Decoder decoder;
-	private boolean useHeader;
+	static public final boolean DEFAULT_HEADERLESS = true;
+	static private final int HEADER_SIZE = 5 /*encoder properties*/ + 8 /*uncompressed size*/; // bytes
+	
+	private final boolean headerless;
 
 	public LZMACompressor()
 	{
-		this(USE_HEADER);
+		this(DEFAULT_HEADERLESS);
+	}
+
+	public LZMACompressor(boolean headerless)
+	{
+		this.headerless = headerless;
 	}
 	
-	public LZMACompressor(boolean useHeader)
+	public Encoder getEncoder()
 	{
-		this.useHeader = useHeader;
-	}
+		Encoder encoder = new Encoder();
 
-	private Encoder getEncoder()
-	{
-		if(encoder == null)
-		{
-			this.encoder = new Encoder();
-
-			// Properties:
-			encoder.setDictionarySize(1 << 23);
-			encoder.setEndMarkerMode(true); // takes up 5 bytes, but if we don't do it decoding fails (even if we pass it the data size instead of -1; see below)
-			encoder.setMatchFinder(Encoder.EMatchFinderTypeBT4);
-			encoder.setNumFastBytes(0x20);
-		}
+		// Properties:
+		encoder.setDictionarySize(1 << 20); // Default: 1 << 23 (way too much memory usage!)
+		encoder.setEndMarkerMode(true); // takes up 5 bytes, but without it decoding fails to end!
+		encoder.setMatchFinder(Encoder.EMatchFinderTypeBT4);
+		encoder.setNumFastBytes(0x20); // Default: 0x20 (= 32)
+		
 		return encoder;
 	}
 	
-	private Decoder getDecoder()
+	@SuppressWarnings("resource")
+	@Override
+	public OutputStream getOutputStream(OutputStream sink) throws IOException
 	{
-		if(decoder == null)
-		{
-			this.decoder = new Decoder();
-			
-			ByteArrayOutputStream propertiesStream = new ByteArrayOutputStream();
-			try
-			{
-				getEncoder().writeCoderProperties(propertiesStream);
-			}
-			catch(IOException ioe)
-			{
-				ioe.printStackTrace(System.err);
-			}
-			if(!decoder.setDecoderProperties(propertiesStream.toByteArray()))
-				throw new IllegalArgumentException("Incorrect stream properties");
-		}
-		return decoder;
+		return new LzmaOutputStream(headerless ? new HeaderEatingOutputStream(sink, HEADER_SIZE) : sink, getEncoder());
 	}
 
 	@Override
-	public byte[] compress(byte[] data) throws IOException
+	public InputStream getInputStream(InputStream source) throws IOException
 	{
-		InputStream in = new BufferedInputStream(new ByteArrayInputStream(data));
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		OutputStream out = new BufferedOutputStream(byteArrayOutputStream);
-		try
+		// Let encoder write out our default properties:
+		
+		if(headerless)
 		{
-			Encoder enc = getEncoder();
-			if(useHeader)
-			{
-				// Write header with coder settings (optional, takes up 5 bytes)
-				enc.writeCoderProperties(out);
-
-				// Write header with uncompressed data size (optional, takes up 8 bytes):
-				for(int i = 0; i < 8; i++)
-					out.write((int) (data.length >>> (8 * i)) & 0xFF);
-			}
+			// Generate fake header:
+			ByteArrayOutputStream headerOut = new ByteArrayOutputStream();
+			// Write header with coder settings (takes up 5 bytes)
+			getEncoder().writeCoderProperties(headerOut);
+			// write -1 as "unknown" for file size (takes up 8 bytes)
+			for(int i = 0; i < 8; ++i)
+				headerOut.write((byte) -1);
+			headerOut.close();
 			
-			// Compress & write compressed bytes:
-			enc.code(in, out, -1, -1, null);
-			out.flush();
-			out.close();
-			in.close();
+			// Insert header:
+			return new LzmaInputStream(new SequenceInputStream(new ByteArrayInputStream(headerOut.toByteArray()), source), new Decoder());
 		}
-		catch(IOException ioe)
-		{
-			throw new IOException("Error upon " + getMode() + " compression", ioe);
-		}
-		return byteArrayOutputStream.toByteArray();
+		else
+			return new LzmaInputStream(source, new Decoder());
 	}
-
-	@Override
-	public byte[] decompress(byte[] compressedData) throws IOException
-	{
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-		OutputStream out = new BufferedOutputStream(byteArrayOutputStream);
-		InputStream in = new BufferedInputStream(new ByteArrayInputStream(compressedData));
-		try
-		{
-			long outSize = -1;
-			Decoder dec = getDecoder();
-			if(useHeader)
-			{
-				// Read header with coder settings (optional):
-				byte[] properties = new byte[5];
-				if(in.read(properties) != 5)
-					throw new IOException("LZMA stream has no header!");
-				if(!dec.setDecoderProperties(properties))
-					throw new IOException("Decoder properties cannot be set!");
 	
-				// Read header with uncompressed data size (optional):
-				outSize = 0;
-				for(int i = 0; i < 8; i++)
-				{
-					int v = in.read();
-					if(v < 0)
-						throw new IOException("Can't read stream size");
-					outSize |= ((long) v) << (8 * i);
-				}
-			}
-				
-			// Read compressed bytes & decompress:
-			if(!dec.code(in, out, outSize))
-				throw new IOException("Error in data stream");
-			out.flush();
-			out.close();
-			in.close();
-		}
-		catch(IOException ioe)
-		{
-			throw new IOException("Error upon " + getMode() + " decompression", ioe);
-		}
-		return byteArrayOutputStream.toByteArray();
-	}
-
 	@Override
 	public Compression getMode()
 	{

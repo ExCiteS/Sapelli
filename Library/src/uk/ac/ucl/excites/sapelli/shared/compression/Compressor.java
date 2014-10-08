@@ -18,39 +18,119 @@
 
 package uk.ac.ucl.excites.sapelli.shared.compression;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.Callable;
+
+import org.apache.commons.io.IOUtils;
 
 /**
  * @author mstevens
- *
+ * 
  */
 public abstract class Compressor
 {
 
 	public abstract CompressorFactory.Compression getMode();
-	
-	public abstract byte[] compress(byte[] data) throws IOException;
 
-	public abstract byte[] decompress(byte[] compressedData) throws IOException;
-	
-//	public class CompressorCallable implements Callable<CompressorResult>
-//	{
-//
-//		private byte[] uncompressedData;
-//		
-//		public CompressorCallable(byte[] uncompressedData)
-//		{
-//			this.uncompressedData = uncompressedData;
-//		}
-//		
-//		@Override
-//		public CompressorResult call() throws Exception
-//		{
-//			return new CompressorResult(getMode(), com, ratio)
-//		}
-//		
-//	}
+	public abstract OutputStream getOutputStream(OutputStream sink) throws IOException;
+
+	/**
+	 * @param data
+	 * @return
+	 * @throws IOException
+	 */
+	public byte[] compress(byte[] data) throws IOException
+	{
+		ByteArrayOutputStream byteArraySink = new ByteArrayOutputStream();
+		OutputStream out = null;
+		try
+		{
+			out = getOutputStream(byteArraySink);
+			out.write(data);
+			out.flush();
+			out.close();
+			return byteArraySink.toByteArray();
+		}
+		catch(IOException ioe)
+		{
+			throw new IOException("Error upon " + getMode() + " compression", ioe);
+		}
+		finally
+		{
+			try
+			{
+				if(out != null)
+					out.close();
+			}
+			catch(Exception ignore)
+			{
+			}
+		}
+	}
+
+	public abstract InputStream getInputStream(InputStream source) throws IOException;
+
+	/**
+	 * @param compressedData
+	 * @return
+	 * @throws IOException
+	 */
+	public byte[] decompress(byte[] compressedData) throws IOException
+	{
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		InputStream in = null;
+		try
+		{
+			in = getInputStream(new ByteArrayInputStream(compressedData));
+			IOUtils.copy(in, out);
+			in.close();
+			out.flush();
+			return out.toByteArray();
+		}
+		catch(IOException ioe)
+		{
+			throw new IOException("Error upon " + getMode() + " decompression", ioe);
+		}
+		finally
+		{
+			try
+			{
+				if(out != null)
+					out.close();
+			}
+			catch(Exception ignore)
+			{
+			}
+			try
+			{
+				if(in != null)
+					in.close();
+			}
+			catch(Exception ignore)
+			{
+			}
+		}
+	}
+
+	// public class CompressorCallable implements Callable<CompressorResult>
+	// {
+	//
+	// private byte[] uncompressedData;
+	//
+	// public CompressorCallable(byte[] uncompressedData)
+	// {
+	// this.uncompressedData = uncompressedData;
+	// }
+	//
+	// @Override
+	// public CompressorResult call() throws Exception
+	// {
+	// return new CompressorResult(getMode(), com, ratio)
+	// }
+	//
+	// }
 
 }

@@ -19,63 +19,63 @@
 package uk.ac.ucl.excites.sapelli.shared.compression;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.SequenceInputStream;
 
-import org.apache.commons.io.IOUtils;
-import org.itadaki.bzip2.BZip2InputStream;
-import org.itadaki.bzip2.BZip2OutputStream;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorOutputStream;
 
-import uk.ac.ucl.excites.sapelli.shared.compression.Compressor;
 import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
+import uk.ac.ucl.excites.sapelli.shared.io.HeaderEatingOutputStream;
 
 /**
  * BZIP2 compressor.
- * Uses the jbzip2 library (MIT licensed).
+ * Based on Commons Compress.
+ * When {@link #headerless} is {@code true} the 3-byte "BZh" header will be stripped off compression result and will *not* be expected on decompression input.
  * 
  * @author mstevens
  * @see <a href="http://en.wikipedia.org/wiki/Bzip2">http://en.wikipedia.org/wiki/Bzip2</a>
- * @see <a href="http://code.google.com/p/jbzip2">http://code.google.com/p/jbzip2</a>
+ * @see <a href="http://commons.apache.org/proper/commons-compress">http://commons.apache.org/proper/commons-compress</a>
  */
 public class BZIP2Compressor extends Compressor
 {
 	
-	@Override
-	public byte[] compress(byte[] data) throws IOException
+	static private byte[] BZIP2_HEADER = { 0x42, 0x5A, 0x68 }; // = "BZh"
+	static public final boolean DEFAULT_HEADERLESS = true;
+	
+	private final boolean headerless;
+	
+	/**
+	 * 
+	 */
+	public BZIP2Compressor()
 	{
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        try
-        {
-        	OutputStream out = new BZip2OutputStream(byteArrayOutputStream);
-            out.write(data);
-            out.close();
-        }
-        catch(IOException ioe)
-        {
-        	throw new IOException("Error upon " + getMode() + " compression", ioe);
-        }
-        return byteArrayOutputStream.toByteArray();
+		this(DEFAULT_HEADERLESS);
+	}
+	
+	/**
+	 * @param headerless
+	 */
+	public BZIP2Compressor(boolean headerless)
+	{
+		this.headerless = headerless;
+	}
+
+	@SuppressWarnings("resource")
+	@Override
+	public OutputStream getOutputStream(OutputStream sink) throws IOException
+	{
+		return new BZip2CompressorOutputStream(headerless ? new HeaderEatingOutputStream(sink, BZIP2_HEADER.length) : sink);
 	}
 
 	@Override
-	public byte[] decompress(byte[] compressedData) throws IOException
+	public InputStream getInputStream(InputStream source) throws IOException
 	{
-        ByteArrayOutputStream out = new ByteArrayOutputStream();   
-        try
-        {
-        	InputStream in = new BZip2InputStream(new ByteArrayInputStream(compressedData), false);
-            IOUtils.copy(in, out);
-            in.close();
-        }
-        catch(IOException ioe)
-        {
-        	throw new IOException("Error upon " + getMode() + " decompression", ioe);
-        }
-        return out.toByteArray();
+		return new BZip2CompressorInputStream(headerless ? new SequenceInputStream(new ByteArrayInputStream(BZIP2_HEADER), source) : source);
 	}
-
+	
 	@Override
 	public Compression getMode()
 	{
