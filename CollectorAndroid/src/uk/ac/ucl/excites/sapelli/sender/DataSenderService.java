@@ -325,7 +325,7 @@ public class DataSenderService extends Service implements Sender, StoreClient
 							Log.d(TAG, "Attempting SMS transmission generation");
 							
 							//Generate transmission(s)
-							List<SMSTransmission> smsTransmissions = generateSMSTransmissions(p, schema, records.iterator());
+							List<SMSTransmission<?>> smsTransmissions = generateSMSTransmissions(p, schema, records.iterator());
 							
 							//Store transmission(s) & update records so associated transmission is stored
 //							for(Transmission t : smsTransmissions)
@@ -341,7 +341,7 @@ public class DataSenderService extends Service implements Sender, StoreClient
 							
 							//Send transmission(s)
 							//TODO check signal again?
-							for(SMSTransmission t : smsTransmissions)
+							for(SMSTransmission<?> t : smsTransmissions)
 							{
 								try
 								{
@@ -401,7 +401,7 @@ public class DataSenderService extends Service implements Sender, StoreClient
 			
 	}
 	
-	private List<SMSTransmission> generateSMSTransmissions(Project project, Schema schema, Iterator<Record> records)
+	private List<SMSTransmission<?>> generateSMSTransmissions(Project project, Schema schema, Iterator<Record> records)
 	{
 		//Settings:
 		//Settings settings = project.getTransmissionSettings();
@@ -411,11 +411,11 @@ public class DataSenderService extends Service implements Sender, StoreClient
 		factorOut.add(Form.COLUMN_DEVICE_ID);
 		
 		//Make transmissions: 
-		List<SMSTransmission> transmissions = new ArrayList<SMSTransmission>();
+		List<SMSTransmission<?>> transmissions = new ArrayList<SMSTransmission<?>>();
 		while(records.hasNext())
 		{
 			// Create transmission:			
-			SMSTransmission t = null;
+			SMSTransmission<?> t = null;
 //			switch(settings.getSMSMode())
 //			{
 //				case BINARY : t = new BinarySMSTransmission(schema, factorOut, settings.getSMSRelay(), settings); break;
