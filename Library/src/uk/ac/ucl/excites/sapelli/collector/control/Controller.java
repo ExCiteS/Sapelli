@@ -446,20 +446,6 @@ public abstract class Controller
 	}
 	
 	/**
-	 * @param af  the MediaField
-	 * @return whether or not a UI update is required after entering the field
-	 */
-	public boolean enterMediaField(MediaField mf, FieldParameters arguments)
-	{
-		if(mf.isMaxReached(currFormSession.record ) && mf.getMax() == 1)
-		{ // Maximum number of attachments for this field is reached and picker is disabled:
-			goForward(false); // skip field
-			return false;
-		}
-		return true;
-	}
-	
-	/**
 	 * @param lf  the LocationField
 	 * @param whether or not the location field is entered together with a page that contains it, or entered on its own
 	 * @return whether or not a UI update is required after entering the field

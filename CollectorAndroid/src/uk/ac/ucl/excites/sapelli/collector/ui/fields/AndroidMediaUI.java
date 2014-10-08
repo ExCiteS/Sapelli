@@ -93,15 +93,21 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			if(mediaFlipper == null)
 				mediaFlipper = new MediaFlipper(collectorUI.getContext());
 
-			if (field.getCount(controller.getCurrentRecord()) == 0 || !multipleCapturesAllowed || goToCapture) {
+			if (field.getCount(controller.getCurrentRecord()) == 0 || goToCapture) {
 				// if no media, not multiple, or just came from gallery then go to capture UI
 				mediaFlipper.showCaptureLayout();
 				onInitialiseCaptureMode();
 			}
 			else {
-				// else go to gallery (e.g. if have just captured media / if skipping back)
-				mediaFlipper.showGalleryLayout();
-				mediaFlipper.updateGallery();
+				// else go to gallery or review (if max = 1)
+				if (field.getMax() == 1) {
+					mediaFlipper.showReviewLayout();
+					mediaFlipper.updateReviewLayout();
+				}
+				else {
+					mediaFlipper.showGalleryLayout();
+					mediaFlipper.updateGallery();
+				}
 			}
 			return mediaFlipper;
 		}
@@ -259,6 +265,16 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			}
 		}
 		
+		private void updateReviewLayout() {
+			// populate reviewLayout with most recently taken picture
+			if (lastCaptureFile == null) {
+				// reload most recent File -- from the last item in the items list
+				List<Item> items = getMediaItems();
+				lastCaptureFile = ((FileItem) items.get(items.size() - 1)).getFile();
+			}
+			populateReviewLayout((LinearLayout)reviewLayoutContainer.getChildAt(0), lastCaptureFile);
+		}
+		
 		private void updateGallery() {
 			gallery.loadMedia();	        
 		}
@@ -302,6 +318,18 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			}
 		}
 		
+		private void showReviewLayout() {
+			if (getCurrentView() == reviewLayoutContainer) {
+				return;
+			}
+			if (getCurrentView() == captureLayoutContainer) {
+				showNext();
+				return;
+			}
+			if (getCurrentView() == galleryLayoutContainer) {
+				showPrevious();
+			}
+		}
 		private void showGalleryLayout() {
 			if (getCurrentView() == galleryLayoutContainer) {
 				return;
@@ -505,9 +533,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						else 
 						{ // position == 1, media discarded / deleted
 							if (!multipleCapturesAllowed) {
-								// reviewing after capture, so discard
+								// single item review -- could be delete or discard (delete if returning after approving)
 								//onDiscard(); TODO: with current method for saving files, temp files eventually discarded automatically.
-								showPrevious(); //switch back to capture mode
+								if (field.getCount(controller.getCurrentRecord()) > 0)
+									// deleting previously approved media, not just discarding
+									removeMedia(lastCaptureFile);
+								controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE); //switch back to capture mode
 							}
 							else {
 								// reviewing from gallery, so delete

@@ -266,8 +266,6 @@ public abstract class MediaField extends Field
 	@Override
 	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
 	{
-		if(!withPage)
-			return controller.enterMediaField(this, arguments);
 		return true;
 	}
 	
