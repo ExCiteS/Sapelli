@@ -89,6 +89,12 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		cameraController.takePicture(this);
 		return false; // only allow new clicks once photo has been received
 	}
+	
+
+	@Override
+    void onDiscard() {
+	    // nothing to do
+    }
 
 	@Override
 	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {

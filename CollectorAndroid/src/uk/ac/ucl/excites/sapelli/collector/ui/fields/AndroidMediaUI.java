@@ -66,7 +66,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 {
 
 	private MediaFlipper mediaFlipper;
-	private Semaphore handlingClick = new Semaphore(1);
+	Semaphore handlingClick = new Semaphore(1);
 	private boolean goToCapture = false; // flag used to jump straight to capture from gallery 
 	boolean multipleCapturesAllowed; // whether or not multiple pieces of media can be associated with this field
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
@@ -162,6 +162,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * interaction can continue - such as a picture callback).
 	 */
 	abstract boolean onCapture();
+	
+	/**
+	 * What to do when a piece of media is discarded.
+	 * @return
+	 */
+	abstract void onDiscard();
 		
 	/**
 	 * What to do on exit of this field (e.g. release resources).
@@ -532,9 +538,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 							}
 						else 
 						{ // position == 1, media discarded / deleted
+							onDiscard();
 							if (!multipleCapturesAllowed) {
 								// single item review -- could be delete or discard (delete if returning after approving)
-								//onDiscard(); TODO: with current method for saving files, temp files eventually discarded automatically.
 								if (field.getCount(controller.getCurrentRecord()) > 0)
 									// deleting previously approved media, not just discarding
 									removeMedia(lastCaptureFile);

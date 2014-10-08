@@ -35,8 +35,7 @@ import android.widget.ProgressBar;
 
 public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
-	private boolean recording = false;
-	private boolean playing = false;
+	private volatile Boolean recording = false;
 
 	static private final String TAG = "AndroidAudioUI";
 
@@ -105,31 +104,38 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 	@Override
 	boolean onCapture() {
-		if (!recording) {
-			// start recording
-			recording = true;
-			startRecording();
-			Log.d("AudioUI","Started recording");
-			// add spinner:
-			if (captureLayout != null) {
-				ProgressBar progress = new ProgressBar(captureLayout.getContext(), null, android.R.attr.progressBarStyleLarge);
-				captureLayout.addView(progress);
+		synchronized(recording) {
+			if (!recording) {
+				// start recording
+				startRecording();
+				Log.d("AudioUI","Started recording");
+				// add spinner:
+				if (captureLayout != null) {
+					ProgressBar progress = new ProgressBar(captureLayout.getContext(), null, android.R.attr.progressBarStyleLarge);
+					captureLayout.addView(progress);
+				}
+				recording = true;
+			} else {
+				// stop recording
+				stopRecording();
+				Log.d("AudioUI","Stopped recording");
+				// remove spinner:
+				if (captureLayout != null) {
+					captureLayout.removeViewAt(0); 
+				}
+				// a capture has been made so show it for review:
+				showCaptureForReview();
+				recording = false;
 			}
-			// TODO change button image to "stop"
-		} else {
-			// stop recording
-			recording = false;
-			stopRecording();
-			Log.d("AudioUI","Stopped recording");
-			// remove spinner:
-			if (captureLayout != null) {
-				captureLayout.removeViewAt(0); 
-			}
-			// a capture has been made so show it for review:
-			showCaptureForReview();
 		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
 		return true; 
+	}
+	
+	@Override
+	void onDiscard() {
+		if (audioReviewPicker != null)
+			audioReviewPicker.finalise();
 	}
 
 	@Override
@@ -177,6 +183,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 	@Override
 	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
+		Log.d("AudioUI","Populating review layout...");
+		reviewLayout.removeAllViews();
 		// create buttons for playing the newly captured audio:
 		audioReviewPicker = new AudioReviewPicker(reviewLayout.getContext(), mediaFile);
 		// add picker to container:
@@ -192,13 +200,17 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	private class AudioReviewPicker extends PickerView implements OnItemClickListener, MediaPlayer.OnCompletionListener {
 		
 		private MediaPlayer mediaPlayer = new MediaPlayer();
+		private Runnable buttonAction;
 		private final ImageItem playAudioButton;
 		private final ImageItem stopAudioButton;
+		private volatile Boolean playing = false;
+
 
 		public AudioReviewPicker(Context context, File audioFile) {
 			super(context);
 			
 			try {
+				Log.d("AudioReviewPicker","Initialising mediaPlayer...");
 	            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 	            mediaPlayer.setDataSource(context, Uri.fromFile(audioFile));
 	            mediaPlayer.setOnCompletionListener(this);
@@ -206,7 +218,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	            Log.e(TAG, "Could not play audio file.");
 	            e.printStackTrace();
             }
-
 			File playImgFile = controller.getProject().getImageFile(field.getPlayAudioImageRelativePath());
 			if(FileHelpers.isReadableFile(playImgFile))
 				playAudioButton = new FileImageItem(playImgFile);
@@ -231,6 +242,25 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			// height of picker = available UI height - height of bottom control bar
 
 			setOnItemClickListener(this);
+			
+			buttonAction = new Runnable() {
+				// only one button - the play/stop button
+				public void run() {
+					synchronized(playing) {
+						if (!playing) {
+							// if not playing, then start playing audio
+							playAudio();
+							playing = true;
+						} 
+						else {
+							// if already playing, then stop audio
+							stopAudio();
+							playing = false;
+						}
+					}
+					handlingClick.release();
+				}
+			};
 
 			getAdapter().addItem(playAudioButton);
 		}
@@ -238,32 +268,17 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		@Override
 		public void onItemClick(AdapterView<?> parent, View view, int position,
 				long id) {
-			// only one button - the play/stop button
-			Runnable buttonAction = new Runnable() {
-				public void run() {
-					if (!playing) {
-						// if not playing, then start playing audio
-						playing = true;
-						Log.d("Play audio button","Start playing");
-						playAudio();
-					} 
-					else {
-						// if already playing, then stop audio
-						playing = false;
-						Log.d("Play audio button","Stop playing");
-						stopAudio();
-					}
-				}
-			};
-			
+			if (handlingClick.tryAcquire()) {
 			// Execute the "press" animation if allowed, then perform the action: 
 			if(controller.getCurrentForm().isClickAnimation())
 				(new ClickAnimator(buttonAction, view, collectorUI)).execute(); //execute animation and the action afterwards
 			else
 				buttonAction.run(); //perform task now (animation is disabled)
+			}
 		}
 		
 		private void stopAudio() {
+			Log.d("AudioReviewPicker","stop");
 			// stop the audio:
 			mediaPlayer.stop();
 			// present the play button to the user:
@@ -273,6 +288,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		}
 		
 		private void playAudio() {
+			Log.d("AudioReviewPicker","play");
 			// play the audio: 
 			try {
 				mediaPlayer.prepare();
@@ -288,16 +304,24 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		}
 		
 		private void finalise() {
-			if (mediaPlayer != null)
-				mediaPlayer.release();
+			Log.d("AudioReviewPicker","finalise");
+			synchronized(playing) {
+				if (mediaPlayer != null)
+					mediaPlayer.release();
+				mediaPlayer = null;
+				playing = false;
+			}
 		}
 
 		@Override
         public void onCompletion(MediaPlayer mp) {
 	        // called when the media player finishes playing its media file
-			playing = false;
-			stopAudio();    
+			Log.d("AudioReviewPicker","on completion");
+			synchronized(playing) {
+				// go from PlaybackCompleted to Stopped
+				stopAudio();
+				playing = false;
+			}
         }
-
 	}
 }
