@@ -43,12 +43,13 @@
 
         <include
             android:layout_width="wrap_content"
+            android:layout_height="0dp"
             layout="@layout/hr" />
 
         <RelativeLayout
             android:id="@+id/ProjectsListLayout"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1" >
 
             <ImageView
@@ -130,7 +131,7 @@
                     android:layout_height="wrap_content"
                     android:layout_weight=".75"
                     android:inputType="textUri"
-                    android:textSize="10dp" />
+                    android:textSize="10sp" />
 
                 <Button
                     android:id="@+id/BrowseButton"

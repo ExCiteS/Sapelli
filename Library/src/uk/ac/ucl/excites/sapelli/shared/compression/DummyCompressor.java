@@ -16,11 +16,12 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.compression;
+package uk.ac.ucl.excites.sapelli.shared.compression;
 
-import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 
 /**
  * Dummy compressor (leaves data unchanged)
@@ -32,13 +33,25 @@ public class DummyCompressor extends Compressor
 {
 
 	@Override
-	public byte[] compress(byte[] data) throws IOException
+	public OutputStream getOutputStream(OutputStream sink)
+	{
+		return sink;
+	}
+
+	@Override
+	public InputStream getInputStream(InputStream source)
+	{
+		return source;
+	}
+	
+	@Override
+	public byte[] compress(byte[] data)
 	{
 		return data;
 	}
 
 	@Override
-	public byte[] decompress(byte[] compressedData) throws IOException
+	public byte[] decompress(byte[] compressedData)
 	{
 		return compressedData;
 	}

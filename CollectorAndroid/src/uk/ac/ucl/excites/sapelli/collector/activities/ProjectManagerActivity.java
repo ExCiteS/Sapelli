@@ -28,6 +28,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
@@ -46,6 +47,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -248,8 +250,11 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	public void initialisationSuccess(DeviceID deviceID)
 	{
 		this.deviceID = deviceID;
-		Crashlytics.setLong(CollectorApp.CRASHLYTICS_DEVICE_ID_CRC32, deviceID.getIDAsCRC32Hash());
-		Crashlytics.setString(CollectorApp.CRASHLYTICS_DEVICE_ID_MD5, deviceID.getIDAsMD5Hash().toString());
+		if(!BuildConfig.DEBUG)
+		{
+			Crashlytics.setLong(CollectorApp.CRASHLYTICS_DEVICE_ID_CRC32, deviceID.getIDAsCRC32Hash());
+			Crashlytics.setString(CollectorApp.CRASHLYTICS_DEVICE_ID_MD5, deviceID.getIDAsMD5Hash().toString());
+		}
 	}
 
 	@Override
@@ -334,6 +339,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return true;
 	}
 
+	@SuppressLint("InflateParams")
 	public boolean openAboutDialog(MenuItem item)
 	{
 		// Set-up UI:
@@ -342,10 +348,12 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		infoLbl.setClickable(true);
 		infoLbl.setMovementMethod(LinkMovementMethod.getInstance());
 		infoLbl.setText(Html.fromHtml(
-				"<p>" + app.getBuildInfo().getVersionInfo() + ".</p>" +
+				"<p><b>" + app.getBuildInfo().getVersionInfo() + "</b></p>" +
 				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
 				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
-				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));		
+				"<p>" + getString(R.string.license)  + "</p>" +
+				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));	
+		infoLbl.setPadding(2, 2, 6, 2);
 		ImageView iconImg = (ImageView) view.findViewById(R.id.aboutIcon);
 		iconImg.setOnClickListener(new OnClickListener()
 		{

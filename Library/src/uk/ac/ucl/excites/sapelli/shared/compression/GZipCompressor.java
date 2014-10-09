@@ -16,18 +16,15 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.compression;
+package uk.ac.ucl.excites.sapelli.shared.compression;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.apache.commons.io.IOUtils;
-
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 
 /**
  * GZIP compressor.
@@ -41,37 +38,15 @@ public class GZipCompressor extends Compressor
 {
 
 	@Override
-	public byte[] compress(byte[] data) throws IOException
+	public OutputStream getOutputStream(OutputStream sink) throws IOException
 	{
-		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        try
-        {
-            GZIPOutputStream gzipOutputStream = new GZIPOutputStream(byteArrayOutputStream);
-            gzipOutputStream.write(data);
-            gzipOutputStream.close();
-        }
-        catch(IOException ioe)
-        {
-            throw new IOException("Error upon " + getMode() + " compression", ioe);
-        }
-        return byteArrayOutputStream.toByteArray();
+		return new GZIPOutputStream(sink);
 	}
 
 	@Override
-	public byte[] decompress(byte[] compressedData) throws IOException
+	public InputStream getInputStream(InputStream source) throws IOException
 	{
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        try
-        {
-        	InputStream in = new GZIPInputStream(new ByteArrayInputStream(compressedData));
-            IOUtils.copy(in, out);
-            in.close();
-        }
-        catch(IOException ioe)
-        {
-        	throw new IOException("Error upon " + getMode() + " decompression", ioe);
-        }
-        return out.toByteArray();
+		return new GZIPInputStream(source);
 	}
 
 	@Override

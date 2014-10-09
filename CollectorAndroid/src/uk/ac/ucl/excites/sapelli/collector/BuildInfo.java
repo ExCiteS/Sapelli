@@ -24,6 +24,7 @@ import java.util.zip.ZipFile;
 import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -135,14 +136,34 @@ public class BuildInfo
 	
 	public String getVersionInfo()
 	{
-		return 	res.getString(R.string.app_name) + " " +
-				(pi != null ?	("v" + pi.versionName + " (version-code: " + pi.versionCode + (isDemoBuild() ? "; demo-build" : "") + ")") :
-								"[Version unknown]");
+		return getVersionInfo(false);
+	}
+	
+	public String getVersionInfo(boolean includeVersionCode)
+	{
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder(" ");
+		bldr.append(res.getString(R.string.app_name));
+		if(pi != null)
+		{
+			bldr.append("v" + pi.versionName);
+			bldr.append("(");
+			bldr.openTransaction("; ");
+			if(includeVersionCode)
+				bldr.append("version-code: " + pi.versionCode);
+			bldr.append(BuildConfig.DEBUG ? "debug" : "release");
+			if(isDemoBuild())
+				bldr.append("demo");
+			bldr.commitTransaction(false);
+			bldr.append(")", false);
+		}
+		else
+			bldr.append("[version unknown]");
+		return bldr.toString();
 	}
 	
 	public String getBuildInfo()
 	{
-		return	"Built by " + getUsername()  + " on " + getTimeStampString() + " using " + getBranch() + " branch, revision " + getLastCommitHash() + " with" + (isChangesSinceLastCommit() ? "" : "out") + " changes";
+		return	"Built on " + getTimeStampString() + " by " + getUsername()  + " using " + getBranch() + " branch, revision " + getLastCommitHash() + " with" + (isChangesSinceLastCommit() ? "" : "out") + " changes";
 	}
 	
 	public String getAllInfo()

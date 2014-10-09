@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.shared.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
@@ -43,7 +44,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.compression.CompressorFactory.Compression;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**

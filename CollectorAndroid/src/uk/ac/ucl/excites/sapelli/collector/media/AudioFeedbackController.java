@@ -5,6 +5,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import android.content.Context;
 import android.view.View;
 
 /**
@@ -29,7 +30,7 @@ public class AudioFeedbackController
 	 * @param choice
 	 * @param choiceView
 	 */
-	public void playAnswer(ChoiceField choice, View choiceView)
+	public void playAnswer(Context context, ChoiceField choice, View choiceView)
 	{
 		// Check whether AudioFeedback is supported for the current form
 		AudioFeedback audioFeedback = controller.getCurrentForm().getAudioFeedback();
@@ -58,7 +59,7 @@ public class AudioFeedbackController
 			}
 
 			// Apply an alpha animation to the long pressed view
-			ViewAnimator.shakeAnimation(choiceView);
+			ViewAnimator.shakeAnimation(context, choiceView);
 		}
 	}
 
@@ -69,7 +70,7 @@ public class AudioFeedbackController
 	 * @param controlItem
 	 * @param controlView
 	 */
-	public void playAnswer(Item controlItem, View controlView)
+	public void playAnswer(Context context, Item controlItem, View controlView)
 	{
 		// Check whether AudioFeedback is supported for the current form
 		AudioFeedback audioFeedback = controller.getCurrentForm().getAudioFeedback();
@@ -97,7 +98,7 @@ public class AudioFeedbackController
 			}
 
 			// Apply an alpha animation to the long pressed view
-			ViewAnimator.shakeAnimation(controlView);
+			ViewAnimator.shakeAnimation(context, controlView);
 		}
 	}
 

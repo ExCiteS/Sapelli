@@ -148,7 +148,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			return false;
 
 		// Audio Feedback
-		audioController.playAnswer(child, childView);
+		audioController.playAnswer(context, child, childView);
 
 		return true;
 	}

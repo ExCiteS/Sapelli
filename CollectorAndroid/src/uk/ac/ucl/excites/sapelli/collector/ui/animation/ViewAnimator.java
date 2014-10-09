@@ -174,14 +174,15 @@ public class ViewAnimator
 		view.startAnimation(animationSet);
 	}
 
-	public static void shakeAnimation(View view)
+	public static void shakeAnimation(Context context, View view)
 	{
 		// Create the animation set
 		AnimationSet animationSet = new AnimationSet(true);
 		animationSet.setInterpolator(new CycleInterpolator(3)); // Repeat 3 times
 
 		// Create movement
-		TranslateAnimation shake = new TranslateAnimation(0, 2, 0, 0);
+		final int horizontalShake = ScreenMetrics.ConvertDipToPx(context, 3);
+		TranslateAnimation shake = new TranslateAnimation(0, horizontalShake, 0, 0);
 		shake.setDuration(600);
 
 		animationSet.addAnimation(shake);

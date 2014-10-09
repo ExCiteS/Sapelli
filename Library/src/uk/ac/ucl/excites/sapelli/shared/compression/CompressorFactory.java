@@ -16,13 +16,13 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.compression;
+package uk.ac.ucl.excites.sapelli.shared.compression;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.DecimalFormat;
 import java.util.Arrays;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * 
@@ -44,6 +44,10 @@ public class CompressorFactory
 		/*HUFFMAN,*/
 	}
 	
+	/**
+	 * @param mode
+	 * @return
+	 */
 	static public Compressor getCompressor(Compression mode)
 	{
 		switch(mode)
@@ -56,6 +60,28 @@ public class CompressorFactory
 			case BZIP2		: return new BZIP2Compressor();
 			default			: return new DummyCompressor();
 		}
+	}
+	
+	/**
+	 * @param mode
+	 * @param sink
+	 * @return
+	 * @throws IOException 
+	 */
+	static public OutputStream getCompressorOutputStream(Compression mode, OutputStream sink) throws IOException
+	{
+		return getCompressor(mode).getOutputStream(sink);
+	}
+	
+	/**
+	 * @param mode
+	 * @param source
+	 * @return
+	 * @throws IOException
+	 */
+	static public InputStream getCompressorInputStream(Compression mode, InputStream source) throws IOException
+	{
+		return getCompressor(mode).getInputStream(source);
 	}
 	
 	static public void CompressionTest(byte[] data)
@@ -94,27 +120,36 @@ public class CompressorFactory
 		}
 	}
 
-	static public CompressorResult ApplyBestCompression(byte[] data)
+	/**
+	 * @param data
+	 * @param verify
+	 * @return
+	 */
+	static public CompressorResult ApplyBestCompression(byte[] data, boolean verify)
 	{
-		return ApplyBestCompression(data, CompressorFactory.Compression.values()); // will try all supported modes
+		return ApplyBestCompression(data, CompressorFactory.Compression.values(), verify); // will try all supported modes
 	}
 	
-	private static final int NUM_CORES = Runtime.getRuntime().availableProcessors();
-	
-	static public CompressorResult ApplyBestCompression(byte[] data, Compression[] modes)
+	/**
+	 * @param data
+	 * @param modes
+	 * @param verify
+	 * @return
+	 */
+	static public CompressorResult ApplyBestCompression(byte[] data, Compression[] modes, boolean verify)
 	{
 		//TODO make this multi-threaded?
 		//CompressorResult[] results = new CompressorResult[modes.length];
-		//ExecutorService executor = Executors.newFixedThreadPool(NUM_CORES);
+		//ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 		
 		CompressorResult best = null;
-		try
+		for(Compression mode : modes)
 		{
-			for(Compression mode : modes)
+			try
 			{
 				Compressor compressor = CompressorFactory.getCompressor(mode);
 				byte[] compressedData = compressor.compress(data);
-				if(Arrays.equals(data, compressor.decompress(compressedData)))
+				if(!verify || Arrays.equals(data, compressor.decompress(compressedData)))
 				{
 					if(best == null || compressedData.length < best.getCompressedData().length)
 						best = new CompressorResult(mode, compressedData, compressedData.length / (float) data.length);
@@ -122,10 +157,11 @@ public class CompressorFactory
 				else
 					System.err.println(mode + ": DECOMPRESSED DATA DOES NOT MATCH INPUT DATA!");
 			}
-		}
-		catch(IOException e)
-		{
-			e.printStackTrace(System.err);
+			catch(IOException e)
+			{
+				e.printStackTrace(System.err);
+				continue;
+			}
 		}
 		return best != null ? best : new CompressorResult(Compression.NONE, data, 1.0f);
 	}
