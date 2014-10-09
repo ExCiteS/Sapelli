@@ -68,7 +68,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private static final String TAG = "AndroidMediaUI";
 
 	private MediaFlipper mediaFlipper;
-	Semaphore handlingClick = new Semaphore(1);
+	Semaphore handlingClick;
 	private boolean goToCapture = false; // flag used to jump straight to capture from gallery 
 	boolean multipleCapturesAllowed; // whether or not multiple pieces of media can be associated with this field
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
@@ -99,57 +99,58 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		{
 			if(mediaFlipper == null)
 				mediaFlipper = new MediaFlipper(collectorUI.getContext());
+			
+			handlingClick = new Semaphore(1); // (re)initialise semaphore when re-entering field
 
 			if (field.getCount(controller.getCurrentRecord()) == 0 || goToCapture) {
-				// if no media, not multiple, or just came from gallery then go to capture UI
+				// if no media or just came from review then go to capture UI
 				mediaFlipper.showCaptureLayout();
-				onInitialiseCaptureMode();
 				
 				if (skipPreviewOnAdd && field.getCount(controller.getCurrentRecord()) > 0) {
-					// skipPreviewOnAdd is enabled and there is already some media, so start capture immediately
+					// skipPreviewOnAdd is enabled and there is already some media attached, so start capture immediately
 					try {
 						handlingClick.acquire();
 						mediaFlipper.performCapture();
 					} catch (InterruptedException e) {
-						Log.d(TAG,"Interrupted while trying to perform auto-capture.");
+						Log.e(TAG,"Interrupted while trying to perform auto-capture.");
 					}
 				}
 			}
 			else {
-				// else go to gallery or review (if max = 1)
+				// else go to gallery UI, or review UI if max = 1
 				if (field.getMax() == 1) {
+					// switch to single review layout:
 					mediaFlipper.showReviewLayout();
-					mediaFlipper.updateReviewLayout();
+					// populate with most recent capture:
+					if (lastCaptureFile == null) {
+						// reload most recent File -- from the last item in the items list
+						List<Item> items = getMediaItems();
+						lastCaptureFile = ((FileItem) items.get(items.size() - 1)).getFile();
+					}
+					populateReviewLayout((ViewGroup)((LinearLayout)mediaFlipper.getCurrentView()).getChildAt(0),lastCaptureFile);
 				}
-				else {
+				else
 					mediaFlipper.showGalleryLayout();
-					mediaFlipper.updateGallery();
-				}
 			}
 			return mediaFlipper;
 		}
 	}
 	
-	void showCaptureForReview() {
-		mediaFlipper.showCaptureForReview();
-	}
-	
 	/**
 	 * Attaches the most recently captured media file to the MediaField.
+	 * 
+	 * @param releaseClick - whether or not to allow clicks once this method returns.
 	 */
-	void attachMediaFile() {
+	void attachMediaFile(boolean releaseClick) {
 		try {
-			if (multipleCapturesAllowed) {
-				mediaAddedButNotDone(lastCaptureFile);										
-			} else {
-				mediaDone(lastCaptureFile, true);
-				finalise(); 
-			}
+			mediaAddedButNotDone(lastCaptureFile);
 		} catch (Exception e) {
-			mediaDone(null, true);
+			mediaDone(null, true); //TODO check
 			e.printStackTrace();
 			finalise();
 		}
+		if (releaseClick)
+			handlingClick.release();
 	}
 	
 	Context getContext() {
@@ -165,11 +166,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			mediaFlipper = null;
 		}
 	}
-
-	/**
-	 * What to do when entering capture mode (e.g. start camera viewfinder).
-	 */
-	abstract void onInitialiseCaptureMode();
 	
 	/**
 	 * What to do when the capture button has been pressed.
@@ -255,8 +251,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			
 			// --- Capture UI:
 			captureLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_capture, this, false);
-			LinearLayout captureLayout = (LinearLayout) captureLayoutContainer.getChildAt(0);
-			populateCaptureLayout(captureLayout);
 			// Add the Capture button:
 			captureLayoutButtonContainer = (LinearLayout) captureLayoutContainer.findViewById(R.id.capture_layout_buttons);
 			captureLayoutButtonContainer.addView(new CaptureButtonView(context));
@@ -279,27 +273,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				galleryLayoutButtonContainer = (LinearLayout) galleryLayoutContainer.findViewById(R.id.picker_layout_buttons);
 				galleryLayoutButtonContainer.addView(new GalleryButtonView(context));
 				final LinearLayout pickerViewContainer = (LinearLayout) galleryLayoutContainer.findViewById(R.id.picker_layout_picker_container);
-				refreshGalleryButtons();
 				gallery = new MediaGalleryView(context);
 				pickerViewContainer.addView(gallery);
-				gallery.loadMedia();
 				// Add the picker:
 				this.addView(galleryLayoutContainer);
 			}
-		}
-		
-		private void updateReviewLayout() {
-			// populate reviewLayout with most recently taken picture
-			if (lastCaptureFile == null) {
-				// reload most recent File -- from the last item in the items list
-				List<Item> items = getMediaItems();
-				lastCaptureFile = ((FileItem) items.get(items.size() - 1)).getFile();
-			}
-			populateReviewLayout((LinearLayout)reviewLayoutContainer.getChildAt(0), lastCaptureFile);
-		}
-		
-		private void updateGallery() {
-			gallery.loadMedia();	        
 		}
 		
         private void performCapture() {
@@ -309,20 +287,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				handlingClick.release();
 			}
 			refreshCaptureButton(); // TODO if performance issues, may not want to do this on every press
-        
-		}
-		private void showCaptureForReview() {
-			// TODO don't run on UI thread?
-			// data has been received from capture, so present it for review
-			if (multipleCapturesAllowed) {
-				attachMediaFile(); // implicitly approve media so it can be reviewed in gallery
-				updateGallery(); // refresh gallery to show the new item
-			}
-			else {
-				showNext(); // just go to simple review UI
-				populateReviewLayout((LinearLayout)reviewLayoutContainer.getChildAt(0), lastCaptureFile);
-			}
-			handlingClick.release();
 		}
 
 		private void refreshGalleryButtons() {
@@ -338,16 +302,13 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		}
 		
 		private void showCaptureLayout() {
-			if (getCurrentView() == captureLayoutContainer) {
-				return;
-			}
 			if (getCurrentView() == reviewLayoutContainer) {
 				showPrevious();
-				return;
 			}
 			if (getCurrentView() == galleryLayoutContainer) {
 				showNext();
 			}
+			populateCaptureLayout((ViewGroup)((ViewGroup)this.getCurrentView()).getChildAt(0));
 		}
 		
 		private void showReviewLayout() {
@@ -362,17 +323,17 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				showPrevious();
 			}
 		}
+			
 		private void showGalleryLayout() {
-			if (getCurrentView() == galleryLayoutContainer) {
-				return;
-			}
 			if (getCurrentView() == captureLayoutContainer) {
 				showPrevious();
-				return;
 			}
 			if (getCurrentView() == reviewLayoutContainer) {
 				showNext();
 			}
+			
+			gallery.loadMedia();
+			refreshGalleryButtons();
 		}
 
 		private class MediaGalleryView extends PickerView {
@@ -399,6 +360,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					@Override
 					public void onItemClick(AdapterView<?> parent, View view,
 							int position, long id) {
+						itemPosition = position;
 						// a piece of media has been clicked, so show it and offer deletion
 						populateReviewLayout((LinearLayout)reviewLayoutContainer.getChildAt(0), ((FileItem)getAdapter().getItem(position)).getFile());
 						// Show the view:
@@ -420,15 +382,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				}
 				getAdapter().notifyDataSetChanged();
 			}
-
-			private void deleteCurrentMedia() {
-				Item currentMediaItem = getAdapter().getItem(itemPosition);
-				File currentMediaFile = ((FileItem)currentMediaItem).getFile();
-				removeMedia(currentMediaFile);
-				getAdapter().removeItem(currentMediaItem);
-				maxReached = false;  // have now deleted media, so cannot have reached max
-				refreshGalleryButtons();
-				getAdapter().notifyDataSetChanged();
+			
+			private void deleteCurrentItem() {
+				File file = ((FileItem)getAdapter().getItem(itemPosition)).getFile();
+				removeMedia(file);
 			}
 		}
 		
@@ -554,37 +511,28 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						//there are 2 buttons: approve (pos=0) & discard (pos=1)
 						if (position == 0) // media approved
 							if (!multipleCapturesAllowed) {
-								// only reviewing the most recent photo, so save it
-								attachMediaFile();
-							}
-							else {
-								// looking at photo after selecting from gallery, so just return to gallery
+								// approving single photo, so go forward
+								mediaDone(null,true); //TODO replace with controller.gotonext?
+							} else {
+								// viewing photo in gallery, already attached
 								showNext();
 							}
 						else 
 						{ // position == 1, media discarded / deleted
 							onDiscard();
 							if (!multipleCapturesAllowed) {
-								// single item review -- could be delete or discard (delete if returning after approving)
-								if (field.getCount(controller.getCurrentRecord()) > 0)
-									// deleting previously approved media, not just discarding
-									removeMedia(lastCaptureFile);
-								controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE); //switch back to capture mode
-							}
-							else {
+								// single item review
+								removeMedia(lastCaptureFile); // captures are now always attached, so must be deleted regardless of approval
+							} else {
 								// reviewing from gallery, so delete
-								gallery.deleteCurrentMedia();
-								if (field.getCount(controller.getCurrentRecord()) == 0) {
-									// no media left, so go straight back to capture
-									controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
-								}
-								else {
-									showNext(); //go back to gallery
-								}
+								gallery.deleteCurrentItem();
+								maxReached = false;  // have now deleted media, so cannot have reached max
+								goToCapture = false;
 							}
+							// either go back to capture, or go back to gallery (decided on entry):
+							controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 						}
 						 // reset last capture file
-						lastCaptureFile = null;
 						handlingClick.release();
 					}
 				};
@@ -636,15 +584,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					@Override
 					public void run() {
 						if (position == 0) {
-							// camera button clicked, return to camera interface
+							// plus button clicked, return to camera interface
 							if (!maxReached) {
 								goToCapture = true;
 								controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 							}
-						} else {
-							//approve button clicked, so proceed to next field
+						} else { // position 1 (approve) - go to next field
 							goToCapture = false;
-							mediaDone(null, true);
+							mediaDone(null, true); //TODO replace with controller.goToNext?
 						}
 						handlingClick.release();
 					}
@@ -662,6 +609,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				plusButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 
 				if (maxReached) {
+					// make button look unclickable
 					LayeredItem layeredItem = new LayeredItem();
 					layeredItem.addLayer(plusButton, false);
 

@@ -184,9 +184,18 @@ public abstract class MediaField extends Field
 
 	public File getNewTempFile(Record record) throws IOException
 	{
+		// TODO slightly hacky fix to avoid filename duplication -- will disappear when 
+		// temp files stop being a thing anyway
+		int suffix = getCount(record);
 		String filename = generateFilename(record, getCount(record));
 		String dataFolderPath = form.getProject().getTempFolder().getAbsolutePath(); //getTempFolder() does the necessary checks (IOException is thrown in case of trouble)
-		return new File(dataFolderPath + File.separator + filename);
+		File file = new File(dataFolderPath + File.separator + filename);
+		while (file.exists()) {
+			suffix++;
+			filename = generateFilename(record, suffix);
+			file = new File(dataFolderPath + File.separator + filename);
+		}
+		return file;
 	}
 	
 	/**

@@ -33,15 +33,18 @@ import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ImageView.ScaleType;
+import android.widget.LinearLayout;
 
 public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements PictureCallback {
 
+	@SuppressWarnings("unused")
+    static private final String TAG = "AndroidPhotoUI";
 	static private final int PREVIEW_SIZE = 1024;
 
 	// Camera & image data:
 	private CameraController cameraController;
+	private SurfaceView captureSurface;
 	private HandleImage handleImage;
 
 	public AndroidPhotoUI(PhotoField field, Controller controller,
@@ -52,37 +55,36 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	@SuppressWarnings("deprecation")
 	@Override
 	void populateCaptureLayout(ViewGroup captureLayout) {
-		// Set up cameraController:
-		//	Camera controller & camera selection:
-		cameraController = new CameraController(field.isUseFrontFacingCamera());
-		if(!cameraController.foundCamera())
-		{ // no camera found, try the other one:
-			cameraController.findCamera(!field.isUseFrontFacingCamera());
-			if(!cameraController.foundCamera())
-			{ // still no camera, this device does not seem to have one:
-				mediaDone(null, false);
-				return;
-			}
+		if (cameraController == null) {
+	        // Set up cameraController:
+	        //	Camera controller & camera selection:
+	        cameraController =
+	                new CameraController(field.isUseFrontFacingCamera());
+	        if (!cameraController.foundCamera()) { // no camera found, try the other one:
+		        cameraController.findCamera(!field.isUseFrontFacingCamera());
+		        if (!cameraController.foundCamera()) { // still no camera, this device does not seem to have one:
+			        mediaDone(null, false);
+			        return;
+		        }
+	        }
+	        //	Set flash mode:
+	        cameraController.setFlashMode(field.getFlashMode());
 		}
-		//	Set flash mode:
-		cameraController.setFlashMode(field.getFlashMode());
-
-		// Create the surface for previewing the camera:
-		final SurfaceView surfaceView = new SurfaceView(captureLayout.getContext());
-		captureLayout.addView(surfaceView);
-
-		// Set-up surface holder:
-		SurfaceHolder holder = surfaceView.getHolder();
-		holder.addCallback(cameraController);
-		holder.setKeepScreenOn(true);
-		// !!! Deprecated but cameraController preview crashes without it (at least on the XCover/Gingerbread):
-		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-	}
-	
-	@Override
-    void onInitialiseCaptureMode() {
+		//TODO figure out how views are cached so this does not have to be done every time:
+		captureLayout.removeAllViews();
+        // Create the surface for previewing the camera:
+		captureSurface = new SurfaceView(captureLayout.getContext());
+        captureLayout.addView(captureSurface);
+        
+        // Set-up surface holder:
+        SurfaceHolder holder = captureSurface.getHolder();
+        holder.addCallback(cameraController);
+        holder.setKeepScreenOn(true);
+        // !!! Deprecated but cameraController preview crashes without it (at least on the XCover/Gingerbread):
+        holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+		
 		cameraController.startPreview();
-    }
+	}
 
 	@Override
 	boolean onCapture() {
@@ -98,6 +100,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 
 	@Override
 	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
+		reviewLayout.removeAllViews();
 		// add an ImageView to the review UI:
 		ImageView reviewView = new ImageView(reviewLayout.getContext());
 		reviewView.setScaleType(ScaleType.FIT_CENTER);
@@ -126,6 +129,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	@Override
 	List<Item> getMediaItems() {
 		// TODO: assumes all attachments (regardless of type) are relevant to this field!
+		// TODO: cache?
 		List<File> files = controller.getMediaAttachments();
 		List<Item> items = new ArrayList<Item>();
 		for (File f : files) {
@@ -218,7 +222,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			cameraController.stopPreview();
 			// Close the dialog
 			dialog.cancel();
-			showCaptureForReview();
+			attachMediaFile(true);
 		}
 	}
 }
