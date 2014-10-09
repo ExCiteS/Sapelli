@@ -36,6 +36,13 @@ import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
 
+/**
+ * A subclass of AndroidMediaUI which allows for the capture and 
+ * review of images from the device's camera.
+ * 
+ * @author mstevens, Michalis Vitos, benelliott
+ *
+ */
 public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements PictureCallback {
 
 	@SuppressWarnings("unused")

@@ -86,6 +86,19 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		this.skipPreviewOnAdd = skipPreviewOnAdd;
 	}
 	
+	/**
+	 * Returns the appropriate View that represents this field.
+	 * <br>
+	 * If not on a page,
+	 * <ul>
+	 * <li> if no media has been captured, or the capture UI has been specifically requested, 
+	 * return the capture UI. If returning from the gallery UI and this field specifies that
+	 * capturing begins immediately when the "add" button is pressed, then the capture process is 
+	 * started.</li>
+	 * <li> if there is already captured media to display, and the capture UI has not been requested, 
+	 * then return either the single-item review UI (e.g. full-page image) if the field can have at most one
+	 * attachment, or the gallery UI if multiple attachments are acceptable.</li>
+	 */
 	@Override
 	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
 	{
@@ -137,6 +150,19 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	}
 	
 	/**
+	 * When a request is made to cancel this field, the abstract method finalise() is called.
+	 */
+	@Override
+	protected void cancel()
+	{
+		if(mediaFlipper != null)
+		{
+			finalise();
+			mediaFlipper = null;
+		}
+	}
+	
+	/**
 	 * Attaches the most recently captured media file to the MediaField.
 	 * 
 	 * @param releaseClick - whether or not to allow clicks once this method returns.
@@ -152,19 +178,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		if (releaseClick)
 			handlingClick.release();
 	}
+
 	
 	Context getContext() {
 		return (mediaFlipper == null) ? null : mediaFlipper.getContext();
-	}
-	
-	@Override
-	protected void cancel()
-	{
-		if(mediaFlipper != null)
-		{
-			finalise();
-			mediaFlipper = null;
-		}
 	}
 	
 	/**
@@ -233,7 +250,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * <br>
 	 * Note: If the Gallery UI is enabled, then captures will skip (2) when they have just been made.
 	 * 
-	 * @author Ben
+	 * @author benelliott
 	 *
 	 */
 	private class MediaFlipper extends ViewFlipper {
@@ -280,6 +297,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			}
 		}
 		
+		/**
+		 * Execute the capture operation (may be called on a button press, or to
+		 * "force" a capture automatically).
+		 */
         private void performCapture() {
 			goToCapture = false; //just made a capture, so go to gallery instead (unless multiple disabled)
 			if (onCapture()) {
@@ -289,18 +310,31 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			refreshCaptureButton(); // TODO if performance issues, may not want to do this on every press
 		}
 
+        /**
+         * Recreate the gallery buttons in case they should be changed (e.g. if 
+         * the number of attachments has now reached the maximum for this field).
+         */
 		private void refreshGalleryButtons() {
 			// recreate gallery buttons in case of change
 			galleryLayoutButtonContainer.removeAllViews();
 			galleryLayoutButtonContainer.addView(new GalleryButtonView(getContext()));
         }
 		
+		/**
+		 * Recreate the capture button in case it should be changed (e.g. if
+		 * recording audio, want capture button to display a "stop" icon once 
+		 * recording has started).
+		 */
 		private void refreshCaptureButton() {
 			// recreate capture button in case of change
 			captureLayoutButtonContainer.removeAllViews();
 			captureLayoutButtonContainer.addView(new CaptureButtonView(getContext()));
 		}
 		
+		/**
+		 * Force the MediaFlipper to show the capture UI, and populate it as specified
+		 * by the subclass.
+		 */
 		private void showCaptureLayout() {
 			if (getCurrentView() == reviewLayoutContainer) {
 				showPrevious();
@@ -311,6 +345,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			populateCaptureLayout((ViewGroup)((ViewGroup)this.getCurrentView()).getChildAt(0));
 		}
 		
+		/**
+		 * Force the MediaFlipper to show the single-item review UI. Not automatically populated  
+		 * since the UI may be populated with information about a specific item, which cannot be 
+		 * predicted here.
+		 */
 		private void showReviewLayout() {
 			if (getCurrentView() == reviewLayoutContainer) {
 				return;
@@ -323,7 +362,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				showPrevious();
 			}
 		}
-			
+		
+		/**
+		 *  Force the MediaFlipper to show the gallery UI; reload its contents and its associated
+		 *  buttons.
+		 */
 		private void showGalleryLayout() {
 			if (getCurrentView() == captureLayoutContainer) {
 				showPrevious();
@@ -336,6 +379,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			refreshGalleryButtons();
 		}
 
+		/**
+		 * A PickerView which allows for the review of multiple media items, such as
+		 * images or audio.
+		 * @author benelliott
+		 *
+		 */
 		private class MediaGalleryView extends PickerView {
 
 			private static final int NUM_COLUMNS = 3; //TODO make configurable?
@@ -369,6 +418,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				});
 			}
 
+			/**
+			 * Load the media items into the adapter and then refresh the View.
+			 */
 			private void loadMedia() {
 				PickerAdapter adapter = new PickerAdapter();
 				for (Item item : getMediaItems()) {
@@ -383,6 +435,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				getAdapter().notifyDataSetChanged();
 			}
 			
+			/**
+			 * Delete the item that has just been selected for review (as 
+			 * represented by itemPosition).
+			 */
 			private void deleteCurrentItem() {
 				File file = ((FileItem)getAdapter().getItem(itemPosition)).getFile();
 				removeMedia(file);
@@ -390,7 +446,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		}
 		
 		/**
-		 * @author mstevens
+		 * Abstract class that represents the bottom row of control buttons that is
+		 * present on any media UI page.
+		 * 
+		 * @author mstevens, benelliott
 		 */
 		private abstract class MediaButtonView extends PickerView
 		{
@@ -398,9 +457,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			private int buttonBackColor;
 			Runnable buttonAction;
 			int position;
-			/**
-			 * @param context
-			 */
+
 			public MediaButtonView(Context context)
 			{
 				super(context);
@@ -447,6 +504,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				setAdapter(getAdapter()); // this is supposedly needed on Android v2.3.x (TODO test it)
 			}
 
+			/**
+			 * Add a single item to the adapter.
+			 * 
+			 * @param button - the item to add.
+			 */
 			protected void addButton(Item button)
 			{
 				button.setPaddingPx(buttonPadding);
@@ -456,10 +518,20 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 			protected abstract int getNumberOfColumns();
 
+			/**
+			 * Add all necessary buttons to the picker.
+			 */
 			protected abstract void addButtons();
 
 		}
 	
+		/**
+		 * The View that holds the capture button, at the bottom of the
+		 * Capture UI.
+		 * 
+		 * @author mstevens, benelliott
+		 *
+		 */
 		private class CaptureButtonView extends MediaButtonView
 		{
 
@@ -495,7 +567,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		}
 		
 		/**
-		 * @author mstevens
+		 * Class that holds the "approve" and "delete" buttons at the bottom
+		 * of the single-item review UI.
+		 * 
+		 * @author mstevens, benelliott
 		 */
 		private class ReviewButtonView extends MediaButtonView
 		{
@@ -569,6 +644,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			}
 		}
 	
+		/**
+		 * Class that holds the "plus" and "approve" buttons at the bottom of the gallery UI.
+		 * 
+		 * @author benelliott
+		 *
+		 */
 		private class GalleryButtonView extends MediaButtonView
 		{
 
@@ -598,6 +679,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				};
 			}
 
+			/**
+			 * Creates a "plus" button to be used in the picker, but makes it appear greyed out
+			 * if the field's maximum number of attachments has been reached.
+			 * 
+			 * @return the "plus" button to be added to the UI.
+			 */
 			private Item createPlusButton() {
 				// creates a "normal" plus button and then disables it if max reached.
 				Item plusButton = null;

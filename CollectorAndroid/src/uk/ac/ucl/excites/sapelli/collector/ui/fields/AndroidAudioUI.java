@@ -42,6 +42,13 @@ import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.LinearLayout;
 
+/**
+ * A subclass of AndroidMediaUI which allows for the capture and review of 
+ * audio recordings from the device's microphone.
+ * 
+ * @author mstevens, Michalis Vitos, benelliott
+ *
+ */
 public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 	private volatile Boolean recording = false;
@@ -58,6 +65,10 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		super(field, controller, collectorUI, true); // want to skip preview on add
 	}
 
+	/**
+	 * Start writing audio data to the media file, and start displaying the volume level.
+	 * @return whether or not recording was started successfully.
+	 */
 	private boolean startRecording()
 	{
 		try
@@ -82,6 +93,9 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		return true;		
 	}
 
+	/**
+	 * Stop writing audio data to the media file, and stop displaying the volume level.
+	 */
 	private void stopRecording()
 	{
 		try
@@ -106,6 +120,11 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			stopRecording();
 	}
 
+	/**
+	 * If not already recording, start recording. Else stop recording and attach the media file 
+	 * to the field. Always returns "true" so that click events can be processed while audio is being
+	 * recorded.
+	 */
 	@Override
 	boolean onCapture() {
 		synchronized(recording) {
@@ -131,6 +150,10 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			audioReviewPicker.finalise();
 	}
 
+	/**
+	 * If not currently recording, will return a "start recording" button. If currently recording, will return a
+	 * "stop recording" button.
+	 */
 	@Override
 	ImageItem generateCaptureButton(Context context) {
 		ImageItem captureButton = null;
@@ -192,6 +215,11 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			audioReviewPicker.finalise();
 	}
 
+	/**
+	 * A simple subclass of PickerView that provides play/stop functionality when a recording is being reviewed.
+	 * 
+	 * @author benelliott
+	 */
 	private class AudioReviewPicker extends PickerView implements OnItemClickListener, MediaPlayer.OnCompletionListener {
 
 		private MediaPlayer mediaPlayer = new MediaPlayer();
@@ -270,16 +298,9 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 					buttonAction.run(); //perform task now (animation is disabled)
 			}
 		}
-
-		private void stopAudio() {
-			// stop the audio:
-			mediaPlayer.stop();
-			// present the play button to the user:
-			getAdapter().clear();
-			getAdapter().addItem(playAudioButton);
-			getAdapter().notifyDataSetChanged();
-		}
-
+		/**
+		 * Start playing audio and display the "stop" button.
+		 */
 		private void playAudio() {
 			// play the audio: 
 			try {
@@ -294,7 +315,22 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			getAdapter().addItem(stopAudioButton);
 			getAdapter().notifyDataSetChanged();
 		}
+		
+		/**
+		 * Stop playing audio and display the "play" button.
+		 */
+		private void stopAudio() {
+			// stop the audio:
+			mediaPlayer.stop();
+			// present the play button to the user:
+			getAdapter().clear();
+			getAdapter().addItem(playAudioButton);
+			getAdapter().notifyDataSetChanged();
+		}
 
+		/**
+		 * Release the media player.
+		 */
 		private void finalise() {
 			synchronized(playing) {
 				if (mediaPlayer != null)
@@ -304,6 +340,10 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			}
 		}
 
+		/**
+		 * When the media player finishes playing the recording, set it to the "stopped" state
+		 * so the user can play it again.
+		 */
 		@Override
 		public void onCompletion(MediaPlayer mp) {
 			// called when the media player finishes playing its media file
@@ -315,6 +355,12 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		}
 	}
 
+	/**
+	 * A SurfaceView that displays a simple visualisation of the current audio amplitude,
+	 * to be used when recording has been started.
+	 * 
+	 * @author benelliott
+	 */
 	private class VolumeDisplaySurfaceView extends SurfaceView {
 
 		private static final int COLOR_BACKGROUND = Color.BLACK;
@@ -337,7 +383,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 				@Override
 				public void surfaceCreated(SurfaceHolder holder) {
-
 				}
 
 				@Override
@@ -351,11 +396,12 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 				@Override
 				public void surfaceDestroyed(SurfaceHolder holder) {
-					// TODO Auto-generated method stub
-
 				}});
 		}
 
+		/**
+		 * Illuminate the number of levels specified by levelsToIlluminate.
+		 */
 		@Override
 		protected void onDraw(Canvas canvas) {
 			// wipe everything off: 
@@ -374,16 +420,28 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 		}
 		
+		/**
+		 * Start the TimerTask to visualise the volume.
+		 */
 		private void start() {
 			timer = new Timer();
 			timer.schedule(new VolumeDisplayTask(), 0, UPDATE_FREQUENCY_MILLISEC);
 		}
 		
+		/**
+		 * Stop the TimerTask that visualises the volume.
+		 */
 		private void stop() {
 			timer.cancel();
 			timer = null;
 		}
 
+		/**
+		 * A TimerTask that periodically checks the current audio amplitude, calculates
+		 * the number of "levels" that should be illuminated, and then draws them to the screen.
+		 * 
+		 * @author benelliott
+		 */
 		private class VolumeDisplayTask extends TimerTask {
 
 			@Override
