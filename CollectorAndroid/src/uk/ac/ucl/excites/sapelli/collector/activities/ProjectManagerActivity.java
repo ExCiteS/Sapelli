@@ -590,17 +590,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		if(!invalidFiles.isEmpty())
 			showWarningDialog("The following files could not be found or read in the project path (" + project.getProjectFolderPath() + "): " + StringUtils.join(invalidFiles, ", "));
 		
-		// TODO Delete?
-		// // Generate documentation
-		// try
-		// {
-		// project.generateDocumentation();
-		// }
-		// catch(IOException e)
-		// {
-		// showErrorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
-		// }
-		
 		// Store the project object:
 		storeProject(project);
 

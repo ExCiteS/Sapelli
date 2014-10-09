@@ -478,29 +478,6 @@ public class Project
 		return invalidFiles;
 	}
 	
-	// /**
-	// * For now this only generates CSV files that document the indexed values for ChoiceFields
-	// *
-	// * @throws IOException
-	// */
-	// public void generateDocumentation() throws IOException
-	// {
-	// File docsFolder = getDocsFolder();
-	// for(Form form : forms)
-	// {
-	// for(Field field : form.getFields())
-	// {
-	// if(!field.isNoColumn() && field instanceof ChoiceField)
-	// {
-	// FileWriter writer = new FileWriter(docsFolder.getAbsolutePath() + File.separator + form.getName() + "_" + field.getID() + ".csv");
-	// writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
-	// writer.write(((ChoiceField) field).getDictionary().toCSV(";"));
-	// writer.close();
-	// }
-	// }
-	// }
-	// }
-	
 	public boolean equalSignature(Project other)
 	{
 		return 	this.name.equals(other.name)
