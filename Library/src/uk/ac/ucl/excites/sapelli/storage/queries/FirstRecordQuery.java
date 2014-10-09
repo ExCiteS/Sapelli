@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.queries;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 
 /**
@@ -29,6 +30,15 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
  */
 public class FirstRecordQuery extends SingleRecordQuery
 {
+	
+	/**
+	 * @param schema
+	 * @param constraints
+	 */
+	public FirstRecordQuery(Schema schema, Constraint... constraints)
+	{
+		this(Source.From(schema), Order.UNDEFINED, constraints);
+	}
 
 	/**
 	 * @param source

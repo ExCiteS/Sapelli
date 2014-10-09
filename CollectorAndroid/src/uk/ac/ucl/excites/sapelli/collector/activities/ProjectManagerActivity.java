@@ -32,7 +32,6 @@ import java.util.regex.Pattern;
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderClient;
@@ -830,7 +829,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 					try
 					{ // TODO make import & storage async
 						// Import:
-						XMLRecordsImporter importer = new XMLRecordsImporter(new SapelliCollectorClient(projectStore));
+						XMLRecordsImporter importer = new XMLRecordsImporter(app.getCollectorClient());
 						List<Record> records = importer.importFrom((new File(path)).getAbsoluteFile());
 
 						// Show parser warnings if needed:

@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.storage.db.db4o;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -149,6 +150,10 @@ public class DB4ORecordStore extends RecordStore
 	{
 		ObjectSet<Record> resultSet = db4o.query(Record.class);
 		
+		// Check for empty result:
+		if(!resultSet.hasNext())
+			return Collections.<Record> emptyList();
+		
 		// Activate result records & add to new ArrayList (list returned by DB4O doesn't allow sorting and possibly other things):
 		List<Record> result = new ArrayList<Record>();
 		for(Record r : resultSet)
@@ -180,6 +185,10 @@ public class DB4ORecordStore extends RecordStore
 						&& (source.isValid(record));		/* Schema check */
 			}
 		});
+		
+		// Check for empty result:
+		if(!resultSet.hasNext())
+			return Collections.<Record> emptyList();
 		
 		// Activate result records, filter by query constraints & add to new ArrayList (list returned by DB4O doesn't allow sorting and possibly other things):
 		List<Record> result = new ArrayList<Record>();

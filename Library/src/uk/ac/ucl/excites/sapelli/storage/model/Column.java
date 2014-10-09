@@ -257,7 +257,7 @@ public abstract class Column<T> implements Serializable
 	 * @return
 	 * @throws ClassCastException
 	 */
-	protected Object convert(Object value) throws ClassCastException
+	public Object convert(Object value) throws ClassCastException
 	{
 		return value;
 	}

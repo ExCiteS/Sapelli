@@ -160,7 +160,7 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#convert(java.lang.Object)
 	 */
 	@Override
-	protected Object convert(Object value)
+	public Object convert(Object value)
 	{
 		return value == null ? null : (value instanceof Long ? value : Long.valueOf(((Number) value).longValue()));
 	}

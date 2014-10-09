@@ -471,10 +471,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param sapValue
 		 * @throws DBException
 		 */
-		@SuppressWarnings("unchecked")
 		public void bindSapelliObject(SapelliSQLiteStatement statement, int paramIdx, Object sapValue) throws DBException
 		{
-			bind(statement, paramIdx, sapValue != null ? mapping.toSQLType((SapType) sapValue) : null);
+			bind(statement, paramIdx, sapelliOjectToSQL(sapValue));
 		}
 		
 		/**

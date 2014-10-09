@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.sql.sqlite.android.AndroidSQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
@@ -60,7 +61,7 @@ public class CollectorApp extends Application implements StoreClient
 	static private final String DATABASE_BASENAME = "Sapelli";
 	static private final String DEMO_PREFIX = "Demo_";
 	
-	//static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
+	static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
 	
 	static private final String PROJECT_FOLDER = "Projects" + File.separator;
 	static private final String TEMP_FOLDER = "Temp" + File.separator;
@@ -78,8 +79,9 @@ public class CollectorApp extends Application implements StoreClient
 	private BuildInfo buildInfo;
 	private File sapelliFolder;
 	
-	private ProjectStore projectStore = null;
+	private SapelliCollectorClient collectorClient;
 	private RecordStore recordStore = null;
+	private ProjectStore projectStore = null;
 	//private TransmissionStore transmissionStore = null; 
 	private Map<Store, Set<StoreClient>> storeClients;
 
@@ -101,6 +103,9 @@ public class CollectorApp extends Application implements StoreClient
 			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
 		}
 	
+		// Collector client:
+		this.collectorClient = new SapelliCollectorClient();
+		
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();
 		
@@ -272,16 +277,21 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		if(projectStore == null)
 		{
-			projectStore = /*USE_PREFS_FOR_PROJECT_STORAGE ?*/ new PrefProjectStore(this, getDemoPrefix()); //: new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			if(USE_PREFS_FOR_PROJECT_STORAGE)
+				projectStore = new PrefProjectStore(this, getDemoPrefix());
+			else
+				projectStore = new ProjectRecordStore(getRecordStore(client)); // TODO sort out storeclient mess!
+			//projectStore = new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			collectorClient.setProjectStore(projectStore); // !!!
 			storeClients.put(projectStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(projectStore).add(client); //add to set of clients currently using the projectStore
 		return projectStore;
 	}
 	
-	public SapelliCollectorClient getCollectorClient(StoreClient client) throws Exception
+	public SapelliCollectorClient getCollectorClient() throws Exception
 	{
-		return new SapelliCollectorClient(getProjectStore(client));
+		return collectorClient;
 	}
 	
 	/**
@@ -293,7 +303,7 @@ public class CollectorApp extends Application implements StoreClient
 		if(recordStore == null)
 		{
 			//recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
-			recordStore = new AndroidSQLiteRecordStore(getCollectorClient(client), this, getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			recordStore = new AndroidSQLiteRecordStore(collectorClient, this, getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			storeClients.put(recordStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(recordStore).add(client); //add to set of clients currently using the projectStore

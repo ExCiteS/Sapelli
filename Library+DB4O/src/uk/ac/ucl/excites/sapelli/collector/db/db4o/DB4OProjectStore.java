@@ -70,7 +70,7 @@ public class DB4OProjectStore extends ProjectStore
 			{
 				return 	project.isV1xProject() &&
 						project.getID() == schemaID &&
-						project.getSchemaVersion() == schemaVersion;
+						project.getV1XSchemaVersion() == schemaVersion;
 			}
 		});
 		if(result.isEmpty())
@@ -91,7 +91,7 @@ public class DB4OProjectStore extends ProjectStore
 	{
 		// Check for project duplicates:
 		if(retrieveProject(project.getName(), project.getVariant(), project.getVersion()) != null)
-			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
+			throw new DuplicateException("There is already a project with signature \"" + project.toString(false) + "\". Either delete the existing one or change the version of the new one.");
 		db4o.store(project);
 		db4o.commit();
 	}

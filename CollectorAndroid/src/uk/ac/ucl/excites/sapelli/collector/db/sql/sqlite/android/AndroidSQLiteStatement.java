@@ -20,11 +20,13 @@ package uk.ac.ucl.excites.sapelli.collector.db.sql.sqlite.android;
 
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement;
 import android.annotation.TargetApi;
 import android.database.SQLException;
+import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDoneException;
 import android.database.sqlite.SQLiteStatement;
 import android.os.Build;
@@ -104,6 +106,10 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 			if(rowID == -1)
 				throw new DBException("Execution of INSERT statement failed (returned ROWID = -1)");
 			return rowID;
+		}
+		catch(SQLiteConstraintException sqliteConstrE)
+		{
+			throw new DBConstraintException("Failed to execute INSERT statement due to constraint violation", sqliteConstrE);
 		}
 		catch(SQLException sqlE)
 		{

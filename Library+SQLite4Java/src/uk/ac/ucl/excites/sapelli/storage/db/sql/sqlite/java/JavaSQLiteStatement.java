@@ -21,9 +21,11 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.java;
 import java.util.List;
 
 import com.almworks.sqlite4java.SQLiteConnection;
+import com.almworks.sqlite4java.SQLiteConstants;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
+import uk.ac.ucl.excites.sapelli.shared.db.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
@@ -183,7 +185,9 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		}
 		catch(SQLiteException e)
 		{
-			throw new DBException("Failed to execute INSERT statement (e)", e);
+			if(e.getErrorCode() == SQLiteConstants.SQLITE_CONSTRAINT)
+				throw new DBConstraintException("Failed to execute INSERT statement due to constraint violation", e);
+			throw new DBException("Failed to execute INSERT statement", e);
 		}
 	}
 

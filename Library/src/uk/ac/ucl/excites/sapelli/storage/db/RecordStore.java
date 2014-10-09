@@ -188,7 +188,6 @@ public abstract class RecordStore implements Store
 		}
 		catch(DBException e)
 		{
-			e.printStackTrace(System.err);
 			rollbackTransactions(); // !!!
 			throw e;
 		}
@@ -244,7 +243,7 @@ public abstract class RecordStore implements Store
 	/**
 	 * Retrieve all Records (of any schema)
 	 * 
-	 * @return
+	 * @return a list of records, possibly empty, never null
 	 */
 	public List<Record> retrieveAllRecords()
 	{
@@ -255,7 +254,7 @@ public abstract class RecordStore implements Store
 	 * Retrieve Records of a given Schema
 	 * 
 	 * @param schema
-	 * @return
+	 * @return a list of records, possibly empty, never null
 	 */
 	public List<Record> retrieveRecords(Schema schema)
 	{
@@ -266,7 +265,7 @@ public abstract class RecordStore implements Store
 	 * Retrieve Records of given Schemata
 	 * 
 	 * @param schemata
-	 * @return
+	 * @return a list of records, possibly empty, never null
 	 */
 	public List<Record> retrieveRecords(Set<Schema> schemata)
 	{
@@ -277,7 +276,7 @@ public abstract class RecordStore implements Store
 	 * Retrieve records by query
 	 * 
 	 * @param query
-	 * @return
+	 * @return a list of records, possibly empty, never null
 	 */
 	public abstract List<Record> retrieveRecords(RecordsQuery query);
 	
@@ -305,12 +304,37 @@ public abstract class RecordStore implements Store
 		}
 		catch(DBException e)
 		{
-			e.printStackTrace(System.err);
 			rollbackTransactions(); // !!!
 			throw e;
 		}
 		// Inform client:
 		client.recordDeleted(record);
+	}
+	
+	/**
+	 * Deletes the record that matches the query
+	 * 
+	 * Default implementation, may be overridden.
+	 * 
+	 * @param recordRef
+	 * @throws DBException
+	 */
+	public void delete(SingleRecordQuery query) throws DBException
+	{
+		delete(retrieveRecord(query));
+	}
+	
+	/**
+	 * Deletes all records that match the query
+	 * 
+	 * Default implementation, may be overridden.
+	 * 
+	 * @param recordsQuery
+	 * @throws DBException
+	 */
+	public void delete(RecordsQuery query) throws DBException
+	{
+		delete(retrieveRecords(query));
 	}
 	
 	/**
@@ -330,7 +354,6 @@ public abstract class RecordStore implements Store
 		}
 		catch(DBException e)
 		{
-			e.printStackTrace(System.err);
 			rollbackTransactions();
 			throw e;
 		}
@@ -357,7 +380,7 @@ public abstract class RecordStore implements Store
 	 * Meant to be overridden in cases where the database contains more deletable
 	 * record instances than those returned by {@link #retrieveAllRecords()}.
 	 * 
-	 * @return list of deletable records
+	 * @return list of deletable records, possibly empty, never null
 	 */
 	protected List<Record> retrieveAllDeletableRecords()
 	{

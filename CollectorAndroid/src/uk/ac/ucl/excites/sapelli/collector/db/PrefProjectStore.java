@@ -80,7 +80,7 @@ public class PrefProjectStore extends ProjectStore
 	{
 		// Check for project duplicates:
 		if(retrieveProject(project.getName(), project.getVariant(), project.getVersion()) != null)
-			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
+			throw new DuplicateException("There is already a project with signature \"" + project.toString(false) + "\". Either delete the existing one or change the version of the new one.");
 		// Check for id & finger print collision (very unlikely, but highly problematic):
 		Project dupe = retrieveProject(project.getID(), project.getFingerPrint());
 		if(dupe != null && !project.equals(dupe))
@@ -130,7 +130,7 @@ public class PrefProjectStore extends ProjectStore
 	{
 		updateProjectCache(); // will also call initProjectCache()
 		for(Project project : projectCache)
-			if(project.isV1xProject() && project.getID() == schemaID && project.getSchemaVersion() == schemaVersion)
+			if(project.isV1xProject() && project.getID() == schemaID && project.getV1XSchemaVersion() == schemaVersion)
 				return project;
 		return null;
 	}
@@ -333,7 +333,7 @@ public class PrefProjectStore extends ProjectStore
 		if(serialisedForeignKey != null)
 			try
 			{
-				return (RecordReference) (new RecordReference(relationship.getRelatedForm().getSchema())).parse(serialisedForeignKey);
+				return relationship.getRelatedForm().getSchema().createRecordReference(serialisedForeignKey);
 			}
 			catch(Exception e)
 			{

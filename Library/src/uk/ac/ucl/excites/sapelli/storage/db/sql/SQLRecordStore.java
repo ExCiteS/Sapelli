@@ -853,13 +853,23 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		
 		/**
 		 * @param sapValue
-		 * @param quotedIfNeeded
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
+		protected SQLType sapelliOjectToSQL(Object sapValue)
+		{
+			sapValue = sourceColumnPointer != null ? sourceColumnPointer.getColumn().convert(sapValue) : sapValue;
+			return sapValue != null ? mapping.toSQLType((SapType) sapValue) : null;
+		}
+		
+		/**
+		 * @param sapValue
+		 * @param quotedIfNeeded
+		 * @return
+		 */
 		public String sapelliObjectToLiteral(Object sapValue, boolean quotedIfNeeded)
 		{
-			return sqlToLiteral(sapValue != null ? mapping.toSQLType((SapType) sapValue) : null, quotedIfNeeded);
+			return sqlToLiteral(sapelliOjectToSQL(sapValue), quotedIfNeeded);
 		}
 		
 		/**

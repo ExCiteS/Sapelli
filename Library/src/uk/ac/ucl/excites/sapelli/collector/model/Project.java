@@ -46,8 +46,7 @@ public class Project
 	
 	static public final String DEFAULT_VERSION = "0";
 	
-	static public final int PROJECT_FINGERPRINT_SIZE = 32; // bits
-	static public final IntegerRangeMapping PROJECT_FINGERPRINT_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_FINGERPRINT_SIZE); // signed(!) 32bit integer (like Java hashCodes)
+	static public final int PROJECT_FINGERPRINT_SIZE = 32; // project fingerprints are signed 32bit integer (like Java hashCodes)
 	
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
@@ -85,8 +84,7 @@ public class Project
 	private Form startForm;
 	
 	// For backwards compatibility:
-	private boolean v1xProject = false;
-	private int schemaVersion = -1; // don't init to 0 because that is an acceptable schema version
+	private Integer v1xSchemaVersion = null; // if this remains null the project is > v1.x
 		
 	/**
 	 * @param id
@@ -115,10 +113,8 @@ public class Project
 		
 		// Project id:
 		if(id == PROJECT_ID_V1X_TEMP)
-		{	//Backwards compatibility
-			this.id = id;
-			v1xProject = true;
-		}
+			//Backwards compatibility
+			this.v1xSchemaVersion = -1; // make variable non-null to mark project as v1.x, the real schemaVersion value will be set from setV1XSchemaInfo(), which will in turn call initialise() to set the project id
 		else
 			initialise(id); // checks if it fits in field	
 		
@@ -179,7 +175,7 @@ public class Project
 	 */
 	public boolean isV1xProject()
 	{
-		return v1xProject;
+		return v1xSchemaVersion != null;
 	}
 	
 	/**
@@ -193,23 +189,21 @@ public class Project
 	 */
 	public void setV1XSchemaInfo(int schemaID, int schemaVersion)
 	{
-		if(!v1xProject)
+		if(!isV1xProject())
 			throw new IllegalStateException("Only allowed for v1.x projects (created with id=PROJECT_ID_V1X_TEMP).");
-		initialise(schemaID); // schemaID of first (and only) form is also used as projectID
+		initialise(schemaID); // schemaID of first (and only) form is used as projectID
 		if(Schema.V1X_SCHEMA_VERSION_FIELD.fits(schemaVersion))
-			this.schemaVersion = schemaVersion;
+			this.v1xSchemaVersion = schemaVersion;
 		else
 			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.V1X_SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
 	}
 	
 	/**
-	 * @return the schemaVersion
+	 * @return the v1x schemaVersion, or null when the project is not a v1x project!
 	 */
-	public int getSchemaVersion()
+	public Integer getV1XSchemaVersion()
 	{
-		if(!v1xProject)
-			throw new IllegalStateException("Only supported for v1.x projects.");
-		return schemaVersion;
+		return v1xSchemaVersion;
 	}
 
 	public String getName()
@@ -419,7 +413,7 @@ public class Project
 	
 	public String toString(boolean verbose)
 	{
-		return 	name + (variant != null ? (" " + variant) : "") + (version != DEFAULT_VERSION ? " (v" + version + ")" : "")
+		return 	name + (variant != null ? (" " + variant) : "") + " (v" + version + ")"
 				+ (verbose ? (" [id: " + id + "; fingerprint: " + fingerPrint + "]") : "");
 	}
 	
@@ -535,8 +529,7 @@ public class Project
 					this.logging == that.logging &&
 					this.forms.equals(that.forms) &&
 					(this.startForm != null ? this.startForm.equals(that.startForm) : that.startForm == null) &&
-					this.v1xProject == that.v1xProject &&
-					this.schemaVersion == that.schemaVersion;
+					this.v1xSchemaVersion == that.v1xSchemaVersion;
 		}
 		return false;
 	}
@@ -555,8 +548,7 @@ public class Project
 		hash = 31 * hash + (logging ? 0 : 1);
 		hash = 31 * hash + forms.hashCode();
 		hash = 31 * hash + (startForm == null ? 0 : startForm.hashCode());
-		hash = 31 * hash + (v1xProject ? 0 : 1);
-		hash = 31 * hash + schemaVersion;
+		hash = 31 * hash + (v1xSchemaVersion == null ? -1 : v1xSchemaVersion);
 		return hash;
 	}
 	
