@@ -75,8 +75,9 @@ public class Project
 	private String variant;
 	private String version;
 	
-	private String basePath;
 	private String projectPath;
+	private String dataPath;
+	private String logPath;
 	
 	private TransmissionSettings transmissionSettings;
 	private boolean logging;
@@ -123,26 +124,14 @@ public class Project
 		else
 			initialise(id); // checks if it fits in field	
 		
-		// Base Path:
-		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
-			basePath += File.separatorChar;
-		
-		this.basePath = basePath;
-
+		// Compose Paths:
 		// Compose the Base Project path
-		this.projectPath = basePath + PROJECTS_FOLDER;
-		if(createSubfolder)
-		{
-			this.projectPath += this.name + File.separatorChar + "v" + version + File.separatorChar + variant + File.separatorChar;
-			if(!FileHelpers.createFolder(projectPath))
-				throw new IllegalArgumentException("Could not create folder: " + projectPath);
-			// Create .nomedia file:
-			try
-			{
-				(new File(projectPath + NO_MEDIA_FILE)).createNewFile();
-			}
-			catch(IOException ignore) {}
-		}
+		this.projectPath = computeFolderPath(basePath, PROJECTS_FOLDER, version, variant, createSubfolder);
+		// Compose the Data Project path
+		this.dataPath = computeFolderPath(basePath, DATA_FOLDER, version, variant, createSubfolder);
+		// Compose the Logs Project path
+		this.logPath = computeFolderPath(basePath, LOGS_FOLDER, version, variant, createSubfolder);
+
 		// Forms list:
 		this.forms = new ArrayList<Form>();
 		// Logging:
@@ -347,6 +336,45 @@ public class Project
 		this.transmissionSettings = transmissionSettings;
 	}
 	
+	/**
+	 * Compute and return the FolderPath of the project from a base path in the format: Base Path/Type/Project Name/Project Version/Project Variant
+	 * 
+	 * @param basePath
+	 * @param type
+	 * @param version
+	 * @param variant
+	 * @param createSubfolder
+	 * @return
+	 */
+	private String computeFolderPath(String basePath, String type, String version, String variant, boolean createSubfolder)
+	{
+		// Path:
+		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
+			basePath += File.separatorChar;
+		
+		// basePath/type/name/version/variant
+		final String folderPath = basePath
+				+ type + File.separatorChar
+				+ this.name + File.separatorChar 
+				+ "v" + version + File.separatorChar 
+				+ ((variant != null) ? "variant-" + variant : "");
+		
+		// Create and test the folder
+		if(createSubfolder)
+		{
+			if(!FileHelpers.createFolder(folderPath))
+				throw new IllegalArgumentException("Could not create folder: " + folderPath);
+			// Create .nomedia file:
+			try
+			{
+				(new File(folderPath + NO_MEDIA_FILE)).createNewFile();
+			}
+			catch(IOException ignore){}
+		}
+		
+		return folderPath;
+	}
+	
 	public String getProjectFolderPath()
 	{
 		return projectPath;
@@ -364,7 +392,7 @@ public class Project
 	
 	public String getDataFolderPath()
 	{
-		return projectPath + DATA_FOLDER + File.separator;
+		return dataPath;
 	}
 	
 	/**
@@ -455,7 +483,7 @@ public class Project
 	
 	public String getLogFolderPath() throws IOException
 	{
-		return basePath + LOGS_FOLDER + File.separator;
+		return logPath;
 	}
 	
 	public File getLogFolder() throws IOException
