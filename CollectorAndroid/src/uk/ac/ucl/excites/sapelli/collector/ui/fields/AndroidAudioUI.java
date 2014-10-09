@@ -32,6 +32,7 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
@@ -46,7 +47,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	private volatile Boolean recording = false;
 
 	private static final String TAG = "AndroidAudioUI";
-	private static final int VOLUME_DISPLAY_HEIGHT_DP = 80;
+	private static final int VOLUME_DISPLAY_WIDTH_DP = 120;
 
 	private AudioRecorder audioRecorder;
 	private AudioReviewPicker audioReviewPicker;
@@ -113,8 +114,9 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	void onInitialiseCaptureMode() {
 		Log.d(TAG,"onInititaliseCaptureMode");
 		volumeDisplay = new VolumeDisplaySurfaceView(captureLayout.getContext());
-		int height = ScreenMetrics.ConvertDipToPx(captureLayout.getContext(), VOLUME_DISPLAY_HEIGHT_DP);
-		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,height);
+		int width = ScreenMetrics.ConvertDipToPx(captureLayout.getContext(), VOLUME_DISPLAY_WIDTH_DP);
+		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width,LinearLayout.LayoutParams.MATCH_PARENT);
+		params.gravity = Gravity.CENTER_HORIZONTAL;
 		captureLayout.addView(volumeDisplay, params);
 	}
 
@@ -328,7 +330,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 		private static final int COLOR_BACKGROUND = Color.BLACK;
 		private static final int COLOR_INACTIVE_LEVEL = Color.DKGRAY;
-		private static final int COLOR_ACTIVE_LEVEL = Color.BLUE;
+		private final int COLOR_ACTIVE_LEVEL = Color.rgb(0, 204, 0);
 		private static final int UPDATE_FREQUENCY_MILLISEC = 100;
 		private static final double MAX_AMPLITUDE = 20000D; // TODO might need tweaking
 		private static final int NUM_LEVELS = 50;
@@ -337,7 +339,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		private Paint paint;
 		private int amplitude;
 		private int levelsToIlluminate;
-		private float levelWidth;
+		private float levelHeight;
 
 		public VolumeDisplaySurfaceView(Context context) {
 			super(context);
@@ -355,7 +357,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 					Canvas c = holder.lockCanvas(null);
 					onDraw(c);
 					holder.unlockCanvasAndPost(c);
-					levelWidth = ((float)getWidth() / NUM_LEVELS) - LEVEL_PADDING;
+					levelHeight = ((float)getHeight() / NUM_LEVELS) - LEVEL_PADDING;
 				}
 
 				@Override
@@ -377,8 +379,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 				if (i == levelsToIlluminate)
 					paint.setColor(COLOR_INACTIVE_LEVEL);
 				
-				float left = i * (levelWidth + LEVEL_PADDING);
-				canvas.drawRect(left, 0, left + levelWidth, this.getHeight(), paint);
+				float bottom = getHeight() - i * (levelHeight + LEVEL_PADDING); // remember top-left is (0,0)
+				canvas.drawRect(0, bottom + levelHeight, getWidth(), bottom, paint);
 			}
 
 		}
