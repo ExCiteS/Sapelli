@@ -67,6 +67,10 @@
     <string name="warning">Warning</string>
     <string name="info">Info</string>
     
+    <string name="projectLoadFailure">Could not find project %1$s[id: %2$d; fingerprint: %3$d].</string>
+    <string name="shortcutRemoved">Shortcut was removed.</string>
+    <string name="noProjectSpecified">CollectorActivity started without project-specifying intent parameters, don\'t know which project to load.</string>
+    
     <string name="title_activity_export">Sapelli Collector Exporter</string>
     <string name="export">Export</string>
     <string name="exportSelection">Select records to export:</string>
