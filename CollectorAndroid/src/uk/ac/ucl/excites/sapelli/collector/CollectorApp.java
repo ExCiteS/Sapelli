@@ -24,10 +24,12 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.sql.sqlite.android.AndroidSQLiteRecordStore;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
 import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
@@ -63,11 +65,14 @@ public class CollectorApp extends Application implements StoreClient
 	
 	static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
 	
-	static private final String PROJECT_FOLDER = "Projects" + File.separator;
+	static private final String PROJECT_FOLDER = Project.PROJECTS_FOLDER + File.separator;
+	static private final String DATA_FOLDER = Project.DATA_FOLDER + File.separator;
+	static private final String LOG_FOLDER = Project.LOGS_FOLDER + File.separator;
 	static private final String TEMP_FOLDER = "Temp" + File.separator;
 	static private final String DOWNLOAD_FOLDER = "Downloads" + File.separator;
 	static private final String DUMP_FOLDER = "Dumps" + File.separator;
 	static private final String EXPORT_FOLDER = "Export" + File.separator;
+
 	
 	static private final String CRASHLYTICS_VERSION_INFO = "VERSION_INFO";
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
@@ -84,6 +89,14 @@ public class CollectorApp extends Application implements StoreClient
 	private ProjectStore projectStore = null;
 	//private TransmissionStore transmissionStore = null; 
 	private Map<Store, Set<StoreClient>> storeClients;
+
+	// Storage status
+	public static enum StorageStatus
+	{
+		UNKNOWN, STORAGE_OK, STORAGE_UNAVAILABLE, STORAGE_REMOVED
+	}
+	private StorageStatus storageStatus = StorageStatus.UNKNOWN;
+	private boolean crashReport = false;
 
 	@Override
 	public void onCreate()
@@ -108,16 +121,6 @@ public class CollectorApp extends Application implements StoreClient
 		
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();
-		
-		// Set up a CrashReporter to the Sapelli/crash Folder
-		try
-		{
-			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name)));
-		}
-		catch(Exception e)
-		{
-			Log.e(TAG, "Could not set-up DefaultUncaughtExceptionHandler", e);
-		}
 	}
 
 	@Override
@@ -147,81 +150,117 @@ public class CollectorApp extends Application implements StoreClient
 	/**
 	 * @return finds/creates the Sapelli folder on the filesystem, and returns it as a File object
 	 */
-	public File getSapelliFolder()
+	public File getSapelliFolder() throws IllegalStateException
 	{
-		if(sapelliFolder == null)
+		// Check if Sapelli folder is already accessible
+		if(isMountedReadbaleWritableDir(sapelliFolder))
+			return sapelliFolder;
+		else
+			sapelliFolder = null;
+
+		// Try to retrieve the Sapelli path from Preferences:
+		CollectorPreferences pref = new CollectorPreferences(getApplicationContext());
+		try
+		{
+			sapelliFolder = new File(pref.getSapelliFolder());
+		}
+		catch(Exception e)
+		{
+			Debug.e(e);
+		}
+
+		// Check if path is available:
+		// Preferences is set
+		if(sapelliFolder != null)
+		{
+			if(isMountedReadbaleWritableDir(sapelliFolder))
+			{
+				storageStatus = StorageStatus.STORAGE_OK;
+				// Set up a CrashReporter to the Sapelli/crash Folder
+				setCrashReport();
+			}
+			else
+			{
+				storageStatus = StorageStatus.STORAGE_REMOVED;
+				throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
+			}
+		}
+		// Preferences is not set, first installation or reset
+		else
 		{
 			// Using application-specific folder (will be removed upon app uninstall!):
 			File[] paths = ContextCompat.getExternalFilesDirs(this, null);
-			if(paths != null)
+			if(paths != null && paths.length != 0)
 			{
 				// We count backwards because we prefer secondary external storage (which is likely to be on an SD card rather unremovable memory)
 				for(int p = paths.length - 1; p >= 0; p--)
-					if(paths[p] != null && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(paths[p])))
+					if(paths[p] != null && isMountedReadbaleWritableDir(paths[p]))
 					{
 						sapelliFolder = paths[p];
 						break;
 					}
-				
-//				// HACK HACK HACK
-//				if(sapelliFolder != null)
-//				{
-//					//									Android 		/   data		/ packagename	/ files
-//					File extStorageRoot = sapelliFolder.getParentFile().getParentFile().getParentFile().getParentFile();
-//					
-//					/* Old way: Using Environment2 library to get the path of the actual SD card if there is one,
-//					 * 			if not it gets the path of the emulated SD card/internal mass storage */
-//					//if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
-//					//	cardDirectory = Environment2.getCardDirectory();
-//					
-//					// Using proper API (will not always return the real SD card path):
-//					if(Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(Environment.getExternalStorageDirectory())))
-//						extStorageRoot = Environment.getExternalStorageDirectory();
-//					
-//					// Check if writable:
-//					if(!FileHelpers.isReadableWritableDirectory(extStorageRoot))
-//						throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
-//					
-//					// Make Sapelli folder:
-//					sapelliFolder = new File(extStorageRoot.getAbsolutePath() + File.separator + SAPELLI_FOLDER);
-//					if(!sapelliFolder.exists())
-//					{
-//						if(!sapelliFolder.mkdirs())
-//							throw new IllegalStateException("Cannot create Sapelli folder");
-//					}
-//				}
-				
 			}
-			// Fall-back: try to get write access to external storage (preferably SD card) root and create Sapelli folder if it doesn't exist yet:
-			if(sapelliFolder == null)
+
+			// Store the path to the Preferences:
+			if(sapelliFolder != null)
 			{
-				File extStorageRoot = null;
-				
-				/* Old way: Using Environment2 library to get the path of the actual SD card if there is one,
-				 * 			if not it gets the path of the emulated SD card/internal mass storage */
-				//if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
-				//	cardDirectory = Environment2.getCardDirectory();
-				
-				// Using proper API (will not always return the real SD card path):
-				if(Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(Environment.getExternalStorageDirectory())))
-					extStorageRoot = Environment.getExternalStorageDirectory();
-				
-				// Check if writable:
-				if(!FileHelpers.isReadableWritableDirectory(extStorageRoot))
-					throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
-				
-				// Make Sapelli folder:
-				sapelliFolder = new File(extStorageRoot.getAbsolutePath() + File.separator + SAPELLI_FOLDER);
-				if(!sapelliFolder.exists())
-				{
-					if(!sapelliFolder.mkdirs())
-						throw new IllegalStateException("Cannot create Sapelli folder");
-				}
+				pref.setSapelliFolder(sapelliFolder.getAbsolutePath());
+				storageStatus = StorageStatus.STORAGE_OK;
+				// Set up a CrashReporter to the Sapelli/crash Folder
+				setCrashReport();
+			}
+			else
+			{
+				storageStatus = StorageStatus.STORAGE_UNAVAILABLE;
+				throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
 			}
 		}
-		
+
+		// TODO Remove debug code:
+		pref.printAll();
+
 		// Return folder:
 		return sapelliFolder;
+	}
+
+	public String getSapelliFolderPath()
+	{
+		return getSapelliFolder().getAbsolutePath();
+	}
+
+	/**
+	 * @return the storageStatus
+	 */
+	public StorageStatus getStorageStatus()
+	{
+		return storageStatus;
+	}
+
+	/**
+	 * Check if a directory is on a mounted storage and writable/readable
+	 * 
+	 * @param dir
+	 * @return
+	 */
+	private boolean isMountedReadbaleWritableDir(File dir)
+	{
+		return (dir != null) && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) && FileHelpers.isReadableWritableDirectory(dir);
+	}
+
+	private void setCrashReport()
+	{
+		if(!crashReport)
+		{
+			try
+			{
+				Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name)));
+				crashReport = true;
+			}
+			catch(Exception e)
+			{
+				Log.e(TAG, "Could not set-up DefaultUncaughtExceptionHandler", e);
+			}
+		}
 	}
 
 	public String getDownloadFolderPath()
@@ -247,6 +286,16 @@ public class CollectorApp extends Application implements StoreClient
 	public String getExportFolderPath()
 	{
 		return getSapelliFolder().getAbsolutePath() + File.separator + EXPORT_FOLDER;
+	}
+
+	public String getDataFolderPath()
+	{
+		return getSapelliFolder().getAbsolutePath() + File.separator + DATA_FOLDER;
+	}
+
+	public String getLogFolderPath()
+	{
+		return getSapelliFolder().getAbsolutePath() + File.separator + LOG_FOLDER;
 	}
 
 	@Override
@@ -357,5 +406,4 @@ public class CollectorApp extends Application implements StoreClient
 			discardStoreUsage(store, this);
 		}
 	}
-
 }

@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -49,6 +50,53 @@ public abstract class BaseActivity extends Activity
 		this.app = (CollectorApp) getApplication();
 	}
 	
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
+
+		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
+		try
+		{
+			app.getSapelliFolder(); // throws IllegalStateException if not accessible or not create-able
+		}
+		catch(IllegalStateException ise)
+		{
+			switch(app.getStorageStatus())
+			{
+
+			case STORAGE_REMOVED:
+				// Inform the user and close the application
+				final Runnable useAlternativeStorage = new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						// Clear the settings and restart
+						CollectorPreferences pref = new CollectorPreferences(BaseActivity.this);
+						pref.clearSapelliFolder();
+					}
+				};
+				showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.string.useAlternativeStorage, true, useAlternativeStorage, R.string.insertSDcard, true);
+
+				break;
+
+			case STORAGE_UNAVAILABLE:
+			case UNKNOWN:
+				// Inform the user and close the application
+				showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
+				break;
+
+			case STORAGE_OK:
+			default:
+				// Do nothing, this should not happen
+				break;
+			}
+
+			return;
+		}
+	}
+
 	public void showOKDialog(int titleId, int messageId)
 	{
 		showDialog(getString(titleId), getString(messageId), android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);

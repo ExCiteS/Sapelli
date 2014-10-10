@@ -25,9 +25,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -51,13 +49,15 @@ public class Project
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
 	
+	// Projects folder:
+	static public final String PROJECTS_FOLDER = "Projects";
+	static public final String DATA_FOLDER = "Data";
+	static public final String LOGS_FOLDER = "Logs";
+
 	// Subfolders:
 	static public final String IMAGE_FOLDER = "img";
 	static public final String SOUND_FOLDER = "snd";
-	static public final String DATA_FOLDER = "data";
 	static public final String TEMP_FOLDER = "temp";
-	static public final String LOG_FOLDER = "logs"; //subfolder of data/
-	static public final String DOCS_FOLDER = "docs";
 	
 	static public final String NO_MEDIA_FILE = ".nomedia"; //Info: http://www.makeuseof.com/tag/hide-private-picture-folders-gallery-android
 	
@@ -67,6 +67,45 @@ public class Project
 	
 	static public final int MAX_RECORD_PRODUCING_FORMS = Math.min(MAX_FORMS, Model.MAX_SCHEMATA - 1 /* subtract 1 for the heartbeatSchema */);
 	
+	/**
+	 * Compute and return the FolderPath of the project from a base path in the format: Base Path/Type/Project Name/Project Version/Project Variant
+	 * 
+	 * @param basePath
+	 * @param type
+	 * @param name
+	 * @param variant
+	 * @param version
+	 * @param createSubfolder
+	 * @return
+	 */
+	public static String ComputeFolderPath(String basePath, String type, String name, String variant, String version, boolean createSubfolder)
+	{
+		// Path:
+		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
+			basePath += File.separatorChar;
+
+		// basePath/type/name/version/variant
+		final String folderPath = basePath + type + File.separatorChar + name + ((variant != null) ? " " + variant : "") + File.separatorChar + "v" + version
+				+ File.separatorChar;
+
+		// Create and test the folder
+		if(createSubfolder)
+		{
+			if(!FileHelpers.createFolder(folderPath))
+				throw new IllegalArgumentException("Could not create folder: " + folderPath);
+			// Create .nomedia file:
+			try
+			{
+				(new File(folderPath + NO_MEDIA_FILE)).createNewFile();
+			}
+			catch(IOException ignore)
+			{
+			}
+		}
+
+		return folderPath;
+	}
+
 	//DYNAMICS------------------------------------------------------------
 	private int id = Integer.MIN_VALUE; // don't init to 0 because that is an acceptable project id, nor -1 because that is used as temporary indication of a v1x project
 	private final int fingerPrint;
@@ -75,7 +114,9 @@ public class Project
 	private String version;
 	
 	private String projectPath;
-	
+	private String dataPath;
+	private String logPath;
+
 	private TransmissionSettings transmissionSettings;
 	private boolean logging;
 	private Schema heartbeatSchema;
@@ -92,7 +133,7 @@ public class Project
 	 * @param variant
 	 * @param version
 	 * @param fingerPrint - hash code computed against XML (ignoring comments and whitespace; see XMLHasher) 
-	 * @param basePath
+	 * @param basePath - The Sapelli base path
 	 * @param createSubfolder
 	 */
 	public Project(int id, String name, String variant, String version, int fingerPrint, String basePath, boolean createSubfolder)
@@ -118,22 +159,14 @@ public class Project
 		else
 			initialise(id); // checks if it fits in field	
 		
-		// Path:
-		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
-			basePath += File.separatorChar;
-		this.projectPath = basePath;
-		if(createSubfolder)
-		{
-			this.projectPath += this.name + File.separatorChar + "v" + version + File.separatorChar; // TODO include variant
-			if(!FileHelpers.createFolder(projectPath))
-				throw new IllegalArgumentException("Could not create folder: " + projectPath);
-			// Create .nomedia file:
-			try
-			{
-				(new File(projectPath + NO_MEDIA_FILE)).createNewFile();
-			}
-			catch(IOException ignore) {}
-		}
+		// Compose Paths:
+		// Compose the Base Project path
+		this.projectPath = ComputeFolderPath(basePath, PROJECTS_FOLDER, name, variant, version, createSubfolder);
+		// Compose the Data Project path
+		this.dataPath = ComputeFolderPath(basePath, DATA_FOLDER, name, variant, version, createSubfolder);
+		// Compose the Logs Project path
+		this.logPath = ComputeFolderPath(basePath, LOGS_FOLDER, name, variant, version, createSubfolder);
+
 		// Forms list:
 		this.forms = new ArrayList<Form>();
 		// Logging:
@@ -353,7 +386,7 @@ public class Project
 	
 	public String getDataFolderPath()
 	{
-		return projectPath + DATA_FOLDER + File.separator;
+		return dataPath;
 	}
 	
 	/**
@@ -444,28 +477,12 @@ public class Project
 	
 	public String getLogFolderPath() throws IOException
 	{
-		return getDataFolder().getAbsolutePath() + File.separator + LOG_FOLDER + File.separator;
+		return logPath;
 	}
 	
 	public File getLogFolder() throws IOException
 	{
 		File folder = new File(getLogFolderPath());
-		checkFolder(folder);
-		return folder;
-	}
-	
-	public String getDocsFolderPath()
-	{
-		return projectPath + DOCS_FOLDER + File.separator;
-	}
-	
-	/**
-	 * @return File object pointing to the docs folder for this project
-	 * @throws IOException - when the folder cannot be created or is not writable
-	 */
-	public File getDocsFolder() throws IOException
-	{
-		File folder = new File(getDocsFolderPath());
 		checkFolder(folder);
 		return folder;
 	}
@@ -481,29 +498,6 @@ public class Project
 				if(!file.isFile() || !file.exists() || !file.canRead())
 					invalidFiles.add(file.getAbsolutePath().substring(projectPath.length()));
 		return invalidFiles;
-	}
-	
-	/**
-	 * For now this only generates CSV files that document the indexed values for ChoiceFields
-	 * 
-	 * @throws IOException
-	 */
-	public void generateDocumentation() throws IOException
-	{
-		File docsFolder = getDocsFolder();
-		for(Form form : forms)
-		{
-			for(Field field : form.getFields())
-			{
-				if(!field.isNoColumn() && field instanceof ChoiceField)
-				{					
-					FileWriter writer = new FileWriter(docsFolder.getAbsolutePath() + File.separator + form.getName() + "_" + field.getID() + ".csv");
-					writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
-					writer.write(((ChoiceField) field).getDictionary().toCSV(";"));
-					writer.close();
-				}
-			}
-		}
 	}
 	
 	public boolean equalSignature(Project other)

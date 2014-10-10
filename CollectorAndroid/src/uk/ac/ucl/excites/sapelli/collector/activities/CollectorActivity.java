@@ -107,17 +107,6 @@ public class CollectorActivity extends ProjectActivity
 		if(savedInstanceState != null && savedInstanceState.containsKey(TEMP_PHOTO_PATH_KEY))
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
 		
-		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
-		try
-		{
-			app.getSapelliFolder(); //throws IllegalStateException if not accessible or not create-able
-		}
-		catch(IllegalStateException ise)
-		{	// Inform the user and close the application
-			showErrorDialog("Sapelli needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
-			return;
-		}
-		
 		// Scheduling...
 		scheduleTaskExecutor = Executors.newScheduledThreadPool(4); // Creates a thread pool that can schedule commands to run after a given duration, or to execute periodically.
 		fixedTimerTriggerFutures = new HashMap<Trigger, ScheduledFuture<?>>();
