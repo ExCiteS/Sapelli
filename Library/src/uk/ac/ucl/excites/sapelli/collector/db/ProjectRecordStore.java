@@ -6,7 +6,9 @@ package uk.ac.ucl.excites.sapelli.collector.db;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -34,8 +36,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 
 /**
- * 
- * TODO caching!!
+ * A RecordStore based implementation of ProjectStore
  * 
  * @author mstevens
  */
@@ -49,7 +50,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	static public final Schema PROJECT_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "Project");
 	//		Columns:
 	static private final IntegerColumn PROJECT_ID_COLUMN = new IntegerColumn("id", false, Project.PROJECT_ID_FIELD);
-	static private final IntegerColumn PROJECT_FINGERPRINT_COLUMN = new IntegerColumn("fingerprint", false, true, Project.PROJECT_FINGERPRINT_SIZE);
+	static private final IntegerColumn PROJECT_FINGERPRINT_COLUMN = new IntegerColumn("fingerPrint", false, true, Project.PROJECT_FINGERPRINT_SIZE);
 	static private final StringColumn PROJECT_NAME_COLUMN = StringColumn.ForCharacterCount("name", false, 128);
 	/*			Note on variant column:
 	 * 				Even though project#variant can be null we make the column non-optional (and will store nulls as ""),
@@ -98,6 +99,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 			
 	// DYNAMICS--------------------------------------------
 	private final RecordStore recordStore;
+	private final Map<Long, Project> cache;
 	
 	/**
 	 * 
@@ -105,6 +107,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	public ProjectRecordStore(RecordStore recordStore)
 	{
 		this.recordStore = recordStore;
+		this.cache = new HashMap<Long, Project>();
 	}
 	
 	private Record getProjectRecord(Project project)
@@ -130,20 +133,42 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 		if(projRec == null)
 			return null;
 		
-		// TODO get project from cache or parse it
+		Project project = null;
 		
-//		File xmlFile = new File(folderPath.toString() + ProjectLoader.PROJECT_FILE);
-//		// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
-//		ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
-//		try
-//		{
-//			return parser.parseProject(xmlFile);
-//		}
-//		catch(Exception e)
-//		{
-//			e.printStackTrace();
-//		}
-		return null;
+		// Check cache first:
+		project = cache.get(getCacheKey(PROJECT_ID_COLUMN.retrieveValue(projRec).intValue(), PROJECT_FINGERPRINT_COLUMN.retrieveValue(projRec).intValue()));
+		
+		// Parse project if we didn't get it from the cache: 
+		if(project == null)
+		{
+		
+		// TODO get project from cache or parse it
+	//		File xmlFile = new File(folderPath.toString() + ProjectLoader.PROJECT_FILE);
+	//		// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
+	//		ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
+	//		try
+	//		{
+	//			return parser.parseProject(xmlFile);
+	//		}
+	//		catch(Exception e)
+	//		{
+	//			e.printStackTrace();
+	//		}
+			
+			// Add to cache:
+			cacheProject(project);
+		}
+		return project;
+	}
+	
+	private void cacheProject(Project project)
+	{
+		cache.put(getCacheKey(project.getID(), project.getFingerPrint()), project);
+	}
+	
+	private long getCacheKey(int projectID, int projectFingerPrint)
+	{
+		return (long) projectID << 32 | projectFingerPrint & 0xFFFFFFFFL;
 	}
 	
 	private List<Project> getProjects(List<Record> projRecs)
@@ -165,6 +190,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 		try
 		{
 			recordStore.store(getProjectRecord(project));
+			cacheProject(project);
 		}
 		catch(DBConstraintException dbCE)
 		{
@@ -237,6 +263,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 		try
 		{
 			recordStore.delete(getProjectRecordReference(project));
+			cache.remove(getCacheKey(project.getID(), project.getFingerPrint()));
 		}
 		catch(DBException e)
 		{
