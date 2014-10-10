@@ -43,7 +43,6 @@ import android.os.Environment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.os.EnvironmentCompat;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 
@@ -162,24 +161,18 @@ public class CollectorApp extends Application implements StoreClient
 		}
 
 		// Check if path is available:
-		if(!FileHelpers.isReadableWritableDirectory(sapelliFolder))
+		if(sapelliFolder != null && !isMountedReadbaleWritableDir(sapelliFolder))
 			throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
-
-		if(true)
-		{
-			Toast.makeText(getApplicationContext(), "skata", Toast.LENGTH_LONG).show();
-			throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
-		}
 
 		if(sapelliFolder == null)
 		{
 			// Using application-specific folder (will be removed upon app uninstall!):
 			File[] paths = ContextCompat.getExternalFilesDirs(this, null);
-			if(paths != null)
+			if(paths != null && paths.length != 0)
 			{
 				// We count backwards because we prefer secondary external storage (which is likely to be on an SD card rather unremovable memory)
 				for(int p = paths.length - 1; p >= 0; p--)
-					if(paths[p] !=null && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(paths[p])))
+					if(paths[p] != null && isMountedReadbaleWritableDir(paths[p]))
 					{
 						sapelliFolder = paths[p];
 						break;
@@ -204,6 +197,17 @@ public class CollectorApp extends Application implements StoreClient
 	public String getSapelliFolderPath()
 	{
 		return getSapelliFolder().getAbsolutePath();
+	}
+
+	/**
+	 * Check if a directory is on a mounted storage and writable/readable
+	 * 
+	 * @param dir
+	 * @return
+	 */
+	private boolean isMountedReadbaleWritableDir(File dir)
+	{
+		return (dir != null) ? Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) && FileHelpers.isReadableWritableDirectory(dir) : false;
 	}
 
 	public String getDownloadFolderPath()
