@@ -88,6 +88,13 @@ public class CollectorApp extends Application implements StoreClient
 	//private TransmissionStore transmissionStore = null; 
 	private Map<Store, Set<StoreClient>> storeClients;
 
+	// Storage status
+	public static enum StorageStatus
+	{
+		UNKNOWN, STORAGE_OK, STORAGE_UNAVAILABLE, STORAGE_REMOVED
+	}
+	private StorageStatus storageStatus = StorageStatus.UNKNOWN;
+
 	@Override
 	public void onCreate()
 	{
@@ -162,7 +169,10 @@ public class CollectorApp extends Application implements StoreClient
 
 		// Check if path is available:
 		if(sapelliFolder != null && !isMountedReadbaleWritableDir(sapelliFolder))
+		{
+			storageStatus = StorageStatus.STORAGE_REMOVED;
 			throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
+		}
 
 		if(sapelliFolder == null)
 		{
@@ -181,14 +191,19 @@ public class CollectorApp extends Application implements StoreClient
 				// Store the path to the Preferences:
 				pref.setSapelliFolder(sapelliFolder.getAbsolutePath());
 			}
+			
+			// Check if new path is available:
+			if(sapelliFolder != null && !isMountedReadbaleWritableDir(sapelliFolder))
+			{
+				storageStatus = StorageStatus.STORAGE_UNAVAILABLE;
+				throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
+			}
 		}
 
 		// TODO Remove debug code:
 		pref.printAll();
 
-		// Check if path is available:
-		if(!FileHelpers.isReadableWritableDirectory(sapelliFolder))
-			throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
+		storageStatus = StorageStatus.STORAGE_OK;
 
 		// Return folder:
 		return sapelliFolder;
@@ -197,6 +212,14 @@ public class CollectorApp extends Application implements StoreClient
 	public String getSapelliFolderPath()
 	{
 		return getSapelliFolder().getAbsolutePath();
+	}
+
+	/**
+	 * @return the storageStatus
+	 */
+	public StorageStatus getStorageStatus()
+	{
+		return storageStatus;
 	}
 
 	/**
@@ -348,5 +371,4 @@ public class CollectorApp extends Application implements StoreClient
 			discardStoreUsage(store, this);
 		}
 	}
-
 }
