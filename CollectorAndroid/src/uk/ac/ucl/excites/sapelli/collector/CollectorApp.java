@@ -168,13 +168,19 @@ public class CollectorApp extends Application implements StoreClient
 		}
 
 		// Check if path is available:
-		if(sapelliFolder != null && !isMountedReadbaleWritableDir(sapelliFolder))
+		// Preferences is set
+		if(sapelliFolder != null)
 		{
-			storageStatus = StorageStatus.STORAGE_REMOVED;
-			throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
+			if(isMountedReadbaleWritableDir(sapelliFolder))
+				storageStatus = StorageStatus.STORAGE_OK;
+			else
+			{
+				storageStatus = StorageStatus.STORAGE_REMOVED;
+				throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
+			}
 		}
-
-		if(sapelliFolder == null)
+		// Preferences is not set, first installation or reset
+		else
 		{
 			// Using application-specific folder (will be removed upon app uninstall!):
 			File[] paths = ContextCompat.getExternalFilesDirs(this, null);
@@ -187,13 +193,15 @@ public class CollectorApp extends Application implements StoreClient
 						sapelliFolder = paths[p];
 						break;
 					}
-				
-				// Store the path to the Preferences:
-				pref.setSapelliFolder(sapelliFolder.getAbsolutePath());
 			}
-			
-			// Check if new path is available:
-			if(sapelliFolder != null && !isMountedReadbaleWritableDir(sapelliFolder))
+
+			// Store the path to the Preferences:
+			if(sapelliFolder != null)
+			{
+				pref.setSapelliFolder(sapelliFolder.getAbsolutePath());
+				storageStatus = StorageStatus.STORAGE_OK;
+			}
+			else
 			{
 				storageStatus = StorageStatus.STORAGE_UNAVAILABLE;
 				throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
@@ -202,8 +210,6 @@ public class CollectorApp extends Application implements StoreClient
 
 		// TODO Remove debug code:
 		pref.printAll();
-
-		storageStatus = StorageStatus.STORAGE_OK;
 
 		// Return folder:
 		return sapelliFolder;
