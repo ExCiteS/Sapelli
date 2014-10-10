@@ -236,7 +236,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	{
 		try
 		{
-			recordStore.delete(getProjectRecordReference(project).getRecordQuery());
+			recordStore.delete(getProjectRecordReference(project));
 		}
 		catch(DBException e)
 		{
@@ -307,7 +307,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	{
 		try
 		{
-			recordStore.delete(getHFKRecordReference(relationship).getRecordQuery());
+			recordStore.delete(getHFKRecordReference(relationship));
 		}
 		catch(DBException e)
 		{

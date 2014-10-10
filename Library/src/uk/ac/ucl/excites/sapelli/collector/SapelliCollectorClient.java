@@ -29,6 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
@@ -183,6 +184,13 @@ public class SapelliCollectorClient extends TransmissionClient
 	{
 		// TODO Auto-generated method stub
 
+	}
+	
+	@Override
+	public void recordDeleted(RecordReference record)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 	/* (non-Javadoc)

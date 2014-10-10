@@ -126,6 +126,15 @@ public class RecordReference extends Record
 		this.referencedSchema = another.referencedSchema;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getReference()
+	 */
+	@Override
+	public RecordReference getReference() throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Cannot create a RecordReference to a RecordReference");
+	}
+	
 	/**
 	 * @return the referencedSchema
 	 */

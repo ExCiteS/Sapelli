@@ -344,6 +344,55 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			table.delete(record);
 	}
 	
+	/**
+	 * Deletes the record pointed to by the given reference.
+	 * Overridden for increased performance.
+	 * 
+	 * @param recordRef
+	 * @throws DBException
+	 */
+	@Override
+	public void delete(RecordReference recordRef) throws DBException
+	{
+		STable table = getTable(recordRef.getReferencedSchema(), false); // no need to create the table in the db if it isn't there!
+		if(table.isInDB())
+		{
+			table.delete(recordRef);
+			client.recordDeleted(recordRef); // inform client
+		}
+	}
+	
+	/**
+	 * Deletes all records that match the query.
+	 * Overridden for increased performance.
+	 * 
+	 * @param recordsQuery
+	 * @throws DBException
+	 */
+	@Override
+	public void delete(RecordsQuery query) throws DBException
+	{
+
+		super.delete(query);
+//		
+//		for(Schema s : getSchemata(query.getSource()))
+//		{
+//			try
+//			{
+//				STable table = getTable(s, false);
+//				if(table.isInDB())
+//				{
+//					// TODO ! (and don't forget to inform client)
+//					
+//				}
+//			}
+//			catch(DBException dbE)
+//			{
+//				
+//			}
+//		}
+	}
+	
 	protected Collection<Schema> getSchemata(Source source)
 	{
 		return	(source.isAny() ?

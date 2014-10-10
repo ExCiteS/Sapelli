@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
@@ -312,16 +313,16 @@ public abstract class RecordStore implements Store
 	}
 	
 	/**
-	 * Deletes the record that matches the query
+	 * Deletes the record pointed to by the given reference.
 	 * 
 	 * Default implementation, may be overridden.
 	 * 
 	 * @param recordRef
 	 * @throws DBException
 	 */
-	public void delete(SingleRecordQuery query) throws DBException
+	public void delete(RecordReference recordRef) throws DBException
 	{
-		delete(retrieveRecord(query));
+		delete(recordRef.getRecordQuery().getRecordsQuery());
 	}
 	
 	/**
