@@ -132,17 +132,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		super.onCreate(savedInstanceState);
 		
-		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
-		try
-		{
-			app.getSapelliFolder(); //throws IllegalStateException if not accessible or not create-able
-		}
-		catch(IllegalStateException ise)
-		{	// Inform the user and close the application
-			showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
-			return;
-		}
-		
 		if(app.getBuildInfo().isDemoBuild())
 			return;
 		//else ...
