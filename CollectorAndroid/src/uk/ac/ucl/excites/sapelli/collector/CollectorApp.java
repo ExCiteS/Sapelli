@@ -94,6 +94,7 @@ public class CollectorApp extends Application implements StoreClient
 		UNKNOWN, STORAGE_OK, STORAGE_UNAVAILABLE, STORAGE_REMOVED
 	}
 	private StorageStatus storageStatus = StorageStatus.UNKNOWN;
+	private boolean crashReport = false;
 
 	@Override
 	public void onCreate()
@@ -115,16 +116,6 @@ public class CollectorApp extends Application implements StoreClient
 	
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();
-		
-		// Set up a CrashReporter to the Sapelli/crash Folder
-		try
-		{
-			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name)));
-		}
-		catch(Exception e)
-		{
-			Log.e(TAG, "Could not set-up DefaultUncaughtExceptionHandler", e);
-		}
 	}
 
 	@Override
@@ -156,6 +147,9 @@ public class CollectorApp extends Application implements StoreClient
 	 */
 	public File getSapelliFolder() throws IllegalStateException
 	{
+		if(isMountedReadbaleWritableDir(sapelliFolder))
+			return sapelliFolder;
+
 		// Try to retrieve the Sapelli path from Preferences:
 		CollectorPreferences pref = new CollectorPreferences(getApplicationContext());
 		try
@@ -172,7 +166,11 @@ public class CollectorApp extends Application implements StoreClient
 		if(sapelliFolder != null)
 		{
 			if(isMountedReadbaleWritableDir(sapelliFolder))
+			{
 				storageStatus = StorageStatus.STORAGE_OK;
+				// Set up a CrashReporter to the Sapelli/crash Folder
+				setCrashReport();
+			}
 			else
 			{
 				storageStatus = StorageStatus.STORAGE_REMOVED;
@@ -200,6 +198,8 @@ public class CollectorApp extends Application implements StoreClient
 			{
 				pref.setSapelliFolder(sapelliFolder.getAbsolutePath());
 				storageStatus = StorageStatus.STORAGE_OK;
+				// Set up a CrashReporter to the Sapelli/crash Folder
+				setCrashReport();
 			}
 			else
 			{
@@ -236,7 +236,23 @@ public class CollectorApp extends Application implements StoreClient
 	 */
 	private boolean isMountedReadbaleWritableDir(File dir)
 	{
-		return (dir != null) ? Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) && FileHelpers.isReadableWritableDirectory(dir) : false;
+		return (dir != null) && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) && FileHelpers.isReadableWritableDirectory(dir);
+	}
+
+	private void setCrashReport()
+	{
+		if(!crashReport)
+		{
+			try
+			{
+				Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name)));
+				crashReport = true;
+			}
+			catch(Exception e)
+			{
+				Log.e(TAG, "Could not set-up DefaultUncaughtExceptionHandler", e);
+			}
+		}
 	}
 
 	public String getDownloadFolderPath()
