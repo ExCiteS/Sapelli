@@ -22,11 +22,9 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
@@ -47,6 +45,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.app.Dialog;
@@ -192,6 +191,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		}
 	}
 	
+	@SuppressLint("InflateParams")
 	private void setDateRange(final int dtRangeIdx)
 	{
 		// Init current date time to show in dialog:
@@ -222,7 +222,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		// Create the dialog
 		AlertDialog.Builder builder = new Builder(this);
 		// Set the title:
-		builder.setTitle(getString(dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo, '…')) 
+		builder.setTitle(getString(dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo, '\u2026')) 
 		// Set UI:
 		.setView(view)
 		// Set the buttons:
