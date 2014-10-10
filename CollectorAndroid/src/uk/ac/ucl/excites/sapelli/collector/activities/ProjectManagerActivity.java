@@ -272,7 +272,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			Project p = null;
 			if(projects.isEmpty())
 			{	// Use /mnt/sdcard/Sapelli/ as the basePath:
-				ProjectLoader loader = new ProjectLoader(this, app.getSapelliFolder().getAbsolutePath(), app.getTempFolderPath());
+				ProjectLoader loader = new ProjectLoader(this, app.getSapelliFolderPath(), app.getTempFolderPath());
 				p = loader.load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
 				storeProject(p);
 			}
@@ -541,8 +541,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		try
 		{
+			// TODO
 			// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
-			ProjectParser parser = new ProjectParser(((CollectorApp) getApplication()).getSapelliFolder().getAbsolutePath(), false);
+			ProjectParser parser = new ProjectParser(app.getSapelliFolderPath(), false);
 			Project parsedProject = parser.parseProject(xmlFile);
 			// Show parser warnings if needed:
 			showParserWarnings(parser.getWarnings());
@@ -559,7 +560,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		try
 		{
-			ProjectLoader loader = new ProjectLoader(this, app.getSapelliFolder().getAbsolutePath(), app.getTempFolderPath());
+			ProjectLoader loader = new ProjectLoader(this, app.getSapelliFolderPath(), app.getTempFolderPath());
 			Project loadedProject = loader.load(sapelliFile);
 			// Show parser warnings if needed:
 			showParserWarnings(loader.getParserWarnings());

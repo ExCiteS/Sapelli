@@ -287,10 +287,10 @@ public class PrefProjectStore extends ProjectStore
 	private Project parseProject(String folderPath)
 	{
 		File xmlFile = new File(folderPath.toString() + ProjectLoader.PROJECT_FILE);
-		// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
-		ProjectParser parser = new ProjectParser(((CollectorApp) context.getApplicationContext()).getSapelliFolder().getAbsolutePath(), false);
 		try
 		{
+			final CollectorApp app = (CollectorApp) context.getApplicationContext();
+			ProjectParser parser = new ProjectParser(app.getSapelliFolderPath(), false);
 			return parser.parseProject(xmlFile);
 		}
 		catch(Exception e)
