@@ -30,7 +30,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
-import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
@@ -40,7 +39,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.util.Debug;
@@ -137,9 +135,6 @@ public class CollectorActivity extends ProjectActivity
 		collectorView = new CollectorView(this);
 		setContentView(collectorView);
 		
-		// Load the project (mandatory):
-		loadProject(true);
-
 		// Enable HierarchyViewer in Debug versions
 		if(BuildConfig.DEBUG)
 		{
@@ -148,31 +143,78 @@ public class CollectorActivity extends ProjectActivity
 			ViewServer.get(this).setFocusedWindow(this);
 			Debug.d("Enabled ViewServer for HierarchyView");
 		}
+		
+		// (onStart()) and onResume() will be called next
 	}
-
-	/*
-	 * @see uk.ac.ucl.excites.sapelli.collector.activities.ProjectLoadingActivity#postLoadInitialisation()
-	 */
+	
 	@Override
-	protected void postLoadInitialisation()
+	protected void onNewIntent(Intent intent)
 	{
-		// Check if project path is accessible:
-		if(!FileHelpers.isReadableWritableDirectory(new File(project.getProjectFolderPath())))
-		{	// show error (activity will be exited after used clicks OK in the dialog):
-			showErrorDialog("The file storage folder of this project resides at a path that is currently inaccessible (" + project.getProjectFolderPath() + "). You may need to reinsert your SD card, or remove and reload the project.", true);
-			return;
-		}
+		super.onNewIntent(intent);
+		
+		// Change the current intent
+		setIntent(intent);
 
-		// Set-up controller:
-		controller = new CollectorController(project, collectorView, projectStore, recordStore, this);
-		collectorView.initialise(controller); // !!!
+		if(controller != null)
+			controller.cancelAndRestartForm();
 		
-		// Start project:
-		controller.startProject();
+		// onResume() will be called next
+	}
+	
+	@Override
+	protected void onResume()
+	{
+		// super:
+		super.onResume();
+
+		// Cancel exit timer if needed:
+		cancelExitFuture();
 		
-		// Show demo disclaimer if needed:
-		if(app.getBuildInfo().isDemoBuild())
-			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
+		// Deal with returning from pausing for activity result:
+		if(pausedForActivityResult)
+		{
+			pausedForActivityResult = false;
+			return; // everything else should still be in order
+		}
+		
+		// Deal with returning from timeout:
+		if(timedOut)
+		{
+			if(controller != null)
+				controller.startProject(); // restart project
+			timedOut = false;
+			return; // everything else should still be in order
+		}
+		
+		// Load project & set-up controller:
+		if(project == null || controller == null) // check both just in case
+		{
+			// Load the project specified by the intent (mandatory):
+			try
+			{
+				loadProject(true);
+			}
+			catch(Exception e)
+			{
+				showErrorDialog(e.getMessage(), true); // show error and exit activity (hence the return; below to stop onResume() from completing)
+				return;
+			}
+			// ... if we get here this.project is initialised
+	
+			// Set-up controller:
+			controller = new CollectorController(project, collectorView, projectStore, recordStore, this);
+			collectorView.initialise(controller); // !!!
+			
+			// Start project:
+			controller.startProject();
+			
+			// Show demo disclaimer if needed:
+			if(app.getBuildInfo().isDemoBuild())
+				showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
+			
+			// Enable audio feedback
+			controller.enableAudioFeedback();
+		}
 	}
 
 	/**
@@ -419,7 +461,8 @@ public class CollectorActivity extends ProjectActivity
 				public void run()
 				{ // time's up!
 					collectorView.cancelCurrentField();
-					controller.cancelAndStop();
+					if(controller != null)
+						controller.cancelAndStop();
 					timedOut = true;
 					Log.i(TAG, "Time-out reached");
 				}
@@ -430,7 +473,8 @@ public class CollectorActivity extends ProjectActivity
 		}
 
 		// Release audio feedback resources
-		controller.disableAudioFeedback();
+		if(controller != null)
+			controller.disableAudioFeedback();
 
 		// super:
 		super.onPause();
@@ -443,45 +487,6 @@ public class CollectorActivity extends ProjectActivity
 			exitFuture.cancel(true);
 			exitFuture = null;
 		}
-	}
-
-	@Override
-	protected void onResume()
-	{
-		// super:
-		super.onResume();
-
-		if(pausedForActivityResult)
-			pausedForActivityResult = false;
-		else
-		{
-			// restart project if needed:
-			if(timedOut)
-			{ 
-				// restart project:
-				controller.startProject();
-				timedOut = false;
-			}
-			else
-				cancelExitFuture(); // cancel exit timer if needed
-		}
-		
-		// Enable audio feedback
-		controller.enableAudioFeedback();
-	}
-
-	@Override
-	protected void onNewIntent(Intent intent)
-	{
-		super.onNewIntent(intent);
-		// Change the current intent
-		setIntent(intent);
-		
-		if(controller != null)
-			controller.cancelAndRestartForm();
-
-		// Load the project (mandatory):
-		loadProject(true);
 	}
 
 	@Override
