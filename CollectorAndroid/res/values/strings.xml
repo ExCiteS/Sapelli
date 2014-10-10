@@ -54,9 +54,9 @@
     <string name="no">No</string>
     
     <string name="needsStorageAccess">needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.</string>
-    <string name="unavailableStorageAccess">The external/mass storage has been removed. Either insert back the SD card and restart the application or try to use another storage option.</string>
+    <string name="unavailableStorageAccess">The external/mass storage has been removed. Either try to use another storage option or insert back the SD card and restart the application.</string>
     <string name="insertSDcard">Insert SD card...</string>
-    <string name="useAlternativeStorage">Use other...</string>
+    <string name="useAlternativeStorage">Use another...</string>
     <string name="projectStorageAccessFail">Could not access project storage, due to: %s.</string>
     <string name="enableLocationProvider">Please enable location provider (%s) in device  settings.</string>
     <string name="noDeviceID">Failed to generate a unique identifier for your device.</string>

@@ -67,7 +67,7 @@ public abstract class BaseActivity extends Activity
 
 			case STORAGE_REMOVED:
 				// Inform the user and close the application
-				final Runnable useAnotherStorage = new Runnable()
+				final Runnable useAlternativeStorage = new Runnable()
 				{
 					@Override
 					public void run()
@@ -77,7 +77,7 @@ public abstract class BaseActivity extends Activity
 						pref.clearSapelliFolder();
 					}
 				};
-				showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.string.insertSDcard, true, useAnotherStorage, R.string.useAlternativeStorage, true);
+				showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.string.useAlternativeStorage, true, useAlternativeStorage, R.string.insertSDcard, true);
 
 				break;
 
