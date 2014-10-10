@@ -64,6 +64,14 @@ public class CollectorPreferences
 		return preferences.getString(PREF_SAPELLI_FOLDER, null);
 	}
 
+	/**
+	 * Clear the Sapelli Folder path from the preferences
+	 */
+	public void clearSapelliFolder()
+	{
+		preferences.edit().remove(PREF_SAPELLI_FOLDER).commit();
+	}
+
 	public void printAll()
 	{
 		Map<String, ?> keys = preferences.getAll();
