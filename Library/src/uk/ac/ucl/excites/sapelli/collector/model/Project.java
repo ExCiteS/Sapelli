@@ -68,6 +68,45 @@ public class Project
 	
 	static public final int MAX_RECORD_PRODUCING_FORMS = Math.min(MAX_FORMS, Model.MAX_SCHEMATA - 1 /* subtract 1 for the heartbeatSchema */);
 	
+	/**
+	 * Compute and return the FolderPath of the project from a base path in the format: Base Path/Type/Project Name/Project Version/Project Variant
+	 * 
+	 * @param basePath
+	 * @param type
+	 * @param name
+	 * @param variant
+	 * @param version
+	 * @param createSubfolder
+	 * @return
+	 */
+	public static String ComputeFolderPath(String basePath, String type, String name, String variant, String version, boolean createSubfolder)
+	{
+		// Path:
+		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
+			basePath += File.separatorChar;
+
+		// basePath/type/name/version/variant
+		final String folderPath = basePath + type + File.separatorChar + name + ((variant != null) ? " " + variant : "") + File.separatorChar + "v" + version
+				+ File.separatorChar;
+
+		// Create and test the folder
+		if(createSubfolder)
+		{
+			if(!FileHelpers.createFolder(folderPath))
+				throw new IllegalArgumentException("Could not create folder: " + folderPath);
+			// Create .nomedia file:
+			try
+			{
+				(new File(folderPath + NO_MEDIA_FILE)).createNewFile();
+			}
+			catch(IOException ignore)
+			{
+			}
+		}
+
+		return folderPath;
+	}
+
 	//DYNAMICS------------------------------------------------------------
 	private int id = Integer.MIN_VALUE; // don't init to 0 because that is an acceptable project id, nor -1 because that is used as temporary indication of a v1x project
 	private final int fingerPrint;
@@ -78,7 +117,7 @@ public class Project
 	private String projectPath;
 	private String dataPath;
 	private String logPath;
-	
+
 	private TransmissionSettings transmissionSettings;
 	private boolean logging;
 	private Schema heartbeatSchema;
@@ -126,11 +165,11 @@ public class Project
 		
 		// Compose Paths:
 		// Compose the Base Project path
-		this.projectPath = computeFolderPath(basePath, PROJECTS_FOLDER, version, variant, createSubfolder);
+		this.projectPath = ComputeFolderPath(basePath, PROJECTS_FOLDER, name, variant, version, createSubfolder);
 		// Compose the Data Project path
-		this.dataPath = computeFolderPath(basePath, DATA_FOLDER, version, variant, createSubfolder);
+		this.dataPath = ComputeFolderPath(basePath, DATA_FOLDER, name, variant, version, createSubfolder);
 		// Compose the Logs Project path
-		this.logPath = computeFolderPath(basePath, LOGS_FOLDER, version, variant, createSubfolder);
+		this.logPath = ComputeFolderPath(basePath, LOGS_FOLDER, name, variant, version, createSubfolder);
 
 		// Forms list:
 		this.forms = new ArrayList<Form>();
@@ -334,45 +373,6 @@ public class Project
 	public void setTransmissionSettings(TransmissionSettings transmissionSettings)
 	{
 		this.transmissionSettings = transmissionSettings;
-	}
-	
-	/**
-	 * Compute and return the FolderPath of the project from a base path in the format: Base Path/Type/Project Name/Project Version/Project Variant
-	 * 
-	 * @param basePath
-	 * @param type
-	 * @param version
-	 * @param variant
-	 * @param createSubfolder
-	 * @return
-	 */
-	private String computeFolderPath(String basePath, String type, String version, String variant, boolean createSubfolder)
-	{
-		// Path:
-		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
-			basePath += File.separatorChar;
-		
-		// basePath/type/name/version/variant
-		final String folderPath = basePath
-				+ type + File.separatorChar
-				+ this.name + File.separatorChar 
-				+ "v" + version + File.separatorChar 
-				+ ((variant != null) ? "variant-" + variant : "");
-		
-		// Create and test the folder
-		if(createSubfolder)
-		{
-			if(!FileHelpers.createFolder(folderPath))
-				throw new IllegalArgumentException("Could not create folder: " + folderPath);
-			// Create .nomedia file:
-			try
-			{
-				(new File(folderPath + NO_MEDIA_FILE)).createNewFile();
-			}
-			catch(IOException ignore){}
-		}
-		
-		return folderPath;
 	}
 	
 	public String getProjectFolderPath()
