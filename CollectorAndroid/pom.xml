@@ -1,50 +1,44 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
 	<artifactId>sapelli-collector-android</artifactId>
 	<name>Sapelli Collector for Android</name>
 	<packaging>apk</packaging>
-
-  <parent>
-    <groupId>uk.ac.ucl.excites</groupId>
-    <artifactId>sapelli</artifactId>
-    <version>2.0.0-beta-6</version>
-  </parent>
-
+	<parent>
+		<groupId>uk.ac.ucl.excites</groupId>
+		<artifactId>sapelli</artifactId>
+		<version>2.0.0-beta-7</version>
+	</parent>
 	<properties>
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
 		<!-- To be provided on command line using -D arguments, e.g.: mvn install 
 			-Prelease -Dsign.keystore=... -->
-		<sign.keystore></sign.keystore>
-		<sign.storepass></sign.storepass>
-		<sign.alias></sign.alias>
-		<sign.keypass></sign.keypass>
+		<sign.keystore />
+		<sign.storepass />
+		<sign.alias />
+		<sign.keypass />
+		<unsigned.classifier>unsigned</unsigned.classifier>
 	</properties>
-
 	<repositories>
 		<repository>
 			<id>crashlytics-repo</id>
 			<url>http://download.crashlytics.com/maven</url>
 		</repository>
 	</repositories>
-
 	<pluginRepositories>
 		<pluginRepository>
 			<id>crashlytics-plugin-repo</id>
 			<url>http://download.crashlytics.com/maven</url>
 		</pluginRepository>
 	</pluginRepositories>
-
 	<dependencies>
-
 		<dependency>
 			<groupId>android</groupId>
 			<artifactId>android</artifactId>
 			<version>4.4.2_r4</version>
 			<scope>provided</scope>
 		</dependency>
-
 		<dependency>
 			<groupId>android.support</groupId>
 			<artifactId>compatibility-v4</artifactId>
@@ -52,39 +46,30 @@
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
-
 		<!-- <dependency> <groupId>android.support</groupId> <artifactId>compatibility-v7-appcompat</artifactId> 
 			<version>20.0.0</version> <type>apklib</type> </dependency> -->
-
 		<dependency>
 			<groupId>uk.ac.ucl.excites</groupId>
 			<artifactId>sapelli-library</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>com.github.japgolly.android</groupId>
 			<artifactId>svg-android</artifactId>
 			<version>2.0.6</version>
 		</dependency>
-
 		<dependency>
 			<groupId>com.crashlytics.android</groupId>
 			<artifactId>crashlytics</artifactId>
 			<version>[1.1.11,)</version>
 		</dependency>
-
 		<!-- <dependency> <groupId>net.rdrei.android.dirchooser</groupId> <artifactId>library</artifactId> 
 			<version>1.0-pre-v11</version> <type>aar</type> </dependency> -->
-
 		<!-- <dependency> <groupId>com.dropbox</groupId> <artifactId>dropbox-android-sync-sdk</artifactId> 
 			<version>2.1.2</version> <type>apklib</type> </dependency> <dependency> <groupId>com.dropbox</groupId> 
 			<artifactId>dropbox-android-sync-sdk</artifactId> <version>2.1.2</version> 
 			<type>jar</type> </dependency> -->
-
 	</dependencies>
-
 	<profiles>
-
 		<profile>
 			<id>maven</id>
 			<activation>
@@ -106,8 +91,59 @@
 					<type>apklib</type>
 				</dependency>
 			</dependencies>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.gmaven</groupId>
+						<artifactId>gmaven-plugin</artifactId>
+						<version>1.5</version>
+						<executions>
+							<execution>
+								<id>setproperty</id>
+								<phase>validate</phase>
+								<goals>
+									<goal>execute</goal>
+								</goals>
+								<configuration>
+									<source>
+										pom.properties['project.groupId.path'] =
+										project.groupId.replace('.', File.separator);
+										pom.properties['project.repodir'] =
+										settings['localRepository'] + File.separator +
+										pom.properties['project.groupId.path'] + File.separator +
+										project.artifactId + File.separator + project.version;
+									</source>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<inherited>true</inherited>
+						<executions>
+							<execution>
+								<id>delete-useless-apks</id>
+								<phase>install</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<echo>Remove useless APKs from repo...</echo>
+										<echo> JAR renamed to APK:</echo>
+										<delete
+											file="${project.repodir}${file.separator}${project.build.finalName}-${project.version}.${project.packaging}" />
+										<echo> Unsigned APK (release nor debug):</echo>
+										<delete
+											file="${project.repodir}${file.separator}${project.build.finalName}-${project.version}-${unsigned.classifier}.${project.packaging}" />
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
-
 		<profile>
 			<id>eclipse</id>
 			<activation>
@@ -119,11 +155,30 @@
 				<!-- nothing for now -->
 			</dependencies>
 		</profile>
-
 		<profile>
 			<id>release</id>
 			<build>
 				<plugins>
+					<plugin>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<inherited>true</inherited>
+						<executions>
+							<execution>
+								<id>copy-before-signing</id>
+								<phase>package</phase>
+								<configuration>
+									<target>
+										<copy file="${project.build.directory}/${project.artifactId}.apk"
+											tofile="${project.build.directory}/${project.artifactId}-signed.apk"
+											overwrite="true" />
+									</target>
+								</configuration>
+								<goals>
+									<goal>run</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-jarsigner-plugin</artifactId>
@@ -138,15 +193,13 @@
 								<phase>package</phase>
 								<inherited>true</inherited>
 								<configuration>
+									<archive>${project.build.directory}/${project.artifactId}-signed.apk</archive>
 									<removeExistingSignatures>true</removeExistingSignatures>
-									<archiveDirectory />
-									<includes>
-										<include>${project.build.directory}/${project.artifactId}.apk</include>
-									</includes>
 									<keystore>${sign.keystore}</keystore>
 									<storepass>${sign.storepass}</storepass>
 									<alias>${sign.alias}</alias>
 									<keypass>${sign.keypass}</keypass>
+									<sigfile>CERT</sigfile>
 									<arguments>
 										<argument>-sigalg</argument>
 										<argument>MD5withRSA</argument>
@@ -158,7 +211,6 @@
 							</execution>
 						</executions>
 					</plugin>
-
 					<plugin>
 						<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 						<artifactId>android-maven-plugin</artifactId>
@@ -166,14 +218,23 @@
 						<configuration>
 							<release>true</release>
 							<sign>
+								<!-- don't sign w/ debug key, APK will be signed w/ release key  -->
 								<debug>false</debug>
 							</sign>
+							<classifier>${unsigned.classifier}</classifier>
+							<attachJar>true</attachJar>
+							<attachSources>false</attachSources>
 							<zipalign>
-								<verbose>false</verbose>
-								<inputApk>${project.build.directory}/${project.artifactId}.apk</inputApk>
-								<outputApk>${project.build.directory}/${project.artifactId}-signed-aligned.apk</outputApk>
 								<skip>false</skip>
+								<verbose>false</verbose>
+								<inputApk>${project.build.directory}/${project.artifactId}-signed.apk</inputApk>
+								<outputApk>${project.build.directory}/${project.artifactId}-signed-aligned.apk</outputApk>
+								<classifier>release</classifier>
 							</zipalign>
+							<proguard>
+								<!-- TODO -->
+								<skip>true</skip>
+							</proguard>
 						</configuration>
 						<executions>
 							<execution>
@@ -189,14 +250,10 @@
 			</build>
 		</profile>
 	</profiles>
-
 	<build>
 		<sourceDirectory>src</sourceDirectory>
-
 		<finalName>${project.artifactId}</finalName>
-
 		<plugins>
-
 			<plugin>
 				<artifactId>maven-antrun-plugin</artifactId>
 				<executions>
@@ -206,20 +263,23 @@
 						<goals>
 							<goal>run</goal>
 						</goals>
+						<configuration>
+							<target>
+								<ant antfile="${buildinfo.antfile}" />
+							</target>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-          <encoding>UTF-8</encoding>
-        </configuration>
-      </plugin>
-
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+					<encoding>UTF-8</encoding>
+				</configuration>
+			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
@@ -233,7 +293,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
 			<plugin>
 				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 				<artifactId>android-maven-plugin</artifactId>
@@ -249,6 +308,15 @@
 					<mergeManifests>true</mergeManifests>
 					<assetsDirectory>${project.basedir}/assets</assetsDirectory>
 					<resourceDirectory>${project.basedir}/res</resourceDirectory>
+					<!-- debug config (overriden in release profile -->
+					<release>false</release>
+					<classifier>debug</classifier>
+					<sign>
+						<!-- sign with debug key -->
+						<debug>true</debug>
+					</sign>
+					<attachJar>false</attachJar>
+					<attachSources>false</attachSources>
 				</configuration>
 				<extensions>true</extensions>
 				<executions>
@@ -267,7 +335,6 @@
 					</execution>
 				</executions>
 			</plugin>
-
 			<plugin>
 				<groupId>com.crashlytics</groupId>
 				<artifactId>crashlytics-maven</artifactId>
@@ -287,35 +354,9 @@
 					</execution>
 				</executions>
 			</plugin>
-
 		</plugins>
-
 		<pluginManagement>
 			<plugins>
-
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-antrun-plugin</artifactId>
-					<version>1.7</version>
-					<dependencies>
-						<dependency>
-							<groupId>org.apache.ant</groupId>
-							<artifactId>ant</artifactId>
-							<version>[1.9.4,)</version>
-						</dependency>
-						<dependency>
-							<groupId>ant-contrib</groupId>
-							<artifactId>ant-contrib</artifactId>
-							<version>1.0b3</version>
-						</dependency>
-					</dependencies>
-					<configuration>
-						<target>
-							<ant antfile="${buildinfo.antfile}" />
-						</target>
-					</configuration>
-				</plugin>
-
 				<plugin>
 					<groupId>org.eclipse.m2e</groupId>
 					<artifactId>lifecycle-mapping</artifactId>
@@ -363,7 +404,7 @@
 									</pluginExecutionFilter>
 									<action>
 										<execute>
-										    <runOnIncremental>false</runOnIncremental>
+											<runOnIncremental>false</runOnIncremental>
 										</execute>
 									</action>
 								</pluginExecution>
@@ -378,7 +419,7 @@
 									</pluginExecutionFilter>
 									<action>
 										<execute>
-										    <runOnIncremental>false</runOnIncremental>
+											<runOnIncremental>false</runOnIncremental>
 										</execute>
 									</action>
 								</pluginExecution>
@@ -388,7 +429,5 @@
 				</plugin>
 			</plugins>
 		</pluginManagement>
-
 	</build>
-
 </project>
