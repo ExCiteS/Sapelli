@@ -147,8 +147,11 @@ public class CollectorApp extends Application implements StoreClient
 	 */
 	public File getSapelliFolder() throws IllegalStateException
 	{
+		// Check if Sapelli folder is already accessible
 		if(isMountedReadbaleWritableDir(sapelliFolder))
 			return sapelliFolder;
+		else
+			sapelliFolder = null;
 
 		// Try to retrieve the Sapelli path from Preferences:
 		CollectorPreferences pref = new CollectorPreferences(getApplicationContext());
