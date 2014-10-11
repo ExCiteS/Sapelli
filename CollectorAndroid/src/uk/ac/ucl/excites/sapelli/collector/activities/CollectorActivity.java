@@ -191,7 +191,7 @@ public class CollectorActivity extends ProjectActivity
 			// ... if we get here this.project is initialised
 	
 			// Set-up controller:
-			controller = new CollectorController(project, collectorView, projectStore, recordStore, this);
+			controller = new CollectorController(project, collectorView, projectStore, recordStore, fileStorageProvider, this);
 			collectorView.initialise(controller); // !!!
 			
 			// Start project:
@@ -239,7 +239,7 @@ public class CollectorActivity extends ProjectActivity
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				if(app.getBuildInfo().isDemoBuild())
 					//TODO export
-					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".");
+					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + fileStorageProvider.getProjectDataFolder(project, false) + ".");
 			DeviceControl.safeDecreaseMediaVolume(this);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_UP:
@@ -275,7 +275,7 @@ public class CollectorActivity extends ProjectActivity
 			Log.d(TAG, "Exporting records...");
 			try
 			{
-				(new XMLRecordsExporter(project.getDataFolder())).export(recordStore.retrieveAllRecords(), "DemoRecords");
+				(new XMLRecordsExporter(fileStorageProvider.getProjectDataFolder(project, true))).export(recordStore.retrieveAllRecords(), "DemoRecords");
 				if(delete)
 					recordStore.deleteAllRecords();
 			}
@@ -340,7 +340,7 @@ public class CollectorActivity extends ProjectActivity
 			try
 			{
 				// Set up temp file (in the projects data folder)
-				tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, project.getTempFolder()); // getTempFolder() does the necessary IO checks
+				tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, fileStorageProvider.getTempFolder(true));
 				// Set-up intent:
 				Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 				takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
@@ -375,7 +375,7 @@ public class CollectorActivity extends ProjectActivity
 			{
 				try
 				{ // Rename the file & pass it to the controller
-					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewTempFile(controller.getCurrentRecord());
+					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewTempFile(fileStorageProvider, controller.getCurrentRecord());
 					tmpPhotoFile.renameTo(newPhoto);
 					photoUI.mediaDone(newPhoto, true);
 				}

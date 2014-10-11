@@ -211,7 +211,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 
 								try
 								{ // Save photo to file:
-									File photoFile = field.getNewTempFile(controller.getCurrentRecord());
+									File photoFile = field.getNewTempFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
 									FileOutputStream fos = new FileOutputStream(photoFile);
 									fos.write(reviewPhotoData);
 									fos.close();
@@ -275,12 +275,10 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 
 		private class CaptureButtonView extends CameraButtonView
 		{
-			private Context context;
 
 			public CaptureButtonView(Context context)
 			{
 				super(context);
-				this.context = context;
 			}
 
 			@Override
@@ -299,7 +297,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			{
 				// Capture button:
 				Item captureButton = null;
-				File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
+				File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getCaptureButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(captureImgFile))
 					captureButton = new FileImageItem(captureImgFile);
 				else
@@ -332,7 +330,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			{
 				// Approve button:
 				Item approveButton = null;
-				File approveImgFile = controller.getProject().getImageFile(field.getApproveButtonImageRelativePath());
+				File approveImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getApproveButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(approveImgFile))
 					approveButton = new FileImageItem(approveImgFile);
 				else
@@ -342,7 +340,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				
 				// Discard button:
 				Item discardButton = null;
-				File discardImgFile = controller.getProject().getImageFile(field.getDiscardButtonImageRelativePath());
+				File discardImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getDiscardButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(discardImgFile))
 					discardButton = new FileImageItem(discardImgFile);
 				else

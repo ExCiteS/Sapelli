@@ -40,11 +40,8 @@ import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
-import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.annotation.SuppressLint;
@@ -97,7 +94,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	// STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectManagerActivity";
 	
-	static private final String XML_FILE_EXTENSION = "xml";
+	static protected final String XML_FILE_EXTENSION = "xml";
 
 	static private final String DEMO_PROJECT = "demo.excites";
 
@@ -249,7 +246,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			Project p = null;
 			if(projects.isEmpty())
 			{	// Use /mnt/sdcard/Sapelli/ as the basePath:
-				ProjectLoader loader = new ProjectLoader(this, app.getSapelliFolderPath(), app.getTempFolderPath());
+				ProjectLoader loader = new ProjectLoader(this, fileStorageProvider);
 				p = loader.load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
 				storeProject(p);
 			}
@@ -487,7 +484,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 				return;
 			}
 			else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
-				project = parseXML(new File(path));
+			{
+				showWarningDialog(R.string.noBareXMLProjects);
+			}
 			else
 			{
 				// Extract & parse a local Sapelli file
@@ -514,30 +513,11 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			showErrorDialog("Please choose a valid XML or Sapelli file", false);
 	}
 
-	private Project parseXML(File xmlFile) throws Exception
-	{
-		try
-		{
-			// TODO
-			// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
-			ProjectParser parser = new ProjectParser(app.getSapelliFolderPath(), false);
-			Project parsedProject = parser.parseProject(xmlFile);
-			// Show parser warnings if needed:
-			showParserWarnings(parser.getWarnings());
-			return parsedProject;
-		}
-		catch(Exception e)
-		{
-			Log.e(TAG, "XML file could not be parsed", e);
-			throw e;
-		}
-	}
-
 	private Project processSapelliFile(File sapelliFile) throws Exception
 	{
 		try
 		{
-			ProjectLoader loader = new ProjectLoader(this, app.getSapelliFolderPath(), app.getTempFolderPath());
+			ProjectLoader loader = new ProjectLoader(this, fileStorageProvider);
 			Project loadedProject = loader.load(sapelliFile);
 			// Show parser warnings if needed:
 			showParserWarnings(loader.getParserWarnings());
@@ -564,9 +544,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	private void addProject(final Project project)
 	{
 		// Check file dependencies
-		List<String> invalidFiles = project.checkForInvalidFiles();
-		if(!invalidFiles.isEmpty())
-			showWarningDialog("The following files could not be found or read in the project path (" + project.getProjectFolderPath() + "): " + StringUtils.join(invalidFiles, ", "));
+		String missingFiles = project.getMissingFilesRelativePaths(fileStorageProvider, ", ");
+		if(missingFiles != null)
+			showWarningDialog("The following files could not be found or read in the project path (" + fileStorageProvider.getProjectInstallationFolder(project, false) + "): " + missingFiles);
 		
 		// Store the project object:
 		storeProject(project);
@@ -646,7 +626,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// Get the selected project
 		Project selectedProject = getSelectedProject(true);
 		if(selectedProject != null)
-			ProjectRunHelpers.createShortcut(this, selectedProject);
+			ProjectRunHelpers.createShortcut(this, fileStorageProvider, selectedProject);
 		return true;
 	}
 
@@ -804,8 +784,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			startTime = System.currentTimeMillis();
 			this.downloadUrl = downloadUrl;
 			// Download file in folder /Downloads/timestamp-filename
-			downloadFolder = new File(app.getDownloadFolderPath());
-			FileHelpers.createFolder(downloadFolder);
+			downloadFolder = fileStorageProvider.getDownloadsFolder(true);
 			downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 
 			// instantiate it within the onCreate method

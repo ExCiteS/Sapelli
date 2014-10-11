@@ -59,7 +59,7 @@ public class CollectorPreferences
 	 * 
 	 * @return
 	 */
-	public String getSapelliFolder()
+	public String getSapelliFolderPath()
 	{
 		return preferences.getString(PREF_SAPELLI_FOLDER, null);
 	}

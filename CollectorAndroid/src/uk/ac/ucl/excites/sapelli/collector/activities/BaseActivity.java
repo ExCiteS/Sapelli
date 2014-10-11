@@ -21,6 +21,9 @@ package uk.ac.ucl.excites.sapelli.collector.activities;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -42,6 +45,7 @@ public abstract class BaseActivity extends Activity
 	static private final boolean DEFAULT_FINISH_ON_DIALOG_CANCEL = false;
 	
 	protected CollectorApp app;
+	protected FileStorageProvider fileStorageProvider;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -58,42 +62,28 @@ public abstract class BaseActivity extends Activity
 		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
-			app.getSapelliFolder(); // throws IllegalStateException if not accessible or not create-able
+			fileStorageProvider = app.getFileStorageProvider();
 		}
-		catch(IllegalStateException ise)
+		catch(FileStorageRemovedException e)
 		{
-			switch(app.getStorageStatus())
+			e.printStackTrace(System.err);
+			// Inform the user and close the application
+			final Runnable useAlternativeStorage = new Runnable()
 			{
-
-			case STORAGE_REMOVED:
-				// Inform the user and close the application
-				final Runnable useAlternativeStorage = new Runnable()
+				@Override
+				public void run()
 				{
-					@Override
-					public void run()
-					{
-						// Clear the settings and restart
-						CollectorPreferences pref = new CollectorPreferences(BaseActivity.this);
-						pref.clearSapelliFolder();
-					}
-				};
-				showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.string.useAlternativeStorage, true, useAlternativeStorage, R.string.insertSDcard, true);
-
-				break;
-
-			case STORAGE_UNAVAILABLE:
-			case UNKNOWN:
-				// Inform the user and close the application
-				showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
-				break;
-
-			case STORAGE_OK:
-			default:
-				// Do nothing, this should not happen
-				break;
-			}
-
-			return;
+					// Clear the setting before restart
+					new CollectorPreferences(BaseActivity.this).clearSapelliFolder();
+				}
+			};
+			showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.string.useAlternativeStorage, true, useAlternativeStorage, R.string.insertSDcard, true);
+		}
+		catch(FileStorageUnavailableException e)
+		{
+			e.printStackTrace(System.err);
+			// Inform the user and close the application
+			showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
 		}
 	}
 

@@ -18,21 +18,15 @@
 
 package uk.ac.ucl.excites.sapelli.util;
 
-import java.io.File;
-
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
-import android.media.MediaPlayer;
-import android.media.MediaPlayer.OnCompletionListener;
-import android.net.Uri;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Vibrator;
 import android.provider.Settings;
-import android.util.Log;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -41,8 +35,11 @@ import android.util.Log;
 public final class DeviceControl
 {
 
-	private static final String TAG = "DeviceControl";
-	// Time to wait after exiting the Airplane Mode for GSM to be connected
+	protected static final String TAG = "DeviceControl";
+	
+	/**
+	 * Time to wait after exiting the Airplane Mode for GSM to be connected
+	 */
 	public static final int POST_AIRPLANE_MODE_WAITING_TIME = 30;
 
 	private DeviceControl() // class should not be instantiated
@@ -139,30 +136,6 @@ public final class DeviceControl
 	{
 		Vibrator vibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
 		vibrator.vibrate(durationMS);
-	}
-
-	public static void playSoundFile(Context context, File soundFile)
-	{
-		try
-		{
-			if(soundFile.exists()) // check if the file really exists
-			{ // Play the sound
-				MediaPlayer mp = MediaPlayer.create(context, Uri.fromFile(soundFile));
-				mp.start();
-				mp.setOnCompletionListener(new OnCompletionListener()
-				{
-					@Override
-					public void onCompletion(MediaPlayer mp)
-					{
-						mp.release();
-					}
-				});
-			}
-		}
-		catch(Exception e)
-		{
-			Log.e(TAG, "Error upon playing sound file.", e);
-		}
 	}
 
 	/**

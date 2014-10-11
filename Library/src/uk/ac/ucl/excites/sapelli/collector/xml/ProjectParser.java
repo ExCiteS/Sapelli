@@ -87,9 +87,6 @@ public class ProjectParser extends DocumentParser
 	
 
 	// DYNAMICS-------------------------------------------------------
-	private final String basePath;
-	private final boolean createProjectFolder;
-	
 	private Format format = DEFAULT_FORMAT;
 	private Integer fingerPrint;
 	private Project project;
@@ -97,11 +94,9 @@ public class ProjectParser extends DocumentParser
 	private HashMap<Relationship, String> relationshipToFormID;
 	private HashMap<Relationship, List<ConstraintDescription>> relationshipToConstraints;
 
-	public ProjectParser(String basePath, boolean createProjectFolder)
+	public ProjectParser()
 	{
 		super();
-		this.basePath = basePath;
-		this.createProjectFolder = createProjectFolder;
 		this.relationshipToFormID = new HashMap<Relationship, String>();
 		this.relationshipToConstraints = new HashMap<Relationship, List<ConstraintDescription>>();
 	}
@@ -181,9 +176,7 @@ public class ProjectParser extends DocumentParser
 										attributes.getRequiredString(TAG_PROJECT, ATTRIBUTE_PROJECT_NAME, true, false),
 										attributes.getString(ATTRIBUTE_PROJECT_VARIANT, null, true, false),
 										attributes.getString(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, true, false),
-										fingerPrint,
-										basePath,
-										createProjectFolder);
+										fingerPrint);
 				
 				// Read startForm ID:
 				startFormID = attributes.getString(ATTRIBUTE_PROJECT_START_FORM, null, true, false); 

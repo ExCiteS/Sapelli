@@ -19,14 +19,16 @@
 package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 
@@ -48,63 +50,16 @@ public class Project
 	
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
-	
-	// Projects folder:
-	static public final String PROJECTS_FOLDER = "Projects";
-	static public final String DATA_FOLDER = "Data";
-	static public final String LOGS_FOLDER = "Logs";
 
-	// Subfolders:
+	// Subfolders of project installation folder:
 	static public final String IMAGE_FOLDER = "img";
 	static public final String SOUND_FOLDER = "snd";
-	static public final String TEMP_FOLDER = "temp";
-	
-	static public final String NO_MEDIA_FILE = ".nomedia"; //Info: http://www.makeuseof.com/tag/hide-private-picture-folders-gallery-android
 	
 	static public final boolean DEFAULT_LOGGING = true;
 		
 	static public final int MAX_FORMS = 32;
 	
 	static public final int MAX_RECORD_PRODUCING_FORMS = Math.min(MAX_FORMS, Model.MAX_SCHEMATA - 1 /* subtract 1 for the heartbeatSchema */);
-	
-	/**
-	 * Compute and return the FolderPath of the project from a base path in the format: Base Path/Type/Project Name/Project Version/Project Variant
-	 * 
-	 * @param basePath
-	 * @param type
-	 * @param name
-	 * @param variant
-	 * @param version
-	 * @param createSubfolder
-	 * @return
-	 */
-	public static String ComputeFolderPath(String basePath, String type, String name, String variant, String version, boolean createSubfolder)
-	{
-		// Path:
-		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
-			basePath += File.separatorChar;
-
-		// basePath/type/name/version/variant
-		final String folderPath = basePath + type + File.separatorChar + name + ((variant != null) ? " " + variant : "") + File.separatorChar + "v" + version
-				+ File.separatorChar;
-
-		// Create and test the folder
-		if(createSubfolder)
-		{
-			if(!FileHelpers.createFolder(folderPath))
-				throw new IllegalArgumentException("Could not create folder: " + folderPath);
-			// Create .nomedia file:
-			try
-			{
-				(new File(folderPath + NO_MEDIA_FILE)).createNewFile();
-			}
-			catch(IOException ignore)
-			{
-			}
-		}
-
-		return folderPath;
-	}
 
 	//DYNAMICS------------------------------------------------------------
 	private int id = Integer.MIN_VALUE; // don't init to 0 because that is an acceptable project id, nor -1 because that is used as temporary indication of a v1x project
@@ -112,10 +67,6 @@ public class Project
 	private final String name;
 	private String variant;
 	private String version;
-	
-	private String projectPath;
-	private String dataPath;
-	private String logPath;
 
 	private TransmissionSettings transmissionSettings;
 	private boolean logging;
@@ -133,13 +84,11 @@ public class Project
 	 * @param variant
 	 * @param version
 	 * @param fingerPrint - hash code computed against XML (ignoring comments and whitespace; see XMLHasher) 
-	 * @param basePath - The Sapelli base path
-	 * @param createSubfolder
 	 */
-	public Project(int id, String name, String variant, String version, int fingerPrint, String basePath, boolean createSubfolder)
+	public Project(int id, String name, String variant, String version, int fingerPrint)
 	{
-		if(name == null || name.isEmpty() || basePath == null || basePath.isEmpty())
-			throw new IllegalArgumentException("Both a name and a valid path are required");
+		if(name == null || name.isEmpty())
+			throw new IllegalArgumentException("A valid name is required");
 		if(version == null || version.isEmpty())
 			throw new IllegalArgumentException("A valid version is required");
 		
@@ -157,16 +106,8 @@ public class Project
 			//Backwards compatibility
 			this.v1xSchemaVersion = -1; // make variable non-null to mark project as v1.x, the real schemaVersion value will be set from setV1XSchemaInfo(), which will in turn call initialise() to set the project id
 		else
-			initialise(id); // checks if it fits in field	
+			initialise(id); // checks if it fits in field
 		
-		// Compose Paths:
-		// Compose the Base Project path
-		this.projectPath = ComputeFolderPath(basePath, PROJECTS_FOLDER, name, variant, version, createSubfolder);
-		// Compose the Data Project path
-		this.dataPath = ComputeFolderPath(basePath, DATA_FOLDER, name, variant, version, createSubfolder);
-		// Compose the Logs Project path
-		this.logPath = ComputeFolderPath(basePath, LOGS_FOLDER, name, variant, version, createSubfolder);
-
 		// Forms list:
 		this.forms = new ArrayList<Form>();
 		// Logging:
@@ -369,73 +310,26 @@ public class Project
 		this.transmissionSettings = transmissionSettings;
 	}
 	
-	public String getProjectFolderPath()
-	{
-		return projectPath;
-	}
-	
-	public String getImageFolderPath()
-	{
-		return projectPath + IMAGE_FOLDER + File.separator;
-	}
-	
-	public String getSoundFolderPath()
-	{
-		return projectPath + SOUND_FOLDER + File.separator;
-	}
-	
-	public String getDataFolderPath()
-	{
-		return dataPath;
-	}
-	
 	/**
 	 * @param imageFileRelativePath
 	 * @return file object, or null if the given path was null or empty
 	 */
-	public File getImageFile(String imageFileRelativePath)
+	public File getImageFile(FileStorageProvider fileStorageProvider, String imageFileRelativePath)
 	{
 		if(imageFileRelativePath == null || imageFileRelativePath.isEmpty())
 			return null;
-		return new File(getImageFolderPath() + imageFileRelativePath);
+		return new File(fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath() + File.separator + IMAGE_FOLDER + File.separator + imageFileRelativePath);
 	}
 	
 	/**
 	 * @param soundFileRelativePath
 	 * @return file object, or null if the given path was null or empty
 	 */
-	public File getSoundFile(String soundFileRelativePath)
+	public File getSoundFile(FileStorageProvider fileStorageProvider, String soundFileRelativePath)
 	{
 		if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
 			return null;
-		return new File(getSoundFolderPath() + soundFileRelativePath);
-	}
-	
-	/**
-	 * @return File object pointing to the data folder for this project
-	 * @throws IOException - when the folder cannot be created or is not writable
-	 */
-	public File getDataFolder() throws IOException
-	{
-		File folder = new File(getDataFolderPath());
-		checkFolder(folder);
-		return folder;
-	}
-	
-	public String getTempFolderPath()
-	{
-		return projectPath + TEMP_FOLDER + File.separator;
-	}
-	
-	/**
-	 * @return File object pointing to the temp folder for this project
-	 * @throws IOException - when the folder cannot be created or is not writable
-	 */
-	public File getTempFolder() throws IOException
-	{
-		File folder = new File(getTempFolderPath());
-		checkFolder(folder);
-		return folder;
+		return new File(fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
 	}
 	
 	@Override
@@ -448,15 +342,6 @@ public class Project
 	{
 		return 	name + (variant != null ? (" " + variant) : "") + " (v" + version + ")"
 				+ (verbose ? (" [id: " + id + "; fingerprint: " + fingerPrint + "]") : "");
-	}
-	
-	private void checkFolder(File folder) throws IOException
-	{
-		// Check if data path is accessible
-		if(!FileHelpers.createFolder(folder))
-			throw new IOException("Data path (" + folder.getAbsolutePath() + ") cannot be created.");
-		if(!folder.canWrite())
-			throw new IOException("Data path (" + folder.getAbsolutePath() + ") is not writable.");
 	}
 
 	/**
@@ -475,29 +360,44 @@ public class Project
 		this.logging = logging;
 	}
 	
-	public String getLogFolderPath() throws IOException
+	/**
+	 * Find all files used by the project
+	 * 
+	 * @param fileStorageProvider to resolve relative paths
+	 * @return a list of files that the project depends on
+	 */
+	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
-		return logPath;
-	}
-	
-	public File getLogFolder() throws IOException
-	{
-		File folder = new File(getLogFolderPath());
-		checkFolder(folder);
-		return folder;
+		List<File> files = new ArrayList<File>();
+		for(Form form : forms)
+			CollectionUtils.addAllIgnoreNull(files, form.getFiles(fileStorageProvider));
+		return files;
 	}
 	
 	/**
-	 * @return a list of files (as paths relative to the project path) that are referred to by (forms of) this project but which could not be found or accessed   
+	 * @return a list of files (as File object) that are referred to by (forms of) this project but which could not be found or accessed   
 	 */
-	public List<String> checkForInvalidFiles()
+	public List<File> getMissingFiles(FileStorageProvider fileStorageProvider)
 	{
-		List<String> invalidFiles = new ArrayList<String>();
-		for(Form form : forms)
-			for(File file : form.getFiles(this))
-				if(!file.isFile() || !file.exists() || !file.canRead())
-					invalidFiles.add(file.getAbsolutePath().substring(projectPath.length()));
+		List<File> invalidFiles = new ArrayList<File>();
+		for(File file : getFiles(fileStorageProvider))
+			if(!file.isFile() || !file.exists() || !file.canRead())
+				invalidFiles.add(file);
 		return invalidFiles;
+	}
+	
+	/**
+	 * Generate concatenated list of paths (relative to the project path) of files that are referred to by (forms of) this project but which could not be found or accessed
+	 * 
+	 * @return concatenated relative paths of missing files, or null if no files are missing   
+	 */
+	public String getMissingFilesRelativePaths(FileStorageProvider fileStorageProvider, String separator)
+	{
+		int startIndex = fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath().length() + 1; // +1 for file separator
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder(separator);
+		for(File missingFile : getMissingFiles(fileStorageProvider))
+			bldr.append(missingFile.getAbsolutePath().substring(startIndex));
+		return bldr.length() != 0 ? bldr.toString() : null;
 	}
 	
 	public boolean equalSignature(Project other)

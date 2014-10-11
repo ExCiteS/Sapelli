@@ -44,7 +44,7 @@ public class AudioFeedbackController
 
 				// If the choice has an audio, pass that audio to the Media Player
 				if(choice.hasAudioAnswerDesc())
-					controller.audioToVoice(controller.getProject().getSoundFolderPath() + choice.getAnswerDesc());
+					controller.audioToVoice(controller.getProject().getSoundFile(controller.getFileStorageProvider(), choice.getAnswerDesc()));
 				else if(choice.getAnswerDesc() != null)
 					// Enable TTS Audio Feedback
 					controller.textToVoice(choice.getAnswerDesc());
@@ -121,7 +121,7 @@ public class AudioFeedbackController
 
 				// If the choice has an audio, pass that audio to the Media Player
 				if(choice.hasQuestionDesc())
-					controller.audioToVoice(controller.getProject().getSoundFolderPath() + choice.getQuestionDesc());
+					controller.audioToVoice(controller.getProject().getSoundFile(controller.getFileStorageProvider(), choice.getQuestionDesc()));
 				else if(choice.getQuestionDesc() != null)
 					// Enable TTS Audio Feedback
 					controller.textToVoice(choice.getQuestionDesc());

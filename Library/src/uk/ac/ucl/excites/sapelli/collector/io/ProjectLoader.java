@@ -38,31 +38,47 @@ import uk.ac.ucl.excites.sapelli.shared.io.Unzipper;
 public class ProjectLoader
 {
 	
+	// STATICS
 	static public final String[] SAPELLI_FILE_EXTENSIONS = { "excites", "sapelli", "sap" };
 	static public final String PROJECT_FILE = "PROJECT.xml";
 
+	/**
+	 * @param folderPath path to folder in which the PROJECT.xml file resides
+	 * @return a project instance or null in case something went wrong
+	 */
+	static public Project ParseProject(String folderPath)
+	{
+		try
+		{
+			return new ProjectParser().parseProject(new File(folderPath + File.separator + PROJECT_FILE));
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+			return null;
+		}
+	}
+	
+	// DYNAMICS
 	private ProjectLoaderClient client;
-	private String tempFolderPath;
+	private FileStorageProvider fileStorageProvider;
+	private File tempFolder;
 	private ProjectParser parser;
 	
 	/**
 	 * @param basePath
 	 * @throws IOException
 	 */
-	public ProjectLoader(ProjectLoaderClient client, String projectsFolderPath, String tempFolderPath) throws IOException
+	public ProjectLoader(ProjectLoaderClient client, FileStorageProvider fileStorageProvider) throws IOException, FileStorageException
 	{
 		this.client = client;
-		// Create the temp folder
-		this.tempFolderPath = FileHelpers.ensureFolderPath(tempFolderPath);
-		if(!FileHelpers.createFolder(tempFolderPath))
-			throw new IOException("Temp folder (" + this.tempFolderPath + ") does not exist and could not be created.");
-		// Create .nomedia file:
-		(new File(tempFolderPath + Project.NO_MEDIA_FILE)).createNewFile();
+		this.fileStorageProvider = fileStorageProvider;
+		
+		// Get/create the temp folder:
+		tempFolder = fileStorageProvider.getTempFolder(true);
+		
 		// Create the project folder
-		String projPath = FileHelpers.ensureFolderPath(projectsFolderPath);
-		if(!FileHelpers.createFolder(projPath))
-			throw new IOException("Projects folder (" + projPath + ") does not exist and could not be created.");
-		this.parser = new ProjectParser(projPath, true);
+		this.parser = new ProjectParser();
 	}
 
 	/**
@@ -89,7 +105,7 @@ public class ProjectLoader
 	public Project load(InputStream sapelliFileStream) throws Exception
 	{
 		Project p = null;
-		String extractFolderPath = tempFolderPath + System.currentTimeMillis() + File.separatorChar;
+		String extractFolderPath = tempFolder.getAbsolutePath() + File.separator + System.currentTimeMillis() + File.separator;
 		// Extract the content of the Sapelli file to a new subfolder of the temp folder:
 		try
 		{
@@ -112,7 +128,7 @@ public class ProjectLoader
 		// Create move extracted files to project folder:
 		try
 		{
-			FileHelpers.moveDirectory(new File(extractFolderPath), new File(p.getProjectFolderPath()));
+			FileHelpers.moveDirectory(new File(extractFolderPath), fileStorageProvider.getProjectInstallationFolder(p, true));
 		}
 		catch(Exception e)
 		{

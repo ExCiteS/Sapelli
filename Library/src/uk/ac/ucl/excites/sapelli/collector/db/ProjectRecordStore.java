@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
@@ -99,14 +101,13 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 			
 	// DYNAMICS--------------------------------------------
 	private final RecordStore recordStore;
+	private final FileStorageProvider fileStorageProvider;
 	private final Map<Long, Project> cache;
 	
-	/**
-	 * 
-	 */
-	public ProjectRecordStore(RecordStore recordStore)
+	public ProjectRecordStore(RecordStore recordStore, FileStorageProvider fileStorageProvider)
 	{
 		this.recordStore = recordStore;
+		this.fileStorageProvider = fileStorageProvider;
 		this.cache = new HashMap<Long, Project>();
 	}
 	
@@ -141,22 +142,26 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 		// Parse project if we didn't get it from the cache: 
 		if(project == null)
 		{
-		
-		// TODO get project from cache or parse it
-	//		File xmlFile = new File(folderPath.toString() + ProjectLoader.PROJECT_FILE);
-	//		// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
-	//		ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
-	//		try
-	//		{
-	//			return parser.parseProject(xmlFile);
-	//		}
-	//		catch(Exception e)
-	//		{
-	//			e.printStackTrace();
-	//		}
-			
-			// Add to cache:
-			cacheProject(project);
+			String variant = PROJECT_VARIANT_COLUMN.retrieveValue(projRec); 
+			project = ProjectLoader.ParseProject(fileStorageProvider.getProjectInstallationFolder(	PROJECT_NAME_COLUMN.retrieveValue(projRec),
+																									variant.isEmpty() ? null : variant, 
+																									PROJECT_VERSION_COLUMN.retrieveValue(projRec),
+																									false).getAbsolutePath());
+			// Check if we have a project:
+			if(project == null)
+			{
+				try
+				{
+					recordStore.delete(projRec);
+				}
+				catch(DBException e)
+				{
+					e.printStackTrace();
+				}
+			}
+			else
+				// Add to cache:
+				cacheProject(project);
 		}
 		return project;
 	}

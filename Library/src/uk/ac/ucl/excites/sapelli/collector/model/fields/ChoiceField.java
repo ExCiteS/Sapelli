@@ -25,10 +25,10 @@ import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary.DictionarySerialiser;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
@@ -330,13 +330,13 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 
 	@Override
-	public List<File> getFiles(Project project)
+	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
 		List<File> paths = new ArrayList<File>();
 		if(hasImage())
-			CollectionUtils.addIgnoreNull(paths, project.getImageFile(imageRelativePath));
+			CollectionUtils.addIgnoreNull(paths, form.getProject().getImageFile(fileStorageProvider, imageRelativePath));
 		for(ChoiceField child : getChildren())
-			CollectionUtils.addAllIgnoreNull(paths, child.getFiles(project));
+			CollectionUtils.addAllIgnoreNull(paths, child.getFiles(fileStorageProvider));
 		return paths;
 	}
 	

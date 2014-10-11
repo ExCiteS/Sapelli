@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
@@ -824,17 +825,21 @@ public class Form
 		return warnings;
 	}
 	
-	public List<File> getFiles(Project project)
+	/**
+	 * @param fileStorageProvider to resolve relative paths
+	 * @return
+	 */
+	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
 		List<File> paths = new ArrayList<File>();
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(backButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(cancelButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(forwardButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(shortcutImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getSoundFile(saveSoundRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, backButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, cancelButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, forwardButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, shortcutImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, project.getSoundFile(fileStorageProvider, saveSoundRelativePath));
 		//Add paths for fields:
 		for(Field field : fields)
-			CollectionUtils.addAllIgnoreNull(paths, field.getFiles(project));
+			CollectionUtils.addAllIgnoreNull(paths, field.getFiles(fileStorageProvider));
 		return paths;
 	}
 	

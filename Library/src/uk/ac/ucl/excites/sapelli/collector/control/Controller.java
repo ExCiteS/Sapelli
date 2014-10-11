@@ -25,6 +25,8 @@ import java.util.List;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
@@ -96,10 +98,11 @@ public abstract class Controller
 	}
 	
 	// DYNAMICS------------------------------------------------------
-	protected Project project;
-	protected CollectorUI<?, ?> ui;
-	protected ProjectStore projectStore;
-	protected RecordStore recordStore;
+	protected final Project project;
+	protected final CollectorUI<?, ?> ui;
+	protected final ProjectStore projectStore;
+	protected final RecordStore recordStore;
+	protected final FileStorageProvider fileStorageProvider;
 	protected Logger logger;
 	
 	protected Stack<FormSession> formHistory;
@@ -108,12 +111,13 @@ public abstract class Controller
 	
 	protected boolean handlingUserGoBackRequest = false;
 	
-	public Controller(Project project, CollectorUI<?, ?> ui, ProjectStore projectStore, RecordStore recordStore)
+	public Controller(Project project, CollectorUI<?, ?> ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
 	{
 		this.project = project;
 		this.ui = ui;
 		this.projectStore = projectStore;
 		this.recordStore = recordStore;
+		this.fileStorageProvider = fileStorageProvider;
 		
 		// Collections:
 		formHistory = new Stack<FormSession>();
@@ -125,7 +129,7 @@ public abstract class Controller
 		{
 			try
 			{
-				logger = new Logger(project.getLogFolder().getAbsolutePath(), LOG_PREFIX);
+				logger = new Logger(fileStorageProvider.getProjectLogsFolder(project, true).getAbsolutePath(), LOG_PREFIX);
 
 				// Log the DeviceID
 				logger.addLine("DeviceID (CRC32)", String.valueOf(getDeviceID()));
@@ -134,6 +138,10 @@ public abstract class Controller
 				// Log the start of the project
 				logger.addLine("PROJECT_START", project.toString());
 				logger.addBlankLine();
+			}
+			catch(FileStorageException fse)
+			{
+				fse.printStackTrace(System.err);
 			}
 			catch(IOException ioe)
 			{
@@ -398,14 +406,14 @@ public abstract class Controller
 		// Move attachments from temp to data folder:
 		try
 		{
-			File dataFolder = project.getDataFolder();
+			File dataFolder = fileStorageProvider.getProjectDataFolder(project, true);
 			for(File attachment : currFormSession.getMediaAttachments())
 				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
 		}
-		catch(IOException ioe)
+		catch(Exception e)
 		{
-			ioe.printStackTrace(System.err);
-			addLogLine("ERROR", "Upon moving attachements", ExceptionHelpers.getMessageAndCause(ioe));
+			e.printStackTrace(System.err);
+			addLogLine("ERROR", "Upon moving attachements", ExceptionHelpers.getMessageAndCause(e));
 			return;
 		}
 	
@@ -414,7 +422,7 @@ public abstract class Controller
 		if(currFormSession.form.isVibrateOnSave())
 			vibrate(VIBRATION_DURATION_MS);
 		// Play sound
-		File endSoundFile = project.getSoundFile(currFormSession.form.getSaveSoundRelativePath());
+		File endSoundFile = project.getSoundFile(fileStorageProvider, currFormSession.form.getSaveSoundRelativePath());
 		if(FileHelpers.isReadableFile(endSoundFile))
 			playSound(endSoundFile);
 	}
@@ -821,6 +829,11 @@ public abstract class Controller
 			logger.addBlankLine();
 	}
 	
+	public FileStorageProvider getFileStorageProvider()
+	{
+		return fileStorageProvider;
+	}
+
 	protected void startLocationListener(LocationField locField)
 	{
 		startLocationListener(Arrays.asList(locField));
