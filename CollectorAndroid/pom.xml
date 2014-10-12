@@ -122,6 +122,19 @@
 						<inherited>true</inherited>
 						<executions>
 							<execution>
+								<id>delete-buildinfo</id>
+								<phase>validate</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<echo>Deleting buildinfo.xml to make sure is will be re-generated...</echo>
+										<delete file="${project.basedir}/res/values/buildinfo.xml" />
+									</target>
+								</configuration>
+							</execution>
+							<execution>
 								<id>delete-useless-apks</id>
 								<phase>install</phase>
 								<goals>
@@ -258,14 +271,14 @@
 				<artifactId>maven-antrun-plugin</artifactId>
 				<executions>
 					<execution>
-						<id>buildinfo</id>
+						<id>generate-buildinfo</id>
 						<phase>initialize</phase>
 						<goals>
 							<goal>run</goal>
 						</goals>
 						<configuration>
 							<target>
-								<ant antfile="${buildinfo.antfile}" />
+								<ant antfile="${buildinfo.antfile}" target="generateBuildInfoIfNeeded"/>
 							</target>
 						</configuration>
 					</execution>
