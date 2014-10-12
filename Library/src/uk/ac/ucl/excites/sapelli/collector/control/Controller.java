@@ -664,7 +664,7 @@ public abstract class Controller
 				}
 				break;
 			case EXITAPP:
-				exit();
+				exit(true); // exit controller & application
 				break;
 		}
 		// No UI update needed:
@@ -758,13 +758,34 @@ public abstract class Controller
 		goTo(new FieldWithArguments(trigger.getJump(), trigger.getNextFieldArguments()));
 	}
 	
-	protected void exit()
+	/**
+	 * Stops all use/activities of the controller but does not exit the containing application.
+	 * I.e. the controller can still be restarted.
+	 */
+	public void discard()
 	{
-		// cancel (timer) triggers:
+		// Logging:
+		addLogLine("FORM_END", "CONTROLLER_DISCARD", currFormSession.form.getName(), Long.toString((getElapsedMillis() - currFormSession.startTime) / 1000) + " seconds");
+		
+		// Save nothing:
+		discardRecordAndAttachments();
+		
+		// Exit controller (but not the application):
+		exit(false);
+	}
+	
+	/**
+	 * Exit controller & optionally the containing application
+	 * 
+	 * @param exitApp
+	 */
+	protected void exit(boolean exitApp)
+	{
+		// Cancel (timer) triggers:
 		if(currFormSession.form != null)
 			disableTriggers(currFormSession.form.getTriggers());
 		
-		// stop GPS!
+		// Stop GPS!
 		stopLocationListener();
 		
 		// Close log file:
@@ -773,8 +794,9 @@ public abstract class Controller
 			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.getID());
 			logger = null;
 		}
-		
-		exitApp();
+
+		if(exitApp)
+			exitApp();
 	}
 
 	/**

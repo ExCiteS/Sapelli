@@ -144,10 +144,15 @@ public class CollectorActivity extends ProjectActivity
 		// Change the current intent
 		setIntent(intent);
 
+		// Throw away current project & controller:
+		project = null;
 		if(controller != null)
-			controller.cancelAndRestartForm();
+		{
+			controller.discard();
+			controller = null;
+		}
 		
-		// onResume() will be called next
+		// onResume() will be called next, where the new project will be loaded and a new controller instantiated 
 	}
 	
 	@Override
@@ -451,7 +456,7 @@ public class CollectorActivity extends ProjectActivity
 				{ // time's up!
 					collectorView.cancelCurrentField();
 					if(controller != null)
-						controller.cancelAndStop();
+						controller.discard(); // don't make controller null so we can restart project in onResume()
 					timedOut = true;
 					Log.i(TAG, "Time-out reached");
 				}
