@@ -40,6 +40,7 @@ import uk.ac.ucl.excites.sapelli.util.Debug;
 public class Zip
 {
 	private static final int BUFFER_SIZE = 2048;
+	private static final String ZIP_EXTENTION = "zip";
 
 	private ZipOutputStream zip;
 	private BufferedInputStream origin;
@@ -58,8 +59,11 @@ public class Zip
 	public Zip(String[] paths, String zipDest)
 	{
 		this.paths = paths;
-		// TODO check if .zip
 		this.zipDest = zipDest;
+
+		// Make sure the zip files ends with the appropriate extension
+		if(!FileHelpers.getFileExtension(this.zipDest).equalsIgnoreCase(ZIP_EXTENTION))
+			this.zipDest += "." + ZIP_EXTENTION;
 	}
 
 	/**
