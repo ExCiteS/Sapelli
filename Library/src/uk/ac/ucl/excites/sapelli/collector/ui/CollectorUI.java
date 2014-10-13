@@ -30,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ButtonUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.CheckBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
@@ -48,6 +49,8 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 	public ChoiceUI<V, UI> createChoiceUI(ChoiceField cf);
 
 	public MediaUI<PhotoField,V, UI> createPhotoUI(PhotoField pf);
+	
+	public MediaUI<VideoField,V, UI> createVideoUI(VideoField pf);
 
 	public MediaUI<AudioField,V, UI> createAudioUI(AudioField af);
 

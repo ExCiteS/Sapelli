@@ -51,6 +51,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
@@ -73,6 +74,7 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_CHOICE = "Choice";
 	static private final String TAG_AUDIO = "Audio";
 	static private final String TAG_PHOTO = "Photo";
+	static private final String TAG_VIDEO = "Video";
 	static private final String TAG_LOCATION = "Location";
 	static private final String TAG_ORIENTATION = "Orientation";
 	static private final String TAG_BELONGS_TO = "BelongsTo";
@@ -369,6 +371,20 @@ public class FormParser extends SubtreeParser
 				photoField.setCaptureButtonImageRelativePath(attributes.getString("captureImg", null, false, false));
 				photoField.setApproveButtonImageRelativePath(attributes.getString("approveImg", null, false, false));
 				photoField.setDiscardButtonImageRelativePath(attributes.getString("discardImg", null, false, false));
+			}
+			// <Video>
+			else if(qName.equals(TAG_VIDEO))
+			{
+				VideoField videoField = new VideoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_PHOTO, false));
+				newMediaField(videoField, attributes);
+				videoField.setUseNativeApp(attributes.getBoolean("useNativeApp", VideoField.DEFAULT_USE_NATIVE_APP));
+				// Camera options (only used when useNativeApp=false):
+				videoField.setUseFrontFacingCamera(attributes.getBoolean("useFrontCamera", VideoField.DEFAULT_USE_FRONT_FACING_CAMERA));
+				// cannot have flash when capturing video
+				// Custom buttons (only used when useNativeApp=false):
+				videoField.setCaptureButtonImageRelativePath(attributes.getString("captureImg", null, false, false));
+				videoField.setApproveButtonImageRelativePath(attributes.getString("approveImg", null, false, false));
+				videoField.setDiscardButtonImageRelativePath(attributes.getString("discardImg", null, false, false));
 			}
 			// <Audio>
 			else if(qName.equals(TAG_AUDIO))

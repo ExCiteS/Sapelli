@@ -169,7 +169,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		}
 		else {
 			// recording started, so present "stop" button instead
-			File stopImgFile = controller.getProject().getImageFile(field.getStopAudioImageRelativePath());
+			File stopImgFile = controller.getProject().getImageFile(field.getStopRecImageRelativePath());
 			if(FileHelpers.isReadableFile(stopImgFile))
 				captureButton = new FileImageItem(stopImgFile);
 			else
