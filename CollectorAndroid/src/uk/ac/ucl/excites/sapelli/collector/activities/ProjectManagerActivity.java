@@ -45,10 +45,13 @@ import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.Zipper;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -65,6 +68,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
@@ -316,6 +320,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	    		return removeShortcut(item);
 	    	case R.id.copy_db_menuitem :
 	    		return copyDBtoSD(item);
+			case R.id.zip_files:
+				return zipSapelliFiles(item);
 	    	case R.id.about_menuitem :
 	    		return openAboutDialog(item);
 	    }
@@ -406,6 +412,30 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			showErrorDialog(getString(R.string.backupFailDueTo, ExceptionHelpers.getMessageAndCause(e)), false);
 		}
 		return true;
+	}
+	
+	public boolean zipSapelliFiles(MenuItem item)
+	{
+		final String zipfile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() 
+				+ File.separator + "Sapelli_" + TimeUtils.getTimestampForFileName();
+
+		// TODO Test files
+		String[] files = new String[3];
+		files[0] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Dumps";
+		files[1] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects";
+		files[2] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects787"; // wrong path for debug
+
+		try
+		{
+			Zipper zipper = new Zipper(files, zipfile);
+			zipper.zip();
+		}
+		catch(Exception e)
+		{
+			Debug.e(e);
+		}
+
+		return false;
 	}
 	
 	public void browse(View view)
