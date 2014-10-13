@@ -155,7 +155,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 
 	@Override
     public void onCompletion(MediaPlayer mp) {
-	    // playback has finished
+	    // playback has finished so go back to start
 		playbackPosition = 0;
     }
 
@@ -174,7 +174,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 				captureButton = new FileImageItem(captureImgFile);
 			else
 				// otherwise just use the default resource
-				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_photo_svg);
+				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_video_capture_svg);
 		}
 		else {
 			// recording started, so present "stop" button instead
