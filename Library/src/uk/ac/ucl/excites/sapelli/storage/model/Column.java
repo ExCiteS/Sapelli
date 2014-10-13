@@ -512,7 +512,7 @@ public abstract class Column<T> implements Serializable
 	@SuppressWarnings("unchecked")
 	public T copyObject(Object value) throws ClassCastException
 	{
-		return copy((T) convert(value));
+		return value != null ? copy((T) convert(value)) : null;
 	}
 
 	/**
