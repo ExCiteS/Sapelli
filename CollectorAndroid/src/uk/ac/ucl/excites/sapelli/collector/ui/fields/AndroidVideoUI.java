@@ -19,16 +19,19 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.VideoItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.media.ThumbnailUtils;
-import android.provider.MediaStore;
+import android.media.MediaPlayer;
+import android.media.MediaPlayer.OnCompletionListener;
+import android.net.Uri;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
+import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
+import android.widget.VideoView;
 
 /**
  * A subclass of AndroidMediaUI which allows for the capture and 
@@ -37,15 +40,16 @@ import android.widget.LinearLayout;
  * @author mstevens, Michalis Vitos, benelliott
  *
  */
-public class AndroidVideoUI extends AndroidMediaUI<VideoField> {
+public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnCompletionListener {
 
-    static private final String TAG = "AndroidVideoUI";
+	static private final String TAG = "AndroidVideoUI";
 
 	// Camera & image data:
 	private CameraController cameraController;
 	private SurfaceView captureSurface;
-	
+
 	private volatile Boolean recording = false;
+	private int playbackPosition = 0;
 
 	public AndroidVideoUI(VideoField field, Controller controller,
 			CollectorView collectorUI) {
@@ -56,80 +60,104 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> {
 	@Override
 	void populateCaptureLayout(ViewGroup captureLayout) {
 		if (cameraController == null) {
-	        // Set up cameraController:
-	        //	Camera controller & camera selection:
-	        cameraController =
-	                new CameraController(field.isUseFrontFacingCamera());
-	        if (!cameraController.foundCamera()) { // no camera found, try the other one:
-		        cameraController.findCamera(!field.isUseFrontFacingCamera());
-		        if (!cameraController.foundCamera()) { // still no camera, this device does not seem to have one:
-			        mediaDone(null, false);
-			        return;
-		        }
-	        }
+			// Set up cameraController:
+			//	Camera controller & camera selection:
+			cameraController =
+					new CameraController(field.isUseFrontFacingCamera());
+			if (!cameraController.foundCamera()) { // no camera found, try the other one:
+				cameraController.findCamera(!field.isUseFrontFacingCamera());
+				if (!cameraController.foundCamera()) { // still no camera, this device does not seem to have one:
+					mediaDone(null, false);
+					return;
+				}
+			}
 		}
 		//TODO figure out how views are cached so this does not have to be done every time:
 		captureLayout.removeAllViews();
-        // Create the surface for previewing the camera:
+		// Create the surface for previewing the camera:
 		captureSurface = new SurfaceView(captureLayout.getContext());
-        captureLayout.addView(captureSurface);
-        
-        // Set-up surface holder:
-        SurfaceHolder holder = captureSurface.getHolder();
-        holder.addCallback(cameraController);
-        holder.setKeepScreenOn(true);
-        // !!! Deprecated but cameraController preview crashes without it (at least on the XCover/Gingerbread):
-        holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-		
+		captureLayout.addView(captureSurface);
+
+		// Set-up surface holder:
+		SurfaceHolder holder = captureSurface.getHolder();
+		holder.addCallback(cameraController);
+		holder.setKeepScreenOn(true);
+		// !!! Deprecated but cameraController preview crashes without it (at least on the XCover/Gingerbread):
+		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+
 		cameraController.startPreview();
 	}
 
 	@Override
 	boolean onCapture() {
 		try {
-	        synchronized(recording) {
-	        	if (!recording) {
-	        		// start recording
-	        		lastCaptureFile = field.getNewTempFile(controller.getCurrentRecord());
-	        		cameraController.startVideoCapture(lastCaptureFile);
-	        		recording = true;
-	        	} else {
-	        		// stop recording
-	        		cameraController.stopVideoCapture();
-	        		// a capture has been made so show it for review:
-	        		attachMediaFile(false);
-	        		recording = false;
-	        	}
-	        }
-        } catch (IOException e) {
-	        Log.e(TAG,"Error when requesting a new temporary media file.",e);
-        }
-        // always allow other click events after this completes (so recording can be stopped by pressing again):
-        return true;
+			synchronized(recording) {
+				if (!recording) {
+					// start recording
+					lastCaptureFile = field.getNewTempFile(controller.getCurrentRecord());
+					cameraController.startVideoCapture(lastCaptureFile);
+					recording = true;
+				} else {
+					// stop recording
+					cameraController.stopVideoCapture();
+					// a capture has been made so show it for review:
+					attachMediaFile(false);
+					recording = false;
+				}
+			}
+		} catch (IOException e) {
+			Log.e(TAG,"Error when requesting a new temporary media file.",e);
+		}
+		// always allow other click events after this completes (so recording can be stopped by pressing again):
+		return true;
 	}
-	
+
 
 	@Override
-    void onDiscard() {
-	    // nothing to do
-    }
+	void onDiscard() {
+		// nothing to do
+	}
 
 	@Override
 	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
 		reviewLayout.removeAllViews();
-		// TODO allow for video play on review
-		// add an ImageView to the review UI:
-		ImageView reviewView = new ImageView(reviewLayout.getContext());
-		reviewView.setScaleType(ScaleType.FIT_CENTER);
-		// make sure the image takes up all the available space:
-		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
-		reviewView.setLayoutParams(params);
-		// create a preview thumbnail from the provided video file:
-		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(mediaFile.getAbsolutePath(),MediaStore.Images.Thumbnails.MINI_KIND);
-		// show the thumbnail on the review screen:
-		reviewView.setImageBitmap(thumbnail);
-		reviewLayout.addView(reviewView);
+		final VideoView playbackView = new VideoView(reviewLayout.getContext());
+
+		playbackView.setOnTouchListener(new OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent ev) {
+				if (ev.getAction() == MotionEvent.ACTION_UP) { 
+					// only perform action when finger is lifted off screen
+					if (playbackView.isPlaying()) {
+						Log.d(TAG,"Pausing video...");
+						playbackPosition = playbackView.getCurrentPosition();
+						playbackView.pause();
+					}
+
+					else {
+						Log.d(TAG,"Playing video...");
+						playbackView.seekTo(playbackPosition);
+						playbackView.start();
+					}
+				}
+				return true;
+			}
+		});
+		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
+		params.gravity = Gravity.CENTER_HORIZONTAL;
+		playbackView.setLayoutParams(params);
+		playbackView.setOnCompletionListener(this);
+		reviewLayout.addView(playbackView);
+		playbackView.setVideoURI(Uri.fromFile(mediaFile));
+		playbackView.start();
 	}
+	
+
+	@Override
+    public void onCompletion(MediaPlayer mp) {
+	    // playback has finished
+		playbackPosition = 0;
+    }
 
 	/**
 	 * If not currently recording, will return a "start recording" button. If currently recording, will return a
@@ -171,10 +199,11 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> {
 		}
 		return items;
 	}
-	
+
 	@Override
-    void finalise() {
+	void finalise() {
 		if(cameraController != null)
 			cameraController.close();	    
 	}
+
 }
