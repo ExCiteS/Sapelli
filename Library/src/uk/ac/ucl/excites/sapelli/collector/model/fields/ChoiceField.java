@@ -471,6 +471,8 @@ public class ChoiceField extends Field implements DictionaryItem
 					(this.root != null ? that.root != null && this.root.getID().equals(that.root.getID()) : that.root == null) &&
 					this.getChildren().equals(that.getChildren()) &&
 					(this.imageRelativePath != null ? this.imageRelativePath.equals(that.imageRelativePath) : that.imageRelativePath == null) &&
+					(this.answerDesc != null ? that.answerDesc.equals(that.answerDesc) : that.answerDesc == null) &&
+					(this.questionDesc != null ? that.questionDesc.equals(that.questionDesc) : that.questionDesc == null) &&
 					this.cols == that.cols &&
 					this.rows == that.rows &&
 					(this.altText != null ? this.altText.equals(that.altText) : that.altText == null) &&
@@ -491,6 +493,8 @@ public class ChoiceField extends Field implements DictionaryItem
 		hash = 31 * hash + (root != null ? root.getID().hashCode() : 0);
 		hash = 31 * hash + getChildren().hashCode();
 		hash = 31 * hash + (imageRelativePath != null ? imageRelativePath.hashCode() : 0);
+		hash = 31 * hash + (answerDesc != null ? answerDesc.hashCode() : 0);
+		hash = 31 * hash + (questionDesc != null ? questionDesc.hashCode() : 0);
 		hash = 31 * hash + cols;
 		hash = 31 * hash + rows;
 		hash = 31 * hash + (altText != null ? altText.hashCode() : 0);
