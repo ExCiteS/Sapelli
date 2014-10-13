@@ -1,3 +1,21 @@
+/**
+ * Sapelli data collection platform: http://sapelli.org
+ * 
+ * Copyright 2012-2014 University College London - ExCiteS group
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and 
+ * limitations under the License.
+ */
+
 package uk.ac.ucl.excites.sapelli.collector.util;
 
 import java.io.BufferedInputStream;
@@ -13,6 +31,12 @@ import java.util.zip.ZipOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 
+/**
+ * Zip class
+ * 
+ * @author Michalis Vitos
+ *
+ */
 public class Zip
 {
 	private static final int BUFFER_SIZE = 2048;
@@ -21,24 +45,37 @@ public class Zip
 	private BufferedInputStream origin;
 	private byte data[];
 
-	private String[] folders;
-	private String zipFileDest;
+	private String[] paths;
+	private String zipDest;
 
-	public Zip(String[] folders, String zipFileDest)
+	/**
+	 * 
+	 * @param paths
+	 *            - A list of paths to files/folders to be zipped
+	 * @param zipDest
+	 *            - The destination of the zip file
+	 */
+	public Zip(String[] paths, String zipDest)
 	{
-		this.folders = folders;
+		this.paths = paths;
 		// TODO check if .zip
-		this.zipFileDest = zipFileDest;
+		this.zipDest = zipDest;
 	}
 
+	/**
+	 * Zips the list of files/folders
+	 * 
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
 	public void zip() throws FileNotFoundException, IOException
 	{
 		// Create the ZipOutputStream
 		if(zip == null)
-			zip = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFileDest)));
+			zip = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipDest)));
 
 		// Iterate through all files and add them to the zip file
-		for(String f : folders)
+		for(String f : paths)
 			if(f != null)
 				zipFile(f);
 
@@ -47,10 +84,10 @@ public class Zip
 	}
 
 	/**
-	 * Zips a file to a zip file saved on
+	 * Zips a given file or folder
 	 * 
 	 * @param sourceFilePath
-	 * @param zipFileDest
+	 * @param zipDest
 	 * @return
 	 */
 	private boolean zipFile(String sourceFilePath)
