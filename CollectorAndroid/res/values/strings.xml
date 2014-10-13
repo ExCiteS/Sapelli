@@ -99,5 +99,6 @@
     <string name="exportDeleteFailureMsg">Failed to delete (some of) the record, due to: %s.</string>
     <string name="exportNothing">There was nothing to export.</string>
     <string name="exportDeletingX">Deleting %d records…</string>
+    <string name="exporting_data">Exporting data...</string>
 
 </resources>

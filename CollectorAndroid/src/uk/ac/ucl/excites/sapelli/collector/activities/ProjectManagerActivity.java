@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderClient;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.util.AsyncZipper;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
@@ -45,13 +46,11 @@ import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.Zipper;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -425,15 +424,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		files[1] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects";
 		files[2] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects787"; // wrong path for debug
 
-		try
-		{
-			Zipper zipper = new Zipper(files, zipfile);
-			zipper.zip();
-		}
-		catch(Exception e)
-		{
-			Debug.e(e);
-		}
+		// Call an AsyncZipper
+		AsyncZipper zipper = new AsyncZipper(this, getString(R.string.exporting_data), files, zipfile);
+		zipper.execute();
 
 		return false;
 	}
