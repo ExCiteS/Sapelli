@@ -24,12 +24,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -78,6 +80,11 @@ public class DB4ORecordStore extends RecordStore
 			this.autoIncrementDict = new AutoIncrementDictionary();
 	}
 	
+	/**
+	 * With DB4O there is always 1 (and only 1) implicit transaction. Explicitly opened additional transactions are only simulated.
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStartTransaction()
+	 */
 	@Override
 	protected void doStartTransaction()
 	{
@@ -116,23 +123,60 @@ public class DB4ORecordStore extends RecordStore
 	@Override
 	protected boolean doStore(Record record) throws DBException
 	{
+		return doStore(record, true);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doInsert(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 */
+	@Override
+	protected void doInsert(Record record) throws DBPrimaryKeyException, DBException
+	{
+		boolean inserted = doStore(record, false);
+		if(!inserted)
+			throw new DBPrimaryKeyException("This record already exists in the record store");
+	}
+	
+	private boolean doStore(Record record, boolean updateAllowed) throws DBException
+	{
 		try
 		{
-			boolean insert = !db4o.ext().isStored(record);
+			boolean insert = !db4o.ext().isStored(record); // will only detect pointer-equal objects (I think)
 			
-			// Deal with auto-incrementing primary keys:
+			// Get auto-incrementing ID column (if there is one):
+			IntegerColumn autoIncrIDColumn;
 			if(record.getSchema().getPrimaryKey() instanceof AutoIncrementingPrimaryKey)
+				autoIncrIDColumn = ((AutoIncrementingPrimaryKey) record.getSchema().getPrimaryKey()).getColumn();
+			else
+				autoIncrIDColumn = null;
+			
+			if(insert)
 			{
-				IntegerColumn autoIncrIDColumn = ((AutoIncrementingPrimaryKey) record.getSchema().getPrimaryKey()).getColumn();
-				// Set autoIncr ID:
-				if(!autoIncrIDColumn.isValueSet(record)) // equivalent to if(insert)
-				{
+				if(autoIncrIDColumn == null || autoIncrIDColumn.isValueSet(record))
+				{	// Check if there is no previously stored record with the same primary key:
+					Record previouslyStored = retrieveRecord(record.getRecordQuery());
+					if(previouslyStored != null)
+					{
+						if(updateAllowed)
+						{	// Update previously stored record:
+							for(Column<?> col : record.getSchema().getColumns(false))
+								col.storeObject(previouslyStored, col.retrieveValue(record));
+							record = previouslyStored;
+						}
+						insert = false; // this is an update
+					}
+				}
+				else
+				{	// Set auto-incrementing id:
 					autoIncrIDColumn.storeValue(record, autoIncrementDict.getNextID(record.getSchema()));
-					// Store the the dictionary:
+					// Store the dictionary:
 					db4o.store(autoIncrementDict);
 				}
 			}
-			db4o.store(record);
+			
+			// Insert, or update (i.e. replace; when allowed) the record:
+			if(insert || updateAllowed)
+				db4o.store(record);
 			
 			return insert;
 		}
@@ -252,7 +296,7 @@ public class DB4ORecordStore extends RecordStore
 	@Override
 	public void finalise() throws DBException
 	{
-		commitTransaction(); // because DB4O does not have explicit opening of transactions (it is always using one) we should always commit before closing.
+		doCommitTransaction(); // because DB4O does not have explicit opening of transactions (it is always using one) we should always commit before closing.
 		super.finalise();
 	}
 
@@ -280,6 +324,16 @@ public class DB4ORecordStore extends RecordStore
 		{
 			throw new DBException("Exception upon backing-up the DB4O file", e);
 		}
+	}
+	
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#hasFullIndexSupport()
+	 */
+	@Override
+	public boolean hasFullIndexSupport()
+	{
+		return false;
 	}
 	
 	/**

@@ -20,7 +20,7 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite;
 
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
@@ -74,7 +74,7 @@ public abstract class SapelliSQLiteStatement
 	
 	public abstract void bindNull(int paramIdx) throws DBException;
 	
-	public abstract void clearAllBindings() throws DBException;
+	public abstract void clearAllBindings();
 	
 	/**
 	 * Executes a SQL INSERT operation, i.e. the creation (the "C" in "CRUD") of a new record in a database table.

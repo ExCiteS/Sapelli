@@ -16,17 +16,22 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.shared.db;
+package uk.ac.ucl.excites.sapelli.collector.db.exceptions;
 
-import java.io.File;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-
-public interface Store
+/**
+ * @author mstevens
+ *
+ */
+public class ProjectIdentificationClashException extends ProjectDuplicateException
 {
 
-	public void finalise() throws DBException;
+	private static final long serialVersionUID = 2L;
 	
-	public void backup(File destinationFolder) throws DBException;
-	
+	public ProjectIdentificationClashException(Project project, boolean previous)
+	{
+		super("There is a previously loaded project " + (previous ? "(\"" + project.toString(false) + "\")" : "") + " which is different but has the same id (" + project.getID() + ") and fingerprint (" + project.getFingerPrint() + "). Either delete the existing one or make a change to new one.");
+	}
+
 }

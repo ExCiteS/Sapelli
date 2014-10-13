@@ -29,7 +29,6 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -72,19 +71,12 @@ public class PrefProjectStore extends ProjectStore
 		this.preferences = context.getSharedPreferences(prefix + PREFERENCES_NAME, Context.MODE_PRIVATE);
 	}
 	
-	/**
-	 * @param project
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#doAdd(uk.ac.ucl.excites.sapelli.collector.model.Project)
 	 */
 	@Override
-	public void store(Project project) throws DuplicateException
+	protected void doAdd(Project project)
 	{
-		// Check for project duplicates:
-		if(retrieveProject(project.getName(), project.getVariant(), project.getVersion()) != null)
-			ThrowDuplicateProjectSignatureException(project);
-		// Check for id & finger print collision (very unlikely, but highly problematic):
-		Project dupe = retrieveProject(project.getID(), project.getFingerPrint());
-		if(dupe != null && !project.equals(dupe))
-			throw new DuplicateException("Project id & finger print collision!");
 		// Store in prefs:
 		storeProjectPathPrefKey(project);
 		// Store in cache:

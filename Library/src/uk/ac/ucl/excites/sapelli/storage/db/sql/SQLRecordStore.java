@@ -30,7 +30,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -86,7 +88,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	
 	private STable modelsTable;
 	private STable schemataTable;
-	private final Map<Record, STable> tables; // Maps "schemaMetaRecords" (records of Schema.META_SCHEMA, each describing a Schema) to the table corresponding to the described Schema
+	
+	/**
+	 * Maps references to(!) "schemaMetaRecords" (records of Schema.META_SCHEMA, each describing a Schema) to the table corresponding to the described Schema
+	 */
+	private final Map<RecordReference, STable> tables;
 	
 	
 	private final String valuePlaceHolder;
@@ -99,7 +105,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	public SQLRecordStore(StorageClient client, String valuePlaceHolder) throws DBException
 	{
 		super(client);
-		this.tables = new HashMap<Record, STable>();
+		this.tables = new HashMap<RecordReference, STable>();
 		this.valuePlaceHolder = valuePlaceHolder;
 	}
 	
@@ -138,15 +144,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	{
 		// Check known tables:
 		STable table = null;
-		Record schemaMetaRecord = null;
+		RecordReference schemaMetaRecordRef = null;
 		if(schema == Model.MODEL_SCHEMA)
 			table = modelsTable; // may still be null if getTable() was called from initialise()
 		else if(schema == Model.META_SCHEMA)
 			table = schemataTable; // may still be null if getTable() was called from initialise()
 		else
 		{
-			schemaMetaRecord = Schema.GetMetaRecord(schema); // get schemaMetaRecord
-			table = tables.get(schemaMetaRecord); // lookup in tables cache
+			schemaMetaRecordRef = Schema.GetMetaRecordReference(schema); // get reference to schemaMetaRecord
+			table = tables.get(schemaMetaRecordRef); // lookup in tables cache
 		}
 		
 		// If not found, generate new SQLTable object for the Schema:
@@ -154,7 +160,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		{
 			table = getTableFactory().generateTable(schema);
 			if(schema != Model.MODEL_SCHEMA && schema != Model.META_SCHEMA) // the "tables" map is only for tables of "real" (non-meta) schemata!
-				tables.put(schemaMetaRecord, table);
+				tables.put(schemaMetaRecordRef, table);
 		}
 		
 		// If requested then create the actual table in the database if it is not there:
@@ -171,7 +177,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				{
 					if(!modelsTable.isRecordInDB(Model.GetModelRecordReference(schema.getModel()))) // check if model is already known (due to one of its other schemata being present)
 						modelsTable.insert(Model.GetModelRecord(schema.getModel()));
-					schemataTable.insert(schemaMetaRecord);
+					schemataTable.insert(Schema.GetMetaRecord(schema));
 				}
 			}
 			catch(Exception e)
@@ -210,7 +216,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				dbE.printStackTrace(System.err);
 				continue;
 			}
-		// Clean up:
+		
+		// Clean up empty tables:
 		if(emptyTables != null)
 		{
 			startTransaction();
@@ -220,14 +227,19 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 				// Forget schemata & drop tables:
 				for(STable emptyTable : emptyTables)
 				{
+					RecordReference schemaMetaRecordRef = Schema.GetMetaRecordReference(emptyTable.schema);
+					
 					// Unregister (i.e. "forget") the schema (which the table corresponds to) in the schemataTable:
-					schemataTable.delete(Schema.GetMetaRecordReference(emptyTable.schema));
+					schemataTable.delete(schemaMetaRecordRef);
 					
 					// Drop the table itself:
 					emptyTable.drop();
 					
 					// Remember model:
 					possiblyRemovableModels.add(emptyTable.schema.getModel());
+					
+					// Remove from tables map:
+					tables.remove(schemaMetaRecordRef);
 				}
 				// Forget models if none of their schemata correspond to an existing (and at this point non-empty) table in the database:
 				modelLoop : for(Model model : possiblyRemovableModels)
@@ -253,6 +265,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			}
 			commitTransaction();
 		}
+		
+		// Release resources on all remaining tables
+		for(STable table : tables.values())
+			table.release();
+		schemataTable.release();
+		modelsTable.release();
 	}
 	
 	protected List<Schema> getAllKnownSchemata()
@@ -334,6 +352,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	protected boolean doStore(Record record) throws DBException
 	{
 		return getTable(record.getSchema(), true).store(record); // will create table in db if it is not there
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doInsert(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 */
+	@Override
+	protected void doInsert(Record record) throws DBException
+	{
+		getTable(record.getSchema(), true).insert(record); // will create table in db if it is not there
 	}
 
 	@Override
@@ -683,10 +710,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Store a record by INSERTing, if it is new, or UPDATEing if it existed.
 		 * 
 		 * @param record
-		 * @return whether or not the record was new
+		 * @return
+		 * @throws DBConstraintException
 		 * @throws DBException
 		 */
-		public boolean store(Record record) throws DBException
+		public boolean store(Record record) throws DBConstraintException, DBException
 		{
 			boolean newRec = !isRecordInDB(record);
 			if(newRec)
@@ -720,11 +748,12 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * 
 		 * *Must* be overridden in order to support auto incrementing keys.
 		 * 
-		 * @param record
+		 * @throws DBPrimaryKeyException
+		 * @throws DBConstraintException
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		public void insert(Record record) throws DBException
+		public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
 		{
 			if(autoIncrementKeyColumn != null)
 				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values.");
@@ -738,10 +767,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * May be overridden.
 		 * 
 		 * @param record
+		 * @throws DBConstraintException
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		public void update(Record record) throws DBException
+		public void update(Record record) throws DBConstraintException, DBException
 		{
 			executeSQL(new RecordUpdateHelper((STable) this, record).getQuery());
 		}
@@ -831,6 +861,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @throws DBException
 		 */
 		protected abstract List<Record> executeRecordSelection(RecordSelectHelper selection) throws DBException;
+		
+		public abstract void release();
 		
 		/* (non-Javadoc)
 		 * @see java.lang.Object#toString()

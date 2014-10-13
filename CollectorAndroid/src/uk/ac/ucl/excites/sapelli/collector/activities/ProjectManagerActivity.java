@@ -32,11 +32,11 @@ import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderCallback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
-import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
@@ -252,7 +252,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			if(projects.isEmpty())
 			{	// Use /mnt/sdcard/Sapelli/ as the basePath:
 				p = new ProjectLoader(fileStorageProvider).load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
-				projectStore.store(p);
+				projectStore.add(p);
 			}
 			else
 				p = projects.get(0); // Assumption: there is only one stored project in demo mode
@@ -558,18 +558,15 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// Store the project object:
 		try
 		{
-			projectStore.store(project);
+			projectStore.add(project);
 		}
 		catch(Exception e) // this shouldn't happen, but just in case...
 		{
 			Log.e(TAG, "Could not store project.", e);
-			showErrorDialog("Could not store project: " + e.getLocalizedMessage(), false);
 			// Delete project installation folder:
-			try
-			{
-				fileStorageProvider.getProjectInstallationFolder(project, false).delete();
-			}
-			catch(Exception ignore) {}
+			org.apache.commons.io.FileUtils.deleteQuietly(fileStorageProvider.getProjectInstallationFolder(project, false));
+			// Show error dialog:
+			showErrorDialog("Could not store project: " + e.getLocalizedMessage());
 			return null; // !!!
 		}
 
@@ -587,15 +584,12 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 	/**
 	 * @param loadedProject
-	 * @throws DuplicateException
+	 * @throws ProjectDuplicateException
 	 */
 	@Override
-	public void checkProject(Project loadedProject) throws DuplicateException
+	public void checkProject(Project loadedProject) throws ProjectDuplicateException
 	{
-		// TODO check if id+finger print clashes? (highly unlikely but potentially catastrophic)
-		// Check for signature clashes (name+variant+version):
-		if(projectStore.retrieveProject(loadedProject.getName(), loadedProject.getVariant(), loadedProject.getVersion()) != null)
-			ProjectStore.ThrowDuplicateProjectSignatureException(loadedProject);
+		projectStore.duplicateCheck(loadedProject);
 	}
 
 	private void requestEncryptionKey(final Project project)

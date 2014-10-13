@@ -25,8 +25,9 @@ import com.almworks.sqlite4java.SQLiteConstants;
 import com.almworks.sqlite4java.SQLiteException;
 import com.almworks.sqlite4java.SQLiteStatement;
 
-import uk.ac.ucl.excites.sapelli.shared.db.DBConstraintException;
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement;
@@ -47,20 +48,21 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	private final SQLiteConnection db;
 	private final SQLiteStatement javaSQLiteSt;
 	private Boolean firstStep = null;
-	
+
 	/**
-	 * @param javaSQLiteSt
+	 * @param db
+	 * @param sql
 	 * @param paramCols
+	 * @throws SQLiteException
 	 * @throws DBException
 	 */
-	public JavaSQLiteStatement(SQLiteConnection db, SQLiteStatement javaSQLiteSt, List<SQLiteColumn<?, ?>> paramCols) throws SQLiteException
+	public JavaSQLiteStatement(SQLiteConnection db, String sql, List<SQLiteColumn<?, ?>> paramCols) throws SQLiteException, DBException
 	{
 		super(paramCols);
 		this.db = db;
-		this.javaSQLiteSt = javaSQLiteSt; // not necessarily a new SQLiteStatement (may have been cached), therefore...
-		// ... reset & clear bindings if necessary:
-		if(javaSQLiteSt.hasStepped() || javaSQLiteSt.hasBindings())
-			javaSQLiteSt.reset(true);
+		this.javaSQLiteSt = db.prepare(sql, true); // not necessarily a new SQLiteStatement (may have been cached), therefore...
+		// ... clear bindings (& reset) if necessary:
+		clearAllBindings(); // will also call reset() if the statement "has stepped"
 	}
 	
 	/**
@@ -140,31 +142,54 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 			throw new DBException("Exception upon binding null value to parameter " + paramIdx, e);
 		}
 	}
-
+	
 	/**
-	 * Clears all existing bindings
+	 * Only serves to "eat" exceptions thrown by {@link SQLiteStatement#reset(boolean)}, which are typically
+	 * "re-throws" of failures during earlier executions of the statement.
 	 * 
-	 * If the statement has stepped we also do a reset. This is because other wise subsequent calls to bind* methods result in errors.
+	 * @param clearBindings
+	 */
+	protected void reset(boolean clearBindings)
+	{
+		try
+		{
+			javaSQLiteSt.reset(clearBindings && javaSQLiteSt.hasBindings()); // also clear bindings if there are any
+		}
+		catch(SQLiteException e)
+		{
+			System.err.println("Exception upon statement reset (probably caused by failure during earlier execution, and hence ignorable):");
+			e.printStackTrace(System.err);
+		}
+	}
+	
+	/**
+	 * Clears all existing bindings.
+	 * 
+	 * If the statement has stepped we also do a reset. This is because otherwise subsequent calls to bind* methods result in errors.
 	 * The reason is that (copied from SQLite C interface docs) "if any of the sqlite3_bind_*() routines are called [...] with a prepared
 	 * statement for which sqlite3_step() has been called more recently than sqlite3_reset(), then the call will return SQLITE_MISUSE."
+	 * 
+	 * Any exceptions thrown by {@link SQLiteStatement#reset(boolean)} or {@link SQLiteStatement#clearBindings()} are "eaten" because
+	 * these are typically "re-throws" of failures during earlier executions of the statement.
 	 * 
 	 * @see http://www.sqlite.org/c3ref/bind_blob.html
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#clearAllBindings()
 	 */
 	@Override
-	public void clearAllBindings() throws DBException
+	public void clearAllBindings()
 	{
-		try
-		{
-			if(javaSQLiteSt.hasStepped())
-				javaSQLiteSt.reset(true); // also clears bindings
-			else
+		if(javaSQLiteSt.hasStepped())
+			reset(true); // also clears bindings if there are any
+		else if(javaSQLiteSt.hasBindings())
+			try
+			{
 				javaSQLiteSt.clearBindings();
-		}
-		catch(SQLiteException e)
-		{
-			throw new DBException("Exception upon clearing statement bindings", e);
-		}
+			}
+			catch(SQLiteException e)
+			{
+				System.err.println("Exception upon clearing statement bindings (probably caused by failure during earlier execution, and hence ignorable):");
+				e.printStackTrace(System.err);
+			}
 	}
 	
 	/**
@@ -186,7 +211,13 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		catch(SQLiteException e)
 		{
 			if(e.getErrorCode() == SQLiteConstants.SQLITE_CONSTRAINT)
-				throw new DBConstraintException("Failed to execute INSERT statement due to constraint violation", e);
+			{
+				String msg = e.getMessage();
+				if(msg != null && msg.toUpperCase().contains("PRIMARY KEY"))
+					throw new DBPrimaryKeyException("Failed to execute INSERT statement due to existing record with same primary key", e);
+				else
+					throw new DBConstraintException("Failed to execute INSERT statement due to constraint violation", e);
+			}
 			throw new DBException("Failed to execute INSERT statement", e);
 		}
 	}
@@ -241,7 +272,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 		try
 		{
 			if(javaSQLiteSt.hasStepped())
-				javaSQLiteSt.reset(false);
+				reset(false); // don't clear bindings!
 			if(javaSQLiteSt.step())
 				return javaSQLiteSt.columnLong(0);
 			else
@@ -266,19 +297,19 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	@Override
 	public ISQLiteCursor executeSelectRows() throws DBException
 	{
+		if(javaSQLiteSt.hasStepped())
+		{
+			firstStep = null;
+			reset(false); // don't clear bindings!
+		}
 		try
 		{
-			if(javaSQLiteSt.hasStepped())
-			{
-				firstStep = null;
-				javaSQLiteSt.reset(false); // don't clear bindings!
-			}
 			firstStep = moveToNext();
 			return this; // act as cursor
 		}
-		catch(SQLiteException /* from javaSQLiteSt.reset(boolean) */ | DBException /* from moveToNext(), we could throw this as-is but msg is confusing */ e)
+		catch(DBException e) // from moveToNext(), we could throw this as-is but msg is confusing
 		{
-			throw new DBException("Failed to execute SELECT rows query", e instanceof DBException ? e.getCause() : e);
+			throw new DBException("Failed to execute SELECT rows query", e.getCause());
 		}
 	}
 	
@@ -376,7 +407,7 @@ public class JavaSQLiteStatement extends SapelliSQLiteStatement implements ISQLi
 	@Override
 	public void close()
 	{
-		javaSQLiteSt.dispose(); // Although it is somewhat counterintuitive this allows the prepared statement to be returned to the cache for future re-use
+		javaSQLiteSt.dispose(); // Although it is somewhat counter-intuitive this allows the prepared statement to be returned to the cache for future re-use
 	}
 	
 	@Override

@@ -20,9 +20,12 @@ package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
+import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectAlreadyStoredException;
+import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
+import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectSignatureClashException;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 
@@ -33,29 +36,81 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
  */
 public abstract class ProjectStore implements Store
 {
-
+	
 	/**
+	 * Stores the given project, provided it doesn't clash with a previously stored one.<br/>
+	 * A clash means that there is a previously stored project which is different *but* has the same signature (name+[variant]+version) or identification (id+fingerprint).
+	 * If the exact same project is already stored nothing happens.
+	 * 
 	 * @param project
-	 * @throws DuplicateException
+	 * @throws ProjectSignatureClashException when there is a previously stored project which is different but has the same signature (name+[variant]+version)
+	 * @throws ProjectIdentificationClashException when there is a previously stored project which is different but has the same identification (id+fingerprint)
 	 */
-	static public void ThrowDuplicateProjectSignatureException(Project project) throws DuplicateException
+	public void add(Project project) throws ProjectSignatureClashException, ProjectIdentificationClashException
 	{
-		throw new DuplicateException("There is already a project with signature \"" + project.toString(false) + "\". Either delete the existing one or change the version of the new one.");
+		if(!isStored(project, true))
+			// Go ahead with storing project:
+			doAdd(project);
 	}
 	
 	/**
-	 * For backwards compatibility only
+	 * Checks if the given project, or a similar one, is already in the database.<br/>
+	 * If *exact* same project is already stored this method returns {@code true}.
+	 * If a different project with the same identification (id+fingerprint), or the same signature (name+[variant]+version)
+	 * is already stored then this method will respectively throw a {@link ProjectIdentificationClashException} or a {@link ProjectSignatureClashException} exception.
+	 * If no equal or similar project is currently stored the method returns {@code false}
 	 * 
-	 * @param id
-	 * @param version
-	 * @return
-	 */
-	public abstract Project retrieveV1Project(int schemaID, int schemaVersion);
-
-	/**
 	 * @param project
+	 * @param queryOnSignature whether or to query based on signature
+	 * @return whether or not exactly the same project is already stored
+	 * @throws ProjectSignatureClashException when there is a previously stored project which is different but has the same signature (name+[variant]+version)
+	 * @throws ProjectIdentificationClashException when there is a previously stored project which is different but has the same identification (id+fingerprint)
 	 */
-	public abstract void store(Project project) throws DuplicateException;
+	protected boolean isStored(Project project, boolean queryOnSignature) throws ProjectSignatureClashException, ProjectIdentificationClashException
+	{
+		// Check for identification (id+fingerprint) clash:
+		Project dupe = retrieveProject(project.getID(), project.getFingerPrint());
+		if(queryOnSignature && dupe == null)
+			// Check for signature (name+[variant]+version) clash:
+			dupe = retrieveProject(project.getName(), project.getVariant(), project.getVersion());
+		
+		// Handle duplicate...
+		if(dupe != null)
+		{
+			if(!project.equals(dupe))
+			{
+				if(project.equalSignature(dupe))
+					throw new ProjectSignatureClashException(dupe);
+				else
+					throw new ProjectIdentificationClashException(dupe, true);
+			}
+			else
+				return true; // duplicate but equal --> this project is already in the store
+		}
+		return false;
+	}
+	
+	/**
+	 * Checks if the given project is similar or equal to a previously stored one
+	 * 
+	 * @param project
+	 * @throws ProjectSignatureClashException when there is a previously stored project which is different but has the same signature (name+[variant]+version)
+	 * @throws ProjectIdentificationClashException when there is a previously stored project which is different but has the same identification (id+fingerprint)
+	 * @throws ProjectAlreadyStoredException when the exact same project is already stored
+	 */
+	public void duplicateCheck(Project project) throws ProjectSignatureClashException, ProjectIdentificationClashException, ProjectAlreadyStoredException
+	{
+		if(isStored(project, true))
+			throw new ProjectAlreadyStoredException(project);
+	}
+	
+	/**
+	 * Stores the project.
+	 * 
+	 * @param project
+	 * @throws ProjectDuplicateException some implementation may throw this in case of a identification or signature clash
+	 */
+	protected abstract void doAdd(Project project) throws ProjectDuplicateException;
 
 	/**
 	 * Retrieves all projects
@@ -89,6 +144,15 @@ public abstract class ProjectStore implements Store
 	 * @return null if no such project was found
 	 */
 	public abstract Project retrieveProject(int projectID, int projectFingerPrint);
+	
+	/**
+	 * For backwards compatibility only
+	 * 
+	 * @param id
+	 * @param version
+	 * @return
+	 */
+	public abstract Project retrieveV1Project(int schemaID, int schemaVersion);
 	
 	/**
 	 * Retrieves all project versions/variants which share a given ID

@@ -414,7 +414,7 @@ public class Project
 	{
 		return 	this.name.equals(other.name)
 				&& (this.variant == null ? other.variant == null : variant.equals(other.variant))
-				&& this.version.equals(other.version);	
+				&& this.version.equals(other.version);
 	}
 	
 	@Override

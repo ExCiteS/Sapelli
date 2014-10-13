@@ -1,6 +1,21 @@
 /**
+ * Sapelli data collection platform: http://sapelli.org
  * 
+ * Copyright 2012-2014 University College London - ExCiteS group
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and 
+ * limitations under the License.
  */
+
 package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.io.File;
@@ -11,15 +26,17 @@ import java.util.List;
 import java.util.Map;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
+import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectSignatureClashException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
-import uk.ac.ucl.excites.sapelli.shared.db.DBConstraintException;
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Index;
@@ -185,26 +202,46 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 			CollectionUtils.addIgnoreNull(projects, getProject(projRec));
 		return projects;
 	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#store(uk.ac.ucl.excites.sapelli.collector.model.Project)
+	
+	/**
+	 * Overridden to avoid that isStored() also does an necessary signature-based query.
+	 * The reason is that when the underlying RecordStore enforces indexes signature clashes will automatically be avoided upon insertion.
+	 * 
+	 * @see #doAdd(Project)
+	 * @see RecordStore#hasFullIndexSupport()
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#add(uk.ac.ucl.excites.sapelli.collector.model.Project)
 	 */
 	@Override
-	public void store(Project project) throws DuplicateException
+	public void add(Project project) throws ProjectSignatureClashException, ProjectIdentificationClashException
+	{
+		if(!isStored(project, !recordStore.hasFullIndexSupport()))
+			// Go ahead with storing project:
+			doAdd(project);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#doAdd(uk.ac.ucl.excites.sapelli.collector.model.Project)
+	 */
+	@Override
+	protected void doAdd(Project project) throws ProjectIdentificationClashException, ProjectSignatureClashException, IllegalStateException
 	{
 		try
 		{
-			// TODO check id+finger print clash? Otherwise existing project will be updated
-			recordStore.store(getProjectRecord(project));
+			recordStore.insert(getProjectRecord(project)); // use insert() instead of store()
 			cacheProject(project);
+		}
+		catch(DBPrimaryKeyException dbPKE)
+		{
+			throw new ProjectIdentificationClashException(project, false);
 		}
 		catch(DBConstraintException dbCE)
 		{
-			ThrowDuplicateProjectSignatureException(project);
+			throw new ProjectSignatureClashException(project);
 		}
 		catch(DBException e)
 		{
-			e.printStackTrace();
+			e.printStackTrace(System.err);
+			throw new IllegalStateException(e);
 		}
 	}
 

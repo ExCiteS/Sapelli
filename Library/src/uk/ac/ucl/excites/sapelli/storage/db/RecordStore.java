@@ -23,8 +23,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -98,8 +100,8 @@ public abstract class RecordStore implements Store
 			}
 			openTransactions--; // !!!
 		}
-		else
-			System.err.println("Warning: there is no open transaction to commit!");
+		//else
+		//	System.err.println("Warning: there is no open transaction to commit!");
 	}
 	
 	protected abstract void doCommitTransaction() throws DBException;
@@ -111,8 +113,8 @@ public abstract class RecordStore implements Store
 	 */
 	public void rollbackTransactions() throws DBException
 	{
-		if(openTransactions == 0)
-			System.err.println("Warning: there is no open transaction to roll back!");
+		//if(openTransactions == 0)
+		//	System.err.println("Warning: there is no open transaction to roll back!");
 		while(openTransactions > 0)
 			rollbackTransaction();
 	}
@@ -122,7 +124,7 @@ public abstract class RecordStore implements Store
 	 * 
 	 * @throws DBException
 	 */
-	public void rollbackTransaction() throws DBException
+	private void rollbackTransaction() throws DBException
 	{
 		if(openTransactions > 0)
 		{
@@ -136,8 +138,8 @@ public abstract class RecordStore implements Store
 			}
 			openTransactions--; // !!!
 		}
-		else
-			System.err.println("Warning: there is no open transaction to roll back!");
+		//else
+		//	System.err.println("Warning: there is no open transaction to roll back!");
 	}
 	
 	protected abstract void doRollbackTransaction() throws DBException;
@@ -153,7 +155,7 @@ public abstract class RecordStore implements Store
 	/**
 	 * @return the number of currently open (possibly simulated) transactions
 	 */
-	protected int getOpenTransactions()
+	protected int numberOfOpenTransactions()
 	{
 		return openTransactions;
 	}
@@ -171,12 +173,13 @@ public abstract class RecordStore implements Store
 	}
 	
 	/**
-	 * Stores a single record.
+	 * Stores a single record, if it already exists it is updated.
 	 * Note that this method does not start a new transaction. If this is a desired the client code should take care of that by first calling {@link #startTransaction()}.
 	 * However, if an error occurs any open transaction will be rolled back!
 	 * 
 	 * @param record - the record to store or update; records of internal schemata will be rejected
-	 * @throws DBException
+	 * @throws DBConstraintException when a table/index constraint is violated
+	 * @throws DBException in case of a database problem
 	 */
 	public void store(Record record) throws DBException
 	{
@@ -200,11 +203,38 @@ public abstract class RecordStore implements Store
 	}
 	
 	/**
-	 * Store a list of records. A transaction will be used. If there is a problem with storing one 
+	 * Insert a single record, if it already exists a DuplicateException will be thrown.
+	 * Note that this method does not start a new transaction. If this is a desired the client code should take care of that by first calling {@link #startTransaction()}.
+	 * However, if an error occurs any open transaction will be rolled back!
+	 * 
+	 * @param record
+	 * @throws DBPrimaryKeyException when the record already exists
+	 * @throws DBConstraintException when a table/index constraint is violated
+	 * @throws DBException in case of another database problem
+	 */
+	public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
+	{
+		if(!isStorable(record))
+			throw new IllegalArgumentException(String.format("Record (%s) cannot be inserted!", record.toString(false)));
+		try
+		{
+			doInsert(record);
+		}
+		catch(DBException e)
+		{
+			rollbackTransactions(); // !!!
+			throw e;
+		}
+		// Inform client:
+		client.recordInserted(record);
+	}
+	
+	/**
+	 * Store a list of records. A record that already exists will be updated. A transaction will be used. If there is a problem with storing one 
 	 * of the records the whole operation will be rolled back.
 	 * 
 	 * @param records - the records to store or update
-	 * @throws DBException
+	 * @throws DBException in case of a database problem
 	 */
 	public void store(List<Record> records) throws DBException
 	{
@@ -235,11 +265,24 @@ public abstract class RecordStore implements Store
 	}
 	
 	/**
+	 * Stores (insert or update/replace) a record
+	 * 
 	 * @param record - the record to store or update; can be assumed to be non-null and not of an internal schema
-	 * @throws DBException
+	 * @throws DBConstraintException when a table/index constraint is violated
+	 * @throws DBException in case of a database problem
 	 * @return whether the record was new (i.e. it was INSERTed; returns true), or not (i.e. it was UPDATEd; returns false)
 	 */
-	protected abstract boolean doStore(Record record) throws DBException;
+	protected abstract boolean doStore(Record record) throws DBConstraintException, DBException;
+	
+	/**
+	 * Inserts a record, throws a DuplicateException if it already exists.
+	 * 
+	 * @param record - the record to insert; can be assumed to be non-null and not of an internal schema
+	 * @throws DBPrimaryKeyException when the record already exists
+	 * @throws DBConstraintException when a table/index constraint is violated
+	 * @throws DBException in case of another database problem
+	 */
+	protected abstract void doInsert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException;
 	
 	/**
 	 * Retrieve all Records (of any schema)
@@ -425,5 +468,10 @@ public abstract class RecordStore implements Store
 	}
 	
 	protected abstract void doBackup(File destinationFolder) throws DBException;
+	
+	/**
+	 * @return whether or not this RecordStore implementation has full support for indexes (and the constraints they impose)
+	 */
+	public abstract boolean hasFullIndexSupport();
 
 }

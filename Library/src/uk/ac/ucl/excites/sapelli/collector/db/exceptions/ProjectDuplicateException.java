@@ -16,17 +16,23 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.shared.db;
+package uk.ac.ucl.excites.sapelli.collector.db.exceptions;
 
-import java.io.File;
-
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-
-public interface Store
+/**
+ * @author mstevens
+ *
+ */
+public class ProjectDuplicateException extends IllegalArgumentException
 {
 
-	public void finalise() throws DBException;
-	
-	public void backup(File destinationFolder) throws DBException;
-	
+	private static final long serialVersionUID = 1L;
+
+	/**
+	 * @param detailMessage
+	 */
+	public ProjectDuplicateException(String detailMessage)
+	{
+		super(detailMessage);
+	}
+
 }
