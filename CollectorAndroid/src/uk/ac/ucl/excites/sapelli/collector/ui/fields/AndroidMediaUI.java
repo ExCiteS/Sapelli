@@ -55,11 +55,11 @@ import android.widget.LinearLayout;
 import android.widget.ViewFlipper;
 
 /**
- * Built-in camera view
+ * An abstract class that represents a generic interface for capturing and reviewing media, with
+ * the automatic usage of a "gallery" mode for review if the media field can have multiple attachments.
  * 
- * TODO added photo/no photo buttons before entering actual camera mode OR going to naive camera app (which is no longer called from the controller!)
- * 
- * TODO Fix white "blocks" briefly appearing where the button(s) should be when view is loaded for 2nd time (on Android v2.x only?)
+ * Subclasses must implement methods that are called when various control buttons are pressed, such as "onCapture" when
+ * the media capture button (e.g. camera shutter) is tapped.
  * 
  * @author mstevens, Michalis Vitos, benelliott
  */

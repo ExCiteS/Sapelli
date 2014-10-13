@@ -40,6 +40,10 @@ import android.widget.LinearLayout;
  * A subclass of AndroidMediaUI which allows for the capture and 
  * review of images from the device's camera.
  * 
+ * TODO added photo/no photo buttons before entering actual camera mode OR going to naive camera app (which is no longer called from the controller!)
+ * 
+ * TODO Fix white "blocks" briefly appearing where the button(s) should be when view is loaded for 2nd time (on Android v2.x only?)
+ * 
  * @author mstevens, Michalis Vitos, benelliott
  *
  */
