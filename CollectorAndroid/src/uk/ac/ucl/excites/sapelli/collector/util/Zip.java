@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.zip.ZipEntry;
@@ -30,55 +31,40 @@ public class Zip
 		this.zipFileDest = zipFileDest;
 	}
 
-	public void zip()
+	public void zip() throws FileNotFoundException, IOException
 	{
+		// Create the ZipOutputStream
+		if(zip == null)
+			zip = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipFileDest)));
+
 		// Iterate through all files and add them to the zip file
 		for(String f : folders)
 			if(f != null)
-				zipFile(f, zipFileDest);
+				zipFile(f);
 
-		try
-		{
-			zip.close();
-		}
-		catch(IOException e)
-		{
-			Debug.e(e);
-		}
+		// Close the ZipOutputStream
+		zip.close();
 	}
 
 	/**
 	 * Zips a file to a zip file saved on
 	 * 
-	 * @param sourceFileDest
+	 * @param sourceFilePath
 	 * @param zipFileDest
 	 * @return
 	 */
-	private boolean zipFile(String sourceFileDest, String zipFileDest)
+	private boolean zipFile(String sourceFilePath)
 	{
 		// Create and test the file
 		File sourceFile = null;
-		try
-		{
-			sourceFile = new File(sourceFileDest);
-		}
-		catch(Exception e)
-		{
-			Debug.e(e);
-		}
+			sourceFile = new File(sourceFilePath);
 		
-		if(sourceFile == null)
+		if(!sourceFile.exists())
 			return false;
 
 		// Try to zip it
 		try
 		{
-			origin = null;
-			FileOutputStream dest = new FileOutputStream(zipFileDest);
-
-			if(zip == null)
-				zip = new ZipOutputStream(new BufferedOutputStream(dest));
-
 			// Check if file is a directory and use zipSubFolder()
 			if(sourceFile.isDirectory())
 			{
@@ -87,9 +73,9 @@ public class Zip
 			else
 			{
 				data = new byte[BUFFER_SIZE];
-				FileInputStream fi = new FileInputStream(sourceFileDest);
+				FileInputStream fi = new FileInputStream(sourceFilePath);
 				origin = new BufferedInputStream(fi, BUFFER_SIZE);
-				ZipEntry entry = new ZipEntry(FileHelpers.getFileName(sourceFileDest));
+				ZipEntry entry = new ZipEntry(FileHelpers.getFileName(sourceFilePath));
 				zip.putNextEntry(entry);
 				int count;
 				while((count = origin.read(data, 0, BUFFER_SIZE)) != -1)
@@ -116,7 +102,6 @@ public class Zip
 	private void zipSubFolder(File folder, int basePathLength) throws IOException
 	{
 		File[] fileList = folder.listFiles();
-		origin = null;
 		for(File file : fileList)
 		{
 			if(file.isDirectory())
