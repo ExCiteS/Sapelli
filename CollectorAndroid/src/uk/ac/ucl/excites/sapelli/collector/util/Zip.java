@@ -14,14 +14,16 @@ import uk.ac.ucl.excites.sapelli.util.Debug;
 
 public class Zip
 {
-	private static final int BUFFER = 2048;
+	private static final int BUFFER_SIZE = 2048;
 
 	private ZipOutputStream zip;
+	private BufferedInputStream origin;
+	private byte data[];
 
 	private String[] folders;
 	private String zipFileDest;
 
-	public Zip(String[] folders, String zipFileDest) throws Exception
+	public Zip(String[] folders, String zipFileDest)
 	{
 		this.folders = folders;
 		// TODO check if .zip
@@ -30,9 +32,19 @@ public class Zip
 
 	public void zip()
 	{
+		// Iterate through all files and add them to the zip file
 		for(String f : folders)
 			if(f != null)
 				zipFile(f, zipFileDest);
+
+		try
+		{
+			zip.close();
+		}
+		catch(IOException e)
+		{
+			Debug.e(e);
+		}
 	}
 
 	/**
@@ -61,9 +73,11 @@ public class Zip
 		// Try to zip it
 		try
 		{
-			BufferedInputStream origin = null;
+			origin = null;
 			FileOutputStream dest = new FileOutputStream(zipFileDest);
-			zip = new ZipOutputStream(new BufferedOutputStream(dest));
+
+			if(zip == null)
+				zip = new ZipOutputStream(new BufferedOutputStream(dest));
 
 			// Check if file is a directory and use zipSubFolder()
 			if(sourceFile.isDirectory())
@@ -72,18 +86,17 @@ public class Zip
 			}
 			else
 			{
-				byte data[] = new byte[BUFFER];
+				data = new byte[BUFFER_SIZE];
 				FileInputStream fi = new FileInputStream(sourceFileDest);
-				origin = new BufferedInputStream(fi, BUFFER);
+				origin = new BufferedInputStream(fi, BUFFER_SIZE);
 				ZipEntry entry = new ZipEntry(FileHelpers.getFileName(sourceFileDest));
 				zip.putNextEntry(entry);
 				int count;
-				while((count = origin.read(data, 0, BUFFER)) != -1)
+				while((count = origin.read(data, 0, BUFFER_SIZE)) != -1)
 				{
 					zip.write(data, 0, count);
 				}
 			}
-			zip.close();
 		}
 		catch(Exception e)
 		{
@@ -103,7 +116,7 @@ public class Zip
 	private void zipSubFolder(File folder, int basePathLength) throws IOException
 	{
 		File[] fileList = folder.listFiles();
-		BufferedInputStream origin = null;
+		origin = null;
 		for(File file : fileList)
 		{
 			if(file.isDirectory())
@@ -112,20 +125,19 @@ public class Zip
 			}
 			else
 			{
-				byte data[] = new byte[BUFFER];
+				data = new byte[BUFFER_SIZE];
 				String unmodifiedFilePath = file.getPath();
 				String relativePath = unmodifiedFilePath.substring(basePathLength);
 				Debug.d("Relative Path : " + relativePath);
 				FileInputStream fi = new FileInputStream(unmodifiedFilePath);
-				origin = new BufferedInputStream(fi, BUFFER);
+				origin = new BufferedInputStream(fi, BUFFER_SIZE);
 				ZipEntry entry = new ZipEntry(relativePath);
 				zip.putNextEntry(entry);
 				int count;
-				while((count = origin.read(data, 0, BUFFER)) != -1)
+				while((count = origin.read(data, 0, BUFFER_SIZE)) != -1)
 				{
 					zip.write(data, 0, count);
 				}
-				origin.close();
 			}
 		}
 	}
