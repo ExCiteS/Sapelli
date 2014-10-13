@@ -868,6 +868,7 @@ public class Form
 					(this.shortcutImageRelativePath != null ? this.shortcutImageRelativePath.equals(that.shortcutImageRelativePath) : that.shortcutImageRelativePath == null) &&
 					this.clickAnimation == that.clickAnimation &&
 					this.screenTransition == that.screenTransition &&
+					this.audioFeedback == that.audioFeedback &&
 					this.obfuscateMediaFiles == that.obfuscateMediaFiles &&
 					this.storeEndTime == that.storeEndTime &&
 					this.next == that.next &&
@@ -875,8 +876,11 @@ public class Form
 					(this.saveSoundRelativePath != null ? this.saveSoundRelativePath.equals(that.saveSoundRelativePath) : that.saveSoundRelativePath == null) &&
 					this.buttonBackgroundColor.equals(that.backButtonImageRelativePath) &&
 					(this.backButtonImageRelativePath != null ? this.backButtonImageRelativePath.equals(that.backButtonImageRelativePath) : that.backButtonImageRelativePath == null) &&
+					this.backButtonDescription.equals(that.backButtonDescription) &&
 					(this.cancelButtonImageRelativePath != null ? this.cancelButtonImageRelativePath.equals(that.cancelButtonImageRelativePath) : that.cancelButtonImageRelativePath == null) &&
-					(this.forwardButtonImageRelativePath != null ? this.forwardButtonImageRelativePath.equals(that.forwardButtonImageRelativePath) : that.forwardButtonImageRelativePath == null);
+					this.cancelButtonDescription.equals(that.cancelButtonDescription) &&
+					(this.forwardButtonImageRelativePath != null ? this.forwardButtonImageRelativePath.equals(that.forwardButtonImageRelativePath) : that.forwardButtonImageRelativePath == null) &&
+					this.forwardButtonDescription.equals(that.forwardButtonDescription);
 		}
 		else
 			return false;
@@ -897,6 +901,7 @@ public class Form
 		hash = 31 * hash + (shortcutImageRelativePath == null ? 0 : shortcutImageRelativePath.hashCode());
 		hash = 31 * hash + (clickAnimation ? 0 : 1);
 		hash = 31 * hash + screenTransition.ordinal();
+		hash = 31 * hash + audioFeedback.ordinal();
 		hash = 31 * hash + (obfuscateMediaFiles ? 0 : 1);
 		hash = 31 * hash + (storeEndTime ? 0 : 1);
 		hash = 31 * hash + next.ordinal();
@@ -904,8 +909,11 @@ public class Form
 		hash = 31 * hash + (saveSoundRelativePath == null ? 0 : saveSoundRelativePath.hashCode());
 		hash = 31 * hash + buttonBackgroundColor.hashCode();
 		hash = 31 * hash + (backButtonImageRelativePath == null ? 0 : backButtonImageRelativePath.hashCode());
+		hash = 31 * hash + backButtonDescription.hashCode();
 		hash = 31 * hash + (cancelButtonImageRelativePath == null ? 0 : cancelButtonImageRelativePath.hashCode());
+		hash = 31 * hash + cancelButtonDescription.hashCode();
 		hash = 31 * hash + (forwardButtonImageRelativePath == null ? 0 : forwardButtonImageRelativePath.hashCode());
+		hash = 31 * hash + forwardButtonDescription.hashCode();
 		// There is no need to include the schema.hashCode() in this computation because the schema it is entirely inferred from things that are included in the computation.
 		return hash;
 	}
