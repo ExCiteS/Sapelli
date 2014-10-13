@@ -60,7 +60,7 @@
 		<dependency>
 			<groupId>com.crashlytics.android</groupId>
 			<artifactId>crashlytics</artifactId>
-			<version>[1.1.11,)</version>
+			<version>[1.1.13,)</version>
 		</dependency>
 		<!-- <dependency> <groupId>net.rdrei.android.dirchooser</groupId> <artifactId>library</artifactId> 
 			<version>1.0-pre-v11</version> <type>aar</type> </dependency> -->
