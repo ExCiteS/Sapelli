@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -415,18 +416,75 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	
 	public boolean zipSapelliFiles(MenuItem item)
 	{
-		final String zipfile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() 
-				+ File.separator + "Sapelli_" + TimeUtils.getTimestampForFileName();
 
-		// TODO Test files
-		String[] files = new String[3];
-		files[0] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Dumps";
-		files[1] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects";
-		files[2] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects787"; // wrong path for debug
+		final ArrayList<Integer> selectedItems = new ArrayList<Integer>(); // Where we track the selected items
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		
+		// Create the items
+		final CharSequence[] folderList = { "Dumps", "Data", "Logs", "Projects" };
+		final boolean[] checkedFolders = { true, false, true, false };
+		
+		// Set the dialog title
+		builder.setTitle("Select folders to export:")
+		// Specify the list array, the items to be selected by default (null for none),
+		// and the listener through which to receive callbacks when items are selected
+				.setMultiChoiceItems(folderList, checkedFolders, new DialogInterface.OnMultiChoiceClickListener()
+				{
+					@Override
+					public void onClick(DialogInterface dialog, int which, boolean isChecked)
+					{
+						if(isChecked)
+						{
+							// If the user checked the item, add it to the selected items
+							selectedItems.add(which);
+						}
+						else if(selectedItems.contains(which))
+						{
+							// Else, if the item is already in the array, remove it
+							selectedItems.remove(Integer.valueOf(which));
+						}
+					}
+				})
+				// Set the action buttons
+				.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener()
+				{
+					@Override
+					public void onClick(DialogInterface dialog, int id)
+					{
+						// TODO Improve File name
+						final String zipfile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
+								+ File.separator + "Sapelli_" + TimeUtils.getTimestampForFileName();
 
-		// Call an AsyncZipper
-		AsyncZipper zipper = new AsyncZipper(this, getString(R.string.exporting_data), files, zipfile);
-		zipper.execute();
+						// TODO Get file paths
+						String[] paths = new String[selectedItems.size()];
+						for(int i : selectedItems)
+						{
+							switch(i)
+							{
+
+							}
+
+						}
+
+						paths[0] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Dumps";
+						paths[1] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects";
+						paths[2] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects787"; // wrong path for debug
+
+						// Call an AsyncZipper
+						AsyncZipper zipper = new AsyncZipper(ProjectManagerActivity.this, getString(R.string.exporting_data), paths, zipfile);
+						zipper.execute();
+					}
+				}).setNegativeButton(R.string.no, new DialogInterface.OnClickListener()
+				{
+					@Override
+					public void onClick(DialogInterface dialog, int id)
+					{
+						// Do nothing
+					}
+				});
+
+		// Show the dialog
+		builder.create().show();
 
 		return false;
 	}
