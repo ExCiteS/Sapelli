@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.util;
+package uk.ac.ucl.excites.sapelli.shared.io;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -28,16 +28,13 @@ import java.io.IOException;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.util.Debug;
-
 /**
- * Zip class
+ * Zipper class
  * 
  * @author Michalis Vitos
  *
  */
-public class Zip
+public class Zipper
 {
 	private static final int BUFFER_SIZE = 2048;
 	private static final String ZIP_EXTENTION = "zip";
@@ -56,7 +53,7 @@ public class Zip
 	 * @param zipDest
 	 *            - The destination of the zip file
 	 */
-	public Zip(String[] paths, String zipDest)
+	public Zipper(String[] paths, String zipDest)
 	{
 		this.paths = paths;
 		this.zipDest = zipDest;
@@ -127,7 +124,7 @@ public class Zip
 		}
 		catch(Exception e)
 		{
-			Debug.e(e);
+			e.printStackTrace();
 			return false;
 		}
 		return true;
@@ -154,9 +151,10 @@ public class Zip
 				data = new byte[BUFFER_SIZE];
 				String unmodifiedFilePath = file.getPath();
 				String relativePath = unmodifiedFilePath.substring(basePathLength);
-				Debug.d("Relative Path : " + relativePath);
+
 				FileInputStream fi = new FileInputStream(unmodifiedFilePath);
 				origin = new BufferedInputStream(fi, BUFFER_SIZE);
+
 				ZipEntry entry = new ZipEntry(relativePath);
 				zip.putNextEntry(entry);
 				int count;
