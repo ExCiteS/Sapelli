@@ -194,12 +194,13 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	{
 		try
 		{
+			// TODO check id+finger print clash? Otherwise existing project will be updated
 			recordStore.store(getProjectRecord(project));
 			cacheProject(project);
 		}
 		catch(DBConstraintException dbCE)
 		{
-			throw new DuplicateException("There is already a project with signature \"" + project.toString(false) + "\". Either delete the existing one or change the version of the new one.");
+			ThrowDuplicateProjectSignatureException(project);
 		}
 		catch(DBException e)
 		{
@@ -353,7 +354,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	@Override
 	public void finalise() throws DBException
 	{
-		recordStore.finalise();
+		//recordStore.finalise();
 	}
 
 	/* (non-Javadoc)
@@ -362,7 +363,7 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	@Override
 	public void backup(File destinationFolder) throws DBException
 	{
-		recordStore.backup(destinationFolder);
+		//recordStore.backup(destinationFolder);
 	}
 
 }

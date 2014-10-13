@@ -27,13 +27,22 @@ import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 
 /**
- * Interface for Project storage back-ends
+ * Abstract super class for Project storage back-ends
  * 
  * @author mstevens
  */
 public abstract class ProjectStore implements Store
 {
 
+	/**
+	 * @param project
+	 * @throws DuplicateException
+	 */
+	static public void ThrowDuplicateProjectSignatureException(Project project) throws DuplicateException
+	{
+		throw new DuplicateException("There is already a project with signature \"" + project.toString(false) + "\". Either delete the existing one or change the version of the new one.");
+	}
+	
 	/**
 	 * For backwards compatibility only
 	 * 
@@ -54,7 +63,7 @@ public abstract class ProjectStore implements Store
 	 * @return
 	 */
 	public abstract List<Project> retrieveProjects();
-
+	
 	/**
 	 * Retrieves specific Project
 	 * 

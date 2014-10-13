@@ -20,7 +20,11 @@ package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
@@ -28,7 +32,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 
@@ -379,25 +382,32 @@ public class Project
 	 */
 	public List<File> getMissingFiles(FileStorageProvider fileStorageProvider)
 	{
-		List<File> invalidFiles = new ArrayList<File>();
+		SortedSet<File> missingFiles = new TreeSet<File>();
 		for(File file : getFiles(fileStorageProvider))
 			if(!file.isFile() || !file.exists() || !file.canRead())
-				invalidFiles.add(file);
-		return invalidFiles;
+				missingFiles.add(file);
+		// Return as list:
+		if(missingFiles.isEmpty())
+			return Collections.<File> emptyList();
+		else
+			return Arrays.asList(missingFiles.toArray(new File[missingFiles.size()]));
 	}
 	
 	/**
-	 * Generate concatenated list of paths (relative to the project path) of files that are referred to by (forms of) this project but which could not be found or accessed
+	 * Generate list of paths (relative to the project path) of files that are referred to by (forms of) this project but which could not be found or accessed
 	 * 
-	 * @return concatenated relative paths of missing files, or null if no files are missing   
+	 * @return a list relative paths of missing files, or null if no files are missing   
 	 */
-	public String getMissingFilesRelativePaths(FileStorageProvider fileStorageProvider, String separator)
+	public List<String> getMissingFilesRelativePaths(FileStorageProvider fileStorageProvider)
 	{
+		List<File> missingFiles = getMissingFiles(fileStorageProvider);
+		if(missingFiles.isEmpty())
+			return Collections.<String> emptyList();
+		List<String> missingFilePaths = new ArrayList<String>(missingFiles.size());
 		int startIndex = fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath().length() + 1; // +1 for file separator
-		TransactionalStringBuilder bldr = new TransactionalStringBuilder(separator);
 		for(File missingFile : getMissingFiles(fileStorageProvider))
-			bldr.append(missingFile.getAbsolutePath().substring(startIndex));
-		return bldr.length() != 0 ? bldr.toString() : null;
+			missingFilePaths.add(missingFile.getAbsolutePath().substring(startIndex));
+		return missingFilePaths;
 	}
 	
 	public boolean equalSignature(Project other)

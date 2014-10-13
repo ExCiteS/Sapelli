@@ -233,20 +233,42 @@ public abstract class BaseActivity extends Activity
 	 * Show dialog with error message
 	 * 
 	 * @param message
+	 * @param finish
 	 */
 	public void showErrorDialog(String message, boolean finish)
 	{
 		showOKDialog(R.string.error, message, finish);
+	}
+	
+	/**
+	 * Show dialog with error message
+	 * 
+	 * @param message
+	 */
+	public void showErrorDialog(String message)
+	{
+		showOKDialog(R.string.error, message, false);
 	}
 
 	/**
 	 * Show dialog with error message
 	 * 
 	 * @param messageId
+	 * @param finish
 	 */
 	public void showErrorDialog(int messageId, boolean finish)
 	{
 		showOKDialog(R.string.error, messageId, finish);
+	}
+	
+	/**
+	 * Show dialog with error message
+	 * 
+	 * @param messageId
+	 */
+	public void showErrorDialog(int messageId)
+	{
+		showOKDialog(R.string.error, messageId, false);
 	}
 	
 	/**

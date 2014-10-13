@@ -126,7 +126,7 @@
                 android:paddingTop="4dp" >
 
                 <EditText
-                    android:id="@+id/EnterURL"
+                    android:id="@+id/txtProjectPathOrURL"
                     android:layout_width="0dip"
                     android:layout_height="wrap_content"
                     android:layout_weight=".75"
@@ -134,7 +134,7 @@
                     android:textSize="10sp" />
 
                 <Button
-                    android:id="@+id/BrowseButton"
+                    android:id="@+id/browseButton"
                     android:layout_width="0dip"
                     android:layout_height="wrap_content"
                     android:layout_weight=".25"
@@ -148,17 +148,17 @@
                 android:layout_height="wrap_content" >
 
                 <Button
-                    android:id="@+id/ScanButton"
+                    android:id="@+id/scanQRButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:onClick="scanQR"
                     android:text="@string/scan_qr_code" />
 
                 <Button
-                    android:id="@+id/DownloadButton"
+                    android:id="@+id/loadProjectButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:onClick="loadFile"
+                    android:onClick="loadProject"
                     android:text="@string/load_project" />
             </LinearLayout>
         </LinearLayout>

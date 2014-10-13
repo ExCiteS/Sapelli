@@ -274,6 +274,14 @@ public class TransactionalStringBuilder
 	}
 	
 	/**
+	 * @return whether or not the builder is still empty (note we only take committed transactions into account!)
+	 */
+	public boolean isEmpty()
+	{
+		return length() == 0;
+	}
+	
+	/**
 	 * @return the String built in the root transaction
 	 * @throws IllegalStateException when there are still externally opened transaction that have not yet been committed/rolled-back
 	 */

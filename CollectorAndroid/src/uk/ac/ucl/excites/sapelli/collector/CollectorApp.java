@@ -65,7 +65,7 @@ public class CollectorApp extends Application implements StoreClient
 	static private final String DATABASE_BASENAME = "Sapelli";
 	static private final String DEMO_PREFIX = "Demo_";
 	
-	static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
+	static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = false;
 	
 	static private final String CRASHLYTICS_VERSION_INFO = "VERSION_INFO";
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";

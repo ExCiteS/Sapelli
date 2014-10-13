@@ -25,9 +25,13 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
  * 
  * @author mstevens
  */
-public interface ProjectLoaderClient
+public interface ProjectLoaderCallback
 {
 
-	public boolean isDuplicateProject(Project loadProject);
+	/**
+	 * @param loadedProject
+	 * @throws IllegalArgumentException if something is wrong
+	 */
+	public void checkProject(Project loadedProject) throws IllegalArgumentException;
 		
 }

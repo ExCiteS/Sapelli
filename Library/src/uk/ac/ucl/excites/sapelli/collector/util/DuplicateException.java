@@ -22,12 +22,9 @@ package uk.ac.ucl.excites.sapelli.collector.util;
  * @author mstevens
  *
  */
-public class DuplicateException extends Exception
+public class DuplicateException extends IllegalArgumentException
 {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 1L;
 
 	/**

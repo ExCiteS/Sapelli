@@ -91,7 +91,7 @@ public class DB4OProjectStore extends ProjectStore
 	{
 		// Check for project duplicates:
 		if(retrieveProject(project.getName(), project.getVariant(), project.getVersion()) != null)
-			throw new DuplicateException("There is already a project with signature \"" + project.toString(false) + "\". Either delete the existing one or change the version of the new one.");
+			ThrowDuplicateProjectSignatureException(project);
 		db4o.store(project);
 		db4o.commit();
 	}

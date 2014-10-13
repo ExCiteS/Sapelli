@@ -39,7 +39,7 @@ public abstract class DocumentParser extends Handler
 	protected InputStream open(File xmlFile) throws Exception
 	{
 		if(xmlFile == null || !xmlFile.exists() || xmlFile.length() == 0)
-			throw new IllegalArgumentException("Invalid xmlFile (" + (xmlFile == null ? "null" : xmlFile.getAbsolutePath()) + ")!");
+			throw new IllegalArgumentException("Invalid or non-existant XML file (" + (xmlFile == null ? "null" : xmlFile.getAbsolutePath()) + ")!");
 		return new FileInputStream(xmlFile);
 	}
 

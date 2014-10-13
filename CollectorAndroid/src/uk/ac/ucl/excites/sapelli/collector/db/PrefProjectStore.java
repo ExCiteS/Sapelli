@@ -80,7 +80,7 @@ public class PrefProjectStore extends ProjectStore
 	{
 		// Check for project duplicates:
 		if(retrieveProject(project.getName(), project.getVariant(), project.getVersion()) != null)
-			throw new DuplicateException("There is already a project with signature \"" + project.toString(false) + "\". Either delete the existing one or change the version of the new one.");
+			ThrowDuplicateProjectSignatureException(project);
 		// Check for id & finger print collision (very unlikely, but highly problematic):
 		Project dupe = retrieveProject(project.getID(), project.getFingerPrint());
 		if(dupe != null && !project.equals(dupe))

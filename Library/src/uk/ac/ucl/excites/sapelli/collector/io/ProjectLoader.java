@@ -20,9 +20,10 @@ package uk.ac.ucl.excites.sapelli.collector.io;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+
+import org.apache.commons.io.FileUtils;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
@@ -39,9 +40,24 @@ public class ProjectLoader
 {
 	
 	// STATICS
-	static public final String[] SAPELLI_FILE_EXTENSIONS = { "excites", "sapelli", "sap" };
+	static public final String[] SAPELLI_FILE_EXTENSIONS = { "sap", "sapelli", "excites", "zip" };
 	static public final String PROJECT_FILE = "PROJECT.xml";
 
+	/**
+	 * Checks if the given file has a support sapelli file extension
+	 * 
+	 * @param file
+	 * @return
+	 */
+	static public boolean HasSapelliFileExtension(File file)
+	{
+		String path = file.getAbsolutePath().toLowerCase();
+		for(String extention : ProjectLoader.SAPELLI_FILE_EXTENSIONS)
+			if(path.endsWith("." + extention))
+				return true;
+		return false;
+	}
+	
 	/**
 	 * @param folderPath path to folder in which the PROJECT.xml file resides
 	 * @return a project instance or null in case something went wrong
@@ -60,18 +76,28 @@ public class ProjectLoader
 	}
 	
 	// DYNAMICS
-	private ProjectLoaderClient client;
-	private FileStorageProvider fileStorageProvider;
-	private File tempFolder;
-	private ProjectParser parser;
+	private final ProjectLoaderCallback callback;
+	private final FileStorageProvider fileStorageProvider;
+	private final File tempFolder;
+	private final ProjectParser parser;
+
+	/**
+	 * @param fileStorageProvider
+	 * @throws FileStorageException
+	 */
+	public ProjectLoader(FileStorageProvider fileStorageProvider) throws FileStorageException
+	{
+		this(null, fileStorageProvider); // no callback used
+	}
 	
 	/**
-	 * @param basePath
-	 * @throws IOException
+	 * @param callback
+	 * @param fileStorageProvider
+	 * @throws FileStorageException
 	 */
-	public ProjectLoader(ProjectLoaderClient client, FileStorageProvider fileStorageProvider) throws IOException, FileStorageException
+	public ProjectLoader(ProjectLoaderCallback callback, FileStorageProvider fileStorageProvider) throws FileStorageException
 	{
-		this.client = client;
+		this.callback = callback;
 		this.fileStorageProvider = fileStorageProvider;
 		
 		// Get/create the temp folder:
@@ -104,13 +130,13 @@ public class ProjectLoader
 	 */
 	public Project load(InputStream sapelliFileStream) throws Exception
 	{
-		Project p = null;
-		String extractFolderPath = tempFolder.getAbsolutePath() + File.separator + System.currentTimeMillis() + File.separator;
+		Project project = null;
 		// Extract the content of the Sapelli file to a new subfolder of the temp folder:
+		File extractFolder = new File(tempFolder.getAbsolutePath() + File.separator + System.currentTimeMillis());
 		try
 		{
-			FileHelpers.createFolder(extractFolderPath);
-			Unzipper.unzip(sapelliFileStream, extractFolderPath);
+			FileHelpers.createFolder(extractFolder);
+			Unzipper.unzip(sapelliFileStream, extractFolder);
 		}
 		catch(Exception e)
 		{
@@ -119,22 +145,38 @@ public class ProjectLoader
 		// Parse PROJECT.xml:
 		try
 		{	
-			p = parser.parseProject(new File(extractFolderPath + PROJECT_FILE));
+			project = parser.parseProject(new File(extractFolder.getAbsolutePath() + File.separator + PROJECT_FILE));
 		}
 		catch(Exception e)
 		{
 			throw new Exception("Error on parsing " + PROJECT_FILE, e);
 		}
+		// Check if project is acceptable:
+		if(callback != null)
+		{
+			try
+			{
+				 callback.checkProject(project); // throws IllegalArgumentException if something is wrong
+			}
+			catch(IllegalArgumentException iae)
+			{	// Project is not acceptable
+				// 	delete temp folder:
+				FileUtils.deleteQuietly(extractFolder);
+				//	re-throw IllegalArgumentException:
+				throw iae;
+			}
+		}
 		// Create move extracted files to project folder:
 		try
 		{
-			FileHelpers.moveDirectory(new File(extractFolderPath), fileStorageProvider.getProjectInstallationFolder(p, true));
+			FileHelpers.moveDirectory(extractFolder, fileStorageProvider.getProjectInstallationFolder(project, true));
 		}
 		catch(Exception e)
 		{
 			throw new Exception("Error on moving extracted files to project folder.", e);
 		}
-		return p;
+		// Return project object:
+		return project;
 	}
 
 	/**

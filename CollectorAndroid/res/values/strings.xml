@@ -18,6 +18,12 @@
  -->
 <resources xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" tools:locale="en">
 
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="error">Error</string>
+    <string name="warning">Warning</string>
+    <string name="info">Info</string>
+    
     <string name="app_name">Sapelli Collector</string>
     <string name="by_ucl_excites_html">&lt;a href=&quot;http://sapelli.org&quot;&gt;Sapelli&lt;/a&gt; is a project by &lt;a href=&quot;http://ucl.ac.uk/excites&quot;&gt;UCL ExCiteS&lt;/a&gt; &amp; collaborators.</string>
     <string name="license">&lt;a href=&quot;http://github.com/ExCiteS/Sapelli&quot;&gt;Source code available&lt;/a&gt; under the terms of the &lt;a href=&quot;http://www.apache.org/licenses/LICENSE-2.0&quot;&gt;Apache License, Version 2.0&lt;/a&gt;.</string>
@@ -49,10 +55,12 @@
     <string name="show_statistics">Show</string>
     <string name="app_usage_statistics">Statistics on App usage</string>
     <string name="settings">Settings</string>
+    <string name="pleaseSelect">Please select a Sapelli file</string>
     <string name="noBareXMLProjects">The loading of bare XML files is no longer supported. Please package your project in a .sap file.</string>
-    
-    <string name="yes">Yes</string>
-    <string name="no">No</string>
+    <string name="unsupportedExtension">Unsupport Sapelli project file extension (%1$s), supported extensions are %2$s.</string>
+    <string name="sapelliFileLoadFailure">Failed to load Sapelli project (source: %1$s).\nCause: %2$s</string>
+    <string name="parsingWarnings">Parsing issues</string>
+    <string name="missingFiles">These files could not be found</string>
     
     <string name="needsStorageAccess">needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.</string>
     <string name="unavailableStorageAccess">Previously used file storage medium has become inaccessible, possibly due to the removal of an SD card or the device being connected to a PC.\nThe application will now exit.\nWhat would you like to happen when you restart it? It can either try using another storage medium, or retry the current medium. In the latter case please first re-insert SD card or disconnect from computer before restarting.</string>
@@ -67,10 +75,6 @@
     <string name="demoLoadFail">Could not load demo project.</string>
     <string name="chooseSapelliFile">Choose a .sapelli or .sap  file</string>
     <string name="backupFailDueTo">Failed to backup database(s), due to: %s</string>
-    
-    <string name="error">Error</string>
-    <string name="warning">Warning</string>
-    <string name="info">Info</string>
     
     <string name="projectLoadFailure">Could not find project %1$s[id: %2$d; fingerprint: %3$d].</string>
     <string name="shortcutRemoved">Shortcut was removed.</string>
