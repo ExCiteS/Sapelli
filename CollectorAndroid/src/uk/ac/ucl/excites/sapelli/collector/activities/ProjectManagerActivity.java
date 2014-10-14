@@ -414,16 +414,54 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return true;
 	}
 	
+	// TODO Move to FileStorageProvider?
+	public static enum SapelliFolders
+	{
+		Dumps, Data, Logs, Projects
+	}
+
 	public boolean zipSapelliFiles(MenuItem item)
 	{
-
-		final ArrayList<Integer> selectedItems = new ArrayList<Integer>(); // Where we track the selected items
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		
 		// Create the items
-		final CharSequence[] folderList = { "Dumps", "Data", "Logs", "Projects" };
-		final boolean[] checkedFolders = { true, false, true, false };
-		
+		final ArrayList<String> selectedItems = new ArrayList<String>(); // Where we track the selected items
+		CharSequence[] folderList = new CharSequence[SapelliFolders.values().length];
+		boolean[] checkedFolders = new boolean[SapelliFolders.values().length];
+
+		for(int i = 0; i < SapelliFolders.values().length; i++)
+		{
+			final SapelliFolders folder = SapelliFolders.values()[i];
+
+			switch(folder)
+			{
+			case Dumps:
+				folderList[i] = folder.name();
+				checkedFolders[i] = true;
+				selectedItems.add(folder.name());
+				break;
+
+			case Data:
+				folderList[i] = folder.name();
+				checkedFolders[i] = false;
+				break;
+
+			case Logs:
+				folderList[i] = folder.name();
+				checkedFolders[i] = true;
+				selectedItems.add(folder.name());
+				break;
+
+			case Projects:
+				folderList[i] = folder.name();
+				checkedFolders[i] = false;
+				break;
+
+			default:
+				break;
+			}
+
+		}
+
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		// Set the dialog title
 		builder.setTitle("Select folders to export:")
 		// Specify the list array, the items to be selected by default (null for none),
@@ -436,7 +474,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						if(isChecked)
 						{
 							// If the user checked the item, add it to the selected items
-							selectedItems.add(which);
+							selectedItems.add(SapelliFolders.values()[which].name());
 						}
 						else if(selectedItems.contains(which))
 						{
@@ -455,24 +493,24 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						final String zipfile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
 								+ File.separator + "Sapelli_" + TimeUtils.getTimestampForFileName();
 
-						// TODO Get file paths
-						String[] paths = new String[selectedItems.size()];
-						for(int i : selectedItems)
+						// TODO Get actual file paths from FileStorageProvider
+						List<String> paths = new ArrayList<String>();
+						for(String f : selectedItems)
 						{
-							switch(i)
-							{
-
-							}
-
+							if (f.equalsIgnoreCase(SapelliFolders.Dumps.name()))
+								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Dumps");
+							if(f.equalsIgnoreCase(SapelliFolders.Data.name()))
+								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Data");
+							if(f.equalsIgnoreCase(SapelliFolders.Logs.name()))
+								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Logs");
+							if(f.equalsIgnoreCase(SapelliFolders.Projects.name()))
+								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects");
 						}
-
-						paths[0] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Dumps";
-						paths[1] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects";
-						paths[2] = "/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects787"; // wrong path for debug
 
 						// Call an AsyncZipper
 						AsyncZipper zipper = new AsyncZipper(ProjectManagerActivity.this, getString(R.string.exporting_data), paths, zipfile);
 						zipper.execute();
+
 					}
 				}).setNegativeButton(R.string.no, new DialogInterface.OnClickListener()
 				{
