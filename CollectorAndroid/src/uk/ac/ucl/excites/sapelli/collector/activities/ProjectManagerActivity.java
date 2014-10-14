@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
@@ -407,9 +409,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	public boolean zipSapelliFiles()
 	{
 		// Create the items
-		final List<String> selectedItems = new ArrayList<String>(); // Where we track the selected items
-		CharSequence[] checkboxItems = new CharSequence[Folders.values().length];
-		boolean[] checkedItems = new boolean[Folders.values().length];
+		final List<String> selectedItems = new ArrayList<String>();
+		final List<String> checkboxItems = new ArrayList<String>();
+		final List<Boolean> checkedItems = new ArrayList<Boolean>();
 
 		for(int i = 0; i < Folders.values().length; i++)
 		{
@@ -421,32 +423,38 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			case Dumps:
 			case Export:
 			case Logs:
-				checkboxItems[i] = folder.name();
-				checkedItems[i] = true;
+				checkboxItems.add(folder.name());
+				checkedItems.add(true);
 				selectedItems.add(folder.name());
 				break;
 
 			// Default unselected:
 			case Data:
-			case Downloads:
 			case Projects:
-			case Temp:
-				checkboxItems[i] = folder.name();
-				checkedItems[i] = false;
+
+				checkboxItems.add(folder.name());
+				checkedItems.add(false);
 				break;
 
+			// Skip:
+			case Downloads:
+			case Temp:
 			default:
 				break;
 			}
-
 		}
-
+		
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		// Set the dialog title
 		builder.setTitle("Select folders to export:")
 		// Specify the list array, the items to be selected by default (null for none),
 		// and the listener through which to receive callbacks when items are selected
-				.setMultiChoiceItems(checkboxItems, checkedItems, new DialogInterface.OnMultiChoiceClickListener()
+				.setMultiChoiceItems(
+				// Transform checkboxItems to a CharSequence[]
+				checkboxItems.toArray(new CharSequence[checkboxItems.size()]),
+				// Transform checkedItems to a boolean[]
+				ArrayUtils.toPrimitive(checkedItems.toArray(new Boolean[checkedItems.size()])),
+				new DialogInterface.OnMultiChoiceClickListener()
 				{
 					@Override
 					public void onClick(DialogInterface dialog, int which, boolean isChecked)
