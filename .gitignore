@@ -14,13 +14,9 @@ gen/
 distro/
 dist/
 build/
-<<<<<<< HEAD
 target/
 CollectorAndroid/res/values/buildinfo.xml
-=======
-target/
-CollectorAndroid/res/values/buildinfo.xml
->>>>>>> refs/heads/master
+
 
 # temp folders and files
 tmp/**
@@ -43,27 +39,15 @@ local.properties
 # Locally stored "Eclipse launch configurations"
 #*.launch
 
-<<<<<<< HEAD
+
 /Dependencies/Android FileChooser/lint.xml
 /CollectorAndroid/*.excites
 /CollectorAndroid/*.sap
 /CollectorAndroid/res/raw/demo.sap
 /CollectorAndroid/res/raw/demo.excites
 /CollectorAndroid/ant.properties
-=======
-/Dependencies/Android FileChooser/lint.xml
-/CollectorAndroid/*.excites
-/CollectorAndroid/*.sap
-/CollectorAndroid/res/raw/demo.sap
-/CollectorAndroid/res/raw/demo.excites
-/CollectorAndroid/ant.properties
->>>>>>> refs/heads/master
 /CollectorAndroid/assets/demo.excites
-<<<<<<< HEAD
 /CollectorAndroid/assets/demo.sap
-=======
-/CollectorAndroid/assets/demo.sap
->>>>>>> refs/heads/master
 /CollectorAndroid/assets/crashlytics-build.properties
 /CollectorAndroid/crashlytics.properties
 /CollectorAndroid/res/values/com_crashlytics_export_strings.xml
