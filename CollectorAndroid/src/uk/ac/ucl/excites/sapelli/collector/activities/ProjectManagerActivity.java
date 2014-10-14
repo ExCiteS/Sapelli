@@ -424,7 +424,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	public boolean zipSapelliFiles(MenuItem item)
 	{
 		// Create the items
-		final ArrayList<String> selectedItems = new ArrayList<String>(); // Where we track the selected items
+		final List<String> selectedItems = new ArrayList<String>(); // Where we track the selected items
 		CharSequence[] folderList = new CharSequence[SapelliFolders.values().length];
 		boolean[] checkedFolders = new boolean[SapelliFolders.values().length];
 
@@ -480,7 +480,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						else if(selectedItems.contains(SapelliFolders.values()[which].name()))
 						{
 							// Else, if the item is already in the array, remove it
-							selectedItems.remove(Integer.valueOf(which));
+							selectedItems.remove(SapelliFolders.values()[which].name());
 						}
 					}
 				})
