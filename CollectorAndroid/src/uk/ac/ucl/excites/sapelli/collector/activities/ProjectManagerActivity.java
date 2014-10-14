@@ -313,7 +313,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	    	case R.id.copy_db_menuitem :
 	    		return copyDBtoSD(item);
 			case R.id.zip_files:
-			return zipSapelliFiles();
+			return backupSapelli(this);
 	    	case R.id.about_menuitem :
 	    		return openAboutDialog(item);
 	    }
@@ -406,7 +406,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return true;
 	}
 	
-	public boolean zipSapelliFiles()
+	public boolean backupSapelli(final Context context)
 	{
 		// Create the items
 		final List<String> selectedItems = new ArrayList<String>();
@@ -489,11 +489,11 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						// Call an AsyncZipper only if there are selected items
 						if(!paths.isEmpty())
 						{
-							AsyncZipper zipper = new AsyncZipper(ProjectManagerActivity.this, getString(R.string.exporting_data), paths, zipfile);
+							AsyncZipper zipper = new AsyncZipper(context, getString(R.string.exporting_data), paths, zipfile);
 							zipper.execute();
 						}
 						else
-							Toast.makeText(ProjectManagerActivity.this, R.string.select_at_least_one_folder_to_export_data, Toast.LENGTH_LONG).show();
+							Toast.makeText(context, R.string.select_at_least_one_folder_to_export_data, Toast.LENGTH_LONG).show();
 					}
 				}).setNegativeButton(R.string.no, new DialogInterface.OnClickListener()
 				{
