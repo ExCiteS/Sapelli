@@ -380,5 +380,5 @@ public abstract class MediaField extends Field
 		hash = 31 * hash + (disableChoice == null ? 0 : disableChoice.getID().hashCode()); // do not use disableChoice itself to avoid potential endless loops!
 		return hash;
 	}
-
+	
 }

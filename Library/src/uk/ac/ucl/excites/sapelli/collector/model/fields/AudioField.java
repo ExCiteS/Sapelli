@@ -36,8 +36,13 @@ public class AudioField extends MediaField
 {
 
 	static public final boolean DEFAULT_USE_NATIVE_APP = false;
-	private static final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
-	private static final String EXTENSION_3GPP = "3gp";
+	static private final String MEDIA_TYPE_3GPP = "MEDIA_TYPE_3GPP";
+	static private final String EXTENSION_3GPP = "3gp";
+
+	private String startRecImageRelativePath;
+	private String stopRecImageRelativePath;
+	private String playAudioImageRelativePath;
+	private String stopAudioImageRelativePath;
 
 	public AudioField(Form form, String id, String caption)
 	{
@@ -45,11 +50,7 @@ public class AudioField extends MediaField
 		useNativeApp = DEFAULT_USE_NATIVE_APP;
 	}
 
-	private String startRecImageRelativePath;
-	private String stopRecImageRelativePath;
-	private String playAudioImageRelativePath;
-	private String stopAudioImageRelativePath;
-	
+
 	/**
 	 * @return the startRecImageRelativePath
 	 */

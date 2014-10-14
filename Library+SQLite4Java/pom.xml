@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
@@ -152,4 +153,160 @@
 			</plugins>
 		</pluginManagement>
 	</build>
+=======
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	
+	<artifactId>sapelli-library-SQLite4Java-backend</artifactId>
+	<name>Sapelli Library SQLite4Java back-end</name>
+	<packaging>jar</packaging>
+	
+  <parent>
+    <groupId>uk.ac.ucl.excites</groupId>
+    <artifactId>sapelli</artifactId>
+    <version>2.0.0-beta-7</version>
+  </parent>
+
+
+	<properties>
+		<sqlite4java.version>0.282</sqlite4java.version>
+		<!-- For Windows 64 bit: -->
+		<sqlite4java.binary>sqlite4java-win32-x64</sqlite4java.binary>
+		<sqlite4java.binary.type>dll</sqlite4java.binary.type>
+		<!-- For linux 64 bit: -->
+		<!-- <sqlite4java.binary>libsqlite4java-linux-amd64</sqlite4java.binary> -->
+		<!-- <sqlite4java.binary.type>so</sqlite4java.binary.type> -->
+	</properties>
+
+	<dependencies>
+
+		<dependency>
+			<groupId>uk.ac.ucl.excites</groupId>
+			<artifactId>sapelli-library</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.almworks.sqlite4java</groupId>
+			<artifactId>sqlite4java</artifactId>
+			<type>jar</type>
+			<version>${sqlite4java.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.almworks.sqlite4java</groupId>
+			<artifactId>${sqlite4java.binary}</artifactId>
+			<type>${sqlite4java.binary.type}</type>
+			<version>${sqlite4java.version}</version>
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<sourceDirectory>src</sourceDirectory>
+		<plugins>
+			<plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+					<encoding>UTF-8</encoding>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copySQLiteBinary</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>com.almworks.sqlite4java</groupId>
+									<artifactId>${sqlite4java.binary}</artifactId>
+									<version>${sqlite4java.version}</version>
+									<type>${sqlite4java.binary.type}</type>
+									<overWrite>true</overWrite>
+									<outputDirectory>${project.build.directory}/lib</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+					<execution>
+						<id>copy-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy-dependencies</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/alternateLocation</outputDirectory>
+							<overWriteReleases>false</overWriteReleases>
+							<overWriteSnapshots>false</overWriteSnapshots>
+							<overWriteIfNewer>true</overWriteIfNewer>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.17</version>
+				<configuration>
+					<systemProperties>
+						<property>
+							<name>sqlite4java.library.path</name>
+							<value>${project.build.directory}/lib</value>
+						</property>
+					</systemProperties>
+				</configuration>
+			</plugin>
+
+		</plugins>
+		<pluginManagement>
+			<plugins>
+				<!--This plugin's configuration is used to store Eclipse m2e settings 
+					only. It has no influence on the Maven build itself. -->
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.apache.maven.plugins
+										</groupId>
+										<artifactId>
+											maven-dependency-plugin
+										</artifactId>
+										<versionRange>
+											[2.1,)
+										</versionRange>
+										<goals>
+											<goal>
+												copy-dependencies
+											</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<ignore></ignore>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+>>>>>>> refs/heads/master
 </project>
