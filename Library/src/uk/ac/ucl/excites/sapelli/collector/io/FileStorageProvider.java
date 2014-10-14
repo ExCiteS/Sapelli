@@ -31,40 +31,44 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 public class FileStorageProvider
 {
 	
-	/**
-	 * Folder in which projects are installed
-	 */
-	static public final String PROJECTS_FOLDER = "Projects";
-	
-	/**
-	 * Folder in which database copies and stacktraces are placed
-	 */
-	static private final String DUMP_FOLDER = "Dumps";
-	
-	/**
-	 * Folder for log files, both project-specific and general
-	 */
-	static public final String LOGS_FOLDER = "Logs";
-	
-	/**
-	 * Folder for file data (e.g. media attachments) produced by the collector (grouped per project)
-	 */
-	static public final String DATA_FOLDER = "Data";
-	
-	/**
-	 * Folder for temporary files
-	 */
-	static public final String TEMP_FOLDER = "Temp";
-	
-	/**
-	 * Folder for downloads
-	 */
-	static public final String DOWNLOADS_FOLDER = "Downloads";
-	
-	/**
-	 * Folder for record exports
-	 */
-	static public final String EXPORT_FOLDER = "Export";
+	// Folders to be used by Sapelli
+	public static enum Folders
+	{
+		/**
+		 * Folder for file data (e.g. media attachments) produced by the collector (grouped per project)
+		 */
+		Data,
+		
+		/**
+		 * Folder for downloads
+		 */
+		Downloads,
+		
+		/**
+		 * Folder in which database copies and stacktraces are placed
+		 */
+		Dumps,
+		
+		/**
+		 * Folder for record exports
+		 */
+		Export,
+
+		/**
+		 * Folder for log files, both project-specific and general
+		 */
+		Logs,
+
+		/**
+		 * Folder in which projects are installed
+		 */
+		Projects,
+		
+		/**
+		 * Folder for temporary files
+		 */
+		Temp
+	}
 
 	private final File sapelliFolder;
 	
@@ -124,7 +128,7 @@ public class FileStorageProvider
 	
 	public File getProjectsFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + PROJECTS_FOLDER, create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Projects.name(), create);
 	}
 
 	public File getProjectInstallationFolder(Project project, boolean create) throws FileStorageException
@@ -139,27 +143,27 @@ public class FileStorageProvider
 	
 	public File getDownloadsFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + DOWNLOADS_FOLDER, create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Downloads.name(), create);
 	}
 	
 	public File getDumpFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + DUMP_FOLDER, create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Dumps.name(), create);
 	}
 	
 	public File getTempFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + TEMP_FOLDER, create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Temp.name(), create);
 	}
 	
 	public File getExportFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + EXPORT_FOLDER, create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Export.name(), create);
 	}
 
 	public File getDataFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + DATA_FOLDER, create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Data.name(), create);
 	}
 	
 	public File getProjectDataFolder(Project project, boolean create) throws FileStorageException
@@ -169,7 +173,7 @@ public class FileStorageProvider
 	
 	public File getLogsFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + LOGS_FOLDER, create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Logs.name(), create);
 	}
 	
 	public File getProjectLogsFolder(Project project, boolean create) throws FileStorageException

@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider.Folders;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderCallback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -403,22 +404,18 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return true;
 	}
 	
-	// TODO Move to FileStorageProvider?
-	public static enum SapelliFolders
-	{
-		Dumps, Data, Logs, Projects
-	}
-
 	public boolean zipSapelliFiles(MenuItem item)
 	{
+		fileStorageProvider.getSapelliFolder();
+
 		// Create the items
 		final List<String> selectedItems = new ArrayList<String>(); // Where we track the selected items
-		CharSequence[] folderList = new CharSequence[SapelliFolders.values().length];
-		boolean[] checkedFolders = new boolean[SapelliFolders.values().length];
+		CharSequence[] folderList = new CharSequence[Folders.values().length];
+		boolean[] checkedFolders = new boolean[Folders.values().length];
 
-		for(int i = 0; i < SapelliFolders.values().length; i++)
+		for(int i = 0; i < Folders.values().length; i++)
 		{
-			final SapelliFolders folder = SapelliFolders.values()[i];
+			final Folders folder = Folders.values()[i];
 
 			switch(folder)
 			{
@@ -463,12 +460,12 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						if(isChecked)
 						{
 							// If the user checked the item, add it to the selected items
-							selectedItems.add(SapelliFolders.values()[which].name());
+							selectedItems.add(Folders.values()[which].name());
 						}
-						else if(selectedItems.contains(SapelliFolders.values()[which].name()))
+						else if(selectedItems.contains(Folders.values()[which].name()))
 						{
 							// Else, if the item is already in the array, remove it
-							selectedItems.remove(SapelliFolders.values()[which].name());
+							selectedItems.remove(Folders.values()[which].name());
 						}
 					}
 				})
@@ -487,7 +484,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						for(String f : selectedItems)
 						{
 							// Get the Sapelli Folder
-							SapelliFolders folder = SapelliFolders.valueOf(f);
+							Folders folder = Folders.valueOf(f);
 
 							switch(folder)
 							{
