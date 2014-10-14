@@ -419,7 +419,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			switch(folder)
 			{
 			// Default selected:
-			case Dumps:
+			case Crashes:
 			case Export:
 			case Logs:
 				checkboxItems.add(folder.name());

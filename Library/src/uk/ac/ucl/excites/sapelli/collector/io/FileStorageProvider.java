@@ -47,7 +47,7 @@ public class FileStorageProvider
 		/**
 		 * Folder in which database copies and stacktraces are placed
 		 */
-		Dumps,
+		Crashes,
 		
 		/**
 		 * Folder for record exports
@@ -121,8 +121,8 @@ public class FileStorageProvider
 		case Downloads:
 			return getDownloadsFolder();
 
-		case Dumps:
-			return getDumpFolder(false);
+		case Crashes:
+			return getCrashFolder(false);
 
 		case Export:
 			return getExportFolder(false);
@@ -201,9 +201,9 @@ public class FileStorageProvider
 			throw new FileStorageException("Downloads folder is not or no longer accessible (path: " + downloadsFolder.getAbsolutePath());
 	}
 	
-	public File getDumpFolder(boolean create) throws FileStorageException
+	public File getCrashFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Dumps.name(), create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Crashes.name(), create);
 	}
 	
 	public File getTempFolder(boolean create) throws FileStorageException
