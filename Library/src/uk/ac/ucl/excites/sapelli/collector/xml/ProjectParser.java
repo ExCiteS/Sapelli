@@ -214,7 +214,8 @@ public class ProjectParser extends DocumentParser
 		if(qName.equals(TAG_PROJECT) || qName.equals(TAG_PROJECT_V1X))
 		{
 			clearSubtreeParsers();
-						if(project.getTransmissionSettings() == null)
+			
+			if(project.getTransmissionSettings() == null)
 			{
 				project.setTransmissionSettings(new TransmissionSettings());
 				addWarning("No transmission settings found, defaults are used");
