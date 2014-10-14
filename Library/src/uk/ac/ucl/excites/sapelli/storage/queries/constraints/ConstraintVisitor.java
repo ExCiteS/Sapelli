@@ -32,8 +32,8 @@ public interface ConstraintVisitor
 	
 	public void visit(NotConstraint notConstr);
 
-	public void visit(EqualityConstraint equalityQuery);
+	public void visit(EqualityConstraint equalityConstr);
 		
-	public void visit(RuleConstraint ruleQuery);
+	public void visit(RuleConstraint ruleConstr);
 
 }

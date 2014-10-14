@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
-import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
@@ -28,13 +28,23 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class ForeignKeyColumn extends RecordColumn<ForeignKey>
+public class ForeignKeyColumn extends RecordColumn<RecordReference>
 {
 	
 	static private final long serialVersionUID = 2L;
 
 	private Schema foreignSchema;
 	
+	/**
+	 * @param foreignSchema
+	 * @param optional
+	 * @throws NullPointerException	if the foreignSchema does not have a primary key set
+	 */
+	public ForeignKeyColumn(Schema foreignSchema, boolean optional)
+	{
+		this(foreignSchema.getName(), foreignSchema, optional);
+	}
+
 	/**
 	 * @param name
 	 * @param foreignSchema
@@ -43,10 +53,10 @@ public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 	 */
 	public ForeignKeyColumn(String name, Schema foreignSchema, boolean optional)
 	{
-		super(ForeignKey.class, name, foreignSchema.getPrimaryKey() /* Index instance, a subclass of Schema */, optional);
+		super(RecordReference.class, name, foreignSchema.getPrimaryKey() /* Index instance, a subclass of Schema */, optional);
 		this.foreignSchema = foreignSchema;
 	}
-
+	
 	@Override
 	public ForeignKeyColumn copy()
 	{
@@ -54,15 +64,15 @@ public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 	}
 
 	@Override
-	public ForeignKey getNewRecord()
+	public RecordReference getNewRecord()
 	{
-		return new ForeignKey(foreignSchema);
+		return new RecordReference(foreignSchema);
 	}
 
 	@Override
-	protected ForeignKey copy(ForeignKey value)
+	protected RecordReference copy(RecordReference value)
 	{
-		return new ForeignKey(value);
+		return new RecordReference(value);
 	}
 	
 	@Override
@@ -72,6 +82,17 @@ public class ForeignKeyColumn extends RecordColumn<ForeignKey>
 			super.accept(visitor, true);
 		else
 			visitor.visit(this);
+	}
+	
+	/**
+	 * Even though the type is actually RecordReference we call this column a "ForeignKeyColumn" 
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#getTypeString()
+	 */
+	@Override
+	public String getTypeString()
+	{
+		return "ForeignKey";
 	}
 	
 	@Override

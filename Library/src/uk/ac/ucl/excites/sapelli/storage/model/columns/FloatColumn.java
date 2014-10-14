@@ -23,7 +23,7 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
@@ -32,13 +32,13 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class FloatColumn extends ComparatorColumn<Double>
+public class FloatColumn extends ComparableColumn<Double>
 {	
 	
 	static private final long serialVersionUID = 2L;
 	
 	static public final boolean DEFAULT_DOUBLE_PRECISION = false; // 32 bit (float) by default
-	private static final boolean DEFAULT_SIGNEDNESS = true; //allow signed values by default
+	static private final boolean DEFAULT_SIGNEDNESS = true; //allow signed values by default
 	
 	private boolean doublePrecision;
 	private boolean signed;
@@ -73,6 +73,20 @@ public class FloatColumn extends ComparatorColumn<Double>
 	{
 		Double doubleValue = (value != null ? Double.valueOf(value.floatValue()) : null);
 		storeValue(record, doubleValue);
+	}
+	
+	/**
+	 * Converts Numbers (Floats, Integers, Shorts, etc.) to Doubles
+	 * 
+	 * @param value possibly null
+	 * @return
+	 * @throws ClassCastException when the value is not a {@link Number}
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#convert(java.lang.Object)
+	 */
+	@Override
+	protected Object convert(Object value)
+	{
+		return value == null ? null : (value instanceof Double ? value : Double.valueOf(((Number) value).doubleValue()));
 	}
 	
 	/**
@@ -160,7 +174,11 @@ public class FloatColumn extends ComparatorColumn<Double>
 	protected boolean equalRestrictions(Column<Double> otherColumn)
 	{
 		if(otherColumn instanceof FloatColumn)
-			return this.doublePrecision == ((FloatColumn) otherColumn).doublePrecision;
+		{
+			FloatColumn other = (FloatColumn) otherColumn;
+			return 	this.doublePrecision == other.doublePrecision &&
+					this.signed == other.signed;
+		}
 		return false;
 	}
 
@@ -171,7 +189,7 @@ public class FloatColumn extends ComparatorColumn<Double>
 	}
 	
 	/**
-	 * Even though the type is actually Double we have called this column an "FloatColumn" 
+	 * Even though the type is actually Double we have called this column a "FloatColumn" 
 	 * 
 	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#getTypeString()
 	 */
@@ -198,6 +216,7 @@ public class FloatColumn extends ComparatorColumn<Double>
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + (doublePrecision ? 0 : 1);
+		hash = 31 * hash + (signed ? 0 : 1);
 		return hash;
 	}
 

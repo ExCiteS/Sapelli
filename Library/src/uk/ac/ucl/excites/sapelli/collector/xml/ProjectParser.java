@@ -30,16 +30,17 @@ import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.model.TransmissionSettings;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.shared.io.UnclosableBufferedInputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.DocumentParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLHasher;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
+import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**
  * Handler for project (i.e. survey) description XML files
@@ -90,8 +91,8 @@ public class ProjectParser extends DocumentParser
 	private final boolean createProjectFolder;
 	
 	private Format format = DEFAULT_FORMAT;
+	private Integer fingerPrint;
 	private Project project;
-	private long projectHash;
 	private String startFormID;
 	private HashMap<Relationship, String> relationshipToFormID;
 	private HashMap<Relationship, List<ConstraintDescription>> relationshipToConstraints;
@@ -111,11 +112,11 @@ public class ProjectParser extends DocumentParser
 	}
 
 	public Project parseProject(InputStream input) throws Exception
-	{
+	{		
 		// (Re)Initialise:
 		format = DEFAULT_FORMAT;
 		project = null;
-		projectHash = -1;
+		fingerPrint = null;
 		startFormID = null;
 		relationshipToFormID.clear();
 		relationshipToConstraints.clear();
@@ -123,7 +124,7 @@ public class ProjectParser extends DocumentParser
 		// Get XML hash:
 		UnclosableBufferedInputStream ubInput = new UnclosableBufferedInputStream(input); // decorate stream to avoid it from being closed and to ensure we can use mark/reset
 		ubInput.mark(Integer.MAX_VALUE);
-		projectHash = (new XMLHasher()).getCRC32HashCode(ubInput);
+		fingerPrint = (new XMLHasher()).getJavaHashCode(ubInput);
 		ubInput.reset();
 		ubInput.makeClosable();
 		
@@ -176,15 +177,13 @@ public class ProjectParser extends DocumentParser
 				// Project...
 				project = new Project(	(format == Format.v1_x) ?
 											Project.PROJECT_ID_V1X_TEMP : // for format = 1 we set a temp id value (will be replaced by Form:schema-id) 
-												attributes.getRequiredInteger(qName, ATTRIBUTE_PROJECT_ID, "because format is >= 2"), // id is required for format >= 2
-										projectHash,
+											attributes.getRequiredInteger(qName, ATTRIBUTE_PROJECT_ID, "because format is >= 2"), // id is required for format >= 2
 										attributes.getRequiredString(TAG_PROJECT, ATTRIBUTE_PROJECT_NAME, true, false),
+										attributes.getString(ATTRIBUTE_PROJECT_VARIANT, null, true, false),
 										attributes.getString(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, true, false),
+										fingerPrint,
 										basePath,
 										createProjectFolder);
-				
-				// Set variant:
-				project.setVariant(attributes.getString(ATTRIBUTE_PROJECT_VARIANT, null, true, false));
 				
 				// Read startForm ID:
 				startFormID = attributes.getString(ATTRIBUTE_PROJECT_START_FORM, null, true, false); 
@@ -217,7 +216,7 @@ public class ProjectParser extends DocumentParser
 			clearSubtreeParsers();
 						if(project.getTransmissionSettings() == null)
 			{
-				project.setTransmissionSettings(new Settings());
+				project.setTransmissionSettings(new TransmissionSettings());
 				addWarning("No transmission settings found, defaults are used");
 			}
 			
@@ -244,9 +243,19 @@ public class ProjectParser extends DocumentParser
 				// Initialise forms...
 				for(Form form : project.getForms())
 				{	
-					form.initialiseStorage(); // generates Schema, Column & ValueDictionaries
-					addWarnings(form.getWarnings());
+					try
+					{
+						// generates Schema, Columns & ValueDictionaries:
+						form.initialiseStorage();
+					}
+					catch(ModelFullException e)
+					{
+						throw new SAXException("This project contains more data-producing Forms than allowed (maximum: " + Project.MAX_RECORD_PRODUCING_FORMS + ").");
+					}
+					addWarnings(form.getWarnings()); // !!!
 				}
+				// Seal project model:
+				project.getModel().seal();
 				
 				// Resolve relationship constraints:
 				for(Entry<Relationship, List<ConstraintDescription>> entry : relationshipToConstraints.entrySet())
@@ -343,10 +352,10 @@ public class ProjectParser extends DocumentParser
 			}
 			
 			// Get column:
-			ColumnPointer columnPointer = new ColumnPointer(form.getSchema(), columnName); // will throw IllegalArgumentException if no such column is found 
+			ColumnPointer columnPointer = new ColumnPointer(form.getSchema(), columnName); // will throw IllegalArgumentException if no such column is found (but name sanitation will be used first)
 			
 			// Column check:
-			if(!(columnPointer.getColumn() instanceof ComparatorColumn<?>))
+			if(!(columnPointer.getColumn() instanceof ComparableColumn<?>))
 				throw new SAXException("Constraint refers to a column (\"" + columnName + "\") which is not comparable.");
 			
 			// Return RuleConstraint:

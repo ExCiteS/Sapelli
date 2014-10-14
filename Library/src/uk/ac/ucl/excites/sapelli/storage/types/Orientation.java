@@ -35,7 +35,7 @@ public class Orientation extends Record
 	static private final long serialVersionUID = 2L;
 	
 	// Schema & columns
-	static final public Schema SCHEMA = new Schema(Schema.InternalKind.ORIENTATION);
+	static final public Schema SCHEMA = new Schema(Schema.InternalKind.Orientation);
 	static final public FloatColumn COLUMN_AZIMUTH = new FloatColumn("Azimuth", true, true, false);	// optional signed 32 bit float
 	static final public FloatColumn COLUMN_PITCH = new FloatColumn("Pitch", true, true, false);		// optional signed 32 bit float
 	static final public FloatColumn COLUMN_ROLL = new FloatColumn("Roll", true, true, false);			// optional signed 32 bit float

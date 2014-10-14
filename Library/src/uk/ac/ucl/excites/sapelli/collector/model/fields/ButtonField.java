@@ -103,15 +103,15 @@ public class ButtonField extends Field
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected Column<?> createColumn()
+	protected Column<?> createColumn(String name)
 	{
 		switch(columnType)
 		{
-			case BOOLEAN : return new BooleanColumn(id, optional != Optionalness.NEVER);
-			case DATETIME : return TimeStampColumn.Century21NoMS(id, optional != Optionalness.NEVER, true);
+			case BOOLEAN : return new BooleanColumn(name, optional != Optionalness.NEVER);
+			case DATETIME : return TimeStampColumn.Century21NoMS(name, optional != Optionalness.NEVER, true);
 			/* case NONE */ default : return null;
 		}
 	}
@@ -132,6 +132,29 @@ public class ButtonField extends Field
 	public <V, UI extends CollectorUI<V, UI>> ButtonUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createButtonUI(this);
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof ButtonField)
+		{
+			ButtonField that = (ButtonField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					this.columnType == that.columnType;
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + columnType.ordinal();
+		return hash;
 	}
 
 }

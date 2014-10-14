@@ -26,12 +26,12 @@ import org.joda.time.format.DateTimeFormatter;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -40,7 +40,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class TimeStampColumn extends ComparatorColumn<TimeStamp>
+public class TimeStampColumn extends ComparableColumn<TimeStamp>
 {
 	
 	// STATICS-------------------------------------------------------
@@ -298,7 +298,7 @@ public class TimeStampColumn extends ComparatorColumn<TimeStamp>
 	@Override
 	protected int _getMinimumSize()
 	{
-		return timeMapping.getSize() + (keepLocalTimezone ? TIMEZONE_QH_OFFSET_SIZE : 0);
+		return timeMapping.size() + (keepLocalTimezone ? TIMEZONE_QH_OFFSET_SIZE : 0);
 	}
 	
 	@Override
@@ -309,12 +309,12 @@ public class TimeStampColumn extends ComparatorColumn<TimeStamp>
 	
 	public TimeStamp getLowBound()
 	{
-		return new TimeStamp(timeMapping.getLowBound() * (keepMS ? 1 : 1000));
+		return new TimeStamp(timeMapping.lowBound() * (keepMS ? 1 : 1000));
 	}
 
 	public TimeStamp getHighBound()
 	{
-		return new TimeStamp(timeMapping.getHighBound(strict) * (keepMS ? 1 : 1000));
+		return new TimeStamp(timeMapping.highBound(strict) * (keepMS ? 1 : 1000));
 	}
 
 	@Override

@@ -324,9 +324,9 @@ public class LocationField extends Field implements Timeoutable
 	}
 
 	@Override
-	protected LocationColumn createColumn()
+	protected LocationColumn createColumn(String name)
 	{
-		return new LocationColumn(id, (optional != Optionalness.NEVER), doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, false, storeProvider); // we never store time (for now)
+		return new LocationColumn(name, (optional != Optionalness.NEVER), doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, false, storeProvider); // we never store time (for now)
 	}
 	
 	@Override
@@ -390,4 +390,53 @@ public class LocationField extends Field implements Timeoutable
 	{
 		return collectorUI.createLocationUI(this);
 	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof LocationField)
+		{
+			LocationField that = (LocationField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					this.type == that.type &&
+					this.startWithForm == that.startWithForm &&
+					this.startWithPage == that.startWithPage &&
+					this.timeoutS == that.timeoutS &&
+					this.maxAgeS == that.maxAgeS &&
+					this.maxAccuracyRadius == that.maxAccuracyRadius &&
+					this.useBestNonQualifyingLocationAfterTimeout == that.useBestNonQualifyingLocationAfterTimeout &&
+					this.doublePrecision == that.doublePrecision &&
+					this.storeAltitude == that.storeAltitude &&
+					this.storeBearing == that.storeBearing &&
+					this.storeSpeed == that.storeSpeed &&
+					this.storeAccuracy == that.storeAccuracy &&
+					this.storeProvider == that.storeProvider;
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + type;
+		hash = 31 * hash + (startWithForm ? 0 : 1);
+		hash = 31 * hash + (startWithPage ? 0 : 1);
+		hash = 31 * hash + (waitAtField ? 0 : 1);
+		hash = 31 * hash + timeoutS;
+		hash = 31 * hash + maxAgeS;
+		hash = 31 * hash + Float.floatToIntBits(maxAccuracyRadius);
+		hash = 31 * hash + (useBestNonQualifyingLocationAfterTimeout ? 0 : 1);
+		hash = 31 * hash + (doublePrecision ? 0 : 1);
+		hash = 31 * hash + (storeAltitude ? 0 : 1);
+		hash = 31 * hash + (storeBearing ? 0 : 1);
+		hash = 31 * hash + (storeSpeed ? 0 : 1);
+		hash = 31 * hash + (storeAccuracy ? 0 : 1);
+		hash = 31 * hash + (storeProvider ? 0 : 1);
+		return hash;
+	}
+	
 }

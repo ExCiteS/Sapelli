@@ -30,8 +30,29 @@ import uk.ac.ucl.excites.sapelli.storage.util.ColumnPointer;
 public class EqualityConstraint extends Constraint
 {
 	
+	static public EqualityConstraint IsNull(Column<?> column)
+	{
+		return IsNull(new ColumnPointer(column));
+	}
+
+	static public EqualityConstraint IsNull(ColumnPointer columnPointer)
+	{
+		return new EqualityConstraint(columnPointer, null);
+	}
+	
+	static public EqualityConstraint IsNotNull(Column<?> column)
+	{
+		return IsNotNull(new ColumnPointer(column));
+	}
+
+	static public EqualityConstraint IsNotNull(ColumnPointer columnPointer)
+	{
+		return new EqualityConstraint(columnPointer, null, false);
+	}
+	
 	private final ColumnPointer columnPointer;
 	private final Object value;
+	private final boolean equal;
 	
 	public EqualityConstraint(Column<?> column, Object value)
 	{
@@ -40,8 +61,30 @@ public class EqualityConstraint extends Constraint
 	
 	public EqualityConstraint(ColumnPointer columnPointer, Object value)
 	{
+		this(columnPointer, value, true);
+	}
+	
+	public EqualityConstraint(Column<?> column, Object value, boolean equal)
+	{
+		this(new ColumnPointer(column), value, equal);
+	}
+	
+	public EqualityConstraint(ColumnPointer columnPointer, Object value, boolean equal)
+	{
 		this.columnPointer = columnPointer;
 		this.value = value;
+		this.equal = equal;
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint#negate()
+	 */
+	@Override
+	public EqualityConstraint negate()
+	{
+		return new EqualityConstraint(	getColumnPointer(),
+										getValue(),
+										!equal); // invert!
 	}
 
 	/* (non-Javadoc)
@@ -50,7 +93,7 @@ public class EqualityConstraint extends Constraint
 	@Override
 	protected boolean _isValid(Record record)
 	{
-		return Record.EqualValues(columnPointer.retrieveValue(record), value);
+		return equal == Record.EqualValues(columnPointer.retrieveValue(record), value);
 	}
 	
 	/* (non-Javadoc)
@@ -70,6 +113,39 @@ public class EqualityConstraint extends Constraint
 	public Object getValue()
 	{
 		return value;
+	}
+	
+	public boolean isEqual()
+	{
+		return equal;
+	}
+	
+	public boolean isValueNull()
+	{
+		return value == null;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof EqualityConstraint)
+		{
+			EqualityConstraint that = (EqualityConstraint) obj;
+			return	this.columnPointer.equals(that.columnPointer) &&
+					(this.value != null ? this.value.equals(that.value) : that.value == null);
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + columnPointer.hashCode();
+		hash = 31 * hash + (value != null ? value.hashCode() : 0);
+		return hash;
 	}
 
 }

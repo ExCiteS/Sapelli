@@ -24,6 +24,7 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.net.Uri;
@@ -183,5 +184,52 @@ public final class DeviceControl
 		}
 
 		return ((float) level / (float) scale) * 100.0f;
+	}
+	
+	/**
+	 * Increases the Media Volume
+	 * 
+	 * @param context
+	 */
+	public static void increaseMediaVolume(Context context)
+	{
+		// Get the AudioManager
+		final AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+		// Set the volume
+		audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_RAISE, 0);
+	}
+
+	/**
+	 * Decreases the Media Volume
+	 * 
+	 * @param context
+	 */
+	public static void decreaseMediaVolume(Context context)
+	{
+		// Get the AudioManager
+		final AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+		// Set the volume
+		audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_LOWER, 0);
+	}
+
+	/**
+	 * Decreases the Media Volume only up to half of the device's max volume
+	 * 
+	 * @param context
+	 */
+	public static void safeDecreaseMediaVolume(Context context)
+	{
+		// Get the volume
+		final AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+		final int currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+		final int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+		final int minVolume = maxVolume / 2;
+
+		Debug.d("currentVolume: " + currentVolume);
+		Debug.d("maxVolume: " + maxVolume);
+		Debug.d("minVolume: " + minVolume);
+
+		if(currentVolume > minVolume)
+			decreaseMediaVolume(context);
 	}
 }

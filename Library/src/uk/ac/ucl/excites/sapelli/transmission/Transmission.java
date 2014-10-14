@@ -18,250 +18,390 @@
 
 package uk.ac.ucl.excites.sapelli.transmission;
 
+import java.io.EOFException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import org.joda.time.DateTime;
-
-import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
+import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
+import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
  * Abstract superclass for all Transmissions
- * 
- * TODO support for multi-schema transmissions? (containing records of more than 1 schema)
  * 
  * @author mstevens
  */
 public abstract class Transmission
 {
 
-	protected boolean full = false;
+	// STATICS-------------------------------------------------------
+	/**
+	 * The different (concrete) transmission types, reflecting different networks or modes of transport. 
+	 */
+	public static enum Type
+	{
+		BINARY_SMS,
+		TEXTUAL_SMS,
+		HTTP,
+		// More later?
+	}
 	
-	protected DateTime sentAt = null; //used only on sending side
-	protected DateTime receivedAt = null; //used on receiving side, and TODO on sending side once we have acknowledgements working
+	static public final int TRANSMISSION_ID_SIZE = 24; // bits
+	static public final IntegerRangeMapping TRANSMISSION_ID_FIELD = IntegerRangeMapping.ForSize(0, TRANSMISSION_ID_SIZE); // unsigned(!) 24 bit integer
 	
-	protected Settings settings;
-	protected TransmissionClient client; //only used on the receiving side
-	protected Schema schema;
-	protected Set<Column<?>> columnsToFactorOut;
-	protected Map<Column<?>, Object> factoredOutValues = null;
-	protected List<Record> records;
+	static public final int PAYLOAD_HASH_SIZE = 16; // bits
+	static public final IntegerRangeMapping PAYLOAD_HASH_FIELD = IntegerRangeMapping.ForSize(0, PAYLOAD_HASH_SIZE); // unsigned(!) 16 bit integer
+	
+	/**
+	 * Minimum number of bits needed to fit transmission body, composed of:
+	 * 	- payload type field: Payload.PAYLOAD_TYPE_SIZE (= 5) bits
+	 * 	- payload data bits length field: at least 1 bit
+	 * 	- the actual payload data bits: at least 1 bit  
+	 */
+	static private final int MIN_BODY_LENGTH_BITS = Payload.PAYLOAD_TYPE_SIZE + 1 + 1; // bits
+	
+	static public final int CORRESPONDENT_MAX_LENGTH = 256;
+	
+	// DYNAMICS------------------------------------------------------
+	protected final TransmissionClient client;
+	
+	/**
+	 * ID by which this transmission is identified in the context of the local device/server
+	 */
+	protected Integer localID;
+	
+	/**
+	 * ID by which this transmission is identified in the context of the remote device/server
+	 */
+	protected Integer remoteID;
+	
+	/**
+	 * The payloadBitsLengthField is an IntegerRangeMapping which will be used to read/write the length of the payload data (in number of bits).<br/>
+	 * It is initialised in {@link #initialise()}.
+	 */
+	private IntegerRangeMapping payloadBitsLengthField = null;
+	
+	/**
+	 * Contents of the transmission
+	 */
+	protected Payload payload;
+	
+	/**
+	 * Computed as a CRC16 hash over the transmission payload (unsigned 16 bit int)
+	 */
+	protected Integer payloadHash;
+	
+	protected TimeStamp sentAt; //used only on sending side
+	protected TimeStamp receivedAt; //used on receiving side, and on sending side if an acknowledgement was received
+	
+	/**
+	 * To be called from the sending side
+	 * 
+	 * @param client
+	 * @param payload
+	 */
+	public Transmission(TransmissionClient client, Payload payload)
+	{
+		this.client = client;
+		this.payload = payload;
+		this.payload.setTransmission(this); // just in case
+		initialise(); // !!!
+	}
+	
+	/**
+	 * To be called from the receiving side
+	 * 
+	 * @param client
+	 * @param sendingSideID
+	 * @param payloadHash
+	 */
+	public Transmission(TransmissionClient client, int sendingSideID, int payloadHash)
+	{
+		this.client = client;
+		this.remoteID = sendingSideID;
+		this.payloadHash = payloadHash;
+		initialise(); // !!!
+	}
+	
+	/**
+	 * To be called upon database retrieval only
+	 * 
+	 * @param client
+	 * @param localID
+	 * @param remoteID - may be null
+	 * @param payloadHash
+	 * @param sentAt - may be null
+	 * @param receivedAt - may be null
+	 */
+	protected Transmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
+	{
+		this.client = client;
+		this.localID = localID;
+		this.remoteID = remoteID; 
+		this.payloadHash = payloadHash;
+		this.sentAt = sentAt;
+		this.receivedAt = receivedAt;
+		initialise(); // !!!
+	}
+	
+	/**
+	 * Initialise method.
+	 * 
+	 * Instantiates the payloadBitsLengthField: an IntegerRangeMapping which is used to read/write the length of the
+	 * payload data (in number of bits). The size of this field is chosen such that it is *just* big enough space to hold
+	 * values of 0 up to (and including) the maximum number of payload data bits the transmission can contain. The latter
+	 * value is equal to total transmission body capacity (given by getMaxBodyBits()) decreased by the size of the
+	 * PAYLOAD_TYPE_FIELD and the size of the payloadBitsLengthField itself!
+	 * Hence, computing the field's size (and/or highbound) is a kind of "chicken or the egg" problem. The answer lies in
+	 * in the logarithmic equation explained in the method code.
+	 * 
+	 * @return the payloadBitsLengthField
+	 */
+	private void initialise()
+	{
+		// Transmission capacity check:
+		if(getMaxBodyBits() < MIN_BODY_LENGTH_BITS)
+			throw new IllegalStateException("Transmission capacity (max body size) is too small! It is " + getMaxBodyBits() + " bits; while the minimum is " + MIN_BODY_LENGTH_BITS + " bits.");
+		
+		// Helper variable: a = bits available for length field (at least 1) + the actual data bits (at least 1)
+		int a = getMaxBodyBits() - Payload.PAYLOAD_TYPE_SIZE;
+		
+		/* The payloadBitlengthField must be *just* big enough to contain values from [0, b], where b (the field's
+		 * 	strict highbound) is the maximum number of actual payload data bits with can store.
+		 * This means that:
+		 * 												/ 0	in most cases --> no bits wasted
+		 * 		a - payloadBitlengthField.size() - b = { 
+		 * 												\ 1	in rare cases (6 times for 2 <= a <= 100) --> 1 bit wasted
+		 * This is achieved by the following equation:
+		 * 		b = a - floor(log2(a - floor(log2(a)))) - 1
+		 * However, because ...
+		 * 		floor(log2(x)) = 31 - Integer.numberOfLeadingZeros(x) = Integer.SIZE - 1 - Integer.numberOfLeadingZeros(x)
+		 * ... this equation can be reduced to: */
+		int b = a - Integer.SIZE + Integer.numberOfLeadingZeros(a - Integer.SIZE + 1 + Integer.numberOfLeadingZeros(a));
+		
+		// Construct payloadBitsLengthField:
+		payloadBitsLengthField = new IntegerRangeMapping(0, b);
+	}
+	
+	public void setLocalID(int id)
+	{
+		if(localID != null && localID != id)
+			throw new IllegalStateException("LocalID has already been set!");
+		this.localID = id;
+	}
+	
+	public boolean isLocalIDSet()
+	{
+		return localID != null;
+	}
+	
+	public int getLocalID()
+	{
+		if(localID == null)
+			throw new IllegalStateException("LocalID has not been set yet");
+		return localID.intValue();
+	}
+		
+	/**
+	 * @return the remoteID
+	 */
+	public int getRemoteID()
+	{
+		if(remoteID == null)
+			throw new IllegalStateException("RemoteID has not been set yet");
+		return remoteID;
+	}
 
-	/**
-	 * To be called at the sending side.
-	 * 
-	 * @param schema
-	 * @param settings
-	 */
-	public Transmission(Schema schema, Settings settings)
+	public boolean isPayloadSet()
 	{
-		this(schema, null, settings);
+		return payload != null;
 	}
 	
-	/**
-	 * To be called at the sending side.
-	 * 
-	 * @param schema
-	 * @param columnsToFactorOut
-	 * @param settings
-	 */
-	public Transmission(Schema schema, Set<Column<?>> columnsToFactorOut, Settings settings)
+	public Payload getPayload()
 	{
-		this(); //!!!
-		if(schema == null)
-			throw new NullPointerException("Schema cannot be null on sending side.");
-		if(schema.isInternal())
-			throw new IllegalArgumentException("Cannot directly transmit records of internal schema.");
-		this.schema = schema;
-		setColumnsToFactorOut(columnsToFactorOut);
-		this.settings = settings;
+		return payload;
 	}
 	
-	/**
-	 * To be called at the receiving side.
-	 * 
-	 * @param modelProvider
-	 * @param settings
-	 */
-	public Transmission(TransmissionClient modelProvider)
-	{
-		this(); //!!!
-		if(modelProvider == null)
-			throw new NullPointerException("TransmissionClient cannot be null on receiving side.");
-		this.client = modelProvider;
+	public int getPayloadHash()
+	{	
+		if(payloadHash == null)
+			throw new IllegalStateException("Payload hash has not been set yet"); // Note: on the receiving side the hash is set before the actual payload
+		return payloadHash;
 	}
 	
-	private Transmission()
-	{
-		this.records = new ArrayList<Record>();
-	}
-	
-	protected void setColumnsToFactorOut(Set<Column<?>> columnsToFactorOut)
-	{
-		if(columnsToFactorOut == null)
-			columnsToFactorOut = Collections.<Column<?>>emptySet();
-		else
-			for(Column<?> c : columnsToFactorOut)
-				if(!schema.containsColumn(c.getName(), false)) 
-					throw new IllegalArgumentException("Column \"" + c.toString() + "\" does not belong to the given schema.");
-		this.columnsToFactorOut = columnsToFactorOut;
-	}
-	
-	public List<Record> getRecords()
-	{
-		return records;
-	}
-	
-	public boolean addRecord(Record record) throws Exception
-	{
-		if(record.getSchema() != schema)
-			throw new IllegalArgumentException("Schema mismatch");
-		
-		if(!record.isFilled())
-			return false;
-		
-		if(columnsToFactorOut != null)
-		{
-			if(records.isEmpty())
-			{
-				factoredOutValues = new HashMap<Column<?>, Object>();
-				//Store "factored out" values:
-				for(Column<?> c : columnsToFactorOut)
-					factoredOutValues.put(c, c.retrieveValue(record));
-			}
-			else
-			{	//Check if factored out values are the same
-				for(Column<?> c : columnsToFactorOut)
-				{
-					Object rValue = c.retrieveValue(record);
-					if(factoredOutValues.get(c) == null)
-					{
-						if(rValue != null)
-							throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
-					}
-					else
-					{
-						if(rValue == null || !rValue.equals(factoredOutValues.get(c)))
-							throw new IllegalArgumentException("Non-matching factored out value in " + c.toString());
-					}
-				}
-			}
-		}
-		
-		//Add the record:
-		records.add(record);
-		
-		//Try preparing messages:
-		try
-		{
-			preparePayload();
-		}
-		catch(TransmissionCapacityExceededException tcee)
-		{	//adding this record caused transmission capacity to be exceeded, so remove it and mark the transmission as full (unless there are no other records)
-			records.remove(record);
-			if(!records.isEmpty())
-				full = true;
-			return false;
-		}
-		
-		//Messages were successfully prepared...
-		//record.setTransmission(this); //set transmission on record
-		return true;
-	}
-	
-	public void send(TransmissionSender transmissionSender) throws Exception
+	public void send(Sender transmissionSender) throws IOException, TransmissionCapacityExceededException, UnknownModelException
 	{
 		//Some checks:
-		if(isSent())
-		{
-			System.out.println("This transmission (& all of its parts) has already been sent.");
-			return;
-		}
-		if(records.isEmpty())
-			throw new IllegalStateException("Transmission has no records. Add at least 1 record before sending the transmission .");
 		if(transmissionSender == null)
 			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
+		if(payload == null)
+			throw new NullPointerException("Cannot send transmission without payload");
+		if(isSent())
+		{
+			System.out.println("This transmission has already been sent.");
+			return;
+		}
 		
-		// Set sendingAttemptedAt for all records:
-//		DateTime now = new DateTime();
-//		for(Record r : records)
-//			r.setSendingAttemptedAt(now);
+		// Open input stream:
+		BitArrayOutputStream bitstream = new BitArrayOutputStream();
 		
-		sendPayload(transmissionSender); // !!!
+		// TODO transmission format version !!!
+		
+		// TODO anonymous / user-cred (maybe only for next transmission format version?)
+		// TODO encrypted flag + encryption-related fields (maybe only for next transmission format version?)
+		
+		// Write payload type:
+		Payload.PAYLOAD_TYPE_FIELD.write(payload.getType(), bitstream);
+		
+		// Get serialised payload bits:
+		BitArray payloadBits = payload.serialise();
+		
+		// Capacity check:
+		if(payloadBits.length() > getMaxPayloadBits())
+			throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + payloadBits.length() + " bits; max for this type of transmission: " + getMaxPayloadBits() + " bits");
+		
+		// Compute & store payload hash:
+		this.payloadHash = computePayloadHash(payloadBits); // must be set before wrap() is called!	
+		
+		// Write payload bits length:
+		payloadBitsLengthField.write(payloadBits.length(), bitstream);
+		
+		// Write the actual payload bits:
+		bitstream.write(payloadBits);
+		
+		// Flush, close & get body bits:
+		bitstream.flush();
+		bitstream.close();
+		BitArray bodyBits = bitstream.toBitArray();
+		
+		// Wrap body for transmission:
+		wrap(bodyBits); // note: payloadHash must be set before this call
+		
+		// Do the actual sending:
+		doSend(transmissionSender);
 	}
 
-	public void resend(TransmissionSender sender) throws Exception
+	public void resend(Sender sender) throws Exception
 	{
-		//Clear early sentAt value (otherwise send() won't work):
+		// Clear early sentAt value (otherwise send() won't work):
 		sentAt = null;
 		
-		//Resend:
+		// Resend:
 		send(sender);
 	}
 	
-	protected abstract void sendPayload(TransmissionSender transmissionSender) throws Exception;
+	protected abstract void doSend(Sender transmissionSender);
 	
-	public void read() throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
+	public void receive() throws IncompleteTransmissionException, IOException, IllegalArgumentException, IllegalStateException, PayloadDecodeException, UnknownModelException
 	{
-		read(null, null);
-	}
-	
-	public void read(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException
-	{
-		//Some checks:
-		if(!records.isEmpty())
+		// Some checks:
+		if(!isComplete())
+			throw new IncompleteTransmissionException(this);
+		if(this.payload != null)
 		{
-			if(schema == schemaToUse && settings == settingsToUse)
-			{
-				System.out.println("This SMSTransmission has already been received.");
-				return;
-			}
-			else
-				records.clear(); //Re-receiving with other schema/settings, so clear records
+			System.out.println("This transmission has already been received.");
+			return;
 		}
 		
-		//Read payload:
-		readPayload(schemaToUse, settingsToUse);
+		// Unwrap (reassemble/decode) body:
+		BitArray bodyBits = unwrap();
+		
+		// Length check:
+		if(bodyBits.length() < MIN_BODY_LENGTH_BITS - 1) // - 1 because in an extreme case it could be that the payload data is empty (0 bits long)
+			throw new IncompleteTransmissionException(this, "Transmission body length (" + bodyBits.length() + " bits) for this to be a valid transmission.");
+		
+		// Open input stream:
+		BitArrayInputStream bitstream = new BitArrayInputStream(bodyBits);
+		
+		// Read payload type & instantiate Payload object:
+		this.payload = Payload.New(client, (int) Payload.PAYLOAD_TYPE_FIELD.read(bitstream));
+		this.payload.setTransmission(this); // !!!
+		
+		// Read payload bits length:
+		int payloadBitsLength = (int) payloadBitsLengthField.read(bitstream);
+		
+		// Read the actual payload bits:
+		BitArray payloadBits;
+		try
+		{
+			payloadBits = bitstream.readBitArray(payloadBitsLength);
+		}
+		catch(EOFException eofe)
+		{	// not enough bits could be read (i.e. less than payloadBitsLength)
+			throw new IncompleteTransmissionException(this, "Transmission body is incomplete, could not read all of the expected " + payloadBitsLength + " payload data bits.");
+		}
+		
+		// Close stream:
+		bitstream.close();
+		
+		// Verify payload hash:
+		if(payloadHash != computePayloadHash(payloadBits))
+			throw new IncompleteTransmissionException(this, "Payload hash mismatch!");
+		
+		// Deserialise payload:
+		payload.deserialise(payloadBits);
+		
+		// TODO set receivedAT?
 	}
 	
-	protected abstract void preparePayload() throws IOException, TransmissionCapacityExceededException;
+	/**
+	 * The maximum length of the body of this transmission (in number of bits).
+	 * 
+	 * @return
+	 */
+	protected abstract int getMaxBodyBits();
 	
-	protected abstract void readPayload(Schema schemaToUse, Settings settingsToUse) throws IncompleteTransmissionException, IllegalStateException, IOException, DecodeException;
-	
-	public boolean isFull()
+	/**
+	 * The maximum length of the payload data (in number of bits) which can be fitted into this transmission.
+	 * 
+	 * @return
+	 */
+	public int getMaxPayloadBits()
 	{
-		return full;
+		return (int) payloadBitsLengthField.highBound(true);
 	}
 	
-	public boolean isEmpty()
+	/**
+	 * Wraps/encodes/splits the payload bits in a way they can be send by this transmission
+	 * 
+	 * @param bodyBits
+	 * @throws TransmissionCapacityExceededException
+	 * @throws IOException
+	 */
+	protected abstract void wrap(BitArray bodyBits) throws TransmissionCapacityExceededException, IOException;
+	
+	/**
+	 * Unwraps/decoded/joins the payload bits
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
+	protected abstract BitArray unwrap() throws IOException;
+	
+	protected int computePayloadHash(BitArray payloadBits)
 	{
-		return records.isEmpty();
+		return Hashing.getCRC16Hash(payloadBits.toByteArray());
 	}
 	
+	public abstract boolean isComplete();
+		
 	public boolean isSent()
 	{
 		return sentAt != null;
 	}
 	
-	protected void setSentAt(DateTime sentAt)
+	protected void setSentAt(TimeStamp sentAt)
 	{
-		for(Record r : records)
-		{
-			r.setSent(true);
-			//r.setSendingAttemptedAt(sentAt);
-		}
 		this.sentAt = sentAt;
 	}
 	
-	public DateTime getSentAt()
+	public TimeStamp getSentAt()
 	{
 		return sentAt;
 	}
@@ -271,24 +411,29 @@ public abstract class Transmission
 		return receivedAt != null;
 	}
 
-	public DateTime getReceivedAt()
+	public TimeStamp getReceivedAt()
 	{
 		return receivedAt;
 	}
 	
-	public void setReceivedAt(DateTime receivedAt)
+	public void setReceivedAt(TimeStamp receivedAt)
 	{
 		this.receivedAt = receivedAt;
 	}
 	
-	public Schema getSchema()
+	public TransmissionClient getClient()
 	{
-		return schema;
+		return client;
 	}
 	
-	public Settings getSettings()
-	{
-		return settings;
-	}
+	/**
+	 * @return whether (true) or not (false) the wrapping of the payload data in the transmission (as implemented by {@link #wrap(BitArray)}) can cause the data size to grow (e.g. due to escaping)
+	 */
+	public abstract boolean canWrapIncreaseSize();
+	
+	/**
+	 * @return
+	 */
+	public abstract Type getType();
 	
 }

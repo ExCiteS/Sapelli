@@ -19,13 +19,18 @@
 package uk.ac.ucl.excites.sapelli.collector.util;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.Thread.UncaughtExceptionHandler;
 
+import org.joda.time.DateTime;
+
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 
@@ -39,7 +44,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
  */
 public class CrashReporter implements UncaughtExceptionHandler
 {
-
 	private UncaughtExceptionHandler defaultUEH;
 	private String localPath;
 	private String namePrefix;
@@ -56,34 +60,82 @@ public class CrashReporter implements UncaughtExceptionHandler
 
 	public void uncaughtException(Thread t, Throwable e)
 	{
-		final Writer result = new StringWriter();
-		final PrintWriter printWriter = new PrintWriter(result);
+		StringBuilder bldr = new StringBuilder();
+		
+		// Timestamp:
+		DateTime ts = DateTime.now();
+		bldr.append("Time of crash: " + TimeUtils.ISOWithMSFormatter.withZone(ts.getZone()).print(ts) + "\n\n");
+		
+		// The actual stacktrace:
+		bldr.append("Stacktrace:\n");
+		Writer result = new StringWriter();
+		PrintWriter printWriter = new PrintWriter(result);
 		e.printStackTrace(printWriter);
-		String stacktrace = result.toString();
+		bldr.append(result.toString());
 		printWriter.close();
-
-		// Add build information to the stacktrace
-		stacktrace = BuildInfo.getAllInfo() + "\n\n" + stacktrace;
-
+		bldr.append("\n");
+		
+		// Add Sapelli Collector build information:
+		BuildInfo buildInfo = BuildInfo.GetInstance();
+		String lastProject = System.getProperty(CollectorApp.PROPERTY_LAST_PROJECT);
+		if(buildInfo != null || lastProject != null)
+		{
+			bldr.append("Application info:\n");
+			if(buildInfo != null)
+			{
+				bldr.append("\t" + buildInfo.getVersionInfo() + ".\n");
+				bldr.append("\t" + buildInfo.getBuildInfo() + ".\n");
+			}
+			if(lastProject != null)
+				bldr.append("\t(last) running project: " + lastProject + "\n");
+			bldr.append("\n");
+		}
+		
+		// Add device info:
+		bldr.append("Device hardware info:\n\t");
+		bldr.append(DeviceID.getHardwareInfo("\n\t") + "\n\n");
+		bldr.append("Device software info:\n\t");
+		bldr.append(DeviceID.getSoftwareInfo("\n\t") + "\n\n");
+		
+		// Add device ID:
+		DeviceID deviceID = DeviceID.GetInstanceOrNull();
+		if(deviceID != null)
+		{
+			bldr.append("Sapelli DeviceID:\n");
+			bldr.append("\tCRC32: " + deviceID.getIDAsCRC32Hash() + "\n");
+			bldr.append("\tMD5: " + deviceID.getIDAsMD5Hash() + "\n");
+			bldr.append("\tRaw: " + deviceID.getRawID() + "\n\n");
+		}
+		
+		// Write to file:
 		String filename = namePrefix + "_" + TimeUtils.getTimestampForFileName() + ".stacktrace";
 		if(localPath != null)
-			writeToFile(stacktrace, filename);
+			writeToFile(bldr.toString(), filename);
 
 		defaultUEH.uncaughtException(t, e);
 	}
 
 	private void writeToFile(String stacktrace, String filename)
 	{
+		BufferedWriter bos = null;
 		try
 		{
-			BufferedWriter bos = new BufferedWriter(new FileWriter(localPath + "/" + filename));
+			bos = new BufferedWriter(new FileWriter(localPath + File.separator + filename));
 			bos.write(stacktrace);
 			bos.flush();
-			bos.close();
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace();
+		}
+		finally
+		{
+			if(bos != null)
+				try
+				{
+					bos.close();
+				}
+				catch(IOException ignore) {}
 		}
 	}
 }

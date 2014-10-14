@@ -31,13 +31,13 @@ import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.xml.FormParser;
+import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
+import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
-import uk.ac.ucl.excites.sapelli.shared.util.ROT13;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -52,10 +52,10 @@ public abstract class MediaField extends Field
 	
 	static private final Pattern OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
 	
-	private String captureButtonImageRelativePath;
-	private String approveButtonImageRelativePath;
-	private String discardButtonImageRelativePath;
-	private String plusButtonImageRelativePath; // path for custom "add more" button in gallery
+	protected String captureButtonImageRelativePath;
+	protected String approveButtonImageRelativePath;
+	protected String discardButtonImageRelativePath;
+	protected String plusButtonImageRelativePath; // path for custom "add more" button in gallery
 	
 	//protected int min;
 	protected boolean useNativeApp;
@@ -148,9 +148,9 @@ public abstract class MediaField extends Field
 	}
 	
 	@Override
-	protected IntegerColumn createColumn()
+	protected IntegerColumn createColumn(String name)
 	{
-		return new IntegerColumn(id, (optional != Optionalness.NEVER), (optional != Optionalness.NEVER ? 0 : 1), max);
+		return new IntegerColumn(name, (optional != Optionalness.NEVER), (optional != Optionalness.NEVER ? 0 : 1), max);
 	}
 	
 	public int getCount(Record record)
@@ -351,4 +351,34 @@ public abstract class MediaField extends Field
 		CollectionUtils.addIgnoreNull(paths, project.getImageFile(discardButtonImageRelativePath));
 		return paths;
 	}
+
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof MediaField)
+		{
+			MediaField that = (MediaField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					//this.min == that.min &&
+					this.max == that.max &&
+					this.useNativeApp == that.useNativeApp &&
+					(this.disableChoice != null ? that.disableChoice != null && this.disableChoice.getID().equals(that.disableChoice.getID()) : that.disableChoice == null); // do not use disableChoice itself to avoid potential endless loops!
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		//hash = 31 * hash + min;
+		hash = 31 * hash + max;
+		hash = 31 * hash + (useNativeApp ? 0 : 1);
+		hash = 31 * hash + (disableChoice == null ? 0 : disableChoice.getID().hashCode()); // do not use disableChoice itself to avoid potential endless loops!
+		return hash;
+	}
+
 }

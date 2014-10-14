@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
@@ -40,7 +41,7 @@ public class Page extends Field
 {
 	
 	private final List<Field> fields;
-	private final List<Trigger> triggers;
+	private List<Trigger> triggers;
 
 	/**
 	 * Create a	new page
@@ -53,7 +54,6 @@ public class Page extends Field
 	{
 		super(form, id);
 		fields = new ArrayList<Field>();
-		triggers = new ArrayList<Trigger>();
 		noColumn = true; // Pages never have columns of their own
 	}
 	
@@ -84,6 +84,8 @@ public class Page extends Field
 	
 	public void addTrigger(Trigger trigger)
 	{
+		if(triggers == null)
+			triggers = new ArrayList<Trigger>();
 		triggers.add(trigger);
 	}
 
@@ -92,7 +94,7 @@ public class Page extends Field
 	 */
 	public List<Trigger> getTriggers()
 	{
-		return triggers;
+		return triggers != null ? triggers : Collections.<Trigger> emptyList();
 	}
 
 	/**
@@ -118,10 +120,10 @@ public class Page extends Field
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected Column<?> createColumn()
+	protected Column<?> createColumn(String name)
 	{
 		throw new UnsupportedOperationException("Page fields do not have a column of their own.");
 	}
@@ -141,6 +143,31 @@ public class Page extends Field
 	public <V, UI extends CollectorUI<V, UI>> PageUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createPageUI(this);
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof Page)
+		{
+			Page that = (Page) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					this.fields.equals(that.fields) &&
+					this.getTriggers().equals(that.getTriggers());
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + fields.hashCode();
+		hash = 31 * hash + (triggers == null ? 0 : triggers.hashCode());
+		return hash;
 	}
 	
 }

@@ -20,21 +20,21 @@ package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Index;
+import uk.ac.ucl.excites.sapelli.storage.model.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -44,14 +44,10 @@ public class Form
 {
 
 	// Statics--------------------------------------------------------
-	/**
-	 * Allowed form indexes: 0 to {@link Project#MAX_FORMS} - 1
-	 */
-	public static final int FORM_POSITION_SIZE = Schema.SCHEMA_ID_SIZE /* 36 */ - Project.PROJECT_HASH_SIZE /* 32 */; // = 4 bits
-	public static final IntegerRangeMapping FORM_POSITION_FIELD = IntegerRangeMapping.ForSize(0, FORM_POSITION_SIZE);
-	
 	public static final boolean END_TIME_DEFAULT = false;
 
+	public static final int MAX_FIELDS = 512;
+	
 	// Where to go next:
 	static public enum Next
 	{
@@ -92,19 +88,32 @@ public class Form
 	public static final ScreenTransition DEFAULT_SCREEN_TRANSITION = ScreenTransition.NONE;
 
 	// Dynamics-------------------------------------------------------
+	public static enum AudioFeedback
+	{
+		NONE, LONG_CLICK, SEQUENTIAL
+	}
+
+	public static final AudioFeedback DEFAULT_AUDIO_FEEDBACK = AudioFeedback.NONE;
+
+	// Buttons Default Description Text (used for accessibility support)
+	public static final String DEFAULT_FORWARD_BUTTON_DESCRIPTION = "Forward";
+	public static final String DEFAULT_CANCEL_BUTTON_DESCRIPTION = "Cancel";
+	public static final String DEFAULT_BACK_BUTTON_DESCRIPTION = "Back";
+
+	// Dynamics-------------------------------------------------------
 	private final Project project;
-	private final int position;
+	private final String id;
+	private final short position;
 	private boolean producesRecords = true;
 	private boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	private Schema schema;
-	private final String id;
 
 	private transient List<String> warnings;
 	
 	// Fields
-	private Field start;
+	private Field startField;
 	private final List<Field> fields;
-	private final List<Trigger> triggers;
+	private List<Trigger> triggers;
 	
 	// Android shortcut:
 	private String shortcutImageRelativePath;
@@ -114,6 +123,9 @@ public class Form
 	
 	// ScreenTransition:
 	private ScreenTransition screenTransition = DEFAULT_SCREEN_TRANSITION;
+
+	// Obfuscate Media Files:
+	private AudioFeedback audioFeedback = DEFAULT_AUDIO_FEEDBACK;
 
 	// Obfuscate Media Files:
 	private boolean obfuscateMediaFiles = DEFAULT_OBFUSCATE_MEDIA_FILES;
@@ -129,22 +141,22 @@ public class Form
 	// Buttons:
 	private String buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
 	private String backButtonImageRelativePath;
+	private String backButtonDescription = DEFAULT_BACK_BUTTON_DESCRIPTION;
 	private String cancelButtonImageRelativePath;
+	private String cancelButtonDescription = DEFAULT_CANCEL_BUTTON_DESCRIPTION;
 	private String forwardButtonImageRelativePath;
+	private String forwardButtonDescription = DEFAULT_FORWARD_BUTTON_DESCRIPTION;
 	
 	public Form(Project project, String id)
 	{
+		if(project == null || id == null || id.isEmpty())
+			throw new IllegalArgumentException("A project and non-empty id are required!");
+		
 		this.project = project;
 		this.id = id;
 		
 		this.fields = new ArrayList<Field>();
-		this.triggers = new ArrayList<Trigger>();
-		
-		// Set Form index & add it to the Project:
-		if(FORM_POSITION_FIELD.fits(project.getForms().size()))
-			this.position = project.getForms().size();
-		else
-			throw new IllegalArgumentException("Invalid form index, valid values are " + FORM_POSITION_FIELD.getLogicalRangeString() + " (up to " + Project.MAX_FORMS + " forms per project).");
+		this.position = (short) project.getForms().size();
 		project.addForm(this); //!!!
 	}
 
@@ -156,8 +168,14 @@ public class Form
 		return project;
 	}
 
-	public void addField(Field f)
+	/**
+	 * @param f
+	 * @throws IllegalStateException when the maximum number of forms is reached
+	 */
+	public void addField(Field f) throws IllegalStateException
 	{
+		 if(fields.size() == MAX_FIELDS)
+			throw new IllegalStateException("Maximum number of fields reached");
 		fields.add(f);
 	}
 
@@ -214,7 +232,7 @@ public class Form
 	}
 	
 	/**
-	 * Find a field of the form by its ID 
+	 * Find a field of the form by its ID
 	 * 
 	 * @param fieldID
 	 * @return the field with the specified ID, or null if no such field exists in this form
@@ -226,13 +244,31 @@ public class Form
 				return f;
 		return null;
 	}
+	
+	/**
+	 * Find a field of the form by its position
+	 * 
+	 * @param fieldPosition
+	 * @return the field at the specified position, or null if no such field exists in this form
+	 */
+	public Field getField(int fieldPosition)
+	{
+		try
+		{
+			return fields.get(fieldPosition);
+		}
+		catch(IndexOutOfBoundsException e)
+		{
+			return null;
+		}
+	}
 
 	/**
 	 * @return the start
 	 */
 	public Field getStartField()
 	{
-		return start;
+		return startField;
 	}
 
 	/**
@@ -241,11 +277,13 @@ public class Form
 	 */
 	public void setStartField(Field start)
 	{
-		this.start = start;
+		this.startField = start;
 	}
 
 	public void addTrigger(Trigger trigger)
 	{
+		if(triggers == null)
+			 triggers = new ArrayList<Trigger>();
 		triggers.add(trigger);
 	}
 
@@ -254,7 +292,7 @@ public class Form
 	 */
 	public List<Trigger> getTriggers()
 	{
-		return triggers;
+		return triggers != null ? triggers : Collections.<Trigger> emptyList();
 	}
 
 	/**
@@ -294,6 +332,33 @@ public class Form
 		try
 		{
 			this.screenTransition = ScreenTransition.valueOf(screenTransitionStr);
+		}
+		catch(IllegalArgumentException iae)
+		{
+			throw iae;
+		}
+	}
+
+	/**
+	 * @return the obfuscateMediaFiles
+	 */
+	public AudioFeedback getAudioFeedback()
+	{
+		return audioFeedback;
+	}
+
+	/**
+	 * @param audioFeedbackStr
+	 *            the audioFeedbackStr to set
+	 */
+	public void setAudioFeedback(String audioFeedbackStr)
+	{
+		if(audioFeedbackStr == null)
+			return; // default Audio Feedback will be used
+		audioFeedbackStr = audioFeedbackStr.toUpperCase(); // Make upper case
+		try
+		{
+			this.audioFeedback = AudioFeedback.valueOf(audioFeedbackStr);
 		}
 		catch(IllegalArgumentException iae)
 		{
@@ -354,6 +419,22 @@ public class Form
 	/**
 	 * @return the cancelButtonImageRelativePath
 	 */
+	public String getBackButtonDescription()
+	{
+		return backButtonDescription;
+	}
+
+	/**
+	 * @param backButtonDescription the backButtonDescription to set
+	 */
+	public void setBackButtonDescription(String backButtonDescription)
+	{
+		this.backButtonDescription = backButtonDescription;
+	}
+
+	/**
+	 * @return the cancelButtonImageRelativePath
+	 */
 	public String getCancelButtonImageRelativePath()
 	{
 		return cancelButtonImageRelativePath;
@@ -370,6 +451,22 @@ public class Form
 	/**
 	 * @return the forwardButtonImageRelativePath
 	 */
+	public String getCancelButtonDescription()
+	{
+		return cancelButtonDescription;
+	}
+
+	/**
+	 * @param cancelButtonDescription the cancelButtonDescription to set
+	 */
+	public void setCancelButtonDescription(String cancelButtonDescription)
+	{
+		this.cancelButtonDescription = cancelButtonDescription;
+	}
+
+	/**
+	 * @return the forwardButtonImageRelativePath
+	 */
 	public String getForwardButtonImageRelativePath()
 	{
 		return forwardButtonImageRelativePath;
@@ -381,6 +478,22 @@ public class Form
 	public void setForwardButtonImageRelativePath(String forwardButtonImageRelativePath)
 	{
 		this.forwardButtonImageRelativePath = forwardButtonImageRelativePath;
+	}
+
+	/**
+	 * @return the buttonBackgroundColor
+	 */
+	public String getForwardButtonDescription()
+	{
+		return forwardButtonDescription;
+	}
+
+	/**
+	 * @param forwardButtonDescription the forwardButtonDescription to set
+	 */
+	public void setForwardButtonDescription(String forwardButtonDescription)
+	{
+		this.forwardButtonDescription = forwardButtonDescription;
 	}
 
 	/**
@@ -525,7 +638,7 @@ public class Form
 	/**
 	 * @return the position within the project
 	 */
-	public int getPosition()
+	public short getPosition()
 	{
 		return position;
 	}
@@ -540,32 +653,29 @@ public class Form
 		return producesRecords;
 	}
 	
-	public void initialiseStorage()
-	{
-		getSchema(); //this will also trigger all Columns to be created/initialised
-	}
-	
 	/**
-	 * The returned Schema object will contain all columns defined by fields in the form, plus the implicitly added
-	 * columns (StartTime & DeviceID, which together are used as the primary key, and the optional EndTime). However,
-	 * those implicit columns are only added if at least 1 user-defined field has a column. If there are no user-defined
-	 * fields with columns then no implicit columns are added and then the whole schema is pointless, therefore in that
-	 * case this method will return null instead of a columnless Schema object and the {@link #producesRecords} variable
-	 * will be set to {@code false}. 
+	 * Generates the {@link Schema} for this form. It will contain all columns defined by fields in the form, and the
+	 * implicitly added columns (StartTime & DeviceID, which together are used as the primary key, and the optional EndTime).
+	 * However, those implicit columns are only added if at least 1 user-defined field has a column. If there are no
+	 * user-defined fields with columns then no implicit columns are added and then the whole schema is pointless,
+	 * therefore in that case the {@link #producesRecords} variable will be set to {@code false} to avoid future attempts
+	 * at generating a schema.
 	 * 
-	 * @return
+	 * @throws ModelFullException
 	 */
-	public Schema getSchema()
+	public void initialiseStorage() throws ModelFullException
 	{
 		if(!producesRecords)
-			return null;
+			return;
 		if(schema == null)
 		{	
-			// Generate columns for user-defined fields:
+			// Generate columns for user-defined top-level fields:
 			List<Column<?>> userDefinedColumns = new ArrayList<Column<?>>();
 			for(Field f : fields)
 				/*	Important: do *NOT* check noColumn here and do *NOT* replace the call
-				 *  to Field#addColumnTo(List<Column<?>>) by a call to Field#getColumn()! */
+				 *  to Field#addColumnTo(List<Column<?>>) by a call to Field#getColumn()! 
+				 *  The reason (in both cases) is that composite fields like Pages, do not
+				 *  have a column of their own but their children do. */
 				f.addColumnTo(userDefinedColumns);
 	
 			// Check if there are user-defined columns at all, if not we don't need to generate a schema at all...
@@ -575,13 +685,10 @@ public class Form
 				// this.schema stays null
 			}
 			else
-			{	
+			{
 				// Create new Schema:
-				schema = new Schema(SapelliCollectorClient.GetSchemaID(this), // combination of project hash and form index
-									project.getName() +
-									(project.getVariant() != null ? '_' + project.getVariant() : "") +
-									"_v" + project.getVersion() +
-									":" + id /* = form "name"*/);
+				schema = new Schema(project.getModel(),
+									project.getModel().getName() + ":" + id);
 				
 				/* Add implicit columns
 				 * 	StartTime & DeviceID together form the primary key of our records.
@@ -597,7 +704,7 @@ public class Form
 				// Device ID column:
 				schema.addColumn(COLUMN_DEVICE_ID);
 				// Add primary key on StartTime & DeviceID:
-				schema.addIndex(new Index(COLUMN_TIMESTAMP_START.getName() + "_" + COLUMN_DEVICE_ID.getName(), true, COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID), true);
+				schema.setPrimaryKey(PrimaryKey.WithColumnNames(COLUMN_TIMESTAMP_START, COLUMN_DEVICE_ID));
 				
 				// Add user-defined columns
 				schema.addColumns(userDefinedColumns);
@@ -606,6 +713,17 @@ public class Form
 				schema.seal();
 			}
 		}
+	}
+	
+	/**
+	 * Gets the schema. Will return {@code null} in case of a non-data-producing form.
+	 * 
+	 * @return
+	 */
+	public Schema getSchema()
+	{
+		if(schema == null)
+			initialiseStorage();
 		return schema;
 	}
 	
@@ -613,12 +731,17 @@ public class Form
 	 * Returns the column associated with the given field.
 	 * 
 	 * @param field
-	 * @return the (non-virtual) column for the given field, or null in case the field has no column or the schema has not been initialised yet(!)
+	 * @return the (non-virtual) column for the given field, or {@code null} in case the field has no column or the schema has not been initialised yet(!)
 	 */
 	public Column<?> getColumnFor(Field field)
 	{
-		if(!field.isNoColumn() && schema != null)
-			return schema.getColumn(field.getID(), false);
+		if(!field.isNoColumn() && producesRecords && schema != null)
+		{
+			Column<?> col = schema.getColumn(field.getID(), false);
+			if(col == null)
+				col = schema.getColumn(Column.SanitiseName(field.getID()), false); // try again with sanitised name!
+			return col; // may still be null
+		}
 		else
 			return null;
 	}
@@ -718,6 +841,68 @@ public class Form
 	public String toString()
 	{
 		return id;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof Form)
+		{
+			Form that = (Form) obj;
+			return	this.id.equals(that.id) &&
+					this.project.toString().equals(that.project.toString()) && // DO NOT INCLUDE project ITSELF HERE (otherwise we create an endless loop!)
+					this.position == that.position &&
+					this.producesRecords == that.producesRecords &&
+					this.skipOnBack == that.skipOnBack &&
+					(this.schema != null ? this.schema.equals(that.schema, true, true, false) : that.schema == null) &&
+					(this.startField != null ? this.startField.equals(that.startField) : that.startField == null) &&
+					this.fields.equals(that.fields) &&
+					this.getTriggers().equals(that.getTriggers()) &&
+					(this.shortcutImageRelativePath != null ? this.shortcutImageRelativePath.equals(that.shortcutImageRelativePath) : that.shortcutImageRelativePath == null) &&
+					this.clickAnimation == that.clickAnimation &&
+					this.screenTransition == that.screenTransition &&
+					this.obfuscateMediaFiles == that.obfuscateMediaFiles &&
+					this.storeEndTime == that.storeEndTime &&
+					this.next == that.next &&
+					this.vibrateOnSave == that.vibrateOnSave &&
+					(this.saveSoundRelativePath != null ? this.saveSoundRelativePath.equals(that.saveSoundRelativePath) : that.saveSoundRelativePath == null) &&
+					this.buttonBackgroundColor.equals(that.backButtonImageRelativePath) &&
+					(this.backButtonImageRelativePath != null ? this.backButtonImageRelativePath.equals(that.backButtonImageRelativePath) : that.backButtonImageRelativePath == null) &&
+					(this.cancelButtonImageRelativePath != null ? this.cancelButtonImageRelativePath.equals(that.cancelButtonImageRelativePath) : that.cancelButtonImageRelativePath == null) &&
+					(this.forwardButtonImageRelativePath != null ? this.forwardButtonImageRelativePath.equals(that.forwardButtonImageRelativePath) : that.forwardButtonImageRelativePath == null);
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + id.hashCode();
+		hash = 31 * hash + project.toString().hashCode(); // DO NOT INCLUDE project ITSELF HERE (otherwise we create an endless loop!)
+		hash = 31 * hash + (int) position;
+		hash = 31 * hash + (producesRecords ? 0 : 1);
+		hash = 31 * hash + (skipOnBack ? 0 : 1);
+		hash = 31 * hash + (startField == null ? 0 : startField.hashCode());
+		hash = 31 * hash + fields.hashCode();
+		hash = 31 * hash + (triggers == null ? 0 : triggers.hashCode());
+		hash = 31 * hash + (shortcutImageRelativePath == null ? 0 : shortcutImageRelativePath.hashCode());
+		hash = 31 * hash + (clickAnimation ? 0 : 1);
+		hash = 31 * hash + screenTransition.ordinal();
+		hash = 31 * hash + (obfuscateMediaFiles ? 0 : 1);
+		hash = 31 * hash + (storeEndTime ? 0 : 1);
+		hash = 31 * hash + next.ordinal();
+		hash = 31 * hash + (vibrateOnSave ? 0 : 1);
+		hash = 31 * hash + (saveSoundRelativePath == null ? 0 : saveSoundRelativePath.hashCode());
+		hash = 31 * hash + buttonBackgroundColor.hashCode();
+		hash = 31 * hash + (backButtonImageRelativePath == null ? 0 : backButtonImageRelativePath.hashCode());
+		hash = 31 * hash + (cancelButtonImageRelativePath == null ? 0 : cancelButtonImageRelativePath.hashCode());
+		hash = 31 * hash + (forwardButtonImageRelativePath == null ? 0 : forwardButtonImageRelativePath.hashCode());
+		// There is no need to include the schema.hashCode() in this computation because the schema it is entirely inferred from things that are included in the computation.
+		return hash;
 	}
 
 }

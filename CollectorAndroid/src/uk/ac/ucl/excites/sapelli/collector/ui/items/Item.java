@@ -40,6 +40,7 @@ public abstract class Item
 	protected int paddingPx = DEFAULT_PADDING_PX;
 	protected int backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	protected boolean visible = true;
+	protected String description;
 	
 	private View view = null; // cached view instance, to allow for recycling
 	
@@ -146,5 +147,20 @@ public abstract class Item
 	{
 		this.backgroundColor = backgroundColor;
 	}
-	
+
+	/**
+	 * @return the description
+	 */
+	public String getDescription()
+	{
+		return description;
+	}
+
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description)
+	{
+		this.description = description;
+	}
 }

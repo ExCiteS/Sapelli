@@ -33,52 +33,20 @@ import java.nio.charset.Charset;
  * 
  * @author mstevens
  */
-public final class BitInputStream extends InputStream
+public abstract class BitInputStream extends InputStream
 {
 	//STATIC
 	private static final Charset DEFAULT_CHARSET = Charset.forName("UTF-8");
 	private static final Charset UTF16BE = Charset.forName("UTF-16BE");
 
 	//DYNAMIC
-	private boolean closed;
-	private InputStream input;			// Underlying byte stream to read from
-	private int currentByte;			// Buffered bits stored as an int (either in the range 0x00 to 0xFF, or -1 if the end of stream is reached)
-	private int numBitsRemaining;		// Always between 0 and 7, inclusive
+	private int numberOfBitsRead;
+	protected boolean closed;
 
-	private boolean isEndOfStream;
-
-	public BitInputStream(InputStream input)
+	public BitInputStream()
 	{
-		if(input == null)
-			throw new NullPointerException("Underlying InputStream cannot be null!");
+		numberOfBitsRead = 0;
 		closed = false;
-		this.input = input;
-		numBitsRemaining = 0;
-		isEndOfStream = false;
-	}
-	
-	/**
-	 * @return whether stream is at end (true) or not (false)
-	 * @throws IOException if the stream is closed or another I/O error occurs
-	 */
-	public boolean atEnd() throws IOException
-	{
-		if(closed)
-			throw new IOException("This stream is closed");
-		if(isEndOfStream && numBitsRemaining == 0)
-			return true;
-		if(numBitsRemaining == 0)
-		{
-			currentByte = input.read();
-			if(currentByte == -1)
-			{
-				isEndOfStream = true;
-				return true;
-			}
-			else
-				numBitsRemaining = 8;
-		}
-		return false;
 	}
 
 	/**
@@ -91,11 +59,12 @@ public final class BitInputStream extends InputStream
 	 */
 	public boolean readBit() throws IOException, EOFException
 	{
-		if(atEnd()) //also reads a new byte from underlying stream if needed! (will also check for closedness)
-			throw new EOFException("End of stream reached");
-		numBitsRemaining--;
-		return ((currentByte >>> numBitsRemaining) & 1) == 1;
+		boolean bit = doReadBit();
+		numberOfBitsRead++;
+		return bit;
 	}
+	
+	protected abstract boolean doReadBit() throws IOException, EOFException;
 
 	/**
 	 * Reads exactly {@code numberOfBits} of bits from the input stream, and returns them as a boolean[]. 
@@ -112,6 +81,23 @@ public final class BitInputStream extends InputStream
 		int n = read(bits);
 		if(n < numberOfBits)
 			throw new EOFException("Could not read enough bits (requested: " + numberOfBits + "; read: " + Math.max(n, 0) + "), because end of stream was reached");
+		return bits;
+	}
+	
+	/**
+	 * Reads exactly {@code numberOfBits} of bits from the input stream, and returns them as a {@link BitArray}. 
+	 * If not enough bits could be read an {@link EOFException} is thrown.
+	 * 
+	 * @param length number of bits to be read
+	 * @return the resulting {@link BitArray}
+	 * @throws IOException if the stream is closed or another I/O error occurs
+	 * @throws EOFException could not read the requested amount of bits
+	 */
+	public BitArray readBitArray(int length) throws EOFException, IOException
+	{
+		BitArray bits = new BitArray(length);
+		for(int i = 0; i < length; i++)
+			bits.set(i, readBit());
 		return bits;
 	}
 	
@@ -252,8 +238,7 @@ public final class BitInputStream extends InputStream
 		return (byte) readInteger(Byte.SIZE, false);
 		//Old version:
 		/*byte b = 0;
-		int i = 0;
-		for(; i < 8; i++)
+		for(int i = 0; i < 8; i++)
 			if(readBit())
 				b |= 1 << (7 - i); //MSB is read first
 		return b;*/
@@ -435,7 +420,6 @@ public final class BitInputStream extends InputStream
 	 */
 	public void close() throws IOException
 	{
-		input.close();
 		closed = true;
 	}
 	
@@ -445,30 +429,12 @@ public final class BitInputStream extends InputStream
 	 * 
 	 * @return
 	 */
-	public int bitsAvailable() throws IOException
-	{
-		try
-		{
-			if(atEnd())
-				return 0;
-			else
-				return numBitsRemaining + (input.available() * 8);
-		}
-		catch(IOException e)
-		{
-			return numBitsRemaining;
-		}
-	}
+	public abstract int bitsAvailable() throws IOException;
 	
 	/* (non-Javadoc)
 	 * @see java.io.InputStream#available()
 	 */
-	public int available() throws IOException
-	{
-		if(closed)
-			throw new IOException("This stream is closed");
-		return (numBitsRemaining == 8 ? 1 : 0) + input.available();
-	}
+	public abstract int available() throws IOException;
 	
 	/* (non-Javadoc)
 	 * @see java.io.InputStream#markSupported()
@@ -520,6 +486,42 @@ public final class BitInputStream extends InputStream
 			return i;
 		}
 		return 0;
+	}
+	
+	/**
+	 * Skips over and discards {@code n} bits.
+	 * 
+	 * @param n - the number of bytes to be skipped
+	 * @return the actual number of bits skipped
+	 * @throws IOException - if some I/O error occurs.
+	 */
+	public long skipBits(long n) throws IOException
+	{
+		if(n > 0)
+		{
+			long i = 0;
+			for(; i < n; i++)
+			{
+				try
+				{
+					readBit();
+				}
+				catch(EOFException eof)
+				{
+					break;
+				}
+			}
+			return i;
+		}
+		return 0;
+	}
+
+	/**
+	 * @return the numberOfBitsRead (includes skipped bits/bytes)
+	 */
+	public int getNumberOfBitsRead()
+	{
+		return numberOfBitsRead;
 	}
 	
 }

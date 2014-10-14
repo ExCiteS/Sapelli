@@ -26,11 +26,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
+import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
@@ -40,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderClient;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
+import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
 import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
@@ -49,7 +49,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.transmission.Settings;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
@@ -59,9 +59,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.AssetManager;
-import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
@@ -105,15 +102,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	static private final String XML_FILE_EXTENSION = "xml";
 
 	static private final String DEMO_PROJECT = "demo.excites";
-	
-	// SHORTCUT INTENT ACTIONS
-	private static final String DEFAULT_INSTALL_SHORTCUT_ACTION = "com.android.launcher.action.INSTALL_SHORTCUT";
-	private static final String DEFAULT_UNINSTALL_SHORTCUT_ACTION = "com.android.launcher.action.UNINSTALL_SHORTCUT";
-	private static final String SAPELLI_LAUNCHER_INSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.sapelli.launcher.INSTALL_SHORTCUT";
-	private static final String SAPELLI_LAUNCHER_UNINSTALL_SHORTCUT_ACTION = "uk.ac.ucl.excites.sapelli.launcher.UNINSTALL_SHORTCUT";
-
-	// SHORTCUT INTENT PARAMETER FOR SAPELLI LAUNCHER
-	private static final String SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH = "uk.ac.ucl.excites.sapelli.launcher.shortcut.ICON_PATH";
 
 	public static final int RETURN_BROWSE_FOR_PROJECT_LOAD = 1;
 	public static final int RETURN_BROWSE_FOR_RECORD_IMPORT = 2;
@@ -133,7 +121,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-
+		
 		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
 		try
 		{
@@ -144,8 +132,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
 			return;
 		}
-				
-		if(BuildInfo.DEMO_BUILD)
+		
+		if(app.getBuildInfo().isDemoBuild())
 			return;
 		//else ...
 		// Only if not in demo mode:
@@ -241,7 +229,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		}
 		
 		// And finally...
-		if(BuildInfo.DEMO_BUILD)
+		if(app.getBuildInfo().isDemoBuild())
 			demoMode();
 		else
 			populateProjectList(); 	// Update project list
@@ -252,8 +240,11 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	public void initialisationSuccess(DeviceID deviceID)
 	{
 		this.deviceID = deviceID;
-		Crashlytics.setLong(CollectorApp.CRASHLYTICS_DEVICE_ID_CRC32, deviceID.getIDAsCRC32Hash());
-		Crashlytics.setString(CollectorApp.CRASHLYTICS_DEVICE_ID_MD5, deviceID.getIDAsMD5Hash().toString());
+		if(!BuildConfig.DEBUG)
+		{
+			Crashlytics.setLong(CollectorApp.CRASHLYTICS_DEVICE_ID_CRC32, deviceID.getIDAsCRC32Hash());
+			Crashlytics.setString(CollectorApp.CRASHLYTICS_DEVICE_ID_MD5, deviceID.getIDAsMD5Hash().toString());
+		}
 	}
 
 	@Override
@@ -278,7 +269,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			else
 				p = projects.get(0); // Assumption: there is only one stored project in demo mode
 			// Run the project
-			startActivity(getProjectRunIntent(p));
+			startActivity(ProjectRunHelpers.getProjectRunIntent(this, p));
 		}
 		catch(Exception e)
 		{
@@ -299,6 +290,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
+		super.onCreateOptionsMenu(menu);
 		getMenuInflater().inflate(R.menu.projectmanager, menu);
 		return true;
 	}
@@ -337,6 +329,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return true;
 	}
 
+	@SuppressLint("InflateParams")
 	public boolean openAboutDialog(MenuItem item)
 	{
 		// Set-up UI:
@@ -345,10 +338,12 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		infoLbl.setClickable(true);
 		infoLbl.setMovementMethod(LinkMovementMethod.getInstance());
 		infoLbl.setText(Html.fromHtml(
-				"<p>" + getString(R.string.app_name) + " " + BuildInfo.getVersionInfo() + ".</p>" +
-				"<p>" + BuildInfo.getBuildInfo() + ".</p>" +
+				"<p><b>" + app.getBuildInfo().getVersionInfo() + "</b></p>" +
+				"<p>" + app.getBuildInfo().getBuildInfo() + ".</p>" +
 				"<p>" + getString(R.string.by_ucl_excites_html)  + "</p>" + 
-				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));		
+				"<p>" + getString(R.string.license)  + "</p>" +
+				"<p>" + "Device ID (CRC32): " + (deviceID != null ? deviceID.getIDAsCRC32Hash() : "?") + ".</p>"));	
+		infoLbl.setPadding(2, 2, 6, 2);
 		ImageView iconImg = (ImageView) view.findViewById(R.id.aboutIcon);
 		iconImg.setOnClickListener(new OnClickListener()
 		{
@@ -376,7 +371,10 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		Project selectedProject = getSelectedProject(false);
 		Intent i = new Intent(getApplicationContext(), ExportActivity.class);
 		if(selectedProject != null)
-			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, selectedProject.getHash());
+		{
+			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_ID, selectedProject.getID());
+			i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_FINGERPRINT, selectedProject.getFingerPrint());
+		}
 		i.setAction(Intent.ACTION_MAIN);
 		startActivity(i);
 		return true;
@@ -426,9 +424,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	/**
 	 * Retrieve all parsed projects from db and populate list
 	 */
-	public void populateProjectList()
+	private void populateProjectList()
 	{
-		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list_item, android.R.id.text1, new ArrayList<Project>(projectStore.retrieveProjects())));
+		projectList.setAdapter(new ArrayAdapter<Project>(this, R.layout.project_list_item, android.R.id.text1, projectStore.retrieveProjects()));
 		if(!projectList.getAdapter().isEmpty())
 		{
 			runBtn.setEnabled(true);
@@ -464,7 +462,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		Project p = getSelectedProject(true);
 		if(p != null)
-			startActivity(getProjectRunIntent(p));
+			startActivity(ProjectRunHelpers.getProjectRunIntent(this, p));
 	}
 
 	private void removeProject()
@@ -472,7 +470,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		Project p = getSelectedProject(false);
 		if(p == null)
 			return;
-		removeShortcut(p);
+		ProjectRunHelpers.removeShortcut(this, p);
 		projectStore.delete(p);
 		populateProjectList();
 
@@ -592,10 +590,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			showErrorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
 		}
 		
-		// Encryption Check
-		if(project.getTransmissionSettings().isEncrypt())
-			requestEncryptionKey(project);
-
 		// Store the project object:
 		storeProject(project);
 
@@ -649,9 +643,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		{
 			public void onClick(DialogInterface dialog, int whichButton)
 			{
-				String inputStr = input.getText().toString();
-				project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? 	Settings.DEFAULT_PASSWORD /*Set the Default Password*/ :
-																					inputStr);
+				//String inputStr = input.getText().toString();
+				//project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? 	EncryptionSettings.DEFAULT_PASSWORD /*Set the Default Password*/ :
+				//																	inputStr);
 			}
 		});
 		encryptionDialog = builder.create();
@@ -664,14 +658,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		IntentIntegrator integrator = new IntentIntegrator(this);
 		integrator.initiateScan(IntentIntegrator.QR_CODE_TYPES);
 	}
-
-	private Intent getProjectRunIntent(Project project)
-	{
-		Intent i = new Intent(getApplicationContext(), CollectorActivity.class);
-		i.putExtra(CollectorActivity.INTENT_PARAM_PROJECT_HASH, project.getHash());
-		i.setAction(Intent.ACTION_MAIN);
-		return i;
-	}
 	
 	/**
 	 * Create a shortcut
@@ -682,63 +668,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// Get the selected project
 		Project selectedProject = getSelectedProject(true);
 		if(selectedProject != null)
-			createShortcut(selectedProject);
+			ProjectRunHelpers.createShortcut(this, selectedProject);
 		return true;
-	}
-	
-	/**
-	 * Create a shortcut
-	 * 
-	 * @param project
-	 */
-	public void createShortcut(Project project)
-	{
-		// Icon image file:
-		File shortcutImageFile = project.getImageFile(project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
-		
-		//-----------------------------------------------------
-		// Create a shortcut in standard Android Home Launcher
-		//-----------------------------------------------------
-		Intent androidLauncherIntent = getShortcutCreationIntent(project, false);
-		// Get up icon bitmap:
-		Drawable iconResource = FileHelpers.isReadableFile(shortcutImageFile) ?	Drawable.createFromPath(shortcutImageFile.getAbsolutePath()) : getResources().getDrawable(R.drawable.ic_excites_grey);
-		Bitmap icon = ((BitmapDrawable) iconResource).getBitmap();
-		// Resize the icon bitmap according to the default size:
-		int maxIconSize = (int) getResources().getDimension(android.R.dimen.app_icon_size); // Get standard system icon size
-		if(icon.getWidth() > maxIconSize || icon.getHeight() > maxIconSize)
-			icon = Bitmap.createScaledBitmap(icon, maxIconSize, maxIconSize, true); //TODO make this keep aspect ratio?
-		// Set up shortcut icon:
-		androidLauncherIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON, icon);
-		// Fire the intent:
-		sendBroadcast(androidLauncherIntent);
-		//-----------------------------------------------------
-		
-		//-----------------------------------------------------
-		// Create an shortcut in the Sapelli Launcher
-		//-----------------------------------------------------
-		Intent sapelliLauncherIntent = getShortcutCreationIntent(project, true);
-		// Set up shortcut icon path:
-		sapelliLauncherIntent.putExtra(SAPELLI_LAUNCHER_SHORTCUT_ICON_PATH, FileHelpers.isReadableFile(shortcutImageFile) ? shortcutImageFile.getAbsolutePath() : null); // launcher will use default Sapelli icon when path is null
-		// Fire the intent:
-		sendBroadcast(sapelliLauncherIntent);		
-		//-----------------------------------------------------
-	}
-	
-	private Intent getShortcutCreationIntent(Project projectToRun, boolean sapelliLauncher)
-	{
-		Intent shortcutCreationIntent = new Intent();
-		
-		// Action:
-		shortcutCreationIntent.setAction(sapelliLauncher ? SAPELLI_LAUNCHER_INSTALL_SHORTCUT_ACTION : DEFAULT_INSTALL_SHORTCUT_ACTION);
-		// Shortcut intent:
-		shortcutCreationIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, getProjectRunIntent(projectToRun));
-		// Shortcut name:
-		shortcutCreationIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, projectToRun.toString());
-		// 	Do not allow duplicate shortcuts:
-		if(!sapelliLauncher)
-			shortcutCreationIntent.putExtra("duplicate", false); // only needed for Android Home Launcher (although Sapelli Launcher would just ignore it)
-		
-		return shortcutCreationIntent;
 	}
 
 	/**
@@ -750,35 +681,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// Get the selected project
 		Project selectedProject = getSelectedProject(true);
 		if(selectedProject != null)
-			removeShortcut(selectedProject);
+			ProjectRunHelpers.removeShortcut(this, selectedProject);
 		return true;
-	}
-	
-	/**
-	 * Remove a shortcut
-	 * 
-	 * @parem project
-	 */
-	public void removeShortcut(Project project)
-	{
-		// Remove a shortcut from the standard Android Home Launcher
-		sendBroadcast(getShortcutRemovalIntent(project, false));
-		// Remove a shortcut from the Sapelli Launcher
-		sendBroadcast(getShortcutRemovalIntent(project, true));
-	}
-
-	private Intent getShortcutRemovalIntent(Project project, boolean sapelliLauncher)
-	{		
-		Intent shortcutRemovalIntent = new Intent();
-		
-		// Action:
-		shortcutRemovalIntent.setAction(sapelliLauncher ? SAPELLI_LAUNCHER_UNINSTALL_SHORTCUT_ACTION : DEFAULT_UNINSTALL_SHORTCUT_ACTION);
-		// Shortcut intent:
-		shortcutRemovalIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, getProjectRunIntent(project));
-		// Shortcut name:
-		shortcutRemovalIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, project.toString());
-		
-		return shortcutRemovalIntent;
 	}
 
 	@Override

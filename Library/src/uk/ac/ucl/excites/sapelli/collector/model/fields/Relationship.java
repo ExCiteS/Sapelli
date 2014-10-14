@@ -23,10 +23,6 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.storage.queries.ExtremeValueRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.NullRecordQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
-import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 
@@ -34,30 +30,25 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
  * Field that represents relationship with another Form
  * <p>
  * We envision the following different type (to be implemented by subclasses):
- * 
- * "LinksTo": A "jump" link between forms.
- * <br/><br/>
- * The relationship between the forms is purely "navigational" and there is no stored association between their records.
- * In this case the Relation field merely provides a "passage way" through which navigation to the other form is possible.
- * An "intra-form" jump to the relation field will automatically result in a subsequent "inter-form" jump to the {@code relatedForm}. 
-* LINK,
-*
- * A 1:1 relationship between this form (holder of of the Relationship object) and another {@code relatedForm}.
- * The consequence is that a new record of the {@code relatedForm} will be created for every instance of this form (unless the relationship is optional). 
-//ONE_TO_ONE,
-
- * A N:1 relationship between this form (holder of of the Relationship object) and another {@code relatedForm}.
- * This means multiple records (N) of this form can relate (or better: "belong") to a single record (1) of the {@code relatedForm}. 
-
-MANY_TO_ONE,
-
-
- * A N:M relationship between this form (holder of of the Relationship object) and another {@code relatedForm}.
- * This means multiple records (N) of this form can relate to (or better: "have and belong to") multiple records (M) of the {@code relatedForm}.
- * Currently not implemented.
- * TODO Support for N:M cardinality (will require some kind of "cross table")
-
-//MANY_TO_MANY
+ * </p><p> 
+ * "LinksTo": A "jump" link between forms, implemented in {@link LinksToField}</br>
+ *	The relationship between the forms is purely "navigational" and there is no stored association between their records.
+ *	In this case the Relation field merely provides a "passage way" through which navigation to the other form is possible.
+ *	An "intra-form" jump to the relation field will automatically result in a subsequent "inter-form" jump to the {@code relatedForm}. 
+ *</p><p>
+ * One-to-one: TODO not yet implemented</br>
+ *	A 1:1 relationship between this form (holder of of the Relationship object) and another {@code relatedForm}.
+ *	The consequence is that a new record of the {@code relatedForm} will be created for every instance of this form (unless the relationship is optional). 
+ * </p><p>
+ * Many-to-one: Implemented in {@link BelongsToField}.
+ * 	A N:1 relationship between this form (holder of of the Relationship object) and another {@code relatedForm}.
+ * 	This means multiple records (N) of this form can relate (or better: "belong") to a single record (1) of the {@code relatedForm}.  
+ * </p><p>
+ * Many-to-many: TODO not yet implemented</br>
+ *	A N:M relationship between this form (holder of of the Relationship object and another {@code relatedForm}.
+ *	This means multiple records (N) of this form can relate to (or better: "have and belong to") multiple records (M) of the {@code relatedForm}.
+ *	Currently not implemented. Implementing this will require some kind of "cross table".
+ * </p>
  * 
  * @author mstevens
  */
@@ -70,7 +61,7 @@ public abstract class Relationship extends UILessField
 	// Dynamics------------------------------------------------------
 	protected Form relatedForm;
 	protected boolean holdForeignRecord;
-	protected AndConstraint constraints;
+	protected final AndConstraint constraints;
 
 	/**
 	 * @param form the form the field belongs to
@@ -90,6 +81,8 @@ public abstract class Relationship extends UILessField
 	
 	public void setRelatedForm(Form relatedForm)
 	{
+		if(this.relatedForm != null)
+			throw new IllegalStateException("relatedForm cannot be changed once it has been set!");
 		if(relatedForm == form)
 			throw new IllegalArgumentException("A form cannot be related to itself!"); //TODO why not? e.g. person-person relationship
 		this.relatedForm = relatedForm;
@@ -108,24 +101,6 @@ public abstract class Relationship extends UILessField
 		return constraints;
 	}
 	
-	/**
-	 * Returns a SingleRecordQuery that can be used to find (or verify)
-	 * the "held" record (the most recent record that meets the constraints).
-	 * 
-	 * If this relationship does not hold on to foreign records a dummy query
-	 * will be returns which always returns a null record upon execution.
-	 * 
-	 * TODO check for deviceID / source:local/remote ...
-	 * 
-	 * @return
-	 */
-	public SingleRecordQuery getHeldRecordQuery()
-	{
-		if(!holdForeignRecord)
-			return new NullRecordQuery();
-		return ExtremeValueRecordQuery.Max(Form.COLUMN_TIMESTAMP_START, new RecordsQuery(relatedForm.getSchema(), constraints));
-	}
-
 	/**
 	 * @return the relatedForm
 	 */
@@ -158,6 +133,33 @@ public abstract class Relationship extends UILessField
 	{
 		//TODO link button image?
 		return null;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof Relationship)
+		{
+			Relationship that = (Relationship) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					(this.relatedForm != null ? that.relatedForm != null && this.relatedForm.getID().equals(that.relatedForm.getID()) : that.relatedForm == null) && // do not use relatedForm itself to avoid potential endless loops!
+					this.holdForeignRecord == that.holdForeignRecord &&
+					this.constraints.equals(that.constraints);
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + (relatedForm == null ? 0 : relatedForm.getID().hashCode()); // do not use relatedForm itself to avoid potential endless loops!
+		hash = 31 * hash + (holdForeignRecord ? 0 : 1);
+		hash = 31 * hash + constraints.hashCode();
+		return hash;
 	}
 
 }

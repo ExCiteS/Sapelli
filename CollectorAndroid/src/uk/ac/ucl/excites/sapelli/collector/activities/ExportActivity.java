@@ -19,36 +19,39 @@
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import java.io.File;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-
+import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
-
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
-import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter.Format;
 import uk.ac.ucl.excites.sapelli.storage.eximport.ExportResult;
 import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter;
+import uk.ac.ucl.excites.sapelli.storage.eximport.Exporter.Format;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.csv.CSVRecordsExporter.Separator;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter.CompositeMode;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
+import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.app.Dialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
@@ -188,6 +191,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		}
 	}
 	
+	@SuppressLint("InflateParams")
 	private void setDateRange(final int dtRangeIdx)
 	{
 		// Init current date time to show in dialog:
@@ -218,7 +222,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		// Create the dialog
 		AlertDialog.Builder builder = new Builder(this);
 		// Set the title:
-		builder.setTitle(getString(dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo, '…')) 
+		builder.setTitle(getString(dtRangeIdx == DT_RANGE_IDX_FROM ? R.string.exportDateRangeFrom : R.string.exportDateRangeTo, '\u2026')) 
 		// Set UI:
 		.setView(view)
 		// Set the buttons:
@@ -270,7 +274,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 	
 	private void queryCallback(List<Record> result)
 	{
-		if(result.isEmpty())
+		if(result == null || result.isEmpty())
 			showOKDialog(getString(R.string.title_activity_export), getString(R.string.exportNoRecordsFound));
 		else
 		{
@@ -374,11 +378,9 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 			try
 			{
 				// Schemas (when list stays empty all records of any schema/project/form will be fetched):
-				List<Schema> schemata = new ArrayList<Schema>();
+				Set<Schema> schemata = new HashSet<Schema>();
 				if(project != null && radioSelectedProject.isChecked())
-					for(Form f : project.getForms())
-						if(f.isProducesRecords())
-							schemata.add(f.getSchema());
+					schemata.addAll(project.getModel().getSchemata());
 				// Date range:
 				AndConstraint constraints = new AndConstraint();
 				if(dateRange[DT_RANGE_IDX_FROM] != null)
@@ -386,11 +388,12 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 				if(dateRange[DT_RANGE_IDX_TO] != null)
 					constraints.addConstraint(new RuleConstraint(Form.COLUMN_TIMESTAMP_START, RuleConstraint.Comparison.SMALLER_OR_EQUAL, new TimeStamp(dateRange[DT_RANGE_IDX_TO])));
 				// Retrieve by query:
-				return recordStore.retrieveRecords(new RecordsQuery(schemata, constraints));
+				return recordStore.retrieveRecords(new RecordsQuery(Source.From(schemata), Order.UNDEFINED, constraints)); // TODO order by form, deviceid, timestamp
 			}
 			catch(Exception e)
 			{
 				e.printStackTrace(System.err);
+				Log.d("QueryTask", ExceptionHelpers.getMessageAndCause(e));
 				failure = e;
 				return null;
 			}
@@ -400,10 +403,10 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		protected void onPostExecute(List<Record> result)
 		{
 			super.onPostExecute(result); // dismiss dialog
-			if(result != null)
-				queryCallback(result);
-			else
+			if(failure != null)
 				queryCallback(failure);
+			else
+				queryCallback(result);
 		}
 		
 	}
@@ -460,6 +463,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 			catch(Exception e)
 			{
 				e.printStackTrace(System.err);
+				Log.d("DeleteTask", ExceptionHelpers.getMessageAndCause(e));
 				failure = e;
 			}
 			return null;

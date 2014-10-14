@@ -21,11 +21,16 @@ package uk.ac.ucl.excites.sapelli.collector.model.fields;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.xml.FormParser;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 
 /**
- * @author mstevens
+ * A relationship from one form to another which constitutes a "jump"</br>
+ *	The relationship between the forms is purely "navigational" and there is no stored association between their records.
+ *	In this case the Relation field merely provides a "passage way" through which navigation to the other form is possible.
+ *	An "intra-form" jump to the relation field will automatically result in a subsequent "inter-form" jump to the {@code relatedForm}
  *
+ * @author mstevens
  */
 public class LinksToField extends Relationship
 {
@@ -41,10 +46,10 @@ public class LinksToField extends Relationship
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected Column<?> createColumn()
+	protected Column<?> createColumn(String name)
 	{	
 		return null;
 	}
@@ -56,6 +61,25 @@ public class LinksToField extends Relationship
 	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
 	{
 		return controller.enterLinksTo(this, arguments);
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof BelongsToField)
+			return super.equals(obj); // Relationship#equals(Object)
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Relationship#hashCode()
+		hash = 31 * hash + FormParser.TAG_LINKS_TO.hashCode();
+		return hash;
 	}
 	
 }

@@ -87,10 +87,10 @@ public class LabelField extends Field
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected Column<?> createColumn()
+	protected Column<?> createColumn(String name)
 	{
 		return null;
 	}
@@ -124,6 +124,31 @@ public class LabelField extends Field
 	public void setOptional(Optionalness optionalness)
 	{
 		// does nothing, labels are always optional
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof LabelField)
+		{
+			LabelField that = (LabelField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					this.textSizeScale == that.textSizeScale &&
+					this.centered == that.centered;
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + Float.floatToIntBits(textSizeScale);
+		hash = 31 * hash + (centered ? 0 : 1);
+		return hash;
 	}
 	
 }

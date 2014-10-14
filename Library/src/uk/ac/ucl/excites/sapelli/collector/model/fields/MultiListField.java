@@ -18,7 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
+import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
@@ -30,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary.Dictionar
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MultiListUI;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.StringListMapper;
@@ -46,10 +49,10 @@ public class MultiListField extends Field
 	static public final boolean DEFAULT_PRESELECT = true;
 	static public final String CAPTION_SEPARATOR = ";";
 	
-	private String[] captions;
-	private MultiListItem itemsRoot;
+	private final String[] captions;
+	private final MultiListItem itemsRoot;
 	private boolean preSelect = DEFAULT_PRESELECT;
-	private Dictionary<MultiListItem> values;
+	private final Dictionary<MultiListItem> values;
 	
 	/**
 	 * @param form
@@ -77,7 +80,7 @@ public class MultiListField extends Field
 		else if(level < captions.length)
 			return captions[level];
 		else
-			return captions[0].isEmpty() ? "" : UNKNOWN_LABEL_PREFIX + level;
+			return captions[captions.length - 1].isEmpty() ? "" : UNKNOWN_LABEL_PREFIX + level; // if last existing caption is "" then return "", otherwise return "LevelX"
 	}
 
 	/**
@@ -120,10 +123,10 @@ public class MultiListField extends Field
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected IntegerColumn createColumn()
+	protected IntegerColumn createColumn(String name)
 	{
 		// Initialise dictionary:
 		addLeaves(itemsRoot); // depth-first traversal
@@ -139,7 +142,7 @@ public class MultiListField extends Field
 			boolean opt = (optional != Optionalness.NEVER);
 			
 			//Create column:
-			IntegerColumn col = new IntegerColumn(id, opt, 0, values.size() - 1);
+			IntegerColumn col = new IntegerColumn(name, opt, 0, values.size() - 1);
 			
 			// Add virtual columns to it:
 			//	Find maximum level:
@@ -164,7 +167,8 @@ public class MultiListField extends Field
 						return parentAtLevel != null ? parentAtLevel.value : null;
 					}
 				}));
-				col.addVirtualVersion(StringColumn.ForCharacterCount(getCaption(level), opt, Math.max(levelValueMapper.getMaxStringLength(), 1)), levelValueMapper); // TODO ensure no illegal chars are in caption
+				String vColName = getCaption(level).trim().isEmpty() ? (name + '_' + l) : Column.SanitiseName(getCaption(level).trim()); // Remove any illegal chars in caption before using it as column name
+				col.addVirtualVersion(StringColumn.ForCharacterCount(vColName, opt, Math.max(levelValueMapper.getMaxStringLength(), 1)), levelValueMapper);
 			}
 
 			// Return the column:
@@ -205,6 +209,35 @@ public class MultiListField extends Field
 		return (IntegerColumn) super.getColumn();
 	}
 	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof MultiListField)
+		{
+			MultiListField that = (MultiListField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					Arrays.equals(this.captions, that.captions) &&
+					this.itemsRoot.equals(that.itemsRoot) &&
+					this.preSelect == that.preSelect;
+					// Do not include the values dictionary here, it is unnecessary and may cause endless loops.
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + Arrays.hashCode(captions);
+		hash = 31 * hash + itemsRoot.hashCode();
+		hash = 31 * hash + (preSelect ? 0 : 1);
+		// Do not include the values dictionary here, it is unnecessary and may cause endless loops.
+		return hash;
+	}
+	
 	/**
 	 * A class representing items in the MultiListField
 	 * 
@@ -222,12 +255,12 @@ public class MultiListField extends Field
 			return dummy;
 		}
 		
-		private MultiListField field;
-		private MultiListItem parent;
+		private final MultiListField field;
+		private final MultiListItem parent;
 		
 		private String value;
 		
-		private List<MultiListItem> children = new ArrayList<MultiListItem>();
+		private List<MultiListItem> children;
 		private int defaultChildIdx = NO_DEFAULT_ITEM_SET_IDX;
 
 		/**
@@ -237,9 +270,11 @@ public class MultiListField extends Field
 		 */
 		/*package*/ MultiListItem(MultiListField field)
 		{
+			if(field == null)
+				throw new NullPointerException("field cannot be null!");
 			this.field = field;
-			// parent & value stay null
-			// children list initialised above
+			this.parent = null;
+			this.value = null;
 		}
 		
 		public MultiListItem(MultiListItem parent, String value)
@@ -250,7 +285,6 @@ public class MultiListField extends Field
 			parent.addChild(this); //!!!
 			this.field = parent.field;
 			this.value = value;
-			// children list initialised above
 		}
 		
 		/**
@@ -268,6 +302,8 @@ public class MultiListField extends Field
 		
 		public void addChild(MultiListItem child)
 		{
+			if(children == null)
+				children = new ArrayList<MultiListItem>();
 			children.add(child);
 		}
 		
@@ -297,12 +333,12 @@ public class MultiListField extends Field
 		 */
 		public List<MultiListItem> getChildren()
 		{
-			return children;
+			return children != null ? children : Collections.<MultiListItem> emptyList();
 		}
 		
 		public boolean isLeaf()
 		{
-			return children.isEmpty();
+			return children == null;
 		}
 		
 		/**
@@ -332,7 +368,7 @@ public class MultiListField extends Field
 		 */
 		public MultiListItem getDefaultChild()
 		{
-			if(defaultChildIdx == NO_DEFAULT_ITEM_SET_IDX)
+			if(defaultChildIdx == NO_DEFAULT_ITEM_SET_IDX || isLeaf())
 				return null;
 			else
 				return children.get(defaultChildIdx);
@@ -351,6 +387,8 @@ public class MultiListField extends Field
 		 */
 		public void setDefaultChild(MultiListItem defaultChild)
 		{
+			if(isLeaf())
+				throw new IllegalArgumentException("Unknown child: " + defaultChild.toString());
 			int idx = children.indexOf(defaultChild);
 			if(idx == -1)
 				throw new IllegalArgumentException("Unknown child: " + defaultChild.toString());
@@ -361,6 +399,36 @@ public class MultiListField extends Field
 		public List<String> getDocExtras()
 		{
 			return null;
+		}
+		
+		@Override
+		public boolean equals(Object obj)
+		{
+			if(this == obj)
+				return true; // references to same object
+			if(obj instanceof MultiListItem)
+			{
+				MultiListItem that = (MultiListItem) obj;
+				return	this.field.getID().equals(that.field.getID()) &&
+						(this.parent != null ? that.parent != null && (this.parent.value != null ? this.parent.value.equals(that.parent.value) : that.parent.value == null) : that.parent == null) &&
+						(this.value != null ? this.value.equals(that.value) : that.value == null) &&
+						this.getChildren().equals(that.getChildren()) &&
+						this.defaultChildIdx == that.defaultChildIdx;
+			}
+			else
+				return false;
+		}
+		
+		@Override
+		public int hashCode()
+		{
+			int hash = 1;
+			hash = 31 * hash + field.getID().hashCode();
+			hash = 31 * hash + (parent != null ? (parent.value != null ? parent.value.hashCode() : 1) : 0); // do not use parent.hashCode() (to avoid endless loop)			
+			hash = 31 * hash + (value != null ? value.hashCode() : 0);
+			hash = 31 * hash + getChildren().hashCode();
+			hash = 31 * hash + defaultChildIdx;
+			return hash;
 		}
 
 	}

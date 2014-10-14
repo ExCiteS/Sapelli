@@ -78,12 +78,12 @@ public class CheckBoxField extends Field
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn()
+	 * @see uk.ac.ucl.excites.collector.project.model.Field#createColumn(String)
 	 */
 	@Override
-	protected Column<?> createColumn()
+	protected Column<?> createColumn(String name)
 	{
-		return new BooleanColumn(id, optional != Optionalness.NEVER);
+		return new BooleanColumn(name, optional != Optionalness.NEVER);
 	}
 
 	/* (non-Javadoc)
@@ -102,6 +102,29 @@ public class CheckBoxField extends Field
 	public <V, UI extends CollectorUI<V, UI>> CheckBoxUI<V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createCheckBoxFieldUI(this);
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof CheckBoxField)
+		{
+			CheckBoxField that = (CheckBoxField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					this.initialValue == that.initialValue;
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + (initialValue ? 0 : 1);
+		return hash;
 	}
 
 }

@@ -7,7 +7,7 @@
     <target name="-settings">
         
         <!-- Change these if needed -->
-        <property name="classname" value="BuildInfo"/>
+        <property name="resourcename" value="buildinfo"/>
 		
         <!-- Don't touch these: -->
 		<property environment="env"/>
@@ -18,23 +18,29 @@
 		<property name="appVersionName" value="${mani.manifest.android:versionName}"/>
 		<property name="appVersionCode" value="${mani.manifest.android:versionCode}"/>
 		<property name="package" value="${mani.manifest.package}"/>
-		<property name="gen-dir" location="${project-dir}${file.separator}gen"/>
+		<!--<property name="gen-dir" location="${project-dir}${file.separator}gen"/>
+		<property name="mvn-gen-dir" location="${project-dir}${file.separator}target${file.separator}generated-sources${file.separator}r"/>-->
+		<!--<condition property="build-dir" value="${mvn-gen-dir}" else="${gen-dir}">
+			<isset property="mvn-phase"/>
+    </condition>-->
 		<property name="assets-dir" location="${project-dir}${file.separator}assets"/>
-		<loadresource property="package-path">
+		<property name="res-values-dir" location="${project-dir}${file.separator}res${file.separator}values"/>
+		<!--<loadresource property="package-path">
 			<propertyresource name="package"/>
 			<filterchain>
 				<tokenfilter>
 					<replacestring from="." to="${file.separator}"/>
 				</tokenfilter>
 			</filterchain>
-		</loadresource>
-		<property name="output-dir" location="${gen-dir}${file.separator}${package-path}"/>
+		</loadresource>-->
+		<!--<property name="output-dir" location="${build-dir}${file.separator}${package-path}"/>-->
+		<property name="output-dir" location="${res-values-dir}"/>
 		<condition property="output-dir-not-there">
 			<not>
 				<available file="${output-dir}" type="dir"/>
 			</not>
 		</condition>
-		<property name="file-path" location="${output-dir}${file.separator}${classname}.java"/>
+		<property name="file-path" location="${output-dir}${file.separator}${resourcename}.xml"/>
 		<property name="demo-project-filename" value="demo.excites"/>
 	</target>
 
@@ -72,7 +78,7 @@
 	<target name="-git.tag" description="Store git tag in ${repository-tag}">
 	    <exec executable="git" outputproperty="git-tag" failifexecutionfails="false" errorproperty="">
 	        <arg value="describe"/>
-	        <arg value="--always"/>
+	        <arg value="--tags"/>
 	        <arg value="HEAD"/>
 	    </exec>
 	    <condition property="repository-tag" value="${git-tag}" else="unknown">
@@ -165,9 +171,9 @@
 	
 	<target name="GenerateBuildInfo" depends="-settings,-create-dir,-git,-demo">
 		<tstamp>
-			<format property="TIMESTAMP" pattern="yyyy-MM-dd HH:mm:ss z" locale="ENGLISH, UK"/>
+			<format property="TIMESTAMP" pattern="yyyy-MM-dd'T'HH:mm:ssZ"/>
 		</tstamp>
-		<echo>Generating ${classname} class...</echo>
+		<echo>Generating ${resourcename}.xml resource file...</echo>
 		<echo>	User: ${user.name}</echo>
 		<echo>	Build timestamp: ${TIMESTAMP}</echo>
 		<echo>	App version (code): ${appVersionName} (${appVersionCode})</echo>
@@ -177,68 +183,42 @@
 		<echo>	Changes since last commit?: ${repository-changes}</echo>
 		<echo>	Demo build?: ${demo-build}</echo>
 		<!-- Generate the class: -->
-		<echo file="${file-path}">/**
- * Sapelli data collection platform: http://sapelli.org
- * 
- * Copyright 2012-2014 University College London - ExCiteS group
- * 
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and 
- * limitations under the License.
- */
-
-package ${package};
-
-/**
- * Automatically generated file, do not edit!
- */			
-public class ${classname}
-{
-
-	// Version info:
-	public static final String VERSION_NAME = "${appVersionName}"; // as in manifest, also available through: getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
-	public static final int VERSION_CODE = ${appVersionCode}; // as in manifest, also available through: getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
-	public static final boolean DEMO_BUILD = ${demo-build};
+		<echo file="${file-path}">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+&lt;!--
+	Sapelli data collection platform: http://sapelli.org
 	
-	// Build info:
-	public static final String USERNAME = "${user.name}";
-	public static final String TIMESTAMP = "${TIMESTAMP}";
-	public static final String BRANCH = "${repository-branch}";
-	public static final String LAST_COMMIT_HASH = "${repository-version}";
-	public static final String LAST_COMMIT_TAG = "${repository-tag}";
-	public static final boolean CHANGES_SINCE_LAST_COMMIT = ${repository-changes};
+	Copyright 2012-2014 University College London - ExCiteS group
 	
-	public static String getVersionInfo()
-	{
-		return "v" + VERSION_NAME + " (version-code: " + VERSION_CODE + (DEMO_BUILD ? "; demo-build" : "") + ")";
-	}
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
 	
-	public static String getBuildInfo()
-	{
-		return	"Built by " + USERNAME  + " on " + TIMESTAMP + " using " + BRANCH + " branch, revision " + LAST_COMMIT_HASH + " with" + (CHANGES_SINCE_LAST_COMMIT ? "" : "out") + " changes";
-	}
+	    http://www.apache.org/licenses/LICENSE-2.0
 	
-	public static String getAllInfo()
-	{
-		return getVersionInfo() + '\n' + getBuildInfo();
-	}
-			
-}</echo>
-		<echo>${classname} class generated (${file-path}).</echo>
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+ --&gt;
+&lt;!-- Automatically generated file, do not edit! --&gt;
+&lt;resources&gt;
+	&lt;item name="username" type="${resourcename}"&gt;${user.name}&lt;/item&gt;
+	&lt;item name="timestamp" type="${resourcename}"&gt;${TIMESTAMP}&lt;/item&gt;
+	&lt;item name="branch" type="${resourcename}"&gt;${repository-branch}&lt;/item&gt;
+	&lt;item name="lastCommitHash" type="${resourcename}"&gt;${repository-version}&lt;/item&gt;
+	&lt;item name="lastCommitTag" type="${resourcename}"&gt;${repository-tag}&lt;/item&gt;
+	&lt;item name="changesSinceLastCommit" type="${resourcename}"&gt;${repository-changes}&lt;/item&gt;
+	&lt;item name="demoBuild" type="${resourcename}"&gt;${demo-build}&lt;/item&gt;
+&lt;/resources&gt;
+</echo>
+		<echo>${resourcename} resource file generated (${file-path}).</echo>
 	</target>
 	
 	<!-- doesn't seem to work, but can be achieved in the builder settings within Eclipse -->
 	<target name="-refresh-eclipse" depends="-settings">
-		<echo>Refreshing generated sources folder in Eclipse...</echo>
-		<eclipse.refreshLocal resource="${gen-dir}" depth="infinite"/>
+	<!-- 	<echo>Refreshing generated sources folder in Eclipse...</echo>
+		<eclipse.refreshLocal resource="${gen-dir}" depth="infinite"/> -->
 	</target>
 	
 	<target name="-clean-demo">

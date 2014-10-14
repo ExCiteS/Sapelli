@@ -154,13 +154,16 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 			tabs = 1;
 			for(Record r : records)
 			{
+				if(r.getSchema().isInternal())
+					continue; // we do not export records of internal schemata
 				writer.openTransaction(); // output will be buffered
 				try
 				{				
 					//Open tag:
 					writer.writeLine(StringUtils.addTabsFront("<" + Record.TAG_RECORD + " " +
 							Schema.ATTRIBUTE_SCHEMA_NAME + "=\"" + XMLUtils.escapeCharacters(r.getSchema().getName()) + "\" " +
-							Schema.ATTRIBUTE_SCHEMA_ID + "=\"" + r.getSchema().getID() + "\"" +
+							Schema.ATTRIBUTE_MODEL_ID + "=\"" + r.getSchema().getModelID() + "\" " +
+							Schema.ATTRIBUTE_MODEL_SCHEMA_NUMBER + "=\"" + r.getSchema().getModelSchemaNumber() + "\"" +
 							">", tabs));
 							//TODO transmission/sent
 				

@@ -24,8 +24,8 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 
 /**
  * @author mstevens
@@ -44,7 +44,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	
 	static protected int GetMaxLengthForSizeFieldSize(int minLength, int sizeBits)
 	{
-		return (int) IntegerRangeMapping.ForSize(minLength, sizeBits).getHighBound();
+		return (int) IntegerRangeMapping.ForSize(minLength, sizeBits).highBound();
 	}
 	
 	private final IntegerRangeMapping sizeField;
@@ -136,10 +136,10 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	@Override
 	protected void validate(L values) throws IllegalArgumentException
 	{
-		if(values.size() < sizeField.getLowBound())
-			throw new IllegalArgumentException(getTypeString() + " does not contain enough " + singleColumn.getTypeString() + "s, minimum is " + sizeField.getLowBound() + ", given value has " + values.size() + ".");
-		if(values.size() > sizeField.getHighBound())
-			throw new IllegalArgumentException(getTypeString() + " contains too many " + singleColumn.getTypeString() + "s, maximum is " + sizeField.getLowBound() + ", given value has " + values.size() + ".");
+		if(values.size() < sizeField.lowBound())
+			throw new IllegalArgumentException(getTypeString() + " does not contain enough " + singleColumn.getTypeString() + "s, minimum is " + sizeField.lowBound() + ", given value has " + values.size() + ".");
+		if(values.size() > sizeField.highBound())
+			throw new IllegalArgumentException(getTypeString() + " contains too many " + singleColumn.getTypeString() + "s, maximum is " + sizeField.lowBound() + ", given value has " + values.size() + ".");
 	}
 
 	@Override
@@ -154,13 +154,13 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	@Override
 	protected int _getMaximumSize()
 	{
-		return sizeField.getSize() + (getMaximumLength() * singleColumn.getMaximumSize());
+		return sizeField.size() + (getMaximumLength() * singleColumn.getMaximumSize());
 	}
 
 	@Override
 	protected int _getMinimumSize()
 	{
-		return sizeField.getSize() + (getMinimumLength() * singleColumn.getMinimumSize());
+		return sizeField.size() + (getMinimumLength() * singleColumn.getMinimumSize());
 	}
 
 	/* (non-Javadoc)
@@ -191,7 +191,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	 */
 	public int getMinimumLength()
 	{
-		return (int) sizeField.getLowBound();
+		return (int) sizeField.lowBound();
 	}
 	
 	/**
@@ -199,7 +199,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	 */
 	public int getMaximumLength()
 	{
-		return (int) sizeField.getHighBound();
+		return (int) sizeField.highBound();
 	}
 
 	@Override

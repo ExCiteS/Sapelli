@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Stack;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -34,7 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
  * 
  * @author mstevens
  */
-public class ColumnPointer implements Comparator<Record>
+public class ColumnPointer
 {
 	
 	private final Stack<Column<?>> columnStack;
@@ -91,11 +91,29 @@ public class ColumnPointer implements Comparator<Record>
 		}
 	}
 	
+	/**
+	 * Copy constructor
+	 * 
+	 * @param columnStack
+	 */
+	private ColumnPointer(Stack<Column<?>> columnStack)
+	{
+		this.columnStack = columnStack;
+	}
+	
+	/**
+	 * @param topLevelSchema
+	 * @param column
+	 */
 	public ColumnPointer(Schema topLevelSchema, Column<?> column)
 	{
 		columnStack = constructPathTo(topLevelSchema, column);
 	}
 	
+	/**
+	 * @param topLevelSchema
+	 * @param columnName
+	 */
 	public ColumnPointer(Schema topLevelSchema, String columnName)
 	{	
 		// Null & empty check:
@@ -104,7 +122,7 @@ public class ColumnPointer implements Comparator<Record>
 		
 		// Build up stack:
 		if(columnName.indexOf(RecordColumn.QUALIFIED_NAME_SEPARATOR) == -1)
-			columnStack = constructPathTo(topLevelSchema, columnName); // Find by columnName (recursive, depth-first search)
+			columnStack = constructPathTo(topLevelSchema, columnName, true); // Find by columnName (recursive, depth-first search; columnName will be sanitised if not found as is)
 		else
 		{
 			columnStack = new Stack<Column<?>>();
@@ -117,10 +135,14 @@ public class ColumnPointer implements Comparator<Record>
 					schema = ((RecordColumn<?>) columnStack.peek()).getSchema();
 				// Deal with current column:
 				Column<?> col = schema.getColumn(colName, true);
-				if(col != null)
-					columnStack.push(col);
-				else
+				// If not found...
+				if(col == null)
+					col = schema.getColumn(Column.SanitiseName(colName), true); // ... try again with sanitised name
+				// If still not found...
+				if(col == null)
 					throw new IllegalArgumentException("Column \"" + columnName + "\" not found in " + topLevelSchema.toString());
+				// Found:
+				columnStack.push(col);
 			}
 		}
 	}
@@ -149,7 +171,7 @@ public class ColumnPointer implements Comparator<Record>
 
 	private Stack<Column<?>> constructPathTo(Schema topLevelSchema, Column<?> column)
 	{
-		Stack<Column<?>> path = constructPathTo(topLevelSchema, column.getName());
+		Stack<Column<?>> path = constructPathTo(topLevelSchema, column.getName(), false);
 		
 		// Check if we got the right one:
 		if(!column.equals(path.peek()))
@@ -158,12 +180,18 @@ public class ColumnPointer implements Comparator<Record>
 		return path;
 	}
 	
-	private Stack<Column<?>> constructPathTo(Schema topLevelSchema, String columnName)
+	private Stack<Column<?>> constructPathTo(Schema topLevelSchema, String columnName, boolean trySanitising)
 	{
+		// Find column & construct path to it:
 		Stack<Column<?>> path = new Stack<Column<?>>();
 		findColumn(path, topLevelSchema, columnName);
+		
 		if(path.isEmpty())
+		{	
+			if(trySanitising) // try again with sanitised name if allowed:
+				return constructPathTo(topLevelSchema, Column.SanitiseName(columnName), false); // pass false to avoid endless sanitation loop ;-)
 			throw new IllegalArgumentException("Column \"" + columnName + "\" not found in " + topLevelSchema.toString());
+		}
 		return path;
 	}
 
@@ -219,6 +247,22 @@ public class ColumnPointer implements Comparator<Record>
 	}
 	
 	/**
+	 * @return whether or not the ColumnPointer points to a top-level (root) column, i.e. one that is directly contained in a/the schema
+	 */
+	public boolean isTopLevelColumn()
+	{
+		return columnStack.size() == 1; 
+	}
+	
+	/**
+	 * @return whether or not the ColumnPointer points to a column which is a child of a composite column
+	 */
+	public boolean isSubColumn()
+	{
+		return columnStack.size() > 1;
+	}
+	
+	/**
 	 * @return the column this ColumnPointer points to
 	 */
 	public Column<?> getColumn()
@@ -229,17 +273,51 @@ public class ColumnPointer implements Comparator<Record>
 	}
 	
 	/**
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public ColumnPointer getParentPointer()
+	{
+		if(isSubColumn())
+		{
+			Stack<Column<?>> parentStack = (Stack<Column<?>>) columnStack.clone();
+			parentStack.pop();
+			return new ColumnPointer(parentStack);
+		}
+		else
+			return null;
+	}
+	
+	/**
 	 * @return the qualified name of the column this ColumnPointer points to (can be incomplete if parent column(s) are unknown!)
 	 */
 	public String getQualifiedColumnName()
 	{
-		return getQualifiedColumnName(null);
+		return getQualifiedColumnName(null, RecordColumn.QUALIFIED_NAME_SEPARATOR);
+	}
+
+	/**
+	 * @param separator to put between column names in qualified name
+	 * @return the qualified name of the column this ColumnPointer points to (can be incomplete if parent column(s) are unknown!)
+	 */
+	public String getQualifiedColumnName(char separator)
+	{
+		return getQualifiedColumnName(null, separator);
 	}
 	
 	/**
 	 * @return the qualified name of the column this ColumnPointer points to (can be incomplete if parent column(s) are unknown and no non-null topLevelSchema is given)
 	 */
 	public String getQualifiedColumnName(Schema topLevelSchema)
+	{
+		return getQualifiedColumnName(topLevelSchema, RecordColumn.QUALIFIED_NAME_SEPARATOR);
+	}
+	
+	/**
+	 * @param separator to put between column names in qualified name
+	 * @return the qualified name of the column this ColumnPointer points to (can be incomplete if parent column(s) are unknown and no non-null topLevelSchema is given)
+	 */
+	public String getQualifiedColumnName(Schema topLevelSchema, char separator)
 	{
 		Stack<Column<?>> path = columnStack;
 		
@@ -251,27 +329,61 @@ public class ColumnPointer implements Comparator<Record>
 		for(Column<?> col : path)
 		{
 			if(col != path.firstElement())
-				bldr.append(RecordColumn.QUALIFIED_NAME_SEPARATOR);
+				bldr.append(separator);
 			bldr.append(col.getName());				
 		}
 		return bldr.toString();
 	}
-
-	@SuppressWarnings("rawtypes")
+	
 	@Override
-	public int compare(Record lhs, Record rhs)
+	public boolean equals(Object obj)
 	{
-		if(!(getColumn() instanceof ComparatorColumn))
-			throw new IllegalStateException("This ColumnPointer does not point to a ComparatorColumn");
-		
-		// Get sub records:
-		lhs = getRecord(lhs, false);
-		rhs = getRecord(rhs, false);
-		
-		// Compare:
-		return lhs == null ?
-				(rhs == null ? 0 : Integer.MIN_VALUE) :
-				(rhs == null ? Integer.MAX_VALUE : ((ComparatorColumn) getColumn()).compare(lhs, rhs));		
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof ColumnPointer)
+		{
+			ColumnPointer that = (ColumnPointer) obj;
+			return columnStack.equals(that.columnStack);
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + columnStack.hashCode();
+		return hash;
+	}
+	
+	public Comparator<Record> getComparator()
+	{
+		Column<?> col = getColumn();
+		if(col == null)
+			return null;
+		if(col instanceof ComparableColumn)
+		{
+			final ComparableColumn<?> compCol = (ComparableColumn<?>) col;
+			return new Comparator<Record>()
+			{
+				
+				@Override
+				public int compare(Record lhs, Record rhs)
+				{
+					// Get sub records:
+					lhs = getRecord(lhs, false);
+					rhs = getRecord(rhs, false);
+					
+					// Compare:
+					return lhs == null ?
+							(rhs == null ? 0 : Integer.MIN_VALUE) :
+							(rhs == null ? Integer.MAX_VALUE : compCol.compare(lhs, rhs));
+				}
+				
+			};
+		}
+		else
+			throw new IllegalArgumentException("ColumnPointer does not point to a ComparatorColumn");
 	}
 
 }

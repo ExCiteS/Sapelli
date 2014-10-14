@@ -20,7 +20,8 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView.PickerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
@@ -46,7 +47,7 @@ import android.widget.AdapterView;
  * 
  * @author mstevens
  */
-public class AndroidControlsUI extends ControlsUI<View, CollectorView> implements AdapterView.OnItemClickListener
+public class AndroidControlsUI extends ControlsUI<View, CollectorView> implements AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener
 {
 	
 	// Statics-------------------------------------------------------
@@ -58,11 +59,14 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	// Dynamics------------------------------------------------------
 	private ControlItem[] controlItems;
 	private PickerView view;
+	private CollectorController controller;
 	
-	public AndroidControlsUI(Controller controller, CollectorView collectorView)
+	public AndroidControlsUI(CollectorController controller, CollectorView collectorView)
 	{
 		super(controller, collectorView);
 		
+		this.controller = controller;
+		// ControlItem array:
 		// ControlItem array:
 		this.controlItems = new ControlItem[Control.values().length];
 	}
@@ -84,6 +88,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			
 			// Listen for clicks:
 			view.setOnItemClickListener(this);
+			view.setOnItemLongClickListener(this);
 		}
 			
 		return view;
@@ -185,6 +190,19 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	}
 	
 	@Override
+	public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id)
+	{
+		// Get the pressed ControlItem
+		ControlItem item = (ControlItem) view.getAdapter().getItem(position);
+
+		// Audio Feedback
+		AudioFeedbackController audioController = new AudioFeedbackController(controller);
+		audioController.playAnswer(parent.getContext(), item, v);
+
+		return true;
+	}
+
+	@Override
 	public int getCurrentHeightPx()
 	{
 		return view == null ? 0 : (view.getAdapter().isEmpty() ? 0 : (getControlHeightPx() + collectorUI.getSpacingPx()));
@@ -224,14 +242,17 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 				case BACK:
 					imgRelativePath = form.getBackButtonImageRelativePath();
 					drawable = new HorizontalArrow(FOREGROUND_COLOR, true);
+					this.setDescription(form.getBackButtonDescription());
 					break;
 				case CANCEL:
 					imgRelativePath = form.getCancelButtonImageRelativePath();
 					drawable = new SaltireCross(FOREGROUND_COLOR);
+					this.setDescription(form.getCancelButtonDescription());
 					break;
 				case FORWARD:
 					imgRelativePath = form.getForwardButtonImageRelativePath();
 					drawable = new HorizontalArrow(FOREGROUND_COLOR, false);
+					this.setDescription(form.getForwardButtonDescription());
 					break;
 			}				
 			File imgFile = controller.getProject().getImageFile(imgRelativePath);

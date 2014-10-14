@@ -22,10 +22,10 @@ import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -33,7 +33,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class IntegerColumn extends ComparatorColumn<Long>
+public class IntegerColumn extends ComparableColumn<Long>
 {
 	
 	//STATICS
@@ -124,7 +124,7 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	{
 		super(Long.class, name, optional);
 		this.rangeMapping = rangeMapping;
-		this.size = rangeMapping.getSize();
+		this.size = rangeMapping.size();
 		this.signed = false;
 	}
 	
@@ -150,7 +150,21 @@ public class IntegerColumn extends ComparatorColumn<Long>
 		Long longValue = (value != null ? Long.valueOf(value.intValue()) : null);
 		storeValue(record, longValue);
 	}
-	
+
+	/**
+	 * Converts Numbers (Integers, Shorts, etc.) to Longs
+	 * 
+	 * @param value possibly null
+	 * @return
+	 * @throws ClassCastException when the value is not a {@link Number}
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Column#convert(java.lang.Object)
+	 */
+	@Override
+	protected Object convert(Object value)
+	{
+		return value == null ? null : (value instanceof Long ? value : Long.valueOf(((Number) value).longValue()));
+	}
+
 	/**
 	 * @param record
 	 * @param nullReplacement
@@ -192,7 +206,7 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	protected void validate(Long value) throws IllegalArgumentException
 	{
 		if(rangeMapping != null && !rangeMapping.inRange(value))
-			throw new IllegalArgumentException("The value (" + value + ") is not in the allowed range of [" + rangeMapping.getLowBound() + ", " + rangeMapping.getHighBound() + "].");
+			throw new IllegalArgumentException("The value (" + value + ") is not in the allowed range of [" + rangeMapping.lowBound() + ", " + rangeMapping.highBound() + "].");
 		else
 		{
 			//Size checks:
@@ -214,7 +228,7 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	public long getMinValue()
 	{
 		if(rangeMapping != null)
-			return rangeMapping.getLowBound();
+			return rangeMapping.lowBound();
 		else
 			return (signed ?	(long) (- Math.pow(2, size - 1)) : 
 								0l);
@@ -223,7 +237,7 @@ public class IntegerColumn extends ComparatorColumn<Long>
 	public long getMaxValue()
 	{
 		if(rangeMapping != null)
-			return rangeMapping.getHighBound();
+			return rangeMapping.highBound();
 		else
 			return (signed ?	(long) (Math.pow(2, size - 1) - 1) : 
 								(long) (Math.pow(2, size) - 1));

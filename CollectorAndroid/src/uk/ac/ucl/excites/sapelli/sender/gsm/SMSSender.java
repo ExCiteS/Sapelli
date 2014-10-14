@@ -20,13 +20,13 @@ package uk.ac.ucl.excites.sapelli.sender.gsm;
 
 import java.util.ArrayList;
 
-import uk.ac.ucl.excites.sapelli.collector.db.DataAccess;
+import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
-import uk.ac.ucl.excites.sapelli.transmission.crypto.Hashing;
-import uk.ac.ucl.excites.sapelli.transmission.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.sms.SMSService;
-import uk.ac.ucl.excites.sapelli.transmission.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -36,7 +36,7 @@ import android.content.IntentFilter;
 import android.telephony.SmsManager;
 import android.util.Log;
 
-public class SMSSender implements SMSService
+public class SMSSender implements SMSClient
 {
 	
 	private static final String TAG = "SMSSender";
@@ -59,18 +59,16 @@ public class SMSSender implements SMSService
 	private static int MESSAGE_ID = 0;
 	
 	private Context context;
-	private DataAccess dao;
 	private SmsManager smsManager;
 	
-	public SMSSender(Context context, DataAccess dao)
+	public SMSSender(Context context)
 	{
 		this.context = context;
-		this.dao = dao;
 		this.smsManager = SmsManager.getDefault();
 	}
 
 	@Override
-	public boolean send(final TextMessage textSMS)
+	public boolean send(SMSAgent receiver, final TextMessage textSMS)
 	{	
 		// Increment message ID!:
 		MESSAGE_ID++;
@@ -87,7 +85,7 @@ public class SMSSender implements SMSService
 					sentIntents.add(setupSentCallback(textSMS, MESSAGE_ID, p, parts.size()));
 					deliveryIntents.add(setupDeliveredCallback(textSMS, MESSAGE_ID, p, parts.size()));
 				}
-				smsManager.sendMultipartTextMessage(textSMS.getReceiver().getPhoneNumber(),
+				smsManager.sendMultipartTextMessage(receiver.getPhoneNumber(),
 													null,
 													parts,
 													sentIntents,
@@ -95,7 +93,7 @@ public class SMSSender implements SMSService
 			}
 			else
 			{	// Send single SMS:	
-				smsManager.sendTextMessage(	textSMS.getReceiver().getPhoneNumber(),
+				smsManager.sendTextMessage(	receiver.getPhoneNumber(),
 											null,
 											textSMS.getContent(),
 											setupSentCallback(textSMS, MESSAGE_ID),
@@ -104,7 +102,7 @@ public class SMSSender implements SMSService
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "Error upon sending " + (textSMS.isMultiPart() ? "multipart " : "")  + "text SMS to " + textSMS.getReceiver().getPhoneNumber());
+			Log.e(TAG, "Error upon sending " + (textSMS.isMultiPart() ? "multipart " : "")  + "text SMS to " + receiver.getPhoneNumber());
 			// Failure:
 			return false;
 		}
@@ -113,7 +111,7 @@ public class SMSSender implements SMSService
 	}
 
 	@Override
-	public boolean send(final BinaryMessage binarySMS)
+	public boolean send(SMSAgent receiver, final BinaryMessage binarySMS)
 	{
 		// Increment message ID!:
 		MESSAGE_ID++;
@@ -121,7 +119,7 @@ public class SMSSender implements SMSService
 		try
 		{
 			Log.d(TAG, "Sending binary SMS, content hash: " + BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(binarySMS.getBytes()).toByteArray()));
-			smsManager.sendDataMessage(	binarySMS.getReceiver().getPhoneNumber(),
+			smsManager.sendDataMessage(	receiver.getPhoneNumber(),
 										null,
 										SMS_PORT,
 										binarySMS.getBytes(),
@@ -130,7 +128,7 @@ public class SMSSender implements SMSService
 		}
 		catch(Exception e)
 		{
-			Log.e(TAG, "Error upon sending binary SMS to " + binarySMS.getReceiver().getPhoneNumber());
+			Log.e(TAG, "Error upon sending binary SMS to " + receiver.getPhoneNumber());
 			// Failure:
 			return false;
 		}
@@ -158,14 +156,17 @@ public class SMSSender implements SMSService
 				// Prepare log message:
 				String msgDescription = "[SMS-ID: " + messageID +
 										(numParts > 1 ? ("; SMS-PART:" + part + "/" + numParts) : "") +
-										"; TRANSMISSION-ID: " + msg.getTransmissionID() +
+										"; TRANSMISSION-ID: " + msg.getTransmission().getLocalID() +
 										"; TRANSMISSION-PART: " + msg.getPartNumber() + "/" + msg.getTotalParts() + "]";
 				// Handle result:
 				switch(getResultCode())
 				{
 					case Activity.RESULT_OK:
 						msg.sentCallback(); //!!!
-						dao.store(msg.getTransmission()); //!!! update the transmission
+						
+						// TODO update stored transmission !
+						//dao.store(msg.getTransmission()); //!!! update the transmission
+						
 						Log.i(TAG, "Sending " + msgDescription + ": success.");
 						break;
 					case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
@@ -208,14 +209,15 @@ public class SMSSender implements SMSService
 				// Prepare log message:
 				String msgDescription = "[SMS-ID: " + messageID +
 										(numParts > 1 ? ("; SMS-PART:" + part + "/" + numParts) : "") +
-										"; TRANSMISSION-ID: " + msg.getTransmissionID() +
+										"; TRANSMISSION-ID: " + msg.getTransmission().getLocalID() +
 										"; TRANSMISSION-PART: " + msg.getPartNumber() + "/" + msg.getTotalParts() + "]";
 				// Handle result:
 				switch(getResultCode())
 				{
 					case Activity.RESULT_OK:
 						msg.deliveryCallback(); //!!!
-						dao.store(msg.getTransmission()); //!!! update the transmission
+						// TODO update stored transmission!
+						//dao.store(msg.getTransmission()); //!!! update the transmission
 						Log.i(TAG, "Delivery " + msgDescription + ": success.");
 						break;
 					case Activity.RESULT_CANCELED:

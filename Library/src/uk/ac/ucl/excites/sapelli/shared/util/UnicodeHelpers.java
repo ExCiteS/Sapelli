@@ -34,6 +34,7 @@ import java.nio.charset.UnsupportedCharsetException;
  * 
  * @see http://koti.mbnet.fi/akini/java/java_utf8_xml
  * @see http://koti.mbnet.fi/akini/java/unicodereader
+ * @see http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4508058
  * @see http://tripoverit.blogspot.be/2007/04/javas-utf-8-and-unicode-writing-is.html
  * @see http://www.rgagnon.com/javadetails/java-handle-utf8-file-with-bom.html
  * @see https://svn.codehaus.org/jtstand/jtstand/tags/jtstand-1.5.9/jtstand-editor/src/main/java/org/fife/io/UnicodeWriter.java

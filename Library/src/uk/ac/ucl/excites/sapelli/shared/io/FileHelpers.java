@@ -24,6 +24,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * File I/O helpers
@@ -341,9 +343,9 @@ public final class FileHelpers
 	static public String getFileExtension(File file)
 	{
 		if(file.isFile())
-			return getFileExtension(file.getAbsolutePath());
+			return getFileExtension(file.getName());
 		else
-			return File.separator;
+			return "";
 	}
 
 	/**
@@ -371,7 +373,7 @@ public final class FileHelpers
 		int lastIndex = filePath.lastIndexOf(".");
 		if(lastIndex == -1)
 			return filePath;
-		return filePath.substring(0, lastIndex - 1);
+		return filePath.substring(0, lastIndex);
 	}
 
 	/**
@@ -405,4 +407,35 @@ public final class FileHelpers
 		return directory != null && directory.exists() && directory.isDirectory() && directory.canRead() && directory.canWrite();
 	}
 	
+	/**
+	 * Checks whether a filename is a valid audiofile name
+	 * 
+	 * @param fileName
+	 * @return
+	 */
+	static public boolean isAudioFileName(String fileName)
+	{
+		// Supported audio files in Android: http://developer.android.com/guide/appendix/media-formats.html
+		String AUDIO_PATTERN = "(.*/)*.+\\.(3gp|mp4|mp3|m4a|aac|ts|flac|mid|xmf|mxmf|rtttl|rtx|ota|imy|ogg|mkv|wav)$";
+		Pattern pattern = Pattern.compile(AUDIO_PATTERN);
+		Matcher matcher = pattern.matcher(fileName.toLowerCase());
+
+		return matcher.matches();
+	}
+
+	/**
+	 * Checks whether a filename is a valid photo name
+	 * 
+	 * @param fileName
+	 * @return
+	 */
+	static public boolean isPhotoFileName(String fileName)
+	{
+		String PHOTO_PATTERN = "(.*/)*.+\\.(png|jpg|gif|bmp|jpeg)$";
+		Pattern pattern = Pattern.compile(PHOTO_PATTERN);
+		Matcher matcher = pattern.matcher(fileName.toLowerCase());
+
+		return matcher.matches();
+	}
+
 }

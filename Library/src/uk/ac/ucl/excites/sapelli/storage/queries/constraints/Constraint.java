@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
-import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 
 /**
  * A class representing constraints on a {@link RecordsQuery}.
@@ -30,8 +29,21 @@ import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
  * 
  * @author mstevens
  */
+/**
+ * @author mstevens
+ *
+ */
+/**
+ * @author mstevens
+ *
+ */
 public abstract class Constraint
 {
+	
+	static public Constraint Reduce(Constraint constraint)
+	{
+		return constraint != null ? constraint.reduce() : null;
+	}
 	
 	/**
 	 * Filters a list of records based on certain criteria
@@ -58,12 +70,28 @@ public abstract class Constraint
 	 * @return
 	 */
 	protected abstract boolean _isValid(Record record);
+	
+	/**
+	 * Will be overridden in some subclasses
+	 * 
+	 * @return
+	 */
+	public Constraint reduce()
+	{
+		return this;
+	}
 		
 	public abstract void accept(ConstraintVisitor visitor);
 	
 	public Constraint negate()
 	{
-		return NotConstraint.Negate(this); // will avoid double negations
+		return new NotConstraint(this).reduce(); // will avoid double negations
 	}
+	
+	@Override
+	public abstract boolean equals(Object obj);
+	
+	@Override
+	public abstract int hashCode();
 
 }

@@ -110,4 +110,35 @@ public class PhotoField extends MediaField
 		return collectorUI.createPhotoUI(this);
 	}
 	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof PhotoField)
+		{
+			PhotoField that = (PhotoField) obj;
+			return	super.equals(that) && // MediaField#equals(Object)
+					this.useFrontFacingCamera == that.useFrontFacingCamera &&
+					this.flashMode == that.flashMode &&
+					(this.captureButtonImageRelativePath != null ? this.captureButtonImageRelativePath.equals(that.captureButtonImageRelativePath) : that.captureButtonImageRelativePath == null) &&
+					(this.approveButtonImageRelativePath != null ? this.approveButtonImageRelativePath.equals(that.approveButtonImageRelativePath) : that.approveButtonImageRelativePath == null) &&
+					(this.discardButtonImageRelativePath != null ? this.discardButtonImageRelativePath.equals(that.discardButtonImageRelativePath) : that.discardButtonImageRelativePath == null);
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // MediaField#hashCode()
+		hash = 31 * hash + (useFrontFacingCamera ? 0 : 1);
+		hash = 31 * hash + flashMode.ordinal();
+		hash = 31 * hash + (captureButtonImageRelativePath == null ? 0 : captureButtonImageRelativePath.hashCode());
+		hash = 31 * hash + (approveButtonImageRelativePath == null ? 0 : approveButtonImageRelativePath.hashCode());
+		hash = 31 * hash + (discardButtonImageRelativePath == null ? 0 : discardButtonImageRelativePath.hashCode());		
+		return hash;
+	}
+	
 }

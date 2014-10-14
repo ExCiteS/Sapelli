@@ -48,8 +48,6 @@ public class Trigger extends JumpSource
 	// Dynamics---------------------------------------------
 	protected List<Key> keys;
 	protected int fixedTimer = NO_TIMEOUT;
-	protected Field jump;
-	protected FieldParameters jumpArgs;
 
 	/**
 	 * @return the keys
@@ -63,6 +61,8 @@ public class Trigger extends JumpSource
 	{
 		if(this.keys == null)
 			this.keys = new ArrayList<Trigger.Key>();
+		if(key == null)
+			throw new NullPointerException("Key cannot be null!");
 		this.keys.add(key);
 	}
 
@@ -82,6 +82,35 @@ public class Trigger extends JumpSource
 		if(fixedTimer != NO_TIMEOUT && fixedTimer < 0)
 			throw new IllegalArgumentException("Invalid timer duration: " + fixedTimer);
 		this.fixedTimer = fixedTimer;
+	}
+	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof Trigger)
+		{
+			Trigger that = (Trigger) obj;
+			return	super.equals(that) && // JumpSource#equals(Object)
+					(this.keys != null ? this.keys.equals(that.keys) : that.keys == null) &&
+					this.fixedTimer == that.fixedTimer;
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // JumpSource#hashCode()
+		if(keys == null)
+			hash = 31 * hash + 0;
+		else
+			for(Key k : keys) // We do this instead of keys.hashCode() because we're not sure whether all Java implementations use ordinal() as the hashCode() of an Enum.
+				hash = 31 * hash + k.ordinal();
+		hash = 31 * hash + fixedTimer;
+		return hash;
 	}
 	
 }

@@ -26,22 +26,23 @@ import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.db.db4o.DB4OProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.db.sql.sqlite.android.AndroidSQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
+import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.db4o.DB4ORecordStore;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.os.EnvironmentCompat;
 import android.util.Log;
 
 import com.crashlytics.android.Crashlytics;
-
-import de.jockels.open.Environment2;
 
 /**
  * Application App to keep the db4o object throughout the life-cycle of the Collector
@@ -59,7 +60,7 @@ public class CollectorApp extends Application implements StoreClient
 	static private final String DATABASE_BASENAME = "Sapelli";
 	static private final String DEMO_PREFIX = "Demo_";
 	
-	static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
+	//static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
 	
 	static private final String PROJECT_FOLDER = "Projects" + File.separator;
 	static private final String TEMP_FOLDER = "Temp" + File.separator;
@@ -71,33 +72,10 @@ public class CollectorApp extends Application implements StoreClient
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
 	static public final String CRASHLYTICS_DEVICE_ID_CRC32 = "SAPELLI_DEVICE_ID_CRC32";
 	static public final String CRASHLYTICS_DEVICE_ID_MD5 = "SAPELLI_DEVICE_ID_MD5";
-
-	/**
-	 * Uses Environment2 library to check whether the directory returned by getStorageDirectory() is on
-	 * an accessible (i.e. mounted) storage device
-	 * 
-	 * @return
-	 */
-	static public boolean isStorageMounted()
-	{
-		if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
-			return true;
-		return false;
-	}
-	
-	/**
-	 * Returns a prefix to be used on storage identifiers (DB4O filenames, SharedPref's names, etc.) when in demo mode
-	 * (if not in demo mode the prefix is empty).
-	 * The goal is to separate demo-mode storage from non-demo-mode installations and previous demo installations.
-	 * 
-	 * @return
-	 */
-	static public String getDemoPrefix()
-	{
-		return (BuildInfo.DEMO_BUILD ? DEMO_PREFIX + FileHelpers.makeValidFileName(BuildInfo.TIMESTAMP) : "");
-	}
+	static public final String PROPERTY_LAST_PROJECT = "SAPELLI_LAST_RUNNING_PROJECT"; // used as a System property as well as on Crashlytics
 	
 	// DYNAMICS-----------------------------------------------------------
+	private BuildInfo buildInfo;
 	private File sapelliFolder;
 	
 	private ProjectStore projectStore = null;
@@ -109,21 +87,22 @@ public class CollectorApp extends Application implements StoreClient
 	public void onCreate()
 	{
 		super.onCreate();
-		Debug.d("CollectorApp started.\nBuild info:\n" + BuildInfo.getAllInfo());
+		
+		// Build info:
+		this.buildInfo = BuildInfo.GetInstance(getApplicationContext());
+		
+		Debug.d("CollectorApp started.\nBuild info:\n" + buildInfo.getAllInfo());
 
 		// Start Crashlytics for bugs reporting
 		if(!BuildConfig.DEBUG)
 		{
 			Crashlytics.start(this);
-			Crashlytics.setString(CRASHLYTICS_VERSION_INFO, BuildInfo.getVersionInfo());
-			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, BuildInfo.getBuildInfo());
+			Crashlytics.setString(CRASHLYTICS_VERSION_INFO, buildInfo.getVersionInfo());
+			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
 		}
 	
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();
-		
-		// Sapelli folder (created on SD card or internal mass storage):
-		sapelliFolder = new File(getStorageDirectory().getAbsolutePath() + File.separator + SAPELLI_FOLDER);
 		
 		// Set up a CrashReporter to the Sapelli/crash Folder
 		try
@@ -135,7 +114,7 @@ public class CollectorApp extends Application implements StoreClient
 			Log.e(TAG, "Could not set-up DefaultUncaughtExceptionHandler", e);
 		}
 	}
-	
+
 	@Override
 	public void onConfigurationChanged(Configuration newConfig)
 	{
@@ -143,29 +122,100 @@ public class CollectorApp extends Application implements StoreClient
 		// Debug.d(newConfig.toString());
 	}
 	
-	/**
-	 * Uses Environment2 library to get the path of the actual SD card if there is one,
-	 * if not it gets the path of the emulated SD card/internal mass storage
-	 * 
-	 * @return the directory as a file object
-	 */
-	public File getStorageDirectory()
+	public BuildInfo getBuildInfo()
 	{
-		return Environment2.getCardDirectory();
+		return buildInfo;
 	}
 
 	/**
-	 * @return creates the Sapelli folder on the filesystem, and returns it as a File object
+	 * Returns a prefix to be used on storage identifiers (DB4O filenames, SharedPref's names, etc.) when in demo mode
+	 * (if not in demo mode the prefix is empty).
+	 * The goal is to separate demo-mode storage from non-demo-mode installations and previous demo installations.
+	 * 
+	 * @return
+	 */
+	public String getDemoPrefix()
+	{
+		return (buildInfo.isDemoBuild() ? DEMO_PREFIX + FileHelpers.makeValidFileName(TimeUtils.getTimestampForFileName(buildInfo.getTimeStamp())) : "");
+	}
+
+	/**
+	 * @return finds/creates the Sapelli folder on the filesystem, and returns it as a File object
 	 */
 	public File getSapelliFolder()
 	{
-		if(!isStorageMounted() || !FileHelpers.isReadableWritableDirectory(getStorageDirectory()))
-			throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
-		if(!sapelliFolder.exists())
+		if(sapelliFolder == null)
 		{
-			if(!sapelliFolder.mkdirs())
-				throw new IllegalStateException("Cannot create Sapelli folder");
+			// Using application-specific folder (will be removed upon app uninstall!):
+			File[] paths = ContextCompat.getExternalFilesDirs(this, null);
+			if(paths != null)
+			{
+				// We count backwards because we prefer secondary external storage (which is likely to be on an SD card rather unremovable memory)
+				for(int p = paths.length - 1; p >= 0; p--)
+					if(paths[p] != null && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(paths[p])))
+					{
+						sapelliFolder = paths[p];
+						break;
+					}
+				
+//				// HACK HACK HACK
+//				if(sapelliFolder != null)
+//				{
+//					//									Android 		/   data		/ packagename	/ files
+//					File extStorageRoot = sapelliFolder.getParentFile().getParentFile().getParentFile().getParentFile();
+//					
+//					/* Old way: Using Environment2 library to get the path of the actual SD card if there is one,
+//					 * 			if not it gets the path of the emulated SD card/internal mass storage */
+//					//if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
+//					//	cardDirectory = Environment2.getCardDirectory();
+//					
+//					// Using proper API (will not always return the real SD card path):
+//					if(Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(Environment.getExternalStorageDirectory())))
+//						extStorageRoot = Environment.getExternalStorageDirectory();
+//					
+//					// Check if writable:
+//					if(!FileHelpers.isReadableWritableDirectory(extStorageRoot))
+//						throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
+//					
+//					// Make Sapelli folder:
+//					sapelliFolder = new File(extStorageRoot.getAbsolutePath() + File.separator + SAPELLI_FOLDER);
+//					if(!sapelliFolder.exists())
+//					{
+//						if(!sapelliFolder.mkdirs())
+//							throw new IllegalStateException("Cannot create Sapelli folder");
+//					}
+//				}
+				
+			}
+			// Fall-back: try to get write access to external storage (preferably SD card) root and create Sapelli folder if it doesn't exist yet:
+			if(sapelliFolder == null)
+			{
+				File extStorageRoot = null;
+				
+				/* Old way: Using Environment2 library to get the path of the actual SD card if there is one,
+				 * 			if not it gets the path of the emulated SD card/internal mass storage */
+				//if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
+				//	cardDirectory = Environment2.getCardDirectory();
+				
+				// Using proper API (will not always return the real SD card path):
+				if(Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(Environment.getExternalStorageDirectory())))
+					extStorageRoot = Environment.getExternalStorageDirectory();
+				
+				// Check if writable:
+				if(!FileHelpers.isReadableWritableDirectory(extStorageRoot))
+					throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
+				
+				// Make Sapelli folder:
+				sapelliFolder = new File(extStorageRoot.getAbsolutePath() + File.separator + SAPELLI_FOLDER);
+				if(!sapelliFolder.exists())
+				{
+					if(!sapelliFolder.mkdirs())
+						throw new IllegalStateException("Cannot create Sapelli folder");
+				}
+			}
 		}
+		
+		// Return folder:
 		return sapelliFolder;
 	}
 
@@ -222,7 +272,7 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		if(projectStore == null)
 		{
-			projectStore = USE_PREFS_FOR_PROJECT_STORAGE ? new PrefProjectStore(this) : new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			projectStore = /*USE_PREFS_FOR_PROJECT_STORAGE ?*/ new PrefProjectStore(this, getDemoPrefix()); //: new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			storeClients.put(projectStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(projectStore).add(client); //add to set of clients currently using the projectStore
@@ -242,7 +292,8 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		if(recordStore == null)
 		{
-			recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			//recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			recordStore = new AndroidSQLiteRecordStore(getCollectorClient(client), this, getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			storeClients.put(recordStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(recordStore).add(client); //add to set of clients currently using the projectStore
@@ -268,7 +319,11 @@ public class CollectorApp extends Application implements StoreClient
 		// Finalise if no longer used by other clients:
 		if(clients == null || clients.isEmpty())
 		{
-			store.finalise();
+			try
+			{
+				store.finalise();
+			}
+			catch(DBException ignore) { }
 			storeClients.remove(store); // remove empty set
 
 			//Slightly dirty but acceptable:

@@ -45,8 +45,9 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.SimpleSchemaTraverser;
 /**
  * Class to export {@link Record}s to XML files, which can be re-imported by {@link XMLRecordsImporter}.
  * 
- * Follows the CSV specification outlined in RFC 4180, except for the choice between different separators (comma, tab & semicolon).
- * The CSV will get a header line with the column names separated by the separator, plus this: *separator*schemaID=...*separator*
+ * Follows the CSV specification outlined in RFC 4180 (i.e. with regardis to escaping/quoting), except for
+ * the choice between different separators (tab & semicolon in addition to comma).
+ * The CSV will get a header line with the column names separated by the separator, with this postfix: separator+"modelID="+...+separator+"modelSchemaNumber="+...+separator
  * 
  * @author mstevens
  * @see <a href="http://www.ietf.org/rfc/rfc4180.txt">http://www.ietf.org/rfc/rfc4180.txt</a>
@@ -173,11 +174,12 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 		{
 			try
 			{
-				openWriter(description + "_" + entry.getKey().getName(), timestamp);
+				Schema schema =  entry.getKey();
+				openWriter(description + "_" + schema.getName(), timestamp);
 
 				// Construct column list:
 				columnPointers.clear();
-				traverse(entry.getKey());
+				traverse(schema);
 				
 				// Write header:
 				writer.openTransaction(); // output will be buffered
@@ -186,8 +188,10 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 					// Column names (separated by the separator):
 					for(ColumnPointer cp : columnPointers)
 						writer.write((!writer.isTransactionBufferEmpty() ? separator.getSeparatorChar() : "") + cp.getQualifiedColumnName());
-					// Postfix: separator+"schemeID="+...+separator	
-					writer.write(separator.getSeparatorChar() + Schema.ATTRIBUTE_SCHEMA_ID + "=" + entry.getKey().getID() + separator.getSeparatorChar());
+					// Postfix: separator+"modelID="+...+separator+"modelSchemaNumber="+...+separator
+					writer.write(	separator.getSeparatorChar() + Schema.ATTRIBUTE_MODEL_ID + "=" + schema.getModelID() +
+									separator.getSeparatorChar() + Schema.ATTRIBUTE_MODEL_SCHEMA_NUMBER + "=" + schema.getModelSchemaNumber() +
+									separator.getSeparatorChar());
 					writer.write('\n');
 				}
 				catch(Exception e)
@@ -200,6 +204,8 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				// Write records:
 				for(Record r : entry.getValue())
 				{
+					if(r.getSchema().isInternal())
+						continue; // we do not export records of internal schemata
 					writer.openTransaction(); // output will be buffered
 					try
 					{	

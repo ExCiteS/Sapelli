@@ -21,8 +21,9 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -63,9 +64,17 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	private PageView pageView;
 	private ChoiceView choiceView;
 
+	private CollectorController controller;
+	private AudioFeedbackController audioController;
+	private ChoiceField choice;
+
 	public AndroidChoiceUI(ChoiceField choice, CollectorController controller, CollectorView collectorView)
 	{
 		super(choice, controller, collectorView);
+		
+		this.controller = controller;
+		this.audioController = new AudioFeedbackController(controller);
+		this.choice = choice;
 	}
 
 	@Override
@@ -100,6 +109,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			choiceView.update();
 			choiceView.setEnabled(true);
 			
+			// Audio Feedback
+			audioController.playQuestion(choice);
+
 			return (View) choiceView;
 		}
 	}
@@ -110,6 +122,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return;
 		
+		// Stop the Audio Feedback
+		controller.stopAudioFeedback();
+
 		// Task to perform after animation has finished:
 		Runnable action = new Runnable()
 		{
@@ -126,6 +141,18 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			action.run(); //perform task now (animation is disabled)	
 	}
 	
+	protected boolean onChildLongClick(Context context, final ChoiceField child, View childView)
+	{
+		// Ignore click if child is disabled:
+		if(!isFieldShown() && !controller.isFieldEnabled(child))
+			return false;
+
+		// Audio Feedback
+		audioController.playAnswer(context, child, childView);
+
+		return true;
+	}
+
 	/**
 	 * To be overridden by AndroidICSChoiceUI
 	 * 
@@ -309,6 +336,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		@Override
 		public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id)
 		{
+			if(isEnabled())
+				return onChildLongClick(getContext(), field.getChildren().get(position) /* pass the chosen child */, v);
+
 			return false;
 		}
 
@@ -364,6 +394,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		// Set size & padding:
 		item.setPaddingPx(itemPaddingPx);
 		
+		// Set the description used for accessibility support
+		item.setDescription(child.getAltText());
+
 		return item;
 	}
 	

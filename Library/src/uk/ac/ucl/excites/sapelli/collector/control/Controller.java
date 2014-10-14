@@ -45,7 +45,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.model.ForeignKey;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
@@ -125,6 +125,10 @@ public abstract class Controller
 			try
 			{
 				logger = new Logger(project.getLogFolder().getAbsolutePath(), LOG_PREFIX);
+
+				// Log the DeviceID
+				logger.addLine("DeviceID (CRC32)", String.valueOf(getDeviceID()));
+				logger.addBlankLine();
 	
 				// Log the start of the project
 				logger.addLine("PROJECT_START", project.toString());
@@ -510,7 +514,7 @@ public abstract class Controller
 	{
 		ForeignKeyColumn column = belongsTo.getColumn();
 		Constraint constraints = belongsTo.getConstraints();
-		ForeignKey foreignKey = column.retrieveValue(currFormSession.record); // may be null
+		RecordReference foreignKey = column.retrieveValue(currFormSession.record); // may be null
 		
 		if(!arguments.getBoolean(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM, false))
 		{	// We were *not* waiting for a return from the relatedForm
@@ -520,7 +524,7 @@ public abstract class Controller
 				if(arguments.getBoolean(BelongsToField.PARAMETER_EDIT, false))
 				{	// We are in edit mode (the edit argument was true):
 					arguments.put(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM, Boolean.TRUE.toString()); // remember we are waiting for relatedForm
-					openFormSession(FormSession.Edit(belongsTo.getRelatedForm(), recordStore.retrieveRecord(foreignKey.getForeignRecordQuery()), this)); // open relatedForm to edit foreign record
+					openFormSession(FormSession.Edit(belongsTo.getRelatedForm(), recordStore.retrieveRecord(foreignKey.getRecordQuery()), this)); // open relatedForm to edit foreign record
 				}
 				else
 					// We are not in edit mode (the edit argument was false, or more likely, missing)
@@ -533,8 +537,8 @@ public abstract class Controller
 				// Check is we are allowed to hold on to foreign records:
 				if(belongsTo.isHoldForeignRecord())
 				{	// The Relationship is allowed to hold on to foreign records 
-					ForeignKey heldForeignKey = projectStore.retrieveHeldForeignKey(belongsTo);
-					foreignRecord = heldForeignKey != null ? recordStore.retrieveRecord(heldForeignKey.getForeignRecordQuery()) : null;
+					RecordReference heldForeignKey = projectStore.retrieveHeldForeignKey(belongsTo);
+					foreignRecord = heldForeignKey != null ? recordStore.retrieveRecord(heldForeignKey.getRecordQuery()) : null;
 					if(constraints.isValid(foreignRecord)) // passing null will return false
 					{	// We have a "held" foreign key, the corresponding foreign record was found and meets the constraints
 						column.storeValue(currFormSession.record, heldForeignKey); // Store foreign key
@@ -563,7 +567,7 @@ public abstract class Controller
 				Record foreignRecord = prevFormSession.record;
 				if(constraints.isValid(foreignRecord)) // passing null will return false
 				{	// The relatedForm produced/edited a non-null record which meets the constraints
-					foreignKey = new ForeignKey(foreignRecord);
+					foreignKey = new RecordReference(foreignRecord);
 					column.storeValue(currFormSession.record, foreignKey); // Store/update foreign key
 					if(belongsTo.isHoldForeignRecord())
 						projectStore.storeHeldForeignKey(belongsTo, foreignKey); // Store/update "held" foreign key if allowed

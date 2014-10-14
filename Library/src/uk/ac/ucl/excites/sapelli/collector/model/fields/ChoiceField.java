@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.model.fields;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
@@ -33,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary.Dictionar
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -62,13 +64,15 @@ public class ChoiceField extends Field implements DictionaryItem
 	private ChoiceField root;
 	private List<ChoiceField> children;
 	private String imageRelativePath;
-	private int cols;
-	private int rows;
+	private String answerDesc;
+	private String questionDesc;
+	private int cols = DEFAULT_NUM_COLS;
+	private int rows = DEFAULT_NUM_ROWS;
 	private String altText;
-	private boolean crossed;
-	private String crossColor;
-	private String value;
-	private ChoiceDictionary dictionary;
+	private boolean crossed = DEFAULT_CROSSED;
+	private String crossColor = DEFAULT_CROSS_COLOR;
+	private final String value;
+	private final ChoiceDictionary dictionary;
 	
 	/**
 	 * @param form the form this choice(tree) belongs to
@@ -87,7 +91,6 @@ public class ChoiceField extends Field implements DictionaryItem
 						parent.getID() + "." + (value == null || value.trim().isEmpty() ? parent.getChildren().size() + 1 : StringUtils.replaceWhitespace(value.trim(), "_"))) :
 					id,
 				caption);
-		this.children = new ArrayList<ChoiceField>();
 		this.parent = parent;
 		this.value = ((value == null || value.isEmpty()) ? null : value); //replace empty string with null (so we don't need to check for empty string elsewhere)
 		if(parent == null)
@@ -105,6 +108,8 @@ public class ChoiceField extends Field implements DictionaryItem
 	
 	public void addChild(ChoiceField c)
 	{
+		if(children == null)
+			children = new ArrayList<ChoiceField>();
 		children.add(c);
 	}
 
@@ -130,16 +135,60 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 
 	/**
+	 * @return the answerDesc
+	 */
+	public String getAnswerDesc()
+	{
+		return answerDesc;
+	}
+
+	/**
+	 * @param answerDesc
+	 *            the answerDesc to set
+	 */
+	public void setAnswerDesc(String answerDesc)
+	{
+		this.answerDesc = answerDesc;
+	}
+
+	public boolean hasAudioAnswerDesc()
+	{
+		return answerDesc != null && FileHelpers.isAudioFileName(answerDesc);
+	}
+
+	/**
+	 * @return the questionDesc
+	 */
+	public String getQuestionDesc()
+	{
+		return questionDesc;
+	}
+
+	/**
+	 * @param questionDesc
+	 *            the questionDesc to set
+	 */
+	public void setQuestionDesc(String questionDesc)
+	{
+		this.questionDesc = questionDesc;
+	}
+
+	public boolean hasQuestionDesc()
+	{
+		return questionDesc != null && FileHelpers.isAudioFileName(questionDesc);
+	}
+
+	/**
 	 * @return the altText
 	 */
 	public String getAltText()
 	{
 		if(altText != null)
 			return altText;
-		if(imageRelativePath != null)
-			return imageRelativePath;
 		if(value != null)
 			return value;
+		if(imageRelativePath != null)
+			return imageRelativePath;
 		return DEFAULT_ALT_TEXT;
 	}
 
@@ -185,7 +234,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	 */
 	public List<ChoiceField> getChildren()
 	{
-		return children;
+		return children != null ? children : Collections.<ChoiceField> emptyList();
 	}
 
 	/**
@@ -249,12 +298,14 @@ public class ChoiceField extends Field implements DictionaryItem
 	 */
 	public void setCrossColor(String crossColor)
 	{
+		if(crossColor == null || crossColor.isEmpty())
+			throw new IllegalArgumentException("crossColor cannot be null or empty");
 		this.crossColor = crossColor;
 	}
 
 	public boolean isLeaf()
 	{
-		return children.isEmpty();
+		return children == null;
 	}
 	
 	@Override
@@ -284,7 +335,7 @@ public class ChoiceField extends Field implements DictionaryItem
 		List<File> paths = new ArrayList<File>();
 		if(hasImage())
 			CollectionUtils.addIgnoreNull(paths, project.getImageFile(imageRelativePath));
-		for(ChoiceField child : children)
+		for(ChoiceField child : getChildren())
 			CollectionUtils.addAllIgnoreNull(paths, child.getFiles(project));
 		return paths;
 	}
@@ -303,7 +354,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 	
 	@Override
-	protected IntegerColumn createColumn()
+	protected IntegerColumn createColumn(String name)
 	{
 		if(!isRoot())
 			throw new IllegalStateException("createColumn() should only be called on a root ChoiceField object.");
@@ -319,7 +370,7 @@ public class ChoiceField extends Field implements DictionaryItem
 			boolean opt = (optional != Optionalness.NEVER);
 			
 			//Create column:
-			IntegerColumn col = new IntegerColumn(id, opt, 0, dictionary.size() - 1);
+			IntegerColumn col = new IntegerColumn(name, opt, 0, dictionary.size() - 1);
 			
 			// Add virtual columns to it:
 			//	Value String column:
@@ -407,6 +458,49 @@ public class ChoiceField extends Field implements DictionaryItem
 			return null;
 	}
 	
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof ChoiceField)
+		{
+			ChoiceField that = (ChoiceField) obj;
+			return	super.equals(that) && // Field#equals(Object)
+					(this.parent != null ? that.parent != null && this.parent.getID().equals(that.parent.getID()) : that.parent == null) &&
+					(this.root != null ? that.root != null && this.root.getID().equals(that.root.getID()) : that.root == null) &&
+					this.getChildren().equals(that.getChildren()) &&
+					(this.imageRelativePath != null ? this.imageRelativePath.equals(that.imageRelativePath) : that.imageRelativePath == null) &&
+					this.cols == that.cols &&
+					this.rows == that.rows &&
+					(this.altText != null ? this.altText.equals(that.altText) : that.altText == null) &&
+					this.crossed == that.crossed &&
+					this.crossColor.equals(that.crossColor) &&
+					(this.value != null ? this.value.equals(that.value) : that.value == null);
+					// Do not include dictionary at all here! It is unnecessary and causes an endless loop!
+		}
+		else
+			return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = super.hashCode(); // Field#hashCode()
+		hash = 31 * hash + (parent != null ? parent.getID().hashCode() : 0);
+		hash = 31 * hash + (root != null ? root.getID().hashCode() : 0);
+		hash = 31 * hash + getChildren().hashCode();
+		hash = 31 * hash + (imageRelativePath != null ? imageRelativePath.hashCode() : 0);
+		hash = 31 * hash + cols;
+		hash = 31 * hash + rows;
+		hash = 31 * hash + (altText != null ? altText.hashCode() : 0);
+		hash = 31 * hash + (crossed ? 0 : 1);
+		hash = 31 * hash + crossColor.hashCode();
+		hash = 31 * hash + (value != null ? value.hashCode() : 0);
+		// Do not include dictionary at all here! It is unnecessary and causes an endless loop!
+		return hash;
+	}
+	
 	/**
 	 * A Dictionary for ChoiceFields.
 	 * 
@@ -436,15 +530,18 @@ public class ChoiceField extends Field implements DictionaryItem
 		 */
 		private void traverse(ChoiceField choice)
 		{
-			if(choice.isLeaf() && choice.getValue() != null)
+			if(choice.isLeaf())
 			{
-				itemToIndex.put(choice, indexed.size());
-				indexed.add(choice);
+				if(choice.getValue() != null) // (do not merge the if's)
+				{
+					itemToIndex.put(choice, indexed.size());
+					indexed.add(choice);
+				}
 			}
 			else
 			{
-				for(ChoiceField child : choice.children) //Depth-first traversal
-					traverse(child); //recursive call
+				for(ChoiceField child : choice.children) // Depth-first traversal
+					traverse(child); // recursive call
 			}
 		}
 		

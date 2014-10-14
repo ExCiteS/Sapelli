@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.queries;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 
 /**
  * @author mstevens
@@ -30,11 +31,13 @@ public class FirstRecordQuery extends SingleRecordQuery
 {
 
 	/**
-	 * @param recordsQuery
+	 * @param source
+	 * @param order
+	 * @param constraints
 	 */
-	public FirstRecordQuery(RecordsQuery recordsQuery)
+	public FirstRecordQuery(Source source, Order order, Constraint... constraints)
 	{
-		super(recordsQuery);
+		super(new RecordsQuery(source, order, 1, constraints));
 	}
 
 	/* (non-Javadoc)
@@ -47,7 +50,7 @@ public class FirstRecordQuery extends SingleRecordQuery
 	}
 
 	@Override
-	public Record acceptExecutor(Executor executor)
+	public <R, E extends Throwable> R acceptExecutor(Executor<R, E> executor) throws E
 	{
 		return executor.execute(this);
 	}

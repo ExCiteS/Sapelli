@@ -22,12 +22,12 @@ import java.text.ParseException;
 
 import org.joda.time.DateTimeZone;
 
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
 
 
 /**
@@ -68,14 +68,14 @@ public class Location extends Record
 	
 	// Schema(s) & columns
 	//	Default Schema (used for Location instances), which uses 64 bit floats (doubles) for latitude, longitude & altitude:
-	static final public Schema SCHEMA = new Schema(Schema.InternalKind.LOCATION);
+	static final public Schema SCHEMA = new Schema(Schema.InternalKind.Location);
 	static final public FloatColumn COLUMN_LATITUDE = new FloatColumn("Latitude", false, true, true);			// non-optional signed 64 bit float
 	static final public FloatColumn COLUMN_LONGITUDE = new FloatColumn("Longitude", false, true, true);			// non-optional signed 64 bit float
 	static final public FloatColumn COLUMN_ALTITUDE = new FloatColumn("Altitude", true, true, true);			// optional signed 64 bit float
 	static final public FloatColumn COLUMN_BEARING = new FloatColumn("Bearing", true, true, false);				// optional signed 32 bit float
 	static final public FloatColumn COLUMN_SPEED = new FloatColumn("Speed", true, true, false);					// optional signed 32 bit float
 	static final public FloatColumn COLUMN_ACCURACY = new FloatColumn("Accuracy", true, true, false);			// optional signed 32 bit float
-	static final public TimeStampColumn COLUMN_TIME = TimeStampColumn.JavaMSTime("TimeUTC", true, false);			// optional signed 64 bit millisecond-accurate UTC timestamp (local timezone not kept, not virtual columns added) 
+	static final public TimeStampColumn COLUMN_TIME = TimeStampColumn.JavaMSTime("TimeUTC", true, false);		// optional signed 64 bit millisecond-accurate UTC timestamp (local timezone not kept, not virtual columns added) 
 	static final public IntegerColumn COLUMN_PROVIDER = new IntegerColumn("Provider", false, PROVIDER_FIELD);	// non-optional 2 bit unsigned integer
 	static
 	{	// Add columns to default Schema & seal it:

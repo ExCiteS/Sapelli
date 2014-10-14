@@ -73,6 +73,11 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 		return ((float) getTimeZoneOffsetMS(value)) / HOUR_MS;
 	}
 	
+	/**
+	 * Current time in the current/default timezone
+	 * 
+	 * @return
+	 */
 	static public TimeStamp now()
 	{
 		return new TimeStamp();
@@ -193,17 +198,27 @@ public class TimeStamp implements Comparable<TimeStamp>, Serializable
 	}
 
 	@Override
-	public int compareTo(TimeStamp other)
+	public int compareTo(TimeStamp another)
 	{
-		if(this == other)
+		if(this == another)
 			return 0;
 		// Note: we cannot do (this.msSinceEpoch - other.msSinceEpoch) because that can cause overflow
-		if(this.msSinceEpoch == other.msSinceEpoch)
+		if(this.msSinceEpoch == another.msSinceEpoch)
 			return 0;
-		if(this.msSinceEpoch < other.msSinceEpoch)
+		if(this.msSinceEpoch < another.msSinceEpoch)
 			return -1;
 		else
 			return 1;
+	}
+	
+	public boolean isBefore(TimeStamp another)
+	{
+		return this.msSinceEpoch < another.msSinceEpoch;
+	}
+	
+	public boolean isAfter(TimeStamp another)
+	{
+		return another.msSinceEpoch < this.msSinceEpoch;
 	}
 	
 	@Override

@@ -24,11 +24,11 @@ import java.text.ParseException;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.UnicodeHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.ComparatorColumn;
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -36,7 +36,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * 
  * @author mstevens
  */
-public class StringColumn extends ComparatorColumn<String>
+public class StringColumn extends ComparableColumn<String>
 {
 	
 	//STATIC---------------------------------------------------------
@@ -168,6 +168,7 @@ public class StringColumn extends ComparatorColumn<String>
 	public String toString(String value)
 	{
 		return SERIALISATION_QUOTE + value + SERIALISATION_QUOTE; // surround with quotes
+		//TODO escape!!!!!
 	}
 	
 	/**
@@ -204,18 +205,18 @@ public class StringColumn extends ComparatorColumn<String>
 	@Override
 	protected int _getMinimumSize()
 	{
-		return sizeField.getSize(); // when stored string is empty: just the size field
+		return sizeField.size(); // when stored string is empty: just the size field
 	}
 	
 	@Override
 	protected int _getMaximumSize()
 	{
-		return sizeField.getSize() + getMaximumBytes() * Byte.SIZE;
+		return sizeField.size() + getMaximumBytes() * Byte.SIZE;
 	}
 	
 	public int getMaximumBytes()
 	{
-		return (int) sizeField.getHighBound();
+		return (int) sizeField.highBound();
 	}
 	
 	/**

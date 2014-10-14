@@ -18,22 +18,63 @@
 
 package uk.ac.ucl.excites.sapelli.transmission;
 
+import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
  * @author mstevens
  *
  */
-public interface TransmissionClient extends StorageClient
+public abstract class TransmissionClient extends StorageClient
 {
 
-	//TODO replace by: public EncryptionSettings getEncryptionSettings(int usageID, int usageSubID) ... 
-	public Settings getSettingsFor(Schema schema);
+	// STATICS-------------------------------------------------------
+	static public final long TRANSMISSION_MANAGEMENT_MODEL_ID = 0; // reserved!
+
+	// DYNAMICS------------------------------------------------------
 	
-	public Set<Column<?>> getFactoredOutColumnsFor(Schema schema);
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
+	 */
+	@Override
+	public List<Model> getReserveredModels()
+	{
+		List<Model> reserved = super.getReserveredModels();
+		reserved.add(TransmissionStore.TRANSMISSION_MANAGEMENT_MODEL);
+		return reserved;
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getTableName(uk.ac.ucl.excites.sapelli.storage.model.Schema)
+	 */
+	@Override
+	public String getTableName(Schema schema)
+	{
+		if(schema == TransmissionStore.TRANSMISSION_SCHEMA)
+			return "Transmissions";
+		if(schema == TransmissionStore.TRANSMISSION_PART_SCHEMA)
+			return "Transmission_Parts";
+		return super.getTableName(schema);
+	}
+	
+	public abstract EncryptionSettings getEncryptionSettingsFor(Model model) throws UnknownModelException;
+	
+	public abstract Payload newPayload(int nonBuiltinType);
+	
+	/**
+	 * Returns columns from ther given schema that should not be transmitted.
+	 * It is assumed these are optional columns, or (TODO once this is supported) non-optional columns with a default value.
+	 * 
+	 * @param schema
+	 * @return
+	 */
+	public abstract Set<Column<?>> getNonTransmittableColumns(Schema schema);
 	
 }

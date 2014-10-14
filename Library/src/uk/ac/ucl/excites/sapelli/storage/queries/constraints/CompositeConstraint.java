@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.queries.constraints;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -28,14 +29,13 @@ import java.util.List;
 public abstract class CompositeConstraint extends Constraint
 {
 
-	protected final List<Constraint> constraints;
+	private List<Constraint> constraints;
 
 	/**
 	 * @param constraints
 	 */
 	public CompositeConstraint(Constraint... constraints)
 	{
-		this.constraints = new ArrayList<Constraint>();
 		if(constraints != null)
 			for(Constraint c : constraints)
 				addConstraint(c);
@@ -43,26 +43,73 @@ public abstract class CompositeConstraint extends Constraint
 	
 	public void addConstraint(Constraint constraint)
 	{
+		// Reduce if possible:
+		constraint = Constraint.Reduce(constraint);
+		// Null check:
 		if(constraint == null)
 			return;
-		if(this.getClass().isInstance(constraint) && isAssociative())
-			// Flatten instance of same CompositeConstraint subclass when associative:
+		// Flatten instance of same CompositeConstraint subclass when associative:
+		else if(this.getClass().isInstance(constraint) && isAssociative())
+		{
 			for(Constraint subConstraint : ((CompositeConstraint) constraint).constraints)
-				this.constraints.add(subConstraint);
+				addConstraint(subConstraint); // recursive call
+		}
+		// Add real subconstraint:
 		else
-			this.constraints.add(constraint);
+		{
+			if(constraints == null) // create collection if necessary
+				constraints = new ArrayList<Constraint>();
+			constraints.add(constraint);
+		}
 	}
 
+	/**
+	 * Reduce unnecessary (Composite)constraint instances
+	 * 
+	 * @return
+	 */
+	@Override
+	public Constraint reduce()
+	{
+		if(!hasSubConstraints())
+			return null;
+		else if(constraints.size() == 1)
+			return getSubConstraints().get(0).reduce();
+		else
+			return this;
+	}
+	
 	public List<Constraint> getSubConstraints()
 	{
-		return constraints;
+		return constraints != null ? constraints : Collections.<Constraint> emptyList();
 	}
-
+	
 	public boolean hasSubConstraints()
 	{
-		return !constraints.isEmpty();
+		return constraints != null; // no need to check isEmpty(), the constraints collection is private and only created if there is at least 1 subConstraint
 	}
 	
 	protected abstract boolean isAssociative();
 
+	@Override
+	public boolean equals(Object obj)
+	{
+		if(this == obj)
+			return true; // references to same object
+		if(obj instanceof CompositeConstraint)
+		{
+			CompositeConstraint that = (CompositeConstraint) obj;
+			return this.getSubConstraints().equals(that.getSubConstraints());
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode()
+	{
+		int hash = 1;
+		hash = 31 * hash + getSubConstraints().hashCode();
+		return hash;
+	}
+	
 }

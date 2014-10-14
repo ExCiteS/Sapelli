@@ -29,7 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import uk.ac.ucl.excites.sapelli.storage.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 
 /**
@@ -41,31 +43,33 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public class Schema implements Serializable
 {
 
-	private static final long serialVersionUID = 2L;
-
 	// Statics------------------------------------------------------------
+	private static final long serialVersionUID = 2L;
+	
 	static protected final int UNKNOWN_COLUMN_POSITION = -1;
 	
-	// Identification of "external"/"client" schema instances:
-	static public final int SCHEMA_ID_SIZE = 36; //bits
-	static public final IntegerRangeMapping SCHEMA_ID_FIELD = IntegerRangeMapping.ForSize(0, SCHEMA_ID_SIZE); // unsigned(!) 36 bit integer; does not accept the IDs of internal schemata!
+	static public final String COLUMN_AUTO_KEY_NAME = "AutoKey";
 	
 	/**
-	 * Identification of "internal" schemata
+	 * Identification of "internal" schemata (not part of a Model)
 	 * 
 	 * The ordinal position (x) within the enum is made negative (formula: -x - 1) and used as the schema ID.
 	 * This allows to differentiate "internal" schemata (& their records) from "external"/"client" schemata (& records).
 	 */
 	static public enum InternalKind
-	{				/* ordinal	-> schema id */
-		INDEX,		/*	0		->	-1 */
-		LOCATION,	/*	1		->	-2 */
-		ORIENTATION	/*	2		->	-3 */
+	{
+		MetaSchema,
+		Model,
+		Anonymous,
+		Index,
+		Location,
+		Orientation,
 		// more later?
 	}
 	
 	// XML attributes (for record exports):
-	static public final String ATTRIBUTE_SCHEMA_ID = "schemaID";
+	static public final String ATTRIBUTE_MODEL_ID = "modelID";
+	static public final String ATTRIBUTE_MODEL_SCHEMA_NUMBER = "modelSchemaNumber";
 	static public final String ATTRIBUTE_SCHEMA_NAME = "schemaName";
 	
 	// v1.x-style identification (for backwards compatibility only):
@@ -78,63 +82,129 @@ public class Schema implements Serializable
 	static public final String V1X_ATTRIBUTE_SCHEMA_ID = "schema-id";
 	static public final String V1X_ATTRIBUTE_SCHEMA_VERSION = "schema-version";
 	
+	/**
+	 * Returns "meta" record which describes the given schema (and contains a serialised version of it)
+	 * 
+	 * @param schema
+	 * @return
+	 */
+	static public Record GetMetaRecord(Schema schema)
+	{
+		if(schema.isInternal())
+			throw new IllegalStateException("Internal schemata cannot be described by a meta record.");
+		return Model.META_SCHEMA.createRecord(Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber, schema.name);
+	}
+	
+	/**
+	 * Returns a RecordReference pointing to a (hypothetical) meta record of the given schema,
+	 * but avoids actually instantiating the whole meta record itself. 
+	 * 
+	 * @param schema
+	 * @return
+	 */
+	static public RecordReference GetMetaRecordReference(Schema schema)
+	{
+		if(schema.isInternal())
+			throw new IllegalStateException("Internal schemata cannot be described by a meta record.");
+		return new RecordReference(Model.META_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
+	}
+	
 	// Dynamics-----------------------------------------------------------
-	protected final long id;
+	public final Model model;
+	public final int modelSchemaNumber;
+	public final InternalKind internal;
 	protected final String name;
 	private boolean sealed = false;
 	
 	// Columns & indexes:
-	private final List<Column> realColumns; // only contains non-virtual ("real") columns
-	private final Map<String, Integer> columnNameToPosition; // only contains non-virtual ("real") columns
+	private final List<Column> realColumns = new ArrayList<Column>(); // only contains non-virtual ("real") columns
+	private final Map<String, Integer> columnNameToPosition = new LinkedHashMap<String, Integer>(); // only contains non-virtual ("real") columns
 	private Map<String, VirtualColumn> virtualColumnsByName;
-	private List<Index> indexes;
-	private Index primaryKey;
+	private PrimaryKey primaryKey;
+	private List<Index> indexes; // also includes the primary key
 	private transient List<Column> allColumns; // contains non-virtual and virtual columns
 	
 	/**
 	 * Make a schema instance of an internal kind
 	 * 
-	 * @param internalKind
+	 * @param internal
 	 */
-	public Schema(InternalKind internalKind)
+	public Schema(InternalKind internal)
 	{
-		this(internalKind, internalKind.name());
+		this(internal, internal.name());
 	}
 	
 	/**
 	 * Make a schema instance of an internal kind
 	 * 
-	 * @param internalKind
+	 * @param internal
 	 * @param name
 	 */
-	public Schema(InternalKind internalKind, String name)
+	public Schema(InternalKind internal, String name)
 	{
-		this(	(internalKind.ordinal() * -1l) - 1l, // Use negative id to indicate this is an "internal" schema and avoid ID collisions with "external"/"client" schema instances
-				name,
-				false); // don't check the id (we know it doesn't fit in the SCHEMA_ID_FIELD because it is negative)
+		if(internal == null)
+			throw new NullPointerException("Please specify an non-null Internal");
+		this.internal = internal;
+		this.model = null; // internal schemata never have a model
+		this.modelSchemaNumber = -1;
+		this.name = name;
 	}
 	
 	/**
-	 * Create a new (external/client) schema instance
+	 * Create a new (external/client) schema instance which will be add to the provided {@link Model}.
 	 * 
-	 * @param id
+	 * @param model
 	 * @param name
+	 * @throws ModelFullException 
 	 */
-	public Schema(long id, String name)
+	public Schema(Model model, String name) throws ModelFullException
 	{
-		this(id, name, true); // check the id!
+		if(model == null)
+			throw new NullPointerException("Please specify an non-null Model");
+		this.model = model;
+		this.internal = null; // external/client never have an "internal"
+		this.name = (name == null || name.isEmpty() ? model.getName() + "_Schema" + (model.getNumberOfSchemata() - 1) : name);
+		this.modelSchemaNumber = model.addSchema(this); // add oneself to the model!
 	}
 	
-	private Schema(long id, String name, boolean checkID)
+	/**
+	 * @return the model
+	 */
+	public Model getModel()
 	{
-		// If allowed then check if id fits in SCHEMA_ID_FIELD:
-		if(checkID && !SCHEMA_ID_FIELD.fits(id))
-			throw new IllegalArgumentException("Invalid schema ID value (" + id + "), valid values are " + SCHEMA_ID_FIELD.getLogicalRangeString() + ".");
-		// Set fields:
-		this.id = id;
-		this.name = (name == null || name.isEmpty() ? "Schema-" + id : name);
-		this.columnNameToPosition = new LinkedHashMap<String, Integer>();
-		this.realColumns = new ArrayList<Column>();
+		if(isInternal())
+			throw new IllegalStateException("Internal schemata do not belong to a model.");
+		return model;
+	}
+	
+	/**
+	 * @return whether this is an "internal" (true) or "external"/"client" schema instance 
+	 */
+	public boolean isInternal()
+	{
+		return internal != null;
+	}
+	
+	/**
+	 * Only supported on "external"/"client" schemata (not on "internal" ones)
+	 * 
+	 * @return the modelID (unsigned 56 bit integer)
+	 */
+	public long getModelID()
+	{
+		return getModel().getID();
+	}
+
+	/**
+	 * Only supported on "external"/"client" schemata (not on "internal" ones)
+	 * 
+	 * @return the modelSchemaNo (unsigned 4 bit integer)
+	 */
+	public int getModelSchemaNumber()
+	{
+		if(isInternal())
+			throw new IllegalStateException("Internal schemata do not belong to a model.");
+		return modelSchemaNumber;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -144,12 +214,18 @@ public class Schema implements Serializable
 			addColumn(c);
 	}
 	
-	public <T> void addColumn(Column<T> column)
+	/**
+	 * Add a new column to the schema
+	 * @param column
+	 * @return the added column
+	 */
+	public <C extends Column<T>, T> C addColumn(C column)
 	{
 		addColumn(column, true);
+		return column;
 	}
 	
-	protected <T> void addColumn(Column<T> column, boolean useVirtual)
+	protected <C extends Column<T>, T> void addColumn(C column, boolean useVirtual)
 	{
 		if(sealed)
 			throw new IllegalStateException("Cannot extend a sealed schema!");
@@ -171,40 +247,77 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * Add an {@link Index} to the Schema, which may or may not be used as the primary key.
-	 * In case it is to be used as the primary key the index needs to be unique and should consist only of non-optional (i.e. non-nullable) columns.
-	 * 
-	 * Note: adding a primary key index is not allowed after the Schema has been sealed, adding normal indexes is allowed.
+	 * Add an {@link Index} to the Schema. If the Index is a primary key it is added as such (provided does not already have a primary key).
+	 * Adding indexes is possible after the Schema has been sealed (setting/changing the primary key is not).
 	 * 
 	 * @param index
-	 * @param useAsPrimaryKey
 	 */
-	public void addIndex(Index index, boolean useAsPrimaryKey)
+	public void addIndex(Index index)
 	{
-		if(sealed && useAsPrimaryKey)
-			throw new IllegalStateException("Cannot set the primary key of a sealed schema (adding normal indexes is allowed)!");
+		if(index instanceof PrimaryKey)
+			// set as primary key:
+			setPrimaryKey((PrimaryKey) index);
+		else
+			// add as normal index:
+			doAddIndex(index);
+	}
+	
+	/**
+	 * @param primaryKey
+	 */
+	public void setPrimaryKey(PrimaryKey primaryKey)
+	{
+		if(this.primaryKey != null)
+			throw new IllegalStateException("This Schema already has a primary key (there can be only 1)!");
+		if(sealed)
+			throw new IllegalStateException("Cannot set primary key on a sealed schema!");
+		// Also add as an index (+ do checks):
+		doAddIndex(primaryKey);
+		// Set primary key:
+		this.primaryKey = primaryKey;
+	}
+
+	private void doAddIndex(Index index)
+	{
+		// Null check:
 		if(index == null)
-			throw new IllegalArgumentException("Index cannot be null!");
+			throw new NullPointerException("Index cannot be null!");
 		// Check if the indexed columns are columns of this Schema instance:
 		for(Column idxCol : index.getColumns(false))
 			if(!containsColumn(idxCol, false))
-				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before Indexes are added.");
-		if(useAsPrimaryKey)
-		{
-			if(primaryKey != null)
-				throw new IllegalStateException("This Schema already has a primary key (there can be only 1)!");
-			if(!index.isUnique())
-				throw new IllegalArgumentException("An Index needs to be unique to serve as the primary key!");
-			for(Column idxCol : index.getColumns(false))
-				if(idxCol.isOptional())
-					throw new IllegalArgumentException("An primary key index cannot contain optional (i.e. nullable) columns!");
-			primaryKey = index; // set the index as primary key
-		}
+				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before indexes are added or the primary key is set.");
+		// Initialise collection if needed:
 		if(indexes == null)
 			indexes = new ArrayList<Index>();
-		indexes.add(index); // add to the indexes
+		// Add to the indexes:
+		indexes.add(index);
 	}
-
+	
+	/**
+	 * Seals the schema. After this records can be created based on the schema, but no more columns can be added and the primary key cannot be set or changed (indexes can still be added though).<br/>
+	 * If an "external/client" schema has not received a primary key at this point an auto-incrementing integer primary key is added prior to sealing. For internal schemata does not happen.
+	 */
+	public void seal()
+	{
+		// Add automatic primary key to "external/client" schemata that don't have one yet:
+		if(!isInternal() && !hasPrimaryKey())
+		{
+			IntegerColumn autoKeyCol = new IntegerColumn(COLUMN_AUTO_KEY_NAME, false, true, Long.SIZE); // signed 64 bit, based on ROWIDs in SQLite v3 and later (http://www.sqlite.org/version3.html)
+			addColumn(autoKeyCol, false);
+			setPrimaryKey(new AutoIncrementingPrimaryKey(name + "_Idx" + COLUMN_AUTO_KEY_NAME, autoKeyCol));
+		}
+		// Seal:
+		this.sealed = true;
+	}
+	
+	/**
+	 * @return whether or not this schema is sealed
+	 */
+	public boolean isSealed()
+	{
+		return sealed;
+	}
+	
 	/**
 	 * @param name
 	 * @param checkVirtual whether or not to look in the schema's virtual columns
@@ -219,7 +332,8 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * Returns the non-virtual ("real") column at the given position
+	 * Returns the non-virtual ("real") column at the given position.
+	 * Virtual columns cannot be found this way!
 	 * 
 	 * @param position
 	 * @return
@@ -232,15 +346,16 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * Returns the position of a given non-virtual column.
-	 * Null is returned if the schema doesn't contain the column at all, but also if the column is virtual (even if the source is contained by the schema).
+	 * Returns the position of a non-virtual(!) column with the given name.
+	 * Null is returned if the schema does not contain such a column.
+	 * Virtual columns cannot be found this way!
 	 * 
 	 * @param realColumn a non-virtual column
-	 * @return	the position of the given {@link Column} instance within this Schema, or {@link #UNKNOWN_COLUMN_POSITION} if the Schema contains no such column
+	 * @return	the position of the given {@link Column} instance within this Schema, or {@link #UNKNOWN_COLUMN_POSITION} if the Schema contains no such column.
 	 */
-	protected int getColumnPosition(Column realColumn)
+	protected int getColumnPosition(String realColumnName)
 	{
-		Integer idx = columnNameToPosition.get(realColumn.getName());
+		Integer idx = columnNameToPosition.get(realColumnName);
 		if(idx == null)
 			return UNKNOWN_COLUMN_POSITION;
 		return idx.intValue();
@@ -258,17 +373,17 @@ public class Schema implements Serializable
 					allColumns.add(nonVirtualCol); // "real" column
 					// insert virtual versions of real column after it (if they are known by the schema):
 					for(VirtualColumn<?, ?> vCol : nonVirtualCol.getVirtualVersions())
-						/* check if this vCol was added through addColumn(), because it might have been
-						 * added to its "real" parent after the latter had been added to the schema).
-						 * We use vCol == getColumn(...) instead of containsColumn(vCol) because we
-						 * that would use equals() instead of ==. */
+						/* check if this vCol was added to the schema (when its "real" owner was added to the schema
+						 * through addColumn()), we must check this because the vCol might have been added to its owner
+						 * _after_ the latter had been added to the schema).
+						 * We use vCol == getColumn(...) instead of containsColumn(vCol) because we that would use equals() instead of ==. */
 						if(vCol == getColumn(vCol.getName(), true))
 							allColumns.add(vCol);
 				}
 			}
 			return allColumns;
 		}
-		return realColumns;
+		return Collections.unmodifiableList(realColumns);
 	}
 	
 	/**
@@ -276,7 +391,16 @@ public class Schema implements Serializable
 	 */
 	public Collection<VirtualColumn> getVirtualColumns()
 	{
-		return virtualColumnsByName == null ? Collections.<VirtualColumn> emptyList() : virtualColumnsByName.values();
+		return virtualColumnsByName == null ? Collections.<VirtualColumn> emptyList() : Collections.unmodifiableCollection(virtualColumnsByName.values());
+	}
+
+	/**
+	 * @param name the name of a column
+	 * @return
+	 */
+	public boolean containsColumn(String name)
+	{
+		return containsColumn(name, false);
 	}
 	
 	/**
@@ -288,6 +412,16 @@ public class Schema implements Serializable
 	{
 		return columnNameToPosition.containsKey(name) || (checkVirtual && virtualColumnsByName != null && virtualColumnsByName.containsKey(name));
 	}
+
+	/**
+	 * 
+	 * @param column
+	 * @return	whether or not this Schema contains the given Column or an exact equivalent of it
+	 */
+	public boolean containsColumn(Column column)
+	{
+		return containsColumn(column, false);
+	}
 	
 	/**
 	 * 
@@ -298,21 +432,43 @@ public class Schema implements Serializable
 	public boolean containsColumn(Column column, boolean checkVirtual)
 	{
 		Column myColumn = getColumn(column.getName(), checkVirtual);
-		return myColumn != null && myColumn.equals(column);
+		return myColumn != null && myColumn.equals(column, false, true); // name is already checked
 	}
-
+	
 	/**
+	 * Returns all indexes (if there are any), including the primary key (if one is set).
+	 * 
 	 * @return the indexes
 	 */
 	public List<Index> getIndexes()
 	{
-		return indexes == null ? Collections.<Index> emptyList() : indexes;
+		return getIndexes(true);
+	}
+
+	/**
+	 * @param includePrimaryKey
+	 * @return the indexes
+	 */
+	public List<Index> getIndexes(boolean includePrimaryKey)
+	{
+		if(indexes == null)
+			// No indexes (yet):
+			return Collections.<Index> emptyList();
+		if(includePrimaryKey)
+			// including PK:
+			return Collections.unmodifiableList(indexes);
+		// Excluding PK:
+		List<Index> indexesWithoutPK = new ArrayList<Index>();
+		for(Index idx : indexes)
+			if(idx != primaryKey)
+				indexesWithoutPK.add(idx);
+		return Collections.unmodifiableList(indexesWithoutPK);
 	}
 
 	/**
 	 * @return the primaryKey
 	 */
-	public Index getPrimaryKey()
+	public PrimaryKey getPrimaryKey()
 	{
 		return primaryKey;
 	}
@@ -324,26 +480,49 @@ public class Schema implements Serializable
 	{
 		return primaryKey != null;
 	}
-
+	
 	/**
-	 * @return the sealed
+	 * Finds the (first, and presumed only) index on/containing the given column. If the column is not indexed {@code null} is returned.
+	 * 
+	 * @param column
+	 * @return the (first) index on the given column, or null if it is not indexed
 	 */
-	public boolean isSealed()
+	public Index getIndex(Column<?> column)
 	{
-		return sealed;
-	}
-
-	/**
-	 * seals the schema, after which records can be created based on it, but no more columns can be added
-	 */
-	public void seal()
-	{
-		this.sealed = true;
+		for(Index idx : getIndexes())
+			if(idx.containsColumn(column, false))
+				return idx;
+		return null;
 	}
 
 	public Record createRecord()
 	{
 		return new Record(this);
+	}
+	
+	public Record createRecord(Object... values)
+	{
+		return new Record(this, values);
+	}
+	
+	/**
+	 * @param serialisedValues without virtual columns!
+	 * @return
+	 * @throws Exception 
+	 */
+	public Record createRecord(String serialisedValues) throws Exception
+	{
+		return new Record(this, serialisedValues);
+	}
+	
+	/**
+	 * @param serialisedValues without virtual columns!
+	 * @return
+	 * @throws Exception 
+	 */
+	public Record createRecord(byte[] serialisedValues) throws Exception
+	{
+		return new Record(this, serialisedValues);
 	}
 	
 	/**
@@ -352,19 +531,6 @@ public class Schema implements Serializable
 	public String getName()
 	{
 		return name;
-	}
-	
-	/**
-	 * @return the id
-	 */
-	public long getID()
-	{
-		return id;
-	}
-	
-	public boolean isInternal()
-	{
-		return id < 0;
 	}
 
 	public int getNumberOfColumns(boolean includeVirtual)
@@ -450,7 +616,7 @@ public class Schema implements Serializable
 	}
 	
 	/**
-	 * Check for equality based on schema ID (nothing else)
+	 * Check for equality
 	 * 
 	 * @param obj object to compare this one with
 	 * @return whether or not the given Object is a Schema with the same ID & version as this one
@@ -459,7 +625,7 @@ public class Schema implements Serializable
 	@Override
 	public boolean equals(Object obj)
 	{
-		return equals(obj, false, false, false); // check only schemaID
+		return equals(obj, true, true, true);
 	}
 
 	/**
@@ -478,8 +644,9 @@ public class Schema implements Serializable
 		if(obj instanceof Schema)
 		{
 			Schema other = (Schema) obj;
-			// ID:
-			boolean idMatch = (this.id == other.id);
+			// Model/Internal
+			boolean idMatch = isInternal() ?	(other.isInternal() && this.internal == other.internal) :
+												(!other.isInternal() && this.model.getID() == other.model.getID());
 			if(!idMatch || !(checkNames || checkColumns || checkIndexes))
 				return idMatch;
 			// Name:
@@ -489,22 +656,22 @@ public class Schema implements Serializable
 			if(checkColumns)
 			{
 				// Check number of (real) columns:
-				if(realColumns.size() != other.realColumns.size())
+				if(this.realColumns.size() != other.realColumns.size())
 					return false;
 				// Compare columns:
-				Iterator<Column> myCols = realColumns.iterator();
+				Iterator<Column> myCols = this.realColumns.iterator();
 				Iterator<Column> otherCols = other.realColumns.iterator();
 				while(myCols.hasNext() /* && otherCols.hasNext() */)
 					if(!myCols.next().equals(otherCols.next(), checkNames, true))
 						return false;
 			}
-			if(checkIndexes)
+			if(checkIndexes) // also checks primary key
 			{
 				// Check number of indexes:
-				if(getIndexes().size() != other.getIndexes().size())
+				if(this.getIndexes().size() != other.getIndexes().size())
 					return false;
 				// Compare indexes:
-				Iterator<Index> myIndexes = getIndexes().iterator();
+				Iterator<Index> myIndexes = this.getIndexes().iterator();
 				Iterator<Index> otherIndexes = other.getIndexes().iterator();
 				while(myIndexes.hasNext() /** otherIndexes.hasNext() */)
 					if(!myIndexes.next().equals(otherIndexes.next(), checkNames, checkColumns, false))
@@ -520,11 +687,12 @@ public class Schema implements Serializable
     public int hashCode()
 	{
 		int hash = 1;
-		hash = 31 * hash + (int)(id ^ (id >>> 32));
+		hash = 31 * hash + (model == null ? 0 : (int)(model.getID() ^ (model.getID() >>> 32))); // do not use model.hashCode() here!
+		hash = 31 * hash + modelSchemaNumber;
+		hash = 31 * hash + (internal == null ? 0 : internal.ordinal());
 		hash = 31 * hash + (name == null ? 0 : name.hashCode());
 		hash = 31 * hash + realColumns.hashCode();
-		hash = 31 * hash + getIndexes().hashCode();
-		hash = 31 * hash + (primaryKey == null ? 0 : primaryKey.hashCode());
+		hash = 31 * hash + getIndexes().hashCode(); // contains primary key
 		hash = 31 * hash + (sealed ? 0 : 1);
 		return hash;
 	}

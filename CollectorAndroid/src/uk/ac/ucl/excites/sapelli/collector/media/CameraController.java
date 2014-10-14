@@ -282,11 +282,11 @@ public class CameraController implements SurfaceHolder.Callback
 					Log.e(TAG, "Exception in setFlashMode()", e);
 				}
 
-				// Resulting file:
-				// Format:
+				//Resulting file:
+				//	Format:
 				parameters.setPictureFormat(ImageFormat.JPEG);
 				parameters.set("jpeg-quality", 100);
-				// Size:
+				//	Size:
 				Camera.Size pictureSize = getLargestPictureSize(parameters);
 				if(pictureSize != null)
 					parameters.setPictureSize(pictureSize.width, pictureSize.height);

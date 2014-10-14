@@ -29,12 +29,21 @@ public final class ExceptionHelpers
 	
 	static public String getMessage(Throwable e)
 	{
-		return e.getLocalizedMessage() != null ? e.getLocalizedMessage() : e.toString();
+		if(e != null)
+		{
+			String msg = e.getLocalizedMessage(); 
+			return msg != null && !msg.isEmpty() ? e.getLocalizedMessage() : e.toString();
+		}
+		else
+			return null;	
 	}
 	
 	static public String getMessageAndCause(Throwable e)
 	{
-		return getMessage(e) + e.getCause() != null ? " (" + getMessage(e.getCause()) + ")" : "";
+		if(e != null)
+			return getMessage(e) + (e.getCause() != null ? " (" + getMessage(e.getCause()) + ")" : "");
+		else
+			return null;
 	}
 
 }

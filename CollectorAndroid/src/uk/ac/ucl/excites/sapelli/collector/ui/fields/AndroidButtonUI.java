@@ -33,7 +33,7 @@ import android.widget.Button;
  */
 public class AndroidButtonUI extends ButtonUI<View, CollectorView> implements OnClickListener
 {
-	
+	// private CollectorController controller;
 	private Button button;
 	
 	public AndroidButtonUI(ButtonField buttonField, CollectorController controller, CollectorView collectorView)
@@ -44,6 +44,8 @@ public class AndroidButtonUI extends ButtonUI<View, CollectorView> implements On
 	@Override
 	public void onClick(View v)
 	{
+		controller.addLogLine("CLICK_BUTTON", this.getField().getID(), this.getField().getCaption());
+
 		buttonPressed();
 	}
 
