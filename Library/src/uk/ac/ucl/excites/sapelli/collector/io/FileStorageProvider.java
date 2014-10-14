@@ -96,7 +96,52 @@ public class FileStorageProvider
 	{
 		return getSapelliFolder().getAbsolutePath() + File.separator;
 	}
-	
+
+	/**
+	 * Return a File for a given folder type.
+	 * 
+	 * @param folderType
+	 *            the type of storage file to return.
+	 * @return
+	 */
+	public File getSapelliFolder(Folders folderType)
+	{
+		switch(folderType)
+		{
+		case Data:
+			return getDataFolder(false);
+
+		case Downloads:
+			return getDownloadsFolder(false);
+
+		case Dumps:
+			return getDumpFolder(false);
+
+		case Export:
+			return getExportFolder(false);
+
+		case Logs:
+			return getLogsFolder(false);
+
+		case Projects:
+			return getProjectsFolder(false);
+
+		case Temp:
+			return getTempFolder(false);
+
+		default:
+			return null;
+		}
+	}
+
+	/**
+	 * @return absolute path to Sapelli folder for a given type, including trailing file separator (/ or \)
+	 */
+	public String getSapelliFolderPath(Folders folderType)
+	{
+		return getSapelliFolder(folderType).getAbsolutePath() + File.separator;
+	}
+
 	/**
 	 * @param parent
 	 * @param project

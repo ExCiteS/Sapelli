@@ -311,7 +311,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	    	case R.id.copy_db_menuitem :
 	    		return copyDBtoSD(item);
 			case R.id.zip_files:
-				return zipSapelliFiles(item);
+			return zipSapelliFiles();
 	    	case R.id.about_menuitem :
 	    		return openAboutDialog(item);
 	    }
@@ -404,14 +404,12 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return true;
 	}
 	
-	public boolean zipSapelliFiles(MenuItem item)
+	public boolean zipSapelliFiles()
 	{
-		fileStorageProvider.getSapelliFolder();
-
 		// Create the items
 		final List<String> selectedItems = new ArrayList<String>(); // Where we track the selected items
-		CharSequence[] folderList = new CharSequence[Folders.values().length];
-		boolean[] checkedFolders = new boolean[Folders.values().length];
+		CharSequence[] checkboxItems = new CharSequence[Folders.values().length];
+		boolean[] checkedItems = new boolean[Folders.values().length];
 
 		for(int i = 0; i < Folders.values().length; i++)
 		{
@@ -419,26 +417,22 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 			switch(folder)
 			{
+			// Default selected:
 			case Dumps:
-				folderList[i] = folder.name();
-				checkedFolders[i] = true;
-				selectedItems.add(folder.name());
-				break;
-
-			case Data:
-				folderList[i] = folder.name();
-				checkedFolders[i] = false;
-				break;
-
+			case Export:
 			case Logs:
-				folderList[i] = folder.name();
-				checkedFolders[i] = true;
+				checkboxItems[i] = folder.name();
+				checkedItems[i] = true;
 				selectedItems.add(folder.name());
 				break;
 
+			// Default unselected:
+			case Data:
+			case Downloads:
 			case Projects:
-				folderList[i] = folder.name();
-				checkedFolders[i] = false;
+			case Temp:
+				checkboxItems[i] = folder.name();
+				checkedItems[i] = false;
 				break;
 
 			default:
@@ -452,7 +446,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		builder.setTitle("Select folders to export:")
 		// Specify the list array, the items to be selected by default (null for none),
 		// and the listener through which to receive callbacks when items are selected
-				.setMultiChoiceItems(folderList, checkedFolders, new DialogInterface.OnMultiChoiceClickListener()
+				.setMultiChoiceItems(checkboxItems, checkedItems, new DialogInterface.OnMultiChoiceClickListener()
 				{
 					@Override
 					public void onClick(DialogInterface dialog, int which, boolean isChecked)
@@ -479,35 +473,10 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						final String zipfile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
 								+ File.separator + "Sapelli_" + TimeUtils.getTimestampForFileName();
 
-						// TODO Get actual file paths from FileStorageProvider
+						// Get file paths for the selected items from FileStorageProvider
 						List<String> paths = new ArrayList<String>();
 						for(String f : selectedItems)
-						{
-							// Get the Sapelli Folder
-							Folders folder = Folders.valueOf(f);
-
-							switch(folder)
-							{
-							case Dumps:
-								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Dumps");
-								break;
-
-							case Data:
-								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Data");
-								break;
-
-							case Logs:
-								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Logs");
-								break;
-
-							case Projects:
-								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects");
-								break;
-
-							default:
-								break;
-							}
-						}
+							paths.add(fileStorageProvider.getSapelliFolderPath(Folders.valueOf(f)));
 
 						// Call an AsyncZipper only if there are selected items
 						if(!paths.isEmpty())
