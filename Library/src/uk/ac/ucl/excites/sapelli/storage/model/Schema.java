@@ -700,8 +700,9 @@ public class Schema implements Serializable
 		{
 			Schema other = (Schema) obj;
 			// Model/Internal
-			boolean idMatch = isInternal() ?	(other.isInternal() && this.internal == other.internal) :
+			boolean idMatch = isInternal() ?	(other.isInternal() && this.internal.ordinal() == other.internal.ordinal()) :
 												(!other.isInternal() && this.model.getID() == other.model.getID());
+			// Note: for internal enum comparison we compare the enum ordinals instead of the enum objects! This is needed when one Schema comes out of DB4O, but probably a good practice in general.
 			if(!idMatch || !(checkNames || checkColumns || checkIndexes))
 				return idMatch;
 			// Name:

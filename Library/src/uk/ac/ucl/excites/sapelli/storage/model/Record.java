@@ -622,28 +622,41 @@ public class Record implements Serializable
 					return false;
 			}
 			// Compare values for each column:
-			if(asStoredBinary)
-				return hasEqualValues(other, true); // using values as if decoded from binary stream
-			else
-				return Arrays.equals(this.values, other.values);
+			return hasEqualValues(other, asStoredBinary);
 		}
 		else
 			return false;
 	}
 	
 	/**
+	 * Compare the values of this record with those of another.
+	 * 
+	 * @param other
+	 * @return
+	 */
+	public boolean hasEqualValues(Record other)
+	{
+		return hasEqualValues(other, false);
+	}
+	
+	/**
+	 * Compare the values of this record with those of another.
+	 * If {@code asStoredBinary} is {@code true} the records must be of the same schema, otherwise an exception will be thrown.
+	 * 
 	 * @param other
 	 * @param asStoredBinary whether or not to compare values as if they've been writen/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
 	public boolean hasEqualValues(Record other, boolean asStoredBinary)
 	{
-		return hasEqualValues(other, this.schema.getColumns(false), asStoredBinary); // compare all non-virtual columns
+		return asStoredBinary ?
+			hasEqualValues(other, this.schema.getColumns(false), true) : // compare all non-virtual columns, using values as if decoded from binary stream
+			Arrays.equals(this.values, other.values);
 	}
 	
 	/**
-	 * Compare the values of this records with those of another, across the given list of columns.
-	 * This and the other record as assumed to have schemata that are the same or at least each contain the given columns (or equivalents).
+	 * Compare the values of this record with those of another, across the given list of columns.
+	 * This and the other record as assumed to have schemata that are the same or at least each share the given columns (or equivalents).
 	 * 
 	 * @param other
 	 * @param columns
