@@ -69,7 +69,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.util.Log;
@@ -478,7 +477,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 					public void onClick(DialogInterface dialog, int id)
 					{
 						// TODO Improve File name
-						final String zipfile = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath()
+						final String zipfile = fileStorageProvider.getDownloadsFolder()
 								+ File.separator + "Sapelli_" + TimeUtils.getTimestampForFileName();
 
 						// Get file paths for the selected items from FileStorageProvider
@@ -909,7 +908,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			startTime = System.currentTimeMillis();
 			this.downloadUrl = downloadUrl;
 			// Download file in folder /Downloads/timestamp-filename
-			downloadFolder = fileStorageProvider.getDownloadsFolder(true);
+			downloadFolder = fileStorageProvider.getDownloadsFolder();
 			downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 
 			// instantiate it within the onCreate method

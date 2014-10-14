@@ -71,14 +71,21 @@ public class FileStorageProvider
 	}
 
 	private final File sapelliFolder;
+	private final File downloadsFolder;
 	
-	public FileStorageProvider(File sapelliFolder)
+	public FileStorageProvider(File sapelliFolder, File downloadsFolder)
 	{
 		if(sapelliFolder == null)
 			throw new NullPointerException("SapelliFolder cannot be null!");
 		if(!sapelliFolder.exists() || !sapelliFolder.isDirectory())
 			throw new FileStorageException("No an existing directory (" + sapelliFolder.getAbsolutePath() + ")");
 		this.sapelliFolder = sapelliFolder;
+
+		if(downloadsFolder == null)
+			throw new NullPointerException("DownloadsFolder cannot be null!");
+		if(!downloadsFolder.exists() || !downloadsFolder.isDirectory())
+			throw new FileStorageException("No an existing directory (" + downloadsFolder.getAbsolutePath() + ")");
+		this.downloadsFolder = downloadsFolder;
 	}
 	
 	public File getSapelliFolder() throws FileStorageException
@@ -112,7 +119,7 @@ public class FileStorageProvider
 			return getDataFolder(false);
 
 		case Downloads:
-			return getDownloadsFolder(false);
+			return getDownloadsFolder();
 
 		case Dumps:
 			return getDumpFolder(false);
@@ -186,9 +193,12 @@ public class FileStorageProvider
 		return getProjectSpecificSubFolder(getProjectsFolder(create), projectName, projectVariant, projectVersion, create);
 	}
 	
-	public File getDownloadsFolder(boolean create) throws FileStorageException
+	public File getDownloadsFolder() throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Downloads.name(), create);
+		if(downloadsFolder.exists() && downloadsFolder.canRead())
+			return downloadsFolder;
+		else
+			throw new FileStorageException("Downloads folder is not or no longer accessible (path: " + downloadsFolder.getAbsolutePath());
 	}
 	
 	public File getDumpFolder(boolean create) throws FileStorageException
