@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -43,7 +44,7 @@ public class Zipper
 	private BufferedInputStream origin;
 	private byte data[];
 
-	private String[] paths;
+	private List<String> paths;
 	private String zipDest;
 
 	/**
@@ -53,7 +54,7 @@ public class Zipper
 	 * @param zipDest
 	 *            - The destination of the zip file
 	 */
-	public Zipper(String[] paths, String zipDest)
+	public Zipper(List<String> paths, String zipDest)
 	{
 		this.paths = paths;
 		this.zipDest = zipDest;
