@@ -64,7 +64,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 	{
 		try
 		{
-			audioFile = field.getNewTempFile(controller.getCurrentRecord());
+			audioFile = field.getNewTempFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
 			audioRecorder = new AudioRecorder(audioFile);
 			audioRecorder.start();
 		}
@@ -154,7 +154,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			// Adapter & button images:
 			// Start rec button:
 			Item startButton = null;
-			File startRecImageFile = controller.getProject().getImageFile(field.getStartRecImageRelativePath());
+			File startRecImageFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStartRecImageRelativePath());
 			if(FileHelpers.isReadableFile(startRecImageFile))
 				startButton = new FileImageItem(startRecImageFile);
 			else
@@ -164,7 +164,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 
 			// Stop rec button:
 			Item stopButton = null;
-			File stopRecImageFile = controller.getProject().getImageFile(field.getStopRecImageRelativePath());
+			File stopRecImageFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStopRecImageRelativePath());
 			if(FileHelpers.isReadableFile(stopRecImageFile))
 				stopButton = new FileImageItem(stopRecImageFile);
 			else

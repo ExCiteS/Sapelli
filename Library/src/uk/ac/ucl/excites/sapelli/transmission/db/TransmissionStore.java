@@ -21,8 +21,8 @@ package uk.ac.ucl.excites.sapelli.transmission.db;
 import java.io.File;
 import java.nio.charset.Charset;
 
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;

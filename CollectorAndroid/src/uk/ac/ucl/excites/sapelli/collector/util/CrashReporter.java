@@ -31,7 +31,7 @@ import org.joda.time.DateTime;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildInfo;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 
 /**
@@ -45,16 +45,14 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 public class CrashReporter implements UncaughtExceptionHandler
 {
 	private UncaughtExceptionHandler defaultUEH;
-	private String localPath;
+	private FileStorageProvider pathProvider;
 	private String namePrefix;
 
-	public CrashReporter(String localPath, String namePrefix)
+	public CrashReporter(FileStorageProvider pathProvider, String namePrefix)
 	{
-		this.localPath = localPath;
+		this.pathProvider = pathProvider;
 		this.namePrefix = namePrefix;
 
-		// Create the folder if does not exist
-		FileHelpers.createFolder(localPath);
 		this.defaultUEH = Thread.getDefaultUncaughtExceptionHandler();
 	}
 
@@ -108,10 +106,9 @@ public class CrashReporter implements UncaughtExceptionHandler
 		}
 		
 		// Write to file:
-		String filename = namePrefix + "_" + TimeUtils.getTimestampForFileName() + ".stacktrace";
-		if(localPath != null)
-			writeToFile(bldr.toString(), filename);
+		writeToFile(bldr.toString(), namePrefix + "_" + TimeUtils.getTimestampForFileName() + ".stacktrace");
 
+		// Pass on the exception:
 		defaultUEH.uncaughtException(t, e);
 	}
 
@@ -120,7 +117,7 @@ public class CrashReporter implements UncaughtExceptionHandler
 		BufferedWriter bos = null;
 		try
 		{
-			bos = new BufferedWriter(new FileWriter(localPath + File.separator + filename));
+			bos = new BufferedWriter(new FileWriter(pathProvider.getDumpFolder(true).getAbsolutePath() + File.separator + filename));
 			bos.write(stacktrace);
 			bos.flush();
 		}
@@ -138,4 +135,5 @@ public class CrashReporter implements UncaughtExceptionHandler
 				catch(IOException ignore) {}
 		}
 	}
+	
 }

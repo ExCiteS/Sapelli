@@ -25,11 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
-import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -57,34 +56,27 @@ public class PrefProjectStore extends ProjectStore
 	private static final String HELD_FOREIGN_KEY_POSTFIX = "_HELD_FOREIGN_KEY";
 
 	// Dynamics---------------------------------------------
-	private Context context;
-	private SharedPreferences preferences;
+	private final FileStorageProvider fileStorageProvider;
+	private final SharedPreferences preferences;
 	private Set<Project> projectCache;
 
-	public PrefProjectStore(Context context)
+	public PrefProjectStore(Context context, FileStorageProvider fileStorageProvider)
 	{
-		this(context, "");
+		this(context, fileStorageProvider, "");
 	}
 	
-	public PrefProjectStore(Context context, String prefix)
+	public PrefProjectStore(Context context, FileStorageProvider fileStorageProvider, String prefix)
 	{
-		this.context = context;
-		this.preferences = this.context.getSharedPreferences(prefix + PREFERENCES_NAME, Context.MODE_PRIVATE);
+		this.fileStorageProvider = fileStorageProvider;
+		this.preferences = context.getSharedPreferences(prefix + PREFERENCES_NAME, Context.MODE_PRIVATE);
 	}
 	
-	/**
-	 * @param project
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#doAdd(uk.ac.ucl.excites.sapelli.collector.model.Project)
 	 */
 	@Override
-	public void store(Project project) throws DuplicateException
+	protected void doAdd(Project project)
 	{
-		// Check for project duplicates:
-		if(retrieveProject(project.getName(), project.getVariant(), project.getVersion()) != null)
-			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
-		// Check for id & finger print collision (very unlikely, but highly problematic):
-		Project dupe = retrieveProject(project.getID(), project.getFingerPrint());
-		if(dupe != null && !project.equals(dupe))
-			throw new DuplicateException("Project id & finger print collision!");
 		// Store in prefs:
 		storeProjectPathPrefKey(project);
 		// Store in cache:
@@ -130,7 +122,7 @@ public class PrefProjectStore extends ProjectStore
 	{
 		updateProjectCache(); // will also call initProjectCache()
 		for(Project project : projectCache)
-			if(project.isV1xProject() && project.getID() == schemaID && project.getSchemaVersion() == schemaVersion)
+			if(project.isV1xProject() && project.getID() == schemaID && project.getV1XSchemaVersion() == schemaVersion)
 				return project;
 		return null;
 	}
@@ -153,7 +145,7 @@ public class PrefProjectStore extends ProjectStore
 		String folderPath = preferences.getString(getProjectPathPrefKey(projectID, projectFingerPrint), null);
 		if(folderPath != null)
 		{
-			Project p = parseProject(folderPath);
+			Project p = ProjectLoader.ParseProject(folderPath);
 			if(p != null)
 			{
 				cacheProject(p); // cache the project (the cache will be initialised if needed)
@@ -205,7 +197,7 @@ public class PrefProjectStore extends ProjectStore
 				int projectFingerPrint = getProjectFingerPrint(entry.getKey());
 				if(getCachedProject(projectID, projectFingerPrint) == null)
 				{	// Parse the project if it is not already in the cache:
-					Project p = parseProject(entry.getValue().toString());
+					Project p = ProjectLoader.ParseProject(entry.getValue().toString());
 					if(p != null)
 					{
 						if(p.getFingerPrint() != projectFingerPrint)
@@ -257,7 +249,7 @@ public class PrefProjectStore extends ProjectStore
 	
 	private void storeProjectPathPrefKey(Project project)
 	{
-		preferences.edit().putString(getProjectPathPrefKey(project), project.getProjectFolderPath()).commit();
+		preferences.edit().putString(getProjectPathPrefKey(project), fileStorageProvider.getProjectInstallationFolder(project, false).getAbsolutePath()).commit();
 	}
 	
 	private String getProjectPathPrefKey(Project project)
@@ -281,22 +273,6 @@ public class PrefProjectStore extends ProjectStore
 	private int getProjectFingerPrint(String projectPathPrefKey)
 	{
 		return Integer.parseInt(projectPathPrefKey.split("\\" + PREF_KEY_SEPARATOR)[2]);
-	}
-	
-	private Project parseProject(String folderPath)
-	{
-		File xmlFile = new File(folderPath.toString() + ProjectLoader.PROJECT_FILE);
-		// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
-		ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
-		try
-		{
-			return parser.parseProject(xmlFile);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
-		return null;
 	}
 
 	private String getHeldForeignKeyPrefKey(Relationship relationship)
@@ -333,7 +309,7 @@ public class PrefProjectStore extends ProjectStore
 		if(serialisedForeignKey != null)
 			try
 			{
-				return (RecordReference) (new RecordReference(relationship.getRelatedForm().getSchema())).parse(serialisedForeignKey);
+				return relationship.getRelatedForm().getSchema().createRecordReference(serialisedForeignKey);
 			}
 			catch(Exception e)
 			{

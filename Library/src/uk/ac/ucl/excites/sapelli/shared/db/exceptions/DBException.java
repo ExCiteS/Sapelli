@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.shared.db;
+package uk.ac.ucl.excites.sapelli.shared.db.exceptions;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,12 +31,13 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public class DBException extends Exception
 {
 
+	private static final long serialVersionUID = 2L;
+	
 	private List<Record> records = null;
 	
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = 2L;
 
 	/**
 	 * @param detailMessage

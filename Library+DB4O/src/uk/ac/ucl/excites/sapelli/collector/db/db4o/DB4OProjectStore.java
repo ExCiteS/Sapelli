@@ -24,9 +24,8 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 
@@ -70,7 +69,7 @@ public class DB4OProjectStore extends ProjectStore
 			{
 				return 	project.isV1xProject() &&
 						project.getID() == schemaID &&
-						project.getSchemaVersion() == schemaVersion;
+						project.getV1XSchemaVersion() == schemaVersion;
 			}
 		});
 		if(result.isEmpty())
@@ -84,14 +83,11 @@ public class DB4OProjectStore extends ProjectStore
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#store(uk.ac.ucl.excites.sapelli.collector.model.Project)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#doAdd(uk.ac.ucl.excites.sapelli.collector.model.Project)
 	 */
 	@Override
-	public void store(Project project) throws DuplicateException
+	public void doAdd(Project project)
 	{
-		// Check for project duplicates:
-		if(retrieveProject(project.getName(), project.getVariant(), project.getVersion()) != null)
-			throw new DuplicateException("There is already a project named \"" + project.getName() + "\", with version " + project.getVersion() + ". Either remove the existing one or increment the version of the new one.");
 		db4o.store(project);
 		db4o.commit();
 	}

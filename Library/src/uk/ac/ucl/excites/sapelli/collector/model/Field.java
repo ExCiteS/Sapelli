@@ -19,10 +19,12 @@
 package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
@@ -410,12 +412,12 @@ public abstract class Field extends JumpSource
 	/**
 	 * To be overridden by Fields that use files (images, sounds, etc.) that are stored with the project
 	 * 
-	 * @param project
+	 * @param fileStorageProvider to resolve relative paths
 	 * @return
 	 */
-	public List<File> getFiles(Project project)
+	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
-		return null;
+		return Collections.<File> emptyList();
 	}
 	
 	@Override

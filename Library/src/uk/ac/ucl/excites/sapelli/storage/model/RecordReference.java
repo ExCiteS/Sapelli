@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model;
 
+import java.io.IOException;
+
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
@@ -47,7 +49,7 @@ public class RecordReference extends Record
 	 * @param referencedSchema (also called "foreign" schema)
 	 * @throws NullPointerException	if the recordSchema does not have a primary key
 	 */
-	public RecordReference(Schema referencedSchema) throws NullPointerException
+	protected RecordReference(Schema referencedSchema) throws NullPointerException
 	{
 		this(referencedSchema, (Object []) null);
 	}
@@ -56,15 +58,43 @@ public class RecordReference extends Record
 	 * Creates a new RecordReference, to be used for referencing a record of the given schema, which is initialised with the given key part values. 
 	 * 
 	 * @param referencedSchema (also called "foreign" schema)
-	 * @param keyPartPalues to initialise the recordReference, the number of values must match number of columns in primary key of the referencedSchema
+	 * @param keyPartValues to initialise the recordReference, the number of values must match number of columns in primary key of the referencedSchema
 	 * @throws NullPointerException	if the referencedSchema does not have a primary key
 	 */
-	public RecordReference(Schema referencedSchema, Object... keyPartPalues) throws NullPointerException
+	protected RecordReference(Schema referencedSchema, Object... keyPartValues) throws NullPointerException
 	{
-		super(referencedSchema.getPrimaryKey(), keyPartPalues); // We use the recordSchema's primary key as the schema for this record (i.e. for the recordReference, which is "a record" in its own right)
+		super(referencedSchema.getPrimaryKey(), keyPartValues); // We use the recordSchema's primary key as the schema for this record (i.e. for the recordReference, which is "a record" in its own right)
 		this.referencedSchema = referencedSchema;
 	}
 	
+	/**
+	 * Creates a new RecordReference, to be used for referencing a record of the given schema, which is initialised with the given serialised key part values.
+	 * 
+	 * @param referencedSchema (also called "foreign" schema)
+	 * @param serialisedKeyPartValues to initialise the recordReference, the number of values must match number of columns in primary key of the referencedSchema
+	 * @throws NullPointerException	if the referencedSchema does not have a primary key
+	 * @throws Exception when parsing serialisedValues fails
+	 */
+	protected RecordReference(Schema referencedSchema, String serialisedKeyPartValues) throws NullPointerException, Exception
+	{
+		super(referencedSchema.getPrimaryKey(), serialisedKeyPartValues);
+		this.referencedSchema = referencedSchema;
+	}
+	
+	/**
+	 * Creates a new RecordReference, to be used for referencing a record of the given schema, which is initialised with the given serialised key part values.
+	 * 
+	 * @param referencedSchema (also called "foreign" schema)
+	 * @param serialisedKeyPartValues to initialise the recordReference, the number of values must match number of columns in primary key of the referencedSchema
+	 * @throws NullPointerException	if the referencedSchema does not have a primary key
+	 * @throws IOException when reading serialisedValues fails
+	 */
+	protected RecordReference(Schema referencedSchema, byte[] serialisedKeyPartValues) throws NullPointerException, IOException
+	{
+		super(referencedSchema.getPrimaryKey(), serialisedKeyPartValues);
+		this.referencedSchema = referencedSchema;
+	}
+
 	/**
 	 * Creates a new RecordReference which points to the given {@link Record}.
 	 * 
@@ -94,6 +124,15 @@ public class RecordReference extends Record
 	{
 		super(another); // sets schema and copies values
 		this.referencedSchema = another.referencedSchema;
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.model.Record#getReference()
+	 */
+	@Override
+	public RecordReference getReference() throws UnsupportedOperationException
+	{
+		throw new UnsupportedOperationException("Cannot create a RecordReference to a RecordReference");
 	}
 	
 	/**

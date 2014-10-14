@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.java;
 import java.io.File;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
@@ -95,7 +95,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		try
 		{
 			System.out.println("SQLite> Compile/reuse statement: " + sql); // TODO remove debug logging
-			return new JavaSQLiteStatement(db, db.prepare(sql, true /* use cache! */), paramCols);
+			return new JavaSQLiteStatement(db, sql, paramCols);
 		}
 		catch(SQLiteException sqliteE)
 		{

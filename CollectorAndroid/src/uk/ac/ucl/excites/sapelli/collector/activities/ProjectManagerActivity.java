@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.collector.activities;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -33,23 +32,22 @@ import java.util.regex.Pattern;
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
-import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderClient;
+import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderCallback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncZipper;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
-import uk.ac.ucl.excites.sapelli.collector.util.DuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentResult;
-import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.annotation.SuppressLint;
@@ -98,13 +96,13 @@ import com.larvalabs.svgandroid.SVGDrawable;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends BaseActivity implements ProjectLoaderClient, StoreClient, DeviceID.InitialisationCallback
+public class ProjectManagerActivity extends BaseActivity implements ProjectLoaderCallback, StoreClient, DeviceID.InitialisationCallback
 {
 
 	// STATICS--------------------------------------------------------
 	static private final String TAG = "ProjectManagerActivity";
 	
-	static private final String XML_FILE_EXTENSION = "xml";
+	static protected final String XML_FILE_EXTENSION = "xml";
 
 	static private final String DEMO_PROJECT = "demo.excites";
 
@@ -115,7 +113,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	private ProjectStore projectStore;
 
 	// UI
-	private EditText enterURL;
+	private EditText txtProjectPathOrURL;
 	private ListView projectList;
 	private Button runBtn;
 	private Button removeBtn;
@@ -126,17 +124,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	protected void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-		
-		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
-		try
-		{
-			app.getSapelliFolder(); //throws IllegalStateException if not accessible or not create-able
-		}
-		catch(IllegalStateException ise)
-		{	// Inform the user and close the application
-			showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
-			return;
-		}
 		
 		if(app.getBuildInfo().isDemoBuild())
 			return;
@@ -149,7 +136,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 		setContentView(R.layout.activity_projectmanager);
 		// Get View Elements
-		enterURL = (EditText) findViewById(R.id.EnterURL);
+		txtProjectPathOrURL = (EditText) findViewById(R.id.txtProjectPathOrURL);
 		projectList = (ListView) findViewById(R.id.ProjectsList);
 		runBtn = (Button) findViewById(R.id.RunProjectButton);
 		removeBtn = (Button) findViewById(R.id.RemoveProjectButton);
@@ -181,6 +168,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// Get scrolling right
 		findViewById(R.id.projectManager_ScrollView).setOnTouchListener(new View.OnTouchListener()
 		{
+			@SuppressLint("ClickableViewAccessibility")
 			@Override
 			public boolean onTouch(View v, MotionEvent event)
 			{
@@ -190,6 +178,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		});
 		projectList.setOnTouchListener(new View.OnTouchListener()
 		{
+			@SuppressLint("ClickableViewAccessibility")
 			public boolean onTouch(View v, MotionEvent event)
 			{	// Disallow the touch request for parent scroll on touch of child view
 				v.getParent().requestDisallowInterceptTouchEvent(true);
@@ -267,9 +256,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			Project p = null;
 			if(projects.isEmpty())
 			{	// Use /mnt/sdcard/Sapelli/ as the basePath:
-				ProjectLoader loader = new ProjectLoader(this, app.getProjectFolderPath(), app.getTempFolderPath());
-				p = loader.load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
-				storeProject(p);
+				p = new ProjectLoader(fileStorageProvider).load(this.getAssets().open(DEMO_PROJECT, AssetManager.ACCESS_RANDOM));
+				projectStore.add(p);
 			}
 			else
 				p = projects.get(0); // Assumption: there is only one stored project in demo mode
@@ -607,11 +595,20 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 
 	private void removeProject()
 	{
-		Project p = getSelectedProject(false);
-		if(p == null)
+		Project project = getSelectedProject(false);
+		if(project == null)
 			return;
-		ProjectRunHelpers.removeShortcut(this, p);
-		projectStore.delete(p);
+		
+		// Remove project from store:
+		projectStore.delete(project);
+		
+		// Remove installation folder:
+		org.apache.commons.io.FileUtils.deleteQuietly(fileStorageProvider.getProjectInstallationFolder(project, false));
+		
+		// Remove shortcut:
+		ProjectRunHelpers.removeShortcut(this, project);
+		
+		// Refresh list:
 		populateProjectList();
 
 		// TODO Re-enable the service at same point
@@ -619,119 +616,96 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// ServiceChecker.restartActiveDataSender(this);
 	}
 
-	public void loadFile(View view)
-	{
-		// Define variables
-		String path = enterURL.getText().toString().trim();
-		if(path.isEmpty())
+	public void loadProject(View view)
 		{
-			showErrorDialog("Please select an XML or Sapelli file", false);
-			return;
-		}
-		enterURL.setText(""); // clear field
-		
-		Project project = null;
-		try
-		{
+		String location = txtProjectPathOrURL.getText().toString().trim();
+		if(location.isEmpty())
 			// Download Sapelli file if path is a URL
-			if(Pattern.matches(Patterns.WEB_URL.toString(), path)) // We don't check the extension to support "smart"/dynamic URLs
-			{	// Start async task to download the file:
-				(new DownloadFileFromURL(path, "Project")).execute(); // the task will also call processSapelliFile() and checkProject()
-				return;
-			}
-			else if(path.toLowerCase().endsWith(XML_FILE_EXTENSION))
-				project = parseXML(new File(path));
+			showErrorDialog(R.string.pleaseSelect);
 			else
 			{
 				// Extract & parse a local Sapelli file
-				for(String extention : ProjectLoader.SAPELLI_FILE_EXTENSIONS)
-				{
-					if(path.toLowerCase().endsWith(extention))
-					{
-						project = processSapelliFile(new File(path));
-						break;
-					}
-				}
-			}
-		}
-		catch(Exception e)
-		{
-			showErrorDialog("Invalid XML or Sapelli file: " + path + "\nError: " + e.getMessage() + (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
-			return;
-		}
+			txtProjectPathOrURL.setText("");
 		
 		//Add project
-		if(project != null) // check to be sure
-			addProject(project);
+			if(Pattern.matches(Patterns.WEB_URL.toString(), location))
+				// Download Sapelli file if location is a URL:
+				(new DownloadFileFromURL(location, "Project")).execute(); // the task will also call loadProjectFromFile()
+			else if(location.toLowerCase().endsWith("." + XML_FILE_EXTENSION))
+				// Warn about bare XML file (no longer supported):
+				showErrorDialog(R.string.noBareXMLProjects);
 		else
-			showErrorDialog("Please choose a valid XML or Sapelli file", false);
-	}
-
-	private Project parseXML(File xmlFile) throws Exception
 	{
-		try
-		{
+				File localFile = new File(location);
+				if(ProjectLoader.HasSapelliFileExtension(localFile))
+					loadProjectFromFile(localFile, null);
+				else
+					showErrorDialog(getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile), StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")));
 			// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
-			ProjectParser parser = new ProjectParser(xmlFile.getParentFile().getAbsolutePath(), false);
-			Project parsedProject = parser.parseProject(xmlFile);
 			// Show parser warnings if needed:
-			showParserWarnings(parser.getWarnings());
-			return parsedProject;
 		}
-		catch(Exception e)
-		{
-			Log.e(TAG, "XML file could not be parsed", e);
-			throw e;
 		}
 	}
 
-	private Project processSapelliFile(File sapelliFile) throws Exception
+	/**
+	 * Processes a sapelli file (extracting & installing contents, parsing XML, etc.) to construct a Project object,
+	 * which, if it passes all checks, is then stored in the ProjectStore. 
+	 * 
+	 * @param sapelliFile
+	 * @param remoteSource remote url project was downloaded from if it was, null otherwise
+	 * @return the project object, or null if there was a problem
+	 */
+	private Project loadProjectFromFile(File sapelliFile, String remoteSource)
 	{
+		Project project = null;
+		ProjectLoader loader = new ProjectLoader(this, fileStorageProvider);
 		try
 		{
-			ProjectLoader loader = new ProjectLoader(this, app.getProjectFolderPath(), app.getTempFolderPath());
-			Project loadedProject = loader.load(sapelliFile);
-			// Show parser warnings if needed:
-			showParserWarnings(loader.getParserWarnings());
-			return loadedProject;
+			project = loader.load(sapelliFile);
 		}
 		catch(Exception e)
 		{
 			Log.e(TAG, "Could not load Sapelli file", e);
-			throw e;
+			showErrorDialog(getString(R.string.sapelliFileLoadFailure, (remoteSource == null ? sapelliFile.getAbsolutePath() : remoteSource), ExceptionHelpers.getMessageAndCause(e)), false);
+			return null; // !!!
 		}
-	}
 
-	private void showParserWarnings(List<String> warnings)
-	{
+		// Warnings...
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
+		//	Parser warnings:
+		List<String> warnings = loader.getParserWarnings(); 
 		if(!warnings.isEmpty())
 		{ // Show parser warnings:
-			String msg = "Parsing issues:\n";
+			bldr.append(getString(R.string.parsingWarnings) + ":");
 			for(String warning : warnings)
-				msg += warning + "\n";
-			showWarningDialog(msg);
+				bldr.append(" - " + warning);
 		}
-	}
 
-	private void addProject(final Project project)
+		List<String> missingFiles = project.getMissingFilesRelativePaths(fileStorageProvider);
+		if(!missingFiles.isEmpty())
 	{
+			bldr.append(getString(R.string.missingFiles) + ":");
+			for(String missingFile : missingFiles)
+				bldr.append(" - " + missingFile);
+		}
 		// Check file dependencies
-		List<String> invalidFiles = project.checkForInvalidFiles();
-		if(!invalidFiles.isEmpty())
-			showWarningDialog("The following files could not be found or read in the project path (" + project.getProjectFolderPath() + "): " + StringUtils.join(invalidFiles, ", "));
+		if(!bldr.isEmpty())
+			showWarningDialog(bldr.toString()); // no need to worry about message not fitting the dialog, when necessary it will be scrollable
 		
 		// Generate documentation
 		try
 		{
-			project.generateDocumentation();
+			projectStore.add(project);
 		}
-		catch(IOException e)
+		catch(Exception e) // this shouldn't happen, but just in case...
 		{
-			showErrorDialog("Could not generate documentation: " + e.getLocalizedMessage(), false);
-		}
+			Log.e(TAG, "Could not store project.", e);
 		
+			org.apache.commons.io.FileUtils.deleteQuietly(fileStorageProvider.getProjectInstallationFolder(project, false));
 		// Store the project object:
-		storeProject(project);
+			showErrorDialog("Could not store project: " + e.getLocalizedMessage());
+			return null; // !!!
+		}
 
 		// Update project list:
 		populateProjectList();
@@ -740,32 +714,19 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// TODO Re-enable the service at same point
 		// Restart the DataSenderService to start monitoring the new project
 		// ServiceChecker.restartActiveDataSender(this);
-	}
 
-	private void storeProject(Project p)
-	{
-		try
-		{
-			projectStore.store(p);
+		// Return project:
+		return project;
 		}
-		catch(DuplicateException de)
-		{
-			showErrorDialog(de.getLocalizedMessage(), false);
-			return;
-		}
-		catch(Exception e) // any other exception
-		{
-			Log.e(TAG, "Could not store project.", e);
-			showErrorDialog("Could not store project: " + e.getLocalizedMessage(), false);
-			return;
-		}
-	}
 	
+	/**
+	 * @param loadedProject
+	 * @throws ProjectDuplicateException
+	 */
 	@Override
-	public boolean isDuplicateProject(Project loadProject)
+	public void checkProject(Project loadedProject) throws ProjectDuplicateException
 	{
-		// TODO Auto-generated method stub
-		return false;
+		projectStore.duplicateCheck(loadedProject);
 	}
 	
 	private void requestEncryptionKey(final Project project)
@@ -808,7 +769,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// Get the selected project
 		Project selectedProject = getSelectedProject(true);
 		if(selectedProject != null)
-			ProjectRunHelpers.createShortcut(this, selectedProject);
+			ProjectRunHelpers.createShortcut(this, fileStorageProvider, selectedProject);
 		return true;
 	}
 
@@ -847,9 +808,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 				// Alternatively, use FileUtils.getFile(Context, Uri)
 				if(path != null && FileUtils.isLocal(path))
 				{
-					enterURL.setText(path);
+					txtProjectPathOrURL.setText(path);
 					// Move the cursor to the end
-					enterURL.setSelection(path.length());
+					txtProjectPathOrURL.setSelection(path.length());
 				}
 
 				break;
@@ -868,11 +829,19 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 					try
 					{ // TODO make import & storage async
 						// Import:
-						XMLRecordsImporter importer = new XMLRecordsImporter(new SapelliCollectorClient(projectStore));
+						XMLRecordsImporter importer = new XMLRecordsImporter(app.getCollectorClient());
 						List<Record> records = importer.importFrom((new File(path)).getAbsoluteFile());
 
 						// Show parser warnings if needed:
-						showParserWarnings(importer.getWarnings());
+						List<String> warnings = importer.getWarnings(); 
+						if(!warnings.isEmpty())
+						{
+							TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
+							bldr.append(getString(R.string.parsingWarnings) + ":");
+							for(String warning : warnings)
+								bldr.append(" - " + warning);
+							showWarningDialog(bldr.toString());
+						}
 
 						/*//TEST CODE (export again to compare with imported file):
 						RecordsExporter exporter = new RecordsExporter(((CollectorApp) getApplication()).getDumpFolderPath(), dao);
@@ -898,9 +867,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 				if(scanResult != null)
 				{
 					String fileUrl = data.getStringExtra("SCAN_RESULT");
-					enterURL.setText(fileUrl);
+					txtProjectPathOrURL.setText(fileUrl);
 					// Move the cursor to the end
-					enterURL.setSelection(fileUrl.length());
+					txtProjectPathOrURL.setSelection(fileUrl.length());
 				}
 				break;
 			}
@@ -966,8 +935,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			startTime = System.currentTimeMillis();
 			this.downloadUrl = downloadUrl;
 			// Download file in folder /Downloads/timestamp-filename
-			downloadFolder = new File(app.getDownloadFolderPath());
-			FileHelpers.createFolder(downloadFolder);
+			downloadFolder = fileStorageProvider.getDownloadsFolder(true);
 			downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 
 			// instantiate it within the onCreate method
@@ -1072,25 +1040,12 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			progressDialog.dismiss();
 			if(downloadFinished)
 			{
-				Project project = null;
 				
+				Project project = loadProjectFromFile(downloadFile, downloadUrl); // also handles all exceptions, but returns null if there was one
 				// Process the file & add the project to the db & list on the screen
-				try
-				{
-					project = processSapelliFile(downloadFile);
-					addProject(project); // will show error if project is null
-				}
-				catch(Exception e)
-				{
-					showErrorDialog("Invalid Sapelli file: " + downloadUrl + "\nError: " + e.getMessage()
-							+ (e.getCause() != null ? "\nCause: " + e.getCause().getMessage() : ""), false);
-					return;
-				}
 				
-				// Handle temp file:
 				if(project != null)
-					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_'
-							+ (startTime / 1000) + ".sapelli"));
+					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_' + (startTime / 1000) + ".sapelli"));
 				else
 					downloadFile.delete();
 			}

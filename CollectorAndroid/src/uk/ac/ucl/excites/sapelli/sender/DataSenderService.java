@@ -45,11 +45,8 @@ import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.Sender;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.util.Debug;
@@ -88,7 +85,7 @@ public class DataSenderService extends Service implements Sender, StoreClient
 	private boolean allowRebind; // indicates whether onRebind should be used
 	private ProjectStore projectStore;
 	private RecordStore recordStore;
-	private Map<Project,Logger> loggers;
+	private Map<Project, Logger> loggers;
 	
 	private ScheduledExecutorService scheduleTaskExecutor;
 	private ScheduledFuture<?> scheduledFuture;
@@ -141,7 +138,7 @@ public class DataSenderService extends Service implements Sender, StoreClient
 			{
 				try
 				{
-					Logger logger = new Logger(p.getLogFolderPath(), LOG_PREFIX);
+					Logger logger = new Logger(((CollectorApp) getApplication()).getFileStorageProvider().getProjectLogsFolder(p, true).getAbsolutePath(), LOG_PREFIX);
 					for(Entry<Project, Logger> pl : loggers.entrySet())
 						pl.getValue().addLine("DataSender", "Service started.");
 					loggers.put(p, logger);

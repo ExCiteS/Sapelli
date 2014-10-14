@@ -29,8 +29,8 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
@@ -79,7 +79,7 @@ public class SapelliCollectorClient extends TransmissionClient
 	// DYNAMICS------------------------------------------------------
 	private ProjectStore projectStore;
 	
-	public SapelliCollectorClient(ProjectStore projectStore)
+	public void setProjectStore(ProjectStore projectStore)
 	{
 		this.projectStore = projectStore;
 	}
@@ -102,7 +102,7 @@ public class SapelliCollectorClient extends TransmissionClient
 	public String getTableName(Schema schema)
 	{
 		if(schema == ProjectRecordStore.PROJECT_SCHEMA)
-			return "Sapelli_Projects";
+			return "Collector_Projects";
 		if(schema == ProjectRecordStore.HFK_SCHEMA)
 			return "Relationship_HFKs";
 		return super.getTableName(schema);
@@ -110,10 +110,12 @@ public class SapelliCollectorClient extends TransmissionClient
 	
 	/**
 	 * @param modelID
-	 * @return the project corresponding to the given modelID
+	 * @return the project corresponding to the given modelID, or null if no such project was found or if no projectStore is available
 	 */
 	public Project getProject(long modelID)
 	{
+		if(projectStore == null)
+			return null;
 		return projectStore.retrieveProject(GetProjectID(modelID), GetProjectFingerPrint(modelID));
 	}
 	
@@ -140,6 +142,7 @@ public class SapelliCollectorClient extends TransmissionClient
 	@Override
 	protected Model getClientModel(long modelID) throws UnknownModelException
 	{
+		// TODO check record store too? (requires retrieveModel method)
 		Project project = getProject(modelID);
 		if(project != null)
 			return project.getModel();
@@ -153,11 +156,13 @@ public class SapelliCollectorClient extends TransmissionClient
 	@Override
 	public Schema getSchemaV1(int schemaID, int schemaVersion) throws UnknownModelException
 	{
-		Project project = projectStore.retrieveV1Project(schemaID, schemaVersion);
-		if(project != null)
-			return project.getForm(0).getSchema(); // return schema of the first (and assumed only) form
-		else
-			throw new UnknownModelException(schemaID, schemaVersion);
+		if(projectStore != null)
+		{
+			Project project = projectStore.retrieveV1Project(schemaID, schemaVersion);
+			if(project != null)
+				return project.getForm(0).getSchema(); // return schema of the first (and assumed only) form
+		}
+		throw new UnknownModelException(schemaID, schemaVersion);
 	}
 
 	@Override
@@ -179,6 +184,13 @@ public class SapelliCollectorClient extends TransmissionClient
 	{
 		// TODO Auto-generated method stub
 
+	}
+	
+	@Override
+	public void recordDeleted(RecordReference record)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 	/* (non-Javadoc)

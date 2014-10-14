@@ -24,23 +24,29 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.db.sql.sqlite.android.AndroidSQLiteRecordStore;
+import uk.ac.ucl.excites.sapelli.collector.io.AndroidFileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.os.EnvironmentCompat;
-import android.util.Log;
 
 import com.crashlytics.android.Crashlytics;
 
@@ -54,19 +60,12 @@ public class CollectorApp extends Application implements StoreClient
 {
 
 	// STATICS------------------------------------------------------------
-	static private final String TAG = "CollectorApp";
+	static protected final String TAG = "CollectorApp";
 	
-	static private final String SAPELLI_FOLDER = "Sapelli" + File.separatorChar;
 	static private final String DATABASE_BASENAME = "Sapelli";
 	static private final String DEMO_PREFIX = "Demo_";
 	
-	//static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = true;
-	
-	static private final String PROJECT_FOLDER = "Projects" + File.separator;
-	static private final String TEMP_FOLDER = "Temp" + File.separator;
-	static private final String DOWNLOAD_FOLDER = "Downloads" + File.separator;
-	static private final String DUMP_FOLDER = "Dumps" + File.separator;
-	static private final String EXPORT_FOLDER = "Export" + File.separator;
+	static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = false;
 	
 	static private final String CRASHLYTICS_VERSION_INFO = "VERSION_INFO";
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
@@ -74,14 +73,23 @@ public class CollectorApp extends Application implements StoreClient
 	static public final String CRASHLYTICS_DEVICE_ID_MD5 = "SAPELLI_DEVICE_ID_MD5";
 	static public final String PROPERTY_LAST_PROJECT = "SAPELLI_LAST_RUNNING_PROJECT"; // used as a System property as well as on Crashlytics
 	
+	public static enum StorageStatus
+	{
+		UNKNOWN, STORAGE_OK, STORAGE_UNAVAILABLE, STORAGE_REMOVED
+	}
+	
 	// DYNAMICS-----------------------------------------------------------
 	private BuildInfo buildInfo;
-	private File sapelliFolder;
 	
-	private ProjectStore projectStore = null;
+	private SapelliCollectorClient collectorClient;
 	private RecordStore recordStore = null;
+	private ProjectStore projectStore = null;
 	//private TransmissionStore transmissionStore = null; 
 	private Map<Store, Set<StoreClient>> storeClients;
+
+	// Files storage:
+	private FileStorageProvider fileStorageProvider;
+	private FileStorageException fileStorageException = null;
 
 	@Override
 	public void onCreate()
@@ -101,19 +109,106 @@ public class CollectorApp extends Application implements StoreClient
 			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
 		}
 	
+		// Collector client:
+		this.collectorClient = new SapelliCollectorClient();
+		
 		// Store clients:
 		storeClients = new HashMap<Store, Set<StoreClient>>();
 		
-		// Set up a CrashReporter to the Sapelli/crash Folder
+		// Initialise file storage:
 		try
 		{
-			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(getDumpFolderPath(), getResources().getString(R.string.app_name)));
+			this.fileStorageProvider = initialiseFileStorage(); // throws FileStorageException
 		}
-		catch(Exception e)
+		catch(FileStorageException fse)
 		{
-			Log.e(TAG, "Could not set-up DefaultUncaughtExceptionHandler", e);
+			this.fileStorageException = fse;
 		}
+		
+		// Set up a CrashReporter (will use dumps folder):
+		if(fileStorageProvider != null)
+			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(fileStorageProvider, getResources().getString(R.string.app_name)));
 	}
+	
+	private FileStorageProvider initialiseFileStorage() throws FileStorageException
+	{
+		File sapelliFolder = null;
+		
+		// Get collector preferences:
+		CollectorPreferences pref = new CollectorPreferences(getApplicationContext());
+		
+		// Try to get Sapelli folder path from preferences:
+		try
+		{
+			sapelliFolder = new File(pref.getSapelliFolderPath());
+		}
+		catch(NullPointerException npe) {}
+
+		// Did we get the folder path from preferences? ...
+		if(sapelliFolder == null)
+		{	// No: first installation or reset
+			
+			// Find appropriate files dir (using application-specific folder, which is removed upon app uninstall!):
+			File[] paths = ContextCompat.getExternalFilesDirs(this, null);
+			if(paths != null && paths.length != 0)
+			{
+				// We count backwards because we prefer secondary external storage (which is likely to be on an SD card rather unremovable memory)
+				for(int p = paths.length - 1; p >= 0; p--)
+					if(paths[p] != null && isMountedReadableWritableDir(paths[p]))
+					{
+						sapelliFolder = paths[p];
+						break;
+					}
+			}
+
+			// Do we have a path?
+			if(sapelliFolder != null)
+				// Yes: store it in the preferences:
+				pref.setSapelliFolder(sapelliFolder.getAbsolutePath());
+			else
+				// No :-(
+				throw new FileStorageUnavailableException();
+		}
+		else
+		{	// Yes, we got path from preferences, check if it is available ...
+			if(!isMountedReadableWritableDir(sapelliFolder))
+				// No :-(
+				throw new FileStorageRemovedException(sapelliFolder.getAbsolutePath());
+		}
+
+		// If we get here this means we have a non-null sapelliFolder object representing an accessible path...
+		
+		// Return path provider
+		return new AndroidFileStorageProvider(sapelliFolder); // Android specific subclass of FileStorageProvider, which generates .nomedia files
+	}
+	
+	/**
+	 * Returns a FileStorageProvider when file storage is available or throws an FileStorageUnavailableException or an FileStorageRemovedException if it is not
+	 * 
+	 * @return a PathProvider object
+	 * @throws FileStorageUnavailableException
+	 * @throws FileStorageRemovedException
+	 */
+	public FileStorageProvider getFileStorageProvider() throws FileStorageUnavailableException, FileStorageRemovedException
+	{
+		if(fileStorageProvider != null && fileStorageException == null)
+			return fileStorageProvider;
+		if(fileStorageException != null)
+			throw fileStorageException;
+		else
+			throw new FileStorageUnavailableException(); // this shouldn't happen
+	}
+	/**
+	 * Check if a directory is on a mounted storage and writable/readable
+	 * 
+	 * @param dir
+	 * @return
+	 */
+	private boolean isMountedReadableWritableDir(File dir)
+	{
+		return (dir != null) && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) && FileHelpers.isReadableWritableDirectory(dir);
+	}
+
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig)
@@ -137,111 +232,6 @@ public class CollectorApp extends Application implements StoreClient
 	public String getDemoPrefix()
 	{
 		return (buildInfo.isDemoBuild() ? DEMO_PREFIX + FileHelpers.makeValidFileName(TimeUtils.getTimestampForFileName(buildInfo.getTimeStamp())) : "");
-	}
-
-	/**
-	 * @return finds/creates the Sapelli folder on the filesystem, and returns it as a File object
-	 */
-	public File getSapelliFolder()
-	{
-		if(sapelliFolder == null)
-		{
-			// Using application-specific folder (will be removed upon app uninstall!):
-			File[] paths = ContextCompat.getExternalFilesDirs(this, null);
-			if(paths != null)
-			{
-				// We count backwards because we prefer secondary external storage (which is likely to be on an SD card rather unremovable memory)
-				for(int p = paths.length - 1; p >= 0; p--)
-					if(paths[p] != null && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(paths[p])))
-					{
-						sapelliFolder = paths[p];
-						break;
-					}
-				
-//				// HACK HACK HACK
-//				if(sapelliFolder != null)
-//				{
-//					//									Android 		/   data		/ packagename	/ files
-//					File extStorageRoot = sapelliFolder.getParentFile().getParentFile().getParentFile().getParentFile();
-//					
-//					/* Old way: Using Environment2 library to get the path of the actual SD card if there is one,
-//					 * 			if not it gets the path of the emulated SD card/internal mass storage */
-//					//if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
-//					//	cardDirectory = Environment2.getCardDirectory();
-//					
-//					// Using proper API (will not always return the real SD card path):
-//					if(Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(Environment.getExternalStorageDirectory())))
-//						extStorageRoot = Environment.getExternalStorageDirectory();
-//					
-//					// Check if writable:
-//					if(!FileHelpers.isReadableWritableDirectory(extStorageRoot))
-//						throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
-//					
-//					// Make Sapelli folder:
-//					sapelliFolder = new File(extStorageRoot.getAbsolutePath() + File.separator + SAPELLI_FOLDER);
-//					if(!sapelliFolder.exists())
-//					{
-//						if(!sapelliFolder.mkdirs())
-//							throw new IllegalStateException("Cannot create Sapelli folder");
-//					}
-//				}
-				
-			}
-			// Fall-back: try to get write access to external storage (preferably SD card) root and create Sapelli folder if it doesn't exist yet:
-			if(sapelliFolder == null)
-			{
-				File extStorageRoot = null;
-				
-				/* Old way: Using Environment2 library to get the path of the actual SD card if there is one,
-				 * 			if not it gets the path of the emulated SD card/internal mass storage */
-				//if(Environment.MEDIA_MOUNTED.equals(Environment2.getCardState()))
-				//	cardDirectory = Environment2.getCardDirectory();
-				
-				// Using proper API (will not always return the real SD card path):
-				if(Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(Environment.getExternalStorageDirectory())))
-					extStorageRoot = Environment.getExternalStorageDirectory();
-				
-				// Check if writable:
-				if(!FileHelpers.isReadableWritableDirectory(extStorageRoot))
-					throw new IllegalStateException("SD card or (emulated) external storage is not accessible");
-				
-				// Make Sapelli folder:
-				sapelliFolder = new File(extStorageRoot.getAbsolutePath() + File.separator + SAPELLI_FOLDER);
-				if(!sapelliFolder.exists())
-				{
-					if(!sapelliFolder.mkdirs())
-						throw new IllegalStateException("Cannot create Sapelli folder");
-				}
-			}
-		}
-		
-		// Return folder:
-		return sapelliFolder;
-	}
-
-	public String getDownloadFolderPath()
-	{
-		return getSapelliFolder().getAbsolutePath() + File.separator + DOWNLOAD_FOLDER;
-	}
-	
-	public String getTempFolderPath()
-	{
-		return getSapelliFolder().getAbsolutePath() + File.separator + TEMP_FOLDER;
-	}
-	
-	public String getProjectFolderPath()
-	{
-		return getSapelliFolder().getAbsolutePath() + File.separator + PROJECT_FOLDER;
-	}
-	
-	public String getDumpFolderPath()
-	{
-		return getSapelliFolder().getAbsolutePath() + File.separator + DUMP_FOLDER;
-	}
-	
-	public String getExportFolderPath()
-	{
-		return getSapelliFolder().getAbsolutePath() + File.separator + EXPORT_FOLDER;
 	}
 
 	@Override
@@ -272,16 +262,21 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		if(projectStore == null)
 		{
-			projectStore = /*USE_PREFS_FOR_PROJECT_STORAGE ?*/ new PrefProjectStore(this, getDemoPrefix()); //: new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			if(USE_PREFS_FOR_PROJECT_STORAGE)
+				projectStore = new PrefProjectStore(this, getFileStorageProvider(), getDemoPrefix());
+			else
+				projectStore = new ProjectRecordStore(getRecordStore(client), getFileStorageProvider()); // TODO sort out storeclient mess!
+			//projectStore = new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			collectorClient.setProjectStore(projectStore); // !!!
 			storeClients.put(projectStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(projectStore).add(client); //add to set of clients currently using the projectStore
 		return projectStore;
 	}
 	
-	public SapelliCollectorClient getCollectorClient(StoreClient client) throws Exception
+	public SapelliCollectorClient getCollectorClient() throws Exception
 	{
-		return new SapelliCollectorClient(getProjectStore(client));
+		return collectorClient;
 	}
 	
 	/**
@@ -293,7 +288,7 @@ public class CollectorApp extends Application implements StoreClient
 		if(recordStore == null)
 		{
 			//recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
-			recordStore = new AndroidSQLiteRecordStore(getCollectorClient(client), this, getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			recordStore = new AndroidSQLiteRecordStore(collectorClient, this, getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			storeClients.put(recordStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(recordStore).add(client); //add to set of clients currently using the projectStore
@@ -338,14 +333,12 @@ public class CollectorApp extends Application implements StoreClient
 	
 	public void backupStores() throws Exception
 	{
-		File exportFolder = new File(getDumpFolderPath());
-		if(!FileHelpers.createFolder(exportFolder))
-			throw new Exception("Export folder (" + exportFolder.getAbsolutePath() + ") does not exist and could not be created!");
+		File exportFolder = getFileStorageProvider().getDumpFolder(true);
 		for(Store store : new Store[] { getProjectStore(this), getRecordStore(this) })
 		{
 			store.backup(exportFolder);
 			discardStoreUsage(store, this);
 		}
 	}
-
+	
 }
