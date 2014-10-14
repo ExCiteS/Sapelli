@@ -497,14 +497,30 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						List<String> paths = new ArrayList<String>();
 						for(String f : selectedItems)
 						{
-							if (f.equalsIgnoreCase(SapelliFolders.Dumps.name()))
+							// Get the Sapelli Folder
+							SapelliFolders folder = SapelliFolders.valueOf(f);
+
+							switch(folder)
+							{
+							case Dumps:
 								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Dumps");
-							if(f.equalsIgnoreCase(SapelliFolders.Data.name()))
+								break;
+
+							case Data:
 								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Data");
-							if(f.equalsIgnoreCase(SapelliFolders.Logs.name()))
+								break;
+
+							case Logs:
 								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Logs");
-							if(f.equalsIgnoreCase(SapelliFolders.Projects.name()))
+								break;
+
+							case Projects:
 								paths.add("/mnt/sdcard/Android/data/uk.ac.ucl.excites.sapelli.collector/files/Projects");
+								break;
+
+							default:
+								break;
+							}
 						}
 
 						// Call an AsyncZipper
