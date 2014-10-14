@@ -63,7 +63,6 @@
     <item
         android:id="@+id/zip_files"
         android:icon="@android:drawable/ic_menu_save"
-        android:onClick="zipSapelliFiles"
         android:showAsAction="always"
         android:title="Export data as a zip file"/>
     
