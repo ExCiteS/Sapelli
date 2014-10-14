@@ -86,6 +86,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 import com.ipaulpro.afilechooser.utils.FileUtils;
@@ -476,7 +477,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 							// If the user checked the item, add it to the selected items
 							selectedItems.add(SapelliFolders.values()[which].name());
 						}
-						else if(selectedItems.contains(which))
+						else if(selectedItems.contains(SapelliFolders.values()[which].name()))
 						{
 							// Else, if the item is already in the array, remove it
 							selectedItems.remove(Integer.valueOf(which));
@@ -523,10 +524,14 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 							}
 						}
 
-						// Call an AsyncZipper
-						AsyncZipper zipper = new AsyncZipper(ProjectManagerActivity.this, getString(R.string.exporting_data), paths, zipfile);
-						zipper.execute();
-
+						// Call an AsyncZipper only if there are selected items
+						if(!paths.isEmpty())
+						{
+							AsyncZipper zipper = new AsyncZipper(ProjectManagerActivity.this, getString(R.string.exporting_data), paths, zipfile);
+							zipper.execute();
+						}
+						else
+							Toast.makeText(ProjectManagerActivity.this, "You must select at least one folder to export", Toast.LENGTH_LONG).show();
 					}
 				}).setNegativeButton(R.string.no, new DialogInterface.OnClickListener()
 				{
