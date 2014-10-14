@@ -531,7 +531,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 							zipper.execute();
 						}
 						else
-							Toast.makeText(ProjectManagerActivity.this, "You must select at least one folder to export", Toast.LENGTH_LONG).show();
+							Toast.makeText(ProjectManagerActivity.this, R.string.select_at_least_one_folder_to_export_data, Toast.LENGTH_LONG).show();
 					}
 				}).setNegativeButton(R.string.no, new DialogInterface.OnClickListener()
 				{

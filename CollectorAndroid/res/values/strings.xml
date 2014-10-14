@@ -100,5 +100,6 @@
     <string name="exportNothing">There was nothing to export.</string>
     <string name="exportDeletingX">Deleting %d records…</string>
     <string name="exporting_data">Exporting data...</string>
+    <string name="select_at_least_one_folder_to_export_data">You must select at least one folder to export data</string>
 
 </resources>
