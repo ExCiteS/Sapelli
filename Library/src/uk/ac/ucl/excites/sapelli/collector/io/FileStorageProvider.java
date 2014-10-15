@@ -22,6 +22,8 @@ import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.io.Zipper;
+import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 
 /**
  * Class which to manages (almost) all path generation/resolving and folder creation for different types of file storage needs
@@ -31,6 +33,8 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 public class FileStorageProvider
 {
 	public static String DOWNLOADS_SAPELLI_FOLDER = "Sapelli";
+	public static String BACKUP_FILE = "Backup";
+	public static String FILE_SEPERATOR = "_";
 	
 	// Folders to be used by Sapelli
 	public static enum Folders
@@ -243,6 +247,14 @@ public class FileStorageProvider
 		return getProjectSpecificSubFolder(getLogsFolder(create), project, create);
 	}
 	
+	/**
+	 * @return the location for creating a zip with backup data i.e. Downloads/Sapelli/Backup_timestamp.zip
+	 */
+	public File getBackupLocation()
+	{
+		return new File(getDownloadsFolder() + File.separator + BACKUP_FILE + FILE_SEPERATOR + TimeUtils.getTimestampForFileName() + "." + Zipper.ZIP_EXTENTION);
+	}
+
 	private File createIfNeeded(String folderPath, boolean create) throws FileStorageException
 	{
 		File folder = new File(folderPath);
@@ -255,5 +267,4 @@ public class FileStorageProvider
 		}
 		return folder;
 	}
-	
 }

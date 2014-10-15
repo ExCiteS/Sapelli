@@ -49,7 +49,6 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.ExceptionHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
-import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsImporter;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -476,10 +475,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 					@Override
 					public void onClick(DialogInterface dialog, int id)
 					{
-						// TODO Improve File name
-						final String zipfile = fileStorageProvider.getDownloadsFolder()
-								+ File.separator + "Sapelli_" + TimeUtils.getTimestampForFileName();
-
 						// Get file paths for the selected items from FileStorageProvider
 						List<String> paths = new ArrayList<String>();
 						for(String f : selectedItems)
@@ -488,7 +483,11 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						// Call an AsyncZipper only if there are selected items
 						if(!paths.isEmpty())
 						{
-							AsyncZipper zipper = new AsyncZipper(context, getString(R.string.exporting_data), paths, zipfile);
+							AsyncZipper zipper = new AsyncZipper(context, 
+									getString(R.string.exporting_data), 
+									paths, 
+									fileStorageProvider.getBackupLocation().getAbsolutePath());
+							
 							zipper.execute();
 						}
 						else

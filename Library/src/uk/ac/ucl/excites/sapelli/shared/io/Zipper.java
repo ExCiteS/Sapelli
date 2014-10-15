@@ -38,7 +38,7 @@ import java.util.zip.ZipOutputStream;
 public class Zipper
 {
 	private static final int BUFFER_SIZE = 2048;
-	private static final String ZIP_EXTENTION = "zip";
+	public static final String ZIP_EXTENTION = "zip";
 
 	private ZipOutputStream zip;
 	private BufferedInputStream origin;
