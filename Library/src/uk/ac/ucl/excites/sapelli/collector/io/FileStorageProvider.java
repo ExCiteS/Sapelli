@@ -30,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
  */
 public class FileStorageProvider
 {
+	public static String DOWNLOADS_SAPELLI_FOLDER = "Sapelli";
 	
 	// Folders to be used by Sapelli
 	public static enum Folders
@@ -193,10 +194,16 @@ public class FileStorageProvider
 		return getProjectSpecificSubFolder(getProjectsFolder(create), projectName, projectVariant, projectVersion, create);
 	}
 	
+	/**
+	 * Returns the Downloads folder, which is located in the default downloads folder of the system, under the directory Sapelli
+	 * 
+	 * @return
+	 * @throws FileStorageException
+	 */
 	public File getDownloadsFolder() throws FileStorageException
 	{
-		if(downloadsFolder.exists() && downloadsFolder.canRead())
-			return downloadsFolder;
+		if(downloadsFolder.exists() && downloadsFolder.canWrite())
+			return new File(downloadsFolder + File.separator + DOWNLOADS_SAPELLI_FOLDER + File.separator);
 		else
 			throw new FileStorageException("Downloads folder is not or no longer accessible (path: " + downloadsFolder.getAbsolutePath());
 	}
@@ -213,7 +220,7 @@ public class FileStorageProvider
 	
 	public File getExportFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Export.name(), create);
+		return createIfNeeded(getDownloadsFolder().getAbsolutePath() + File.separator + Folders.Export.name(), create);
 	}
 
 	public File getDataFolder(boolean create) throws FileStorageException
