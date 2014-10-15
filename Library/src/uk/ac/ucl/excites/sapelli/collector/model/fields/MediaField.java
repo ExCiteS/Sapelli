@@ -48,7 +48,7 @@ public abstract class MediaField extends Field
 	static public final char FILENAME_ELEMENT_SEPARATOR = '_';
 	
 	//TODO update:
-	static private final Pattern OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
+	static private final Pattern HISTORIC_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
 	
 	static public final long MAX_ATTACHMENT_CREATION_TIME_OFFSET = (long) (10 * 365.25 * 24 * 60 * 60 * 1000); // 10 years in ms
 	
@@ -61,7 +61,7 @@ public abstract class MediaField extends Field
 	protected boolean useNativeApp;
 	protected int max;
 	protected ChoiceField disableChoice;
-
+	
 	public MediaField(Form form, String id, String caption)
 	{
 		super(form, id, caption);
@@ -183,24 +183,22 @@ public abstract class MediaField extends Field
 		// add creationTimeOffset to column
 		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
 		if (offsets == null)
+		{	
 			offsets = new ArrayList<Long>();
-		offsets.add(creationTimeOffset);
-		((IntegerListColumn) getColumn()).storeValue(record, offsets);
+			((IntegerListColumn) getColumn()).storeValue(record, offsets);
+		}
+		offsets.add(creationTimeOffset);	
 	}
 	
 	public void removeAttachmentFromRecord(File attachment, Record record) {
-		// check if there are any attachments to remove
-		int currentCount = getCount(record);
-		if (currentCount == 0)
-			throw new IllegalStateException("No attachments exist to delete.");
 		// retrieve creationTimeOffset from filename
 		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
 		// remove creationTimeOffset from column
 		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
-		offsets.remove(creationTimeOffset);
+		if (!offsets.remove(creationTimeOffset))
+				throw new IllegalStateException("Specified attachment could not be found for deletion.");
 		((IntegerListColumn) getColumn()).storeValue(record, offsets);
-		// actually remove file
-		attachment.delete();
+		// do not actually remove file, in case delete is not "committed" -- will be marked in FormSession
 	}
 	
 	private long getCreationTimeOffsetFromFile(File file) {
@@ -269,24 +267,8 @@ public abstract class MediaField extends Field
 	}
 	
 	/**
-	 * Deletes all attachments associated with this field and record from the file
-	 * system and removes their creationTimeOffsets from the column.
-	 * @param fileStorageProvider
-	 * @param record
-	 */
-	public void discardAttachments(FileStorageProvider fileStorageProvider, Record record) {
-		// delete files from file system:
-		for (File file : getAttachments(fileStorageProvider, record)) {
-			if (file.exists())
-				file.delete();
-		}
-		// delete offsets list:
-		((IntegerListColumn)getColumn()).storeValue(record, null); //TODO check
-	}
-	
-	/**
 	 * Generates a new filename for the next media attachment for this field. If obfuscation is enabled,
-	 * the entire filename is obfuscated to match the {@link #OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT}.
+	 * the entire filename is obfuscated using ROT13.
 	 * 
 	 * @param record
 	 * @param creationTimeOffset
@@ -329,15 +311,15 @@ public abstract class MediaField extends Field
 	}
 	
 	/**
-	 * Undoes the obfuscation of the extension on filenames that match the {@link #OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT} pattern.
+	 * Undoes the obfuscation of the extension on filenames that match the {@link #HISTORIC_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT} pattern.
 	 * 
 	 * @param filename
 	 * @see #generateFilename(Record, int, boolean, boolean)
 	 * @return
 	 */
-	public static String undoExtensionObfuscation(String filename)
+	public static String undoHistoricExtensionObfuscation(String filename)
 	{
-		Matcher matcher = OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT.matcher(filename);
+		Matcher matcher = HISTORIC_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT.matcher(filename);
 		if(matcher.find() && matcher.groupCount() == 2)
 		{	// Got match!
 			/*

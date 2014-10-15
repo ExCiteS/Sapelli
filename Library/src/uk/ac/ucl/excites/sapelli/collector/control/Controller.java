@@ -39,7 +39,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
@@ -110,7 +109,7 @@ public abstract class Controller
 	protected FormSession prevFormSession; 
 	
 	protected boolean handlingUserGoBackRequest = false;
-	
+			
 	public Controller(Project project, CollectorUI<?, ?> ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
 	{
 		this.project = project;
@@ -384,6 +383,12 @@ public abstract class Controller
 	{
 		if(!currFormSession.form.isProducesRecords()) //!!!
 			return;
+				
+		// Delete any files that were "queued" for deletion but not actually deleted yet:
+		currFormSession.deleteDiscardedAttachments();
+		
+		// Clear the list of added files so they cannot be deleted accidentally:
+		currFormSession.clearAddedAttachments();
 		
 		// Finalise the currentRecord:
 		currFormSession.form.finish(currFormSession.record); // (re)sets the end-time if necessary
@@ -402,9 +407,7 @@ public abstract class Controller
 			addLogLine("ERROR", "Upon saving record", ExceptionHelpers.getMessageAndCause(e));
 			return;
 		}
-	
-		// Attachments are added when created, but explicitly deleted on discard, so don't do any saving
-	
+		
 		// Signal the successful storage of the currentRecord
 		// Vibration
 		if(currFormSession.form.isVibrateOnSave())
@@ -416,16 +419,13 @@ public abstract class Controller
 	}
 	
 	protected void discardRecordAndAttachments()
-	{		
-		List<Field> fields = currFormSession.form.getFields();
+	{
+		// delete any files that were added but have now been discarded:
+		currFormSession.deleteAddedAttachments();
 		
-		// discard every media field's attachments
-		for (Field field : fields) {
-			if (field instanceof MediaField) {
-				// may have attachments
-				((MediaField) field).discardAttachments(fileStorageProvider, currFormSession.record);
-			}
-		}
+		// Clear the list of deleted files:
+		currFormSession.clearDiscardedAttachments();
+		
 		// Discard record itself:
 		currFormSession.record = null; //!!!
 	}
@@ -839,6 +839,14 @@ public abstract class Controller
 	public FileStorageProvider getFileStorageProvider()
 	{
 		return fileStorageProvider;
+	}
+	
+	public void addAttachment(File file) {
+		currFormSession.addAttachment(file);
+	}
+	
+	public void discardAttachment(File file) {
+		currFormSession.discardAttachment(file);
 	}
 
 	protected void startLocationListener(LocationField locField)

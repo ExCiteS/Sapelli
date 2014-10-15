@@ -18,7 +18,10 @@
 
 package uk.ac.ucl.excites.sapelli.collector.control;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -57,6 +60,8 @@ public class FormSession
 	private FieldWithArguments currFieldAndArguments = null;
 	private boolean currFieldDisplayed = false;
 	private Map<Field,Boolean> runtimeEnabled = null; // only instantiated when needed
+	private List<File> addedAttachments;
+	private List<File> discardedAttachments;
 	
 	/**
 	 * @param form
@@ -173,5 +178,55 @@ public class FormSession
 	public boolean atField()
 	{
 		return currFieldAndArguments != null;
-	}	
+	}
+	
+	/**
+	 * Adds a file to the list of attachments added in this form session.
+	 * @param file
+	 */
+	public void addAttachment(File file) {
+		if (addedAttachments == null)
+			addedAttachments = new ArrayList<File>();
+		addedAttachments.add(file);
+	}
+	
+	/**
+	 * Adds a file to the list of attachments deleted in this form session.
+	 * @param file
+	 */
+	public void discardAttachment(File file) {
+		if (discardedAttachments == null)
+			discardedAttachments = new ArrayList<File>();
+		discardedAttachments.add(file);
+	}
+	
+	/**
+	 * Deletes all attachments that were in the "discarded" list.
+	 */
+	public void deleteDiscardedAttachments() {
+		if (discardedAttachments != null) {
+			for (File file : discardedAttachments)
+				file.delete();
+		}
+		discardedAttachments = null;
+	}
+	
+	/**
+	 * Deletes all attachments that were in the "added" list.
+	 */
+	public void deleteAddedAttachments() {
+		if (addedAttachments != null) {
+			for (File file : addedAttachments)
+				file.delete();
+		}
+		addedAttachments = null;
+	}
+	
+	public void clearDiscardedAttachments() {
+		discardedAttachments = null;
+	}
+	
+	public void clearAddedAttachments() {
+		addedAttachments = null;
+	}
 }

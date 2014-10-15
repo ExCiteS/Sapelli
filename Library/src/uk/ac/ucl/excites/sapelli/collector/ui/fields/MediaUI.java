@@ -46,6 +46,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		{
 			controller.addLogLine("ATTACHMENT", field.getID(), mediaAttachment.getName());
 			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());
+			controller.addAttachment(mediaAttachment);
 			controller.goForward(userRequested); // goto next/jump field
 		}
 		else
@@ -64,7 +65,8 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
 			controller.addLogLine("ATTACHMENT", field.getID(), mediaAttachment.getName());
-			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());			
+			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());
+			controller.addAttachment(mediaAttachment);
 		}
 		// do NOT go to next/jump field
 		controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
@@ -74,6 +76,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	{
 			controller.addLogLine("ATTACHMENT REMOVED", field.getID(), mediaAttachment.getName());
 			field.removeAttachmentFromRecord(mediaAttachment, controller.getCurrentRecord());
+			controller.discardAttachment(mediaAttachment);
 	}
 	
 	protected boolean showCreateButton()

@@ -118,7 +118,7 @@ public class CollectorController extends Controller implements LocationListener,
 	protected void saveRecordAndAttachments()
 	{	
 		super.saveRecordAndAttachments(); //!!!
-	
+		
 		// Also print the record on Android Log:
 		if(currFormSession.form.isProducesRecords())
 		{
