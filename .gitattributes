@@ -7,7 +7,6 @@
 *.svg text
 *.bat text
 *.md text
-*.pdf text
 *.xlsx text
 *.mf text
 *.jsp text
@@ -16,3 +15,4 @@
 *.png binary
 *.gif binary
 *.apk binary
+*.pdf binary
