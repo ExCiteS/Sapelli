@@ -350,7 +350,7 @@ public class CollectorApp extends Application implements StoreClient
 	
 	public void backupStores() throws Exception
 	{
-		File exportFolder = getFileStorageProvider().getCrashFolder(true);
+		File exportFolder = getFileStorageProvider().getTempFolder(true);
 		for(Store store : new Store[] { getProjectStore(this), getRecordStore(this) })
 		{
 			store.backup(exportFolder);

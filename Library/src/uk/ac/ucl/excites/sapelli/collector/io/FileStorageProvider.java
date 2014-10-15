@@ -50,7 +50,7 @@ public class FileStorageProvider
 		Downloads,
 		
 		/**
-		 * Folder in which database copies and stacktraces are placed
+		 * Folder in which stacktraces are placed
 		 */
 		Crashes,
 		
