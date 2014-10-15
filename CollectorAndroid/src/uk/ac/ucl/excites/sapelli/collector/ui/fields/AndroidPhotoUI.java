@@ -144,7 +144,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	@Override
 	ImageItem generateCaptureButton(Context context) {
 		ImageItem captureButton = null;
-		File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
+		File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getCaptureButtonImageRelativePath());
 		if(FileHelpers.isReadableFile(captureImgFile))
 			// return a custom photo capture button if it exists
 			captureButton = new FileImageItem(captureImgFile);
@@ -232,7 +232,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 				// write to temporary file right away, but don't attach it unless approved
 				// may eventually run out of storage but makes media code easier - should be fixed 
 				// when temp file stuff is refactored --- TODO
-				lastCaptureFile = field.getNewTempFile(controller.getCurrentRecord());
+				lastCaptureFile = field.getNewTempFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
 				FileOutputStream fos = new FileOutputStream(lastCaptureFile);
 				fos.write(data);
 				fos.close();

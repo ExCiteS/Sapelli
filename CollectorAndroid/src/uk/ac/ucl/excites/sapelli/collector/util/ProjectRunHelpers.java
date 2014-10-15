@@ -22,6 +22,7 @@ import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
@@ -83,10 +84,10 @@ public class ProjectRunHelpers
 	 *
 	 * @param project
 	 */
-	static public void createShortcut(ContextWrapper contextWrapper, Project project)
+	static public void createShortcut(ContextWrapper contextWrapper, FileStorageProvider fileStorageProvider, Project project)
 	{
 		// Icon image file:
-		File shortcutImageFile = project.getImageFile(project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
+		File shortcutImageFile = project.getImageFile(fileStorageProvider, project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
 
 		// Shortcut name:
 		String shortcutName = project.toString();

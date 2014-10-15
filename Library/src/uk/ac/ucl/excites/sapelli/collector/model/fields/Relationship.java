@@ -18,11 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
-import java.io.File;
-import java.util.List;
-
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.AndConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 
@@ -123,16 +119,6 @@ public abstract class Relationship extends UILessField
 	public void setHoldForeignRecord(boolean holdForeignRecord)
 	{
 		this.holdForeignRecord = holdForeignRecord;
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.collector.project.model.Field#getFiles(uk.ac.ucl.excites.collector.project.model.Project)
-	 */
-	@Override
-	public List<File> getFiles(Project project)
-	{
-		//TODO link button image?
-		return null;
 	}
 	
 	@Override

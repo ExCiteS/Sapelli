@@ -19,20 +19,18 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.xml.FormParser;
 import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
-import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
@@ -188,13 +186,13 @@ public abstract class MediaField extends Field
 		((IntegerColumn) form.getColumnFor(this)).storeValue(record, --currentCount);
 	}
 
-	public File getNewTempFile(Record record) throws IOException
+	public File getNewTempFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
 	{
 		// TODO slightly hacky fix to avoid filename duplication -- will disappear when 
 		// temp files stop being a thing anyway
 		int suffix = getCount(record);
 		String filename = generateFilename(record, getCount(record));
-		String dataFolderPath = form.getProject().getTempFolder().getAbsolutePath(); //getTempFolder() does the necessary checks (IOException is thrown in case of trouble)
+		String dataFolderPath = fileStorageProvider.getProjectDataFolder(form.getProject(), true).getAbsolutePath();
 		File file = new File(dataFolderPath + File.separator + filename);
 		while (file.exists()) {
 			suffix++;
@@ -341,16 +339,6 @@ public abstract class MediaField extends Field
 	public void setPlusButtonImageRelativePath(String plusButtonImageRelativePath)
 	{
 		this.plusButtonImageRelativePath = plusButtonImageRelativePath;
-	}
-
-	@Override
-	public List<File> getFiles(Project project)
-	{
-		List<File> paths = new ArrayList<File>();
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(captureButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(approveButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(discardButtonImageRelativePath));
-		return paths;
 	}
 
 	@Override

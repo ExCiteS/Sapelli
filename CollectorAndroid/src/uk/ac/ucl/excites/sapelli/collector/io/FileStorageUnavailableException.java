@@ -16,26 +16,20 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.util;
+package uk.ac.ucl.excites.sapelli.collector.io;
 
 /**
- * @author mstevens
+ * @author mstevens, Michalis Vitos
  *
  */
-public class DuplicateException extends Exception
+public class FileStorageUnavailableException extends FileStorageException
 {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-
-	/**
-	 * @param detailMessage
-	 */
-	public DuplicateException(String detailMessage)
+	
+	private static final long serialVersionUID = 2L;
+	
+	public FileStorageUnavailableException()
 	{
-		super(detailMessage);
+		super("No accessible SD card or (emulated) external storage medium found!");
 	}
 
 }

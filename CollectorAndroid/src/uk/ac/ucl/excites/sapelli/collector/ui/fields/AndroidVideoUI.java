@@ -1,7 +1,6 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -90,11 +89,10 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 
 	@Override
 	boolean onCapture() {
-		try {
 			synchronized(recording) {
 				if (!recording) {
 					// start recording
-					lastCaptureFile = field.getNewTempFile(controller.getCurrentRecord());
+					lastCaptureFile = field.getNewTempFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
 					cameraController.startVideoCapture(lastCaptureFile);
 					recording = true;
 				} else {
@@ -105,9 +103,6 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 					recording = false;
 				}
 			}
-		} catch (IOException e) {
-			Log.e(TAG,"Error when requesting a new temporary media file.",e);
-		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
 		return true;
 	}
@@ -168,7 +163,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		ImageItem captureButton = null;
 		if (!recording) {
 			// recording hasn't started yet, so present "record" button
-			File captureImgFile = controller.getProject().getImageFile(field.getCaptureButtonImageRelativePath());
+			File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getCaptureButtonImageRelativePath());
 			if(FileHelpers.isReadableFile(captureImgFile))
 				// use a custom video capture image if available
 				captureButton = new FileImageItem(captureImgFile);
@@ -178,7 +173,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		}
 		else {
 			// recording started, so present "stop" button instead
-			File stopImgFile = controller.getProject().getImageFile(field.getStopRecImageRelativePath());
+			File stopImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getStopRecImageRelativePath());
 			if(FileHelpers.isReadableFile(stopImgFile))
 				captureButton = new FileImageItem(stopImgFile);
 			else

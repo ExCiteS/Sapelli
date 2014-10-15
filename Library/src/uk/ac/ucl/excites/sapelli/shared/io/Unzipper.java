@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.shared.io;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -33,8 +34,9 @@ public final class Unzipper
 
 	private Unzipper() {}
 	
-	static public void unzip(InputStream zipFileStream, String extractionPath) throws IOException
+	static public void unzip(InputStream zipFileStream, File extractionFolder) throws IOException
 	{
+		String extractionPath = extractionFolder.getAbsolutePath() + File.separator;
 		try
 		{
 			ZipInputStream zin = new ZipInputStream(zipFileStream);

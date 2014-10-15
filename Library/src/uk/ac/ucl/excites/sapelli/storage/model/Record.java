@@ -122,9 +122,10 @@ public class Record implements Serializable
 	 * 
 	 * @param schema
 	 * @param serialisedValues byte array to initialise record (should not contain values of virtual columns, i.e. the String must be as produced by {@link #toBytes()})
-	 * @throws Exception 
+	 * @throws NullPointerException when schema is null
+	 * @throws IOException when reading serialisedValues fails
 	 */
-	protected Record(Schema schema, byte[] serialisedValues) throws Exception
+	protected Record(Schema schema, byte[] serialisedValues) throws NullPointerException, IOException
 	{
 		this(schema);
 		fromBytes(serialisedValues);

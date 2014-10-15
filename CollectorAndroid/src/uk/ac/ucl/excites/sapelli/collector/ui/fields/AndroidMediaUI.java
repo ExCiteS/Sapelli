@@ -626,7 +626,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			{
 				// Approve button:
 				Item approveButton = null;
-				File approveImgFile = controller.getProject().getImageFile(field.getApproveButtonImageRelativePath());
+				File approveImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getApproveButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(approveImgFile))
 					approveButton = new FileImageItem(approveImgFile);
 				else
@@ -636,7 +636,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 				// Discard button:
 				Item discardButton = null;
-				File discardImgFile = controller.getProject().getImageFile(field.getDiscardButtonImageRelativePath());
+				File discardImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getDiscardButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(discardImgFile))
 					discardButton = new FileImageItem(discardImgFile);
 				else
@@ -690,7 +690,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			private Item createPlusButton() {
 				// creates a "normal" plus button and then disables it if max reached.
 				Item plusButton = null;
-				File plusImgFile = controller.getProject().getImageFile(field.getPlusButtonImageRelativePath());
+				File plusImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getPlusButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(plusImgFile))
 					plusButton = new FileImageItem(plusImgFile);
 				else
@@ -731,7 +731,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 				// Approve button:
 				approveButton = null;
-				File approveImgFile = controller.getProject().getImageFile(field.getApproveButtonImageRelativePath());
+				File approveImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getApproveButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(approveImgFile))
 					approveButton = new FileImageItem(approveImgFile);
 				else

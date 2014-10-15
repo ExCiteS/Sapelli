@@ -20,6 +20,10 @@ package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
+import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -41,6 +45,7 @@ public abstract class BaseActivity extends Activity
 	static private final boolean DEFAULT_FINISH_ON_DIALOG_CANCEL = false;
 	
 	protected CollectorApp app;
+	protected FileStorageProvider fileStorageProvider;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState)
@@ -49,6 +54,39 @@ public abstract class BaseActivity extends Activity
 		this.app = (CollectorApp) getApplication();
 	}
 	
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
+
+		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
+		try
+		{
+			fileStorageProvider = app.getFileStorageProvider();
+		}
+		catch(FileStorageRemovedException e)
+		{
+			e.printStackTrace(System.err);
+			// Inform the user and close the application
+			final Runnable useAlternativeStorage = new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					// Clear the setting before restart
+					new CollectorPreferences(BaseActivity.this).clearSapelliFolder();
+				}
+			};
+			showDialog(getString(R.string.app_name), getString(R.string.unavailableStorageAccess), R.string.useAlternativeStorage, true, useAlternativeStorage, R.string.insertSDcard, true);
+		}
+		catch(FileStorageUnavailableException e)
+		{
+			e.printStackTrace(System.err);
+			// Inform the user and close the application
+			showErrorDialog(getString(R.string.app_name) + " " + getString(R.string.needsStorageAccess), true);
+		}
+	}
+
 	public void showOKDialog(int titleId, int messageId)
 	{
 		showDialog(getString(titleId), getString(messageId), android.R.string.ok, DEFAULT_FINISH_ON_DIALOG_OK, null, HIDE_BUTTON, DEFAULT_FINISH_ON_DIALOG_CANCEL);
@@ -195,20 +233,42 @@ public abstract class BaseActivity extends Activity
 	 * Show dialog with error message
 	 * 
 	 * @param message
+	 * @param finish
 	 */
 	public void showErrorDialog(String message, boolean finish)
 	{
 		showOKDialog(R.string.error, message, finish);
+	}
+	
+	/**
+	 * Show dialog with error message
+	 * 
+	 * @param message
+	 */
+	public void showErrorDialog(String message)
+	{
+		showOKDialog(R.string.error, message, false);
 	}
 
 	/**
 	 * Show dialog with error message
 	 * 
 	 * @param messageId
+	 * @param finish
 	 */
 	public void showErrorDialog(int messageId, boolean finish)
 	{
 		showOKDialog(R.string.error, messageId, finish);
+	}
+	
+	/**
+	 * Show dialog with error message
+	 * 
+	 * @param messageId
+	 */
+	public void showErrorDialog(int messageId)
+	{
+		showOKDialog(R.string.error, messageId, false);
 	}
 	
 	/**

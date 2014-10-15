@@ -66,7 +66,7 @@ public class ForeignKeyColumn extends RecordColumn<RecordReference>
 	@Override
 	public RecordReference getNewRecord()
 	{
-		return new RecordReference(foreignSchema);
+		return foreignSchema.createRecordReference();
 	}
 
 	@Override

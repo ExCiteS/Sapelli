@@ -19,15 +19,18 @@
 package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -46,37 +49,28 @@ public class Project
 	
 	static public final String DEFAULT_VERSION = "0";
 	
-	static public final int PROJECT_FINGERPRINT_SIZE = 32; // bits
-	static public final IntegerRangeMapping PROJECT_FINGERPRINT_FIELD = IntegerRangeMapping.ForSize(0, PROJECT_FINGERPRINT_SIZE); // signed(!) 32bit integer (like Java hashCodes)
+	static public final int PROJECT_FINGERPRINT_SIZE = 32; // project fingerprints are signed 32bit integer (like Java hashCodes)
 	
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
-	
-	// Subfolders:
+
+	// Subfolders of project installation folder:
 	static public final String IMAGE_FOLDER = "img";
 	static public final String SOUND_FOLDER = "snd";
-	static public final String DATA_FOLDER = "data";
-	static public final String TEMP_FOLDER = "temp";
-	static public final String LOG_FOLDER = "logs"; //subfolder of data/
-	static public final String DOCS_FOLDER = "docs";
-	
-	static public final String NO_MEDIA_FILE = ".nomedia"; //Info: http://www.makeuseof.com/tag/hide-private-picture-folders-gallery-android
 	
 	static public final boolean DEFAULT_LOGGING = true;
 		
 	static public final int MAX_FORMS = 32;
 	
 	static public final int MAX_RECORD_PRODUCING_FORMS = Math.min(MAX_FORMS, Model.MAX_SCHEMATA - 1 /* subtract 1 for the heartbeatSchema */);
-	
+
 	//DYNAMICS------------------------------------------------------------
 	private int id = Integer.MIN_VALUE; // don't init to 0 because that is an acceptable project id, nor -1 because that is used as temporary indication of a v1x project
 	private final int fingerPrint;
 	private final String name;
 	private String variant;
 	private String version;
-	
-	private String projectPath;
-	
+
 	private TransmissionSettings transmissionSettings;
 	private boolean logging;
 	private Schema heartbeatSchema;
@@ -85,8 +79,7 @@ public class Project
 	private Form startForm;
 	
 	// For backwards compatibility:
-	private boolean v1xProject = false;
-	private int schemaVersion = -1; // don't init to 0 because that is an acceptable schema version
+	private Integer v1xSchemaVersion = null; // if this remains null the project is > v1.x
 		
 	/**
 	 * @param id
@@ -94,13 +87,11 @@ public class Project
 	 * @param variant
 	 * @param version
 	 * @param fingerPrint - hash code computed against XML (ignoring comments and whitespace; see XMLHasher) 
-	 * @param basePath
-	 * @param createSubfolder
 	 */
-	public Project(int id, String name, String variant, String version, int fingerPrint, String basePath, boolean createSubfolder)
+	public Project(int id, String name, String variant, String version, int fingerPrint)
 	{
-		if(name == null || name.isEmpty() || basePath == null || basePath.isEmpty())
-			throw new IllegalArgumentException("Both a name and a valid path are required");
+		if(name == null || name.isEmpty())
+			throw new IllegalArgumentException("A valid name is required");
 		if(version == null || version.isEmpty())
 			throw new IllegalArgumentException("A valid version is required");
 		
@@ -115,29 +106,11 @@ public class Project
 		
 		// Project id:
 		if(id == PROJECT_ID_V1X_TEMP)
-		{	//Backwards compatibility
-			this.id = id;
-			v1xProject = true;
-		}
+			//Backwards compatibility
+			this.v1xSchemaVersion = -1; // make variable non-null to mark project as v1.x, the real schemaVersion value will be set from setV1XSchemaInfo(), which will in turn call initialise() to set the project id
 		else
-			initialise(id); // checks if it fits in field	
+			initialise(id); // checks if it fits in field
 		
-		// Path:
-		if(basePath.charAt(basePath.length() - 1) != File.separatorChar)
-			basePath += File.separatorChar;
-		this.projectPath = basePath;
-		if(createSubfolder)
-		{
-			this.projectPath += this.name + File.separatorChar + "v" + version + File.separatorChar; // TODO include variant
-			if(!FileHelpers.createFolder(projectPath))
-				throw new IllegalArgumentException("Could not create folder: " + projectPath);
-			// Create .nomedia file:
-			try
-			{
-				(new File(projectPath + NO_MEDIA_FILE)).createNewFile();
-			}
-			catch(IOException ignore) {}
-		}
 		// Forms list:
 		this.forms = new ArrayList<Form>();
 		// Logging:
@@ -179,7 +152,7 @@ public class Project
 	 */
 	public boolean isV1xProject()
 	{
-		return v1xProject;
+		return v1xSchemaVersion != null;
 	}
 	
 	/**
@@ -193,23 +166,21 @@ public class Project
 	 */
 	public void setV1XSchemaInfo(int schemaID, int schemaVersion)
 	{
-		if(!v1xProject)
+		if(!isV1xProject())
 			throw new IllegalStateException("Only allowed for v1.x projects (created with id=PROJECT_ID_V1X_TEMP).");
-		initialise(schemaID); // schemaID of first (and only) form is also used as projectID
+		initialise(schemaID); // schemaID of first (and only) form is used as projectID
 		if(Schema.V1X_SCHEMA_VERSION_FIELD.fits(schemaVersion))
-			this.schemaVersion = schemaVersion;
+			this.v1xSchemaVersion = schemaVersion;
 		else
 			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.V1X_SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
 	}
 	
 	/**
-	 * @return the schemaVersion
+	 * @return the v1x schemaVersion, or null when the project is not a v1x project!
 	 */
-	public int getSchemaVersion()
+	public Integer getV1XSchemaVersion()
 	{
-		if(!v1xProject)
-			throw new IllegalStateException("Only supported for v1.x projects.");
-		return schemaVersion;
+		return v1xSchemaVersion;
 	}
 
 	public String getName()
@@ -342,73 +313,26 @@ public class Project
 		this.transmissionSettings = transmissionSettings;
 	}
 	
-	public String getProjectFolderPath()
-	{
-		return projectPath;
-	}
-	
-	public String getImageFolderPath()
-	{
-		return projectPath + IMAGE_FOLDER + File.separator;
-	}
-	
-	public String getSoundFolderPath()
-	{
-		return projectPath + SOUND_FOLDER + File.separator;
-	}
-	
-	public String getDataFolderPath()
-	{
-		return projectPath + DATA_FOLDER + File.separator;
-	}
-	
 	/**
 	 * @param imageFileRelativePath
 	 * @return file object, or null if the given path was null or empty
 	 */
-	public File getImageFile(String imageFileRelativePath)
+	public File getImageFile(FileStorageProvider fileStorageProvider, String imageFileRelativePath)
 	{
 		if(imageFileRelativePath == null || imageFileRelativePath.isEmpty())
 			return null;
-		return new File(getImageFolderPath() + imageFileRelativePath);
+		return new File(fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath() + File.separator + IMAGE_FOLDER + File.separator + imageFileRelativePath);
 	}
 	
 	/**
 	 * @param soundFileRelativePath
 	 * @return file object, or null if the given path was null or empty
 	 */
-	public File getSoundFile(String soundFileRelativePath)
+	public File getSoundFile(FileStorageProvider fileStorageProvider, String soundFileRelativePath)
 	{
 		if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
 			return null;
-		return new File(getSoundFolderPath() + soundFileRelativePath);
-	}
-	
-	/**
-	 * @return File object pointing to the data folder for this project
-	 * @throws IOException - when the folder cannot be created or is not writable
-	 */
-	public File getDataFolder() throws IOException
-	{
-		File folder = new File(getDataFolderPath());
-		checkFolder(folder);
-		return folder;
-	}
-	
-	public String getTempFolderPath()
-	{
-		return projectPath + TEMP_FOLDER + File.separator;
-	}
-	
-	/**
-	 * @return File object pointing to the temp folder for this project
-	 * @throws IOException - when the folder cannot be created or is not writable
-	 */
-	public File getTempFolder() throws IOException
-	{
-		File folder = new File(getTempFolderPath());
-		checkFolder(folder);
-		return folder;
+		return new File(fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
 	}
 	
 	@Override
@@ -419,17 +343,8 @@ public class Project
 	
 	public String toString(boolean verbose)
 	{
-		return 	name + (variant != null ? (" " + variant) : "") + (version != DEFAULT_VERSION ? " (v" + version + ")" : "")
+		return 	name + (variant != null ? (" " + variant) : "") + " (v" + version + ")"
 				+ (verbose ? (" [id: " + id + "; fingerprint: " + fingerPrint + "]") : "");
-	}
-	
-	private void checkFolder(File folder) throws IOException
-	{
-		// Check if data path is accessible
-		if(!FileHelpers.createFolder(folder))
-			throw new IOException("Data path (" + folder.getAbsolutePath() + ") cannot be created.");
-		if(!folder.canWrite())
-			throw new IOException("Data path (" + folder.getAbsolutePath() + ") is not writable.");
 	}
 
 	/**
@@ -448,75 +363,58 @@ public class Project
 		this.logging = logging;
 	}
 	
-	public String getLogFolderPath() throws IOException
-	{
-		return getDataFolder().getAbsolutePath() + File.separator + LOG_FOLDER + File.separator;
-	}
-	
-	public File getLogFolder() throws IOException
-	{
-		File folder = new File(getLogFolderPath());
-		checkFolder(folder);
-		return folder;
-	}
-	
-	public String getDocsFolderPath()
-	{
-		return projectPath + DOCS_FOLDER + File.separator;
-	}
-	
 	/**
-	 * @return File object pointing to the docs folder for this project
-	 * @throws IOException - when the folder cannot be created or is not writable
-	 */
-	public File getDocsFolder() throws IOException
-	{
-		File folder = new File(getDocsFolderPath());
-		checkFolder(folder);
-		return folder;
-	}
-	
-	/**
-	 * @return a list of files (as paths relative to the project path) that are referred to by (forms of) this project but which could not be found or accessed   
-	 */
-	public List<String> checkForInvalidFiles()
-	{
-		List<String> invalidFiles = new ArrayList<String>();
-		for(Form form : forms)
-			for(File file : form.getFiles(this))
-				if(!file.isFile() || !file.exists() || !file.canRead())
-					invalidFiles.add(file.getAbsolutePath().substring(projectPath.length()));
-		return invalidFiles;
-	}
-	
-	/**
-	 * For now this only generates CSV files that document the indexed values for ChoiceFields
+	 * Find all files used by the project
 	 * 
-	 * @throws IOException
+	 * @param fileStorageProvider to resolve relative paths
+	 * @return a list of files that the project depends on
 	 */
-	public void generateDocumentation() throws IOException
+	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
-		File docsFolder = getDocsFolder();
+		List<File> files = new ArrayList<File>();
 		for(Form form : forms)
-		{
-			for(Field field : form.getFields())
-			{
-				if(!field.isNoColumn() && field instanceof ChoiceField)
-				{					
-					FileWriter writer = new FileWriter(docsFolder.getAbsolutePath() + File.separator + form.getName() + "_" + field.getID() + ".csv");
-					writer.open(FileHelpers.FILE_EXISTS_STRATEGY_REPLACE, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
-					writer.write(((ChoiceField) field).getDictionary().toCSV(";"));
-					writer.close();
-				}
-			}
-		}
+			CollectionUtils.addAllIgnoreNull(files, form.getFiles(fileStorageProvider));
+		return files;
+	}
+	
+	/**
+	 * @return a list of files (as File object) that are referred to by (forms of) this project but which could not be found or accessed   
+	 */
+	public List<File> getMissingFiles(FileStorageProvider fileStorageProvider)
+	{
+		SortedSet<File> missingFiles = new TreeSet<File>();
+		for(File file : getFiles(fileStorageProvider))
+			if(!file.isFile() || !file.exists() || !file.canRead())
+				missingFiles.add(file);
+		// Return as list:
+		if(missingFiles.isEmpty())
+			return Collections.<File> emptyList();
+		else
+			return Arrays.asList(missingFiles.toArray(new File[missingFiles.size()]));
+	}
+	
+	/**
+	 * Generate list of paths (relative to the project path) of files that are referred to by (forms of) this project but which could not be found or accessed
+	 * 
+	 * @return a list relative paths of missing files, or null if no files are missing   
+	 */
+	public List<String> getMissingFilesRelativePaths(FileStorageProvider fileStorageProvider)
+	{
+		List<File> missingFiles = getMissingFiles(fileStorageProvider);
+		if(missingFiles.isEmpty())
+			return Collections.<String> emptyList();
+		List<String> missingFilePaths = new ArrayList<String>(missingFiles.size());
+		int startIndex = fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath().length() + 1; // +1 for file separator
+		for(File missingFile : getMissingFiles(fileStorageProvider))
+			missingFilePaths.add(missingFile.getAbsolutePath().substring(startIndex));
+		return missingFilePaths;
 	}
 	
 	public boolean equalSignature(Project other)
 	{
 		return 	this.name.equals(other.name)
 				&& (this.variant == null ? other.variant == null : variant.equals(other.variant))
-				&& this.version.equals(other.version);	
+				&& this.version.equals(other.version);
 	}
 	
 	@Override
@@ -535,8 +433,7 @@ public class Project
 					this.logging == that.logging &&
 					this.forms.equals(that.forms) &&
 					(this.startForm != null ? this.startForm.equals(that.startForm) : that.startForm == null) &&
-					this.v1xProject == that.v1xProject &&
-					this.schemaVersion == that.schemaVersion;
+					this.v1xSchemaVersion == that.v1xSchemaVersion;
 		}
 		return false;
 	}
@@ -555,8 +452,7 @@ public class Project
 		hash = 31 * hash + (logging ? 0 : 1);
 		hash = 31 * hash + forms.hashCode();
 		hash = 31 * hash + (startForm == null ? 0 : startForm.hashCode());
-		hash = 31 * hash + (v1xProject ? 0 : 1);
-		hash = 31 * hash + schemaVersion;
+		hash = 31 * hash + (v1xSchemaVersion == null ? -1 : v1xSchemaVersion);
 		return hash;
 	}
 	

@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
@@ -133,7 +133,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	@Override
 	protected void doCommitTransaction() throws DBException
 	{
-		if(getOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
+		if(numberOfOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
 			try
 			{
 				executeSQL("COMMIT TRANSACTION;");
@@ -147,7 +147,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	@Override
 	protected void doRollbackTransaction() throws DBException
 	{
-		if(getOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
+		if(numberOfOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
 			try
 			{
 				executeSQL("ROLLBACK TRANSACTION;");
@@ -193,6 +193,15 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			if(cursor != null)
 				cursor.close();
 		}
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#hasFullIndexSupport()
+	 */
+	@Override
+	public boolean hasFullIndexSupport()
+	{
+		return true;
 	}
 	
 	/**
@@ -404,6 +413,14 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		public void drop() throws DBException
 		{
 			// Release resources:
+			release();
+			
+			// Drop table:
+			super.drop();
+		}
+		
+		public void release()
+		{
 			if(existsStatement != null)
 				existsStatement.close();
 			if(insertStatement != null)
@@ -414,9 +431,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				deleteStatement.close();
 			if(countStatement != null)
 				countStatement.close();
-			
-			// Drop table:
-			super.drop();
 		}
 
 	}
@@ -471,10 +485,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @param sapValue
 		 * @throws DBException
 		 */
-		@SuppressWarnings("unchecked")
 		public void bindSapelliObject(SapelliSQLiteStatement statement, int paramIdx, Object sapValue) throws DBException
 		{
-			bind(statement, paramIdx, sapValue != null ? mapping.toSQLType((SapType) sapValue) : null);
+			bind(statement, paramIdx, sapelliOjectToSQL(sapValue));
 		}
 		
 		/**

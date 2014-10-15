@@ -868,7 +868,7 @@ public class FormParser extends SubtreeParser
 			}
 			currentForm.setStartField(startField);		
 			
-			// Add EndField instances (these don't need to be added as actual fields)
+			// Add EndField instances to idToField map (these don't need to be added as actual fields to the form itself)
 			for(EndField endF : EndField.GetEndFields(currentForm))
 				idToField.put(endF.getID().toUpperCase(), endF); // upper cased, for case insensitivity (they should already be upper case, but just in case...)
 			

@@ -17,7 +17,6 @@ build/
 target/
 CollectorAndroid/res/values/buildinfo.xml
 
-
 # temp folders and files
 tmp/**
 temp/**
@@ -38,7 +37,6 @@ local.properties
 
 # Locally stored "Eclipse launch configurations"
 #*.launch
-
 
 /Dependencies/Android FileChooser/lint.xml
 /CollectorAndroid/*.excites

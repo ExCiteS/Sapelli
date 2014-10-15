@@ -1,18 +1,20 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project name="Sapelli Data Collector - Build info generation" default="GenerateBuildInfo" xmlns:ac="antlib:net.sf.antcontrib">
+﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project name="Sapelli Data Collector - Build info generation" default="generateBuildInfo" xmlns:ac="antlib:net.sf.antcontrib">
 	<!-- Author: mstevens -->
-
-	<taskdef resource="net/sf/antcontrib/antlib.xml" uri="antlib:net.sf.antcontrib"/><!-- required for for/if/etc. -->	
+	<taskdef resource="net/sf/antcontrib/antlib.xml" uri="antlib:net.sf.antcontrib"/><!-- required for for/if/etc. -->
+  <taskdef name="groovy" classname="org.codehaus.groovy.ant.Groovy"/>
     
-    <target name="-settings">
-        
-        <!-- Change these if needed -->
-        <property name="resourcename" value="buildinfo"/>
+  <target name="-settings">
+    <!-- Change these if needed -->
+    <property name="resourcename" value="buildinfo"/>
 		
-        <!-- Don't touch these: -->
+    <!-- Don't touch these: -->
 		<property environment="env"/>
 		<property name="home" location="."/>
 		<property name="project-dir" location="${basedir}"/>
+    <property name="assets-dir" location="${project-dir}${file.separator}assets"/>
+    <property name="demo-project-filename" value="demo.excites"/>
+		<property name="res-values-dir" location="${project-dir}${file.separator}res${file.separator}values"/>
 		<loadproperties srcFile="${project-dir}${file.separator}project.properties" />
 		<xmlproperty file="${project-dir}${file.separator}AndroidManifest.xml" prefix="mani" collapseAttributes="true"/>
 		<property name="appVersionName" value="${mani.manifest.android:versionName}"/>
@@ -23,8 +25,6 @@
 		<!--<condition property="build-dir" value="${mvn-gen-dir}" else="${gen-dir}">
 			<isset property="mvn-phase"/>
     </condition>-->
-		<property name="assets-dir" location="${project-dir}${file.separator}assets"/>
-		<property name="res-values-dir" location="${project-dir}${file.separator}res${file.separator}values"/>
 		<!--<loadresource property="package-path">
 			<propertyresource name="package"/>
 			<filterchain>
@@ -40,8 +40,7 @@
 				<available file="${output-dir}" type="dir"/>
 			</not>
 		</condition>
-		<property name="file-path" location="${output-dir}${file.separator}${resourcename}.xml"/>
-		<property name="demo-project-filename" value="demo.excites"/>
+		<property name="buildinfo-path" location="${output-dir}${file.separator}${resourcename}.xml"/>
 	</target>
 
     <target name="-git.branch" description="Store current git branch in ${repository-branch}">
@@ -93,18 +92,18 @@
 	<target name="-git.changes" description="Check if there are changes w.r.t. the last commit in the given ${repository-path}">
 	    <echo>Checking for changes in: ${repository-path}</echo>
 	    <ac:var name="git-changes" unset="true"/>
-		<exec executable="git" resultproperty="git-changes" failifexecutionfails="false" errorproperty="">
-	        <arg value="diff"/>
-	        <arg value="--quiet"/>
-	        <arg value="HEAD"/>
+	    <exec executable="git" resultproperty="git-changes" failifexecutionfails="false" errorproperty="">
+	       	<arg value="diff"/>
+	       	<arg value="--quiet"/>
+	    	<arg value="HEAD"/>
 	    	<arg value='"${repository-path}"'/>
 	    </exec>
-		<ac:var name="repository-path-changes" unset="true"/>
-		<condition property="repository-path-changes" value="true" else="false">
-	        <and>
-			<isset property="git-changes"/>
-	        	<equals arg1="${git-changes}" arg2="1"/>
-	        </and>
+	    <ac:var name="repository-path-changes" unset="true"/>
+	    <condition property="repository-path-changes" value="true" else="false">
+		<and>
+		     <isset property="git-changes"/>
+		     <equals arg1="${git-changes}" arg2="1"/>
+		</and>
 	    </condition>
 	    <echo>Changes since last commit?: ${repository-path-changes}</echo>
 	</target>
@@ -122,10 +121,10 @@
 			<ac:then>
 		        <!-- first checks the project itself and then (if needed) loops over the android.library.reference.* properties which are loaded from project.properties -->
 		        <script language="javascript">
-		   			//Check project itself:
+		   			// Check project itself:
 		   			project.setProperty("repository-path", ".");
 		   			project.executeTarget("-git.changes");
-		            //Check libraries (as long as we do not find changes):
+		            		// Check libraries (as long as we do not find changes):
 					i = 1;
 					while(project.getProperty("repository-path-changes") != "true")
 					{
@@ -149,9 +148,9 @@
 	
 	<target name="git-check" depends="-settings,-git">
 	    <echo>Active git branch: ${repository-branch}</echo>
-		<echo>Last git commit hash: ${repository-version}</echo>
-		<echo>Last git commit tag: ${repository-tag}</echo>
-		<echo>Changes since last commit?: ${repository-changes}</echo>
+	    <echo>Last git commit hash: ${repository-version}</echo>
+	    <echo>Last git commit tag: ${repository-tag}</echo>
+	    <echo>Changes since last commit?: ${repository-changes}</echo>
 	</target>
 	
 	<target name="-demo">
@@ -169,21 +168,44 @@
 		</ac:if>
 	</target>
 	
-	<target name="GenerateBuildInfo" depends="-settings,-create-dir,-git,-demo">
-		<tstamp>
+	<target name="generateBuildInfoIfNeeded" depends="-settings">
+    <groovy>
+      def buildinfoxml = new File(properties.'buildinfo-path')
+      if(!buildinfoxml.exists() || (System.currentTimeMillis() - buildinfoxml.lastModified()) >= (15*1000))
+      {
+        properties.'generate' = true
+      }
+    </groovy>
+     <ac:if>
+      <isset property="generate"/>
+      <then>
+        <antcall target="-generate"/>
+      </then>
+      <else>
+        <echo>No need to update ${resourcename}.xml, existing version is less than 15 seconds old...</echo>
+      </else>
+    </ac:if>
+	</target>
+	
+	<target name="generateBuildInfo" depends="-settings">
+    <antcall target="-generate"/>
+	</target>
+	
+	<target name="-generate" depends="-create-dir,-git,-demo">
+    <tstamp>
 			<format property="TIMESTAMP" pattern="yyyy-MM-dd'T'HH:mm:ssZ"/>
 		</tstamp>
 		<echo>Generating ${resourcename}.xml resource file...</echo>
 		<echo>	User: ${user.name}</echo>
 		<echo>	Build timestamp: ${TIMESTAMP}</echo>
 		<echo>	App version (code): ${appVersionName} (${appVersionCode})</echo>
-		<echo>  Active git branch: ${repository-branch}</echo>
+		<echo>	Active git branch: ${repository-branch}</echo>
 		<echo>	Last git commit hash: ${repository-version}</echo>
 		<echo>	Last git commit tag: ${repository-tag}</echo>
 		<echo>	Changes since last commit?: ${repository-changes}</echo>
 		<echo>	Demo build?: ${demo-build}</echo>
 		<!-- Generate the class: -->
-		<echo file="${file-path}">&lt;?xml version="1.0" encoding="utf-8"?&gt;
+		<echo file="${buildinfo-path}">&lt;?xml version="1.0" encoding="utf-8"?&gt;
 &lt;!--
 	Sapelli data collection platform: http://sapelli.org
 	
@@ -212,7 +234,7 @@
 	&lt;item name="demoBuild" type="${resourcename}"&gt;${demo-build}&lt;/item&gt;
 &lt;/resources&gt;
 </echo>
-		<echo>${resourcename} resource file generated (${file-path}).</echo>
+		<echo>${resourcename} resource file generated (${buildinfo-path}).</echo>
 	</target>
 	
 	<!-- doesn't seem to work, but can be achieved in the builder settings within Eclipse -->

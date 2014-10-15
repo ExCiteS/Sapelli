@@ -16,12 +16,12 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.db.sql.sqlite.android;
+package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
 import java.io.File;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
@@ -128,7 +128,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected void doCommitTransaction() throws DBException
 	{
-		if(getOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
+		if(numberOfOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
 			try
 			{
 				db.setTransactionSuccessful();
@@ -143,7 +143,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected void doRollbackTransaction() throws DBException
 	{
-		if(getOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
+		if(numberOfOpenTransactions() == 1) // higher numbers indicate nested transactions which are simulated
 			try
 			{
 				db.endTransaction();

@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.storage.model;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -495,11 +496,18 @@ public class Schema implements Serializable
 		return null;
 	}
 
+	/**
+	 * @return
+	 */
 	public Record createRecord()
 	{
 		return new Record(this);
 	}
 	
+	/**
+	 * @param values
+	 * @return
+	 */
 	public Record createRecord(Object... values)
 	{
 		return new Record(this, values);
@@ -523,6 +531,53 @@ public class Schema implements Serializable
 	public Record createRecord(byte[] serialisedValues) throws Exception
 	{
 		return new Record(this, serialisedValues);
+	}
+	
+	/**
+	 * Create an uninitialised reference to a record of this schema
+	 * 
+	 * @return
+	 */
+	public RecordReference createRecordReference()
+	{
+		return new RecordReference(this);
+	}
+	
+	/**
+	 * Create an initialised reference to a record of this schema
+	 * 
+	 * @param keyPartValues
+	 * @return
+	 */
+	public RecordReference createRecordReference(Object... keyPartValues)
+	{
+		return new RecordReference(this, keyPartValues);
+	}
+	
+	/**
+	 * Create an initialised reference to a record of this schema
+	 * 
+	 * @param serialiseKeyPartValues
+	 * @return
+	 * @throws Exception 
+	 * @throws NullPointerException 
+	 */
+	public RecordReference createRecordReference(String serialisedKeyPartValues) throws NullPointerException, Exception
+	{
+		return new RecordReference(this, serialisedKeyPartValues);
+	}
+	
+	/**
+	 * Create an initialised reference to a record of this schema
+	 * 
+	 * @param serialiseKeyPartValues
+	 * @return
+	 * @throws NullPointerException
+	 * @throws IOException 
+	 */
+	public RecordReference createRecordReference(byte[] serialisedKeyPartValues) throws NullPointerException, IOException
+	{
+		return new RecordReference(this, serialisedKeyPartValues);
 	}
 	
 	/**
