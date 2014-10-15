@@ -59,8 +59,7 @@ import android.util.Log;
  * @author mstevens, Michalis Vitos, Julia
  * 
  */
-public class CollectorController extends Controller implements LocationListener, OrientationListener
-{
+public class CollectorController extends Controller implements LocationListener, OrientationListener {
 
 	// STATICS-------------------------------------------------------
 	public static final String TAG = "CollectorController";
@@ -78,49 +77,41 @@ public class CollectorController extends Controller implements LocationListener,
 	private TextToVoice textToVoice;
 	private AudioToVoice audioToVoice;
 
-	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, CollectorActivity activity)
-	{
+	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, CollectorActivity activity) {
 		super(project, collectorView, projectStore, recordStore);
 		this.activity = activity;
 
 		// Set/change last running project:
 		Crashlytics.setString(CollectorApp.PROPERTY_LAST_PROJECT, project.toString(true));
 		System.getProperties().setProperty(CollectorApp.PROPERTY_LAST_PROJECT, project.toString(true));
-		
+
 		// Get Device ID (as a CRC32 hash):
-		try
-		{
+		try {
 			deviceIDHash = DeviceID.GetInstance(activity).getIDAsCRC32Hash();
-		}
-		catch(IllegalStateException ise)
-		{
+		} catch (IllegalStateException ise) {
 			activity.showErrorDialog("DeviceID has not be initialised!", true);
 		}
 	}
 
 	@Override
-	public boolean enterOrientationField(OrientationField of, FieldParameters arguments)
-	{
-		if(orientationSensor == null)
-			orientationSensor = new OrientationSensor(activity);		
+	public boolean enterOrientationField(OrientationField of, FieldParameters arguments) {
+		if (orientationSensor == null)
+			orientationSensor = new OrientationSensor(activity);
 		orientationSensor.start(this); // start listening for orientation updates
-		return false; // there is no UI needed for this (for now)
+		return true; // always update UI (for now)
 	}
 
 	@Override
-	public uk.ac.ucl.excites.sapelli.storage.types.Location getCurrentBestLocation()
-	{
+	public uk.ac.ucl.excites.sapelli.storage.types.Location getCurrentBestLocation() {
 		return LocationUtils.getSapelliLocation(currentBestLocation); // passing null returns null
 	}
-	
+
 	@Override
-	protected void saveRecordAndAttachments()
-	{	
-		super.saveRecordAndAttachments(); //!!!
-	
+	protected void saveRecordAndAttachments() {
+		super.saveRecordAndAttachments(); // !!!
+
 		// Also print the record on Android Log:
-		if(currFormSession.form.isProducesRecords())
-		{
+		if (currFormSession.form.isProducesRecords()) {
 			Log.d(TAG, "Stored record:");
 			Log.d(TAG, currFormSession.record.toString());
 		}
@@ -131,9 +122,8 @@ public class CollectorController extends Controller implements LocationListener,
 	 * 
 	 * @param text
 	 */
-	public void textToVoice(String text)
-	{
-		if(textToVoice == null)
+	public void textToVoice(String text) {
+		if (textToVoice == null)
 			return;
 
 		textToVoice.speak(text);
@@ -145,86 +135,72 @@ public class CollectorController extends Controller implements LocationListener,
 	 * 
 	 * @param soundFilePath
 	 */
-	public void audioToVoice(String soundFilePath)
-	{
-		if(audioToVoice == null)
+	public void audioToVoice(String soundFilePath) {
+		if (audioToVoice == null)
 			return;
 
 		audioToVoice.speak(soundFilePath);
 		addLogLine("AUDIO_TO_VOICE", soundFilePath);
 	}
 
-	public void stopAudioFeedback()
-	{
+	public void stopAudioFeedback() {
 		// Stop the Media Player
-		if(audioToVoice != null)
+		if (audioToVoice != null)
 			audioToVoice.stop();
 
 		// Stop the Android TTS (Text-To-Speech) Engine
-		if(textToVoice != null)
+		if (textToVoice != null)
 			textToVoice.stop();
 	}
 
-	public void onOrientationChanged(Orientation orientation)
-	{
-		if(getCurrentField() instanceof OrientationField)
-		{
+	public void onOrientationChanged(Orientation orientation) {
+		if (getCurrentField() instanceof OrientationField) {
 			((OrientationField) getCurrentField()).storeOrientation(currFormSession.record, orientation);
 			orientationSensor.stop(); // stop listening for updates
 			goForward(false);
 		}
 	}
 
-	public void startLocationListener(List<LocationField> locFields)
-	{
-		if(locFields.isEmpty())
+	public void startLocationListener(List<LocationField> locFields) {
+		if (locFields.isEmpty())
 			return;
 		// Get locationmanager:
-		if(locationManager == null)
+		if (locationManager == null)
 			locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
 		// Determine which provider(s) we need:
 		Set<String> providers = new HashSet<String>();
-		for(LocationField lf : locFields)
+		for (LocationField lf : locFields)
 			providers.addAll(LocationUtils.getProvider(locationManager, lf));
 		// Start listening to each provider:
-		for(String provider : providers)
-		{
+		for (String provider : providers) {
 			locationManager.requestLocationUpdates(provider, LOCATION_LISTENER_UPDATE_MIN_TIME_MS, LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M, this);
 			// Test if provider is active:
-			if(!locationManager.isProviderEnabled(provider))
-			{
-				activity.showOKDialog(R.string.app_name, activity.getString(R.string.enableLocationProvider, provider), true, new Runnable()
-				{	// TODO /how will not illiterates deal with this, and what if the Sapelli launcher is used (settings screen will be inaccessible)?
-					@Override
-					public void run()
-					{
-						activity.startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), 0);
-					}
-				});
+			if (!locationManager.isProviderEnabled(provider)) {
+				activity.showOKDialog(R.string.app_name, activity.getString(R.string.enableLocationProvider, provider), true, new Runnable() { // TODO /how will not illiterates deal with this, and what if the Sapelli launcher is used (settings screen will be inaccessible)?
+							@Override
+							public void run() {
+								activity.startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), 0);
+							}
+						});
 			}
 		}
 	}
 
-	public void stopLocationListener()
-	{
-		if(locationManager != null)
+	public void stopLocationListener() {
+		if (locationManager != null)
 			locationManager.removeUpdates(this);
 	}
 
 	@Override
-	public synchronized void onLocationChanged(Location location)
-	{
-		if(LocationUtils.isBetterLocation(location, currentBestLocation))
-		{
+	public synchronized void onLocationChanged(Location location) {
+		if (LocationUtils.isBetterLocation(location, currentBestLocation)) {
 			currentBestLocation = location;
 			// check if we can/need to use the location now:
-			if(getCurrentField() instanceof LocationField)
-			{	// user is currently waiting for a location for the currFormSession.currField
+			if (getCurrentField() instanceof LocationField) { // user is currently waiting for a location for the currFormSession.currField
 				LocationField lf = (LocationField) getCurrentField();
 				// try to store location:
-				if(lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(location)))
-				{ 	// location successfully stored:
-					if(currFormSession.form.getLocationFields(true).isEmpty())
+				if (lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(location))) { // location successfully stored:
+					if (currFormSession.form.getLocationFields(true).isEmpty())
 						stopLocationListener(); // there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)
 					goForward(false); // continue (will leave waiting screen & stop the timeout timer)
 				}
@@ -234,87 +210,71 @@ public class CollectorController extends Controller implements LocationListener,
 	}
 
 	@Override
-	public void onProviderDisabled(String provider)
-	{
+	public void onProviderDisabled(String provider) {
 		// does nothing for now
 	}
 
 	@Override
-	public void onProviderEnabled(String provider)
-	{
+	public void onProviderEnabled(String provider) {
 		// does nothing for now
 	}
 
 	@Override
-	public void onStatusChanged(String provider, int status, Bundle extras)
-	{
+	public void onStatusChanged(String provider, int status, Bundle extras) {
 		// does nothing for now
 	}
-	
 
 	@Override
-	protected void setupKeyPressTrigger(Trigger trigger)
-	{
+	protected void setupKeyPressTrigger(Trigger trigger) {
 		activity.setupKeyPressTrigger(trigger);
 	}
 
 	@Override
-	protected void setupTimerTrigger(Trigger trigger)
-	{
+	protected void setupTimerTrigger(Trigger trigger) {
 		activity.setupTimerTrigger(trigger);
 	}
 
 	@Override
-	protected void disableKeyPressTrigger(Trigger trigger)
-	{
+	protected void disableKeyPressTrigger(Trigger trigger) {
 		activity.disableKeyPressTrigger(trigger);
 	}
 
 	@Override
-	protected void disableTimerTrigger(Trigger trigger)
-	{
+	protected void disableTimerTrigger(Trigger trigger) {
 		activity.disableTimerTrigger(trigger);
 	}
-	
-	
+
 	@Override
-	protected void vibrate(int durationMS)
-	{
+	protected void vibrate(int durationMS) {
 		DeviceControl.vibrate(activity, durationMS);
 	}
-	
+
 	@Override
-	protected void playSound(File soundFile)
-	{
+	protected void playSound(File soundFile) {
 		DeviceControl.playSoundFile(activity, soundFile);
 	}
 
 	@Override
-	protected void exitApp()
-	{
+	protected void exitApp() {
 		activity.finish();
 	}
 
-	public void enableAudioFeedback()
-	{
+	public void enableAudioFeedback() {
 		// Check if any of the forms has audio feedback enabled
-		for(Form f : project.getForms())
-		{
+		for (Form f : project.getForms()) {
 			final AudioFeedback audioFeedback = f.getAudioFeedback();
 
-			if(audioFeedback != null)
-			{
-				switch(audioFeedback)
-				{
+			if (audioFeedback != null) {
+				switch (audioFeedback) {
 				case LONG_CLICK:
 				case SEQUENTIAL:
 
 					// Enable Audio Files Feedback
-					if(audioToVoice == null)
+					if (audioToVoice == null)
 						audioToVoice = new AudioToVoice(activity.getBaseContext());
 
 					// Enable TTS Audio Feedback
-					if(textToVoice == null)
+					if (textToVoice == null)
 						textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
 
 					break;
@@ -325,35 +285,33 @@ public class CollectorController extends Controller implements LocationListener,
 		}
 	}
 
-	public void disableAudioFeedback()
-	{
+	public void disableAudioFeedback() {
 		// Release the Media Player
-		if(audioToVoice != null)
+		if (audioToVoice != null)
 			audioToVoice.destroy();
 
 		// Release the Android TTS (Text-To-Speech) Engine
-		if(textToVoice != null)
+		if (textToVoice != null)
 			textToVoice.destroy();
 	}
 
 	@Override
-	protected void showError(String errorMsg, boolean exit)
-	{
+	protected void showError(String errorMsg, boolean exit) {
 		activity.showErrorDialog(errorMsg, exit);
 	}
 
 	@Override
-	protected long getDeviceID()
-	{
+	protected long getDeviceID() {
 		return deviceIDHash;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.collector.control.Controller#getElapsedMillis()
 	 */
 	@Override
-	protected long getElapsedMillis()
-	{
+	protected long getElapsedMillis() {
 		return SystemClock.elapsedRealtime();
 	}
 
