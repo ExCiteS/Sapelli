@@ -380,7 +380,7 @@ public class CollectorActivity extends ProjectActivity
 			{
 				try
 				{ // Rename the file & pass it to the controller
-					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewTempFile(fileStorageProvider, controller.getCurrentRecord());
+					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewMediaFile(fileStorageProvider, controller.getCurrentRecord(), controller.getCurrentForm().isObfuscateMediaFiles());
 					tmpPhotoFile.renameTo(newPhoto);
 					photoUI.mediaDone(newPhoto, true);
 				}

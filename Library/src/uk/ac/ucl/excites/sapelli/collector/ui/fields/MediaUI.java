@@ -45,18 +45,12 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
 			controller.addLogLine("ATTACHMENT", field.getID(), mediaAttachment.getName());
-			
-			field.incrementCount(controller.getCurrentRecord()); // Store/increase number of pictures/recordings taken
-			
-			// Store file:
-			controller.addMediaAttachment(mediaAttachment);
-			
+			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());
 			controller.goForward(userRequested); // goto next/jump field
 		}
 		else
 		{
 			controller.addLogLine("ATTACHMENT", field.getID(), "-NONE-");
-			
 			if(!isValid(controller.getCurrentRecord()))
 				// at least one attachment is required & we have none:
 				controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE); // stay at this field ("return;" is not enough because if we are using a native app it needs to be restarted)
@@ -67,16 +61,10 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	
 	public void mediaAddedButNotDone(File mediaAttachment)
 	{
-		//TODO ask Matthias about this
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
 			controller.addLogLine("ATTACHMENT", field.getID(), mediaAttachment.getName());
-			
-			field.incrementCount(controller.getCurrentRecord()); // Store/increase number of pictures/recordings taken
-			
-			// Store file:
-			controller.addMediaAttachment(mediaAttachment);
-			
+			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());			
 		}
 		// do NOT go to next/jump field
 		controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
@@ -84,12 +72,8 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	
 	public void removeMedia(File mediaAttachment)
 	{
-		//TODO ask Matthias if this is correct
 			controller.addLogLine("ATTACHMENT REMOVED", field.getID(), mediaAttachment.getName());
-			
-			field.decrementCount(controller.getCurrentRecord()); // Store/increase number of pictures/recordings taken
-			
-			controller.removeMediaAttachment(mediaAttachment);
+			field.removeAttachmentFromRecord(mediaAttachment, controller.getCurrentRecord());
 	}
 	
 	protected boolean showCreateButton()

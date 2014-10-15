@@ -18,11 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.control;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
@@ -61,7 +57,6 @@ public class FormSession
 	private FieldWithArguments currFieldAndArguments = null;
 	private boolean currFieldDisplayed = false;
 	private Map<Field,Boolean> runtimeEnabled = null; // only instantiated when needed
-	private List<File> mediaAttachments = null; // only instantiated when needed
 	
 	/**
 	 * @param form
@@ -178,27 +173,5 @@ public class FormSession
 	public boolean atField()
 	{
 		return currFieldAndArguments != null;
-	}
-	
-	public void addMediaAttachment(File mediaAttachment)
-	{
-		if(mediaAttachments == null)
-			mediaAttachments = new ArrayList<File>();
-		mediaAttachments.add(mediaAttachment);
-	}
-	
-	public void removeMediaAttachment(File mediaAttachment)
-	{
-		if(mediaAttachments != null)
-			mediaAttachments.remove(mediaAttachment);
-	}
-
-	/**
-	 * @return the mediaAttachments
-	 */
-	public List<File> getMediaAttachments()
-	{
-		return mediaAttachments != null ? mediaAttachments : Collections.<File>emptyList();
-	}
-	
+	}	
 }

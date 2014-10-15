@@ -232,7 +232,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 				// write to temporary file right away, but don't attach it unless approved
 				// may eventually run out of storage but makes media code easier - should be fixed 
 				// when temp file stuff is refactored --- TODO
-				lastCaptureFile = field.getNewTempFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
+				lastCaptureFile = field.getNewMediaFile(controller.getFileStorageProvider(),controller.getCurrentRecord(), controller.getCurrentForm().isObfuscateMediaFiles());
 				FileOutputStream fos = new FileOutputStream(lastCaptureFile);
 				fos.write(data);
 				fos.close();

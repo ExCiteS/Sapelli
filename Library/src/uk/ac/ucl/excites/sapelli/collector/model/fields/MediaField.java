@@ -29,7 +29,6 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.xml.FormParser;
 import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -170,42 +169,67 @@ public abstract class MediaField extends Field
 		return (getCount(record) >= max);
 	}
 	
-	public void incrementCount(Record record)
-	{
+	public void addAttachmentToRecord(File attachment, Record record) {
+		// check if adding would exceed max no attachments for this field	
 		int currentCount = getCount(record);	
-		if(currentCount >= max)
+		if(currentCount >= max) {
+			attachment.delete(); // TODO check
 			throw new IllegalStateException("Maximum # of attachments (" + max + ") reached.");
-		((IntegerColumn) form.getColumnFor(this)).storeValue(record, ++currentCount);
+		}
+		// retrieve creationTimeOffset from filename
+		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
+		// add creationTimeOffset to column
+		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
+		offsets.add(creationTimeOffset);
+		((IntegerListColumn) getColumn()).storeValue(record, offsets);
 	}
 	
-	public void decrementCount(Record record)
-	{
-		int currentCount = getCount(record);	
-		if(currentCount <= 0)
+	public void removeAttachmentFromRecord(File attachment, Record record) {
+		// check if there are any attachments to remove
+		int currentCount = getCount(record);
+		if (currentCount == 0)
 			throw new IllegalStateException("No attachments exist to delete.");
-		((IntegerColumn) form.getColumnFor(this)).storeValue(record, --currentCount);
+		// retrieve creationTimeOffset from filename
+		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
+		// remove creationTimeOffset from column
+		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
+		offsets.remove(creationTimeOffset);
+		((IntegerListColumn) getColumn()).storeValue(record, offsets);
+		// actually remove file
+		attachment.delete();
 	}
-
-	public File getNewTempFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
+	
+	private long getCreationTimeOffsetFromFile(File file) {
+		String unobfuscatedName = undoExtensionObfuscation(file.getName());
+		String[] parts = unobfuscatedName.split(Character.toString(FILENAME_ELEMENT_SEPARATOR));
+		try {
+			return Long.parseLong(parts[3]);
+		} catch (Exception e) {
+			throw new IllegalStateException("Attachment filename did not have the expected syntax.");
+		}
+	}
+	
+	/**
+	 * Creates a new file in which to store media, with a filename determined by the field ID, record start time and
+	 * time offset at which this file was requested from that start time.
+	 * @param fileStorageProvider
+	 * @param record
+	 * @param obfuscateFilename
+	 * @return
+	 * @throws FileStorageException
+	 */
+	public File getNewMediaFile(FileStorageProvider fileStorageProvider, Record record, boolean obfuscateFilename) throws FileStorageException
 	{
-		// TODO slightly hacky fix to avoid filename duplication -- will disappear when 
-		// temp files stop being a thing anyway
-		int suffix = getCount(record);
-		String filename = generateFilename(record, getCount(record));
+		long creationTimeOffset = System.currentTimeMillis() - form.getStartTime(record, true).getMsSinceEpoch();
+		String filename = generateFilename(record, creationTimeOffset);
 		String dataFolderPath = fileStorageProvider.getProjectDataFolder(form.getProject(), true).getAbsolutePath();
 		File file = new File(dataFolderPath + File.separator + filename);
-		while (file.exists()) {
-			suffix++;
-			filename = generateFilename(record, suffix);
-			file = new File(dataFolderPath + File.separator + filename);
-		}
 		return file;
 	}
 	
 	/**
-	 * Generates a filename for the {@code attachmentNumber}-th attachment for this {@link MediaField} and the provided {@code record}.
-	 * Both the base filename and the extension will be obfuscated if the {@link FormParser#ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES} attribute was set to {@code true},
-	 * and if so the generated filenames will match {@link #OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT}.
+	 * Generates a new filename for the next media attachment for this field. If obfuscation is enabled,
+	 * the entire filename is obfuscated to match the {@link #OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT}.
 	 * 
 	 * @param record
 	 * @param creationTimeOffset
@@ -217,11 +241,10 @@ public abstract class MediaField extends Field
 	}
 	
 	/**
-	 * Generates a filename for the {@code attachmentNumber}-th attachment for this {@link MediaField} and the provided {@code record}.
+	 * Generates a filename for a new attachment for this {@link MediaField} and the provided {@code record}.
 	 * The filename will be obfuscated if {@code obfuscate} is {@code true}.
 	 * 
 	 * @param record
-	 * @param creationTimeOffset
 	 * @param obfuscate
 	 * @return
 	 */
@@ -232,7 +255,7 @@ public abstract class MediaField extends Field
 		long deviceID = form.getDeviceID(record);
 		
 		// Assemble base filename
-		//	Format: "FieldID_DeviceID_DateTime_AttachmentNumber"
+		//	Format: "FieldID_DeviceID_DateTime_CreationTimeOffset"
 		String filename = this.getID() + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + creationTimeOffset;
 		String extension = getFileExtension();
 		char extensionSeparator = '.';
@@ -240,6 +263,7 @@ public abstract class MediaField extends Field
 		// Obfuscate filename if necessary:
 		if(obfuscate)
 		{
+			// TODO - remove custom extension separator and rotate all at once?
 			filename = ROT13.rot13NumRot5(filename);
 			extensionSeparator = FILENAME_ELEMENT_SEPARATOR; // '_' instead of '.'
 			extension = ROT13.rot13NumRot5(extension).toUpperCase(); // Format: UPPERCASE(ROT13(extension))
@@ -254,7 +278,7 @@ public abstract class MediaField extends Field
 	 * @see #generateFilename(Record, int, boolean, boolean)
 	 * @return
 	 */
-	public static String UndoExtensionObfuscation(String filename)
+	public static String undoExtensionObfuscation(String filename)
 	{
 		Matcher matcher = OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT.matcher(filename);
 		if(matcher.find() && matcher.groupCount() == 2)

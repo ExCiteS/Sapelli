@@ -92,7 +92,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 			synchronized(recording) {
 				if (!recording) {
 					// start recording
-					lastCaptureFile = field.getNewTempFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
+					lastCaptureFile = field.getNewMediaFile(controller.getFileStorageProvider(), controller.getCurrentRecord(), controller.getCurrentForm().isObfuscateMediaFiles());
 					cameraController.startVideoCapture(lastCaptureFile);
 					recording = true;
 				} else {

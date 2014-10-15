@@ -91,7 +91,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	{
 		try
 		{
-			lastCaptureFile = field.getNewTempFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
+			lastCaptureFile = field.getNewMediaFile(controller.getFileStorageProvider(), controller.getCurrentRecord(), controller.getCurrentForm().isObfuscateMediaFiles());
 			audioRecorder = new AudioRecorder(lastCaptureFile);
 			audioRecorder.start();
 			volumeDisplay.start();
