@@ -25,6 +25,7 @@ import java.util.concurrent.Semaphore;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
@@ -137,7 +138,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					// populate with most recent capture:
 					if (lastCaptureFile == null) {
 						// reload most recent File -- from the last item in the items list
-						List<Item> items = getMediaItems();
+						List<Item> items = getMediaItems(controller.getFileStorageProvider(),controller.getCurrentRecord());
 						lastCaptureFile = ((FileItem) items.get(items.size() - 1)).getFile();
 					}
 					populateReviewLayout((ViewGroup)((LinearLayout)mediaFlipper.getCurrentView()).getChildAt(0),lastCaptureFile);
@@ -208,7 +209,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * 
 	 * @return a list of the media items captured in this field.
 	 */
-	abstract List<Item> getMediaItems();
+	abstract List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record);
 	
 	/**
 	 * Generate a "capture" button (may vary by media, e.g. microphone
@@ -425,7 +426,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			 */
 			private void loadMedia() {
 				PickerAdapter adapter = new PickerAdapter();
-				for (Item item : getMediaItems()) {
+				for (Item item : getMediaItems(controller.getFileStorageProvider(),controller.getCurrentRecord())) {
 					item.setPaddingPx(buttonPadding);
 					adapter.addItem(item);
 				}

@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,6 +47,7 @@ public abstract class MediaField extends Field
 	static public final int DEFAULT_MAX = 255; //column will use 1 byte (up to 255 items)
 	static public final char FILENAME_ELEMENT_SEPARATOR = '_';
 	
+	//TODO update:
 	static private final Pattern OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
 	
 	static public final long MAX_ATTACHMENT_CREATION_TIME_OFFSET = (long) (10 * 365.25 * 24 * 60 * 60 * 1000); // 10 years in ms
@@ -180,6 +182,8 @@ public abstract class MediaField extends Field
 		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
 		// add creationTimeOffset to column
 		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
+		if (offsets == null)
+			offsets = new ArrayList<Long>();
 		offsets.add(creationTimeOffset);
 		((IntegerListColumn) getColumn()).storeValue(record, offsets);
 	}
@@ -200,12 +204,23 @@ public abstract class MediaField extends Field
 	}
 	
 	private long getCreationTimeOffsetFromFile(File file) {
-		String unobfuscatedName = undoExtensionObfuscation(file.getName());
+		String unobfuscatedName = file.getName();
+		if (form.isObfuscateMediaFiles())
+			unobfuscatedName = ROT13.rot13NumRot5(file.getName());
+		else {
+			// remove file extension before extracting creationTimeOffset (if obfuscated, name/ext separator is _ anyway)
+			int pos = unobfuscatedName.lastIndexOf(".");
+			if (pos > 0) {
+				unobfuscatedName = unobfuscatedName.substring(0, pos);
+			}
+		}
+
+		// creationTimeOffset is the fourth part of the filename:
 		String[] parts = unobfuscatedName.split(Character.toString(FILENAME_ELEMENT_SEPARATOR));
 		try {
 			return Long.parseLong(parts[3]);
 		} catch (Exception e) {
-			throw new IllegalStateException("Attachment filename did not have the expected syntax.");
+			throw new IllegalStateException("Attachment filename did not have the expected syntax: "+unobfuscatedName);
 		}
 	}
 	
@@ -214,17 +229,59 @@ public abstract class MediaField extends Field
 	 * time offset at which this file was requested from that start time.
 	 * @param fileStorageProvider
 	 * @param record
-	 * @param obfuscateFilename
 	 * @return
 	 * @throws FileStorageException
 	 */
-	public File getNewMediaFile(FileStorageProvider fileStorageProvider, Record record, boolean obfuscateFilename) throws FileStorageException
+	public File getNewMediaFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
 	{
 		long creationTimeOffset = System.currentTimeMillis() - form.getStartTime(record, true).getMsSinceEpoch();
 		String filename = generateFilename(record, creationTimeOffset);
 		String dataFolderPath = fileStorageProvider.getProjectDataFolder(form.getProject(), true).getAbsolutePath();
 		File file = new File(dataFolderPath + File.separator + filename);
 		return file;
+	}
+	
+	/**
+	 * Returns a list of files attached to this field and record.
+	 * @param fileStorageProvider
+	 * @param record
+	 * @return
+	 */
+	public List<File> getAttachments(FileStorageProvider fileStorageProvider, Record record) {
+		List<File> files = new ArrayList<File>();
+		List<Long> offsets = ((IntegerListColumn)getColumn()).retrieveValue(record);
+		if (offsets == null)
+			return files;
+		String dir = fileStorageProvider.getProjectDataFolder(form.getProject(), true).getAbsolutePath();
+		String filename;
+		File file;
+		// for each attachment...
+		for (Long offset : offsets) {
+			// calculate filename from offset
+			filename = generateFilename(record, offset);
+			// locate corresponding file
+			file = new File(dir, filename);
+			if (file.exists()) {
+				files.add(file);
+			}
+		}
+		return files;
+	}
+	
+	/**
+	 * Deletes all attachments associated with this field and record from the file
+	 * system and removes their creationTimeOffsets from the column.
+	 * @param fileStorageProvider
+	 * @param record
+	 */
+	public void discardAttachments(FileStorageProvider fileStorageProvider, Record record) {
+		// delete files from file system:
+		for (File file : getAttachments(fileStorageProvider, record)) {
+			if (file.exists())
+				file.delete();
+		}
+		// delete offsets list:
+		((IntegerListColumn)getColumn()).storeValue(record, null); //TODO check
 	}
 	
 	/**

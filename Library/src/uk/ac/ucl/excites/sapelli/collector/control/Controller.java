@@ -39,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
@@ -402,19 +403,7 @@ public abstract class Controller
 			return;
 		}
 	
-		// Move attachments from temp to data folder:
-		try
-		{
-			File dataFolder = fileStorageProvider.getProjectDataFolder(project, true);
-			for(File attachment : currFormSession.getMediaAttachments())
-				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace(System.err);
-			addLogLine("ERROR", "Upon moving attachements", ExceptionHelpers.getMessageAndCause(e));
-			return;
-		}
+		// Attachments are added when created, but explicitly deleted on discard, so don't do any saving
 	
 		// Signal the successful storage of the currentRecord
 		// Vibration
@@ -427,15 +416,18 @@ public abstract class Controller
 	}
 	
 	protected void discardRecordAndAttachments()
-	{
-		// Discard record:
-		currFormSession.record = null; //!!!
+	{		
+		List<Field> fields = currFormSession.form.getFields();
 		
-		// Delete any attachments:
-		for(File attachment : currFormSession.getMediaAttachments())
-			if(attachment.exists())
-				attachment.delete();
-		currFormSession.getMediaAttachments().clear();
+		// discard every media field's attachments
+		for (Field field : fields) {
+			if (field instanceof MediaField) {
+				// may have attachments
+				((MediaField) field).discardAttachments(fileStorageProvider, currFormSession.record);
+			}
+		}
+		// Discard record itself:
+		currFormSession.record = null; //!!!
 	}
 	
 	/**
@@ -859,21 +851,6 @@ public abstract class Controller
 	public abstract void stopLocationListener();
 	
 	public abstract Location getCurrentBestLocation();
-	
-	public void addMediaAttachment(File mediaAttachment)
-	{
-		currFormSession.addMediaAttachment(mediaAttachment);
-	}
-	
-	public void removeMediaAttachment(File mediaAttachment)
-	{
-		currFormSession.removeMediaAttachment(mediaAttachment);
-	}
-	
-	public List<File> getMediaAttachments()
-	{
-		return currFormSession.getMediaAttachments();
-	}
 	
 	protected abstract void vibrate(int durationMS);
 	

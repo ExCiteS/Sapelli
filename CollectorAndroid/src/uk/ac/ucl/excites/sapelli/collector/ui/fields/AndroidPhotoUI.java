@@ -25,6 +25,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
@@ -37,6 +38,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.BitmapUtils;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -155,14 +157,10 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		return captureButton;
 	}
 
-	@Override
-	List<Item> getMediaItems() {
-		// TODO: assumes all attachments (regardless of type) are relevant to this field!
-		// TODO: cache?
-		List<File> files = controller.getMediaAttachments();
+	List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record) {
 		List<Item> items = new ArrayList<Item>();
-		for (File f : files) {
-			items.add(new FileImageItem(f)); //TODO will fail if file is audio -- should change when refactored
+		for (File f : field.getAttachments(fileStorageProvider, record)) {
+			items.add(new FileImageItem(f));
 		}
 		return items;
 	}
@@ -232,7 +230,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 				// write to temporary file right away, but don't attach it unless approved
 				// may eventually run out of storage but makes media code easier - should be fixed 
 				// when temp file stuff is refactored --- TODO
-				lastCaptureFile = field.getNewMediaFile(controller.getFileStorageProvider(),controller.getCurrentRecord(), controller.getCurrentForm().isObfuscateMediaFiles());
+				lastCaptureFile = field.getNewMediaFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
 				FileOutputStream fos = new FileOutputStream(lastCaptureFile);
 				fos.write(data);
 				fos.close();
