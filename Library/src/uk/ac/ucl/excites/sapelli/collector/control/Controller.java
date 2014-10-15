@@ -387,9 +387,11 @@ public abstract class Controller
 		// Delete any files that were "queued" for deletion but not actually deleted yet:
 		currFormSession.deleteDiscardedAttachments();
 		
+		// NOTE: no need to touch the added files since they were added on creation
+		
 		// Clear the list of added files so they cannot be deleted accidentally:
 		currFormSession.clearAddedAttachments();
-		
+				
 		// Finalise the currentRecord:
 		currFormSession.form.finish(currFormSession.record); // (re)sets the end-time if necessary
 	
@@ -422,6 +424,8 @@ public abstract class Controller
 	{
 		// delete any files that were added but have now been discarded:
 		currFormSession.deleteAddedAttachments();
+		
+		// NOTE: no need to touch the deleted files since their deletion has been aborted
 		
 		// Clear the list of deleted files:
 		currFormSession.clearDiscardedAttachments();

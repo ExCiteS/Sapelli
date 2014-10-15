@@ -1,11 +1,53 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
-<svg version="1.0" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="96px"
-	 height="96px" viewBox="0 0 96 96" enable-background="new 0 0 96 96" xml:space="preserve">
-<g id="_x31_0_device_access_mic">
-	<path fill-rule="evenodd" clip-rule="evenodd" fill="#333333" d="M36.656,45.439V23.345
-		c0-6.262,5.08-11.338,11.341-11.338s11.338,5.076,11.338,11.338v22.094c0,6.264-5.077,11.338-11.338,11.338
-		S36.656,51.703,36.656,45.439z M74.432,45.844h-7.764c0,10.312-8.355,18.668-18.671,18.668s-18.671-8.355-18.671-18.668h-7.792
-		c0,13.324,9.854,24.346,22.671,26.18v11.982h7.854V71.982C64.734,70.02,74.432,59.068,74.432,45.844z"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.0"
+   x="0px"
+   y="0px"
+   width="96px"
+   height="96px"
+   viewBox="0 0 96 96"
+   enable-background="new 0 0 96 96"
+   xml:space="preserve"
+   id="svg2"
+   inkscape:version="0.48.5 r10040"
+   sodipodi:docname="audio_item_svg.svg"><metadata
+   id="metadata11"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata><defs
+   id="defs9" /><sodipodi:namedview
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1"
+   objecttolerance="10"
+   gridtolerance="10"
+   guidetolerance="10"
+   inkscape:pageopacity="0"
+   inkscape:pageshadow="2"
+   inkscape:window-width="1600"
+   inkscape:window-height="837"
+   id="namedview7"
+   showgrid="false"
+   inkscape:zoom="2.4583333"
+   inkscape:cx="48"
+   inkscape:cy="48"
+   inkscape:window-x="-8"
+   inkscape:window-y="-8"
+   inkscape:window-maximized="1"
+   inkscape:current-layer="svg2" />
+<g
+   id="_x31_0_device_access_mic">
+	<path
+   clip-rule="evenodd"
+   d="M 36.656,45.439 V 23.345 c 0,-6.262 5.08,-11.338 11.341,-11.338 6.261,0 11.338,5.076 11.338,11.338 v 22.094 c 0,6.264 -5.077,11.338 -11.338,11.338 -6.261,0 -11.341,-5.074 -11.341,-11.338 z m 37.776,0.405 h -7.764 c 0,10.312 -8.355,18.668 -18.671,18.668 -10.316,0 -18.671,-8.355 -18.671,-18.668 h -7.792 c 0,13.324 9.854,24.346 22.671,26.18 v 11.982 h 7.854 V 71.982 C 64.734,70.02 74.432,59.068 74.432,45.844 z"
+   id="path5"
+   inkscape:connector-curvature="0"
+   style="fill:#000000;fill-rule:evenodd" />
 </g>
 </svg>

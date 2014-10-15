@@ -404,6 +404,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						collectorUI.getFieldUIPartWidthPx(NUM_COLUMNS),
 						collectorUI.getFieldUIPartHeightPx(NUM_ROWS));
 				
+				this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
+				
 				int spacingPx = collectorUI.getSpacingPx();
 				setHorizontalSpacing(spacingPx);
 				setVerticalSpacing(spacingPx);

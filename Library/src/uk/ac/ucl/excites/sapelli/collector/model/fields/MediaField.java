@@ -146,7 +146,7 @@ public abstract class MediaField extends Field
 	{
 		this.disableChoice = disableChoice;
 	}
-	
+
 	@Override
 	protected IntegerListColumn createColumn(String name)
 	{
@@ -171,6 +171,12 @@ public abstract class MediaField extends Field
 		return (getCount(record) >= max);
 	}
 	
+	/**
+	 * Add the provided attachment file to the column corresponding to this field in the provided record.
+	 * Note: does not actually alter the file system, only the record contents.
+	 * @param attachment
+	 * @param record
+	 */
 	public void addAttachmentToRecord(File attachment, Record record) {
 		// check if adding would exceed max no attachments for this field	
 		int currentCount = getCount(record);	
@@ -190,6 +196,12 @@ public abstract class MediaField extends Field
 		offsets.add(creationTimeOffset);	
 	}
 	
+	/**
+	 * Remove the provided attachment file from the column corresponding to this field in the provided record.
+	 * Note: does not actually alter the file system, only the record contents.
+	 * @param attachment
+	 * @param record
+	 */
 	public void removeAttachmentFromRecord(File attachment, Record record) {
 		// retrieve creationTimeOffset from filename
 		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
