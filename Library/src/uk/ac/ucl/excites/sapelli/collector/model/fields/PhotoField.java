@@ -18,7 +18,6 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
