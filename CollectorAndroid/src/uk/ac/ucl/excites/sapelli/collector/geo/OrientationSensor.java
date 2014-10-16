@@ -100,11 +100,11 @@ public class OrientationSensor implements SensorEventListener
 		switch(sensorEvent.sensor.getType())
 		{
 			case Sensor.TYPE_ACCELEROMETER:
-				Log.d(TAG, "Accelerometer update");
+				//Log.d(TAG, "Accelerometer update");
 				gravity = sensorEvent.values.clone();
 				break;
 			case Sensor.TYPE_MAGNETIC_FIELD:
-				Log.d(TAG, "Magnetic field update");
+				//Log.d(TAG, "Magnetic field update");
 				geomagnetic = sensorEvent.values.clone();
 				break;
 		}

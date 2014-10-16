@@ -39,9 +39,14 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Path.FillType;
+import android.graphics.PointF;
 import android.graphics.RectF;
 import android.util.Log;
 import android.view.Gravity;
@@ -66,7 +71,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 	private Button pageView;
 	private RelativeLayout waitView;
 	private OrientationSensor orientationSensor;
-	private OrientationDisplaySurfaceView odsv;
+	private CompassView compass;
 	private Orientation orientation;
 
 	static public final float PADDING = 40.0f;
@@ -102,12 +107,12 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
 				gpsIcon.setPadding(padding, padding, padding, padding);
 				waitView.addView(gpsIcon);
-				odsv = new OrientationDisplaySurfaceView(context);
+				compass = new CompassView(context);
 				RelativeLayout.LayoutParams compassParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
 				compassParams.addRule(RelativeLayout.CENTER_IN_PARENT);
-				waitView.addView(odsv, compassParams);
+				waitView.addView(compass, compassParams);
 				RelativeLayout.LayoutParams confirmParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-				waitView.addView(new OrientationConfirmView(context),confirmParams);
+				//waitView.addView(new OrientationConfirmView(context),confirmParams); TODO
 			}
 		}
 		
@@ -118,23 +123,26 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 		return waitView;
 	}
 	
-	private class OrientationDisplaySurfaceView extends SurfaceView {
+	private class CompassView extends SurfaceView {
 
 		private static final int COLOR_BACKGROUND = Color.BLACK;
-		private static final int COLOR_COMPASS = Color.DKGRAY;
-		private static final int COLOR_INNER_DIAL = Color.RED;
-		private static final int COMPASS_RADIUS = 400;
-		private static final int INNER_DIAL_RADIUS = 350;
-		private static final int MARKER_WIDTH = 30;
-		private Paint paint;
-		private RectF compassTemplateBounds;
-		private RectF innerDialBounds;
-		private float compassCentreX;
-		private float compassCentreY;
+		private static final int COLOR_OUTER = Color.GRAY;
+		private static final int COLOR_INNER = Color.DKGRAY;
+		private static final int COLOR_NORTH_POINTER = Color.RED;
+		private static final int COLOR_SOUTH_POINTER = Color.WHITE;
+		private static final float INNER_CIRCLE_PERCENTAGE = 0.92f; // inner compass circle radius as percentage of outer radius
+		private static final float POINTER_BASE_WIDTH = 80;
+		private static final float COMPASS_ARROW_SPACING = 20; //vertical gap between arrow and compass
+		private static final float ARROW_WIDTH_PERCENTAGE = 0.4f; // arrow width as percentage of View's width 
+		private static final float ARROW_HEIGHT_PERCENTAGE_WIDTH = 0.3f; // arrow height as percentage of arrow width
+		private static final boolean ANTI_ALIAS = true;
+		private Bitmap arrowBitmap;
+		private Bitmap compassBitmap;
+		private Matrix compassRotationMatrix;
 
-		public OrientationDisplaySurfaceView(Context context) {
+		public CompassView(Context context) {
 			super(context);
-			paint = new Paint();			
+			compassRotationMatrix = new Matrix();
 			getHolder().addCallback(new Callback(){
 
 				@Override
@@ -145,12 +153,14 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
                 @Override
 				public void surfaceChanged(SurfaceHolder holder, int format,
 						int width, int height) {
-					
-					compassCentreX = width / 2;
-					compassCentreY = height / 2;
-					compassTemplateBounds = new RectF(compassCentreX - COMPASS_RADIUS, compassCentreY - COMPASS_RADIUS, compassCentreX + COMPASS_RADIUS, compassCentreY + COMPASS_RADIUS);
-					innerDialBounds = new RectF(compassCentreX - INNER_DIAL_RADIUS, compassCentreY - INNER_DIAL_RADIUS, compassCentreX + INNER_DIAL_RADIUS, compassCentreY + INNER_DIAL_RADIUS);
-					
+
+					// may need to resize compass and arrow, so regenerate bitmaps
+					arrowBitmap = createArrowBitmap((int) (width * ARROW_WIDTH_PERCENTAGE));
+
+					// want width of compass equal to height...
+					int size = (width < height) ? width : height;
+					compassBitmap = createCompassBitmap(size);
+
 					Canvas c = holder.lockCanvas(null);
 					onDraw(c);
 					holder.unlockCanvasAndPost(c);
@@ -162,29 +172,24 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 		}
 
 		/**
-		 * Draw the compass to screen.
+		 *  Rotate the compass according to the azimuth and draw it to the canvas.
 		 */
 		@Override
 		protected void onDraw(Canvas canvas) {
 			if (orientation != null) {
-				float azimuth = orientation.getAzimuth();
-				// wipe everything off: 
-				canvas.drawColor(COLOR_BACKGROUND);
-				// draw compass template:
-				paint.setColor(COLOR_COMPASS);
-				canvas.drawOval(compassTemplateBounds, paint);
-				// draw new orientation:
-				paint.setColor(COLOR_INNER_DIAL);
-				Log.d("Compass", "Azimuth: "+azimuth);
-				// rotate azimuth by 270 deg (since 0 deg is at x=0) then draw:
-				canvas.drawArc(compassTemplateBounds, azimuth + 270f - MARKER_WIDTH / 2, MARKER_WIDTH, true, paint);
-				paint.setColor(COLOR_BACKGROUND);
-				canvas.drawOval(innerDialBounds, paint);
+				// rotate the compass by the azimuth, about its centre:
+				compassRotationMatrix.reset();
+				compassRotationMatrix.postTranslate(0, COMPASS_ARROW_SPACING + arrowBitmap.getHeight());
+				compassRotationMatrix.postRotate(orientation.getAzimuth(), compassBitmap.getWidth() / 2, arrowBitmap.getHeight() + COMPASS_ARROW_SPACING + compassBitmap.getHeight() / 2);
+				canvas.drawBitmap(compassBitmap, compassRotationMatrix, null);
+				
+				// draw top arrow last in case corner of compass bitmap overlaps it:
+				canvas.drawBitmap(arrowBitmap, (getWidth() - arrowBitmap.getWidth()) / 2, 0, null);
 			}
 		}
-		
+
 		@SuppressLint("WrongCall")
-        protected void drawOrientation(Orientation orientation) {
+        protected void drawOrientationToScreen() {
 			Canvas c = null;
 			try {				
 				c = getHolder().lockCanvas();
@@ -198,12 +203,90 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 				}
 			}
 		}
+		
+		private Bitmap createCompassBitmap(int size) {
+			Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+
+			float bitmapCentreX = bitmap.getWidth() / 2;
+			float bitmapCentreY = bitmap.getHeight() / 2;
+			
+			Canvas bitmapCanvas = new Canvas(bitmap);
+			Paint paint = new Paint();
+			paint.setAntiAlias(ANTI_ALIAS);
+			
+			// draw background:
+			bitmapCanvas.drawColor(COLOR_BACKGROUND);
+			
+			// draw outer circle:
+			paint.setColor(COLOR_OUTER);
+			RectF outerCircleBounds = new RectF(0, 0, size, size);
+			bitmapCanvas.drawOval(outerCircleBounds, paint);
+			
+			// draw inner circle:
+			paint.setColor(COLOR_INNER);
+			RectF innerCircleBounds = new RectF(outerCircleBounds.right * (1 - INNER_CIRCLE_PERCENTAGE), outerCircleBounds.bottom * (1 - INNER_CIRCLE_PERCENTAGE), outerCircleBounds.right * INNER_CIRCLE_PERCENTAGE, outerCircleBounds.bottom * INNER_CIRCLE_PERCENTAGE);
+			bitmapCanvas.drawOval(innerCircleBounds, paint);
+			
+			// draw north-pointing triangle:
+		    paint.setColor(COLOR_NORTH_POINTER);
+		    PointF north = new PointF(bitmapCentreX, innerCircleBounds.top); //top vertex
+		    PointF left = new PointF(bitmapCentreX - POINTER_BASE_WIDTH/2, bitmapCentreY); // bottom-left vertex
+		    PointF right = new PointF(bitmapCentreX + POINTER_BASE_WIDTH/2, bitmapCentreY); //bottom-right vertex
+		    Path northPointer = new Path();
+		    northPointer.setFillType(FillType.EVEN_ODD);
+		    northPointer.moveTo(right.x, right.y);
+		    northPointer.lineTo(north.x, north.y);
+		    northPointer.lineTo(left.x, left.y);
+		    northPointer.lineTo(right.x, right.y);
+		    northPointer.close();
+		    bitmapCanvas.drawPath(northPointer, paint);
+			
+			// draw south-pointing triangle:
+			paint.setColor(COLOR_SOUTH_POINTER); 
+		    PointF south = new PointF(bitmapCentreX, innerCircleBounds.bottom); //bottom vertex
+		    Path southPointer = new Path();
+		    southPointer.setFillType(FillType.EVEN_ODD);
+		    southPointer.moveTo(right.x, right.y); //use existing left/right vertices
+		    southPointer.lineTo(south.x, south.y);
+		    southPointer.lineTo(left.x, left.y);
+		    southPointer.lineTo(right.x, right.y);
+		    southPointer.close();
+		    bitmapCanvas.drawPath(southPointer, paint);
+		    
+		    return bitmap;
+		}
+		
+		private Bitmap createArrowBitmap(int arrowWidth) {
+			Log.d("Arrow","width: "+arrowWidth);
+			Bitmap bitmap = Bitmap.createBitmap(arrowWidth,(int) (arrowWidth * ARROW_HEIGHT_PERCENTAGE_WIDTH), Bitmap.Config.ARGB_8888);
+			Log.d("Arrow","height: "+bitmap.getHeight());
+			Canvas bitmapCanvas = new Canvas(bitmap);
+			Paint paint = new Paint();
+			paint.setAntiAlias(ANTI_ALIAS);
+			
+			// draw simple isosceles triangle:
+		    paint.setColor(COLOR_OUTER);
+		    PointF top = new PointF(bitmap.getWidth() / 2, 0); //top vertex
+		    PointF left = new PointF(0, bitmap.getHeight()); // bottom-left vertex
+		    PointF right = new PointF(bitmap.getWidth(), bitmap.getHeight()); //bottom-right vertex
+		    Path arrowPath = new Path();
+		    arrowPath.setFillType(FillType.EVEN_ODD);
+		    arrowPath.moveTo(right.x, right.y);
+		    arrowPath.lineTo(top.x, top.y);
+		    arrowPath.lineTo(left.x, left.y);
+		    arrowPath.lineTo(right.x, right.y);
+		    arrowPath.close();
+		    bitmapCanvas.drawPath(arrowPath, paint);
+			
+			return bitmap;
+		}
 	}
+	
 
 	@Override
     public void onOrientationChanged(Orientation orientation) {
 		this.orientation = orientation;
-	    odsv.drawOrientation(orientation);
+	    compass.drawOrientationToScreen();
     }
 	
 	private class OrientationConfirmView extends PickerView
