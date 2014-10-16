@@ -107,17 +107,6 @@ public class CollectorActivity extends ProjectActivity
 		if(savedInstanceState != null && savedInstanceState.containsKey(TEMP_PHOTO_PATH_KEY))
 			tmpPhotoFile = new File(savedInstanceState.getString(TEMP_PHOTO_PATH_KEY));
 		
-		// Check if we can access read/write to the Sapelli folder (created on the SD card or internal mass storage if there is no physical SD card):
-		try
-		{
-			app.getSapelliFolder(); //throws IllegalStateException if not accessible or not create-able
-		}
-		catch(IllegalStateException ise)
-		{	// Inform the user and close the application
-			showErrorDialog("Sapelli needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.", true);
-			return;
-		}
-		
 		// Scheduling...
 		scheduleTaskExecutor = Executors.newScheduledThreadPool(4); // Creates a thread pool that can schedule commands to run after a given duration, or to execute periodically.
 		fixedTimerTriggerFutures = new HashMap<Trigger, ScheduledFuture<?>>();
@@ -155,10 +144,15 @@ public class CollectorActivity extends ProjectActivity
 		// Change the current intent
 		setIntent(intent);
 
+		// Throw away current project & controller:
+		project = null;
 		if(controller != null)
-			controller.cancelAndRestartForm();
+		{
+			controller.discard();
+			controller = null;
+		}
 		
-		// onResume() will be called next
+		// onResume() will be called next, where the new project will be loaded and a new controller instantiated 
 	}
 	
 	@Override
@@ -202,7 +196,7 @@ public class CollectorActivity extends ProjectActivity
 			// ... if we get here this.project is initialised
 	
 			// Set-up controller:
-			controller = new CollectorController(project, collectorView, projectStore, recordStore, this);
+			controller = new CollectorController(project, collectorView, projectStore, recordStore, fileStorageProvider, this);
 			collectorView.initialise(controller); // !!!
 			
 			// Start project:
@@ -250,7 +244,7 @@ public class CollectorActivity extends ProjectActivity
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				if(app.getBuildInfo().isDemoBuild())
 					//TODO export
-					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + project.getDataFolderPath() + ".");
+					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + fileStorageProvider.getProjectDataFolder(project, false) + ".");
 			DeviceControl.safeDecreaseMediaVolume(this);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_UP:
@@ -286,7 +280,7 @@ public class CollectorActivity extends ProjectActivity
 			Log.d(TAG, "Exporting records...");
 			try
 			{
-				(new XMLRecordsExporter(project.getDataFolder())).export(recordStore.retrieveAllRecords(), "DemoRecords");
+				(new XMLRecordsExporter(fileStorageProvider.getProjectDataFolder(project, true))).export(recordStore.retrieveAllRecords(), "DemoRecords");
 				if(delete)
 					recordStore.deleteAllRecords();
 			}
@@ -351,7 +345,7 @@ public class CollectorActivity extends ProjectActivity
 			try
 			{
 				// Set up temp file (in the projects data folder)
-				tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, project.getTempFolder()); // getTempFolder() does the necessary IO checks
+				tmpPhotoFile = File.createTempFile(TEMP_PHOTO_PREFIX, TEMP_PHOTO_SUFFIX, fileStorageProvider.getTempFolder(true));
 				// Set-up intent:
 				Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 				takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(tmpPhotoFile));
@@ -386,7 +380,7 @@ public class CollectorActivity extends ProjectActivity
 			{
 				try
 				{ // Rename the file & pass it to the controller
-					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewTempFile(controller.getCurrentRecord());
+					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewTempFile(fileStorageProvider, controller.getCurrentRecord());
 					tmpPhotoFile.renameTo(newPhoto);
 					photoUI.mediaDone(newPhoto, true);
 				}
@@ -462,7 +456,7 @@ public class CollectorActivity extends ProjectActivity
 				{ // time's up!
 					collectorView.cancelCurrentField();
 					if(controller != null)
-						controller.cancelAndStop();
+						controller.discard(); // don't make controller null so we can restart project in onResume()
 					timedOut = true;
 					Log.i(TAG, "Time-out reached");
 				}

@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.shared.util;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormatter;
@@ -41,18 +42,11 @@ public class Logger
 	private DateTimeFormatter formatter;
 	private FileWriter fileWriter;
 
-	public Logger(String folderPath, String baseFileName)
+	public Logger(String folderPath, String baseFileName) throws IOException
 	{
 		this.formatter = ISODateTimeFormat.dateTime();
-		try
-		{
-			this.fileWriter = new FileWriter(folderPath + File.separator + baseFileName + (TimeUtils.getTimestampForFileName()) + LOG_EXTENSION);
-			fileWriter.open(FileHelpers.FILE_EXISTS_STRATEGY_APPEND, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace(System.err);
-		}
+		this.fileWriter = new FileWriter(folderPath + File.separator + baseFileName + (TimeUtils.getTimestampForFileName()) + LOG_EXTENSION);
+		fileWriter.open(FileHelpers.FILE_EXISTS_STRATEGY_APPEND, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 	}
 
 	/**

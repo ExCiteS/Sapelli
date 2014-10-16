@@ -16,15 +16,18 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.db.sql.sqlite.android;
+package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
 import java.util.List;
-
-import uk.ac.ucl.excites.sapelli.shared.db.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore.SQLiteColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement;
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.database.SQLException;
+import android.database.sqlite.SQLiteConstraintException;
 import android.database.sqlite.SQLiteDoneException;
 import android.database.sqlite.SQLiteStatement;
 import android.os.Build;
@@ -95,6 +98,7 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		androidSQLiteSt.clearBindings();
 	}
 
+	@SuppressLint("DefaultLocale")
 	@Override
 	public long executeInsert() throws DBException
 	{
@@ -104,6 +108,14 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 			if(rowID == -1)
 				throw new DBException("Execution of INSERT statement failed (returned ROWID = -1)");
 			return rowID;
+		}
+		catch(SQLiteConstraintException sqliteConstrE)
+		{
+			String msg = sqliteConstrE.getMessage();
+			if(msg != null && msg.toUpperCase().contains("PRIMARY KEY"))
+				throw new DBPrimaryKeyException("Failed to execute INSERT statement due to existing record with same primary key", sqliteConstrE);
+			else
+				throw new DBConstraintException("Failed to execute INSERT statement due to constraint violation", sqliteConstrE);
 		}
 		catch(SQLException sqlE)
 		{

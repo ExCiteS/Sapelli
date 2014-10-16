@@ -16,26 +16,22 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.util;
+package uk.ac.ucl.excites.sapelli.collector.db.exceptions;
+
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 
 /**
  * @author mstevens
  *
  */
-public class DuplicateException extends Exception
+public class ProjectSignatureClashException extends ProjectDuplicateException
 {
 
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 2L;
 
-	/**
-	 * @param detailMessage
-	 */
-	public DuplicateException(String detailMessage)
+	public ProjectSignatureClashException(Project storedProject)
 	{
-		super(detailMessage);
+		super("There is a previously loaded project which is different but has the same signature \"" + storedProject.toString(false) + "\". Either delete the existing one or change the version of the new one.");
 	}
 
 }

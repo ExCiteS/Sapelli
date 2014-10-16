@@ -19,11 +19,12 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -165,10 +166,10 @@ public abstract class MediaField extends Field
 		((IntegerColumn) form.getColumnFor(this)).storeValue(record, ++currentCount);
 	}
 
-	public File getNewTempFile(Record record) throws IOException
+	public File getNewTempFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
 	{
 		String filename = generateFilename(record, getCount(record));
-		String dataFolderPath = form.getProject().getTempFolder().getAbsolutePath(); //getTempFolder() does the necessary checks (IOException is thrown in case of trouble)
+		String dataFolderPath = fileStorageProvider.getProjectDataFolder(form.getProject(), true).getAbsolutePath();
 		return new File(dataFolderPath + File.separator + filename);
 	}
 	

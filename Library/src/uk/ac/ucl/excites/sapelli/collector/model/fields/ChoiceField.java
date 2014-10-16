@@ -25,10 +25,10 @@ import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary.DictionarySerialiser;
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
@@ -330,13 +330,13 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 
 	@Override
-	public List<File> getFiles(Project project)
+	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
 		List<File> paths = new ArrayList<File>();
 		if(hasImage())
-			CollectionUtils.addIgnoreNull(paths, project.getImageFile(imageRelativePath));
+			CollectionUtils.addIgnoreNull(paths, form.getProject().getImageFile(fileStorageProvider, imageRelativePath));
 		for(ChoiceField child : getChildren())
-			CollectionUtils.addAllIgnoreNull(paths, child.getFiles(project));
+			CollectionUtils.addAllIgnoreNull(paths, child.getFiles(fileStorageProvider));
 		return paths;
 	}
 	
@@ -471,6 +471,8 @@ public class ChoiceField extends Field implements DictionaryItem
 					(this.root != null ? that.root != null && this.root.getID().equals(that.root.getID()) : that.root == null) &&
 					this.getChildren().equals(that.getChildren()) &&
 					(this.imageRelativePath != null ? this.imageRelativePath.equals(that.imageRelativePath) : that.imageRelativePath == null) &&
+					(this.answerDesc != null ? that.answerDesc.equals(that.answerDesc) : that.answerDesc == null) &&
+					(this.questionDesc != null ? that.questionDesc.equals(that.questionDesc) : that.questionDesc == null) &&
 					this.cols == that.cols &&
 					this.rows == that.rows &&
 					(this.altText != null ? this.altText.equals(that.altText) : that.altText == null) &&
@@ -491,6 +493,8 @@ public class ChoiceField extends Field implements DictionaryItem
 		hash = 31 * hash + (root != null ? root.getID().hashCode() : 0);
 		hash = 31 * hash + getChildren().hashCode();
 		hash = 31 * hash + (imageRelativePath != null ? imageRelativePath.hashCode() : 0);
+		hash = 31 * hash + (answerDesc != null ? answerDesc.hashCode() : 0);
+		hash = 31 * hash + (questionDesc != null ? questionDesc.hashCode() : 0);
 		hash = 31 * hash + cols;
 		hash = 31 * hash + rows;
 		hash = 31 * hash + (altText != null ? altText.hashCode() : 0);

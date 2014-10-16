@@ -20,6 +20,8 @@ package uk.ac.ucl.excites.sapelli.shared.db;
 
 import java.io.File;
 
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+
 public interface Store
 {
 

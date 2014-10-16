@@ -18,16 +18,23 @@
 
 package uk.ac.ucl.excites.sapelli.collector.io;
 
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
-
 /**
- * Callbacks for ProjectLoader
- * 
  * @author mstevens
+ *
  */
-public interface ProjectLoaderClient
+public class FileStorageException extends IllegalStateException
 {
 
-	public boolean isDuplicateProject(Project loadProject);
-		
+	private static final long serialVersionUID = 2L;
+
+	public FileStorageException(String detailMessage)
+	{
+		super(detailMessage);
+	}
+
+	public FileStorageException(String message, Throwable cause)
+	{
+		super(message, cause);
+	}
+
 }

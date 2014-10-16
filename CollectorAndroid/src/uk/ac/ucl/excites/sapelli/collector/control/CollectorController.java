@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
@@ -39,7 +40,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.util.AudioToVoice;
+import uk.ac.ucl.excites.sapelli.collector.util.AudioPlayer;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
 import uk.ac.ucl.excites.sapelli.collector.util.TextToVoice;
@@ -74,11 +75,12 @@ public class CollectorController extends Controller implements LocationListener,
 	private OrientationSensor orientationSensor;
 	private long deviceIDHash;
 
+	private AudioPlayer audioPlayer;
 	private TextToVoice textToVoice;
-	private AudioToVoice audioToVoice;
 
-	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, CollectorActivity activity) {
-		super(project, collectorView, projectStore, recordStore);
+	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider, CollectorActivity activity)
+	{
+		super(project, collectorView, projectStore, recordStore, fileStorageProvider);
 		this.activity = activity;
 
 		// Set/change last running project:
@@ -131,30 +133,38 @@ public class CollectorController extends Controller implements LocationListener,
 	}
 
 	/**
-	 * Use Media Player to speak a given audio file
+	 * Use Media Player to play a given audio file + logging
 	 * 
-	 * @param soundFilePath
+	 * @param soundFile
 	 */
-	public void audioToVoice(String soundFilePath) {
-		if (audioToVoice == null)
-			return;
-
-		audioToVoice.speak(soundFilePath);
-		addLogLine("AUDIO_TO_VOICE", soundFilePath);
+	public void audioToVoice(File soundFile)
+	{
+		playSound(soundFile);
+		addLogLine("AUDIO_TO_VOICE", soundFile.getAbsolutePath());
 	}
 
 	public void stopAudioFeedback() {
 		// Stop the Media Player
-		if (audioToVoice != null)
-			audioToVoice.stop();
+		if(audioPlayer != null)
+			audioPlayer.stop();
 
 		// Stop the Android TTS (Text-To-Speech) Engine
 		if (textToVoice != null)
 			textToVoice.stop();
 	}
 
-	public void onOrientationChanged(Orientation orientation) {
-		if (getCurrentField() instanceof OrientationField) {
+	@Override
+	protected void playSound(File soundFile)
+	{
+		if(audioPlayer == null)
+			audioPlayer = new AudioPlayer(activity.getBaseContext());
+		audioPlayer.play(soundFile);
+	}
+
+	public void onOrientationChanged(Orientation orientation)
+	{
+		if(getCurrentField() instanceof OrientationField)
+		{
 			((OrientationField) getCurrentField()).storeOrientation(currFormSession.record, orientation);
 			orientationSensor.stop(); // stop listening for updates
 			goForward(false);
@@ -250,11 +260,6 @@ public class CollectorController extends Controller implements LocationListener,
 	}
 
 	@Override
-	protected void playSound(File soundFile) {
-		DeviceControl.playSoundFile(activity, soundFile);
-	}
-
-	@Override
 	protected void exitApp() {
 		activity.finish();
 	}
@@ -269,9 +274,7 @@ public class CollectorController extends Controller implements LocationListener,
 				case LONG_CLICK:
 				case SEQUENTIAL:
 
-					// Enable Audio Files Feedback
-					if (audioToVoice == null)
-						audioToVoice = new AudioToVoice(activity.getBaseContext());
+					// Enable Audio Files Feedback: nothing to do, audioPlayer instance will be creaded when playSound() is called
 
 					// Enable TTS Audio Feedback
 					if (textToVoice == null)
@@ -287,8 +290,8 @@ public class CollectorController extends Controller implements LocationListener,
 
 	public void disableAudioFeedback() {
 		// Release the Media Player
-		if (audioToVoice != null)
-			audioToVoice.destroy();
+		if(audioPlayer != null)
+			audioPlayer.destroy();
 
 		// Release the Android TTS (Text-To-Speech) Engine
 		if (textToVoice != null)

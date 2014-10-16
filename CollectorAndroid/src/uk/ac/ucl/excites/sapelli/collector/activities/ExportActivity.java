@@ -102,7 +102,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		this.loadProject(false); // loads project specified by intent (if one was selected)
 		
 		// Export path:
-		exportFolder = new File(app.getExportFolderPath());
+		exportFolder = fileStorageProvider.getExportFolder(true);
 		
 		// UI elements...
 		radioSelectedProject = (RadioButton) findViewById(R.id.radioExportSelectedProj);

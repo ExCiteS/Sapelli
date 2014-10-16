@@ -23,6 +23,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 
@@ -95,5 +96,7 @@ public abstract class StorageClient
 	public abstract void recordUpdated(Record record);
 	
 	public abstract void recordDeleted(Record record);
+	
+	public abstract void recordDeleted(RecordReference record);
 	
 }
