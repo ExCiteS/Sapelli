@@ -60,7 +60,7 @@ import android.util.Log;
  * @author mstevens, Michalis Vitos, Julia
  * 
  */
-public class CollectorController extends Controller implements LocationListener, OrientationListener {
+public class CollectorController extends Controller implements LocationListener {
 
 	// STATICS-------------------------------------------------------
 	public static final String TAG = "CollectorController";
@@ -72,7 +72,6 @@ public class CollectorController extends Controller implements LocationListener,
 
 	private LocationManager locationManager;
 	private Location currentBestLocation = null;
-	private OrientationSensor orientationSensor;
 	private long deviceIDHash;
 
 	private AudioPlayer audioPlayer;
@@ -97,9 +96,6 @@ public class CollectorController extends Controller implements LocationListener,
 
 	@Override
 	public boolean enterOrientationField(OrientationField of, FieldParameters arguments) {
-		if (orientationSensor == null)
-			orientationSensor = new OrientationSensor(activity);
-		orientationSensor.start(this); // start listening for orientation updates
 		return true; // always update UI (for now)
 	}
 
@@ -159,16 +155,6 @@ public class CollectorController extends Controller implements LocationListener,
 		if(audioPlayer == null)
 			audioPlayer = new AudioPlayer(activity.getBaseContext());
 		audioPlayer.play(soundFile);
-	}
-
-	public void onOrientationChanged(Orientation orientation)
-	{
-		if(getCurrentField() instanceof OrientationField)
-		{
-			((OrientationField) getCurrentField()).storeOrientation(currFormSession.record, orientation);
-			orientationSensor.stop(); // stop listening for updates
-			goForward(false);
-		}
 	}
 
 	public void startLocationListener(List<LocationField> locFields) {
