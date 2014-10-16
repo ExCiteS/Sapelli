@@ -112,5 +112,6 @@
     <string name="select_at_least_one_folder_to_export_data">You must select at least one folder to export data</string>
     <string name="successful_backup">Successful backup</string>
     <string name="backup_in">Find your backup in:</string>
+    <string name="backup">Backup</string>
 
 </resources>

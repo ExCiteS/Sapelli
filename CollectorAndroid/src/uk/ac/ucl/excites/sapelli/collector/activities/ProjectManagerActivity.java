@@ -308,10 +308,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	    		return createShortcut(item);
 	    	case R.id.remove_shortcut :
 	    		return removeShortcut(item);
-	    	case R.id.copy_db_menuitem :
-	    		return copyDBtoSD(item);
-			case R.id.zip_files:
-			return backupSapelli(this);
+			case R.id.backup:
+				return backupSapelli(this);
 	    	case R.id.about_menuitem :
 	    		return openAboutDialog(item);
 	    }
