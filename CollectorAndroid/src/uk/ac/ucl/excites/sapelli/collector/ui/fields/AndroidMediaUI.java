@@ -149,35 +149,20 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			return mediaFlipper;
 		}
 	}
-	
-	/**
-	 * When a request is made to cancel this field, the abstract method finalise() is called.
-	 */
+
 	@Override
 	protected void cancel()
 	{
-		if(mediaFlipper != null)
-		{
-			finalise();
-			mediaFlipper = null;
-		}
+		mediaFlipper = null;
 	}
 	
 	/**
-	 * Attaches the most recently captured media file to the MediaField.
-	 * 
-	 * @param releaseClick - whether or not to allow clicks once this method returns.
+	 * Release the semaphore that controls click handling. This method is needed because some 
+	 * media types use a callback to determine when the media has been acquired (e.g. photos),
+	 * so the semaphore cannot be released as soon as the {@link #onCapture()} method completes.
 	 */
-	void attachMediaFile(boolean releaseClick) {
-		try {
-			mediaAddedButNotDone(lastCaptureFile);
-		} catch (Exception e) {
-			mediaDone(null, true); //TODO check
-			e.printStackTrace();
-			finalise();
-		}
-		if (releaseClick)
-			handlingClick.release();
+	void releaseClick() {
+		handlingClick.release();
 	}
 
 	
@@ -187,23 +172,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	
 	/**
 	 * What to do when the capture button has been pressed.
-	 * @return a boolean indicating whether or not to process
-	 * other click events as soon as this method returns (i.e. whether the task
-	 * is finished immediately or whether we must wait for some event before
-	 * interaction can continue - such as a picture callback).
 	 */
-	abstract boolean onCapture();
+	abstract void onCapture();
 	
 	/**
-	 * What to do when a piece of media is discarded.
+	 * What to do when a piece of media is discarded after review (e.g. release media player resources).
 	 * @return
 	 */
 	abstract void onDiscard();
-		
-	/**
-	 * What to do on exit of this field (e.g. release resources).
-	 */
-	abstract void finalise();
 	
 	/**
 	 * 
@@ -304,10 +280,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		 */
         private void performCapture() {
 			goToCapture = false; //just made a capture, so go to gallery instead (unless multiple disabled)
-			if (onCapture()) {
-				// if returns true, allow other clicks to occur after onCapture returned
-				handlingClick.release();
-			}
+			onCapture();
 			refreshCaptureButton(); // TODO if performance issues, may not want to do this on every press
 		}
 
@@ -592,7 +565,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						if (position == 0) // media approved
 							if (!multipleCapturesAllowed) {
 								// approving single photo, so go forward
-								mediaDone(null,true); //TODO replace with controller.gotonext?
+								controller.goForward(true);
 							} else {
 								// viewing photo in gallery, already attached
 								showNext();
@@ -677,7 +650,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 							}
 						} else { // position 1 (approve) - go to next field
 							goToCapture = false;
-							mediaDone(null, true); //TODO replace with controller.goToNext?
+							controller.goForward(true);
 						}
 						handlingClick.release();
 					}

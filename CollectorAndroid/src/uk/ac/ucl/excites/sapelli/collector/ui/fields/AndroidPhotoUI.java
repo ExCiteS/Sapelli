@@ -94,7 +94,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	        if (!cameraController.foundCamera()) { // no camera found, try the other one:
 		        cameraController.findCamera(!field.isUseFrontFacingCamera());
 		        if (!cameraController.foundCamera()) { // still no camera, this device does not seem to have one:
-			        mediaDone(null, false);
+			        attachMedia(null, false, true);
 			        return;
 		        }
 	        }
@@ -118,9 +118,9 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	}
 
 	@Override
-	boolean onCapture() {
+	void onCapture() {
 		cameraController.takePicture(this);
-		return false; // only allow new clicks once photo has been received
+		// do not release click semaphore - only allow new clicks once photo has been received
 	}
 	
 
@@ -166,9 +166,11 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	}
 	
 	@Override
-    void finalise() {
+    protected void cancel() {
+		super.cancel();
 		if(cameraController != null)
-			cameraController.close();	    
+			cameraController.close();
+		cameraController = null;
 	}
 	
 	@Override
@@ -230,7 +232,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 				// write to temporary file right away, but don't attach it unless approved
 				// may eventually run out of storage but makes media code easier - should be fixed 
 				// when temp file stuff is refactored --- TODO
-				lastCaptureFile = field.getNewMediaFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
+				lastCaptureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
 				FileOutputStream fos = new FileOutputStream(lastCaptureFile);
 				fos.write(data);
 				fos.close();
@@ -249,7 +251,8 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			cameraController.stopPreview();
 			// Close the dialog
 			dialog.cancel();
-			attachMediaFile(true);
+			attachMedia(lastCaptureFile, false, false);
+			releaseClick();
 		}
 	}
 }

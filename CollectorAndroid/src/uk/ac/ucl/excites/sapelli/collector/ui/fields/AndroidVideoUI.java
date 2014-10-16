@@ -68,7 +68,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 			if (!cameraController.foundCamera()) { // no camera found, try the other one:
 				cameraController.findCamera(!field.isUseFrontFacingCamera());
 				if (!cameraController.foundCamera()) { // still no camera, this device does not seem to have one:
-					mediaDone(null, false);
+					attachMedia(null, false, true);
 					return;
 				}
 			}
@@ -90,24 +90,23 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	}
 
 	@Override
-	boolean onCapture() {
+	void onCapture() {
 			synchronized(recording) {
 				if (!recording) {
 					// start recording
-					lastCaptureFile = field.getNewMediaFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
-					Log.d("VideoUI","New file: "+lastCaptureFile.getAbsolutePath());
+					lastCaptureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
 					cameraController.startVideoCapture(lastCaptureFile);
 					recording = true;
 				} else {
 					// stop recording
 					cameraController.stopVideoCapture();
 					// a capture has been made so show it for review:
-					attachMediaFile(false);
+					attachMedia(lastCaptureFile, false, false);
 					recording = false;
 				}
 			}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
-		return true;
+		releaseClick();
 	}
 
 
@@ -196,9 +195,11 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	}
 
 	@Override
-	void finalise() {
+	protected void cancel() {
+		super.cancel();
 		if(cameraController != null)
-			cameraController.close();	    
+			cameraController.close();
+		cameraController = null;
 	}
 
 }

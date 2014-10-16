@@ -39,39 +39,52 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	{
 		super(field, controller, collectorUI);
 	}
-
-	public void mediaDone(File mediaAttachment, boolean userRequested)
+	
+	/**
+	 * Logs the attachment of a media file, and requests that the controller proceed to the appropriate field.
+	 * 
+	 * @param mediaAttachment - the file to be attached to {@code field} in the current record.
+	 * @param userRequested
+	 * @param goForward - whether to go forward to the next field or re-enter the current field with the new attachment (important
+	 * if multiple attachments can be added to the same field).
+	 */
+	public void attachMedia(File mediaAttachment, boolean userRequested, boolean goForward)
 	{
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
+			// log the attachment
 			controller.addLogLine("ATTACHMENT", field.getID(), mediaAttachment.getName());
+			// add it to the record
 			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());
+			// mark it to be added when the user saves their session
 			controller.addAttachment(mediaAttachment);
-			controller.goForward(userRequested); // goto next/jump field
+			// goto next/jump field
 		}
 		else
 		{
+			// log empty attachment
 			controller.addLogLine("ATTACHMENT", field.getID(), "-NONE-");
-			if(!isValid(controller.getCurrentRecord()))
+			if(!isValid(controller.getCurrentRecord())) {
 				// at least one attachment is required & we have none:
 				controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE); // stay at this field ("return;" is not enough because if we are using a native app it needs to be restarted)
-			else
-				controller.goForward(userRequested); // goto next/jump field
+				// must not go forward (!):
+				return;
+			}
 		}
+		
+		if (goForward)
+			// goto next/jump field
+			controller.goForward(userRequested); 
+		else
+			// re-enter current field, but with new attachment
+			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 	}
 	
-	public void mediaAddedButNotDone(File mediaAttachment)
-	{
-		if(mediaAttachment != null && mediaAttachment.exists())
-		{
-			controller.addLogLine("ATTACHMENT", field.getID(), mediaAttachment.getName());
-			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());
-			controller.addAttachment(mediaAttachment);
-		}
-		// do NOT go to next/jump field
-		controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
-	}
-	
+	/**
+	 * Logs the deletion of a media file, removes it from the record and cancels the request of it being saved at the end
+	 * of the user's session.
+	 * @param mediaAttachment - the attachment to remove
+	 */
 	public void removeMedia(File mediaAttachment)
 	{
 			controller.addLogLine("ATTACHMENT REMOVED", field.getID(), mediaAttachment.getName());

@@ -94,7 +94,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	{
 		try
 		{
-			lastCaptureFile = field.getNewMediaFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
+			lastCaptureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
 			audioRecorder = new AudioRecorder(lastCaptureFile);
 			audioRecorder.start();
 			volumeDisplay.start();
@@ -102,13 +102,13 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		catch(IOException ioe)
 		{
 			Log.e(TAG, "Could not get audio file.", ioe);
-			mediaDone(null, false);
+			attachMedia(null, false, true);
 			return false;
 		}
 		catch(Exception e)
 		{
 			Log.e(TAG, "Could not start audio recording.", e);
-			mediaDone(null, false);
+			attachMedia(null, false, true);
 			return false; // !!!
 		}
 		return true;		
@@ -134,20 +134,13 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		}
 	}
 
-	@Override
-	protected void cancel()
-	{
-		if(audioRecorder != null)
-			stopRecording();
-	}
-
 	/**
 	 * If not already recording, start recording. Else stop recording and attach the media file 
 	 * to the field. Always returns "true" so that click events can be processed while audio is being
 	 * recorded.
 	 */
 	@Override
-	boolean onCapture() {
+	void onCapture() {
 		synchronized(recording) {
 			if (!recording) {
 				// start recording
@@ -157,12 +150,12 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 				// stop recording
 				stopRecording();
 				// a capture has been made so show it for review:
-				attachMediaFile(false);
+				attachMedia(lastCaptureFile, false, false);
 				recording = false;
 			}
 		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
-		return true; 
+		releaseClick(); 
 	}
 
 	@Override
@@ -229,9 +222,14 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	}
 
 	@Override
-	void finalise() {
+    protected void cancel() {
+		super.cancel();
+		if(audioRecorder != null)
+			stopRecording();
 		if (audioReviewPicker != null)
 			audioReviewPicker.finalise();
+		audioReviewPicker = null;
+		volumeDisplay = null;
 	}
 
 	/**

@@ -337,7 +337,7 @@ public class CollectorActivity extends ProjectActivity
 		if(!isIntentAvailable(this, MediaStore.ACTION_IMAGE_CAPTURE)) // check if the device is able to handle PhotoField Intents
 		{ // Device cannot take photos
 			Log.i(TAG, "Cannot take photo due to device limitation.");
-			photoUI.mediaDone(null, true); // skip the PhotoField field (pass null to indicate no file was created)
+			photoUI.attachMedia(null, true, true); // skip the PhotoField field (pass null to indicate no file was created)
 		}
 		else
 		{ // Device can take photos
@@ -358,7 +358,7 @@ public class CollectorActivity extends ProjectActivity
 				if(tmpPhotoFile != null)
 					tmpPhotoFile.delete();
 				Log.e(TAG, "setPhoto() error", e);
-				photoUI.mediaDone(null, true);
+				photoUI.attachMedia(null, true, true);
 			}
 		}
 	}
@@ -380,25 +380,25 @@ public class CollectorActivity extends ProjectActivity
 			{
 				try
 				{ // Rename the file & pass it to the controller
-					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewMediaFile(fileStorageProvider, controller.getCurrentRecord());
+					File newPhoto = ((PhotoField) controller.getCurrentField()).getNewAttachmentFile(fileStorageProvider, controller.getCurrentRecord());
 					tmpPhotoFile.renameTo(newPhoto);
-					photoUI.mediaDone(newPhoto, true);
+					photoUI.attachMedia(newPhoto, true, true);
 				}
 				catch(Exception e)
 				{ // could not rename the file
 					tmpPhotoFile.delete();
-					photoUI.mediaDone(null, true);
+					photoUI.attachMedia(null, true, true);
 				}
 			}
 			else
-				photoUI.mediaDone(null, true);
+				photoUI.attachMedia(null, true, true);
 		}
 		else
 		// if(resultCode == RESULT_CANCELED)
 		{
 			if(tmpPhotoFile != null)
 				tmpPhotoFile.delete(); // Delete the tmp file from the device
-			photoUI.mediaDone(null, true);
+			photoUI.attachMedia(null, true, true);
 		}
 	}
 

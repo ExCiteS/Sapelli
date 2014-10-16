@@ -37,5 +37,4 @@ public class VideoItem extends Item implements FileItem {
     public File getFile() {
 		return file;
     }
-
 }

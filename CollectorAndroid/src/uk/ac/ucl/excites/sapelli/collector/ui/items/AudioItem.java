@@ -15,14 +15,14 @@ import com.larvalabs.svgandroid.SVGDrawable;
 public class AudioItem extends Item implements FileItem {
 	
 	private File file;
-	
+		
 	public AudioItem(File file) {
 		this(null, file);
 	}
 
 	public AudioItem(Integer id, File file) {
-	    super(id);
-	    this.file = file;
+		super(id);
+		this.file = file;
     }
 
 	@Override
@@ -34,10 +34,9 @@ public class AudioItem extends Item implements FileItem {
 		image.setImageDrawable(new SVGDrawable(audioSvg));
 		return image;
 	}
-
+	
 	@Override
-    public File getFile() {
+	public File getFile() {
 		return file;
-    }
-
+	}
 }
