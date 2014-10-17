@@ -84,18 +84,27 @@ public class OrientationSensor implements SensorEventListener
 	@Override
 	public void onSensorChanged(SensorEvent sensorEvent)
 	{
+		
+		/**
+		 * Some devices (especially Nexus) fire SENSOR_STATUS_UNRELIABLE each time this is checked and values are lost.
+		 *
+		 * http://stackoverflow.com/questions/9487747/type-magnetic-field-event-not-firing-on-my-galaxy-nexus-ics-4-0-2
+		 * http://stackoverflow.com/questions/6256256/android-compass-seems-unreliable
+		 */
 		// If the sensor data is unreliable return
-		if(sensorEvent.accuracy == SensorManager.SENSOR_STATUS_UNRELIABLE)
-			return;
+//		if (sensorEvent.accuracy == SensorManager.SENSOR_STATUS_UNRELIABLE)
+//			return;
+		
+		
 		// Gets the value of the sensor that has been changed
 		switch(sensorEvent.sensor.getType())
 		{
 			case Sensor.TYPE_ACCELEROMETER:
-				//Log.d(TAG, "Accelerometer update");
+				Log.d(TAG, "Accelerometer update");
 				gravity = sensorEvent.values.clone();
 				break;
 			case Sensor.TYPE_MAGNETIC_FIELD:
-				//Log.d(TAG, "Magnetic field update");
+				Log.d(TAG, "Magnetic field update");
 				geomagnetic = sensorEvent.values.clone();
 				break;
 		}
