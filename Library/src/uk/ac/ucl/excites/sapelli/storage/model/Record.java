@@ -304,7 +304,7 @@ public class Record implements Serializable
 	public Constraint getRecordQueryConstraint() throws IllegalStateException
 	{
 		if(!isFilled(schema.getPrimaryKey()))
-			throw new IllegalStateException("All values of the key must be set before a query can be created!");
+			throw new IllegalStateException("All values of the key must be set before a record selecting contraint/query can be created!");
 		
 		// Match for key parts:
 		AndConstraint constraints = new AndConstraint();
@@ -649,9 +649,10 @@ public class Record implements Serializable
 	 */
 	public boolean hasEqualValues(Record other, boolean asStoredBinary)
 	{
-		return asStoredBinary ?
-			hasEqualValues(other, this.schema.getColumns(false), true) : // compare all non-virtual columns, using values as if decoded from binary stream
-			Arrays.equals(this.values, other.values);
+		return other == null ?	false :
+								(asStoredBinary ?
+									hasEqualValues(other, this.schema.getColumns(false), true) : // compare all non-virtual columns, using values as if decoded from binary stream
+									Arrays.equals(this.values, other.values));
 	}
 	
 	/**
@@ -666,6 +667,8 @@ public class Record implements Serializable
 	@SuppressWarnings("rawtypes")
 	public boolean hasEqualValues(Record other, List<Column> columns, boolean asStoredBinary)
 	{
+		if(other == null)
+			return false;
 		for(Column c : columns)
 		{
 			if(!EqualValues(asStoredBinary ? c.retrieveValueAsStoredBinary(this) : c.retrieveValue(this),

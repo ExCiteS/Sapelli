@@ -92,7 +92,7 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, boolean signed, int sizeBits)
 	{
-		super(Long.class, name, optional);
+		super(name, optional);
 		if(sizeBits < 1 || sizeBits > 64)
 			throw new IllegalArgumentException("Invalid size (" + sizeBits + "). Size must be between 1 and 64 bits.");
 		this.size = sizeBits;
@@ -122,7 +122,7 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 */
 	public IntegerColumn(String name, boolean optional, IntegerRangeMapping rangeMapping)
 	{
-		super(Long.class, name, optional);
+		super(name, optional);
 		this.rangeMapping = rangeMapping;
 		this.size = rangeMapping.size();
 		this.signed = false;
@@ -338,6 +338,12 @@ public class IntegerColumn extends ComparableColumn<Long>
 		hash = 31 * hash + (signed ? 0 : 1);
 		hash = 31 * hash + (rangeMapping == null ? 0 : rangeMapping.hashCode());
 		return hash;
+	}
+
+	@Override
+	public Class<Long> getType()
+	{
+		return Long.class;
 	}
 	
 }
