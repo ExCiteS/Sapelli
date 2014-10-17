@@ -59,6 +59,11 @@ public class Zipper
 		this.paths = paths;
 		this.zipDest = zipDest;
 
+		// Make sure that the parent folder of the zip exists
+		final File zipFile = new File(zipDest);
+		if(!zipFile.exists())
+			FileHelpers.createParentFolder(zipFile);
+
 		// Make sure the zip files ends with the appropriate extension
 		if(!FileHelpers.getFileExtension(this.zipDest).equalsIgnoreCase(ZIP_EXTENTION))
 			this.zipDest += "." + ZIP_EXTENTION;

@@ -324,6 +324,18 @@ public final class FileHelpers
 	}
 
 	/**
+	 * Attempts to create the necessary parent folder(s) for a given path (the path could be a folder or file)
+	 * 
+	 * @param folder
+	 * @return
+	 */
+	public static boolean createParentFolder(File folder)
+	{
+		File parent = folder.getParentFile();
+		return createFolder(parent);
+	}
+
+	/**
 	 * Returns only the folderPath of the filePath. e.g. for "/my/path/myfile.raw" : "/my/path/"
 	 * 
 	 * @param filePath
