@@ -499,7 +499,11 @@ public abstract class Controller
 	 * @param of  the OrientationField
 	 * @return whether or not a UI update is required after entering the field
 	 */
-	public abstract boolean enterOrientationField(OrientationField of, FieldParameters arguments);
+	public boolean enterOrientationField(OrientationField of, FieldParameters arguments)
+	{
+		startOrientationListener();
+		return true; // update UI (even though the orientation values are typically received instantaneously and the UI might never actually be seen by the user)
+	}
 	
 	/**
 	 * @param page	the Page
@@ -861,9 +865,11 @@ public abstract class Controller
 		startLocationListener(Arrays.asList(locField));
 	}
 
-	public abstract void startLocationListener(List<LocationField> locFields);
+	protected abstract void startOrientationListener();
+	
+	protected abstract void startLocationListener(List<LocationField> locFields);
 
-	public abstract void stopLocationListener();
+	protected abstract void stopLocationListener();
 	
 	public abstract Location getCurrentBestLocation();
 	

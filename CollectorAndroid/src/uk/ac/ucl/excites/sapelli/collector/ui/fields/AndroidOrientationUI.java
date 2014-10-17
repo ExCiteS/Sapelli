@@ -40,35 +40,46 @@ import android.widget.RelativeLayout.LayoutParams;
  * @author Julia, mstevens
  *
  */
-public class AndroidOrientationUI extends OrientationUI<View, CollectorView> {
+public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
+{
 
 	private Button pageView;
 	private RelativeLayout waitView;
 
 	static public final float PADDING = 40.0f;
 
-	public AndroidOrientationUI(OrientationField field, Controller controller, CollectorView collectorUI) {
+	public AndroidOrientationUI(OrientationField field, Controller controller, CollectorView collectorUI)
+	{
 		super(field, controller, collectorUI);
 	}
 
 	@Override
-	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord) {
+	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
+	{
 		// TODO take "enabled" into account!
-		if (onPage) {
-			if (pageView == null) {
+		if(onPage)
+		{
+			if(pageView == null)
+			{
 				pageView = new Button(collectorUI.getContext());
 				pageView.setText(field.getCaption());
 				// TODO some kind of icon/image would be nice (an arrow?)
-				pageView.setOnClickListener(new OnClickListener() {
+				pageView.setOnClickListener(new OnClickListener()
+				{
 					@Override
-					public void onClick(View v) {
-						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field itself
+					public void onClick(View v)
+					{
+						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field
+																											// itself
 					}
 				});
 			}
 			return pageView;
-		} else {
-			if (waitView == null) {
+		}
+		else
+		{
+			if(waitView == null)
+			{
 				Context context = collectorUI.getContext();
 				waitView = new RelativeLayout(context);
 				RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
