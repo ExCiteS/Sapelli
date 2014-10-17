@@ -313,11 +313,21 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				autoIncrementKeyColumn.storeValue(record, rowID);
 		}
 
-		/* (non-Javadoc)
+		/**
+		 * Note:
+		 * 	Currently the detection of _actual_ changes to the record does *not* work.
+		 * 	If the UPDATE statement's WHERE clause matches an existing row that row will (at least in SQLite) be considered
+		 * 	as changed/affected (i.e. this method will return true) even if the actual values remained unchanged.
+		 * 	The only obvious way to fix this is to generate UPDATE statements in which the WHERE clause checks whether
+		 * 	values _need_ to be updated. E.g. "UPDATE table SET col1 = "newVal1", col2 = "newVal2" WHERE id = X AND (col1 IS NOT 'newVal1' OR col2 IS NOT 'newVal2');"
+		 * 	We could implement such a solution in RecordUpdateHelper but will wait until we are certain this feature will be required.
+		 * @see See: <a href="http://stackoverflow.com/questions/26372449">http://stackoverflow.com/questions/26372449</a>
+		 * TODO implement solution to detect actual record value changes
+		 * 
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#update(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public void update(Record record) throws DBException
+		public boolean update(Record record) throws DBException
 		{
 			if(updateStatement == null)
 			{
@@ -331,7 +341,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			updateStatement.retrieveAndBindAll(record);
 			
 			// Execute:
-			updateStatement.executeUpdate();
+			return updateStatement.executeUpdate() == 1;
 		}
 		
 		public void upsert(Record record) throws DBException
