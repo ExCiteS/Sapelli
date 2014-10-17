@@ -701,14 +701,14 @@ public class Schema implements Serializable
 			Schema other = (Schema) obj;
 			// Model/Internal
 			boolean idMatch = isInternal() ?	(other.isInternal() && this.internal.ordinal() == other.internal.ordinal()) :
-												(!other.isInternal() && this.model.getID() == other.model.getID());
+												(!other.isInternal() && (this.model.getID() == other.model.getID() && this.modelSchemaNumber == other.modelSchemaNumber));
 			// Note: for internal enum comparison we compare the enum ordinals instead of the enum objects! This is needed when one Schema comes out of DB4O, but probably a good practice in general.
 			if(!idMatch || !(checkNames || checkColumns || checkIndexes))
 				return idMatch;
-			// Name:
-			if(checkNames && !this.name.equals(other.name))
+			// Schema & model name:
+			if(checkNames && (!this.name.equals(other.name) || (!this.isInternal() && !this.model.getName().equals(other.model.getName()))))
 				return false;
-			// Columns & indexes:
+			// Columns:
 			if(checkColumns)
 			{
 				// Check number of (real) columns:
@@ -721,6 +721,7 @@ public class Schema implements Serializable
 					if(!myCols.next().equals(otherCols.next(), checkNames, true))
 						return false;
 			}
+			// Check indexes:
 			if(checkIndexes) // also checks primary key
 			{
 				// Check number of indexes:
