@@ -54,12 +54,13 @@
         android:onClick="importRecords"
         android:showAsAction="always"
         android:title="@string/import_records_menuitem"/> -->
+   
     <item
-        android:id="@+id/copy_db_menuitem"
+        android:id="@+id/backup"
         android:icon="@android:drawable/ic_menu_save"
-        android:onClick="copyDBtoSD"
         android:showAsAction="always"
-        android:title="@string/copy_db_menuitem"/>
+        android:title="@string/backup"/>
+    
     <item
         android:id="@+id/about_menuitem"
         android:icon="@android:drawable/ic_menu_info_details"

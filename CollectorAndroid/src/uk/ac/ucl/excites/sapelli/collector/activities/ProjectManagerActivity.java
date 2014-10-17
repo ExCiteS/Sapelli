@@ -25,17 +25,22 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+
+import org.apache.commons.lang3.ArrayUtils;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider.Folders;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderCallback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.util.AsyncZipper;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
@@ -80,6 +85,7 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 import com.ipaulpro.afilechooser.utils.FileUtils;
@@ -302,8 +308,8 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	    		return createShortcut(item);
 	    	case R.id.remove_shortcut :
 	    		return removeShortcut(item);
-	    	case R.id.copy_db_menuitem :
-	    		return copyDBtoSD(item);
+			case R.id.backup:
+				return backupSapelli(this);
 	    	case R.id.about_menuitem :
 	    		return openAboutDialog(item);
 	    }
@@ -396,6 +402,110 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return true;
 	}
 	
+	public boolean backupSapelli(final Context context)
+	{
+		// Create the items
+		final List<String> selectedItems = new ArrayList<String>();
+		final List<String> checkboxItems = new ArrayList<String>();
+		final List<Boolean> checkedItems = new ArrayList<Boolean>();
+
+		for(int i = 0; i < Folders.values().length; i++)
+		{
+			final Folders folder = Folders.values()[i];
+
+			switch(folder)
+			{
+			// Default selected:
+			case Crashes:
+			case Export:
+			case Logs:
+				checkboxItems.add(folder.name());
+				checkedItems.add(true);
+				selectedItems.add(folder.name());
+				break;
+
+			// Default unselected:
+			case Data:
+			case Projects:
+
+				checkboxItems.add(folder.name());
+				checkedItems.add(false);
+				break;
+
+			// Skip:
+			case Downloads:
+			case Temp:
+			default:
+				break;
+			}
+		}
+		
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		// Set the dialog title
+		builder.setTitle("Select folders to export:")
+		// Specify the list array, the items to be selected by default (null for none),
+		// and the listener through which to receive callbacks when items are selected
+				.setMultiChoiceItems(
+				// Transform checkboxItems to a CharSequence[]
+				checkboxItems.toArray(new CharSequence[checkboxItems.size()]),
+				// Transform checkedItems to a boolean[]
+				ArrayUtils.toPrimitive(checkedItems.toArray(new Boolean[checkedItems.size()])),
+				new DialogInterface.OnMultiChoiceClickListener()
+				{
+					@Override
+					public void onClick(DialogInterface dialog, int which, boolean isChecked)
+					{
+						if(isChecked)
+						{
+							// If the user checked the item, add it to the selected items
+							selectedItems.add(Folders.values()[which].name());
+						}
+						else if(selectedItems.contains(Folders.values()[which].name()))
+						{
+							// Else, if the item is already in the array, remove it
+							selectedItems.remove(Folders.values()[which].name());
+						}
+					}
+				})
+				// Set the action buttons
+				.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener()
+				{
+					@Override
+					public void onClick(DialogInterface dialog, int id)
+					{
+						// Get file paths for the selected items from FileStorageProvider
+						List<String> paths = new ArrayList<String>();
+						for(String f : selectedItems)
+							paths.add(fileStorageProvider.getSapelliFolderPath(Folders.valueOf(f)));
+
+						// Call an AsyncZipper only if there are selected items
+						if(!paths.isEmpty())
+						{
+							AsyncZipper zipper = new AsyncZipper(context, 
+									getString(R.string.exporting_data), 
+									paths, 
+									fileStorageProvider.getBackupLocation().getAbsolutePath());
+							
+							zipper.execute();
+						}
+						else
+							Toast.makeText(context, R.string.select_at_least_one_folder_to_export_data, Toast.LENGTH_LONG).show();
+					}
+				}).setNegativeButton(R.string.no, new DialogInterface.OnClickListener()
+				{
+					@Override
+					public void onClick(DialogInterface dialog, int id)
+					{
+						// Do nothing
+					}
+				});
+
+		// Show the dialog
+		builder.create().show();
+
+		return false;
+	}
+	
 	public void browse(View view)
 	{
 		// Use the GET_CONTENT intent from the utility class
@@ -476,37 +586,34 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// ServiceChecker.restartActiveDataSender(this);
 	}
 
-	/**
-	 * @param view
-	 */
 	public void loadProject(View view)
-	{
+		{
 		String location = txtProjectPathOrURL.getText().toString().trim();
 		if(location.isEmpty())
-			// no file to load:
+			// Download Sapelli file if path is a URL
 			showErrorDialog(R.string.pleaseSelect);
-		else
-		{
-			// Clear field
+			else
+			{
+				// Extract & parse a local Sapelli file
 			txtProjectPathOrURL.setText("");
-			
-			// Try loading project:
+		
+		//Add project
 			if(Pattern.matches(Patterns.WEB_URL.toString(), location))
 				// Download Sapelli file if location is a URL:
 				(new DownloadFileFromURL(location, "Project")).execute(); // the task will also call loadProjectFromFile()
 			else if(location.toLowerCase().endsWith("." + XML_FILE_EXTENSION))
 				// Warn about bare XML file (no longer supported):
 				showErrorDialog(R.string.noBareXMLProjects);
-			else
-			{	// Load project from local file (unless extension is not known)
+		else
+	{
 				File localFile = new File(location);
 				if(ProjectLoader.HasSapelliFileExtension(localFile))
 					loadProjectFromFile(localFile, null);
 				else
 					showErrorDialog(getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile), StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")));
-				/* Note the we only check extension for local files, because in order to support "smart"/dynamic URLs
-				 * all downloaded files get a generic "tmp" extension. */
-			}
+			// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
+			// Show parser warnings if needed:
+		}
 		}
 	}
 
@@ -538,24 +645,24 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		//	Parser warnings:
 		List<String> warnings = loader.getParserWarnings(); 
 		if(!warnings.isEmpty())
-		{ 
+		{ // Show parser warnings:
 			bldr.append(getString(R.string.parsingWarnings) + ":");
 			for(String warning : warnings)
 				bldr.append(" - " + warning);
 		}
-		//	Missing files:
+
 		List<String> missingFiles = project.getMissingFilesRelativePaths(fileStorageProvider);
 		if(!missingFiles.isEmpty())
-		{
+	{
 			bldr.append(getString(R.string.missingFiles) + ":");
 			for(String missingFile : missingFiles)
 				bldr.append(" - " + missingFile);
 		}
-		//	Show dialog if needed:
+		// Check file dependencies
 		if(!bldr.isEmpty())
 			showWarningDialog(bldr.toString()); // no need to worry about message not fitting the dialog, when necessary it will be scrollable
-					
-		// Store the project object:
+		
+		// Generate documentation
 		try
 		{
 			projectStore.add(project);
@@ -563,9 +670,9 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		catch(Exception e) // this shouldn't happen, but just in case...
 		{
 			Log.e(TAG, "Could not store project.", e);
-			// Delete project installation folder:
+		
 			org.apache.commons.io.FileUtils.deleteQuietly(fileStorageProvider.getProjectInstallationFolder(project, false));
-			// Show error dialog:
+		// Store the project object:
 			showErrorDialog("Could not store project: " + e.getLocalizedMessage());
 			return null; // !!!
 		}
@@ -577,11 +684,11 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		// TODO Re-enable the service at same point
 		// Restart the DataSenderService to start monitoring the new project
 		// ServiceChecker.restartActiveDataSender(this);
-		
+
 		// Return project:
 		return project;
-	}
-
+		}
+	
 	/**
 	 * @param loadedProject
 	 * @throws ProjectDuplicateException
@@ -591,7 +698,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		projectStore.duplicateCheck(loadedProject);
 	}
-
+	
 	private void requestEncryptionKey(final Project project)
 	{
 		// encryptionDialog = new AlertDialog.Builder(this);
@@ -695,7 +802,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 						XMLRecordsImporter importer = new XMLRecordsImporter(app.getCollectorClient());
 						List<Record> records = importer.importFrom((new File(path)).getAbsoluteFile());
 
-						//	Parser warnings:
+						// Show parser warnings if needed:
 						List<String> warnings = importer.getWarnings(); 
 						if(!warnings.isEmpty())
 						{
@@ -798,7 +905,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			startTime = System.currentTimeMillis();
 			this.downloadUrl = downloadUrl;
 			// Download file in folder /Downloads/timestamp-filename
-			downloadFolder = fileStorageProvider.getDownloadsFolder(true);
+			downloadFolder = fileStorageProvider.getDownloadsFolder();
 			downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
 
 			// instantiate it within the onCreate method
@@ -903,10 +1010,10 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 			progressDialog.dismiss();
 			if(downloadFinished)
 			{
-				// Process the file & add the project to the db & list on the screen
-				Project project = loadProjectFromFile(downloadFile, downloadUrl); // also handles all exceptions, but returns null if there was one
 				
-				// Handle temp file:
+				Project project = loadProjectFromFile(downloadFile, downloadUrl); // also handles all exceptions, but returns null if there was one
+				// Process the file & add the project to the db & list on the screen
+				
 				if(project != null)
 					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_' + (startTime / 1000) + ".sapelli"));
 				else
