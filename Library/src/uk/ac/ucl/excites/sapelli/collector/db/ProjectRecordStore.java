@@ -353,17 +353,16 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	@Override
 	public RecordReference retrieveHeldForeignKey(Relationship relationship)
 	{
-		Record hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship).getRecordQuery());
-		if(hfkRecord != null)
+		Record hfkRecord = null;
+		try
 		{
-			try
-			{
-				return relationship.getRelatedForm().getSchema().createRecordReference(HFK_SERIALISED_RECORD_REFERENCE.retrieveValue(hfkRecord));
-			}
-			catch(Exception e)
-			{
+			hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship).getRecordQuery());
+			return relationship.getRelatedForm().getSchema().createRecordReference(HFK_SERIALISED_RECORD_REFERENCE.retrieveValue(hfkRecord));
+		}
+		catch(Exception e)
+		{
+			if(hfkRecord != null)
 				deleteHeldForeignKey(relationship);
-			}
 		}
 		//else:
 		return null;

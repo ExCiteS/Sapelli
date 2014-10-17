@@ -31,9 +31,9 @@ public abstract class ComparableColumn<T> extends Column<T> implements Comparato
 	
 	static private final long serialVersionUID = 2L;
 
-	public ComparableColumn(Class<T> type, String name, boolean optional)
+	public ComparableColumn(String name, boolean optional)
 	{
-		super(type, name, optional);
+		super(name, optional);
 	}
 	
 	/* (non-Javadoc)

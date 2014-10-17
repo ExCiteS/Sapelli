@@ -60,10 +60,9 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 		this(name, singleColumn, optional, DEFAULT_MINIMUM_LENGTH, maxLength);
 	}
 	
-	@SuppressWarnings("unchecked")
 	public ListColumn(String name, Column<T> singleColumn, boolean optional, int minLength, int maxLength)
 	{
-		super((Class<L>) (Class<?>) List.class, name, optional);
+		super(name, optional);
 		this.singleColumn = singleColumn;
 		this.sizeField = new IntegerRangeMapping(minLength, maxLength);
 	}
@@ -217,4 +216,11 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 		return hash;
 	}
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public Class<L> getType()
+	{
+		return (Class<L>) (Class<?>) List.class;
+	}
+	
 }

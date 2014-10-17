@@ -145,10 +145,45 @@ public class Source extends Constraint
 		return new Source(schemata, !inclusion).reduce();
 	}
 
+	/**
+	 * Compares record schema which schemata in the source.
+	 * The call to {@link Set#contains(Object)} uses the expensive {@link Schema#equals(Object)} method to compare pairs of schemata, but the search itself is O(log2(n)).
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint#_isValid(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 */
 	@Override
 	protected boolean _isValid(Record record)
 	{
 		return schemata.isEmpty() || inclusion == schemata.contains(record.getSchema());
+	}
+	
+	/**
+	 * Alternative isValid() method which allows by-passing the expensive schema comparison and use a cheaper (but less) secure implementation.
+	 * When {@code fullSchemaCompare} is false a  cheaper schema pair comparison will be used, but the search itself is O(n).
+	 * 
+	 * @param record
+	 * @param fullSchemaCompare
+	 * @return
+	 */
+	public boolean isValid(Record record, boolean fullSchemaCompare)
+	{
+		if(fullSchemaCompare)
+			return isValid(record); // uses _isValid() above
+		else if(record == null)
+			return false;
+		else if(schemata.isEmpty())
+			return true;
+		else
+		{	// Uses cheaper schema pair comparison, but the search is O(n)
+			boolean contains = false;
+			for(Schema sourceSchema : schemata)
+				if(record.getSchema().equals(sourceSchema, false, false, false))
+				{
+					contains = true;
+					break;
+				}
+			return inclusion == contains;
+		}
 	}
 	
 	@Override

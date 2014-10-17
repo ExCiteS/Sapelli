@@ -98,6 +98,9 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		androidSQLiteSt.clearBindings();
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeInsert()
+	 */
 	@SuppressLint("DefaultLocale")
 	@Override
 	public long executeInsert() throws DBException
@@ -123,6 +126,9 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeUpdate()
+	 */
 	@Override
 	public int executeUpdate() throws DBException
 	{
@@ -136,6 +142,9 @@ public class AndroidSQLiteStatement extends SapelliSQLiteStatement
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SapelliSQLiteStatement#executeDelete()
+	 */
 	@Override
 	public int executeDelete() throws DBException
 	{

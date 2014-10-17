@@ -74,6 +74,24 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 			throw new DBException(sqlE);
 		}
 	}
+	
+	@Override
+	protected int executeSQLReturnAffectedRows(String sql) throws DBException
+	{
+		// Execute SQL:
+		executeSQL(sql);
+		// Return number of affected rows:
+		try
+		{
+			int rows = db.getChanges();
+			System.out.println("affected rows: " + rows);
+			return rows;
+		}
+		catch(SQLiteException e)
+		{
+			throw new DBException("Failed to get number of changed rows", e);
+		}
+	}
 
 	@Override
 	protected ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException
