@@ -207,7 +207,7 @@ public class FileStorageProvider
 	public File getDownloadsFolder() throws FileStorageException
 	{
 		if(downloadsFolder.exists() && downloadsFolder.canWrite())
-			return new File(downloadsFolder + File.separator + DOWNLOADS_SAPELLI_FOLDER + File.separator);
+			return createIfNeeded(downloadsFolder + File.separator + DOWNLOADS_SAPELLI_FOLDER + File.separator, true);
 		else
 			throw new FileStorageException("Downloads folder is not or no longer accessible (path: " + downloadsFolder.getAbsolutePath());
 	}
