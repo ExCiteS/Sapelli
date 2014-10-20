@@ -111,6 +111,8 @@ public abstract class Controller
 	
 	protected boolean handlingUserGoBackRequest = false;
 	
+	protected boolean blockedUI = false;
+
 	public Controller(Project project, CollectorUI<?, ?> ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
 	{
 		this.project = project;
@@ -896,4 +898,27 @@ public abstract class Controller
 	 */
 	protected abstract long getElapsedMillis();
 	
+	/**
+	 * @return the blockedUI
+	 */
+	public boolean isUIBlocked()
+	{
+		return blockedUI;
+	}
+
+	/**
+	 * Block UI
+	 */
+	public void blockUI()
+	{
+		this.blockedUI = true;
+	}
+
+	/**
+	 * Unblock UI
+	 */
+	public void unblockUI()
+	{
+		this.blockedUI = false;
+	}
 }

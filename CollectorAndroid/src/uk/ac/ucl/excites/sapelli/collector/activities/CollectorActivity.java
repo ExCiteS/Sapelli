@@ -53,6 +53,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.Window;
 import android.view.WindowManager;
 
@@ -268,6 +269,15 @@ public class CollectorActivity extends ProjectActivity
 		return super.onKeyUp(keyCode, event);
 	}
 	
+	@Override
+	public boolean dispatchTouchEvent(MotionEvent event)
+	{
+		if(controller.isUIBlocked())
+			return false;
+		else
+			return super.dispatchTouchEvent(event);
+	}
+
 	public void startAudioRecorderApp(AndroidAudioUI audioUI)
 	{
 		// TODO call native audio recorder (maybe look at how ODK Collect does it)
