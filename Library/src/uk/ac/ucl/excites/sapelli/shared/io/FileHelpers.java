@@ -396,7 +396,7 @@ public final class FileHelpers
 	 */
 	static public String getFileName(String filePath)
 	{
-		int lastIndex = filePath.lastIndexOf("/");
+		int lastIndex = filePath.lastIndexOf(File.separator);
 		String result = filePath.substring(lastIndex + 1, filePath.length());
 		return result;
 	}
