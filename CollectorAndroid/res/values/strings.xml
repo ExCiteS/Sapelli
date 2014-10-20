@@ -62,6 +62,13 @@
     <string name="parsingWarnings">Parsing issues</string>
     <string name="missingFiles">These files could not be found</string>
     
+    <string name="selectForBackup">This will back-up the database, as well as the folders selected below:</string>
+    <string name="folderCrashes">Crash reports</string>
+    <string name="folderExports">Exported data</string>
+    <string name="folderLogs">Log files</string>
+    <string name="folderAttachments">Attachments</string>
+    <string name="folderProjects">Project files</string>
+    
     <string name="needsStorageAccess">needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.</string>
     <string name="unavailableStorageAccess">Previously used file storage medium has become inaccessible, possibly due to the removal of an SD card or the device being connected to a PC.\nThe application will now exit.\nWhat would you like to happen when you restart it? It can either try using another storage medium, or retry the current medium. In the latter case please first re-insert SD card or disconnect from computer before restarting.</string>
     <string name="useAlternativeStorage">Try another&#8230;</string>

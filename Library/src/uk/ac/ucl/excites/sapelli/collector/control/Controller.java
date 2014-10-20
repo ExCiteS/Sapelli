@@ -406,7 +406,7 @@ public abstract class Controller
 		// Move attachments from temp to data folder:
 		try
 		{
-			File dataFolder = fileStorageProvider.getProjectDataFolder(project, true);
+			File dataFolder = fileStorageProvider.getProjectAttachmentFolder(project, true);
 			for(File attachment : currFormSession.getMediaAttachments())
 				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
 		}
@@ -542,7 +542,7 @@ public abstract class Controller
 	{
 		ForeignKeyColumn column = belongsTo.getColumn();
 		Constraint constraints = belongsTo.getConstraints();
-		RecordReference foreignKey = column.retrieveValue(currFormSession.record); // may be null
+		RecordReference foreignKey = column.retrieveValue(currFormSession.record); // foreignKey may be null
 		
 		if(!arguments.getBoolean(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM, false))
 		{	// We were *not* waiting for a return from the relatedForm

@@ -44,19 +44,17 @@ public class Zipper
 	private BufferedInputStream origin;
 	private byte data[];
 
-	private List<String> paths;
+	private List<File> sourceFiles;
 	private String zipDest;
 
 	/**
 	 * 
-	 * @param paths
-	 *            - A list of paths to files/folders to be zipped
-	 * @param zipDest
-	 *            - The destination of the zip file
+	 * @param sourceFiles - A list of files/folders to be zipped
+	 * @param zipDest - The destination path of the zip file
 	 */
-	public Zipper(List<String> paths, String zipDest)
+	public Zipper(List<File> sourceFiles, String zipDest)
 	{
-		this.paths = paths;
+		this.sourceFiles = sourceFiles;
 		this.zipDest = zipDest;
 
 		// Make sure that the parent folder of the zip exists
@@ -82,7 +80,7 @@ public class Zipper
 			zip = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipDest)));
 
 		// Iterate through all files and add them to the zip file
-		for(String f : paths)
+		for(File f : sourceFiles)
 			if(f != null)
 				zipFile(f);
 
@@ -97,12 +95,8 @@ public class Zipper
 	 * @param zipDest
 	 * @return
 	 */
-	private boolean zipFile(String sourceFilePath)
+	private boolean zipFile(File sourceFile)
 	{
-		// Create and test the file
-		File sourceFile = null;
-			sourceFile = new File(sourceFilePath);
-		
 		if(!sourceFile.exists())
 			return false;
 
@@ -117,9 +111,9 @@ public class Zipper
 			else
 			{
 				data = new byte[BUFFER_SIZE];
-				FileInputStream fi = new FileInputStream(sourceFilePath);
+				FileInputStream fi = new FileInputStream(sourceFile);
 				origin = new BufferedInputStream(fi, BUFFER_SIZE);
-				ZipEntry entry = new ZipEntry(FileHelpers.getFileName(sourceFilePath));
+				ZipEntry entry = new ZipEntry(sourceFile.getName());
 				zip.putNextEntry(entry);
 				int count;
 				while((count = origin.read(data, 0, BUFFER_SIZE)) != -1)

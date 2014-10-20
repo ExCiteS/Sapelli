@@ -1,5 +1,6 @@
 package uk.ac.ucl.excites.sapelli.collector.util;
 
+import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
@@ -11,21 +12,21 @@ import android.content.DialogInterface;
 
 /**
  * 
- * @author Michalis Vitos
+ * @author Michalis Vitos, mstevens
  *
  */
 public class AsyncZipper extends AsyncTaskWithWaitingDialog<Void, Void, Void>
 {
 	private Context context;
-	private List<String> paths;
+	private List<File> sourceFiles;
 	private String zipDest;
 
-	public AsyncZipper(Context context, String waitingMsg, List<String> paths, String zipDest)
+	public AsyncZipper(Context context, String waitingMsg, List<File> sourceFiles, String zipDest)
 	{
 		super(context, waitingMsg);
 
 		this.context = context;
-		this.paths = paths;
+		this.sourceFiles = sourceFiles;
 		this.zipDest = zipDest;
 	}
 
@@ -34,8 +35,7 @@ public class AsyncZipper extends AsyncTaskWithWaitingDialog<Void, Void, Void>
 	{
 		try
 		{
-			Zipper zipper = new Zipper(paths, zipDest);
-			zipper.zip();
+			new Zipper(sourceFiles, zipDest).zip();
 		}
 		catch(Exception e)
 		{

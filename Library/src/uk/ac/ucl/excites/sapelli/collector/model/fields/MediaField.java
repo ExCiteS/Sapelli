@@ -169,7 +169,7 @@ public abstract class MediaField extends Field
 	public File getNewTempFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
 	{
 		String filename = generateFilename(record, getCount(record));
-		String dataFolderPath = fileStorageProvider.getProjectDataFolder(form.getProject(), true).getAbsolutePath();
+		String dataFolderPath = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
 		return new File(dataFolderPath + File.separator + filename);
 	}
 	

@@ -244,7 +244,7 @@ public class CollectorActivity extends ProjectActivity
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				if(app.getBuildInfo().isDemoBuild())
 					//TODO export
-					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + fileStorageProvider.getProjectDataFolder(project, false) + ".");
+					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + fileStorageProvider.getProjectAttachmentFolder(project, false) + ".");
 			DeviceControl.safeDecreaseMediaVolume(this);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_UP:
@@ -280,7 +280,7 @@ public class CollectorActivity extends ProjectActivity
 			Log.d(TAG, "Exporting records...");
 			try
 			{
-				(new XMLRecordsExporter(fileStorageProvider.getProjectDataFolder(project, true))).export(recordStore.retrieveAllRecords(), "DemoRecords");
+				(new XMLRecordsExporter(fileStorageProvider.getProjectAttachmentFolder(project, true))).export(recordStore.retrieveAllRecords(), "DemoRecords");
 				if(delete)
 					recordStore.deleteAllRecords();
 			}

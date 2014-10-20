@@ -52,9 +52,9 @@ public class AndroidFileStorageProvider extends FileStorageProvider
 	}
 	
 	@Override
-	public File getDataFolder(boolean create) throws FileStorageException
+	public File getAttachmentsFolder(boolean create) throws FileStorageException
 	{
-		return createNoMediaIn(super.getDataFolder(create));
+		return createNoMediaIn(super.getAttachmentsFolder(create));
 	}
 
 	private File createNoMediaIn(File folder)

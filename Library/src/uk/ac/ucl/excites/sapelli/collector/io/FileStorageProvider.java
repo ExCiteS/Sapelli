@@ -37,12 +37,12 @@ public class FileStorageProvider
 	public static String FILE_SEPERATOR = "_";
 	
 	// Folders to be used by Sapelli
-	public static enum Folders
+	public static enum Folder
 	{
 		/**
-		 * Folder for file data (e.g. media attachments) produced by the collector (grouped per project)
+		 * Folder for (media) attachments, files produced during data collection (e.g. photos, audio, video), grouped per project
 		 */
-		Data,
+		Attachments,
 		
 		/**
 		 * Folder for downloads
@@ -116,42 +116,43 @@ public class FileStorageProvider
 	 *            the type of storage file to return.
 	 * @return
 	 */
-	public File getSapelliFolder(Folders folderType)
+	public File getSapelliFolder(Folder folderType, boolean create)
 	{
 		switch(folderType)
 		{
-		case Data:
-			return getDataFolder(false);
-
-		case Downloads:
-			return getDownloadsFolder();
-
-		case Crashes:
-			return getCrashFolder(false);
-
-		case Export:
-			return getExportFolder(false);
-
-		case Logs:
-			return getLogsFolder(false);
-
-		case Projects:
-			return getProjectsFolder(false);
-
-		case Temp:
-			return getTempFolder(false);
-
-		default:
-			return null;
+			case Attachments:
+				return getAttachmentsFolder(create);
+	
+			case Downloads:
+				return getDownloadsFolder();
+	
+			case Crashes:
+				return getCrashFolder(create);
+	
+			case Export:
+				return getExportFolder(create);
+	
+			case Logs:
+				return getLogsFolder(create);
+	
+			case Projects:
+				return getProjectsFolder(create);
+	
+			case Temp:
+				return getTempFolder(create);
+	
+			default:
+				return null;
 		}
 	}
 
 	/**
 	 * @return absolute path to Sapelli folder for a given type, including trailing file separator (/ or \)
 	 */
-	public String getSapelliFolderPath(Folders folderType)
+	public String getSapelliFolderPath(Folder folderType, boolean create)
 	{
-		return getSapelliFolder(folderType).getAbsolutePath() + File.separator;
+		File folder = getSapelliFolder(folderType, create);
+		return folder != null ? folder.getAbsolutePath() + File.separator : null;
 	}
 
 	/**
@@ -185,7 +186,7 @@ public class FileStorageProvider
 	
 	public File getProjectsFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Projects.name(), create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folder.Projects.name(), create);
 	}
 
 	public File getProjectInstallationFolder(Project project, boolean create) throws FileStorageException
@@ -199,8 +200,9 @@ public class FileStorageProvider
 	}
 	
 	/**
-	 * Returns the Downloads folder, which is located in the default downloads folder of the system, under the directory Sapelli
+	 * Returns and creates a Sapelli-specific subfolder of the device/system Downloads folder
 	 * 
+	 * @param create
 	 * @return
 	 * @throws FileStorageException
 	 */
@@ -214,32 +216,32 @@ public class FileStorageProvider
 	
 	public File getCrashFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Crashes.name(), create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folder.Crashes.name(), create);
 	}
 	
 	public File getTempFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Temp.name(), create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folder.Temp.name(), create);
 	}
 	
 	public File getExportFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getDownloadsFolder().getAbsolutePath() + File.separator + Folders.Export.name(), create);
+		return createIfNeeded(getDownloadsFolder().getAbsolutePath() + File.separator + Folder.Export.name(), create);
 	}
 
-	public File getDataFolder(boolean create) throws FileStorageException
+	public File getAttachmentsFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Data.name(), create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folder.Attachments.name(), create);
 	}
 	
-	public File getProjectDataFolder(Project project, boolean create) throws FileStorageException
+	public File getProjectAttachmentFolder(Project project, boolean create) throws FileStorageException
 	{
-		return getProjectSpecificSubFolder(getDataFolder(create), project, create);
+		return getProjectSpecificSubFolder(getAttachmentsFolder(create), project, create);
 	}
 	
 	public File getLogsFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folders.Logs.name(), create);
+		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folder.Logs.name(), create);
 	}
 	
 	public File getProjectLogsFolder(Project project, boolean create) throws FileStorageException

@@ -25,22 +25,18 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-
-import org.apache.commons.lang3.ArrayUtils;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider.Folders;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoaderCallback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.util.AsyncZipper;
+import uk.ac.ucl.excites.sapelli.collector.ui.dialogs.BackupDialogBuilder;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
@@ -85,7 +81,6 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.crashlytics.android.Crashlytics;
 import com.ipaulpro.afilechooser.utils.FileUtils;
@@ -309,7 +304,7 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	    	case R.id.remove_shortcut :
 	    		return removeShortcut(item);
 			case R.id.backup:
-				return backupSapelli(this);
+				return backupSapelli(item);
 	    	case R.id.about_menuitem :
 	    		return openAboutDialog(item);
 	    }
@@ -402,108 +397,10 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		return true;
 	}
 	
-	public boolean backupSapelli(final Context context)
+	public boolean backupSapelli(MenuItem item)
 	{
-		// Create the items
-		final List<String> selectedItems = new ArrayList<String>();
-		final List<String> checkboxItems = new ArrayList<String>();
-		final List<Boolean> checkedItems = new ArrayList<Boolean>();
-
-		for(int i = 0; i < Folders.values().length; i++)
-		{
-			final Folders folder = Folders.values()[i];
-
-			switch(folder)
-			{
-			// Default selected:
-			case Crashes:
-			case Export:
-			case Logs:
-				checkboxItems.add(folder.name());
-				checkedItems.add(true);
-				selectedItems.add(folder.name());
-				break;
-
-			// Default unselected:
-			case Data:
-			case Projects:
-
-				checkboxItems.add(folder.name());
-				checkedItems.add(false);
-				break;
-
-			// Skip:
-			case Downloads:
-			case Temp:
-			default:
-				break;
-			}
-		}
-		
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		// Set the dialog title
-		builder.setTitle("Select folders to export:")
-		// Specify the list array, the items to be selected by default (null for none),
-		// and the listener through which to receive callbacks when items are selected
-				.setMultiChoiceItems(
-				// Transform checkboxItems to a CharSequence[]
-				checkboxItems.toArray(new CharSequence[checkboxItems.size()]),
-				// Transform checkedItems to a boolean[]
-				ArrayUtils.toPrimitive(checkedItems.toArray(new Boolean[checkedItems.size()])),
-				new DialogInterface.OnMultiChoiceClickListener()
-				{
-					@Override
-					public void onClick(DialogInterface dialog, int which, boolean isChecked)
-					{
-						if(isChecked)
-						{
-							// If the user checked the item, add it to the selected items
-							selectedItems.add(Folders.values()[which].name());
-						}
-						else if(selectedItems.contains(Folders.values()[which].name()))
-						{
-							// Else, if the item is already in the array, remove it
-							selectedItems.remove(Folders.values()[which].name());
-						}
-					}
-				})
-				// Set the action buttons
-				.setPositiveButton(R.string.yes, new DialogInterface.OnClickListener()
-				{
-					@Override
-					public void onClick(DialogInterface dialog, int id)
-					{
-						// Get file paths for the selected items from FileStorageProvider
-						List<String> paths = new ArrayList<String>();
-						for(String f : selectedItems)
-							paths.add(fileStorageProvider.getSapelliFolderPath(Folders.valueOf(f)));
-
-						// Call an AsyncZipper only if there are selected items
-						if(!paths.isEmpty())
-						{
-							AsyncZipper zipper = new AsyncZipper(context, 
-									getString(R.string.exporting_data), 
-									paths, 
-									fileStorageProvider.getBackupLocation().getAbsolutePath());
-							
-							zipper.execute();
-						}
-						else
-							Toast.makeText(context, R.string.select_at_least_one_folder_to_export_data, Toast.LENGTH_LONG).show();
-					}
-				}).setNegativeButton(R.string.no, new DialogInterface.OnClickListener()
-				{
-					@Override
-					public void onClick(DialogInterface dialog, int id)
-					{
-						// Do nothing
-					}
-				});
-
-		// Show the dialog
-		builder.create().show();
-
-		return false;
+		BackupDialogBuilder.Build(fileStorageProvider, this).show();
+		return true;
 	}
 	
 	public void browse(View view)

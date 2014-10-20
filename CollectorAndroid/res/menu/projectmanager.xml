@@ -58,6 +58,7 @@
     <item
         android:id="@+id/backup"
         android:icon="@android:drawable/ic_menu_save"
+        android:onClick="backupSapelli"
         android:showAsAction="always"
         android:title="@string/backup"/>
     
