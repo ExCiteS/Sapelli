@@ -22,6 +22,7 @@ import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
+import uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
@@ -77,6 +78,27 @@ public class ProjectRunHelpers
 			i.putExtra(CollectorActivity.INTENT_OPTIONAL_PARAM_SHORTCUT_NAME, shortcutName);
 		i.setAction(Intent.ACTION_MAIN);
 		return i;
+	}
+
+	/**
+	 * Add a shortcut for Sapelli Collector to the Home screen
+	 * 
+	 * @param context
+	 */
+	static public void createCollectorShortcut(Context context)
+	{
+		// Adding shortcut for MainActivity
+		Intent shortcutIntent = new Intent(context, ProjectManagerActivity.class);
+
+		shortcutIntent.setAction(Intent.ACTION_MAIN);
+
+		Intent addIntent = new Intent();
+		addIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
+		addIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, context.getString(R.string.app_name));
+		addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(context, R.drawable.ic_excites_grey));
+
+		addIntent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
+		context.sendBroadcast(addIntent);
 	}
 
 	/**
