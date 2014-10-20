@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
+import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
@@ -128,6 +129,17 @@ public class CollectorApp extends Application implements StoreClient
 		// Set up a CrashReporter (will use dumps folder):
 		if(fileStorageProvider != null)
 			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(fileStorageProvider, getResources().getString(R.string.app_name)));
+
+		// Create shortcut to Sapelli Collector on Home Screen:
+		// Get collector preferences:
+		CollectorPreferences pref = new CollectorPreferences(getApplicationContext());
+		if(pref.isFirstInstallation())
+		{
+			// Create shortcut
+			ProjectRunHelpers.createCollectorShortcut(getApplicationContext());
+			// Set first installation to false
+			pref.setFirstInstallation(false);
+		}
 	}
 	
 	/**
