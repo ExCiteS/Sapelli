@@ -42,18 +42,20 @@ public class Zipper
 	private ZipOutputStream zip;
 
 	/**
+	 * Zips the given list of files/folders to create the a zip archive file at the given path
+	 * 
 	 * @param sourceFiles
-	 * @param zipDestPath
+	 * @param zipDestinationPath
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	public void zip(List<File> sourceFiles, String zipDestPath) throws FileNotFoundException, IOException
+	public void zip(List<File> sourceFiles, String zipDestinationPath) throws FileNotFoundException, IOException
 	{
 		// Make sure the zip files ends with the appropriate extension
-		if(!FileHelpers.getFileExtension(zipDestPath).equalsIgnoreCase(ZIP_EXTENSION))
-			zipDestPath += "." + ZIP_EXTENSION;
+		if(!FileHelpers.getFileExtension(zipDestinationPath).equalsIgnoreCase(ZIP_EXTENSION))
+			zipDestinationPath += "." + ZIP_EXTENSION;
 		
-		zip(sourceFiles, new File(zipDestPath));
+		zip(sourceFiles, new File(zipDestinationPath));
 	}
 	
 	/**
