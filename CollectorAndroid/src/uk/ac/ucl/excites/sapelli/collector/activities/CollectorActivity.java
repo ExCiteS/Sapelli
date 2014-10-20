@@ -40,7 +40,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.content.Context;
@@ -267,26 +266,6 @@ public class CollectorActivity extends ProjectActivity
 			return true;
 		}
 		return super.onKeyUp(keyCode, event);
-	}
-	
-	private int exportDemoRecords(boolean delete)
-	{
-		int count = 0;
-		if(recordStore != null && project != null)
-		{
-			Log.d(TAG, "Exporting records...");
-			try
-			{
-				(new XMLRecordsExporter(fileStorageProvider.getProjectAttachmentFolder(project, true))).export(recordStore.retrieveAllRecords(), "DemoRecords");
-				if(delete)
-					recordStore.deleteAllRecords();
-			}
-			catch(Exception e)
-			{
-				Log.e(TAG, "Error upon exporting records", e);
-			}
-		}
-		return count;
 	}
 	
 	public void startAudioRecorderApp(AndroidAudioUI audioUI)
