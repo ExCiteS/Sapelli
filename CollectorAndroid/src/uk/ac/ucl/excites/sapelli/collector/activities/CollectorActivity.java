@@ -204,7 +204,7 @@ public class CollectorActivity extends ProjectActivity
 			
 			// Show demo disclaimer if needed:
 			if(app.getBuildInfo().isDemoBuild())
-				showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
+				showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
 			
 			// Enable audio feedback
 			controller.enableAudioFeedback();
@@ -242,10 +242,7 @@ public class CollectorActivity extends ProjectActivity
 				collectorView.getControlsUI().handleControlEvent(Control.FORWARD, true);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
-				if(app.getBuildInfo().isDemoBuild())
-					//TODO export
-					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + fileStorageProvider.getProjectAttachmentFolder(project, false) + ".");
-			DeviceControl.safeDecreaseMediaVolume(this);
+				DeviceControl.safeDecreaseMediaVolume(this);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_UP:
 				DeviceControl.increaseMediaVolume(this);
