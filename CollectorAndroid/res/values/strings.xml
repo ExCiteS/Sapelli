@@ -110,15 +110,16 @@
     <string name="exportDeletingX">Deleting %d records&#8230;</string>
     <string name="exporting_data">Exporting data&#8230;</string>
 
+    <string name="backup">Backup</string>
     <string name="selectForBackup">This will back-up the database, as well as the folders selected below:</string>
     <string name="folderCrashes">Crash reports</string>
     <string name="folderExports">Exported data</string>
     <string name="folderLogs">Log files</string>
     <string name="folderAttachments">Attachments</string>
     <string name="folderProjects">Project files</string>
-    <string name="share">Share&#8230;</string>
+    <string name="backing_up">Creating back-up&#8230;</string>
     <string name="successful_backup">Backup successful</string>
     <string name="backup_in">Find your backup in:</string>
-    <string name="backup">Backup</string>
+    <string name="share">Share&#8230;</string>
     
 </resources>

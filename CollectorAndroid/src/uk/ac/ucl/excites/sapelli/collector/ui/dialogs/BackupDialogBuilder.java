@@ -138,11 +138,10 @@ public class BackupDialogBuilder
 						List<File> toZip = new ArrayList<File>();
 						for(Folder folder : foldersToExport)
 							toZip.add(fileStorageProvider.getSapelliFolder(folder, false));
-						// TODO Add database backup!
 						
-						// Zip everything with AsyncZipper (at least the database, if nothing else was selected):
+						// Zip everything with AsyncZipper (which will also back-up the database and include it in the zip):
 						new AsyncZipper(context,
-										context.getString(R.string.exporting_data),
+										context.getString(R.string.backing_up),
 										toZip,
 										fileStorageProvider.getBackupFile()).execute();
 							
@@ -177,6 +176,8 @@ public class BackupDialogBuilder
 		{
 			try
 			{
+				// TODO Add database backup!
+				
 				new Zipper().zip(sourceFiles, destZipFile);
 			}
 			catch(Exception e)
