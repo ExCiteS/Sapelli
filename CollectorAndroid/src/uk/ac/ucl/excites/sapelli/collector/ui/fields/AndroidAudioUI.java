@@ -225,7 +225,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 
 			// Execute the "press" animation if allowed, then perform the action: 
 			if(controller.getCurrentForm().isClickAnimation())
-				(new ClickAnimator(action, v, collectorUI)).execute(); //execute animation and the action afterwards
+				(new ClickAnimator(action, v, controller)).execute(); // execute animation and the action afterwards
 			else
 				action.run(); //perform task now (animation is disabled)
 		}

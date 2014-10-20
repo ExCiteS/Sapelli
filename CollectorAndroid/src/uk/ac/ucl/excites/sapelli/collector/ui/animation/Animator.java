@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import android.os.AsyncTask;
 import android.view.View;
 import android.view.animation.AnimationSet;
@@ -35,7 +36,7 @@ public abstract class Animator extends AsyncTask<Void, Void, Void>
 	protected long duration;
 	private Runnable taskAfterAnimation;
 	private View animateView;
-	private View blockView;
+	private Controller controller;
 
 	/**
 	 * @param duration  running time of the animation (in ms)
@@ -43,23 +44,23 @@ public abstract class Animator extends AsyncTask<Void, Void, Void>
 	 * @param animateView  View to which the animation will be applied
 	 * @param blockView  View which is to be disabled while the animation is running (can be null)
 	 */
-	public Animator(long duration, Runnable taskAfterAnimation, View animateView, View blockView)
+	public Animator(long duration, Runnable taskAfterAnimation, View animateView, Controller controller)
 	{
 		this.duration = duration;
 		this.taskAfterAnimation = taskAfterAnimation;
 		this.animateView = animateView;
-		this.blockView = blockView;
+		this.controller = controller;
 	}
 
 	@Override
 	protected void onPreExecute()
 	{
-		// Disable blockView:
-		if(blockView != null)
-			blockView.setEnabled(false);
-
 		if(duration > 0)
+		{
 			animateView.startAnimation(getAnimationSet());
+			// Block the UI
+			controller.blockUi();
+		}
 	}
 	
 	protected abstract AnimationSet getAnimationSet();
@@ -84,9 +85,8 @@ public abstract class Animator extends AsyncTask<Void, Void, Void>
 		// Run the task
 		taskAfterAnimation.run();
 
-		// Re-enable blockView:
-		if(blockView != null)
-			blockView.setEnabled(true);
+		// Re-enable the UI
+		controller.unblockUi();
 	}
 
 }

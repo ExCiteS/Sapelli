@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
@@ -35,14 +36,14 @@ public class ClickAnimator extends Animator
 
 	public static final int DURATION = 400; // ms
 	
-	public ClickAnimator(Runnable taskAfterAnimation, View animateView, View blockView)
+	public ClickAnimator(Runnable taskAfterAnimation, View animateView, Controller controller)
 	{
-		this(DURATION, taskAfterAnimation, animateView, blockView);
+		this(DURATION, taskAfterAnimation, animateView, controller);
 	}
 	
-	public ClickAnimator(long duration, Runnable taskAfterAnimation, View animateView, View blockView)
+	public ClickAnimator(long duration, Runnable taskAfterAnimation, View animateView, Controller controller)
 	{
-		super(duration, taskAfterAnimation, animateView, blockView);
+		super(duration, taskAfterAnimation, animateView, controller);
 	}
 
 	@Override

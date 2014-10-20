@@ -54,6 +54,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.Window;
 import android.view.WindowManager;
 
@@ -269,6 +270,15 @@ public class CollectorActivity extends ProjectActivity
 		return super.onKeyUp(keyCode, event);
 	}
 	
+	@Override
+	public boolean dispatchTouchEvent(MotionEvent event)
+	{
+		if(controller.isUiBlocked())
+			return false;
+		else
+			return super.dispatchTouchEvent(event);
+	}
+
 	private int exportDemoRecords(boolean delete)
 	{
 		int count = 0;
