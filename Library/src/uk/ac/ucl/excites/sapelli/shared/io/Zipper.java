@@ -33,7 +33,6 @@ import java.util.zip.ZipOutputStream;
  * Helper class to create Zip files
  * 
  * @author Michalis Vitos, mstevens
- *
  */
 public class Zipper
 {
