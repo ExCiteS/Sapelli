@@ -30,9 +30,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 /**
- * Zipper class
+ * Helper class to create Zip files
  * 
- * @author Michalis Vitos
+ * @author Michalis Vitos, mstevens
  *
  */
 public class Zipper
@@ -41,44 +41,40 @@ public class Zipper
 	public static final String ZIP_EXTENTION = "zip";
 
 	private ZipOutputStream zip;
-	private BufferedInputStream origin;
-	private byte data[];
-
-	private List<File> sourceFiles;
-	private String zipDest;
 
 	/**
-	 * 
-	 * @param sourceFiles - A list of files/folders to be zipped
-	 * @param zipDest - The destination path of the zip file
-	 */
-	public Zipper(List<File> sourceFiles, String zipDest)
-	{
-		this.sourceFiles = sourceFiles;
-		this.zipDest = zipDest;
-
-		// Make sure that the parent folder of the zip exists
-		final File zipFile = new File(zipDest);
-		if(!zipFile.exists())
-			FileHelpers.createParentFolder(zipFile);
-
-		// Make sure the zip files ends with the appropriate extension
-		if(!FileHelpers.getFileExtension(this.zipDest).equalsIgnoreCase(ZIP_EXTENTION))
-			this.zipDest += "." + ZIP_EXTENTION;
-	}
-
-	/**
-	 * Zips the list of files/folders
-	 * 
+	 * @param sourceFiles
+	 * @param zipDestPath
 	 * @throws FileNotFoundException
 	 * @throws IOException
 	 */
-	public void zip() throws FileNotFoundException, IOException
+	public void zip(List<File> sourceFiles, String zipDestPath) throws FileNotFoundException, IOException
 	{
+		// Make sure the zip files ends with the appropriate extension
+		if(!FileHelpers.getFileExtension(zipDestPath).equalsIgnoreCase(ZIP_EXTENTION))
+			zipDestPath += "." + ZIP_EXTENTION;
+		
+		zip(sourceFiles, new File(zipDestPath));
+	}
+	
+	/**
+	 * Zips the given list of files/folders to create the given destination zip archive file
+	 * 
+	 * @param sourceFiles
+	 * @param zipDestination
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
+	public void zip(List<File> sourceFiles, File zipDestination) throws FileNotFoundException, IOException
+	{
+		// Create containing folder:
+		if(!zipDestination.exists())
+			FileHelpers.createParentFolder(zipDestination);
+	
 		// Create the ZipOutputStream
 		if(zip == null)
-			zip = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipDest)));
-
+			zip = new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(zipDestination)));
+		
 		// Iterate through all files and add them to the zip file
 		for(File f : sourceFiles)
 			if(f != null)
@@ -93,34 +89,21 @@ public class Zipper
 	 * 
 	 * @param sourceFilePath
 	 * @param zipDest
-	 * @return
+	 * @return whether successful
 	 */
 	private boolean zipFile(File sourceFile)
 	{
 		if(!sourceFile.exists())
 			return false;
-
 		// Try to zip it
 		try
 		{
+			int basePathLength = sourceFile.getParentFile().getAbsolutePath().length() + 1; // +1 to include final slash
 			// Check if file is a directory and use zipSubFolder()
 			if(sourceFile.isDirectory())
-			{
-				zipSubFolder(sourceFile, sourceFile.getParent().length());
-			}
+				zipSubFolder(sourceFile, basePathLength);
 			else
-			{
-				data = new byte[BUFFER_SIZE];
-				FileInputStream fi = new FileInputStream(sourceFile);
-				origin = new BufferedInputStream(fi, BUFFER_SIZE);
-				ZipEntry entry = new ZipEntry(sourceFile.getName());
-				zip.putNextEntry(entry);
-				int count;
-				while((count = origin.read(data, 0, BUFFER_SIZE)) != -1)
-				{
-					zip.write(data, 0, count);
-				}
-			}
+				zipFile(sourceFile, basePathLength);
 		}
 		catch(Exception e)
 		{
@@ -129,9 +112,39 @@ public class Zipper
 		}
 		return true;
 	}
+	
+	/**
+	 * Zips a file
+	 * 
+	 * @param file
+	 * @param basePathLength
+	 * @throws IOException
+	 */
+	private void zipFile(File file, int basePathLength) throws IOException
+	{
+		BufferedInputStream source = null;
+		try
+		{
+			byte[] data = new byte[BUFFER_SIZE];
+			source = new BufferedInputStream(new FileInputStream(file), BUFFER_SIZE);
+			zip.putNextEntry(new ZipEntry(file.getAbsolutePath().substring(basePathLength))); // use path relative to basePath
+			int count;
+			while((count = source.read(data, 0, BUFFER_SIZE)) != -1)
+				zip.write(data, 0, count);
+		}
+		finally
+		{
+			if(source != null)
+				try
+				{
+					source.close();
+				}
+				catch(Exception ignore) {}
+		}
+	}
 
 	/**
-	 * Zips a subfolder
+	 * Zips a (sub)folder
 	 * 
 	 * @param folder
 	 * @param basePathLength
@@ -139,30 +152,11 @@ public class Zipper
 	 */
 	private void zipSubFolder(File folder, int basePathLength) throws IOException
 	{
-		File[] fileList = folder.listFiles();
-		for(File file : fileList)
-		{
+		for(File file : folder.listFiles())
 			if(file.isDirectory())
-			{
 				zipSubFolder(file, basePathLength);
-			}
 			else
-			{
-				data = new byte[BUFFER_SIZE];
-				String unmodifiedFilePath = file.getPath();
-				String relativePath = unmodifiedFilePath.substring(basePathLength);
-
-				FileInputStream fi = new FileInputStream(unmodifiedFilePath);
-				origin = new BufferedInputStream(fi, BUFFER_SIZE);
-
-				ZipEntry entry = new ZipEntry(relativePath);
-				zip.putNextEntry(entry);
-				int count;
-				while((count = origin.read(data, 0, BUFFER_SIZE)) != -1)
-				{
-					zip.write(data, 0, count);
-				}
-			}
-		}
+				zipFile(file, basePathLength);
 	}
+	
 }

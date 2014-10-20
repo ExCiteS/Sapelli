@@ -34,7 +34,6 @@ public class FileStorageProvider
 {
 	public static String DOWNLOADS_SAPELLI_FOLDER = "Sapelli";
 	public static String BACKUP_FILE = "Backup";
-	public static String FILE_SEPERATOR = "_";
 	
 	// Folders to be used by Sapelli
 	public static enum Folder
@@ -252,9 +251,9 @@ public class FileStorageProvider
 	/**
 	 * @return the location for creating a zip with backup data i.e. Downloads/Sapelli/Backup_timestamp.zip
 	 */
-	public File getBackupLocation()
+	public File getBackupFile()
 	{
-		return new File(getDownloadsFolder() + File.separator + BACKUP_FILE + FILE_SEPERATOR + TimeUtils.getTimestampForFileName() + "." + Zipper.ZIP_EXTENTION);
+		return new File(getDownloadsFolder() + File.separator + BACKUP_FILE + "_" + TimeUtils.getTimestampForFileName() + "." + Zipper.ZIP_EXTENTION);
 	}
 
 	private File createIfNeeded(String folderPath, boolean create) throws FileStorageException

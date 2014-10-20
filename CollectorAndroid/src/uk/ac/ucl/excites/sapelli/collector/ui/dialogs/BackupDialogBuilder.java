@@ -14,12 +14,15 @@ import org.apache.commons.lang3.ArrayUtils;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider.Folder;
-import uk.ac.ucl.excites.sapelli.collector.util.AsyncZipper;
+import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
+import uk.ac.ucl.excites.sapelli.shared.io.Zipper;
+import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.widget.Toast;
+import android.content.Intent;
+import android.net.Uri;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -28,7 +31,7 @@ import android.widget.Toast;
 public class BackupDialogBuilder
 {
 
-	static public final Folder[] BACK_UP_ABLE_FOLDERS = { Folder.Attachments, Folder.Crashes, Folder.Export, Folder.Logs, Folder.Projects };
+	static public final Folder[] BACKUPABLE_FOLDERS = { Folder.Attachments, Folder.Crashes, Folder.Export, Folder.Logs, Folder.Projects };
 	
 	static private String getFolderString(Context context, Folder folder)
 	{
@@ -77,7 +80,7 @@ public class BackupDialogBuilder
 		final Set<Folder> foldersToExport = new HashSet<Folder>();
 		List<String> checkboxItems = new ArrayList<String>();
 		List<Boolean> checkedItems = new ArrayList<Boolean>();
-		for(Folder folder : BACK_UP_ABLE_FOLDERS)
+		for(Folder folder : BACKUPABLE_FOLDERS)
 		{
 			checkboxItems.add(getFolderString(context, folder));
 			boolean selected = isFolderDefaultSelected(folder);
@@ -104,10 +107,10 @@ public class BackupDialogBuilder
 					{
 						if(isChecked)
 							// If the user checked the item, add it to the selected items:
-							foldersToExport.add(Folder.values()[which]);
+							foldersToExport.add(BACKUPABLE_FOLDERS[which]);
 						else
 							// Else, if the item is already in the array, remove it:
-							foldersToExport.remove(Folder.values()[which]);
+							foldersToExport.remove(BACKUPABLE_FOLDERS[which]);
 					}
 				})
 				// Set the action buttons
@@ -120,21 +123,77 @@ public class BackupDialogBuilder
 						List<File> toZip = new ArrayList<File>();
 						for(Folder folder : foldersToExport)
 							toZip.add(fileStorageProvider.getSapelliFolder(folder, false));
-						// TODO Add database
-
-						// Call an AsyncZipper only if there are selected items
-						if(!toZip.isEmpty())
-							new AsyncZipper(context,
-											context.getString(R.string.exporting_data),
-											toZip,
-											fileStorageProvider.getBackupLocation().getAbsolutePath()).execute();
-						else
-							Toast.makeText(context, R.string.select_at_least_one_folder_to_export_data, Toast.LENGTH_LONG).show();
+						// TODO Add database backup!
+						
+						// Zip everything with AsyncZipper (at least the database, if nothing else was selected):
+						new AsyncZipper(context,
+										context.getString(R.string.exporting_data),
+										toZip,
+										fileStorageProvider.getBackupFile()).execute();
+							
 					}
 				}).setNegativeButton(android.R.string.cancel, null);
 		
 		// Return the dialog:
 		return builder.create();
 	}
+
+	/**
+	 * 
+	 * @author Michalis Vitos, mstevens
+	 */
+	private static class AsyncZipper extends AsyncTaskWithWaitingDialog<Void, Void, Void>
+	{
+		private Context context;
+		private List<File> sourceFiles;
+		private File destZipFile;
+	
+		public AsyncZipper(Context context, String waitingMsg, List<File> sourceFiles, File destZipFile)
+		{
+			super(context, waitingMsg);
+	
+			this.context = context;
+			this.sourceFiles = sourceFiles;
+			this.destZipFile = destZipFile;
+		}
+	
+		@Override
+		protected Void doInBackground(Void... params)
+		{
+			try
+			{
+				new Zipper().zip(sourceFiles, destZipFile);
+			}
+			catch(Exception e)
+			{
+				Debug.e(e);
+			}
+			return null;
+		}
+	
+		@Override
+		protected void onPostExecute(Void result)
+		{
+			super.onPostExecute(result);
+	
+			// Show confirmation dialog (with option to share the file):
+			new AlertDialog.Builder(context).setTitle(R.string.successful_backup).setMessage(context.getString(R.string.backup_in) + "\n" + destZipFile.getAbsolutePath())
+					.setPositiveButton(android.R.string.ok, null)
+					.setNegativeButton(R.string.share, new DialogInterface.OnClickListener()
+					{
+						@Override
+						public void onClick(DialogInterface dialog, int which)
+						{
+							Intent sendIntent = new Intent();
+		                    sendIntent.setAction(Intent.ACTION_SEND);
+		                    sendIntent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(destZipFile));
+		                    sendIntent.setType("application/zip");
+		                    context.startActivity(sendIntent);
+						}
+					})
+					.create().show();
+		}
+	}
+
 	
 }
