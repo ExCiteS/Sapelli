@@ -37,7 +37,7 @@ import java.util.zip.ZipOutputStream;
 public class Zipper
 {
 	private static final int BUFFER_SIZE = 2048;
-	public static final String ZIP_EXTENTION = "zip";
+	public static final String ZIP_EXTENSION = "zip";
 
 	private ZipOutputStream zip;
 
@@ -50,8 +50,8 @@ public class Zipper
 	public void zip(List<File> sourceFiles, String zipDestPath) throws FileNotFoundException, IOException
 	{
 		// Make sure the zip files ends with the appropriate extension
-		if(!FileHelpers.getFileExtension(zipDestPath).equalsIgnoreCase(ZIP_EXTENTION))
-			zipDestPath += "." + ZIP_EXTENTION;
+		if(!FileHelpers.getFileExtension(zipDestPath).equalsIgnoreCase(ZIP_EXTENSION))
+			zipDestPath += "." + ZIP_EXTENSION;
 		
 		zip(sourceFiles, new File(zipDestPath));
 	}

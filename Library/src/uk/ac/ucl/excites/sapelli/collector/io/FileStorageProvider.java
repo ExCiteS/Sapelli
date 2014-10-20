@@ -253,7 +253,7 @@ public class FileStorageProvider
 	 */
 	public File getBackupFile()
 	{
-		return new File(getDownloadsFolder() + File.separator + BACKUP_FILE + "_" + TimeUtils.getTimestampForFileName() + "." + Zipper.ZIP_EXTENTION);
+		return new File(getDownloadsFolder() + File.separator + BACKUP_FILE + "_" + TimeUtils.getTimestampForFileName() + "." + Zipper.ZIP_EXTENSION);
 	}
 
 	private File createIfNeeded(String folderPath, boolean create) throws FileStorageException
