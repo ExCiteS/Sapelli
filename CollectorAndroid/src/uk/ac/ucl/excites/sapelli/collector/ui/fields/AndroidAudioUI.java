@@ -94,8 +94,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	{
 		try
 		{
-			minimiseCaptureButton(); // show volume levels while recording
-			captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
 			audioRecorder = new AudioRecorder(captureFile);
 			audioRecorder.start();
 			volumeDisplay.start();
@@ -152,6 +150,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		synchronized(recording) {
 			if (!recording) {
 				// start recording
+				minimiseCaptureButton(); // show volume levels while recording
+				captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
 				startRecording();
 				recording = true;
 			} else {
@@ -264,7 +264,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 		public AudioReviewPicker(Context context, File audioFile) {
 			super(context);
-			Log.d("AudioReviewPicker","Audio file: "+audioFile.getAbsolutePath());
 			try {
 				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 				mediaPlayer.setDataSource(context, Uri.fromFile(audioFile));

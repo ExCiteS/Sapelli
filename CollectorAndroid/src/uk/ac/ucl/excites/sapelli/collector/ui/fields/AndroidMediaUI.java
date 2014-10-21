@@ -590,22 +590,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				buttonAction = new Runnable() {
 					@Override
 					public void run() {
-						//there are 2 buttons: approve (pos=0) & discard (pos=1)
-						if (position == 0) // media approved
-							if (!multipleCapturesAllowed) {
-								// approving single photo, so go forward
-								controller.goForward(true);
-							} else {
-								// viewing photo in gallery, already attached
-								showNext();
-							}
-						else 
-						{ // position == 1, media discarded / deleted
+						// only one button: discard
 							onDiscard();
 							if (!multipleCapturesAllowed) {
 								// single item review
 								removeMedia(field.getLastAttachment(controller.getFileStorageProvider(), controller.getCurrentRecord())); // captures are now always attached, so must be deleted regardless of approval
-								captureFile = null;
 							} else {
 								// reviewing from gallery, so delete
 								gallery.deleteCurrentItem();
@@ -614,7 +603,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 							}
 							// either go back to capture, or go back to gallery (decided on entry):
 							controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
-						}
 						 // reset last capture file
 						handlingClick.release();
 					}
@@ -624,22 +612,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			@Override
 			protected int getNumberOfColumns()
 			{
-				return 2;
+				return 1;
 			}
 
 			@Override
 			protected void addButtons()
 			{
-				// Approve button:
-				Item approveButton = null;
-				File approveImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getApproveButtonImageRelativePath());
-				if(FileHelpers.isReadableFile(approveImgFile))
-					approveButton = new FileImageItem(approveImgFile);
-				else
-					approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
-				approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-				addButton(approveButton);
-
 				// Discard button:
 				Item discardButton = null;
 				File discardImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getDiscardButtonImageRelativePath());
@@ -662,7 +640,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		{
 
 			private Item plusButton;
-			private Item approveButton;
 
 			public GalleryButtonView(Context context)
 			{
@@ -672,16 +649,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				buttonAction = new Runnable() {
 					@Override
 					public void run() {
-						if (position == 0) {
 							// plus button clicked, return to camera interface
 							if (!maxReached) {
 								goToCapture = true;
 								controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 							}
-						} else { // position 1 (approve) - go to next field
-							goToCapture = false;
-							controller.goForward(true);
-						}
 						handlingClick.release();
 					}
 				};
@@ -725,7 +697,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			@Override
 			protected int getNumberOfColumns()
 			{
-				return 2;
+				return 1;
 			}
 
 			@Override
@@ -734,16 +706,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				// Capture button:
 				plusButton = createPlusButton();
 				addButton(plusButton);
-
-				// Approve button:
-				approveButton = null;
-				File approveImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getApproveButtonImageRelativePath());
-				if(FileHelpers.isReadableFile(approveImgFile))
-					approveButton = new FileImageItem(approveImgFile);
-				else
-					approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
-				approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-				addButton(approveButton);
 			}
 		}		
 	}

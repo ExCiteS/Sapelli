@@ -240,7 +240,6 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 				fos.close();
 				attachMedia(captureFile);
 				captureFile = null;
-				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 			}
 			catch(Exception e)
 			{
@@ -258,6 +257,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			dialog.cancel();
 			captureFile = null;
 			releaseClick();
+			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 		}
 	}
 }
