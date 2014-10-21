@@ -35,16 +35,12 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
-import uk.ac.ucl.excites.sapelli.collector.util.BitmapUtils;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
 import android.net.Uri;
@@ -191,7 +187,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	 * @author Michalis Vitos
 	 * 
 	 */
-	public class HandleImage extends AsyncTask<Void, Void, Bitmap>
+	public class HandleImage extends AsyncTask<Void, Void, Void>
 	{
 		private ProgressDialog dialog;
 		private byte[] data;
@@ -212,28 +208,11 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		}
 
 		@Override
-		protected Bitmap doInBackground(Void... params)
+		protected Void doInBackground(Void... params)
 		{
-			Bitmap picture = null;
 
 			try
 			{
-				// TODO use EXIF data to determine proper rotation? Cf. http://stackoverflow.com/q/12944123/1084488
-
-				// Decode image size, do not create the actual bitmap (picture is null)
-				BitmapFactory.Options options = new BitmapFactory.Options();
-				options.inJustDecodeBounds = true;
-				picture = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-
-				// Find the preview size
-				int previewWidth = (ScreenMetrics.GetScreenWidth(context) > 0) ? ScreenMetrics.GetScreenWidth(context) : PREVIEW_SIZE;
-				int previewHeight = (ScreenMetrics.GetScreenHeight(context) > 0) ? ScreenMetrics.GetScreenHeight(context) : PREVIEW_SIZE;
-
-				// Decode with inSampleSize and get the correct, scaled image
-				options.inJustDecodeBounds = false;
-				options.inSampleSize = BitmapUtils.calculateInSampleSize(options, previewWidth, previewHeight);
-				picture = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-				
 				captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
 				FileOutputStream fos = new FileOutputStream(captureFile);
 				fos.write(data);
@@ -246,17 +225,16 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 				Log.e("Handle image", "Image capture failed");
 				Debug.e(e);
 			}
-			return picture;
+			
+			return null;
 		}
 
 		@Override
-		protected void onPostExecute(Bitmap picture)
+		protected void onPostExecute(Void result)
 		{
 			cameraController.stopPreview();
 			// Close the dialog
 			dialog.cancel();
-			captureFile = null;
-			releaseClick();
 			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 		}
 	}
