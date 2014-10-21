@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
+import java.io.File;
+
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
@@ -31,10 +33,12 @@ import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 import android.annotation.SuppressLint;
@@ -59,7 +63,8 @@ import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
-import android.widget.RelativeLayout;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout.LayoutParams;
 
 /**
@@ -69,7 +74,7 @@ import android.widget.RelativeLayout.LayoutParams;
 public class AndroidOrientationUI extends OrientationUI<View, CollectorView> implements OrientationListener {
 
 	private Button pageView;
-	private RelativeLayout waitView;
+	private LinearLayout waitView;
 	private OrientationSensor orientationSensor;
 	private CompassView compass;
 	private Orientation orientation;
@@ -84,7 +89,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord) {
 		// TODO take "enabled" into account!
 		Context context = collectorUI.getContext();
-		
+
 		if (onPage) {
 			if (pageView == null) {
 				pageView = new Button(context);
@@ -100,27 +105,59 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 			return pageView;
 		} else {
 			if (waitView == null) {
-				waitView = new RelativeLayout(context);
+				// show a spinner initially, which is replaced with a compass when an orientation is received for the first time
+				waitView = new LinearLayout(context);
+				waitView.setOrientation(LinearLayout.VERTICAL);
 				ImageView gpsIcon = new ImageView(context);
 				gpsIcon.setImageDrawable(context.getResources().getDrawable(R.drawable.compass));
 				gpsIcon.setScaleType(ScaleType.CENTER_INSIDE);
 				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
 				gpsIcon.setPadding(padding, padding, padding, padding);
-				waitView.addView(gpsIcon);
-				compass = new CompassView(context);
-				RelativeLayout.LayoutParams compassParams = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-				compassParams.addRule(RelativeLayout.CENTER_IN_PARENT);
-				waitView.addView(compass, compassParams);
-				RelativeLayout.LayoutParams confirmParams = new RelativeLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-				//waitView.addView(new OrientationConfirmView(context),confirmParams); TODO
+				LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
+				params.gravity = Gravity.CENTER_HORIZONTAL;
+				//waitView.addView(gpsIcon, params);
+				waitView.addView(new ProgressBar(context, null, android.R.attr.progressBarStyleLarge), params);
 			}
 		}
 		
 		if (orientationSensor == null)
 			orientationSensor = new OrientationSensor(context);
-		orientationSensor.start(this); // start listening for orientation updates
-		
+		orientationSensor.start(this); // start listening for orientation updates after views are created
+
 		return waitView;
+	}
+
+	@Override
+	public void onOrientationChanged(Orientation orientation) {
+		this.orientation = orientation;
+		if (compass == null) {
+			Context context = waitView.getContext();
+			// currently showing spinner, must clear and replace with compass and confirmation button
+			waitView.removeAllViews();
+			// set the container's weight sum so the compass can expand to fit the available area:
+			waitView.setWeightSum(1.0f);
+			// create compass
+			compass = new CompassView(context);
+			LinearLayout.LayoutParams compassParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
+			compassParams.gravity = Gravity.CENTER_HORIZONTAL;
+			// compass should expand to fit any available space:
+			compassParams.weight = 1.0f;
+			waitView.addView(compass, compassParams);
+			LinearLayout.LayoutParams confirmParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(context, AndroidControlsUI.CONTROL_HEIGHT_DIP));
+			confirmParams.gravity = Gravity.BOTTOM;
+			waitView.addView(new OrientationConfirmView(context),confirmParams);
+		}
+		compass.drawOrientationToScreen();
+	}
+	
+	@Override
+	public void cancel() {
+		compass = null;
+		if (orientationSensor != null) {
+			orientationSensor.stop();
+			orientationSensor = null;
+		}
+		waitView = null;
 	}
 	
 	private class CompassView extends SurfaceView {
@@ -136,7 +173,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 		private static final float ARROW_WIDTH_PERCENTAGE = 0.4f; // arrow width as percentage of View's width 
 		private static final float ARROW_HEIGHT_PERCENTAGE_WIDTH = 0.3f; // arrow height as percentage of arrow width
 		private static final boolean ANTI_ALIAS = true;
-		private Bitmap arrowBitmap;
+		private Bitmap arrowBitmap; // TODO expose arrow in XML so that custom images can be used?
 		private Bitmap compassBitmap;
 		private Matrix compassRotationMatrix;
 
@@ -150,14 +187,14 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 				}
 
 				@SuppressLint("WrongCall")
-                @Override
+				@Override
 				public void surfaceChanged(SurfaceHolder holder, int format,
 						int width, int height) {
 
 					// may need to resize compass and arrow, so regenerate bitmaps
 					arrowBitmap = createArrowBitmap((int) (width * ARROW_WIDTH_PERCENTAGE));
 
-					// want width of compass equal to height...
+					// want width of compass equal to height so that compass is not stretched
 					int size = (width < height) ? width : height;
 					compassBitmap = createCompassBitmap(size);
 
@@ -182,14 +219,14 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 				compassRotationMatrix.postTranslate(0, COMPASS_ARROW_SPACING + arrowBitmap.getHeight());
 				compassRotationMatrix.postRotate(orientation.getAzimuth(), compassBitmap.getWidth() / 2, arrowBitmap.getHeight() + COMPASS_ARROW_SPACING + compassBitmap.getHeight() / 2);
 				canvas.drawBitmap(compassBitmap, compassRotationMatrix, null);
-				
+
 				// draw top arrow last in case corner of compass bitmap overlaps it:
 				canvas.drawBitmap(arrowBitmap, (getWidth() - arrowBitmap.getWidth()) / 2, 0, null);
 			}
 		}
 
 		@SuppressLint("WrongCall")
-        protected void drawOrientationToScreen() {
+		protected void drawOrientationToScreen() {
 			Canvas c = null;
 			try {				
 				c = getHolder().lockCanvas();
@@ -203,59 +240,59 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 				}
 			}
 		}
-		
+
 		private Bitmap createCompassBitmap(int size) {
 			Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
 
 			float bitmapCentreX = bitmap.getWidth() / 2;
 			float bitmapCentreY = bitmap.getHeight() / 2;
-			
+
 			Canvas bitmapCanvas = new Canvas(bitmap);
 			Paint paint = new Paint();
 			paint.setAntiAlias(ANTI_ALIAS);
-			
+
 			// draw background:
 			bitmapCanvas.drawColor(COLOR_BACKGROUND);
-			
+
 			// draw outer circle:
 			paint.setColor(COLOR_OUTER);
 			RectF outerCircleBounds = new RectF(0, 0, size, size);
 			bitmapCanvas.drawOval(outerCircleBounds, paint);
-			
+
 			// draw inner circle:
 			paint.setColor(COLOR_INNER);
 			RectF innerCircleBounds = new RectF(outerCircleBounds.right * (1 - INNER_CIRCLE_PERCENTAGE), outerCircleBounds.bottom * (1 - INNER_CIRCLE_PERCENTAGE), outerCircleBounds.right * INNER_CIRCLE_PERCENTAGE, outerCircleBounds.bottom * INNER_CIRCLE_PERCENTAGE);
 			bitmapCanvas.drawOval(innerCircleBounds, paint);
-			
+
 			// draw north-pointing triangle:
-		    paint.setColor(COLOR_NORTH_POINTER);
-		    PointF north = new PointF(bitmapCentreX, innerCircleBounds.top); //top vertex
-		    PointF left = new PointF(bitmapCentreX - POINTER_BASE_WIDTH/2, bitmapCentreY); // bottom-left vertex
-		    PointF right = new PointF(bitmapCentreX + POINTER_BASE_WIDTH/2, bitmapCentreY); //bottom-right vertex
-		    Path northPointer = new Path();
-		    northPointer.setFillType(FillType.EVEN_ODD);
-		    northPointer.moveTo(right.x, right.y);
-		    northPointer.lineTo(north.x, north.y);
-		    northPointer.lineTo(left.x, left.y);
-		    northPointer.lineTo(right.x, right.y);
-		    northPointer.close();
-		    bitmapCanvas.drawPath(northPointer, paint);
-			
+			paint.setColor(COLOR_NORTH_POINTER);
+			PointF north = new PointF(bitmapCentreX, innerCircleBounds.top); //top vertex
+			PointF left = new PointF(bitmapCentreX - POINTER_BASE_WIDTH/2, bitmapCentreY); // bottom-left vertex
+			PointF right = new PointF(bitmapCentreX + POINTER_BASE_WIDTH/2, bitmapCentreY); //bottom-right vertex
+			Path northPointer = new Path();
+			northPointer.setFillType(FillType.EVEN_ODD);
+			northPointer.moveTo(right.x, right.y);
+			northPointer.lineTo(north.x, north.y);
+			northPointer.lineTo(left.x, left.y);
+			northPointer.lineTo(right.x, right.y);
+			northPointer.close();
+			bitmapCanvas.drawPath(northPointer, paint);
+
 			// draw south-pointing triangle:
 			paint.setColor(COLOR_SOUTH_POINTER); 
-		    PointF south = new PointF(bitmapCentreX, innerCircleBounds.bottom); //bottom vertex
-		    Path southPointer = new Path();
-		    southPointer.setFillType(FillType.EVEN_ODD);
-		    southPointer.moveTo(right.x, right.y); //use existing left/right vertices
-		    southPointer.lineTo(south.x, south.y);
-		    southPointer.lineTo(left.x, left.y);
-		    southPointer.lineTo(right.x, right.y);
-		    southPointer.close();
-		    bitmapCanvas.drawPath(southPointer, paint);
-		    
-		    return bitmap;
+			PointF south = new PointF(bitmapCentreX, innerCircleBounds.bottom); //bottom vertex
+			Path southPointer = new Path();
+			southPointer.setFillType(FillType.EVEN_ODD);
+			southPointer.moveTo(right.x, right.y); //use existing left/right vertices
+			southPointer.lineTo(south.x, south.y);
+			southPointer.lineTo(left.x, left.y);
+			southPointer.lineTo(right.x, right.y);
+			southPointer.close();
+			bitmapCanvas.drawPath(southPointer, paint);
+
+			return bitmap;
 		}
-		
+
 		private Bitmap createArrowBitmap(int arrowWidth) {
 			Log.d("Arrow","width: "+arrowWidth);
 			Bitmap bitmap = Bitmap.createBitmap(arrowWidth,(int) (arrowWidth * ARROW_HEIGHT_PERCENTAGE_WIDTH), Bitmap.Config.ARGB_8888);
@@ -263,32 +300,25 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 			Canvas bitmapCanvas = new Canvas(bitmap);
 			Paint paint = new Paint();
 			paint.setAntiAlias(ANTI_ALIAS);
-			
+
 			// draw simple isosceles triangle:
-		    paint.setColor(COLOR_OUTER);
-		    PointF top = new PointF(bitmap.getWidth() / 2, 0); //top vertex
-		    PointF left = new PointF(0, bitmap.getHeight()); // bottom-left vertex
-		    PointF right = new PointF(bitmap.getWidth(), bitmap.getHeight()); //bottom-right vertex
-		    Path arrowPath = new Path();
-		    arrowPath.setFillType(FillType.EVEN_ODD);
-		    arrowPath.moveTo(right.x, right.y);
-		    arrowPath.lineTo(top.x, top.y);
-		    arrowPath.lineTo(left.x, left.y);
-		    arrowPath.lineTo(right.x, right.y);
-		    arrowPath.close();
-		    bitmapCanvas.drawPath(arrowPath, paint);
-			
+			paint.setColor(COLOR_OUTER);
+			PointF top = new PointF(bitmap.getWidth() / 2, 0); //top vertex
+			PointF left = new PointF(0, bitmap.getHeight()); // bottom-left vertex
+			PointF right = new PointF(bitmap.getWidth(), bitmap.getHeight()); //bottom-right vertex
+			Path arrowPath = new Path();
+			arrowPath.setFillType(FillType.EVEN_ODD);
+			arrowPath.moveTo(right.x, right.y);
+			arrowPath.lineTo(top.x, top.y);
+			arrowPath.lineTo(left.x, left.y);
+			arrowPath.lineTo(right.x, right.y);
+			arrowPath.close();
+			bitmapCanvas.drawPath(arrowPath, paint);
+
 			return bitmap;
 		}
 	}
-	
 
-	@Override
-    public void onOrientationChanged(Orientation orientation) {
-		this.orientation = orientation;
-	    compass.drawOrientationToScreen();
-    }
-	
 	private class OrientationConfirmView extends PickerView
 	{
 		private int buttonPadding;
@@ -302,43 +332,43 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 				@Override
 				public void onItemClick(AdapterView<?> parent, View view,
 						int position, long id) {
-						Runnable buttonAction = new Runnable() {
-							@Override
-							public void run() {
-								field.storeOrientation(controller.getCurrentRecord(), orientation);
-								orientationSensor.stop(); // stop listening for updates
-								controller.goForward(false);
-							}
-						};
-						// Execute the "press" animation if allowed, then perform the action: 
-						if(controller.getCurrentForm().isClickAnimation())
-							(new ClickAnimator(buttonAction, view, collectorUI)).execute(); //execute animation and the action afterwards
-						else
-							buttonAction.run(); //perform task now (animation is disabled)
+					Runnable buttonAction = new Runnable() {
+						@Override
+						public void run() {
+							field.storeOrientation(controller.getCurrentRecord(), orientation);
+							orientationSensor.stop(); // stop listening for updates
+							controller.goForward(false);
+						}
+					};
+					// Execute the "press" animation if allowed, then perform the action: 
+					if(controller.getCurrentForm().isClickAnimation())
+						(new ClickAnimator(buttonAction, view, collectorUI)).execute(); //execute animation and the action afterwards
+					else
+						buttonAction.run(); //perform task now (animation is disabled)
 				}	
 			});
 
 			// Layout:
 			setBackgroundColor(Color.TRANSPARENT);
 			setGravity(Gravity.CENTER);
-			setPadding(0, collectorUI.getSpacingPx(), 0, 0);
+			//setPadding(0, collectorUI.getSpacingPx(), 0, 0);
 
 			// Columns
 			setNumColumns(1);
-			
+
 			// Button size, padding & background colour:
 			this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(context, AndroidControlsUI.CONTROL_HEIGHT_DIP));
 			this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP * 3);
 			this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
 
 			Item approveButton = null;
-//			File approveImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getApproveButtonImageRelativePath());
-//			if(FileHelpers.isReadableFile(approveImgFile))
-//				approveButton = new FileImageItem(approveImgFile);
-//			else
-				approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
+			File approveImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getApproveButtonImageRelativePath());
+			if(FileHelpers.isReadableFile(approveImgFile))
+				approveButton = new FileImageItem(approveImgFile);
+			else
+			approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
 			approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-			
+
 			approveButton.setPaddingPx(buttonPadding);
 			approveButton.setBackgroundColor(buttonBackColor);
 			getAdapter().addItem(approveButton);

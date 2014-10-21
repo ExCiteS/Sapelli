@@ -45,6 +45,8 @@ public class OrientationField extends Field
 	private boolean storePitch = DEFAULT_STORE_PITCH;
 	private boolean storeRoll = DEFAULT_STORE_ROLL;
 	
+	private String approveButtonImageRelativePath;
+	
 	/**
 	 * @param form the form the field belongs to
 	 * @param id the id of the field, should not be null
@@ -153,6 +155,22 @@ public class OrientationField extends Field
 		hash = 31 * hash + (storePitch ? 0 : 1);
 		hash = 31 * hash + (storeRoll ? 0 : 1);
 		return hash;
+	}
+
+	/**
+	 * @return the approveButtonImageRelativePath
+	 */
+	public String getApproveButtonImageRelativePath()
+	{
+		return approveButtonImageRelativePath;
+	}
+
+	/**
+	 * @param approveButtonImageRelativePath the approveButtonImageRelativePath to set
+	 */
+	public void setApproveButtonImageRelativePath(String approveButtonImageRelativePath)
+	{
+		this.approveButtonImageRelativePath = approveButtonImageRelativePath;
 	}
 
 }

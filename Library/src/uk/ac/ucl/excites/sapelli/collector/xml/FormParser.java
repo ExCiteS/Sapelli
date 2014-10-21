@@ -404,6 +404,7 @@ public class FormParser extends SubtreeParser
 			{
 				OrientationField orField = new OrientationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_ORIENTATION, false));
 				newField(orField, attributes);
+				orField.setApproveButtonImageRelativePath(attributes.getString("approveImg", null, false, false));
 				orField.setStoreAzimuth(attributes.getBoolean("storeAzimuth", OrientationField.DEFAULT_STORE_AZIMUTH));
 				orField.setStoreAzimuth(attributes.getBoolean("storePitch", OrientationField.DEFAULT_STORE_PITCH));
 				orField.setStoreAzimuth(attributes.getBoolean("storeRoll", OrientationField.DEFAULT_STORE_ROLL));
