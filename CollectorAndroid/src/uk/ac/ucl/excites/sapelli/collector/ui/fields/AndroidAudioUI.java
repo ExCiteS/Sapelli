@@ -93,6 +93,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	{
 		try
 		{
+			minimiseCaptureButton(); // show volume levels while recording
 			lastCaptureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
 			audioRecorder = new AudioRecorder(lastCaptureFile);
 			audioRecorder.start();
@@ -209,6 +210,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width,LinearLayout.LayoutParams.MATCH_PARENT);
 		params.gravity = Gravity.CENTER_HORIZONTAL;
 		captureLayout.addView(volumeDisplay, params);
+		// not recording yet, so set capture button to take up whole screen:
+		maximiseCaptureButton();
 	}
 
 	@Override

@@ -46,6 +46,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -125,7 +126,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						List<Item> items = getMediaItems(controller.getFileStorageProvider(),controller.getCurrentRecord());
 						lastCaptureFile = ((FileItem) items.get(items.size() - 1)).getFile();
 					}
-					populateReviewLayout((ViewGroup)((LinearLayout)mediaFlipper.getCurrentView()).getChildAt(0),lastCaptureFile);
+					populateReviewLayout((ViewGroup)mediaFlipper.findViewById(R.id.review_layout_content),lastCaptureFile);
 				}
 				else
 					mediaFlipper.showGalleryLayout();
@@ -152,6 +153,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	
 	Context getContext() {
 		return (mediaFlipper == null) ? null : mediaFlipper.getContext();
+	}
+	
+	void maximiseCaptureButton() {
+		mediaFlipper.maximiseCaptureButton();
+	}
+	
+	void minimiseCaptureButton() {
+		mediaFlipper.minimiseCaptureButton();
 	}
 	
 	/**
@@ -223,6 +232,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		
 		private LinearLayout galleryLayoutButtonContainer;
 		private LinearLayout captureLayoutButtonContainer;
+		private android.view.ViewGroup.LayoutParams originalCaptureButtonParams;
+		private boolean captureButtonMaximised = false;
 		
 		public MediaFlipper(Context context) {
 			super(context);
@@ -231,6 +242,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			captureLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_capture, this, false);
 			// Add the Capture button:
 			captureLayoutButtonContainer = (LinearLayout) captureLayoutContainer.findViewById(R.id.capture_layout_buttons);
+			originalCaptureButtonParams = captureLayoutButtonContainer.getLayoutParams();
 			captureLayoutButtonContainer.addView(new CaptureButtonView(context));
 			// Add the CaptureLayout to the screen
 			this.addView(captureLayoutContainer);
@@ -300,7 +312,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			if (getCurrentView() == galleryLayoutContainer) {
 				showNext();
 			}
-			populateCaptureLayout((ViewGroup)((ViewGroup)this.getCurrentView()).getChildAt(0));
+			populateCaptureLayout((ViewGroup)((ViewGroup)this.getCurrentView()).findViewById(R.id.capture_layout_content));
 		}
 		
 		/**
@@ -335,6 +347,27 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			
 			gallery.loadMedia();
 			refreshGalleryButtons();
+		}
+		
+		private void minimiseCaptureButton() {
+			if (captureButtonMaximised) {
+				captureButtonMaximised = false;
+				captureLayoutContainer.findViewById(R.id.capture_layout_content).setVisibility(View.VISIBLE);
+				captureLayoutButtonContainer.setLayoutParams(originalCaptureButtonParams); // TODO remove xml completely
+				
+				refreshCaptureButton();
+			}
+		}
+		
+		private void maximiseCaptureButton() {
+			if (!captureButtonMaximised) {
+				captureButtonMaximised = true;
+				captureLayoutContainer.findViewById(R.id.capture_layout_content).setVisibility(View.GONE);
+				LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
+				captureLayoutButtonContainer.setLayoutParams(params);
+				
+				refreshCaptureButton();
+			}
 		}
 
 		/**
@@ -373,7 +406,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 							int position, long id) {
 						itemPosition = position;
 						// a piece of media has been clicked, so show it and offer deletion
-						populateReviewLayout((LinearLayout)reviewLayoutContainer.getChildAt(0), ((FileItem)getAdapter().getItem(position)).getFile());
+						populateReviewLayout((LinearLayout)reviewLayoutContainer.findViewById(R.id.review_layout_content), ((FileItem)getAdapter().getItem(position)).getFile());
 						// Show the view:
 						showPrevious(); // currently in gallery, so go backwards
 					}	
@@ -420,7 +453,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			Runnable buttonAction;
 			int position;
 
-			public MediaButtonView(Context context)
+			public MediaButtonView(Context context) {
+				this(context, false);
+			}
+			
+			public MediaButtonView(Context context, boolean maximised)
 			{
 				super(context);
 
@@ -447,7 +484,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				// Layout:
 				setBackgroundColor(Color.TRANSPARENT);
 				setGravity(Gravity.CENTER);
-				setPadding(0, collectorUI.getSpacingPx(), 0, 0);
 
 				// Columns
 				setNumColumns(getNumberOfColumns()); //TODO necessary?
@@ -455,7 +491,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				// Images/buttons:
 
 				// Button size, padding & background colour:
-				this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(context, AndroidControlsUI.CONTROL_HEIGHT_DIP));
+				
+				if (maximised) // fill all available space
+					this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, collectorUI.getFieldUIHeightPx());
+				else {// just set to default height
+					setPadding(0, collectorUI.getSpacingPx(), 0, 0);
+					this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(context, AndroidControlsUI.CONTROL_HEIGHT_DIP));
+				}
+
 				this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP * 3);
 				this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
 
@@ -499,8 +542,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 			public CaptureButtonView(Context context)
 			{
-				super(context);
-
+				super(context, captureButtonMaximised);
 				buttonAction = new Runnable() {
 					@Override
 					public void run() {
