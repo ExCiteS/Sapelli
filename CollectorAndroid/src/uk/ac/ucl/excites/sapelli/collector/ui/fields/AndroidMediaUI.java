@@ -46,7 +46,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -74,17 +73,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	boolean multipleCapturesAllowed; // whether or not multiple pieces of media can be associated with this field
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
 	File lastCaptureFile; // file that holds the most recently captured media
-	private boolean skipPreviewOnAdd; // whether or not to start capturing media immediately when the "plus" button is pressed
 	
-	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI) {
-		this(field, controller, collectorUI, false);
-	}
-	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI, boolean skipPreviewOnAdd)
+	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
 		multipleCapturesAllowed = (field.getMax() > 1);	
 		maxReached = (field.getCount(controller.getCurrentRecord()) >= field.getMax());
-		this.skipPreviewOnAdd = skipPreviewOnAdd;
 	}
 	
 	/**
@@ -119,16 +113,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			if (field.getCount(controller.getCurrentRecord()) == 0 || goToCapture) {
 				// if no media or just came from review then go to capture UI
 				mediaFlipper.showCaptureLayout();
-				
-				if (skipPreviewOnAdd && field.getCount(controller.getCurrentRecord()) > 0) {
-					// skipPreviewOnAdd is enabled and there is already some media attached, so start capture immediately
-					try {
-						handlingClick.acquire();
-						mediaFlipper.performCapture();
-					} catch (InterruptedException e) {
-						Log.e(TAG,"Interrupted while trying to perform auto-capture.");
-					}
-				}
 			}
 			else {
 				// else go to gallery UI, or review UI if max = 1

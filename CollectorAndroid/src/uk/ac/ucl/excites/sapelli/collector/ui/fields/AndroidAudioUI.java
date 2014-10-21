@@ -81,9 +81,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	private AudioReviewPicker audioReviewPicker;
 	private VolumeDisplaySurfaceView volumeDisplay;
 
-	public AndroidAudioUI(AudioField field, Controller controller,
-			CollectorView collectorUI) {
-		super(field, controller, collectorUI, true); // want to skip preview on add
+	public AndroidAudioUI(AudioField field, Controller controller, CollectorView collectorUI) {
+		super(field, controller, collectorUI);
 	}
 
 	/**
