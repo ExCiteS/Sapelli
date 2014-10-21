@@ -68,8 +68,6 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 	
 	public PageUI<V, UI> createPageUI(Page page);
 	
-	public ControlsUI<V, UI> createControlsUI();
-
 	public void setField(Field currentField);
 	
 	public FieldUI<?, V, UI> getCurrentFieldUI();

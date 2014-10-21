@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
@@ -412,12 +412,13 @@ public class ChoiceField extends Field implements DictionaryItem
 		return dictionary;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor, uk.ac.ucl.excites.sapelli.collector.model.FieldParameters, boolean)
+	 */
 	@Override
-	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
+	public boolean enter(FieldVisitor visitor, FieldParameters arguments, boolean withPage)
 	{
-		if(!withPage)
-			return controller.enterChoiceField(this, arguments);
-		return true;
+		return visitor.enterChoiceField(this, arguments, withPage);
 	}
 	
 	@Override

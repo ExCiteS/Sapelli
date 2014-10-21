@@ -158,6 +158,8 @@ public class CollectorActivity extends ProjectActivity
 	@Override
 	protected void onResume()
 	{
+		//Log.d(TAG, "onResume()");
+		
 		// super:
 		super.onResume();
 
@@ -430,6 +432,8 @@ public class CollectorActivity extends ProjectActivity
 	@Override
 	protected void onPause()
 	{
+		//Log.d(TAG, "onPause()");
+		
 		// set timeout timer:
 		if(!pausedForActivityResult)
 		{
@@ -442,14 +446,15 @@ public class CollectorActivity extends ProjectActivity
 				{ // time's up!
 					collectorView.cancelCurrentField();
 					if(controller != null)
-						controller.discard(); // don't make controller null so we can restart project in onResume()
+						controller.discard(); // discards current record, stops GPS, etc.
+					// don't make controller null so we can restart the same project in onResume()
 					timedOut = true;
 					Log.i(TAG, "Time-out reached");
 				}
 			};
 			exitFuture = scheduleTaskExecutor.schedule(exitTask, TIMEOUT_MIN, TimeUnit.MINUTES);
 
-			Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
+			//Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
 
 		// Release audio feedback resources

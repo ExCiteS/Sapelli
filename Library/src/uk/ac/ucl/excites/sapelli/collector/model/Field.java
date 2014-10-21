@@ -24,6 +24,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
@@ -471,12 +472,12 @@ public abstract class Field extends JumpSource
 	 * 
 	 *  This method uses double-dispatch: the actual Field-type-specific behaviour will be defined in the class implementing the Controller interface.
 	 * 
-	 * @param controller
+	 * @param visitor a FieldVisitor (usually a Controller)
 	 * @param arguments arguments passed from previous field (should never be null, but will often be the FieldParameters.EMPTY object)
 	 * @param withPage whether or not the field is entered because the page containing it entered (true) or because it is entered on its own (false)
 	 * @return whether or not a UI update is required after entering the field)
 	 */
-	public abstract boolean enter(Controller controller, FieldParameters arguments, boolean withPage);
+	public abstract boolean enter(FieldVisitor visitor, FieldParameters arguments, boolean withPage);
 	
 	/**
 	 * Returns a FieldUI object to represent this Field.

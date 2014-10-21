@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.model.fields;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -308,12 +308,12 @@ public class TextBoxField extends Field
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor, uk.ac.ucl.excites.sapelli.collector.model.FieldParameters, boolean)
 	 */
 	@Override
-	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
+	public boolean enter(FieldVisitor visitor, FieldParameters arguments, boolean withPage)
 	{
-		return true;
+		return visitor.enterTextBoxField(this, arguments, withPage);
 	}
 
 	/* (non-Javadoc)

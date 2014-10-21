@@ -35,13 +35,18 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form.Next;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.BelongsToField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
@@ -59,7 +64,7 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
  * 
  * @author mstevens, Michalis Vitos, Julia
  */
-public abstract class Controller
+public abstract class Controller implements FieldVisitor
 {
 	
 	// STATICS-------------------------------------------------------
@@ -95,6 +100,72 @@ public abstract class Controller
 		 * The current field must be unconditionally left without any validation or value storage happening. 
 		 */
 		UNCONDITIONAL_NO_STORAGE
+	}
+	
+	/**
+	 * Checks whether the given field is to be shown in the current Mode.
+	 * Note that disabled fields may still be shown (e.g. displayed grayed-out).
+	 * 
+	 * @param mode
+	 * @param field
+	 * @return
+	 */
+	static public boolean IsFieldToBeShown(Mode mode, Field field)
+	{
+		switch(mode)
+		{
+			case CREATE:
+				return field.isShowOnCreate();
+			case EDIT:
+				return field.isShowOnEdit();
+			default:
+				throw new IllegalStateException("Unknown Mode: " + mode.name());
+		}
+	}
+	
+	/**
+	 * Checks whether the given field is currently enabled.
+	 * While disabled fields may still be shown, a field that is *not* allowed to be shown is always disabled.
+	 * 
+	 * @param currFormSession
+	 * @param field
+	 * @return
+	 */
+	static public boolean IsFieldEnabled(FormSession currFormSession, Field field)
+	{
+		return IsFieldEnabled(currFormSession.mode, currFormSession.getRuntimeEnabled(field), field);
+	}
+	
+	/**
+	 * Checks whether the given field is currently enabled.
+	 * While disabled fields may still be shown, a field that is *not* allowed to be shown is always disabled.
+	 * 
+	 * @param mode
+	 * @param field
+	 * @return
+	 */
+	static public boolean IsFieldEnabled(Mode mode, Field field)
+	{
+		return IsFieldEnabled(mode, null, field);
+	}
+	
+	/**
+	 * Checks whether the given field is currently enabled.
+	 * While disabled fields may still be shown, a field that is *not* allowed to be shown is always disabled.
+	 * 
+	 * @param mode
+	 * @param runtimeEnabled
+	 * @param field
+	 * @return
+	 */
+	static public boolean IsFieldEnabled(Mode mode, Boolean runtimeEnabled, Field field)
+	{
+		return 	// a field that is *not* allowed to be shown is always disabled:
+				IsFieldToBeShown(mode, field)
+				// "runtime enabledness" (kept in FormSession, but rarely used) has preference over "static enabledness" (kept in the Field object itself, true by default):
+				&& (runtimeEnabled != null ? runtimeEnabled : field.isEnabled())
+				// when in EDIT mode the field must be editable to be enabled:
+				&& (mode != Mode.EDIT || field.isEditable());
 	}
 	
 	// DYNAMICS------------------------------------------------------
@@ -345,26 +416,6 @@ public abstract class Controller
 	}
 	
 	/**
-	 * Checks whether the given field is to be shown in the current Mode.
-	 * Note that disabled fields may still be shown (e.g. displayed grayed-out).
-	 * 
-	 * @param field
-	 * @return
-	 */
-	public boolean isFieldToBeShown(Field field)
-	{
-		switch(currFormSession.mode)
-		{
-			case CREATE:
-				return field.isShowOnCreate();
-			case EDIT:
-				return field.isShowOnEdit();
-			default:
-				throw new IllegalStateException("Unknown Mode: " + currFormSession.mode.name());
-		}
-	}
-	
-	/**
 	 * Checks whether the given field is currently enabled.
 	 * While disabled fields may still be shown, a field that is *not* allowed to be shown is always disabled.
 	 * 
@@ -373,15 +424,21 @@ public abstract class Controller
 	 */
 	public boolean isFieldEnabled(Field field)
 	{
-		Boolean runtimeEnabled = null;
-		return 	// a field that is *not* allowed to be shown is always disabled:
-				isFieldToBeShown(field)
-				// "runtime enabledness" (kept in FormSession, but rarely used) has preference over "static enabledness" (kept in the Field object itself, true by default):
-				&& ((runtimeEnabled = currFormSession.getRuntimeEnabled(field)) != null ? runtimeEnabled : field.isEnabled())
-				// when in EDIT mode the field must be editable to be enabled:
-				&& (currFormSession.mode != Mode.EDIT || field.isEditable());
+		return IsFieldEnabled(currFormSession, field);
 	}
-
+	
+	/**
+	 * Checks whether the given field is to be shown in the current Mode.
+	 * Note that disabled fields may still be shown (e.g. displayed grayed-out).
+	 * 
+	 * @param field
+	 * @return
+	 */
+	public boolean isFieldToBeShown(Field field)
+	{
+		return IsFieldToBeShown(currFormSession.mode, field);
+	}
+	
 	protected void saveRecordAndAttachments()
 	{
 		if(!currFormSession.form.isProducesRecords()) //!!!
@@ -441,44 +498,41 @@ public abstract class Controller
 		currFormSession.getMediaAttachments().clear();
 	}
 	
-	/**
-	 * @param cf  the ChoiceField
-	 * @return whether or not a UI update is required after entering the field
-	 */
-	public boolean enterChoiceField(ChoiceField cf, FieldParameters arguments)
+	@Override
+	public boolean enterChoiceField(ChoiceField cf, FieldParameters arguments, boolean withPage)
 	{
-		// Deal with leaves:
+		if(withPage)
+			return true;
+		// else (not with page):
+		// 	Deal with leaves:
 		if(cf.isLeaf())
 			return false;
-		
-		// The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
+		// 	The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
 		for(ChoiceField child : cf.getChildren())
-			if(isFieldEnabled(child))
+			if(IsFieldEnabled(currFormSession, child))
 				return true;
-		// This ChoiceField currently has no enabled children, so we should skip it:
+		// 	This ChoiceField currently has no enabled children, so we should skip it:
 		goForward(false);
 		return false;
 	}
 	
-	/**
-	 * @param af  the MediaField
-	 * @return whether or not a UI update is required after entering the field
-	 */
-	public boolean enterMediaField(MediaField mf, FieldParameters arguments)
+	@Override
+	public boolean enterMediaField(MediaField mf, FieldParameters arguments, boolean withPage)
 	{
-		if(mf.isMaxReached(currFormSession.record))
-		{ // Maximum number of attachments for this field is reached:
-			goForward(false); // skip field //TODO this needs to change if we allow to delete previously generated media
-			return false;
+		if(withPage)
+			return true;
+		else
+		{
+			if(mf.isMaxReached(currFormSession.record))
+			{ // Maximum number of attachments for this field is reached:
+				goForward(false); // skip field //TODO this needs to change if we allow to delete previously generated media
+				return false;
+			}
+			return true;
 		}
-		return true;
 	}
 	
-	/**
-	 * @param lf  the LocationField
-	 * @param whether or not the location field is entered together with a page that contains it, or entered on its own
-	 * @return whether or not a UI update is required after entering the field
-	 */
+	@Override
 	public boolean enterLocationField(LocationField lf, FieldParameters arguments, boolean withPage)
 	{
 		if(withPage && !lf.isStartWithPage())
@@ -497,20 +551,16 @@ public abstract class Controller
 		}
 	}
 	
-	/**
-	 * @param of  the OrientationField
-	 * @return whether or not a UI update is required after entering the field
-	 */
-	public boolean enterOrientationField(OrientationField of, FieldParameters arguments)
+	@Override
+	public boolean enterOrientationField(OrientationField of, FieldParameters arguments, boolean withPage)
 	{
-		startOrientationListener();
-		return true; // update UI (even though the orientation values are typically received instantaneously and the UI might never actually be seen by the user)
+		if(!withPage)
+			startOrientationListener();
+		return true;
+		// update UI (even though the orientation values are typically received instantaneously and the UI might never actually be seen by the user)
 	}
 	
-	/**
-	 * @param page	the Page
-	 * @return whether or not a UI update is required after entering the field
-	 */
+	@Override
 	public boolean enterPage(Page page, FieldParameters arguments)
 	{
 		// Enter child fields (but signal that they are entered as part of entering the page):
@@ -528,6 +578,7 @@ public abstract class Controller
 		return true;
 	}
 	
+	@Override
 	public boolean enterLinksTo(LinksToField linksTo, FieldParameters arguments)
 	{
 		//TODO enterLinksTo
@@ -540,6 +591,7 @@ public abstract class Controller
 		return false;
 	}
 	
+	@Override
 	public boolean enterBelongsTo(BelongsToField belongsTo, FieldParameters arguments)
 	{
 		ForeignKeyColumn column = belongsTo.getColumn();
@@ -625,10 +677,37 @@ public abstract class Controller
 		return false;
 	}
 	
-	/**
-	 * @param ef  the EndField
-	 * @return whether or not a UI update is required after entering the field
-	 */
+	@Override
+	public boolean enterTextBoxField(TextBoxField tbf, FieldParameters arguments, boolean withPage)
+	{
+		return true;
+	}
+
+	@Override
+	public boolean enterLabelField(LabelField lblf, FieldParameters arguments, boolean withPage)
+	{
+		return true;
+	}
+	
+	@Override
+	public boolean enterCheckboxField(CheckBoxField cbf, FieldParameters arguments, boolean withPage)
+	{
+		return true;
+	}
+
+	@Override
+	public boolean enterButtonField(ButtonField buttonField, FieldParameters arguments, boolean withPage)
+	{
+		return true;
+	}
+
+	@Override
+	public boolean enterMultiListField(MultiListField mlf, FieldParameters arguments, boolean withPage)
+	{
+		return true;
+	}
+	
+	@Override
 	public boolean enterEndField(EndField ef, FieldParameters arguments)
 	{
 		// Logging:
@@ -791,8 +870,9 @@ public abstract class Controller
 		if(currFormSession.form != null)
 			disableTriggers(currFormSession.form.getTriggers());
 		
-		// Stop GPS!
+		// Stop sensors:
 		stopLocationListener();
+		stopOrientationListener();
 		
 		// Close log file:
 		if(logger != null)
@@ -869,6 +949,8 @@ public abstract class Controller
 
 	protected abstract void startOrientationListener();
 	
+	protected abstract void stopOrientationListener();
+	
 	protected abstract void startLocationListener(List<LocationField> locFields);
 
 	protected abstract void stopLocationListener();
@@ -921,4 +1003,5 @@ public abstract class Controller
 	{
 		this.blockedUI = false;
 	}
+	
 }

@@ -166,16 +166,26 @@ public class CollectorController extends Controller implements LocationListener,
 	{
 		if(orientationSensor == null)
 			orientationSensor = new OrientationSensor(activity);
-		orientationSensor.start(this); // start listening for orientation updates	
-		// the sensor is stopped when values are received
+		orientationSensor.start(this); // start listening for orientation updates
+	}
+	
+	@Override
+	protected void stopOrientationListener()
+	{
+		if(orientationSensor != null)
+			orientationSensor.stop();
 	}
 	
 	public void onOrientationChanged(Orientation orientation)
 	{
+		if(orientation == null)
+			return;
+		// Stop listening for orientation updates:
+		stopOrientationListener();
+		// Use orientation:
 		if(getCurrentField() instanceof OrientationField) // !!!
 		{
 			((OrientationField) getCurrentField()).storeOrientation(currFormSession.record, orientation);
-			orientationSensor.stop(); // stop listening for updates
 			goForward(false);
 		}
 	}

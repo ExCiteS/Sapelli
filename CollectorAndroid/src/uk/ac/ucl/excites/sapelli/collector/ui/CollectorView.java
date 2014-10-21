@@ -137,6 +137,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	 * 
 	 * @param field
 	 */
+	@Override
 	public void setField(Field field)
 	{
 		if(controller == null)
@@ -162,7 +163,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		if(fieldUI != null && newFieldUI != fieldUI && fieldUI.isFieldShown())
 			fieldUI.hideField(); // mark field as not shown, and execute cancel behaviour (e.g. stop audio recording, close camera, ...)
 
-		// newFieldUI become the current fieldUI:
+		// newFieldUI becomes the current fieldUI:
 		fieldUI = newFieldUI;
 
 		// Update the controls:
@@ -301,12 +302,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	public AndroidPageUI createPageUI(Page pg)
 	{
 		return new AndroidPageUI(pg, controller, this);
-	}
-
-	@Override
-	public AndroidControlsUI createControlsUI()
-	{
-		return new AndroidControlsUI(controller, this);
 	}
 
 	public void cancelCurrentField()
