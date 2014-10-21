@@ -368,6 +368,21 @@ public abstract class MediaField extends Field
 	}
 	
 	/**
+	 * Returns the most recently attached file.
+	 * @param fileStorageProvider
+	 * @param record
+	 * @return
+	 */
+	public File getLastAttachment(FileStorageProvider fileStorageProvider, Record record) {
+		List<Long> offsets = ((IntegerListColumn)getColumn()).retrieveValue(record);
+		if (offsets == null || offsets.size() < 1)
+			return null;
+		String dir = fileStorageProvider.getProjectDataFolder(form.getProject(), true).getAbsolutePath();
+		String filename = generateFilename(record, offsets.get(offsets.size() - 1)); // get final offset from list
+		return new File(dir, filename);		
+	}
+	
+	/**
 	 * Generates a new filename for the next media attachment for this field. If obfuscation is enabled,
 	 * the entire filename is obfuscated using ROT13.
 	 * 

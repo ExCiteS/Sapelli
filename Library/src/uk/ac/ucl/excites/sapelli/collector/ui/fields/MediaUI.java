@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -48,7 +47,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	 * @param goForward - whether to go forward to the next field or re-enter the current field with the new attachment (important
 	 * if multiple attachments can be added to the same field).
 	 */
-	public void attachMedia(File mediaAttachment, boolean userRequested, boolean goForward)
+	public void attachMedia(File mediaAttachment)
 	{
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
@@ -64,20 +63,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		{
 			// log empty attachment
 			controller.addLogLine("ATTACHMENT", field.getID(), "-NONE-");
-			if(!isValid(controller.getCurrentRecord())) {
-				// at least one attachment is required & we have none:
-				controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE); // stay at this field ("return;" is not enough because if we are using a native app it needs to be restarted)
-				// must not go forward (!):
-				return;
-			}
 		}
-		
-		if (goForward)
-			// goto next/jump field
-			controller.goForward(userRequested); 
-		else
-			// re-enter current field, but with new attachment
-			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 	}
 	
 	/**

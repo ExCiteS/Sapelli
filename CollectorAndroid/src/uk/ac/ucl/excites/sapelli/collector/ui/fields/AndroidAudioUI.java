@@ -27,6 +27,7 @@ import java.util.TimerTask;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -94,21 +95,29 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		try
 		{
 			minimiseCaptureButton(); // show volume levels while recording
-			lastCaptureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
-			audioRecorder = new AudioRecorder(lastCaptureFile);
+			captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
+			audioRecorder = new AudioRecorder(captureFile);
 			audioRecorder.start();
 			volumeDisplay.start();
 		}
 		catch(IOException ioe)
 		{
 			Log.e(TAG, "Could not get audio file.", ioe);
-			attachMedia(null, false, true);
+			attachMedia(null); //TODO remove?
+			if (isValid(controller.getCurrentRecord()))
+				controller.goForward(false);
+			else
+				controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE);
 			return false;
 		}
 		catch(Exception e)
 		{
 			Log.e(TAG, "Could not start audio recording.", e);
-			attachMedia(null, false, true);
+			attachMedia(null);
+			if (isValid(controller.getCurrentRecord()))
+				controller.goForward(false);
+			else
+				controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE);
 			return false; // !!!
 		}
 		return true;		
@@ -136,8 +145,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 	/**
 	 * If not already recording, start recording. Else stop recording and attach the media file 
-	 * to the field. Always returns "true" so that click events can be processed while audio is being
-	 * recorded.
+	 * to the field.
 	 */
 	@Override
 	void onCapture() {
@@ -150,8 +158,10 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 				// stop recording
 				stopRecording();
 				// a capture has been made so show it for review:
-				attachMedia(lastCaptureFile, false, false);
+				attachMedia(captureFile);
+				captureFile = null;
 				recording = false;
+				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 			}
 		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
@@ -224,10 +234,14 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	}
 
 	@Override
-    protected void cancel() {
+	protected void cancel() {
 		super.cancel();
-		if(audioRecorder != null)
-			stopRecording();
+		synchronized(recording) {
+			if(audioRecorder != null) {
+				stopRecording();
+			}
+			recording = false;
+		}
 		if (audioReviewPicker != null)
 			audioReviewPicker.finalise();
 		audioReviewPicker = null;
@@ -250,7 +264,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 		public AudioReviewPicker(Context context, File audioFile) {
 			super(context);
-
+			Log.d("AudioReviewPicker","Audio file: "+audioFile.getAbsolutePath());
 			try {
 				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 				mediaPlayer.setDataSource(context, Uri.fromFile(audioFile));
@@ -334,7 +348,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			getAdapter().addItem(stopAudioButton);
 			getAdapter().notifyDataSetChanged();
 		}
-		
+
 		/**
 		 * Stop playing audio and display the "play" button.
 		 */
@@ -405,7 +419,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 				}
 
 				@SuppressLint("WrongCall")
-                @Override
+				@Override
 				public void surfaceChanged(SurfaceHolder holder, int format,
 						int width, int height) {
 					Canvas c = holder.lockCanvas(null);
@@ -428,18 +442,18 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			canvas.drawColor(COLOR_BACKGROUND);
 			// draw the levels:
 			paint.setColor(COLOR_ACTIVE_LEVEL);
-			
+
 			for (int i = 0; i < NUM_LEVELS; i++) {
-				
+
 				if (i == levelsToIlluminate)
 					paint.setColor(COLOR_INACTIVE_LEVEL);
-				
+
 				float bottom = getHeight() - i * (levelHeight + LEVEL_PADDING); // remember top-left is (0,0)
 				canvas.drawRect(0, bottom + levelHeight, getWidth(), bottom, paint);
 			}
 
 		}
-		
+
 		/**
 		 * Start the TimerTask to visualise the volume.
 		 */
@@ -447,7 +461,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			timer = new Timer();
 			timer.schedule(new VolumeDisplayTask(), 0, UPDATE_FREQUENCY_MILLISEC);
 		}
-		
+
 		/**
 		 * Stop the TimerTask that visualises the volume.
 		 */
@@ -465,7 +479,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		private class VolumeDisplayTask extends TimerTask {
 
 			@SuppressLint("WrongCall")
-            @Override
+			@Override
 			public void run() {
 				amplitude = audioRecorder.getMaxAmplitude();
 				// see how loud it currently is relative to MAX_AMPLITUDE, then multiply that fraction

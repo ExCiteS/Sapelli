@@ -6,6 +6,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -68,7 +69,11 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 			if (!cameraController.foundCamera()) { // no camera found, try the other one:
 				cameraController.findCamera(!field.isUseFrontFacingCamera());
 				if (!cameraController.foundCamera()) { // still no camera, this device does not seem to have one:
-					attachMedia(null, false, true);
+					attachMedia(null);
+					if (isValid(controller.getCurrentRecord()))
+						controller.goForward(false);
+					else
+						controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE);
 					return;
 				}
 			}
@@ -91,20 +96,22 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 
 	@Override
 	void onCapture() {
-			synchronized(recording) {
-				if (!recording) {
-					// start recording
-					lastCaptureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
-					cameraController.startVideoCapture(lastCaptureFile);
-					recording = true;
-				} else {
-					// stop recording
-					cameraController.stopVideoCapture();
-					// a capture has been made so show it for review:
-					attachMedia(lastCaptureFile, false, false);
-					recording = false;
-				}
+		synchronized(recording) {
+			if (!recording) {
+				// start recording
+				captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
+				cameraController.startVideoCapture(captureFile);
+				recording = true;
+			} else {
+				// stop recording
+				cameraController.stopVideoCapture();
+				// a capture has been made so show it for review:
+				attachMedia(captureFile);
+				captureFile = null;
+				recording = false;
+				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 			}
+		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
 		releaseClick();
 	}
@@ -148,13 +155,13 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		playbackView.setVideoURI(Uri.fromFile(mediaFile));
 		playbackView.start();
 	}
-	
+
 
 	@Override
-    public void onCompletion(MediaPlayer mp) {
-	    // playback has finished so go back to start
+	public void onCompletion(MediaPlayer mp) {
+		// playback has finished so go back to start
 		playbackPosition = 0;
-    }
+	}
 
 	/**
 	 * If not currently recording, will return a "start recording" button. If currently recording, will return a
@@ -197,8 +204,12 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	@Override
 	protected void cancel() {
 		super.cancel();
-		if(cameraController != null)
-			cameraController.close();
+		synchronized(recording) {
+			recording = false;
+			if(cameraController != null) {
+				cameraController.close();
+			}
+		}
 		cameraController = null;
 	}
 

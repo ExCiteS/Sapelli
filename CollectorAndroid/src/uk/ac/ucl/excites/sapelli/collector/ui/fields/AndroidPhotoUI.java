@@ -25,6 +25,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -94,7 +95,11 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	        if (!cameraController.foundCamera()) { // no camera found, try the other one:
 		        cameraController.findCamera(!field.isUseFrontFacingCamera());
 		        if (!cameraController.foundCamera()) { // still no camera, this device does not seem to have one:
-			        attachMedia(null, false, true);
+		        	attachMedia(null);
+					if (isValid(controller.getCurrentRecord()))
+						controller.goForward(false);
+					else
+						controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE);
 			        return;
 		        }
 	        }
@@ -229,13 +234,13 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 				options.inSampleSize = BitmapUtils.calculateInSampleSize(options, previewWidth, previewHeight);
 				picture = BitmapFactory.decodeByteArray(data, 0, data.length, options);
 				
-				// write to temporary file right away, but don't attach it unless approved
-				// may eventually run out of storage but makes media code easier - should be fixed 
-				// when temp file stuff is refactored --- TODO
-				lastCaptureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
-				FileOutputStream fos = new FileOutputStream(lastCaptureFile);
+				captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
+				FileOutputStream fos = new FileOutputStream(captureFile);
 				fos.write(data);
 				fos.close();
+				attachMedia(captureFile);
+				captureFile = null;
+				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 			}
 			catch(Exception e)
 			{
@@ -251,7 +256,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			cameraController.stopPreview();
 			// Close the dialog
 			dialog.cancel();
-			attachMedia(lastCaptureFile, false, false);
+			captureFile = null;
 			releaseClick();
 		}
 	}

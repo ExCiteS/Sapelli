@@ -73,7 +73,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private boolean goToCapture = false; // flag used to jump straight to capture from gallery 
 	boolean multipleCapturesAllowed; // whether or not multiple pieces of media can be associated with this field
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
-	File lastCaptureFile; // file that holds the most recently captured media
+	File captureFile; // file that holds the most recently captured media
 	
 	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI)
 	{
@@ -121,12 +121,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					// switch to single review layout:
 					mediaFlipper.showReviewLayout();
 					// populate with most recent capture:
-					if (lastCaptureFile == null) {
-						// reload most recent File -- from the last item in the items list
-						List<Item> items = getMediaItems(controller.getFileStorageProvider(),controller.getCurrentRecord());
-						lastCaptureFile = ((FileItem) items.get(items.size() - 1)).getFile();
-					}
-					populateReviewLayout((ViewGroup)mediaFlipper.findViewById(R.id.review_layout_content),lastCaptureFile);
+					populateReviewLayout((ViewGroup)mediaFlipper.findViewById(R.id.review_layout_content),field.getLastAttachment(controller.getFileStorageProvider(), record));
 				}
 				else
 					mediaFlipper.showGalleryLayout();
@@ -139,6 +134,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	protected void cancel()
 	{
 		mediaFlipper = null;
+		if (captureFile != null) {
+			// last capture has been implicitly discarded. TODO: this is a little unsafe,
+			// as forgetting to nullify the new capture would cause its deletion
+			Log.d(TAG, "Deleting discarded file...");
+			captureFile.delete();
+		}
+		captureFile = null;
+		
 	}
 	
 	/**
@@ -601,7 +604,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 							onDiscard();
 							if (!multipleCapturesAllowed) {
 								// single item review
-								removeMedia(lastCaptureFile); // captures are now always attached, so must be deleted regardless of approval
+								removeMedia(field.getLastAttachment(controller.getFileStorageProvider(), controller.getCurrentRecord())); // captures are now always attached, so must be deleted regardless of approval
+								captureFile = null;
 							} else {
 								// reviewing from gallery, so delete
 								gallery.deleteCurrentItem();
