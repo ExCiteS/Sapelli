@@ -44,17 +44,20 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	}
 	
 	/**
-	 * Note 1:	chosenChild is not the currentField! The currentField (also a ChoiceField) is its parent.
+	 * Note 1:	chosenChild is not the (current) field! The field (also a ChoiceField) is its parent.
 	 * 
 	 * Note 2:	For leaves we cannot just call goForward() here because then we would first need to make
 	 * 			the chosenChild the currentField, in which case it would end up in the fieldHistory which
 	 * 			does not make sense because a leaf choice cannot be displayed on its own.
 	 * 
-	 * Note 3:	If the chosenChild is not a leaf, or it is a "valueless" leaf, the goTo is unconditional
+	 * Note 3:	For the same reason leaves are never actually "visited" by the controller, instead we
+	 * 			*go* straight *to* what follows (the next/jump of the leaf).
+	 * 
+	 * Note 4:	If the chosenChild is not a leaf, or it is a "valueless" leaf, the goTo is unconditional
 	 * 			because otherwise validation would keep us from advancing. If it is a "valued" leaf
 	 * 			validation will happen. This means valueless leaves offer way out of choice trees, even
 	 * 			non-optional ones. Form designers should use this with care (e.g. only using valueless
-	 * 			leaves as "back jumps", and assuring the field will be revisited to acquire a value.
+	 * 			leaves as "back jumps", and assuring the field will be revisited to acquire a value).
 	 *
 	 * @param chosenChild
 	 */
@@ -70,7 +73,7 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 		{	// Store value if the field has a column, the chosenChild is a leaf and it is known in the field dictionary (meaning it carries a value):
 			if(!field.isNoColumn() && chosenChild.isLeaf() && field.getDictionary().contains(chosenChild))
 				field.getColumn().storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
-			// Go to next/jump of chosenChild:
+			// Go to next/jump of chosenChild (not to the chosen child itself because it is a leaf):
 			next = field.getForm().getNextFieldAndArguments(chosenChild);
 		}
 		else
