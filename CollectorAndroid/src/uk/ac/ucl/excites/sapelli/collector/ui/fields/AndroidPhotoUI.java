@@ -68,7 +68,6 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 
 	@SuppressWarnings("unused")
     static private final String TAG = "AndroidPhotoUI";
-	static private final int PREVIEW_SIZE = 1024;
 
 	// Camera & image data:
 	private CameraController cameraController;

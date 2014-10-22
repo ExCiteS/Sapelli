@@ -21,17 +21,23 @@ import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
 import android.widget.VideoView;
 
@@ -128,7 +134,22 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	@Override
 	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
 		reviewLayout.removeAllViews();
+		final ImageView thumbnailView = new ImageView(reviewLayout.getContext());
+		// create thumbnail from video file:
+		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(mediaFile.getAbsolutePath(),MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
+		thumbnailView.setScaleType(ScaleType.FIT_CENTER);
+		thumbnailView.setImageBitmap(thumbnail);
+		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
+		params.gravity = Gravity.CENTER_HORIZONTAL;
+		reviewLayout.addView(thumbnailView, params);
+		
 		final VideoView playbackView = new VideoView(reviewLayout.getContext());
+		playbackView.setLayoutParams(params);
+		playbackView.setOnCompletionListener(this);
+		reviewLayout.addView(playbackView);
+		playbackView.setVideoURI(Uri.fromFile(mediaFile));
+		
+		playbackView.setVisibility(View.GONE);
 
 		playbackView.setOnTouchListener(new OnTouchListener() {
 			@Override
@@ -150,13 +171,17 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 				return true;
 			}
 		});
-		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
-		params.gravity = Gravity.CENTER_HORIZONTAL;
-		playbackView.setLayoutParams(params);
-		playbackView.setOnCompletionListener(this);
-		reviewLayout.addView(playbackView);
-		playbackView.setVideoURI(Uri.fromFile(mediaFile));
-		playbackView.start();
+		
+		thumbnailView.setOnClickListener(new OnClickListener() {
+
+			@Override
+            public void onClick(View v) {
+				thumbnailView.setVisibility(View.GONE);
+				playbackView.setVisibility(View.VISIBLE);
+	            playbackView.start();
+            }
+			
+		});
 	}
 
 
