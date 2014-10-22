@@ -828,6 +828,10 @@ public abstract class Controller
 		return currFormSession.getCurrentFieldArguments();
 	}
 	
+	public void addCurrentFieldToHistory() {
+		currFormSession.addCurrentFieldToHistory();
+	}
+	
 	public void addLogLine(String... fields)
 	{
 		if(logger != null)

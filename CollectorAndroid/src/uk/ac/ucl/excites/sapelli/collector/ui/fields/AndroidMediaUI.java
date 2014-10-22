@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
+import java.util.Currency;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -324,6 +325,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		 * predicted here.
 		 */
 		private void showReviewLayout() {
+			if (multipleCapturesAllowed && field.getCount(controller.getCurrentRecord()) > 0) {
+				controller.addCurrentFieldToHistory();
+			}
 			if (getCurrentView() == reviewLayoutContainer) {
 				return;
 			}
@@ -411,7 +415,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						// a piece of media has been clicked, so show it and offer deletion
 						populateReviewLayout((LinearLayout)reviewLayoutContainer.findViewById(R.id.review_layout_content), ((FileItem)getAdapter().getItem(position)).getFile());
 						// Show the view:
-						showPrevious(); // currently in gallery, so go backwards
+						showReviewLayout();
 					}	
 				});
 			}

@@ -487,5 +487,4 @@ public abstract class Field extends JumpSource
 	 * @return
 	 */
 	public abstract <V, UI extends CollectorUI<V, UI>> FieldUI<?, V, UI> createUI(UI collectorUI);
-	
 }

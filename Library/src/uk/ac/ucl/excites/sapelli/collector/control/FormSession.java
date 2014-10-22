@@ -120,6 +120,10 @@ public class FormSession
 		this.currFieldAndArguments = nextFieldAndArguments;
 	}
 	
+	public void addCurrentFieldToHistory() {
+		fieldAndArgumentHistory.push(currFieldAndArguments);
+	}
+	
 	/**
 	 * @return the currFieldDisplayed
 	 */
