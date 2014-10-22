@@ -27,7 +27,6 @@ import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.JumpSource;
@@ -425,13 +424,13 @@ public class FormParser extends SubtreeParser
 				newField(btn, attributes);
 				try
 				{
-					btn.setColumnType(attributes.getString(ATTRIBUTE_BUTTON_COLUMN, ButtonField.DEFAULT_COLUMN.name(), true, false));
+					btn.setColumnType(attributes.getString(ATTRIBUTE_BUTTON_COLUMN, ButtonField.DEFAULT_COLUMN_TYPE.name(), true, false));
 				}
 				catch(IllegalArgumentException iae)
 				{
 					throw new SAXException("Invalid '" + ATTRIBUTE_BUTTON_COLUMN + "' attribute value on <" + TAG_BUTTON + ">.", iae);
 				}
-				if(btn.getColumnType() == ButtonColumnType.DATETIME && btn.getOptional() != Optionalness.ALWAYS)
+				if(btn.getColumnType() == ButtonColumnType.DATETIME && !btn.isOptional())
 					addWarning("Button \"" + btn.getID() + "\" has a DateTime column but is not optional, this means the button will *have* to be pressed.");
 			}
 			// <Label>
@@ -449,15 +448,15 @@ public class FormParser extends SubtreeParser
 				newField(txtField, attributes); // first set general things like optionality (needed for getDefaultMinLength() below).
 				
 				// Deal with minimum & maximum length:
-				if(txtField.getOptional() != Optionalness.ALWAYS && !attributes.contains(ATTRIBUTE_TEXT_MINLENGTH))
-					addWarning("Text field \"" + txtField.getID() + "\" is non-optional but no minimal length is defined, therefore the minimum will be set to " + TextBoxField.DEFAULT_MIN_LENGTH_NON_OPTIONAL + " character(s). If this is not appropriate then please use the '" + ATTRIBUTE_TEXT_MINLENGTH + "' attribute to set the minimum length explicitly.");				
-				txtField.setMinMaxLength(	attributes.getInteger(ATTRIBUTE_TEXT_MINLENGTH, txtField.getDefaultMinLength()),
+				if(!txtField.isOptional() && !attributes.contains(ATTRIBUTE_TEXT_MINLENGTH))
+					addWarning("Text field \"" + txtField.getID() + "\" is non-optional but no minimal length is defined, therefore the minimum will be set to " + TextBoxField.DEFAULT_MIN_LENGTH_NON_OPTIONAL + " character(s). It is recommended to use the '" + ATTRIBUTE_TEXT_MINLENGTH + "' attribute to set an appropriate minimum length explicitly.");				
+				txtField.setMinMaxLength(	attributes.getInteger(ATTRIBUTE_TEXT_MINLENGTH, TextBoxField.GetDefaultMinLength(txtField.isOptional())),
 											attributes.getInteger(ATTRIBUTE_TEXT_MAXLENGTH, TextBoxField.DEFAULT_MAX_LENGTH));
 				// Multi-line:
 				txtField.setMultiline(attributes.getBoolean(ATTRIBUTE_TEXT_MULTILINE, TextBoxField.DEFAULT_MULTILINE));
 				
 				// Initial value (must happen after min/maxLength are set):
-				txtField.setInitialValue(attributes.getString(txtField.getDefaultInitialValue(), false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
+				txtField.setInitialValue(attributes.getString(TextBoxField.GetDefaultInitialValue(txtField.isOptional()), false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
 				
 				// Content types:
 				txtField.setContent(attributes.getString(ATTRIBUTE_TEXT_CONTENT, TextBoxField.DEFAULT_CONTENT.name(), true, false));
@@ -664,16 +663,16 @@ public class FormParser extends SubtreeParser
 				{
 					// Set optionalness:
 					String optText = attributes.getValue(ATTRIBUTE_FIELD_OPTIONAL);
-					Optionalness opt = currentPage == null ? Field.DEFAULT_OPTIONAL : currentPage.getOptional(); // use default optionalness or that of the containing page
+					boolean opt = currentPage == null ? Field.DEFAULT_OPTIONAL : currentPage.isOptional(); // use default optionalness or that of the containing page
 					if(optText != null && !optText.trim().isEmpty())
 					{	
 						optText = optText.trim();
 						if("always".equalsIgnoreCase(optText) || Boolean.TRUE.toString().equalsIgnoreCase(optText))
-							opt = Optionalness.ALWAYS;
-						else if("notIfReached".equalsIgnoreCase(optText))
-							opt = Optionalness.NOT_IF_REACHED;
+							opt = true;
+						else if("notIfReached".equalsIgnoreCase(optText)) // deprecated, but still parsed on all format versions (for backwards compatibility)
+							opt = false;
 						else if("never".equalsIgnoreCase(optText) || Boolean.FALSE.toString().equalsIgnoreCase(optText))
-							opt = Optionalness.NEVER;
+							opt = false;
 					}
 					field.setOptional(opt);
 					
@@ -779,11 +778,12 @@ public class FormParser extends SubtreeParser
 	protected void closePage(Page page)
 	{
 		/* The 'optional' attribute of a page is only used to inherit from by contained fields (see newField()),
-		 * at runtime it doesn't have meaning in itself because whether or not a page can be skipped or left is
-		 * to be decided based on the optionalness and acquired values of the contained fields.
+		 * at runtime it doesn't have meaning in itself because the page does not have a column of its own and
+		 * whether or not the page can be skipped or left is to be decided based on the optionalness and acquired
+		 * values of the contained fields.
 		 * Because of this the optionalness of the page is reset to ALWAYS after all contained fields are parsed.
 		 */
-		page.setOptional(Optionalness.ALWAYS);
+		page.setOptional(true);
 	}
 	
 	@Override

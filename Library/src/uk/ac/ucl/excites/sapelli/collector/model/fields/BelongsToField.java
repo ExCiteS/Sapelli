@@ -63,7 +63,7 @@ public class BelongsToField extends Relationship
 	@Override
 	protected ForeignKeyColumn createColumn(String name)
 	{	
-		return new ForeignKeyColumn(name, relatedForm.getSchema(), (optional != Optionalness.NEVER)); // (BelongsTo)
+		return new ForeignKeyColumn(name, relatedForm.getSchema(), form.getColumnOptionalityAdvisor().getColumnOptionality(this));
 	}
 	
 	@Override

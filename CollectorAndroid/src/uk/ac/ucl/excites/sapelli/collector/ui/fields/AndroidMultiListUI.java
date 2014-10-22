@@ -20,8 +20,8 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.util.Stack;
 
+import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField.MultiListItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -313,7 +313,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			// Insert "Please select" item if preSelect=false:
 			if(!parentItem.getField().isPreSelect())
 			{
-				nonSelectableItem = MultiListItem.GetDummyItem(field, PLEASE_SELECT);
+				nonSelectableItem = MultiListItem.GetDummyItem(field, context.getString(R.string.lstPleaseSelect));
 				this.add(nonSelectableItem);
 			}
 			
@@ -322,9 +322,9 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 				this.add(item); // Not using this.addAll(...) because it requires API level 11 (current minimum is 9)
 			
 			// If preSelect=true, but the field is optional...
-			if(parentItem.getField().isPreSelect() && parentItem.getField().getOptional() == Optionalness.ALWAYS)
+			if(parentItem.getField().isPreSelect() && parentItem.getField().isOptional())
 			{	// insert "null-selection" item such that "not answering" remains possible:
-				nullItem = MultiListItem.GetDummyItem(field, UNDO_SELECTION);
+				nullItem = MultiListItem.GetDummyItem(field, context.getString(R.string.lstUndoSelection));
 				this.add(nullItem);
 			}
 		}

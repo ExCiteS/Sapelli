@@ -74,7 +74,7 @@ public abstract class MediaField extends Field
 	 */
 	public int getMin()
 	{
-		return optional == Optionalness.ALWAYS ? 0 : 1; 
+		return optional ? 0 : 1; 
 	}
 	
 	/**
@@ -142,7 +142,8 @@ public abstract class MediaField extends Field
 	@Override
 	protected IntegerColumn createColumn(String name)
 	{
-		return new IntegerColumn(name, (optional != Optionalness.NEVER), (optional != Optionalness.NEVER ? 0 : 1), max);
+		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
+		return new IntegerColumn(name, colOptional, (colOptional ? 0 : 1), max);
 	}
 	
 	public int getCount(Record record)

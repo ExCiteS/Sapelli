@@ -324,7 +324,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 	
 	@Override
-	public Optionalness getOptional()
+	public boolean isOptional()
 	{
 		return root.optional;
 	}
@@ -367,10 +367,10 @@ public class ChoiceField extends Field implements DictionaryItem
 		}
 		else
 		{	
-			boolean opt = (optional != Optionalness.NEVER);
+			boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
 			
 			//Create column:
-			IntegerColumn col = new IntegerColumn(name, opt, 0, dictionary.size() - 1);
+			IntegerColumn col = new IntegerColumn(name, colOptional, 0, dictionary.size() - 1);
 			
 			// Add virtual columns to it:
 			//	Value String column:
@@ -382,7 +382,7 @@ public class ChoiceField extends Field implements DictionaryItem
 					return item.value;
 				}
 			}));
-			col.addVirtualVersion(StringColumn.ForCharacterCount(VALUE_VIRTUAL_COLOMN_TARGET_NAME, opt, Math.max(itemValueMapper.getMaxStringLength(), 1)), itemValueMapper);
+			col.addVirtualVersion(StringColumn.ForCharacterCount(VALUE_VIRTUAL_COLOMN_TARGET_NAME, colOptional, Math.max(itemValueMapper.getMaxStringLength(), 1)), itemValueMapper);
 			//	Image path column:
 			StringListMapper itemImgMapper = new StringListMapper(dictionary.serialise(new DictionarySerialiser<ChoiceField>()
 			{
@@ -392,7 +392,7 @@ public class ChoiceField extends Field implements DictionaryItem
 					return item.imageRelativePath;
 				}
 			}));
-			col.addVirtualVersion(StringColumn.ForCharacterCount(IMAGE_VIRTUAL_COLOMN_TARGET_NAME, opt, Math.max(itemImgMapper.getMaxStringLength(), 1)), itemImgMapper);
+			col.addVirtualVersion(StringColumn.ForCharacterCount(IMAGE_VIRTUAL_COLOMN_TARGET_NAME, colOptional, Math.max(itemImgMapper.getMaxStringLength(), 1)), itemImgMapper);
 			
 			// Return the column:
 			return col;

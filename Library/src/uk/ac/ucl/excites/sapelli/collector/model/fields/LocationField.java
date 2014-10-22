@@ -326,7 +326,15 @@ public class LocationField extends Field implements Timeoutable
 	@Override
 	protected LocationColumn createColumn(String name)
 	{
-		return new LocationColumn(name, (optional != Optionalness.NEVER), doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, false, storeProvider); // we never store time (for now)
+		return new LocationColumn(	name,
+									form.getColumnOptionalityAdvisor().getColumnOptionality(this),
+									doublePrecision,
+									storeAltitude,
+									storeBearing,
+									storeSpeed,
+									storeAccuracy,
+									false, // for now time is never stored (or rather transmited)
+									storeProvider);
 	}
 	
 	@Override

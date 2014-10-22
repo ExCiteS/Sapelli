@@ -28,7 +28,6 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.Next;
@@ -657,7 +656,7 @@ public abstract class Controller implements FieldVisitor
 				}
 				else
 				{	// Either the relatedForm did not save its record (i.e. it is now null), OR it doesn't meet the constraints
-					if(foreignKey != null || belongsTo.getOptional() == Optionalness.ALWAYS)
+					if(foreignKey != null || belongsTo.isOptional())
 						// Either we already have a (previously set) foreign key value, OR we don't need one because the field is optional
 						goForward(true); // continue to next field (keeping the currently stored foreign key if there is one, or keeping it blank if there is none)
 					

@@ -83,7 +83,7 @@ public class CheckBoxField extends Field
 	@Override
 	protected Column<?> createColumn(String name)
 	{
-		return new BooleanColumn(name, optional != Optionalness.NEVER);
+		return new BooleanColumn(name, form.getColumnOptionalityAdvisor().getColumnOptionality(this));
 	}
 
 	/* (non-Javadoc)

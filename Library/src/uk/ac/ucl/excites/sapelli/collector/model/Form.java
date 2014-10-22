@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
+import uk.ac.ucl.excites.sapelli.collector.util.ColumnOptionalityAdvisor;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.PrimaryKey;
@@ -108,6 +109,7 @@ public class Form
 	private boolean producesRecords = true;
 	private boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	private Schema schema;
+	private transient ColumnOptionalityAdvisor columnOptionalityAdvisor;
 
 	private transient List<String> warnings;
 	
@@ -650,8 +652,15 @@ public class Form
 	public boolean isProducesRecords()
 	{
 		if(producesRecords)
-			getSchema(); // make sure getSchema() is at least called once
+			getSchema(); // make sure getSchema()/initialiseStorage() is at least called once
 		return producesRecords;
+	}
+	
+	public ColumnOptionalityAdvisor getColumnOptionalityAdvisor()
+	{
+		if(columnOptionalityAdvisor == null)
+			columnOptionalityAdvisor = ColumnOptionalityAdvisor.For(this);
+		return columnOptionalityAdvisor;
 	}
 	
 	/**
@@ -669,7 +678,7 @@ public class Form
 		if(!producesRecords)
 			return;
 		if(schema == null)
-		{	
+		{
 			// Generate columns for user-defined top-level fields:
 			List<Column<?>> userDefinedColumns = new ArrayList<Column<?>>();
 			for(Field f : fields)

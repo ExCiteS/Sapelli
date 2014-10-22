@@ -67,6 +67,20 @@
     <string name="useAlternativeStorage">Try another&#8230;</string>
     <string name="insertSDcard">Retry current&#8230;</string>
     
+    <string name="txtNullModeCreate">&#8212; Touch to set &#8212;</string>
+	<string name="txtNullModeEdit">&#8212; Touch to edit &#8212;</string>
+	<string name="txtNullModeDisabled">(no value set)</string>
+    <string name="txtValidationErrorMissing">Non-optional field requires a value.</string>
+	<string name="txtValidationErrorShort">Minimum length of %d characters not reached.</string>
+	<string name="txtValidationErrorLong">Maximum length of %d characters exceeded.</string>
+	<string name="txtValidationErrorrPattern">Pattern mismatch</string>
+	<string name="txtValidationErrorInvalid">Invalid input.</string>
+	<string name="txtValidationErrorInvalidNumber">Invalid numeric input.</string>
+	<string name="txtValidationOptionalHint">To leave blank, hit backspace until cross appears.</string>
+	
+	<string name="lstPleaseSelect">&#8212; Please select &#8212;</string>
+	<string name="lstUndoSelection">&#8212; No selection &#8212;</string>
+    
     <string name="projectStorageAccessFail">Could not access project storage, due to: %s.</string>
     <string name="enableLocationProvider">Please enable location provider (%s) in device settings.</string>
     <string name="noDeviceID">Failed to generate a unique identifier for your device.</string>
