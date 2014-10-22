@@ -19,7 +19,6 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
-import java.util.Currency;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -635,7 +634,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		}
 	
 		/**
-		 * Class that holds the "plus" and "approve" buttons at the bottom of the gallery UI.
+		 * Class that holds the "capture more" button at the bottom of the gallery UI.
 		 * 
 		 * @author benelliott
 		 *
@@ -643,7 +642,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		private class GalleryButtonView extends MediaButtonView
 		{
 
-			private Item plusButton;
+			private Item captureMoreButton;
 
 			public GalleryButtonView(Context context)
 			{
@@ -653,7 +652,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				buttonAction = new Runnable() {
 					@Override
 					public void run() {
-							// plus button clicked, return to camera interface
+							// "capture more" button clicked, return to camera interface
 							if (!maxReached) {
 								goToCapture = true;
 								controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
@@ -664,25 +663,20 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			}
 
 			/**
-			 * Creates a "plus" button to be used in the picker, but makes it appear greyed out
+			 * Creates a "capture more" button to be used in the picker, but makes it appear greyed out
 			 * if the field's maximum number of attachments has been reached.
 			 * 
-			 * @return the "plus" button to be added to the UI.
+			 * @return the "capture more" button to be added to the UI.
 			 */
-			private Item createPlusButton() {
-				// creates a "normal" plus button and then disables it if max reached.
-				Item plusButton = null;
-				File plusImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getPlusButtonImageRelativePath());
-				if(FileHelpers.isReadableFile(plusImgFile))
-					plusButton = new FileImageItem(plusImgFile);
-				else
-					plusButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_plus_svg);
-				plusButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+			private Item createCaptureMoreButton() {
+				// creates a "normal" capture button and then disables it if max reached.
+
+				ImageItem captureButton = generateCaptureButton(getContext());
 
 				if (maxReached) {
 					// make button look unclickable
 					LayeredItem layeredItem = new LayeredItem();
-					layeredItem.addLayer(plusButton, false);
+					layeredItem.addLayer(captureButton, false);
 
 					// Make background of layered stack gray:
 					layeredItem.setBackgroundColor(CollectorView.COLOR_GRAY);
@@ -694,7 +688,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					return layeredItem;
 				}
 				else {
-					return plusButton;
+					return captureButton;
 				}
 			}
 
@@ -708,8 +702,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			protected void addButtons()
 			{
 				// Capture button:
-				plusButton = createPlusButton();
-				addButton(plusButton);
+				captureMoreButton = createCaptureMoreButton();
+				addButton(captureMoreButton);
 			}
 		}		
 	}

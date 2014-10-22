@@ -55,7 +55,6 @@ public abstract class MediaField extends Field
 	protected String captureButtonImageRelativePath;
 	protected String approveButtonImageRelativePath;
 	protected String discardButtonImageRelativePath;
-	protected String plusButtonImageRelativePath; // path for custom "add more" button in gallery
 	
 	//protected int min;
 	protected boolean useNativeApp;
@@ -195,22 +194,6 @@ public abstract class MediaField extends Field
 	public void setDiscardButtonImageRelativePath(String discardButtonImageRelativePath)
 	{
 		this.discardButtonImageRelativePath = discardButtonImageRelativePath;
-	}
-	
-	/**
-	 * @return the plusButtonImageRelativePath
-	 */
-	public String getPlusButtonImageRelativePath()
-	{
-		return plusButtonImageRelativePath;
-	}
-
-	/**
-	 * @param plusButtonImageRelativePath the plusButtonImageRelativePath to set
-	 */
-	public void setPlusButtonImageRelativePath(String plusButtonImageRelativePath)
-	{
-		this.plusButtonImageRelativePath = plusButtonImageRelativePath;
 	}
 
 	@Override
