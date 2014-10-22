@@ -236,7 +236,10 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			// Close the dialog
 			dialog.cancel();
 			releaseClick();
-			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+			if (field.isShowReview())
+				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+			else
+				controller.goForward(true);
 		}
 	}
 }

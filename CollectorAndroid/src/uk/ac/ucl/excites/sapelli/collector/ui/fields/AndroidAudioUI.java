@@ -161,7 +161,10 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 				attachMedia(captureFile);
 				captureFile = null;
 				recording = false;
-				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+				if (field.isShowReview())
+					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+				else
+					controller.goForward(true);
 			}
 		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
@@ -189,7 +192,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 				captureButton = new FileImageItem(captureImgFile);
 			else
 				// otherwise just use the default resource
-				captureButton = new ResourceImageItem(context.getResources(), R.drawable.audio_item_svg);
+				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_audio_capture_svg);
 		}
 		else {
 			// recording started, so present "stop" button instead

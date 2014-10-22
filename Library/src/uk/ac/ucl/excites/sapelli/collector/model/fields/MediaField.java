@@ -45,6 +45,7 @@ public abstract class MediaField extends Field
 
 	//static public final int DEFAULT_MIN = 0;
 	static public final int DEFAULT_MAX = 255; //column will use 1 byte (up to 255 items)
+	static public final boolean DEFAULT_SHOW_REVIEW = true;
 	static public final char FILENAME_ELEMENT_SEPARATOR = '_';
 	
 	// no longer used as filenames are now just ROT13-ed, but may be useful for backwards compatibility:
@@ -58,13 +59,15 @@ public abstract class MediaField extends Field
 	
 	//protected int min;
 	protected boolean useNativeApp;
+	protected boolean showReview;
 	protected int max;
 	protected ChoiceField disableChoice;
 	
 	public MediaField(Form form, String id, String caption)
 	{
 		super(form, id, caption);
-		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);		
+		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);
+		setShowReview(DEFAULT_SHOW_REVIEW);
 	}
 	
 	public abstract String getMediaType();
@@ -129,6 +132,21 @@ public abstract class MediaField extends Field
 	public void setUseNativeApp(boolean useNativeApp)
 	{
 		this.useNativeApp = useNativeApp;
+	}
+	
+	/**
+	 * @return whether or not the review screen should be shown after media is captured.
+	 */
+	public boolean isShowReview() {
+		return showReview;
+	}
+	
+	/**
+	 * Set whether or not the review screen should be shown after media is captured.
+	 * @param showReview
+	 */
+	public void setShowReview(boolean showReview) {
+		this.showReview = showReview;
 	}
 
 	/**

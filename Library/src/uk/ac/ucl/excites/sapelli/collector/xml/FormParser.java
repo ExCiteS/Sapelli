@@ -167,6 +167,7 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
 	static private final String ATTRIBUTE_BUTTON_COLUMN = "column";
 	static private final String ATTRIBUTE_MEDIA_MAX = "max";
+	static private final String ATTRIBUTE_MEDIA_REVIEW = "review";
 	static private final String ATTRIBUTE_TRIGGER_KEY = "key";
 	static private final String ATTRIBUTE_TRIGGER_KEYS = "keys";
 	static private final String ATTRIBUTE_TRIGGER_FIXED_TIMER = "fixedTimer";
@@ -374,6 +375,7 @@ public class FormParser extends SubtreeParser
 				newMediaField(photoField, attributes);
 				photoField.setUseNativeApp(attributes.getBoolean("useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP));
 				// Camera options (only used when useNativeApp=false):
+				photoField.setShowReview(attributes.getBoolean(ATTRIBUTE_MEDIA_REVIEW, MediaField.DEFAULT_SHOW_REVIEW));
 				photoField.setUseFrontFacingCamera(attributes.getBoolean("useFrontCamera", PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA));
 				String flashText = attributes.getValue("flash");
 				PhotoField.FlashMode flash = PhotoField.DEFAULT_FLASH_MODE;

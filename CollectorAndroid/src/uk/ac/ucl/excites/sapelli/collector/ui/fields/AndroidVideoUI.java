@@ -109,7 +109,10 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 				attachMedia(captureFile);
 				captureFile = null;
 				recording = false;
-				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+				if (field.isShowReview())
+					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+				else
+					controller.goForward(true);
 			}
 		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
