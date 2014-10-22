@@ -131,10 +131,11 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	}
 	
 	@Override
-	protected void updateControlStates(State[] newControlStates)
+    protected void updateControlStates(State[] newControlStates)
 	{
-		if(view == null)
+		if(view == null) {
 			return;
+		}
 		
 		// Update shown controlItems:
 		PickerAdapter adapter = view.getAdapter();

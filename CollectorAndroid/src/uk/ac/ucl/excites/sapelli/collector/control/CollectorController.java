@@ -23,8 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import com.crashlytics.android.Crashlytics;
-
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
@@ -55,6 +53,8 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
+
+import com.crashlytics.android.Crashlytics;
 
 /**
  * @author mstevens, Michalis Vitos, Julia
@@ -353,5 +353,4 @@ public class CollectorController extends Controller implements LocationListener,
 	{
 		return SystemClock.elapsedRealtime();
 	}
-
 }

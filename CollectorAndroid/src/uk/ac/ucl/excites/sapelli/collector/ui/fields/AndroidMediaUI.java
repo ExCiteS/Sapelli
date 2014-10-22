@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
@@ -326,6 +327,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		private void showReviewLayout() {
 			if (multipleCapturesAllowed && field.getCount(controller.getCurrentRecord()) > 0) {
 				controller.addCurrentFieldToHistory();
+				// remove the forward button on review:
+				ControlsUI.State[] newStates = {ControlsUI.State.SHOWN_ENABLED, ControlsUI.State.SHOWN_ENABLED, ControlsUI.State.HIDDEN};
+				collectorUI.getControlsUI().setControlStates(newStates);
 			}
 			if (getCurrentView() == reviewLayoutContainer) {
 				return;

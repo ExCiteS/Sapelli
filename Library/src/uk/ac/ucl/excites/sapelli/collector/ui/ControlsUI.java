@@ -95,6 +95,14 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	
 	protected abstract void updateForm(Form newForm);
 	
+	public void setControlStates(State[] newControlStates) {
+		if(!Arrays.equals(newControlStates, controlStates))
+		{
+			controlStates = newControlStates;
+			updateControlStates(controlStates);
+		}
+	}
+	
 	protected abstract void updateControlStates(State[] newControlStates);
 	
 	public void disable()

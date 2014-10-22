@@ -132,7 +132,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI = new AndroidControlsUI(controller, this);
 		View controlsView = controlsUI.getPlatformView();
 		controlsView.setId(BUTTONS_VIEW_ID);
-		this.addView(controlsView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+		this.addView(controlsView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));	
 	}
 
 	/**
