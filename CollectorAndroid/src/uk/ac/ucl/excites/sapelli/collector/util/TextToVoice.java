@@ -72,6 +72,17 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		else
 			tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
 	}
+	
+	public int getSpeechFile(String text, String filename) {
+		if (tts == null || !initialised) {
+			tts = new TextToSpeech(context, this);
+			return TextToSpeech.ERROR;
+		}
+		if(text == null || "".equals(text))
+			return tts.synthesizeToFile(DEFAULT_UNAVAILABLE_CONTENT, null, filename);
+		else
+			return tts.synthesizeToFile(text, null, filename);
+	}
 
 	public void stop()
 	{

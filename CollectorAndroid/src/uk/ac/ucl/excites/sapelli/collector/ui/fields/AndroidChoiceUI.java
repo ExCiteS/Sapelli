@@ -110,8 +110,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			choiceView.setEnabled(true);
 			
 			// Audio Feedback
-			audioController.playQuestion(choice);
-
+			//audioController.playQuestion(choice); TODO
+			audioController.playChoicePage(null, choice, pageView);
 			return (View) choiceView;
 		}
 	}

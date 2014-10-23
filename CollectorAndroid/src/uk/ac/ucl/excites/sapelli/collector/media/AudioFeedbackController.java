@@ -1,9 +1,12 @@
 package uk.ac.ucl.excites.sapelli.collector.media;
 
+import java.util.List;
+
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidChoiceUI.PageView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import android.content.Context;
 import android.view.View;
@@ -23,6 +26,16 @@ public class AudioFeedbackController
 		AudioFeedbackController.controller = controller;
 	}
 
+	public void playChoicePage(Context context, ChoiceField choice, PageView pageView) {
+		//TODO assumes sequential already
+		// play question:
+		playQuestion(choice);
+		// then play all possible answers, and animate them on the way:
+		List<ChoiceField> children  = choice.getChildren();
+		for (int i = 0; i < children.size(); i++) {
+			playAnswer(null, children.get(i), null);
+		}			
+	}
 	/**
 	 * Speaks aloud the description of a ChoiceField and animates the ChoiceField. The description used can be either audio file or text that uses Android's TTS
 	 * (Text-To-Speech) engine to read it aloud which is defined in the XML of a project.
@@ -59,7 +72,7 @@ public class AudioFeedbackController
 			}
 
 			// Apply an alpha animation to the long pressed view
-			ViewAnimator.shakeAnimation(context, choiceView);
+			//ViewAnimator.shakeAnimation(context, choiceView);
 		}
 	}
 

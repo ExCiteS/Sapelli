@@ -51,6 +51,7 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
+import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
 import com.crashlytics.android.Crashlytics;
@@ -124,11 +125,32 @@ public class CollectorController extends Controller implements LocationListener,
 	 */
 	public void textToVoice(String text)
 	{
-		if(textToVoice == null)
+		Log.d(TAG,"Text to voice: "+text);
+		if(textToVoice == null) {
+			Log.d(TAG,"Text to voice was null");
 			return;
-
-		textToVoice.speak(text);
+		}
+		File file = getTemporaryFile();
+		if (textToVoice.getSpeechFile(text, file.getAbsolutePath()) != TextToSpeech.SUCCESS) {
+			Log.e(TAG,"Error when trying to save synthesised speech to disk.");
+		}
+		playSound(file, true, true);
 		addLogLine("TEXT_TO_VOICE", text);
+	}
+	
+	/**
+	 * @return a temporary file into which synthesised speech can be saved, with the expectation that it will be
+	 * deleted after being played.
+	 */
+	private File getTemporaryFile() {
+		File tempFolder = this.getFileStorageProvider().getTempFolder(true);
+		int filename = 0;
+		File tempFile;
+		while ((tempFile = new File(tempFolder, Integer.toString(filename))).exists()) {
+			filename++;
+		}
+		Log.d(TAG,"Returning temporary file: "+tempFile.getAbsolutePath());
+		return tempFile;
 	}
 
 	/**
@@ -138,7 +160,8 @@ public class CollectorController extends Controller implements LocationListener,
 	 */
 	public void audioToVoice(File soundFile)
 	{
-		playSound(soundFile);
+		Log.d(TAG,"Audio to voice: "+soundFile.getAbsolutePath());
+		playSound(soundFile, true, false);
 		addLogLine("AUDIO_TO_VOICE", soundFile.getAbsolutePath());
 	}
 
@@ -146,7 +169,7 @@ public class CollectorController extends Controller implements LocationListener,
 	{
 		// Stop the Media Player
 		if(audioPlayer != null)
-			audioPlayer.stop();
+			audioPlayer.stopQueue();
 
 		// Stop the Android TTS (Text-To-Speech) Engine
 		if(textToVoice != null)
@@ -154,11 +177,23 @@ public class CollectorController extends Controller implements LocationListener,
 	}
 
 	@Override
-	protected void playSound(File soundFile)
+	protected void playSound(File soundFile) {
+		playSound(soundFile, false);
+	}
+	
+	protected void playSound(File soundFile, boolean queueSound) {
+		playSound(soundFile, false, false);
+	}
+	
+	protected void playSound(File soundFile, boolean queueSound, boolean deleteAfterPlaying)
 	{
 		if(audioPlayer == null)
 			audioPlayer = new AudioPlayer(activity.getBaseContext());
-		audioPlayer.play(soundFile);
+		if (queueSound) {
+			audioPlayer.enqueueAndPlay(soundFile, deleteAfterPlaying);
+		} else {
+			audioPlayer.playImmediate(soundFile);
+		}
 	}
 
 	@Override
@@ -304,6 +339,7 @@ public class CollectorController extends Controller implements LocationListener,
 
 	public void enableAudioFeedback()
 	{
+		Log.d(TAG,"Enable audio feedback...");
 		// Check if any of the forms has audio feedback enabled
 		for(Form f : project.getForms())
 		{
@@ -319,9 +355,9 @@ public class CollectorController extends Controller implements LocationListener,
 					// Enable Audio Files Feedback: nothing to do, audioPlayer instance will be creaded when playSound() is called
 
 					// Enable TTS Audio Feedback
-					if(textToVoice == null)
+					if(textToVoice == null) {
 						textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
-
+					}
 					break;
 
 				case NONE:
