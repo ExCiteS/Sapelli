@@ -73,9 +73,9 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	 */
 	public void removeMedia(File mediaAttachment)
 	{
-			controller.addLogLine("ATTACHMENT REMOVED", field.getID(), mediaAttachment.getName());
-			field.removeAttachmentFromRecord(mediaAttachment, controller.getCurrentRecord());
-			controller.discardAttachment(mediaAttachment);
+		controller.addLogLine("ATTACHMENT REMOVED", field.getID(), mediaAttachment.getName());
+		field.removeAttachmentFromRecord(mediaAttachment, controller.getCurrentRecord());
+		controller.discardAttachment(mediaAttachment);
 	}
 	
 	protected boolean showCreateButton()

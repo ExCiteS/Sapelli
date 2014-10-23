@@ -234,11 +234,12 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			cameraController.stopPreview();
 			// Close the dialog
 			dialog.cancel();
-			releaseClick();
 			if (field.isShowReview())
 				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 			else
 				controller.goForward(true);
+			// Important: release the click semaphore AFTER the field has been exited
+			releaseClick(); 
 		}
 	}
 }
