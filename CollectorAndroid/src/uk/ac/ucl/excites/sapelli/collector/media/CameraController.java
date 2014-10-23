@@ -33,6 +33,7 @@ import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.PictureCallback;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
+import android.os.Build;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -250,8 +251,9 @@ public class CameraController implements SurfaceHolder.Callback
 				// IMAGE orientation (as opposed to preview):
 				parameters.setRotation(ROTATION); // should match preview
 				
-				// recording hint:
-				parameters.setRecordingHint(recordingHint);
+				// recording hint (not supported below API level 14):
+				if (Build.VERSION.SDK_INT >= 14)
+					parameters.setRecordingHint(recordingHint);
 				
 				// Preview size:
 				Camera.Size previewSize = getBestPreviewSize(width, height, parameters);
