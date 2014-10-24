@@ -182,9 +182,14 @@ public class AudioPlayer
 		}
 	}
 
+	/**
+	 * Simple class that houses a file and whether or not it should be deleted.
+	 * @author benelliott
+	 *
+	 */
 	private class SoundFile {
-		File file;
-		boolean deleteAfterPlaying = false;
+		private File file;
+		private boolean deleteAfterPlaying = false;
 
 		SoundFile(File file, boolean deleteAfterPlaying) {
 			this.file = file;

@@ -132,11 +132,23 @@ public class CollectorController extends Controller implements LocationListener,
 			return;
 		}
 		File file = getTemporaryFile();
+		// QUEUE the text for synthesis (which is conducted asynchronously)
 		if (textToVoice.processSpeechToFile(text, file.getAbsolutePath()) != TextToSpeech.SUCCESS) {
 			Log.e(TAG,"Error when trying to save synthesised speech to disk.");
 		}
 
 	}
+	
+	/**
+	 * When a text synthesis job has been completed, add it to the play queue.
+	 */
+	@Override
+    public void onTextSynthesisCompleted(String text, String filepath) {
+		File soundFile = new File(filepath);
+		playSound(soundFile, true, true);
+		addLogLine("TEXT_TO_VOICE", text);
+    }
+
 	
 	/**
 	 * @return a temporary file into which synthesised speech can be saved, with the expectation that it will be
@@ -161,6 +173,7 @@ public class CollectorController extends Controller implements LocationListener,
 	public void audioToVoice(File soundFile)
 	{
 		Log.d(TAG,"Audio to voice: "+soundFile.getAbsolutePath());
+		// Play the audio in a queued fashion but do not delete the file afterwards:
 		playSound(soundFile, true, false);
 		addLogLine("AUDIO_TO_VOICE", soundFile.getAbsolutePath());
 	}
@@ -176,15 +189,31 @@ public class CollectorController extends Controller implements LocationListener,
 			textToVoice.stop();
 	}
 
+	/**
+	 * Play a sound immediately.
+	 */
 	@Override
 	protected void playSound(File soundFile) {
 		playSound(soundFile, false);
 	}
 	
+	/**
+	 * Play a sound, with it optionally being queued (i.e. if another queued sound is
+	 * currently being played, wait for that to finish before playing this one). 
+	 * @param soundFile
+	 * @param queueSound
+	 */
 	protected void playSound(File soundFile, boolean queueSound) {
-		playSound(soundFile, false, false);
+		playSound(soundFile, queueSound, false);
 	}
 	
+	/**
+	 * Play a sound, with it optionally being queued and optionally being deleted after playing
+	 * (useful if the file is only meant to be played once, e.g. a synthesised piece of text).
+	 * @param soundFile
+	 * @param queueSound
+	 * @param deleteAfterPlaying
+	 */
 	protected void playSound(File soundFile, boolean queueSound, boolean deleteAfterPlaying)
 	{
 		if(audioPlayer == null)
@@ -400,12 +429,5 @@ public class CollectorController extends Controller implements LocationListener,
 	{
 		return SystemClock.elapsedRealtime();
 	}
-
-	@Override
-    public void onTextSynthesisCompleted(String text, String filepath) {
-		File soundFile = new File(filepath);
-		playSound(soundFile, true, true);
-		addLogLine("TEXT_TO_VOICE", text);
-    }
 
 }
