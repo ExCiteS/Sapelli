@@ -40,6 +40,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.util.AudioPlayer;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
+import uk.ac.ucl.excites.sapelli.collector.util.TextSynthesisCompletedListener;
 import uk.ac.ucl.excites.sapelli.collector.util.TextToVoice;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
@@ -60,7 +61,7 @@ import com.crashlytics.android.Crashlytics;
  * @author mstevens, Michalis Vitos, Julia
  * 
  */
-public class CollectorController extends Controller implements LocationListener, OrientationListener
+public class CollectorController extends Controller implements LocationListener, OrientationListener, TextSynthesisCompletedListener
 {
 
 	// STATICS-------------------------------------------------------
@@ -131,11 +132,10 @@ public class CollectorController extends Controller implements LocationListener,
 			return;
 		}
 		File file = getTemporaryFile();
-		if (textToVoice.getSpeechFile(text, file.getAbsolutePath()) != TextToSpeech.SUCCESS) {
+		if (textToVoice.processSpeechToFile(text, file.getAbsolutePath()) != TextToSpeech.SUCCESS) {
 			Log.e(TAG,"Error when trying to save synthesised speech to disk.");
 		}
-		playSound(file, true, true);
-		addLogLine("TEXT_TO_VOICE", text);
+
 	}
 	
 	/**
@@ -357,6 +357,7 @@ public class CollectorController extends Controller implements LocationListener,
 					// Enable TTS Audio Feedback
 					if(textToVoice == null) {
 						textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
+						textToVoice.setOnTextSynthesisCompletedListener(this);
 					}
 					break;
 
@@ -399,5 +400,12 @@ public class CollectorController extends Controller implements LocationListener,
 	{
 		return SystemClock.elapsedRealtime();
 	}
+
+	@Override
+    public void onTextSynthesisCompleted(String text, String filepath) {
+		File soundFile = new File(filepath);
+		playSound(soundFile, true, true);
+		addLogLine("TEXT_TO_VOICE", text);
+    }
 
 }

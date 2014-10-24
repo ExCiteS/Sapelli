@@ -1,9 +1,12 @@
 package uk.ac.ucl.excites.sapelli.collector.util;
 
+import java.util.HashMap;
 import java.util.Locale;
 
 import android.content.Context;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.TextToSpeech.Engine;
+import android.speech.tts.UtteranceProgressListener;
 
 /**
  * Class that uses the Android TTS (Text-To-Speech) Engine to speak a given text
@@ -11,7 +14,7 @@ import android.speech.tts.TextToSpeech;
  * @author Michalis Vitos
  *
  */
-public class TextToVoice implements TextToSpeech.OnInitListener
+public class TextToVoice extends UtteranceProgressListener implements TextToSpeech.OnInitListener
 {
 	public static final Locale DEFAULT_LOCALE = Locale.UK;
 	public static final String DEFAULT_UNAVAILABLE_CONTENT = "Content not available";
@@ -20,6 +23,8 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 	private Locale locale;
 	private TextToSpeech tts;
 	private boolean initialised = false;
+	private HashMap<String, String> queuedTTS;
+	private TextSynthesisCompletedListener completedListener;
 
 	public TextToVoice(Context context)
 	{
@@ -73,15 +78,23 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 			tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
 	}
 	
-	public int getSpeechFile(String text, String filename) {
+	public int processSpeechToFile(String text, String filepath) {
 		if (tts == null || !initialised) {
 			tts = new TextToSpeech(context, this);
 			return TextToSpeech.ERROR;
 		}
 		if(text == null || "".equals(text))
-			return tts.synthesizeToFile(DEFAULT_UNAVAILABLE_CONTENT, null, filename);
-		else
-			return tts.synthesizeToFile(text, null, filename);
+			return TextToSpeech.ERROR;
+			//return tts.synthesizeToFile(DEFAULT_UNAVAILABLE_CONTENT, null, filename);
+		else {
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put(Engine.KEY_PARAM_UTTERANCE_ID, text);
+			if (queuedTTS == null)
+				queuedTTS = new HashMap<String, String>();
+			queuedTTS.put(text, filepath);
+			tts.setOnUtteranceProgressListener(this);
+			return tts.synthesizeToFile(text, params, filepath);
+		}
 	}
 
 	public void stop()
@@ -99,4 +112,29 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 			tts = null;
 		}
 	}
+	
+	public void setOnTextSynthesisCompletedListener(TextSynthesisCompletedListener completedListener) {
+		this.completedListener = completedListener;
+	}
+
+	@Override
+    public void onDone(String utteranceId) {
+	    String filepath = queuedTTS.get(utteranceId);
+	    if (filepath != null) {
+	    	if (completedListener != null)
+	    		completedListener.onTextSynthesisCompleted(utteranceId, filepath);
+	    }
+    }
+
+	@Override
+    public void onStart(String utteranceId) {
+	    // TODO Auto-generated method stub
+	    
+    }
+
+	@Override
+    public void onError(String utteranceId) {
+	    // TODO Auto-generated method stub
+	    
+    }
 }

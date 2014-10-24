@@ -95,37 +95,63 @@ public class AudioPlayer
 	{
 		stopImmediate();
 		stopQueue();
-		immediatePlayer = null;
-		queuePlayer = null;
+		immediatePlayer = null; //TODO move this?
 	}
 
 	/**
 	 * Play all items that have been queued.
 	 */
 	public void playQueue() {
-		if (initialiseQueuePlayer()) {
-			Log.d(TAG,"Playing...");
+		if (setNextQueueItem()) {
+			// if queue is not empty...
+			
+			// set player to play next queue item on completion:
 			queuePlayer.setOnCompletionListener(new OnCompletionListener() {
 				@Override
 				public void onCompletion(MediaPlayer mp) {
-					Log.d("TAG","On completion. Queue length: "+mediaQueue.size());
+					// remove file from disk if told to:
 					if (mediaQueue.get(0).deleteAfterPlaying)
 						mediaQueue.get(0).file.delete();
+					// remove item from queue:
 					mediaQueue.remove(0);
-					initialiseQueuePlayer();
-					queuePlayer.start();
+					Log.d("TAG","On completion. Queue length: "+mediaQueue.size());
+					// set player's data source:
+					if (setNextQueueItem())
+						// if queue not empty, play next item:
+						queuePlayer.start();
 				}
 			});
-			queuePlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+			
+			// start playing from the queue:
 			queuePlayer.start();
 		}
 	}
 	
-	public void playQueue2() {
-		while (queuePlaying) {
-			// TODO
+	/**
+	 * Sets the queue media player's data source to the next item in the queue, if it exists.
+	 * @return true if the data source was successfully set as the next item in the queue, false otherwise.
+	 */
+	private boolean setNextQueueItem() {
+		if (!mediaQueue.isEmpty()) {
+			SoundFile nextSound = mediaQueue.get(0);
+			Log.d(TAG,"Setting queue player's data source to: "+nextSound.file.getAbsolutePath());
+			try {
+				if (queuePlayer == null) {
+					queuePlayer = MediaPlayer.create(context, Uri.fromFile(nextSound.file));
+					queuePlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+				}
+				else {
+					queuePlayer.reset(); // reset to idle state
+					queuePlayer.setDataSource(context, Uri.fromFile(nextSound.file));
+					queuePlayer.prepare();
+				}
+            } catch (Exception e) {
+            	Log.e(TAG,"Error when trying to play media file: "+mediaQueue.get(0).file.getAbsolutePath(), e);
+            	return false;
+            }
+			return true;
 		}
-			
+		return false;
 	}
 
 	/**
@@ -136,34 +162,8 @@ public class AudioPlayer
 			queuePlaying = false;
 			queuePlayer.stop();
 			queuePlayer.release();
+			queuePlayer = null;
 		}
-	}
-
-	private boolean initialiseQueuePlayer() {
-		if (!mediaQueue.isEmpty()) {
-			Log.d(TAG,"Initialising queue player from file: "+mediaQueue.get(0).file.getAbsolutePath());
-			try {
-				if (queuePlayer == null)
-					queuePlayer = MediaPlayer.create(context, Uri.fromFile(mediaQueue.get(0).file));
-				else
-					queuePlayer.setDataSource(context, Uri.fromFile(mediaQueue.get(0).file));
-            } catch (IllegalArgumentException e) {
-	            // TODO Auto-generated catch block
-	            e.printStackTrace();
-            } catch (SecurityException e) {
-	            // TODO Auto-generated catch block
-	            e.printStackTrace();
-            } catch (IllegalStateException e) {
-	            // TODO Auto-generated catch block
-	            e.printStackTrace();
-            } catch (IOException e) {
-	            // TODO Auto-generated catch block
-	            e.printStackTrace();
-            }
-			queuePlayer = MediaPlayer.create(context, Uri.fromFile(mediaQueue.get(0).file));
-			return true;
-		}
-		return false;
 	}
 
 	/**
