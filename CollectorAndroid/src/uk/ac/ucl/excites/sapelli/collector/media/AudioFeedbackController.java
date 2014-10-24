@@ -1,6 +1,10 @@
 package uk.ac.ucl.excites.sapelli.collector.media;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.Semaphore;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
@@ -8,34 +12,95 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidChoiceUI.PageView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.util.TextToVoice;
 import android.content.Context;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.TextToSpeech.Engine;
+import android.speech.tts.UtteranceProgressListener;
+import android.util.Log;
 import android.view.View;
 
 /**
  * Controller for the AudioFeedback Feature
  * 
- * @author Michalis Vitos
+ * @author Michalis Vitos, benelliott
  *
  */
-public class AudioFeedbackController
+public class AudioFeedbackController extends UtteranceProgressListener
 {
-	private static CollectorController controller;
+	private static CollectorController controller; //TODO why static?
+	private static String TAG = "AudioFeedbackController";
+	private TextToVoice textToVoice;
+	private Locale locale;
+	private ArrayList<AudioFeedbackDescription> answersQueue;
 
 	public AudioFeedbackController(CollectorController controller)
 	{
 		AudioFeedbackController.controller = controller;
+		locale = controller.activity.getResources().getConfiguration().locale;
+		
+		textToVoice = new TextToVoice(controller.activity.getBaseContext(), locale);
 	}
+	
+	/**
+	 * Speaks aloud the description of a ChoiceField used to ask the question. The description used can be either audio file or text that uses Android's TTS
+	 * (Text-To-Speech) engine to read it aloud which is defined in the XML of a project.
+	 * 
+	 * @param choice
+	 */
+	public void playQuestion(Context context, ChoiceField choice, PageView pageView)
+	{
+		Log.d(TAG,"Play question");
+		// Check whether AudioFeedback is supported for the current form
+		AudioFeedback audioFeedback = controller.getCurrentForm().getAudioFeedback();
 
-	public void playChoicePage(Context context, ChoiceField choice, PageView pageView) {
-		//TODO assumes sequential already
-		// play question:
-		playQuestion(choice);
-		// then play all possible answers, and animate them on the way:
-		List<ChoiceField> children  = choice.getChildren();
-		for (int i = 0; i < children.size(); i++) {
-			playAnswer(null, children.get(i), null);
-		}			
+		if(audioFeedback != null)
+		{
+			AudioFeedbackDescription question;
+			switch(audioFeedback)
+			{
+			case LONG_CLICK:
+				// play question:
+				question = AudioFeedbackDescription.afdFromChoiceField(choice, textToVoice, true);
+				question.play();
+				break;
+
+			case SEQUENTIAL:
+				answersQueue = new ArrayList<AudioFeedbackDescription>();
+				// add question to queue:
+				question = AudioFeedbackDescription.afdFromChoiceField(choice, textToVoice, true);
+				answersQueue.add(question);
+				
+				// then add all possible answers:
+				List<ChoiceField> children  = choice.getChildren();
+				for (int i = 0; i < children.size(); i++) {
+					answersQueue.add(AudioFeedbackDescription.afdFromChoiceField(children.get(i), textToVoice, false));
+				}
+				// play all items in the queue. Do this on a new thread because it will be blocked when
+				// it encounters an item whose TTS has not yet been synthesised
+				Thread playerThread = new Thread() {
+					@Override
+					public void run() {
+						while (!answersQueue.isEmpty()) {
+							AudioFeedbackDescription nextAnswer = answersQueue.remove(0);
+							nextAnswer.play();
+							if (nextAnswer.tts) {
+								// if item was TTS, delete its temporary file now it has been played:
+								nextAnswer.file.delete();
+							}
+						}
+					}
+				};
+				playerThread.start();
+				break;
+
+			case NONE:
+				break;
+			}
+		}
 	}
+	
+
 	/**
 	 * Speaks aloud the description of a ChoiceField and animates the ChoiceField. The description used can be either audio file or text that uses Android's TTS
 	 * (Text-To-Speech) engine to read it aloud which is defined in the XML of a project.
@@ -45,6 +110,7 @@ public class AudioFeedbackController
 	 */
 	public void playAnswer(Context context, ChoiceField choice, View choiceView)
 	{
+		Log.d(TAG,"Play answer");
 		// Check whether AudioFeedback is supported for the current form
 		AudioFeedback audioFeedback = controller.getCurrentForm().getAudioFeedback();
 
@@ -55,16 +121,8 @@ public class AudioFeedbackController
 			case LONG_CLICK:
 			case SEQUENTIAL:
 
-				// If the choice has an audio, pass that audio to the Media Player
-				if(choice.hasAudioAnswerDesc())
-					controller.audioToVoice(controller.getProject().getSoundFile(controller.getFileStorageProvider(), choice.getAnswerDesc()));
-				else if(choice.getAnswerDesc() != null)
-					// Enable TTS Audio Feedback
-					controller.textToVoice(choice.getAnswerDesc());
-				else
-					// Enable TTS Audio Feedback
-					controller.textToVoice(choice.getAltText());
-				break;
+				AudioFeedbackDescription answer = AudioFeedbackDescription.afdFromChoiceField(choice, textToVoice, false);
+				answer.play();
 
 			case NONE:
 				controller.addLogLine("LONG_CLICK", "LongClick on " + choice.getAltText() + " but AudioFeedback is disabled");
@@ -72,7 +130,7 @@ public class AudioFeedbackController
 			}
 
 			// Apply an alpha animation to the long pressed view
-			//ViewAnimator.shakeAnimation(context, choiceView);
+			//ViewAnimator.shakeAnimation(context, choiceView); TODO
 		}
 	}
 
@@ -96,13 +154,14 @@ public class AudioFeedbackController
 			case SEQUENTIAL:
 
 				// TODO: decide TTS / MediaPlayer
+				
 
 				// If the choice has an audio, pass that audio to the Media Player
 				if(false)
 					return;
 				else
 					// Enable TTS Audio Feedback
-					controller.textToVoice(controlItem.getDescription());
+					textToVoice(controlItem.getDescription());
 				break;
 
 			case NONE:
@@ -115,40 +174,126 @@ public class AudioFeedbackController
 		}
 	}
 
+
 	/**
-	 * Speaks aloud the description of a ChoiceField used to ask the question. The description used can be either audio file or text that uses Android's TTS
-	 * (Text-To-Speech) engine to read it aloud which is defined in the XML of a project.
+	 * Use the Android TTS (Text-To-Speech) Engine to speak the text
 	 * 
-	 * @param choice
+	 * @param text
 	 */
-	public void playQuestion(ChoiceField choice)
+	public void textToVoice(String text)
 	{
-		// Check whether AudioFeedback is supported for the current form
-		AudioFeedback audioFeedback = controller.getCurrentForm().getAudioFeedback();
+		Log.d(TAG,"Text to voice: "+text);
+		if(textToVoice == null) {
+			Log.d(TAG,"Text to voice was null");
+			return;
+		}
+		File file = controller.getTemporaryFile();
+		// QUEUE the text for synthesis (which is conducted asynchronously)
+		if (textToVoice.processSpeechToFile(text, file.getAbsolutePath()) != TextToSpeech.SUCCESS) {
+			Log.e(TAG,"Error when trying to save synthesised speech to disk.");
+		}
 
-		if(audioFeedback != null)
-		{
-			switch(audioFeedback)
-			{
-			case LONG_CLICK:
+	}
 
-				// If the choice has an audio, pass that audio to the Media Player
-				if(choice.hasQuestionDesc())
-					controller.audioToVoice(controller.getProject().getSoundFile(controller.getFileStorageProvider(), choice.getQuestionDesc()));
-				else if(choice.getQuestionDesc() != null)
-					// Enable TTS Audio Feedback
-					controller.textToVoice(choice.getQuestionDesc());
-				break;
+	public void stopAudioFeedback()
+	{
+		// Stop the Media Player
+		controller.stopAudio();
 
-			case SEQUENTIAL:
+		// Stop the Android TTS (Text-To-Speech) Engine
+		if(textToVoice != null)
+			textToVoice.stop();
+	}
 
-				// TODO Sequentially navigate through the items
+	public void destroy() {
+		if (textToVoice != null) {
+			textToVoice.destroy();
+		}
+		textToVoice = null;
+	}
+	
+	@Override
+    public void onDone(String utteranceId) {
+		// mark the appropriate 
+	    for (AudioFeedbackDescription answer : answersQueue) {
+	    	if (answer.text == utteranceId)
+	    		answer.complete();
+	    }
+    }
+	
+	@Override
+    public void onStart(String utteranceId) {
+	    // nothing to do
+    }
 
-				break;
-
-			case NONE:
-				break;
+	@Override
+    public void onError(String utteranceId) {
+		// nothing to do
+    }
+	
+	private static class AudioFeedbackDescription {
+		
+		private String text = "";
+		private Semaphore completedSemaphore = new Semaphore(0);
+		private boolean tts;
+		private File file;
+		
+		AudioFeedbackDescription(File soundFile) {
+			this.file = soundFile;
+			tts = false;
+			// can play straight away, reflect this by releasing a permit to the semaphore:
+			completedSemaphore.release();
+		}
+		
+		AudioFeedbackDescription(String text, TextToVoice ttv) {
+			this.text = text;
+			tts = true;
+			file = controller.getTemporaryFile();
+			if (ttv.processSpeechToFile(text, file.getAbsolutePath()) == TextToSpeech.ERROR)  {
+				completedSemaphore.release(); // processing has failed so skip this file
 			}
 		}
+		
+		private static AudioFeedbackDescription afdFromChoiceField(ChoiceField choice, TextToVoice ttv, boolean question) {
+			if (question) {
+				if(choice.hasAudioQuestionDesc())
+					return new AudioFeedbackDescription(controller.getProject().getSoundFile(controller.getFileStorageProvider(),choice.getAnswerDesc()));
+				else if(choice.getQuestionDesc() != null)
+					// Enable TTS Audio Feedback
+					return new AudioFeedbackDescription(choice.getQuestionDesc(), ttv);
+				else
+					// Enable TTS Audio Feedback
+					return new AudioFeedbackDescription(choice.getAltText(), ttv);
+			}
+			else {
+					if(choice.hasAudioAnswerDesc())
+					return new AudioFeedbackDescription(controller.getProject().getSoundFile(controller.getFileStorageProvider(),choice.getAnswerDesc()));
+				else if(choice.getAnswerDesc() != null)
+					// Enable TTS Audio Feedback
+					return new AudioFeedbackDescription(choice.getAnswerDesc(), ttv);
+				else
+					// Enable TTS Audio Feedback
+					return new AudioFeedbackDescription(choice.getAltText(), ttv);
+			}
+		}
+		
+		private void complete() {
+			if (tts) {
+				// reflect that the TTS synthesis job is complete by releasing the semaphore, thus awakening the player thread
+				completedSemaphore.release();
+			}
+		}
+		
+		private void play() {
+			try {
+				Log.d(TAG,"About to try to acquire playing semaphore...");
+	            completedSemaphore.acquire();
+            } catch (InterruptedException e) {
+	            e.printStackTrace();
+            }
+			Log.d(TAG,"Semaphore acquired, playing sound");
+			controller.playSound(file, true);   
+		}
+		
 	}
 }

@@ -73,7 +73,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		super(choice, controller, collectorView);
 		
 		this.controller = controller;
-		this.audioController = new AudioFeedbackController(controller);
+		this.audioController = controller.getAudioFeedbackController();
 		this.choice = choice;
 	}
 
@@ -110,8 +110,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			choiceView.setEnabled(true);
 			
 			// Audio Feedback
-			//audioController.playQuestion(choice); TODO
-			audioController.playChoicePage(null, choice, pageView);
+			audioController.playQuestion(null, choice, pageView);
 			return (View) choiceView;
 		}
 	}
@@ -123,7 +122,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			return;
 		
 		// Stop the Audio Feedback
-		controller.stopAudioFeedback();
+		if (audioController != null)
+			audioController.stopAudioFeedback();
 
 		// Task to perform after animation has finished:
 		Runnable action = new Runnable()

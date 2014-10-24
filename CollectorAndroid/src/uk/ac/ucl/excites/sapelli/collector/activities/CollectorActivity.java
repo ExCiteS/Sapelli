@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
-import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.content.Context;
@@ -207,9 +205,6 @@ public class CollectorActivity extends ProjectActivity
 			// Show demo disclaimer if needed:
 			if(app.getBuildInfo().isDemoBuild())
 				showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
-			
-			// Enable audio feedback
-			controller.enableAudioFeedback();
 		}
 	}
 
@@ -457,9 +452,9 @@ public class CollectorActivity extends ProjectActivity
 			//Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
 
-		// Release audio feedback resources
+		// Release audio resources
 		if(controller != null)
-			controller.disableAudioFeedback();
+			controller.destroyAudio();
 
 		// super:
 		super.onPause();

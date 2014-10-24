@@ -173,7 +173,7 @@ public class ChoiceField extends Field implements DictionaryItem
 		this.questionDesc = questionDesc;
 	}
 
-	public boolean hasQuestionDesc()
+	public boolean hasAudioQuestionDesc()
 	{
 		return questionDesc != null && FileHelpers.isAudioFileName(questionDesc);
 	}

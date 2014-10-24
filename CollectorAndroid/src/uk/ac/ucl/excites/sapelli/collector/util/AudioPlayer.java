@@ -24,7 +24,7 @@ public class AudioPlayer
 
 	private Context context;
 	private MediaPlayer immediatePlayer;
-	private ArrayList<SoundFile> mediaQueue;
+	private ArrayList<File> mediaQueue;
 	private MediaPlayer queuePlayer;
 	private boolean queuePlaying = false;
 
@@ -109,9 +109,6 @@ public class AudioPlayer
 			queuePlayer.setOnCompletionListener(new OnCompletionListener() {
 				@Override
 				public void onCompletion(MediaPlayer mp) {
-					// remove file from disk if told to:
-					if (mediaQueue.get(0).deleteAfterPlaying)
-						mediaQueue.get(0).file.delete();
 					// remove item from queue:
 					mediaQueue.remove(0);
 					Log.d("TAG","On completion. Queue length: "+mediaQueue.size());
@@ -133,21 +130,23 @@ public class AudioPlayer
 	 */
 	private boolean setNextQueueItem() {
 		if (!mediaQueue.isEmpty()) {
-			SoundFile nextSound = mediaQueue.get(0);
-			Log.d(TAG,"Setting queue player's data source to: "+nextSound.file.getAbsolutePath());
+			File nextSound = mediaQueue.get(0);
+			Log.d(TAG,"Setting queue player's data source to: "+nextSound.getAbsolutePath());
 			try {
 				if (queuePlayer == null) {
-					queuePlayer = MediaPlayer.create(context, Uri.fromFile(nextSound.file));
+					queuePlayer = MediaPlayer.create(context, Uri.fromFile(nextSound));
 					queuePlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 				}
 				else {
 					queuePlayer.reset(); // reset to idle state
-					queuePlayer.setDataSource(context, Uri.fromFile(nextSound.file));
+					queuePlayer.setDataSource(context, Uri.fromFile(nextSound));
 					queuePlayer.prepare();
 				}
             } catch (Exception e) {
-            	Log.e(TAG,"Error when trying to play media file: "+mediaQueue.get(0).file.getAbsolutePath(), e);
-            	return false;
+            	Log.e(TAG,"Error when trying to play media file: "+mediaQueue.get(0).getAbsolutePath(), e);
+            	// remove this file from the queue and try again:
+            	mediaQueue.remove(0);
+            	return setNextQueueItem();
             }
 			return true;
 		}
@@ -170,31 +169,15 @@ public class AudioPlayer
 	 * Add a new media file to the queue of files to be played.
 	 * @param mediaFile
 	 */
-	public void enqueueAndPlay(File mediaFile, boolean deleteAfterPlaying) {
+	public void enqueueAndPlay(File mediaFile) {
 		Log.d(TAG,"Enqueuing: "+mediaFile.getAbsolutePath());
 		if (mediaQueue == null) {
-			mediaQueue = new ArrayList<SoundFile>();
+			mediaQueue = new ArrayList<File>();
 		}
-		mediaQueue.add(new SoundFile(mediaFile, deleteAfterPlaying));
+		mediaQueue.add(mediaFile);
 		if (!queuePlaying) {
 			playQueue();
 			queuePlaying = true;
 		}
 	}
-
-	/**
-	 * Simple class that houses a file and whether or not it should be deleted.
-	 * @author benelliott
-	 *
-	 */
-	private class SoundFile {
-		private File file;
-		private boolean deleteAfterPlaying = false;
-
-		SoundFile(File file, boolean deleteAfterPlaying) {
-			this.file = file;
-			this.deleteAfterPlaying = deleteAfterPlaying;
-		}
-	}
-
 }

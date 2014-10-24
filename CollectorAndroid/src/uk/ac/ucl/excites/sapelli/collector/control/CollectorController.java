@@ -30,8 +30,7 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -40,8 +39,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.util.AudioPlayer;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
-import uk.ac.ucl.excites.sapelli.collector.util.TextSynthesisCompletedListener;
-import uk.ac.ucl.excites.sapelli.collector.util.TextToVoice;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.types.Orientation;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
@@ -52,7 +49,6 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
-import android.speech.tts.TextToSpeech;
 import android.util.Log;
 
 import com.crashlytics.android.Crashlytics;
@@ -61,7 +57,7 @@ import com.crashlytics.android.Crashlytics;
  * @author mstevens, Michalis Vitos, Julia
  * 
  */
-public class CollectorController extends Controller implements LocationListener, OrientationListener, TextSynthesisCompletedListener
+public class CollectorController extends Controller implements LocationListener, OrientationListener
 {
 
 	// STATICS-------------------------------------------------------
@@ -76,9 +72,9 @@ public class CollectorController extends Controller implements LocationListener,
 	private Location currentBestLocation = null;
 	private OrientationSensor orientationSensor;
 	private long deviceIDHash;
-
 	private AudioPlayer audioPlayer;
-	private TextToVoice textToVoice;
+	private AudioFeedbackController audioController;
+
 
 	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider, CollectorActivity activity)
 	{
@@ -119,42 +115,13 @@ public class CollectorController extends Controller implements LocationListener,
 		}
 	}
 
-	/**
-	 * Use the Android TTS (Text-To-Speech) Engine to speak the text
-	 * 
-	 * @param text
-	 */
-	public void textToVoice(String text)
-	{
-		Log.d(TAG,"Text to voice: "+text);
-		if(textToVoice == null) {
-			Log.d(TAG,"Text to voice was null");
-			return;
-		}
-		File file = getTemporaryFile();
-		// QUEUE the text for synthesis (which is conducted asynchronously)
-		if (textToVoice.processSpeechToFile(text, file.getAbsolutePath()) != TextToSpeech.SUCCESS) {
-			Log.e(TAG,"Error when trying to save synthesised speech to disk.");
-		}
 
-	}
-	
-	/**
-	 * When a text synthesis job has been completed, add it to the play queue.
-	 */
-	@Override
-    public void onTextSynthesisCompleted(String text, String filepath) {
-		File soundFile = new File(filepath);
-		playSound(soundFile, true, true);
-		addLogLine("TEXT_TO_VOICE", text);
-    }
 
-	
 	/**
 	 * @return a temporary file into which synthesised speech can be saved, with the expectation that it will be
 	 * deleted after being played.
 	 */
-	private File getTemporaryFile() {
+	public File getTemporaryFile() {
 		File tempFolder = this.getFileStorageProvider().getTempFolder(true);
 		int filename = 0;
 		File tempFile;
@@ -166,30 +133,6 @@ public class CollectorController extends Controller implements LocationListener,
 	}
 
 	/**
-	 * Use Media Player to play a given audio file + logging
-	 * 
-	 * @param soundFile
-	 */
-	public void audioToVoice(File soundFile)
-	{
-		Log.d(TAG,"Audio to voice: "+soundFile.getAbsolutePath());
-		// Play the audio in a queued fashion but do not delete the file afterwards:
-		playSound(soundFile, true, false);
-		addLogLine("AUDIO_TO_VOICE", soundFile.getAbsolutePath());
-	}
-
-	public void stopAudioFeedback()
-	{
-		// Stop the Media Player
-		if(audioPlayer != null)
-			audioPlayer.stopQueue();
-
-		// Stop the Android TTS (Text-To-Speech) Engine
-		if(textToVoice != null)
-			textToVoice.stop();
-	}
-
-	/**
 	 * Play a sound immediately.
 	 */
 	@Override
@@ -197,32 +140,45 @@ public class CollectorController extends Controller implements LocationListener,
 		playSound(soundFile, false);
 	}
 	
+	
 	/**
 	 * Play a sound, with it optionally being queued (i.e. if another queued sound is
 	 * currently being played, wait for that to finish before playing this one). 
 	 * @param soundFile
 	 * @param queueSound
 	 */
-	protected void playSound(File soundFile, boolean queueSound) {
-		playSound(soundFile, queueSound, false);
-	}
+
 	
 	/**
-	 * Play a sound, with it optionally being queued and optionally being deleted after playing
-	 * (useful if the file is only meant to be played once, e.g. a synthesised piece of text).
+	 * Play a sound, with it optionally being queued.
 	 * @param soundFile
 	 * @param queueSound
-	 * @param deleteAfterPlaying
 	 */
-	protected void playSound(File soundFile, boolean queueSound, boolean deleteAfterPlaying)
+	public void playSound(File soundFile, boolean queueSound)
 	{
+		Log.d(TAG,"Playing sound: "+soundFile.getAbsolutePath());
 		if(audioPlayer == null)
 			audioPlayer = new AudioPlayer(activity.getBaseContext());
 		if (queueSound) {
-			audioPlayer.enqueueAndPlay(soundFile, deleteAfterPlaying);
+			audioPlayer.enqueueAndPlay(soundFile);
 		} else {
 			audioPlayer.playImmediate(soundFile);
 		}
+	}
+	
+	public void stopAudio() {
+		//TODO
+		if(audioPlayer != null)
+			audioPlayer.stopQueue();
+	}
+	
+	public void destroyAudio() {
+		if(audioPlayer != null)
+			audioPlayer.destroy();
+		if (audioController != null)
+			audioController.destroy();
+		audioPlayer = null;
+		audioController = null;
 	}
 
 	@Override
@@ -366,47 +322,6 @@ public class CollectorController extends Controller implements LocationListener,
 		activity.finish();
 	}
 
-	public void enableAudioFeedback()
-	{
-		Log.d(TAG,"Enable audio feedback...");
-		// Check if any of the forms has audio feedback enabled
-		for(Form f : project.getForms())
-		{
-			final AudioFeedback audioFeedback = f.getAudioFeedback();
-
-			if(audioFeedback != null)
-			{
-				switch(audioFeedback)
-				{
-				case LONG_CLICK:
-				case SEQUENTIAL:
-
-					// Enable Audio Files Feedback: nothing to do, audioPlayer instance will be creaded when playSound() is called
-
-					// Enable TTS Audio Feedback
-					if(textToVoice == null) {
-						textToVoice = new TextToVoice(activity.getBaseContext(), activity.getResources().getConfiguration().locale);
-						textToVoice.setOnTextSynthesisCompletedListener(this);
-					}
-					break;
-
-				case NONE:
-				}
-			}
-		}
-	}
-
-	public void disableAudioFeedback()
-	{
-		// Release the Media Player
-		if(audioPlayer != null)
-			audioPlayer.destroy();
-
-		// Release the Android TTS (Text-To-Speech) Engine
-		if(textToVoice != null)
-			textToVoice.destroy();
-	}
-
 	@Override
 	protected void showError(String errorMsg, boolean exit)
 	{
@@ -428,6 +343,12 @@ public class CollectorController extends Controller implements LocationListener,
 	protected long getElapsedMillis()
 	{
 		return SystemClock.elapsedRealtime();
+	}
+	
+	public AudioFeedbackController getAudioFeedbackController() {
+		if (audioController == null)
+			audioController = new AudioFeedbackController(this);
+		return audioController;
 	}
 
 }
