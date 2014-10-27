@@ -506,6 +506,8 @@ public abstract class Controller implements FieldVisitor
 		// 	Deal with leaves:
 		if(cf.isLeaf())
 			return false; // this should never happen
+		// Add the choice options to the log files
+		addLogLine("CHOICE_OPTIONS", cf.getChildren().toString());
 		// 	The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
 		for(ChoiceField child : cf.getChildren())
 			if(IsFieldEnabled(currFormSession, child))

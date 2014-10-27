@@ -36,7 +36,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
 public class Logger
 {
 	
-	public static final String FIELD_SEPARATOR = "; ";
+	public static final String FIELD_SEPARATOR = ";";
 	public static final String LOG_EXTENSION = ".log";
 	
 	private DateTimeFormatter formatter;
@@ -62,7 +62,7 @@ public class Logger
 
 	/**
 	 * Add a new line with the following format: TIMESTAMP;fields[0];...;fields[fields.length-1]
-	 *  
+	 * 
 	 * @param fields
 	 */
 	public void addLine(String... fields)
@@ -86,7 +86,7 @@ public class Logger
 		addBlankLine();
 		close();
 	}
-	
+
 	/**
 	 * Add some whitespace
 	 */
@@ -95,7 +95,7 @@ public class Logger
 		checkWriter();
 		fileWriter.writeLine("");
 	}
-	
+
 	/**
 	 * Closes the log file. Nothing can be added to it after this method has been called.
 	 */
@@ -107,17 +107,23 @@ public class Logger
 			fileWriter = null;
 		}
 	}
-	
+
 	private void checkWriter()
 	{
 		if(fileWriter == null || !fileWriter.isWritable())
 			throw new IllegalStateException("Logger " + fileWriter.getFullPath() + "has been closed or file is not writable.");
 	}
 
+	/**
+	 * Return the time in two formats, one in ISO8601 and one in "pretty ISO" format ("yyyy-MM-dd HH:mm:ss"), which should be correctly interpreted by (most)
+	 * Excel installations.
+	 * 
+	 * @return
+	 */
 	private String getTime()
 	{
 		DateTime now = new DateTime();
-		return formatter.withZone(now.getZone()).print(now);
+		return formatter.withZone(now.getZone()).print(now) + FIELD_SEPARATOR + TimeUtils.PrettyTimestampWithoutMSFormatter.print(now);
 	}
-	
+
 }
