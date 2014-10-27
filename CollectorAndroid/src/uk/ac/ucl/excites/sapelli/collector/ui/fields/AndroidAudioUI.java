@@ -146,7 +146,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	 * to the field.
 	 */
 	@Override
-	void onCapture() {
+	protected void onCapture() {
 		synchronized(recording) {
 			if (!recording) {
 				// start recording
@@ -172,7 +172,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	}
 
 	@Override
-	void onDiscard() {
+	protected void onDiscard() {
 		if (audioReviewPicker != null)
 			audioReviewPicker.finalise();
 	}
@@ -182,7 +182,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	 * "stop recording" button.
 	 */
 	@Override
-	ImageItem generateCaptureButton(Context context) {
+	protected ImageItem generateCaptureButton(Context context) {
 		ImageItem captureButton = null;
 		if (!recording) {
 			// recording hasn't started yet, so present "record" button
@@ -207,7 +207,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	}
 
 	@Override
-	List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record) {
+	protected List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record) {
 		List<Item> items = new ArrayList<Item>();
 		for (File f : field.getAttachments(fileStorageProvider, record)) {
 			items.add(new AudioItem(f));
@@ -216,7 +216,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	}
 
 	@Override
-	void populateCaptureLayout(ViewGroup captureLayout) {
+	protected void populateCaptureLayout(ViewGroup captureLayout) {
 		captureLayout.removeAllViews();
 		volumeDisplay = new VolumeDisplaySurfaceView(captureLayout.getContext());
 		int width = ScreenMetrics.ConvertDipToPx(captureLayout.getContext(), VOLUME_DISPLAY_WIDTH_DP);
@@ -228,7 +228,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	}
 
 	@Override
-	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
+	protected void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
 		reviewLayout.removeAllViews();
 		// create buttons for playing the newly captured audio:
 		audioReviewPicker = new AudioReviewPicker(reviewLayout.getContext(), mediaFile);

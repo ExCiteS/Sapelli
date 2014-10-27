@@ -70,10 +70,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH"; // key for obtaining review filepath from field arguments
 	private static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 
-	Semaphore handlingClick;
+	protected Semaphore handlingClick;
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
-	File captureFile; // file that holds the most recently captured media
+	protected File captureFile; // file that holds the most recently captured media
 	private MediaGalleryView gallery;
 
 	private LinearLayout captureLayoutContainer;
@@ -115,73 +115,89 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			//TODO
 			return null;
 		}
-		else
-		{
-			Context context = collectorUI.getContext();
 
-			// initialise click semaphore:
-			if (handlingClick == null)
-				handlingClick = new Semaphore(1);
-			
-			boolean goToCapture = Boolean.parseBoolean(controller.getCurrentFieldArguments().getValue(GO_TO_CAPTURE_KEY)); // returns false if not present
+		// initialise click semaphore:
+		if (handlingClick == null)
+			handlingClick = new Semaphore(1);
 
-			if (field.getCount(controller.getCurrentRecord()) == 0 || goToCapture) {
-				// if no media or just came from review then go to capture UI:
-				if (captureLayoutContainer == null) {
-					captureLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_capture, null, false);
-					// Add the Capture button:
-					captureLayoutButtonContainer = (LinearLayout) captureLayoutContainer.findViewById(R.id.capture_layout_buttons);
-					originalCaptureButtonParams = captureLayoutButtonContainer.getLayoutParams(); // save XML-defined params for later
-					captureLayoutButtonContainer.addView(new CaptureButtonView(context));
-				}
-				populateCaptureLayout((ViewGroup)captureLayoutContainer.findViewById(R.id.capture_layout_content));
-				return captureLayoutContainer;
-			}
-			else {
-				// else go to single-item review UI if max = 1, or gallery otherwise
-				String reviewPath = controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY);
-				if (field.getMax() == 1 || reviewPath != null) {
-					// switch to single review layout, populated with most recent capture:
-					
-					// -------------------------- TODO this is the code that alters the control button behaviour - may want to remove it
-					if (field.getMax() > 1 && field.getCount(controller.getCurrentRecord()) > 0) {
-						// put this field on the stack, so that it is added to the user's history:
-						controller.addCurrentFieldToHistory();
-						// remove the forward button on review:
-						ControlsUI.State[] newStates = {/* back */ ControlsUI.State.SHOWN_ENABLED, /* exit */ ControlsUI.State.SHOWN_ENABLED, /* forward */ ControlsUI.State.HIDDEN};
-						collectorUI.getControlsUI().setControlStates(newStates);
-					}
-					// --------------------------
-					
-					reviewLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_review, null, false);
-					// Add the confirm/cancel buttons:
-					LinearLayout reviewLayoutButtons = (LinearLayout) reviewLayoutContainer.findViewById(R.id.review_layout_buttons);
-					reviewLayoutButtons.addView(new ReviewButtonView(getContext()));
-					// Add the review UI to the flipper
-					if (reviewPath != null)
-						populateReviewLayout((ViewGroup)reviewLayoutContainer.findViewById(R.id.review_layout_content), new File(reviewPath));
-					else
-						populateReviewLayout((ViewGroup)reviewLayoutContainer.findViewById(R.id.review_layout_content), field.getLastAttachment(controller.getFileStorageProvider(), record));
-					controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY); // clear review path in arguments
-					return reviewLayoutContainer;
-				}
-				else {
-					// --- Gallery UI (only instantiate if max > 1):
-						galleryLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_picker, null, false);
-						// Add the confirm/cancel buttons:
-						galleryLayoutButtonContainer = (LinearLayout) galleryLayoutContainer.findViewById(R.id.picker_layout_buttons);
-						galleryLayoutButtonContainer.addView(new GalleryButtonView(context));
-						// Add the gallery itself:
-						final LinearLayout pickerViewContainer = (LinearLayout) galleryLayoutContainer.findViewById(R.id.picker_layout_picker_container);
-						gallery = new MediaGalleryView(context);
-						pickerViewContainer.addView(gallery);
-						// Add the gallery UI to the flipper
-						gallery.loadMedia();
-						refreshGalleryButtons();
-						return galleryLayoutContainer;
-				}
+		// check if the field's arguments specify that we go straight to capture:
+		boolean goToCapture = Boolean.parseBoolean(controller.getCurrentFieldArguments().getValue(GO_TO_CAPTURE_KEY)); // returns false if not present
+
+		if (field.getCount(controller.getCurrentRecord()) == 0 || goToCapture) {
+			// if no media or just came from review then go to capture UI
+
+			if (captureLayoutContainer == null)
+				initCaptureLayoutContainer();
+			// populate capture layout (e.g. set up photo viewfinder)
+			populateCaptureLayout((ViewGroup)captureLayoutContainer.findViewById(R.id.capture_layout_content));
+			return captureLayoutContainer;
+
+		} else {
+			// else go to single-item review or gallery review
+
+			// check if the field's arguments specify a single file to review:
+			String reviewPath = controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY);
+			if (field.getMax() == 1 || reviewPath != null) {
+				// if file in argument or only one file possible then show single review UI
+
+				if (reviewLayoutContainer == null)
+					initReviewLayoutContainer();
+				if (reviewPath != null)
+					// if arguments specified a file, populate review UI with it
+					populateReviewLayout((ViewGroup)reviewLayoutContainer.findViewById(R.id.review_layout_content), new File(reviewPath));
+				else
+					// else we are here because max == 1, so just use the most recent attachment
+					populateReviewLayout((ViewGroup)reviewLayoutContainer.findViewById(R.id.review_layout_content), field.getLastAttachment(controller.getFileStorageProvider(), record));
+				// remove the filepath from the field's arguments so we do not re-enter single-item review unintentionally
+				controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY); // clear review path in arguments
+				return reviewLayoutContainer;
+
+			} else {
+				// max > 1 and we have not been supplied with a filepath, so go to gallery
+
+				if (galleryLayoutContainer == null)
+					initGalleryLayoutContainer();
+				// force the gallery to update its contents and its button:
+				gallery.loadMedia();
+				refreshGalleryButtons();
+				return galleryLayoutContainer;
+
 			}
 		}
+	}
+
+	private void initCaptureLayoutContainer() {
+		captureLayoutContainer = (LinearLayout) LayoutInflater.from(collectorUI.getContext()).inflate(R.layout.collector_media_capture, null, false);
+		captureLayoutButtonContainer = (LinearLayout) captureLayoutContainer.findViewById(R.id.capture_layout_buttons);
+		originalCaptureButtonParams = captureLayoutButtonContainer.getLayoutParams(); // save XML-defined params for later
+		captureLayoutButtonContainer.addView(new CaptureButtonView(collectorUI.getContext()));
+	}
+
+	private void initReviewLayoutContainer() {
+		// -------------------------- TODO this is the code that alters the control button behaviour - may want to remove it
+		if (field.getMax() > 1 && field.getCount(controller.getCurrentRecord()) > 0) {
+			// put this field on the stack, so that it is added to the user's history:
+			controller.addCurrentFieldToHistory();
+			// remove the forward button on review:
+			ControlsUI.State[] newStates = {/* back */ ControlsUI.State.SHOWN_ENABLED, /* exit */ ControlsUI.State.SHOWN_ENABLED, /* forward */ ControlsUI.State.HIDDEN};
+			collectorUI.getControlsUI().setControlStates(newStates);
+		}
+		// --------------------------
+
+		reviewLayoutContainer = (LinearLayout) LayoutInflater.from(collectorUI.getContext()).inflate(R.layout.collector_media_review, null, false);
+		LinearLayout reviewLayoutButtons = (LinearLayout) reviewLayoutContainer.findViewById(R.id.review_layout_buttons);
+		reviewLayoutButtons.addView(new ReviewButtonView(getContext()));
+	}
+
+	private void initGalleryLayoutContainer() {
+		galleryLayoutContainer = (LinearLayout) LayoutInflater.from(collectorUI.getContext()).inflate(R.layout.collector_media_picker, null, false);
+		// Add the confirm/cancel buttons:
+		galleryLayoutButtonContainer = (LinearLayout) galleryLayoutContainer.findViewById(R.id.picker_layout_buttons);
+		galleryLayoutButtonContainer.addView(new GalleryButtonView(collectorUI.getContext()));
+		// Add the gallery itself:
+		final LinearLayout pickerViewContainer = (LinearLayout) galleryLayoutContainer.findViewById(R.id.picker_layout_picker_container);
+		gallery = new MediaGalleryView(collectorUI.getContext());
+		pickerViewContainer.addView(gallery);
 	}
 
 	@Override
@@ -202,31 +218,31 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * media types use a callback to determine when the media has been acquired (e.g. photos),
 	 * so the semaphore cannot be released as soon as the {@link #onCapture()} method completes.
 	 */
-	void releaseClick() {
+	protected void releaseClick() {
 		handlingClick.release();
 	}
 
 
-	Context getContext() {
+	protected Context getContext() {
 		return collectorUI.getContext();
 	}
 
 	/**
 	 * What to do when the capture button has been pressed.
 	 */
-	abstract void onCapture();
+	protected abstract void onCapture();
 
 	/**
 	 * What to do when a piece of media is discarded after review (e.g. release media player resources).
 	 */
-	abstract void onDiscard();
+	protected abstract void onDiscard();
 
 	/**
 	 * @return a list of the media items captured in this field. Left to the subclass to implement because
 	 * different media types should be used to instantiate different media items (e.g. if video, create a list
 	 * of VideoItems).
 	 */
-	abstract List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record);
+	protected abstract List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record);
 
 	/**
 	 * Generate a "capture" button (may vary by media, e.g. microphone
@@ -234,14 +250,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @param context
 	 * @return an ImageItem housing an appropriate "capture" button for the media.
 	 */
-	abstract ImageItem generateCaptureButton(Context context);
+	protected abstract ImageItem generateCaptureButton(Context context);
 
 	/**
 	 * Populate a container with views as appropriate to create an interface
 	 * for media capture (e.g. viewfinder for camera).
 	 * @param captureLayout - the container to populate.
 	 */
-	abstract void populateCaptureLayout(ViewGroup captureLayout);
+	protected abstract void populateCaptureLayout(ViewGroup captureLayout);
 
 	/**
 	 * Populate a container with views as appropriate to create an interface for 
@@ -249,7 +265,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @param deleteLayout - the container to populate.
 	 * @param mediaFile - the media file being reviewed.
 	 */
-	abstract void populateReviewLayout(ViewGroup reviewLayout, File mediaFile);
+	protected abstract void populateReviewLayout(ViewGroup reviewLayout, File mediaFile);
 
 	/**
 	 * Recreate the gallery button in case it should be changed (e.g. if 

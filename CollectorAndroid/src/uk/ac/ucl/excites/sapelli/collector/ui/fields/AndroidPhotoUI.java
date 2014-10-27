@@ -81,7 +81,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 
 	@SuppressWarnings("deprecation")
 	@Override
-	void populateCaptureLayout(ViewGroup captureLayout) {
+	protected void populateCaptureLayout(ViewGroup captureLayout) {
 		if (cameraController == null) {
 	        // Set up cameraController:
 	        //	Camera controller & camera selection:
@@ -118,19 +118,19 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	}
 
 	@Override
-	void onCapture() {
+	protected void onCapture() {
 		cameraController.takePicture(this);
 		// do not release click semaphore - only allow new clicks once photo has been received
 	}
 	
 
 	@Override
-    void onDiscard() {
+	protected void onDiscard() {
 	    // nothing to do
     }
 
 	@Override
-	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
+	protected void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
 		reviewLayout.removeAllViews();
 		// add an ImageView to the review UI:
 		ImageView reviewView = new ImageView(reviewLayout.getContext());
@@ -144,7 +144,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	}
 
 	@Override
-	ImageItem generateCaptureButton(Context context) {
+	protected ImageItem generateCaptureButton(Context context) {
 		ImageItem captureButton = null;
 		File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getCaptureButtonImageRelativePath());
 		if(FileHelpers.isReadableFile(captureImgFile))
@@ -157,7 +157,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		return captureButton;
 	}
 
-	List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record) {
+	protected List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record) {
 		List<Item> items = new ArrayList<Item>();
 		for (File f : field.getAttachments(fileStorageProvider, record)) {
 			items.add(new FileImageItem(f));

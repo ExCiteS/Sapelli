@@ -66,7 +66,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 
 	@SuppressWarnings("deprecation")
 	@Override
-	void populateCaptureLayout(ViewGroup captureLayout) {
+	protected void populateCaptureLayout(ViewGroup captureLayout) {
 		if (cameraController == null) {
 			// Set up cameraController:
 			//	Camera controller & camera selection:
@@ -101,7 +101,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	}
 
 	@Override
-	void onCapture() {
+	protected void onCapture() {
 		synchronized(recording) {
 			if (!recording) {
 				// start recording
@@ -127,12 +127,12 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 
 
 	@Override
-	void onDiscard() {
+	protected void onDiscard() {
 		// nothing to do
 	}
 
 	@Override
-	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
+	protected void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
 		Log.d(TAG,"Showing review layout for file: "+mediaFile.getName());
 		// clear the container:
 		reviewLayout.removeAllViews();
@@ -204,7 +204,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	 * "stop recording" button.
 	 */
 	@Override
-	ImageItem generateCaptureButton(Context context) { //TODO: allow for specific "video" button
+	protected ImageItem generateCaptureButton(Context context) { //TODO: allow for specific "video" button
 		ImageItem captureButton = null;
 		if (!recording) {
 			// recording hasn't started yet, so present "record" button
@@ -229,7 +229,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	}
 
 	@Override
-	List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record) {
+	protected List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record) {
 		List<Item> items = new ArrayList<Item>();
 		for (File f : field.getAttachments(fileStorageProvider, record)) {
 			items.add(new VideoItem(f));
