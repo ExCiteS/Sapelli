@@ -84,6 +84,11 @@ public class FieldParameters extends Parameters
 		return keyValuePairs.put(key, value);
 	}
 	
+	public String remove(String key)
+	{
+		return keyValuePairs.remove(key);
+	}
+	
 	/**
 	 * Warning don't clear arguments from the FieldParameters kept by Field or Trigger instances! Create copy first.
 	 * 

@@ -286,6 +286,11 @@ public abstract class Controller
 		goTo(currFormSession.getCurrent(), leaveRule);
 	}
 	
+	public void goToCurrent(FieldParameters arguments, LeaveRule leaveRule)
+	{
+		goTo(new FieldWithArguments(currFormSession.getCurrentField(), arguments), leaveRule);
+	}
+	
 	public void goTo(FieldWithArguments nextFieldAndArguments)
 	{
 		goTo(nextFieldAndArguments, LeaveRule.CONDITIONAL); // only leave upon successful validation (& value storage)

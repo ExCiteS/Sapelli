@@ -67,19 +67,18 @@ import android.widget.LinearLayout;
 public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, View, CollectorView>
 {
 	private static final String TAG = "AndroidMediaUI";
+	private static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH"; // key for obtaining review filepath from field arguments
+	private static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 
 	Semaphore handlingClick;
-	private boolean goToCapture = false; // flag used to jump straight to capture from gallery 
-	boolean multipleCapturesAllowed; // whether or not multiple pieces of media can be associated with this field
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
+	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
 	File captureFile; // file that holds the most recently captured media
-	private File reviewFile;
-	private boolean goToReview = false;
+	private MediaGalleryView gallery;
 
 	private LinearLayout captureLayoutContainer;
 	private LinearLayout reviewLayoutContainer;
 	private LinearLayout galleryLayoutContainer;
-	private MediaGalleryView gallery;
 
 	private LinearLayout galleryLayoutButtonContainer;
 	private LinearLayout captureLayoutButtonContainer;
@@ -88,13 +87,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	// keep hold of the original minimised capture button params when it is maximised (could tidy this if XML was removed):
 	private android.view.ViewGroup.LayoutParams originalCaptureButtonParams;
 
-	// keep track of whether or not the media items have been changed (and hence if the gallery needs to be redrawn):
-	private boolean mediaItemsChanged = false;
-
 	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
-		multipleCapturesAllowed = (field.getMax() > 1);	
 		maxReached = (field.getCount(controller.getCurrentRecord()) >= field.getMax());
 	}
 
@@ -126,26 +121,30 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 			// initialise click semaphore:
 			if (handlingClick == null)
-				handlingClick = new Semaphore(1); 
+				handlingClick = new Semaphore(1);
+			
+			boolean goToCapture = Boolean.parseBoolean(controller.getCurrentFieldArguments().getValue(GO_TO_CAPTURE_KEY)); // returns false if not present
 
 			if (field.getCount(controller.getCurrentRecord()) == 0 || goToCapture) {
 				// if no media or just came from review then go to capture UI:
-				// --- Capture UI:
-				captureLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_capture, null, false);
-				// Add the Capture button:
-				captureLayoutButtonContainer = (LinearLayout) captureLayoutContainer.findViewById(R.id.capture_layout_buttons);
-				originalCaptureButtonParams = captureLayoutButtonContainer.getLayoutParams(); // save XML-defined params for later
-				captureLayoutButtonContainer.addView(new CaptureButtonView(context));
+				if (captureLayoutContainer == null) {
+					captureLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_capture, null, false);
+					// Add the Capture button:
+					captureLayoutButtonContainer = (LinearLayout) captureLayoutContainer.findViewById(R.id.capture_layout_buttons);
+					originalCaptureButtonParams = captureLayoutButtonContainer.getLayoutParams(); // save XML-defined params for later
+					captureLayoutButtonContainer.addView(new CaptureButtonView(context));
+				}
 				populateCaptureLayout((ViewGroup)captureLayoutContainer.findViewById(R.id.capture_layout_content));
 				return captureLayoutContainer;
 			}
 			else {
 				// else go to single-item review UI if max = 1, or gallery otherwise
-				if (field.getMax() == 1 || goToReview) {
+				String reviewPath = controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY);
+				if (field.getMax() == 1 || reviewPath != null) {
 					// switch to single review layout, populated with most recent capture:
 					
 					// -------------------------- TODO this is the code that alters the control button behaviour - may want to remove it
-					if (multipleCapturesAllowed && field.getCount(controller.getCurrentRecord()) > 0) {
+					if (field.getMax() > 1 && field.getCount(controller.getCurrentRecord()) > 0) {
 						// put this field on the stack, so that it is added to the user's history:
 						controller.addCurrentFieldToHistory();
 						// remove the forward button on review:
@@ -154,15 +153,16 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					}
 					// --------------------------
 					
-					// --- Review UI:
 					reviewLayoutContainer = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_media_review, null, false);
 					// Add the confirm/cancel buttons:
 					LinearLayout reviewLayoutButtons = (LinearLayout) reviewLayoutContainer.findViewById(R.id.review_layout_buttons);
 					reviewLayoutButtons.addView(new ReviewButtonView(getContext()));
 					// Add the review UI to the flipper
-					File toReview = (reviewFile != null) ? reviewFile : field.getLastAttachment(controller.getFileStorageProvider(), record);
-					populateReviewLayout((ViewGroup)reviewLayoutContainer.findViewById(R.id.review_layout_content), toReview);
-					goToReview = false;
+					if (reviewPath != null)
+						populateReviewLayout((ViewGroup)reviewLayoutContainer.findViewById(R.id.review_layout_content), new File(reviewPath));
+					else
+						populateReviewLayout((ViewGroup)reviewLayoutContainer.findViewById(R.id.review_layout_content), field.getLastAttachment(controller.getFileStorageProvider(), record));
+					controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY); // clear review path in arguments
 					return reviewLayoutContainer;
 				}
 				else {
@@ -339,8 +339,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				public void onItemClick(AdapterView<?> parent, View view,
 						int position, long id) {
 					itemPosition = position;
-					reviewFile = ((FileItem)getAdapter().getItem(position)).getFile();
-					goToReview = true;
+					controller.getCurrentFieldArguments().put(REVIEW_FILE_PATH_KEY, ((FileItem)getAdapter().getItem(position)).getFile().getAbsolutePath());
 					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 				}	
 			});
@@ -485,7 +484,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			buttonAction = new Runnable() {
 				@Override
 				public void run() {
-					goToCapture = false; //just made a capture, so go to gallery instead (unless multiple disabled)
+					controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY); //just made a capture, so go to gallery instead (unless multiple disabled)
 					onCapture();
 					refreshCaptureButton(); // TODO if performance issues, may not want to do this on every press
 					mediaItemsChanged = true; 
@@ -531,14 +530,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				public void run() {
 					// only one button: discard
 					onDiscard();
-					if (!multipleCapturesAllowed) {
+					if (field.getMax() <= 1) {
 						// single item review
 						removeMedia(field.getLastAttachment(controller.getFileStorageProvider(), controller.getCurrentRecord())); // captures are now always attached, so must be deleted regardless of approval
 					} else {
 						// reviewing from gallery, so delete
 						gallery.deleteCurrentItem();
 						maxReached = false;  // have now deleted media, so cannot have reached max
-						goToCapture = false;
+						controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY);
 					}
 					// an item has been deleted, so want the gallery to be refreshed:
 					mediaItemsChanged = true; 
@@ -592,7 +591,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				public void run() {
 					// "capture more" button clicked, return to camera interface
 					if (!maxReached) {
-						goToCapture = true;
+						controller.getCurrentFieldArguments().put(GO_TO_CAPTURE_KEY, "true");
 						controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 					}
 					// Important: release the click semaphore AFTER the field has been exited
