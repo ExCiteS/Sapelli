@@ -113,7 +113,6 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 				cameraController.stopVideoCapture();
 				// a capture has been made so show it for review:
 				attachMedia(captureFile);
-				captureFile = null;
 				recording = false;
 				if (field.isShowReview())
 					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);

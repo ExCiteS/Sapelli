@@ -159,7 +159,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 				stopRecording();
 				// a capture has been made so show it for review:
 				attachMedia(captureFile);
-				captureFile = null;
 				recording = false;
 				if (field.isShowReview())
 					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
@@ -402,7 +401,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		private static final int COLOR_INACTIVE_LEVEL = Color.DKGRAY;
 		private final int COLOR_ACTIVE_LEVEL = Color.rgb(0, 204, 0);
 		private static final int UPDATE_FREQUENCY_MILLISEC = 200;
-		private static final double MAX_AMPLITUDE = 20000D; // TODO might need tweaking
+		private static final double MAX_AMPLITUDE = 40000D; // TODO might need tweaking
 		private static final int NUM_LEVELS = 50;
 		private static final int LEVEL_PADDING = 5;
 		Timer timer;

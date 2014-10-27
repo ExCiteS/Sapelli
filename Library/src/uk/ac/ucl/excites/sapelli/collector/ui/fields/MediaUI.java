@@ -40,7 +40,9 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	}
 	
 	/**
-	 * Logs the attachment of a media file, and requests that the controller proceed to the appropriate field.
+	 * Logs the attachment of a media file, and requests that the controller proceed to the appropriate field. Before this
+	 * method returns, the provided reference is nullified so that the file cannot be inadvertently deleted (to delete, a reference
+	 * to the attachment must be requested from the field).
 	 * 
 	 * @param mediaAttachment - the file to be attached to {@code field} in the current record.
 	 * @param userRequested
@@ -64,6 +66,8 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 			// log empty attachment
 			controller.addLogLine("ATTACHMENT", field.getID(), "-NONE-");
 		}
+		// NOTE: nullifies the file here so that the reference can not be used to inadvertently delete the file
+		mediaAttachment = null; 
 	}
 	
 	/**

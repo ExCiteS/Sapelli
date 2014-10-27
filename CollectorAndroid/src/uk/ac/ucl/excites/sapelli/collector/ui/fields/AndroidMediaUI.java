@@ -204,8 +204,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	protected void cancel()
 	{
 		if (captureFile != null) {
-			// last capture has been implicitly discarded. TODO: this is a little unsafe,
-			// as forgetting to nullify the new capture in a subclass would cause its deletion
+			// last capture has been implicitly discarded.
 			Log.d(TAG, "Deleting discarded file...");
 			captureFile.delete();
 		}

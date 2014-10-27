@@ -217,7 +217,6 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 				fos.write(data);
 				fos.close();
 				attachMedia(captureFile);
-				captureFile = null;
 			}
 			catch(Exception e)
 			{
