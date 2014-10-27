@@ -47,8 +47,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -342,8 +340,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				showPrevious();
 			}
 
-			populateReviewLayout((LinearLayout)reviewLayoutContainer.findViewById(R.id.review_layout_content), mediaFile);
-
+			populateReviewLayout((ViewGroup)this.getCurrentView().findViewById(R.id.review_layout_content), mediaFile);
 		}
 
 		/**

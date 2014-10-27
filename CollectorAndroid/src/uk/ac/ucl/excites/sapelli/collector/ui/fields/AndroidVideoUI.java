@@ -133,36 +133,45 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 
 	@Override
 	void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
+		Log.d(TAG,"Showing review layout for file: "+mediaFile.getName());
+		// clear the container:
 		reviewLayout.removeAllViews();
+		
+		// instantiate the thumbnail that is shown before the video is started:
 		final ImageView thumbnailView = new ImageView(reviewLayout.getContext());
 		// create thumbnail from video file:
 		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(mediaFile.getAbsolutePath(),MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
 		thumbnailView.setScaleType(ScaleType.FIT_CENTER);
 		thumbnailView.setImageBitmap(thumbnail);
+		
+		// instantiate the video view that plays the captured video:
+		final VideoView playbackView = new VideoView(reviewLayout.getContext());
+		playbackView.setOnCompletionListener(this);
+		playbackView.setVideoURI(Uri.fromFile(mediaFile));
+		// don't show the video view straight away - only once the thumbnail is clicked:
+		playbackView.setVisibility(View.GONE);
+		
+		// layout params for the thumbnail and the video view are the same:
 		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
 		params.gravity = Gravity.CENTER_HORIZONTAL;
 		reviewLayout.addView(thumbnailView, params);
-		
-		final VideoView playbackView = new VideoView(reviewLayout.getContext());
-		playbackView.setLayoutParams(params);
-		playbackView.setOnCompletionListener(this);
-		reviewLayout.addView(playbackView);
-		playbackView.setVideoURI(Uri.fromFile(mediaFile));
-		
-		playbackView.setVisibility(View.GONE);
+		reviewLayout.addView(playbackView, params);
 
+		// Set the video view to play or pause the video when it is touched:
 		playbackView.setOnTouchListener(new OnTouchListener() {
 			@Override
 			public boolean onTouch(View v, MotionEvent ev) {
 				if (ev.getAction() == MotionEvent.ACTION_UP) { 
 					// only perform action when finger is lifted off screen
 					if (playbackView.isPlaying()) {
+						// if playing, pause
 						Log.d(TAG,"Pausing video...");
 						playbackPosition = playbackView.getCurrentPosition();
 						playbackView.pause();
 					}
 
 					else {
+						// if not playing, play
 						Log.d(TAG,"Playing video...");
 						playbackView.seekTo(playbackPosition);
 						playbackView.start();
@@ -172,15 +181,14 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 			}
 		});
 		
+		// replace the thumbnail with the video when the thumbnail is clicked:
 		thumbnailView.setOnClickListener(new OnClickListener() {
-
 			@Override
             public void onClick(View v) {
 				thumbnailView.setVisibility(View.GONE);
 				playbackView.setVisibility(View.VISIBLE);
 	            playbackView.start();
             }
-			
 		});
 	}
 
