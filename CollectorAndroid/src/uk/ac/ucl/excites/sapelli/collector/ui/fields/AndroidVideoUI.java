@@ -55,7 +55,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	// Camera & image data:
 	private CameraController cameraController;
 	private SurfaceView captureSurface;
-
+	private VideoView playbackView;
 	private volatile Boolean recording = false;
 	private int playbackPosition = 0;
 
@@ -145,7 +145,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		thumbnailView.setImageBitmap(thumbnail);
 		
 		// instantiate the video view that plays the captured video:
-		final VideoView playbackView = new VideoView(reviewLayout.getContext());
+		playbackView = new VideoView(reviewLayout.getContext());
 		playbackView.setOnCompletionListener(this);
 		playbackView.setVideoURI(Uri.fromFile(mediaFile));
 		// don't show the video view straight away - only once the thumbnail is clicked:
@@ -247,6 +247,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 			}
 		}
 		cameraController = null;
+		
+		playbackView = null;
 	}
-
 }
