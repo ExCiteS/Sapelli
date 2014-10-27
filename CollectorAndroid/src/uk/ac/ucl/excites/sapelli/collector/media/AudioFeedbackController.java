@@ -1,12 +1,14 @@
 package uk.ac.ucl.excites.sapelli.collector.media;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Semaphore;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
@@ -15,7 +17,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.util.TextToVoice;
 import android.content.Context;
 import android.speech.tts.TextToSpeech;
-import android.speech.tts.TextToSpeech.Engine;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.view.View;
@@ -69,24 +70,29 @@ public class AudioFeedbackController extends UtteranceProgressListener
 				answersQueue = new ArrayList<AudioFeedbackDescription>();
 				// add question to queue:
 				question = AudioFeedbackDescription.afdFromChoiceField(choice, textToVoice, true);
-				answersQueue.add(question);
-				
+				synchronized(answersQueue) {
+					answersQueue.add(question);
+				}
 				// then add all possible answers:
 				List<ChoiceField> children  = choice.getChildren();
-				for (int i = 0; i < children.size(); i++) {
-					answersQueue.add(AudioFeedbackDescription.afdFromChoiceField(children.get(i), textToVoice, false));
+				synchronized(answersQueue) {
+					for (int i = 0; i < children.size(); i++) {
+						answersQueue.add(AudioFeedbackDescription.afdFromChoiceField(children.get(i), textToVoice, false));
+					}
 				}
 				// play all items in the queue. Do this on a new thread because it will be blocked when
 				// it encounters an item whose TTS has not yet been synthesised
 				Thread playerThread = new Thread() {
 					@Override
 					public void run() {
-						while (!answersQueue.isEmpty()) {
-							AudioFeedbackDescription nextAnswer = answersQueue.remove(0);
-							nextAnswer.play();
-							if (nextAnswer.tts) {
-								// if item was TTS, delete its temporary file now it has been played:
-								nextAnswer.file.delete();
+						synchronized(answersQueue) {
+							while (!answersQueue.isEmpty()) {
+								AudioFeedbackDescription nextAnswer = answersQueue.remove(0); //TODO concurrency
+								nextAnswer.play();
+								if (nextAnswer.tts) {
+									// if item was TTS, delete its temporary file now it has been played:
+									nextAnswer.file.delete();
+								}
 							}
 						}
 					}
@@ -161,7 +167,7 @@ public class AudioFeedbackController extends UtteranceProgressListener
 					return;
 				else
 					// Enable TTS Audio Feedback
-					textToVoice(controlItem.getDescription());
+					//textToVoice(controlItem.getDescription()); TODO
 				break;
 
 			case NONE:
@@ -187,12 +193,20 @@ public class AudioFeedbackController extends UtteranceProgressListener
 			Log.d(TAG,"Text to voice was null");
 			return;
 		}
-		File file = controller.getTemporaryFile();
-		// QUEUE the text for synthesis (which is conducted asynchronously)
-		if (textToVoice.processSpeechToFile(text, file.getAbsolutePath()) != TextToSpeech.SUCCESS) {
-			Log.e(TAG,"Error when trying to save synthesised speech to disk.");
-		}
-
+		File file;
+        try {
+	        file = File.createTempFile(Integer.toString(text.hashCode()), null, controller.getFileStorageProvider().getTempFolder(true));
+			// QUEUE the text for synthesis (which is conducted asynchronously)
+			if (textToVoice.processSpeechToFile(text, file.getAbsolutePath()) != TextToSpeech.SUCCESS) {
+				Log.e(TAG,"Error when trying to save synthesised speech to disk.");
+			}
+        } catch (FileStorageException e) {
+	        // TODO Auto-generated catch block
+	        e.printStackTrace();
+        } catch (IOException e) {
+	        // TODO Auto-generated catch block
+	        e.printStackTrace();
+        }
 	}
 
 	public void stopAudioFeedback()
@@ -248,10 +262,19 @@ public class AudioFeedbackController extends UtteranceProgressListener
 		AudioFeedbackDescription(String text, TextToVoice ttv) {
 			this.text = text;
 			tts = true;
-			file = controller.getTemporaryFile();
-			if (ttv.processSpeechToFile(text, file.getAbsolutePath()) == TextToSpeech.ERROR)  {
-				completedSemaphore.release(); // processing has failed so skip this file
-			}
+			File file;
+	        try {
+		        file = File.createTempFile(Integer.toString(text.hashCode()), null, controller.getFileStorageProvider().getTempFolder(true));
+				if (ttv.processSpeechToFile(text, file.getAbsolutePath()) == TextToSpeech.ERROR)  {
+					completedSemaphore.release(); // processing has failed so skip this file TODO
+				}
+	        } catch (FileStorageException e) {
+		        // TODO Auto-generated catch block
+		        e.printStackTrace();
+	        } catch (IOException e) {
+		        // TODO Auto-generated catch block
+		        e.printStackTrace();
+	        }
 		}
 		
 		private static AudioFeedbackDescription afdFromChoiceField(ChoiceField choice, TextToVoice ttv, boolean question) {
@@ -280,18 +303,19 @@ public class AudioFeedbackController extends UtteranceProgressListener
 		private void complete() {
 			if (tts) {
 				// reflect that the TTS synthesis job is complete by releasing the semaphore, thus awakening the player thread
+				Log.d(TAG,"TTS completed: "+file.getName()+"  ||  "+text);
 				completedSemaphore.release();
 			}
 		}
 		
 		private void play() {
 			try {
-				Log.d(TAG,"About to try to acquire playing semaphore...");
+				Log.d(TAG,"Trying to acquire semaphore for "+file.getName()+"  ||  "+text);
 	            completedSemaphore.acquire();
             } catch (InterruptedException e) {
 	            e.printStackTrace();
             }
-			Log.d(TAG,"Semaphore acquired, playing sound");
+			Log.d(TAG,"Semaphore acquired for "+file.getName()+"  ||  "+text+". Playing sound");
 			controller.playSound(file, true);   
 		}
 		

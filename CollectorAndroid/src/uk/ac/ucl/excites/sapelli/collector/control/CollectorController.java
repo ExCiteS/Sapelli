@@ -115,23 +115,6 @@ public class CollectorController extends Controller implements LocationListener,
 		}
 	}
 
-
-
-	/**
-	 * @return a temporary file into which synthesised speech can be saved, with the expectation that it will be
-	 * deleted after being played.
-	 */
-	public File getTemporaryFile() {
-		File tempFolder = this.getFileStorageProvider().getTempFolder(true);
-		int filename = 0;
-		File tempFile;
-		while ((tempFile = new File(tempFolder, Integer.toString(filename))).exists()) {
-			filename++;
-		}
-		Log.d(TAG,"Returning temporary file: "+tempFile.getAbsolutePath());
-		return tempFile;
-	}
-
 	/**
 	 * Play a sound immediately.
 	 */

@@ -109,18 +109,21 @@ public class AudioPlayer
 			queuePlayer.setOnCompletionListener(new OnCompletionListener() {
 				@Override
 				public void onCompletion(MediaPlayer mp) {
-					// remove item from queue:
-					mediaQueue.remove(0);
 					Log.d("TAG","On completion. Queue length: "+mediaQueue.size());
 					// set player's data source:
 					if (setNextQueueItem())
 						// if queue not empty, play next item:
 						queuePlayer.start();
+					else
+						queuePlaying = false;
 				}
 			});
 			
 			// start playing from the queue:
+			queuePlaying = true;
 			queuePlayer.start();
+		} else {
+			queuePlaying = false;
 		}
 	}
 	
@@ -130,7 +133,7 @@ public class AudioPlayer
 	 */
 	private boolean setNextQueueItem() {
 		if (!mediaQueue.isEmpty()) {
-			File nextSound = mediaQueue.get(0);
+			File nextSound = mediaQueue.remove(0);
 			Log.d(TAG,"Setting queue player's data source to: "+nextSound.getAbsolutePath());
 			try {
 				if (queuePlayer == null) {
@@ -143,10 +146,8 @@ public class AudioPlayer
 					queuePlayer.prepare();
 				}
             } catch (Exception e) {
-            	Log.e(TAG,"Error when trying to play media file: "+mediaQueue.get(0).getAbsolutePath(), e);
-            	// remove this file from the queue and try again:
-            	mediaQueue.remove(0);
-            	return setNextQueueItem();
+            	Log.e(TAG,"Error when trying to play media file: "+nextSound.getAbsolutePath(), e);
+            	return false;
             }
 			return true;
 		}
@@ -177,7 +178,6 @@ public class AudioPlayer
 		mediaQueue.add(mediaFile);
 		if (!queuePlaying) {
 			playQueue();
-			queuePlaying = true;
 		}
 	}
 }
