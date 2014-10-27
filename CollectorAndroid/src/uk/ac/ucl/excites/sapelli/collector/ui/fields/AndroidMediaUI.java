@@ -98,13 +98,16 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * <br>
 	 * If not on a page,
 	 * <ul>
-	 * <li> if no media has been captured, or the capture UI has been specifically requested, 
-	 * return the capture UI. If returning from the gallery UI and this field specifies that
-	 * capturing begins immediately when the "add" button is pressed, then the capture process is 
-	 * started.</li>
-	 * <li> if there is already captured media to display, and the capture UI has not been requested, 
-	 * then return either the single-item review UI (e.g. full-page image) if the field can have at most one
-	 * attachment, or the gallery UI if multiple attachments are acceptable.</li>
+	 * <li> if no media has been captured, or the capture UI has been specifically requested (e.g. when the 
+	 * user wants to capture more media from the gallery), return the capture UI.</li>
+	 * <li> else
+	 * <ul>
+	 * <li> if the field can only have one attachment and one has been made, return the single-item review UI. 
+	 * Also return the single-item review UI if an item has been selected from the gallery. </li>
+	 * <li> else (field max is larger than 1 and an item hasn't been selected), return the gallery UI.</li>
+	 * </ul>
+	 * </li>
+	 * </ul>
 	 */
 	@Override
 	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
@@ -200,6 +203,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		pickerViewContainer.addView(gallery);
 	}
 
+	/**
+	 * When this field is cancelled, delete any half-captured media (e.g. pressing 'back' 
+	 * during video recording).
+	 */
 	@Override
 	protected void cancel()
 	{
