@@ -1,10 +1,12 @@
 package uk.ac.ucl.excites.sapelli.collector.util;
 
+import java.util.HashMap;
 import java.util.Locale;
 
 import android.content.Context;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
+import android.util.Log;
 
 /**
  * Class that uses the Android TTS (Text-To-Speech) Engine to speak a given text or to process
@@ -51,8 +53,11 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 			if(result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED)
 				result = tts.setLanguage(DEFAULT_LOCALE);
 
-			if(result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED)
+			if(result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED) {
 				initialised = true;
+				Log.d(TAG,"TTS initialised successfully.");
+			} else
+				Log.e(TAG,"Failure when trying to initialise TTS.");
 		}
 	}
 
@@ -63,12 +68,13 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 	 */
 	public void speak(String text)
 	{
-		if(tts == null || initialised == false)
-		{
+		if (tts == null) {
 			tts = new TextToSpeech(context, this);
 			return;
 		}
-
+		if (!initialised)
+			return;
+		
 		if(text == null || "".equals(text))
 			tts.speak(DEFAULT_UNAVAILABLE_CONTENT, TextToSpeech.QUEUE_FLUSH, null);
 		else
@@ -76,28 +82,28 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 	}
 
 	public int processSpeechToFile(String text, String filepath) {
-		if (tts == null || !initialised) {
+		if (tts == null) {
 			tts = new TextToSpeech(context, this);
 			return TextToSpeech.ERROR;
 		}
+		if (!initialised)
+			return TextToSpeech.ERROR;
+		
 		if(text == null || "".equals(text))
 			return TextToSpeech.ERROR;
-		return tts.synthesizeToFile(DEFAULT_UNAVAILABLE_CONTENT, null, filepath);
-	}
-
-	public void stop()
-	{
-		if(tts != null)
-			tts.stop();
+		
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
+		return tts.synthesizeToFile(text, params, filepath);
 	}
 
 	public void destroy()
 	{
 		if(tts != null)
-		{
-			tts.stop();
+		{	tts.stop();
 			tts.shutdown();
 			tts = null;
+			initialised = false;
 		}
 	}
 	

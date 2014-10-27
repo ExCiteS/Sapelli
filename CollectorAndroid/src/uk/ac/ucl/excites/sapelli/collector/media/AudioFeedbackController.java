@@ -41,6 +41,7 @@ public class AudioFeedbackController extends UtteranceProgressListener
 		locale = controller.activity.getResources().getConfiguration().locale;
 		
 		textToVoice = new TextToVoice(controller.activity.getBaseContext(), locale);
+		textToVoice.setOnUtteranceProgressListener(this);
 	}
 	
 	/**
@@ -87,8 +88,10 @@ public class AudioFeedbackController extends UtteranceProgressListener
 					public void run() {
 						synchronized(answersQueue) {
 							while (!answersQueue.isEmpty()) {
-								AudioFeedbackDescription nextAnswer = answersQueue.remove(0); //TODO concurrency
+								// note: use "get" rather than "remove" so that the TTS file is still in the queue when its job completes 
+								AudioFeedbackDescription nextAnswer = answersQueue.get(0); //TODO concurrency
 								nextAnswer.play();
+								answersQueue.remove(0);
 								if (nextAnswer.tts) {
 									// if item was TTS, delete its temporary file now it has been played:
 									nextAnswer.file.delete();
@@ -214,9 +217,9 @@ public class AudioFeedbackController extends UtteranceProgressListener
 		// Stop the Media Player
 		controller.stopAudio();
 
-		// Stop the Android TTS (Text-To-Speech) Engine
-		if(textToVoice != null)
-			textToVoice.stop();
+		// Stop the Android TTS (Text-To-Speech) Engine TODO
+//		if(textToVoice != null)
+//			textToVoice.stop();
 	}
 
 	public void destroy() {
@@ -228,21 +231,22 @@ public class AudioFeedbackController extends UtteranceProgressListener
 	
 	@Override
     public void onDone(String utteranceId) {
-		// mark the appropriate 
+		// mark the appropriate answer as completed
+		Log.d(TAG,"Done processing: "+utteranceId);
 	    for (AudioFeedbackDescription answer : answersQueue) {
-	    	if (answer.text == utteranceId)
+	    	if (answer.text.equals(utteranceId))
 	    		answer.complete();
 	    }
     }
 	
 	@Override
     public void onStart(String utteranceId) {
-	    // nothing to do
+	    Log.d(TAG,"Started processing: "+utteranceId);
     }
 
 	@Override
     public void onError(String utteranceId) {
-		// nothing to do
+		Log.e(TAG,"Error while processing: "+utteranceId);
     }
 	
 	private static class AudioFeedbackDescription {
@@ -262,12 +266,13 @@ public class AudioFeedbackController extends UtteranceProgressListener
 		AudioFeedbackDescription(String text, TextToVoice ttv) {
 			this.text = text;
 			tts = true;
-			File file;
 	        try {
-		        file = File.createTempFile(Integer.toString(text.hashCode()), null, controller.getFileStorageProvider().getTempFolder(true));
+		        file = File.createTempFile("tmp"+Integer.toString(text.hashCode()), null, controller.getFileStorageProvider().getTempFolder(true));
+		        Log.d(TAG,"Submitting text for processing: "+text);
 				if (ttv.processSpeechToFile(text, file.getAbsolutePath()) == TextToSpeech.ERROR)  {
+					Log.e(TAG,"Error when trying to process speech: "+text+". Skipping to next.");
 					completedSemaphore.release(); // processing has failed so skip this file TODO
-				}
+				} else Log.d(TAG,"Speech successfully queued for processing: "+text);
 	        } catch (FileStorageException e) {
 		        // TODO Auto-generated catch block
 		        e.printStackTrace();
@@ -316,7 +321,8 @@ public class AudioFeedbackController extends UtteranceProgressListener
 	            e.printStackTrace();
             }
 			Log.d(TAG,"Semaphore acquired for "+file.getName()+"  ||  "+text+". Playing sound");
-			controller.playSound(file, true);   
+			controller.playSound(file, true);  
+			Log.d(TAG,"Queued file for playing: "+file.getName()+"  ||  "+text);
 		}
 		
 	}
