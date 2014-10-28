@@ -110,7 +110,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			choiceView.setEnabled(true);
 			
 			// Audio Feedback
-			audioController.playQuestion(null, choice, pageView);
+			audioController.playQuestion(collectorUI.getContext(), choice, choiceView);
 			return (View) choiceView;
 		}
 	}
@@ -273,12 +273,14 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * 
 	 * @author mstevens
 	 */
-	protected interface ChoiceView
+	public interface ChoiceView
 	{
 		
 		public void update();
 		
 		public void setEnabled(boolean enabled);
+		
+		public View getChildViewAt(int index);
 		
 	}
 	
@@ -324,6 +326,10 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			for(ChoiceField child : field.getChildren())
 				adapter.getItem(c++).setVisibility(controller.isFieldEnabled(child));
 			setAdapter(adapter);
+		}
+		
+		public View getChildViewAt(int index) {
+			return this.getChildAt(index);
 		}
 		
 		@Override
