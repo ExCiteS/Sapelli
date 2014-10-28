@@ -152,6 +152,11 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 
 		return true;
 	}
+	
+	@Override
+	public void cancel() {
+		controller.stopAudioFeedback();
+	}
 
 	/**
 	 * To be overridden by AndroidICSChoiceUI
