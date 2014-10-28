@@ -139,11 +139,23 @@ public class CollectorController extends Controller implements LocationListener,
 	 */
 	public void playSound(File soundFile, boolean queueSound)
 	{
+		playSound(soundFile, queueSound, false);
+	}
+	
+	/**
+	 * Play a sound, with it optionally being queued and optionally being deleted
+	 * once it has finished playing.
+	 * @param soundFile
+	 * @param queueSound
+	 * @param deleteAfterPlaying
+	 */
+	public void playSound(File soundFile, boolean queueSound, boolean deleteAfterPlaying)
+	{
 		Log.d(TAG,"Playing sound: "+soundFile.getAbsolutePath());
 		if(audioPlayer == null)
 			audioPlayer = new AudioPlayer(activity.getBaseContext());
 		if (queueSound) {
-			audioPlayer.enqueueAndPlay(soundFile);
+			audioPlayer.enqueueAndPlay(soundFile, deleteAfterPlaying);
 		} else {
 			audioPlayer.playImmediate(soundFile);
 		}

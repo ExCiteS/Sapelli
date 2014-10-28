@@ -24,7 +24,7 @@ public class AudioPlayer
 
 	private Context context;
 	private MediaPlayer immediatePlayer;
-	private ArrayList<File> mediaQueue;
+	private ArrayList<SoundFile> mediaQueue;
 	private MediaPlayer queuePlayer;
 	private boolean queuePlaying = false;
 
@@ -110,6 +110,13 @@ public class AudioPlayer
 				@Override
 				public void onCompletion(MediaPlayer mp) {
 					Log.d("TAG","On completion. Queue length: "+mediaQueue.size());
+					SoundFile justPlayed = mediaQueue.remove(0);
+					
+					if (justPlayed.deleteAfterPlaying) {
+						Log.d(TAG, "Now that playback has completed, deleting file: "+justPlayed.file.getName());
+						justPlayed.file.delete();
+					}
+					
 					// set player's data source:
 					if (setNextQueueItem())
 						// if queue not empty, play next item:
@@ -133,20 +140,23 @@ public class AudioPlayer
 	 */
 	private boolean setNextQueueItem() {
 		if (!mediaQueue.isEmpty()) {
-			File nextSound = mediaQueue.remove(0);
-			Log.d(TAG,"Setting queue player's data source to: "+nextSound.getAbsolutePath());
+			SoundFile nextSound = mediaQueue.get(0); // use 'get' rather than remove so the file can be deleted later
+			Log.d(TAG,"Setting queue player's data source to: "+nextSound.file.getAbsolutePath());
 			try {
-//				if (queuePlayer == null) {
-					queuePlayer = MediaPlayer.create(context, Uri.fromFile(nextSound));
+				if (queuePlayer == null) {
+					queuePlayer = MediaPlayer.create(context, Uri.fromFile(nextSound.file));
 					queuePlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-//				}
-//				else {
-//					queuePlayer.reset(); // reset to idle state
-//					queuePlayer.setDataSource(context, Uri.fromFile(nextSound));
-//					queuePlayer.prepare();
-//				}
+				}
+				else {
+					queuePlayer.reset(); // reset to idle state
+					queuePlayer.setDataSource(context, Uri.fromFile(nextSound.file));
+					queuePlayer.prepare();
+				}
             } catch (Exception e) {
-            	Log.e(TAG,"Error when trying to play media file: "+nextSound.getAbsolutePath(), e);
+            	Log.e(TAG,"Error when trying to play media file: "+nextSound.file.getAbsolutePath(), e);
+            	SoundFile failedSound = mediaQueue.remove(0);
+            	if (failedSound.deleteAfterPlaying)
+            		failedSound.file.delete();
             	return false;
             }
 			return true;
@@ -170,15 +180,25 @@ public class AudioPlayer
 	 * Add a new media file to the queue of files to be played.
 	 * @param mediaFile
 	 */
-	public void enqueueAndPlay(File mediaFile) {
+	public void enqueueAndPlay(File mediaFile, boolean deleteAfterPlaying) {
 		Log.d(TAG,"Enqueuing: "+mediaFile.getAbsolutePath());
 		if (mediaQueue == null) {
-			mediaQueue = new ArrayList<File>();
+			mediaQueue = new ArrayList<SoundFile>();
 		}
-		mediaQueue.add(mediaFile);
+		mediaQueue.add(new SoundFile(mediaFile, deleteAfterPlaying));
 		if (!queuePlaying) {
 			Log.d(TAG,"Queue not already playing, so starting it up...");
 			playQueue();
 		} else Log.d(TAG,"Added to queue but queue is already playing.");
+	}
+	
+	private class SoundFile {
+		File file;
+		boolean deleteAfterPlaying;
+		
+		SoundFile(File file, boolean deleteAfterPlaying) {
+			this.file = file;
+			this.deleteAfterPlaying = deleteAfterPlaying;
+		}
 	}
 }

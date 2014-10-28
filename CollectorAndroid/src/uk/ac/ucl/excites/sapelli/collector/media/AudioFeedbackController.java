@@ -88,14 +88,12 @@ public class AudioFeedbackController extends UtteranceProgressListener
 					public void run() {
 						synchronized(answersQueue) {
 							while (!answersQueue.isEmpty()) {
-								// note: use "get" rather than "remove" so that the TTS file is still in the queue when its job completes 
+								// note: use "get" rather than "remove" so that the TTS file is still in the queue when its job completes
+								// (otherwise the first job will never mark the object as completed because it can't find it
+								// in the queue)
 								AudioFeedbackDescription nextAnswer = answersQueue.get(0); //TODO concurrency
 								nextAnswer.play();
 								answersQueue.remove(0);
-								if (nextAnswer.tts) {
-									// if item was TTS, delete its temporary file now it has been played:
-									nextAnswer.file.delete();
-								}
 							}
 						}
 					}
@@ -321,7 +319,7 @@ public class AudioFeedbackController extends UtteranceProgressListener
 	            e.printStackTrace();
             }
 			Log.d(TAG,"Semaphore acquired for "+file.getName()+"  ||  "+text+". Playing sound");
-			controller.playSound(file, true);  
+			controller.playSound(file, true, tts);  // delete after playing if TTS
 			Log.d(TAG,"Queued file for playing: "+file.getName()+"  ||  "+text);
 		}
 		
