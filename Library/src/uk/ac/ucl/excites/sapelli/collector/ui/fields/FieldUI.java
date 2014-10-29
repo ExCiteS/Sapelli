@@ -237,5 +237,19 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @return whether of not to show the Forward control above this fieldUI
 	 */
 	protected abstract boolean isShowForward();
+
+	/**
+	 * Allows subclasses to handle control events (i.e. pressing back/exit/forward)
+	 * in ways specific to their UI.
+	 * 
+	 * @param control - the control that was pressed
+	 * @return {@code true} if the control event was consumed and the default behaviour should not be
+	 * enacted, {@code false} if the control event was not consumed and the default behaviour should
+	 * be enacted.
+	 */
+	public boolean handleControlEvent(Control control) {
+		// by default, do not consume events:
+	    return false;
+    }
 	
 }

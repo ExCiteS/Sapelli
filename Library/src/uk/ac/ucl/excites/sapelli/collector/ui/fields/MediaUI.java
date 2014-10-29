@@ -33,21 +33,16 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
  */
 public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<MF, V, UI>
 {
-
+	
 	public MediaUI(MF field, Controller controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}
 	
 	/**
-	 * Logs the attachment of a media file, and requests that the controller proceed to the appropriate field. Before this
-	 * method returns, the provided reference is nullified so that the file cannot be inadvertently deleted (to delete, a reference
-	 * to the attachment must be requested from the field).
+	 * Logs the attachment of a media file, and requests that the controller proceed to the appropriate field.
 	 * 
 	 * @param mediaAttachment - the file to be attached to {@code field} in the current record.
-	 * @param userRequested
-	 * @param goForward - whether to go forward to the next field or re-enter the current field with the new attachment (important
-	 * if multiple attachments can be added to the same field).
 	 */
 	public void attachMedia(File mediaAttachment)
 	{
@@ -66,8 +61,6 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 			// log empty attachment
 			controller.addLogLine("ATTACHMENT", field.getID(), "-NONE-");
 		}
-		// NOTE: nullifies the file here so that the reference can not be used to inadvertently delete the file
-		mediaAttachment = null; 
 	}
 	
 	/**

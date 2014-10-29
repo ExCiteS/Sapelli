@@ -137,19 +137,22 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 		// Log interaction:
 		controller.addLogLine((hardwareKeyPress ? "KEY" : "CLICK") + "_CONTROL_" + control.name(), controller.getCurrentField().getID());
 		
-		// Handle event:
-		switch(control)
-		{
-			case BACK :				
-				controller.goBack(true);
-				break;
-			case CANCEL : 
-				controller.cancelAndRestartForm();
-				break;
-			case FORWARD :
-				controller.goForward(true);
-				break;
-			default : return;
+		// pass the control event to the current field UI in case it wants to do something unusual:
+		if (!collectorUI.getCurrentFieldUI().handleControlEvent(control)) {
+		// if the field UI didn't do anything with the control event, then handle in the default way:
+			switch(control)
+			{
+				case BACK :				
+					controller.goBack(true);
+					break;
+				case CANCEL : 
+					controller.cancelAndRestartForm();
+					break;
+				case FORWARD :
+					controller.goForward(true);
+					break;
+				default : return;
+			}
 		}
 	}
 	
