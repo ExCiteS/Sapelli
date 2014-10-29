@@ -150,6 +150,22 @@
 								</configuration>
 							</execution>
 							<execution>
+								<!-- avoid AMP from tripping over if the (empty) "libs" folder gets recreated (e.g. by the Fabric Eclipse plugin): -->
+								<id>delete-empty-libs-dir</id>
+								<phase>validate</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<echo>Delete ${project.basedir}/libs if it exists and is empty...</echo>
+										<delete includeemptydirs="true" failonerror="false">
+											<fileset dir="${project.basedir}/libs" excludes="**/*" />
+										</delete>
+									</target>
+								</configuration>
+							</execution>
+							<execution>
 								<id>delete-useless-apks</id>
 								<phase>install</phase>
 								<goals>
@@ -370,6 +386,7 @@
 				<artifactId>android-maven-plugin</artifactId>
 				<version>4.0.0-rc.2</version>
 				<configuration>
+					<!-- General config: -->
 					<sdk>
 						<!-- <path>${sdk-home}</path> -->
 						<platform>19</platform>
@@ -380,7 +397,11 @@
 					<mergeManifests>true</mergeManifests>
 					<assetsDirectory>${project.basedir}/assets</assetsDirectory>
 					<resourceDirectory>${project.basedir}/res</resourceDirectory>
-					<!-- debug config (overriden in release profile -->
+					<!-- Alternative way to avoid AMP tripping over if the (empty) "libs" folder gets recreated (e.g. by the Fabric Eclipse plugin).
+						 Commented out in favour of ant approach (deleting libs on initialize) -->
+					<!-- <nativeLibrariesDirectory>${project.basedir}/libs</nativeLibrariesDirectory> -->
+					
+					<!-- Debug config (overriden in release profile): -->
 					<release>false</release>
 					<classifier>debug</classifier>
 					<sign>
