@@ -57,6 +57,7 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 
 /**
  * The GUI of the CollectorActivity
@@ -92,6 +93,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	private FieldUI<?, View, CollectorView> fieldUI;
 	private View fieldUIView = null;
 	private HashMap<Field, FieldUI<?, View, CollectorView>> fieldUICache;
+	private ProgressBar spinner;
 
 	// Input manager:
 	private InputMethodManager imm;
@@ -482,6 +484,18 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		View focusedView = activity.getCurrentFocus();
 		if(focusedView != null)
 			focusedView.clearFocus();
+	}
+
+	public void addSpinner() {
+	    spinner = new ProgressBar(this.getContext(), null, android.R.attr.progressBarStyleLarge);
+	    this.addView(spinner);
+    }
+	
+	public void removeSpinner() {
+		if (spinner != null) {
+			this.removeView(spinner);
+			spinner = null;
+		}
 	}
 
 }

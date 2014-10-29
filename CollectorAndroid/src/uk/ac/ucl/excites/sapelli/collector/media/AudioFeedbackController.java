@@ -11,6 +11,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidChoiceUI.ChoiceView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.util.TTSInitListener;
 import uk.ac.ucl.excites.sapelli.collector.util.TextToVoice;
 import android.content.Context;
 import android.media.AudioManager;
@@ -450,4 +451,8 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 			}
 		}
 	}
+
+	public void setTTSInitListener(TTSInitListener listener) {
+	    textToVoice.setTTSInitListener(listener);
+    }
 }

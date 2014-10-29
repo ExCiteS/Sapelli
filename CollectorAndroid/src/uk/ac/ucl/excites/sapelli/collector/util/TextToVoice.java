@@ -24,6 +24,7 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 	private Locale locale;
 	private TextToSpeech tts;
 	private boolean initialised = false;
+	private TTSInitListener initListener;
 
 	public TextToVoice(Context context)
 	{
@@ -55,6 +56,9 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 
 			if(result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED) {
 				initialised = true;
+				if (initListener != null)
+					initListener.onTTSInit();
+				
 				Log.d(TAG,"TTS initialised successfully.");
 			} else
 				Log.e(TAG,"Failure when trying to initialise TTS.");
@@ -109,5 +113,9 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 	
 	public void setOnUtteranceProgressListener(UtteranceProgressListener listener) {
 		tts.setOnUtteranceProgressListener(listener);
-	}	
+	}
+
+	public void setTTSInitListener(TTSInitListener initListener) {
+	    this.initListener = initListener;
+    }	
 }

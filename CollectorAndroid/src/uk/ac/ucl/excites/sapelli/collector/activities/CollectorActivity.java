@@ -30,13 +30,18 @@ import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
+import uk.ac.ucl.excites.sapelli.collector.util.TTSInitListener;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
@@ -60,7 +65,7 @@ import android.view.WindowManager;
  * 
  * @author mstevens, julia, Michalis Vitos
  */
-public class CollectorActivity extends ProjectActivity
+public class CollectorActivity extends ProjectActivity implements TTSInitListener
 {
 
 	// STATICS--------------------------------------------------------
@@ -199,13 +204,28 @@ public class CollectorActivity extends ProjectActivity
 			controller = new CollectorController(project, collectorView, projectStore, recordStore, fileStorageProvider, this);
 			collectorView.initialise(controller); // !!!
 			
-			// Start project:
-			controller.startProject();
-			
-			// Show demo disclaimer if needed:
-			if(app.getBuildInfo().isDemoBuild())
-				showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
+			if (needsTTSEngine(project)) {
+				collectorView.addSpinner();
+				controller.getAudioFeedbackController().setTTSInitListener(this);
+			}
+			else
+				startProject();
 		}
+	}
+	
+	@Override
+	public void onTTSInit() {
+		collectorView.removeSpinner();
+		startProject();
+	}
+	
+	private void startProject() {
+		// Start project:
+		controller.startProject();
+		
+		// Show demo disclaimer if needed:
+		if(app.getBuildInfo().isDemoBuild())
+			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
 	}
 
 	/**
@@ -552,6 +572,21 @@ public class CollectorActivity extends ProjectActivity
 				if(keyCode != -1)
 					keyCodeToTrigger.put(keyCode, t);
 			}
+	}
+	
+	private static boolean needsTTSEngine(Project project) {
+		boolean needsTTS = false;
+		outer: for (Form form : project.getForms()) {
+			for (Field field : form.getFields()) {
+				
+				if (field instanceof ChoiceField &&
+						!((ChoiceField)field).hasAudioAnswerDesc() || !((ChoiceField)field).hasAudioQuestionDesc()) {
+					needsTTS = true;
+				}
+					
+			}
+		}
+		return needsTTS;
 	}
 	
 }

@@ -309,5 +309,4 @@ public class CollectorController extends Controller implements LocationListener,
 		if (audioController != null)
 			audioController.stopPlayingFeedback();
 	}
-
 }
