@@ -29,12 +29,11 @@
 	</parent>
 	<properties>
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
-		<!-- To be provided on command line using -D arguments, e.g.: mvn install Prelease -Dsign.keystore=... -->
-		<sign.keystore />
-		<sign.storepass />
-		<sign.alias />
-		<sign.keypass />
+		<release.properties.file>${project.basedir}/release.properties</release.properties.file>
+		<!-- Must contain these properties: keystore-path, keystore-passwd, key-alias, key-passwd -->
 		<unsigned.classifier>unsigned</unsigned.classifier>
+		<apk.unsigned>${project.build.directory}/${project.artifactId}-unsigned.tmp</apk.unsigned>
+		<apk.signed.unaligned>${project.build.directory}/${project.artifactId}-signed-unaligned.tmp</apk.signed.unaligned>
 	</properties>
 	<repositories>
 		<repository>
@@ -159,6 +158,9 @@
 								<configuration>
 									<target>
 										<echo>Remove useless APKs from repo...</echo>
+										<!-- The repository contains a jar renamed to apk, maven installs it
+											 this way because the release/debug apk is installed with classifier,
+											 because there is no "unclassified apk" maven takes the jar instead -->
 										<echo> JAR renamed to APK:</echo>
 										<delete file="${project.repodir}${file.separator}${project.build.finalName}-${project.version}.${project.packaging}" />
 										<echo> Unsigned APK (release nor debug):</echo>
@@ -187,6 +189,25 @@
 			<build>
 				<plugins>
 					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>properties-maven-plugin</artifactId>
+						<version>1.0-alpha-2</version>
+						<executions>
+							<execution>
+								<id>read-release-properties</id>
+								<phase>initialize</phase>
+								<goals>
+									<goal>read-project-properties</goal>
+								</goals>
+								<configuration>
+									<files>
+										<file>${release.properties.file}</file>
+									</files>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
 						<artifactId>maven-antrun-plugin</artifactId>
 						<inherited>true</inherited>
 						<executions>
@@ -195,7 +216,7 @@
 								<phase>package</phase>
 								<configuration>
 									<target>
-										<copy file="${project.build.directory}/${project.artifactId}.apk" tofile="${project.build.directory}/${project.artifactId}-signed.apk" overwrite="true" />
+										<copy file="${apk.unsigned}" tofile="${apk.signed.unaligned}" overwrite="true" />
 									</target>
 								</configuration>
 								<goals>
@@ -218,12 +239,12 @@
 								<phase>package</phase>
 								<inherited>true</inherited>
 								<configuration>
-									<archive>${project.build.directory}/${project.artifactId}-signed.apk</archive>
+									<archive>${apk.signed.unaligned}</archive>
 									<removeExistingSignatures>true</removeExistingSignatures>
-									<keystore>${sign.keystore}</keystore>
-									<storepass>${sign.storepass}</storepass>
-									<alias>${sign.alias}</alias>
-									<keypass>${sign.keypass}</keypass>
+									<keystore>${keystore-path}</keystore>
+									<storepass>${keystore-passwd}</storepass>
+									<alias>${key-alias}</alias>
+									<keypass>${key-passwd}</keypass>
 									<sigfile>CERT</sigfile>
 									<arguments>
 										<argument>-sigalg</argument>
@@ -243,17 +264,20 @@
 						<configuration>
 							<release>true</release>
 							<sign>
-								<!-- don't sign w/ debug key, APK will be signed w/ release key  -->
+								<!-- don't sign at all (not even w/ debug key) APK will
+									 be signed w/ release key by the jarsigner plugin -->
 								<debug>false</debug>
 							</sign>
+							<outputApk>${apk.unsigned}</outputApk>
 							<classifier>${unsigned.classifier}</classifier>
 							<attachJar>true</attachJar>
 							<attachSources>false</attachSources>
 							<zipalign>
 								<skip>false</skip>
 								<verbose>false</verbose>
-								<inputApk>${project.build.directory}/${project.artifactId}-signed.apk</inputApk>
-								<outputApk>${project.build.directory}/${project.artifactId}-signed-aligned.apk</outputApk>
+								<inputApk>${apk.signed.unaligned}</inputApk>
+								<!-- this is the end product (signed with release key & zip aligned): -->
+								<outputApk>${project.build.directory}/${project.build.finalName}.apk</outputApk>
 								<classifier>release</classifier>
 							</zipalign>
 							<proguard>
@@ -268,6 +292,30 @@
 								<goals>
 									<goal>zipalign</goal>
 								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<!-- disable default deploy plugin (for now) -->
+						<artifactId>maven-deploy-plugin</artifactId>
+						<configuration>
+							<skip>true</skip>
+						</configuration>
+					</plugin>
+					<plugin>
+						<!-- deploy apk using crashlytics Beta distribution -->
+						<groupId>com.crashlytics</groupId>
+						<artifactId>crashlytics-maven</artifactId>
+						<executions>
+							<execution>
+								<id>distribute-beta</id>
+								<phase>deploy</phase>
+								<goals>
+									<goal>UploadDistribution</goal>
+								</goals>
+								<configuration>
+									<betaDistributionReleaseNotesFilePath>${project.basedir}/beta-notes.txt</betaDistributionReleaseNotesFilePath>
+								</configuration>
 							</execution>
 						</executions>
 					</plugin>
@@ -320,7 +368,7 @@
 			<plugin>
 				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 				<artifactId>android-maven-plugin</artifactId>
-				<version>4.0.0-rc.1</version>
+				<version>4.0.0-rc.2</version>
 				<configuration>
 					<sdk>
 						<!-- <path>${sdk-home}</path> -->
@@ -343,6 +391,13 @@
 					<attachSources>false</attachSources>
 				</configuration>
 				<extensions>true</extensions>
+				<!-- <dependencies>
+					<dependency>
+						<groupId>net.sf.proguard</groupId>
+						<artifactId>proguard-base</artifactId>
+						<version>5.0</version>
+					</dependency>
+				</dependencies> -->
 				<executions>
 					<execution>
 						<id>update-manifest</id>
@@ -388,7 +443,6 @@
 					<configuration>
 						<lifecycleMappingMetadata>
 							<pluginExecutions>
-								<!-- make m2e ignore the antrun execution -->
 								<pluginExecution>
 									<pluginExecutionFilter>
 										<groupId>org.apache.maven.plugins</groupId>
@@ -421,7 +475,7 @@
 									<pluginExecutionFilter>
 										<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 										<artifactId>android-maven-plugin</artifactId>
-										<versionRange>[4.0.0-rc.1,)</versionRange>
+										<versionRange>[4.0.0-rc.2,)</versionRange>
 										<goals>
 											<goal>manifest-update</goal>
 										</goals>
