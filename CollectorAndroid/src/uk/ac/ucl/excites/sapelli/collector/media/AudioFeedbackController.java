@@ -161,7 +161,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 			audioAvailableSem.acquire();
 			// get the next track from the front of the queue but do not remove it (as otherwise the synthesis job
 			// may not be able to find the track in the queue)
-			AudioDescription currentTrack;
+			final AudioDescription currentTrack;
 			synchronized(mediaQueue) {
 				currentTrack = mediaQueue.get(0); 
 			}
@@ -192,7 +192,15 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 			// animate the view corresponding to the played choice, if necessary:
 			if (currentTrack.toAnimate != null) {
 				Log.d(TAG,"Animating view for "+currentTrack.text+" || "+currentTrack.mediaFile.getName());
-				ViewAnimator.shakeAnimation(controller.activity.getBaseContext(), currentTrack.toAnimate);
+				controller.activity.runOnUiThread(new Runnable() { // TODO improve
+
+					@Override
+                    public void run() {
+						ViewAnimator.shakeAnimation(controller.activity.getBaseContext(), currentTrack.toAnimate);
+                    }
+					
+				});
+				
 			} else {
 				Log.d(TAG,"Didn't animate view for "+currentTrack.text+" || "+currentTrack.mediaFile.getName()+" as it was null");
 			}
@@ -306,7 +314,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 				// enqueue answer:
 				enqueueDescription(choice, false, choiceView);
 				// start playback:
-				startPlayingFeedback();
+				//startPlayingFeedback();
 				break;
 
 			case NONE:
