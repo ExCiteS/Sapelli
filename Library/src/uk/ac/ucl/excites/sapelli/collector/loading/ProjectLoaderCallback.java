@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.io;
+package uk.ac.ucl.excites.sapelli.collector.loading;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 
@@ -33,5 +33,5 @@ public interface ProjectLoaderCallback
 	 * @throws IllegalArgumentException if something is wrong
 	 */
 	public void checkProject(Project loadedProject) throws IllegalArgumentException;
-		
+	
 }

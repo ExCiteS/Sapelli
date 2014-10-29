@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.io;
+package uk.ac.ucl.excites.sapelli.collector.loading;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -25,8 +25,13 @@ import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.loading.tasks.LoadingTask;
+import uk.ac.ucl.excites.sapelli.collector.loading.tasks.LoadingTaskExecutor;
+import uk.ac.ucl.excites.sapelli.collector.loading.tasks.TTSSynthesisTask;
+import uk.ac.ucl.excites.sapelli.collector.loading.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.xml.ProjectParser;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.Unzipper;
 
@@ -36,7 +41,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.Unzipper;
  * @author mstevens, Michalis Vitos
  * 
  */
-public class ProjectLoader
+public class ProjectLoader implements LoadingTaskExecutor
 {
 	
 	// STATICS
@@ -131,80 +136,119 @@ public class ProjectLoader
 	public Project load(InputStream sapelliFileStream) throws Exception
 	{
 		Project project = null;
-		// Extract the content of the Sapelli file to a new subfolder of the temp folder:
 		File extractFolder = new File(tempFolder.getAbsolutePath() + File.separator + System.currentTimeMillis());
 		try
 		{
-			FileHelpers.createFolder(extractFolder);
-			Unzipper.unzip(sapelliFileStream, extractFolder);
-		}
-		catch(Exception e)
-		{
-			throw new Exception("Error on extracting contents of Sapelli file.", e);
-		}
-		// Parse PROJECT.xml:
-		try
-		{	
-			project = parser.parseProject(new File(extractFolder.getAbsolutePath() + File.separator + PROJECT_FILE));
-		}
-		catch(Exception e)
-		{
-			throw new Exception("Error on parsing " + PROJECT_FILE, e);
-		}
-		// Check if project is acceptable:
-		if(callback != null)
-		{
+			// STEP 1 - Extract the content of the Sapelli file to a new subfolder of the temp folder:
 			try
 			{
-				 callback.checkProject(project); // throws IllegalArgumentException if something is wrong
+				FileHelpers.createFolder(extractFolder);
+				Unzipper.unzip(sapelliFileStream, extractFolder);
 			}
-			catch(IllegalArgumentException iae)
-			{	// Project is not acceptable
-				// 	delete temp folder:
-				FileUtils.deleteQuietly(extractFolder);
-				//	re-throw IllegalArgumentException:
-				throw iae;
+			catch(Exception e)
+			{
+				throw new Exception("Error on extracting contents of Sapelli file.", e);
 			}
-		}
-		// Create move extracted files to project folder:
-		try
-		{
-			FileHelpers.moveDirectory(extractFolder, fileStorageProvider.getProjectInstallationFolder(project, true));
+			
+			// STEP 2 - Parse PROJECT.xml:
+			try
+			{	
+				project = parser.parseProject(new File(extractFolder.getAbsolutePath() + File.separator + PROJECT_FILE));
+			}
+			catch(Exception e)
+			{
+				throw new Exception("Error on parsing " + PROJECT_FILE, e);
+			}
+			
+			// STEP 3 - Check if project is acceptable:
+			checkProject(project); // throws IllegalArgumentException if something is wrong
+
+			// STEP 4 - Create move extracted files to project folder:
+			try
+			{
+				FileHelpers.moveDirectory(extractFolder, fileStorageProvider.getProjectInstallationFolder(project, true));
+			}
+			catch(Exception e)
+			{
+				throw new Exception("Error on moving extracted files to project folder.", e);
+			}
+			
+			// STEP 5 - Post-processing of loader tasks:
+			for(LoadingTask task : parser.getLoadingTasks())
+			{
+				try
+				{
+					task.execute(this);
+				}
+				catch(Exception e)
+				{
+					throw new Exception("Error on executing loader task", e);
+				}
+			}
 		}
 		catch(Exception e)
 		{
-			throw new Exception("Error on moving extracted files to project folder.", e);
+			// 	delete temp folder:
+			FileUtils.deleteQuietly(extractFolder);
+			//	re-throw Exception:
+			throw e;
 		}
+		
 		// Return project object:
 		return project;
 	}
+	
+	/**
+	 * @param project
+	 * @throws IllegalArgumentException when the project is not acceptable
+	 */
+	protected void checkProject(Project project) throws IllegalArgumentException
+	{
+		if(callback != null)
+			callback.checkProject(project); // throws IllegalArgumentException if something is wrong
+	}
 
 	/**
-	 * Parses the PROJECT.xml present in the given sapelli file (provided as a File object), without extracting the contents to storage; returns the resulting Project object.
+	 * To be overridden by subclass!
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.collector.loading.tasks.LoadingTaskExecutor#execute(uk.ac.ucl.excites.sapelli.collector.loading.tasks.TTSSynthesisTask)
+	 */
+	@Override
+	public void execute(TTSSynthesisTask ttsTask)
+	{
+		System.err.println("TTSSysthesis not supported!");
+	}
+	
+	/**
+	 * Parses the PROJECT.xml present in the given sapelli file (provided as a File object), without extracting the contents to storage and without executing load tasks; returns the resulting Project object.
 	 * 
 	 * @param sapelliFile
 	 * @return the loaded Project
 	 * @throws Exception
 	 */
-	public Project loadWithoutExtract(File sapelliFile) throws Exception
+	public Project loadParseOnly(File sapelliFile) throws Exception
 	{
 		if(sapelliFile == null || !sapelliFile.exists() || sapelliFile.length() == 0)
 			throw new IllegalArgumentException("Invalid Sapelli file");
-		return loadWithoutExtract(new FileInputStream(sapelliFile));
+		return loadParseOnly(new FileInputStream(sapelliFile));
 	}
 
 	/**
-	 * Parses the PROJECT.xml present in the given sapelli file (provided as an InputStream), without extracting the contents to storage; returns the resulting Project object.
+	 * Parses the PROJECT.xml present in the given sapelli file (provided as an InputStream), without extracting the contents to storage and without executing load tasks; returns the resulting Project object.
 	 * 
 	 * @param sapelliFileStream
 	 * @return the loaded Project
 	 * @throws Exception
 	 */
-	public Project loadWithoutExtract(InputStream sapelliFileStream) throws Exception
+	public Project loadParseOnly(InputStream sapelliFileStream) throws Exception
 	{
 		try
 		{	// Parse PROJECT.xml:
-			return parser.parseProject(Unzipper.getInputStreamForFileInZip(sapelliFileStream, PROJECT_FILE));
+			Project project = parser.parseProject(Unzipper.getInputStreamForFileInZip(sapelliFileStream, PROJECT_FILE));
+			// Check if project is acceptable:
+			checkProject(project); // throws IllegalArgumentException if something is wrong
+			// all OK:
+			return project;
 		}
 		catch(Exception e)
 		{

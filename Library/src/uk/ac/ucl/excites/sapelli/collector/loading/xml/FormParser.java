@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.xml;
+package uk.ac.ucl.excites.sapelli.collector.loading.xml;
 
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -63,7 +63,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
  * 
  * @author mstevens
  */
-public class FormParser extends SubtreeParser
+public class FormParser extends SubtreeParser<ProjectParser>
 {
 	
 	// STATICS--------------------------------------------------------
@@ -225,7 +225,7 @@ public class FormParser extends SubtreeParser
 				throw new SAXException("Forms cannot be nested!");
 			
 			String id = attributes.getRequiredString(TAG_FORM, true, false, ATTRIBUTE_FORM_ID, ATTRIBUTE_FORM_NAME); // "name" is v1.x syntax but still accepted in v2.0 (yet "id" is preferred)
-			ProjectParser.Format format = ((ProjectParser) owner).getFormat();
+			ProjectParser.Format format = owner.getFormat();
 			if(format == ProjectParser.Format.v1_x)
 			{	// Backwards compatibility
 				if(project.getForms().isEmpty()) // only for 1st, and assumed only, currentForm
@@ -544,10 +544,10 @@ public class FormParser extends SubtreeParser
 						if(comparisonAttrib == null)
 							addWarning("<" + TAG_CONSTRAINT + "> does not contain an comparison attribute (i.e. 1 of: " + StringUtils.join(RuleConstraint.COMPARISON_STRINGS, ", ") + ").");
 						else
-							((ProjectParser) owner).addRelationshipConstraint(	currentRelationship,
-																				columnName,
-																				comparisonAttrib,
-																				attributes.getRequiredString(getRelationshipTag(currentRelationship), comparisonAttrib, true, true));
+							owner.addRelationshipConstraint(currentRelationship,
+															columnName,
+															comparisonAttrib,
+															attributes.getRequiredString(getRelationshipTag(currentRelationship), comparisonAttrib, true, true));
 					}
 					// <Constraint> in something else than <BelongsTo> or <LinksTo>
 					else
@@ -608,7 +608,7 @@ public class FormParser extends SubtreeParser
 	{
 		newField(relationship, attributes);
 		// Remember form name (to resolved later):
-		((ProjectParser) owner).addRelationship(relationship, attributes.getRequiredString(getRelationshipTag(relationship), ATTRIBUTE_RELATIONSHIP_FORM, true, false));
+		owner.addRelationship(relationship, attributes.getRequiredString(getRelationshipTag(relationship), ATTRIBUTE_RELATIONSHIP_FORM, true, false));
 		
 		// Other attributes:
 		relationship.setHoldForeignRecord(attributes.getBoolean(ATTRIBUTE_RELATIONSHIP_HOLD, Relationship.DEFAULT_HOLD_FOREIGN_RECORD));

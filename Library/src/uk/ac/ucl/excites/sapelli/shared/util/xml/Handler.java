@@ -41,19 +41,19 @@ public abstract class Handler extends DefaultHandler
 	protected static final String DISABLED = "disabled";
 	
 	// Dynamic
-	private final Map<String, SubtreeParser> subtreeParsers;
-	private SubtreeParser activeSubtreeParser;
+	private final Map<String, SubtreeParser<?>> subtreeParsers;
+	private SubtreeParser<?> activeSubtreeParser;
 	
 	protected final List<String> warnings;
 
 	public Handler()
 	{
 		this.warnings = new ArrayList<String>();
-		this.subtreeParsers = new HashMap<String, SubtreeParser>();
+		this.subtreeParsers = new HashMap<String, SubtreeParser<?>>();
 		this.activeSubtreeParser = null;
 	}
 	
-	public void addSubtreeParser(SubtreeParser subtreeParser)
+	public void addSubtreeParser(SubtreeParser<?> subtreeParser)
 	{
 		if(subtreeParser != null)
 			subtreeParsers.put(subtreeParser.getRootElementQName(), subtreeParser);
@@ -72,14 +72,14 @@ public abstract class Handler extends DefaultHandler
 		activeSubtreeParser = null;
 	}
 	
-	public void activateSubtreeParser(SubtreeParser subtreeParser)
+	public void activateSubtreeParser(SubtreeParser<?> subtreeParser)
 	{
 		if(subtreeParsers.get(subtreeParser.getRootElementQName()) == null)
 			throw new IllegalArgumentException("Unknown SubtreeParser");
 		this.activeSubtreeParser = subtreeParser;
 	}
 	
-	public void deactivateSubtreeParser(SubtreeParser subtreeParser)
+	public void deactivateSubtreeParser(SubtreeParser<?> subtreeParser)
 	{
 		if(activeSubtreeParser != subtreeParser)
 			return;
@@ -96,7 +96,7 @@ public abstract class Handler extends DefaultHandler
 	/**
 	 * @return the activeSubtreeParser
 	 */
-	public SubtreeParser getActiveSubtreeParser()
+	public SubtreeParser<?> getActiveSubtreeParser()
 	{
 		return activeSubtreeParser;
 	}

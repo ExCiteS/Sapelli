@@ -22,13 +22,13 @@ package uk.ac.ucl.excites.sapelli.shared.util.xml;
  * @author mstevens
  *
  */
-public abstract class SubtreeParser extends Handler
+public abstract class SubtreeParser<O extends Handler> extends Handler
 {
 
-	protected final Handler owner;
+	protected final O owner;
 	private final String rootElementQName;
 	
-	public SubtreeParser(Handler owner, String rootElementQName)
+	public SubtreeParser(O owner, String rootElementQName)
 	{
 		this.owner = owner;
 		this.rootElementQName = rootElementQName;

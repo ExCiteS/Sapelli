@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.xml;
+package uk.ac.ucl.excites.sapelli.collector.loading.xml;
 
 import org.xml.sax.SAXException;
 
@@ -31,7 +31,7 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
  * @author mstevens
  * 
  */
-public class ConfigurationParser extends SubtreeParser
+public class ConfigurationParser extends SubtreeParser<ProjectParser>
 {
 
 	// STATICS--------------------------------------------------------
