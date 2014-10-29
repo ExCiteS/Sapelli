@@ -595,30 +595,6 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	{
 		projectStore.duplicateCheck(loadedProject);
 	}
-	
-	private void requestEncryptionKey(final Project project)
-	{
-		// encryptionDialog = new AlertDialog.Builder(this);
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle("Project Encryption");
-		builder.setMessage("This project requires a password in order to encrypt and transmit the data. Please provide a password:");
-		
-		// Set an EditText view to get user input
-		final EditText input = new EditText(this);
-		builder.setView(input);
-
-		builder.setPositiveButton("Ok", new DialogInterface.OnClickListener()
-		{
-			public void onClick(DialogInterface dialog, int whichButton)
-			{
-				//String inputStr = input.getText().toString();
-				//project.getTransmissionSettings().setPassword(inputStr.isEmpty() ? 	EncryptionSettings.DEFAULT_PASSWORD /*Set the Default Password*/ :
-				//																	inputStr);
-			}
-		});
-		encryptionDialog = builder.create();
-		encryptionDialog.show();
-	}
 
 	public void scanQR(View view)
 	{
