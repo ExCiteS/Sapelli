@@ -45,6 +45,7 @@ import android.graphics.Color;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -62,7 +63,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	static public final float CROSS_THICKNESS = 0.02f;
 	
 	private PageView pageView;
-	private ChoiceView choiceView;
+	private PreICSChoiceView choiceView; // TODO was ChoiceView
 
 	private CollectorController controller;
 	private AudioFeedbackController audioController;
@@ -110,7 +111,17 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			choiceView.setEnabled(true);
 			
 			// Audio Feedback
-			audioController.playQuestion(collectorUI.getContext(), choice, choiceView);
+			choiceView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
+
+				@Override
+                public void onGlobalLayout() {
+					// when the views have all been created, play the question
+					audioController.playQuestion(collectorUI.getContext(), choice, choiceView);
+					// remove this listener once this has occurred, since the question will only be played once
+					choiceView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                }
+				
+			});
 			return (View) choiceView;
 		}
 	}
@@ -159,7 +170,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * 
 	 * @return
 	 */
-	public ChoiceView getChoiceView()
+	public PreICSChoiceView getChoiceView() // TODO was ChoiceView
 	{
 		return new PreICSChoiceView(collectorUI.getContext());
 	}
