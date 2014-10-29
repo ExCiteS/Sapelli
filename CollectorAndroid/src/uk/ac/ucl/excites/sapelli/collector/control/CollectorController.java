@@ -130,7 +130,7 @@ public class CollectorController extends Controller implements LocationListener,
 		if(audioPlayer != null)
 			audioPlayer.destroy();
 		if (audioController != null)
-			audioController.stopAudioFeedback();
+			audioController.stopPlayingFeedback();
 		audioPlayer = null;
 		audioController = null;
 	}
@@ -307,7 +307,7 @@ public class CollectorController extends Controller implements LocationListener,
 	
 	public void stopAudioFeedback() {
 		if (audioController != null)
-			audioController.stopAudioFeedback();
+			audioController.stopPlayingFeedback();
 	}
 
 }

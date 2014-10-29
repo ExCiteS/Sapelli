@@ -35,13 +35,67 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 	private MediaPlayer queuePlayer;
 	private ArrayList<AudioDescription> mediaQueue; // list of audio to play
 	private TextToVoice textToVoice;
-	private Semaphore playbackCompleted; // semaphore used to notify when the media player has finished playing the current track
+	private Thread playbackThread;
+	private Semaphore audioAvailableSem; // semaphore used to notify when there is a track in the queue to be played
+	private Semaphore playbackCompletedSem; // semaphore used to notify when the media player has finished playing the current track
+	private volatile boolean running = false; // boolean used to start/stop the playback thread looping
 
 	public AudioFeedbackController(CollectorController controller) {
 		this.controller = controller;
 
 		textToVoice = new TextToVoice(controller.activity.getBaseContext(), controller.activity.getResources().getConfiguration().locale);
-		textToVoice.setOnUtteranceProgressListener(this);
+		textToVoice.setOnUtteranceProgressListener(this);		
+	}
+
+	/**
+	 * Start a thread which constantly pulls audio tracks from the queue and plays them in-order.
+	 */
+	public void startPlayingFeedback() {
+		Log.d(TAG, "Starting playback...");
+		playbackCompletedSem = new Semaphore(0);
+
+		if (playbackThread == null) { // which it always will be since the thread is nullified when stopped
+			playbackThread = new Thread() {
+				@Override
+				public void run() {
+					while (running) {
+						playNextQueueItem();
+					}
+				}
+			};
+		}
+
+		running = true;
+		playbackThread.start();
+	}
+
+	/**
+	 * Destroy the media player and clear the queue of media items.
+	 */
+	public void stopPlayingFeedback() {
+		Log.d(TAG,"Stopping playback...");
+		running = false;
+		// destroy audio player:
+		if (queuePlayer != null) {
+			queuePlayer.stop();
+			queuePlayer.release();
+			queuePlayer = null;
+		}
+		// interrupt playback thread since it is probably blocked on a semaphore:
+		playbackThread.interrupt();
+		try {
+			// wait for playback thread to die before continuing:
+			playbackThread.join();
+		} catch (InterruptedException e) {
+			Log.e(TAG,"Main thread interrupted while waiting for playback thread to join.");
+		}
+		// nullify thread so it must be re-initialised:
+		playbackThread = null;
+		// destroy queue so stale media cannot be played later:
+		mediaQueue = null;
+		// destroy semaphores so they aren't reused by later ChoiceFields:
+		audioAvailableSem = null;
+		playbackCompletedSem = null;
 	}
 
 	/**
@@ -49,7 +103,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 	 */
 	@Override
 	public void onCompletion(MediaPlayer mp) {
-		playbackCompleted.release();
+		playbackCompletedSem.release();
 	}
 
 
@@ -90,65 +144,73 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 
 	/**
 	 * Play the next item in the queue, and once it has finished, remove it from the queue and delete the file
-	 * if necessary (if the file was a temporary file used to store synthesised text).
+	 * if necessary (if the file was a temporary file used to store synthesised text). Precisely, this method executes the
+	 * following steps:
+	 * <ul>
+	 * <li> Wait for a new track (acquire {@link AudioFeedbackController#audioAvailableSem}) </li>
+	 * <li> Wait for track to be ready - i.e. for TTS synthesis to finish (acquire {@link AudioFeedbackController.AudioDescription#audioProcessedSem}) </li>
+	 * <li> Start playing track </li>
+	 * <li> Wait for playback to finish (acquire {@link AudioFeedbackController#playbackCompletedSem}) </li>
+	 * <li> Remove the just-played item from the queue and delete its file if it was a TTS synthesis </li>
+	 * </ul>
 	 */
 	private void playNextQueueItem() {
-
-		// get the next track from the front of the queue
-		AudioDescription currentTrack = mediaQueue.get(0);
 		try {
-			// wait for synthesis to have finished on the media file
-			currentTrack.completedSemaphore.acquire();
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		// set the media player's source to the new audio track
-		Log.d(TAG,"Queuing next audio item: "+currentTrack.text+" ||| "+currentTrack.mediaFile.getName());
-		try {
-			if (queuePlayer == null) {
-				queuePlayer = MediaPlayer.create(controller.activity.getBaseContext(), Uri.fromFile(currentTrack.mediaFile));
-				queuePlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-				queuePlayer.setOnCompletionListener(this);
+			// wait for a track to become available:
+			audioAvailableSem.acquire();
+			// get the next track from the front of the queue but do not remove it (as otherwise the synthesis job
+			// may not be able to find the track in the queue)
+			AudioDescription currentTrack;
+			synchronized(mediaQueue) {
+				currentTrack = mediaQueue.get(0); 
 			}
-			else {
-				queuePlayer.reset(); // reset to idle state
-				queuePlayer.setDataSource(controller.activity.getBaseContext(), Uri.fromFile(currentTrack.mediaFile));
-				queuePlayer.prepare();
+			// wait for synthesis to have finished on the media file:
+			currentTrack.audioProcessedSem.acquire();
+			// set the media player's source to the new audio track
+			Log.d(TAG,"Queuing next audio item: "+currentTrack.text+" || "+currentTrack.mediaFile.getName());
+			try {
+				if (queuePlayer == null) {
+					queuePlayer = MediaPlayer.create(controller.activity.getBaseContext(), Uri.fromFile(currentTrack.mediaFile));
+					queuePlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+					queuePlayer.setOnCompletionListener(this);
+				}
+				else {
+					queuePlayer.reset(); // reset to idle state
+					queuePlayer.setDataSource(controller.activity.getBaseContext(), Uri.fromFile(currentTrack.mediaFile));
+					queuePlayer.prepare();
 
+				}
+				// start it playing:
+				queuePlayer.start();
+
+			} catch (Exception e) {
+				Log.e(TAG,"Error when trying to change media player data source to: "+currentTrack.text+", file "+currentTrack.mediaFile.getName(), e);
+				// Playing failed so completed listener will never fire. Allow file to be deleted and playback to continue:
+				playbackCompletedSem.release();
 			}
-			// start it playing:
-			queuePlayer.start();
+			// animate the view corresponding to the played choice, if necessary:
+			if (currentTrack.toAnimate != null) {
+				Log.d(TAG,"Animating view for "+currentTrack.text+" || "+currentTrack.mediaFile.getName());
+				ViewAnimator.shakeAnimation(controller.activity.getBaseContext(), currentTrack.toAnimate);
+			} else {
+				Log.d(TAG,"Didn't animate view for "+currentTrack.text+" || "+currentTrack.mediaFile.getName()+" as it was null");
+			}
 
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			Log.e(TAG,"Error when trying to change media player data source to: "+currentTrack.text+", file "+currentTrack.mediaFile.getName(), e);
-			playbackCompleted.release();
-		}
-		
-		// animate the view corresponding to the played choice, if necessary:
-		if (currentTrack.toAnimate != null) {
-			Log.d(TAG,"Animating view for "+currentTrack.text+" || "+currentTrack.mediaFile.getName());
-			ViewAnimator.shakeAnimation(controller.activity.getBaseContext(), currentTrack.toAnimate);
-		} else {
-			Log.d(TAG,"Didn't animate view for "+currentTrack.text+" || "+currentTrack.mediaFile.getName()+" as it was null");
-		}
-
-		
-		try {
 			// wait for the media player to finish playing the track
-			playbackCompleted.acquire();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		// delete the track's media file if it was a synthesised TTS file:
-		if (currentTrack.tts)
-			currentTrack.mediaFile.delete();
-		
-		// remove played item from queue:
-		mediaQueue.remove(currentTrack);
+			playbackCompletedSem.acquire();
 
+			// delete the track's media file if it was a synthesised TTS file:
+			if (currentTrack.tts)
+				currentTrack.mediaFile.delete();
+
+			// remove played item from queue:
+			synchronized(mediaQueue) {
+				mediaQueue.remove(currentTrack);
+			}
+		} catch (InterruptedException e1) {
+			// was probably caused by the ChoiceField being exited
+			Log.d(TAG,"Playback thread interrupted while waiting for semaphore.");
+		}
 
 	}
 
@@ -157,37 +219,67 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 		AudioFeedback audioFeedback = controller.getCurrentForm().getAudioFeedback();
 		if(audioFeedback != null)
 		{
-			AudioDescription question;
 			switch(audioFeedback)
 			{
 			case LONG_CLICK:
-				// TODO play question out loud
+
+				// enqueue question:
+				enqueueDescription(choice, true, null);
+				// play media queue:
+				startPlayingFeedback();
 				break;
+
 			case SEQUENTIAL:
-				mediaQueue = new ArrayList<AudioDescription>();
-				question = audioDescFromChoiceField(choice, true, null);
-				mediaQueue.add(question);
+
+				// enqueue question:
+				enqueueDescription(choice, true, null);
 				List<ChoiceField> children = choice.getChildren();
 				for (int i = 0; i < children.size(); i++) {
-					mediaQueue.add(audioDescFromChoiceField(children.get(i), false, choiceView.getChildViewAt(i)));
+					// enqueue each answer:
+					enqueueDescription(children.get(i), false, choiceView.getChildViewAt(i));
 				}
-
-				playbackCompleted = new Semaphore(0);
-
-				Thread playerThread = new Thread() {
-					@Override
-					public void run() {
-						while (!mediaQueue.isEmpty()) {
-							playNextQueueItem();
-						}
-					}
-				};
-				playerThread.start();
+				// play media queue:
+				startPlayingFeedback();
 				break;
+
 			case NONE:
+
 				break;
+
 			}
 		}
+	}
+	
+	/**
+	 * Creates an AudioDescription from the provided parameters then enqueues it if creation was successful.
+	 * @param choice - the ChoiceField which the audio describes
+	 * @param question - whether or not the ChoiceField is the question in this context
+	 * @param toAnimate - the view to animate when the audio description is played
+	 */
+	private void enqueueDescription(ChoiceField choice, boolean question, View toAnimate) {
+		try {
+	        AudioDescription ad = audioDescFromChoiceField(choice, question, toAnimate);
+	        enqueueDescription(ad);
+        } catch (TTSFailedException e) {
+	        Log.e(TAG,"Failed to synthesise TTS for text: "+e.getText());
+        }
+	}
+
+	/**
+	 * Adds the provided AudioDescription object to the playback queue, 
+	 * creating the queue first if it does not already exist and notifying the availability
+	 * of a new track by releasing the {@code tracksInQueue} semaphore.
+	 * @param audioDesc - the AudioDescription to queue
+	 */
+	private void enqueueDescription(AudioDescription audioDesc) {
+		if (mediaQueue == null)
+			mediaQueue = new ArrayList<AudioDescription>();
+		if (audioAvailableSem == null)
+			audioAvailableSem = new Semaphore(0);
+		synchronized(mediaQueue) {
+			mediaQueue.add(audioDesc);
+		}
+		audioAvailableSem.release();
 	}
 
 	/**
@@ -210,8 +302,11 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 			case LONG_CLICK:
 			case SEQUENTIAL:
 
-				AudioDescription answer = audioDescFromChoiceField(choice, false, choiceView);
-				// TODO play answer
+				// enqueue answer:
+				enqueueDescription(choice, false, choiceView);
+				// start playback:
+				startPlayingFeedback();
+				break;
 
 			case NONE:
 				controller.addLogLine("LONG_CLICK", "LongClick on " + choice.getAltText() + " but AudioFeedback is disabled");
@@ -263,20 +358,6 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 		}
 	}
 
-
-	/**
-	 * Destroy the media player and clear the queue of media items.
-	 */
-	public void stopAudioFeedback() {
-		if (queuePlayer != null) {
-			queuePlayer.stop();
-			queuePlayer.release();
-			queuePlayer = null;
-		}
-		mediaQueue = null;
-		playbackCompleted = null;
-	}
-
 	/**
 	 * Create an AudioDescription object from the provided ChoiceField.
 	 * @param choice - the ChoiceField which the audio describes
@@ -284,7 +365,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 	 * @param toAnimate - the view to animate when the audio description is played
 	 * @return an AudioDescription object for these parameters
 	 */
-	private AudioDescription audioDescFromChoiceField(ChoiceField choice, boolean question, View toAnimate) {
+	private AudioDescription audioDescFromChoiceField(ChoiceField choice, boolean question, View toAnimate) throws TTSFailedException {
 		if (question) {
 			if(choice.hasAudioQuestionDesc())
 				return new AudioDescription(controller.getProject().getSoundFile(controller.getFileStorageProvider(), choice.getAnswerDesc()), toAnimate);
@@ -318,7 +399,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 		private File mediaFile;
 		private String text;
 		private boolean tts;
-		private Semaphore completedSemaphore; // semaphore to indicate when this track's file has been fully synthesised
+		private Semaphore audioProcessedSem; // semaphore to indicate when this track's file has been fully synthesised
 		private View toAnimate;
 
 		/**
@@ -330,7 +411,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 			this.mediaFile = mediaFile;
 			this.text = ""; // no text 
 			this.tts = false;
-			completedSemaphore = new Semaphore(1); // no synthesis necessary, so immediately mark track as "completed"
+			audioProcessedSem = new Semaphore(1); // no synthesis necessary, so immediately mark track as "completed"
 			this.toAnimate = toAnimate;
 		}
 
@@ -339,10 +420,10 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 		 * @param text - the text to synthesise
 		 * @param toAnimate - the view to animate when the audio is played
 		 */
-		AudioDescription(String text, View toAnimate) {
+		AudioDescription(String text, View toAnimate) throws TTSFailedException {
 			this.text = text;
 			this.tts = true;
-			completedSemaphore = new Semaphore(0); // only mark track as "completed" when the TTS engine is finished with it
+			audioProcessedSem = new Semaphore(0); // only mark track as "completed" when the TTS engine is finished with it
 			this.toAnimate = toAnimate;
 			try {
 				// create a temporary file in which to store the synthesised audio:
@@ -350,15 +431,11 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 				Log.d(TAG,"Submitting text for processing: "+text);
 				// send the text and file off to the TTS engine for synthesis:
 				if (textToVoice.processSpeechToFile(text, mediaFile.getAbsolutePath()) == TextToSpeech.ERROR)  {
-					Log.e(TAG,"Error when trying to process speech: "+text+". Skipping to next.");
-					// if processing fails, allow the media player to skip the file (TODO - improve)
-					completedSemaphore.release();
+					throw new Exception();
 				} else 
 					Log.d(TAG,"Speech successfully queued for processing: "+text);
 			} catch (Exception e) {
-				Log.e(TAG,"Error when trying to process speech: "+text+". Skipping to next.");
-				// if processing fails, allow the media player to skip the file (TODO - improve)
-				completedSemaphore.release();
+				throw new TTSFailedException(text);
 			}
 		}
 
@@ -369,7 +446,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 			if (tts) {
 				// reflect that the TTS synthesis job is complete by releasing the semaphore, thus awakening the player thread
 				Log.d(TAG,"TTS completed: "+mediaFile.getName()+"  ||  "+text);
-				completedSemaphore.release();
+				audioProcessedSem.release();
 			}
 		}
 	}

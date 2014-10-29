@@ -120,10 +120,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		// Ignore click if child is disabled:
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return;
-		
-		// Stop the Audio Feedback
-		if (audioController != null)
-			audioController.stopAudioFeedback();
 
 		// Task to perform after animation has finished:
 		Runnable action = new Runnable()
