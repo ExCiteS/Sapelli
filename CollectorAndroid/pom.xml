@@ -38,8 +38,8 @@
 	</properties>
 	<repositories>
 		<repository>
-			<id>crashlytics-repo</id>
-			<url>http://download.crashlytics.com/maven</url>
+			<id>fabric-repo</id>
+			<url>https://maven.fabric.io/repo</url>
 		</repository>
 	</repositories>
 	<pluginRepositories>
@@ -77,11 +77,6 @@
 			<artifactId>svg-android</artifactId>
 			<version>2.0.6</version>
 		</dependency>
-		<dependency>
-			<groupId>com.crashlytics.android</groupId>
-			<artifactId>crashlytics</artifactId>
-			<version>[1.1.13,)</version>
-		</dependency>
 		<!-- <dependency> <groupId>net.rdrei.android.dirchooser</groupId> <artifactId>library</artifactId> 
 			<version>1.0-pre-v11</version> <type>aar</type> </dependency> -->
 		<!-- <dependency> <groupId>com.dropbox</groupId> <artifactId>dropbox-android-sync-sdk</artifactId> 
@@ -109,6 +104,13 @@
 					<artifactId>afilechooser-library</artifactId>
 					<version>2.4</version>
 					<type>apklib</type>
+				</dependency>
+				<dependency>
+					<groupId>com.crashlytics.sdk.android</groupId>
+					<artifactId>crashlytics</artifactId>
+					<version>2.0.0</version>
+					<scope>compile</scope>
+					<type>aar</type>
 				</dependency>
 			</dependencies>
 			<build>
@@ -320,7 +322,7 @@
 			<plugin>
 				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 				<artifactId>android-maven-plugin</artifactId>
-				<version>4.0.0-rc.1</version>
+				<version>4.0.0-rc.2</version>
 				<configuration>
 					<sdk>
 						<!-- <path>${sdk-home}</path> -->
@@ -421,7 +423,7 @@
 									<pluginExecutionFilter>
 										<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 										<artifactId>android-maven-plugin</artifactId>
-										<versionRange>[4.0.0-rc.1,)</versionRange>
+										<versionRange>[4.0.0-rc.2,)</versionRange>
 										<goals>
 											<goal>manifest-update</goal>
 										</goals>

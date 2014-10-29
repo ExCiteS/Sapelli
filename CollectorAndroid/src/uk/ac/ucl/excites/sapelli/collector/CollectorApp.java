@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector;
 
+import io.fabric.sdk.android.Fabric;
 import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -105,7 +106,7 @@ public class CollectorApp extends Application implements StoreClient
 		// Start Crashlytics for bugs reporting
 		if(!BuildConfig.DEBUG)
 		{
-			Crashlytics.start(this);
+			Fabric.with(this, new Crashlytics());
 			Crashlytics.setString(CRASHLYTICS_VERSION_INFO, buildInfo.getVersionInfo());
 			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
 		}
