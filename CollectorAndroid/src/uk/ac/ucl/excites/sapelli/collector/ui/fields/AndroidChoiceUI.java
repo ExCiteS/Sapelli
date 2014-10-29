@@ -63,7 +63,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	static public final float CROSS_THICKNESS = 0.02f;
 	
 	private PageView pageView;
-	private PreICSChoiceView choiceView; // TODO was ChoiceView
+	private ChoiceView choiceView;
 
 	private CollectorController controller;
 	private AudioFeedbackController audioController;
@@ -110,18 +110,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			choiceView.update();
 			choiceView.setEnabled(true);
 			
-			// Audio Feedback
-			choiceView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
-
-				@Override
-                public void onGlobalLayout() {
-					// when the views have all been created, play the question
-					audioController.playQuestion(collectorUI.getContext(), choice, choiceView);
-					// remove this listener once this has occurred, since the question will only be played once
-					choiceView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                }
-				
-			});
 			return (View) choiceView;
 		}
 	}
@@ -170,7 +158,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * 
 	 * @return
 	 */
-	public PreICSChoiceView getChoiceView() // TODO was ChoiceView
+	public ChoiceView getChoiceView()
 	{
 		return new PreICSChoiceView(collectorUI.getContext());
 	}
@@ -328,6 +316,19 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// Click listeners:
 			setOnItemClickListener(this);
 			setOnItemLongClickListener(this);
+			
+			// Only begin audio feedback once the system calls back to tell us all the views have been drawn:
+			getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
+
+				@Override
+                public void onGlobalLayout() {
+					// when the views have all been created, play the question
+					audioController.playQuestion(collectorUI.getContext(), choice, PreICSChoiceView.this);
+					// remove this listener once this has occurred, since the question will only be played once
+					PreICSChoiceView.this.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                }
+				
+			});
 		}
 		
 		public void update()
