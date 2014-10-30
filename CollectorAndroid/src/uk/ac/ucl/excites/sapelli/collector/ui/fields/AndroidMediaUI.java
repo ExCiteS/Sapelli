@@ -157,9 +157,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			toReview = new File(controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY));
 			reviewView.setReviewFile(toReview);
 			populateReviewLayout(reviewView.contentView, toReview);
-
-			// remove the filepath from the field's arguments so we do not re-enter single-item review unintentionally
-			controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY);
 			
 			return reviewView;
 
@@ -230,6 +227,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	@Override
 	public boolean handleControlEvent(Control control) {
 		if (control.equals(Control.BACK) && getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY) {
+			// remove the filepath from the field's arguments so we do not re-enter single-item review unintentionally
+			controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY);
 			// we are currently in single-item review from gallery, so back button must just return us to gallery
 			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 			return true;
@@ -610,7 +609,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 							controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY);
 						}
 						// an item has been deleted, so want the gallery to be refreshed:
-						mediaItemsChanged = true; 
+						mediaItemsChanged = true;
+						// remove the filepath from the field's arguments so we do not re-enter single-item review unintentionally
+						controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY);
 						// either go back to capture, or go back to gallery (decided on entry):
 						controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 						// Important: release the click semaphore AFTER the field has been exited
