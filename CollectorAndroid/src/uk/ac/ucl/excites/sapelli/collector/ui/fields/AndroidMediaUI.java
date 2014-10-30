@@ -69,20 +69,21 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	protected static enum DisplayState {
 		CAPTURE,
 		GALLERY,
-		SINGLE_ITEM_REVIEW,
-		SINGLE_REVIEW_FROM_GALLERY
+		SINGLE_ITEM_REVIEW, // alternative to gallery mode when field.max = 1
+		SINGLE_REVIEW_FROM_GALLERY // showing a single item from gallery
 	};
 	
 	private static final String TAG = "AndroidMediaUI";
 	private static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH"; // key for obtaining review filepath from field arguments
 	private static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 
-	private DisplayState currentState = DisplayState.CAPTURE;
-	protected Semaphore handlingClick;
+	private DisplayState currentState = DisplayState.CAPTURE; // keep track of the current display state (when UI first initialised, capture)
+	protected Semaphore handlingClick; // semaphore used to prevent race conditions on click events
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
 	protected File captureFile; // file used to store media while it is being captured
 
+	// Three possible UI screens:
 	private CaptureView captureView;
 	private ReviewView reviewView;
 	private GalleryView galleryView;
@@ -211,6 +212,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	}
 
 
+	/**
+	 * Override the normal "back" behaviour so that the user is returned to the gallery when "back" is pressed
+	 * from the single-item review UI.
+	 */
 	@Override
 	public boolean handleControlEvent(Control control) {
 		if (control.equals(Control.BACK) && currentState.equals(DisplayState.SINGLE_REVIEW_FROM_GALLERY)) {
@@ -245,6 +250,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		if (captureView != null)
 			captureView.maximiseCaptureButton();
 	}
+	
+	// -------- ABSTRACT METHODS:
 
 	/**
 	 * What to do when the capture button has been pressed.
@@ -285,6 +292,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @param mediaFile - the media file being reviewed.
 	 */
 	protected abstract void populateReviewLayout(ViewGroup reviewLayout, File mediaFile);
+	
+	// -------- PRIVATE CLASSES:
 
 	/**
 	 * Abstract class that represents the bottom row of control buttons that is
@@ -367,27 +376,34 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 	}
 	
+	// -------------- CAPTURE UI:
+
+	/**
+	 * LinearLayout that holds the capture UI.
+	 * @author benelliott
+	 *
+	 */
 	private class CaptureView extends LinearLayout {
 				
-		private CaptureContentView contentView;
-		private CaptureButtonView buttonView;
+		private CaptureContentView contentView; // capture UI content
+		private CaptureButtonView buttonView; // capture button
 		private boolean captureButtonMaximised = false;
 		private Context context;
 		
 		private CaptureView(Context context) {
 			super(context);
 			this.context = context;
-			// all XML stuff
+			// layout parameters:
 			this.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 			this.setOrientation(LinearLayout.VERTICAL);
+			// set weight sum (capture UI content will expand to fill all 'spare' space:
 			this.setWeightSum(1.0f);
-			
+			// add content:
 			contentView = new CaptureContentView(context);
 			this.addView(contentView);
-			
+			// add button:
 			buttonView = new CaptureButtonView(context);
 			this.addView(buttonView);
-			//this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, collectorUI.getFieldUIHeightPx());
 		}
 		
 		/**
@@ -422,12 +438,17 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			}
 		}
 		
-		
+		/**
+		 * LinearLayout that holds the capture UI content (to be populated by AndroidMediaUI subclass).
+		 * @author benelliott
+		 *
+		 */
 		private class CaptureContentView extends LinearLayout {
 			
 			private CaptureContentView(Context context) {
 				super(context);
 				LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
+				// expand to fill all available space:
 				params.weight = 1.0f;
 				this.setLayoutParams(params);
 				this.setOrientation(LinearLayout.VERTICAL);
@@ -447,6 +468,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			public CaptureButtonView(Context context)
 			{
 				super(context);
+				
 				buttonAction = new Runnable() {
 					@Override
 					public void run() {
@@ -481,11 +503,16 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		
 	}
 	
+	/**
+	 * LinearLayout that holds the single-item review UI.
+	 * @author benelliott
+	 *
+	 */
 	private class ReviewView extends LinearLayout {
 		
-		private ReviewContentView contentView;
-		private ReviewButtonView buttonView;
-		private File toReview;
+		private ReviewContentView contentView; // review UI content
+		private ReviewButtonView buttonView; // "delete item" button
+		private File toReview; // file used to populate review UI
 		
 		private ReviewView(Context context) {
 			super(context);
@@ -502,10 +529,22 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			this.addView(buttonView);
 		}
 		
+		/**
+		 * Give this object a handle to the file that is being reviewed so that it can delete it 
+		 * when the delete button is pressed.
+		 * 
+		 * @param toReview
+		 */
 		private void setReviewFile(File toReview) {
 			this.toReview = toReview;
 		}
 		
+		/**
+		 * LinearLayout that holds the review UI content (to be populated by AndroidMediaUI subclass).
+		 * 
+		 * @author benelliott
+		 *
+		 */
 		private class ReviewContentView extends LinearLayout {
 			
 			private ReviewContentView(Context context) {
@@ -518,8 +557,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		}
 		
 		/**
-		 * Class that holds the "approve" and "delete" buttons at the bottom
-		 * of the single-item review UI.
+		 * Class that holds the "delete" button at the bottom of the single-item review UI.
 		 * 
 		 * @author mstevens, benelliott
 		 */
@@ -578,6 +616,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		
 	}
 	
+	/**
+	 * LinearLayout that holds the gallery UI (only used when there are multiple media attachments to show).
+	 * 
+	 * @author benelliott
+	 *
+	 */
 	private class GalleryView extends LinearLayout {
 		
 		private GalleryPicker pickerView;
@@ -585,19 +629,21 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		
 		private GalleryView(Context context) {
 			super(context);
-			// all XML stuff
+			// layout parameters:
 			this.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 			this.setOrientation(LinearLayout.VERTICAL);
 			this.setWeightSum(1.0f);
-			
-			// all init stuff
+			// add gallery picker:
 			pickerView = new GalleryPicker(context);
 			this.addView(pickerView);
-			
+			// add capture button:
 			buttonView = new GalleryButtonView(context);
 			this.addView(buttonView);
 		}
 		
+		/**
+		 * Refreshes the contents of the gallery and the "capture" button.
+		 */
 		private void refresh() {
 			pickerView.loadMedia();
 			buttonView.refreshButtons();
@@ -684,7 +730,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		 */
 		private class GalleryButtonView extends MediaButtonView
 		{
-
 			private Item captureMoreButton;
 
 			private GalleryButtonView(Context context)
@@ -697,7 +742,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					public void run() {
 						// "capture more" button clicked, return to camera interface
 						if (!maxReached) {
+							// add the "go to capture" argument to the field:
 							controller.getCurrentFieldArguments().put(GO_TO_CAPTURE_KEY, "true");
+							// re-enter current field:
 							controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 						}
 						// Important: release the click semaphore AFTER the field has been exited
