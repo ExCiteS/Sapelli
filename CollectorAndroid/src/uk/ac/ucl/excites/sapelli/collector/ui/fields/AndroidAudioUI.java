@@ -290,7 +290,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 			setNumColumns(1);
 
-			// TODO rework this:
+			// TODO rework this: use weights?
 			setItemDimensionsPx(
 					LayoutParams.MATCH_PARENT,
 					collectorUI.getFieldUIPartHeightPx(

@@ -77,7 +77,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH"; // key for obtaining review filepath from field arguments
 	private static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 
-	private DisplayState currentState = DisplayState.CAPTURE; // keep track of the current display state (when UI first initialised, capture)
 	protected Semaphore handlingClick; // semaphore used to prevent race conditions on click events
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
@@ -125,64 +124,76 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		if (handlingClick == null)
 			handlingClick = new Semaphore(1);
 
-		// check if the field's arguments specify that we go straight to capture:
-		boolean goToCapture = controller.getCurrentFieldArguments().getBoolean(GO_TO_CAPTURE_KEY, false);
-		
-		if (field.getCount(controller.getCurrentRecord()) == 0 || goToCapture) {
-			currentState = DisplayState.CAPTURE;
-			// if no media or just came from review then go to capture UI
+		DisplayState currentState = getCurrentDisplayState();
+		File toReview;
 
+		switch (currentState) {
+		case CAPTURE:
+			
 			if (captureView == null)
 				captureView = new CaptureView(collectorUI.getContext());
-			
+
 			// populate capture layout (e.g. set up photo viewfinder)
 			populateCaptureLayout(captureView.contentView);
+			
 			return captureView;
 
-		} else {
-			// else go to single-item review or gallery review
+		case SINGLE_ITEM_REVIEW:
 
-			// check if the field's arguments specify a single file to review:
-			String reviewPath = controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY);
-			if (field.getMax() == 1 || reviewPath != null) {
-				// if file in argument or only one file possible then show single review UI
+			if (reviewView == null)
+				reviewView = new ReviewView(collectorUI.getContext());
+			// populate review layout with most recent capture:
+			toReview = field.getLastAttachment(controller.getFileStorageProvider(), record);
+			reviewView.setReviewFile(toReview);
+			populateReviewLayout(reviewView.contentView, toReview);
+			
+			return reviewView;
 
-				if (reviewView == null)
-					reviewView = new ReviewView(collectorUI.getContext());
-				
-				File toReview;
-				
-				if (reviewPath != null) {
-					// if arguments specified a file, populate review UI with it
-					currentState = DisplayState.SINGLE_REVIEW_FROM_GALLERY;
-					toReview = new File(reviewPath);
+		case SINGLE_REVIEW_FROM_GALLERY:
 
-				}
-				else {
-					// else we are here because max == 1, so just use the most recent attachment
-					currentState = DisplayState.SINGLE_ITEM_REVIEW;
-					toReview = field.getLastAttachment(controller.getFileStorageProvider(), record);
-				}
-				
-				reviewView.setReviewFile(toReview);
-				populateReviewLayout(reviewView.contentView, toReview);
-				
-				// remove the filepath from the field's arguments so we do not re-enter single-item review unintentionally
-				controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY); // clear review path in arguments
-				return reviewView;
+			if (reviewView == null)
+				reviewView = new ReviewView(collectorUI.getContext());
+			// populate review layout with provided filepath:
+			toReview = new File(controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY));
+			reviewView.setReviewFile(toReview);
+			populateReviewLayout(reviewView.contentView, toReview);
 
-			} else {
-				// max > 1 and we have not been supplied with a filepath, so go to gallery
+			// remove the filepath from the field's arguments so we do not re-enter single-item review unintentionally
+			controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY);
+			
+			return reviewView;
 
-				currentState = DisplayState.GALLERY;
-				if (galleryView == null)
-					galleryView = new GalleryView(collectorUI.getContext());
-				// force the gallery to update its contents and its button:
-				galleryView.refresh();
-				return galleryView;
-
-			}
+		default: // Return gallery
+			
+			if (galleryView == null)
+				galleryView = new GalleryView(collectorUI.getContext());
+			// force the gallery to update its contents and its button:
+			galleryView.refresh();
+			
+			return galleryView;
 		}
+	}
+
+	/**
+	 * Return the current display state based on the field's arguments and properties.
+	 * @return
+	 */
+	private DisplayState getCurrentDisplayState() {
+		if (field.getCount(controller.getCurrentRecord()) == 0 || controller.getCurrentFieldArguments().getBoolean(GO_TO_CAPTURE_KEY, false)) {
+			// either have no files to review or have been explicitly told to go to capture state
+			return DisplayState.CAPTURE;
+		}
+		
+		if (field.getMax() == 1)
+			// not in capture and can have max. 1 attachment, so go to single item review
+			return DisplayState.SINGLE_ITEM_REVIEW;
+		
+		if (controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY) != null)
+			// not in capture, max > 1, and there was a filepath in the arguments so show that file for review
+			return DisplayState.SINGLE_REVIEW_FROM_GALLERY;
+		
+		// have multiple attachments, not going to capture, and no filepath for review so go to gallery
+		return DisplayState.GALLERY;
 	}
 
 	/**
@@ -218,7 +229,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 */
 	@Override
 	public boolean handleControlEvent(Control control) {
-		if (control.equals(Control.BACK) && currentState.equals(DisplayState.SINGLE_REVIEW_FROM_GALLERY)) {
+		if (control.equals(Control.BACK) && getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY) {
 			// we are currently in single-item review from gallery, so back button must just return us to gallery
 			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 			return true;
@@ -228,11 +239,26 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	}
 	
 	/**
+	 * Force the back button to be shown if in single item review (from gallery) so that the user can always go back
+	 * to the gallery (regardless of field history on the stack).
+	 * 
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#isShowBack()
+	 */
+	@Override
+    protected boolean isShowBack() {
+		if (getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY)
+			return true;
+		return super.isShowBack();
+    }
+
+	/**
 	 * Hide the forward button when reviewing a single item from the gallery.
+	 *
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.SelfLeavingFieldUI#isShowForward()
 	 */
 	@Override
 	public boolean isShowForward() {
-		if (currentState.equals(DisplayState.SINGLE_REVIEW_FROM_GALLERY))
+		if (getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY)
 			return false;
 		return super.isShowForward();
 	}
