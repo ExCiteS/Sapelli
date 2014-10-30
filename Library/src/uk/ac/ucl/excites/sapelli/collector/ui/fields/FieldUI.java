@@ -31,7 +31,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 /**
  * Abstract class to represent the UI of a Field
  * 
- * @author mstevens
+ * @author mstevens, Ben
  *
  * @param <F>
  * @param <V>
@@ -207,7 +207,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 			switch(control)
 			{
 				case BACK:
-					show &= controller.canGoBack(false); // can we go back to a previous field or form
+					show &= isShowBack();
 					break;
 				case CANCEL:
 					show &= isShowCancel();
@@ -219,6 +219,17 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		
 		// Return state
 		return show ? State.SHOWN_ENABLED : State.HIDDEN; // for now we don't use SHOWN_DISABLED (= "grayed-out")
+	}
+	
+	/**
+	 * Whether or not to show the Back control above this fieldUI
+	 * This should *only* be overridden if {@link #handleControlEvent(Control)} is also overridden to perform a custom "back action"
+	 *  
+	 * @return
+	 */
+	protected boolean isShowBack()
+	{
+		return controller.canGoBack(false); // can we go back to a previous field or form
 	}
 	
 	/**
@@ -247,7 +258,8 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * enacted, {@code false} if the control event was not consumed and the default behaviour should
 	 * be enacted.
 	 */
-	public boolean handleControlEvent(Control control) {
+	public boolean handleControlEvent(Control control)
+	{
 		// by default, do not consume events:
 	    return false;
     }
