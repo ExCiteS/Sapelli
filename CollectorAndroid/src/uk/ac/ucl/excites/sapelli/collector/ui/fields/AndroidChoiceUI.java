@@ -19,12 +19,15 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
+import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
+import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
@@ -306,7 +309,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				adapter.addItem(createItem(child, itemPaddingPx, !controller.isFieldEnabled(child)));
 			// Click listeners:
 			setOnItemClickListener(this);
-			setOnItemLongClickListener(this);
+			if(isUsingAudioFeedback(false))
+				setOnItemLongClickListener(this);
 		}
 		
 		public void update()
@@ -392,6 +396,13 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		item.setDescription(child.getAltText());
 
 		return item;
+	}
+
+	@Override
+	protected List<AbstractAudioFeedbackController<View>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 }
