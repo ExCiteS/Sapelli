@@ -166,9 +166,6 @@ public class PickerView extends GridView
 				
 				// Set layout params (width & height):
 				view.setLayoutParams(itemLayoutParams);
-				
-				// Set the description used for accessibility support:
-				view.setContentDescription(items.get(position).getDescription());
 
 				// Return view:
 				return view;

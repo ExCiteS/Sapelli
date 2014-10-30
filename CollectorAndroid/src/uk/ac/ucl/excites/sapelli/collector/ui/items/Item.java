@@ -73,6 +73,9 @@ public abstract class Item
 		// Set background color:
 		view.setBackgroundColor(backgroundColor);
 		
+		// Set the description used for accessibility support:
+		view.setContentDescription(description);
+		
 		// Set view visibility:
 		applyVisibility(view);
 		
