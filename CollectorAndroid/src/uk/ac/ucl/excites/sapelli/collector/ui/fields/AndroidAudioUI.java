@@ -167,7 +167,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			}
 		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
-		releaseClick(); 
+		handlingClick.release(); 
 	}
 
 	@Override

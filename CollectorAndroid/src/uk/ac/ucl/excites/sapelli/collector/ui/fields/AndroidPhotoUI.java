@@ -238,7 +238,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			else
 				controller.goForward(true);
 			// Important: release the click semaphore AFTER the field has been exited
-			releaseClick(); 
+			handlingClick.release(); 
 		}
 	}
 }

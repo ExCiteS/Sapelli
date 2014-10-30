@@ -121,7 +121,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 			}
 		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
-		releaseClick();
+		handlingClick.release();
 	}
 
 
