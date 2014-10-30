@@ -42,6 +42,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
@@ -57,7 +58,7 @@ import android.widget.TextView;
  */
 public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 {
-	
+	static private final String TAG = "AndroidChoiceUI";
 	static public final float PAGE_CHOSEN_ITEM_SIZE_DIP = 60.0f; // width = height
 	static public final float PAGE_CHOSEN_ITEM_MARGIN_DIP = 1.0f; // same margin all round
 	static public final float CROSS_THICKNESS = 0.02f;
@@ -66,7 +67,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	private ChoiceView choiceView;
 
 	private CollectorController controller;
-	private AudioFeedbackController audioController;
 	private ChoiceField choice;
 
 	public AndroidChoiceUI(ChoiceField choice, CollectorController controller, CollectorView collectorView)
@@ -74,7 +74,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		super(choice, controller, collectorView);
 		
 		this.controller = controller;
-		this.audioController = controller.getAudioFeedbackController();
 		this.choice = choice;
 	}
 
@@ -110,7 +109,24 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			choiceView.update();
 			choiceView.setEnabled(true);
 			
-			return (View) choiceView;
+			// Cast to View
+			final View choiceViewView = (View) choiceView;
+			
+			// Only begin audio feedback once the system calls back to tell us all the views have been drawn:
+			if (controller.isAudioFeedbackUsed())
+				choiceViewView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
+					        @Override
+					        public void onGlobalLayout() {
+						        // when the views have all been created, play the question
+						        //Log.d(TAG, "Global Layout Callback");
+						        controller.getCurrentAudioFeedbackController().playQuestion(choice, choiceView);
+						        // remove this listener once this has occurred, since the question will only be played once
+						        choiceViewView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+					        }
+
+				        });
+			
+			return choiceViewView;
 		}
 	}
 	
@@ -142,8 +158,10 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return false;
 
-		// Audio Feedback
-		audioController.playAnswer(context, child, childView);
+		if(controller.isAudioFeedbackUsed())		
+			controller.getCurrentAudioFeedbackController().playAnswer(child, childView); // Audio Feedback
+		else
+			controller.addLogLine("LONG_CLICK", "LongClick on " + choice.getAltText() + " but AudioFeedback is disabled");
 
 		return true;
 	}
@@ -156,9 +174,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	/**
 	 * To be overridden by AndroidICSChoiceUI
 	 * 
-	 * @return
+	 * @return a View object (not type checked!) of a class that implements ChoiceView
 	 */
-	public ChoiceView getChoiceView()
+	protected ChoiceView getChoiceView()
 	{
 		return new PreICSChoiceView(collectorUI.getContext());
 	}
@@ -280,7 +298,11 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		
 		public void setEnabled(boolean enabled);
 		
-		public View getChildViewAt(int index);
+		/**
+		 * @param index of a choice child
+		 * @return the view representing that choice
+		 */
+		public View getChildAt(int index);
 		
 	}
 	
@@ -316,21 +338,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// Click listeners:
 			setOnItemClickListener(this);
 			setOnItemLongClickListener(this);
-			
-			// Only begin audio feedback once the system calls back to tell us all the views have been drawn:
-			getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
-
-				@Override
-                public void onGlobalLayout() {
-					// when the views have all been created, play the question
-					audioController.playQuestion(collectorUI.getContext(), choice, PreICSChoiceView.this);
-					// remove this listener once this has occurred, since the question will only be played once
-					PreICSChoiceView.this.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                }
-				
-			});
 		}
 		
+		@Override
 		public void update()
 		{
 			// Update grayed-out state:
@@ -339,10 +349,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			for(ChoiceField child : field.getChildren())
 				adapter.getItem(c++).setVisibility(controller.isFieldEnabled(child));
 			setAdapter(adapter);
-		}
-		
-		public View getChildViewAt(int index) {
-			return this.getChildAt(index);
 		}
 		
 		@Override

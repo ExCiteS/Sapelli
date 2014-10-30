@@ -195,9 +195,10 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		// Get the pressed ControlItem
 		ControlItem item = (ControlItem) view.getAdapter().getItem(position);
 
-		// Audio Feedback
-		AudioFeedbackController audioController  = controller.getAudioFeedbackController();
-		audioController.playAnswer(parent.getContext(), item, v);
+		if(controller.isAudioFeedbackUsed())
+			controller.getCurrentAudioFeedbackController().playAnswer(item, v); // Audio Feedback
+		else
+			controller.addLogLine("LONG_CLICK", "LongClick on " + Control.values()[(int) id].name() + " but AudioFeedback is disabled");
 
 		return true;
 	}

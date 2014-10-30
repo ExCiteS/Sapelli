@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
@@ -575,18 +576,13 @@ public class CollectorActivity extends ProjectActivity implements TTSInitListene
 	}
 	
 	private static boolean needsTTSEngine(Project project) {
-		boolean needsTTS = false;
-		outer: for (Form form : project.getForms()) {
-			for (Field field : form.getFields()) {
-				
-				if (field instanceof ChoiceField &&
-						!((ChoiceField)field).hasAudioAnswerDesc() || !((ChoiceField)field).hasAudioQuestionDesc()) {
-					needsTTS = true;
-				}
-					
-			}
-		}
-		return needsTTS;
+		for (Form form : project.getForms())
+			if(form.getAudioFeedback() != AudioFeedback.NONE)
+				for (Field field : form.getFields())
+					// Currently tts is
+					if (field instanceof ChoiceField && !((ChoiceField)field).hasAudioAnswerDesc() || !((ChoiceField)field).hasAudioQuestionDesc())
+						return true;
+		return false;
 	}
 	
 }

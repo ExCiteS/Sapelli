@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -72,6 +73,7 @@ public class CollectorController extends Controller implements LocationListener,
 	private Location currentBestLocation = null;
 	private OrientationSensor orientationSensor;
 	private long deviceIDHash;
+	
 	private AudioPlayer audioPlayer;
 	private AudioFeedbackController audioController;
 
@@ -299,7 +301,22 @@ public class CollectorController extends Controller implements LocationListener,
 		return SystemClock.elapsedRealtime();
 	}
 	
-	public AudioFeedbackController getAudioFeedbackController() {
+	public boolean isAudioFeedbackUsed()
+	{
+		return currFormSession.form.getAudioFeedback() != AudioFeedback.NONE;
+	}
+	
+	/**
+	 * @return the {@link AudioFeedbackController} used on the current Form or null if there current form doesn't use audio feedback
+	 */
+	public AudioFeedbackController getCurrentAudioFeedbackController() {
+		if(isAudioFeedbackUsed())
+			return getAudioFeedbackController();
+		else
+			return null;
+	}
+	
+	private AudioFeedbackController getAudioFeedbackController() {
 		if (audioController == null)
 			audioController = new AudioFeedbackController(this);
 		return audioController;

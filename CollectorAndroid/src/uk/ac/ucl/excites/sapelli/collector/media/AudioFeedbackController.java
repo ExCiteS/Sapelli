@@ -40,11 +40,12 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 	private Semaphore audioAvailableSem; // semaphore used to notify when there is a track in the queue to be played
 	private Semaphore playbackCompletedSem; // semaphore used to notify when the media player has finished playing the current track
 	private volatile boolean running = false; // boolean used to start/stop the playback thread looping
+	private Context context;
 
 	public AudioFeedbackController(CollectorController controller) {
 		this.controller = controller;
-
-		textToVoice = new TextToVoice(controller.activity.getBaseContext(), controller.activity.getResources().getConfiguration().locale);
+		this.context = controller.activity.getApplicationContext();
+		textToVoice = new TextToVoice(context, controller.activity.getResources().getConfiguration().locale);
 		textToVoice.setOnUtteranceProgressListener(this);		
 	}
 
@@ -75,28 +76,31 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 	 */
 	public void stopPlayingFeedback() {
 		Log.d(TAG,"Stopping playback...");
-		running = false;
-		// destroy audio player:
-		if (queuePlayer != null) {
-			queuePlayer.stop();
-			queuePlayer.release();
-			queuePlayer = null;
-		}
-		// interrupt playback thread since it is probably blocked on a semaphore:
-		playbackThread.interrupt();
-		try {
-			// wait for playback thread to die before continuing:
-			playbackThread.join();
-		} catch (InterruptedException e) {
-			Log.e(TAG,"Main thread interrupted while waiting for playback thread to join.");
-		}
-		// nullify thread so it must be re-initialised:
-		playbackThread = null;
-		// destroy queue so stale media cannot be played later:
-		mediaQueue = null;
-		// destroy semaphores so they aren't reused by later ChoiceFields:
-		audioAvailableSem = null;
-		playbackCompletedSem = null;
+		if (running) {
+	        running = false;
+	        // destroy audio player:
+	        if (queuePlayer != null) {
+		        queuePlayer.stop();
+		        queuePlayer.release();
+		        queuePlayer = null;
+	        }
+	        // interrupt playback thread since it is probably blocked on a semaphore:
+	        playbackThread.interrupt();
+	        try {
+		        // wait for playback thread to die before continuing:
+		        playbackThread.join();
+	        } catch (InterruptedException e) {
+		        Log.e(TAG,
+		                "Main thread interrupted while waiting for playback thread to join.");
+	        }
+	        // nullify thread so it must be re-initialised:
+	        playbackThread = null;
+	        // destroy queue so stale media cannot be played later:
+	        mediaQueue = null;
+	        // destroy semaphores so they aren't reused by later ChoiceFields:
+	        audioAvailableSem = null;
+	        playbackCompletedSem = null;
+        }
 	}
 
 	/**
@@ -171,13 +175,13 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 			Log.d(TAG,"Queuing next audio item: "+currentTrack.text+" || "+currentTrack.mediaFile.getName());
 			try {
 				if (queuePlayer == null) {
-					queuePlayer = MediaPlayer.create(controller.activity.getBaseContext(), Uri.fromFile(currentTrack.mediaFile));
+					queuePlayer = MediaPlayer.create(context, Uri.fromFile(currentTrack.mediaFile));
 					queuePlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 					queuePlayer.setOnCompletionListener(this);
 				}
 				else {
 					queuePlayer.reset(); // reset to idle state
-					queuePlayer.setDataSource(controller.activity.getBaseContext(), Uri.fromFile(currentTrack.mediaFile));
+					queuePlayer.setDataSource(context, Uri.fromFile(currentTrack.mediaFile));
 					queuePlayer.prepare();
 
 				}
@@ -190,20 +194,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 				playbackCompletedSem.release();
 			}
 			// animate the view corresponding to the played choice, if necessary:
-			if (currentTrack.toAnimate != null) {
-				Log.d(TAG,"Animating view for "+currentTrack.text+" || "+currentTrack.mediaFile.getName());
-				controller.activity.runOnUiThread(new Runnable() { // TODO improve
-
-					@Override
-                    public void run() {
-						ViewAnimator.shakeAnimation(controller.activity.getBaseContext(), currentTrack.toAnimate);
-                    }
-					
-				});
-				
-			} else {
-				Log.d(TAG,"Didn't animate view for "+currentTrack.text+" || "+currentTrack.mediaFile.getName()+" as it was null");
-			}
+			animateViewShake(currentTrack.toAnimate);
 
 			// wait for the media player to finish playing the track
 			playbackCompletedSem.acquire();
@@ -223,11 +214,14 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 
 	}
 
-	public void playQuestion(Context context, ChoiceField choice, ChoiceView choiceView) {
+	public void playQuestion(ChoiceField choice, ChoiceView choiceView) {
+		Log.d(TAG,"Play question");
 		// Check whether AudioFeedback is supported for the current form
 		AudioFeedback audioFeedback = controller.getCurrentForm().getAudioFeedback();
 		if(audioFeedback != null)
 		{
+			// ensure nothing is playing beforehand:
+			stopPlayingFeedback();
 			switch(audioFeedback)
 			{
 			case LONG_CLICK:
@@ -245,7 +239,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 				List<ChoiceField> children = choice.getChildren();
 				for (int i = 0; i < children.size(); i++) {
 					// enqueue each answer:
-					enqueueDescription(children.get(i), false, choiceView.getChildViewAt(i));
+					enqueueDescription(children.get(i), false, choiceView.getChildAt(i));
 				}
 				// play media queue:
 				startPlayingFeedback();
@@ -298,7 +292,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 	 * @param choice
 	 * @param choiceView
 	 */
-	public void playAnswer(Context context, ChoiceField choice, View choiceView)
+	public void playAnswer(ChoiceField choice, View choiceView)
 	{
 		Log.d(TAG,"Play answer");
 		// Check whether AudioFeedback is supported for the current form
@@ -306,6 +300,8 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 
 		if(audioFeedback != null)
 		{
+			// ensure nothing is already playing first:
+			stopPlayingFeedback();
 			switch(audioFeedback)
 			{
 			case LONG_CLICK:
@@ -314,16 +310,14 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 				// enqueue answer:
 				enqueueDescription(choice, false, choiceView);
 				// start playback:
-				//startPlayingFeedback();
+				startPlayingFeedback();
 				break;
 
 			case NONE:
-				controller.addLogLine("LONG_CLICK", "LongClick on " + choice.getAltText() + " but AudioFeedback is disabled");
 				return;
 			}
 
 			// Apply an alpha animation to the long pressed view
-			//ViewAnimator.shakeAnimation(context, choiceView); TODO
 		}
 	}
 
@@ -334,7 +328,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 	 * @param controlItem
 	 * @param controlView
 	 */
-	public void playAnswer(Context context, Item controlItem, View controlView)
+	public void playAnswer(Item controlItem, View controlView)
 	{
 		// Check whether AudioFeedback is supported for the current form
 		AudioFeedback audioFeedback = controller.getCurrentForm().getAudioFeedback();
@@ -358,12 +352,38 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 					break;
 
 			case NONE:
-				controller.addLogLine("LONG_CLICK", "LongClick on " + controlItem.getDescription() + " but AudioFeedback is disabled");
 				return;
 			}
 
 			// Apply an alpha animation to the long pressed view
-			ViewAnimator.shakeAnimation(context, controlView);
+			//animateViewAlpha(controlView);
+		}
+	}
+	
+
+	public void setTTSInitListener(TTSInitListener listener) {
+	    textToVoice.setTTSInitListener(listener);
+    }
+	
+	private void animateViewAlpha(final View toAnimate) {
+		if (toAnimate != null) {
+			controller.activity.runOnUiThread(new Runnable() {
+				@Override
+	            public void run() {
+					ViewAnimator.alphaAnimation(toAnimate);
+	            }
+			});	
+		}
+	}
+	
+	private void animateViewShake(final View toAnimate) {
+		if (toAnimate != null) {
+			controller.activity.runOnUiThread(new Runnable() {
+				@Override
+	            public void run() {
+					ViewAnimator.shakeAnimation(context, toAnimate);
+	            }
+			});	
 		}
 	}
 
@@ -459,8 +479,4 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 			}
 		}
 	}
-
-	public void setTTSInitListener(TTSInitListener listener) {
-	    textToVoice.setTTSInitListener(listener);
-    }
 }
