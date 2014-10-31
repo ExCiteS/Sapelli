@@ -273,9 +273,15 @@ public class CollectorActivity extends ProjectActivity
 	public boolean dispatchTouchEvent(MotionEvent event)
 	{
 		if(controller.isUIBlocked())
+		{
+			controller.addLogLine("BLOCKED_MOTION_EVENT", event.toString());
 			return false;
+		}
 		else
+		{
+			controller.addLogLine("DISPATCHED_MOTION_EVENT", event.toString());
 			return super.dispatchTouchEvent(event);
+		}
 	}
 
 	public void startAudioRecorderApp(AndroidAudioUI audioUI)
