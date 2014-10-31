@@ -12,3 +12,5 @@ call mvn clean install
 cd CollectorAndroid
 
 call mvn deploy -Prelease
+
+pause

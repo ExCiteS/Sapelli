@@ -349,6 +349,14 @@ public class Form
 	{
 		return audioFeedback;
 	}
+	
+	/**
+	 * @return
+	 */
+	public boolean isUsingAudioFeedback()
+	{
+		return audioFeedback != AudioFeedback.NONE;
+	}
 
 	/**
 	 * @param audioFeedbackStr

@@ -22,6 +22,7 @@ import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.ScreenTransition;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
@@ -218,6 +219,12 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			}
 			// New becomes current:
 			fieldUIView = newFieldUIView;
+			
+			// Set up listener if needed:
+			if(fieldUI.informOnDisplay(false))
+			{
+				// TODO set up listener and if listeren called call fieldUI.onDisplay(false);
+			}
 		}
 
 		// Set focus:
@@ -482,6 +489,13 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		View focusedView = activity.getCurrentFocus();
 		if(focusedView != null)
 			focusedView.clearFocus();
+	}
+
+	@Override
+	public AbstractAudioFeedbackController<View> getAudioFeebackController()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
