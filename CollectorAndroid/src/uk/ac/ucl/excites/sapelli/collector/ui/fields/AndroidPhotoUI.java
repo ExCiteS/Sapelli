@@ -233,7 +233,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 							// if(position == 1)
 							{ // photo discarded
 
-								controller.addLogLine("CLICK_CAMERA_DISCARD_PICURE");
+								controller.addLogLine("CLICK_CAMERA_DISCARD_PICTURE");
 
 								showNext(); // switch back to capture mode
 								cameraController.startPreview();
