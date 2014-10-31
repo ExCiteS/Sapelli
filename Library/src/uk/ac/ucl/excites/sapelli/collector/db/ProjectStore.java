@@ -54,7 +54,7 @@ public abstract class ProjectStore implements Store
 		if(!isStored(project, true))
 			// Go ahead with storing project:
 			doAdd(project);
-		// Return if successfull:
+		// Return if successful:
 		return project;
 	}
 	

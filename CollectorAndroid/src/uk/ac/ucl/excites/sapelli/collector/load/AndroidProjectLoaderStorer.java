@@ -65,7 +65,10 @@ public class AndroidProjectLoaderStorer extends ProjectLoaderStorer
 	{
 		new AsyncProjectLoadStoreTask(context, sapelliFileInputStream, callback).execute();
 	}
-
+	
+	/**
+	 * @author mstevens
+	 */
 	private class AsyncProjectLoadStoreTask extends AsyncTaskWithWaitingDialog<Void, Void, Project>
 	{
 
