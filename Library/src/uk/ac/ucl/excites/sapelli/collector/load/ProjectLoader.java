@@ -16,35 +16,37 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.loading;
+package uk.ac.ucl.excites.sapelli.collector.load;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
 
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.loading.tasks.LoadingTask;
-import uk.ac.ucl.excites.sapelli.collector.loading.tasks.LoadingTaskExecutor;
-import uk.ac.ucl.excites.sapelli.collector.loading.tasks.TTSSynthesisTask;
-import uk.ac.ucl.excites.sapelli.collector.loading.xml.ProjectParser;
+import uk.ac.ucl.excites.sapelli.collector.load.parse.ProjectParser;
+import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessTask;
+import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.Unzipper;
+import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 
 /**
- * Loader for .sapelli (or .excites or .sap) files, which are actually just renamed ZIP files
+ * Class with methods to load (or just parse) Sapelli projects from .sapelli/.excites/.sap files (which are actually just renamed ZIP files).
  * 
  * @author mstevens, Michalis Vitos
- * 
  */
-public class ProjectLoader implements LoadingTaskExecutor
+public class ProjectLoader implements WarningKeeper
 {
 	
-	// STATICS
+	// STATICS -----------------------------------------------------------
 	static public final String[] SAPELLI_FILE_EXTENSIONS = { "sap", "sapelli", "excites", "zip" };
 	static public final String PROJECT_FILE = "PROJECT.xml";
 
@@ -80,9 +82,24 @@ public class ProjectLoader implements LoadingTaskExecutor
 		}
 	}
 	
-	// DYNAMICS
-	private final ProjectLoaderCallback callback;
-	private final FileStorageProvider fileStorageProvider;
+	/**
+	 * @param sapelliFile
+	 * @return
+	 * @throws Exception
+	 */
+	static public FileInputStream openStream(File sapelliFile) throws Exception
+	{
+		if(sapelliFile == null || !sapelliFile.exists() || sapelliFile.length() == 0)
+			throw new IllegalArgumentException("Invalid Sapelli file");
+		return new FileInputStream(sapelliFile);
+	}
+	
+	// DYNAMICS ----------------------------------------------------------
+	/*package*/ final FileStorageProvider fileStorageProvider;
+	private final ProjectChecker checker;
+	private final PostProcessor postProcessor;
+	private List<String> warnings;
+	
 	private final File tempFolder;
 	private final ProjectParser parser;
 
@@ -92,18 +109,22 @@ public class ProjectLoader implements LoadingTaskExecutor
 	 */
 	public ProjectLoader(FileStorageProvider fileStorageProvider) throws FileStorageException
 	{
-		this(null, fileStorageProvider); // no callback used
+		this(fileStorageProvider, null, null); // no post-processing nor checking
 	}
 	
 	/**
-	 * @param callback
 	 * @param fileStorageProvider
+	 * @param postProcessor (may be null)
+	 * @param checker (may be null)
 	 * @throws FileStorageException
 	 */
-	public ProjectLoader(ProjectLoaderCallback callback, FileStorageProvider fileStorageProvider) throws FileStorageException
+	public ProjectLoader(FileStorageProvider fileStorageProvider, PostProcessor postProcessor, ProjectChecker checker) throws FileStorageException
 	{
-		this.callback = callback;
+		if(fileStorageProvider == null)
+			throw new NullPointerException("fileStorageProvider cannot be null!");
 		this.fileStorageProvider = fileStorageProvider;
+		this.postProcessor = postProcessor;
+		this.checker = checker;
 		
 		// Get/create the temp folder:
 		tempFolder = fileStorageProvider.getTempFolder(true);
@@ -111,7 +132,7 @@ public class ProjectLoader implements LoadingTaskExecutor
 		// Create the project folder
 		this.parser = new ProjectParser();
 	}
-
+	
 	/**
 	 * Extract the given sapelli file (provided as a File object) and parses the PROJECT.xml; returns the resulting Project object.
 	 * 
@@ -121,20 +142,19 @@ public class ProjectLoader implements LoadingTaskExecutor
 	 */
 	public Project load(File sapelliFile) throws Exception
 	{
-		if(sapelliFile == null || !sapelliFile.exists() || sapelliFile.length() == 0)
-			throw new IllegalArgumentException("Invalid Sapelli file");
-		return load(new FileInputStream(sapelliFile));
+		return load(openStream(sapelliFile));
 	}
 	
 	/**
 	 * Extract the given sapelli file (provided as an InputStream) and parses the PROJECT.xml; returns the resulting Project object.
 	 * 
-	 * @param sapelliFileStream
+	 * @param sapelliFileInputStream
 	 * @return the loaded Project
 	 * @throws Exception
 	 */
-	public Project load(InputStream sapelliFileStream) throws Exception
+	public Project load(InputStream sapelliFileInputStream) throws Exception
 	{
+		clearWarnings();
 		Project project = null;
 		File extractFolder = new File(tempFolder.getAbsolutePath() + File.separator + System.currentTimeMillis());
 		try
@@ -143,7 +163,7 @@ public class ProjectLoader implements LoadingTaskExecutor
 			try
 			{
 				FileHelpers.createFolder(extractFolder);
-				Unzipper.unzip(sapelliFileStream, extractFolder);
+				Unzipper.unzip(sapelliFileInputStream, extractFolder);
 			}
 			catch(Exception e)
 			{
@@ -159,6 +179,8 @@ public class ProjectLoader implements LoadingTaskExecutor
 			{
 				throw new Exception("Error on parsing " + PROJECT_FILE, e);
 			}
+			// Copy parser warnings:
+			addWarnings(parser.getWarnings());
 			
 			// STEP 3 - Check if project is acceptable:
 			checkProject(project); // throws IllegalArgumentException if something is wrong
@@ -166,31 +188,40 @@ public class ProjectLoader implements LoadingTaskExecutor
 			// STEP 4 - Create move extracted files to project folder:
 			try
 			{
-				FileHelpers.moveDirectory(extractFolder, fileStorageProvider.getProjectInstallationFolder(project, true));
+				File installFolder = fileStorageProvider.getProjectInstallationFolder(project, true);
+				FileHelpers.moveDirectory(extractFolder, installFolder);
+				extractFolder = installFolder;
 			}
 			catch(Exception e)
 			{
 				throw new Exception("Error on moving extracted files to project folder.", e);
 			}
 			
-			// STEP 5 - Post-processing of loader tasks:
-			for(LoadingTask task : parser.getLoadingTasks())
+			// STEP 5 - Run post-processing tasks:
+			List<PostProcessTask> tasks = parser.getPostLoadingTasks();
+			if(!tasks.isEmpty())
 			{
-				try
-				{
-					task.execute(this);
-				}
-				catch(Exception e)
-				{
-					throw new Exception("Error on executing loader task", e);
-				}
+				if(postProcessor != null)
+					for(PostProcessTask task : tasks)
+					{
+						try
+						{
+							task.execute(postProcessor, this);
+						}
+						catch(Exception e)
+						{
+							throw new Exception("Error on executing post-processing task", e);
+						}
+					}
+				else
+					addWarning("Unable to perform " + tasks.size() + " post-processing");
 			}
 		}
 		catch(Exception e)
 		{
-			// 	delete temp folder:
+			// Delete temp or install folder:
 			FileUtils.deleteQuietly(extractFolder);
-			//	re-throw Exception:
+			// Re-throw Exception:
 			throw e;
 		}
 		
@@ -204,19 +235,8 @@ public class ProjectLoader implements LoadingTaskExecutor
 	 */
 	protected void checkProject(Project project) throws IllegalArgumentException
 	{
-		if(callback != null)
-			callback.checkProject(project); // throws IllegalArgumentException if something is wrong
-	}
-
-	/**
-	 * To be overridden by subclass!
-	 * 
-	 * @see uk.ac.ucl.excites.sapelli.collector.loading.tasks.LoadingTaskExecutor#execute(uk.ac.ucl.excites.sapelli.collector.loading.tasks.TTSSynthesisTask)
-	 */
-	@Override
-	public void execute(TTSSynthesisTask ttsTask)
-	{
-		System.err.println("TTSSysthesis not supported!");
+		if(checker != null)
+			checker.checkProject(project); // throws IllegalArgumentException if something is wrong
 	}
 	
 	/**
@@ -226,6 +246,7 @@ public class ProjectLoader implements LoadingTaskExecutor
 	 * @return the loaded Project
 	 * @throws Exception
 	 */
+
 	public Project loadParseOnly(File sapelliFile) throws Exception
 	{
 		if(sapelliFile == null || !sapelliFile.exists() || sapelliFile.length() == 0)
@@ -242,9 +263,12 @@ public class ProjectLoader implements LoadingTaskExecutor
 	 */
 	public Project loadParseOnly(InputStream sapelliFileStream) throws Exception
 	{
+		clearWarnings();
 		try
 		{	// Parse PROJECT.xml:
 			Project project = parser.parseProject(Unzipper.getInputStreamForFileInZip(sapelliFileStream, PROJECT_FILE));
+			// Copy parser warnings:
+			addWarnings(parser.getWarnings());
 			// Check if project is acceptable:
 			checkProject(project); // throws IllegalArgumentException if something is wrong
 			// all OK:
@@ -256,9 +280,48 @@ public class ProjectLoader implements LoadingTaskExecutor
 		}
 	}
 	
-	public List<String> getParserWarnings()
+	@Override
+	public void addWarning(String warning)
 	{
-		return parser.getWarnings();
+		if(warnings == null)
+			warnings = new ArrayList<String>();
+		warnings.add(warning);
+	}
+
+	@Override
+	public void addWarnings(Collection<String> warnings)
+	{
+		if(warnings == null)
+			warnings = new ArrayList<String>();
+		this.warnings.addAll(warnings);
+	}
+
+	@Override
+	public List<String> getWarnings()
+	{
+		return warnings != null ? warnings : Collections.<String> emptyList();
+	}
+	
+	@Override
+	public void clearWarnings()
+	{
+		warnings = null;
+	}
+	
+	/**
+	 * Callback interface for checking Project acceptance
+	 * 
+	 * @author mstevens
+	 */
+	public interface ProjectChecker
+	{
+
+		/**
+		 * @param loadedProject
+		 * @throws IllegalArgumentException if something is wrong
+		 */
+		public void checkProject(Project loadedProject) throws IllegalArgumentException;
+		
 	}
 	
 }

@@ -29,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectSignatureClashException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.loading.ProjectLoader;
+import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
@@ -212,11 +212,13 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#add(uk.ac.ucl.excites.sapelli.collector.model.Project)
 	 */
 	@Override
-	public void add(Project project) throws ProjectSignatureClashException, ProjectIdentificationClashException
+	public Project add(Project project) throws ProjectSignatureClashException, ProjectIdentificationClashException
 	{
 		if(!isStored(project, !recordStore.hasFullIndexSupport()))
 			// Go ahead with storing project:
 			doAdd(project);
+		// Return if successful:
+		return project;
 	}
 	
 	/* (non-Javadoc)

@@ -19,7 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
-import uk.ac.ucl.excites.sapelli.collector.loading.xml.FormParser;
+import uk.ac.ucl.excites.sapelli.collector.load.parse.FormParser;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;

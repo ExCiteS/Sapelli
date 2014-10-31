@@ -43,14 +43,19 @@ public abstract class ProjectStore implements Store
 	 * If the exact same project is already stored nothing happens.
 	 * 
 	 * @param project
+	 * @return the stored project
 	 * @throws ProjectSignatureClashException when there is a previously stored project which is different but has the same signature (name+[variant]+version)
 	 * @throws ProjectIdentificationClashException when there is a previously stored project which is different but has the same identification (id+fingerprint)
 	 */
-	public void add(Project project) throws ProjectSignatureClashException, ProjectIdentificationClashException
+	public Project add(Project project) throws ProjectSignatureClashException, ProjectIdentificationClashException
 	{
+		if(project == null)
+			throw new NullPointerException("Project is null");
 		if(!isStored(project, true))
 			// Go ahead with storing project:
 			doAdd(project);
+		// Return if successfull:
+		return project;
 	}
 	
 	/**

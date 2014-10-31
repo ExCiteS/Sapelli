@@ -18,25 +18,19 @@
 
 package uk.ac.ucl.excites.sapelli.collector.activities;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
-import uk.ac.ucl.excites.sapelli.collector.loading.ProjectLoader;
-import uk.ac.ucl.excites.sapelli.collector.loading.ProjectLoaderCallback;
+import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
+import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
+import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.ui.dialogs.BackupDialogBuilder;
+import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.qrcode.IntentIntegrator;
@@ -52,16 +46,10 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
-import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.AssetManager;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Html;
@@ -92,7 +80,7 @@ import com.larvalabs.svgandroid.SVGDrawable;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class ProjectManagerActivity extends BaseActivity implements ProjectLoaderCallback, StoreClient, DeviceID.InitialisationCallback
+public class ProjectManagerActivity extends BaseActivity implements StoreClient, DeviceID.InitialisationCallback, ProjectLoaderStorer.FileSourceCallback, AsyncDownloader.Callback
 {
 
 	// STATICS--------------------------------------------------------
@@ -484,118 +472,38 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 	}
 
 	public void loadProject(View view)
-		{
+	{
 		String location = txtProjectPathOrURL.getText().toString().trim();
 		if(location.isEmpty())
 			// Download Sapelli file if path is a URL
 			showErrorDialog(R.string.pleaseSelect);
-			else
-			{
-				// Extract & parse a local Sapelli file
+		else
+		{
+			// Extract & parse a local Sapelli file
 			txtProjectPathOrURL.setText("");
-		
-		//Add project
-			if(Pattern.matches(Patterns.WEB_URL.toString(), location))
-				// Download Sapelli file if location is a URL:
-				(new DownloadFileFromURL(location, "Project")).execute(); // the task will also call loadProjectFromFile()
+
+			// Add project
+			if(Patterns.WEB_URL.matcher(location).matches())
+				// Location is a (remote) URL: download Sapelli file:
+				AsyncDownloader.Download(this, fileStorageProvider.getDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
 			else if(location.toLowerCase().endsWith("." + XML_FILE_EXTENSION))
 				// Warn about bare XML file (no longer supported):
 				showErrorDialog(R.string.noBareXMLProjects);
-		else
-	{
+			else
+			{
 				File localFile = new File(location);
 				if(ProjectLoader.HasSapelliFileExtension(localFile))
-					loadProjectFromFile(localFile, null);
+					// Load & store project from local file:
+					new AndroidProjectLoaderStorer(this, fileStorageProvider, projectStore).loadAndStore(localFile, Uri.fromFile(localFile).toString(), this);
 				else
-					showErrorDialog(getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile), StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")));
-			// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
-			// Show parser warnings if needed:
-		}
+					showErrorDialog(getString(R.string.unsupportedExtension, FileHelpers.getFileExtension(localFile),
+							StringUtils.join(ProjectLoader.SAPELLI_FILE_EXTENSIONS, ", ")));
+				// Use the path where the xml file resides as the basePath (img&snd folders are assumed to be in the same place), no subfolders are created:
+				// Show parser warnings if needed:
+			}
 		}
 	}
-
-	/**
-	 * Processes a sapelli file (extracting & installing contents, parsing XML, etc.) to construct a Project object,
-	 * which, if it passes all checks, is then stored in the ProjectStore. 
-	 * 
-	 * @param sapelliFile
-	 * @param remoteSource remote url project was downloaded from if it was, null otherwise
-	 * @return the project object, or null if there was a problem
-	 */
-	private Project loadProjectFromFile(File sapelliFile, String remoteSource)
-	{
-		Project project = null;
-		ProjectLoader loader = new ProjectLoader(this, fileStorageProvider);
-		try
-		{
-			project = loader.load(sapelliFile);
-		}
-		catch(Exception e)
-		{
-			Log.e(TAG, "Could not load Sapelli file", e);
-			showErrorDialog(getString(R.string.sapelliFileLoadFailure, (remoteSource == null ? sapelliFile.getAbsolutePath() : remoteSource), ExceptionHelpers.getMessageAndCause(e)), false);
-			return null; // !!!
-		}
-
-		// Warnings...
-		TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
-		//	Parser warnings:
-		List<String> warnings = loader.getParserWarnings(); 
-		if(!warnings.isEmpty())
-		{ // Show parser warnings:
-			bldr.append(getString(R.string.parsingWarnings) + ":");
-			for(String warning : warnings)
-				bldr.append(" - " + warning);
-		}
-
-		List<String> missingFiles = project.getMissingFilesRelativePaths(fileStorageProvider);
-		if(!missingFiles.isEmpty())
-	{
-			bldr.append(getString(R.string.missingFiles) + ":");
-			for(String missingFile : missingFiles)
-				bldr.append(" - " + missingFile);
-		}
-		// Check file dependencies
-		if(!bldr.isEmpty())
-			showWarningDialog(bldr.toString()); // no need to worry about message not fitting the dialog, when necessary it will be scrollable
-		
-		// Generate documentation
-		try
-		{
-			projectStore.add(project);
-		}
-		catch(Exception e) // this shouldn't happen, but just in case...
-		{
-			Log.e(TAG, "Could not store project.", e);
-		
-			org.apache.commons.io.FileUtils.deleteQuietly(fileStorageProvider.getProjectInstallationFolder(project, false));
-		// Store the project object:
-			showErrorDialog("Could not store project: " + e.getLocalizedMessage());
-			return null; // !!!
-		}
-
-		// Update project list:
-		populateProjectList();
-		selectProjectInList(project); // select the new project
-
-		// TODO Re-enable the service at same point
-		// Restart the DataSenderService to start monitoring the new project
-		// ServiceChecker.restartActiveDataSender(this);
-
-		// Return project:
-		return project;
-		}
 	
-	/**
-	 * @param loadedProject
-	 * @throws ProjectDuplicateException
-	 */
-	@Override
-	public void checkProject(Project loadedProject) throws ProjectDuplicateException
-	{
-		projectStore.duplicateCheck(loadedProject);
-	}
-
 	public void scanQR(View view)
 	{
 		// Start the Intent to Scan a QR code
@@ -746,174 +654,67 @@ public class ProjectManagerActivity extends BaseActivity implements ProjectLoade
 		if(encryptionDialog != null)
 			encryptionDialog.dismiss();
 	}
-
-	/**
-	 * Background Async Task to download file
-	 * 
-	 * @author Michalis Vitos, mstevens
-	 */
-	public class DownloadFileFromURL extends AsyncTask<Void, Integer, Boolean>
+	
+	@Override
+	public void downloadSuccess(String downloadUrl, File downloadedFile)
 	{
-
-		static private final String TEMP_FILE_EXTENSION = "tmp";
-
-		// Variables
-		private final long startTime;
-		private final ProgressDialog progressDialog;
-		private final String downloadUrl;
-		private final File downloadFolder;
-		private final File downloadFile;
-
-		/**
-		 * Downloads the file
-		 * 
-		 * Note: We do not use Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS); as the download folder because it does not seem
-		 * to be writable on the Xcover.
-		 * 
-		 * @param downloadUrl
-		 * @param filename
-		 */
-		public DownloadFileFromURL(String downloadUrl, String filename)
-		{
-			startTime = System.currentTimeMillis();
-			this.downloadUrl = downloadUrl;
-			// Download file in folder /Downloads/timestamp-filename
-			downloadFolder = fileStorageProvider.getDownloadsFolder();
-			downloadFile = new File(downloadFolder.getAbsolutePath() + File.separator + (startTime / 1000) + '.' + TEMP_FILE_EXTENSION);
-
-			// instantiate it within the onCreate method
-			progressDialog = new ProgressDialog(ProjectManagerActivity.this);
-			progressDialog.setMessage("Downloading...");
-			progressDialog.setIndeterminate(false);
-			progressDialog.setMax(100);
-			progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			progressDialog.setCancelable(true);
-		}
-
-		/**
-		 * Show Progress Bar Dialog before starting the downloading
-		 * */
-		@Override
-		protected void onPreExecute()
-		{
-			super.onPreExecute();
-
-			progressDialog.setButton(DialogInterface.BUTTON_POSITIVE, "Cancel...", new DialogInterface.OnClickListener()
-			{
-				public void onClick(DialogInterface dialog, int which)
-				{
-					DownloadFileFromURL.this.cancel(true);
-					// Delete the downloaded file
-					downloadFile.delete();
-				}
-			});
-
-			progressDialog.show();
-		}
-
-		/**
-		 * Downloading file in background thread
-		 * 
-		 * @return
-		 * */
-		@Override
-		protected Boolean doInBackground(Void... voids)
-		{
-			if(isOnline(ProjectManagerActivity.this))
-			{
-				int count;
-				try
-				{
-					URL url = new URL(downloadUrl);
-					HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-					connection.setRequestMethod("GET");
-					connection.connect();
-					// getting file length
-					int fileLength = connection.getContentLength();
-
-					// input stream to read file - with 8k buffer
-					InputStream input = new BufferedInputStream(url.openStream(), 8192);
-					// Output stream to write file
-					OutputStream output = new FileOutputStream(downloadFile);
-
-					byte data[] = new byte[1024];
-					long total = 0;
-					while((count = input.read(data)) != -1)
-					{
-						total += count;
-						// Publish the progress....
-						publishProgress((int) (total * 100 / fileLength));
-
-						// writing data to file
-						output.write(data, 0, count);
-					}
-
-					// flushing output
-					output.flush();
-
-					// closing streams
-					output.close();
-					input.close();
-				}
-				catch(Exception e)
-				{
-					Log.e("Download error: ", e.getMessage(), e);
-					return false;
-				}
-				return true;
-			}
-			return false;
-		}
-
-		/**
-		 * Updating progress bar
-		 * */
-		protected void onProgressUpdate(Integer... progress)
-		{
-			progressDialog.setProgress(progress[0]);
-		}
-
-		/**
-		 * After completing background task Dismiss the progress dialog and parse the project
-		 * **/
-		@Override
-		protected void onPostExecute(Boolean downloadFinished)
-		{
-			// Dismiss the dialog after the file was downloaded
-			progressDialog.dismiss();
-			if(downloadFinished)
-			{
-				
-				Project project = loadProjectFromFile(downloadFile, downloadUrl); // also handles all exceptions, but returns null if there was one
-				// Process the file & add the project to the db & list on the screen
-				
-				if(project != null)
-					downloadFile.renameTo(new File(downloadFolder.getAbsolutePath() + File.separator + project.getName() + "_v" + project.getVersion() + '_' + (startTime / 1000) + ".sapelli"));
-				else
-					downloadFile.delete();
-			}
-			else
-			{
-				showErrorDialog("Download error. Please check if you are connected to the Internet.", false);
-				// Delete the downloaded file
-				downloadFile.delete();
-			}
-		}
+		new AndroidProjectLoaderStorer(this, fileStorageProvider, projectStore).loadAndStore(downloadedFile, downloadUrl, this);
 	}
 
-	/**
-	 * Check if the device is connected to Internet
-	 * 
-	 * @param mContext
-	 * @return
-	 */
-	public static boolean isOnline(Context mContext)
+	@Override
+	public void downloadFailure(String downloadUrl, Exception cause)
 	{
-		ConnectivityManager cm = (ConnectivityManager) mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
-		NetworkInfo netInfo = cm.getActiveNetworkInfo();
-		if(netInfo != null && netInfo.isConnected())
-			return true;
-		return false;
+		showErrorDialog(R.string.downloadError, false);
+	}
+	
+	@Override
+	public void projectLoadStoreSuccess(File sapelliFile, String sourceURI, Project project, List<String> warnings)
+	{
+		// Deal with downloaded file...
+		if(Patterns.WEB_URL.matcher(sourceURI).matches())
+			// Change temporary name to proper one:
+			sapelliFile.renameTo(new File(sapelliFile.getParentFile().getAbsolutePath() + File.separator + FileHelpers.makeValidFileName(project.toString(false) + ".sapelli")));
+		
+		// Warnings...
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder("\n");
+		//	Parser/loader warnings: 
+		if(!warnings.isEmpty())
+		{
+			bldr.append(getString(R.string.projectLoadingWarnings) + ":");
+			for(String warning : warnings)
+				bldr.append(" - " + warning);
+		}
+		//	Check file dependencies:
+		List<String> missingFiles = project.getMissingFilesRelativePaths(fileStorageProvider);
+		if(!missingFiles.isEmpty())
+		{
+			bldr.append(getString(R.string.missingFiles) + ":");
+			for(String missingFile : missingFiles)
+				bldr.append(" - " + missingFile);
+		}
+		//	Show warnings dialog:
+		if(!bldr.isEmpty())
+			showWarningDialog(bldr.toString()); // no need to worry about message not fitting the dialog, it will have a scrollbar when necessary 
+		
+		// Update project list:
+		populateProjectList();
+		selectProjectInList(project); // select the new project
+
+		// TODO Re-enable the service at same point
+		// Restart the DataSenderService to start monitoring the new project
+		// ServiceChecker.restartActiveDataSender(this);
+	}
+
+	@Override
+	public void projectLoadStoreFailure(File sapelliFile, String sourceURI, Exception cause)
+	{
+		// Deal with downloaded file...
+		if(Patterns.WEB_URL.matcher(sourceURI).matches())
+			org.apache.commons.io.FileUtils.deleteQuietly(sapelliFile);
+		
+		// Report problem:
+		Log.e(TAG, "Could not load/store Sapelli file", cause);
+		showErrorDialog(getString(R.string.sapelliFileLoadFailure, (Patterns.WEB_URL.matcher(sourceURI).matches() ? sapelliFile.getAbsolutePath() : sourceURI), ExceptionHelpers.getMessageAndCause(cause)), false);		
 	}
 
 }

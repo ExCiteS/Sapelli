@@ -23,6 +23,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Vibrator;
@@ -36,6 +38,21 @@ public final class DeviceControl
 {
 
 	protected static final String TAG = "DeviceControl";
+	
+	/**
+	 * Check if the device is connected to Internet
+	 * 
+	 * @param mContext
+	 * @return
+	 */
+	public static boolean isOnline(Context context)
+	{
+		ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo netInfo = cm.getActiveNetworkInfo();
+		if(netInfo != null && netInfo.isConnected())
+			return true;
+		return false;
+	}
 	
 	/**
 	 * Time to wait after exiting the Airplane Mode for GSM to be connected

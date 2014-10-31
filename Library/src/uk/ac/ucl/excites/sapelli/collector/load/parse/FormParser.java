@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.loading.xml;
+package uk.ac.ucl.excites.sapelli.collector.load.parse;
 
 import java.util.HashMap;
 import java.util.Hashtable;

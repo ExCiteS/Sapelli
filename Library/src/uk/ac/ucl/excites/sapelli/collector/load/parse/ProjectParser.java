@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.loading.xml;
+package uk.ac.ucl.excites.sapelli.collector.load.parse;
 
 import java.io.File;
 import java.io.InputStream;
@@ -29,7 +29,7 @@ import java.util.Map.Entry;
 
 import org.xml.sax.SAXException;
 
-import uk.ac.ucl.excites.sapelli.collector.loading.tasks.LoadingTask;
+import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessTask;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.TransmissionSettings;
@@ -95,7 +95,7 @@ public class ProjectParser extends DocumentParser
 	private String startFormID;
 	private HashMap<Relationship, String> relationshipToFormID;
 	private HashMap<Relationship, List<ConstraintDescription>> relationshipToConstraints;
-	private List<LoadingTask> loadingTasks;
+	private List<PostProcessTask> postLoadingTasks;
 
 	public ProjectParser()
 	{
@@ -118,8 +118,8 @@ public class ProjectParser extends DocumentParser
 			relationshipToFormID.clear();
 		if(relationshipToConstraints != null)
 			relationshipToConstraints.clear();
-		if(loadingTasks != null)
-			loadingTasks.clear();
+		if(postLoadingTasks != null)
+			postLoadingTasks.clear();
 		
 		// Get XML hash:
 		UnclosableBufferedInputStream ubInput = new UnclosableBufferedInputStream(input); // decorate stream to avoid it from being closed and to ensure we can use mark/reset
@@ -252,6 +252,7 @@ public class ProjectParser extends DocumentParser
 						throw new SAXException("This project contains more data-producing Forms than allowed (maximum: " + Project.MAX_RECORD_PRODUCING_FORMS + ").");
 					}
 					addWarnings(form.getWarnings()); // !!!
+					form.clearWarnings();
 				}
 				// Seal project model:
 				project.getModel().seal();
@@ -382,19 +383,19 @@ public class ProjectParser extends DocumentParser
 	 * 
 	 * @param task
 	 */
-	/*package*/ void addLoadingTask(LoadingTask task)
+	/*package*/ void addPostLoadingTask(PostProcessTask task)
 	{
-		if(loadingTasks == null)
-			loadingTasks = new ArrayList<LoadingTask>();
-		loadingTasks.add(task);
+		if(postLoadingTasks == null)
+			postLoadingTasks = new ArrayList<PostProcessTask>();
+		postLoadingTasks.add(task);
 	}
 
 	/**
 	 * @return the postLoadingTasks
 	 */
-	public List<LoadingTask> getLoadingTasks()
+	public List<PostProcessTask> getPostLoadingTasks()
 	{
-		return loadingTasks != null ? loadingTasks : Collections.<LoadingTask> emptyList();
+		return postLoadingTasks != null ? postLoadingTasks : Collections.<PostProcessTask> emptyList();
 	}
 	
 }

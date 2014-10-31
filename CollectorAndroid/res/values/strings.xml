@@ -58,9 +58,13 @@
     <string name="pleaseSelect">Please select a Sapelli file</string>
     <string name="noBareXMLProjects">The loading of bare XML files is no longer supported. Please package your project in a .sap file.</string>
     <string name="unsupportedExtension">Unsupport Sapelli project file extension (%1$s), supported extensions are %2$s.</string>
-    <string name="sapelliFileLoadFailure">Failed to load Sapelli project (source: %1$s).\nCause: %2$s</string>
+    <string name="projectLoading">Loading project&#8230;</string>
+    <string name="sapelliFileLoadFailure">Failed to load or store Sapelli project (source: %1$s).\nCause: %2$s</string>
     <string name="parsingWarnings">Parsing issues</string>
+    <string name="projectLoadingWarnings">Project loading issues</string>
     <string name="missingFiles">These files could not be found</string>
+    <string name="downloading">Downloading&#8230;</string>
+    <string name="downloadError">Download error. Please check if you are connected to the Internet.</string>
     
     <string name="needsStorageAccess">needs write access to the external/mass storage in order to function. Please insert an SD card and restart the application.</string>
     <string name="unavailableStorageAccess">Previously used file storage medium has become inaccessible, possibly due to the removal of an SD card or the device being connected to a PC.\nThe application will now exit.\nWhat would you like to happen when you restart it? It can either try using another storage medium, or retry the current medium. In the latter case please first re-insert SD card or disconnect from computer before restarting.</string>

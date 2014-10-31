@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.shared.util.xml;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,12 +29,14 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
+
 
 /**
  * @author mstevens
  *
  */
-public abstract class Handler extends DefaultHandler
+public abstract class Handler extends DefaultHandler implements WarningKeeper
 {
 
 	// Static
@@ -44,11 +47,10 @@ public abstract class Handler extends DefaultHandler
 	private final Map<String, SubtreeParser<?>> subtreeParsers;
 	private SubtreeParser<?> activeSubtreeParser;
 	
-	protected final List<String> warnings;
+	private List<String> warnings;
 
 	public Handler()
 	{
-		this.warnings = new ArrayList<String>();
 		this.subtreeParsers = new HashMap<String, SubtreeParser<?>>();
 		this.activeSubtreeParser = null;
 	}
@@ -185,24 +187,32 @@ public abstract class Handler extends DefaultHandler
 		super.characters(ch, start, length);
 	}
 
-	protected void addWarning(String warning)
+	@Override
+	public void addWarning(String warning)
 	{
+		if(warnings == null)
+			warnings = new ArrayList<String>();
 		warnings.add(warning);
 	}
 
-	protected void addWarnings(Collection<String> warnings)
+	@Override
+	public void addWarnings(Collection<String> warnings)
 	{
-		this.warnings.addAll(warnings);
+		if(warnings == null)
+			warnings = new ArrayList<String>();
+		warnings.addAll(warnings);
 	}
 
+	@Override
 	public List<String> getWarnings()
 	{
-		return warnings;
+		return warnings != null ? warnings : Collections.<String> emptyList();
 	}
 	
+	@Override
 	public void clearWarnings()
 	{
-		warnings.clear();
+		warnings = null;
 	}
 
 }

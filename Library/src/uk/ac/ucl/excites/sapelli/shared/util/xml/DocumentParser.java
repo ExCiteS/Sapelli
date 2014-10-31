@@ -43,11 +43,11 @@ public abstract class DocumentParser extends Handler
 		return new FileInputStream(xmlFile);
 	}
 
-	public void parse(InputStream input) throws Exception
+	protected void parse(InputStream input) throws Exception
 	{
 		if(input == null)
 			throw new IllegalArgumentException("Invalid input stream");
-		warnings.clear();
+		clearWarnings();
 		try
 		{
 			SAXParserFactory spf = SAXParserFactory.newInstance();
