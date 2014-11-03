@@ -45,6 +45,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
@@ -391,6 +392,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			// add content:
 			this.contentView = getCaptureContent(context);
 			LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
+			contentParams.gravity = Gravity.CENTER_HORIZONTAL;
 			contentParams.weight = 1.0f;
 			addView(contentView, contentParams);
 			
@@ -480,6 +482,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			View contentView = getReviewContent(context, toReview);
 			LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
 			contentParams.weight = 1.0f;
+			contentParams.gravity = Gravity.CENTER;
 			addView(contentView, contentParams);
 			
 			// add button:			
@@ -488,20 +491,20 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				public void run() {
 					// only one button: discard
 					onDiscard();
-					if (field.getMax() <= 1) {
-						// single item review
-						removeMedia(field.getLastAttachment(controller.getFileStorageProvider(), controller.getCurrentRecord())); // captures are now always attached, so must be deleted regardless of approval
-					} else {
-						// reviewing from gallery, so delete
-						ReviewView.this.toReview.delete();
-						maxReached = false;  // have now deleted media, so cannot have reached max
-						controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY);
-					}
+					removeMedia(ReviewView.this.toReview); // captures are now always attached, so must be deleted regardless of approval
+					// have now deleted media, so cannot have reached max
+					maxReached = false;
 					// an item has been deleted, so want the gallery to be refreshed:
 					mediaItemsChanged = true;
+					
 					// remove the filepath from the field's arguments so we do not re-enter single-item review unintentionally
 					controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY);
-					// either go back to capture, or go back to gallery (decided on entry):
+					
+					if (field.getCount(controller.getCurrentRecord()) < 1)
+						// go to capture if no attachments remain
+						controller.getCurrentFieldArguments().put(GO_TO_CAPTURE_KEY, "true");
+					
+					// either go back to capture, or go back to gallery:
 					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 					// Important: release the click semaphore AFTER the field has been exited
 					handlingClick.release();

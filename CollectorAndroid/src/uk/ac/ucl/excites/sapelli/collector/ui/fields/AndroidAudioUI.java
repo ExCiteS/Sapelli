@@ -208,13 +208,14 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 	@Override
 	protected View getCaptureContent(Context context) {
-		volumeDisplay = new VolumeDisplaySurfaceView(context);
-//		int width = ScreenMetrics.ConvertDipToPx(context, VOLUME_DISPLAY_WIDTH_DP); TODO
-//		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width,LinearLayout.LayoutParams.MATCH_PARENT);
-//		params.gravity = Gravity.CENTER_HORIZONTAL;
-		
-		// not recording yet, so set capture button to take up whole screen:
+		volumeDisplay = new VolumeDisplaySurfaceView(context);		
 		return volumeDisplay;
+	}
+	
+	@Override
+	protected View getReviewContent(Context context, File mediaFile) {		
+		audioReviewView = new AudioReviewView(context, mediaFile);
+		return audioReviewView;
 	}
 	
 	/**
@@ -223,12 +224,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	@Override
 	protected boolean isMaximiseCaptureButton() {
 		return true;
-	}
-
-	@Override
-	protected View getReviewContent(Context context, File mediaFile) {		
-		audioReviewView = new AudioReviewView(context, mediaFile);
-		return audioReviewView;
 	}
 
 	@Override
@@ -301,6 +296,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 						}
 					}
 					handlingClick.release();
+					Log.d(TAG,"Click semaphore released from playback");
 				}
 			};
 			
@@ -309,6 +305,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 				@Override
                 public void onClick(View v) {
 					if (handlingClick.tryAcquire()) {
+						Log.d(TAG,"Click semaphore acquired for playback");
 						// Execute the "press" animation if allowed, then perform the action: 
 						if(controller.getCurrentForm().isClickAnimation())
 							(new ClickAnimator(buttonAction, AudioReviewView.this, collectorUI)).execute(); //execute animation and the action afterwards

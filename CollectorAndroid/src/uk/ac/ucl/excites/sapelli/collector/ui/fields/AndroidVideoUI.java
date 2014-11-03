@@ -131,6 +131,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	@Override
 	protected View getReviewContent(Context context, File mediaFile) {
 		LinearLayout reviewLayout = new LinearLayout(context);
+		reviewLayout.setGravity(Gravity.CENTER);
 		// instantiate the thumbnail that is shown before the video is started:
 		final ImageView thumbnailView = new ImageView(context);
 		// create thumbnail from video file:
@@ -147,7 +148,6 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		
 		// layout params for the thumbnail and the video view are the same:
 		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
-		params.gravity = Gravity.CENTER_HORIZONTAL;
 		reviewLayout.addView(thumbnailView, params);
 		reviewLayout.addView(playbackView, params);
 
