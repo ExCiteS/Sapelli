@@ -532,9 +532,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		
 		private GalleryPicker pickerView;
 		private View buttonView;
+		private Context context;
+		private Runnable buttonAction;
 		
 		private GalleryView(Context context) {
 			super(context);
+			this.context = context;
 			// layout parameters:
 			this.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 			this.setOrientation(LinearLayout.VERTICAL);
@@ -548,7 +551,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 			// add button:
 			
-			final Runnable buttonAction = new Runnable() {
+			buttonAction = new Runnable() {
 				@Override
 				public void run() {
 					// "capture more" button clicked, return to camera interface
@@ -573,7 +576,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		 */
 		private void refresh() {
 			pickerView.loadMedia();
-			//buttonView.refreshButtons(); TODO
+			// refresh capture button in case it is now (un-)greyed out:
+			this.removeView(buttonView);
+			buttonView = buttonFromItem(context, createCaptureMoreButton(), buttonAction);
+			this.addView(buttonView, buttonParams);
 		}
 
 		/**
