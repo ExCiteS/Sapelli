@@ -83,14 +83,18 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private CaptureView captureView;
 	private ReviewView reviewView;
 	private GalleryView galleryView;
-	private LinearLayout.LayoutParams buttonParams;
+	
+	// global variable that holds the params for the capture/discard buttons
+	private LinearLayout.LayoutParams buttonParams; 
 
 	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
 		maxReached = (field.getCount(controller.getCurrentRecord()) >= field.getMax());
+		// create button params to be used for all bottom-of-screen buttons:
 		buttonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(collectorUI.getContext(), AndroidControlsUI.CONTROL_HEIGHT_DIP));
-
+		// add margin above button to separate it from content:
+		buttonParams.setMargins(0, collectorUI.getSpacingPx(), 0, 0);
 	}
 
 	/**
@@ -124,6 +128,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			handlingClick = new Semaphore(1);
 
 		DisplayState currentState = getCurrentDisplayState();
+		Log.d(TAG,"Current state: "+currentState.name());
 		File toReview;
 
 		switch (currentState) {
@@ -141,6 +146,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 			if (reviewView == null)
 				reviewView = new ReviewView(collectorUI.getContext());
+			
 			// populate review layout with most recent capture:
 			toReview = field.getLastAttachment(controller.getFileStorageProvider(), record);
 			reviewView.setReviewFile(toReview);
@@ -152,9 +158,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 			if (reviewView == null)
 				reviewView = new ReviewView(collectorUI.getContext());
+			
 			// populate review layout with provided filepath:
 			toReview = new File(controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY));
 			reviewView.setReviewFile(toReview);
+			// NOTE: only remove path from args on exit from field, since the current display state is checked multiple times
 			populateReviewLayout(reviewView.contentView, toReview);
 			
 			return reviewView;
@@ -163,6 +171,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			
 			if (galleryView == null)
 				galleryView = new GalleryView(collectorUI.getContext());
+			
 			// force the gallery to update its contents and its button:
 			galleryView.refresh();
 			
@@ -275,7 +284,15 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			captureView.maximiseCaptureButton();
 	}
 	
-	public Item generateDiscardButton(Context context) { //TODO
+	/**
+	 * Return a "discard" button item to be used when reviewing a single media item. Will use field-specific capture button if 
+	 * available, otherwise the default resource is used. Can be overriden by the subclass if some kind of 'dynamic' discard 
+	 * button is needed, analogous to the capture button.
+	 * 
+	 * @param context
+	 * @return
+	 */
+	public Item generateDiscardButton(Context context) {
 		Item discardButton = null;
 		File discardImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getDiscardButtonImageRelativePath());
 		if(FileHelpers.isReadableFile(discardImgFile))
@@ -349,7 +366,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
             }
 	
 		});
-		
+						
 		return view;
 	}
 	
@@ -364,10 +381,13 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				
 		private LinearLayout contentView; // capture UI content
 		private View buttonView; // capture button
+		private Runnable buttonAction;
 		private boolean captureButtonMaximised = false;
+		private Context context;
 		
 		private CaptureView(Context context) {
 			super(context);
+			this.context = context;
 			// layout parameters:
 			this.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 			this.setOrientation(LinearLayout.VERTICAL);
@@ -376,26 +396,26 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			
 			// add content:
 			contentView = new LinearLayout(context);
-			LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
-			// expand to fill all available space:
-			params.weight = 1.0f;
-			contentView.setLayoutParams(params);
+			LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
+			contentParams.weight = 1.0f;
 			contentView.setOrientation(LinearLayout.VERTICAL);
-			this.addView(contentView);
+			this.addView(contentView, contentParams);
 			
 			// add button:
-			final Runnable buttonAction = new Runnable() {
+			buttonAction = new Runnable() {
 				@Override
 				public void run() {
-					controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY); //just made a capture, so go to gallery instead (unless multiple disabled)
+					 //just made a capture, so go to gallery instead when the field is re-entered (unless multiple disabled):
+					controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY);
 					onCapture();
-					//CaptureButtonView.this.refreshButtons();
+					// refresh capture button on press (e.g. might need to change from "record" to "stop recording")
+					refreshCaptureButton(null);
+					// force gallery to check for new files next time it is entered:
 					mediaItemsChanged = true; 
 				}
 			};
 			
 			buttonView = buttonFromItem(context, generateCaptureButton(context), buttonAction);
-			
 			this.addView(buttonView, buttonParams);
 		}
 		
@@ -407,11 +427,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				captureButtonMaximised = false;
 				// show all other content from capture UI:
 				contentView.setVisibility(View.VISIBLE);
-				// restore capture button's original (minimised) layout parameters:
-				buttonView.setPadding(0, collectorUI.getSpacingPx(), 0, 0);
-				buttonView.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
 				// redraw the capture button:
-				// buttonView.refreshButtons(); TODO
+				refreshCaptureButton(buttonParams);
 			}
 		}
 
@@ -423,12 +440,18 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				captureButtonMaximised = true;
 				// hide all other content from capture UI:
 				contentView.setVisibility(View.GONE);
-				// fill the capture UI with the capture button:
-				buttonView.setPadding(0, 0, 0, 0);
-				buttonView.setLayoutParams(buttonParams);
 				// redraw the capture button:
-				// buttonView.refreshButtons(); TODO
+				refreshCaptureButton(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
 			}
+		}
+		
+		private void refreshCaptureButton(ViewGroup.LayoutParams newLayoutParams) {
+			if (newLayoutParams == null) // use whatever params it had before:
+				newLayoutParams = buttonView.getLayoutParams();
+			
+			this.removeView(buttonView);
+			buttonView = buttonFromItem(context, generateCaptureButton(context), buttonAction);
+			this.addView(buttonView, newLayoutParams);
 		}
 	}
 	
@@ -452,11 +475,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			
 			// add content:
 			contentView = new LinearLayout(context);
-			LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);		
-			params.weight = 1.0f;
-			this.setLayoutParams(params);
+			LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
+			contentParams.weight = 1.0f;
 			this.setOrientation(LinearLayout.VERTICAL);
-			this.addView(contentView);
+			this.addView(contentView, contentParams);
 			
 			// add button:			
 			
@@ -486,7 +508,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			};
 			
 			buttonView = buttonFromItem(context, generateDiscardButton(context), buttonAction);
-			
 			this.addView(buttonView, buttonParams);
 		}
 		
@@ -521,7 +542,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			
 			// add gallery picker:
 			pickerView = new GalleryPicker(context);
-			this.addView(pickerView);
+			LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
+			contentParams.weight = 1.0f;
+			this.addView(pickerView, contentParams);
 
 			// add button:
 			
