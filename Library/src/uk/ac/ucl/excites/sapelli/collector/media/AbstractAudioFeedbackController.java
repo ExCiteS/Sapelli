@@ -47,6 +47,15 @@ public abstract class AbstractAudioFeedbackController<V>
 			this.viewToAnimate = viewToAnimate;
 		}
 		
+		/**
+		 * @param soundRelativePath
+		 */
+		private PlaybackJob(String soundRelativePath)
+		{
+			this.soundRelativePath = soundRelativePath;
+			this.viewToAnimate = null;
+		}
+		
 	}
 
 }

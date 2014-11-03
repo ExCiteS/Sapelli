@@ -91,7 +91,6 @@ public class Form implements WarningKeeper
 
 	public static final ScreenTransition DEFAULT_SCREEN_TRANSITION = ScreenTransition.NONE;
 
-	// Dynamics-------------------------------------------------------
 	public static enum AudioFeedback
 	{
 		NONE, LONG_CLICK, SEQUENTIAL

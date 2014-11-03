@@ -95,7 +95,7 @@ public class ProjectParser extends DocumentParser
 	private String startFormID;
 	private HashMap<Relationship, String> relationshipToFormID;
 	private HashMap<Relationship, List<ConstraintDescription>> relationshipToConstraints;
-	private List<PostProcessTask> postLoadingTasks;
+	private List<PostProcessTask> postProcessingTasks;
 
 	public ProjectParser()
 	{
@@ -118,8 +118,8 @@ public class ProjectParser extends DocumentParser
 			relationshipToFormID.clear();
 		if(relationshipToConstraints != null)
 			relationshipToConstraints.clear();
-		if(postLoadingTasks != null)
-			postLoadingTasks.clear();
+		if(postProcessingTasks != null)
+			postProcessingTasks.clear();
 		
 		// Get XML hash:
 		UnclosableBufferedInputStream ubInput = new UnclosableBufferedInputStream(input); // decorate stream to avoid it from being closed and to ensure we can use mark/reset
@@ -383,19 +383,19 @@ public class ProjectParser extends DocumentParser
 	 * 
 	 * @param task
 	 */
-	/*package*/ void addPostLoadingTask(PostProcessTask task)
+	/*package*/ void addPostProcessingTask(PostProcessTask task)
 	{
-		if(postLoadingTasks == null)
-			postLoadingTasks = new ArrayList<PostProcessTask>();
-		postLoadingTasks.add(task);
+		if(postProcessingTasks == null)
+			postProcessingTasks = new ArrayList<PostProcessTask>();
+		postProcessingTasks.add(task);
 	}
 
 	/**
 	 * @return the postLoadingTasks
 	 */
-	public List<PostProcessTask> getPostLoadingTasks()
+	public List<PostProcessTask> getPostProcessingTasks()
 	{
-		return postLoadingTasks != null ? postLoadingTasks : Collections.<PostProcessTask> emptyList();
+		return postProcessingTasks != null ? postProcessingTasks : Collections.<PostProcessTask> emptyList();
 	}
 	
 }
