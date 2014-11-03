@@ -32,9 +32,7 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
-import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.AudioItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
@@ -42,7 +40,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.annotation.SuppressLint;
@@ -54,14 +51,10 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
 import android.widget.LinearLayout;
 
 /**
@@ -79,7 +72,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	private static final int VOLUME_DISPLAY_WIDTH_DP = 120;
 
 	private AudioRecorder audioRecorder;
-	private AudioReviewPicker audioReviewPicker;
+	private AudioReviewView audioReviewView;
 	private VolumeDisplaySurfaceView volumeDisplay;
 
 	public AndroidAudioUI(AudioField field, Controller controller, CollectorView collectorUI) {
@@ -172,8 +165,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 	@Override
 	protected void onDiscard() {
-		if (audioReviewPicker != null)
-			audioReviewPicker.finalise();
+		if (audioReviewView != null)
+			audioReviewView.finalise();
 	}
 
 	/**
@@ -215,24 +208,26 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	}
 
 	@Override
-	protected void populateCaptureLayout(ViewGroup captureLayout) {
-		captureLayout.removeAllViews();
-		volumeDisplay = new VolumeDisplaySurfaceView(captureLayout.getContext());
-		int width = ScreenMetrics.ConvertDipToPx(captureLayout.getContext(), VOLUME_DISPLAY_WIDTH_DP);
-		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width,LinearLayout.LayoutParams.MATCH_PARENT);
-		params.gravity = Gravity.CENTER_HORIZONTAL;
-		captureLayout.addView(volumeDisplay, params);
+	protected View getCaptureContent(Context context) {
+		volumeDisplay = new VolumeDisplaySurfaceView(context);
+//		int width = ScreenMetrics.ConvertDipToPx(context, VOLUME_DISPLAY_WIDTH_DP); TODO
+//		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(width,LinearLayout.LayoutParams.MATCH_PARENT);
+//		params.gravity = Gravity.CENTER_HORIZONTAL;
+		
 		// not recording yet, so set capture button to take up whole screen:
-		maximiseCaptureButton();
+		return volumeDisplay;
+	}
+	
+	@Override
+	protected boolean isMaximiseCaptureButton() {
+		return true;
 	}
 
 	@Override
-	protected void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
-		reviewLayout.removeAllViews();
-		// create buttons for playing the newly captured audio:
-		audioReviewPicker = new AudioReviewPicker(reviewLayout.getContext(), mediaFile);
+	protected View getReviewContent(Context context, File mediaFile) {		
+		audioReviewView = new AudioReviewView(context, mediaFile);
 		// add picker to container:
-		reviewLayout.addView(audioReviewPicker);
+		return audioReviewView;
 	}
 
 	@Override
@@ -244,27 +239,27 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			}
 			recording = false;
 		}
-		if (audioReviewPicker != null)
-			audioReviewPicker.finalise();
-		audioReviewPicker = null;
+		if (audioReviewView != null)
+			audioReviewView.finalise();
+		audioReviewView = null;
 		volumeDisplay = null;
 	}
 
 	/**
-	 * A simple subclass of PickerView that provides play/stop functionality when a recording is being reviewed.
+	 * A simple subclass of ImageView that provides play/stop functionality when a recording is being reviewed.
 	 * 
 	 * @author benelliott
 	 */
-	private class AudioReviewPicker extends PickerView implements OnItemClickListener, MediaPlayer.OnCompletionListener {
+	private class AudioReviewView extends LinearLayout implements MediaPlayer.OnCompletionListener {
 
 		private MediaPlayer mediaPlayer = new MediaPlayer();
 		private Runnable buttonAction;
-		private final ImageItem playAudioButton;
-		private final ImageItem stopAudioButton;
+		private final View playButton;
+		private final View stopButton;
 		private volatile Boolean playing = false;
 
 
-		public AudioReviewPicker(Context context, File audioFile) {
+		public AudioReviewView(Context context, File audioFile) {
 			super(context);
 			try {
 				mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -276,31 +271,21 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			}
 			File playImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getPlayAudioImageRelativePath());
 			if(FileHelpers.isReadableFile(playImgFile))
-				playAudioButton = new FileImageItem(playImgFile);
+				playButton = new FileImageItem(playImgFile).getView(context);
 			else
-				playAudioButton = new ResourceImageItem(context.getResources(), R.drawable.button_play_audio_svg);
-			playAudioButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+				playButton = new ResourceImageItem(context.getResources(), R.drawable.button_play_audio_svg).getView(context);
+//			playAudioButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+			playButton.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT ));
 
 			File stopImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getStopAudioImageRelativePath());
 			if(FileHelpers.isReadableFile(stopImgFile))
-				stopAudioButton = new FileImageItem(stopImgFile);
+				stopButton = new FileImageItem(stopImgFile).getView(context);
 			else
-				stopAudioButton = new ResourceImageItem(context.getResources(), R.drawable.button_stop_audio_svg);
-			stopAudioButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-
-			setNumColumns(1);
-
-			// TODO rework this: use weights?
-			setItemDimensionsPx(
-					LayoutParams.MATCH_PARENT,
-					collectorUI.getFieldUIPartHeightPx(
-							collectorUI.getFieldUIHeightPx() - ScreenMetrics.ConvertDipToPx(context, AndroidControlsUI.CONTROL_HEIGHT_DIP) - collectorUI.getSpacingPx(),1));
-			// height of picker = available UI height - height of bottom control bar
-
-			setOnItemClickListener(this);
+				stopButton = new ResourceImageItem(context.getResources(), R.drawable.button_stop_audio_svg).getView(context);
+//			stopAudioButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+			stopButton.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT ));
 
 			buttonAction = new Runnable() {
-				// only one button - the play/stop button
 				public void run() {
 					synchronized(playing) {
 						if (!playing) {
@@ -317,22 +302,27 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 					handlingClick.release();
 				}
 			};
+			
+			this.setOnClickListener(new OnClickListener() {
 
-			getAdapter().addItem(playAudioButton);
-		}
+				@Override
+                public void onClick(View v) {
+					if (handlingClick.tryAcquire()) {
+						// Execute the "press" animation if allowed, then perform the action: 
+						if(controller.getCurrentForm().isClickAnimation())
+							(new ClickAnimator(buttonAction, AudioReviewView.this, collectorUI)).execute(); //execute animation and the action afterwards
+						else
+							buttonAction.run(); //perform task now (animation is disabled)
+					}
+	                
+                }
+				
+			});
+			 // show play button first
+			this.addView(playButton);
 
-		@Override
-		public void onItemClick(AdapterView<?> parent, View view, int position,
-				long id) {
-			if (handlingClick.tryAcquire()) {
-				// Execute the "press" animation if allowed, then perform the action: 
-				if(controller.getCurrentForm().isClickAnimation())
-					(new ClickAnimator(buttonAction, view, collectorUI)).execute(); //execute animation and the action afterwards
-				else
-					buttonAction.run(); //perform task now (animation is disabled)
-			}
 		}
-		/**
+		/*
 		 * Start playing audio and display the "stop" button.
 		 */
 		private void playAudio() {
@@ -345,9 +335,9 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 				e.printStackTrace();
 			}
 			// present the play button to the user:
-			getAdapter().clear();
-			getAdapter().addItem(stopAudioButton);
-			getAdapter().notifyDataSetChanged();
+			
+			removeView(playButton);
+			addView(stopButton);
 		}
 
 		/**
@@ -357,9 +347,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			// stop the audio:
 			mediaPlayer.stop();
 			// present the play button to the user:
-			getAdapter().clear();
-			getAdapter().addItem(playAudioButton);
-			getAdapter().notifyDataSetChanged();
+			removeView(stopButton);
+			addView(playButton);
 		}
 
 		/**

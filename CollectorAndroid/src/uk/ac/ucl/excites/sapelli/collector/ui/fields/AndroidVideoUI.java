@@ -35,7 +35,6 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
-import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
@@ -66,7 +65,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 
 	@SuppressWarnings("deprecation")
 	@Override
-	protected void populateCaptureLayout(ViewGroup captureLayout) {
+	protected View getCaptureContent(Context context) {
 		if (cameraController == null) {
 			// Set up cameraController:
 			//	Camera controller & camera selection:
@@ -80,15 +79,12 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 						controller.goForward(false);
 					else
 						controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE);
-					return;
+					return null;
 				}
 			}
 		}
-		//TODO figure out how views are cached so this does not have to be done every time:
-		captureLayout.removeAllViews();
 		// Create the surface for previewing the camera:
-		captureSurface = new SurfaceView(captureLayout.getContext());
-		captureLayout.addView(captureSurface);
+		captureSurface = new SurfaceView(context);
 
 		// Set-up surface holder:
 		SurfaceHolder holder = captureSurface.getHolder();
@@ -98,6 +94,8 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
 		cameraController.startPreview();
+		
+		return captureSurface;
 	}
 
 	@Override
@@ -131,20 +129,17 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	}
 
 	@Override
-	protected void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
-		Log.d(TAG,"Showing review layout for file: "+mediaFile.getName());
-		// clear the container:
-		reviewLayout.removeAllViews();
-		
+	protected View getReviewContent(Context context, File mediaFile) {
+		LinearLayout reviewLayout = new LinearLayout(context);
 		// instantiate the thumbnail that is shown before the video is started:
-		final ImageView thumbnailView = new ImageView(reviewLayout.getContext());
+		final ImageView thumbnailView = new ImageView(context);
 		// create thumbnail from video file:
 		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(mediaFile.getAbsolutePath(),MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
 		thumbnailView.setScaleType(ScaleType.FIT_CENTER);
 		thumbnailView.setImageBitmap(thumbnail);
 		
 		// instantiate the video view that plays the captured video:
-		playbackView = new VideoView(reviewLayout.getContext());
+		playbackView = new VideoView(context);
 		playbackView.setOnCompletionListener(this);
 		playbackView.setVideoURI(Uri.fromFile(mediaFile));
 		// don't show the video view straight away - only once the thumbnail is clicked:
@@ -189,6 +184,8 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	            playbackView.start();
             }
 		});
+		
+		return reviewLayout;
 	}
 
 

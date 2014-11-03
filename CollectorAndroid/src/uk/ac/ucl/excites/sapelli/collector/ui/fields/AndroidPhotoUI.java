@@ -48,10 +48,9 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.ViewGroup;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
-import android.widget.LinearLayout;
 
 /**
  * A subclass of AndroidMediaUI which allows for the capture and 
@@ -81,7 +80,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 
 	@SuppressWarnings("deprecation")
 	@Override
-	protected void populateCaptureLayout(ViewGroup captureLayout) {
+	protected View getCaptureContent(Context context) {
 		if (cameraController == null) {
 	        // Set up cameraController:
 	        //	Camera controller & camera selection:
@@ -95,17 +94,14 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 						controller.goForward(false);
 					else
 						controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE);
-			        return;
+			        return null;
 		        }
 	        }
 	        //	Set flash mode:
 	        cameraController.setFlashMode(field.getFlashMode());
 		}
-		//TODO figure out how views are cached so this does not have to be done every time:
-		captureLayout.removeAllViews();
         // Create the surface for previewing the camera:
-		captureSurface = new SurfaceView(captureLayout.getContext());
-        captureLayout.addView(captureSurface);
+		captureSurface = new SurfaceView(context);
         
         // Set-up surface holder:
         SurfaceHolder holder = captureSurface.getHolder();
@@ -115,6 +111,8 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 		
 		cameraController.startPreview();
+		
+		return captureSurface;
 	}
 
 	@Override
@@ -130,17 +128,13 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
     }
 
 	@Override
-	protected void populateReviewLayout(ViewGroup reviewLayout, File mediaFile) {
-		reviewLayout.removeAllViews();
+	protected View getReviewContent(Context context, File mediaFile) {
 		// add an ImageView to the review UI:
-		ImageView reviewView = new ImageView(reviewLayout.getContext());
+		ImageView reviewView = new ImageView(context);
 		reviewView.setScaleType(ScaleType.FIT_CENTER);
-		// make sure the image takes up all the available space:
-		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
-		reviewView.setLayoutParams(params);
 		// set the ImageView to the provided photo file:
 		reviewView.setImageURI(Uri.fromFile(mediaFile));
-		reviewLayout.addView(reviewView);
+		return reviewView;
 	}
 
 	@Override

@@ -79,9 +79,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
 	protected File captureFile; // file used to store media while it is being captured
 
-	// Three possible UI screens:
 	private CaptureView captureView;
-	private ReviewView reviewView;
 	private GalleryView galleryView;
 	
 	// global variable that holds the params for the capture/discard buttons
@@ -129,44 +127,21 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 		DisplayState currentState = getCurrentDisplayState();
 		Log.d(TAG,"Current state: "+currentState.name());
-		File toReview;
 
 		switch (currentState) {
 		case CAPTURE:
 			
-			if (captureView == null)
-				captureView = new CaptureView(collectorUI.getContext());
-
-			// populate capture layout (e.g. set up photo viewfinder)
-			populateCaptureLayout(captureView.contentView);
-			
+			captureView = new CaptureView(collectorUI.getContext(), isMaximiseCaptureButton());
 			return captureView;
 
 		case SINGLE_ITEM_REVIEW:
 
-			if (reviewView == null)
-				reviewView = new ReviewView(collectorUI.getContext());
-			
-			// populate review layout with most recent capture:
-			toReview = field.getLastAttachment(controller.getFileStorageProvider(), record);
-			reviewView.setReviewFile(toReview);
-			populateReviewLayout(reviewView.contentView, toReview);
-			
-			return reviewView;
+			return new ReviewView(collectorUI.getContext(), field.getLastAttachment(controller.getFileStorageProvider(), record));
 
 		case SINGLE_REVIEW_FROM_GALLERY:
-
-			if (reviewView == null)
-				reviewView = new ReviewView(collectorUI.getContext());
 			
-			// populate review layout with provided filepath:
-			toReview = new File(controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY));
-			reviewView.setReviewFile(toReview);
-			// NOTE: only remove path from args on exit from field, since the current display state is checked multiple times
-			populateReviewLayout(reviewView.contentView, toReview);
+			return new ReviewView(collectorUI.getContext(),new File(controller.getCurrentFieldArguments().getValue(REVIEW_FILE_PATH_KEY)));
 			
-			return reviewView;
-
 		default: // Return gallery
 			
 			if (galleryView == null)
@@ -303,6 +278,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		return discardButton;
 	}
 	
+	protected boolean isMaximiseCaptureButton() {
+		return false;
+	}
+	
+	
 	// -------- ABSTRACT METHODS:
 
 	/**
@@ -335,7 +315,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * for media capture (e.g. viewfinder for camera).
 	 * @param captureLayout - the container to populate.
 	 */
-	protected abstract void populateCaptureLayout(ViewGroup captureLayout);
+	protected abstract View getCaptureContent(Context context);
 
 	/**
 	 * Populate a container with views as appropriate to create an interface for 
@@ -343,7 +323,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @param deleteLayout - the container to populate.
 	 * @param mediaFile - the media file being reviewed.
 	 */
-	protected abstract void populateReviewLayout(ViewGroup reviewLayout, File mediaFile);
+	protected abstract View getReviewContent(Context context, File mediaFile);
 	
 	private View buttonFromItem(Context context, Item buttonItem, final Runnable onClickRunnable) {
 		final View view = buttonItem.getView(context);
@@ -378,14 +358,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 *
 	 */
 	private class CaptureView extends LinearLayout {
-				
-		private LinearLayout contentView; // capture UI content
+		
+		private View contentView;
 		private View buttonView; // capture button
 		private Runnable buttonAction;
 		private boolean captureButtonMaximised = false;
 		private Context context;
 		
-		private CaptureView(Context context) {
+		private CaptureView(Context context, boolean maximiseCaptureButton) {
 			super(context);
 			this.context = context;
 			// layout parameters:
@@ -395,11 +375,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			this.setWeightSum(1.0f);
 			
 			// add content:
-			contentView = new LinearLayout(context);
+			this.contentView = getCaptureContent(context);
 			LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
 			contentParams.weight = 1.0f;
-			contentView.setOrientation(LinearLayout.VERTICAL);
-			this.addView(contentView, contentParams);
+			addView(contentView, contentParams);
 			
 			// add button:
 			buttonAction = new Runnable() {
@@ -416,9 +395,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			};
 			
 			buttonView = buttonFromItem(context, generateCaptureButton(context), buttonAction);
-			this.addView(buttonView, buttonParams);
+			addView(buttonView, buttonParams);
+			
+			if (maximiseCaptureButton)
+				maximiseCaptureButton();
 		}
-		
+
 		/**
 		 * Restores a maximised capture button to its original position at the bottom of the screen.
 		 */
@@ -462,23 +444,22 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 */
 	private class ReviewView extends LinearLayout {
 		
-		private LinearLayout contentView; // review UI content
 		private View buttonView; // "delete item" button
 		private File toReview; // file used to populate review UI
 		
-		private ReviewView(Context context) {
+		private ReviewView(Context context,File toReview) {
 			super(context);
+			this.toReview = toReview;
 			// layout:
 			this.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 			this.setOrientation(LinearLayout.VERTICAL);
 			this.setWeightSum(1.0f);
 			
 			// add content:
-			contentView = new LinearLayout(context);
+			View contentView = getReviewContent(context, toReview);
 			LinearLayout.LayoutParams contentParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0);
 			contentParams.weight = 1.0f;
-			this.setOrientation(LinearLayout.VERTICAL);
-			this.addView(contentView, contentParams);
+			addView(contentView, contentParams);
 			
 			// add button:			
 			
@@ -492,7 +473,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						removeMedia(field.getLastAttachment(controller.getFileStorageProvider(), controller.getCurrentRecord())); // captures are now always attached, so must be deleted regardless of approval
 					} else {
 						// reviewing from gallery, so delete
-						toReview.delete();
+						ReviewView.this.toReview.delete();
 						maxReached = false;  // have now deleted media, so cannot have reached max
 						controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY);
 					}
@@ -508,17 +489,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			};
 			
 			buttonView = buttonFromItem(context, generateDiscardButton(context), buttonAction);
-			this.addView(buttonView, buttonParams);
-		}
-		
-		/**
-		 * Give this object a handle to the file that is being reviewed so that it can delete it 
-		 * when the delete button is pressed.
-		 * 
-		 * @param toReview
-		 */
-		private void setReviewFile(File toReview) {
-			this.toReview = toReview;
+			addView(buttonView, buttonParams);
 		}
 	}
 	
