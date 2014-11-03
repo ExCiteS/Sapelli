@@ -22,6 +22,7 @@ import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.ScreenTransition;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
@@ -57,7 +58,6 @@ import android.view.View;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
-import android.widget.ProgressBar;
 
 /**
  * The GUI of the CollectorActivity
@@ -93,7 +93,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	private FieldUI<?, View, CollectorView> fieldUI;
 	private View fieldUIView = null;
 	private HashMap<Field, FieldUI<?, View, CollectorView>> fieldUICache;
-	private ProgressBar spinner;
 
 	// Input manager:
 	private InputMethodManager imm;
@@ -220,6 +219,12 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			}
 			// New becomes current:
 			fieldUIView = newFieldUIView;
+			
+			// Set up listener if needed:
+			if(fieldUI.informOnDisplay(false))
+			{
+				// TODO set up listener and if listeren called call fieldUI.onDisplay(false);
+			}
 		}
 
 		// Set focus:
@@ -486,16 +491,11 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			focusedView.clearFocus();
 	}
 
-	public void addSpinner() {
-	    spinner = new ProgressBar(this.getContext(), null, android.R.attr.progressBarStyleLarge);
-	    this.addView(spinner);
-    }
-	
-	public void removeSpinner() {
-		if (spinner != null) {
-			this.removeView(spinner);
-			spinner = null;
-		}
+	@Override
+	public AbstractAudioFeedbackController<View> getAudioFeebackController()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

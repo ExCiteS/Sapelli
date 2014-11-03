@@ -22,7 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -30,7 +30,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
@@ -73,11 +72,14 @@ import android.widget.ViewSwitcher;
 public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 {
 	
+	private CollectorController controller;
 	private CameraView photoView;
 	
-	public AndroidPhotoUI(PhotoField field, Controller controller, CollectorView collectorUI)
+	public AndroidPhotoUI(PhotoField field, CollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
+
+		this.controller = controller;
 	}
 	
 	@Override
@@ -231,7 +233,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 							// if(position == 1)
 							{ // photo discarded
 
-								controller.addLogLine("CLICK_CAMERA_DISCARD_PICURE");
+								controller.addLogLine("CLICK_CAMERA_DISCARD_PICTURE");
 
 								showNext(); // switch back to capture mode
 								cameraController.startPreview();
@@ -243,11 +245,8 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				}
 			};
 
-			// Execute the "press" animation if allowed, then perform the action: 
-			if(controller.getCurrentForm().isClickAnimation())
-				(new ClickAnimator(action, v, controller)).execute(); // execute animation and the action afterwards
-			else
-				action.run(); //perform task now (animation is disabled)
+			// Perform the click
+			controller.clickView(v, action);
 		}
 		
 		public void update()

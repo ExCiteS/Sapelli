@@ -97,6 +97,36 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 		return valid;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#informOnDisplay(boolean)
+	 */
+	@Override
+	public boolean informOnDisplay(boolean withPage)
+	{
+		// Page itself:
+		if(super.informOnDisplay(false))
+			return true;
+		// Children:
+		for(FieldUI<?, V, UI> fUI : fieldUIs)
+			if(fUI.informOnDisplay(true))
+				return true;
+		return false;
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#onDisplay(boolean)
+	 */
+	@Override
+	public void onDisplay(boolean withPage)
+	{
+		// Page itself:
+		super.onDisplay(false);
+		// Children:
+		for(FieldUI<?, V, UI> fUI : fieldUIs)
+			if(fUI.informOnDisplay(true))
+				fUI.onDisplay(true);
+	}
+	
 	/**
 	 * Validated a specific field contained within the page
 	 * 

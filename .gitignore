@@ -1,4 +1,4 @@
-lea# built application files
+# built application files
 *.apk
 *.ap_
 
@@ -25,29 +25,32 @@ temp/**
 **~$*.docx
 **~$*.xlsx
 
-# Local configuration file (sdk path, etc)
+# Local properties files:
 local.properties
+ant.properties
+release.properties
+/CollectorAndroid/assets/crashlytics-build.properties
+/CollectorAndroid/crashlytics.properties
+/CollectorAndroid/res/values/com_crashlytics_export_strings.xml
 
-# Eclipse project files
-#.classpath
-#.project
-
-# Eclipse external tool builders
-#.externalToolBuilders/
-
-# Locally stored "Eclipse launch configurations"
-#*.launch
-
-/Dependencies/Android FileChooser/lint.xml
+# Demo/test Sapelli projects
 /CollectorAndroid/*.excites
 /CollectorAndroid/*.sap
 /CollectorAndroid/res/raw/demo.sap
 /CollectorAndroid/res/raw/demo.excites
-/CollectorAndroid/ant.properties
 /CollectorAndroid/assets/demo.excites
 /CollectorAndroid/assets/demo.sap
-/CollectorAndroid/assets/crashlytics-build.properties
-/CollectorAndroid/crashlytics.properties
-/CollectorAndroid/res/values/com_crashlytics_export_strings.xml
-/CollectorAndroid/release.bat
+
+# Keystore files:
+*.ks
+
+# Beta release notes:
+/CollectorAndroid/beta-notes.txt
+
+# Misc
 /desktop.ini
+
+# Why are we ignoring this?
+/Dependencies/Android FileChooser/lint.xml
+
+

@@ -30,19 +30,13 @@ import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
-import uk.ac.ucl.excites.sapelli.collector.util.TTSInitListener;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
@@ -66,7 +60,7 @@ import android.view.WindowManager;
  * 
  * @author mstevens, julia, Michalis Vitos
  */
-public class CollectorActivity extends ProjectActivity implements TTSInitListener
+public class CollectorActivity extends ProjectActivity
 {
 
 	// STATICS--------------------------------------------------------
@@ -205,28 +199,16 @@ public class CollectorActivity extends ProjectActivity implements TTSInitListene
 			controller = new CollectorController(project, collectorView, projectStore, recordStore, fileStorageProvider, this);
 			collectorView.initialise(controller); // !!!
 			
-			if (needsTTSEngine(project)) {
-				collectorView.addSpinner();
-				controller.getAudioFeedbackController().setTTSInitListener(this);
-			}
-			else
-				startProject();
+			// Start project:
+			controller.startProject();
+			
+			// Show demo disclaimer if needed:
+			if(app.getBuildInfo().isDemoBuild())
+				showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
+			
+			// Enable audio feedback
+			controller.enableAudioFeedback();
 		}
-	}
-	
-	@Override
-	public void onTTSInit() {
-		collectorView.removeSpinner();
-		startProject();
-	}
-	
-	private void startProject() {
-		// Start project:
-		controller.startProject();
-		
-		// Show demo disclaimer if needed:
-		if(app.getBuildInfo().isDemoBuild())
-			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
 	}
 
 	/**
@@ -291,9 +273,15 @@ public class CollectorActivity extends ProjectActivity implements TTSInitListene
 	public boolean dispatchTouchEvent(MotionEvent event)
 	{
 		if(controller.isUIBlocked())
+		{
+			controller.addLogLine("BLOCKED_MOTION_EVENT", event.toString());
 			return false;
+		}
 		else
+		{
+			controller.addLogLine("DISPATCHED_MOTION_EVENT", event.toString());
 			return super.dispatchTouchEvent(event);
+		}
 	}
 
 	public void startAudioRecorderApp(AndroidAudioUI audioUI)
@@ -473,9 +461,9 @@ public class CollectorActivity extends ProjectActivity implements TTSInitListene
 			//Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
 
-		// Release audio resources
+		// Release audio feedback resources
 		if(controller != null)
-			controller.destroyAudio();
+			controller.disableAudioFeedback();
 
 		// super:
 		super.onPause();
@@ -573,16 +561,6 @@ public class CollectorActivity extends ProjectActivity implements TTSInitListene
 				if(keyCode != -1)
 					keyCodeToTrigger.put(keyCode, t);
 			}
-	}
-	
-	private static boolean needsTTSEngine(Project project) {
-		for (Form form : project.getForms())
-			if(form.getAudioFeedback() != AudioFeedback.NONE)
-				for (Field field : form.getFields())
-					// Currently tts is
-					if (field instanceof ChoiceField && !((ChoiceField)field).hasAudioAnswerDesc() || !((ChoiceField)field).hasAudioQuestionDesc())
-						return true;
-		return false;
 	}
 	
 }

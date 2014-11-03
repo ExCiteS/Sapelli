@@ -19,16 +19,18 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
+import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
+import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
@@ -145,11 +147,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			}
 		};
 
-		// Execute the "press" animation if allowed, then perform the action: 
-		if(controller.getCurrentForm().isClickAnimation())
-			(new ClickAnimator(action, childView, controller)).execute(); // execute animation and the action afterwards
-		else
-			action.run(); //perform task now (animation is disabled)	
+		// Perform the click
+		controller.clickView(childView, action);
 	}
 	
 	protected boolean onChildLongClick(Context context, final ChoiceField child, View childView)
@@ -277,11 +276,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				}
 			};
 
-			// Execute the "press" animation if allowed, then perform the action: 
-			if(controller.getCurrentForm().isClickAnimation())
-				(new ClickAnimator(action, v, controller)).execute(); // execute animation and the action afterwards
-			else
-				action.run(); //perform task now (animation is disabled)			
+			// Perform the click
+			controller.clickView(v, action);
 		}
 		
 	}
@@ -337,7 +333,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				adapter.addItem(createItem(child, itemPaddingPx, !controller.isFieldEnabled(child)));
 			// Click listeners:
 			setOnItemClickListener(this);
-			setOnItemLongClickListener(this);
+			if(isUsingAudioFeedback(false))
+				setOnItemLongClickListener(this);
 		}
 		
 		@Override
@@ -424,6 +421,13 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		item.setDescription(child.getAltText());
 
 		return item;
+	}
+
+	@Override
+	protected List<AbstractAudioFeedbackController<View>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 	
 }

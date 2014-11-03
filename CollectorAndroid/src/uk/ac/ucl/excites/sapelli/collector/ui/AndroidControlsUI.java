@@ -24,7 +24,6 @@ import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView.PickerAdapter;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
@@ -182,11 +181,8 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			}
 		};
 
-		// Execute the "press" animation if allowed, then perform the action: 
-		if(controller.getCurrentForm().isClickAnimation())
-			(new ClickAnimator(action, v, controller)).execute(); // execute animation and the action afterwards
-		else
-			action.run(); //perform task now (animation is disabled)
+		// Perform the click
+		controller.clickView(v, action);
 	}
 	
 	@Override

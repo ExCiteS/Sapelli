@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -29,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.util.ColumnOptionalityAdvisor;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -42,7 +44,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
  * @author mstevens, Michalis Vitos
  *
  */
-public class Form
+public class Form implements WarningKeeper
 {
 
 	// Statics--------------------------------------------------------
@@ -89,7 +91,6 @@ public class Form
 
 	public static final ScreenTransition DEFAULT_SCREEN_TRANSITION = ScreenTransition.NONE;
 
-	// Dynamics-------------------------------------------------------
 	public static enum AudioFeedback
 	{
 		NONE, LONG_CLICK, SEQUENTIAL
@@ -348,6 +349,14 @@ public class Form
 	public AudioFeedback getAudioFeedback()
 	{
 		return audioFeedback;
+	}
+	
+	/**
+	 * @return
+	 */
+	public boolean isUsingAudioFeedback()
+	{
+		return audioFeedback != AudioFeedback.NONE;
 	}
 
 	/**
@@ -820,6 +829,7 @@ public class Form
 			COLUMN_TIMESTAMP_END.storeValue(record, TimeStamp.now());
 	}
 	
+	@Override
 	public void addWarning(String warning)
 	{
 		if(warnings == null)
@@ -827,13 +837,26 @@ public class Form
 		warnings.add(warning);
 	}
 	
-	public List<String> getWarnings()
+	@Override
+	public void addWarnings(Collection<String> warnings)
 	{
 		if(warnings == null)
-			return new ArrayList<String>(); //leave this.warnings null
-		return warnings;
+			warnings = new ArrayList<String>();
+		warnings.addAll(warnings);
+	}
+
+	@Override
+	public List<String> getWarnings()
+	{
+		return warnings != null ? warnings : Collections.<String> emptyList();
 	}
 	
+	@Override
+	public void clearWarnings()
+	{
+		warnings = null;
+	}
+
 	/**
 	 * @param fileStorageProvider to resolve relative paths
 	 * @return

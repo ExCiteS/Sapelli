@@ -1,4 +1,21 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	Sapelli data collection platform: http://sapelli.org
+	
+	Copyright 2012-2014 University College London - ExCiteS group
+	
+	Licensed under the Apache License, Version 2.0 (the "License");
+	you may not use this file except in compliance with the License.
+	You may obtain a copy of the License at
+	
+	    http://www.apache.org/licenses/LICENSE-2.0
+	
+	Unless required by applicable law or agreed to in writing, software
+	distributed under the License is distributed on an "AS IS" BASIS,
+	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+	See the License for the specific language governing permissions and
+	limitations under the License.
+ -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
@@ -12,13 +29,11 @@
 	</parent>
 	<properties>
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
-		<!-- To be provided on command line using -D arguments, e.g.: mvn install 
-			-Prelease -Dsign.keystore=... -->
-		<sign.keystore />
-		<sign.storepass />
-		<sign.alias />
-		<sign.keypass />
+		<release.properties.file>${project.basedir}/release.properties</release.properties.file>
+		<!-- Must contain these properties: keystore-path, keystore-passwd, key-alias, key-passwd -->
 		<unsigned.classifier>unsigned</unsigned.classifier>
+		<apk.unsigned>${project.build.directory}/${project.artifactId}-unsigned.tmp</apk.unsigned>
+		<apk.signed.unaligned>${project.build.directory}/${project.artifactId}-signed-unaligned.tmp</apk.signed.unaligned>
 	</properties>
 	<repositories>
 		<repository>
@@ -39,6 +54,12 @@
 			<version>4.4.2_r4</version>
 			<scope>provided</scope>
 		</dependency>
+		<!-- <dependency>
+			<groupId>android.support</groupId>
+			<artifactId>compatibility-v7-appcompat</artifactId> 
+			<version>20.0.0</version>
+			<type>apklib</type>
+		</dependency> -->
 		<dependency>
 			<groupId>android.support</groupId>
 			<artifactId>compatibility-v4</artifactId>
@@ -46,8 +67,6 @@
 			<type>jar</type>
 			<scope>compile</scope>
 		</dependency>
-		<!-- <dependency> <groupId>android.support</groupId> <artifactId>compatibility-v7-appcompat</artifactId> 
-			<version>20.0.0</version> <type>apklib</type> </dependency> -->
 		<dependency>
 			<groupId>uk.ac.ucl.excites</groupId>
 			<artifactId>sapelli-library</artifactId>
@@ -106,12 +125,8 @@
 								</goals>
 								<configuration>
 									<source>
-										pom.properties['project.groupId.path'] =
-										project.groupId.replace('.', File.separator);
-										pom.properties['project.repodir'] =
-										settings['localRepository'] + File.separator +
-										pom.properties['project.groupId.path'] + File.separator +
-										project.artifactId + File.separator + project.version;
+										pom.properties['project.groupId.path'] = project.groupId.replace('.', File.separator);
+										pom.properties['project.repodir'] = settings['localRepository'] + File.separator + pom.properties['project.groupId.path'] + File.separator + project.artifactId + File.separator + project.version;
 									</source>
 								</configuration>
 							</execution>
@@ -129,8 +144,24 @@
 								</goals>
 								<configuration>
 									<target>
-										<echo>Deleting buildinfo.xml to make sure is will be re-generated...</echo>
+										<echo>Deleting buildinfo.xml to make sure it will be re-generated...</echo>
 										<delete file="${project.basedir}/res/values/buildinfo.xml" />
+									</target>
+								</configuration>
+							</execution>
+							<execution>
+								<!-- avoid AMP from tripping over if the (empty) "libs" folder gets recreated (e.g. by the Fabric Eclipse plugin): -->
+								<id>delete-empty-libs-dir</id>
+								<phase>validate</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target>
+										<echo>Delete ${project.basedir}/libs if it exists and is empty...</echo>
+										<delete includeemptydirs="true" failonerror="false">
+											<fileset dir="${project.basedir}/libs" excludes="**/*" />
+										</delete>
 									</target>
 								</configuration>
 							</execution>
@@ -143,12 +174,13 @@
 								<configuration>
 									<target>
 										<echo>Remove useless APKs from repo...</echo>
+										<!-- The repository contains a jar renamed to apk, maven installs it
+											 this way because the release/debug apk is installed with classifier,
+											 because there is no "unclassified apk" maven takes the jar instead -->
 										<echo> JAR renamed to APK:</echo>
-										<delete
-											file="${project.repodir}${file.separator}${project.build.finalName}-${project.version}.${project.packaging}" />
+										<delete file="${project.repodir}${file.separator}${project.build.finalName}-${project.version}.${project.packaging}" />
 										<echo> Unsigned APK (release nor debug):</echo>
-										<delete
-											file="${project.repodir}${file.separator}${project.build.finalName}-${project.version}-${unsigned.classifier}.${project.packaging}" />
+										<delete file="${project.repodir}${file.separator}${project.build.finalName}-${project.version}-${unsigned.classifier}.${project.packaging}" />
 									</target>
 								</configuration>
 							</execution>
@@ -173,6 +205,25 @@
 			<build>
 				<plugins>
 					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>properties-maven-plugin</artifactId>
+						<version>1.0-alpha-2</version>
+						<executions>
+							<execution>
+								<id>read-release-properties</id>
+								<phase>initialize</phase>
+								<goals>
+									<goal>read-project-properties</goal>
+								</goals>
+								<configuration>
+									<files>
+										<file>${release.properties.file}</file>
+									</files>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
 						<artifactId>maven-antrun-plugin</artifactId>
 						<inherited>true</inherited>
 						<executions>
@@ -181,9 +232,7 @@
 								<phase>package</phase>
 								<configuration>
 									<target>
-										<copy file="${project.build.directory}/${project.artifactId}.apk"
-											tofile="${project.build.directory}/${project.artifactId}-signed.apk"
-											overwrite="true" />
+										<copy file="${apk.unsigned}" tofile="${apk.signed.unaligned}" overwrite="true" />
 									</target>
 								</configuration>
 								<goals>
@@ -206,12 +255,12 @@
 								<phase>package</phase>
 								<inherited>true</inherited>
 								<configuration>
-									<archive>${project.build.directory}/${project.artifactId}-signed.apk</archive>
+									<archive>${apk.signed.unaligned}</archive>
 									<removeExistingSignatures>true</removeExistingSignatures>
-									<keystore>${sign.keystore}</keystore>
-									<storepass>${sign.storepass}</storepass>
-									<alias>${sign.alias}</alias>
-									<keypass>${sign.keypass}</keypass>
+									<keystore>${keystore-path}</keystore>
+									<storepass>${keystore-passwd}</storepass>
+									<alias>${key-alias}</alias>
+									<keypass>${key-passwd}</keypass>
 									<sigfile>CERT</sigfile>
 									<arguments>
 										<argument>-sigalg</argument>
@@ -231,17 +280,20 @@
 						<configuration>
 							<release>true</release>
 							<sign>
-								<!-- don't sign w/ debug key, APK will be signed w/ release key  -->
+								<!-- don't sign at all (not even w/ debug key) APK will
+									 be signed w/ release key by the jarsigner plugin -->
 								<debug>false</debug>
 							</sign>
+							<outputApk>${apk.unsigned}</outputApk>
 							<classifier>${unsigned.classifier}</classifier>
 							<attachJar>true</attachJar>
 							<attachSources>false</attachSources>
 							<zipalign>
 								<skip>false</skip>
 								<verbose>false</verbose>
-								<inputApk>${project.build.directory}/${project.artifactId}-signed.apk</inputApk>
-								<outputApk>${project.build.directory}/${project.artifactId}-signed-aligned.apk</outputApk>
+								<inputApk>${apk.signed.unaligned}</inputApk>
+								<!-- this is the end product (signed with release key & zip aligned): -->
+								<outputApk>${project.build.directory}/${project.build.finalName}.apk</outputApk>
 								<classifier>release</classifier>
 							</zipalign>
 							<proguard>
@@ -256,6 +308,30 @@
 								<goals>
 									<goal>zipalign</goal>
 								</goals>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<!-- disable default deploy plugin (for now) -->
+						<artifactId>maven-deploy-plugin</artifactId>
+						<configuration>
+							<skip>true</skip>
+						</configuration>
+					</plugin>
+					<plugin>
+						<!-- deploy apk using crashlytics Beta distribution -->
+						<groupId>com.crashlytics</groupId>
+						<artifactId>crashlytics-maven</artifactId>
+						<executions>
+							<execution>
+								<id>distribute-beta</id>
+								<phase>deploy</phase>
+								<goals>
+									<goal>UploadDistribution</goal>
+								</goals>
+								<configuration>
+									<betaDistributionReleaseNotesFilePath>${project.basedir}/beta-notes.txt</betaDistributionReleaseNotesFilePath>
+								</configuration>
 							</execution>
 						</executions>
 					</plugin>
@@ -296,7 +372,6 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
-				<version>1.9.1</version>
 				<executions>
 					<execution>
 						<id>parse-version</id>
@@ -309,8 +384,9 @@
 			<plugin>
 				<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 				<artifactId>android-maven-plugin</artifactId>
-				<version>4.0.0-rc.1</version>
+				<version>4.0.0-rc.2</version>
 				<configuration>
+					<!-- General config: -->
 					<sdk>
 						<!-- <path>${sdk-home}</path> -->
 						<platform>19</platform>
@@ -321,7 +397,11 @@
 					<mergeManifests>true</mergeManifests>
 					<assetsDirectory>${project.basedir}/assets</assetsDirectory>
 					<resourceDirectory>${project.basedir}/res</resourceDirectory>
-					<!-- debug config (overriden in release profile -->
+					<!-- Alternative way to avoid AMP tripping over if the (empty) "libs" folder gets recreated (e.g. by the Fabric Eclipse plugin).
+						 Commented out in favour of ant approach (deleting libs on initialize) -->
+					<!-- <nativeLibrariesDirectory>${project.basedir}/libs</nativeLibrariesDirectory> -->
+					
+					<!-- Debug config (overriden in release profile): -->
 					<release>false</release>
 					<classifier>debug</classifier>
 					<sign>
@@ -332,6 +412,13 @@
 					<attachSources>false</attachSources>
 				</configuration>
 				<extensions>true</extensions>
+				<!-- <dependencies>
+					<dependency>
+						<groupId>net.sf.proguard</groupId>
+						<artifactId>proguard-base</artifactId>
+						<version>5.0</version>
+					</dependency>
+				</dependencies> -->
 				<executions>
 					<execution>
 						<id>update-manifest</id>
@@ -351,7 +438,7 @@
 			<plugin>
 				<groupId>com.crashlytics</groupId>
 				<artifactId>crashlytics-maven</artifactId>
-				<version>1.10.0</version>
+				<version>1.10.1</version>
 				<executions>
 					<execution>
 						<id>GenerateResources</id>
@@ -377,7 +464,6 @@
 					<configuration>
 						<lifecycleMappingMetadata>
 							<pluginExecutions>
-								<!-- make m2e ignore the antrun execution -->
 								<pluginExecution>
 									<pluginExecutionFilter>
 										<groupId>org.apache.maven.plugins</groupId>
@@ -397,7 +483,7 @@
 									<pluginExecutionFilter>
 										<groupId>com.crashlytics</groupId>
 										<artifactId>crashlytics-maven</artifactId>
-										<versionRange>[1.9.2,)</versionRange>
+										<versionRange>[1.10.1,)</versionRange>
 										<goals>
 											<goal>GenerateResources</goal>
 										</goals>
@@ -410,24 +496,9 @@
 									<pluginExecutionFilter>
 										<groupId>com.jayway.maven.plugins.android.generation2</groupId>
 										<artifactId>android-maven-plugin</artifactId>
-										<versionRange>[4.0.0-rc.1,)</versionRange>
+										<versionRange>[4.0.0-rc.2,)</versionRange>
 										<goals>
 											<goal>manifest-update</goal>
-										</goals>
-									</pluginExecutionFilter>
-									<action>
-										<execute>
-											<runOnIncremental>false</runOnIncremental>
-										</execute>
-									</action>
-								</pluginExecution>
-								<pluginExecution>
-									<pluginExecutionFilter>
-										<groupId>org.codehaus.mojo</groupId>
-										<artifactId>build-helper-maven-plugin</artifactId>
-										<versionRange>[1.9.1,)</versionRange>
-										<goals>
-											<goal>parse-version</goal>
 										</goals>
 									</pluginExecutionFilter>
 									<action>

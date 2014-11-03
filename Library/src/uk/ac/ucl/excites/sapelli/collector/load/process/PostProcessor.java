@@ -16,22 +16,25 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.io;
+package uk.ac.ucl.excites.sapelli.collector.load.process;
 
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
+
 
 /**
- * Callbacks for ProjectLoader
+ * Interface for post-loading task execution.
+ * Add an execute() method here for each new class which implements {@link PostProcessTask}.
  * 
  * @author mstevens
  */
-public interface ProjectLoaderCallback
+public interface PostProcessor
 {
 
 	/**
-	 * @param loadedProject
-	 * @throws IllegalArgumentException if something is wrong
+	 * @param ttsTask
+	 * @param warningKeeper
+	 * @throws Exception
 	 */
-	public void checkProject(Project loadedProject) throws IllegalArgumentException;
-		
+	public void execute(TTSSynthesisTask ttsTask, WarningKeeper warningKeeper) throws Exception;
+	
 }
