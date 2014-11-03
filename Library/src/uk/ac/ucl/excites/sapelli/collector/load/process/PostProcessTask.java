@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.load.process;
 
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 
 /**
@@ -27,6 +28,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 public interface PostProcessTask
 {
 
-	public void execute(PostProcessor executor, WarningKeeper warningKeeper) throws Exception;
+	public void execute(PostProcessor executor, Project project, WarningKeeper warningKeeper) throws Exception;
 	
 }

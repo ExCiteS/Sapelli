@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.load.process;
 
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 
 
@@ -32,9 +33,10 @@ public interface PostProcessor
 
 	/**
 	 * @param ttsTask
+	 * @param project
 	 * @param warningKeeper
 	 * @throws Exception
 	 */
-	public void execute(TTSSynthesisTask ttsTask, WarningKeeper warningKeeper) throws Exception;
+	public void execute(TTSSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception;
 	
 }

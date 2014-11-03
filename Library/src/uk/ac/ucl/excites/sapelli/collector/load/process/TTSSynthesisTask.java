@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.load.process;
 
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 
 /**
@@ -58,12 +59,12 @@ public class TTSSynthesisTask implements PostProcessTask
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessTask#execute(uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor, uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper)
+	 * @see uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessTask#execute(uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor, uk.ac.ucl.excites.sapelli.collector.model.Project, uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper)
 	 */
 	@Override
-	public void execute(PostProcessor executor, WarningKeeper warningKeeper) throws Exception
+	public void execute(PostProcessor executor, Project project, WarningKeeper warningKeeper) throws Exception
 	{
-		executor.execute(this, warningKeeper);
+		executor.execute(this, project, warningKeeper);
 	}
 
 }
