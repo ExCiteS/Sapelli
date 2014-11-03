@@ -125,13 +125,16 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		if (handlingClick == null)
 			handlingClick = new Semaphore(1);
 
+		// get the current display state:
 		DisplayState currentState = getCurrentDisplayState();
 		Log.d(TAG,"Current state: "+currentState.name());
 
+		// decide which UI to return and return it:
 		switch (currentState) {
 		case CAPTURE:
 			
 			captureView = new CaptureView(collectorUI.getContext(), isMaximiseCaptureButton());
+			// keep a reference to the capture UI so the capture button can later be maximised/minimised
 			return captureView;
 
 		case SINGLE_ITEM_REVIEW:
@@ -159,10 +162,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * @return
 	 */
 	private DisplayState getCurrentDisplayState() {
-		if (field.getCount(controller.getCurrentRecord()) == 0 || controller.getCurrentFieldArguments().getBoolean(GO_TO_CAPTURE_KEY, false)) {
+		if (field.getCount(controller.getCurrentRecord()) == 0 || controller.getCurrentFieldArguments().getBoolean(GO_TO_CAPTURE_KEY, false)) 
 			// either have no files to review or have been explicitly told to go to capture state
 			return DisplayState.CAPTURE;
-		}
 		
 		if (field.getMax() == 1)
 			// not in capture and can have max. 1 attachment, so go to single item review
@@ -278,6 +280,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		return discardButton;
 	}
 	
+	/**
+	 * 
+	 * @return whether or not the capture button should be maximised when the capture UI is first entered (can be overriden
+	 * by subclass, but returns {@code false} by default).
+	 */
 	protected boolean isMaximiseCaptureButton() {
 		return false;
 	}
@@ -311,20 +318,27 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	protected abstract Item generateCaptureButton(Context context);
 
 	/**
-	 * Populate a container with views as appropriate to create an interface
-	 * for media capture (e.g. viewfinder for camera).
-	 * @param captureLayout - the container to populate.
+	 * Creates the main content for the capture UI.
+	 * @param context
+	 * @return a {@code View} containing the content for capture mode.
 	 */
 	protected abstract View getCaptureContent(Context context);
 
 	/**
-	 * Populate a container with views as appropriate to create an interface for 
-	 * the review and deletion of the media file provided (e.g. full-page photo).
-	 * @param deleteLayout - the container to populate.
-	 * @param mediaFile - the media file being reviewed.
+	 * Creates the main content for the review UI.
+	 * @param context
+	 * @param mediaFile - the file to be reviewed.
+	 * @return a {@code View} containing the content for review mode.
 	 */
 	protected abstract View getReviewContent(Context context, File mediaFile);
 	
+	/**
+	 * Creates a {@code View} to be used as a (capture/discard/etc) button in the media UI.
+	 * @param context
+	 * @param buttonItem - the {@code Item} from which to create the button.
+	 * @param onClickRunnable - the {@code Runnable} to execute when the button is clicked.
+	 * @return the button as a {@code View}.
+	 */
 	private View buttonFromItem(Context context, Item buttonItem, final Runnable onClickRunnable) {
 		final View view = buttonItem.getView(context);
 		view.setOnClickListener(new OnClickListener() {
@@ -384,8 +398,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			buttonAction = new Runnable() {
 				@Override
 				public void run() {
-					 //just made a capture, so go to gallery instead when the field is re-entered (unless multiple disabled):
+					//just made a capture, so go to gallery/review when the field is re-entered:
 					controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY);
+					// execute subclass's capture behaviour
 					onCapture();
 					// refresh capture button on press (e.g. might need to change from "record" to "stop recording")
 					refreshCaptureButton(null);
@@ -397,6 +412,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			buttonView = buttonFromItem(context, generateCaptureButton(context), buttonAction);
 			addView(buttonView, buttonParams);
 			
+			// maximise capture button initially, if required:
 			if (maximiseCaptureButton)
 				maximiseCaptureButton();
 		}
@@ -427,6 +443,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			}
 		}
 		
+		/**
+		 * Recreate the capture button with the specified layout parameters.
+		 * @param newLayoutParams - the new layout parameters that should be applied to the button. If 
+		 * {@code null} then the previous parameters will be used.
+		 */
 		private void refreshCaptureButton(ViewGroup.LayoutParams newLayoutParams) {
 			if (newLayoutParams == null) // use whatever params it had before:
 				newLayoutParams = buttonView.getLayoutParams();
@@ -462,7 +483,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			addView(contentView, contentParams);
 			
 			// add button:			
-			
 			final Runnable buttonAction = new Runnable() {
 				@Override
 				public void run() {

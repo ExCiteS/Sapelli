@@ -69,7 +69,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	private volatile Boolean recording = false;
 
 	private static final String TAG = "AndroidAudioUI";
-	private static final int VOLUME_DISPLAY_WIDTH_DP = 120;
 
 	private AudioRecorder audioRecorder;
 	private AudioReviewView audioReviewView;
@@ -94,7 +93,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		catch(IOException ioe)
 		{
 			Log.e(TAG, "Could not get audio file.", ioe);
-			attachMedia(null); //TODO remove?
+			attachMedia(null); //TODO remove? only functionality is to log that attaching failed
 			if (isValid(controller.getCurrentRecord()))
 				controller.goForward(false);
 			else
@@ -218,6 +217,9 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		return volumeDisplay;
 	}
 	
+	/**
+	 * Requests that the capture button be maximised when the capture UI is entered.
+	 */
 	@Override
 	protected boolean isMaximiseCaptureButton() {
 		return true;
@@ -226,7 +228,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	@Override
 	protected View getReviewContent(Context context, File mediaFile) {		
 		audioReviewView = new AudioReviewView(context, mediaFile);
-		// add picker to container:
 		return audioReviewView;
 	}
 
@@ -246,7 +247,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	}
 
 	/**
-	 * A simple subclass of ImageView that provides play/stop functionality when a recording is being reviewed.
+	 * A subclass of ImageView that provides play/stop functionality when a recording is being reviewed.
 	 * 
 	 * @author benelliott
 	 */
@@ -390,14 +391,18 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		private static final int COLOR_INACTIVE_LEVEL = Color.DKGRAY;
 		private final int COLOR_ACTIVE_LEVEL = Color.rgb(0, 204, 0);
 		private static final int UPDATE_FREQUENCY_MILLISEC = 200;
-		private static final double MAX_AMPLITUDE = 40000D; // TODO might need tweaking
+		private static final double MAX_AMPLITUDE = 30000D; // TODO might need tweaking
 		private static final int NUM_LEVELS = 50;
 		private static final int LEVEL_PADDING = 5;
+		private static final float VOLUME_WIDTH_FRACTION = 0.5f; // fraction of the display width that the volume display should span
 		Timer timer;
 		private Paint paint;
 		private int amplitude;
 		private int levelsToIlluminate;
+		private float levelWidth;
 		private float levelHeight;
+		private float levelLeft;
+		private float levelRight;
 
 		public VolumeDisplaySurfaceView(Context context) {
 			super(context);
@@ -412,10 +417,15 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 				@Override
 				public void surfaceChanged(SurfaceHolder holder, int format,
 						int width, int height) {
+					// calculate level dimensions:
+					levelHeight = ((float)getHeight() / NUM_LEVELS) - LEVEL_PADDING;
+					levelWidth = VOLUME_WIDTH_FRACTION * getWidth();
+					levelLeft = (getWidth() - levelWidth) / 2;
+					levelRight = (getWidth() + levelWidth) / 2;
+					
 					Canvas c = holder.lockCanvas(null);
 					onDraw(c);
 					holder.unlockCanvasAndPost(c);
-					levelHeight = ((float)getHeight() / NUM_LEVELS) - LEVEL_PADDING;
 				}
 
 				@Override
@@ -438,8 +448,9 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 				if (i == levelsToIlluminate)
 					paint.setColor(COLOR_INACTIVE_LEVEL);
 
-				float bottom = getHeight() - i * (levelHeight + LEVEL_PADDING); // remember top-left is (0,0)
-				canvas.drawRect(0, bottom + levelHeight, getWidth(), bottom, paint);
+				float levelBottom = getHeight() - i * (levelHeight + LEVEL_PADDING); // remember top-left is (0,0)
+
+				canvas.drawRect(levelLeft, levelBottom + levelHeight, levelRight, levelBottom, paint);
 			}
 
 		}

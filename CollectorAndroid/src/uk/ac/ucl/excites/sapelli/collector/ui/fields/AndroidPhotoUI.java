@@ -114,6 +114,16 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		
 		return captureSurface;
 	}
+	
+	@Override
+	protected View getReviewContent(Context context, File mediaFile) {
+		// add an ImageView to the review UI:
+		ImageView reviewView = new ImageView(context);
+		reviewView.setScaleType(ScaleType.FIT_CENTER);
+		// set the ImageView to the provided photo file:
+		reviewView.setImageURI(Uri.fromFile(mediaFile));
+		return reviewView;
+	}
 
 	@Override
 	protected void onCapture() {
@@ -126,16 +136,6 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	protected void onDiscard() {
 	    // nothing to do
     }
-
-	@Override
-	protected View getReviewContent(Context context, File mediaFile) {
-		// add an ImageView to the review UI:
-		ImageView reviewView = new ImageView(context);
-		reviewView.setScaleType(ScaleType.FIT_CENTER);
-		// set the ImageView to the provided photo file:
-		reviewView.setImageURI(Uri.fromFile(mediaFile));
-		return reviewView;
-	}
 
 	@Override
 	protected ImageItem generateCaptureButton(Context context) {
