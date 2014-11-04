@@ -263,7 +263,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 		try {
 	        AudioDescription ad = audioDescFromChoiceField(choice, question, toAnimate);
 	        enqueueDescription(ad);
-        } catch (TTSFailedException e) {
+        } catch (TTVFailedException e) {
 	        Log.e(TAG,"Failed to synthesise TTS for text: "+e.getText());
         }
 	}
@@ -394,7 +394,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 	 * @param toAnimate - the view to animate when the audio description is played
 	 * @return an AudioDescription object for these parameters
 	 */
-	private AudioDescription audioDescFromChoiceField(ChoiceField choice, boolean question, View toAnimate) throws TTSFailedException {
+	private AudioDescription audioDescFromChoiceField(ChoiceField choice, boolean question, View toAnimate) throws TTVFailedException {
 		if (question) {
 			if(choice.hasAudioQuestionDesc())
 				return new AudioDescription(controller.getProject().getSoundFile(controller.getFileStorageProvider(), choice.getAnswerDesc()), toAnimate);
@@ -449,7 +449,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 		 * @param text - the text to synthesise
 		 * @param toAnimate - the view to animate when the audio is played
 		 */
-		AudioDescription(String text, View toAnimate) throws TTSFailedException {
+		AudioDescription(String text, View toAnimate) throws TTVFailedException {
 			this.text = text;
 			this.tts = true;
 			audioProcessedSem = new Semaphore(0); // only mark track as "completed" when the TTS engine is finished with it
@@ -464,7 +464,7 @@ public class AudioFeedbackController extends UtteranceProgressListener implement
 				} else 
 					Log.d(TAG,"Speech successfully queued for processing: "+text);
 			} catch (Exception e) {
-				throw new TTSFailedException(text);
+				throw new TTVFailedException(text);
 			}
 		}
 

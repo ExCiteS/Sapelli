@@ -4,13 +4,13 @@ package uk.ac.ucl.excites.sapelli.collector.media;
  * @author Ben
  *
  */
-public class TTSFailedException extends Exception {
+public class TTVFailedException extends Exception {
 
     private static final long serialVersionUID = 1L;
     
     private String text;
     
-    public TTSFailedException(String text) {
+    public TTVFailedException(String text) {
     	super();
     	this.text = text;
     }

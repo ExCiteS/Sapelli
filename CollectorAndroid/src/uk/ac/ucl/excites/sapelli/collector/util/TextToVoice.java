@@ -2,29 +2,32 @@ package uk.ac.ucl.excites.sapelli.collector.util;
 
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.concurrent.Semaphore;
 
+import uk.ac.ucl.excites.sapelli.collector.media.TTVFailedException;
 import android.content.Context;
+import android.os.Build;
 import android.speech.tts.TextToSpeech;
+import android.speech.tts.TextToSpeech.OnUtteranceCompletedListener;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 
 /**
- * Class that uses the Android TTS (Text-To-Speech) Engine to speak a given text or to process
- * its synthesis into a file.
+ * Class that uses the Android TTS (Text-To-Speech) Engine to synthesise a string to a (WAV) file.
  * 
  * @author Michalis Vitos, benelliott
  *
  */
-public class TextToVoice implements TextToSpeech.OnInitListener
+public class TextToVoice  implements TextToSpeech.OnInitListener
 {
 	public static final Locale DEFAULT_LOCALE = Locale.UK;
-	public static final String DEFAULT_UNAVAILABLE_CONTENT = "Content not available";
 	private static final String TAG = "TextToVoice";
 	private Context context;
 	private Locale locale;
 	private TextToSpeech tts;
-	private boolean initialised = false;
-	private TTSInitListener initListener;
+	private Semaphore ttvInitialised;
+	private Semaphore ttvJobComplete;
+	
 
 	public TextToVoice(Context context)
 	{
@@ -36,8 +39,29 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		this.context = context;
 		this.locale = locale;
 
-		// Set up tts
+		// set up initialisation semaphore so thread blocks waiting for TTS init
+		ttvInitialised = new Semaphore(0);
+		
+		setupTTS();
+	}
+	
+	private void setupTTS() {
 		tts = new TextToSpeech(context, this);
+		
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1 /* 15 */) {
+			Log.d(TAG, ">= 15 build version detected");
+			UtteranceListener15 utteranceListener = new UtteranceListener15(tts);
+		} else {
+			Log.d(TAG, "< 15 build version detected");
+			UtteranceListenerSub15 utteranceListener = new UtteranceListenerSub15(tts);
+		}
+		
+		try {
+	        ttvInitialised.acquire();
+        } catch (InterruptedException e) {
+	        // TODO Auto-generated catch block
+	        e.printStackTrace();
+        }
 	}
 
 	@Override
@@ -56,52 +80,36 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 					result = tts.setLanguage(DEFAULT_LOCALE);
 
 				if(result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED)
-					initialised = true;
+					ttvInitialised.release();
+				
+	
 			}
 			// if null, has probably been destroyed before initialisation completed
-				if (initListener != null)
-					initListener.onTTSInit();
-				
-				Log.d(TAG,"TTS initialised successfully.");
-			} else
-				Log.e(TAG,"Failure when trying to initialise TTS.");
 		}
 	}
 
-	/**
-	 * Use the Android TTS (Text-To-Speech) Engine to speak the text
-	 * 
-	 * @param text
-	 */
-	public void speak(String text)
-	{
-		if (tts == null) {
-			tts = new TextToSpeech(context, this);
-			return;
-		}
-		if (!initialised)
-			return;
+	public void processSpeechToFile(String text, String filepath) throws TTVFailedException {
+		if (tts == null)
+			setupTTS();
 		
 		if(text == null || "".equals(text))
-			tts.speak(DEFAULT_UNAVAILABLE_CONTENT, TextToSpeech.QUEUE_FLUSH, null);
-		else
-			tts.speak(text, TextToSpeech.QUEUE_FLUSH, null);
-	}
-
-	public int processSpeechToFile(String text, String filepath) {
-		if (tts == null) {
-			tts = new TextToSpeech(context, this);
-			return TextToSpeech.ERROR;
-		}
-		if (!initialised)
-			return TextToSpeech.ERROR;
-		
-		if(text == null || "".equals(text))
-			return TextToSpeech.ERROR;
+			throw new TTVFailedException("INVALID TEXT SUPPLIED AS ARGUMENT");
 		
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
-		return tts.synthesizeToFile(text, params, filepath);
+		
+		if (ttvJobComplete == null)
+			ttvJobComplete = new Semaphore(0);
+		
+		if (tts.synthesizeToFile(text, params, filepath) == TextToSpeech.ERROR)
+			throw new TTVFailedException(text);
+		
+		try {
+	        ttvJobComplete.acquire();
+        } catch (InterruptedException e) {
+	        // TODO Auto-generated catch block
+	        e.printStackTrace();
+        }
 	}
 
 	public void destroy()
@@ -110,15 +118,52 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		{	tts.stop();
 			tts.shutdown();
 			tts = null;
-			initialised = false;
 		}
 	}
 	
-	public void setOnUtteranceProgressListener(UtteranceProgressListener listener) {
-		tts.setOnUtteranceProgressListener(listener);
+	
+	private void onTTSJobCompleted(String synthesisText) {
+		Log.d(TAG, "Completed synthesis for text: "+synthesisText);
+		ttvJobComplete.release();
 	}
+	
+	// TODO listener for > 15
+	private class UtteranceListener15 extends UtteranceProgressListener
+	{
 
-	public void setTTSInitListener(TTSInitListener initListener) {
-	    this.initListener = initListener;
-    }	
+		public UtteranceListener15(TextToSpeech tts) {
+			tts.setOnUtteranceProgressListener(this);
+        }
+		
+		@Override
+        public void onStart(String utteranceId) {
+	        Log.d(TAG, "Started processing text: "+utteranceId);
+        }
+
+		@Override
+        public void onDone(String utteranceId) {
+	        onTTSJobCompleted(utteranceId);
+        }
+
+		@Override
+        public void onError(String utteranceId) {
+	        Log.e(TAG, "Error processing text: "+utteranceId);	        
+        }
+		
+	}
+	
+	// TODO listener for < 15
+	@SuppressWarnings("deprecation")
+    private class UtteranceListenerSub15 implements OnUtteranceCompletedListener {
+		
+		public UtteranceListenerSub15(TextToSpeech tts) {
+			tts.setOnUtteranceCompletedListener(this);
+		}
+
+		@Override
+        public void onUtteranceCompleted(String utteranceId) {
+			onTTSJobCompleted(utteranceId);
+        }
+		
+	}
 }

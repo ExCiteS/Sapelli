@@ -18,9 +18,13 @@
 
 package uk.ac.ucl.excites.sapelli.collector.load;
 
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor;
 import uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask;
+import uk.ac.ucl.excites.sapelli.collector.media.TTVFailedException;
+import uk.ac.ucl.excites.sapelli.collector.util.TextToVoice;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
+import android.content.Context;
 
 /**
  * @author mstevens
@@ -29,13 +33,46 @@ import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 public class AndroidPostProcessor implements PostProcessor
 {
 	
+	private static final String TAG = "AndroidPostProcessor";
+	private Context context;
+	private FileStorageProvider fileStorageProvider;
+	private TextToVoice ttv;
+
+	public AndroidPostProcessor(Context context, FileStorageProvider fileStorageProvider) {
+		this.context = context;
+		this.fileStorageProvider = fileStorageProvider;
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor#execute(uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask, uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper)
 	 */
 	@Override
 	public void execute(TTSSynthesisTask ttsTask, WarningKeeper warningKeeper) throws Exception
 	{
+		
+		if (ttv == null) {
+			ttv = new TextToVoice(context);
+
+		}
+		
+		String filepath = ttsTask.getAudioFileRelativePath(); //TODO need absolute
+		
+		try {
+	        ttv.processSpeechToFile(ttsTask.getTextToSynthesise(), filepath);
+        } catch (TTVFailedException e) {
+	        warningKeeper.addWarning("Unable to synthesise text to speech: \""+e.getText()+"\". Skipping this text without creating an audio file.");
+        }
+		
 		// TODO implement TTS support here, avoid throwing exceptions unless really fatal, for everything else (including failure to produce mp3) use warningKeeper.addWarning(String)
 	}
 
+	public void destroy() {
+		// destroy any resources here (may eventually be more than TTS)
+		if (ttv != null) {
+			ttv.destroy();
+			ttv = null;
+		}
+	}
+	
+	
 }
