@@ -30,7 +30,6 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
@@ -77,7 +76,6 @@ public class CollectorController extends Controller implements LocationListener,
 	private long deviceIDHash;
 	
 	private AudioPlayer audioPlayer;
-	private AudioFeedbackController audioController;
 
 
 	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider, CollectorActivity activity)
@@ -133,10 +131,7 @@ public class CollectorController extends Controller implements LocationListener,
 	public void destroyAudio() {
 		if(audioPlayer != null)
 			audioPlayer.destroy();
-		if (audioController != null)
-			audioController.stopPlayingFeedback();
 		audioPlayer = null;
-		audioController = null;
 	}
 
 	@Override
@@ -307,27 +302,7 @@ public class CollectorController extends Controller implements LocationListener,
 	{
 		return currFormSession.form.getAudioFeedback() != AudioFeedback.NONE;
 	}
-	
-	/**
-	 * @return the {@link AudioFeedbackController} used on the current Form or null if there current form doesn't use audio feedback
-	 */
-	public AudioFeedbackController getCurrentAudioFeedbackController() {
-		if(isAudioFeedbackUsed())
-			return getAudioFeedbackController();
-		else
-			return null;
-	}
-	
-	private AudioFeedbackController getAudioFeedbackController() {
-		if (audioController == null)
-			audioController = new AudioFeedbackController(this);
-		return audioController;
-	}
-	
-	public void stopAudioFeedback() {
-		if (audioController != null)
-			audioController.stopPlayingFeedback();
-	}
+
 	/**
 	 * Controls the way that clicked views behave (i.e. animate) and interact
 	 * 

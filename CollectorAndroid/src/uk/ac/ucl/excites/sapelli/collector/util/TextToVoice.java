@@ -45,12 +45,13 @@ public class TextToVoice  implements TextToSpeech.OnInitListener
 		setupTTS();
 	}
 	
+	// TODO annotations
 	private void setupTTS() {
 		tts = new TextToSpeech(context, this);
 		
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1 /* 15 */) {
 			Log.d(TAG, ">= 15 build version detected");
-			UtteranceListener15 utteranceListener = new UtteranceListener15(tts);
+			UtteranceListener15Plus utteranceListener = new UtteranceListener15Plus(tts);
 		} else {
 			Log.d(TAG, "< 15 build version detected");
 			UtteranceListenerSub15 utteranceListener = new UtteranceListenerSub15(tts);
@@ -128,10 +129,10 @@ public class TextToVoice  implements TextToSpeech.OnInitListener
 	}
 	
 	// TODO listener for > 15
-	private class UtteranceListener15 extends UtteranceProgressListener
+	private class UtteranceListener15Plus extends UtteranceProgressListener
 	{
 
-		public UtteranceListener15(TextToSpeech tts) {
+		public UtteranceListener15Plus(TextToSpeech tts) {
 			tts.setOnUtteranceProgressListener(this);
         }
 		

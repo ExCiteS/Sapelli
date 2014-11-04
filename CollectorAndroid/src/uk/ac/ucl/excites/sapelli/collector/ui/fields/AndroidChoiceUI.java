@@ -19,12 +19,13 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
-import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
@@ -44,11 +45,9 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
-import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -114,19 +113,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// Cast to View
 			final View choiceViewView = (View) choiceView;
 			
-			// Only begin audio feedback once the system calls back to tell us all the views have been drawn:
-			if (controller.isAudioFeedbackUsed())
-				choiceViewView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
-					        @Override
-					        public void onGlobalLayout() {
-						        // when the views have all been created, play the question
-						        //Log.d(TAG, "Global Layout Callback");
-						        controller.getCurrentAudioFeedbackController().playQuestion(choice, choiceView);
-						        // remove this listener once this has occurred, since the question will only be played once
-						        choiceViewView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-					        }
 
-				        });
 			
 			return choiceViewView;
 		}
@@ -157,8 +144,10 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return false;
 
-		if(controller.isAudioFeedbackUsed())		
-			controller.getCurrentAudioFeedbackController().playAnswer(child, childView); // Audio Feedback
+		if(isFieldUsingAudioFeedback(false)) { //TODO onPage?
+			AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
+			afc.play(afc.new PlaybackJob(child.getAnswerDesc(), childView));
+		}
 		else
 			controller.addLogLine("LONG_CLICK", "LongClick on " + choice.getAltText() + " but AudioFeedback is disabled");
 
@@ -167,7 +156,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	
 	@Override
 	public void cancel() {
-		controller.stopAudioFeedback();
+		if (isFieldUsingAudioFeedback(false)) //TODO onPage?
+			collectorUI.stopAudioFeedback();
 	}
 
 	/**
@@ -424,10 +414,37 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	}
 
 	@Override
-	protected List<AbstractAudioFeedbackController<View>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
+	protected List<AudioFeedbackController<View>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
 	{
-		// TODO Auto-generated method stub
-		return null;
+		switch (audioFeedbackMode) {
+		case LONG_CLICK:
+			
+			return Collections.singletonList(collectorUI.getAudioFeebackController().new PlaybackJob(field.getQuestionDesc()));
+			
+		case SEQUENTIAL:
+			List<AudioFeedbackController<View>.PlaybackJob> playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>();
+			
+			playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getQuestionDesc()));
+			List<ChoiceField> children = field.getChildren();
+			
+			for (int i = 0; i < children.size(); i++) {
+				// enqueue each answer:
+				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(children.get(i).getAnswerDesc(), choiceView.getChildAt(i)));
+			}
+			
+			return playlist;
+			
+		default:
+			// should never get here
+			return null;
+			
+		}
+	}
+	
+	@Override
+	protected boolean isFieldUsingAudioFeedback(boolean withPage)
+	{
+		return !withPage;
 	}
 	
 }

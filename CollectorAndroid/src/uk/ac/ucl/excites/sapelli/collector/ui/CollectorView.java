@@ -22,7 +22,8 @@ import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AndroidAudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.ScreenTransition;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
@@ -56,6 +57,7 @@ import android.graphics.Color;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
 
@@ -96,6 +98,9 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 
 	// Input manager:
 	private InputMethodManager imm;
+	
+	// Audio feedback controller:
+	private AndroidAudioFeedbackController audioFeedbackController;
 
 	public CollectorView(CollectorActivity activity)
 	{
@@ -220,10 +225,18 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			// New becomes current:
 			fieldUIView = newFieldUIView;
 			
-			// Set up listener if needed:
+			// Set up view tree listener if needed (notify field when Android is actually displaying its View):
 			if(fieldUI.informOnDisplay(false))
 			{
-				// TODO set up listener and if listeren called call fieldUI.onDisplay(false);
+				fieldUIView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
+			        @Override
+			        public void onGlobalLayout() {
+			        	// call the field's onDisplay method:
+			        	fieldUI.onDisplay(false);
+				        // remove this listener once this has occurred, so the field's onDisplay method is not called too many times
+			        	fieldUIView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+			        }
+		        });
 			}
 		}
 
@@ -492,10 +505,22 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	}
 
 	@Override
-	public AbstractAudioFeedbackController<View> getAudioFeebackController()
-	{
-		// TODO Auto-generated method stub
-		return null;
+    public AudioFeedbackController<View> getAudioFeebackController() {
+		if (audioFeedbackController == null)
+			audioFeedbackController = new AndroidAudioFeedbackController(controller);
+		return audioFeedbackController;
+    }
+	
+	public void stopAudioFeedback() {
+		if (audioFeedbackController != null)
+			audioFeedbackController.stop();
+	}
+	
+	public void destroyAudio() {
+		if (audioFeedbackController != null) {
+			audioFeedbackController.destroy();
+		}
+		audioFeedbackController = null;
 	}
 
 }

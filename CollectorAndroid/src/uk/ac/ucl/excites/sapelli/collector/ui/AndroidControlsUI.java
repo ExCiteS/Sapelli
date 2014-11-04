@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AndroidAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView.PickerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;

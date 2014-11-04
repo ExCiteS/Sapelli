@@ -28,7 +28,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 import android.content.Context;
 
 /**
- * @author mstevens
+ * @author mstevens, benelliott
  *
  */
 public class AndroidPostProcessor implements PostProcessor
@@ -50,30 +50,27 @@ public class AndroidPostProcessor implements PostProcessor
 	@Override
 	public void execute(TTSSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception
 	{
-		
-		if (ttv == null) {
+		if (ttv == null)
 			ttv = new TextToVoice(context);
-
-		}
 		
-		String filepath = ttsTask.getAudioFileRelativePath(); //TODO need absolute
+		String filepath =  ttsTask.getAudioFileRelativePath(); //TODO need absolute
 		
 		try {
 	        ttv.processSpeechToFile(ttsTask.getTextToSynthesise(), filepath);
         } catch (TTVFailedException e) {
 	        warningKeeper.addWarning("Unable to synthesise text to speech: \""+e.getText()+"\". Skipping this text without creating an audio file.");
         }
-		
-		// TODO implement TTS support here, avoid throwing exceptions unless really fatal, for everything else (including failure to produce mp3) use warningKeeper.addWarning(String)
 	}
 
-	public void destroy() {
-		// destroy any resources here (may eventually be more than TTS)
+	/**
+	 * Destroys any resources that were being used by the PostProcessor
+	 */
+	public void destroy() {	
+		// destroy TTS engine:
 		if (ttv != null) {
 			ttv.destroy();
 			ttv = null;
 		}
 	}
-	
 	
 }

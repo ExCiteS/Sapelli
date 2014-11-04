@@ -23,7 +23,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
@@ -303,9 +303,9 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param withPage whether the field is being display as part of a page (true) or on its own (false)
 	 * @return
 	 */
-	protected List<AbstractAudioFeedbackController<V>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
+	protected List<AudioFeedbackController<V>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
 	{
-		return Collections.<AbstractAudioFeedbackController<V>.PlaybackJob> emptyList(); // no jobs by default
+		return Collections.<AudioFeedbackController<V>.PlaybackJob> emptyList(); // no jobs by default
 	}
 	
 	/**

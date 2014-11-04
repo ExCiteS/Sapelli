@@ -205,9 +205,6 @@ public class CollectorActivity extends ProjectActivity
 			// Show demo disclaimer if needed:
 			if(app.getBuildInfo().isDemoBuild())
 				showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
-			
-			// Enable audio feedback
-			controller.enableAudioFeedback();
 		}
 	}
 
@@ -460,10 +457,11 @@ public class CollectorActivity extends ProjectActivity
 
 			//Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
-
+		// release controller's media player resources
+		if (controller != null)
+			controller.destroyAudio();
 		// Release audio feedback resources
-		if(controller != null)
-			controller.disableAudioFeedback();
+		collectorView.destroyAudio();
 
 		// super:
 		super.onPause();
