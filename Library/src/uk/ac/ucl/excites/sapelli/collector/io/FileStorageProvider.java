@@ -32,6 +32,8 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
  */
 public class FileStorageProvider
 {
+	
+	// STATICS-------------------------------------------------------
 	public static String DOWNLOADS_SAPELLI_FOLDER = "Sapelli";
 	public static String BACKUP_FILE = "Backup";
 	
@@ -73,7 +75,12 @@ public class FileStorageProvider
 		 */
 		Temp
 	}
-
+	
+	// Subfolders of project installation folder:
+	static public final String IMAGE_FOLDER = "img";
+	static public final String SOUND_FOLDER = "snd";
+	
+	// DYNAMICS------------------------------------------------------
 	private final File sapelliFolder;
 	private final File downloadsFolder;
 	
@@ -246,6 +253,30 @@ public class FileStorageProvider
 	public File getProjectLogsFolder(Project project, boolean create) throws FileStorageException
 	{
 		return getProjectSpecificSubFolder(getLogsFolder(create), project, create);
+	}
+	
+	/**
+	 * @param project
+	 * @param imageFileRelativePath
+	 * @return file object (pointing to a file which does *not* necessarily exist), or null if the given path was null or empty
+	 */
+	public File getProjectImageFile(Project project, String imageFileRelativePath)
+	{
+		if(imageFileRelativePath == null || imageFileRelativePath.isEmpty())
+			return null;
+		return new File(getProjectInstallationFolder(project, false).getAbsolutePath() + File.separator + IMAGE_FOLDER + File.separator + imageFileRelativePath);
+	}
+	
+	/**
+	 * @param project
+	 * @param soundFileRelativePath
+	 * @return file object (pointing to a file which does *not* necessarily exist), or null if the given path was null or empty
+	 */
+	public File getProjectSoundFile(Project project, String soundFileRelativePath)
+	{
+		if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
+			return null;
+		return new File(getProjectInstallationFolder(project, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
 	}
 	
 	/**

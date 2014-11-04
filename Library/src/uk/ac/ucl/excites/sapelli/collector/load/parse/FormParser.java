@@ -26,6 +26,7 @@ import java.util.Stack;
 import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -52,6 +53,9 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
+import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
@@ -329,13 +333,24 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				choice.setNoColumn(attributes.getBoolean(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
 				// Other attributes:
 				choice.setImageRelativePath(attributes.getString(ATTRIBUTE_FIELD_IMG, null, false, false));
-				choice.setAnswerDesc(attributes.getString(ATTRIBUTE_FIELD_ANSWER_DESC, null, false, false));
-				choice.setQuestionDesc(attributes.getString(ATTRIBUTE_FIELD_QUESTION_DESC, null, false, false));
 				choice.setAltText(attributes.getString(ATTRIBUTE_FIELD_ALT, null, false, false));
 				choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
 				choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
 				choice.setCrossed(attributes.getBoolean("crossed", ChoiceField.DEFAULT_CROSSED));
 				choice.setCrossColor(attributes.getString("crossColor", ChoiceField.DEFAULT_CROSS_COLOR, true, false));
+				// Audio feedback:
+				//	Question: "questionDesc" is parsed in newField()!
+				//	Answer:
+				choice.setAnswerDescription(attributes.getString(ATTRIBUTE_FIELD_ANSWER_DESC, null, true, false));
+				if(choice.getAnswerDescription() != null && currentForm.isUsingAudioFeedback())
+				{
+					choice.setAnswerDescriptionAudioRelativePath(
+						FileHelpers.isAudioFileName(choice.getAnswerDescription()) ?
+							// playback of audio file included with project:
+							choice.getAnswerDescription() :
+							// playback of audio generated from text (TTS):
+							newTTSSynthesisTask(choice.getAnswerDescription(), FileHelpers.makeValidFileName(choice.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(choice.getID().getBytes())) + "_A." + owner.getGeneratedAudioExtension())));
+				}
 			}
 			// <Location>
 			else if(qName.equals(TAG_LOCATION))
@@ -633,7 +648,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	private void newField(Field field, XMLAttributes attributes) throws SAXException
 	{
 		try
-		{
+		{	
 			// Warn about IDs starting with '_': //TODO test if no invalid XML chars
 			if(field.getID().startsWith("_"))
 			{
@@ -730,6 +745,17 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		{
 			throw new SAXException("Error on parsing field '" + field.getID() + "'", e);
 		}
+	}
+	
+	/**
+	 * @param textToSpeak
+	 * @param relativeSoundFilePath
+	 * @return the relativeSoundFilePath
+	 */
+	private String newTTSSynthesisTask(String textToSpeak, String relativeSoundFilePath)
+	{
+		owner.addPostProcessingTask(new TTSSynthesisTask(textToSpeak, relativeSoundFilePath));
+		return relativeSoundFilePath;
 	}
 	
 	private void newTrigger(Trigger trigger, XMLAttributes attributes)

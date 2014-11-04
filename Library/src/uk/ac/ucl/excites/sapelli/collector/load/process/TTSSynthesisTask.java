@@ -36,7 +36,7 @@ public class TTSSynthesisTask implements PostProcessTask
 	 * @param textToSynthesise
 	 * @param audioFileRelativePath
 	 */
-	private TTSSynthesisTask(String textToSynthesise, String audioFileRelativePath)
+	public TTSSynthesisTask(String textToSynthesise, String audioFileRelativePath)
 	{
 		this.textToSynthesise = textToSynthesise;
 		this.audioFileRelativePath = audioFileRelativePath;

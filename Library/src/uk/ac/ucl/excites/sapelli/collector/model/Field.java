@@ -64,6 +64,8 @@ public abstract class Field extends JumpSource
 	protected final String id;
 	protected final Form form;
 	protected final String caption;
+	protected String description;
+	protected String decriptionAudioRelativePath;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	protected boolean showOnCreate = DEFAULT_SHOW_ON_CREATE;
@@ -136,6 +138,38 @@ public abstract class Field extends JumpSource
 		return caption;
 	}
 	
+	/**
+	 * @return the description
+	 */
+	public String getDescription()
+	{
+		return description;
+	}
+
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description)
+	{
+		this.description = description;
+	}
+
+	/**
+	 * @return the decriptionAudioRelativePath
+	 */
+	public String getDecriptionAudioRelativePath()
+	{
+		return decriptionAudioRelativePath;
+	}
+
+	/**
+	 * @param decriptionAudioRelativePath the decriptionAudioRelativePath to set
+	 */
+	public void setDecriptionAudioRelativePath(String decriptionAudioRelativePath)
+	{
+		this.decriptionAudioRelativePath = decriptionAudioRelativePath;
+	}
+
 	/**
 	 * @return the noColumn
 	 */
@@ -424,6 +458,7 @@ public abstract class Field extends JumpSource
 					this.form.toString().equals(that.form.toString()) && // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
 					this.form.getProject().toString().equals(that.form.getProject().toString()) && // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
 					this.caption.equals(that.caption) &&
+					(this.description != null ? this.description.equals(that.description) : that.description == null) &&
 					this.enabled == that.enabled &&
 					this.skipOnBack == that.skipOnBack &&
 					this.showOnCreate == that.showOnCreate &&
@@ -445,6 +480,7 @@ public abstract class Field extends JumpSource
 		hash = 31 * hash + form.toString().hashCode(); // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
 		hash = 31 * hash + form.getProject().toString().hashCode(); // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
 		hash = 31 * hash + caption.hashCode();
+		hash = 31 * hash + description.hashCode();
 		hash = 31 * hash + (enabled ? 0 : 1);
 		hash = 31 * hash + (skipOnBack ? 0 : 1);
 		hash = 31 * hash + (showOnCreate ? 0 : 1);

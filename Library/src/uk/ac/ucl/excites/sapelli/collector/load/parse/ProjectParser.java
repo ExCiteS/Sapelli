@@ -87,19 +87,37 @@ public class ProjectParser extends DocumentParser
 	static private final String ATTRIBUTE_PROJECT_VERSION = "version";
 	static private final String ATTRIBUTE_PROJECT_START_FORM = "startForm";
 	
+	// Potentially platform-specific parameters:
+	static public final String DEFAULT_GENERATED_AUDIO_EXTENSION = "wav";
+	
 
 	// DYNAMICS-------------------------------------------------------
 	private Format format = DEFAULT_FORMAT;
+	private final String generatedAudioExtension;
 	private Integer fingerPrint;
 	private Project project;
 	private String startFormID;
 	private HashMap<Relationship, String> relationshipToFormID;
 	private HashMap<Relationship, List<ConstraintDescription>> relationshipToConstraints;
-	private List<PostProcessTask> postProcessingTasks;
+	private List<PostProcessTask> postProcessingTasks; 
 
 	public ProjectParser()
 	{
+		this(DEFAULT_GENERATED_AUDIO_EXTENSION);
+	}
+
+	public ProjectParser(String generatedAudioExtension)
+	{
 		super();
+		this.generatedAudioExtension = generatedAudioExtension;
+	}
+	
+	/**
+	 * @return the generatedAudioExtension
+	 */
+	public String getGeneratedAudioExtension()
+	{
+		return generatedAudioExtension;
 	}
 
 	public Project parseProject(File xmlFile) throws Exception
@@ -172,7 +190,7 @@ public class ProjectParser extends DocumentParser
 				}
 				//	within range (or default because missing attribute):
 				else
-					format = Format.values()[formatVersion]; 
+					format = Format.values()[formatVersion];
 				
 				// Project...
 				project = new Project(	(format == Format.v1_x) ?
