@@ -244,7 +244,7 @@ public class DeviceID
 	 */
 	public BigInteger getIDAsMD5Hash()
 	{
-		return Hashing.getMD5Hash(getRawID().getBytes());
+		return Hashing.getMD5HashBigInt(getRawID().getBytes());
 	}
 
 	/**
