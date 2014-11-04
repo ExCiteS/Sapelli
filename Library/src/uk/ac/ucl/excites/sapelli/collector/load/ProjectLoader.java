@@ -206,7 +206,7 @@ public class ProjectLoader implements WarningKeeper
 					{
 						try
 						{
-							task.execute(postProcessor, this);
+							task.execute(postProcessor, project, this);
 						}
 						catch(Exception e)
 						{

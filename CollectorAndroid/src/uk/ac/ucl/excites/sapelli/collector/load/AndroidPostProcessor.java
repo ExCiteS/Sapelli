@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.load;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor;
 import uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask;
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.media.TTVFailedException;
 import uk.ac.ucl.excites.sapelli.collector.util.TextToVoice;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
@@ -44,10 +45,10 @@ public class AndroidPostProcessor implements PostProcessor
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor#execute(uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask, uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper)
+	 * @see uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor#execute(uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask, uk.ac.ucl.excites.sapelli.collector.model.Project, uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper)
 	 */
 	@Override
-	public void execute(TTSSynthesisTask ttsTask, WarningKeeper warningKeeper) throws Exception
+	public void execute(TTSSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception
 	{
 		
 		if (ttv == null) {
