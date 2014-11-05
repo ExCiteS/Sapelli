@@ -1,13 +1,10 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
@@ -19,7 +16,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.VideoItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.media.MediaPlayer;
@@ -224,13 +220,10 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		return captureButton;
 	}
 
+	
 	@Override
-	protected List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record) {
-		List<Item> items = new ArrayList<Item>();
-		for (File f : field.getAttachments(fileStorageProvider, record)) {
-			items.add(new VideoItem(f));
-		}
-		return items;
+	protected Item getItemFromFile(File file) {
+		return new VideoItem(file);
 	}
 
 	@Override

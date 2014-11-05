@@ -19,13 +19,12 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
-import java.util.List;
+import java.util.HashMap;
 import java.util.concurrent.Semaphore;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
@@ -82,6 +81,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 	private CaptureView captureView;
 	private GalleryView galleryView;
+	
+	private HashMap<File, Item> galleryCache; // hashmap used to cache gallery items so that every attachment doesn't have to be reloaded when a change is made
 	
 	// global variable that holds the params for the capture/discard buttons
 	private LinearLayout.LayoutParams buttonParams; 
@@ -150,6 +151,9 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			
 			if (galleryView == null)
 				galleryView = new GalleryView(collectorUI.getContext());
+			
+			if (galleryCache == null || newRecord)
+				galleryCache = new HashMap<File, Item>();
 			
 			// force the gallery to update its contents and its button:
 			galleryView.refresh();
@@ -302,13 +306,13 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * What to do when a piece of media is discarded after review (e.g. release media player resources).
 	 */
 	protected abstract void onDiscard();
-
+	
 	/**
-	 * @return a list of the media items captured in this field. Left to the subclass to implement because
-	 * different media types should be used to instantiate different media items (e.g. if video, create a list
-	 * of VideoItems).
+	 * Returns an appropriate {@link Item} for the provided file.
+	 * @param file - the file to use to create the item.
+	 * @return an Item corresponding to the file.
 	 */
-	protected abstract List<Item> getMediaItems(FileStorageProvider fileStorageProvider, Record record);
+	protected abstract Item getItemFromFile(File file);
 
 	/**
 	 * Generate a "capture" button (may vary by media, e.g. microphone
@@ -491,7 +495,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				public void run() {
 					// only one button: discard
 					onDiscard();
-					removeMedia(ReviewView.this.toReview); // captures are now always attached, so must be deleted regardless of approval
+					// captures are now always attached, so must be deleted regardless of approval:
+					removeMedia(ReviewView.this.toReview);
+					// if gallery cache is being used, remove this item from it now it has been deleted:
+					if (galleryCache != null)
+						galleryCache.remove(ReviewView.this.toReview);
 					// have now deleted media, so cannot have reached max
 					maxReached = false;
 					// an item has been deleted, so want the gallery to be refreshed:
@@ -657,13 +665,26 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				PickerAdapter adapter;
 
 				if (mediaItemsChanged) {
-					// if an item has been added or deleted, then do a complete rescan for files
+					// an item has been added or deleted so reload gallery items
 					Log.d(TAG,"Media items changed, updating gallery...");
+					// reset adapter
 					adapter = new PickerAdapter();
-					for (Item item : getMediaItems(controller.getFileStorageProvider(),controller.getCurrentRecord())) {
-						item.setPaddingPx(buttonPadding);
-						adapter.addItem(item);
+					for (File file : field.getAttachments(controller.getFileStorageProvider(),controller.getCurrentRecord())) {
+						// for each file in this field's attachments...
+						
+						// see if it can be found in the gallery cache:
+						Item toAdd = galleryCache.get(file);
+
+						if (toAdd == null) {
+							// if not, create a new item and put it in the cache:
+							toAdd = getItemFromFile(file);
+							galleryCache.put(file, toAdd);
+						}
+						// set padding and add item to adapter
+						toAdd.setPaddingPx(buttonPadding);
+						adapter.addItem(toAdd);
 					}
+					
 					if (adapter.getCount() >= field.getMax()) {
 						maxReached = true;
 					}
