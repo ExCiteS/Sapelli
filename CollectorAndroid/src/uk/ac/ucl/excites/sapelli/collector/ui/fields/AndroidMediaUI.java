@@ -153,6 +153,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				galleryView = new GalleryView(collectorUI.getContext());
 			
 			if (galleryCache == null || newRecord)
+				// wipe the cache whenever newRecord is true since we don't want any stale items in the gallery
 				galleryCache = new HashMap<File, Item>();
 			
 			// force the gallery to update its contents and its button:
