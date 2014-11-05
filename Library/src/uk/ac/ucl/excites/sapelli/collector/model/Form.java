@@ -864,11 +864,12 @@ public class Form implements WarningKeeper
 	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
 		List<File> paths = new ArrayList<File>();
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, backButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, cancelButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, forwardButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, shortcutImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getSoundFile(fileStorageProvider, saveSoundRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, backButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, cancelButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, forwardButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, shortcutImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, saveSoundRelativePath));
+
 		//Add paths for fields:
 		for(Field field : fields)
 			CollectionUtils.addAllIgnoreNull(paths, field.getFiles(fileStorageProvider));
