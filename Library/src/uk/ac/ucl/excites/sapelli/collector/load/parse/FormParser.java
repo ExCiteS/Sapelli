@@ -51,6 +51,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
@@ -73,6 +74,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String TAG_CHOICE = "Choice";
 	static private final String TAG_AUDIO = "Audio";
 	static private final String TAG_PHOTO = "Photo";
+	static private final String TAG_VIDEO = "Video";
 	static private final String TAG_LOCATION = "Location";
 	static private final String TAG_ORIENTATION = "Orientation";
 	static public final String TAG_BELONGS_TO = "BelongsTo";
@@ -165,6 +167,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
 	static private final String ATTRIBUTE_BUTTON_COLUMN = "column";
 	static private final String ATTRIBUTE_MEDIA_MAX = "max";
+	static private final String ATTRIBUTE_MEDIA_REVIEW = "review";
 	static private final String ATTRIBUTE_TRIGGER_KEY = "key";
 	static private final String ATTRIBUTE_TRIGGER_KEYS = "keys";
 	static private final String ATTRIBUTE_TRIGGER_FIXED_TIMER = "fixedTimer";
@@ -374,6 +377,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				newMediaField(photoField, attributes);
 				photoField.setUseNativeApp(attributes.getBoolean("useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP));
 				// Camera options (only used when useNativeApp=false):
+				photoField.setShowReview(attributes.getBoolean(ATTRIBUTE_MEDIA_REVIEW, MediaField.DEFAULT_SHOW_REVIEW));
 				photoField.setUseFrontFacingCamera(attributes.getBoolean("useFrontCamera", PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA));
 				String flashText = attributes.getValue("flash");
 				PhotoField.FlashMode flash = PhotoField.DEFAULT_FLASH_MODE;
@@ -392,6 +396,20 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				photoField.setCaptureButtonImageRelativePath(attributes.getString("captureImg", null, false, false));
 				photoField.setApproveButtonImageRelativePath(attributes.getString("approveImg", null, false, false));
 				photoField.setDiscardButtonImageRelativePath(attributes.getString("discardImg", null, false, false));
+			}
+			// <Video>
+			else if(qName.equals(TAG_VIDEO))
+			{
+				VideoField videoField = new VideoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_PHOTO, false));
+				newMediaField(videoField, attributes);
+				videoField.setUseNativeApp(attributes.getBoolean("useNativeApp", VideoField.DEFAULT_USE_NATIVE_APP));
+				// Camera options (only used when useNativeApp=false):
+				videoField.setUseFrontFacingCamera(attributes.getBoolean("useFrontCamera", VideoField.DEFAULT_USE_FRONT_FACING_CAMERA));
+				// cannot have flash when capturing video
+				// Custom buttons (only used when useNativeApp=false):
+				videoField.setCaptureButtonImageRelativePath(attributes.getString("captureImg", null, false, false));
+				videoField.setApproveButtonImageRelativePath(attributes.getString("approveImg", null, false, false));
+				videoField.setDiscardButtonImageRelativePath(attributes.getString("discardImg", null, false, false));
 			}
 			// <Audio>
 			else if(qName.equals(TAG_AUDIO))
