@@ -212,6 +212,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 */
 	@Override
 	public boolean handleControlEvent(Control control) {
+		// ignore user's request to return to capture now we are leaving the field
+		// (do this in any case)
+		controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY);
+		
 		if (control.equals(Control.BACK) && getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY) {
 			// remove the filepath from the field's arguments so we do not re-enter single-item review unintentionally
 			controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY);
@@ -219,7 +223,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 			return true;
 		}
-		// do not change the button behaviour in any other case
+		// do not change the button behaviour in any other case (other than removing the capture request)
 		return false;
 	}
 	
