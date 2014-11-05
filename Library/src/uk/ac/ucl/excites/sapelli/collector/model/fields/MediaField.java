@@ -212,7 +212,7 @@ public abstract class MediaField extends Field
 		
 		// Obfuscate filename and/or extension if necessary:
 		if(obfuscateFilename)
-			filename = BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(filename.getBytes()).toByteArray(), 16, true); // Format: HEX(MD5(filename))
+			filename = BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(filename.getBytes()), 16, true); // Format: HEX(MD5(filename))
 		if(obfuscateExtension)
 		{
 			extensionSeparator = FILENAME_ELEMENT_SEPARATOR; // '_' instead of '.'

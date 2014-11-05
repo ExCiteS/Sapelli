@@ -54,10 +54,6 @@ public class Project
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
 
-	// Subfolders of project installation folder:
-	static public final String IMAGE_FOLDER = "img";
-	static public final String SOUND_FOLDER = "snd";
-	
 	static public final boolean DEFAULT_LOGGING = true;
 		
 	static public final int MAX_FORMS = 32;
@@ -311,28 +307,6 @@ public class Project
 	public void setTransmissionSettings(TransmissionSettings transmissionSettings)
 	{
 		this.transmissionSettings = transmissionSettings;
-	}
-	
-	/**
-	 * @param imageFileRelativePath
-	 * @return file object, or null if the given path was null or empty
-	 */
-	public File getImageFile(FileStorageProvider fileStorageProvider, String imageFileRelativePath)
-	{
-		if(imageFileRelativePath == null || imageFileRelativePath.isEmpty())
-			return null;
-		return new File(fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath() + File.separator + IMAGE_FOLDER + File.separator + imageFileRelativePath);
-	}
-	
-	/**
-	 * @param soundFileRelativePath
-	 * @return file object, or null if the given path was null or empty
-	 */
-	public File getSoundFile(FileStorageProvider fileStorageProvider, String soundFileRelativePath)
-	{
-		if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
-			return null;
-		return new File(fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
 	}
 	
 	@Override

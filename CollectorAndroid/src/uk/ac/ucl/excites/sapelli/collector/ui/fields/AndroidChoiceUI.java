@@ -372,7 +372,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 */
 	public Item createItem(ChoiceField child, int itemPaddingPx, boolean grayedOut)
 	{
-		File imageFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), child.getImageRelativePath());
+		File imageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), child.getImageRelativePath());
 		Item item = null;
 		if(FileHelpers.isReadableFile(imageFile))
 			item = new FileImageItem(imageFile);

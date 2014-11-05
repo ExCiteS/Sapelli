@@ -251,8 +251,8 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 					drawable = new HorizontalArrow(FOREGROUND_COLOR, false);
 					this.setDescription(form.getForwardButtonDescription());
 					break;
-			}				
-			File imgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), imgRelativePath);
+			}
+			File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), imgRelativePath);
 			Item button = null;
 			if(FileHelpers.isReadableFile(imgFile))
 				button = new FileImageItem(imgFile);

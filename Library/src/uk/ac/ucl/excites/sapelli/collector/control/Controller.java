@@ -480,7 +480,7 @@ public abstract class Controller implements FieldVisitor
 		if(currFormSession.form.isVibrateOnSave())
 			vibrate(VIBRATION_DURATION_MS);
 		// Play sound
-		File endSoundFile = project.getSoundFile(fileStorageProvider, currFormSession.form.getSaveSoundRelativePath());
+		File endSoundFile = fileStorageProvider.getProjectSoundFile(project, currFormSession.form.getSaveSoundRelativePath());
 		if(FileHelpers.isReadableFile(endSoundFile))
 			playSound(endSoundFile);
 	}

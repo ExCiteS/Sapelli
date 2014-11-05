@@ -100,8 +100,8 @@ public class AudioField extends MediaField
 	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
 		List<File> paths = new ArrayList<File>();
-		CollectionUtils.addIgnoreNull(paths, form.getProject().getImageFile(fileStorageProvider, startRecImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, form.getProject().getImageFile(fileStorageProvider, stopRecImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.getProject(), startRecImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.getProject(), stopRecImageRelativePath));
 		return paths;
 	}
 

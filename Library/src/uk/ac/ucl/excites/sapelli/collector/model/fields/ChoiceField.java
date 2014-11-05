@@ -34,7 +34,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary.Dictionar
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -64,8 +63,8 @@ public class ChoiceField extends Field implements DictionaryItem
 	private ChoiceField root;
 	private List<ChoiceField> children;
 	private String imageRelativePath;
-	private String answerDesc;
-	private String questionDesc;
+	private String answerDescription;
+	private String answerDescriptionAudioRelativePath;
 	private int cols = DEFAULT_NUM_COLS;
 	private int rows = DEFAULT_NUM_ROWS;
 	private String altText;
@@ -132,50 +131,6 @@ public class ChoiceField extends Field implements DictionaryItem
 	public boolean hasImage()
 	{
 		return imageRelativePath != null;
-	}
-
-	/**
-	 * @return the answerDesc
-	 */
-	public String getAnswerDesc()
-	{
-		return answerDesc;
-	}
-
-	/**
-	 * @param answerDesc
-	 *            the answerDesc to set
-	 */
-	public void setAnswerDesc(String answerDesc)
-	{
-		this.answerDesc = answerDesc;
-	}
-
-	public boolean hasAudioAnswerDesc()
-	{
-		return answerDesc != null && FileHelpers.isAudioFileName(answerDesc);
-	}
-
-	/**
-	 * @return the questionDesc
-	 */
-	public String getQuestionDesc()
-	{
-		return questionDesc;
-	}
-
-	/**
-	 * @param questionDesc
-	 *            the questionDesc to set
-	 */
-	public void setQuestionDesc(String questionDesc)
-	{
-		this.questionDesc = questionDesc;
-	}
-
-	public boolean hasAudioQuestionDesc()
-	{
-		return questionDesc != null && FileHelpers.isAudioFileName(questionDesc);
 	}
 
 	/**
@@ -329,12 +284,45 @@ public class ChoiceField extends Field implements DictionaryItem
 		return root.optional;
 	}
 
+	/**
+	 * @return the answerDescription
+	 */
+	public String getAnswerDescription()
+	{
+		return answerDescription;
+	}
+
+	/**
+	 * @param answerDescription the answerDescription to set
+	 */
+	public void setAnswerDescription(String answerDescription)
+	{
+		this.answerDescription = answerDescription;
+	}
+
+	/**
+	 * @return the answerDescriptionAudioRelativePath
+	 */
+	public String getAnswerDescriptionAudioRelativePath()
+	{
+		return answerDescriptionAudioRelativePath;
+	}
+
+	/**
+	 * @param answerDescriptionAudioRelativePath the answerDescriptionAudioRelativePath to set
+	 */
+	public void setAnswerDescriptionAudioRelativePath(String answerDescriptionAudioRelativePath)
+	{
+		this.answerDescriptionAudioRelativePath = answerDescriptionAudioRelativePath;
+	}
+
 	@Override
 	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
 		List<File> paths = new ArrayList<File>();
 		if(hasImage())
-			CollectionUtils.addIgnoreNull(paths, form.getProject().getImageFile(fileStorageProvider, imageRelativePath));
+			CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.getProject(), imageRelativePath));
+		// TODO audio feedback files!
 		for(ChoiceField child : getChildren())
 			CollectionUtils.addAllIgnoreNull(paths, child.getFiles(fileStorageProvider));
 		return paths;
@@ -472,8 +460,7 @@ public class ChoiceField extends Field implements DictionaryItem
 					(this.root != null ? that.root != null && this.root.getID().equals(that.root.getID()) : that.root == null) &&
 					this.getChildren().equals(that.getChildren()) &&
 					(this.imageRelativePath != null ? this.imageRelativePath.equals(that.imageRelativePath) : that.imageRelativePath == null) &&
-					(this.answerDesc != null ? that.answerDesc.equals(that.answerDesc) : that.answerDesc == null) &&
-					(this.questionDesc != null ? that.questionDesc.equals(that.questionDesc) : that.questionDesc == null) &&
+					(this.answerDescription != null ? that.answerDescription.equals(that.answerDescription) : that.answerDescription == null) &&
 					this.cols == that.cols &&
 					this.rows == that.rows &&
 					(this.altText != null ? this.altText.equals(that.altText) : that.altText == null) &&
@@ -494,8 +481,7 @@ public class ChoiceField extends Field implements DictionaryItem
 		hash = 31 * hash + (root != null ? root.getID().hashCode() : 0);
 		hash = 31 * hash + getChildren().hashCode();
 		hash = 31 * hash + (imageRelativePath != null ? imageRelativePath.hashCode() : 0);
-		hash = 31 * hash + (answerDesc != null ? answerDesc.hashCode() : 0);
-		hash = 31 * hash + (questionDesc != null ? questionDesc.hashCode() : 0);
+		hash = 31 * hash + (answerDescription != null ? answerDescription.hashCode() : 0);
 		hash = 31 * hash + cols;
 		hash = 31 * hash + rows;
 		hash = 31 * hash + (altText != null ? altText.hashCode() : 0);

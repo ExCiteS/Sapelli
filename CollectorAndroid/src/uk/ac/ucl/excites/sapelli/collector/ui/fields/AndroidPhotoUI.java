@@ -296,7 +296,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			{
 				// Capture button:
 				Item captureButton = null;
-				File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getCaptureButtonImageRelativePath());
+				File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getCaptureButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(captureImgFile))
 					captureButton = new FileImageItem(captureImgFile);
 				else
@@ -329,7 +329,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			{
 				// Approve button:
 				Item approveButton = null;
-				File approveImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getApproveButtonImageRelativePath());
+				File approveImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getApproveButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(approveImgFile))
 					approveButton = new FileImageItem(approveImgFile);
 				else
@@ -339,7 +339,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 				
 				// Discard button:
 				Item discardButton = null;
-				File discardImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getDiscardButtonImageRelativePath());
+				File discardImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getDiscardButtonImageRelativePath());
 				if(FileHelpers.isReadableFile(discardImgFile))
 					discardButton = new FileImageItem(discardImgFile);
 				else
