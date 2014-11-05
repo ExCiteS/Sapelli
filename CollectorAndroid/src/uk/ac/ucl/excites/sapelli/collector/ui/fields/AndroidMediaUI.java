@@ -20,10 +20,9 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.concurrent.Semaphore;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
@@ -74,7 +73,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH"; // key for obtaining review filepath from field arguments
 	private static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 
-	protected Semaphore handlingClick; // semaphore used to prevent race conditions on click events
+	protected CollectorController controller; // keep reference to the Android-specific controller. NOTE: shadows controller in FieldUI
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
 	protected File captureFile; // file used to store media while it is being captured
@@ -87,9 +86,10 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	// global variable that holds the params for the capture/discard buttons
 	private LinearLayout.LayoutParams buttonParams; 
 
-	public AndroidMediaUI(MF field, Controller controller, CollectorView collectorUI)
+	public AndroidMediaUI(MF field, CollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
+		this.controller = controller;
 		maxReached = (field.getCount(controller.getCurrentRecord()) >= field.getMax());
 		// create button params to be used for all bottom-of-screen buttons:
 		buttonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(collectorUI.getContext(), AndroidControlsUI.CONTROL_HEIGHT_DIP));
@@ -122,10 +122,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			//TODO
 			return null;
 		}
-
-		// initialise click semaphore:
-		if (handlingClick == null)
-			handlingClick = new Semaphore(1);
 
 		// get the current display state:
 		DisplayState currentState = getCurrentDisplayState();
@@ -209,7 +205,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		captureFile = null;
 
 	}
-
 
 	/**
 	 * Override the normal "back" behaviour so that the user is returned to the gallery when "back" is pressed
@@ -295,7 +290,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		return false;
 	}
 	
-	
 	// -------- ABSTRACT METHODS:
 
 	/**
@@ -350,21 +344,16 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		view.setOnClickListener(new OnClickListener() {
 
 			@Override
-            public void onClick(View v) {
-				if (handlingClick.tryAcquire()) {
-					/* NOTE: try to acquire semaphore here rather than in Runnable,
-						 because Runnable may be delayed by animation (e.g. press "capture",
-						 then move to review, but "capture" Runnable checks semaphore after
-						 View has changed. Should still release it in the Runnable for a
-						 similar reason. */
-					// Execute the "press" animation if allowed, then perform the action: 
-					if(controller.getCurrentForm().isClickAnimation())
-						(new ClickAnimator(onClickRunnable, view, collectorUI)).execute(); //execute animation and the action afterwards
-					else
-						onClickRunnable.run(); //perform task now (animation is disabled)
-				}
-            }
-	
+			public void onClick(View v) {
+				controller.blockUI();
+				// Execute the "press" animation if allowed, then perform the action: 
+				if(controller.getCurrentForm().isClickAnimation())
+					(new ClickAnimator(onClickRunnable, view, collectorUI)).execute(); //execute animation and the action afterwards
+				else
+					onClickRunnable.run(); //perform task now (animation is disabled)
+
+			}
+
 		});
 						
 		return view;
@@ -515,8 +504,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					
 					// either go back to capture, or go back to gallery:
 					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
-					// Important: release the click semaphore AFTER the field has been exited
-					handlingClick.release();
+					// allow clicks now we have finished
+					controller.unblockUI();
 				}
 			};
 			
@@ -564,8 +553,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 						// re-enter current field:
 						controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 					}
-					// Important: release the click semaphore AFTER the field has been exited
-					handlingClick.release();
+					// allow clicks now we have finished
+					controller.unblockUI();
 				}
 			};
 			
@@ -648,15 +637,29 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				setHorizontalSpacing(spacingPx);
 				setVerticalSpacing(spacingPx);
 
+
 				// When a gallery item is clicked, present it in full screen for review/deletion:
 				setOnItemClickListener(new OnItemClickListener() {
 					@Override
-					public void onItemClick(AdapterView<?> parent, View view,
-							int position, long id) {
-						controller.getCurrentFieldArguments().put(REVIEW_FILE_PATH_KEY, ((FileItem)getAdapter().getItem(position)).getFile().getAbsolutePath());
-						controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
-					}	
+					public void onItemClick(AdapterView<?> parent, View view,int position, long id) {
+						controller.clickView(view, getItemClickRunnable(position));
+					}
 				});
+			}
+			
+			/**
+			 * Convenience method for creating a {@code Runnable} that passes the clicked item to the full-page review screen.
+			 * @param position - the index of the item in the gallery
+			 * @return the {@code Runnable} that should be executed when this item is clicked.
+			 */
+			private Runnable getItemClickRunnable(final int position) {
+				return new Runnable() {
+					@Override
+					public void run() {
+						controller.getCurrentFieldArguments().put(REVIEW_FILE_PATH_KEY, ((FileItem)GalleryPicker.this.getAdapter().getItem(position)).getFile().getAbsolutePath());
+						controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+					}
+				};
 			}
 
 			/**

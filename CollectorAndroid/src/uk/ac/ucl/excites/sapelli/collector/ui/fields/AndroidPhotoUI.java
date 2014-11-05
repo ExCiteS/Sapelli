@@ -22,7 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -69,8 +69,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	private SurfaceView captureSurface;
 	private HandleImage handleImage;
 
-	public AndroidPhotoUI(PhotoField field, Controller controller,
-			CollectorView collectorUI) {
+	public AndroidPhotoUI(PhotoField field, CollectorController controller, CollectorView collectorUI) {
 		super(field, controller, collectorUI);
 	}
 
@@ -124,7 +123,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	@Override
 	protected void onCapture() {
 		cameraController.takePicture(this);
-		// do not release click semaphore - only allow new clicks once photo has been received
+		// do not allow clicks yet as the above call is asynchronous and returns immediately
 	}
 	
 
@@ -224,8 +223,8 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 			else
 				controller.goForward(true);
-			// Important: release the click semaphore AFTER the field has been exited
-			handlingClick.release(); 
+			// allow clicks now we have finished
+			controller.unblockUI();
 		}
 	}
 }

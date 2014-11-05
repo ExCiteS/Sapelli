@@ -24,13 +24,12 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.AudioItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
@@ -70,7 +69,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	private AudioReviewView audioReviewView;
 	private VolumeDisplaySurfaceView volumeDisplay;
 
-	public AndroidAudioUI(AudioField field, Controller controller, CollectorView collectorUI) {
+	public AndroidAudioUI(AudioField field, CollectorController controller, CollectorView collectorUI) {
 		super(field, controller, collectorUI);
 	}
 
@@ -155,7 +154,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			}
 		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
-		handlingClick.release(); 
+		controller.unblockUI();
 	}
 
 	@Override
@@ -287,8 +286,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 							playing = false;
 						}
 					}
-					handlingClick.release();
-					Log.d(TAG,"Click semaphore released from playback");
+					controller.unblockUI();
 				}
 			};
 			
@@ -296,16 +294,8 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 
 				@Override
                 public void onClick(View v) {
-					if (handlingClick.tryAcquire()) {
-						Log.d(TAG,"Click semaphore acquired for playback");
-						// Execute the "press" animation if allowed, then perform the action: 
-						if(controller.getCurrentForm().isClickAnimation())
-							(new ClickAnimator(buttonAction, AudioReviewView.this, collectorUI)).execute(); //execute animation and the action afterwards
-						else
-							buttonAction.run(); //perform task now (animation is disabled)
-					}
-	                
-                }
+					controller.clickView(v, buttonAction);
+				}
 				
 			});
 			 // show play button first

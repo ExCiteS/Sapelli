@@ -79,6 +79,7 @@ public class CollectorController extends Controller implements LocationListener,
 
 	private AudioPlayer audioPlayer;
 	private TextToVoice textToVoice;
+	private volatile boolean blockedUI = false;
 
 	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider, CollectorActivity activity)
 	{
@@ -386,5 +387,31 @@ public class CollectorController extends Controller implements LocationListener,
 			action.run();
 			unblockUI();
 		}
+	}
+	
+	/**
+	 * @return whether or not the UI is currently blocked from new user interaction.
+	 */
+	public synchronized boolean isUIBlocked()
+	{
+		return blockedUI;
+	}
+
+	/**
+	 * Block the UI from receiving any new user interaction.
+	 */
+	public synchronized void blockUI()
+	{
+		if (!blockedUI)
+			blockedUI = true;
+	}
+
+	/**
+	 * Unblock the UI from receiving any new user interaction.
+	 */
+	public synchronized void unblockUI()
+	{
+		if (blockedUI)
+			blockedUI = false;
 	}
 }

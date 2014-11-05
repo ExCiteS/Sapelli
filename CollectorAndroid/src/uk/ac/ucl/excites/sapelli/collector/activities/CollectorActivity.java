@@ -269,16 +269,25 @@ public class CollectorActivity extends ProjectActivity
 		return super.onKeyUp(keyCode, event);
 	}
 	
+	/**
+	 * Catch every touch event here, and only pass them on to their 'receiving' objects if the UI
+	 * has not already been blocked from receiving any new interactions for the time being. This is
+	 * used to prevent unwanted extra clicks when the first click is still being processed.
+	 */
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent event)
 	{
 		if(controller.isUIBlocked())
 		{
+			// something has requested that interactions be blocked, so do not
+			// send touch event to receiving object
 			controller.addLogLine("BLOCKED_MOTION_EVENT", event.toString());
-			return false;
+			return true; // we have consumed this motion event, so return true
 		}
 		else
 		{
+			// UI is not blocked, so send the touch event to the receiving object
+			// using the super call
 			controller.addLogLine("DISPATCHED_MOTION_EVENT", event.toString());
 			return super.dispatchTouchEvent(event);
 		}

@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import android.os.AsyncTask;
 import android.view.View;
 import android.view.animation.AnimationSet;
@@ -38,7 +38,7 @@ public abstract class Animator extends AsyncTask<Void, Void, Void>
 	private View animateView;
 	private View blockView; // may be null
 	private boolean blockViewEnabled;
-	private Controller controller; // may be null
+	private CollectorController controller; // may be null
 
 	/**
 	 * @param duration  running time of the animation (in ms)
@@ -60,7 +60,7 @@ public abstract class Animator extends AsyncTask<Void, Void, Void>
 	 * @param animateView  View to which the animation will be applied
 	 * @param controller  if a non-null Controller instance is passed the Controller's blockUI() method will be used to block all UI interactions during animation
 	 */
-	public Animator(long duration, Runnable taskAfterAnimation, View animateView, Controller controller)
+	public Animator(long duration, Runnable taskAfterAnimation, View animateView, CollectorController controller)
 	{
 		this.duration = duration;
 		this.taskAfterAnimation = taskAfterAnimation;

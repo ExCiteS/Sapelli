@@ -3,7 +3,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -54,8 +54,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	private volatile Boolean recording = false;
 	private int playbackPosition = 0;
 
-	public AndroidVideoUI(VideoField field, Controller controller,
-			CollectorView collectorUI) {
+	public AndroidVideoUI(VideoField field, CollectorController controller,	CollectorView collectorUI) {
 		super(field, controller, collectorUI);
 	}
 
@@ -115,7 +114,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 			}
 		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
-		handlingClick.release();
+		controller.unblockUI();
 	}
 
 
@@ -151,6 +150,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		playbackView.setOnTouchListener(new OnTouchListener() {
 			@Override
 			public boolean onTouch(View v, MotionEvent ev) {
+				controller.blockUI();
 				if (ev.getAction() == MotionEvent.ACTION_UP) { 
 					// only perform action when finger is lifted off screen
 					if (playbackView.isPlaying()) {
@@ -167,6 +167,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 						playbackView.start();
 					}
 				}
+				controller.unblockUI();
 				return true;
 			}
 		});
@@ -175,9 +176,11 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		thumbnailView.setOnClickListener(new OnClickListener() {
 			@Override
             public void onClick(View v) {
+				controller.blockUI();
 				thumbnailView.setVisibility(View.GONE);
 				playbackView.setVisibility(View.VISIBLE);
 	            playbackView.start();
+	            controller.unblockUI();
             }
 		});
 		
