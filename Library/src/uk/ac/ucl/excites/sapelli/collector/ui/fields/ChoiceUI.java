@@ -93,9 +93,9 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	@Override
 	protected boolean isFieldUsingAudioFeedback(boolean withPage)
 	{
-		return true;
+		return !withPage; // do not use if on page (yet)
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#getAudioFeedbackJobs(uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback, boolean)
 	 */

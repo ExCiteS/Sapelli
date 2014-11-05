@@ -157,7 +157,7 @@ public abstract class Field extends JumpSource
 	/**
 	 * @return the decriptionAudioRelativePath
 	 */
-	public String getDecriptionAudioRelativePath()
+	public String getDescriptionAudioRelativePath()
 	{
 		return decriptionAudioRelativePath;
 	}

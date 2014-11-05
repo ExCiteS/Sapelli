@@ -144,9 +144,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return false;
 
-		if(isFieldUsingAudioFeedback(false)) { //TODO onPage?
+		if(isFieldUsingAudioFeedback(false)) {
 			AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
-			afc.play(afc.new PlaybackJob(child.getAnswerDesc(), childView));
+			afc.play(afc.new PlaybackJob(child.getAnswerDescriptionAudioRelativePath(), childView));
 		}
 		else
 			controller.addLogLine("LONG_CLICK", "LongClick on " + choice.getAltText() + " but AudioFeedback is disabled");
@@ -156,7 +156,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	
 	@Override
 	public void cancel() {
-		if (isFieldUsingAudioFeedback(false)) //TODO onPage?
+		if (isFieldUsingAudioFeedback(false))
 			collectorUI.stopAudioFeedback();
 	}
 
@@ -419,17 +419,17 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		switch (audioFeedbackMode) {
 		case LONG_CLICK:
 			
-			return Collections.singletonList(collectorUI.getAudioFeebackController().new PlaybackJob(field.getQuestionDesc()));
+			return Collections.singletonList(collectorUI.getAudioFeebackController().new PlaybackJob(field.getDescriptionAudioRelativePath()));
 			
 		case SEQUENTIAL:
 			List<AudioFeedbackController<View>.PlaybackJob> playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>();
 			
-			playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getQuestionDesc()));
+			playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getDescriptionAudioRelativePath()));
 			List<ChoiceField> children = field.getChildren();
 			
 			for (int i = 0; i < children.size(); i++) {
 				// enqueue each answer:
-				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(children.get(i).getAnswerDesc(), choiceView.getChildAt(i)));
+				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(children.get(i).getAnswerDescriptionAudioRelativePath(), choiceView.getChildAt(i)));
 			}
 			
 			return playlist;
@@ -440,11 +440,4 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			
 		}
 	}
-	
-	@Override
-	protected boolean isFieldUsingAudioFeedback(boolean withPage)
-	{
-		return !withPage;
-	}
-	
 }

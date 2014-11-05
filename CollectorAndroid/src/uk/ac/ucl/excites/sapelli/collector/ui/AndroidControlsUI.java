@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.media.AndroidAudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView.PickerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
@@ -191,8 +191,10 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		// Get the pressed ControlItem
 		ControlItem item = (ControlItem) view.getAdapter().getItem(position);
 
-		if(controller.isAudioFeedbackUsed())
-			controller.getCurrentAudioFeedbackController().playAnswer(item, v); // Audio Feedback
+		if(controller.isAudioFeedbackUsed()) {
+			AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
+			//afc.play(afc.new PlaybackJob(item.getDescriptionAudioRelativePath()), v)); TODO
+		}
 		else
 			controller.addLogLine("LONG_CLICK", "LongClick on " + Control.values()[(int) id].name() + " but AudioFeedback is disabled");
 

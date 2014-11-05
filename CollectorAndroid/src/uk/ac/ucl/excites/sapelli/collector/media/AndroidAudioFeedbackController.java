@@ -109,25 +109,25 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 			audioAvailableSem.acquire();
 
 			PlaybackJob currentTrack = mediaQueue.remove(0); 
-			File file = null; // TODO get file from rel filepath
+			File audioFile = controller.getFileStorageProvider().getProjectSoundFile(controller.getProject(), currentTrack.soundRelativePath);
 			
 			// set the media player's source to the new audio track
 			try {
 				if (queuePlayer == null) {
-					queuePlayer = MediaPlayer.create(context, Uri.fromFile(file));
+					queuePlayer = MediaPlayer.create(context, Uri.fromFile(audioFile));
 					queuePlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 					queuePlayer.setOnCompletionListener(this);
 				}
 				else {
 					queuePlayer.reset(); // reset to idle state
-					queuePlayer.setDataSource(context, Uri.fromFile(file));
+					queuePlayer.setDataSource(context, Uri.fromFile(audioFile));
 					queuePlayer.prepare();
 				}
 				// start it playing:
 				queuePlayer.start();
 
 			} catch (Exception e) {
-				Log.e(TAG,"Error when trying to change media player data source to file "+file.getName(), e);
+				Log.e(TAG,"Error when trying to change media player data source to file "+audioFile.getName(), e);
 				// Playing failed so completed listener will never fire. Allow file to be deleted and playback to continue:
 				playbackCompletedSem.release();
 			}

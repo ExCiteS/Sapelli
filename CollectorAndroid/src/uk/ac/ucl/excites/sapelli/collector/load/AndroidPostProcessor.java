@@ -53,10 +53,10 @@ public class AndroidPostProcessor implements PostProcessor
 		if (ttv == null)
 			ttv = new TextToVoice(context);
 		
-		String filepath =  ttsTask.getAudioFileRelativePath(); //TODO need absolute
+		String filepath = (fileStorageProvider.getProjectSoundFile(project, ttsTask.getAudioFileRelativePath())).getAbsolutePath();
 		
 		try {
-	        ttv.processSpeechToFile(ttsTask.getTextToSynthesise(), filepath);
+	        ttv.processSpeechToFile(ttsTask.getTextToSynthesise(), filepath); //TODO deprecated as of Lollipop
         } catch (TTVFailedException e) {
 	        warningKeeper.addWarning("Unable to synthesise text to speech: \""+e.getText()+"\". Skipping this text without creating an audio file.");
         }

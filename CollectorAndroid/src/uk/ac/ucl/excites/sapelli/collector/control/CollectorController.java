@@ -30,7 +30,6 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -300,7 +299,7 @@ public class CollectorController extends Controller implements LocationListener,
 	
 	public boolean isAudioFeedbackUsed()
 	{
-		return currFormSession.form.getAudioFeedback() != AudioFeedback.NONE;
+		return currFormSession.form.isUsingAudioFeedback();
 	}
 
 	/**
