@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +38,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
-import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
-import uk.ac.ucl.excites.sapelli.storage.eximport.xml.XMLRecordsExporter;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.content.Context;
@@ -54,6 +51,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.util.SparseArray;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.Window;
 import android.view.WindowManager;
 
@@ -158,6 +156,8 @@ public class CollectorActivity extends ProjectActivity
 	@Override
 	protected void onResume()
 	{
+		//Log.d(TAG, "onResume()");
+		
 		// super:
 		super.onResume();
 
@@ -204,7 +204,7 @@ public class CollectorActivity extends ProjectActivity
 			
 			// Show demo disclaimer if needed:
 			if(app.getBuildInfo().isDemoBuild())
-				showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.\nPush the volume-down key to export data.");
+				showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
 			
 			// Enable audio feedback
 			controller.enableAudioFeedback();
@@ -242,10 +242,7 @@ public class CollectorActivity extends ProjectActivity
 				collectorView.getControlsUI().handleControlEvent(Control.FORWARD, true);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
-				if(app.getBuildInfo().isDemoBuild())
-					//TODO export
-					showInfoDialog("Exported " + exportDemoRecords(true) + " records to an XML file in " + fileStorageProvider.getProjectDataFolder(project, false) + ".");
-			DeviceControl.safeDecreaseMediaVolume(this);
+				DeviceControl.safeDecreaseMediaVolume(this);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_UP:
 				DeviceControl.increaseMediaVolume(this);
@@ -272,26 +269,21 @@ public class CollectorActivity extends ProjectActivity
 		return super.onKeyUp(keyCode, event);
 	}
 	
-	private int exportDemoRecords(boolean delete)
+	@Override
+	public boolean dispatchTouchEvent(MotionEvent event)
 	{
-		int count = 0;
-		if(recordStore != null && project != null)
+		if(controller.isUIBlocked())
 		{
-			Log.d(TAG, "Exporting records...");
-			try
-			{
-				(new XMLRecordsExporter(fileStorageProvider.getProjectDataFolder(project, true))).export(recordStore.retrieveAllRecords(), "DemoRecords");
-				if(delete)
-					recordStore.deleteAllRecords();
-			}
-			catch(Exception e)
-			{
-				Log.e(TAG, "Error upon exporting records", e);
-			}
+			controller.addLogLine("BLOCKED_MOTION_EVENT", event.toString());
+			return false;
 		}
-		return count;
+		else
+		{
+			controller.addLogLine("DISPATCHED_MOTION_EVENT", event.toString());
+			return super.dispatchTouchEvent(event);
+		}
 	}
-	
+
 	public void startAudioRecorderApp(AndroidAudioUI audioUI)
 	{
 		// TODO call native audio recorder (maybe look at how ODK Collect does it)
@@ -451,6 +443,8 @@ public class CollectorActivity extends ProjectActivity
 	@Override
 	protected void onPause()
 	{
+		//Log.d(TAG, "onPause()");
+		
 		// set timeout timer:
 		if(!pausedForActivityResult)
 		{
@@ -463,14 +457,15 @@ public class CollectorActivity extends ProjectActivity
 				{ // time's up!
 					collectorView.cancelCurrentField();
 					if(controller != null)
-						controller.discard(); // don't make controller null so we can restart project in onResume()
+						controller.discard(); // discards current record, stops GPS, etc.
+					// don't make controller null so we can restart the same project in onResume()
 					timedOut = true;
 					Log.i(TAG, "Time-out reached");
 				}
 			};
 			exitFuture = scheduleTaskExecutor.schedule(exitTask, TIMEOUT_MIN, TimeUnit.MINUTES);
 
-			Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
+			//Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
 
 		// Release audio feedback resources

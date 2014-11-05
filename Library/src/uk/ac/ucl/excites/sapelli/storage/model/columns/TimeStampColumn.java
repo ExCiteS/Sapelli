@@ -171,7 +171,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	
 	private TimeStampColumn(String name, IntegerRangeMapping timeMapping, boolean keepMS, boolean keepLocalTimezone, boolean strictHighBound, boolean optional, boolean addVirtuals)
 	{
-		super(TimeStamp.class, name, optional);
+		super(name, optional);
 		this.timeMapping = timeMapping;
 		this.keepMS = keepMS;
 		this.keepLocalTimezone = keepLocalTimezone;
@@ -356,6 +356,12 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 		hash = 31 * hash + (keepLocalTimezone ? 0 : 1);
 		hash = 31 * hash + (strict ? 0 : 1);
 		return hash;
+	}
+
+	@Override
+	public Class<TimeStamp> getType()
+	{
+		return TimeStamp.class;
 	}
 	
 }

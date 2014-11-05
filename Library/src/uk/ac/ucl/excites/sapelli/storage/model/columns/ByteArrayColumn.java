@@ -51,7 +51,7 @@ public class ByteArrayColumn extends Column<byte[]>
 	 */
 	public ByteArrayColumn(String name, boolean optional)
 	{
-		super(byte[].class, name, optional);
+		super(name, optional);
 		this.sizeField = new IntegerRangeMapping(0, Integer.MAX_VALUE);
 	}
 
@@ -177,6 +177,12 @@ public class ByteArrayColumn extends Column<byte[]>
 		int hash = super.hashCode();
 		hash = 31 * hash + sizeField.hashCode();
 		return hash;
+	}
+
+	@Override
+	public Class<byte[]> getType()
+	{
+		return byte[].class;
 	}
 
 }

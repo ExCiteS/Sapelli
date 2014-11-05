@@ -30,7 +30,6 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
@@ -38,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.util.AudioPlayer;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
@@ -53,6 +53,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.View;
 
 import com.crashlytics.android.Crashlytics;
 
@@ -87,7 +88,7 @@ public class CollectorController extends Controller implements LocationListener,
 		// Set/change last running project:
 		Crashlytics.setString(CollectorApp.PROPERTY_LAST_PROJECT, project.toString(true));
 		System.getProperties().setProperty(CollectorApp.PROPERTY_LAST_PROJECT, project.toString(true));
-		
+
 		// Get Device ID (as a CRC32 hash):
 		try
 		{
@@ -98,27 +99,18 @@ public class CollectorController extends Controller implements LocationListener,
 			activity.showErrorDialog("DeviceID has not be initialised!", true);
 		}
 	}
-
-	@Override
-	public boolean enterOrientationField(OrientationField of, FieldParameters arguments)
-	{
-		if(orientationSensor == null)
-			orientationSensor = new OrientationSensor(activity);		
-		orientationSensor.start(this); // start listening for orientation updates
-		return false; // there is no UI needed for this (for now)
-	}
-
+	
 	@Override
 	public uk.ac.ucl.excites.sapelli.storage.types.Location getCurrentBestLocation()
 	{
 		return LocationUtils.getSapelliLocation(currentBestLocation); // passing null returns null
 	}
-	
+
 	@Override
 	protected void saveRecordAndAttachments()
-	{	
-		super.saveRecordAndAttachments(); //!!!
-		
+	{
+		super.saveRecordAndAttachments(); // !!!
+
 		// Also print the record on Android Log:
 		if(currFormSession.form.isProducesRecords())
 		{
@@ -162,7 +154,7 @@ public class CollectorController extends Controller implements LocationListener,
 		if(textToVoice != null)
 			textToVoice.stop();
 	}
-	
+
 	@Override
 	protected void playSound(File soundFile)
 	{
@@ -171,17 +163,36 @@ public class CollectorController extends Controller implements LocationListener,
 		audioPlayer.play(soundFile);
 	}
 
+	@Override
+	protected void startOrientationListener()
+	{
+		if(orientationSensor == null)
+			orientationSensor = new OrientationSensor(activity);
+		orientationSensor.start(this); // start listening for orientation updates
+	}
+	
+	@Override
+	protected void stopOrientationListener()
+	{
+		if(orientationSensor != null)
+			orientationSensor.stop();
+	}
+	
 	public void onOrientationChanged(Orientation orientation)
 	{
-		if(getCurrentField() instanceof OrientationField)
+		if(orientation == null)
+			return;
+		// Stop listening for orientation updates:
+		stopOrientationListener();
+		// Use orientation:
+		if(getCurrentField() instanceof OrientationField) // !!!
 		{
 			((OrientationField) getCurrentField()).storeOrientation(currFormSession.record, orientation);
-			orientationSensor.stop(); // stop listening for updates
 			goForward(false);
 		}
 	}
 
-	public void startLocationListener(List<LocationField> locFields)
+	protected void startLocationListener(List<LocationField> locFields)
 	{
 		if(locFields.isEmpty())
 			return;
@@ -200,7 +211,7 @@ public class CollectorController extends Controller implements LocationListener,
 			if(!locationManager.isProviderEnabled(provider))
 			{
 				activity.showOKDialog(R.string.app_name, activity.getString(R.string.enableLocationProvider, provider), true, new Runnable()
-				{	// TODO /how will not illiterates deal with this, and what if the Sapelli launcher is used (settings screen will be inaccessible)?
+				{ 	// TODO how will non/illiterates deal with this, and what if the Sapelli launcher is used (settings screen will be inaccessible)?
 					@Override
 					public void run()
 					{
@@ -211,7 +222,7 @@ public class CollectorController extends Controller implements LocationListener,
 		}
 	}
 
-	public void stopLocationListener()
+	protected void stopLocationListener()
 	{
 		if(locationManager != null)
 			locationManager.removeUpdates(this);
@@ -225,11 +236,11 @@ public class CollectorController extends Controller implements LocationListener,
 			currentBestLocation = location;
 			// check if we can/need to use the location now:
 			if(getCurrentField() instanceof LocationField)
-			{	// user is currently waiting for a location for the currFormSession.currField
+			{ // user is currently waiting for a location for the currFormSession.currField
 				LocationField lf = (LocationField) getCurrentField();
 				// try to store location:
 				if(lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(location)))
-				{ 	// location successfully stored:
+				{ // location successfully stored:
 					if(currFormSession.form.getLocationFields(true).isEmpty())
 						stopLocationListener(); // there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)
 					goForward(false); // continue (will leave waiting screen & stop the timeout timer)
@@ -280,8 +291,7 @@ public class CollectorController extends Controller implements LocationListener,
 	{
 		activity.disableTimerTrigger(trigger);
 	}
-	
-	
+
 	@Override
 	protected void vibrate(int durationMS)
 	{
@@ -345,12 +355,36 @@ public class CollectorController extends Controller implements LocationListener,
 		return deviceIDHash;
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 * 
 	 * @see uk.ac.ucl.excites.sapelli.collector.control.Controller#getElapsedMillis()
 	 */
 	@Override
 	protected long getElapsedMillis()
 	{
 		return SystemClock.elapsedRealtime();
+	}
+	/**
+	 * Controls the way that clicked views behave (i.e. animate) and interact
+	 * 
+	 * @param clickView
+	 * @param action
+	 */
+	public void clickView(View clickView, Runnable action)
+	{
+		// Execute the "press" animation if allowed, then perform the action:
+		if(getCurrentForm().isClickAnimation())
+		{
+			// execute animation and the action afterwards
+			(new ClickAnimator(action, clickView, this)).execute();
+		}
+		else
+		{
+			// Block the UI before running the action and unblock it afterwards
+			blockUI();
+			action.run();
+			unblockUI();
+		}
 	}
 }

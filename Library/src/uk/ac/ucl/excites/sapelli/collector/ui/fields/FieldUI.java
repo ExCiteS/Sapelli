@@ -18,9 +18,14 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
+import java.util.Collections;
+import java.util.List;
+
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
@@ -93,6 +98,9 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	protected abstract V getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord);
 	
+	/**
+	 * Hides/cancels the fieldUI
+	 */
 	public void hideField()
 	{
 		// mark fieldUI as *not* currently shown:
@@ -244,7 +252,6 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	}
 	
 	/**
-	 *  
 	 * @return whether of not to show the Forward control above this fieldUI
 	 */
 	protected abstract boolean isShowForward();
@@ -263,5 +270,91 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		// by default, do not consume events:
 	    return false;
     }
+
+	/**
+	 * Tells whether this FieldUI needs to have its onDisplay() method called when it appears on the screen.
+	 * 
+	 * @param withPage whether the field is being display as part of a page (true) or on its own (false)
+	 * @return whether or not onDisplay() must be called when the FieldUI is displayed to the user
+	 */
+	public /*final except for PageUI*/ boolean informOnDisplay(boolean withPage)
+	{
+		return isUsingAudioFeedback(withPage) || informOnDisplayNonAudioFeedback(withPage);
+	}
+	
+	/**
+	 * Behaviour to be executed when the FieldUI is displayed on the screen.
+	 * Only called when informOnDisplay(boolean) returned true (for the same withPage value). 
+	 * 
+	 * @param withPage whether the field is being display as part of a page (true) or on its own (false)
+	 */
+	public /*final except for PageUI*/ void onDisplay(boolean withPage)
+	{
+		// Audio feedback:
+		if(isUsingAudioFeedback(withPage))
+			// Play (sequence of) audio feedback jobs:
+			collectorUI.getAudioFeebackController().play(getAudioFeedbackJobs(field.getForm().getAudioFeedback(), withPage));
+		// Other onDisplay behaviour:
+		if(informOnDisplayNonAudioFeedback(withPage))
+			onDisplayNonAudioFeedback(withPage);
+	}
+	
+	/**
+	 * Whether or not the field (and the form its part of) use audio feedback. 
+	 * 
+	 * @param withPage
+	 * @return
+	 */
+	public final boolean isUsingAudioFeedback(boolean withPage)
+	{
+		return field.getForm().isUsingAudioFeedback() && isFieldUsingAudioFeedback(withPage);
+	}
+	
+	/**
+	 * To be overridden - always together with getAudioFeedbackJobs()! - in subclasses that support field-specific audio feedback. 
+	 * This method is only called if the form the field is on uses audio feedback, so when this method is overridden that should not be checked again.
+	 * 
+	 * @param withPage whether the field is being display as part of a page (true) or on its own (false)
+	 * @return whether the concrete FieldUI implementation supports/uses audio feedback
+	 */
+	protected boolean isFieldUsingAudioFeedback(boolean withPage)
+	{
+		return false; // not using audio feedback by default
+	}
+	
+	/**
+	 * To be overridden - always together with isFieldUsingAudioFeedback(boolean)! - in subclasses that support field-specific audio feedback.
+	 * 
+	 * @param audioFeedbackMode the audioFeedback mode of the form
+	 * @param withPage whether the field is being display as part of a page (true) or on its own (false)
+	 * @return
+	 */
+	protected List<AbstractAudioFeedbackController<V>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
+	{
+		return Collections.<AbstractAudioFeedbackController<V>.PlaybackJob> emptyList(); // no jobs by default
+	}
+	
+	/**
+	 * To be overridden - always together with onDisplayNonAudioFeedback(boolean) - in subclasses that may need to
+	 * execute additional, non-audiofeeback, behaviour upon the displaying of the fieldUI on the screen.
+	 * 
+	 * @param withPage whether the field is being display as part of a page (true) or on its own (false)
+	 * @return
+	 */
+	protected boolean informOnDisplayNonAudioFeedback(boolean withPage)
+	{
+		return false; // inform not needed by default
+	}
+	
+	/**
+	 * To be overridden - always together with informOnDisplayNonAudioFeedback(boolean) - in subclasses that may need to
+	 * execute additional, non-audiofeeback, behaviour upon the displaying of the fieldUI on the screen.
+	 * 
+	 * @param withPage
+	 */
+	protected void onDisplayNonAudioFeedback(boolean withPage)
+	{
+		// does nothing by default
+	}
 	
 }

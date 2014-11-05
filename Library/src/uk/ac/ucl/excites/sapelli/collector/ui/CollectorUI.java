@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
+import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
@@ -70,8 +71,6 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 	
 	public PageUI<V, UI> createPageUI(Page page);
 	
-	public ControlsUI<V, UI> createControlsUI();
-
 	public void setField(Field currentField);
 	
 	public FieldUI<?, V, UI> getCurrentFieldUI();
@@ -81,5 +80,7 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 	public int getScreenWidthPx();
 	
 	public int getScreenHeightPx();
+	
+	public AbstractAudioFeedbackController<V> getAudioFeebackController();
 	
 }

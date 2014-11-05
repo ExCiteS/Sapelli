@@ -118,7 +118,7 @@ public class SMSSender implements SMSClient
 		//Try sending:
 		try
 		{
-			Log.d(TAG, "Sending binary SMS, content hash: " + BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(binarySMS.getBytes()).toByteArray()));
+			Log.d(TAG, "Sending binary SMS, content hash: " + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(binarySMS.getBytes())));
 			smsManager.sendDataMessage(	receiver.getPhoneNumber(),
 										null,
 										SMS_PORT,

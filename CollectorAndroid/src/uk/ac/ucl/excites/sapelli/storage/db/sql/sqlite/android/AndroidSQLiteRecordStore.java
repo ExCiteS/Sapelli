@@ -100,6 +100,13 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			throw new DBException(sqlE);
 		}
 	}
+
+	@Override
+	protected int executeSQLReturnAffectedRows(String sql) throws DBException
+	{
+		executeSQL(sql);
+		return getNumberOfAffectedRows();
+	}
 	
 	/**
 	 * In SQlite basic transactions (those controlled with BEGIN...COMMIT/ROLLBACK) cannot

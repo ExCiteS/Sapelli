@@ -16,18 +16,20 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.xml;
+package uk.ac.ucl.excites.sapelli.collector.load.parse;
 
 import java.io.File;
 import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
 import org.xml.sax.SAXException;
 
+import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessTask;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.TransmissionSettings;
@@ -93,12 +95,11 @@ public class ProjectParser extends DocumentParser
 	private String startFormID;
 	private HashMap<Relationship, String> relationshipToFormID;
 	private HashMap<Relationship, List<ConstraintDescription>> relationshipToConstraints;
+	private List<PostProcessTask> postProcessingTasks;
 
 	public ProjectParser()
 	{
 		super();
-		this.relationshipToFormID = new HashMap<Relationship, String>();
-		this.relationshipToConstraints = new HashMap<Relationship, List<ConstraintDescription>>();
 	}
 
 	public Project parseProject(File xmlFile) throws Exception
@@ -113,8 +114,12 @@ public class ProjectParser extends DocumentParser
 		project = null;
 		fingerPrint = null;
 		startFormID = null;
-		relationshipToFormID.clear();
-		relationshipToConstraints.clear();
+		if(relationshipToFormID != null)
+			relationshipToFormID.clear();
+		if(relationshipToConstraints != null)
+			relationshipToConstraints.clear();
+		if(postProcessingTasks != null)
+			postProcessingTasks.clear();
 		
 		// Get XML hash:
 		UnclosableBufferedInputStream ubInput = new UnclosableBufferedInputStream(input); // decorate stream to avoid it from being closed and to ensure we can use mark/reset
@@ -207,8 +212,7 @@ public class ProjectParser extends DocumentParser
 		if(qName.equals(TAG_PROJECT) || qName.equals(TAG_PROJECT_V1X))
 		{
 			clearSubtreeParsers();
-			
-			if(project.getTransmissionSettings() == null)
+						if(project.getTransmissionSettings() == null)
 			{
 				project.setTransmissionSettings(new TransmissionSettings());
 				addWarning("No transmission settings found, defaults are used");
@@ -225,14 +229,15 @@ public class ProjectParser extends DocumentParser
 				//else: first form of project will remain the startForm
 				
 				// Resolve form relationships:
-				for(Entry<Relationship, String> entry : relationshipToFormID.entrySet())
-				{
-					Relationship rel = entry.getKey();
-					Form relatedForm = project.getForm(entry.getValue()); // uses equalsIgnoreCase()
-					if(relatedForm == null)
-						throw new SAXException("Relationship \"" + rel.getID() + "\" in form \"" + rel.getForm().getID() + "\" refers to unknown related form \"" + entry.getValue() + "\".");
-					rel.setRelatedForm(relatedForm); // will trigger initialisation of Schema of relatedForm (this should not be a problem, it will not be done again below)
-				}
+				if(relationshipToFormID != null)
+					for(Entry<Relationship, String> entry : relationshipToFormID.entrySet())
+					{
+						Relationship rel = entry.getKey();
+						Form relatedForm = project.getForm(entry.getValue()); // uses equalsIgnoreCase()
+						if(relatedForm == null)
+							throw new SAXException("Relationship \"" + rel.getID() + "\" in form \"" + rel.getForm().getID() + "\" refers to unknown related form \"" + entry.getValue() + "\".");
+						rel.setRelatedForm(relatedForm); // will trigger initialisation of Schema of relatedForm (this should not be a problem, it will not be done again below)
+					}
 				
 				// Initialise forms...
 				for(Form form : project.getForms())
@@ -247,22 +252,24 @@ public class ProjectParser extends DocumentParser
 						throw new SAXException("This project contains more data-producing Forms than allowed (maximum: " + Project.MAX_RECORD_PRODUCING_FORMS + ").");
 					}
 					addWarnings(form.getWarnings()); // !!!
+					form.clearWarnings();
 				}
 				// Seal project model:
 				project.getModel().seal();
 				
 				// Resolve relationship constraints:
-				for(Entry<Relationship, List<ConstraintDescription>> entry : relationshipToConstraints.entrySet())
-					for(ConstraintDescription constrDesc : entry.getValue())
-						try
-						{
-							Relationship rel = entry.getKey();
-							rel.addConstraint(constrDesc.resolve(rel.getRelatedForm()));
-						}
-						catch(Exception e)
-						{
-							throw new SAXException("Error upon resolving constraint on Relationship \"" + entry.getKey().getID() + "\"", e);
-						}
+				if(relationshipToConstraints != null)
+					for(Entry<Relationship, List<ConstraintDescription>> entry : relationshipToConstraints.entrySet())
+						for(ConstraintDescription constrDesc : entry.getValue())
+							try
+							{
+								Relationship rel = entry.getKey();
+								rel.addConstraint(constrDesc.resolve(rel.getRelatedForm()));
+							}
+							catch(Exception e)
+							{
+								throw new SAXException("Error upon resolving constraint on Relationship \"" + entry.getKey().getID() + "\"", e);
+							}
 			}
 		}
 	}
@@ -289,13 +296,26 @@ public class ProjectParser extends DocumentParser
 	 * @param relationship
 	 * @param formID
 	 */
-	protected void addRelationship(Relationship relationship, String formID)
+	/*package*/ void addRelationship(Relationship relationship, String formID)
 	{
+		if(relationshipToFormID == null)
+			relationshipToFormID = new HashMap<Relationship, String>();
 		relationshipToFormID.put(relationship, formID);
 	}
 	
-	protected void addRelationshipConstraint(Relationship relationship, String columnName, String comparisonAttrib, String valueString) throws SAXException
+	/**
+	 * Called from {@link FormParser}
+	 * 
+	 * @param relationship
+	 * @param columnName
+	 * @param comparisonAttrib
+	 * @param valueString
+	 * @throws SAXException
+	 */
+	/*package*/ void addRelationshipConstraint(Relationship relationship, String columnName, String comparisonAttrib, String valueString) throws SAXException
 	{
+		if(relationshipToConstraints == null)
+			relationshipToConstraints = new HashMap<Relationship, List<ConstraintDescription>>();
 		if(!relationshipToConstraints.containsKey(relationship))
 			relationshipToConstraints.put(relationship, new ArrayList<ConstraintDescription>());
 		// Add constraint description to be resolved later:
@@ -357,5 +377,25 @@ public class ProjectParser extends DocumentParser
 		}
 		
 	}
+	
+	/**
+	 * Called from {@link FormParser}
+	 * 
+	 * @param task
+	 */
+	/*package*/ void addPostProcessingTask(PostProcessTask task)
+	{
+		if(postProcessingTasks == null)
+			postProcessingTasks = new ArrayList<PostProcessTask>();
+		postProcessingTasks.add(task);
+	}
 
+	/**
+	 * @return the postLoadingTasks
+	 */
+	public List<PostProcessTask> getPostProcessingTasks()
+	{
+		return postProcessingTasks != null ? postProcessingTasks : Collections.<PostProcessTask> emptyList();
+	}
+	
 }

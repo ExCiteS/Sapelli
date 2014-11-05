@@ -53,7 +53,7 @@ public class LocationColumn extends RecordColumn<Location>
 	 */
 	public LocationColumn(String name, boolean optional, boolean doublePrecision, boolean storeAltitude, boolean storeBearing, boolean storeSpeed, boolean storeAccuracy, boolean storeTime, boolean storeProvider)
 	{
-		super(Location.class, name, Location.SCHEMA, optional);
+		super(name, Location.SCHEMA, optional);
 		// "Skip columns": skip the things we don't want to store binary:
 		if(!storeAltitude)
 			addSkipColumn(Location.COLUMN_ALTITUDE);
@@ -149,6 +149,12 @@ public class LocationColumn extends RecordColumn<Location>
 			super.accept(visitor, !visitor.skipNonBinarySerialisedLocationSubColumns());
 		else
 			visitor.visit(this);
+	}
+
+	@Override
+	public Class<Location> getType()
+	{
+		return Location.class;
 	}
 	
 }

@@ -24,6 +24,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
@@ -40,13 +41,6 @@ public abstract class Field extends JumpSource
 {
 	
 	//Statics----------------------------------------------
-	static public enum Optionalness
-	{
-	    ALWAYS,
-	    NOT_IF_REACHED,
-	    NEVER
-	}
-	
 	static public String captionToID(String prefix, Form form, String caption)
 	{	
 		return prefix + (caption.trim().isEmpty() ? form.getFields().size() : Column.SanitiseName(caption.trim())); // remove chars that are illegal in Column (& XML) names
@@ -60,7 +54,7 @@ public abstract class Field extends JumpSource
 	static public final boolean DEFAULT_SKIP_ON_BACK = false;
 	static public final boolean DEFAULT_SHOW_ON_CREATE = true;
 	static public final boolean DEFAULT_SHOW_ON_EDIT = true;
-	static public final Optionalness DEFAULT_OPTIONAL = Optionalness.NOT_IF_REACHED;
+	static public final boolean DEFAULT_OPTIONAL = false;
 	static public final boolean DEFAULT_NO_COLUMN = false;
 	static public final boolean DEFAULT_EDITABLE = true;
 	static public final String DEFAULT_BACKGROUND_COLOR = "#FFFFFF"; //white
@@ -74,7 +68,7 @@ public abstract class Field extends JumpSource
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	protected boolean showOnCreate = DEFAULT_SHOW_ON_CREATE;
 	protected boolean showOnEdit = DEFAULT_SHOW_ON_EDIT;
-	protected Optionalness optional = DEFAULT_OPTIONAL;
+	protected boolean optional = DEFAULT_OPTIONAL;
 	protected boolean noColumn = DEFAULT_NO_COLUMN;
 	protected boolean editable = DEFAULT_EDITABLE;
 	protected String backgroundColor = DEFAULT_BACKGROUND_COLOR;
@@ -157,21 +151,18 @@ public abstract class Field extends JumpSource
 	{
 		this.noColumn = noColumn;
 	}
-
-	/**
-	 * @return the optional
-	 */
-	public Optionalness getOptional()
-	{
-		return optional;
-	}
-
+	
 	/**
 	 * @param optional the optional to set
 	 */
-	public void setOptional(Optionalness optionalness)
+	public void setOptional(boolean optional)
 	{
-		this.optional = optionalness;
+		this.optional = optional;
+	}
+
+	public boolean isOptional()
+	{
+		return optional;
 	}
 
 	/**
@@ -458,7 +449,7 @@ public abstract class Field extends JumpSource
 		hash = 31 * hash + (skipOnBack ? 0 : 1);
 		hash = 31 * hash + (showOnCreate ? 0 : 1);
 		hash = 31 * hash + (showOnEdit ? 0 : 1);
-		hash = 31 * hash + optional.ordinal();
+		hash = 31 * hash + (optional ? 0 : 1);
 		hash = 31 * hash + (noColumn ? 0 : 1);
 		hash = 31 * hash + (editable ? 0 : 1);
 		hash = 31 * hash + backgroundColor.hashCode();
@@ -471,12 +462,12 @@ public abstract class Field extends JumpSource
 	 * 
 	 *  This method uses double-dispatch: the actual Field-type-specific behaviour will be defined in the class implementing the Controller interface.
 	 * 
-	 * @param controller
+	 * @param visitor a FieldVisitor (usually a Controller)
 	 * @param arguments arguments passed from previous field (should never be null, but will often be the FieldParameters.EMPTY object)
 	 * @param withPage whether or not the field is entered because the page containing it entered (true) or because it is entered on its own (false)
 	 * @return whether or not a UI update is required after entering the field)
 	 */
-	public abstract boolean enter(Controller controller, FieldParameters arguments, boolean withPage);
+	public abstract boolean enter(FieldVisitor visitor, FieldParameters arguments, boolean withPage);
 	
 	/**
 	 * Returns a FieldUI object to represent this Field.

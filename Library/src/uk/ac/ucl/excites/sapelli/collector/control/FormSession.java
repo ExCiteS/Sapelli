@@ -59,7 +59,7 @@ public class FormSession
 	private final Stack<FieldWithArguments> fieldAndArgumentHistory;
 	private FieldWithArguments currFieldAndArguments = null;
 	private boolean currFieldDisplayed = false;
-	private Map<Field,Boolean> runtimeEnabled = null; // only instantiated when needed
+	private Map<Field, Boolean> runtimeEnabled = null; // only instantiated when needed
 	private List<File> addedAttachments; // list containing files to be added
 	private List<File> discardedAttachments; // list containing files to be deleted
 	

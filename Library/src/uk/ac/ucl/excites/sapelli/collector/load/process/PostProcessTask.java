@@ -16,22 +16,18 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.io;
+package uk.ac.ucl.excites.sapelli.collector.load.process;
 
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 
 /**
- * Callbacks for ProjectLoader
- * 
  * @author mstevens
+ *
  */
-public interface ProjectLoaderCallback
+public interface PostProcessTask
 {
 
-	/**
-	 * @param loadedProject
-	 * @throws IllegalArgumentException if something is wrong
-	 */
-	public void checkProject(Project loadedProject) throws IllegalArgumentException;
-		
+	public void execute(PostProcessor executor, Project project, WarningKeeper warningKeeper) throws Exception;
+	
 }

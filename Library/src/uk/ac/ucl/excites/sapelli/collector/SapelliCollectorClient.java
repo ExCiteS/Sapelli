@@ -187,7 +187,7 @@ public class SapelliCollectorClient extends TransmissionClient
 	}
 	
 	@Override
-	public void recordDeleted(RecordReference record)
+	public void recordDeleted(RecordReference recordReference)
 	{
 		// TODO Auto-generated method stub
 		

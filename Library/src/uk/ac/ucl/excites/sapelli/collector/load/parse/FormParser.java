@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.xml;
+package uk.ac.ucl.excites.sapelli.collector.load.parse;
 
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -27,9 +27,9 @@ import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
+import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.JumpSource;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
@@ -51,7 +51,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
@@ -64,7 +63,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
  * 
  * @author mstevens
  */
-public class FormParser extends SubtreeParser
+public class FormParser extends SubtreeParser<ProjectParser>
 {
 	
 	// STATICS--------------------------------------------------------
@@ -74,7 +73,6 @@ public class FormParser extends SubtreeParser
 	static private final String TAG_CHOICE = "Choice";
 	static private final String TAG_AUDIO = "Audio";
 	static private final String TAG_PHOTO = "Photo";
-	static private final String TAG_VIDEO = "Video";
 	static private final String TAG_LOCATION = "Location";
 	static private final String TAG_ORIENTATION = "Orientation";
 	static public final String TAG_BELONGS_TO = "BelongsTo";
@@ -167,7 +165,6 @@ public class FormParser extends SubtreeParser
 	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
 	static private final String ATTRIBUTE_BUTTON_COLUMN = "column";
 	static private final String ATTRIBUTE_MEDIA_MAX = "max";
-	static private final String ATTRIBUTE_MEDIA_REVIEW = "review";
 	static private final String ATTRIBUTE_TRIGGER_KEY = "key";
 	static private final String ATTRIBUTE_TRIGGER_KEYS = "keys";
 	static private final String ATTRIBUTE_TRIGGER_FIXED_TIMER = "fixedTimer";
@@ -228,7 +225,7 @@ public class FormParser extends SubtreeParser
 				throw new SAXException("Forms cannot be nested!");
 			
 			String id = attributes.getRequiredString(TAG_FORM, true, false, ATTRIBUTE_FORM_ID, ATTRIBUTE_FORM_NAME); // "name" is v1.x syntax but still accepted in v2.0 (yet "id" is preferred)
-			ProjectParser.Format format = ((ProjectParser) owner).getFormat();
+			ProjectParser.Format format = owner.getFormat();
 			if(format == ProjectParser.Format.v1_x)
 			{	// Backwards compatibility
 				if(project.getForms().isEmpty()) // only for 1st, and assumed only, currentForm
@@ -280,10 +277,12 @@ public class FormParser extends SubtreeParser
 			{
 				addWarning("Invalid '" + ATTRIBUTE_FORM_SCREEN_TRANSITION + "' attribute value on <" + TAG_FORM + ">. Default Screen Transition is going to be used.");
 			}
-			// Obfuscate Media Files:
+			// Add AudioFeedbakc:
 			try
 			{
 				currentForm.setAudioFeedback(attributes.getString(ATTRIBUTE_FORM_AUDIO_FEEDBACK, Form.DEFAULT_AUDIO_FEEDBACK.name(), true, false));
+				if(currentForm.getAudioFeedback() != null && currentForm.getAudioFeedback() != AudioFeedback.NONE)
+					addWarning("Older Android devices may require SpeechSynthesis Data Installer to be installed for text-to-speech to work");
 			}
 			catch(IllegalArgumentException iae)
 			{
@@ -375,7 +374,6 @@ public class FormParser extends SubtreeParser
 				newMediaField(photoField, attributes);
 				photoField.setUseNativeApp(attributes.getBoolean("useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP));
 				// Camera options (only used when useNativeApp=false):
-				photoField.setShowReview(attributes.getBoolean(ATTRIBUTE_MEDIA_REVIEW, MediaField.DEFAULT_SHOW_REVIEW));
 				photoField.setUseFrontFacingCamera(attributes.getBoolean("useFrontCamera", PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA));
 				String flashText = attributes.getValue("flash");
 				PhotoField.FlashMode flash = PhotoField.DEFAULT_FLASH_MODE;
@@ -394,20 +392,6 @@ public class FormParser extends SubtreeParser
 				photoField.setCaptureButtonImageRelativePath(attributes.getString("captureImg", null, false, false));
 				photoField.setApproveButtonImageRelativePath(attributes.getString("approveImg", null, false, false));
 				photoField.setDiscardButtonImageRelativePath(attributes.getString("discardImg", null, false, false));
-			}
-			// <Video>
-			else if(qName.equals(TAG_VIDEO))
-			{
-				VideoField videoField = new VideoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_PHOTO, false));
-				newMediaField(videoField, attributes);
-				videoField.setUseNativeApp(attributes.getBoolean("useNativeApp", VideoField.DEFAULT_USE_NATIVE_APP));
-				// Camera options (only used when useNativeApp=false):
-				videoField.setUseFrontFacingCamera(attributes.getBoolean("useFrontCamera", VideoField.DEFAULT_USE_FRONT_FACING_CAMERA));
-				// cannot have flash when capturing video
-				// Custom buttons (only used when useNativeApp=false):
-				videoField.setCaptureButtonImageRelativePath(attributes.getString("captureImg", null, false, false));
-				videoField.setApproveButtonImageRelativePath(attributes.getString("approveImg", null, false, false));
-				videoField.setDiscardButtonImageRelativePath(attributes.getString("discardImg", null, false, false));
 			}
 			// <Audio>
 			else if(qName.equals(TAG_AUDIO))
@@ -443,13 +427,13 @@ public class FormParser extends SubtreeParser
 				newField(btn, attributes);
 				try
 				{
-					btn.setColumnType(attributes.getString(ATTRIBUTE_BUTTON_COLUMN, ButtonField.DEFAULT_COLUMN.name(), true, false));
+					btn.setColumnType(attributes.getString(ATTRIBUTE_BUTTON_COLUMN, ButtonField.DEFAULT_COLUMN_TYPE.name(), true, false));
 				}
 				catch(IllegalArgumentException iae)
 				{
 					throw new SAXException("Invalid '" + ATTRIBUTE_BUTTON_COLUMN + "' attribute value on <" + TAG_BUTTON + ">.", iae);
 				}
-				if(btn.getColumnType() == ButtonColumnType.DATETIME && btn.getOptional() != Optionalness.ALWAYS)
+				if(btn.getColumnType() == ButtonColumnType.DATETIME && !btn.isOptional())
 					addWarning("Button \"" + btn.getID() + "\" has a DateTime column but is not optional, this means the button will *have* to be pressed.");
 			}
 			// <Label>
@@ -467,15 +451,15 @@ public class FormParser extends SubtreeParser
 				newField(txtField, attributes); // first set general things like optionality (needed for getDefaultMinLength() below).
 				
 				// Deal with minimum & maximum length:
-				if(txtField.getOptional() != Optionalness.ALWAYS && !attributes.contains(ATTRIBUTE_TEXT_MINLENGTH))
-					addWarning("Text field \"" + txtField.getID() + "\" is non-optional but no minimal length is defined, therefore the minimum will be set to " + TextBoxField.DEFAULT_MIN_LENGTH_NON_OPTIONAL + " character(s). If this is not appropriate then please use the '" + ATTRIBUTE_TEXT_MINLENGTH + "' attribute to set the minimum length explicitly.");				
-				txtField.setMinMaxLength(	attributes.getInteger(ATTRIBUTE_TEXT_MINLENGTH, txtField.getDefaultMinLength()),
+				if(!txtField.isOptional() && !attributes.contains(ATTRIBUTE_TEXT_MINLENGTH))
+					addWarning("Text field \"" + txtField.getID() + "\" is non-optional but no minimal length is defined, therefore the minimum will be set to " + TextBoxField.DEFAULT_MIN_LENGTH_NON_OPTIONAL + " character(s). It is recommended to use the '" + ATTRIBUTE_TEXT_MINLENGTH + "' attribute to set an appropriate minimum length explicitly.");				
+				txtField.setMinMaxLength(	attributes.getInteger(ATTRIBUTE_TEXT_MINLENGTH, TextBoxField.GetDefaultMinLength(txtField.isOptional())),
 											attributes.getInteger(ATTRIBUTE_TEXT_MAXLENGTH, TextBoxField.DEFAULT_MAX_LENGTH));
 				// Multi-line:
 				txtField.setMultiline(attributes.getBoolean(ATTRIBUTE_TEXT_MULTILINE, TextBoxField.DEFAULT_MULTILINE));
 				
 				// Initial value (must happen after min/maxLength are set):
-				txtField.setInitialValue(attributes.getString(txtField.getDefaultInitialValue(), false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
+				txtField.setInitialValue(attributes.getString(TextBoxField.GetDefaultInitialValue(txtField.isOptional()), false, true, ATTRIBUTE_FIELD_DEFAULTVALUE, ATTRIBUTE_FIELD_INITVALUE));
 				
 				// Content types:
 				txtField.setContent(attributes.getString(ATTRIBUTE_TEXT_CONTENT, TextBoxField.DEFAULT_CONTENT.name(), true, false));
@@ -560,10 +544,10 @@ public class FormParser extends SubtreeParser
 						if(comparisonAttrib == null)
 							addWarning("<" + TAG_CONSTRAINT + "> does not contain an comparison attribute (i.e. 1 of: " + StringUtils.join(RuleConstraint.COMPARISON_STRINGS, ", ") + ").");
 						else
-							((ProjectParser) owner).addRelationshipConstraint(	currentRelationship,
-																				columnName,
-																				comparisonAttrib,
-																				attributes.getRequiredString(getRelationshipTag(currentRelationship), comparisonAttrib, true, true));
+							owner.addRelationshipConstraint(currentRelationship,
+															columnName,
+															comparisonAttrib,
+															attributes.getRequiredString(getRelationshipTag(currentRelationship), comparisonAttrib, true, true));
 					}
 					// <Constraint> in something else than <BelongsTo> or <LinksTo>
 					else
@@ -624,7 +608,7 @@ public class FormParser extends SubtreeParser
 	{
 		newField(relationship, attributes);
 		// Remember form name (to resolved later):
-		((ProjectParser) owner).addRelationship(relationship, attributes.getRequiredString(getRelationshipTag(relationship), ATTRIBUTE_RELATIONSHIP_FORM, true, false));
+		owner.addRelationship(relationship, attributes.getRequiredString(getRelationshipTag(relationship), ATTRIBUTE_RELATIONSHIP_FORM, true, false));
 		
 		// Other attributes:
 		relationship.setHoldForeignRecord(attributes.getBoolean(ATTRIBUTE_RELATIONSHIP_HOLD, Relationship.DEFAULT_HOLD_FOREIGN_RECORD));
@@ -682,16 +666,16 @@ public class FormParser extends SubtreeParser
 				{
 					// Set optionalness:
 					String optText = attributes.getValue(ATTRIBUTE_FIELD_OPTIONAL);
-					Optionalness opt = currentPage == null ? Field.DEFAULT_OPTIONAL : currentPage.getOptional(); // use default optionalness or that of the containing page
+					boolean opt = currentPage == null ? Field.DEFAULT_OPTIONAL : currentPage.isOptional(); // use default optionalness or that of the containing page
 					if(optText != null && !optText.trim().isEmpty())
 					{	
 						optText = optText.trim();
 						if("always".equalsIgnoreCase(optText) || Boolean.TRUE.toString().equalsIgnoreCase(optText))
-							opt = Optionalness.ALWAYS;
-						else if("notIfReached".equalsIgnoreCase(optText))
-							opt = Optionalness.NOT_IF_REACHED;
+							opt = true;
+						else if("notIfReached".equalsIgnoreCase(optText)) // deprecated, but still parsed on all format versions (for backwards compatibility)
+							opt = false;
 						else if("never".equalsIgnoreCase(optText) || Boolean.FALSE.toString().equalsIgnoreCase(optText))
-							opt = Optionalness.NEVER;
+							opt = false;
 					}
 					field.setOptional(opt);
 					
@@ -797,11 +781,12 @@ public class FormParser extends SubtreeParser
 	protected void closePage(Page page)
 	{
 		/* The 'optional' attribute of a page is only used to inherit from by contained fields (see newField()),
-		 * at runtime it doesn't have meaning in itself because whether or not a page can be skipped or left is
-		 * to be decided based on the optionalness and acquired values of the contained fields.
+		 * at runtime it doesn't have meaning in itself because the page does not have a column of its own and
+		 * whether or not the page can be skipped or left is to be decided based on the optionalness and acquired
+		 * values of the contained fields.
 		 * Because of this the optionalness of the page is reset to ALWAYS after all contained fields are parsed.
 		 */
-		page.setOptional(Optionalness.ALWAYS);
+		page.setOptional(true);
 	}
 	
 	@Override

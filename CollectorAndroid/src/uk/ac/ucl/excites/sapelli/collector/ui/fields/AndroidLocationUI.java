@@ -21,61 +21,59 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.util.Timeoutable;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
-import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.LinearLayout;
+import android.widget.ImageView;
+import android.widget.ImageView.ScaleType;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
+import android.widget.RelativeLayout.LayoutParams;
 
 /**
  * @author Julia, mstevens
  *
  */
-public class AndroidLocationUI extends LocationUI<View, CollectorView>
-{
+public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 
 	private Button pageView;
-	private LinearLayout waitView;
+	private RelativeLayout waitView;
 	private Timer timeoutCounter = null;
 	
-	public AndroidLocationUI(LocationField field, Controller controller, CollectorView collectorUI)
-	{
+	static public final float PADDING = 20.0f;
+
+	public AndroidLocationUI(LocationField field, Controller controller, CollectorView collectorUI) {
 		super(field, controller, collectorUI);
 	}
 
 	@Override
-	protected void cancel()
-	{
-		if(timeoutCounter != null)
+	protected void cancel() {
+		if (timeoutCounter != null)
 			timeoutCounter.cancel();
-		//else: do nothing
+		// else: do nothing
 	}
-	
+
 	@Override
-	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
-	{
-		//TODO editable
-		if(onPage)
-		{
-			if(pageView == null)
-			{
+	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord) {
+		// TODO editable
+		if (onPage) {
+			if (pageView == null) {
 				pageView = new Button(collectorUI.getContext());
 				pageView.setText(field.getCaption());
 				// TODO some kind of icon/image would be nice (an little flag or crosshairs?)
-				pageView.setOnClickListener(new OnClickListener()
-				{
+				pageView.setOnClickListener(new OnClickListener() {
 					@Override
-					public void onClick(View v)
-					{
+					public void onClick(View v) {
 						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field itself
 					}
 				});
@@ -84,42 +82,42 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 				// TODO take "enabled" into account!
 			}
 			return pageView;
-		}
-		else
-		{
+		} else {
 			// TODO show coordinates/accuracy to literate users (this will need a new XML attribute)
-			if(waitView == null)
-			{
+			if (waitView == null) {
 				Context context = collectorUI.getContext();
-				waitView = new LinearLayout(context);
-				waitView.setGravity(Gravity.CENTER);
-				waitView.addView(new ProgressBar(context, null, android.R.attr.progressBarStyleLarge));
+				waitView = new RelativeLayout(context);
+				RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+				params.addRule(RelativeLayout.CENTER_IN_PARENT);
+				ImageView gpsIcon = new ImageView(context);
+				gpsIcon.setImageDrawable(context.getResources().getDrawable(R.drawable.gps_location));
+				gpsIcon.setScaleType(ScaleType.CENTER_INSIDE);
+				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
+				gpsIcon.setPadding(padding, padding, padding, padding);
+				waitView.addView(gpsIcon);
+				waitView.addView(new ProgressBar(context, null, android.R.attr.progressBarStyleLarge), params);
 			}
-			
+
 			// Cancel previous counter:
 			cancel();
-			
+
 			// Start timeout counter
 			timeoutCounter = new Timer();
-			timeoutCounter.schedule(new TimerTask()
-			{
+			timeoutCounter.schedule(new TimerTask() {
 				@Override
-				public void run()
-				{	//time's up!
-					collectorUI.getActivity().runOnUiThread(new Runnable()
-					{
+				public void run() { // time's up!
+					collectorUI.getActivity().runOnUiThread(new Runnable() {
 						@Override
-						public void run()
-						{
+						public void run() {
 							timeout();
 						}
 					});
 				}
-			}, ((Timeoutable) field).getTimeoutS() * 1000 /*ms*/);
-			
+			}, ((Timeoutable) field).getTimeoutS() * 1000 /* ms */);
+
 			return waitView;
 		}
-		
+
 	}
 
 }

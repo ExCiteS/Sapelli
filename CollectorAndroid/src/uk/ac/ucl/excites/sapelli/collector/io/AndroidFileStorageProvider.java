@@ -34,9 +34,9 @@ public class AndroidFileStorageProvider extends FileStorageProvider
 	 */
 	static public final String NO_MEDIA_FILE = ".nomedia";
 
-	public AndroidFileStorageProvider(File sapelliFolder)
+	public AndroidFileStorageProvider(File sapelliFolder, File downloadsFolder)
 	{
-		super(sapelliFolder);
+		super(sapelliFolder, downloadsFolder);
 	}
 
 	@Override
@@ -52,9 +52,9 @@ public class AndroidFileStorageProvider extends FileStorageProvider
 	}
 	
 	@Override
-	public File getDataFolder(boolean create) throws FileStorageException
+	public File getAttachmentsFolder(boolean create) throws FileStorageException
 	{
-		return createNoMediaIn(super.getDataFolder(create));
+		return createNoMediaIn(super.getAttachmentsFolder(create));
 	}
 
 	private File createNoMediaIn(File folder)

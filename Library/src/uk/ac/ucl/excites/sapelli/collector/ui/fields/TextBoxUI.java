@@ -19,12 +19,10 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
-
 
 /**
  * @author mstevens
@@ -36,10 +34,13 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 {
 
 	// STATIC -------------------------------------------------------
-	static protected final String NULL_MODE_CREATE = "— Touch to set —"; //TODO multilang
-	static protected final String NULL_MODE_EDIT = "— Touch to edit —"; //TODO multilang
-	static protected final String NULL_MODE_DISABED = "(no value set)"; //TODO multilang
-
+	static protected final int VALIDATION_ERROR_NON_OPTIONAL_MISSING = 1;
+	static protected final int VALIDATION_ERROR_TOO_SHORT = 2;
+	static protected final int VALIDATION_ERROR_TOO_LONG = 3;
+	static protected final int VALIDATION_ERROR_PATTERN_MISMATCH = 4;
+	static protected final int VALIDATION_ERROR_INVALID = 5;
+	static protected final int VALIDATION_ERROR_INVALID_NUMERIC = 6;
+	
 	// DYNAMIC ------------------------------------------------------
 	public TextBoxUI(TextBoxField textBox, Controller controller, UI collectorUI)
 	{
@@ -50,23 +51,30 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	public boolean isValid(Record record)
 	{
 		String text = getValue();
-		String error = null;
+		Integer error = null;
+		Integer errorArg = null;
 		// Null check:
 		if(text == null)
 		{
-			if(field.getOptional() != Optionalness.ALWAYS)
+			if(!field.isOptional())
 				 // this should never happen really
-				error = "Non-optional field requires a value."; //TODO multilang
+				error = VALIDATION_ERROR_NON_OPTIONAL_MISSING;
 		}
 		// Too short:
 		else if(text.length() < field.getMinLength())
-			error = "Minimum length of " + field.getMinLength() + " characters not reached."; //TODO multilang
+		{
+			error = VALIDATION_ERROR_TOO_SHORT;
+			errorArg = field.getMinLength();
+		}
 		// Too long:
 		else if(text.length() > field.getMaxLength())
-			error = "Maximum length of " + field.getMaxLength() + " characters exceeded."; //TODO multilang
+		{
+			error = VALIDATION_ERROR_TOO_LONG;
+			errorArg = field.getMaxLength();
+		}
 		// Match regular expression:
 		else if(field.getRegexPattern() != null && !field.getRegexPattern().matcher(text).matches())
-			error = "Pattern mismatch"; //TODO multilang
+			error = VALIDATION_ERROR_PATTERN_MISMATCH;
 		// Column-level validation:
 		else
 			switch(field.getContent())
@@ -78,7 +86,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 				default :
 					if(!field.getColumn().isValidValue(text))
 						// in fact this shouldn't happen, given that max length has already been checked
-						error = "Invalid input."; //TODO multilang
+						error = VALIDATION_ERROR_INVALID;
 					break;
 				case unsignedint :
 				case signedint :
@@ -89,7 +97,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 				case unsigneddouble :
 				case signeddouble :
 					if(!field.getColumn().isValidValueString(text))
-						error = "Invalid numeric input."; //TODO multilang
+						error = VALIDATION_ERROR_INVALID_NUMERIC;
 					break;
 			}
 		// Deal with error:
@@ -100,9 +108,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 		}
 		else
 		{
-			if(field.getOptional() == Optionalness.ALWAYS)
-				error += "\nIf you don't want to answer, hit backspace until cross appears."; //TODO multilang
-			setValidationError(error);
+			setValidationError(error, errorArg, field.isOptional());
 			return false;
 		}
 	}
@@ -161,8 +167,8 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 
 	protected abstract String getValue();
 
-	protected abstract void setValidationError(String errorDescr);
+	protected abstract void setValidationError(int errorCode, Integer argument, boolean hintOptional);
 
 	protected abstract void clearValidationError();
-
+	
 }

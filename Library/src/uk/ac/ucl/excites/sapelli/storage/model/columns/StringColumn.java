@@ -125,7 +125,7 @@ public class StringColumn extends ComparableColumn<String>
 	 */
 	public StringColumn(String name, boolean optional, int maxLengthBytes, Charset charset)
 	{
-		super(String.class, name, optional);
+		super(name, optional);
 		if(maxLengthBytes <= 0)
 			throw new IllegalArgumentException("maxLenghthBytes needs to be at least 1 byte to make sense, given " + maxLengthBytes + " bytes");
 		if(charset == null)
@@ -273,6 +273,12 @@ public class StringColumn extends ComparableColumn<String>
 		if(this.charset == null)
 			this.charset = Charset.forName(charsetName); // needed because charset member variable is transient (because Charset is not a Serialisable class)
 		return charset;
+	}
+
+	@Override
+	public Class<String> getType()
+	{
+		return String.class;
 	}
 	
 }

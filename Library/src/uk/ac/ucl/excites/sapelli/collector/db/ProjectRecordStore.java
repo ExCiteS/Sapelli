@@ -29,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectSignatureClashException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
+import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
@@ -212,11 +212,13 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStore#add(uk.ac.ucl.excites.sapelli.collector.model.Project)
 	 */
 	@Override
-	public void add(Project project) throws ProjectSignatureClashException, ProjectIdentificationClashException
+	public Project add(Project project) throws ProjectSignatureClashException, ProjectIdentificationClashException
 	{
 		if(!isStored(project, !recordStore.hasFullIndexSupport()))
 			// Go ahead with storing project:
 			doAdd(project);
+		// Return if successful:
+		return project;
 	}
 	
 	/* (non-Javadoc)
@@ -353,17 +355,16 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	@Override
 	public RecordReference retrieveHeldForeignKey(Relationship relationship)
 	{
-		Record hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship).getRecordQuery());
-		if(hfkRecord != null)
+		Record hfkRecord = null;
+		try
 		{
-			try
-			{
-				return relationship.getRelatedForm().getSchema().createRecordReference(HFK_SERIALISED_RECORD_REFERENCE.retrieveValue(hfkRecord));
-			}
-			catch(Exception e)
-			{
+			hfkRecord = recordStore.retrieveRecord(getHFKRecordReference(relationship).getRecordQuery());
+			return relationship.getRelatedForm().getSchema().createRecordReference(HFK_SERIALISED_RECORD_REFERENCE.retrieveValue(hfkRecord));
+		}
+		catch(Exception e)
+		{
+			if(hfkRecord != null)
 				deleteHeldForeignKey(relationship);
-			}
 		}
 		//else:
 		return null;

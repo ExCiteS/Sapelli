@@ -30,10 +30,11 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.AndroidFileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
+import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
@@ -128,8 +129,23 @@ public class CollectorApp extends Application implements StoreClient
 		// Set up a CrashReporter (will use dumps folder):
 		if(fileStorageProvider != null)
 			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(fileStorageProvider, getResources().getString(R.string.app_name)));
+
+		// Create shortcut to Sapelli Collector on Home Screen:
+		// Get collector preferences:
+		CollectorPreferences pref = new CollectorPreferences(getApplicationContext());
+		if(pref.isFirstInstallation())
+		{
+			// Create shortcut
+			ProjectRunHelpers.createCollectorShortcut(getApplicationContext());
+			// Set first installation to false
+			pref.setFirstInstallation(false);
+		}
 	}
 	
+	/**
+	 * @return
+	 * @throws FileStorageException
+	 */
 	private FileStorageProvider initialiseFileStorage() throws FileStorageException
 	{
 		File sapelliFolder = null;
@@ -178,8 +194,21 @@ public class CollectorApp extends Application implements StoreClient
 
 		// If we get here this means we have a non-null sapelliFolder object representing an accessible path...
 		
+		// Try to get the Android Downloads folder
+		File downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+		if(!isMountedReadableWritableDir(downloadsFolder))
+		{
+			// Try to create the dir.
+			downloadsFolder.mkdirs();
+
+			// Check again
+			if(!isMountedReadableWritableDir(downloadsFolder))
+				// No :-(
+				throw new FileStorageRemovedException(downloadsFolder.getAbsolutePath());
+		}
+		
 		// Return path provider
-		return new AndroidFileStorageProvider(sapelliFolder); // Android specific subclass of FileStorageProvider, which generates .nomedia files
+		return new AndroidFileStorageProvider(sapelliFolder, downloadsFolder); // Android specific subclass of FileStorageProvider, which generates .nomedia files
 	}
 	
 	/**
@@ -333,7 +362,7 @@ public class CollectorApp extends Application implements StoreClient
 	
 	public void backupStores() throws Exception
 	{
-		File exportFolder = getFileStorageProvider().getDumpFolder(true);
+		File exportFolder = getFileStorageProvider().getTempFolder(true);
 		for(Store store : new Store[] { getProjectStore(this), getRecordStore(this) })
 		{
 			store.backup(exportFolder);

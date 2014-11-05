@@ -126,16 +126,14 @@ public abstract class Column<T> implements Serializable
 	}
 
 	// DYNAMICS------------------------------------------------------
-	private final Class<T> type;
 	protected final String name;
 	protected final boolean optional;
 	protected List<VirtualColumn<?, T>> virtualVersions;
 
-	public Column(Class<T> type, String name, boolean optional)
+	public Column(String name, boolean optional)
 	{
 		if(!IsValidName(name))
 			throw new IllegalArgumentException("Invalid column name (" + name + "), please use static the Column#SanitiseName method.");
-		this.type = type;
 		this.name = name;
 		this.optional = optional;
 	}
@@ -490,14 +488,11 @@ public abstract class Column<T> implements Serializable
 
 	public String getTypeString()
 	{
-		return type.getSimpleName();
+		return getType().getSimpleName();
 	}
 
-	public Class<T> getType()
-	{
-		return type;
-	}
-
+	public abstract Class<T> getType();
+	
 	public T retrieveValueCopy(Record record)
 	{
 		T value = retrieveValue(record);
@@ -638,12 +633,8 @@ public abstract class Column<T> implements Serializable
 	@Override
     public int hashCode()
 	{
-		// DB4O issue workaround:
-		if(type == null) //	TODO remove this at some point when we have abandoned DB4O for good
-			return super.hashCode();
-		// else:
 		int hash = 1;
-		hash = 31 * hash + type.getName().hashCode(); // don't use type.hashCode() as it is not stable (Class does not implement hashCode() so Object.hashCode() is executed)
+		hash = 31 * hash + getTypeString().hashCode();
 		hash = 31 * hash + name.hashCode();
 		hash = 31 * hash + (optional ? 0 : 1);
 		hash = 31 * hash + (virtualVersions == null ? 0 : virtualVersions.hashCode());

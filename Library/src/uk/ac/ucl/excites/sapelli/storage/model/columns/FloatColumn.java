@@ -38,10 +38,10 @@ public class FloatColumn extends ComparableColumn<Double>
 	static private final long serialVersionUID = 2L;
 	
 	static public final boolean DEFAULT_DOUBLE_PRECISION = false; // 32 bit (float) by default
-	static private final boolean DEFAULT_SIGNEDNESS = true; //allow signed values by default
+	static public final boolean DEFAULT_SIGNEDNESS = true; // allow signed values by default
 	
-	private boolean doublePrecision;
-	private boolean signed;
+	private final boolean doublePrecision;
+	private final boolean signed;
 	
 	public FloatColumn(String name, boolean optional)
 	{
@@ -50,7 +50,7 @@ public class FloatColumn extends ComparableColumn<Double>
 	
 	public FloatColumn(String name, boolean optional, boolean signed, boolean doublePrecision)
 	{
-		super(Double.class, name, optional);
+		super(name, optional);
 		this.doublePrecision = doublePrecision;
 		this.signed = signed;
 	}
@@ -234,6 +234,12 @@ public class FloatColumn extends ComparableColumn<Double>
 	public boolean isSigned()
 	{
 		return signed;
+	}
+
+	@Override
+	public Class<Double> getType()
+	{
+		return Double.class;
 	}
 	
 }

@@ -90,25 +90,40 @@ public final class Hashing
 	/**
 	 * Computes a 128 bit MD5 hash code from the provided data
 	 * 
-	 * @return the hash code
+	 * @return the hash code as byte[]
 	 * @see <a href="http://en.wikipedia.org/wiki/MD5">http://en.wikipedia.org/wiki/MD5</a>
 	 */
-	static public BigInteger getMD5Hash(byte[] data)
+	static public byte[] getMD5HashBytes(byte[] data)
 	{
 		try
 		{
 			MessageDigest md5 = MessageDigest.getInstance("MD5");
 			md5.update(data);
-			return new BigInteger(md5.digest());
+			return md5.digest();
 		}
 		catch(NoSuchAlgorithmException e)
 		{
 			System.err.println("Could not get MD5 implementation: " + e.getLocalizedMessage());
 			e.printStackTrace();
-			return BigInteger.ZERO;
+			return null;
 		}
 	}
 
+	/**
+	 * Computes a 128 bit MD5 hash code from the provided data
+	 * 
+	 * @return the hash code
+	 * @see <a href="http://en.wikipedia.org/wiki/MD5">http://en.wikipedia.org/wiki/MD5</a>
+	 */
+	static public BigInteger getMD5HashBigInt(byte[] data)
+	{
+		byte[] md5bytes = getMD5HashBytes(data);
+		if(md5bytes == null)
+			return BigInteger.ZERO;
+		else
+			return new BigInteger(md5bytes);
+	}
+	
 	/**
 	 * Computes a 16 bit Cyclic Redundancy Check (CRC16) hash code from the provided data
 	 * 

@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -106,7 +106,7 @@ public class OrientationField extends Field
 	@Override
 	protected OrientationColumn createColumn(String name)
 	{
-		return new OrientationColumn(name, (optional != Optionalness.NEVER), storeAzimuth, storePitch, storeRoll);
+		return new OrientationColumn(name, form.getColumnOptionalityAdvisor().getColumnOptionality(this), storeAzimuth, storePitch, storeRoll);
 	}
 
 	public void storeOrientation(Record record, Orientation orientation)
@@ -114,12 +114,13 @@ public class OrientationField extends Field
 		((OrientationColumn) form.getColumnFor(this)).storeValue(record, orientation);
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor, uk.ac.ucl.excites.sapelli.collector.model.FieldParameters, boolean)
+	 */
 	@Override
-	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
+	public boolean enter(FieldVisitor visitor, FieldParameters arguments, boolean withPage)
 	{
-		if(!withPage)
-			return controller.enterOrientationField(this, arguments);
-		return true;
+		return visitor.enterOrientationField(this, arguments, withPage);
 	}
 
 	@Override

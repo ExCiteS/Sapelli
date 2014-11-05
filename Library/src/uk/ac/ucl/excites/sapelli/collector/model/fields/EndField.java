@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.model.fields;
 import java.util.ArrayList;
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.Next;
@@ -106,12 +106,12 @@ public class EndField extends UILessField
 	}
 
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.Controller, boolean)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor, uk.ac.ucl.excites.sapelli.collector.model.FieldParameters, boolean)
 	 */
 	@Override
-	public boolean enter(Controller controller, FieldParameters arguments, boolean onPage)
+	public boolean enter(FieldVisitor visitor, FieldParameters arguments, boolean withPage)
 	{
-		return controller.enterEndField(this, arguments);
+		return visitor.enterEndField(this, arguments);
 	}
 	
 	@Override

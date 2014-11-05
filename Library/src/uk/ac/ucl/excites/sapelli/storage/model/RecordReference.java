@@ -164,7 +164,7 @@ public class RecordReference extends Record
 	public Constraint getRecordQueryConstraint() throws IllegalStateException
 	{
 		if(!isFilled())
-			throw new IllegalStateException("All values of the key must be set before a query can be created!");
+			throw new IllegalStateException("All values of the key must be set before a record selecting constraint/query can be created!");
 		
 		// Match for key parts:
 		AndConstraint constraints = new AndConstraint();

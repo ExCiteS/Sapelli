@@ -42,15 +42,18 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		{
 			int result = TextToSpeech.ERROR;
 
-			if(tts != null)
+			if(tts != null) 
+			{
 				result = tts.setLanguage(locale);
 
-			// If the locale is missing, fall back to the default locale
-			if(result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED)
-				result = tts.setLanguage(DEFAULT_LOCALE);
+				// If the locale is missing, fall back to the default locale
+				if(result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED)
+					result = tts.setLanguage(DEFAULT_LOCALE);
 
-			if(result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED)
-				initialised = true;
+				if(result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED)
+					initialised = true;
+			}
+			// if null, has probably been destroyed before initialisation completed
 		}
 	}
 

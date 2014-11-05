@@ -21,11 +21,15 @@ package uk.ac.ucl.excites.sapelli.collector.control;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 
+/**
+ * @author mstevens
+ *
+ */
 public class FieldWithArguments
 {
 	
-	protected Field field;
-	protected FieldParameters arguments;
+	public final Field field;
+	public final FieldParameters arguments;
 	
 	/**
 	 * @param field the field

@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
@@ -84,7 +84,7 @@ public abstract class MediaField extends Field
 	 */
 	public int getMin()
 	{
-		return optional == Optionalness.ALWAYS ? 0 : 1; 
+		return optional ? 0 : 1; 
 	}
 	
 	/**
@@ -217,12 +217,15 @@ public abstract class MediaField extends Field
 	@Override
 	protected IntegerListColumn createColumn(String name)
 	{
-		return new IntegerListColumn(name, new IntegerColumn("creationTimeOffset", false, 0, MAX_ATTACHMENT_CREATION_TIME_OFFSET), (optional != Optionalness.NEVER), (optional != Optionalness.NEVER ? 0 : 1), max);
+		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
+		return new IntegerListColumn(name, new IntegerColumn("creationTimeOffset", false, 0, MAX_ATTACHMENT_CREATION_TIME_OFFSET), colOptional, (colOptional ? 0 : 1), max);
+
 	}
 	
 	public IntegerColumn createV1XColumn()
 	{
-		return new IntegerColumn(getColumn().getName() + "-v1x", (optional != Optionalness.NEVER), (optional != Optionalness.NEVER ? 0 : 1), max);
+		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
+		return new IntegerColumn(getColumn().getName() + "-v1x", colOptional, (colOptional ? 0 : 1), max);
 	}
 	
 	/**
@@ -336,7 +339,7 @@ public abstract class MediaField extends Field
 	{
 		long creationTimeOffset = System.currentTimeMillis() - form.getStartTime(record, true).getMsSinceEpoch();
 		String filename = generateFilename(record, creationTimeOffset);
-		String dataFolderPath = fileStorageProvider.getProjectDataFolder(form.getProject(), true).getAbsolutePath();
+		String dataFolderPath = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
 		File file = new File(dataFolderPath + File.separator + filename);
 		return file;
 	}
@@ -352,7 +355,7 @@ public abstract class MediaField extends Field
 		List<Long> offsets = ((IntegerListColumn)getColumn()).retrieveValue(record);
 		if (offsets == null) // return an empty list
 			return files;
-		String dir = fileStorageProvider.getProjectDataFolder(form.getProject(), true).getAbsolutePath();
+		String dir = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
 		String filename;
 		File file;
 		// for each attachment...
@@ -378,7 +381,7 @@ public abstract class MediaField extends Field
 		List<Long> offsets = ((IntegerListColumn)getColumn()).retrieveValue(record);
 		if (offsets == null || offsets.size() < 1)
 			return null;
-		String dir = fileStorageProvider.getProjectDataFolder(form.getProject(), true).getAbsolutePath();
+		String dir = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
 		String filename = generateFilename(record, offsets.get(offsets.size() - 1)); // get final offset from list
 		return new File(dir, filename);		
 	}
@@ -450,10 +453,13 @@ public abstract class MediaField extends Field
 			return filename;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor, uk.ac.ucl.excites.sapelli.collector.model.FieldParameters, boolean)
+	 */
 	@Override
-	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
+	public boolean enter(FieldVisitor visitor, FieldParameters arguments, boolean withPage)
 	{
-		return true;
+		return visitor.enterMediaField(this, arguments, withPage);
 	}
 
 

@@ -56,7 +56,7 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 
 	public VirtualColumn(Column<ST> sourceColumn, Column<TT> targetColumn, ValueMapper<TT, ST> valueMapper)
 	{
-		super(targetColumn.getType(), sourceColumn.name + NAME_SEPARATOR + targetColumn.name, targetColumn.optional);
+		super(sourceColumn.name + NAME_SEPARATOR + targetColumn.name, targetColumn.optional);
 		if(sourceColumn == null || targetColumn == null || valueMapper == null)
 			throw new NullPointerException("sourceColumn, targetColumn & valueMapper cannot be null!");
 		if(sourceColumn == targetColumn)
@@ -217,6 +217,12 @@ public class VirtualColumn<TT, ST> extends Column<TT>
 			return false;
 		}
 		
+	}
+
+	@Override
+	public Class<TT> getType()
+	{
+		return targetColumn.getType();
 	}
 
 }

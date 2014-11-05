@@ -14,7 +14,7 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
- --><manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="200" android:versionName="2.0.0-beta-7" package="uk.ac.ucl.excites.sapelli.collector">
+ --><manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="200" android:versionName="2.0.0-beta-10" package="uk.ac.ucl.excites.sapelli.collector">
 
     <uses-sdk android:minSdkVersion="10" android:targetSdkVersion="11"/>
 
@@ -29,7 +29,7 @@
     <uses-permission android:name="android.permission.WRITE_SMS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:maxSdkVersion="18" android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
     <uses-permission android:name="com.android.launcher.permission.INSTALL_SHORTCUT"/>
     <uses-permission android:name="com.android.launcher.permission.UNINSTALL_SHORTCUT"/>
     <uses-permission android:name="android.permission.INTERNET"/>
