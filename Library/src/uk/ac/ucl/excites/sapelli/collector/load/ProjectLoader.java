@@ -291,8 +291,8 @@ public class ProjectLoader implements WarningKeeper
 	@Override
 	public void addWarnings(Collection<String> warnings)
 	{
-		if(warnings == null)
-			warnings = new ArrayList<String>();
+		if(this.warnings == null)
+			this.warnings = new ArrayList<String>();
 		this.warnings.addAll(warnings);
 	}
 
