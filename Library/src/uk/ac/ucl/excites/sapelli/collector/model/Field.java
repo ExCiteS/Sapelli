@@ -459,6 +459,7 @@ public abstract class Field extends JumpSource
 					this.form.getProject().toString().equals(that.form.getProject().toString()) && // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
 					this.caption.equals(that.caption) &&
 					(this.description != null ? this.description.equals(that.description) : that.description == null) &&
+					(this.descriptionAudioRelativePath != null ? this.descriptionAudioRelativePath.equals(that.descriptionAudioRelativePath) : that.descriptionAudioRelativePath == null) &&
 					this.enabled == that.enabled &&
 					this.skipOnBack == that.skipOnBack &&
 					this.showOnCreate == that.showOnCreate &&
@@ -480,7 +481,8 @@ public abstract class Field extends JumpSource
 		hash = 31 * hash + form.toString().hashCode(); // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
 		hash = 31 * hash + form.getProject().toString().hashCode(); // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
 		hash = 31 * hash + caption.hashCode();
-		hash = 31 * hash + description.hashCode();
+		hash = (this.description != null) ? 31 * hash + description.hashCode() : hash;
+		hash = (this.descriptionAudioRelativePath != null) ? 31 * hash + descriptionAudioRelativePath.hashCode() : hash;
 		hash = 31 * hash + (enabled ? 0 : 1);
 		hash = 31 * hash + (skipOnBack ? 0 : 1);
 		hash = 31 * hash + (showOnCreate ? 0 : 1);
