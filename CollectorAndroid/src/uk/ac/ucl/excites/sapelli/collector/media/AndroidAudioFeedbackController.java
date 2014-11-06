@@ -25,16 +25,17 @@ import android.view.View;
 public class AndroidAudioFeedbackController extends AudioFeedbackController<View> implements OnCompletionListener  {
 
 	private static final String TAG = "AudioFeedbackController";
+	private static final int FFEDBACK_GAP_DURATION_MILISEC = 1000; // time (in milisec) to pause if a piece of audio is not available 
 	
 	private CollectorController controller;
 	private Context context;
 	
 	private Thread playbackThread;
+	private volatile boolean running = false;
 	private MediaPlayer queuePlayer;
-	private Semaphore audioAvailableSem; // semaphore used to notify when there is a track in the queue to be played
 	private Semaphore playbackCompletedSem; // semaphore used to notify when the media player has finished playing the current track
 	private Semaphore animationCompletedSem; // semaphore used to notify when the UI thread has finished animating the view
-
+	
 	public AndroidAudioFeedbackController(CollectorController controller) {
 		this.controller = controller;
 		this.context = controller.activity.getApplicationContext();
@@ -42,28 +43,34 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 	
 	@Override
     public void play(final List<AudioFeedbackController<View>.PlaybackJob> sequence) {
+		stop(); // stop any already-playing playlists prematurely
 		Log.d(TAG, "Starting playback...");
+
 		playbackCompletedSem = new Semaphore(0);
 		animationCompletedSem = new Semaphore(0);
-		stop(); // stop any already-playing playlists prematurely
 		
 		playbackThread = new Thread() {
 			
 			@Override
 			public void run() {
-				while (!sequence.isEmpty()) {
+				while (running && !sequence.isEmpty()) {
 					playNextQueueItem(sequence);
 				}
 			}
 			
 		};
 
+		running = true;
 		playbackThread.start();
     }
 	
 	@Override
 	public void stop() {
 		Log.d(TAG,"Stopping playback...");
+		running = false;
+		 //stop currently playing track:
+		if (queuePlayer != null && queuePlayer.isPlaying())
+			queuePlayer.stop();
         // interrupt playback thread since it is probably blocked on a semaphore:
 		if (playbackThread != null) {
 	        playbackThread.interrupt();
@@ -76,8 +83,8 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 		}
         // nullify thread so it must be re-initialised:
         playbackThread = null;
-        // destroy semaphores so they aren't reused by later ChoiceFields:
-        audioAvailableSem = null;
+        // destroy semaphore so it isn't reused by later ChoiceFields:a
+        animationCompletedSem = null;
         playbackCompletedSem = null;
 	}
 	
@@ -102,32 +109,37 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 	 * <li> Wait for playback to finish (acquire {@link AndroidAudioFeedbackController#playbackCompletedSem}) </li>
 	 * <li> Remove the just-played item from the queue </li>
 	 * </ul>
-	 */
+	 */ 
 	private void playNextQueueItem(List<PlaybackJob> mediaQueue) {
 		try {
-			// wait for a track to become available:
-			audioAvailableSem.acquire();
 
-			PlaybackJob currentTrack = mediaQueue.remove(0); 
+			PlaybackJob currentTrack = mediaQueue.remove(0); 			
 			File audioFile = controller.getFileStorageProvider().getProjectSoundFile(controller.getProject(), currentTrack.soundRelativePath);
 			
 			// set the media player's source to the new audio track
-			try {
-				if (queuePlayer == null) {
-					queuePlayer = MediaPlayer.create(context, Uri.fromFile(audioFile));
-					queuePlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-					queuePlayer.setOnCompletionListener(this);
-				}
-				else {
-					queuePlayer.reset(); // reset to idle state
-					queuePlayer.setDataSource(context, Uri.fromFile(audioFile));
-					queuePlayer.prepare();
-				}
-				// start it playing:
-				queuePlayer.start();
+			if (audioFile != null) {
+				try {
+					if (queuePlayer == null) {
+						queuePlayer = MediaPlayer.create(context, Uri.fromFile(audioFile));
+						queuePlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+						queuePlayer.setOnCompletionListener(this);
+					}
+					else {
+						queuePlayer.reset(); // reset to idle state
+						queuePlayer.setDataSource(context, Uri.fromFile(audioFile));
+						queuePlayer.prepare();
+					}
+					// start it playing:
+					queuePlayer.start();
 
-			} catch (Exception e) {
-				Log.e(TAG,"Error when trying to change media player data source to file "+audioFile.getName(), e);
+				} catch (Exception e) {
+					Log.e(TAG,"Error when trying to change media player data source to file "+currentTrack.soundRelativePath, e);
+					// Playing failed so completed listener will never fire. Allow file to be deleted and playback to continue:
+					playbackCompletedSem.release();
+				}
+			} else {
+				// sleep for a while to indicate "gap" in audio playback:
+				Thread.sleep(FFEDBACK_GAP_DURATION_MILISEC);
 				// Playing failed so completed listener will never fire. Allow file to be deleted and playback to continue:
 				playbackCompletedSem.release();
 			}
@@ -139,12 +151,11 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 			
 			// wait for the UI thread to finish animating the view
 			animationCompletedSem.acquire();
-
+			
 		} catch (InterruptedException e1) {
 			// was probably caused by the ChoiceField being exited
 			Log.d(TAG,"Playback thread interrupted while waiting for semaphore.");
 		}
-
 	}
 
 	/**

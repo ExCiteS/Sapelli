@@ -3,36 +3,52 @@
  */
 package uk.ac.ucl.excites.sapelli.collector.media;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Abstract notion of an object that plays audio feedback items and animates their corresponding UI elements at the same time.
  *
  * @param <V>
  * 
- * @author mstevens, Ben
+ * @author mstevens, benelliott
  */
 public abstract class AudioFeedbackController<V>
 {
 	
 	/**
-	 * @param job
+	 * Play a single audio feedback job.
+	 * @param job - the audio feedback job to play
 	 */
 	public void play(PlaybackJob job)
 	{
-		play(Collections.singletonList(job));
+		// note: list should be mutable (as jobs will be removed) so do not use a (immutable)
+		// Collections.singletonList here
+		ArrayList<PlaybackJob> singletonPlaylist = new ArrayList<PlaybackJob>();
+		singletonPlaylist.add(job);
+		play(singletonPlaylist);
 	}
 	
 	/**
-	 * @param sequence
+	 * Play a sequence of audio feedback jobs.
+	 * @param sequence - the list of audio feedback jobs to play.
 	 */
 	public abstract void play(List<PlaybackJob> sequence);
 	
+	/**
+	 * Stop playing the current job.
+	 */
 	public abstract void stop();
 	
+	/**
+	 * Destroy all resources required for audio feedback.
+	 */
 	public abstract void destroy();
 	
 	/**
+	 * A class that encapsulates the concept of an "audio feedback job" with a filepath for the sound to play
+	 * and a reference to the UI object (e.g. View) to animate while doing so.
+	 * 
 	 * @author mstevens
 	 */
 	public class PlaybackJob
@@ -42,8 +58,10 @@ public abstract class AudioFeedbackController<V>
 		/*package*/ final V viewToAnimate;
 		
 		/**
-		 * @param soundRelativePath
-		 * @param viewToAnimate
+		 * Creates a PlaybackJob with the provided sound filepath and UI object to animate.
+		 * 
+		 * @param soundRelativePath - relative filepath of the sound to play
+		 * @param viewToAnimate - the UI object to animate while playing the sound
 		 */
 		public PlaybackJob(String soundRelativePath, V viewToAnimate)
 		{
@@ -52,7 +70,9 @@ public abstract class AudioFeedbackController<V>
 		}
 		
 		/**
-		 * @param soundRelativePath
+		 * Creates a PlaybackJob with the provided sound filepath but no UI object to animate.
+		 * 
+		 * @param soundRelativePath - relative filepath of the sound to play
 		 */
 		public PlaybackJob(String soundRelativePath)
 		{
