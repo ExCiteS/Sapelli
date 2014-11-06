@@ -1,6 +1,5 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>commons-codec</groupId>
@@ -17,30 +16,30 @@
 	  *************************************************************
 	   
 	  Context:
-	    Android includes an outdated version (1.2) of commons-codec as an internal library.
+	    Android includes an outdated version (v1.3) of commons-codec as an internal library.
 	    This library is not exposed in the Android SDK so app developers who want to rely on
-	    commons-codec need to treat it as an addition dependency and include it in the APK of
-	    their app. However, at runtime Android will always favour its internal version of the
-	    library which causes trouble when app code tries to call methods that don't exist in
-	    that outdated version but do exist in the version the developer expected to be using.
+	    commons-codec need to treat it as an addition dependency and include it in the APK
+	    of their app. However, at runtime Android will always favour its internal version of
+	    the library which causes trouble when app code tries to call methods that don't
+	    exist in v1.3 but do exist in the version the developer expected to be using.
 	  
 	  Solution:
 	    After experimenting with many different variations the current (and final) solution
-	    to this problem is implemented in this project and does not require big hacks or changes
-	    in the other (sapelli) projects, expect for declaring dependency on commons-codec-shade
-	    (i.e. this project) instead of the original commons-codec (cfr. Library/pom.xml), and
-	    explicitly excluding the dependency on the original one.
+	    to this problem is implemented in this project and does not require big hacks or
+	    changes in projects which depend on commons-codec, expect for declaring dependency
+	    on commons-codec-shaded (i.e. this project) instead of the original commons-codec.
 	  
-	    What we do here is take the "original" commons-codec library (currently version 1.9) and
-	    use the maven-shade-plugin to "shade" it, which means we modify the package name of the
-	    library (both in the compiled classes and the sources jar) in order to avoid the clash
-	    with Android's version. The package name changes from "org.apache.commons.codec" to
-	    "shaded.org.apache.commons.codec". The result is published to the local Maven repository
-	    for other (sapelli) projects to use by simple dependency declaration on this project.
-	    Because we only apply the shading to commons-codec itself (and not to other classes
-	    using it; which is possible using the shade plug-in but doesn't work in combination with
-	    android-maven-plugin) any sapelli classes which make use of commons-codec will have to
-	    import the new "shaded" package name instead of the old one.
+	    What we do here is take the "original" commons-codec library (currently version 1.9)
+	    and use the maven-shade-plugin to "shade" it, which means we modify the package name
+	    of the library (both in the compiled classes and the sources jar) in order to avoid
+	    the clash with Android's version. The package name is changed from
+	    "org.apache.commons.codec" to "shaded.org.apache.commons.codec". The result is
+	    published to the local Maven repository for other projects to use by simple
+	    dependency declaration on this project. Because we only apply the shading to
+ 	    commons-codec itself (and not to other projects/classes using it; which in fact is
+ 	    possible using the shade plug-in but breaks in combination with android-maven-plugin)
+ 	    any client classes which make use of commons-codec will have to import the new
+ 	    "shaded" package name instead of the old one.
 	  
 	  Issue on android-maven-plugin github which I posted to discuss all this:
 	    https://github.com/jayway/maven-android-plugin/issues/487
@@ -73,7 +72,7 @@
 				<role>Shading for use on Android</role>
 			</roles>
 		</contributor>
-		<!-- see commons-codec:commons-codec pom for list of original contributors & developers -->
+		<!-- see commons-codec:commons-codec pom for original contributors/developers -->
 	</contributors>
 
 	<properties>
@@ -305,7 +304,7 @@
 				<version>${antrun-plugin-version}</version>
 				<executions>
 					<execution>
-						<!-- unpack shaded classes and sources for manifest generation and re-jarring -->
+						 <!-- unpack shaded classes & sources for manifest generation and re-jarring -->
 						<id>post-shading-tasks</id>
 						<phase>package</phase>
 						<goals>
