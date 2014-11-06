@@ -128,6 +128,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FIELD_EDITABLE = "editable";
 	static private final String ATTRIBUTE_FIELD_ALT = "alt";
 	static private final String ATTRIBUTE_FIELD_IMG = "img";
+	static private final String ATTRIBUTE_FIELD_DESC = "desc";
 	static private final String ATTRIBUTE_FIELD_ANSWER_DESC = "answerDesc";
 	static private final String ATTRIBUTE_FIELD_QUESTION_DESC = "questionDesc";
 	static private final String ATTRIBUTE_FIELD_CAPTION = "caption";
@@ -736,6 +737,18 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					field.setShowCancel((v1xFormShowCancel != null ? v1xFormShowCancel : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));
 				if(attributes.contains(ATTRIBUTE_FIELD_SHOW_FORWARD) || v1xFormShowForward != null)
 					field.setShowForward((v1xFormShowForward != null ? v1xFormShowForward : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
+				
+				// audio feedback description:
+				field.setDescription(attributes.getString(null, true, false, ATTRIBUTE_FIELD_DESC, ATTRIBUTE_FIELD_QUESTION_DESC /* alias for choice fields */));
+				if(field.getDescription() != null && currentForm.isUsingAudioFeedback())
+				{
+					field.setDescriptionAudioRelativePath(
+						FileHelpers.isAudioFileName(field.getDescription()) ?
+							// playback of audio file included with project:
+							field.getDescription() :
+							// playback of audio generated from text (TTS): //TODO document filename format
+							newTTSSynthesisTask(field.getDescription(), FileHelpers.makeValidFileName(field.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(field.getID().getBytes())) + "_A." + owner.getGeneratedAudioExtension())));
+				}
 			}
 			
 			// Remember current field:

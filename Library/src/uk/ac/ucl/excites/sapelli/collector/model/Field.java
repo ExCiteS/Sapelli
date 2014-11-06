@@ -65,7 +65,7 @@ public abstract class Field extends JumpSource
 	protected final Form form;
 	protected final String caption;
 	protected String description;
-	protected String decriptionAudioRelativePath;
+	protected String descriptionAudioRelativePath;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	protected boolean showOnCreate = DEFAULT_SHOW_ON_CREATE;
@@ -155,19 +155,19 @@ public abstract class Field extends JumpSource
 	}
 
 	/**
-	 * @return the decriptionAudioRelativePath
+	 * @return the descriptionAudioRelativePath
 	 */
 	public String getDescriptionAudioRelativePath()
 	{
-		return decriptionAudioRelativePath;
+		return descriptionAudioRelativePath;
 	}
 
 	/**
-	 * @param decriptionAudioRelativePath the decriptionAudioRelativePath to set
+	 * @param descriptionAudioRelativePath the descriptionAudioRelativePath to set
 	 */
-	public void setDecriptionAudioRelativePath(String decriptionAudioRelativePath)
+	public void setDescriptionAudioRelativePath(String descriptionAudioRelativePath)
 	{
-		this.decriptionAudioRelativePath = decriptionAudioRelativePath;
+		this.descriptionAudioRelativePath = descriptionAudioRelativePath;
 	}
 
 	/**
