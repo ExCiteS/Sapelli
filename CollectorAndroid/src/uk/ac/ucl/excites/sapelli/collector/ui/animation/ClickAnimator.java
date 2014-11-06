@@ -37,9 +37,9 @@ public class ClickAnimator extends Animator
 	public static final int DURATION = 400; // ms
 	
 	/**
-	 * @param taskAfterAnimation
+	 * @param taskAfterAnimation (may be null)
 	 * @param animateView
-	 * @param controller passed to block entire UI during animation
+	 * @param controller when not null controller is used to block entire UI during animation
 	 */
 	public ClickAnimator(Runnable taskAfterAnimation, View animateView, CollectorController controller)
 	{
@@ -48,9 +48,9 @@ public class ClickAnimator extends Animator
 	
 	/**
 	 * @param duration
-	 * @param taskAfterAnimation
+	 * @param taskAfterAnimation (may be null)
 	 * @param animateView
-	 * @param controller passed to block entire UI during animation
+	 * @param controller when not null controller is used to block entire UI during animation 
 	 */
 	public ClickAnimator(long duration, Runnable taskAfterAnimation, View animateView, CollectorController controller)
 	{
@@ -58,9 +58,9 @@ public class ClickAnimator extends Animator
 	}
 	
 	/**
-	 * @param taskAfterAnimation
+	 * @param taskAfterAnimation (may be null)
 	 * @param animateView
-	 * @param blockView specific view to block during animation
+	 * @param blockView specific view to block during animation (may be null)
 	 */
 	public ClickAnimator(Runnable taskAfterAnimation, View animateView, View blockView)
 	{
@@ -69,9 +69,9 @@ public class ClickAnimator extends Animator
 	
 	/**
 	 * @param duration
-	 * @param taskAfterAnimation
+	 * @param taskAfterAnimation (may be null)
 	 * @param animateView
-	 * @param blockView specific view to block during animation
+	 * @param blockView specific view to block during animation (may be null)
 	 */
 	public ClickAnimator(long duration, Runnable taskAfterAnimation, View animateView, View blockView)
 	{

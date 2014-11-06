@@ -25,7 +25,7 @@ import android.view.animation.AnimationSet;
 
 /**
  * AsyncTask Class that blocks the UI thread for {@link Animator#duration} milliseconds and executes the animation to the {@link Animator#view}. After the end of
- * the duration and the animation is over, the {@link Animator#runnableTask} will be run.
+ * the duration and the animation is over, the {@link Animator#runnableTask} will be run (unless it is {@code null}).
  * 
  * @author Michalis Vitos, mstevens
  * 
@@ -34,7 +34,7 @@ public abstract class Animator extends AsyncTask<Void, Void, Void>
 {
 	
 	protected long duration;
-	private Runnable taskAfterAnimation;
+	private Runnable taskAfterAnimation; // may be null
 	private View animateView;
 	private View blockView; // may be null
 	private boolean blockViewEnabled;
@@ -42,9 +42,9 @@ public abstract class Animator extends AsyncTask<Void, Void, Void>
 
 	/**
 	 * @param duration  running time of the animation (in ms)
-	 * @param taskAfterAnimation  Runnable that is to be executed after the animation is finished
+	 * @param taskAfterAnimation  Runnable that is to be executed after the animation is finished (may be null)
 	 * @param animateView  View to which the animation will be applied
-	 * @param blockView  View which is to be disabled while the animation is running (can be null)
+	 * @param blockView  View which is to be disabled while the animation is running (may be null)
 	 */
 	public Animator(long duration, Runnable taskAfterAnimation, View animateView, View blockView)
 	{
@@ -56,7 +56,7 @@ public abstract class Animator extends AsyncTask<Void, Void, Void>
 	
 	/**
 	 * @param duration  running time of the animation (in ms)
-	 * @param taskAfterAnimation  Runnable that is to be executed after the animation is finished
+	 * @param taskAfterAnimation  Runnable that is to be executed after the animation is finished (may be null)
 	 * @param animateView  View to which the animation will be applied
 	 * @param controller  if a non-null Controller instance is passed the Controller's blockUI() method will be used to block all UI interactions during animation
 	 */
@@ -107,7 +107,8 @@ public abstract class Animator extends AsyncTask<Void, Void, Void>
 	protected void onPostExecute(Void result)
 	{
 		// Run the task
-		taskAfterAnimation.run();
+		if(taskAfterAnimation != null)
+			taskAfterAnimation.run();
 		
 		// Re-enable blockView:
 		if(blockView != null)

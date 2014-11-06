@@ -143,8 +143,8 @@ public class AndroidProjectLoaderStorer extends ProjectLoaderStorer
 					// Report success:
 					((StreamSourceCallback) callback).projectLoadStoreSuccess(project, loader.getWarnings());
 			}
-		}
-		
+			super.onPostExecute(project);
+		}		
 	}
 	
 }
