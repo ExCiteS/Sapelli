@@ -388,4 +388,5 @@ public class CollectorController extends Controller implements LocationListener,
 			unblockUI();
 		}
 	}
+	
 }
