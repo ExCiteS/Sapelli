@@ -4,6 +4,6 @@ call mvn versions:commit
 
 cd CollectorAndroid
 
-call mvn android:manifest-update
+call mvn build-helper:parse-version android:manifest-update
 
 cd ..
