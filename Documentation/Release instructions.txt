@@ -1,0 +1,14 @@
+
+Beta releases:
+--------------
+
+1) run in Sapelli/: upgrade.bat 2.0.0-beta-X
+2) commit to git (message: Released test build v2.0.0-beta-X)
+3) tag that commit with tag "v2.0.0-beta-X"
+4) run in Sapelli/CollectorAndroid/beta-distribute.bat  (this does a full release build and uploads the APK to crashlytics)
+5) invite testers to the new beta
+6) push to github!
+7) create a Release on github based on the v2.0.0-beta-X tag and attach the apk to it (take it from your local m2 repository: ~/.m2/repository/uk/ac/ucl/excites/sapelli-collector-android/2.0.0-beta-X/sapelli-collector-android-2.0.0-beta-X-release.apk)
+8) run in Sapelli/: upgrade 2.0.0-SNAPSHOT (!!!)
+9) commit to git (message: Changed version to 2.0.0-SNAPSHOT to open development of v2.0.0-beta-X+1)
+10) push to github
