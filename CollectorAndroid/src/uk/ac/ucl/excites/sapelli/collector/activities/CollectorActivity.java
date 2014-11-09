@@ -135,8 +135,24 @@ public class CollectorActivity extends ProjectActivity
 	}
 	
 	@Override
+	protected void onStart()
+	{
+		//Log.d(TAG, "onStart()");
+		
+		// super:
+		super.onStart();
+		
+		// Show demo disclaimer if needed:
+		if(app.getBuildInfo().isDemoBuild())
+			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
+	}
+
+	@Override
 	protected void onNewIntent(Intent intent)
 	{
+		//Log.d(TAG, "onNewIntent()");
+		
+		// super:
 		super.onNewIntent(intent);
 		
 		// Change the current intent
@@ -180,7 +196,8 @@ public class CollectorActivity extends ProjectActivity
 			return; // everything else should still be in order
 		}
 		
-		// Load project & set-up controller:
+		/* If there is no loaded project yet (or not anymore) and/or the controller is (or has been made) null, then:
+		 * 	Load the project, set-up controller, (re)initialise UI & start the project: */
 		if(project == null || controller == null) // check both just in case
 		{
 			// Load the project specified by the intent (mandatory):
@@ -191,23 +208,19 @@ public class CollectorActivity extends ProjectActivity
 			catch(Exception e)
 			{
 				showErrorDialog(e.getMessage(), true); // show error and exit activity (hence the return; below to stop onResume() from completing)
-				return;
+				return; // !!!
 			}
 			// ... if we get here this.project is initialised
 	
 			// Set-up controller:
 			controller = new CollectorController(project, collectorView, projectStore, recordStore, fileStorageProvider, this);
-			collectorView.initialise(controller); // !!!
+			collectorView.initialise(controller); // (re)initialise the UI !!!
 			
 			// Start project:
 			controller.startProject();
 			
-			// Show demo disclaimer if needed:
-			if(app.getBuildInfo().isDemoBuild())
-				showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
-			
 			// Enable audio feedback
-			controller.enableAudioFeedback();
+			controller.enableAudioFeedback(); // TODO make the Controller/collectorController handle this on its own
 		}
 	}
 
@@ -261,10 +274,10 @@ public class CollectorActivity extends ProjectActivity
 	{
 		switch(keyCode)
 		{
-		case KeyEvent.KEYCODE_VOLUME_DOWN:
-			return true;
-		case KeyEvent.KEYCODE_VOLUME_UP:
-			return true;
+			case KeyEvent.KEYCODE_VOLUME_DOWN:
+				return true;
+			case KeyEvent.KEYCODE_VOLUME_UP:
+				return true;
 		}
 		return super.onKeyUp(keyCode, event);
 	}
@@ -481,11 +494,14 @@ public class CollectorActivity extends ProjectActivity
 	@Override
 	protected void onDestroy()
 	{
+		//Log.d(TAG, "onDestory()");
+		
 		// Clean up:
 		collectorView.cancelCurrentField();
 		cancelExitFuture(); // cancel exit timer if needed
 		if(controller != null)
 			controller.cancelAndStop();
+		
 		// super:
 		super.onDestroy(); // discards projectStore & recordStore
 	}

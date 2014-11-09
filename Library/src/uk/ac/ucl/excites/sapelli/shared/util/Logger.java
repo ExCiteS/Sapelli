@@ -95,6 +95,13 @@ public class Logger
 		checkWriter();
 		fileWriter.writeLine("");
 	}
+	
+	@Override
+	public void finalize() throws Throwable
+	{
+		close();
+		super.finalize();
+	}
 
 	/**
 	 * Closes the log file. Nothing can be added to it after this method has been called.

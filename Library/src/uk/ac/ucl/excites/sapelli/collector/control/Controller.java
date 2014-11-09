@@ -878,7 +878,7 @@ public abstract class Controller implements FieldVisitor
 		// Close log file:
 		if(logger != null)
 		{
-			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.getID());
+			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.getID()); // closes the logger & underlying file(writer)
 			logger = null;
 		}
 
