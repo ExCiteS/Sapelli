@@ -76,6 +76,11 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	 */
 	static public final Pattern identifierPattern = Pattern.compile("[a-zA-Z_]+[0-9a-zA-Z_]*");
 	
+	static public String GetDBFileName(String baseName)
+	{
+		return baseName + DATABASE_NAME_SUFFIX + "." + DATABASE_FILE_EXTENSION;
+	}
+	
 	/**
 	 * Test method
 	 */

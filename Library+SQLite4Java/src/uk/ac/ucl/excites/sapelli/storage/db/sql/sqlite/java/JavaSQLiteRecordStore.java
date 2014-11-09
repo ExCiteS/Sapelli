@@ -54,7 +54,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		super(client);
 		
 		// Open database connection:
-		this.db = new SQLiteConnection(new File(folderPath, baseName + DATABASE_NAME_SUFFIX + "." + DATABASE_FILE_EXTENSION));
+		this.db = new SQLiteConnection(new File(folderPath, GetDBFileName(baseName)));
 		db.open(true);
 		
 		// Initialise:

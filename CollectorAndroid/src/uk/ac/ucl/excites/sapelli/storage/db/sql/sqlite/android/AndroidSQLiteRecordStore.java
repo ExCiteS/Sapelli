@@ -27,7 +27,9 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.database.Cursor;
+import android.database.DatabaseErrorHandler;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteCursor;
 import android.database.sqlite.SQLiteCursorDriver;
@@ -57,15 +59,16 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	/**
 	 * @param client
 	 * @param context
-	 * @param dbName
-	 * @throws Exception 
+	 * @param databaseFolder
+	 * @param baseName
+	 * @throws Exception
 	 */
-	public AndroidSQLiteRecordStore(StorageClient client, Context context, String baseName) throws Exception
+	public AndroidSQLiteRecordStore(StorageClient client, Context context, File databaseFolder, String baseName) throws Exception
 	{
 		super(client);
 		
 		// Helper:
-		SQLiteOpenHelper helper = new SQLiteOpenHelper(context, baseName + DATABASE_NAME_SUFFIX, new AndroidSQLiteCursorFactory(), DATABASE_VERSION)
+		SQLiteOpenHelper helper = new SQLiteOpenHelper(new CollectorContext(context, databaseFolder), GetDBFileName(baseName), new AndroidSQLiteCursorFactory(), DATABASE_VERSION)
 		{
 			@Override
 			public void onCreate(SQLiteDatabase db)
@@ -76,12 +79,13 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 			@Override
 			public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
 			{
-				// TODO what to do here??
+				// TODO onUpgrade(): what to do here?
 			}
 		};
 		
 		// Open writable database:
 		this.db = helper.getWritableDatabase();
+		Log.d("SQLite", "Opened SQLite database: " + db.getPath()); // TODO remove debug logging
 		
 		// Initialise:
 		initialise(newDB);
@@ -235,6 +239,57 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		    if(cursor != null)
 		        cursor.close();
 		}
+	}
+
+	/**
+	 * Custom ContextWrapper which creates databases in the given folder, instead of in the
+	 * internal application data folder (which the default Context implementation would do).
+	 * 
+	 * This allows us to place the SQLite database(s) on an external storage location (with the rest of the Sapelli files and folders).
+	 * 
+	 * Note that class makes assumptions about how {@link SQLiteOpenHelper} uses the provided {@link Context} to determine the database path,
+	 * refer to the links below for details.
+	 * 
+	 * @author mstevens
+	 * 
+	 * @see http://stackoverflow.com/a/9168969/1084488
+	 * @see http://grepcode.com/file/repository.grepcode.com/java/ext/com.google.android/android/2.3.3_r1/android/database/sqlite/SQLiteOpenHelper.java#95
+	 * @see http://grepcode.com/file/repository.grepcode.com/java/ext/com.google.android/android/5.L_preview/android/database/sqlite/SQLiteOpenHelper.java#192
+	 * @see http://grepcode.com/file/repository.grepcode.com/java/ext/com.google.android/android/2.3.3_r1/android/app/ContextImpl.java#542
+	 * @see http://grepcode.com/file/repository.grepcode.com/java/ext/com.google.android/android/2.3.3_r1/android/app/ContextImpl.java#560
+	 * @see http://grepcode.com/file/repository.grepcode.com/java/ext/com.google.android/android/5.L_preview/android/app/ContextImpl.java#940
+	 * @see http://grepcode.com/file/repository.grepcode.com/java/ext/com.google.android/android/5.L_preview/android/app/ContextImpl.java#968
+	 */
+	static private class CollectorContext extends ContextWrapper
+	{
+
+		private final File databaseFolder;
+
+		public CollectorContext(Context baseContext, File databaseFolder)
+		{
+			super(baseContext);
+			this.databaseFolder = databaseFolder;
+		}
+
+		@Override
+		public File getDatabasePath(String name)
+		{
+			return new File(databaseFolder, name);
+		}
+
+		@Override
+		public SQLiteDatabase openOrCreateDatabase(String name, int mode, SQLiteDatabase.CursorFactory factory)
+		{
+			return SQLiteDatabase.openOrCreateDatabase(getDatabasePath(name), factory);
+		}
+
+		@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+		@Override
+		public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory, DatabaseErrorHandler errorHandler)
+		{
+			return SQLiteDatabase.openOrCreateDatabase(getDatabasePath(name).getAbsolutePath(), factory, errorHandler);
+		}
+		
 	}
 	
 	/**

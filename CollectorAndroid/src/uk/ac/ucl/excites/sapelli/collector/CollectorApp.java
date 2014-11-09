@@ -315,8 +315,8 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		if(recordStore == null)
 		{
-			//recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
-			recordStore = new AndroidSQLiteRecordStore(collectorClient, this, getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			//recordStore = new DB4ORecordStore(getCollectorClient(client), getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			recordStore = new AndroidSQLiteRecordStore(collectorClient, this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			storeClients.put(recordStore, new HashSet<StoreClient>());
 		}
 		storeClients.get(recordStore).add(client); //add to set of clients currently using the projectStore

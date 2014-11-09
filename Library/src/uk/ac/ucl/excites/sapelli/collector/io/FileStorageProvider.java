@@ -39,6 +39,11 @@ public class FileStorageProvider
 	public static enum Folder
 	{
 		/**
+		 * Folder for (live, i.e. non-dumped/backed-up) databases and auxiliary files (e.g. journal file)
+		 */
+		DB,
+		
+		/**
 		 * Folder for (media) attachments, files produced during data collection (e.g. photos, audio, video), grouped per project
 		 */
 		Attachments,
@@ -123,27 +128,22 @@ public class FileStorageProvider
 	{
 		switch(folderType)
 		{
+			case DB: 
+				return getDBFolder(create);
 			case Attachments:
 				return getAttachmentsFolder(create);
-	
 			case Downloads:
 				return getSapelliDownloadsFolder();
-	
 			case Crashes:
 				return getCrashFolder(create);
-	
 			case Export:
 				return getExportFolder(create);
-	
 			case Logs:
 				return getLogsFolder(create);
-	
 			case Projects:
 				return getProjectsFolder(create);
-	
 			case Temp:
 				return getTempFolder(create);
-	
 			default:
 				return null;
 		}
@@ -216,6 +216,11 @@ public class FileStorageProvider
 			return getSubFolder(downloadsFolder, DOWNLOADS_SAPELLI_FOLDER, true);
 		else
 			throw new FileStorageException("Downloads folder is not or no longer accessible (path: " + downloadsFolder.getAbsolutePath());
+	}
+	
+	public File getDBFolder(boolean create) throws FileStorageException
+	{
+		return getSubFolder(getSapelliFolder(), Folder.DB.name(), create);
 	}
 	
 	public File getCrashFolder(boolean create) throws FileStorageException
