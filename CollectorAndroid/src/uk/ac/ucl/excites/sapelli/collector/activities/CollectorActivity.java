@@ -165,6 +165,7 @@ public class CollectorActivity extends ProjectActivity
 			controller.discard();
 			controller = null;
 		}
+		timedOut = false; // forget about timeouts in previous project/intent !!!
 		
 		// onResume() will be called next, where the new project will be loaded and a new controller instantiated 
 	}
@@ -184,16 +185,16 @@ public class CollectorActivity extends ProjectActivity
 		if(pausedForActivityResult)
 		{
 			pausedForActivityResult = false;
-			return; // everything else should still be in order
+			// (controller & project should still be there so nothing will happen below)
 		}
 		
 		// Deal with returning from timeout:
 		if(timedOut)
 		{
+			timedOut = false;
 			if(controller != null)
 				controller.startProject(); // restart project
-			timedOut = false;
-			return; // everything else should still be in order
+			// (unless the controller is null nothing will happen below)
 		}
 		
 		/* If there is no loaded project yet (or not anymore) and/or the controller is (or has been made) null, then:
@@ -284,7 +285,9 @@ public class CollectorActivity extends ProjectActivity
 	
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent event)
-	{
+	{ 
+		if(controller == null)
+			return false; // just in case...
 		if(controller.isUIBlocked())
 		{
 			controller.addLogLine("BLOCKED_MOTION_EVENT", event.toString());
