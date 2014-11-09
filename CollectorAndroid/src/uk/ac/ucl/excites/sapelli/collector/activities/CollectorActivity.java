@@ -167,7 +167,7 @@ public class CollectorActivity extends ProjectActivity
 		}
 		timedOut = false; // forget about timeouts in previous project/intent !!!
 		
-		// onResume() will be called next, where the new project will be loaded and a new controller instantiated 
+		// onStart() and onResume() will be called next, in the latter the new project will be loaded and a new controller instantiated 
 	}
 	
 	@Override
