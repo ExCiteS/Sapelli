@@ -485,7 +485,7 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 			// Add project
 			if(Patterns.WEB_URL.matcher(location).matches())
 				// Location is a (remote) URL: download Sapelli file:
-				AsyncDownloader.Download(this, fileStorageProvider.getDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
+				AsyncDownloader.Download(this, fileStorageProvider.getSapelliDownloadsFolder(), location, this); // loading & store of the project will happen upon successful download (via callback)
 			else if(location.toLowerCase().endsWith("." + XML_FILE_EXTENSION))
 				// Warn about bare XML file (no longer supported):
 				showErrorDialog(R.string.noBareXMLProjects);

@@ -123,7 +123,7 @@ public class CollectorApp extends Application implements StoreClient
 		}
 		catch(FileStorageException fse)
 		{
-			this.fileStorageException = fse;
+			this.fileStorageException = fse; // postpone throwing until getFileStorageProvider() is called!
 		}
 		
 		// Set up a CrashReporter (will use dumps folder):
@@ -215,10 +215,9 @@ public class CollectorApp extends Application implements StoreClient
 	 * Returns a FileStorageProvider when file storage is available or throws an FileStorageUnavailableException or an FileStorageRemovedException if it is not
 	 * 
 	 * @return a PathProvider object
-	 * @throws FileStorageUnavailableException
-	 * @throws FileStorageRemovedException
+	 * @throws FileStorageException
 	 */
-	public FileStorageProvider getFileStorageProvider() throws FileStorageUnavailableException, FileStorageRemovedException
+	public FileStorageProvider getFileStorageProvider() throws FileStorageException
 	{
 		if(fileStorageProvider != null && fileStorageException == null)
 			return fileStorageProvider;
@@ -227,6 +226,7 @@ public class CollectorApp extends Application implements StoreClient
 		else
 			throw new FileStorageUnavailableException(); // this shouldn't happen
 	}
+	
 	/**
 	 * Check if a directory is on a mounted storage and writable/readable
 	 * 
@@ -237,7 +237,6 @@ public class CollectorApp extends Application implements StoreClient
 	{
 		return (dir != null) && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) && FileHelpers.isReadableWritableDirectory(dir);
 	}
-
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig)
