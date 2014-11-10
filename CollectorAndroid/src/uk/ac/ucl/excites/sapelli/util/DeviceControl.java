@@ -18,6 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.util;
 
+import java.io.File;
+
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
@@ -29,6 +31,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Vibrator;
 import android.provider.Settings;
+import android.support.v4.content.ContextCompat;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -38,7 +41,8 @@ public final class DeviceControl
 {
 
 	protected static final String TAG = "DeviceControl";
-	
+	protected static final String SAMSUNG_S7710_SD_PATH = "/storage/extSdCard";
+
 	/**
 	 * Check if the device is connected to Internet
 	 * 
@@ -53,7 +57,7 @@ public final class DeviceControl
 			return true;
 		return false;
 	}
-	
+
 	/**
 	 * Time to wait after exiting the Airplane Mode for GSM to be connected
 	 */
@@ -175,7 +179,7 @@ public final class DeviceControl
 
 		return ((float) level / (float) scale) * 100.0f;
 	}
-	
+
 	/**
 	 * Increases the Media Volume
 	 * 
@@ -221,5 +225,84 @@ public final class DeviceControl
 
 		if(currentVolume > minVolume)
 			decreaseMediaVolume(context);
+	}
+
+	/**
+	 * Returns absolute paths to application-specific directories on all external storage devices where the application can place persistent files it owns as in
+	 * {@link ContextCompat#getExternalFilesDirs(Context, String)}. This method also hard-codes the SD Card path for devices that are not supported in Android
+	 * i.e. Samsung Xcover 2
+	 * 
+	 * @param context
+	 * @param type
+	 * @return
+	 */
+	public static File[] getExternalFilesDirs(Context context, String type)
+	{
+		// Get the paths ContextCompat
+		File[] paths = ContextCompat.getExternalFilesDirs(context, type);
+
+		String manufacturer = android.os.Build.MANUFACTURER;
+		String model = android.os.Build.MODEL;
+
+		// Check if Device is Samsung GT-S7710 (a.k.a. Samsung Galaxy Xcover 2)
+		if(compare(manufacturer, "Samsung") && compare(model, "GT-S7710"))
+		{
+			// Hard code the path of the external SD Card
+			paths = addPath(paths, getSdCardFilesDir(context, SAMSUNG_S7710_SD_PATH));
+		}
+
+		return paths;
+	}
+
+	/**
+	 * Return a file with a absolute path to the application-specific directory on the external sd card. The format is
+	 * <code>/sdCardPath/Android/data/application package name/files</code>
+	 * 
+	 * @param context
+	 * @param sdCardPath
+	 * @return
+	 */
+	private static File getSdCardFilesDir(Context context, String sdCardPath)
+	{
+		// Assemble the dir path
+		File sdCardFile = new File(sdCardPath + File.separator
+				+ "Android/data" + File.separator 
+				+ context.getApplicationContext().getPackageName() + File.separator
+				+ "files" + File.separator);
+
+		// Create the path
+		sdCardFile.mkdirs();
+
+		return sdCardFile;
+	}
+
+	/**
+	 * Compare if two strings are equal and also perform <code>null</code> and <code>isEmpty()</code> checks
+	 * 
+	 * @param firstString
+	 * @param secondString
+	 * @return
+	 */
+	private static boolean compare(String firstString, String secondString)
+	{
+		return firstString != null && secondString != null && !firstString.isEmpty() && !secondString.isEmpty() && firstString.equalsIgnoreCase(secondString);
+	}
+
+	/**
+	 * Add an element to the end of a File array
+	 * 
+	 * @param paths
+	 * @param path
+	 * @return
+	 */
+	public static File[] addPath(File[] paths, File path)
+	{
+		// Create a new paths array
+		File[] newPaths = new File[paths.length + 1];
+		// Copy the old paths and add the new one at the end of the array
+		System.arraycopy(paths, 0, newPaths, 0, paths.length);
+		newPaths[paths.length] = path;
+
+		return newPaths;
 	}
 }
