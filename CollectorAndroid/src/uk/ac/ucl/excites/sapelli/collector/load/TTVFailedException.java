@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.collector.media;
+package uk.ac.ucl.excites.sapelli.collector.load;
 
 /**
  * @author Ben

@@ -22,8 +22,6 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor;
 import uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.media.TTVFailedException;
-import uk.ac.ucl.excites.sapelli.collector.util.TextToVoice;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 import android.content.Context;
 
@@ -56,7 +54,7 @@ public class AndroidPostProcessor implements PostProcessor
 		String filepath = (fileStorageProvider.getProjectSoundFile(project, ttsTask.getAudioFileRelativePath())).getAbsolutePath();
 		
 		try {
-	        ttv.processSpeechToFile(ttsTask.getTextToSynthesise(), filepath); //TODO deprecated as of Lollipop
+	        ttv.processSpeechToFile(ttsTask.getTextToSynthesise(), filepath);
         } catch (TTVFailedException e) {
 	        warningKeeper.addWarning("Unable to synthesise text to speech: \""+e.getText()+"\". Skipping this text without creating an audio file.");
         }
