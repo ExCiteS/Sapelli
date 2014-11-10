@@ -54,10 +54,11 @@ import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Build;
 import android.util.Log;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
 
@@ -229,13 +230,21 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			if(fieldUI.informOnDisplay(false))
 			{
 				fieldUIView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
-			        @Override
+					
+                    @SuppressLint("NewApi")
+                    @SuppressWarnings("deprecation")
+                    @Override
 			        public void onGlobalLayout() {
 			        	// call the field's onDisplay method:
 			        	fieldUI.onDisplay(false);
-				        // remove this listener once this has occurred, so the field's onDisplay method is not called too many times
-			        	fieldUIView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+				        // remove this listener once this has occurred, so the field's onDisplay method is not called too many times:
+			        	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN /* 16 */)
+			        		fieldUIView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+			        	else
+			        		// use deprecated version (probably changed due to "on" typo):
+			        		fieldUIView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
 			        }
+                    
 		        });
 			}
 		}
