@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.SplitItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.TextItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
@@ -192,6 +193,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			
 			// Add label:
 			label = new TextView(getContext());
+			 //ensure that the label text is not truncated, by setting width to WRAP_CONTENT:
+			label.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 			label.setText(field.getCaption());
 			this.addView(label);
 			
@@ -358,7 +361,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	}
 	
 	/**
-	 * Creates an DictionaryItem object responding to the provided child ChoiceField
+	 * Creates an Item object responding to the provided child ChoiceField
 	 * 
 	 * Note: if we add colSpan/rowSpan support the right itemWidth/Height would need to be computed here (e.g.: for rowSpan=2 the itemWidth becomes (itemWidth*2)+spacingPx)
 	 * 
@@ -369,10 +372,23 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	{
 		File imageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), child.getImageRelativePath());
 		Item item = null;
-		if(FileHelpers.isReadableFile(imageFile))
-			item = new FileImageItem(imageFile);
-		else
-			item = new TextItem(child.getAltText()); //render alt text instead of image
+		
+		if (child.getCaptionHeight() == 1 || !FileHelpers.isReadableFile(imageFile)) {
+			item = new TextItem(child.getCaption()); //render caption text instead of image
+		}
+		else {
+			if (child.getCaptionHeight() == 0)
+				// do not add a caption text box
+				item = new FileImageItem(imageFile);
+			else {
+				// create new split item:
+				item = new SplitItem(SplitItem.VERTICAL)
+				// add image (take up all space not taken up by caption):
+				.addItem(new FileImageItem(imageFile), 1F - choice.getCaptionHeight())
+				// add caption text box:
+				.addItem(new TextItem(child.getCaption()), choice.getCaptionHeight());
+			}
+		}
 		
 		// Set background colour:
 		item.setBackgroundColor(ColourHelpers.ParseColour(child.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));

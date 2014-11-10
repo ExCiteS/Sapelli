@@ -53,9 +53,9 @@ public class ChoiceField extends Field implements DictionaryItem
 	static public final int DEFAULT_NUM_COLS = 1;
 	static public final int DEFAULT_NUM_ROWS = 2;
 	static public final String DEFAULT_ALT_TEXT = "?";
+	static public final float DEFAULT_CAPTION_HEIGHT = 0F; // by default, do not display caption text box
 	static public final boolean DEFAULT_CROSSED = false;
 	static public final String DEFAULT_CROSS_COLOR = "#A5FF0000"; // Red with 65% alpha
-	
 	static public final String IMAGE_VIRTUAL_COLOMN_TARGET_NAME = "Image";
 	static public final String VALUE_VIRTUAL_COLOMN_TARGET_NAME = "Value";
 	
@@ -68,6 +68,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	private int cols = DEFAULT_NUM_COLS;
 	private int rows = DEFAULT_NUM_ROWS;
 	private String altText;
+	private float captionHeight = DEFAULT_CAPTION_HEIGHT;
 	private boolean crossed = DEFAULT_CROSSED;
 	private String crossColor = DEFAULT_CROSS_COLOR;
 	private final String value;
@@ -153,6 +154,20 @@ public class ChoiceField extends Field implements DictionaryItem
 	public void setAltText(String altText)
 	{
 		this.altText = altText;
+	}
+	
+	/**
+	 * @return the fraction of the choice field's height that will be taken up by the caption text.
+	 */
+	public float getCaptionHeight() {
+		return captionHeight;
+	}
+	
+	/**
+	 * @param captionHeight - the fraction of the choice field's height that will be taken up by the caption text.
+	 */
+	public void setCaptionHeight(float captionHeight) {
+		this.captionHeight = captionHeight;
 	}
 	
 	/**
