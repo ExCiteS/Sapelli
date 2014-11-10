@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
@@ -59,7 +58,9 @@ import android.widget.TextView;
  */
 public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 {
-	static private final String TAG = "AndroidChoiceUI";
+	@SuppressWarnings("unused")
+    static private final String TAG = "AndroidChoiceUI";
+	
 	static public final float PAGE_CHOSEN_ITEM_SIZE_DIP = 60.0f; // width = height
 	static public final float PAGE_CHOSEN_ITEM_MARGIN_DIP = 1.0f; // same margin all round
 	static public final float CROSS_THICKNESS = 0.02f;
@@ -364,12 +365,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param child
 	 * @return corresponding item
 	 */
-	/**
-	 * @param child
-	 * @param itemPaddingPx
-	 * @param grayedOut
-	 * @return
-	 */
 	public Item createItem(ChoiceField child, int itemPaddingPx, boolean grayedOut)
 	{
 		File imageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), child.getImageRelativePath());
@@ -416,17 +411,21 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	@Override
 	protected List<AudioFeedbackController<View>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
 	{
+		List<AudioFeedbackController<View>.PlaybackJob> playlist;
 		switch (audioFeedbackMode) {
 		case LONG_CLICK:
-			
-			return Collections.singletonList(collectorUI.getAudioFeebackController().new PlaybackJob(field.getDescriptionAudioRelativePath()));
+			// just play question description when entering choice field:
+			playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>(); // do not use singletonList as list should be mutable
+			playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getAnswerDescriptionAudioRelativePath()));
+			return playlist;
 			
 		case SEQUENTIAL:
-			List<AudioFeedbackController<View>.PlaybackJob> playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>();
-			
+			// create a playlist that includes firstly the question description and then each answer description:
+			playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>();
+			// question description:
 			playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getDescriptionAudioRelativePath()));
+			// answer descriptions:
 			List<ChoiceField> children = field.getChildren();
-			
 			for (int i = 0; i < children.size(); i++) {
 				// enqueue each answer:
 				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(children.get(i).getAnswerDescriptionAudioRelativePath(), choiceView.getChildAt(i)));
@@ -435,7 +434,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			return playlist;
 			
 		default:
-			// should never get here
+			// should never get here since this method is only called if audio feedback is enabled
 			return null;
 			
 		}

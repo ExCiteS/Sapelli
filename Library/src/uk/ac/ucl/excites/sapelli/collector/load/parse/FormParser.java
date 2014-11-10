@@ -747,7 +747,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 							// playback of audio file included with project:
 							field.getDescription() :
 							// playback of audio generated from text (TTS): //TODO document filename format
-							newTTSSynthesisTask(field.getDescription(), FileHelpers.makeValidFileName(field.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(field.getID().getBytes())) + "_A." + owner.getGeneratedAudioExtension())));
+							newTTSSynthesisTask(field.getDescription(), FileHelpers.makeValidFileName(field.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(field.getID().getBytes())) + "_Q." + owner.getGeneratedAudioExtension())));
 				}
 			}
 			

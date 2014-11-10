@@ -31,8 +31,9 @@ import android.content.Context;
  */
 public class AndroidPostProcessor implements PostProcessor
 {
+	@SuppressWarnings("unused")
+    private static final String TAG = "AndroidPostProcessor";
 	
-	private static final String TAG = "AndroidPostProcessor";
 	private Context context;
 	private FileStorageProvider fileStorageProvider;
 	private TextToVoice ttv;
