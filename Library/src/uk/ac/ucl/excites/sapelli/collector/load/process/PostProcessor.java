@@ -39,4 +39,8 @@ public interface PostProcessor
 	 */
 	public void execute(TTSSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception;
 	
+	/**
+	 * Free any resources used by the post-processor.
+	 */
+	public void freeResources();
 }

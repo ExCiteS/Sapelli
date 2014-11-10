@@ -62,14 +62,14 @@ public class AndroidPostProcessor implements PostProcessor
 	}
 
 	/**
-	 * Destroys any resources that were being used by the PostProcessor
+	 * Frees any resources that were being used by the PostProcessor
 	 */
-	public void destroy() {	
+	@Override
+	public void freeResources() {	
 		// destroy TTS engine:
 		if (ttv != null) {
 			ttv.destroy();
 			ttv = null;
 		}
 	}
-	
 }
