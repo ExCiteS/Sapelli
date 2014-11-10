@@ -493,7 +493,13 @@ public abstract class Controller implements FieldVisitor
 		currFormSession.clearDiscardedAttachments();
 		
 		// Discard record itself:
-		currFormSession.record = null; //!!!
+		currFormSession.record = null; // !!!
+		/* Note:
+		 * 	Making the record null is risky because an NPE will be thrown (most likely crashing the app)
+		 * 	when some FieldUI or controller method attempts to (illegally!) use the record after this
+		 * 	discard operation. Obviously that shouldn't happen but we've had several cases in which it did.
+		 * 	However, all (known) cases have been resolved and keeping the above line also enables us to
+		 * 	detect any new similar cases (revealed by an NPE and/or crash). */
 	}
 	
 	@Override
@@ -850,7 +856,7 @@ public abstract class Controller implements FieldVisitor
 	
 	/**
 	 * Stops all use/activities of the controller but does not exit the containing application.
-	 * I.e. the controller can still be restarted.
+	 * I.e. the controller can still be restarted!
 	 */
 	public void discard()
 	{
@@ -882,7 +888,7 @@ public abstract class Controller implements FieldVisitor
 		// Close log file:
 		if(logger != null)
 		{
-			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.getID());
+			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.getID()); // closes the logger & underlying file(writer)
 			logger = null;
 		}
 

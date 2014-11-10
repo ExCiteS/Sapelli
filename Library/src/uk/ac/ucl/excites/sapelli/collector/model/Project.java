@@ -96,7 +96,7 @@ public class Project
 			throw new IllegalArgumentException("A valid version is required");
 		
 		// Name, variant & version:
-		this.name = FileHelpers.makeValidFileName(name);
+		this.name = name;
 		if(variant != null && !variant.isEmpty())
 			this.variant = variant;
 		this.version = version;
