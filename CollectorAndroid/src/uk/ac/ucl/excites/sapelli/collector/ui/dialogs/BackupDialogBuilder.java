@@ -137,7 +137,7 @@ public class BackupDialogBuilder
 						// Get file paths for the selected items from FileStorageProvider
 						List<File> toZip = new ArrayList<File>();
 						for(Folder folder : foldersToExport)
-							toZip.add(fileStorageProvider.getSapelliFolder(folder, false));
+							toZip.add(fileStorageProvider.getFolder(folder, false));
 						
 						// Zip everything with AsyncZipper (which will also back-up the database and include it in the zip):
 						new AsyncZipper(context,
