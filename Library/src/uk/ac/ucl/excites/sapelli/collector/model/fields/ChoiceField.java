@@ -53,7 +53,8 @@ public class ChoiceField extends Field implements DictionaryItem
 	static public final int DEFAULT_NUM_COLS = 1;
 	static public final int DEFAULT_NUM_ROWS = 2;
 	static public final String DEFAULT_ALT_TEXT = "?";
-	static public final float DEFAULT_CAPTION_HEIGHT = 0F; // by default, do not display caption text box
+	static public final float DEFAULT_CAPTION_HEIGHT_NO_CAPTION = 0F; // by default, do not display caption text box if there is no caption
+	static public final float DEFAULT_CAPTION_HEIGHT_HAS_CAPTION = 0.3F; // if the project author specifies a caption, use 0.3 caption height by default
 	static public final boolean DEFAULT_CROSSED = false;
 	static public final String DEFAULT_CROSS_COLOR = "#A5FF0000"; // Red with 65% alpha
 	static public final String IMAGE_VIRTUAL_COLOMN_TARGET_NAME = "Image";
@@ -68,7 +69,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	private int cols = DEFAULT_NUM_COLS;
 	private int rows = DEFAULT_NUM_ROWS;
 	private String altText;
-	private float captionHeight = DEFAULT_CAPTION_HEIGHT;
+	private float captionHeight = DEFAULT_CAPTION_HEIGHT_NO_CAPTION;
 	private boolean crossed = DEFAULT_CROSSED;
 	private String crossColor = DEFAULT_CROSS_COLOR;
 	private final String value;
@@ -189,15 +190,15 @@ public class ChoiceField extends Field implements DictionaryItem
 		return root;
 	}
 	
-	/** Always return the caption of the root
-	 * 
-	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#getCaption()
-	 */
-	@Override
-	public String getCaption()
-	{
-		return root.caption;
-	}
+//	/** Always return the caption of the root
+//	 * 
+//	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#getCaption()
+//	 */
+//	@Override
+//	public String getCaption()
+//	{
+//		return root.caption;
+//	}
 	
 	/**
 	 * @return the children

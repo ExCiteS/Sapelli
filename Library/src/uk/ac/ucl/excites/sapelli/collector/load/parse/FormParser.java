@@ -325,18 +325,20 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// <Choice>
 			if(qName.equals(TAG_CHOICE))
 			{
+				String caption = readCaption(attributes, TAG_CHOICE, false);
 				ChoiceField choice = new ChoiceField(currentForm,
 												attributes.getValue(ATTRIBUTE_FIELD_ID),
 												attributes.getValue(ATTRIBUTE_FIELD_VALUE),
 												!openFields.isEmpty() && openFields.peek() instanceof ChoiceField ? (ChoiceField) openFields.peek() : null, // old currentChoice becomes the parent (if it is null that's ok)
-												readCaption(attributes, TAG_CHOICE, false));
+												caption);
 				newField(choice, attributes);
 				// noColumn:
 				choice.setNoColumn(attributes.getBoolean(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
 				// Other attributes:
 				choice.setImageRelativePath(attributes.getString(ATTRIBUTE_FIELD_IMG, null, false, false));
 				choice.setAltText(attributes.getString(ATTRIBUTE_FIELD_ALT, null, false, false));
-				choice.setCaptionHeight(attributes.getFloat(ATTRIBUTE_CHOICE_CAPTION_HEIGHT, ChoiceField.DEFAULT_CAPTION_HEIGHT));
+				// if user specified a caption then use default height with caption, else use default height without caption:
+				choice.setCaptionHeight(attributes.getFloat(ATTRIBUTE_CHOICE_CAPTION_HEIGHT, (caption != null) ? ChoiceField.DEFAULT_CAPTION_HEIGHT_HAS_CAPTION : ChoiceField.DEFAULT_CAPTION_HEIGHT_NO_CAPTION));
 				choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
 				choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
 				choice.setCrossed(attributes.getBoolean("crossed", ChoiceField.DEFAULT_CROSSED));
