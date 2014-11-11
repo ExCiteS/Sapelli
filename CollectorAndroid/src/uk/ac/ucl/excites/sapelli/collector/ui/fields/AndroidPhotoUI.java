@@ -121,9 +121,10 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	}
 
 	@Override
-	protected void onCapture() {
+	protected boolean onCapture() {
 		cameraController.takePicture(this);
 		// do not allow clicks yet as the above call is asynchronous and returns immediately
+		return false;
 	}
 	
 

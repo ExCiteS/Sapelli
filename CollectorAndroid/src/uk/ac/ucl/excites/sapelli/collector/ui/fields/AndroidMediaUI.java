@@ -298,8 +298,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 
 	/**
 	 * What to do when the capture button has been pressed.
+	 * 
+	 * @return a boolean indicating whether or not to immediately allow new user interactions (i.e. clicks)
+	 * after this method has returned.
 	 */
-	protected abstract void onCapture();
+	protected abstract boolean onCapture();
 
 	/**
 	 * What to do when a piece of media is discarded after review (e.g. release media player resources).
@@ -400,12 +403,15 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				public void run() {
 					//just made a capture, so go to gallery/review when the field is re-entered:
 					controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY);
-					// execute subclass's capture behaviour
-					onCapture();
+					// execute subclass's capture behaviour and make note of whether or not
+					boolean unblock = onCapture();
 					// refresh capture button on press (e.g. might need to change from "record" to "stop recording")
 					refreshCaptureButton(null);
 					// force gallery to check for new files next time it is entered:
 					mediaItemsChanged = true; 
+					if (unblock)
+						// unblock UI if requested by subclass
+						controller.unblockUI();
 				}
 			};
 			

@@ -133,7 +133,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 	 * to the field.
 	 */
 	@Override
-	protected void onCapture() {
+	protected boolean onCapture() {
 		synchronized(recording) {
 			if (!recording) {
 				// start recording
@@ -154,7 +154,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 			}
 		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
-		controller.unblockUI();
+		return true;
 	}
 
 	@Override
