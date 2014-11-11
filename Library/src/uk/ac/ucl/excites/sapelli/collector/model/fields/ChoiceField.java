@@ -190,16 +190,6 @@ public class ChoiceField extends Field implements DictionaryItem
 		return root;
 	}
 	
-//	/** Always return the caption of the root
-//	 * 
-//	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#getCaption()
-//	 */
-//	@Override
-//	public String getCaption()
-//	{
-//		return root.caption;
-//	}
-	
 	/**
 	 * @return the children
 	 */
