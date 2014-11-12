@@ -278,7 +278,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		}
 
 		@Override
-		public SQLiteDatabase openOrCreateDatabase(String name, int mode, SQLiteDatabase.CursorFactory factory)
+		public SQLiteDatabase openOrCreateDatabase(String name, int mode, CursorFactory factory)
 		{
 			return SQLiteDatabase.openOrCreateDatabase(getDatabasePath(name), factory);
 		}
