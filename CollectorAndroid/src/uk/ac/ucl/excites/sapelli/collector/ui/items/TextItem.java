@@ -32,24 +32,38 @@ import android.widget.TextView;
 public class TextItem extends Item
 {
 
+	static public final int DEFAULT_TEXT_COLOR = Color.BLACK;
+	
 	private String text;
+	private int textColor;
 	
 	public TextItem(String text)
 	{
-		this(null, text);
+		this(null, text, DEFAULT_TEXT_COLOR);
+	}
+	
+	public TextItem(String text, int textColour)
+	{
+		this(null, text, textColour);
 	}
 	
 	public TextItem(Integer id, String text)
 	{
-		super(id);
-		this.text = text;
+		this(id, text, DEFAULT_TEXT_COLOR);
 	}
 	
+	public TextItem(Integer id, String text, int textColour)
+	{
+		super(id);
+		this.text = text;
+		this.textColor = textColour;
+	}
+		
 	@Override
 	protected View createView(Context context, boolean recycleChildren)
 	{
 		TextView txtView = new FontFitTextView(context);
-		txtView.setTextColor(Color.BLACK);
+		txtView.setTextColor(textColor);
 		txtView.setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
 		txtView.setIncludeFontPadding(false);
 		//txtView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
