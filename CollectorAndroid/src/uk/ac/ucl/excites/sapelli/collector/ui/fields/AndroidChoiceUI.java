@@ -430,7 +430,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		item.setPaddingPx(itemPaddingPx);
 
 		// Set the description used for accessibility support
-		item.setDescription(choice.getAnswerDescription()); // TODO fallbacks ? (e.g. when on page)
+		item.setDescription(choice.getAnswerDescription()); // TODO fallbacks ? (question)desc? caption? (e.g. when on page)
 
 		return item;
 	}
