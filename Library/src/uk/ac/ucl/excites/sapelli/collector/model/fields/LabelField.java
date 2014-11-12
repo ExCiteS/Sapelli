@@ -37,19 +37,27 @@ public class LabelField extends Field
 	static public final float DEFAULT_TEXT_SIZE_SCALE = 1.0f; // same as surrounding text  
 	static public final boolean DEFAULT_TEXT_CENTERED = false;
 	
+	static private String GetCaption(String parsedCaption) throws NullPointerException
+	{
+		if(parsedCaption == null)
+			throw new NullPointerException("The caption of a Label cannot be null");
+		return parsedCaption;
+	}
+	
 	private float textSizeScale = DEFAULT_TEXT_SIZE_SCALE;
 	private boolean centered = DEFAULT_TEXT_CENTERED;
 	
 	/**
 	 * @param form
-	 * @param id
+	 * @param id the id, may be null
 	 * @param caption the label's caption, cannot be null.
+	 * @throws NullPointerException when the caption is null
 	 */
-	public LabelField(Form form, String id, String caption)
+	public LabelField(Form form, String id, String caption) throws NullPointerException
 	{	
 		super(	form,
-				(id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id),
-				caption);
+				GetID(id, form, ID_PREFIX, caption),
+				GetCaption(caption));
 		this.noColumn = true;
 		this.optional = true;
 	}

@@ -35,7 +35,7 @@ public abstract class UILessField extends Field
 	 */
 	public UILessField(Form form, String id)
 	{
-		super(form, id, null);
+		super(form, id);
 	}
 
 	/* (non-Javadoc)

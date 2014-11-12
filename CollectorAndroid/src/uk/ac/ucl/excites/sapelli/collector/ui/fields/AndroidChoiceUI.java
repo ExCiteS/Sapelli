@@ -151,7 +151,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			afc.play(afc.new PlaybackJob(child.getAnswerDescriptionAudioRelativePath(), childView));
 		}
 		else
-			controller.addLogLine("LONG_CLICK", "LongClick on " + choice.getAltText() + " but AudioFeedback is disabled");
+			controller.addLogLine("LONG_CLICK", "LongClick on " + choice.toString(false) + " but AudioFeedback is disabled");
 
 		return true;
 	}
@@ -192,11 +192,14 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			this.setOrientation(LinearLayout.VERTICAL);
 			
 			// Add label:
-			label = new TextView(getContext());
-			 //ensure that the label text is not truncated, by setting width to WRAP_CONTENT:
-			label.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-			label.setText(field.getCaption());
-			this.addView(label);
+			if(field.hasCaption())
+			{
+				label = new TextView(getContext());
+				//ensure that the label text is not truncated, by setting width to WRAP_CONTENT:
+				label.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+				label.setText(field.getCaption());
+				this.addView(label);
+			}
 			
 			chosenSizePx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_SIZE_DIP);
 			chosenPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
@@ -361,46 +364,54 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	}
 	
 	/**
-	 * Creates an Item object responding to the provided child ChoiceField
+	 * Creates an Item object responding to the provided (child) ChoiceField
 	 * 
-	 * Note: if we add colSpan/rowSpan support the right itemWidth/Height would need to be computed here (e.g.: for rowSpan=2 the itemWidth becomes (itemWidth*2)+spacingPx)
-	 * 
-	 * @param child
-	 * @return corresponding item
+	 * @param choice
+	 * @param itemPaddingPx
+	 * @param grayedOut
+	 * @return
 	 */
-	public Item createItem(ChoiceField child, int itemPaddingPx, boolean grayedOut)
+	public Item createItem(ChoiceField choice, int itemPaddingPx, boolean grayedOut)
 	{
-		File imageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), child.getImageRelativePath());
-		Item item = null;
+		/* Note
+		 * 	If the choice is the root it means we are on a page (meaning the item will be
+		 * 	displayed together with caption-label above it) and there is no value yet.
+		 * 	In this case we never show both an image and a caption (due to limited space),
+		 * 	we also avoid repeating the caption which is already displayed above the item. */
 		
-		if (child.getCaptionHeight() == 1 || !FileHelpers.isReadableFile(imageFile)) {
-			item = new TextItem(child.getCaption()); //render caption text instead of image
-		}
-		else {
-			if (child.getCaptionHeight() == 0)
-				// do not add a caption text box
-				item = new FileImageItem(imageFile);
-			else {
-				// create new split item:
-				item = new SplitItem(SplitItem.VERTICAL)
-				// add image (take up all space not taken up by caption):
-				.addItem(new FileImageItem(imageFile), 1F - choice.getCaptionHeight())
-				// add caption text box:
-				.addItem(new TextItem(child.getCaption()), choice.getCaptionHeight());
+		Item item = null;
+		// Decide on appearance and get appropriate item(s):
+		if(choice.getImageRelativePath() != null && choice.getCaptionHeight() < 1)
+		{	// the is an image path (but not necessarily an accessible file) and the caption does not take up the full height
+			if(choice.hasCaption() && choice.getCaptionHeight() > 0 && !choice.isRoot())
+			{	// there is a caption, a non-zero caption height & the choice not the root --> IMAGE + CAPTION:
+				item = new SplitItem(SplitItem.VERTICAL) // create new split item
+					// add item for image (take up all space not taken up by caption):
+					.addItem(createImageItem(choice, false), 1.0f - choice.getCaptionHeight())
+					// add item for caption:
+					.addItem(createCaptionItem(choice, false), choice.getCaptionHeight());
 			}
+			else
+			{	// there is no caption, or its height is 0, or we are dealing with the root --> IMAGE ONLY
+				item = createImageItem(choice, !choice.isRoot());
+			}
+		}
+		else
+		{	// there is no image path, or the caption takes up the full height --> CAPTION ONLY
+			item = createCaptionItem(choice, !choice.isRoot()); // regardless of the actual captionHeight the caption will take up the fill available height
 		}
 		
 		// Set background colour:
-		item.setBackgroundColor(ColourHelpers.ParseColour(child.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
-		
+		item.setBackgroundColor(ColourHelpers.ParseColour(choice.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+
 		// Crossing & graying out
-		if(child.isCrossed() || grayedOut)
-		{	
+		if(choice.isCrossed() || grayedOut)
+		{
 			LayeredItem layeredItem = new LayeredItem();
 			layeredItem.addLayer(item, false);
 			// Crossing:
-			if(child.isCrossed())
-				layeredItem.addLayer(new DrawableItem(new SaltireCross(ColourHelpers.ParseColour(child.getCrossColor(), ChoiceField.DEFAULT_CROSS_COLOR), CROSS_THICKNESS))); // later we may expose thickness in the XML as well
+			if(choice.isCrossed())
+				layeredItem.addLayer(new DrawableItem(new SaltireCross(ColourHelpers.ParseColour(choice.getCrossColor(), ChoiceField.DEFAULT_CROSS_COLOR), CROSS_THICKNESS))); // later we may expose thickness in the XML as well
 			// Graying-out:
 			if(grayedOut)
 			{
@@ -409,19 +420,48 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				// Add grayed-out layer:
 				Item grayOutOverlay = new EmptyItem();
 				grayOutOverlay.setBackgroundColor(CollectorView.COLOR_SEMI_TRANSPARENT_GRAY);
-				layeredItem.addLayer(grayOutOverlay, false);	
+				layeredItem.addLayer(grayOutOverlay, false);
 			}
 			// Item becomes layered:
 			item = layeredItem;
 		}
-		
+
 		// Set size & padding:
 		item.setPaddingPx(itemPaddingPx);
-		
+
 		// Set the description used for accessibility support
-		item.setDescription(child.getAltText());
+		item.setDescription(choice.getAnswerDescription()); // TODO fallbacks ? (e.g. when on page)
 
 		return item;
+	}
+	
+	/**
+	 * @param choice
+	 * @param standAlone whether the text will be displayed on its own, or not (i.e. under an image or under a page caption-label)
+	 * @return
+	 */
+	private Item createImageItem(ChoiceField choice, boolean standAlone)
+	{
+		File imageFile = controller.getFileStorageProvider().getProjectImageFile(field.form.project, choice.getImageRelativePath());
+		if(FileHelpers.isReadableFile(imageFile))
+			// render image:
+			return new FileImageItem(imageFile);
+		else
+		{	// render "alt" text instead of image:
+			String alt = getAltText(choice, standAlone);
+			// We make text color red if the alt text is the image path (meaning we couldn't display a caption or value String):
+			return new TextItem(alt, alt.equals(choice.getImageRelativePath()) ? Color.RED : TextItem.DEFAULT_TEXT_COLOR);
+		}
+	}
+	
+	/**
+	 * @param child
+	 * @param standAlone whether the text will be displayed on its own, or not (i.e. under an image or under a page caption-label)
+	 * @return
+	 */
+	private Item createCaptionItem(ChoiceField child, boolean standAlone)
+	{	// render caption text:
+		return new TextItem(getCaptionText(child, standAlone));
 	}
 
 	@Override

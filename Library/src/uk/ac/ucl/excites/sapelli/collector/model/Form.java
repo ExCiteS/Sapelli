@@ -104,7 +104,7 @@ public class Form implements WarningKeeper
 	public static final String DEFAULT_BACK_BUTTON_DESCRIPTION = "Back";
 
 	// Dynamics-------------------------------------------------------
-	private final Project project;
+	public final Project project;
 	private final String id;
 	private final short position;
 	private boolean producesRecords = true;

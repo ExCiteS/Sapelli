@@ -126,7 +126,6 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FIELD_OPTIONAL = "optional";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
 	static private final String ATTRIBUTE_FIELD_EDITABLE = "editable";
-	static private final String ATTRIBUTE_FIELD_ALT = "alt";
 	static private final String ATTRIBUTE_FIELD_IMG = "img";
 	static private final String ATTRIBUTE_FIELD_DESC = "desc";
 	static private final String ATTRIBUTE_FIELD_ANSWER_DESC = "answerDesc";
@@ -153,6 +152,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FIELD_DEFAULTVALUE = "defaultValue";
 	static private final String ATTRIBUTE_FIELD_INITVALUE = "initialValue";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
+	static private final String ATTRIBUTE_CHOICE_ALT = "alt";
 	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
 	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
 	static private final String ATTRIBUTE_CHOICE_CAPTION_HEIGHT = "captionHeight";
@@ -325,39 +325,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// <Choice>
 			if(qName.equals(TAG_CHOICE))
 			{
-				String caption = readCaption(attributes, TAG_CHOICE, false);
-				ChoiceField choice = new ChoiceField(currentForm,
-												attributes.getValue(ATTRIBUTE_FIELD_ID),
-												attributes.getValue(ATTRIBUTE_FIELD_VALUE),
-												!openFields.isEmpty() && openFields.peek() instanceof ChoiceField ? (ChoiceField) openFields.peek() : null, // old currentChoice becomes the parent (if it is null that's ok)
-												caption);
-				newField(choice, attributes);
-				// noColumn:
-				choice.setNoColumn(attributes.getBoolean(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
-				// Other attributes:
-				choice.setImageRelativePath(attributes.getString(ATTRIBUTE_FIELD_IMG, null, false, false));
-				choice.setAltText(attributes.getString(ATTRIBUTE_FIELD_ALT, null, false, false));
-				// if user specified a caption then use default height with caption, else use default height without caption:
-				choice.setCaptionHeight(attributes.getFloat(ATTRIBUTE_CHOICE_CAPTION_HEIGHT, (caption != null) ? ChoiceField.DEFAULT_CAPTION_HEIGHT_HAS_CAPTION : ChoiceField.DEFAULT_CAPTION_HEIGHT_NO_CAPTION));
-				choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
-				choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
-				choice.setCrossed(attributes.getBoolean("crossed", ChoiceField.DEFAULT_CROSSED));
-				choice.setCrossColor(attributes.getString("crossColor", ChoiceField.DEFAULT_CROSS_COLOR, true, false));
-				// Audio feedback:
-				//	Question: "questionDesc" is parsed in newField()!
-				//	Answer:
-				choice.setAnswerDescription(attributes.getString(ATTRIBUTE_FIELD_ANSWER_DESC, null, true, false));
-				if(choice.getAnswerDescription() != null && currentForm.isUsingAudioFeedback())
-				{
-					choice.setAnswerDescriptionAudioRelativePath(
-						FileHelpers.isAudioFileName(choice.getAnswerDescription()) ?
-							// playback of audio file included with project:
-							choice.getAnswerDescription() :
-							// playback of audio generated from text (TTS):
-							newTTSSynthesisTask(choice.getAnswerDescription(),
-									// Filename: "[id]_[md5Hex(id)]_A.EXTENSION"
-									FileHelpers.makeValidFileName(choice.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(choice.getID().getBytes())) + "_A." + owner.getGeneratedAudioExtension())));
-				}
+				newChoice(attributes);
 			}
 			// <Location>
 			else if(qName.equals(TAG_LOCATION))
@@ -609,6 +577,73 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		{
 			throw new IllegalArgumentException("FormParser only deals with elements that are equal to, or contained within <" + TAG_FORM + ">.");
 		}
+	}
+	
+	/**
+	 * Parses a <Choice>
+	 * 
+	 * @param attributes
+	 * @throws SAXException
+	 */
+	private void newChoice(XMLAttributes attributes) throws SAXException
+	{
+		// Parent:
+		ChoiceField parent = !openFields.isEmpty() && openFields.peek() instanceof ChoiceField ? (ChoiceField) openFields.peek() : null; 
+		
+		// Caption:
+		String caption = null;
+		boolean captionFromAlt = false;
+		// 	First try singular caption attributes ("caption" & "label") ...
+		caption = attributes.getString(caption, false, true, ATTRIBUTE_FIELD_CAPTION_SINGULAR);
+		//	... if that failed, try "alt" (for backwards compatibility), but only if this is not a root choice(!) ...
+		if(caption == null && parent != null && attributes.contains(ATTRIBUTE_CHOICE_ALT))
+		{
+			caption = attributes.getString(ATTRIBUTE_CHOICE_ALT, caption, false, true);
+			captionFromAlt = true; // !!!
+		}
+		
+		// Create ChoiceField:
+		ChoiceField choice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getValue(ATTRIBUTE_FIELD_VALUE), parent, caption);
+		newField(choice, attributes);
+		
+		// Parse noColumn:
+		choice.setNoColumn(attributes.getBoolean(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
+		// Parse img path:
+		choice.setImageRelativePath(attributes.getString(ATTRIBUTE_FIELD_IMG, null, false, false));
+		
+		// Parse/set caption height:
+		float defaultCaptionHeight = !captionFromAlt ?
+										ChoiceField.DEFAULT_CAPTION_HEIGHT /* if there is a caption it did not come from "alt" */ :
+										ChoiceField.DEFAULT_CAPTION_ALT_HEIGHT /* the caption came from "alt" */;
+		float captionHeight = attributes.getFloat(ATTRIBUTE_CHOICE_CAPTION_HEIGHT, defaultCaptionHeight);
+		if(captionHeight < 0.0f || captionHeight > 1.0f) // check if the captionHeight not out of bounds
+		{
+			addWarning("Value of attribute " + ATTRIBUTE_CHOICE_CAPTION_HEIGHT + " on <" + TAG_CHOICE  + "> must be in range [0.0, 1.0].");
+			captionHeight = defaultCaptionHeight;
+		}
+		choice.setCaptionHeight(captionHeight);
+		
+		// Audio feedback:
+		//	Question: "questionDesc" is parsed in newField()!
+		//	Answer:
+		choice.setAnswerDescription(attributes.getString(ATTRIBUTE_FIELD_ANSWER_DESC, null, true, false));
+		if(choice.getAnswerDescription() != null && currentForm.isUsingAudioFeedback())
+		{
+			choice.setAnswerDescriptionAudioRelativePath(
+				FileHelpers.isAudioFileName(choice.getAnswerDescription()) ?
+					// playback of audio file included with project:
+					choice.getAnswerDescription() :
+					// playback of audio generated from text (TTS):
+					newTTSSynthesisTask(choice.getAnswerDescription(),
+							// Filename: "[id]_[md5Hex(id)]_A.EXTENSION"
+							FileHelpers.makeValidFileName(choice.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(choice.getID().getBytes())) + "_A." + owner.getGeneratedAudioExtension())));
+		}
+		
+		// Other attributes:
+		choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
+		choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
+		choice.setCrossed(attributes.getBoolean("crossed", ChoiceField.DEFAULT_CROSSED));
+		choice.setCrossColor(attributes.getString("crossColor", ChoiceField.DEFAULT_CROSS_COLOR, true, false));
 	}
 	
 	/**
@@ -930,7 +965,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			deactivate(); //will call reset() (+ warnings will be copied to owner)
 		}
 	}
-	
+
 	private String readCaption(XMLAttributes tagAttributes, String tag, boolean required) throws Exception
 	{
 		return readCaption(tagAttributes, tag, required, false); // singular by default

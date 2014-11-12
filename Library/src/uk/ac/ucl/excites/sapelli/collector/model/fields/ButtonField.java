@@ -57,7 +57,7 @@ public class ButtonField extends Field
 	 */
 	public ButtonField(Form form, String id, String caption)
 	{	
-		super(form, (id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id), caption);
+		super(form, GetID(id, form, ID_PREFIX, caption), GetCaption(id, caption));
 		setColumnType(DEFAULT_COLUMN_TYPE); // also sets noColumn
 	}
 	

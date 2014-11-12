@@ -106,14 +106,14 @@ public class TextBoxField extends Field
 	
 	/**
 	 * @param form
-	 * @param id
-	 * @param caption
+	 * @param id the id of the field, may be null (but not recommended)
+	 * @param caption the caption of the field, may be null (in which case the id is used as the caption)
 	 */
 	public TextBoxField(Form form, String id, String caption)
 	{
 		super(	form,
-				(id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id),
-				caption);
+				GetID(id, form, ID_PREFIX, caption),
+				GetCaption(id, caption));
 		this.setMinMaxLength(GetDefaultMinLength(optional), DEFAULT_MAX_LENGTH);
 		this.setInitialValue(GetDefaultInitialValue(optional));
 		this.multiline = DEFAULT_MULTILINE;

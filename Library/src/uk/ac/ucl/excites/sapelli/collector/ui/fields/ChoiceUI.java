@@ -35,6 +35,8 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<ChoiceField, V, UI>
 {
 
+	static public final String MISSING_CAPTION_TEXT = "?";
+	
 	/**
 	 * @param field
 	 * @param controller
@@ -68,9 +70,9 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	protected void choiceMade(ChoiceField chosenChild)
 	{
 		if(!controller.isFieldEnabled(chosenChild))
-			throw new IllegalArgumentException("This choice is disabled:" + chosenChild.getAltText()); // should never happen
+			throw new IllegalArgumentException("This choice is disabled:" + chosenChild.getID()); // should never happen
 
-		controller.addLogLine("CLICKED", chosenChild.getAltText());
+		controller.addLogLine("CLICKED", chosenChild.toString(true));
 
 		FieldWithArguments next;
 		if(chosenChild.isLeaf())
@@ -85,6 +87,40 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 			next = new FieldWithArguments(chosenChild, field.getNextFieldArguments()); // No arguments (i.e. FieldParameters) are passed from parent to child
 		// Go...
 		controller.goTo(next, chosenChild.isLeaf() && field.getDictionary().contains(chosenChild) ? LeaveRule.CONDITIONAL : LeaveRule.UNCONDITIONAL_NO_STORAGE);
+	}
+	
+	/**
+	 * Returns the String to display as the caption under an image or instead of an image when no image was specified
+	 * 
+	 * @param choice
+	 * @param standAlone whether the text will be displayed on its own, or not (i.e. under an image or under a page caption-label)
+	 * @return text to use a caption (not necessarily taken from choice#caption)
+	 */
+	protected String getCaptionText(ChoiceField choice, boolean standAlone)
+	{
+		if(choice.hasCaption() && standAlone) // only use caption if it is not already displayed underneath the image, or above it in a page label
+			return choice.getCaption();
+		if(choice.getValue() != null)
+			return choice.getValue();
+		return MISSING_CAPTION_TEXT;
+	}
+	
+	/**
+	 * Returns the String to display *instead* of an image which the form designer
+	 * wanted to show (meaning that choice#imageRelativePath is not null) but which
+	 * cannot be displayed (due to missing/inaccessible file).
+	 * 
+	 * @param choice
+	 * @param standAlone whether the text will be displayed on its own, or not (i.e. under an image or under a page caption-label)
+	 * @return text to display instead of a missing image
+	 */
+	protected String getAltText(ChoiceField choice, boolean standAlone)
+	{
+		if(choice.hasCaption() && standAlone) // only use caption if it is not already displayed underneath the image, or above it in a page label
+			return choice.getCaption();
+		if(choice.getValue() != null)
+			return choice.getValue();
+		return choice.getImageRelativePath();
 	}
 
 	/* (non-Javadoc)

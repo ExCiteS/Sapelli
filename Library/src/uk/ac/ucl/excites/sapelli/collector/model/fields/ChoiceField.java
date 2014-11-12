@@ -36,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
@@ -47,16 +48,31 @@ import uk.ac.ucl.excites.sapelli.storage.util.StringListMapper;
  * 
  * @author mstevens
  */
+/**
+ * @author mstevens
+ *
+ */
 public class ChoiceField extends Field implements DictionaryItem
 {
 	
 	static public final int DEFAULT_NUM_COLS = 1;
 	static public final int DEFAULT_NUM_ROWS = 2;
-	static public final String DEFAULT_ALT_TEXT = "?";
-	static public final float DEFAULT_CAPTION_HEIGHT_NO_CAPTION = 0F; // by default, do not display caption text box if there is no caption
-	static public final float DEFAULT_CAPTION_HEIGHT_HAS_CAPTION = 0.3F; // if the project author specifies a caption, use 0.3 caption height by default
+	
+	/**
+	 * By default the caption (if one is specified!) will take up a quarter of the available height.
+	 */
+	static public final float DEFAULT_CAPTION_HEIGHT = 0.25f;
+	
+	/**
+	 * When the caption was specified using the deprecated "alt" attribute then it is not displayed by default
+	 * (hence the default height is 0). It will only be displayed underneath the image if a different captionHeight
+	 * is specified in the XML, or instead of the image if no image path is given or the image file is not accessible.
+	 */
+	static public final float DEFAULT_CAPTION_ALT_HEIGHT = 0.0f;
+	
 	static public final boolean DEFAULT_CROSSED = false;
 	static public final String DEFAULT_CROSS_COLOR = "#A5FF0000"; // Red with 65% alpha
+	
 	static public final String IMAGE_VIRTUAL_COLOMN_TARGET_NAME = "Image";
 	static public final String VALUE_VIRTUAL_COLOMN_TARGET_NAME = "Value";
 	
@@ -68,8 +84,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	private String answerDescriptionAudioRelativePath;
 	private int cols = DEFAULT_NUM_COLS;
 	private int rows = DEFAULT_NUM_ROWS;
-	private String altText;
-	private float captionHeight = DEFAULT_CAPTION_HEIGHT_NO_CAPTION;
+	private float captionHeight = DEFAULT_CAPTION_HEIGHT;
 	private boolean crossed = DEFAULT_CROSSED;
 	private String crossColor = DEFAULT_CROSS_COLOR;
 	private final String value;
@@ -134,40 +149,20 @@ public class ChoiceField extends Field implements DictionaryItem
 	{
 		return imageRelativePath != null;
 	}
-
-	/**
-	 * @return the altText
-	 */
-	public String getAltText()
-	{
-		if(altText != null)
-			return altText;
-		if(value != null)
-			return value;
-		if(imageRelativePath != null)
-			return imageRelativePath;
-		return DEFAULT_ALT_TEXT;
-	}
-
-	/**
-	 * @param altText the altText to set
-	 */
-	public void setAltText(String altText)
-	{
-		this.altText = altText;
-	}
 	
 	/**
 	 * @return the fraction of the choice field's height that will be taken up by the caption text.
 	 */
-	public float getCaptionHeight() {
+	public float getCaptionHeight()
+	{
 		return captionHeight;
 	}
 	
 	/**
 	 * @param captionHeight - the fraction of the choice field's height that will be taken up by the caption text.
 	 */
-	public void setCaptionHeight(float captionHeight) {
+	public void setCaptionHeight(float captionHeight)
+	{
 		this.captionHeight = captionHeight;
 	}
 	
@@ -334,17 +329,42 @@ public class ChoiceField extends Field implements DictionaryItem
 		return paths;
 	}
 	
+	@Override
 	public String toString()
 	{
 		return toString(false);
 	}
 	
-	public String toString(boolean printValue)
+	/**
+	 * @param verbose
+	 * @return
+	 */
+	public String toString(boolean verbose)
 	{
-		if(printValue)
-			return "ChoiceField " + id + (value != null ? " (value: " + value + ")" : " (no value set)");
-		else
-			return id;
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder(" ");
+		bldr.append("ChoiceField");
+		bldr.append(id);
+		if(verbose)
+		{
+			bldr.openTransaction("");
+			bldr.append("(");
+			bldr.openTransaction("; ");
+			if(value != null)
+				bldr.append("value: " + value);
+			if(imageRelativePath != null)
+				bldr.append("img: " + imageRelativePath);
+			if(hasCaption())
+				bldr.append("caption: " + caption);
+			if(!bldr.isCurrentTransactionEmpty())
+			{
+				bldr.commitTransaction();
+				bldr.append(")");
+				bldr.commitTransaction();
+			}
+			else
+				bldr.rollbackTransactions(2);
+		}
+		return bldr.toString();
 	}
 	
 	@Override
@@ -467,9 +487,9 @@ public class ChoiceField extends Field implements DictionaryItem
 					this.getChildren().equals(that.getChildren()) &&
 					(this.imageRelativePath != null ? this.imageRelativePath.equals(that.imageRelativePath) : that.imageRelativePath == null) &&
 					(this.answerDescription != null ? that.answerDescription.equals(that.answerDescription) : that.answerDescription == null) &&
+					this.captionHeight == that.captionHeight &&
 					this.cols == that.cols &&
 					this.rows == that.rows &&
-					(this.altText != null ? this.altText.equals(that.altText) : that.altText == null) &&
 					this.crossed == that.crossed &&
 					this.crossColor.equals(that.crossColor) &&
 					(this.value != null ? this.value.equals(that.value) : that.value == null);
@@ -488,9 +508,9 @@ public class ChoiceField extends Field implements DictionaryItem
 		hash = 31 * hash + getChildren().hashCode();
 		hash = 31 * hash + (imageRelativePath != null ? imageRelativePath.hashCode() : 0);
 		hash = 31 * hash + (answerDescription != null ? answerDescription.hashCode() : 0);
+		hash = 31 * hash + Float.floatToIntBits(captionHeight);
 		hash = 31 * hash + cols;
 		hash = 31 * hash + rows;
-		hash = 31 * hash + (altText != null ? altText.hashCode() : 0);
 		hash = 31 * hash + (crossed ? 0 : 1);
 		hash = 31 * hash + crossColor.hashCode();
 		hash = 31 * hash + (value != null ? value.hashCode() : 0);
