@@ -24,8 +24,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * File I/O helpers
@@ -47,9 +45,12 @@ public final class FileHelpers
 	static final public int FILE_DOES_NOT_EXIST_STRATEGY_REJECT = 1;
 	static final public int FILE_DOES_NOT_EXIST_STRATEGY_CREATE = 2;
 
+	/**
+	 * This class should never be instantiated 
+	 */
 	private FileHelpers()
 	{
-	} // no-one should instantiate this class
+	}
 
 	static public boolean isValidFileName(String filename)
 	{
@@ -417,37 +418,6 @@ public final class FileHelpers
 	static public boolean isReadableWritableDirectory(File directory)
 	{
 		return directory != null && directory.exists() && directory.isDirectory() && directory.canRead() && directory.canWrite();
-	}
-	
-	/**
-	 * Checks whether a filename is a valid audiofile name
-	 * 
-	 * @param fileName
-	 * @return
-	 */
-	static public boolean isAudioFileName(String fileName)
-	{
-		// Supported audio files in Android: http://developer.android.com/guide/appendix/media-formats.html
-		String AUDIO_PATTERN = "(.*/)*.+\\.(3gp|mp4|mp3|m4a|aac|ts|flac|mid|xmf|mxmf|rtttl|rtx|ota|imy|ogg|mkv|wav)$";
-		Pattern pattern = Pattern.compile(AUDIO_PATTERN);
-		Matcher matcher = pattern.matcher(fileName.toLowerCase());
-
-		return matcher.matches();
-	}
-
-	/**
-	 * Checks whether a filename is a valid photo name
-	 * 
-	 * @param fileName
-	 * @return
-	 */
-	static public boolean isPhotoFileName(String fileName)
-	{
-		String PHOTO_PATTERN = "(.*/)*.+\\.(png|jpg|gif|bmp|jpeg)$";
-		Pattern pattern = Pattern.compile(PHOTO_PATTERN);
-		Matcher matcher = pattern.matcher(fileName.toLowerCase());
-
-		return matcher.matches();
 	}
 
 }

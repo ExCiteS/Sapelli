@@ -27,6 +27,7 @@ import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask;
+import uk.ac.ucl.excites.sapelli.collector.media.MediaHelpers;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -630,7 +631,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		if(choice.getAnswerDescription() != null && currentForm.isUsingAudioFeedback())
 		{
 			choice.setAnswerDescriptionAudioRelativePath(
-				FileHelpers.isAudioFileName(choice.getAnswerDescription()) ?
+				MediaHelpers.isAudioFileName(choice.getAnswerDescription()) ?
 					// playback of audio file included with project:
 					choice.getAnswerDescription() :
 					// playback of audio generated from text (TTS):
@@ -784,7 +785,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				if(field.getDescription() != null && currentForm.isUsingAudioFeedback())
 				{
 					field.setDescriptionAudioRelativePath(
-						FileHelpers.isAudioFileName(field.getDescription()) ?
+						MediaHelpers.isAudioFileName(field.getDescription()) ?
 							// playback of audio file included with project:
 							field.getDescription() :
 							// playback of audio generated from text (TTS):
