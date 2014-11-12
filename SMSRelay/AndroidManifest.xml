@@ -22,7 +22,7 @@
     android:versionName="1.0.0" >
 
     <!--
-	    For more information on permission:  
+	    For more information on permission:
 	    http://developer.android.com/reference/android/Manifest.permission.html
     -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
