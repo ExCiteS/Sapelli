@@ -237,7 +237,7 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 			this.onPage = onPage;
 			// Set adapter:
 			super.setAdapter(new MultiListAdapter(context, parentItem));
-		}
+	}
 		
 		@Override
 		public void setAdapter(SpinnerAdapter adapter)
@@ -355,3 +355,4 @@ public class AndroidMultiListUI extends MultiListUI<View, CollectorView>
 	}
 
 }
+

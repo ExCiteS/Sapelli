@@ -4,6 +4,7 @@
 *.classpath text
 *.properties text
 *.prefs text
+*.pom text
 *.py text
 *.xml text
 *.htm text
@@ -21,6 +22,10 @@
 *.js text
 *.ep text
 *.csv text
+*.cfg text
+*.component text
+*.gradle text
+*.jsdtscope text
 *.zip binary
 *.sap binary
 *.sapelli binary
