@@ -22,6 +22,7 @@ import android.content.Context;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.widget.TextView;
 
 /**
@@ -44,12 +45,12 @@ public class FontFitTextView extends TextView
 	public FontFitTextView(Context context, AttributeSet attrs)
 	{
 		super(context, attrs);
-		this.setIncludeFontPadding(false); //slightly reduce vertical padding on TextView (may need to re-enable for other langs due to accents)
 		initialise();
 	}
 
 	private void initialise()
 	{
+		this.setIncludeFontPadding(false); //slightly reduce vertical padding on TextView (may need to re-enable for other langs due to accents)
 		testPaint = new Paint();
 		testPaint.set(this.getPaint());
 		// max size defaults to the initially specified text size unless it is too small
@@ -59,34 +60,45 @@ public class FontFitTextView extends TextView
 	/**
 	 * Compute maximum font size which makes the specified text fit in the box defined by the textWidth and textHeight parameters.
 	 */
-	private float refitText(String text, int textWidth, int textHeight)
+	private void refitText(String text, int textWidth, int textHeight)
 	{
 		if(textWidth <= 0 || textHeight <= 0)
-			return this.getTextSize();
+			// do not try to change font height
+			return;
+		// target text width/height is the provided container width minus relevant padding
 		int targetWidth = textWidth - this.getPaddingLeft() - this.getPaddingRight();
 		int targetHeight = textHeight - this.getPaddingBottom() - this.getPaddingTop();
+		// initialise max/min to some appropriate values
 		float hi = 100;
 		float lo = 2;
-		final float threshold = 0.5f; // How close we have to be
+		// how close we have to be to accept the size we have converged on and stop iterating:
+		final float threshold = 0.5f;
+
 		testPaint.set(this.getPaint());
-		Rect boundsRect = new Rect(); // Store measured bounds in a new Rect
+		
+		// Store measured bounds in a new Rect
+		Rect boundsRect = new Rect(); 
 
 		while((hi - lo) > threshold)
 		{
 			float size = (hi + lo) / 2;
 			testPaint.setTextSize(size);
 			testPaint.getTextBounds(text, 0, text.length(), boundsRect); //measure bounds and store in boundsRect
-			int additionalSpacing = testPaint.getFontMetricsInt(null); //TextView always adds a line spacing's worth of padding above and below text
+			
+			// TextView always adds a line spacing's worth of padding above and below text -- http://stackoverflow.com/questions/4768738/android-textview-remove-spacing-and-padding-on-top-and-bottom
+			// Here I am cheating a bit and only making sure there is enough space for the text + the top padding
+			// (i.e. the bottom padding can go of the screen and the font can be a little larger)
+			int additionalSpacing = testPaint.getFontMetricsInt(null); //
+			
 			//TODO allow for changed line spacing? - this assumes default only
 			//Note: getTextBounds not used to measure text width; see http://www.stackoverflow.com/questions/7549182/
-			if(testPaint.measureText(text) >= targetWidth 
-					|| boundsRect.height()+2*additionalSpacing >= targetHeight)
-				hi = size; // too big
+			if(testPaint.measureText(text) >= targetWidth || boundsRect.height() + additionalSpacing >= targetHeight)
+				hi = size; // was too big, so reduce hi
 			else
-				lo = size; // too small
+				lo = size; // was too small, so reduce lo
 		}
 		// Use lo so that we undershoot rather than overshoot
-		return lo;
+		this.setTextSize(TypedValue.COMPLEX_UNIT_PX, lo);
 	}
 
 
@@ -94,10 +106,8 @@ public class FontFitTextView extends TextView
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
 	{
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		int parentWidth = MeasureSpec.getSize(widthMeasureSpec);
-		int parentHeight = MeasureSpec.getSize(heightMeasureSpec);
-		refitText(this.getText().toString(), parentWidth, parentHeight);
-		this.setMeasuredDimension(parentWidth, parentHeight);
+		refitText(this.getText().toString(), MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
+		//this.setMeasuredDimension(parentWidth, parentHeight); //TODO
 	}
 
 	@Override
