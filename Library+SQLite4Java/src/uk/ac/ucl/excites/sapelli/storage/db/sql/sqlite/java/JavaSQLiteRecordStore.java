@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.java;
 import java.io.File;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
@@ -136,7 +137,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#doBackup(java.io.File)
 	 */
 	@Override
-	protected void doBackup(File destinationFolder) throws DBException
+	protected void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
 		File dstFile = new File(destinationFolder, FileHelpers.trimFileExtensionAndDot(db.getDatabaseFile().getName()) + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName() + "." + DATABASE_FILE_EXTENSION);
 		SQLiteBackup backup = null;

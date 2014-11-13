@@ -372,11 +372,17 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 		return true;
 	}
 
+	/**
+	 * TODO remove this once DB backup has been integrated with new zip-based backup feature
+	 * 
+	 * @param item
+	 * @return
+	 */
 	public boolean copyDBtoSD(MenuItem item)
 	{
 		try
 		{
-			app.backupStores();
+			app.backupStores(fileStorageProvider.getTempFolder(true));
 		}
 		catch(Exception e)
 		{

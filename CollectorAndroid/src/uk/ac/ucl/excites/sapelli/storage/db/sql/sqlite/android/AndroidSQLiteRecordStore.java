@@ -61,9 +61,9 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	 * @param context
 	 * @param databaseFolder
 	 * @param baseName
-	 * @throws Exception
+	 * @throws DBException
 	 */
-	public AndroidSQLiteRecordStore(StorageClient client, Context context, File databaseFolder, String baseName) throws Exception
+	public AndroidSQLiteRecordStore(StorageClient client, Context context, File databaseFolder, String baseName) throws DBException
 	{
 		super(client);
 		
@@ -84,7 +84,14 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		};
 		
 		// Open writable database:
-		this.db = helper.getWritableDatabase();
+		try
+		{
+			this.db = helper.getWritableDatabase();
+		}
+		catch(SQLiteException sqliteE)
+		{
+			throw new DBException("Failed to open writable SQLite database", sqliteE);
+		}
 		Log.d("SQLite", "Opened SQLite database: " + db.getPath()); // TODO remove debug logging
 		
 		// Initialise:

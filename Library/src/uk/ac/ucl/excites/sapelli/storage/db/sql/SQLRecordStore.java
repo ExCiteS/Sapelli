@@ -100,9 +100,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	/**
 	 * @param client
 	 * @param valuePlaceHolder - may be null if no parameters are to be used on SQL statements/queries (only literal values)
-	 * @throws DBException 
 	 */
-	public SQLRecordStore(StorageClient client, String valuePlaceHolder) throws DBException
+	public SQLRecordStore(StorageClient client, String valuePlaceHolder)
 	{
 		super(client);
 		this.tables = new HashMap<RecordReference, STable>();
@@ -113,9 +112,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * Must be called from subclass constructor!
 	 * 
 	 * @param newDB whether or not the database file is new (i.e. empty)
-	 * @throws Exception
+	 * @throws DBException
 	 */
-	protected void initialise(boolean newDB) throws Exception
+	protected void initialise(boolean newDB) throws DBException
 	{
 		// create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database)
 		this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);

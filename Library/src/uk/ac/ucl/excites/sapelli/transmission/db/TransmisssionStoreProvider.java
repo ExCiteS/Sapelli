@@ -16,17 +16,23 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.shared.db;
+package uk.ac.ucl.excites.sapelli.transmission.db;
 
-import java.io.File;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreProvider;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-
-public interface Store
+/**
+ * @author mstevens
+ *
+ */
+public interface TransmisssionStoreProvider extends StoreProvider
 {
 
-	public void finalise() throws DBException;
-	
-	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException;
+	/**
+	 * @param client
+	 * @return
+	 */
+	public RecordStore getTransmissionStore(StoreClient client) throws Exception;
 	
 }

@@ -20,13 +20,27 @@ package uk.ac.ucl.excites.sapelli.shared.db;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-
-public interface Store
+/**
+ * @author mstevens
+ *
+ */
+public interface StoreProvider
 {
 
-	public void finalise() throws DBException;
-	
-	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException;
-	
+	/**
+	 * Called by a DataAccessClient to signal it will no longer use its DataAccess object 
+	 * 
+	 * @param store
+	 * @param client
+	 */
+	public void discardStoreUsage(Store store, StoreClient client);
+
+	/**
+	 * Backs-up all known Stores
+	 * 
+	 * @param destinationFolder
+	 * @throws Exception
+	 */
+	public void backupStores(File destinationFolder) throws Exception;
+
 }

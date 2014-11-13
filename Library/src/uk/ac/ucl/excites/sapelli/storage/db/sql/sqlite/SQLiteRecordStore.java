@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
@@ -96,7 +97,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	// Dynamics---------------------------------------------
 	private final SQLiteTableFactory factory;
 	
-	public SQLiteRecordStore(StorageClient client) throws Exception
+	/**
+	 * @param client
+	 */
+	public SQLiteRecordStore(StorageClient client)
 	{
 		super(client, PARAM_PLACEHOLDER);
 		factory = new SQLiteTableFactory();
@@ -219,7 +223,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	protected abstract ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException;
 
 	@Override
-	protected void doBackup(File destinationFolder) throws DBException
+	protected void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
 		File currentDB = getDatabaseFile();
 		String extension = FileHelpers.getFileExtension(currentDB);
@@ -239,6 +243,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			throw new DBException("Failed to back-up SQLite database");
 	}
 	
+	/**
+	 * @return
+	 */
 	protected abstract File getDatabaseFile();
 	
 	/**
