@@ -107,7 +107,6 @@ public class FontFitTextView extends TextView
 	{
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 		refitText(this.getText().toString(), MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
-		//this.setMeasuredDimension(parentWidth, parentHeight); //TODO
 	}
 
 	@Override
