@@ -336,8 +336,10 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		 */
 		private void finalise() {
 			synchronized(playing) {
-				if (mediaPlayer != null)
+				if (mediaPlayer != null) {
+					mediaPlayer.reset();
 					mediaPlayer.release();
+				}
 				mediaPlayer = null;
 				playing = false;
 			}
