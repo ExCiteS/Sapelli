@@ -70,12 +70,15 @@ public class AudioRecorder
 
 	/**
 	 * Stops a recording that has been previously started.
+	 * 
+	 * @see http://stackoverflow.com/a/11984387/1084488
 	 */
 	public void stop() throws Exception
 	{
 		if (isRecording)
 		{
 			mediaRecorder.stop();
+			mediaRecorder.reset();
 			mediaRecorder.release();
 			mediaRecorder = null;
 			//Log.d(TAG, "Stopped recording audio (output file: " + audioFile.getAbsolutePath() + ").");

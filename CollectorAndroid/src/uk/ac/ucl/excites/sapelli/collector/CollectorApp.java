@@ -43,10 +43,10 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.util.Debug;
+import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.os.EnvironmentCompat;
 
 import com.crashlytics.android.Crashlytics;
@@ -165,7 +165,7 @@ public class CollectorApp extends Application implements StoreClient
 		{	// No: first installation or reset
 			
 			// Find appropriate files dir (using application-specific folder, which is removed upon app uninstall!):
-			File[] paths = ContextCompat.getExternalFilesDirs(this, null);
+			File[] paths = DeviceControl.getExternalFilesDirs(this, null);
 			if(paths != null && paths.length != 0)
 			{
 				// We count backwards because we prefer secondary external storage (which is likely to be on an SD card rather unremovable memory)
@@ -235,7 +235,11 @@ public class CollectorApp extends Application implements StoreClient
 	 */
 	private boolean isMountedReadableWritableDir(File dir)
 	{
-		return (dir != null) && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) && FileHelpers.isReadableWritableDirectory(dir);
+		// Accept both Mounted and Unknown Media. The Unknown Media is used in Android when a path isn't backed by known storage media i.e. the SD Card on
+		// Samsung Xcover 2. However, we still check that the dir is not null and that we have read/write access to it.
+		return (dir != null)
+				&& (Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) || EnvironmentCompat.MEDIA_UNKNOWN.equals(EnvironmentCompat.getStorageState(dir)))
+				&& FileHelpers.isReadableWritableDirectory(dir);
 	}
 
 	@Override
