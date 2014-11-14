@@ -275,7 +275,7 @@ public class DeviceID
 		
 	}
 	
-	private static class Initialiser extends AsyncTaskWithWaitingDialog<Void, Void, Integer>
+	private static class Initialiser extends AsyncTaskWithWaitingDialog<Void, Integer>
 	{
 
 		// Statics --------------------------------------------------

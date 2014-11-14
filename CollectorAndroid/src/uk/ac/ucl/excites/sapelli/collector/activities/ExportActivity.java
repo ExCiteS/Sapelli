@@ -374,7 +374,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 			this.finish();
 	}
 	
-	private class QueryTask extends AsyncTaskWithWaitingDialog<Void, Void, List<Record>>
+	private class QueryTask extends AsyncTaskWithWaitingDialog<Void, List<Record>>
 	{
 
 		private Exception failure = null;
@@ -423,7 +423,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		
 	}
 	
-	private class ExportTask extends AsyncTaskWithWaitingDialog<Void, Void, ExportResult>
+	private class ExportTask extends AsyncTaskWithWaitingDialog<Void, ExportResult>
 	{
 
 		private List<Record> records;
@@ -453,7 +453,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		
 	}
 	
-	private class DeleteTask extends AsyncTaskWithWaitingDialog<Void, Void, Void>
+	private class DeleteTask extends AsyncTaskWithWaitingDialog<Void, Void>
 	{
 
 		private List<Record> records;
@@ -485,7 +485,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		protected void onPostExecute(Void result)
 		{
 			super.onPostExecute(result); // dismiss dialog
-			deleteCallback(failure);				
+			deleteCallback(failure);
 		}
 		
 	}

@@ -348,16 +348,19 @@ public class DB4ORecordStore extends RecordStore
 	@Override
 	protected void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
+		doCommitTransaction(); // because DB4O does not have explicit opening of transactions (it is always using one) we should always commit before backing-up
 		try
 		{
-			db4o.ext().backup(DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName()).getAbsolutePath());
+			File backupDB = backuper.isLabelFilesAsBackup() ?
+				DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + TimeUtils.getTimestampForFileName()) :
+				DB4OConnector.getFile(destinationFolder, filename);
+			db4o.ext().backup(backupDB.getAbsolutePath());
 		}
 		catch(Exception e)
 		{
 			throw new DBException("Exception upon backing-up the DB4O file", e);
 		}
 	}
-	
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#hasFullIndexSupport()

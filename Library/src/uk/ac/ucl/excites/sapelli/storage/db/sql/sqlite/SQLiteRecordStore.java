@@ -69,7 +69,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	
 	// Statics----------------------------------------------
 	static public final String DATABASE_FILE_EXTENSION = "sqlite3";
-	static public final String BACKUP_SUFFIX = "_Backup";
 	static public final String PARAM_PLACEHOLDER = "?";
 	
 	/**
@@ -226,21 +225,43 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	protected void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
 		File currentDB = getDatabaseFile();
-		String extension = FileHelpers.getFileExtension(currentDB);
-		File backupDB = new File(destinationFolder, FileHelpers.trimFileExtensionAndDot(currentDB.getName()) + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName() + "." + (extension.isEmpty() ? DATABASE_FILE_EXTENSION : extension));
 		if(currentDB != null && currentDB.exists() && destinationFolder.canWrite())
-		{	// File copy:
+		{
+			// Get destination file:
+			File backupDB;
+			if(backuper.isLabelFilesAsBackup())
+			{	// File name format: [original_name_w/o_extension]_Backup_[timestamp].[original_extension]
+				String extension = FileHelpers.getFileExtension(currentDB);
+				backupDB = new File(destinationFolder,
+									FileHelpers.trimFileExtensionAndDot(currentDB.getName()) + BACKUP_SUFFIX + TimeUtils.getTimestampForFileName() + "." + (extension.isEmpty() ? DATABASE_FILE_EXTENSION : extension));
+			}
+			else
+				// Using original file name
+				backupDB = new File(destinationFolder, currentDB.getName());
+			// Perform the actual back-up:
 			try
 			{
-				FileUtils.copyFile(currentDB, backupDB);
+				doBackup(backupDB);
 			}
-			catch(IOException e)
+			catch(Exception e)
 			{
 				throw new DBException("Failed to back-up SQLite database to: " + backupDB.getAbsolutePath(), e);
 			}
 		}
 		else
 			throw new DBException("Failed to back-up SQLite database");
+	}
+	
+	/**
+	 * Back-up by means of file copy.
+	 * May be overridden.
+	 * 
+	 * @param destinationFile
+	 * @throws Exception
+	 */
+	protected void doBackup(File destinationFile) throws Exception
+	{
+		FileUtils.copyFile(getDatabaseFile(), destinationFile);
 	}
 	
 	/**

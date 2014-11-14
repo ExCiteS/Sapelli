@@ -324,6 +324,27 @@ public final class FileHelpers
 	}
 
 	/**
+	 * Returns (as a File instance) a subfolder with the given name in the given parent folder.
+	 * If {@code create} is {@code true} the folder is created on disc (if the parent folder does not exist it is created as well).
+	 * 
+	 * @param parentFolder
+	 * @param subFolderName
+	 * @param create
+	 * @return
+	 * @throws IOException
+	 */
+	public static File getSubFolder(File parentFolder, String subFolderName, boolean create) throws IOException
+	{
+		File subFolder = new File(parentFolder, subFolderName);
+		if(create)
+		{	// Create and test the subfolder
+			if(!createFolder(subFolder))
+				throw new IOException("Could not create folder: " + subFolder.getAbsolutePath());
+		}
+		return subFolder;
+	}
+	
+	/**
 	 * Attempts to create the necessary parent folder(s) for a given path (the path could be a folder or file)
 	 * 
 	 * @param folder

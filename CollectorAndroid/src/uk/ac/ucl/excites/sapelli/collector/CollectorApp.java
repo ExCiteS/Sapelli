@@ -362,15 +362,15 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.shared.db.StoreProvider#backupStores(java.io.File)
+	 * @see uk.ac.ucl.excites.sapelli.shared.db.StoreProvider#backupStores(java.io.File, boolean)
 	 */
 	@Override
-	public void backupStores(File destinationFolder) throws Exception
+	public void backupStores(File destinationFolder, boolean labelFilesAsBackup) throws Exception
 	{
 		Store[] toBackup = new Store[] { getProjectStore(this), getRecordStore(this) };
 		// Note: by calling the get...Store(StoreClient) methods above we briefly register the CollectorApp itself as a StoreClient for each store
 		
-		StoreBackuper backuper = new StoreBackuper(toBackup);
+		StoreBackuper backuper = new StoreBackuper(labelFilesAsBackup, toBackup);
 		backuper.backup(destinationFolder);
 		
 		// Unregister the CollectorApp as a StoreClient

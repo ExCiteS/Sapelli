@@ -37,6 +37,9 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 public abstract class ProjectStore implements Store
 {
 	
+	static public final String DATABASE_NAME_SUFFIX = "_Projects";
+	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp
+	
 	/**
 	 * Stores the given project, provided it doesn't clash with a previously stored one.<br/>
 	 * A clash means that there is a previously stored project which is different *but* has the same signature (name+[variant]+version) or identification (id+fingerprint).

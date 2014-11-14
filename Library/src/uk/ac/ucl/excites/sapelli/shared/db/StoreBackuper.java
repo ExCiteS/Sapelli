@@ -33,11 +33,17 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 public class StoreBackuper
 {
 
+	private final boolean labelFilesAsBackup;
 	private final Stack<Store> toBackup;
 	private final Set<Store> backedUp;
 	
-	public StoreBackuper(Store... storesToBackup)
+	/**
+	 * @param labelFilesAsBackup whether or not the files which are created should be labels (in their filename) as backups or not (in which case the name of the original file, if there is one, will be used)
+	 * @param storesToBackup
+	 */
+	public StoreBackuper(boolean labelFilesAsBackup, Store... storesToBackup)
 	{
+		this.labelFilesAsBackup = labelFilesAsBackup;
 		toBackup = new Stack<Store>();
 		backedUp = new HashSet<Store>();
 		if(storesToBackup != null)
@@ -64,6 +70,14 @@ public class StoreBackuper
 			// Recurse (until stack is empty):
 			backup(destinationFolder);
 		}
+	}
+
+	/**
+	 * @return the labelFilesAsBackup
+	 */
+	public boolean isLabelFilesAsBackup()
+	{
+		return labelFilesAsBackup;
 	}
 	
 }

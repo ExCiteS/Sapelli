@@ -205,7 +205,7 @@ public class FileStorageProvider
 	}
 	
 	/**
-	 * Returns and creates a Sapelli-specific subfolder of the device/system Downloads folder
+	 * Returns and creates a Sapelli-specific subfolder of the device/system Download folder
 	 * 
 	 * @return
 	 * @throws FileStorageException
@@ -231,6 +231,18 @@ public class FileStorageProvider
 	public File getTempFolder(boolean create) throws FileStorageException
 	{
 		return getSubFolder(getSapelliFolder(), Folder.Temp.name(), create);
+	}
+	
+	/**
+	 * Creates a folder with the given name inside of the Sapelli Temp folder
+	 * 
+	 * @param name
+	 * @return
+	 * @throws FileStorageException
+	 */
+	public File getTempSubFolder(String name) throws FileStorageException
+	{
+		return getSubFolder(getTempFolder(true), name, true);
 	}
 	
 	public File getExportFolder(boolean create) throws FileStorageException
@@ -259,23 +271,33 @@ public class FileStorageProvider
 	}
 	
 	/**
-	 * @return the location for creating a zip with backup data i.e. Downloads/Sapelli/Backup_timestamp.zip
+	 * Returns a File object representing a (still uncreated) ZIP file which will be used for a Collector back-up.
+	 * The path will be: <device_download_folder>/Sapelli/Backup_timestamp.zip
+	 * 
+	 * @return the ZIP file (not yet created!)
 	 */
-	public File getBackupFile()
+	public File getNewBackupFile()
 	{
 		return new File(getSapelliDownloadsFolder(), BACKUP_FILE + "_" + TimeUtils.getTimestampForFileName() + "." + Zipper.ZIP_EXTENSION);
 	}
 
+	/**
+	 * @param parentFolder
+	 * @param subFolderName
+	 * @param create
+	 * @return
+	 * @throws FileStorageException
+	 */
 	private File getSubFolder(File parentFolder, String subFolderName, boolean create) throws FileStorageException
 	{
-		File subFolder = new File(parentFolder, subFolderName);
-		
-		if(create)
-		{	// Create and test the subfolder
-			if(!FileHelpers.createFolder(subFolder))
-				throw new FileStorageException("Could not create folder: " + subFolder.getAbsolutePath());
+		try
+		{
+			return FileHelpers.getSubFolder(parentFolder, subFolderName, create);
 		}
-		return subFolder;
+		catch(Exception e)
+		{	// Wrap as FileStorageException:
+			throw new FileStorageException(e);
+		}
 	}
 	
 }

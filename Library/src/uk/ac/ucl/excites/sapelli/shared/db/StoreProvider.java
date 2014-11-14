@@ -39,8 +39,9 @@ public interface StoreProvider
 	 * Backs-up all known Stores
 	 * 
 	 * @param destinationFolder
+	 * @param labelFilesAsBackup whether or not the files which are created should be labels (in their filename) as backups or not (in which case the name of the original file, if there is one, will be used)
 	 * @throws Exception
 	 */
-	public void backupStores(File destinationFolder) throws Exception;
+	public void backupStores(File destinationFolder, boolean labelFilesAsBackup) throws Exception;
 
 }

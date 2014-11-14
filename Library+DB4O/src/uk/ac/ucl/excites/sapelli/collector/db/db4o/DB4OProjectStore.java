@@ -42,8 +42,6 @@ public class DB4OProjectStore extends ProjectStore
 {
 
 	// Statics----------------------------------------------
-	static public final String DATABASE_NAME_SUFFIX = "_Projects";
-	static public final String BACKUP_SUFFIX = "_Backup";
 	static public final int ACTIVATION_DEPTH = 40;
 	static public final int UPDATE_DEPTH = 40;
 
@@ -254,7 +252,10 @@ public class DB4OProjectStore extends ProjectStore
 		try
 		{
 			db4o.commit();
-			db4o.ext().backup(DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName()).getAbsolutePath());
+			File backupDB = backuper.isLabelFilesAsBackup() ?
+				DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + TimeUtils.getTimestampForFileName()) :
+				DB4OConnector.getFile(destinationFolder, filename);
+			db4o.ext().backup(backupDB.getAbsolutePath());
 		}
 		catch(Exception e)
 		{

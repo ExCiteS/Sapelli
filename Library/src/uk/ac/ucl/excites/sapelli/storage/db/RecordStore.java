@@ -47,7 +47,7 @@ public abstract class RecordStore implements Store
 {
 
 	static public final String DATABASE_NAME_SUFFIX = "-RecordStore";
-	static public final String BACKUP_SUFFIX = "_Backup";
+	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp
 	
 	protected StorageClient client;
 	
@@ -484,7 +484,7 @@ public abstract class RecordStore implements Store
 	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
 		if(isInTransaction())
-			throw new DBException("Cannot back-up database due to uncommited transaction!"); // TODO remove this?
+			throw new DBException("Cannot back-up database due to uncommited transaction!");
 		doBackup(backuper, destinationFolder);
 	}
 	
