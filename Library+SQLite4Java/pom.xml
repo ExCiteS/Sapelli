@@ -31,7 +31,7 @@
 	</parent>
 
 	<properties>
-		<sqlite4java.version>0.282</sqlite4java.version>
+		<sqlite4java.version>1.0.392</sqlite4java.version>
 		<!-- For Windows 64 bit: -->
 		<sqlite4java.binary>sqlite4java-win32-x64</sqlite4java.binary>
 		<sqlite4java.binary.type>dll</sqlite4java.binary.type>
