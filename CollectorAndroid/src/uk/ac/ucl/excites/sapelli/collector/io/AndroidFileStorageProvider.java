@@ -61,7 +61,7 @@ public class AndroidFileStorageProvider extends FileStorageProvider
 	{
 		try
 		{
-			(new File(folder.getAbsolutePath() + File.separator + NO_MEDIA_FILE)).createNewFile();
+			(new File(folder, NO_MEDIA_FILE)).createNewFile();
 		}
 		catch(Exception ignore) {}
 		return folder;

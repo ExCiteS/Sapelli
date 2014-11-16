@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.tasks;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,14 +45,16 @@ import android.content.Intent;
 import android.net.Uri;
 
 /**
+ * Sapelli Collector Back-up procedure 
+ * 
  * @author Michalis Vitos, mstevens
- *
  */
 public class Backup
 {
 
 	// STATIC -----------------------------------------------------------------
 	static public final Folder[] BACKUPABLE_FOLDERS = { Folder.Attachments, Folder.Crashes, Folder.Export, Folder.Logs, Folder.Projects };
+	static public final String EMPTY_FILE = ".empty";
 	
 	static private String getFolderString(Context context, Folder folder)
 	{
@@ -240,10 +243,10 @@ public class Backup
 				//	Create array with file paths of the selected items as well as the Temp/DB folder:
 				Set<Folder> selectedFolders = params[0];
 				File[] toZip = new File[selectedFolders.size() + 1]; // +1 for tmp/DB folder!
+				tmpFolder = fileStorageProvider.getTempSubFolder("Backup_" + System.currentTimeMillis());
 				int z = 0;
 				for(Folder folder : foldersToExport)
-					toZip[z++] = fileStorageProvider.getFolder(folder, false); // add folders as File objects
-				tmpFolder = fileStorageProvider.getTempSubFolder("Backup_" + System.currentTimeMillis()); 
+					toZip[z++] = getFolderFile(folder, tmpFolder); // add folders as File objects
 				toZip[z] = FileHelpers.getSubFolder(tmpFolder, Folder.DB.name(), true); // add Temp/Backup_[timestamp]/DB/ folder
 				
 				// Phase 2: Back-up database(s)
@@ -266,6 +269,19 @@ public class Backup
 				FileUtils.deleteQuietly(tmpFolder);
 			}
 			return destZipFile;
+		}
+		
+		private File getFolderFile(Folder folder, File tmpFolder) throws IOException
+		{
+			File folderFile = fileStorageProvider.getFolder(folder, false);
+			if(!folderFile.exists() || !folderFile.isDirectory() || folderFile.listFiles().length == 0)
+			{
+				// Create matching folder in tmpFolder:
+				folderFile = FileHelpers.getSubFolder(tmpFolder, folder.name(), true); // Temp/Backup_[timestamp]/[folder]/
+				// Create .empty file (to make sure folder is included in ZIP):
+				(new File(folderFile, EMPTY_FILE)).createNewFile();
+			}
+			return folderFile;
 		}
 	
 		@Override
