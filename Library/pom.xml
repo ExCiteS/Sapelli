@@ -53,7 +53,7 @@
 		<dependency>
 			<groupId>commons-codec</groupId>
 			<artifactId>commons-codec-shaded</artifactId>
-			<version>1.9</version>
+			<version>1.10</version>
 		</dependency>
 		<dependency>
 			<groupId>org.tukaani</groupId>
