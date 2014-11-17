@@ -113,7 +113,7 @@ public class VideoField extends MediaField
 	/**
 	 * @param stopVideoImageRelativePath the stopVideoImageRelativePath to set
 	 */
-	public void setStopRecAudioImageRelativePath(String stopRecImageRelativePath)
+	public void setStopRecImageRelativePath(String stopRecImageRelativePath)
 	{
 		this.stopRecImageRelativePath = stopRecImageRelativePath;
 	}

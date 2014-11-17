@@ -172,7 +172,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField> {
 		ImageItem captureButton = null;
 		if (!recording) {
 			// recording hasn't started yet, so present "record" button
-			File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getCaptureButtonImageRelativePath());
+			File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getStartRecImageRelativePath());
 			if(FileHelpers.isReadableFile(captureImgFile))
 				// use a custom audio capture image if available
 				captureButton = new FileImageItem(captureImgFile);

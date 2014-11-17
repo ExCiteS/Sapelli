@@ -203,7 +203,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		ImageItem captureButton = null;
 		if (!recording) {
 			// recording hasn't started yet, so present "record" button
-			File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getCaptureButtonImageRelativePath());
+			File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getStartRecImageRelativePath());
 			if(FileHelpers.isReadableFile(captureImgFile))
 				// use a custom video capture image if available
 				captureButton = new FileImageItem(captureImgFile);

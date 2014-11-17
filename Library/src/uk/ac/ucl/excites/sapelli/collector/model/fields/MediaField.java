@@ -53,15 +53,12 @@ public abstract class MediaField extends Field
 	
 	static public final long MAX_ATTACHMENT_CREATION_TIME_OFFSET = (long) (10 * 365.25 * 24 * 60 * 60 * 1000); // 10 years in ms
 	
-	protected String captureButtonImageRelativePath;
-	protected String approveButtonImageRelativePath;
 	protected String discardButtonImageRelativePath;
 	
 	//protected int min;
 	protected boolean useNativeApp;
 	protected boolean showReview;
 	protected int max;
-	protected ChoiceField disableChoice;
 	
 	public MediaField(Form form, String id, String caption)
 	{
@@ -147,55 +144,6 @@ public abstract class MediaField extends Field
 	 */
 	public void setShowReview(boolean showReview) {
 		this.showReview = showReview;
-	}
-
-	/**
-	 * @return the disableChoice
-	 */
-	public ChoiceField getDisableChoice()
-	{
-		return disableChoice;
-	}
-
-	/**
-	 * @param disableChoice the disableChoice to set
-	 */
-	public void setDisableChoice(ChoiceField disableChoice)
-	{
-		this.disableChoice = disableChoice;
-	}
-	
-	
-	/**
-	 * @return the captureButtonImageRelativePath
-	 */
-	public String getCaptureButtonImageRelativePath()
-	{
-		return captureButtonImageRelativePath;
-	}
-
-	/**
-	 * @param captureButtonImageRelativePath the captureButtonImageRelativePath to set
-	 */
-	public void setCaptureButtonImageRelativePath(String captureButtonImageRelativePath)
-	{
-		this.captureButtonImageRelativePath = captureButtonImageRelativePath;
-	}
-
-	/**
-	 * @return the approveButtonImageRelativePath
-	 */
-	public String getApproveButtonImageRelativePath()
-	{
-		return approveButtonImageRelativePath;
-	}
-
-	/**
-	 * @param approveButtonImageRelativePath the approveButtonImageRelativePath to set
-	 */
-	public void setApproveButtonImageRelativePath(String approveButtonImageRelativePath)
-	{
-		this.approveButtonImageRelativePath = approveButtonImageRelativePath;
 	}
 
 	/**
@@ -474,8 +422,7 @@ public abstract class MediaField extends Field
 			return	super.equals(that) && // Field#equals(Object)
 					//this.min == that.min &&
 					this.max == that.max &&
-					this.useNativeApp == that.useNativeApp &&
-					(this.disableChoice != null ? that.disableChoice != null && this.disableChoice.getID().equals(that.disableChoice.getID()) : that.disableChoice == null); // do not use disableChoice itself to avoid potential endless loops!
+					this.useNativeApp == that.useNativeApp;
 		}
 		else
 			return false;
@@ -488,7 +435,6 @@ public abstract class MediaField extends Field
 		//hash = 31 * hash + min;
 		hash = 31 * hash + max;
 		hash = 31 * hash + (useNativeApp ? 0 : 1);
-		hash = 31 * hash + (disableChoice == null ? 0 : disableChoice.getID().hashCode()); // do not use disableChoice itself to avoid potential endless loops!
 		return hash;
 	}
 	

@@ -47,8 +47,8 @@ public class PhotoField extends MediaField
 	//DYNAMICS-------------------------------------------------------
 	private boolean useFrontFacingCamera;
 	private FlashMode flashMode;
+	private String captureButtonImageRelativePath;
 	
-
 	
 	public PhotoField(Form form, String id, String caption)
 	{
@@ -89,6 +89,22 @@ public class PhotoField extends MediaField
 	{
 		this.flashMode = flashMode;
 	}
+	
+	/**
+	 * @return the captureButtonImageRelativePath
+	 */
+	public String getCaptureButtonImageRelativePath()
+	{
+		return captureButtonImageRelativePath;
+	}
+
+	/**
+	 * @param captureButtonImageRelativePath the captureButtonImageRelativePath to set
+	 */
+	public void setCaptureButtonImageRelativePath(String captureButtonImageRelativePath)
+	{
+		this.captureButtonImageRelativePath = captureButtonImageRelativePath;
+	}
 
 
 
@@ -122,7 +138,6 @@ public class PhotoField extends MediaField
 					this.useFrontFacingCamera == that.useFrontFacingCamera &&
 					this.flashMode == that.flashMode &&
 					(this.captureButtonImageRelativePath != null ? this.captureButtonImageRelativePath.equals(that.captureButtonImageRelativePath) : that.captureButtonImageRelativePath == null) &&
-					(this.approveButtonImageRelativePath != null ? this.approveButtonImageRelativePath.equals(that.approveButtonImageRelativePath) : that.approveButtonImageRelativePath == null) &&
 					(this.discardButtonImageRelativePath != null ? this.discardButtonImageRelativePath.equals(that.discardButtonImageRelativePath) : that.discardButtonImageRelativePath == null);
 		}
 		else
@@ -136,7 +151,6 @@ public class PhotoField extends MediaField
 		hash = 31 * hash + (useFrontFacingCamera ? 0 : 1);
 		hash = 31 * hash + flashMode.ordinal();
 		hash = 31 * hash + (captureButtonImageRelativePath == null ? 0 : captureButtonImageRelativePath.hashCode());
-		hash = 31 * hash + (approveButtonImageRelativePath == null ? 0 : approveButtonImageRelativePath.hashCode());
 		hash = 31 * hash + (discardButtonImageRelativePath == null ? 0 : discardButtonImageRelativePath.hashCode());		
 		return hash;
 	}
