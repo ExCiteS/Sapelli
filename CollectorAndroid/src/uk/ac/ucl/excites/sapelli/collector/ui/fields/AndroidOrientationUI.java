@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
+import java.util.concurrent.Semaphore;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
@@ -68,11 +69,12 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout.LayoutParams;
 
 /**
- * @author Julia, mstevens
+ * @author Julia, mstevens, benelliott
  *
  */
 public class AndroidOrientationUI extends OrientationUI<View, CollectorView> implements OrientationListener {
 
+	private static final String TAG = "AndroidOrientationUI";
 	private Button pageView;
 	private LinearLayout waitView;
 	private OrientationSensor orientationSensor;
@@ -119,7 +121,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 				waitView.addView(new ProgressBar(context, null, android.R.attr.progressBarStyleLarge), params);
 			}
 		}
-		
+
 		if (orientationSensor == null)
 			orientationSensor = new OrientationSensor(context);
 		orientationSensor.start(this); // start listening for orientation updates after views are created
@@ -149,17 +151,20 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 		}
 		compass.drawOrientationToScreen();
 	}
-	
+
 	@Override
 	public void cancel() {
-		compass = null;
 		if (orientationSensor != null) {
 			orientationSensor.stop();
 			orientationSensor = null;
 		}
+		if (compass != null) {
+			compass.stopDrawingCompass();
+			compass = null;
+		}
 		waitView = null;
 	}
-	
+
 	private class CompassView extends SurfaceView {
 
 		private static final int COLOR_BACKGROUND = Color.BLACK;
@@ -176,6 +181,11 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 		private Bitmap arrowBitmap; // TODO expose arrow in XML so that custom images can be used?
 		private Bitmap compassBitmap;
 		private Matrix compassRotationMatrix;
+
+		private Thread drawingThread;
+		private Semaphore orientationReady;
+		private volatile boolean threadDrawing = false;
+		private volatile boolean running = false;
 
 		public CompassView(Context context) {
 			super(context);
@@ -205,7 +215,8 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 
 				@Override
 				public void surfaceDestroyed(SurfaceHolder holder) {
-				}});
+				}
+			});
 		}
 
 		/**
@@ -225,19 +236,65 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 			}
 		}
 
-		@SuppressLint("WrongCall")
 		protected void drawOrientationToScreen() {
-			Canvas c = null;
-			try {				
-				c = getHolder().lockCanvas();
-				synchronized (getHolder()) {
-					if (c != null)
-						onDraw(c);
+			if (!threadDrawing) { // only notify drawing thread of new orientation if it is not busy
+				if (!running) // if not already running, initialise
+					startDrawingCompass();
+				orientationReady.release(); // notify thread of new orientation to draw
+
+			}
+		}
+		
+		protected void startDrawingCompass() {
+			orientationReady = new Semaphore(0); // semaphore for notifying thread when there is new data
+			
+			drawingThread = new Thread() {
+				@SuppressLint("WrongCall")
+				@Override
+				public void run() {
+					while(running) {
+						try {
+							// wait until new data
+							orientationReady.acquire();
+						} catch (InterruptedException e) {
+							Log.d(TAG, "Compass drawing thread interrupted while waiting for semaphore.");
+						}
+						// draw data to screen
+						threadDrawing = true;
+						Canvas c = null;
+						try {				
+							c = getHolder().lockCanvas();
+							synchronized (getHolder()) {
+								if (c != null)
+									onDraw(c);
+							}
+						} finally {
+							if (c != null) {
+								getHolder().unlockCanvasAndPost(c);
+							}
+						}
+						threadDrawing = false;
+					}
 				}
-			} finally {
-				if (c != null) {
-					getHolder().unlockCanvasAndPost(c);
-				}
+				
+			};
+			
+			running = true;
+			drawingThread.start();
+		}
+		
+		protected void stopDrawingCompass() {
+			if (running) {
+				running = false;
+				// interrupt thread (may be blocked on semaphore)
+				drawingThread.interrupt();
+				// wait for it to join
+				try {
+	                drawingThread.join();
+                } catch (InterruptedException e) {
+	                Log.e(TAG, "Main thread interrupted while waiting for drawing thread to join.");
+                }
+				drawingThread = null;
 			}
 		}
 
@@ -366,7 +423,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 			if(FileHelpers.isReadableFile(approveImgFile))
 				approveButton = new FileImageItem(approveImgFile);
 			else
-			approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
+				approveButton = new ResourceImageItem(getContext().getResources(), R.drawable.button_tick_svg);
 			approveButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 
 			approveButton.setPaddingPx(buttonPadding);
