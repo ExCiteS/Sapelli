@@ -24,6 +24,7 @@ import java.util.HashMap;
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
@@ -46,9 +47,11 @@ import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 /**
  * An abstract class that represents a generic interface for capturing and reviewing media, with
@@ -78,6 +81,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
 	protected File captureFile; // file used to store media while it is being captured
 
+	private PageView pageView;
+	
 	private CaptureView captureView;
 	private GalleryView galleryView;
 	
@@ -119,8 +124,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		//TODO take "enabled" into account
 		if(onPage)
 		{
-			//TODO
-			return null;
+			if(pageView == null)
+				pageView = new PageView(collectorUI.getContext());
+			
+			// Enable/disable (do this before calling setChosen()!):
+			pageView.setEnabled(enabled); // also sets up event listeners!
+			return pageView;
 		}
 
 		// get the current display state:
@@ -713,5 +722,98 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				setAdapter(adapter);
 			}
 		}		
+	}
+	
+	
+	/**
+	 * View for displaying a MediaField as part of a Page
+	 * 
+	 * @author mstevens, benelliott
+	 */
+	public class PageView extends LinearLayout implements OnClickListener, OnFocusChangeListener
+	{
+		static public final float PAGE_CHOSEN_ITEM_SIZE_DIP = 60.0f; // width = height
+		static public final float PAGE_CHOSEN_ITEM_MARGIN_DIP = 1.0f; // same margin all round
+		
+		private TextView label;
+		private View captureView;
+		private int chosenSizePx;
+		private int chosenMarginPx;
+		
+		public PageView(Context context)
+		{
+			super(context);
+			this.setOrientation(LinearLayout.VERTICAL);
+			
+			// Add label:
+			label = new TextView(getContext());
+			label.setText(field.getCaption());
+			this.addView(label);
+			
+			chosenSizePx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_SIZE_DIP);
+			chosenMarginPx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_MARGIN_DIP);
+			
+			// just use the capture button image to represent the media field:
+			captureView = generateCaptureButton(context).getView(context);
+						
+			// Set margins on layoutparams:
+			LayoutParams captureLP = new LinearLayout.LayoutParams(chosenSizePx, chosenSizePx);
+			captureLP.setMargins(chosenMarginPx, chosenMarginPx, chosenMarginPx, chosenMarginPx);
+			
+			// Add the view:
+			this.addView(captureView, captureLP);
+		}
+		
+		@Override
+		public void setEnabled(boolean enabled)
+		{
+			super.setEnabled(enabled);
+			if(captureView != null)
+			{
+				captureView.setEnabled(enabled);
+				captureView.setOnClickListener(enabled ? this : null);
+				// Make other fields lose focus and simulate clicking with onFocusChange:
+				captureView.setFocusable(enabled);
+				captureView.setFocusableInTouchMode(enabled);
+				captureView.setOnFocusChangeListener(enabled ? this : null);
+			}
+		}
+
+		@Override
+		public void onFocusChange(View v, boolean hasFocus)
+		{ //TODO necessary?
+			if(hasFocus && isFieldShown() && isEnabled() && v.isEnabled())
+			{
+				// Lose focus again:
+				v.clearFocus();
+				
+				// Simulate click:
+				onClick(v);
+			}
+		}
+
+		@Override
+		public void onClick(View v)
+		{
+			// Do nothing if not shown or enabled:
+			if(!isFieldShown() || !isEnabled() || !v.isEnabled())
+				return;
+			
+			// The user will make a choice now, so don't annoy him/her with the red box:
+			clearPageInvalidMark();
+			
+			// Task to perform after animation has finished:
+			Runnable action = new Runnable()
+			{
+				public void run()
+				{
+					controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field itself
+				}
+			};
+
+			// Perform the click
+			controller.clickView(v, action);
+		}
+		
 	}
 }
