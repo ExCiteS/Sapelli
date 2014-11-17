@@ -128,7 +128,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
 	static private final String ATTRIBUTE_FIELD_EDITABLE = "editable";
 	static private final String ATTRIBUTE_FIELD_IMG = "img";
-	static private final String ATTRIBUTE_FIELD_DESC = "desc";
+	static private final String ATTRIBUTE_FIELD_AUDIO_DESC = "audioDescription";
 	static private final String ATTRIBUTE_FIELD_ANSWER_DESC = "answerDesc";
 	static private final String ATTRIBUTE_FIELD_QUESTION_DESC = "questionDesc";
 	static private final String ATTRIBUTE_FIELD_CAPTION = "caption";
@@ -781,7 +781,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					field.setShowForward((v1xFormShowForward != null ? v1xFormShowForward : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
 				
 				// audio feedback description:
-				field.setDescription(attributes.getString(null, true, false, ATTRIBUTE_FIELD_DESC, ATTRIBUTE_FIELD_QUESTION_DESC /* alias for choice fields */));
+				field.setDescription(attributes.getString(null, true, false, ATTRIBUTE_FIELD_AUDIO_DESC, ATTRIBUTE_FIELD_QUESTION_DESC /* alias for choice fields */));
 				if(field.getDescription() != null && currentForm.isUsingAudioFeedback())
 				{
 					field.setDescriptionAudioRelativePath(
