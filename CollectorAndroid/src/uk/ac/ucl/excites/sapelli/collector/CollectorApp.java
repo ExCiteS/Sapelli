@@ -238,6 +238,10 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 	 */
 	private boolean isMountedReadableWritableDir(File dir)
 	{
+		// Try to create the folder before checking its availability
+		if(!dir.exists())
+			dir.mkdirs();
+
 		// Accept both Mounted and Unknown Media. The Unknown Media is used in Android when a path isn't backed by known storage media i.e. the SD Card on
 		// Samsung Xcover 2. However, we still check that the dir is not null and that we have read/write access to it.
 		return (dir != null)

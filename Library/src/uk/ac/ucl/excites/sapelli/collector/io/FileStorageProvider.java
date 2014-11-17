@@ -105,6 +105,8 @@ public class FileStorageProvider
 	{
 		if(sapelliFolder.exists() && sapelliFolder.canRead())
 			return sapelliFolder;
+		else if(sapelliFolder.mkdirs() && sapelliFolder.canRead())
+			return sapelliFolder;
 		else
 			throw new FileStorageException("Sapelli folder is not or no longer accessible (path: " + sapelliFolder.getAbsolutePath());
 	}
