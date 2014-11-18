@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
@@ -42,6 +43,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
 
 import com.db4o.ObjectContainer;
 import com.db4o.ObjectSet;
+import com.db4o.ext.ExtObjectContainer;
 import com.db4o.query.Predicate;
 
 /**
@@ -57,8 +59,8 @@ public class DB4ORecordStore extends RecordStore
 {
 
 	// Statics----------------------------------------------
-	static public final int ACTIVATION_DEPTH = 40;
-	static public final int UPDATE_DEPTH = 40;
+	static public final int ACTIVATION_DEPTH = 50;
+	static public final int UPDATE_DEPTH = 50;
 
 	// Dynamics---------------------------------------------
 	private ObjectContainer db4o;
@@ -121,7 +123,7 @@ public class DB4ORecordStore extends RecordStore
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStore(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	protected boolean doStore(Record record) throws DBException
+	protected Boolean doStore(Record record) throws DBException, IllegalStateException
 	{
 		return doStore(record, true);
 	}
@@ -130,54 +132,81 @@ public class DB4ORecordStore extends RecordStore
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doInsert(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	protected void doInsert(Record record) throws DBPrimaryKeyException, DBException
+	protected boolean doInsert(Record record) throws DBPrimaryKeyException, DBException, IllegalStateException
 	{
-		boolean inserted = doStore(record, false);
-		if(!inserted)
-			throw new DBPrimaryKeyException("This record already exists in the record store");
+		Boolean inserted = doStore(record, false);
+		if(inserted == null)
+			return false; // record was already stored with identical values
+		if(inserted) // new record was inserted
+			return true;
+		else // record existed and would have been UPDATEd if it were allowed 
+			throw new DBPrimaryKeyException("This record already exists in the record store (with different values).");
 	}
 	
-	private boolean doStore(Record record, boolean updateAllowed) throws DBException
+	/**
+	 * @param record
+	 * @param updateAllowed whether or not updates are allowed
+	 * @return whether the record was new (i.e. it was INSERTed; returns {@code true}); was, or would have been if allowed, modified (i.e. it was UPDATEd; returns {@code false}); or neither (i.e. the exact same record was already stored; returns {@code null})
+	 * @throws DBException
+	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
+	 */
+	private Boolean doStore(Record record, boolean updateAllowed) throws DBException, IllegalStateException
 	{
 		try
 		{
-			boolean insert = !db4o.ext().isStored(record); // will only detect pointer-equal objects (I think)
-			
 			// Get auto-incrementing ID column (if there is one):
 			IntegerColumn autoIncrIDColumn;
 			if(record.getSchema().getPrimaryKey() instanceof AutoIncrementingPrimaryKey)
 				autoIncrIDColumn = ((AutoIncrementingPrimaryKey) record.getSchema().getPrimaryKey()).getColumn();
 			else
 				autoIncrIDColumn = null;
+			// Get ExtObjectContainer:
+			ExtObjectContainer extDB4O = db4o.ext();
 			
-			if(insert)
-			{
+			// Try to find a previously stored version of the record:
+			Record previouslyStored = null;
+			// Check if the exact same (i.e. pointer-equal) record object is already in DB4O...
+			if(extDB4O.isStored(record))
+			{	// Yes it is (but not necessarily with the same values), get the stored version:
+				previouslyStored = extDB4O.peekPersisted(record, ACTIVATION_DEPTH, isInTransaction());
+				// We call this UPDATE-CASE-1
+			}
+			else // No it isn't, but perhaps there is a previously stored record with the same primary key value(s):
 				if(autoIncrIDColumn == null || autoIncrIDColumn.isValueSet(record))
-				{	// Check if there is no previously stored record with the same primary key:
-					Record previouslyStored = retrieveRecord(record.getRecordQuery());
-					if(previouslyStored != null)
-					{
-						if(updateAllowed)
-						{	// Update previously stored record:
-							for(Column<?> col : record.getSchema().getColumns(false))
-								col.storeObject(previouslyStored, col.retrieveValue(record));
-							record = previouslyStored;
-						}
-						insert = false; // this is an update
-					}
+			{
+				previouslyStored = retrieveRecord(record.getRecordQuery()); // (may be null if there is no matching record)
+				// if previouslyStored is now != null than we are we call this UPDATE-CASE-2
+			}
+			else
+			{	// This is INSERT case, and there is an autoIncrementing PK which has not been set, so we must set the key value:
+				// Set auto-incrementing id:
+				autoIncrIDColumn.storeValue(record, autoIncrementDict.getNextID(record.getSchema()));
+				// Store the dictionary:
+				db4o.store(autoIncrementDict);
+			}
+			
+			if(previouslyStored != null)
+			{
+				// Check if there are changes at all...
+				if(record == previouslyStored || record.hasEqualValues(previouslyStored))
+				{
+					return null; // no changes (so neither an INSERT nor an UPDATE must happen)
 				}
-				else
-				{	// Set auto-incrementing id:
-					autoIncrIDColumn.storeValue(record, autoIncrementDict.getNextID(record.getSchema()));
-					// Store the dictionary:
-					db4o.store(autoIncrementDict);
+				// If update allowed & we are in UPDATE-CASE-2 (in which previousRecord is known by DB4O)...
+				else if(updateAllowed && extDB4O.isStored(previouslyStored))
+				{	// update values of previousRecord ...
+					for(Column<?> col : record.getSchema().getColumns(false)) 
+						col.storeObject(previouslyStored, col.retrieveValue(record));
+					// and make it the record that is passed to db4o.store() to be UPDATEd in the database:
+					record = previouslyStored;
 				}
+				// else: update is not allowed, OR we are in UPDATE-CASE-1 meaning record is an object known to DB4O which can thus be passed to db4o.store()
 			}
 			
 			// Insert, or update (i.e. replace; when allowed) the record:
+			boolean insert = previouslyStored == null;
 			if(insert || updateAllowed)
 				db4o.store(record);
-			
 			return insert;
 		}
 		catch(Exception e)
@@ -225,8 +254,10 @@ public class DB4ORecordStore extends RecordStore
 
 			public boolean match(Record record)
 			{
-				return	!record.getSchema().isInternal()	/* filter out records of internal schemas */
-						&& (source.isValid(record));		/* Schema check */
+				return	// filter out records of internal schemas:
+						!record.getSchema().isInternal() &&
+						// Schema check, but without full comparison, because that is expensive AND requires the record(/schema) object to be activated to a deeper level than it is at this stage:
+						source.isValid(record, false);
 			}
 		});
 		
@@ -241,7 +272,8 @@ public class DB4ORecordStore extends RecordStore
 		{
 			Record r = resultSet.next();
 			db4o.activate(r, ACTIVATION_DEPTH);
-			if(constraints == null || constraints.isValid(r)) // Filter by constraint(s) (for some reason the DB4O query doesn't work if this happens inside the Predicate's match() method)
+			// Filter again: by schema (this time using full comparison), and by contraint(s) (which doesn't work inside the Predicate's match() method, probably due to insufficiently deep activation)  
+			if(source.isValid(r) && (constraints == null || constraints.isValid(r))) 
 				result.add(r);
 		}
 		
@@ -314,18 +346,21 @@ public class DB4ORecordStore extends RecordStore
 	}
 
 	@Override
-	protected void doBackup(File destinationFolder) throws DBException
+	protected void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
+		doCommitTransaction(); // because DB4O does not have explicit opening of transactions (it is always using one) we should always commit before backing-up
 		try
 		{
-			db4o.ext().backup(DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName()).getAbsolutePath());
+			File backupDB = backuper.isLabelFilesAsBackup() ?
+				DB4OConnector.getFile(destinationFolder, filename + BACKUP_SUFFIX + TimeUtils.getTimestampForFileName()) :
+				DB4OConnector.getFile(destinationFolder, filename);
+			db4o.ext().backup(backupDB.getAbsolutePath());
 		}
 		catch(Exception e)
 		{
 			throw new DBException("Exception upon backing-up the DB4O file", e);
 		}
 	}
-	
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#hasFullIndexSupport()
@@ -338,6 +373,9 @@ public class DB4ORecordStore extends RecordStore
 	
 	/**
 	 * Helper class which does the book keeping for auto-incrementing primary keys
+	 * 
+	 * The first auto-incrementing PK value (i.e. the one assigned to the first record of a given schema that is inserted) will be 0.
+	 * Note that some (SQL) RMDBs (such as SQLite) use an initial value of 1 instead.
 	 * 
 	 * @author mstevens 
 	 */
@@ -353,7 +391,9 @@ public class DB4ORecordStore extends RecordStore
 				throw new IllegalArgumentException("Schema must have an auto-incrementing primary key");
 			// Next id:
 			long next = (containsKey(schema) ? get(schema) : -1l) + 1;
-			// TODO deal with max reached!!!
+			// Check bounds:
+			if(next == Long.MIN_VALUE) // Because: Long.MAX_VALUE + 1l = Long.MIN_VALUE
+				throw new IllegalStateException("The \"table\" for records of schema " + schema.getName() + " is full!");
 			// Store it:
 			put(schema, next); // hash map always keeps the last used id
 			// Return it:

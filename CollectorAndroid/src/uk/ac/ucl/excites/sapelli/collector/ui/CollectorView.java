@@ -22,6 +22,7 @@ import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.ScreenTransition;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
@@ -137,6 +138,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	 * 
 	 * @param field
 	 */
+	@Override
 	public void setField(Field field)
 	{
 		if(controller == null)
@@ -162,7 +164,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		if(fieldUI != null && newFieldUI != fieldUI && fieldUI.isFieldShown())
 			fieldUI.hideField(); // mark field as not shown, and execute cancel behaviour (e.g. stop audio recording, close camera, ...)
 
-		// newFieldUI become the current fieldUI:
+		// newFieldUI becomes the current fieldUI:
 		fieldUI = newFieldUI;
 
 		// Update the controls:
@@ -217,6 +219,12 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			}
 			// New becomes current:
 			fieldUIView = newFieldUIView;
+			
+			// Set up listener if needed:
+			if(fieldUI.informOnDisplay(false))
+			{
+				// TODO set up listener and if listeren called call fieldUI.onDisplay(false);
+			}
 		}
 
 		// Set focus:
@@ -301,12 +309,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	public AndroidPageUI createPageUI(Page pg)
 	{
 		return new AndroidPageUI(pg, controller, this);
-	}
-
-	@Override
-	public AndroidControlsUI createControlsUI()
-	{
-		return new AndroidControlsUI(controller, this);
 	}
 
 	public void cancelCurrentField()
@@ -487,6 +489,13 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		View focusedView = activity.getCurrentFocus();
 		if(focusedView != null)
 			focusedView.clearFocus();
+	}
+
+	@Override
+	public AbstractAudioFeedbackController<View> getAudioFeebackController()
+	{
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }

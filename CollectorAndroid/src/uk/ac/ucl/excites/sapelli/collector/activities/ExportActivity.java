@@ -22,9 +22,11 @@ import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncTaskWithWaitingDialog;
@@ -101,9 +103,6 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		
 		this.loadProject(false); // loads project specified by intent (if one was selected)
 		
-		// Export path:
-		exportFolder = fileStorageProvider.getExportFolder(true);
-		
 		// UI elements...
 		radioSelectedProject = (RadioButton) findViewById(R.id.radioExportSelectedProj);
 		radioAllProjects = (RadioButton) findViewById(R.id.radioExportAllProj);
@@ -128,7 +127,6 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		
 		// Output destination:
 		btnDestination = (Button) findViewById(R.id.btnDestination);
-		btnDestination.setText(exportFolder.getAbsolutePath());
 		btnDestination.setEnabled(false); // TODO make export path configurable (for now it is not)
 		
 		// Output formats:
@@ -171,6 +169,20 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		((Button) findViewById(R.id.btnExportCancel)).setOnClickListener(this);
 	}
 	
+	@Override
+	public void onResume()
+	{
+		super.onResume();
+
+		// All storage operations should happen in onResume, otherwise the storage will be unassesible
+
+		// Export path:
+		exportFolder = fileStorageProvider.getExportFolder(true);
+
+		// Set UI:
+		btnDestination.setText(exportFolder.getAbsolutePath());
+	};
+
 	@Override
 	public void onClick(View v)
 	{
@@ -362,7 +374,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 			this.finish();
 	}
 	
-	private class QueryTask extends AsyncTaskWithWaitingDialog<Void, Void, List<Record>>
+	private class QueryTask extends AsyncTaskWithWaitingDialog<Void, List<Record>>
 	{
 
 		private Exception failure = null;
@@ -411,7 +423,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		
 	}
 	
-	private class ExportTask extends AsyncTaskWithWaitingDialog<Void, Void, ExportResult>
+	private class ExportTask extends AsyncTaskWithWaitingDialog<Void, ExportResult>
 	{
 
 		private List<Record> records;
@@ -441,7 +453,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		
 	}
 	
-	private class DeleteTask extends AsyncTaskWithWaitingDialog<Void, Void, Void>
+	private class DeleteTask extends AsyncTaskWithWaitingDialog<Void, Void>
 	{
 
 		private List<Record> records;
@@ -473,7 +485,7 @@ public class ExportActivity extends ProjectActivity implements OnClickListener
 		protected void onPostExecute(Void result)
 		{
 			super.onPostExecute(result); // dismiss dialog
-			deleteCallback(failure);				
+			deleteCallback(failure);
 		}
 		
 	}

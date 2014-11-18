@@ -22,8 +22,6 @@ import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.ISQLiteCursor;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
@@ -54,7 +52,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		super(client);
 		
 		// Open database connection:
-		this.db = new SQLiteConnection(new File(folderPath, baseName + DATABASE_NAME_SUFFIX + "." + DATABASE_FILE_EXTENSION));
+		this.db = new SQLiteConnection(new File(folderPath, GetDBFileName(baseName)));
 		db.open(true);
 		
 		// Initialise:
@@ -72,6 +70,24 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 		catch(SQLiteException sqlE)
 		{
 			throw new DBException(sqlE);
+		}
+	}
+	
+	@Override
+	protected int executeSQLReturnAffectedRows(String sql) throws DBException
+	{
+		// Execute SQL:
+		executeSQL(sql);
+		// Return number of affected rows:
+		try
+		{
+			int rows = db.getChanges();
+			System.out.println("affected rows: " + rows);
+			return rows;
+		}
+		catch(SQLiteException e)
+		{
+			throw new DBException("Failed to get number of changed rows", e);
 		}
 	}
 
@@ -118,19 +134,14 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore#doBackup(java.io.File)
 	 */
 	@Override
-	protected void doBackup(File destinationFolder) throws DBException
+	protected void doBackup(File destinationFile) throws Exception
 	{
-		File dstFile = new File(destinationFolder, FileHelpers.trimFileExtensionAndDot(db.getDatabaseFile().getName()) + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName() + "." + DATABASE_FILE_EXTENSION);
 		SQLiteBackup backup = null;
 		try
 		{
-			backup = db.initializeBackup(dstFile);
+			backup = db.initializeBackup(destinationFile);
 			while(!backup.isFinished())
 				backup.backupStep(32);
-		}
-		catch(SQLiteException e)
-		{
-			throw new DBException("Failed to back-up SQLite database to: " + dstFile.getAbsolutePath(), e);
 		}
 		finally
 		{

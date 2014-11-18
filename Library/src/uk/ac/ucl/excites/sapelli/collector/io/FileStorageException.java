@@ -36,5 +36,10 @@ public class FileStorageException extends IllegalStateException
 	{
 		super(message, cause);
 	}
+	
+	public FileStorageException(Throwable cause)
+	{
+		super(cause);
+	}
 
 }

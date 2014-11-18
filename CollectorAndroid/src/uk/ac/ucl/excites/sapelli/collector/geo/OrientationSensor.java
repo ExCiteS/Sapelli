@@ -27,14 +27,14 @@ import android.hardware.SensorManager;
 import android.util.Log;
 
 /**
- * @author mstevens
+ * @author mstevens, Julia
  * 
  */
-@SuppressWarnings("unused")
 public class OrientationSensor implements SensorEventListener
 {
 	
 	static protected final String TAG = "OrientationSensor";
+	static protected final int MAX_TRIES = 5;
 
 	private SensorManager sensorManager;
 
@@ -43,7 +43,9 @@ public class OrientationSensor implements SensorEventListener
 	private float[] geomagnetic;
 	private Orientation lastOrientation;
 	private OrientationListener listener;
-
+	private int gravityTries;
+	private int geomagneticTries;
+	
 	public OrientationSensor(Context context)
 	{
 		sensorManager = (SensorManager) context.getSystemService(Context.SENSOR_SERVICE);
@@ -56,6 +58,8 @@ public class OrientationSensor implements SensorEventListener
 		R = new float[16];
 		gravity = null;
 		geomagnetic = null;
+		gravityTries = 0;
+		geomagneticTries = 0;
 		
 		// Register this class as a listener for the accelerometer sensor
 		sensorManager.registerListener(this, sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER), SensorManager.SENSOR_DELAY_NORMAL);
@@ -84,30 +88,23 @@ public class OrientationSensor implements SensorEventListener
 	@Override
 	public void onSensorChanged(SensorEvent sensorEvent)
 	{
-		
-		/**
-		 * Some devices (especially Nexus) fire SENSOR_STATUS_UNRELIABLE each time this is checked and values are lost.
-		 *
-		 * http://stackoverflow.com/questions/9487747/type-magnetic-field-event-not-firing-on-my-galaxy-nexus-ics-4-0-2
-		 * http://stackoverflow.com/questions/6256256/android-compass-seems-unreliable
-		 */
-		// If the sensor data is unreliable return
-//		if (sensorEvent.accuracy == SensorManager.SENSOR_STATUS_UNRELIABLE)
-//			return;
-		
-		
-		// Gets the value of the sensor that has been changed
+		// Get the value of the sensor that has been changed, and evaluate accuracy
 		switch(sensorEvent.sensor.getType())
 		{
 			case Sensor.TYPE_ACCELEROMETER:
-				//Log.d(TAG, "Accelerometer update");
-				gravity = sensorEvent.values.clone();
+				if(checkAccuracy("Accelerometer", ++gravityTries, sensorEvent))
+					gravity = sensorEvent.values.clone();
+				else
+					return;
 				break;
 			case Sensor.TYPE_MAGNETIC_FIELD:
-				//Log.d(TAG, "Magnetic field update");
-				geomagnetic = sensorEvent.values.clone();
+				if(checkAccuracy("Magnetic field", ++geomagneticTries, sensorEvent))
+					geomagnetic = sensorEvent.values.clone();
+				else
+					return;
 				break;
 		}
+		
 		// If gravity and geomagnetic have values then find rotation matrix
 		if(gravity != null && geomagnetic != null)
 		{
@@ -133,6 +130,37 @@ public class OrientationSensor implements SensorEventListener
 				listener.onOrientationChanged(lastOrientation);
 			}
 		}
+	}
+	
+	/**
+	 * Previously we would never use sensor values when the reported accuracy was SENSOR_STATUS_UNRELIABLE. However,
+	 * some devices (especially Nexus4), report accelerometer accuracy as being SENSOR_STATUS_UNRELIABLE (almost) all
+	 * the time, meaning we never got to compute the orientation.
+	 * We therefore decided to wait for better sensor values up to MAX_TRIES times. If the values are still unreliable
+	 * the MAX_TRIES-th time we use them anyway (but logging is used to report about unreliability).
+	 * 
+	 * Related info:
+	 * - http://stackoverflow.com/questions/9487747/type-magnetic-field-event-not-firing-on-my-galaxy-nexus-ics-4-0-2
+	 * - http://stackoverflow.com/questions/6256256/android-compass-seems-unreliable
+	 * 
+	 * @param tries
+	 * @param sensorEvent
+	 * @return whether or not to accept (i.e. use) the sensor values
+	 */
+	private boolean checkAccuracy(String sensorName, int tries, SensorEvent sensorEvent)
+	{
+		Log.d(TAG, sensorName + " update (#" + tries + ")");
+		if(sensorEvent.accuracy == SensorManager.SENSOR_STATUS_UNRELIABLE)
+		{	
+			if(tries < MAX_TRIES)
+			{
+				Log.w(TAG, " " + sensorName + " values are unreliable, waiting for improvement...");
+				return false;
+			}
+			else
+				Log.w(TAG, " " + sensorName + " values are unreliable, but accepted anyway."); 
+		}
+		return true;
 	}
 
 	/**

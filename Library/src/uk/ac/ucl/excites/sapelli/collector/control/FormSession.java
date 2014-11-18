@@ -60,7 +60,7 @@ public class FormSession
 	private final Stack<FieldWithArguments> fieldAndArgumentHistory;
 	private FieldWithArguments currFieldAndArguments = null;
 	private boolean currFieldDisplayed = false;
-	private Map<Field,Boolean> runtimeEnabled = null; // only instantiated when needed
+	private Map<Field, Boolean> runtimeEnabled = null; // only instantiated when needed
 	private List<File> mediaAttachments = null; // only instantiated when needed
 	
 	/**

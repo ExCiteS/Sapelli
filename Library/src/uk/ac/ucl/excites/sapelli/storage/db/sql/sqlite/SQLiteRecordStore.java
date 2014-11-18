@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
@@ -68,13 +69,17 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	
 	// Statics----------------------------------------------
 	static public final String DATABASE_FILE_EXTENSION = "sqlite3";
-	static public final String BACKUP_SUFFIX = "_Backup";
 	static public final String PARAM_PLACEHOLDER = "?";
 	
 	/**
 	 * @see http://catalogue.pearsoned.co.uk/samplechapter/067232685X.pdf
 	 */
 	static public final Pattern identifierPattern = Pattern.compile("[a-zA-Z_]+[0-9a-zA-Z_]*");
+	
+	static public String GetDBFileName(String baseName)
+	{
+		return baseName + DATABASE_NAME_SUFFIX + "." + DATABASE_FILE_EXTENSION;
+	}
 	
 	/**
 	 * Test method
@@ -91,7 +96,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	// Dynamics---------------------------------------------
 	private final SQLiteTableFactory factory;
 	
-	public SQLiteRecordStore(StorageClient client) throws Exception
+	/**
+	 * @param client
+	 */
+	public SQLiteRecordStore(StorageClient client)
 	{
 		super(client, PARAM_PLACEHOLDER);
 		factory = new SQLiteTableFactory();
@@ -214,18 +222,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	protected abstract ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException;
 
 	@Override
-	protected void doBackup(File destinationFolder) throws DBException
+	protected void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
 		File currentDB = getDatabaseFile();
-		String extension = FileHelpers.getFileExtension(currentDB);
-		File backupDB = new File(destinationFolder, FileHelpers.trimFileExtensionAndDot(currentDB.getName()) + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName() + "." + (extension.isEmpty() ? DATABASE_FILE_EXTENSION : extension));
 		if(currentDB != null && currentDB.exists() && destinationFolder.canWrite())
-		{	// File copy:
+		{
+			// Get destination file:
+			File backupDB;
+			if(backuper.isLabelFilesAsBackup())
+			{	// File name format: [original_name_w/o_extension]_Backup_[timestamp].[original_extension]
+				String extension = FileHelpers.getFileExtension(currentDB);
+				backupDB = new File(destinationFolder,
+									FileHelpers.trimFileExtensionAndDot(currentDB.getName()) + BACKUP_SUFFIX + TimeUtils.getTimestampForFileName() + "." + (extension.isEmpty() ? DATABASE_FILE_EXTENSION : extension));
+			}
+			else
+				// Using original file name
+				backupDB = new File(destinationFolder, currentDB.getName());
+			// Perform the actual back-up:
 			try
 			{
-				FileUtils.copyFile(currentDB, backupDB);
+				doBackup(backupDB);
 			}
-			catch(IOException e)
+			catch(Exception e)
 			{
 				throw new DBException("Failed to back-up SQLite database to: " + backupDB.getAbsolutePath(), e);
 			}
@@ -234,6 +252,21 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			throw new DBException("Failed to back-up SQLite database");
 	}
 	
+	/**
+	 * Back-up by means of file copy.
+	 * May be overridden.
+	 * 
+	 * @param destinationFile
+	 * @throws Exception
+	 */
+	protected void doBackup(File destinationFile) throws Exception
+	{
+		FileUtils.copyFile(getDatabaseFile(), destinationFile);
+	}
+	
+	/**
+	 * @return
+	 */
 	protected abstract File getDatabaseFile();
 	
 	/**
@@ -313,11 +346,21 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				autoIncrementKeyColumn.storeValue(record, rowID);
 		}
 
-		/* (non-Javadoc)
+		/**
+		 * Note:
+		 * 	Currently the detection of _actual_ changes to the record does *not* work.
+		 * 	If the UPDATE statement's WHERE clause matches an existing row that row will (at least in SQLite) be considered
+		 * 	as changed/affected (i.e. this method will return true) even if the actual values remained unchanged.
+		 * 	The only obvious way to fix this is to generate UPDATE statements in which the WHERE clause checks whether
+		 * 	values _need_ to be updated. E.g. "UPDATE table SET col1 = "newVal1", col2 = "newVal2" WHERE id = X AND (col1 IS NOT 'newVal1' OR col2 IS NOT 'newVal2');"
+		 * 	We could implement such a solution in RecordUpdateHelper but will wait until we are certain this feature will be required.
+		 * @see See: <a href="http://stackoverflow.com/questions/26372449">http://stackoverflow.com/questions/26372449</a>
+		 * TODO implement solution to detect actual record value changes
+		 * 
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#update(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
 		@Override
-		public void update(Record record) throws DBException
+		public boolean update(Record record) throws DBException
 		{
 			if(updateStatement == null)
 			{
@@ -331,7 +374,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			updateStatement.retrieveAndBindAll(record);
 			
 			// Execute:
-			updateStatement.executeUpdate();
+			return updateStatement.executeUpdate() == 1;
 		}
 		
 		public void upsert(Record record) throws DBException

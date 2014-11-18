@@ -51,64 +51,77 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 
 	static public final char QUALIFIED_NAME_SEPARATOR = '.'; // Note: if this is ever changed Column#SanitiseName(String) may need changing too!
 	static public final boolean DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION = true;
-	static public final boolean DEFAULT_INCLUDE_VIRTUALCOLS_IN_BINARY_SERIALISATION = false;
 	static public final boolean DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION = true;
 	
 	private final Schema schema;
 	protected final boolean includeSkipColsInStringSerialisation;
-	protected final boolean includeVirtualColsInBinarySerialisation;
 	protected final boolean includeVirtualColsInStringSerialisation;
-	private Set<Column<?>> skipColumns;
-	private Map<Column<?>, Column<?>> swapColumns;
+	private Set<Integer> skipColumnPositions;
+	private transient Set<Column<?>> skipColumns;
+	private Map<Integer, Column<?>> swapColumns;
 
-	public RecordColumn(Class<R> type, String name, Schema schema, boolean optional)
+	/**
+	 * @param name
+	 * @param schema
+	 * @param optional
+	 */
+	public RecordColumn(String name, Schema schema, boolean optional)
 	{
-		this(type, name, schema, optional, DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION, DEFAULT_INCLUDE_VIRTUALCOLS_IN_BINARY_SERIALISATION, DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION);
+		this(name, schema, optional, DEFAULT_INCLUDE_SKIPCOLS_IN_STRING_SERIALISATION, DEFAULT_INCLUDE_VIRTUALCOLS_IN_STRING_SERIALISATION);
 	}
 	
 	/**
-	 * @param type
 	 * @param name
 	 * @param schema schema containing subcolumns
 	 * @param optional
 	 * @param includeSkipColsInStringSerialisation whether serialisation/deserialisation to/from String should include the subcolumns in skipColumns
-	 * @param includeVirtualColsInBinarySerialisation whether writing/reading to/from binary storage should include virtual subcolumns
 	 * @param includeVirtualColsInStringSerialisation whether serialisation/deserialisation to/from String should include virtual subcolumns
 	 */
-	public RecordColumn(Class<R> type, String name, Schema schema, boolean optional, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInBinarySerialisation, boolean includeVirtualColsInStringSerialisation)
+	public RecordColumn(String name, Schema schema, boolean optional, boolean includeSkipColsInStringSerialisation, boolean includeVirtualColsInStringSerialisation)
 	{
-		super(type, name, optional);
+		super(name, optional);
 		if(schema == null)
 			throw new NullPointerException("RecordColumn needs a non-null schema to specify its subcolumns.");
 		this.schema = schema;
 		this.includeSkipColsInStringSerialisation = includeSkipColsInStringSerialisation;
-		this.includeVirtualColsInBinarySerialisation = includeVirtualColsInBinarySerialisation;
 		this.includeVirtualColsInStringSerialisation = includeVirtualColsInStringSerialisation;
 	}
 	
 	/**
-	 * Add a column that needs to be skipped upon reading/writing to binary storage and
+	 * Add a column that needs to be skipped upon reading/writing to binary storage/transmission and
 	 * optionally also for serialisation/deserialisation to/from String
 	 * 
-	 * @param skipColumn
+	 * @param skipColumn a non-virtual(!) column that is part of the schema
 	 */
 	protected void addSkipColumn(Column<?> skipColumn)
 	{
-		if(!schema.containsColumn(skipColumn, true))
-			throw new IllegalArgumentException("Unknown subcolumn");
-		if(skipColumns == null)
-			skipColumns = new HashSet<Column<?>>();
-		skipColumns.add(skipColumn);
+		if(skipColumn == null)
+			throw new NullPointerException("skipColumn cannot be null!");
+		int position = schema.getColumnPosition(skipColumn.name);
+		if(position == Schema.UNKNOWN_COLUMN_POSITION)
+			throw new IllegalArgumentException("Unknown subcolumn \"" + skipColumn.name + "\"!");
+		if(skipColumnPositions == null)
+			skipColumnPositions = new HashSet<Integer>();
+		skipColumnPositions.add(position);
+		skipColumns = null; // to ensure the set of Column<?>s is recreated
 	}
 	
 	protected Set<Column<?>> getSkipColumns(boolean forceNone)
 	{
-		return skipColumns == null || forceNone ? Collections.<Column<?>>emptySet() : skipColumns;
+		if(skipColumnPositions == null || forceNone)
+			return Collections.<Column<?>> emptySet();
+		if(skipColumns == null)
+		{
+			skipColumns = new HashSet<Column<?>>();
+			for(int pos : skipColumnPositions)
+				skipColumns.add(schema.getColumn(pos));
+		}
+		return skipColumns;
 	}
 	
 	protected boolean isColumnSkipped(Column<?> column)
 	{
-		return skipColumns != null && skipColumns.contains(column);
+		return skipColumnPositions != null && skipColumnPositions.contains(schema.getColumnPosition(column.name));
 	}
 	
 	/**
@@ -123,13 +136,18 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	 */
 	protected void addBinaryColumn(Column<?> schemaColumn, Column<?> binaryColumn)
 	{
-		if(!schema.containsColumn(schemaColumn, true))
-			throw new IllegalArgumentException("Unknown subColumn");
+		if(schemaColumn == null)
+			throw new NullPointerException("schemaColumn cannot be null!");
+		if(binaryColumn == null)
+			throw new NullPointerException("binaryColumn cannot be null!");
+		int schemaColPos = schema.getColumnPosition(schemaColumn.name);
+		if(schemaColPos == Schema.UNKNOWN_COLUMN_POSITION)
+			throw new IllegalArgumentException("Unknown subcolumn \"" + schemaColumn.name + "\"!");
 		if(!schemaColumn.getType().equals(binaryColumn.getType()))
 			throw new IllegalArgumentException("Column type mismatch!");
 		if(swapColumns == null)
-			swapColumns = new HashMap<Column<?>, Column<?>>();
-		swapColumns.put(schemaColumn, binaryColumn);
+			swapColumns = new HashMap<Integer, Column<?>>();
+		swapColumns.put(schemaColPos, binaryColumn);
 	}
 	
 	/**
@@ -141,10 +159,15 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	 */
 	protected Column<?> getBinaryColumn(Column<?> schemaColumn)
 	{
-		if(swapColumns != null && swapColumns.containsKey(schemaColumn))
-			return swapColumns.get(schemaColumn);
-		else
-			return schemaColumn;
+		if(swapColumns != null)
+		{
+			int schemaColPos = schema.getColumnPosition(schemaColumn.name);
+			if(schemaColPos == Schema.UNKNOWN_COLUMN_POSITION)
+				throw new IllegalArgumentException("Unknown subcolumn \"" + schemaColumn.name + "\"!"); // this should never happen
+			if(swapColumns.containsKey(schemaColPos))
+				return swapColumns.get(schemaColPos);
+		}
+		return schemaColumn;
 	}
 	
 	/* (non-Javadoc)
@@ -180,7 +203,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	@Override
 	protected void write(R record, BitOutputStream bitStream) throws IOException
 	{
-		for(Column<?> subCol : schema.getColumns(includeVirtualColsInBinarySerialisation))
+		for(Column<?> subCol : schema.getColumns(false))
 			if(!isColumnSkipped(subCol))
 				getBinaryColumn(subCol).writeObject(subCol.retrieveValue(record), bitStream); // will also write optional bit of the subcolumn if it is optional
 	}
@@ -194,7 +217,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	protected R read(BitInputStream bitStream) throws IOException
 	{
 		R record = getNewRecord();
-		for(Column<?> subCol : schema.getColumns(includeVirtualColsInBinarySerialisation))
+		for(Column<?> subCol : schema.getColumns(false))
 			if(!isColumnSkipped(subCol))
 				subCol.storeObject(record, getBinaryColumn(subCol).readValue(bitStream));
 		return record;
@@ -218,7 +241,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	@Override
 	protected int _getMaximumSize()
 	{
-		return schema.getMaximumSize(includeVirtualColsInBinarySerialisation, getSkipColumns(false));
+		return schema.getMaximumSize(false, getSkipColumns(false));
 	}
 
 	/* (non-Javadoc)
@@ -227,7 +250,7 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	@Override
 	protected int _getMinimumSize()
 	{
-		return schema.getMinimumSize(includeVirtualColsInBinarySerialisation, getSkipColumns(false));
+		return schema.getMinimumSize(false, getSkipColumns(false));
 	}
 
 	/* (non-Javadoc)
@@ -240,8 +263,10 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 		{
 			RecordColumn<R> other = (RecordColumn<R>) otherColumn;
 			return	this.schema.equals(other.schema) &&
-					(this.skipColumns == null ? other.skipColumns == null :
-												this.skipColumns.equals(other.skipColumns)) &&
+					(this.skipColumnPositions == null ? other.skipColumnPositions == null :
+												this.skipColumnPositions.equals(other.skipColumnPositions)) &&
+					this.includeSkipColsInStringSerialisation == other.includeSkipColsInStringSerialisation &&
+					this.includeVirtualColsInStringSerialisation == other.includeVirtualColsInStringSerialisation &&
 					(this.swapColumns == null ? other.swapColumns == null :
 												this.swapColumns.equals(other.swapColumns));
 		}
@@ -253,8 +278,9 @@ public abstract class RecordColumn<R extends Record> extends Column<R>
 	{
 		int hash = super.hashCode();
 		hash = 31 * hash + schema.hashCode();
-		hash = 31 * hash + (skipColumns == null ? 0 : skipColumns.hashCode());
+		hash = 31 * hash + (skipColumnPositions == null ? 0 : skipColumnPositions.hashCode());
 		hash = 31 * hash + (includeSkipColsInStringSerialisation ? 0 : 1);
+		hash = 31 * hash + (includeVirtualColsInStringSerialisation ? 0 : 1);
 		hash = 31 * hash + (swapColumns == null ? 0 : swapColumns.hashCode());
 		return hash;
 	}

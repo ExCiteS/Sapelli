@@ -97,6 +97,6 @@ public abstract class StorageClient
 	
 	public abstract void recordDeleted(Record record);
 	
-	public abstract void recordDeleted(RecordReference record);
+	public abstract void recordDeleted(RecordReference recordReference);
 	
 }

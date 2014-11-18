@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -326,7 +326,15 @@ public class LocationField extends Field implements Timeoutable
 	@Override
 	protected LocationColumn createColumn(String name)
 	{
-		return new LocationColumn(name, (optional != Optionalness.NEVER), doublePrecision, storeAltitude, storeBearing, storeSpeed, storeAccuracy, false, storeProvider); // we never store time (for now)
+		return new LocationColumn(	name,
+									form.getColumnOptionalityAdvisor().getColumnOptionality(this),
+									doublePrecision,
+									storeAltitude,
+									storeBearing,
+									storeSpeed,
+									storeAccuracy,
+									false, // for now time is never stored (or rather transmited)
+									storeProvider);
 	}
 	
 	@Override
@@ -379,10 +387,13 @@ public class LocationField extends Field implements Timeoutable
 		return ((LocationColumn) form.getColumnFor(this)).retrieveValue(record);
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#enter(uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor, uk.ac.ucl.excites.sapelli.collector.model.FieldParameters, boolean)
+	 */
 	@Override
-	public boolean enter(Controller controller, FieldParameters arguments, boolean withPage)
+	public boolean enter(FieldVisitor visitor, FieldParameters arguments, boolean withPage)
 	{
-		return controller.enterLocationField(this, arguments, withPage);
+		return visitor.enterLocationField(this, arguments, withPage);
 	}
 	
 	@Override

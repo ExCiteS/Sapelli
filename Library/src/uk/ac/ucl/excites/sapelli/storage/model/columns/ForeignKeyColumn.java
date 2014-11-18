@@ -53,7 +53,7 @@ public class ForeignKeyColumn extends RecordColumn<RecordReference>
 	 */
 	public ForeignKeyColumn(String name, Schema foreignSchema, boolean optional)
 	{
-		super(RecordReference.class, name, foreignSchema.getPrimaryKey() /* Index instance, a subclass of Schema */, optional);
+		super(name, foreignSchema.getPrimaryKey() /* Index instance, a subclass of Schema */, optional);
 		this.foreignSchema = foreignSchema;
 	}
 	
@@ -101,6 +101,12 @@ public class ForeignKeyColumn extends RecordColumn<RecordReference>
 		int hash = super.hashCode();
 		hash = 31 * hash + foreignSchema.hashCode();
 		return hash;
+	}
+
+	@Override
+	public Class<RecordReference> getType()
+	{
+		return RecordReference.class;
 	}
 
 }

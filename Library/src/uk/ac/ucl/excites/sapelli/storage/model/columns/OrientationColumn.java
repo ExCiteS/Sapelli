@@ -34,7 +34,7 @@ public class OrientationColumn extends RecordColumn<Orientation>
 	
 	public OrientationColumn(String name, boolean optional, boolean storeAzimuth, boolean storePitch, boolean storeRoll)
 	{
-		super(Orientation.class, name, Orientation.SCHEMA, optional);
+		super(name, Orientation.SCHEMA, optional);
 		if(!storeAzimuth)
 			addSkipColumn(Orientation.COLUMN_AZIMUTH);
 		if(!storePitch)
@@ -83,6 +83,12 @@ public class OrientationColumn extends RecordColumn<Orientation>
 			super.accept(visitor, !visitor.skipNonBinarySerialisedOrientationSubColumns());
 		else
 			visitor.visit(this);
+	}
+
+	@Override
+	public Class<Orientation> getType()
+	{
+		return Orientation.class;
 	}
 	
 }

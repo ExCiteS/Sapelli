@@ -22,8 +22,8 @@
     android:versionName="1.0.0" >
 
     <!--
-	    For more information on permission:  
-	    http://developer.android.com/reference/android/Manifest.permission.html
+	    For more information on permission:
+	    http://developer.android.com/reference/android/Manifest.permission.html
     -->
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />

@@ -28,24 +28,28 @@ import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
 import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
+import uk.ac.ucl.excites.sapelli.collector.db.ProjectStoreProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.AndroidFileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
-import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
+import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreProvider;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteRecordStore;
 import uk.ac.ucl.excites.sapelli.util.Debug;
+import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.app.Application;
 import android.content.res.Configuration;
 import android.os.Environment;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.os.EnvironmentCompat;
 
 import com.crashlytics.android.Crashlytics;
@@ -56,7 +60,7 @@ import com.crashlytics.android.Crashlytics;
  * @author Michalis Vitos, mstevens
  * 
  */
-public class CollectorApp extends Application implements StoreClient
+public class CollectorApp extends Application implements StoreClient, RecordStoreProvider, ProjectStoreProvider
 {
 
 	// STATICS------------------------------------------------------------
@@ -122,14 +126,29 @@ public class CollectorApp extends Application implements StoreClient
 		}
 		catch(FileStorageException fse)
 		{
-			this.fileStorageException = fse;
+			this.fileStorageException = fse; // postpone throwing until getFileStorageProvider() is called!
 		}
 		
 		// Set up a CrashReporter (will use dumps folder):
 		if(fileStorageProvider != null)
 			Thread.setDefaultUncaughtExceptionHandler(new CrashReporter(fileStorageProvider, getResources().getString(R.string.app_name)));
+
+		// Create shortcut to Sapelli Collector on Home Screen:
+		// Get collector preferences:
+		CollectorPreferences pref = new CollectorPreferences(getApplicationContext());
+		if(pref.isFirstInstallation())
+		{
+			// Create shortcut
+			ProjectRunHelpers.createCollectorShortcut(getApplicationContext());
+			// Set first installation to false
+			pref.setFirstInstallation(false);
+		}
 	}
 	
+	/**
+	 * @return
+	 * @throws FileStorageException
+	 */
 	private FileStorageProvider initialiseFileStorage() throws FileStorageException
 	{
 		File sapelliFolder = null;
@@ -149,7 +168,7 @@ public class CollectorApp extends Application implements StoreClient
 		{	// No: first installation or reset
 			
 			// Find appropriate files dir (using application-specific folder, which is removed upon app uninstall!):
-			File[] paths = ContextCompat.getExternalFilesDirs(this, null);
+			File[] paths = DeviceControl.getExternalFilesDirs(this, null);
 			if(paths != null && paths.length != 0)
 			{
 				// We count backwards because we prefer secondary external storage (which is likely to be on an SD card rather unremovable memory)
@@ -178,18 +197,30 @@ public class CollectorApp extends Application implements StoreClient
 
 		// If we get here this means we have a non-null sapelliFolder object representing an accessible path...
 		
+		// Try to get the Android Downloads folder
+		File downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+		if(!isMountedReadableWritableDir(downloadsFolder))
+		{
+			// Try to create the dir.
+			downloadsFolder.mkdirs();
+
+			// Check again
+			if(!isMountedReadableWritableDir(downloadsFolder))
+				// No :-(
+				throw new FileStorageRemovedException(downloadsFolder.getAbsolutePath());
+		}
+		
 		// Return path provider
-		return new AndroidFileStorageProvider(sapelliFolder); // Android specific subclass of FileStorageProvider, which generates .nomedia files
+		return new AndroidFileStorageProvider(sapelliFolder, downloadsFolder); // Android specific subclass of FileStorageProvider, which generates .nomedia files
 	}
 	
 	/**
 	 * Returns a FileStorageProvider when file storage is available or throws an FileStorageUnavailableException or an FileStorageRemovedException if it is not
 	 * 
 	 * @return a PathProvider object
-	 * @throws FileStorageUnavailableException
-	 * @throws FileStorageRemovedException
+	 * @throws FileStorageException
 	 */
-	public FileStorageProvider getFileStorageProvider() throws FileStorageUnavailableException, FileStorageRemovedException
+	public FileStorageProvider getFileStorageProvider() throws FileStorageException
 	{
 		if(fileStorageProvider != null && fileStorageException == null)
 			return fileStorageProvider;
@@ -198,6 +229,7 @@ public class CollectorApp extends Application implements StoreClient
 		else
 			throw new FileStorageUnavailableException(); // this shouldn't happen
 	}
+	
 	/**
 	 * Check if a directory is on a mounted storage and writable/readable
 	 * 
@@ -206,9 +238,16 @@ public class CollectorApp extends Application implements StoreClient
 	 */
 	private boolean isMountedReadableWritableDir(File dir)
 	{
-		return (dir != null) && Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) && FileHelpers.isReadableWritableDirectory(dir);
-	}
+		// Try to create the folder before checking its availability
+		if(!dir.exists())
+			dir.mkdirs();
 
+		// Accept both Mounted and Unknown Media. The Unknown Media is used in Android when a path isn't backed by known storage media i.e. the SD Card on
+		// Samsung Xcover 2. However, we still check that the dir is not null and that we have read/write access to it.
+		return (dir != null)
+				&& (Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) || EnvironmentCompat.MEDIA_UNKNOWN.equals(EnvironmentCompat.getStorageState(dir)))
+				&& FileHelpers.isReadableWritableDirectory(dir);
+	}
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig)
@@ -251,13 +290,10 @@ public class CollectorApp extends Application implements StoreClient
 		Debug.d("Should never be called!");
 	}
 
-	/**
-	 * Called by a StoreClient to request a ProjectStore object
-	 * 
-	 * @param client
-	 * @return
-	 * @throws Exception
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStoreProvider#getProjectStore(uk.ac.ucl.excites.sapelli.shared.db.StoreClient)
 	 */
+	@Override
 	public ProjectStore getProjectStore(StoreClient client) throws Exception
 	{
 		if(projectStore == null)
@@ -265,8 +301,8 @@ public class CollectorApp extends Application implements StoreClient
 			if(USE_PREFS_FOR_PROJECT_STORAGE)
 				projectStore = new PrefProjectStore(this, getFileStorageProvider(), getDemoPrefix());
 			else
-				projectStore = new ProjectRecordStore(getRecordStore(client), getFileStorageProvider()); // TODO sort out storeclient mess!
-			//projectStore = new DB4OProjectStore(getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+				projectStore = new ProjectRecordStore(this, getFileStorageProvider());
+			//projectStore = new DB4OProjectStore(getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			collectorClient.setProjectStore(projectStore); // !!!
 			storeClients.put(projectStore, new HashSet<StoreClient>());
 		}
@@ -279,28 +315,26 @@ public class CollectorApp extends Application implements StoreClient
 		return collectorClient;
 	}
 	
-	/**
-	 * @param client
-	 * @return
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStoreProvider#getRecordStore(uk.ac.ucl.excites.sapelli.shared.db.StoreClient)
 	 */
-	public RecordStore getRecordStore(StoreClient client) throws Exception
+	@Override
+	public RecordStore getRecordStore(StoreClient client) throws DBException
 	{
 		if(recordStore == null)
 		{
-			//recordStore = new DB4ORecordStore(getCollectorClient(client), getFilesDir(), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
-			recordStore = new AndroidSQLiteRecordStore(collectorClient, this, getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			//recordStore = new DB4ORecordStore(getCollectorClient(client), getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			recordStore = new AndroidSQLiteRecordStore(collectorClient, this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 			storeClients.put(recordStore, new HashSet<StoreClient>());
 		}
-		storeClients.get(recordStore).add(client); //add to set of clients currently using the projectStore
+		storeClients.get(recordStore).add(client); // add to set of clients currently using the recordStore
 		return recordStore;
 	}
 	
-	/**
-	 * Called by a DataAccessClient to signal it will no longer use its DataAccess object 
-	 * 
-	 * @param store
-	 * @param client
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.shared.db.StoreProvider#discardStoreUsage(uk.ac.ucl.excites.sapelli.shared.db.Store, uk.ac.ucl.excites.sapelli.shared.db.StoreClient)
 	 */
+	@Override
 	public void discardStoreUsage(Store store, StoreClient client)
 	{
 		if(store == null)
@@ -308,9 +342,9 @@ public class CollectorApp extends Application implements StoreClient
 		
 		// Remove client for this store:
 		Set<StoreClient> clients = storeClients.get(store);
-		
 		if(clients != null)
 			clients.remove(client);
+		
 		// Finalise if no longer used by other clients:
 		if(clients == null || clients.isEmpty())
 		{
@@ -321,7 +355,7 @@ public class CollectorApp extends Application implements StoreClient
 			catch(DBException ignore) { }
 			storeClients.remove(store); // remove empty set
 
-			//Slightly dirty but acceptable:
+			// Slightly dirty but acceptable:
 			if(store == projectStore)
 				projectStore = null;
 			else if(store == recordStore)
@@ -331,14 +365,21 @@ public class CollectorApp extends Application implements StoreClient
 		}
 	}
 	
-	public void backupStores() throws Exception
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.shared.db.StoreProvider#backupStores(java.io.File, boolean)
+	 */
+	@Override
+	public void backupStores(File destinationFolder, boolean labelFilesAsBackup) throws Exception
 	{
-		File exportFolder = getFileStorageProvider().getDumpFolder(true);
-		for(Store store : new Store[] { getProjectStore(this), getRecordStore(this) })
-		{
-			store.backup(exportFolder);
+		Store[] toBackup = new Store[] { getProjectStore(this), getRecordStore(this) };
+		// Note: by calling the get...Store(StoreClient) methods above we briefly register the CollectorApp itself as a StoreClient for each store
+		
+		StoreBackuper backuper = new StoreBackuper(labelFilesAsBackup, toBackup);
+		backuper.backup(destinationFolder);
+		
+		// Unregister the CollectorApp as a StoreClient
+		for(Store store : toBackup) 
 			discardStoreUsage(store, this);
-		}
 	}
 	
 }

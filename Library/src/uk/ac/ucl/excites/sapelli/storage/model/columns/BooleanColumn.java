@@ -40,7 +40,7 @@ public class BooleanColumn extends ComparableColumn<Boolean>
 	 */
 	public BooleanColumn(String name, boolean optional)
 	{
-		super(Boolean.class, name, optional);
+		super(name, optional);
 	}
 	
 	@Override
@@ -126,6 +126,12 @@ public class BooleanColumn extends ComparableColumn<Boolean>
 	protected int compareNonNullValues(Boolean lhs, Boolean rhs)
 	{
 		return lhs.compareTo(rhs);
+	}
+
+	@Override
+	public Class<Boolean> getType()
+	{
+		return Boolean.class;
 	}
 
 }

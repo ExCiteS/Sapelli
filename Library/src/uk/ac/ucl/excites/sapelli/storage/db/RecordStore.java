@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
@@ -46,7 +47,7 @@ public abstract class RecordStore implements Store
 {
 
 	static public final String DATABASE_NAME_SUFFIX = "-RecordStore";
-	static public final String BACKUP_SUFFIX = "_Backup";
+	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp
 	
 	protected StorageClient client;
 	
@@ -180,8 +181,10 @@ public abstract class RecordStore implements Store
 	 * @param record - the record to store or update; records of internal schemata will be rejected
 	 * @throws DBConstraintException when a table/index constraint is violated
 	 * @throws DBException in case of a database problem
+	 * @throws IllegalArgumentException when the given record cannot be stored
+	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 	 */
-	public void store(Record record) throws DBException
+	public void store(Record record) throws DBException, IllegalArgumentException, IllegalStateException
 	{
 		if(!isStorable(record))
 			throw new IllegalArgumentException(String.format("Record (%s) cannot be stored!", record.toString(false)));
@@ -196,7 +199,9 @@ public abstract class RecordStore implements Store
 			throw e;
 		}
 		// Inform client:
-		if(insert)
+		if(insert == null)
+			return; // record was unchanged
+		else if(insert)
 			client.recordInserted(record);
 		else
 			client.recordUpdated(record);
@@ -211,22 +216,26 @@ public abstract class RecordStore implements Store
 	 * @throws DBPrimaryKeyException when the record already exists
 	 * @throws DBConstraintException when a table/index constraint is violated
 	 * @throws DBException in case of another database problem
+	 * @throws IllegalArgumentException when the given record cannot be stored
+	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 	 */
-	public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
+	public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException, IllegalArgumentException, IllegalStateException
 	{
 		if(!isStorable(record))
 			throw new IllegalArgumentException(String.format("Record (%s) cannot be inserted!", record.toString(false)));
+		boolean inserted = false;
 		try
 		{
-			doInsert(record);
+			inserted = doInsert(record);
 		}
 		catch(DBException e)
 		{
 			rollbackTransactions(); // !!!
 			throw e;
 		}
-		// Inform client:
-		client.recordInserted(record);
+		// Inform client if a real insert happened:
+		if(inserted)
+			client.recordInserted(record);
 	}
 	
 	/**
@@ -235,8 +244,10 @@ public abstract class RecordStore implements Store
 	 * 
 	 * @param records - the records to store or update
 	 * @throws DBException in case of a database problem
+	 * @throws IllegalArgumentException when the given record cannot be stored
+	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 	 */
-	public void store(List<Record> records) throws DBException
+	public void store(List<Record> records) throws DBException, IllegalArgumentException, IllegalStateException
 	{
 		Boolean[] insert = new Boolean[records.size()]; 
 		startTransaction();
@@ -258,7 +269,9 @@ public abstract class RecordStore implements Store
 		// Inform client:
 		r = 0;
 		for(Record record : records)
-			if(insert[r++])
+			if(insert[r++] == null)
+				return; // record was unchanged
+			else if(insert[r])
 				client.recordInserted(record);
 			else
 				client.recordUpdated(record);
@@ -268,21 +281,24 @@ public abstract class RecordStore implements Store
 	 * Stores (insert or update/replace) a record
 	 * 
 	 * @param record - the record to store or update; can be assumed to be non-null and not of an internal schema
+	 * @return whether the record was new (i.e. it was INSERTed; returns {@code true}), modified (i.e. it was UPDATEd; returns {@code false}), or neither (i.e. the exact same record was already stored; returns {@code null})
 	 * @throws DBConstraintException when a table/index constraint is violated
 	 * @throws DBException in case of a database problem
-	 * @return whether the record was new (i.e. it was INSERTed; returns true), or not (i.e. it was UPDATEd; returns false)
+	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 	 */
-	protected abstract boolean doStore(Record record) throws DBConstraintException, DBException;
+	protected abstract Boolean doStore(Record record) throws DBConstraintException, DBException, IllegalStateException;
 	
 	/**
 	 * Inserts a record, throws a DuplicateException if it already exists.
 	 * 
 	 * @param record - the record to insert; can be assumed to be non-null and not of an internal schema
+	 * @return whether the record was really inserted (true), or was already stored with identical values (false)
 	 * @throws DBPrimaryKeyException when the record already exists
 	 * @throws DBConstraintException when a table/index constraint is violated
 	 * @throws DBException in case of another database problem
+	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 	 */
-	protected abstract void doInsert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException;
+	protected abstract boolean doInsert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException, IllegalStateException;
 	
 	/**
 	 * Retrieve all Records (of any schema)
@@ -362,8 +378,9 @@ public abstract class RecordStore implements Store
 	 * 
 	 * @param recordRef
 	 * @throws DBException
+	 * @throws IllegalStateException when not all columns of this recordReference have been assigned a value
 	 */
-	public void delete(RecordReference recordRef) throws DBException
+	public void delete(RecordReference recordRef) throws DBException, IllegalStateException
 	{
 		delete(recordRef.getRecordQuery().getRecordsQuery());
 	}
@@ -460,14 +477,23 @@ public abstract class RecordStore implements Store
 	
 	protected abstract void close() throws DBException;
 	
-	public void backup(File destinationFolder) throws DBException
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#backup(uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper, java.io.File)
+	 */
+	@Override
+	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
 		if(isInTransaction())
-			throw new DBException("Cannot back-up database due to uncommited transaction!"); // TODO remove this?
-		doBackup(destinationFolder);
+			throw new DBException("Cannot back-up database due to uncommited transaction!");
+		doBackup(backuper, destinationFolder);
 	}
 	
-	protected abstract void doBackup(File destinationFolder) throws DBException;
+	/**
+	 * @param backuper
+	 * @param destinationFolder
+	 * @throws DBException
+	 */
+	protected abstract void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException;
 	
 	/**
 	 * @return whether or not this RecordStore implementation has full support for indexes (and the constraints they impose)

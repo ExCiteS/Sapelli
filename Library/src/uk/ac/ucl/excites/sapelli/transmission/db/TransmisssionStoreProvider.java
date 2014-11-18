@@ -16,22 +16,23 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.io;
+package uk.ac.ucl.excites.sapelli.transmission.db;
 
-import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreProvider;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 
 /**
- * Callbacks for ProjectLoader
- * 
  * @author mstevens
+ *
  */
-public interface ProjectLoaderCallback
+public interface TransmisssionStoreProvider extends StoreProvider
 {
 
 	/**
-	 * @param loadedProject
-	 * @throws IllegalArgumentException if something is wrong
+	 * @param client
+	 * @return
 	 */
-	public void checkProject(Project loadedProject) throws IllegalArgumentException;
-		
+	public RecordStore getTransmissionStore(StoreClient client) throws Exception;
+	
 }

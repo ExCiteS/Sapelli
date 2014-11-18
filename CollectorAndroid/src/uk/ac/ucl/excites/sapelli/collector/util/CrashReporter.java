@@ -117,7 +117,7 @@ public class CrashReporter implements UncaughtExceptionHandler
 		BufferedWriter bos = null;
 		try
 		{
-			bos = new BufferedWriter(new FileWriter(pathProvider.getDumpFolder(true).getAbsolutePath() + File.separator + filename));
+			bos = new BufferedWriter(new FileWriter(pathProvider.getCrashFolder(true).getAbsolutePath() + File.separator + filename));
 			bos.write(stacktrace);
 			bos.flush();
 		}

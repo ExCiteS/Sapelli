@@ -83,12 +83,14 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 
 	static public final float PADDING = 40.0f;
 
-	public AndroidOrientationUI(OrientationField field, Controller controller, CollectorView collectorUI) {
+	public AndroidOrientationUI(OrientationField field, Controller controller, CollectorView collectorUI)
+	{
 		super(field, controller, collectorUI);
 	}
 
 	@Override
-	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord) {
+	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
+	{
 		// TODO take "enabled" into account!
 		Context context = collectorUI.getContext();
 
@@ -97,16 +99,22 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 				pageView = new Button(context);
 				pageView.setText(field.getCaption());
 				// TODO some kind of icon/image would be nice (an arrow?)
-				pageView.setOnClickListener(new OnClickListener() {
+				pageView.setOnClickListener(new OnClickListener()
+				{
 					@Override
-					public void onClick(View v) {
-						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field itself
+					public void onClick(View v)
+					{
+						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field
+																											// itself
 					}
 				});
 			}
 			return pageView;
-		} else {
-			if (waitView == null) {
+		}
+		else
+		{
+			if(waitView == null)
+			{
 				// show a spinner initially, which is replaced with a compass when an orientation is received for the first time
 				waitView = new LinearLayout(context);
 				waitView.setOrientation(LinearLayout.VERTICAL);

@@ -34,7 +34,7 @@ public class CollectorPreferences
 	// Statics----------------------------------------------
 	private static final String PREFERENCES_NAME = "COLLECTOR_PREFERANCES";
 	private static final String PREF_SAPELLI_FOLDER = "SAPELLI_FOLDER";
-	private static final String PREF_FIRST_INSTALLATION = "FIRST_INSTALLATION"; // TODO
+	private static final String PREF_FIRST_INSTALLATION = "FIRST_INSTALLATION";
 
 	// Dynamics---------------------------------------------
 	private SharedPreferences preferences;
@@ -70,6 +70,26 @@ public class CollectorPreferences
 	public void clearSapelliFolder()
 	{
 		preferences.edit().remove(PREF_SAPELLI_FOLDER).commit();
+	}
+
+	/**
+	 * Set the first installation
+	 * 
+	 * @param firstInstallation
+	 */
+	public void setFirstInstallation(boolean firstInstallation)
+	{
+		preferences.edit().putBoolean(PREF_FIRST_INSTALLATION, firstInstallation).commit();
+	}
+
+	/**
+	 * Check if the app is installed for the first time
+	 * 
+	 * @return true if is first installation, false otherwise
+	 */
+	public boolean isFirstInstallation()
+	{
+		return preferences.getBoolean(PREF_FIRST_INSTALLATION, true);
 	}
 
 	public void printAll()

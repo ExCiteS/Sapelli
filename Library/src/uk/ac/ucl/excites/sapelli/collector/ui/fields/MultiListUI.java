@@ -19,7 +19,6 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField.MultiListItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
@@ -35,11 +34,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class MultiListUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<MultiListField, V, UI>
 {
 
-	// STATIC -------------------------------------------------------
-	static protected final String PLEASE_SELECT = "— Please select —"; //TODO multilang
-	static protected final String UNDO_SELECTION = "— No selection —"; //TODO multilang
-
-	// DYNAMIC ------------------------------------------------------
 	public MultiListUI(MultiListField listField, Controller controller, UI collectorUI)
 	{
 		super(listField, controller, collectorUI);
@@ -63,7 +57,7 @@ public abstract class MultiListUI<V, UI extends CollectorUI<V, UI>> extends NonS
 	public boolean isValid(Record record)
 	{
 		MultiListItem chosen = getChosenItem();
-		return chosen == null ? (field.getOptional() == Optionalness.ALWAYS) : chosen.isLeaf();
+		return chosen == null ? field.isOptional() : chosen.isLeaf();
 	}
 
 	protected abstract MultiListItem getChosenItem();

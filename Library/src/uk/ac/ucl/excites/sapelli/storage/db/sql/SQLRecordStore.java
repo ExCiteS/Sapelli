@@ -100,9 +100,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	/**
 	 * @param client
 	 * @param valuePlaceHolder - may be null if no parameters are to be used on SQL statements/queries (only literal values)
-	 * @throws DBException 
 	 */
-	public SQLRecordStore(StorageClient client, String valuePlaceHolder) throws DBException
+	public SQLRecordStore(StorageClient client, String valuePlaceHolder)
 	{
 		super(client);
 		this.tables = new HashMap<RecordReference, STable>();
@@ -113,9 +112,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * Must be called from subclass constructor!
 	 * 
 	 * @param newDB whether or not the database file is new (i.e. empty)
-	 * @throws Exception
+	 * @throws DBException
 	 */
-	protected void initialise(boolean newDB) throws Exception
+	protected void initialise(boolean newDB) throws DBException
 	{
 		// create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database)
 		this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);
@@ -123,6 +122,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	}
 	
 	protected abstract void executeSQL(String sql) throws DBException;
+	
+	protected abstract int executeSQLReturnAffectedRows(String sql) throws DBException;
 	
 	protected abstract String sanitiseIdentifier(String identifier);
 	
@@ -349,18 +350,24 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStore(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	protected boolean doStore(Record record) throws DBException
+	protected Boolean doStore(Record record) throws DBException, IllegalStateException
 	{
-		return getTable(record.getSchema(), true).store(record); // will create table in db if it is not there
+		return getTable(record.getSchema(), true).store(record, true); // getTable() will create table in db if it is not there
 	}
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doInsert(uk.ac.ucl.excites.sapelli.storage.model.Record)
 	 */
 	@Override
-	protected void doInsert(Record record) throws DBException
+	protected boolean doInsert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException, IllegalStateException
 	{
-		getTable(record.getSchema(), true).insert(record); // will create table in db if it is not there
+		Boolean inserted = getTable(record.getSchema(), true).store(record, false); // getTable() will create table in db if it is not there
+		if(inserted == null)
+			return false; // record was already stored with identical values
+		if(inserted) // new record was inserted
+			return true;
+		else // record existed and would have been UPDATEd if it were allowed 
+			throw new DBPrimaryKeyException("This record already exists in the record store (with different values).");
 	}
 
 	@Override
@@ -710,18 +717,23 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * Store a record by INSERTing, if it is new, or UPDATEing if it existed.
 		 * 
 		 * @param record
-		 * @return
+		 * @param updateAllowed whether or not updates are allowed
+		 * @return whether the record was new (i.e. it was INSERTed; returns {@code true}); was, or would have been if allowed, modified (i.e. UPDATEd; returns {@code false}); or neither (i.e. the exact same record was already stored; returns {@code null})
 		 * @throws DBConstraintException
 		 * @throws DBException
+		 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 		 */
-		public boolean store(Record record) throws DBConstraintException, DBException
+		public Boolean store(Record record, boolean updateAllowed) throws DBPrimaryKeyException, DBConstraintException, DBException, IllegalStateException
 		{
-			boolean newRec = !isRecordInDB(record);
-			if(newRec)
+			if(!isRecordInDB(record))
+			{
 				insert(record);
+				return true;
+			}
+			else if(!updateAllowed)
+				return record.hasEqualValues(select(record.getRecordQuery())) ? null : false;
 			else
-				update(record);
-			return newRec;
+				return update(record) ? false : null;
 		}
 		
 		/**
@@ -734,12 +746,13 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * @return
 		 * @throws NullPointerException
 		 * @throws DBException
+		 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 		 */
-		public boolean isRecordInDB(Record record) throws DBException
+		public boolean isRecordInDB(Record record) throws DBException, IllegalStateException
 		{
 			return (autoIncrementKeyColumn == null) ?
-					select(record.getRecordQuery()) != null :
-					autoIncrementKeyColumn.isValueSet(record);
+						select(record.getRecordQuery()) != null :
+						autoIncrementKeyColumn.isValueSet(record);
 		}
 		
 		/**
@@ -766,14 +779,25 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 * 
 		 * May be overridden.
 		 * 
+		 * Note:
+		 * 	Currently the detection of _actual_ changes to the record does *not* work.
+		 * 	If the UPDATE statement's WHERE clause matches an existing row that row will (at least in SQLite) be considered
+		 * 	as changed/affected (i.e. this method will return true) even if the actual values remained unchanged.
+		 * 	The only obvious way to fix this is to generate UPDATE statements in which the WHERE clause checks whether
+		 * 	values _need_ to be updated. E.g. "UPDATE table SET col1 = "newVal1", col2 = "newVal2" WHERE id = X AND (col1 IS NOT 'newVal1' OR col2 IS NOT 'newVal2');"
+		 * 	We could implement such a solution in RecordUpdateHelper but will wait until we are certain this feature will be required.
+		 * @see See: <a href="http://stackoverflow.com/questions/26372449">http://stackoverflow.com/questions/26372449</a>
+		 * TODO implement solution to detect actual record value changes
+		 * 
 		 * @param record
+		 * @return whether the record was really updated or stayed unchanged (because the record that was passed is identical to the stored one)
 		 * @throws DBConstraintException
 		 * @throws DBException
 		 */
 		@SuppressWarnings("unchecked")
-		public void update(Record record) throws DBConstraintException, DBException
+		public boolean update(Record record) throws DBConstraintException, DBException
 		{
-			executeSQL(new RecordUpdateHelper((STable) this, record).getQuery());
+			return executeSQLReturnAffectedRows(new RecordUpdateHelper((STable) this, record).getQuery()) == 1;
 		}
 		
 		/**

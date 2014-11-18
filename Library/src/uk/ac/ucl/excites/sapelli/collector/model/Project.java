@@ -29,7 +29,6 @@ import java.util.TreeSet;
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
@@ -96,7 +95,7 @@ public class Project
 			throw new IllegalArgumentException("A valid version is required");
 		
 		// Name, variant & version:
-		this.name = FileHelpers.makeValidFileName(name);
+		this.name = name;
 		if(variant != null && !variant.isEmpty())
 			this.variant = variant;
 		this.version = version;
