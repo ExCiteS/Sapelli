@@ -72,7 +72,7 @@ public final class Zipper
 	{
 		// Create containing folder:
 		if(!zipDestination.exists())
-			FileHelpers.createParentFolder(zipDestination);
+			FileHelpers.createParentDirectory(zipDestination);
 	
 		ZipOutputStream zipOutputStream = null;
 		try

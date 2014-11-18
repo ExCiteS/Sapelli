@@ -45,7 +45,7 @@ public final class Unzipper
 			{
 				if(ze.isDirectory())
 				{
-					if(!FileHelpers.createFolder(extractionPath + ze.getName()))
+					if(!FileHelpers.createDirectory(extractionPath + ze.getName()))
 					{
 						zin.close();
 						throw new IOException("Could not create folder: " + extractionPath + ze.getName());

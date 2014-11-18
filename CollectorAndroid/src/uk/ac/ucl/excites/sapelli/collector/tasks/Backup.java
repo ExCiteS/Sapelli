@@ -247,7 +247,7 @@ public class Backup
 				int z = 0;
 				for(Folder folder : foldersToExport)
 					toZip[z++] = getFolderFile(folder, tmpFolder); // add folders as File objects
-				toZip[z] = FileHelpers.getSubFolder(tmpFolder, Folder.DB.name(), true); // add Temp/Backup_[timestamp]/DB/ folder
+				toZip[z] = FileHelpers.getSubDirectory(tmpFolder, Folder.DB.name(), true); // add Temp/Backup_[timestamp]/DB/ folder
 				
 				// Phase 2: Back-up database(s)
 				publishProgress(activity.getString(R.string.backup_progress_db));
@@ -277,7 +277,7 @@ public class Backup
 			if(!folderFile.exists() || !folderFile.isDirectory() || folderFile.listFiles().length == 0)
 			{
 				// Create matching folder in tmpFolder:
-				folderFile = FileHelpers.getSubFolder(tmpFolder, folder.name(), true); // Temp/Backup_[timestamp]/[folder]/
+				folderFile = FileHelpers.getSubDirectory(tmpFolder, folder.name(), true); // Temp/Backup_[timestamp]/[folder]/
 				// Create .empty file (to make sure folder is included in ZIP):
 				(new File(folderFile, EMPTY_FILE)).createNewFile();
 			}

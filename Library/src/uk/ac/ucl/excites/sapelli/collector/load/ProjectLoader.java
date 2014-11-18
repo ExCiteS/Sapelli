@@ -162,7 +162,7 @@ public class ProjectLoader implements WarningKeeper
 			// STEP 1 - Extract the content of the Sapelli file to a new subfolder of the temp folder:
 			try
 			{
-				FileHelpers.createFolder(extractFolder);
+				FileHelpers.createDirectory(extractFolder);
 				Unzipper.unzip(sapelliFileInputStream, extractFolder);
 			}
 			catch(Exception e)

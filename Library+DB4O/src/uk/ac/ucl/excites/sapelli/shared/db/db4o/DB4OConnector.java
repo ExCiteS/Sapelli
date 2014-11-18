@@ -41,7 +41,7 @@ public final class DB4OConnector
 	
 	static public File getFile(File folder, String filenameWithoutExtension) throws IOException
 	{
-		if(!FileHelpers.createFolder(folder))
+		if(!FileHelpers.createDirectory(folder))
 			throw new IOException("Path does not exist and could not be created: " + folder.getAbsolutePath());
 		return new File(folder.getAbsolutePath() + File.separator + filenameWithoutExtension + '.' + DB4O_FILE_EXTENSION);
 	}

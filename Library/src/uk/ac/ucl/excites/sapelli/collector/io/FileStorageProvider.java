@@ -294,7 +294,7 @@ public class FileStorageProvider
 	{
 		try
 		{
-			return FileHelpers.getSubFolder(parentFolder, subFolderName, create);
+			return FileHelpers.getSubDirectory(parentFolder, subFolderName, create);
 		}
 		catch(Exception e)
 		{	// Wrap as FileStorageException:

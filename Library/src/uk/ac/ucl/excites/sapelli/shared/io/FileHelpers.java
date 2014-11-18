@@ -77,12 +77,12 @@ public final class FileHelpers
 	}
 	
 	/**
-	 * Ensures that the path is a folder path (adding / or \ if needed, but does not check if the folder exists)
+	 * Ensures that the path is a directory path (adding / or \ if needed, but does not check if the directory actually exists)
 	 * 
 	 * @param path
 	 * @return
 	 */
-	static public String ensureFolderPath(String path)
+	static public String ensureDirectoryPath(String path)
 	{
 		return path + (path.charAt(path.length() - 1) == File.separatorChar ? "" : File.separatorChar); 
 	}
@@ -229,37 +229,37 @@ public final class FileHelpers
 	}
 	
 	/**
-	 * Moves a directory. Files that already exist in the destination directory are overwritten. Files that exist in the distination directory but not in the source are left alone.
+	 * Moves a directory. Files that already exist in the destination directory are overwritten. Files that exist in the destination directory but not in the source are left alone.
 	 * 
-	 * @param srcFolder
-	 * @param dstFolder
+	 * @param srcDir
+	 * @param dstDir
 	 * @throws IOException
 	 * @throws IllegalArgumentException
 	 */
-	public static void moveDirectory(File srcFolder, File dstFolder) throws IOException, IllegalArgumentException
+	public static void moveDirectory(File srcDir, File dstDir) throws IOException, IllegalArgumentException
 	{
-		if(!srcFolder.exists())
+		if(!srcDir.exists())
 			throw new IllegalArgumentException("Source directory does not exist");
-		if( !srcFolder.isDirectory())
+		if( !srcDir.isDirectory())
 			throw new IllegalArgumentException("Source is not a directory, call moveFile() instead");
 		
 		// Create destination if needed:
-		if(!dstFolder.exists())
-			createFolder(dstFolder);
-		else if(!dstFolder.isDirectory())
+		if(!dstDir.exists())
+			createDirectory(dstDir);
+		else if(!dstDir.isDirectory())
 			throw new IllegalArgumentException("Destination exists but is not a directory!");
 		
 		// Move contents (recursive calls will happen for subdirectories):
-		for(File source : srcFolder.listFiles())
-			moveFileOrDirectory(source, new File(dstFolder.getAbsolutePath() + File.separator + source.getName()));
+		for(File source : srcDir.listFiles())
+			moveFileOrDirectory(source, new File(dstDir.getAbsolutePath() + File.separator + source.getName()));
 		
-		// Check if srcFolder is empty:
-		if(!isFolderEmpty(srcFolder))
+		// Check if srcDir is empty:
+		if(!isDirectoryEmpty(srcDir))
 			throw new IOException("Some contents may not have been moved or copied.");
 		
-		// Delete srcFolder:
-		if(!srcFolder.delete())
-			throw new IOException("Could not delete srcFolder, ");
+		// Delete srcDir:
+		if(!srcDir.delete())
+			throw new IOException("Could not delete source directory (" + srcDir.getAbsolutePath() + ").");
 	}
 	
 	/**
@@ -291,7 +291,7 @@ public final class FileHelpers
 			moveFile(source, destination);
 	}
 	
-	public static boolean isFolderEmpty(File directory)
+	public static boolean isDirectoryEmpty(File directory)
 	{
 		if(!directory.isDirectory())
 			throw new IllegalArgumentException("File is not a directory");
@@ -300,73 +300,71 @@ public final class FileHelpers
 	}
 
 	/**
-	 * Attempts to create the necessary (containing) folder(s) for a given path
+	 * Attempts to create the necessary (containing) directory/ies for a given path
 	 * 
-	 * @param folderPath
-	 * @return success (whether the directory exists now)
+	 * @param directoryPath
+	 * @return success (whether the directory exists now, or already existed)
 	 */
-	public static boolean createFolder(String folderPath)
+	public static boolean createDirectory(String directoryPath)
 	{
-		return createFolder(new File(folderPath));
+		return createDirectory(new File(directoryPath));
 	}
 
 	/**
-	 * Attempts to create the necessary (containing) folder(s) for a given path
+	 * Attempts to create the necessary (containing) directory/ies for a given path
 	 * 
-	 * @param folderPath
-	 * @return success, i.e. whether the folder exists now (as a directory, *not* as a file), or existed already
+	 * @param directory
+	 * @return success, i.e. whether the directory exists now (as a directory, *not* as a file), or existed already
 	 */
-	public static boolean createFolder(File folder)
+	public static boolean createDirectory(File directory)
 	{
-		if(!folder.exists())
-			return folder.mkdirs();
-		return folder.isDirectory();
+		if(!directory.exists())
+			return directory.mkdirs();
+		return directory.isDirectory();
 	}
 
 	/**
-	 * Returns (as a File instance) a subfolder with the given name in the given parent folder.
-	 * If {@code create} is {@code true} the folder is created on disc (if the parent folder does not exist it is created as well).
+	 * Returns (as a File instance) a subdirectory with the given name in the given parent directory.
+	 * If {@code create} is {@code true} the directory is created on disc (if the parent directory does not exist it is created as well).
 	 * 
-	 * @param parentFolder
-	 * @param subFolderName
+	 * @param parentDir
+	 * @param subDirName
 	 * @param create
 	 * @return
 	 * @throws IOException
 	 */
-	public static File getSubFolder(File parentFolder, String subFolderName, boolean create) throws IOException
+	public static File getSubDirectory(File parentDir, String subDirName, boolean create) throws IOException
 	{
-		File subFolder = new File(parentFolder, subFolderName);
+		File subDir = new File(parentDir, subDirName);
 		if(create)
-		{	// Create and test the subfolder
-			if(!createFolder(subFolder))
-				throw new IOException("Could not create folder: " + subFolder.getAbsolutePath());
+		{	// Create and test the sub dir
+			if(!createDirectory(subDir))
+				throw new IOException("Could not create directory: " + subDir.getAbsolutePath());
 		}
-		return subFolder;
+		return subDir;
 	}
 	
 	/**
-	 * Attempts to create the necessary parent folder(s) for a given path (the path could be a folder or file)
+	 * Attempts to create the necessary parent directory/ies for a given path (the path could be a directory or file)
 	 * 
-	 * @param folder
+	 * @param path
 	 * @return
 	 */
-	public static boolean createParentFolder(File folder)
+	public static boolean createParentDirectory(File path)
 	{
-		File parent = folder.getParentFile();
-		return createFolder(parent);
+		return createDirectory(path.getParentFile());
 	}
 
 	/**
-	 * Returns only the folderPath of the filePath. e.g. for "/my/path/myfile.raw" : "/my/path/"
+	 * Returns only the parent directory path of the given file path,
+	 * e.g. for "/my/path/myfile.raw" : "/my/path/"
 	 * 
 	 * @param filePath
-	 * @return The folderPath of the filePath. e.g. for "/my/path/myfile.raw" : "/my/path/"
+	 * @return The parent path of the filePath
 	 */
-	static public String getFolderPath(String filePath)
+	static public String getParentPath(String filePath)
 	{
-		int lastIndex = filePath.lastIndexOf("/");
-		String result = filePath.substring(0, lastIndex + 1);
-		return result;
+		return filePath.substring(0, filePath.lastIndexOf(File.separatorChar) + 1);
 	}
 	
 	/**
