@@ -127,7 +127,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			if(pageView == null)
 				pageView = new OnPageView(collectorUI.getContext());
 			
-			// Enable/disable (do this before calling setChosen()!):
+			// Enable/disable:
 			pageView.setEnabled(enabled); // also sets up event listeners!
 			return pageView;
 		}
@@ -732,8 +732,8 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 */
 	public class OnPageView extends LinearLayout implements OnClickListener, OnFocusChangeListener
 	{
-		static public final float PAGE_CHOSEN_ITEM_SIZE_DIP = 60.0f; // width = height
-		static public final float PAGE_CHOSEN_ITEM_MARGIN_DIP = 1.0f; // same margin all round
+		static public final float PAGE_ITEM_SIZE_DIP = 60.0f; // width = height
+		static public final float PAGE_ITEM_MARGIN_DIP = 1.0f; // same margin all round
 		
 		private TextView label;
 		private View captureView;
@@ -748,10 +748,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			// Add label:
 			label = new TextView(getContext());
 			label.setText(field.getCaption());
+			//ensure that the label text is not truncated, by setting width to WRAP_CONTENT:
+			label.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 			this.addView(label);
 			
-			captureSizePx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_SIZE_DIP);
-			captureMarginPx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_MARGIN_DIP);
+			captureSizePx = ScreenMetrics.ConvertDipToPx(context, PAGE_ITEM_SIZE_DIP);
+			captureMarginPx = ScreenMetrics.ConvertDipToPx(context, PAGE_ITEM_MARGIN_DIP);
 			
 			// just use the capture button image to represent the media field:
 			captureView = generateCaptureButton(context).getView(context);
@@ -799,7 +801,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			if(!isFieldShown() || !isEnabled() || !v.isEnabled())
 				return;
 			
-			// The user will make a choice now, so don't annoy him/her with the red box:
 			clearPageInvalidMark();
 			
 			// Task to perform after animation has finished:
