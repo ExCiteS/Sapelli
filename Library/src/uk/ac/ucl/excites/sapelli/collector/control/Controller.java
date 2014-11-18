@@ -525,17 +525,8 @@ public abstract class Controller implements FieldVisitor
 	@Override
 	public boolean enterMediaField(MediaField mf, FieldParameters arguments, boolean withPage)
 	{
-		if(withPage)
-			return true;
-		else
-		{
-			if(mf.isMaxReached(currFormSession.record))
-			{ // Maximum number of attachments for this field is reached:
-				goForward(false); // skip field //TODO this needs to change if we allow to delete previously generated media
-				return false;
-			}
-			return true;
-		}
+		// we no longer skip media fields when max reached, so always return true
+		return true;
 	}
 	
 	/**

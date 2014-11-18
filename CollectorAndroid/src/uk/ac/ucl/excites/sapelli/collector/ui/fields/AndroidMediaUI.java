@@ -81,7 +81,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
 	protected File captureFile; // file used to store media while it is being captured
 
-	private PageView pageView;
+	private OnPageView pageView;
 	
 	private CaptureView captureView;
 	private GalleryView galleryView;
@@ -125,7 +125,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		if(onPage)
 		{
 			if(pageView == null)
-				pageView = new PageView(collectorUI.getContext());
+				pageView = new OnPageView(collectorUI.getContext());
 			
 			// Enable/disable (do this before calling setChosen()!):
 			pageView.setEnabled(enabled); // also sets up event listeners!
@@ -730,17 +730,17 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * 
 	 * @author mstevens, benelliott
 	 */
-	public class PageView extends LinearLayout implements OnClickListener, OnFocusChangeListener
+	public class OnPageView extends LinearLayout implements OnClickListener, OnFocusChangeListener
 	{
 		static public final float PAGE_CHOSEN_ITEM_SIZE_DIP = 60.0f; // width = height
 		static public final float PAGE_CHOSEN_ITEM_MARGIN_DIP = 1.0f; // same margin all round
 		
 		private TextView label;
 		private View captureView;
-		private int chosenSizePx;
-		private int chosenMarginPx;
+		private int captureSizePx;
+		private int captureMarginPx;
 		
-		public PageView(Context context)
+		public OnPageView(Context context)
 		{
 			super(context);
 			this.setOrientation(LinearLayout.VERTICAL);
@@ -750,15 +750,15 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			label.setText(field.getCaption());
 			this.addView(label);
 			
-			chosenSizePx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_SIZE_DIP);
-			chosenMarginPx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_MARGIN_DIP);
+			captureSizePx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_SIZE_DIP);
+			captureMarginPx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_MARGIN_DIP);
 			
 			// just use the capture button image to represent the media field:
 			captureView = generateCaptureButton(context).getView(context);
 						
 			// Set margins on layoutparams:
-			LayoutParams captureLP = new LinearLayout.LayoutParams(chosenSizePx, chosenSizePx);
-			captureLP.setMargins(chosenMarginPx, chosenMarginPx, chosenMarginPx, chosenMarginPx);
+			LayoutParams captureLP = new LinearLayout.LayoutParams(captureSizePx, captureSizePx);
+			captureLP.setMargins(captureMarginPx, captureMarginPx, captureMarginPx, captureMarginPx);
 			
 			// Add the view:
 			this.addView(captureView, captureLP);

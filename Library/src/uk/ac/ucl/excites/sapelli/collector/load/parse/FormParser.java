@@ -419,7 +419,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// <Video>
 			else if(qName.equals(TAG_VIDEO))
 			{
-				VideoField videoField = new VideoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_PHOTO, false));
+				VideoField videoField = new VideoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_VIDEO, false));
 				newMediaField(videoField, attributes);
 				videoField.setUseNativeApp(attributes.getBoolean(ATTRIBUTE_MEDIA_NATIVE_APP, VideoField.DEFAULT_USE_NATIVE_APP));
 				// Camera options (only used when useNativeApp=false):
@@ -832,13 +832,14 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	{
 		// Close field: </Choice>, </Location>, </Photo>, </Audio>, </Orientation>, </BelongsTo>, </LinksTo>, </Button>, </Label>, </Textbox>, </Checkbox>, </List>, </MultiList>, </Page>
 		if(	!openFields.isEmpty() && (
-			qName.equals(TAG_CHOICE) || qName.equals(TAG_LOCATION) ||
-			qName.equals(TAG_PHOTO) || qName.equals(TAG_AUDIO) ||
+			qName.equals(TAG_CHOICE)  || qName.equals(TAG_PAGE)|| 
+			qName.equals(TAG_LOCATION) ||qName.equals(TAG_PHOTO) || 
+			qName.equals(TAG_AUDIO) || qName.equals(TAG_VIDEO) ||
 			qName.equals(TAG_ORIENTATION) || qName.equals(TAG_BELONGS_TO) ||
 			qName.equals(TAG_LINKS_TO) || qName.equals(TAG_BUTTON) ||
 			qName.equals(TAG_LABEL) || qName.equals(TAG_TEXTFIELD) ||
 			qName.equals(TAG_CHECKBOX) || qName.equals(TAG_LIST) ||
-			qName.equals(TAG_MULTILIST) || qName.equals(TAG_PAGE)))
+			qName.equals(TAG_MULTILIST)))
 		{
 			Field currentField = openFields.pop(); // pop the field
 			
