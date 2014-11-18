@@ -173,7 +173,7 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 			{
 				// We count backwards because we prefer secondary external storage (which is likely to be on an SD card rather unremovable memory)
 				for(int p = paths.length - 1; p >= 0; p--)
-					if(paths[p] != null && isMountedReadableWritableDir(paths[p]))
+					if(isMountedReadableWritableDir(paths[p]))
 					{
 						sapelliFolder = paths[p];
 						break;
@@ -190,25 +190,18 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 		}
 		else
 		{	// Yes, we got path from preferences, check if it is available ...
-			if(!isMountedReadableWritableDir(sapelliFolder))
+			if(!isMountedReadableWritableDir(sapelliFolder)) // (will also attempt to create the directory if it doesn't exist)
 				// No :-(
 				throw new FileStorageRemovedException(sapelliFolder.getAbsolutePath());
 		}
 
 		// If we get here this means we have a non-null sapelliFolder object representing an accessible path...
 		
-		// Try to get the Android Downloads folder
+		// Try to get the Android Downloads folder...
 		File downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-		if(!isMountedReadableWritableDir(downloadsFolder))
-		{
-			// Try to create the dir.
-			downloadsFolder.mkdirs();
-
-			// Check again
-			if(!isMountedReadableWritableDir(downloadsFolder))
-				// No :-(
-				throw new FileStorageRemovedException(downloadsFolder.getAbsolutePath());
-		}
+		if(!isMountedReadableWritableDir(downloadsFolder)) // check if we can access it (will also attempt to create the directory if it doesn't exist)
+			// No :-(
+			throw new FileStorageException("Cannot access downloads folder: " + downloadsFolder.getAbsolutePath());
 		
 		// Return path provider
 		return new AndroidFileStorageProvider(sapelliFolder, downloadsFolder); // Android specific subclass of FileStorageProvider, which generates .nomedia files
@@ -235,18 +228,27 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 	 * 
 	 * @param dir
 	 * @return
+	 * @throws FileStorageException
 	 */
-	private boolean isMountedReadableWritableDir(File dir)
+	private boolean isMountedReadableWritableDir(File dir) throws FileStorageException
 	{
-		// Try to create the folder before checking its availability
-		if(!dir.exists())
-			dir.mkdirs();
-
-		// Accept both Mounted and Unknown Media. The Unknown Media is used in Android when a path isn't backed by known storage media i.e. the SD Card on
-		// Samsung Xcover 2. However, we still check that the dir is not null and that we have read/write access to it.
-		return (dir != null)
-				&& (Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) || EnvironmentCompat.MEDIA_UNKNOWN.equals(EnvironmentCompat.getStorageState(dir)))
-				&& FileHelpers.isReadableWritableDirectory(dir);
+		try
+		{
+			return	// Null check:
+					(dir != null)
+					// Try to create the directory if it is not there
+					&& FileHelpers.createDirectory(dir)
+					/* Check storage state, accepting both MEDIA_MOUNTED and MEDIA_UNKNOWN.
+					 * 	The MEDIA_UNKNOWN state occurs when a path isn't backed by known storage media; e.g. the SD Card on
+					 * the Samsung Xcover 2 (the detection of which we have to force in DeviceControl#getExternalFilesDirs()). */
+					&& (Environment.MEDIA_MOUNTED.equals(EnvironmentCompat.getStorageState(dir)) || EnvironmentCompat.MEDIA_UNKNOWN.equals(EnvironmentCompat.getStorageState(dir)))
+					// Check whether we have read & write access to the directory:
+					&& FileHelpers.isReadableWritableDirectory(dir);
+		}
+		catch(Exception e)
+		{
+			throw new FileStorageException("Unable to create or determine status of directory: " + (dir != null ? dir.getAbsolutePath() : "null"), e);
+		}
 	}
 
 	@Override

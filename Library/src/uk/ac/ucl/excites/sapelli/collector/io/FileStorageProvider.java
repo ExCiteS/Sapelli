@@ -102,10 +102,9 @@ public class FileStorageProvider
 	 * @throws FileStorageException
 	 */
 	public File getSapelliFolder() throws FileStorageException
-	{
-		if(sapelliFolder.exists() && sapelliFolder.canRead())
-			return sapelliFolder;
-		else if(sapelliFolder.mkdirs() && sapelliFolder.canRead())
+	{	
+		// Use FileHelpers.createFolder() to check if folder exists, and create it if it doesn't:
+		if(FileHelpers.createDirectory(sapelliFolder) && sapelliFolder.canRead())
 			return sapelliFolder;
 		else
 			throw new FileStorageException("Sapelli folder is not or no longer accessible (path: " + sapelliFolder.getAbsolutePath());
