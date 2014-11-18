@@ -61,7 +61,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
-import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.LinearLayout;
@@ -75,13 +75,15 @@ import android.widget.RelativeLayout.LayoutParams;
 public class AndroidOrientationUI extends OrientationUI<View, CollectorView> implements OrientationListener {
 
 	private static final String TAG = "AndroidOrientationUI";
-	private Button pageView;
+	private ImageButton pageView;
 	private LinearLayout waitView;
 	private OrientationSensor orientationSensor;
 	private CompassView compass;
 	private Orientation orientation;
 
 	static public final float PADDING = 40.0f;
+	static private final float ON_PAGE_WIDTH_DIP = 60.0f;
+	static private final float ON_PAGE_HEIGHT_DIP = 60.0f;
 
 	public AndroidOrientationUI(OrientationField field, Controller controller, CollectorView collectorUI)
 	{
@@ -96,8 +98,10 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 
 		if (onPage) {
 			if (pageView == null) {
-				pageView = new Button(context);
-				pageView.setText(field.getCaption());
+				pageView = new ImageButton(context);
+				pageView.setLayoutParams(new LinearLayout.LayoutParams(ScreenMetrics.ConvertDipToPx(context, ON_PAGE_WIDTH_DIP), ScreenMetrics.ConvertDipToPx(context, ON_PAGE_HEIGHT_DIP)));
+				pageView.setBackgroundResource(R.drawable.compass);
+				//pageView.setText(field.getCaption());
 				// TODO some kind of icon/image would be nice (an arrow?)
 				pageView.setOnClickListener(new OnClickListener()
 				{
@@ -162,6 +166,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 
 	@Override
 	public void cancel() {
+		Log.d("AOUI","Cancel");
 		if (orientationSensor != null) {
 			orientationSensor.stop();
 			orientationSensor = null;

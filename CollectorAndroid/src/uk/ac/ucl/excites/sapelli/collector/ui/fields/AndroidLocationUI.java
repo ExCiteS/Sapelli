@@ -34,7 +34,9 @@ import android.content.Context;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ImageView.ScaleType;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -46,11 +48,13 @@ import android.widget.RelativeLayout.LayoutParams;
  */
 public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 
-	private Button pageView;
+	private ImageButton pageView;
 	private RelativeLayout waitView;
 	private Timer timeoutCounter = null;
 	
 	static public final float PADDING = 20.0f;
+	static private final float ON_PAGE_WIDTH_DIP = 45.0f;
+	static private final float ON_PAGE_HEIGHT_DIP = 60.0f;
 
 	public AndroidLocationUI(LocationField field, Controller controller, CollectorView collectorUI) {
 		super(field, controller, collectorUI);
@@ -68,8 +72,10 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 		// TODO editable
 		if (onPage) {
 			if (pageView == null) {
-				pageView = new Button(collectorUI.getContext());
-				pageView.setText(field.getCaption());
+				Context context = collectorUI.getContext();
+				pageView = new ImageButton(context);
+				pageView.setLayoutParams(new LinearLayout.LayoutParams(ScreenMetrics.ConvertDipToPx(context, ON_PAGE_WIDTH_DIP), ScreenMetrics.ConvertDipToPx(context, ON_PAGE_HEIGHT_DIP)));
+				pageView.setBackgroundResource(R.drawable.gps_location);
 				// TODO some kind of icon/image would be nice (an little flag or crosshairs?)
 				pageView.setOnClickListener(new OnClickListener() {
 					@Override
