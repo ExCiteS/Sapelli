@@ -236,7 +236,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView> imp
 				// rotate the compass by the azimuth, about its centre:
 				compassRotationMatrix.reset();
 				compassRotationMatrix.postTranslate(0, COMPASS_ARROW_SPACING + arrowBitmap.getHeight());
-				compassRotationMatrix.postRotate(orientation.getAzimuth(), compassBitmap.getWidth() / 2, arrowBitmap.getHeight() + COMPASS_ARROW_SPACING + compassBitmap.getHeight() / 2);
+				compassRotationMatrix.postRotate(-orientation.getAzimuth(), compassBitmap.getWidth() / 2, arrowBitmap.getHeight() + COMPASS_ARROW_SPACING + compassBitmap.getHeight() / 2);
 				canvas.drawBitmap(compassBitmap, compassRotationMatrix, null);
 
 				// draw top arrow last in case corner of compass bitmap overlaps it:
