@@ -18,10 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import android.content.Context;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.widget.TextView;
 
@@ -35,21 +37,25 @@ public class FontFitTextView extends TextView
 {
 
 	private Paint testPaint;
+	private FontSizeCoordinator fontSizeCoordinator;
 	
 	public FontFitTextView(Context context)
 	{
-		super(context);
-		initialise();
+		this(context, null);
 	}
 
-	public FontFitTextView(Context context, AttributeSet attrs)
+	public FontFitTextView(Context context, FontSizeCoordinator fontSizeCoordinator)
 	{
-		super(context, attrs);
+		super(context);
+		this.fontSizeCoordinator = fontSizeCoordinator;
 		initialise();
 	}
 
 	private void initialise()
 	{
+		if (fontSizeCoordinator != null)
+			fontSizeCoordinator.register(this);
+		
 		this.setIncludeFontPadding(false); //slightly reduce vertical padding on TextView (may need to re-enable for other langs due to accents)
 		testPaint = new Paint();
 		testPaint.set(this.getPaint());
@@ -107,6 +113,8 @@ public class FontFitTextView extends TextView
 	{
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 		refitText(this.getText().toString(), MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
+		if (fontSizeCoordinator != null)
+			fontSizeCoordinator.refitted(this);
 	}
 
 	@Override
@@ -121,7 +129,49 @@ public class FontFitTextView extends TextView
 		if(w != oldw || h != oldh)
 		{
 			refitText(this.getText().toString(), w, h);
+			
+			if (fontSizeCoordinator != null)
+				fontSizeCoordinator.refitted(this);
 		}
+	}
+	
+	
+	/**
+	 * @author mstevens, Ben
+	 *
+	 */
+	static public class FontSizeCoordinator
+	{
+		
+		private List<FontFitTextView> views;
+		private float minMaxFontSize = Float.MAX_VALUE; // keep track of the smallest font fize of all of the views we're tracking
+		
+		public FontSizeCoordinator()
+		{
+			this.views = new ArrayList<FontFitTextView>();
+		}
+		
+		public void register(FontFitTextView view)
+		{
+			views.add(view);
+		}
+		
+		public void refitted(FontFitTextView view)
+		{
+			if(view.getTextSize() < minMaxFontSize)
+			{ 
+				// this TextView has a font size smaller than the others, so update them all
+				minMaxFontSize = view.getTextSize();
+				for(FontFitTextView v : views)
+					if(v != view) {
+						v.setTextSize(TypedValue.COMPLEX_UNIT_PX, minMaxFontSize);
+					}
+			}
+			else if(view.getTextSize() > minMaxFontSize)
+				// this view's font size must be reduced to match that of all the others
+				view.setTextSize(TypedValue.COMPLEX_UNIT_PX, minMaxFontSize);
+		}
+		
 	}
 
 }

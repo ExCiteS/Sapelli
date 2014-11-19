@@ -30,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.FontFitTextView.FontSizeCoordinator;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
@@ -213,7 +214,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				this.removeView(chosenView);
 			
 			// New chosenView
-			chosenView = createItem(chosenField, chosenPaddingPx, !isEnabled()).getView(getContext());
+			chosenView = createItem(chosenField, chosenPaddingPx, !isEnabled(), null, null).getView(getContext());
 			
 			// Set margins on layoutparams:
 			LayoutParams chosenLP = new LinearLayout.LayoutParams(chosenSizePx, chosenSizePx);
@@ -324,10 +325,14 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 								collectorUI.getFieldUIPartHeightPx(field.getRows()));
 			int itemPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 
+
+			FontSizeCoordinator textOnlyCoordinator = new FontSizeCoordinator();
+			FontSizeCoordinator captionCoordinator = new FontSizeCoordinator();
+			
 			// Add items for children:
 			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
-				adapter.addItem(createItem(child, itemPaddingPx, !controller.isFieldEnabled(child)));
+				adapter.addItem(createItem(child, itemPaddingPx, !controller.isFieldEnabled(child), textOnlyCoordinator, captionCoordinator));
 			// Click listeners:
 			setOnItemClickListener(this);
 			if(isUsingAudioFeedback(false))
@@ -371,7 +376,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param grayedOut
 	 * @return
 	 */
-	public Item createItem(ChoiceField choice, int itemPaddingPx, boolean grayedOut)
+	public Item createItem(ChoiceField choice, int itemPaddingPx, boolean grayedOut, FontSizeCoordinator textOnlyCoordinator, FontSizeCoordinator captionCoordinator)
 	{
 		/* Note
 		 * 	If the choice is the root it means we are on a page (meaning the item will be
@@ -387,18 +392,18 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			{	// there is a caption, a non-zero caption height & the choice not the root --> IMAGE + CAPTION:
 				item = new SplitItem(SplitItem.VERTICAL) // create new split item
 					// add item for image (take up all space not taken up by caption):
-					.addItem(createImageItem(choice, false), 1.0f - choice.getCaptionHeight())
+					.addItem(createImageItem(choice, false, textOnlyCoordinator), 1.0f - choice.getCaptionHeight())
 					// add item for caption:
-					.addItem(createCaptionItem(choice, false), choice.getCaptionHeight());
+					.addItem(createCaptionItem(choice, false, captionCoordinator), choice.getCaptionHeight());
 			}
 			else
 			{	// there is no caption, or its height is 0, or we are dealing with the root --> IMAGE ONLY
-				item = createImageItem(choice, !choice.isRoot());
+				item = createImageItem(choice, !choice.isRoot(), textOnlyCoordinator);
 			}
 		}
 		else
 		{	// there is no image path, or the caption takes up the full height --> CAPTION ONLY
-			item = createCaptionItem(choice, !choice.isRoot()); // regardless of the actual captionHeight the caption will take up the fill available height
+			item = createCaptionItem(choice, !choice.isRoot(), textOnlyCoordinator); // regardless of the actual captionHeight the caption will take up the fill available height
 		}
 		
 		// Set background colour:
@@ -440,7 +445,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param standAlone whether the text will be displayed on its own, or not (i.e. under an image or under a page caption-label)
 	 * @return
 	 */
-	private Item createImageItem(ChoiceField choice, boolean standAlone)
+	private Item createImageItem(ChoiceField choice, boolean standAlone, FontSizeCoordinator textOnlyCoordinator)
 	{
 		File imageFile = controller.getFileStorageProvider().getProjectImageFile(field.form.project, choice.getImageRelativePath());
 		if(FileHelpers.isReadableFile(imageFile))
@@ -450,7 +455,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		{	// render "alt" text instead of image:
 			String alt = getAltText(choice, standAlone);
 			// We make text color red if the alt text is the image path (meaning we couldn't display a caption or value String):
-			return new TextItem(alt, alt.equals(choice.getImageRelativePath()) ? Color.RED : TextItem.DEFAULT_TEXT_COLOR);
+			return new TextItem(alt, alt.equals(choice.getImageRelativePath()) ? Color.RED : TextItem.DEFAULT_TEXT_COLOR, textOnlyCoordinator);
 		}
 	}
 	
@@ -459,9 +464,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param standAlone whether the text will be displayed on its own, or not (i.e. under an image or under a page caption-label)
 	 * @return
 	 */
-	private Item createCaptionItem(ChoiceField child, boolean standAlone)
+	private Item createCaptionItem(ChoiceField child, boolean standAlone, FontSizeCoordinator coordinator)
 	{	// render caption text:
-		return new TextItem(getCaptionText(child, standAlone));
+		return new TextItem(getCaptionText(child, standAlone), coordinator);
 	}
 
 	@Override

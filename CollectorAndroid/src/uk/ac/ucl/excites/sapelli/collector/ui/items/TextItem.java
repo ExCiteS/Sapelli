@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
 import uk.ac.ucl.excites.sapelli.collector.ui.FontFitTextView;
+import uk.ac.ucl.excites.sapelli.collector.ui.FontFitTextView.FontSizeCoordinator;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.Gravity;
@@ -36,33 +37,35 @@ public class TextItem extends Item
 	
 	private String text;
 	private int textColor;
+	private FontSizeCoordinator fontSizeCoordinator;
 	
-	public TextItem(String text)
+	public TextItem(String text, FontSizeCoordinator fontSizeCoordinator)
 	{
-		this(null, text, DEFAULT_TEXT_COLOR);
+		this(null, text, DEFAULT_TEXT_COLOR, fontSizeCoordinator);
 	}
 	
-	public TextItem(String text, int textColour)
+	public TextItem(String text, int textColour, FontSizeCoordinator fontSizeCoordinator)
 	{
-		this(null, text, textColour);
+		this(null, text, textColour, fontSizeCoordinator);
 	}
 	
-	public TextItem(Integer id, String text)
+	public TextItem(Integer id, String text, FontSizeCoordinator fontSizeCoordinator)
 	{
-		this(id, text, DEFAULT_TEXT_COLOR);
+		this(id, text, DEFAULT_TEXT_COLOR, fontSizeCoordinator);
 	}
 	
-	public TextItem(Integer id, String text, int textColour)
+	public TextItem(Integer id, String text, int textColour, FontSizeCoordinator fontSizeCoordinator)
 	{
 		super(id);
 		this.text = text;
 		this.textColor = textColour;
+		this.fontSizeCoordinator = fontSizeCoordinator;
 	}
 		
 	@Override
 	protected View createView(Context context, boolean recycleChildren)
 	{
-		TextView txtView = new FontFitTextView(context);
+		TextView txtView = new FontFitTextView(context, fontSizeCoordinator);
 		txtView.setTextColor(textColor);
 		txtView.setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
 		txtView.setIncludeFontPadding(false);
