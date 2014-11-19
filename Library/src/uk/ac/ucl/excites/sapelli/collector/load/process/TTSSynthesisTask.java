@@ -28,7 +28,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 public class TTSSynthesisTask implements PostProcessTask
 {
 	
-	//TODO private String language;
+	private String language;
 	private String textToSynthesise;
 	private String audioFileRelativePath;
 
@@ -36,10 +36,11 @@ public class TTSSynthesisTask implements PostProcessTask
 	 * @param textToSynthesise
 	 * @param audioFileRelativePath
 	 */
-	public TTSSynthesisTask(String textToSynthesise, String audioFileRelativePath)
+	public TTSSynthesisTask(String textToSynthesise, String audioFileRelativePath, String language)
 	{
 		this.textToSynthesise = textToSynthesise;
 		this.audioFileRelativePath = audioFileRelativePath;
+		this.language = language;
 	}
 
 	/**
@@ -56,6 +57,13 @@ public class TTSSynthesisTask implements PostProcessTask
 	public String getAudioFileRelativePath()
 	{
 		return audioFileRelativePath;
+	}
+	
+	/**
+	 * @return the language in which the text should be synthesised, as a BCP 47 format string (e.g. en-GB)
+	 */
+	public String getLanguage() {
+		return language;
 	}
 
 	/* (non-Javadoc)

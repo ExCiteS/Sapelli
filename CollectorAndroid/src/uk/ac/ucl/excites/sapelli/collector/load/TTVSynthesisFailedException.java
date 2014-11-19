@@ -4,13 +4,13 @@ package uk.ac.ucl.excites.sapelli.collector.load;
  * @author Ben
  *
  */
-public class TTVFailedException extends Exception {
+public class TTVSynthesisFailedException extends Exception {
 
     private static final long serialVersionUID = 1L;
     
     private String text;
     
-    public TTVFailedException(String text) {
+    public TTVSynthesisFailedException(String text) {
     	super();
     	this.text = text;
     }

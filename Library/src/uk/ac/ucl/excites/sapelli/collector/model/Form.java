@@ -119,6 +119,9 @@ public class Form implements WarningKeeper
 	private final List<Field> fields;
 	private List<Trigger> triggers;
 	
+	// Form language:
+	private String defaultLanguage; // null by default (because project language should be used if form language not specified)
+
 	// Android shortcut:
 	private String shortcutImageRelativePath;
 
@@ -342,7 +345,24 @@ public class Form implements WarningKeeper
 			throw iae;
 		}
 	}
+	
+	/**
+	 * @return the BCP 47 format string representing the currently set default language for this form
+	 */
+	public String getDefaultLanguage()
+	{
+		return defaultLanguage;
+	}
 
+	/**
+	 * Set the project's default language (the language that will be used for text-to-speech synthesis).
+	 * @param defaultLanguage the language to set, as a valid BCP 47 format string (e.g. "en-GB")
+	 */
+	public void setDefaultLanguage(String defaultLanguage)
+	{
+		this.defaultLanguage = defaultLanguage;
+	}
+	
 	/**
 	 * @return the obfuscateMediaFiles
 	 */

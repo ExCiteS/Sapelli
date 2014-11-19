@@ -117,6 +117,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
 	static private final String ATTRIBUTE_FORM_CLICK_ANIMATION = "clickAnimation";
 	static private final String ATTRIBUTE_FORM_ANIMATION = "animation"; // 1.x compatibility, the same as clickAnimation
+	static private final String ATTRIBUTE_FORM_DEFAULT_LANGUAGE = "defaultLanguage";
 	static private final String ATTRIBUTE_FORM_SCREEN_TRANSITION = "screenTransition";
 	static private final String ATTRIBUTE_FORM_AUDIO_FEEDBACK = "audioFeedback";
 	static private final String ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES = "obfuscateMediaFiles";
@@ -284,7 +285,9 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			{
 				addWarning("Invalid '" + ATTRIBUTE_FORM_SCREEN_TRANSITION + "' attribute value on <" + TAG_FORM + ">. Default Screen Transition is going to be used.");
 			}
-			// Add AudioFeedbakc:
+			// Form language (for TTS synthesis) -- allow null so that we can fall back on project language:
+			currentForm.setDefaultLanguage(attributes.getString(ATTRIBUTE_FORM_DEFAULT_LANGUAGE, null, true, false));
+			// Add AudioFeedback:
 			try
 			{
 				currentForm.setAudioFeedback(attributes.getString(ATTRIBUTE_FORM_AUDIO_FEEDBACK, Form.DEFAULT_AUDIO_FEEDBACK.name(), true, false));
@@ -631,15 +634,19 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		if(choice.getAnswerDescription() != null && currentForm.isUsingAudioFeedback())
 		{
 			choice.setAnswerDescriptionAudioRelativePath(
-				MediaHelpers.isAudioFileName(choice.getAnswerDescription()) ?
-					// playback of audio file included with project:
-					choice.getAnswerDescription() :
-					// playback of audio generated from text (TTS):
-					newTTSSynthesisTask(choice.getAnswerDescription(),
-							// Filename: "[id]_[md5Hex(id)]_A.EXTENSION"
-							FileHelpers.makeValidFileName(choice.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(choice.getID().getBytes())) + "_A." + owner.getGeneratedAudioExtension())));
+					MediaHelpers.isAudioFileName(choice.getAnswerDescription()) ?
+							// playback of audio file included with project:
+							choice.getAnswerDescription() :
+								// playback of audio generated from text (TTS):
+								newTTSSynthesisTask(choice.getAnswerDescription(),
+										// Filename: "[id]_[md5Hex(id)]_A.EXTENSION"
+										FileHelpers.makeValidFileName(choice.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(choice.getID().getBytes())) + "_A." + owner.getGeneratedAudioExtension()),
+										// synthesis language:
+										(currentForm.getDefaultLanguage() != null) ? currentForm.getDefaultLanguage() : project.getDefaultLanguage()
+										)
+					);
 		}
-		
+
 		// Other attributes:
 		choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
 		choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
@@ -779,22 +786,26 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					field.setShowCancel((v1xFormShowCancel != null ? v1xFormShowCancel : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));
 				if(attributes.contains(ATTRIBUTE_FIELD_SHOW_FORWARD) || v1xFormShowForward != null)
 					field.setShowForward((v1xFormShowForward != null ? v1xFormShowForward : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
-				
+
 				// audio feedback description:
 				field.setDescription(attributes.getString(null, true, false, ATTRIBUTE_FIELD_AUDIO_DESC, ATTRIBUTE_FIELD_QUESTION_DESC /* alias for choice fields */));
 				if(field.getDescription() != null && currentForm.isUsingAudioFeedback())
 				{
 					field.setDescriptionAudioRelativePath(
-						MediaHelpers.isAudioFileName(field.getDescription()) ?
-							// playback of audio file included with project:
-							field.getDescription() :
-							// playback of audio generated from text (TTS):
-							newTTSSynthesisTask(field.getDescription(),
-									// Filename: "[id]_[md5Hex(id)]_Q.EXTENSION"
-									FileHelpers.makeValidFileName(field.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(field.getID().getBytes())) + "_Q." + owner.getGeneratedAudioExtension())));
+							MediaHelpers.isAudioFileName(field.getDescription()) ?
+									// playback of audio file included with project:
+									field.getDescription() :
+										// playback of audio generated from text (TTS):
+										newTTSSynthesisTask(field.getDescription(),
+												// Filename: "[id]_[md5Hex(id)]_Q.EXTENSION"
+												FileHelpers.makeValidFileName(field.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(field.getID().getBytes())) + "_Q." + owner.getGeneratedAudioExtension()),
+												// synthesis language:
+												(currentForm.getDefaultLanguage() != null) ? currentForm.getDefaultLanguage() : project.getDefaultLanguage()
+												)
+							);
 				}
 			}
-			
+
 			// Remember current field:
 			openFields.push(field); //!!!
 		}
@@ -807,11 +818,12 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	/**
 	 * @param textToSpeak
 	 * @param relativeSoundFilePath
+	 * @param synthesisLanguage
 	 * @return the relativeSoundFilePath
 	 */
-	private String newTTSSynthesisTask(String textToSpeak, String relativeSoundFilePath)
+	private String newTTSSynthesisTask(String textToSpeak, String relativeSoundFilePath, String synthesisLanguage)
 	{
-		owner.addPostProcessingTask(new TTSSynthesisTask(textToSpeak, relativeSoundFilePath));
+		owner.addPostProcessingTask(new TTSSynthesisTask(textToSpeak, relativeSoundFilePath, synthesisLanguage));
 		return relativeSoundFilePath;
 	}
 	

@@ -23,26 +23,17 @@ import android.util.Log;
  */
 public class TextToVoice  implements TextToSpeech.OnInitListener
 {
-	public static final Locale DEFAULT_LOCALE = Locale.UK;
 	private static final String TAG = "TextToVoice";
 	private Context context;
 	private Locale locale;
+	private String previousLanguageCode = "";
 	private TextToSpeech tts;
 	private Semaphore ttvInitialised;
 	private Semaphore ttvJobComplete;
 	
-
 	public TextToVoice(Context context)
 	{
-		// use default locale unless one is explicitly specified:
-		this(context, DEFAULT_LOCALE);
-	}
-
-	public TextToVoice(Context context, Locale locale)
-	{
-		this.context = context;
-		this.locale = locale;
-		
+		this.context = context;		
 		setupTTS();
 	}
 	
@@ -81,26 +72,9 @@ public class TextToVoice  implements TextToSpeech.OnInitListener
 	@Override
 	public void onInit(int status)
 	{
-		if(status == TextToSpeech.SUCCESS)
-		{
-			// Only report success if the language can be successfully set too:
-			int result = TextToSpeech.ERROR;
-
-			if(tts != null) 
-			{
-				result = tts.setLanguage(locale); // TODO move this to processSpeechToFile once we support multiple languages
-
-				// If the locale is missing, fall back to the default locale
-				if(result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED)
-					result = tts.setLanguage(DEFAULT_LOCALE);
-
-				if(result != TextToSpeech.LANG_MISSING_DATA && result != TextToSpeech.LANG_NOT_SUPPORTED)
-					ttvInitialised.release();
-				
-	
-			}
-			// if null, has probably been destroyed before initialisation completed
-		}
+		if(status == TextToSpeech.SUCCESS && tts != null)
+			ttvInitialised.release();
+		// if null, has probably been destroyed before initialisation completed
 	}
 
 	/**
@@ -110,35 +84,76 @@ public class TextToVoice  implements TextToSpeech.OnInitListener
 	 * 
 	 * @param text - the text to synthesise into speech
 	 * @param filepath - the path of the file into which the speech audio should be stored
-	 * @throws TTVFailedException if an error occurs when trying to synthesise speech.
+	 * @return whether or not the language was successfully changed
 	 */
-	public void processSpeechToFile(String text, String filepath) throws TTVFailedException {
+	public void processSpeechToFile(String text, String filepath, String languageCode) throws TTVSynthesisFailedException, TTVUnsupportedLanguageException {
 		if (tts == null)
 			setupTTS();
 		
 		if(text == null || "".equals(text))
-			throw new TTVFailedException("INVALID TEXT SUPPLIED AS ARGUMENT");
+			throw new TTVSynthesisFailedException("(No text provided)");
+
+		// only proceed if able to set language to that specified:
+		setNewLanguage(languageCode);
 		
-		// instantiate semaphore so we can wait for the job to complete:
-		if (ttvJobComplete == null)
-			ttvJobComplete = new Semaphore(0);
-		
-		// TODO the method signature for TextToSpeech#synthesizeToFile changed in API 21 / Lollipop. 
-		// Check build version here when SDK is updated to include level 21 and call the new version if appropriate:
-		
-		// set params of synthesis job by creating a hash table:
-		HashMap<String, String> params = new HashMap<String, String>();
-		// use text to be synthesised as "utterance ID" for job:
-		params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
-		if (tts.synthesizeToFile(text, params, filepath) == TextToSpeech.ERROR)
-			throw new TTVFailedException(text);
-		
-		try {
-			// block thread until synthesis job completes:
-	        ttvJobComplete.acquire();
-        } catch (InterruptedException e) {
-	        e.printStackTrace();
-        }
+			// instantiate semaphore so we can wait for the job to complete:
+			if (ttvJobComplete == null)
+				ttvJobComplete = new Semaphore(0);
+			
+			// TODO the method signature for TextToSpeech#synthesizeToFile changed in API 21 / Lollipop. 
+			// Check build version here when SDK is updated to include level 21 and call the new version if appropriate:
+			
+			// set params of synthesis job by creating a hash table:
+			HashMap<String, String> params = new HashMap<String, String>();
+			// use text to be synthesised as "utterance ID" for job:
+			params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
+			if (tts.synthesizeToFile(text, params, filepath) == TextToSpeech.ERROR)
+				throw new TTVSynthesisFailedException(text);
+			try {
+				// block thread until synthesis job completes:
+		        ttvJobComplete.acquire();
+	        } catch (InterruptedException e) {
+		        e.printStackTrace();
+	        }
+	}
+	
+	/**
+	 * Sets the TTS engine's language to the one specified by the provided language code.
+	 * @param languageCode-  the language code in BCP-47 format
+	 * TODO throws
+	 */
+	private void setNewLanguage(String languageCode) throws TTVUnsupportedLanguageException {
+		// only parse code again if it has changed between TTS jobs:
+		if (!previousLanguageCode.equals(languageCode) || locale == null) {
+			// All the locale parsing stuff was only added in API 21 :'(
+			
+			// set previous language code to new one:
+			previousLanguageCode = languageCode;
+			
+			// split language code by "-":
+			String[] subtags = languageCode.split("-");
+			
+			if (subtags.length > 0) {
+				// Try to make a locale from this, and let Android reject it later if any component is not valid
+				// (it might not support valid languages anyway) :
+				locale = new Locale(
+						// language:
+						subtags[0],
+						// country:
+						subtags.length > 1 ? subtags[1] : "",
+						// variant:
+						subtags.length > 2 ? subtags[2] : "");
+			} else
+				// invalid language code (empty after splitting)
+				throw new TTVUnsupportedLanguageException(languageCode);
+			
+			int result = tts.setLanguage(locale);
+
+			// If the locale is missing, report error
+			if(result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED)
+				throw new TTVUnsupportedLanguageException(languageCode);
+		}
+		// else don't need to change locale
 	}
 	
 	/**

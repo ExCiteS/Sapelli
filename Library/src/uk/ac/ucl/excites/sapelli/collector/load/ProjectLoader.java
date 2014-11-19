@@ -201,7 +201,9 @@ public class ProjectLoader implements WarningKeeper
 			List<PostProcessTask> tasks = parser.getPostProcessingTasks();
 			if(!tasks.isEmpty())
 			{
-				if(postProcessor != null) {
+				if(postProcessor != null)
+				{
+					postProcessor.initialise(project);
 					for(PostProcessTask task : tasks)
 					{
 						try

@@ -29,7 +29,6 @@ import java.util.TreeSet;
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
@@ -54,6 +53,8 @@ public class Project
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
 
+	static public final String DEFAULT_DEFAULT_LANGUAGE = "en"; // the default "default language" to set if there isn't one specified (English)
+	
 	static public final boolean DEFAULT_LOGGING = true;
 		
 	static public final int MAX_FORMS = 32;
@@ -68,6 +69,7 @@ public class Project
 	private String version;
 
 	private TransmissionSettings transmissionSettings;
+	private String defaultLanguage;
 	private boolean logging;
 	private Schema heartbeatSchema;
 	private final List<Form> forms;
@@ -109,6 +111,8 @@ public class Project
 		
 		// Forms list:
 		this.forms = new ArrayList<Form>();
+		// Project language (for TTS):
+		this.defaultLanguage = DEFAULT_DEFAULT_LANGUAGE;
 		// Logging:
 		this.logging = DEFAULT_LOGGING;
 	}
@@ -335,6 +339,23 @@ public class Project
 	public void setLogging(boolean logging)
 	{
 		this.logging = logging;
+	}
+	
+	/**
+	 * @return the BCP 47 format string representing the currently set default language for this project
+	 */
+	public String getDefaultLanguage()
+	{
+		return defaultLanguage;
+	}
+	
+	/**
+	 * Set the project's default language (the language that will be used for text-to-speech synthesis unless a language is specified in the current form)
+	 * @param defaultLanguage the language to set, as a valid BCP 47 format string (e.g. "en-GB")
+	 */
+	public void setDefaultLanguage(String defaultLanguage)
+	{
+		this.defaultLanguage = defaultLanguage;
 	}
 	
 	/**

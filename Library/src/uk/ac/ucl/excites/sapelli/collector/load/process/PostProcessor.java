@@ -32,6 +32,13 @@ public interface PostProcessor
 {
 
 	/**
+	 * To be called before the first task execution for a given Project
+	 *  
+	 * @param project
+	 */
+	public void initialise(Project project);
+	
+	/**
 	 * @param ttsTask
 	 * @param project
 	 * @param warningKeeper

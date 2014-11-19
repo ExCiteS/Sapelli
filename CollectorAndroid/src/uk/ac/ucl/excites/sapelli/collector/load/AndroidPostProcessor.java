@@ -37,11 +37,19 @@ public class AndroidPostProcessor implements PostProcessor
 	private Context context;
 	private FileStorageProvider fileStorageProvider;
 	private TextToVoice ttv;
+	private boolean warnedAboutLanguage = false;
 
 	public AndroidPostProcessor(Context context, FileStorageProvider fileStorageProvider) {
 		this.context = context;
 		this.fileStorageProvider = fileStorageProvider;
 	}
+	
+	@Override
+    public void initialise(Project project)
+	{
+		// Reset "already warned" flags:
+		warnedAboutLanguage = false;
+    }
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor#execute(uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask, uk.ac.ucl.excites.sapelli.collector.model.Project, uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper)
@@ -54,11 +62,17 @@ public class AndroidPostProcessor implements PostProcessor
 		
 		String filepath = (fileStorageProvider.getProjectSoundFile(project, ttsTask.getAudioFileRelativePath())).getAbsolutePath();
 		
-		try {
-	        ttv.processSpeechToFile(ttsTask.getTextToSynthesise(), filepath);
-        } catch (TTVFailedException e) {
-	        warningKeeper.addWarning("Unable to synthesise text to speech: \""+e.getText()+"\". Skipping this text without creating an audio file.");
-        }
+		// keep track of whether or not the user has been warned about an invalid language code (only want to warn them once):
+	    try {
+	    	ttv.processSpeechToFile(ttsTask.getTextToSynthesise(), filepath, ttsTask.getLanguage());
+	    } catch (TTVSynthesisFailedException e) {
+			warningKeeper.addWarning("Text-to-speech synthesis: Error when trying to synthesise text -- \""+e.getText()+"\". This synthesis job will be skipped and nothing will be played when the project is run.");
+	    } catch (TTVUnsupportedLanguageException e) {
+	    	if (!warnedAboutLanguage) {
+	    		warningKeeper.addWarning("Text-to-speech synthesis: specified language code not supported for synthesis. Make sure the provided language code is valid, but know that Android will not support all valid language codes for speech synthesis.");
+	    		warnedAboutLanguage = true;
+	    	}
+	    }
 	}
 
 	/**
@@ -72,4 +86,5 @@ public class AndroidPostProcessor implements PostProcessor
 			ttv = null;
 		}
 	}
+
 }
