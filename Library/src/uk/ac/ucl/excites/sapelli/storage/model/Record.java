@@ -588,7 +588,7 @@ public class Record implements Serializable
 	{
 		int hash = 1;
 		hash = 31 * hash + schema.hashCode();
-		hash = 31 * hash + Arrays.hashCode(values);
+		hash = 31 * hash + Arrays.deepHashCode(values);
 		return hash;
 	}
 	
