@@ -172,7 +172,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 				
 					// Traverse columns:
 					currentRecord = r;
-					traverse(r.getSchema());
+					traverse(r.getSchema(), Collections.<Column<?>> singleton(Schema.COLUMN_LAST_EXPORTED_AT)); // skip the lastExportedAt column
 				
 					// Unindent:
 					tabs--;

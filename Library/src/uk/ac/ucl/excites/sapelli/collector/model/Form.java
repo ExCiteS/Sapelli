@@ -39,6 +39,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
+import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 
 /**
  * @author mstevens, Michalis Vitos
@@ -727,6 +728,9 @@ public class Form implements WarningKeeper
 				
 				// Add user-defined columns
 				schema.addColumns(userDefinedColumns);
+				
+				// Make transmittable(!):
+				TransmissionClient.MakeTransmittable(schema);
 				
 				// Seal the schema:
 				schema.seal();

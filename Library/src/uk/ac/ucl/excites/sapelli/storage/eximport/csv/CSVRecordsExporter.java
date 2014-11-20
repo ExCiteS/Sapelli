@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.storage.eximport.csv;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -179,7 +180,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 
 				// Construct column list:
 				columnPointers.clear();
-				traverse(schema);
+				traverse(schema, Collections.<Column<?>> singleton(Schema.COLUMN_LAST_EXPORTED_AT)); // skip the lastExportedAt column
 				
 				// Write header:
 				writer.openTransaction(); // output will be buffered

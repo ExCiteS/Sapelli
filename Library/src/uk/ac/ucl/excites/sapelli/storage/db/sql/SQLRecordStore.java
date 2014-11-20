@@ -768,9 +768,17 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@SuppressWarnings("unchecked")
 		public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException
 		{
+			// This method cannot be used on schemata with auto-incrementing PKs:
 			if(autoIncrementKeyColumn != null)
 				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values.");
-			executeSQL(new RecordInsertHelper((STable) this, record).getQuery());
+			
+			// lastStoredAt time:
+			Long now = Now();
+			
+			executeSQL(new RecordInsertHelper((STable) this, record, now).getQuery());
+			
+			// Set lastStoredAt time on the Record object too:
+			setLastStoredAt(record, now);
 		}
 		
 		/**
@@ -797,7 +805,16 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@SuppressWarnings("unchecked")
 		public boolean update(Record record) throws DBConstraintException, DBException
 		{
-			return executeSQLReturnAffectedRows(new RecordUpdateHelper((STable) this, record).getQuery()) == 1;
+			// lastStoredAt time:
+			Long now = Now();
+			
+			boolean updated = executeSQLReturnAffectedRows(new RecordUpdateHelper((STable) this, record, now).getQuery()) == 1;
+			
+			if(updated)
+				// Update lastStoredAt time on the Record object too:
+				setLastStoredAt(record, now);
+			
+			return updated;
 		}
 		
 		/**
@@ -913,7 +930,7 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public final String name;
 		protected final String type;
 		protected final String constraint;
-		protected final ColumnPointer sourceColumnPointer;
+		public final ColumnPointer sourceColumnPointer;
 		protected final TypeMapping<SQLType, SapType> mapping;
 		
 		/**
@@ -944,6 +961,11 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			this.type = type;
 			this.constraint = constraint;
 			this.mapping = mapping != null ? mapping : (TypeMapping<SQLType, SapType>) TypeMapping.<SQLType> Transparent();
+		}
+		
+		public boolean isLastStoredAtColumn()
+		{
+			return sourceColumnPointer != null && sourceColumnPointer.getColumn() == Schema.COLUMN_LAST_STORED_AT;
 		}
 		
 		/**
@@ -1312,14 +1334,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public RecordInsertHelper(STable table)
 		{
-			this(table, null);
+			this(table, null, null);
 		}
 		
 		/** 
 		 * @param table
 		 * @param record a record instance (when the statement is not parameterised) or null (when it is parameterised)
+		 * @param lastStoredAt if non null this value will be used as the new lastStoredAt time
 		 */
-		public RecordInsertHelper(STable table, Record record)
+		public RecordInsertHelper(STable table, Record record, Long lastStoredAt)
 		{
 			// Initialise
 			super(table);
@@ -1345,6 +1368,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 						bldr.append(valuePlaceHolder);
 						addParameterColumn(sqlCol);
 					}
+					else if(sqlCol.isLastStoredAtColumn() && lastStoredAt != null)
+						bldr.append(sqlCol.sapelliObjectToLiteral(lastStoredAt, true)); // Set lastStoredAt time
 					else
 						bldr.append(sqlCol.retrieveAsLiteral(record, true));
 				}
@@ -1422,14 +1447,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public RecordUpdateHelper(STable table)
 		{
-			this(table, null);
+			this(table, null, null);
 		}
 		
 		/**
 		 * @param table
 		 * @param record a record instance (when the statement is not parameterised) or null (when it is parameterised)
+		 * @param lastStoredAt if non null this value will be used as the new lastStoredAt time
 		 */
-		public RecordUpdateHelper(STable table, Record record)
+		public RecordUpdateHelper(STable table, Record record, Long lastStoredAt)
 		{
 			// Initialise
 			super(table);
@@ -1451,6 +1477,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 						bldr.append(valuePlaceHolder);
 						addParameterColumn(sqlCol);
 					}
+					else if(sqlCol.isLastStoredAtColumn() && lastStoredAt != null)
+						bldr.append(sqlCol.sapelliObjectToLiteral(lastStoredAt, true)); // Set lastStoredAt time
 					else
 						bldr.append(sqlCol.retrieveAsLiteral(record, true));
 					bldr.commitTransaction();
@@ -1719,29 +1747,29 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		@Override
 		public void visit(RuleConstraint ruleConstr)
 		{
-			Object sapValue = ruleConstr.getValue();
 			// Check for null comparison (see class javadoc):
-			if(sapValue == null && (ruleConstr.getComparison() == Comparison.EQUAL || ruleConstr.getComparison() == Comparison.NOT_EQUAL)) // RuleConstraint only accepts null values in combination with in/equality comparison, so we don't need to check other cases
+			if(ruleConstr.isRHSValue() && ruleConstr.getRHSValue() == null && (ruleConstr.getComparison() == Comparison.EQUAL || ruleConstr.getComparison() == Comparison.NOT_EQUAL)) // RuleConstraint only accepts null values in combination with in/equality comparison, so we don't need to check other cases
 			{
-				new EqualityConstraint(ruleConstr.getColumnPointer(), null, ruleConstr.getComparison() == Comparison.EQUAL).accept(this);
+				new EqualityConstraint(ruleConstr.getLHSColumnPointer(), null, ruleConstr.getComparison() == Comparison.EQUAL).accept(this);
 				return;
 			}
 			// All other cases:
-			SColumn sqlCol = table.getSQLColumn(ruleConstr.getColumnPointer());
-			if(sqlCol == null)
-			{
-				new DBException("Failed to generate SQL for ruleConstraint on column " + ruleConstr.getColumnPointer().getQualifiedColumnName(table.schema));
-				return;
-			}
-			bldr.append(sqlCol.name);
+			SColumn lhsSCol = table.getSQLColumn(ruleConstr.getLHSColumnPointer());
+			bldr.append(lhsSCol.name);
 			bldr.append(getComparisonOperator(ruleConstr.getComparison()));
-			if(isParameterised())
-			{
-				bldr.append(valuePlaceHolder);
-				addParameterColumnAndValue(sqlCol, sapValue);
-			}
+			if(ruleConstr.isRHSColumn())
+				bldr.append(table.getSQLColumn(ruleConstr.getRHSColumnPointer()).name);
 			else
-				bldr.append(sqlCol.sapelliObjectToLiteral(sapValue, true));
+			{
+				Object sapValue = ruleConstr.getRHSValue();
+				if(isParameterised())
+				{
+					bldr.append(valuePlaceHolder);
+					addParameterColumnAndValue(lhsSCol, sapValue);
+				}
+				else
+					bldr.append(lhsSCol.sapelliObjectToLiteral(sapValue, true));
+			}
 		}
 		
 	}

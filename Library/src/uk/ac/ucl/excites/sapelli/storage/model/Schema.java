@@ -62,8 +62,8 @@ public class Schema implements Serializable
 	 */
 	static public enum InternalKind
 	{
-		MetaSchema,
 		Model,
+		MetaSchema,
 		Anonymous,
 		Index,
 		Location,
@@ -112,6 +112,15 @@ public class Schema implements Serializable
 			throw new IllegalStateException("Internal schemata cannot be described by a meta record.");
 		return new RecordReference(Model.META_SCHEMA, Model.GetModelRecordReference(schema.model), schema.modelSchemaNumber);
 	}
+	
+	static public IntegerColumn GetRawMSTimeColumn(String name, boolean optional)
+	{
+		return new IntegerColumn(name, optional, true, Long.SIZE);
+	}
+	
+	static public final IntegerColumn COLUMN_LAST_STORED_AT = GetRawMSTimeColumn("lastStoredAt", true);
+	
+	static public final IntegerColumn COLUMN_LAST_EXPORTED_AT = GetRawMSTimeColumn("lastExportedAt", true);
 	
 	// Dynamics-----------------------------------------------------------
 	public final Model model;
@@ -288,13 +297,33 @@ public class Schema implements Serializable
 			throw new NullPointerException("Index cannot be null!");
 		// Check if the indexed columns are columns of this Schema instance:
 		for(Column idxCol : index.getColumns(false))
-			if(!containsColumn(idxCol, false))
+		{
+			// Special columns:
+			if(idxCol == COLUMN_LAST_STORED_AT)
+				addLastStoredColumn(); // implicitly add the lastStoredAt column if allowed
+			if(idxCol == COLUMN_LAST_EXPORTED_AT)
+				addLastStoredColumn(); // implicitly add the lastExportedAt column if allowed
+			// Check if idxCol is known:
+			if(!containsColumn(idxCol, false)) 
 				throw new IllegalArgumentException("Indexed column '" + idxCol.getName() + "' does not belong to this Schema. Indexed columns need to be added to the Schema before indexes are added or the primary key is set.");
+		}
 		// Initialise collection if needed:
 		if(indexes == null)
 			indexes = new ArrayList<Index>();
 		// Add to the indexes:
 		indexes.add(index);
+	}
+	
+	private void addLastStoredColumn()
+	{
+		if(!sealed && !isInternal() && !containsColumn(COLUMN_LAST_STORED_AT))
+			addColumn(COLUMN_LAST_STORED_AT);
+	}
+	
+	private void addLastExportedColumn()
+	{
+		if(!sealed && !isInternal() && !containsColumn(COLUMN_LAST_EXPORTED_AT))
+			addColumn(COLUMN_LAST_EXPORTED_AT);
 	}
 	
 	/**
@@ -310,6 +339,9 @@ public class Schema implements Serializable
 			addColumn(autoKeyCol, false);
 			setPrimaryKey(new AutoIncrementingPrimaryKey(name + "_Idx" + COLUMN_AUTO_KEY_NAME, autoKeyCol));
 		}
+		// Add lastStoredAt & lastExportedAt:
+		addLastStoredColumn();
+		addLastExportedColumn();
 		// Seal:
 		this.sealed = true;
 	}

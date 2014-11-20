@@ -48,7 +48,19 @@ public abstract class RecordStore implements Store
 
 	// STATIC -----------------------------------------------------------------
 	static public final String DATABASE_NAME_SUFFIX = "-RecordStore";
-	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp 
+	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp
+	
+	static protected Long Now()
+	{
+		return Long.valueOf(System.currentTimeMillis());
+	}
+	
+	protected void setLastStoredAt(Record record, Long lastStoredAt)
+	{
+		if(!record.getSchema().isInternal())
+			Schema.COLUMN_LAST_STORED_AT.storeValue(record, lastStoredAt);
+		// else: do nothing
+	}
 	
 	// DYNAMIC ----------------------------------------------------------------
 	protected StorageClient client;

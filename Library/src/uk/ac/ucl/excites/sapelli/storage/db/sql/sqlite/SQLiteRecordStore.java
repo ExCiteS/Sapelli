@@ -334,9 +334,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			}
 			else
 				insertStatement.clearAllBindings(); // clear bindings for reuse
-
+			
 			// Bind parameters:
-			insertStatement.retrieveAndBindAll(record);
+			Long now = Now();
+			insertStatement.retrieveAndBindAll(record, now);
 			
 			// Execute:
 			long rowID = insertStatement.executeInsert();
@@ -344,6 +345,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			// Set auto-incrementing key value:
 			if(autoIncrementKeyColumn != null)
 				autoIncrementKeyColumn.storeValue(record, rowID);
+			
+			// Set lastStoredAt time on the Record object too:
+			setLastStoredAt(record, now);
 		}
 
 		/**
@@ -356,6 +360,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * 	We could implement such a solution in RecordUpdateHelper but will wait until we are certain this feature will be required.
 		 * @see See: <a href="http://stackoverflow.com/questions/26372449">http://stackoverflow.com/questions/26372449</a>
 		 * TODO implement solution to detect actual record value changes
+		 * 
+		 * @param record
+		 * @return whether the record was really updated or stayed unchanged (because the record that was passed is identical to the stored one)
+		 * @throws DBException
 		 * 
 		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#update(uk.ac.ucl.excites.sapelli.storage.model.Record)
 		 */
@@ -371,10 +379,17 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				updateStatement.clearAllBindings(); // clear bindings for reuse
 
 			// Bind parameters:
-			updateStatement.retrieveAndBindAll(record);
+			Long now = Now();
+			updateStatement.retrieveAndBindAll(record, now);
 			
 			// Execute:
-			return updateStatement.executeUpdate() == 1;
+			boolean updated = updateStatement.executeUpdate() == 1;
+			
+			// Update lastStoredAt time on the Record object too:
+			if(updated)
+				setLastStoredAt(record, now);
+				
+			return updated;
 		}
 		
 		public void upsert(Record record) throws DBException

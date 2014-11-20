@@ -56,11 +56,24 @@ public abstract class SapelliSQLiteStatement
 	 */
 	public void retrieveAndBindAll(Record record) throws DBException
 	{
+		retrieveAndBindAll(record, null);
+	}
+	
+	/**
+	 * @param record
+	 * @param lastStoredAt if non null this value will be used as the new lastStoredAt time
+	 * @throws DBException
+	 */
+	public void retrieveAndBindAll(Record record, Long lastStoredAt) throws DBException
+	{
 		if(paramCols != null)
 		{
 			int p = 0;
 			for(SQLiteColumn<?, ?> sqliteCol : paramCols)
-				sqliteCol.retrieveAndBind(this, p++, record);
+				if(sqliteCol.isLastStoredAtColumn() && lastStoredAt != null)
+					sqliteCol.bindSapelliObject(this, p++, lastStoredAt);
+				else
+					sqliteCol.retrieveAndBind(this, p++, record);
 		}
 	}
 	
