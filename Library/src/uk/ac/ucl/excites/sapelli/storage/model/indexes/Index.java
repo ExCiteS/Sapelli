@@ -16,7 +16,11 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.model;
+package uk.ac.ucl.excites.sapelli.storage.model.indexes;
+
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.VirtualColumn;
 
 
 /**

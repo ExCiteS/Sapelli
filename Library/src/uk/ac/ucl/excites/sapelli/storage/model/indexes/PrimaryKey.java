@@ -16,9 +16,10 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.storage.model;
+package uk.ac.ucl.excites.sapelli.storage.model.indexes;
 
 import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
+import uk.ac.ucl.excites.sapelli.storage.model.Column;
 
 /**
  * A class representing a primary key on a schema, implemented as a subclass of {@link Index}.
