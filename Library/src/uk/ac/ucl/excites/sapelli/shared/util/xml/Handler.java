@@ -198,9 +198,9 @@ public abstract class Handler extends DefaultHandler implements WarningKeeper
 	@Override
 	public void addWarnings(Collection<String> warnings)
 	{
-		if(warnings == null)
-			warnings = new ArrayList<String>();
-		warnings.addAll(warnings);
+		if(this.warnings == null)
+			this.warnings = new ArrayList<String>();
+		this.warnings.addAll(warnings);
 	}
 
 	@Override
