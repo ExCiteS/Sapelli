@@ -24,6 +24,7 @@ import java.util.List;
 import android.content.Context;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.util.Log;
 import android.util.TypedValue;
 import android.widget.TextView;
 
@@ -44,7 +45,6 @@ public class FontFitTextView extends TextView
 	private Rect boundsRect;
 	private int lastViewWidth = -1;
 	private int lastViewHeight = -1;
-	private float lastFontSize;
 	
 	public FontFitTextView(Context context)
 	{
@@ -66,17 +66,22 @@ public class FontFitTextView extends TextView
 	/**
 	 * Compute maximum font size which makes the specified text fit in the box defined by the textWidth and textHeight parameters.
 	 */
-	private void refitText(String text, int viewWidth, int viewHeight)
+	private void refitText(int viewWidth, int viewHeight, boolean force)
 	{
+		Log.d("FFTV","refitText, text: " + this.getText() + ", hash: " + hashCode() + " w=" + viewWidth + ", h=" + viewHeight + ", forced: " + force);
+		
+		if(!force && viewWidth == lastViewWidth && viewHeight == lastViewHeight)
+			return; // already seen these dimensions
+		
 		if(viewWidth <= 0 || viewHeight <= 0)
+			return;
+		
+		String text = this.getText().toString();
+		if(text.isEmpty() )
 			// do not try to change font size if a dimension is 0
 			return;
 		
-		if (viewWidth == lastViewWidth && viewHeight == lastViewHeight) {
-			// already seen these dimensions (but may need to set text size again)
-			this.setTextSize(TypedValue.COMPLEX_UNIT_PX, lastFontSize);
-			return;
-		}
+		Log.d("FFTV","refitText, is refitting!");
 		
 		// target text width/height is the provided container width minus relevant padding
 		int targetWidth = viewWidth - this.getPaddingLeft() - this.getPaddingRight();
@@ -112,13 +117,12 @@ public class FontFitTextView extends TextView
 				lo = size; // was too small, so increase lo
 		}
 		
+		// Use lo so that we undershoot rather than overshoot
+		this.setTextSize(TypedValue.COMPLEX_UNIT_PX, lo);
+		
+		// Remember:
 		lastViewWidth = viewWidth;
 		lastViewHeight = viewHeight;
-		
-		// Use lo so that we undershoot rather than overshoot
-
-		lastFontSize = lo;
-		this.setTextSize(TypedValue.COMPLEX_UNIT_PX, lo);
 		
 		if (fontSizeCoordinator != null)
 			fontSizeCoordinator.refitted(this);
@@ -128,26 +132,33 @@ public class FontFitTextView extends TextView
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec)
 	{
+		Log.d("FFTV","onMeasure: " + this.getText() + ", hash: " + hashCode() + " w=" + MeasureSpec.getSize(widthMeasureSpec) + ", h=" + MeasureSpec.getSize(heightMeasureSpec));
+		refitText(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec), false);
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		refitText(this.getText().toString(), MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
 	}
 
+	/* (non-Javadoc)
+	 * @see android.widget.TextView#onTextChanged(java.lang.CharSequence, int, int, int)
+	 */
 	@Override
 	protected void onTextChanged(final CharSequence text, final int start, final int before, final int after)
-	{
-		refitText(text.toString(), this.getWidth(), this.getHeight());
-		// invalidate "cached" font size:
-		lastViewWidth = -1;
-		lastViewHeight = -1;
+	{		
+		Log.d("FFTV","onTextChanged: text: " + text + ", this.getText(): " +this.getText() + ", hash: " + hashCode() + " w=" + this.getWidth() + ", h=" + this.getHeight());
+		refitText(this.getWidth(), this.getHeight(), true);
+		// Note: no need for a super call as super implementation is empty
 	}
 
+	/* (non-Javadoc)
+	 * @see android.view.View#onSizeChanged(int, int, int, int)
+	 */
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh)
 	{
+		Log.d("FFTV","onSizeChanged: "+this.getText() + ", hash: " + hashCode() + ", changed:"+(w != oldw || h != oldh) + ", old-w=" + oldw + ", old-h=" + oldh + ", w=" + w + ", h=" + h);
 		if(w != oldw || h != oldh)
-			refitText(this.getText().toString(), w, h);
+			refitText(w, h, false); // false: don't trust oldw/oldh ...
+		// Note: no need for a super call as super implementation is empty
 	}
-	
 	
 	/**
 	 * @author mstevens, Ben
@@ -157,34 +168,45 @@ public class FontFitTextView extends TextView
 	{
 		
 		private List<FontFitTextView> views;
+		private List<FontFitTextView> unfitted;
 		private float minMaxFontSize = START_HI; // keep track of the smallest font size of all of the views we're tracking
 		
 		public FontSizeCoordinator()
 		{
 			this.views = new ArrayList<FontFitTextView>();
+			this.unfitted = new ArrayList<FontFitTextView>();
 		}
 		
 		public void register(FontFitTextView view)
 		{
 			views.add(view);
+			unfitted.add(view);
 		}
 		
 		public void refitted(FontFitTextView view)
 		{
+			unfitted.remove(view);
 			if(view.getTextSize() < minMaxFontSize)
 			{ 
 				// this TextView has a font size smaller than the others, so update them all
 				minMaxFontSize = view.getTextSize();
-				for(FontFitTextView v : views)
-					if(v != view) {
+/*				for(FontFitTextView v : views)
+					if(v != view && v.getTextSize() != minMaxFontSize) {
 						v.setTextSize(TypedValue.COMPLEX_UNIT_PX, minMaxFontSize);
-						v.lastFontSize = minMaxFontSize;
-					}
+					}*/
 			}
-			else if(view.getTextSize() > minMaxFontSize) {
+/*			else if(view.getTextSize() > minMaxFontSize) {
 				// this view's font size must be reduced to match that of all the others
 				view.setTextSize(TypedValue.COMPLEX_UNIT_PX, minMaxFontSize);
-				view.lastFontSize = minMaxFontSize;
+			}*/
+			
+			if(unfitted.isEmpty())
+			{
+				for(FontFitTextView v : views)
+					if(view.getTextSize() != minMaxFontSize) {
+						v.setTextSize(TypedValue.COMPLEX_UNIT_PX, minMaxFontSize);
+					}
+				unfitted.addAll(views);
 			}
 		}
 		
