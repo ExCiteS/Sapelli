@@ -540,7 +540,7 @@ public class Form implements WarningKeeper
 		{
 			List<LocationField> startLF = new ArrayList<LocationField>();
 			for(LocationField lf : getLocationFields())
-				if(lf.isStartWithForm())
+				if(lf.getStartWith() == LocationField.START_WITH.FORM)
 					startLF.add(lf);
 			return startLF;
 		}

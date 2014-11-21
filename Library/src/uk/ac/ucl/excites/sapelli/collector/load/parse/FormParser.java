@@ -150,6 +150,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
 	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
 	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
+	static private final String ATTRIBUTE_LOCATION_START_WITH = "startWith";
+	static private final String ATTRIBUTE_LOCATION_START_WITH_FORM = "startWithForm"; // deprecated in favour of enum above
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
 	static private final String ATTRIBUTE_RELATIONSHIP_HOLD = "hold";
 	static private final String ATTRIBUTE_CONSTRAINT_COLUMN = "column";
@@ -349,11 +351,31 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				else if("GPS".equalsIgnoreCase(type))
 					locField.setType(LocationField.TYPE_GPS);
 				else if("Network".equalsIgnoreCase(type))
-					locField.setType(LocationField.TYPE_GPS);
+					locField.setType(LocationField.TYPE_NETWORK);
 				else if(type != null) // unrecognised location type
 					addWarning("Unknown Location type (" + type + ").");
-				// Operating settings:
-				locField.setStartWithForm(attributes.getBoolean("startWithForm", LocationField.DEFAULT_START_WITH_FORM));
+				
+				// When to start listening for a location:
+				String startWith = attributes.getString(ATTRIBUTE_LOCATION_START_WITH, null, true, false);
+				if ("field".equalsIgnoreCase(startWith))
+					locField.setStartWith(LocationField.START_WITH.FIELD);
+				
+				else if ("page".equalsIgnoreCase(startWith))
+					if (getCurrentPage() != null)
+						locField.setStartWith(LocationField.START_WITH.PAGE);
+					else {
+						// told to start on page, but there is no page! Start with field instead (assume the user was trying to avoid "form")
+						addWarning("Location field specified to start with page, but no containing page was found. Location detection will start with the field instead.");
+						locField.setStartWith(LocationField.START_WITH.FIELD);
+					}
+				
+				else if ("form".equalsIgnoreCase(startWith) || attributes.getBoolean(ATTRIBUTE_LOCATION_START_WITH_FORM, false))
+					locField.setStartWith(LocationField.START_WITH.FORM);
+				
+				else if (startWith != null)
+					// unknown setting, default will be used 
+					addWarning("Unknown location field start preference (" + startWith +").");
+				
 				locField.setWaitAtField(attributes.getBoolean("waitAtField", LocationField.DEFAULT_WAIT_AT_FIELD));
 				locField.setTimeoutS(attributes.getInteger("timeout", LocationField.DEFAULT_TIMEOUT_S));
 				locField.setMaxAgeS(attributes.getInteger("maxAge", LocationField.DEFAULT_MAX_AGE_S));

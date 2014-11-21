@@ -41,10 +41,15 @@ public class LocationField extends Field implements Timeoutable
 	static public final int TYPE_GPS = 1;
 	static public final int TYPE_NETWORK = 2;
 	//static public final int TYPE_PASSIVE = 3;
+	static public enum START_WITH {
+		FORM,
+		PAGE,
+		FIELD
+	};
 	
 	//Defaults:
 	static public final int DEFAULT_TYPE = TYPE_GPS; 				// use GPS by default
-	static public final boolean DEFAULT_START_WITH_FORM = true;		// start listening for locations at the start of the form
+	static public final START_WITH DEFAULT_START_WITH = START_WITH.FORM;	// start listening for locations at the start of the form
 	static public final boolean DEFAULT_WAIT_AT_FIELD = false;		// do not wait for a new(er) location when at the field
 	static public final int DEFAULT_TIMEOUT_S = 5 * 60; 			// use timeout of 5 minutes (300 seconds)
 	static public final int DEFAULT_MAX_AGE_S = 10 * 60;			// use max age of 10 minutes (600 seconds)
@@ -59,8 +64,7 @@ public class LocationField extends Field implements Timeoutable
 	
 	//Dynamics---------------------------------------------
 	private int type;
-	private boolean startWithForm;
-	private boolean startWithPage;
+	private START_WITH startWith;
 	private boolean waitAtField;
 	private int timeoutS;
 	private int maxAgeS;
@@ -84,7 +88,7 @@ public class LocationField extends Field implements Timeoutable
 		if(id == null)
 			throw new NullPointerException("ID of top-level field cannot be null");
 		this.type = DEFAULT_TYPE;
-		this.startWithForm = DEFAULT_START_WITH_FORM;
+		this.startWith = DEFAULT_START_WITH;
 		this.waitAtField = DEFAULT_WAIT_AT_FIELD;
 		this.timeoutS = DEFAULT_TIMEOUT_S;
 		this.doublePrecision = DEFAULT_DOUBLE_PRECISION;
@@ -148,35 +152,19 @@ public class LocationField extends Field implements Timeoutable
 	}
 	
 	/**
-	 * @return the startWithForm
+	 * @return the startWith
 	 */
-	public boolean isStartWithForm()
+	public START_WITH getStartWith()
 	{
-		return startWithForm;
+		return startWith;
 	}
 
 	/**
-	 * @param startWithForm the startWithForm to set
+	 * @param startWithForm the startWith to set
 	 */
-	public void setStartWithForm(boolean startWithForm)
+	public void setStartWith(START_WITH startWith)
 	{
-		this.startWithForm = startWithForm;
-	}
-	
-	/**
-	 * @return the startWithPage
-	 */
-	public boolean isStartWithPage()
-	{
-		return startWithPage;
-	}
-
-	/**
-	 * @param startWithPage the startWithPage to set
-	 */
-	public void setStartWithPage(boolean startWithPage)
-	{
-		this.startWithPage = startWithPage;
+		this.startWith = startWith;
 	}
 
 	/**
@@ -412,8 +400,7 @@ public class LocationField extends Field implements Timeoutable
 			LocationField that = (LocationField) obj;
 			return	super.equals(that) && // Field#equals(Object)
 					this.type == that.type &&
-					this.startWithForm == that.startWithForm &&
-					this.startWithPage == that.startWithPage &&
+					this.startWith == that.startWith &&
 					this.timeoutS == that.timeoutS &&
 					this.maxAgeS == that.maxAgeS &&
 					this.maxAccuracyRadius == that.maxAccuracyRadius &&
@@ -434,8 +421,7 @@ public class LocationField extends Field implements Timeoutable
 	{
 		int hash = super.hashCode(); // Field#hashCode()
 		hash = 31 * hash + type;
-		hash = 31 * hash + (startWithForm ? 0 : 1);
-		hash = 31 * hash + (startWithPage ? 0 : 1);
+		hash = 31 * hash + (startWith.ordinal());
 		hash = 31 * hash + (waitAtField ? 0 : 1);
 		hash = 31 * hash + timeoutS;
 		hash = 31 * hash + maxAgeS;
