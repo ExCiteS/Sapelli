@@ -351,7 +351,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				else if("GPS".equalsIgnoreCase(type))
 					locField.setType(LocationField.TYPE_GPS);
 				else if("Network".equalsIgnoreCase(type))
-					locField.setType(LocationField.TYPE_GPS);
+					locField.setType(LocationField.TYPE_NETWORK);
 				else if(type != null) // unrecognised location type
 					addWarning("Unknown Location type (" + type + ").");
 				
