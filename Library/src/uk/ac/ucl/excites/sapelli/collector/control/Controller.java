@@ -181,7 +181,7 @@ public abstract class Controller implements FieldVisitor
 	
 	protected boolean handlingUserGoBackRequest = false;
 	
-	protected boolean blockedUI = false;
+	protected volatile boolean blockedUI = false;
 
 	public Controller(Project project, CollectorUI<?, ?> ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
 	{
@@ -990,7 +990,7 @@ public abstract class Controller implements FieldVisitor
 	/**
 	 * @return the blockedUI
 	 */
-	public boolean isUIBlocked()
+	public synchronized boolean isUIBlocked()
 	{
 		return blockedUI;
 	}
@@ -998,7 +998,7 @@ public abstract class Controller implements FieldVisitor
 	/**
 	 * Block UI
 	 */
-	public void blockUI()
+	public synchronized void blockUI()
 	{
 		this.blockedUI = true;
 	}
@@ -1006,7 +1006,7 @@ public abstract class Controller implements FieldVisitor
 	/**
 	 * Unblock UI
 	 */
-	public void unblockUI()
+	public synchronized void unblockUI()
 	{
 		this.blockedUI = false;
 	}
