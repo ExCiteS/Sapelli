@@ -35,9 +35,16 @@ import android.widget.TextView;
  */
 public class FontFitTextView extends TextView
 {
+	private static final float START_HI = 100F; // This does need to be this high because some text gets pretty big
+	private static final float START_LO = 5F;
+	private static final float THRESHOLD = 1F;  // how close we have to be to accept the size we have converged on and stop iterating
 
 	private Paint testPaint;
 	private FontSizeCoordinator fontSizeCoordinator;
+	private Rect boundsRect;
+	private int lastViewWidth = -1;
+	private int lastViewHeight = -1;
+	private float lastFontSize;
 	
 	public FontFitTextView(Context context)
 	{
@@ -48,63 +55,73 @@ public class FontFitTextView extends TextView
 	{
 		super(context);
 		this.fontSizeCoordinator = fontSizeCoordinator;
-		initialise();
-	}
-
-	private void initialise()
-	{
+		
 		if (fontSizeCoordinator != null)
 			fontSizeCoordinator.register(this);
 		
-		this.setIncludeFontPadding(false); //slightly reduce vertical padding on TextView (may need to re-enable for other langs due to accents)
-		testPaint = new Paint();
-		testPaint.set(this.getPaint());
-		// max size defaults to the initially specified text size unless it is too small
+		 //slightly reduce vertical padding on TextView (may need to re-enable for other langs due to accents):
+		this.setIncludeFontPadding(false);
 	}
-
 
 	/**
 	 * Compute maximum font size which makes the specified text fit in the box defined by the textWidth and textHeight parameters.
 	 */
-	private void refitText(String text, int textWidth, int textHeight)
+	private void refitText(String text, int viewWidth, int viewHeight)
 	{
-		if(textWidth <= 0 || textHeight <= 0)
-			// do not try to change font height
+		if(viewWidth <= 0 || viewHeight <= 0)
+			// do not try to change font size if a dimension is 0
 			return;
+		
+		if (viewWidth == lastViewWidth && viewHeight == lastViewHeight) {
+			// already seen these dimensions (but may need to set text size again)
+			this.setTextSize(TypedValue.COMPLEX_UNIT_PX, lastFontSize);
+			return;
+		}
+		
 		// target text width/height is the provided container width minus relevant padding
-		int targetWidth = textWidth - this.getPaddingLeft() - this.getPaddingRight();
-		int targetHeight = textHeight - this.getPaddingBottom() - this.getPaddingTop();
+		int targetWidth = viewWidth - this.getPaddingLeft() - this.getPaddingRight();
+		int targetHeight = viewHeight - this.getPaddingBottom() - this.getPaddingTop();
 		// initialise max/min to some appropriate values
-		float hi = 100;
-		float lo = 2;
-		// how close we have to be to accept the size we have converged on and stop iterating:
-		final float threshold = 0.5f;
+		float hi = (fontSizeCoordinator == null) ? START_HI : fontSizeCoordinator.minMaxFontSize;
+		float lo = START_LO;
 
+		if (testPaint == null)
+			testPaint = new Paint();
 		testPaint.set(this.getPaint());
 		
 		// Store measured bounds in a new Rect
-		Rect boundsRect = new Rect(); 
+		if (boundsRect == null)
+			boundsRect = new Rect(); 
 
-		while((hi - lo) > threshold)
+		while((hi - lo) > THRESHOLD)
 		{
 			float size = (hi + lo) / 2;
 			testPaint.setTextSize(size);
 			testPaint.getTextBounds(text, 0, text.length(), boundsRect); //measure bounds and store in boundsRect
 			
+			// NOTE: " + testPaint.getFontMetricsInt(null)":
 			// TextView always adds a line spacing's worth of padding above and below text -- http://stackoverflow.com/questions/4768738/android-textview-remove-spacing-and-padding-on-top-and-bottom
 			// Here I am cheating a bit and only making sure there is enough space for the text + the top padding
-			// (i.e. the bottom padding can go of the screen and the font can be a little larger)
-			int additionalSpacing = testPaint.getFontMetricsInt(null); //
+			// (i.e. the bottom padding can go off the screen and the font can be a little larger)
 			
 			//TODO allow for changed line spacing? - this assumes default only
-			//Note: getTextBounds not used to measure text width; see http://www.stackoverflow.com/questions/7549182/
-			if(testPaint.measureText(text) >= targetWidth || boundsRect.height() + additionalSpacing >= targetHeight)
+			//NOTE: getTextBounds not used to measure text width; see http://www.stackoverflow.com/questions/7549182/
+			if(testPaint.measureText(text) >= targetWidth || boundsRect.height() + testPaint.getFontMetricsInt(null) >= targetHeight)
 				hi = size; // was too big, so reduce hi
 			else
-				lo = size; // was too small, so reduce lo
+				lo = size; // was too small, so increase lo
 		}
+		
+		lastViewWidth = viewWidth;
+		lastViewHeight = viewHeight;
+		
 		// Use lo so that we undershoot rather than overshoot
+
+		lastFontSize = lo;
 		this.setTextSize(TypedValue.COMPLEX_UNIT_PX, lo);
+		
+		if (fontSizeCoordinator != null)
+			fontSizeCoordinator.refitted(this);
 	}
 
 
@@ -113,26 +130,22 @@ public class FontFitTextView extends TextView
 	{
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 		refitText(this.getText().toString(), MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.getSize(heightMeasureSpec));
-		if (fontSizeCoordinator != null)
-			fontSizeCoordinator.refitted(this);
 	}
 
 	@Override
 	protected void onTextChanged(final CharSequence text, final int start, final int before, final int after)
 	{
 		refitText(text.toString(), this.getWidth(), this.getHeight());
+		// invalidate "cached" font size:
+		lastViewWidth = -1;
+		lastViewHeight = -1;
 	}
 
 	@Override
 	protected void onSizeChanged(int w, int h, int oldw, int oldh)
 	{
 		if(w != oldw || h != oldh)
-		{
 			refitText(this.getText().toString(), w, h);
-			
-			if (fontSizeCoordinator != null)
-				fontSizeCoordinator.refitted(this);
-		}
 	}
 	
 	
@@ -144,7 +157,7 @@ public class FontFitTextView extends TextView
 	{
 		
 		private List<FontFitTextView> views;
-		private float minMaxFontSize = Float.MAX_VALUE; // keep track of the smallest font fize of all of the views we're tracking
+		private float minMaxFontSize = START_HI; // keep track of the smallest font size of all of the views we're tracking
 		
 		public FontSizeCoordinator()
 		{
@@ -165,11 +178,14 @@ public class FontFitTextView extends TextView
 				for(FontFitTextView v : views)
 					if(v != view) {
 						v.setTextSize(TypedValue.COMPLEX_UNIT_PX, minMaxFontSize);
+						v.lastFontSize = minMaxFontSize;
 					}
 			}
-			else if(view.getTextSize() > minMaxFontSize)
+			else if(view.getTextSize() > minMaxFontSize) {
 				// this view's font size must be reduced to match that of all the others
 				view.setTextSize(TypedValue.COMPLEX_UNIT_PX, minMaxFontSize);
+				view.lastFontSize = minMaxFontSize;
+			}
 		}
 		
 	}
