@@ -797,7 +797,12 @@ public class FormParser extends SubtreeParser<ProjectParser>
 
 	private Page getCurrentPage()
 	{
-		return (!openFields.isEmpty() && openFields.peek() instanceof Page) ? (Page) openFields.peek() : null;
+		// Iterate through the stack from the top down and look for a Page:
+		for(int f = openFields.size() - 1; f >= 0; f--)
+			if(openFields.get(f) instanceof Page)
+				return (Page) openFields.get(f);
+		// No current page:
+		return null;
 	}
 	
 	protected void closePage(Page page)
