@@ -342,52 +342,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// <Location>
 			else if(qName.equals(TAG_LOCATION))
 			{
-				LocationField locField = new LocationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_LOCATION, false));
-				newField(locField, attributes);
-				// Location type:
-				String type = attributes.getValue("type");
-				if("Any".equalsIgnoreCase(type))
-					locField.setType(LocationField.TYPE_ANY);
-				else if("GPS".equalsIgnoreCase(type))
-					locField.setType(LocationField.TYPE_GPS);
-				else if("Network".equalsIgnoreCase(type))
-					locField.setType(LocationField.TYPE_NETWORK);
-				else if(type != null) // unrecognised location type
-					addWarning("Unknown Location type (" + type + ").");
-				
-				// When to start listening for a location:
-				String startWith = attributes.getString(ATTRIBUTE_LOCATION_START_WITH, null, true, false);
-				if ("field".equalsIgnoreCase(startWith))
-					locField.setStartWith(LocationField.START_WITH.FIELD);
-				
-				else if ("page".equalsIgnoreCase(startWith))
-					if (getCurrentPage() != null)
-						locField.setStartWith(LocationField.START_WITH.PAGE);
-					else {
-						// told to start on page, but there is no page! Start with field instead (assume the user was trying to avoid "form")
-						addWarning("Location field specified to start with page, but no containing page was found. Location detection will start with the field instead.");
-						locField.setStartWith(LocationField.START_WITH.FIELD);
-					}
-				
-				else if ("form".equalsIgnoreCase(startWith) || attributes.getBoolean(ATTRIBUTE_LOCATION_START_WITH_FORM, false))
-					locField.setStartWith(LocationField.START_WITH.FORM);
-				
-				else if (startWith != null)
-					// unknown setting, default will be used 
-					addWarning("Unknown location field start preference (" + startWith +").");
-				
-				locField.setWaitAtField(attributes.getBoolean("waitAtField", LocationField.DEFAULT_WAIT_AT_FIELD));
-				locField.setTimeoutS(attributes.getInteger("timeout", LocationField.DEFAULT_TIMEOUT_S));
-				locField.setMaxAgeS(attributes.getInteger("maxAge", LocationField.DEFAULT_MAX_AGE_S));
-				locField.setMaxAccuracyRadius(attributes.getFloat("maxAccuracyRadius", LocationField.DEFAULT_MAX_ACCURACY_RADIUS));
-				locField.setUseBestNonQualifyingLocationAfterTimeout(attributes.getBoolean("useBestKnownLocationOnTimeout", LocationField.DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT));
-				// Storage settings:
-				locField.setDoublePrecision(attributes.getBoolean("doublePrecision", LocationField.DEFAULT_DOUBLE_PRECISION));
-				locField.setStoreAltitude(attributes.getBoolean("storeAltitude", LocationField.DEFAULT_STORE_ALTITUDE));
-				locField.setStoreBearing(attributes.getBoolean("storeBearing", LocationField.DEFAULT_STORE_BEARING));
-				locField.setStoreSpeed(attributes.getBoolean("storeSpeed", LocationField.DEFAULT_STORE_SPEED));
-				locField.setStoreAccuracy(attributes.getBoolean("storeAccuracy", LocationField.DEFAULT_STORE_ACCURACY));
-				locField.setStoreProvider(attributes.getBoolean("storeProvider", LocationField.DEFAULT_STORE_PROVIDER));
+				newLocation(new LocationField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_LOCATION, false)), attributes);
 			}
 			// <Photo>
 			else if(qName.equals(TAG_PHOTO))
@@ -624,6 +579,56 @@ public class FormParser extends SubtreeParser<ProjectParser>
 									currentForm.getID() + "_page" :
 									attributes.getString(currentForm.getID() + "_page_" + currentForm.getFields().size(), true, false, ATTRIBUTE_FIELD_ID));
 		newField(newPage, attributes);
+	}
+	
+	private void newLocation(LocationField locField, XMLAttributes attributes) throws Exception
+	{
+		newField(locField, attributes);
+		// Location type:
+		String type = attributes.getValue("type");
+		if("Any".equalsIgnoreCase(type))
+			locField.setType(LocationField.TYPE_ANY);
+		else if("GPS".equalsIgnoreCase(type))
+			locField.setType(LocationField.TYPE_GPS);
+		else if("Network".equalsIgnoreCase(type))
+			locField.setType(LocationField.TYPE_NETWORK);
+		else if(type != null) // unrecognised location type
+			addWarning("Unknown Location type (" + type + ").");
+		
+		// When to start listening for a location:
+		String startWith = attributes.getString(ATTRIBUTE_LOCATION_START_WITH, null, true, false);
+		if("field".equalsIgnoreCase(startWith))
+			locField.setStartWith(LocationField.START_WITH.FIELD);
+		else if("page".equalsIgnoreCase(startWith))
+		{
+			if(getCurrentPage() != null)
+				locField.setStartWith(LocationField.START_WITH.PAGE);
+			else
+			{
+				// told to start on page, but there is no page! Start with field instead (assume the user was trying to avoid "form")
+				addWarning("Location field specified to start with page, but no containing page was found. Location detection will start with the field instead.");
+				locField.setStartWith(LocationField.START_WITH.FIELD);
+			}
+		}
+		else if("form".equalsIgnoreCase(startWith) || attributes.getBoolean(ATTRIBUTE_LOCATION_START_WITH_FORM, false))
+			locField.setStartWith(LocationField.START_WITH.FORM);
+		
+		else if (startWith != null)
+			// unknown setting, default will be used 
+			addWarning("Unknown location field start preference (" + startWith +").");
+		
+		locField.setWaitAtField(attributes.getBoolean("waitAtField", LocationField.DEFAULT_WAIT_AT_FIELD));
+		locField.setTimeoutS(attributes.getInteger("timeout", LocationField.DEFAULT_TIMEOUT_S));
+		locField.setMaxAgeS(attributes.getInteger("maxAge", LocationField.DEFAULT_MAX_AGE_S));
+		locField.setMaxAccuracyRadius(attributes.getFloat("maxAccuracyRadius", LocationField.DEFAULT_MAX_ACCURACY_RADIUS));
+		locField.setUseBestNonQualifyingLocationAfterTimeout(attributes.getBoolean("useBestKnownLocationOnTimeout", LocationField.DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT));
+		// Storage settings:
+		locField.setDoublePrecision(attributes.getBoolean("doublePrecision", LocationField.DEFAULT_DOUBLE_PRECISION));
+		locField.setStoreAltitude(attributes.getBoolean("storeAltitude", LocationField.DEFAULT_STORE_ALTITUDE));
+		locField.setStoreBearing(attributes.getBoolean("storeBearing", LocationField.DEFAULT_STORE_BEARING));
+		locField.setStoreSpeed(attributes.getBoolean("storeSpeed", LocationField.DEFAULT_STORE_SPEED));
+		locField.setStoreAccuracy(attributes.getBoolean("storeAccuracy", LocationField.DEFAULT_STORE_ACCURACY));
+		locField.setStoreProvider(attributes.getBoolean("storeProvider", LocationField.DEFAULT_STORE_PROVIDER));
 	}
 	
 	private void newRelationship(Relationship relationship, XMLAttributes attributes) throws Exception
