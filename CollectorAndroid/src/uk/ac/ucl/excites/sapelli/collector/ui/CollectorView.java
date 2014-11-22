@@ -231,21 +231,22 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			{
 				fieldUIView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener() {
 					
-                    @SuppressLint("NewApi")
-                    @SuppressWarnings("deprecation")
-                    @Override
-			        public void onGlobalLayout() {
-			        	// call the field's onDisplay method:
-			        	fieldUI.onDisplay(false);
-				        // remove this listener once this has occurred, so the field's onDisplay method is not called too many times:
-			        	if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN /* 16 */)
-			        		fieldUIView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-			        	else
-			        		// use deprecated version (probably changed due to "on" typo):
-			        		fieldUIView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
-			        }
-                    
-		        });
+					@SuppressLint("NewApi")
+					@SuppressWarnings("deprecation")
+					@Override
+					public void onGlobalLayout()
+					{
+						// call the field's onDisplay method:
+						fieldUI.onDisplay(false);
+						// remove this listener once this has occurred, so the field's onDisplay method is not called too many times:
+						if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN /* 16 */)
+							fieldUIView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+						else
+							// use deprecated version (probably changed due to "on" typo):
+							fieldUIView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+					}
+
+				});
 			}
 		}
 
@@ -514,21 +515,23 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	}
 
 	@Override
-    public AudioFeedbackController<View> getAudioFeebackController() {
+	public AudioFeedbackController<View> getAudioFeebackController()
+	{
 		if (audioFeedbackController == null)
 			audioFeedbackController = new AndroidAudioFeedbackController(controller);
 		return audioFeedbackController;
-    }
-	
-	public void stopAudioFeedback() {
-		if (audioFeedbackController != null)
-			audioFeedbackController.stop();
 	}
 	
-	public void destroyAudio() {
-		if (audioFeedbackController != null) {
+	public void stopAudioFeedback()
+	{
+		if(audioFeedbackController != null)
+			audioFeedbackController.stop();
+	}
+
+	public void destroyAudio()
+	{
+		if(audioFeedbackController != null)
 			audioFeedbackController.destroy();
-		}
 		audioFeedbackController = null;
 	}
 
