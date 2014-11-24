@@ -395,8 +395,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				item = new SplitItem(SplitItem.VERTICAL) // create new split item
 					// add item for image (take up all space not taken up by caption):
 					.addItem(createImageItem(choice, false, textOnlyCoordinator), 1.0f - choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_PX)
-					// add item for caption:
-					.addItem(createCaptionItem(choice, false, captionCoordinator), choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_PX);
+					// add item for caption (show value text rather than caption if choice is root -- caption would be above page item already):
+					.addItem(createCaptionItem(choice, !choice.isRoot(), captionCoordinator), choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_PX);
 			}
 			else
 			{	// there is no caption, or its height is 0, or we are dealing with the root --> IMAGE ONLY

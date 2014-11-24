@@ -18,13 +18,11 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import android.annotation.TargetApi;
+import java.util.ArrayList;
+
 import android.content.Context;
 import android.graphics.Paint;
 import android.graphics.Rect;
-import android.os.Build;
 import android.util.TypedValue;
 import android.widget.TextView;
 
@@ -88,67 +86,40 @@ public class FontFitTextView extends TextView
 		if(coordinator != null)
 			this.coordinatorSlot = coordinatorSlot >= 0 ? coordinatorSlot : coordinator.claimSlot();
 
-		// slightly reduce vertical padding on TextView (may need to re-enable for other langs due to accents):
-		this.setIncludeFontPadding(false); // TODO re-evaluate whether this is a good idea (what if we do have accepts to show?)
-	}
-	
-	/* (non-Javadoc)
-	 * @see android.widget.TextView#setIncludeFontPadding(boolean)
-	 */
-	@Override
-	public void setIncludeFontPadding(boolean includepad)
-	{
-		if(includepad != getIncludeFontPadding())
-		{	// Force reset of fitted test size:
-			lastTargetWidth = -1;
-			lastTargetHeight = -1;
-		}
-		// Super call:
-		super.setIncludeFontPadding(includepad);
-	}
-
-	/**
-	 * @see android.widget.TextView#getIncludeFontPadding()
-	 * @see android.widget.TextView#setIncludeFontPadding(boolean)
-	 * @see http://grepcode.com/file/repository.grepcode.com/java/ext/com.google.android/android/4.0.4_r2.1/android/widget/TextView.java#6433
-	 */
-	@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
-	@Override
-	public boolean getIncludeFontPadding()
-	{
-		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN /* 16 */)
-			return super.getIncludeFontPadding();
-		else
-		{	// Force our way with reflection:
-			try
-			{
-				Field includePadField = TextView.class.getDeclaredField("mIncludePad"); // may throw NoSuchFieldException
-				includePadField.setAccessible(true);
-				boolean includePad = includePadField.getBoolean(this); // may throw IllegalAccessException
-				includePadField.setAccessible(false);
-				return includePad;
-			}
-			catch(Exception e)
-			{
-				e.printStackTrace(System.err);
-				return true; // return the default
-			}
-		}
+		// disable font padding (we deal with interline spacing ourselves):
+		this.setIncludeFontPadding(false);
 	}
 
 	/**
 	 * Computes maximum font size which makes the text fit in the bounding box defined by the viewWidth and viewHeight parameters.
-	 * 
+	 * This will ensure that the resulting text size will accommodate multiline text.
+	 * <br>
 	 * We use 2 distinct ways of measuring text:
-	 * 	- {@link Paint#getTextBounds(String, int, int, Rect)}:
-	 * 	  This computes both width & height but unfortunately underestimates both.
-	 * 		* The underestimation of height is caused by TextView always adding a line spacing's
-	 * 		  worth of padding above and below the text, as explained here: http://stackoverflow.com/questions/4768738
-	 * 		  We solve this by adding {@link Paint#getFontMetricsInt()} to the height
-	 * 		* The underestimation of width has a more low-level cause, as explained here: http://stackoverflow.com/a/7579469/1084488
-	 * 		  We solve this by instead relying on...
-	 * 	- {@link Paint#measureText(String)}: this does compute the width in a reliable way
-	 * 
+	 * <ul>
+	 * 	<li>
+	 * 		{@link Paint#getTextBounds(String, int, int, Rect)}:
+	 * 		<br>
+	 * 	  	This computes both width & height but unfortunately underestimates both.
+	 * 			<ul>
+	 * 				<li>
+	 * 					The underestimation of height is caused by TextView always adding a line spacing's
+	 * 		  			worth of padding above and below the text, as explained here: http://stackoverflow.com/questions/4768738
+	 * 					<br>
+	 * 		 			We solve this by adding {@link Paint#getFontMetricsInt()} to the height
+	 * 				</li>
+	 * 				<li>
+	 * 					The underestimation of width has a more low-level cause, as explained here: http://stackoverflow.com/a/7579469/1084488
+	 * 					<br>
+	 * 		  			We solve this by instead relying on...
+	 * 				</li>
+	 * 			</ul>
+	 * 	</li>
+	 * 	<li>
+	 * 		{@link Paint#measureText(String)}:
+	 * 		<br>
+	 * 		this does compute the width in a reliable way
+	 * 	</li>
+	 * </ul>
 	 * @param viewWidth
 	 * @param viewHeight
 	 * @param force
@@ -159,12 +130,10 @@ public class FontFitTextView extends TextView
 		if(viewWidth <= 0 || viewHeight <= 0)
 			return;
 
-		// Get text to measure:
-		String text = this.getText().toString();
-
 		// Avoid unnecessary (re)fitting: text is empty
-		if(text.isEmpty())
+		if(this.getText().length() < 1)
 			return;
+		
 		
 		// Compute the target text width/height as the provided container width minus relevant padding
 		int targetWidth = viewWidth - this.getPaddingLeft() - this.getPaddingRight();
@@ -180,6 +149,9 @@ public class FontFitTextView extends TextView
 		// Initialise lo & hi bounds:
 		float lo = MIN_TEXT_SIZE;
 		float hi = (coordinator == null) ? MAX_TEXT_SIZE : coordinator.getCoordinatedTextSize();
+		
+		// get an array of all the lines in the text:
+		String[] lines = this.getText().toString().split("\n");
 
 		// Get a Rect to store measured bounds:
 		if(boundsRect == null)
@@ -196,17 +168,22 @@ public class FontFitTextView extends TextView
 			float size = (hi + lo) / 2;
 			testPaint.setTextSize(size);
 
-			// Measure bounds and store in boundsRect:
-			testPaint.getTextBounds(text, 0, text.length(), boundsRect);
-
-			// NOTE: Here I am cheating a bit and only making sure there is enough space for the text + the top padding
-			// (i.e. the bottom padding can go off the screen and the font can be a little larger)
-			// TODO why cheat, can't we just add 2 * testPaint.getFontMetricsInt(null) ? --> probably not a good idea because it seems we already reserve more space than needed
-			// TODO why do we use testPaint.getFontMetricsInt(null) and not testPaint.getFontMetrics(null) ?
-			// TODO what about testPaint.getFontSpacing() shouldn't we use that instead?
-			// TODO allow for changed line spacing? - this assumes default only
+			// keep track of maximum width across all lines of text:
+			float maxWidth = 0;
+			// keep track of cumulative height across all lines of text:
+			float cumulHeight = -testPaint.getFontMetrics(null); // initialise to (- 1 * line spacing) so we can just add one line spacing for each line (should really be n-1)
 			
-			if(testPaint.measureText(text) >= targetWidth || boundsRect.height() + (this.getIncludeFontPadding() ? testPaint.getFontMetricsInt(null) : 0) >= targetHeight)
+			for (String line : lines) {
+				// measure bounds for each line of text:
+				testPaint.getTextBounds(line, 0, line.length(), boundsRect);
+				// max width is max(previous max width, this line width)
+				maxWidth = Math.max(maxWidth, testPaint.measureText(line));
+				// add line height and interline spacing to cumulative height
+				cumulHeight += boundsRect.height() + testPaint.getFontMetrics(null);
+			}			
+			
+			// see if our text fits
+			if(maxWidth >= targetWidth || cumulHeight >= targetHeight)
 				hi = size; // was too big, so reduce hi
 			else
 				lo = size; // was too small, so increase lo
@@ -283,47 +260,61 @@ public class FontFitTextView extends TextView
 	static public class TextSizeCoordinator
 	{
 
-		private FontFitTextView[] views = new FontFitTextView[0]; // init as empty array!
-		private float[] intendedTextSizes = new float[0]; // init as empty array!
+		private ArrayList<FontFitTextView> views = new ArrayList<FontFitTextView>();
+		private ArrayList<Float> intendedTextSizes = new ArrayList<Float>(); // init as empty array!
 
+
+		/**
+		 * Requests that the coordinator reserve a 'slot' for this view so that it will update its font size at some point.
+		 * @return
+		 */
 		public int claimSlot()
 		{
-			int slot = views.length;
-			views = Arrays.copyOf(views, slot + 1);
-			intendedTextSizes = Arrays.copyOf(intendedTextSizes, slot + 1);
-			intendedTextSizes[slot] = MAX_TEXT_SIZE;
+			int slot = views.size();
+			intendedTextSizes.add(MAX_TEXT_SIZE); //TODO check
 			//Log.d("FFTV", "Coordinator.claimSlot: number of slots: " + intendedTextSizes.length);
 			return slot;
 		}
 
+		/**
+		 * Requests that the controller record the provided maximum text size for the provided view, and then coordinates font sizes across all views.
+		 * @param view - the view whose max text size is being recorded
+		 * @param maxTextSize - the max text size to record
+		 */
 		public void setMaxTextSize(FontFitTextView view, float maxTextSize)
 		{
 			// Just in case:
-			if(view.coordinatorSlot < 0 || view.coordinatorSlot >= intendedTextSizes.length)
+			if(view.coordinatorSlot < 0 || view.coordinatorSlot >= intendedTextSizes.size())
 				throw new IllegalArgumentException("Invalid or unclaimed coordinator slot (" + view.coordinatorSlot + "), make sure to claim a slot for each coordinated view.");
 
 			// Register the view:
-			views[view.coordinatorSlot] = view;
+			views.add(view);
 
 			// If the intended text size is different than before...
-			if(intendedTextSizes[view.coordinatorSlot] != maxTextSize) // TODO round/floor to whole pixels?
+			if(intendedTextSizes.get(view.coordinatorSlot) != maxTextSize) // TODO round/floor to whole pixels?
 			{
-				intendedTextSizes[view.coordinatorSlot] = maxTextSize;
+				intendedTextSizes.set(view.coordinatorSlot, maxTextSize);
 				// TODO wait until all fitted? (causes more "requestLayout() improperly called" warnings in some case)
 				coordinate();
 			}
 		}
 
+		/**
+		 * @return the largest font size that appreciates the maximum font size constraints of all views registered to the controller.
+		 */
 		public float getCoordinatedTextSize()
 		{
 			//Log.d("FFTV", "Intended sizes: " + Arrays.toString(intendedTextSizes));
 			float min = MAX_TEXT_SIZE; // keep track of the smallest font size of all of the views we're tracking
-			for(int v = 0; v < views.length; v++)
-				if(views[v] != null && intendedTextSizes[v] < min)
-					min = intendedTextSizes[v];
+			for(int v = 0; v < views.size(); v++)
+				if(views.get(v) != null && intendedTextSizes.get(v) < min)
+					min = intendedTextSizes.get(v);
 			return min;
 		}
 
+		/**
+		 * Applies the coordinated font size to all registered views.
+		 */
 		public void coordinate()
 		{
 			float coordinatedTextSize = getCoordinatedTextSize();
