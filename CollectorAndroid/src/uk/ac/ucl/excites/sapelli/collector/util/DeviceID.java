@@ -488,7 +488,7 @@ public class DeviceID
 		{
 			if(bluetoothAdapter != null && bluetoothAdapter.isEnabled())
 				id.saveStingPreference(PREF_BLUETOOTH_MAC, bluetoothAdapter.getAddress()); // Save Bluetooth MAC address to preferences
-			else if(wifiManager != null)
+			else if(bluetoothAdapter != null)
 			{	// Try to enable the Bluetooth Adapter and wait for the broadcast receiver:
 				setBluetoothBroadcastReceiver();
 				bluetoothAdapter.enable();
