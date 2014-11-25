@@ -93,12 +93,12 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	 * Returns the String to display as the caption under an image or instead of an image when no image was specified
 	 * 
 	 * @param choice
-	 * @param standAlone whether the text will be displayed on its own, or not (i.e. under an image or under a page caption-label)
+	 * @param allowCaption whether the ChoiceField.caption can be used (because it is isn't already displayed above the caption item)
 	 * @return text to use a caption (not necessarily taken from choice#caption)
 	 */
-	protected String getCaptionText(ChoiceField choice, boolean standAlone)
+	protected String getCaptionText(ChoiceField choice, boolean allowCaption)
 	{
-		if(choice.hasCaption() && standAlone) // only use caption if it is not already displayed underneath the image, or above it in a page label
+		if(choice.hasCaption() && allowCaption) // only use caption if it is not already displayed underneath the image, or above it in a page label
 			return choice.getCaption();
 		if(choice.getValue() != null)
 			return choice.getValue();

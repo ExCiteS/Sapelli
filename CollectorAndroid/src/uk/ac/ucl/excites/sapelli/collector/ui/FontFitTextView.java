@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import android.content.Context;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.util.Log;
 import android.util.TypedValue;
 import android.widget.TextView;
 
@@ -84,7 +85,7 @@ public class FontFitTextView extends TextView
 
 		this.coordinator = coordinator;
 		if(coordinator != null)
-			this.coordinatorSlot = coordinatorSlot >= 0 ? coordinatorSlot : coordinator.claimSlot();
+			this.coordinatorSlot = coordinatorSlot >= 0 ? coordinatorSlot : coordinator.claimSlot(this);
 
 		// disable font padding (we deal with interline spacing ourselves):
 		this.setIncludeFontPadding(false);
@@ -145,10 +146,6 @@ public class FontFitTextView extends TextView
 
 		// At this point we know a new size computation will take place...
 		//Log.d("FFTV", "fitText: IS REFITTING, text: " + this.getText() + ", hash: " + hashCode() + " w=" + viewWidth + ", h=" + viewHeight + ", forced: " + force);
-
-		// Initialise lo & hi bounds:
-		float lo = MIN_TEXT_SIZE;
-		float hi = (coordinator == null) ? MAX_TEXT_SIZE : coordinator.getCoordinatedTextSize();
 		
 		// get an array of all the lines in the text:
 		String[] lines = this.getText().toString().split("\n");
@@ -161,45 +158,68 @@ public class FontFitTextView extends TextView
 		if(testPaint == null)
 			testPaint = new Paint();
 		testPaint.set(this.getPaint());
+		
+		// Initialise lo & hi bounds:
+		float lo = MIN_TEXT_SIZE;
+		float hi = (coordinator == null) ? MAX_TEXT_SIZE : coordinator.getCoordinatedTextSize();
 
+		float textSize = hi; // TODO explain why we do this and why it is OK ;)
+		
 		// Fitting loop (binary search):
 		while((hi - lo) > THRESHOLD)
 		{
-			float size = (hi + lo) / 2;
-			testPaint.setTextSize(size);
+			textSize = (hi + lo) / 2;
+			testPaint.setTextSize(textSize);
 
-			// keep track of maximum width across all lines of text:
-			float maxWidth = 0;
-			// keep track of cumulative height across all lines of text:
-			float cumulHeight = -testPaint.getFontMetrics(null); // initialise to (- 1 * line spacing) so we can just add one line spacing for each line (should really be n-1)
 			
-			for (String line : lines) {
+			// keep track of cumulative height across all lines of text:
+//			float cumulHeight = -testPaint.getFontMetrics(null); // initialise to (- 1 * line spacing) so we can just add one line spacing for each line (should really be n-1)
+			
+			Log.d("FFTV", "text: " + this.getText().toString() + ", font size: " + textSize + " metrics/spacing: " + testPaint.getFontMetrics(null));
+			
+			if(lines.length > 1)
+			{
+				String allLines = this.getText().toString();
+				testPaint.getTextBounds(allLines, 0, allLines.length(), boundsRect);
+				Log.d("FFTV", "allLines height: "+ boundsRect.height() + " width: " + testPaint.measureText(allLines));
+			}
+			
+			// keep track of maximum width across all lines of text:
+			float width = 0, maxHeight = 0;
+			for (String line : lines)
+			{
 				// measure bounds for each line of text:
 				testPaint.getTextBounds(line, 0, line.length(), boundsRect);
+				maxHeight = Math.max(maxHeight, boundsRect.height());
 				// max width is max(previous max width, this line width)
-				maxWidth = Math.max(maxWidth, testPaint.measureText(line));
+				width = Math.max(width, testPaint.measureText(line));
+				//Log.d("FFTV", "line: "+line+" height: "+boundsRect.height() + " width: " + testPaint.measureText(line));
 				// add line height and interline spacing to cumulative height
-				cumulHeight += boundsRect.height() + testPaint.getFontMetrics(null);
-			}			
+//				cumulHeight += boundsRect.height() + testPaint.getFontMetrics(null);
+			}
 			
 			// see if our text fits
-			if(maxWidth >= targetWidth || cumulHeight >= targetHeight)
-				hi = size; // was too big, so reduce hi
+			if(width >= targetWidth || lines.length * Math.max(maxHeight, testPaint.getFontMetrics(null)) >= targetHeight)
+				hi = textSize; // was too big, so reduce hi
 			else
-				lo = size; // was too small, so increase lo
+				lo = textSize; // was too small, so increase lo
+			
+			// We set lo as the new textSize, so that we undershoot rather than overshoot:
+			textSize = lo; // only matters in this is the last iteration
 		}
+		
+		Log.d("FFTV", "final textSize for slot " + coordinatorSlot + ": " + textSize);
 
 		// Remember target dimensions:
 		lastTargetWidth = targetWidth;
 		lastTargetHeight = targetHeight;
-
-		// We set lo as the new textSize, so that we undershoot rather than overshoot:
+		
 		if(coordinator != null)
 			// Let the coordinator apply the textSize at the appropriate time:
-			coordinator.setMaxTextSize(this, lo);
-		else if(this.getTextSize() != lo)
+			coordinator.setMaxTextSize(this, textSize);
+		else if(this.getTextSize() != textSize)
 			// Apply now:
-			this.setTextSize(TypedValue.COMPLEX_UNIT_PX, lo);
+			this.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
 	}
 
 	/*
@@ -263,17 +283,25 @@ public class FontFitTextView extends TextView
 		private ArrayList<FontFitTextView> views = new ArrayList<FontFitTextView>();
 		private ArrayList<Float> intendedTextSizes = new ArrayList<Float>();
 
-
 		/**
 		 * Requests that the coordinator reserve a 'slot' for this view so that it will update its font size at some point.
-		 * @return
+		 * @return the claimed slot
 		 */
 		public int claimSlot()
 		{
-			int slot = views.size();
+			return claimSlot(null);
+		}
+		
+		/**
+		 * @param view
+		 * @return the claimed slot
+		 */
+		public int claimSlot(FontFitTextView view)
+		{
+			views.add(view);
 			intendedTextSizes.add(MAX_TEXT_SIZE);
-			//Log.d("FFTV", "Coordinator.claimSlot: number of slots: " + intendedTextSizes.length);
-			return slot;
+			Log.d("FFTV", "Coordinator.claimSlot: number of slots: " + views.size());
+			return views.size() - 1;
 		}
 
 		/**
@@ -284,11 +312,11 @@ public class FontFitTextView extends TextView
 		public void setMaxTextSize(FontFitTextView view, float maxTextSize)
 		{
 			// Just in case:
-			if(view.coordinatorSlot < 0 || view.coordinatorSlot >= intendedTextSizes.size())
+			if(view.coordinatorSlot < 0 || view.coordinatorSlot >= views.size())
 				throw new IllegalArgumentException("Invalid or unclaimed coordinator slot (" + view.coordinatorSlot + "), make sure to claim a slot for each coordinated view.");
 
 			// Register the view:
-			views.add(view);
+			views.set(view.coordinatorSlot, view);
 
 			// If the intended text size is different than before...
 			if(intendedTextSizes.get(view.coordinatorSlot) != maxTextSize) // TODO round/floor to whole pixels?

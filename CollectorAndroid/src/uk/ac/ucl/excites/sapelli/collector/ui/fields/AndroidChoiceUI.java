@@ -396,7 +396,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 					// add item for image (take up all space not taken up by caption):
 					.addItem(createImageItem(choice, false, textOnlyCoordinator), 1.0f - choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_PX)
 					// add item for caption (show value text rather than caption if choice is root -- caption would be above page item already):
-					.addItem(createCaptionItem(choice, !choice.isRoot(), captionCoordinator), choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_PX);
+					.addItem(createCaptionItem(choice, true, captionCoordinator), choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_PX);
 			}
 			else
 			{	// there is no caption, or its height is 0, or we are dealing with the root --> IMAGE ONLY
@@ -444,7 +444,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	
 	/**
 	 * @param choice
-	 * @param standAlone whether the text will be displayed on its own, or not (i.e. under an image or under a page caption-label)
+	 * @param standAlone whether the item will be displayed on its own, or not (i.e. under an image or under a page caption-label)
 	 * @return
 	 */
 	private Item createImageItem(ChoiceField choice, boolean standAlone, TextSizeCoordinator textOnlyCoordinator)
@@ -463,12 +463,12 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	
 	/**
 	 * @param child
-	 * @param standAlone whether the text will be displayed on its own, or not (i.e. under an image or under a page caption-label)
+	 * @param allowCaption whether the ChoiceField.caption can be used (because it is isn't already displayed above the caption item)
 	 * @return
 	 */
-	private Item createCaptionItem(ChoiceField child, boolean standAlone, TextSizeCoordinator coordinator)
+	private Item createCaptionItem(ChoiceField child, boolean allowCaption, TextSizeCoordinator coordinator)
 	{	// render caption text:
-		return new TextItem(getCaptionText(child, standAlone), coordinator);
+		return new TextItem(getCaptionText(child, allowCaption), coordinator);
 	}
 
 	@Override
