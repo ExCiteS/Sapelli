@@ -37,7 +37,7 @@ public class FontFitTextView extends TextView
 	/**
 	 * Maximum font size which we will ever use in this view. This does need to be this high because some text gets pretty big.
 	 */
-	private static final float MAX_TEXT_SIZE = 150.0f; //
+	private static final float MAX_TEXT_SIZE = 150.0f;
 
 	/**
 	 * Minimum font size which we will ever use in this view.
@@ -261,7 +261,7 @@ public class FontFitTextView extends TextView
 	{
 
 		private ArrayList<FontFitTextView> views = new ArrayList<FontFitTextView>();
-		private ArrayList<Float> intendedTextSizes = new ArrayList<Float>(); // init as empty array!
+		private ArrayList<Float> intendedTextSizes = new ArrayList<Float>();
 
 
 		/**
@@ -271,7 +271,7 @@ public class FontFitTextView extends TextView
 		public int claimSlot()
 		{
 			int slot = views.size();
-			intendedTextSizes.add(MAX_TEXT_SIZE); //TODO check
+			intendedTextSizes.add(MAX_TEXT_SIZE);
 			//Log.d("FFTV", "Coordinator.claimSlot: number of slots: " + intendedTextSizes.length);
 			return slot;
 		}
