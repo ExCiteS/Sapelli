@@ -203,17 +203,19 @@ public abstract class MediaField extends Field
 	}
 	
 	/**
-	 * Add the provided attachment file to the column corresponding to this field in the provided record.
-	 * <br>
-	 * Note: does not actually alter the file system, only the record contents. The file is added to the file system
-	 * as soon as it is requested through the {@link #getNewAttachmentFile(FileStorageProvider, Record)} method.
+	 * Add the provided attachment file to the column corresponding to this field in the provided record. <br>
+	 * Note: does not actually alter the file system, only the record contents. The file is added to the file system as soon as it is requested through the
+	 * {@link #getNewAttachmentFile(FileStorageProvider, Record)} method.
+	 * 
 	 * @param attachment - the file to attach to the record
 	 * @param record - the record to attach the file to
 	 */
-	public void addAttachmentToRecord(File attachment, Record record) {
-		// check if adding would exceed max no attachments for this field	
-		int currentCount = getCount(record);	
-		if(currentCount >= max) {
+	public void addAttachmentToRecord(File attachment, Record record)
+	{
+		// check if adding would exceed max no attachments for this field
+		int currentCount = getCount(record);
+		if(currentCount >= max)
+		{
 			attachment.delete(); // TODO check
 			throw new IllegalStateException("Maximum # of attachments (" + max + ") reached.");
 		}
@@ -221,14 +223,14 @@ public abstract class MediaField extends Field
 		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
 		// add creationTimeOffset to column
 		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
-		if (offsets == null)
-		{	
+		if(offsets == null)
+		{
 			offsets = new ArrayList<Long>();
 			((IntegerListColumn) getColumn()).storeValue(record, offsets);
 		}
-		offsets.add(creationTimeOffset);	
+		offsets.add(creationTimeOffset);
 	}
-	
+
 	/**
 	 * Remove the provided attachment file from the column corresponding to this field in the provided record.
 	 * <br>
@@ -237,13 +239,14 @@ public abstract class MediaField extends Field
 	 * @param attachment - the attachment to delete
 	 * @param record - the record to delete the attachment from
 	 */
-	public void removeAttachmentFromRecord(File attachment, Record record) {
+	public void removeAttachmentFromRecord(File attachment, Record record)
+	{
 		// retrieve creationTimeOffset from filename
 		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
 		// remove creationTimeOffset from column
 		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
-		if (!offsets.remove(creationTimeOffset))
-				throw new IllegalStateException("Specified attachment could not be found for deletion.");
+		if(!offsets.remove(creationTimeOffset))
+			throw new IllegalStateException("Specified attachment could not be found for deletion.");
 		((IntegerListColumn) getColumn()).storeValue(record, offsets);
 		// do not actually remove file, in case delete is not "committed" -- will be marked for deletion in FormSession
 	}
@@ -254,24 +257,30 @@ public abstract class MediaField extends Field
 	 * @param file
 	 * @return the creation time offset
 	 */
-	private long getCreationTimeOffsetFromFile(File file) {
+	private long getCreationTimeOffsetFromFile(File file)
+	{
 		String deobfuscatedName = file.getName();
-		if (form.isObfuscateMediaFiles()) // deobfuscate if necessary by rotating
+		if(form.isObfuscateMediaFiles()) // deobfuscate if necessary by rotating
 			deobfuscatedName = ROT13.rot13NumRot5(file.getName());
-		else {
+		else
+		{
 			// remove file extension before extracting creationTimeOffset (if obfuscated, name/ext separator is _ anyway)
 			int pos = deobfuscatedName.lastIndexOf(".");
-			if (pos > 0) {
+			if(pos > 0)
+			{
 				deobfuscatedName = deobfuscatedName.substring(0, pos);
 			}
 		}
 
 		// creationTimeOffset is the fourth part of the filename:
 		String[] parts = deobfuscatedName.split(Character.toString(FILENAME_ELEMENT_SEPARATOR));
-		try {
+		try
+		{
 			return Long.parseLong(parts[3]);
-		} catch (Exception e) {
-			throw new IllegalStateException("Attachment filename did not have the expected syntax: "+deobfuscatedName);
+		}
+		catch(Exception e)
+		{
+			throw new IllegalStateException("Attachment filename did not have the expected syntax: " + deobfuscatedName);
 		}
 	}
 	
@@ -298,21 +307,24 @@ public abstract class MediaField extends Field
 	 * @param record
 	 * @return the list of attachments
 	 */
-	public List<File> getAttachments(FileStorageProvider fileStorageProvider, Record record) {
+	public List<File> getAttachments(FileStorageProvider fileStorageProvider, Record record)
+	{
 		List<File> files = new ArrayList<File>();
-		List<Long> offsets = ((IntegerListColumn)getColumn()).retrieveValue(record);
-		if (offsets == null) // return an empty list
+		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
+		if(offsets == null) // return an empty list
 			return files;
 		String dir = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
 		String filename;
 		File file;
 		// for each attachment...
-		for (Long offset : offsets) {
+		for(Long offset : offsets)
+		{
 			// calculate filename from offset
 			filename = generateFilename(record, offset);
 			// locate corresponding file
 			file = new File(dir, filename);
-			if (file.exists()) {
+			if(file.exists())
+			{
 				files.add(file);
 			}
 		}
@@ -325,13 +337,14 @@ public abstract class MediaField extends Field
 	 * @param record
 	 * @return
 	 */
-	public File getLastAttachment(FileStorageProvider fileStorageProvider, Record record) {
-		List<Long> offsets = ((IntegerListColumn)getColumn()).retrieveValue(record);
-		if (offsets == null || offsets.size() < 1)
+	public File getLastAttachment(FileStorageProvider fileStorageProvider, Record record)
+	{
+		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
+		if(offsets == null || offsets.size() < 1)
 			return null;
 		String dir = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
 		String filename = generateFilename(record, offsets.get(offsets.size() - 1)); // get final offset from list
-		return new File(dir, filename);		
+		return new File(dir, filename);
 	}
 	
 	/**

@@ -55,13 +55,13 @@ import android.widget.LinearLayout;
 import android.widget.VideoView;
 
 /**
- * A subclass of AndroidMediaUI which allows for the capture and 
- * review of videos from the device's camera.
+ * A subclass of AndroidMediaUI which allows for the capture and review of videos from the device's camera.
  * 
  * @author mstevens, Michalis Vitos, benelliott
  *
  */
-public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnCompletionListener {
+public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnCompletionListener
+{
 
 	static private final String TAG = "AndroidVideoUI";
 
@@ -72,23 +72,27 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	private volatile Boolean recording = false;
 	private int playbackPosition = 0;
 
-	public AndroidVideoUI(VideoField field, CollectorController controller,	CollectorView collectorUI) {
+	public AndroidVideoUI(VideoField field, CollectorController controller, CollectorView collectorUI)
+	{
 		super(field, controller, collectorUI);
 	}
 
 	@SuppressWarnings("deprecation")
 	@Override
-	protected View getCaptureContent(Context context) {
-		if (cameraController == null) {
+	protected View getCaptureContent(Context context)
+	{
+		if(cameraController == null)
+		{
 			// Set up cameraController:
-			//	Camera controller & camera selection:
-			cameraController =
-					new CameraController(field.isUseFrontFacingCamera());
-			if (!cameraController.foundCamera()) { // no camera found, try the other one:
+			// Camera controller & camera selection:
+			cameraController = new CameraController(field.isUseFrontFacingCamera());
+			if(!cameraController.foundCamera())
+			{ // no camera found, try the other one:
 				cameraController.findCamera(!field.isUseFrontFacingCamera());
-				if (!cameraController.foundCamera()) { // still no camera, this device does not seem to have one:
+				if(!cameraController.foundCamera())
+				{ // still no camera, this device does not seem to have one:
 					attachMedia(null);
-					if (isValid(controller.getCurrentRecord()))
+					if(isValid(controller.getCurrentRecord()))
 						controller.goForward(false);
 					else
 						controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE);
@@ -107,25 +111,30 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
 
 		cameraController.startPreview();
-		
+
 		return captureSurface;
 	}
 
 	@Override
-	protected boolean onCapture() {
-		synchronized(recording) {
-			if (!recording) {
+	protected boolean onCapture()
+	{
+		synchronized(recording)
+		{
+			if(!recording)
+			{
 				// start recording
 				captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
 				cameraController.startVideoCapture(captureFile);
 				recording = true;
-			} else {
+			}
+			else
+			{
 				// stop recording
 				cameraController.stopVideoCapture();
 				// a capture has been made so show it for review:
 				attachMedia(captureFile);
 				recording = false;
-				if (field.isShowReview())
+				if(field.isShowReview())
 					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 				else
 					controller.goForward(true);
@@ -135,52 +144,58 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		return true;
 	}
 
-
 	@Override
-	protected void onDiscard() {
+	protected void onDiscard()
+	{
 		// nothing to do
 	}
 
 	@Override
-	protected View getReviewContent(Context context, File mediaFile) {
+	protected View getReviewContent(Context context, File mediaFile)
+	{
 		LinearLayout reviewLayout = new LinearLayout(context);
 		reviewLayout.setGravity(Gravity.CENTER);
 		// instantiate the thumbnail that is shown before the video is started:
 		final ImageView thumbnailView = new ImageView(context);
 		// create thumbnail from video file:
-		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(mediaFile.getAbsolutePath(),MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
+		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(mediaFile.getAbsolutePath(), MediaStore.Images.Thumbnails.FULL_SCREEN_KIND);
 		thumbnailView.setScaleType(ScaleType.FIT_CENTER);
 		thumbnailView.setImageBitmap(thumbnail);
-		
+
 		// instantiate the video view that plays the captured video:
 		playbackView = new VideoView(context);
 		playbackView.setOnCompletionListener(this);
 		playbackView.setVideoURI(Uri.fromFile(mediaFile));
 		// don't show the video view straight away - only once the thumbnail is clicked:
 		playbackView.setVisibility(View.GONE);
-		
+
 		// layout params for the thumbnail and the video view are the same:
 		LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.MATCH_PARENT);
 		reviewLayout.addView(thumbnailView, params);
 		reviewLayout.addView(playbackView, params);
 
 		// Set the video view to play or pause the video when it is touched:
-		playbackView.setOnTouchListener(new OnTouchListener() {
+		playbackView.setOnTouchListener(new OnTouchListener()
+		{
 			@Override
-			public boolean onTouch(View v, MotionEvent ev) {
+			public boolean onTouch(View v, MotionEvent ev)
+			{
 				controller.blockUI();
-				if (ev.getAction() == MotionEvent.ACTION_UP) { 
+				if(ev.getAction() == MotionEvent.ACTION_UP)
+				{
 					// only perform action when finger is lifted off screen
-					if (playbackView.isPlaying()) {
+					if(playbackView.isPlaying())
+					{
 						// if playing, pause
-						Log.d(TAG,"Pausing video...");
+						Log.d(TAG, "Pausing video...");
 						playbackPosition = playbackView.getCurrentPosition();
 						playbackView.pause();
 					}
 
-					else {
+					else
+					{
 						// if not playing, play
-						Log.d(TAG,"Playing video...");
+						Log.d(TAG, "Playing video...");
 						playbackView.seekTo(playbackPosition);
 						playbackView.start();
 					}
@@ -189,39 +204,42 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 				return true;
 			}
 		});
-		
+
 		// replace the thumbnail with the video when the thumbnail is clicked:
-		thumbnailView.setOnClickListener(new OnClickListener() {
+		thumbnailView.setOnClickListener(new OnClickListener()
+		{
 			@Override
-            public void onClick(View v) {
+			public void onClick(View v)
+			{
 				controller.blockUI();
 				thumbnailView.setVisibility(View.GONE);
 				playbackView.setVisibility(View.VISIBLE);
-	            playbackView.start();
-	            controller.unblockUI();
-            }
+				playbackView.start();
+				controller.unblockUI();
+			}
 		});
-		
+
 		return reviewLayout;
 	}
 
-
 	@Override
-	public void onCompletion(MediaPlayer mp) {
+	public void onCompletion(MediaPlayer mp)
+	{
 		// playback has finished so go back to start
 		playbackPosition = 0;
 	}
 
 	/**
-	 * If not currently recording, will return a "start recording" button. If currently recording, will return a
-	 * "stop recording" button.
+	 * If not currently recording, will return a "start recording" button. If currently recording, will return a "stop recording" button.
 	 */
 	@Override
-	protected ImageItem generateCaptureButton(Context context) { //TODO: allow for specific "video" button
+	protected ImageItem generateCaptureButton(Context context)
+	{
 		ImageItem captureButton = null;
-		if (!recording) {
+		if(!recording)
+		{
 			// recording hasn't started yet, so present "record" button
-			File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getStartRecImageRelativePath());
+			File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStartRecImageRelativePath());
 			if(FileHelpers.isReadableFile(captureImgFile))
 				// use a custom video capture image if available
 				captureButton = new FileImageItem(captureImgFile);
@@ -229,35 +247,39 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 				// otherwise just use the default resource
 				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_video_capture_svg);
 		}
-		else {
+		else
+		{
 			// recording started, so present "stop" button instead
-			File stopImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(),field.getStopRecImageRelativePath());
+			File stopImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStopRecImageRelativePath());
 			if(FileHelpers.isReadableFile(stopImgFile))
 				captureButton = new FileImageItem(stopImgFile);
 			else
-				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_stop_audio_svg); //TODO video
+				captureButton = new ResourceImageItem(context.getResources(), R.drawable.button_stop_audio_svg);
 		}
 		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		return captureButton;
 	}
 
-	
 	@Override
-	protected Item getItemFromFile(File file) {
+	protected Item getItemFromFile(File file)
+	{
 		return new VideoItem(file);
 	}
 
 	@Override
-	protected void cancel() {
+	protected void cancel()
+	{
 		super.cancel();
-		synchronized(recording) {
+		synchronized(recording)
+		{
 			recording = false;
-			if(cameraController != null) {
+			if(cameraController != null)
+			{
 				cameraController.close();
 			}
 		}
 		cameraController = null;
-		
+
 		playbackView = null;
 	}
 }

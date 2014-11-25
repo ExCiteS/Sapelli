@@ -188,8 +188,9 @@ public class FormSession
 	 * Adds a file to the list of attachments added in this form session.
 	 * @param file
 	 */
-	public void addAttachment(File file) {
-		if (addedAttachments == null)
+	public void addAttachment(File file)
+	{
+		if(addedAttachments == null)
 			addedAttachments = new ArrayList<File>();
 		addedAttachments.add(file);
 	}
@@ -198,8 +199,9 @@ public class FormSession
 	 * Adds a file to the list of attachments deleted in this form session.
 	 * @param file
 	 */
-	public void discardAttachment(File file) {
-		if (discardedAttachments == null)
+	public void discardAttachment(File file)
+	{
+		if(discardedAttachments == null)
 			discardedAttachments = new ArrayList<File>();
 		discardedAttachments.add(file);
 	}
@@ -207,9 +209,11 @@ public class FormSession
 	/**
 	 * Deletes all attachments that were in the "discarded" list.
 	 */
-	public void deleteDiscardedAttachments() {
-		if (discardedAttachments != null) {
-			for (File file : discardedAttachments)
+	public void deleteDiscardedAttachments()
+	{
+		if(discardedAttachments != null)
+		{
+			for(File file : discardedAttachments)
 				file.delete();
 		}
 		discardedAttachments = null;
@@ -218,19 +222,23 @@ public class FormSession
 	/**
 	 * Deletes all attachments that were in the "added" list.
 	 */
-	public void deleteAddedAttachments() {
-		if (addedAttachments != null) {
-			for (File file : addedAttachments)
+	public void deleteAddedAttachments()
+	{
+		if(addedAttachments != null)
+		{
+			for(File file : addedAttachments)
 				file.delete();
 		}
 		addedAttachments = null;
 	}
 	
-	public void clearDiscardedAttachments() {
+	public void clearDiscardedAttachments()
+	{
 		discardedAttachments = null;
 	}
-	
-	public void clearAddedAttachments() {
+
+	public void clearAddedAttachments()
+	{
 		addedAttachments = null;
 	}
 }
