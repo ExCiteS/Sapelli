@@ -20,7 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.load;
 
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor;
-import uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask;
+import uk.ac.ucl.excites.sapelli.collector.load.process.TTVSynthesisTask;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 import android.content.Context;
@@ -55,7 +55,7 @@ public class AndroidPostProcessor implements PostProcessor
 	 * @see uk.ac.ucl.excites.sapelli.collector.load.process.PostProcessor#execute(uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask, uk.ac.ucl.excites.sapelli.collector.model.Project, uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper)
 	 */
 	@Override
-	public void execute(TTSSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception
+	public void execute(TTVSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception
 	{
 		if (ttv == null)
 			ttv = new TextToVoice(context);
@@ -79,9 +79,11 @@ public class AndroidPostProcessor implements PostProcessor
 	 * Frees any resources that were being used by the PostProcessor
 	 */
 	@Override
-	public void freeResources() {	
+	public void freeResources()
+	{
 		// destroy TTS engine:
-		if (ttv != null) {
+		if(ttv != null)
+		{
 			ttv.destroy();
 			ttv = null;
 		}

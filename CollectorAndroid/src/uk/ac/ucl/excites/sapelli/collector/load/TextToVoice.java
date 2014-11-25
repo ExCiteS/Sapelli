@@ -12,16 +12,15 @@ import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 
 /**
- * Class that uses the Android TTS (Text-To-Speech) Engine to synthesise a string to a (WAV) file. This class is a synchronous
- * abstraction of Android's asynchronous TTS API - when an object of this type is instantiated or a call is made to synthesise a file
- * the calling thread will block (!) until the job is finished. This class should therefore not be instantiated or used on the main
- * thread or the UI will become unresponsive.
+ * Class that uses the Android TTS (Text-To-Speech) Engine to synthesise a string to a (WAV) file. This class is a synchronous abstraction of Android's
+ * asynchronous TTS API - when an object of this type is instantiated or a call is made to synthesise a file the calling thread will block (!) until the job is
+ * finished. This class should therefore not be instantiated or used on the main thread or the UI will become unresponsive.
  * 
  * 
  * @author Michalis Vitos, benelliott
  *
  */
-public class TextToVoice  implements TextToSpeech.OnInitListener
+public class TextToVoice implements TextToSpeech.OnInitListener
 {
 	private static final String TAG = "TextToVoice";
 	private Context context;
@@ -30,44 +29,50 @@ public class TextToVoice  implements TextToSpeech.OnInitListener
 	private TextToSpeech tts;
 	private Semaphore ttvInitialised;
 	private Semaphore ttvJobComplete;
-	
+
 	public TextToVoice(Context context)
 	{
-		this.context = context;		
+		this.context = context;
 		setupTTS();
 	}
-	
+
 	/**
-	 * Synchronous method that blocks the calling thread until the text-to-speech engine has been fully initialised (!).
-	 * Thus assumes that the calling thread is not the UI thread.
+	 * Synchronous method that blocks the calling thread until the text-to-speech engine has been fully initialised (!). Thus assumes that the calling thread is
+	 * not the UI thread.
 	 */
 	@SuppressWarnings("unused")
-    private void setupTTS() {
+	private void setupTTS()
+	{
 		// set up initialisation semaphore so thread blocks waiting for TTS init (else jobs will fail)
-		if (ttvInitialised == null)
+		if(ttvInitialised == null)
 			ttvInitialised = new Semaphore(0);
 		// instantiate TTS engine and subscribe to updates as to when it is ready:
 		tts = new TextToSpeech(context, this);
 		// set up listener for when synthesis jobs complete (pre-API 15 listener is now deprecated):
-		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1 /* 15 */) {
+		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1 /* 15 */)
+		{
 			Log.d(TAG, ">= 15 build version detected");
 			UtteranceListener15Plus utteranceListener = new UtteranceListener15Plus(tts);
-		} else {
+		}
+		else
+		{
 			Log.d(TAG, "< 15 build version detected");
 			UtteranceListenerSub15 utteranceListener = new UtteranceListenerSub15(tts);
 		}
-		
-		try {
+
+		try
+		{
 			// block calling thread until the TTS engine is initialised:
-	        ttvInitialised.acquire();
-        } catch (InterruptedException e) {
-	        e.printStackTrace();
-        }
+			ttvInitialised.acquire();
+		}
+		catch(InterruptedException e)
+		{
+			e.printStackTrace();
+		}
 	}
 
 	/**
-	 * Called when the text-to-speech engine is initialised. Releases the thread that started the 
-	 * initialisation if the engine reports success.
+	 * Called when the text-to-speech engine is initialised. Releases the thread that started the initialisation if the engine reports success.
 	 */
 	@Override
 	public void onInit(int status)
@@ -78,62 +83,71 @@ public class TextToVoice  implements TextToSpeech.OnInitListener
 	}
 
 	/**
-	 * Synchronous method that dispatches a text synthesis job to the TTS engine
-	 * and then blocks the calling thread until synthesis is finished (!). Assumes that the calling thread
-	 * is thus *not* the UI thread.
+	 * Synchronous method that dispatches a text synthesis job to the TTS engine and then blocks the calling thread until synthesis is finished (!). Assumes
+	 * that the calling thread is thus *not* the UI thread.
 	 * 
-	 * @param text - the text to synthesise into speech
-	 * @param filepath - the path of the file into which the speech audio should be stored
+	 * @param text
+	 *            - the text to synthesise into speech
+	 * @param filepath
+	 *            - the path of the file into which the speech audio should be stored
 	 * @return whether or not the language was successfully changed
 	 */
-	public void processSpeechToFile(String text, String filepath, String languageCode) throws TTVSynthesisFailedException, TTVUnsupportedLanguageException {
-		if (tts == null)
+	public void processSpeechToFile(String text, String filepath, String languageCode) throws TTVSynthesisFailedException, TTVUnsupportedLanguageException
+	{
+		if(tts == null)
 			setupTTS();
-		
+
 		if(text == null || "".equals(text))
 			throw new TTVSynthesisFailedException("(No text provided)");
 
 		// only proceed if able to set language to that specified:
 		setNewLanguage(languageCode);
-		
-			// instantiate semaphore so we can wait for the job to complete:
-			if (ttvJobComplete == null)
-				ttvJobComplete = new Semaphore(0);
-			
-			// TODO the method signature for TextToSpeech#synthesizeToFile changed in API 21 / Lollipop. 
-			// Check build version here when SDK is updated to include level 21 and call the new version if appropriate:
-			
-			// set params of synthesis job by creating a hash table:
-			HashMap<String, String> params = new HashMap<String, String>();
-			// use text to be synthesised as "utterance ID" for job:
-			params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
-			if (tts.synthesizeToFile(text, params, filepath) == TextToSpeech.ERROR)
-				throw new TTVSynthesisFailedException(text);
-			try {
-				// block thread until synthesis job completes:
-		        ttvJobComplete.acquire();
-	        } catch (InterruptedException e) {
-		        e.printStackTrace();
-	        }
+
+		// instantiate semaphore so we can wait for the job to complete:
+		if(ttvJobComplete == null)
+			ttvJobComplete = new Semaphore(0);
+
+		// TODO the method signature for TextToSpeech#synthesizeToFile changed in API 21 / Lollipop.
+		// Check build version here when SDK is updated to include level 21 and call the new version if appropriate:
+
+		// set params of synthesis job by creating a hash table:
+		HashMap<String, String> params = new HashMap<String, String>();
+		// use text to be synthesised as "utterance ID" for job:
+		params.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, text);
+		if(tts.synthesizeToFile(text, params, filepath) == TextToSpeech.ERROR)
+			throw new TTVSynthesisFailedException(text);
+		try
+		{
+			// block thread until synthesis job completes:
+			ttvJobComplete.acquire();
+		}
+		catch(InterruptedException e)
+		{
+			e.printStackTrace();
+		}
 	}
-	
+
 	/**
 	 * Sets the TTS engine's language to the one specified by the provided language code.
-	 * @param languageCode-  the language code in BCP-47 format
-	 * TODO throws
+	 * 
+	 * @param languageCode
+	 *            - the language code in BCP-47 format TODO throws
 	 */
-	private void setNewLanguage(String languageCode) throws TTVUnsupportedLanguageException {
+	private void setNewLanguage(String languageCode) throws TTVUnsupportedLanguageException
+	{
 		// only parse code again if it has changed between TTS jobs:
-		if (!previousLanguageCode.equals(languageCode) || locale == null) {
+		if(!previousLanguageCode.equals(languageCode) || locale == null)
+		{
 			// All the locale parsing stuff was only added in API 21 :'(
-			
+
 			// set previous language code to new one:
 			previousLanguageCode = languageCode;
-			
+
 			// split language code by "-":
 			String[] subtags = languageCode.split("-");
-			
-			if (subtags.length > 0) {
+
+			if(subtags.length > 0)
+			{
 				// Try to make a locale from this, and let Android reject it later if any component is not valid
 				// (it might not support valid languages anyway) :
 				locale = new Locale(
@@ -143,10 +157,11 @@ public class TextToVoice  implements TextToSpeech.OnInitListener
 						subtags.length > 1 ? subtags[1] : "",
 						// variant:
 						subtags.length > 2 ? subtags[2] : "");
-			} else
+			}
+			else
 				// invalid language code (empty after splitting)
 				throw new TTVUnsupportedLanguageException(languageCode);
-			
+
 			int result = tts.setLanguage(locale);
 
 			// If the locale is missing, report error
@@ -155,19 +170,18 @@ public class TextToVoice  implements TextToSpeech.OnInitListener
 		}
 		// else don't need to change locale
 	}
-	
+
 	/**
-	 * Called when the text-to-speech engine completes the synthesis of a job,
-	 * identified by the text that the job was synthesising. Unblock the job dispatching
+	 * Called when the text-to-speech engine completes the synthesis of a job, identified by the text that the job was synthesising. Unblock the job dispatching
 	 * thread so it can process the next job.
 	 * 
 	 * @param synthesisText - the text that was successfully synthesised.
 	 */
-	private void onTTSJobCompleted(String synthesisText) {
-		Log.d(TAG, "Completed synthesis for text: "+synthesisText);
+	private void onTTSJobCompleted(String synthesisText)
+	{
+		Log.d(TAG, "Completed synthesis for text: " + synthesisText);
 		ttvJobComplete.release();
 	}
-	
 
 	/**
 	 * Release and nullify the text-to-speech engine.
@@ -175,60 +189,67 @@ public class TextToVoice  implements TextToSpeech.OnInitListener
 	public void destroy()
 	{
 		if(tts != null)
-		{	tts.stop();
+		{
+			tts.stop();
 			tts.shutdown();
 			tts = null;
 		}
 	}
-	
+
 	/**
-	 * Text-to-speech synthesis listener for devices with an API level of 15 or above.
-	 * API level 15 introduced a more detailed "progress listener" that reports commencement
-	 * and failure of a synthesis job rather than just completion.
+	 * Text-to-speech synthesis listener for devices with an API level of 15 or above. API level 15 introduced a more detailed "progress listener" that reports
+	 * commencement and failure of a synthesis job rather than just completion.
 	 * 
 	 * @author benelliott
 	 */
 	@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1)
-    private class UtteranceListener15Plus extends UtteranceProgressListener
+	private class UtteranceListener15Plus extends UtteranceProgressListener
 	{
 
-		public UtteranceListener15Plus(TextToSpeech tts) {
+		public UtteranceListener15Plus(TextToSpeech tts)
+		{
 			tts.setOnUtteranceProgressListener(this);
-        }
-		
-		@Override
-        public void onStart(String utteranceId) {
-	        Log.d(TAG, "Started processing text: "+utteranceId);
-        }
+		}
 
 		@Override
-        public void onDone(String utteranceId) {
-	        onTTSJobCompleted(utteranceId);
-        }
+		public void onStart(String utteranceId)
+		{
+			Log.d(TAG, "Started processing text: " + utteranceId);
+		}
 
 		@Override
-        public void onError(String utteranceId) {
-	        Log.e(TAG, "Error processing text: "+utteranceId);	        
-        }
-		
+		public void onDone(String utteranceId)
+		{
+			onTTSJobCompleted(utteranceId);
+		}
+
+		@Override
+		public void onError(String utteranceId)
+		{
+			Log.e(TAG, "Error processing text: " + utteranceId);
+		}
+
 	}
-	
+
 	/**
 	 * Text-to-speech synthesis listener for devices with an API level below 15.
 	 * 
 	 * @author benelliott
 	 */
 	@SuppressWarnings("deprecation")
-    private class UtteranceListenerSub15 implements android.speech.tts.TextToSpeech.OnUtteranceCompletedListener {
-		
-		public UtteranceListenerSub15(TextToSpeech tts) {
+	private class UtteranceListenerSub15 implements android.speech.tts.TextToSpeech.OnUtteranceCompletedListener
+	{
+
+		public UtteranceListenerSub15(TextToSpeech tts)
+		{
 			tts.setOnUtteranceCompletedListener(this);
 		}
 
 		@Override
-        public void onUtteranceCompleted(String utteranceId) {
+		public void onUtteranceCompleted(String utteranceId)
+		{
 			onTTSJobCompleted(utteranceId);
-        }
-		
+		}
+
 	}
 }

@@ -44,7 +44,7 @@ public interface PostProcessor
 	 * @param warningKeeper
 	 * @throws Exception
 	 */
-	public void execute(TTSSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception;
+	public void execute(TTVSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception;
 	
 	/**
 	 * Free any resources used by the post-processor.

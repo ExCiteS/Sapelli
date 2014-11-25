@@ -25,7 +25,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
  * @author mstevens
  *
  */
-public class TTSSynthesisTask implements PostProcessTask
+public class TTVSynthesisTask implements PostProcessTask
 {
 	
 	private String language;
@@ -36,7 +36,7 @@ public class TTSSynthesisTask implements PostProcessTask
 	 * @param textToSynthesise
 	 * @param audioFileRelativePath
 	 */
-	public TTSSynthesisTask(String textToSynthesise, String audioFileRelativePath, String language)
+	public TTVSynthesisTask(String textToSynthesise, String audioFileRelativePath, String language)
 	{
 		this.textToSynthesise = textToSynthesise;
 		this.audioFileRelativePath = audioFileRelativePath;

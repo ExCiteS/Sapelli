@@ -475,13 +475,14 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	protected List<AudioFeedbackController<View>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
 	{
 		List<AudioFeedbackController<View>.PlaybackJob> playlist;
-		switch (audioFeedbackMode) {
+		switch(audioFeedbackMode)
+		{
 		case LONG_CLICK:
 			// just play question description when entering choice field:
 			playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>(); // do not use singletonList as list should be mutable
 			playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getAnswerDescriptionAudioRelativePath()));
 			return playlist;
-			
+
 		case SEQUENTIAL:
 			// create a playlist that includes firstly the question description and then each answer description:
 			playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>();
@@ -489,17 +490,18 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getDescriptionAudioRelativePath()));
 			// answer descriptions:
 			List<ChoiceField> children = field.getChildren();
-			for (int i = 0; i < children.size(); i++) {
+			for(int i = 0; i < children.size(); i++)
+			{
 				// enqueue each answer:
-				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(children.get(i).getAnswerDescriptionAudioRelativePath(), choiceView.getChildAt(i)));
+				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(children.get(i).getAnswerDescriptionAudioRelativePath(), choiceView
+						.getChildAt(i)));
 			}
-			
+
 			return playlist;
-			
+
 		default:
 			// should never get here since this method is only called if audio feedback is enabled
 			return null;
-			
 		}
 	}
 }

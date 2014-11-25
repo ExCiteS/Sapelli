@@ -26,7 +26,7 @@ import java.util.Stack;
 import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
-import uk.ac.ucl.excites.sapelli.collector.load.process.TTSSynthesisTask;
+import uk.ac.ucl.excites.sapelli.collector.load.process.TTVSynthesisTask;
 import uk.ac.ucl.excites.sapelli.collector.media.MediaHelpers;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
@@ -823,7 +823,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	 */
 	private String newTTSSynthesisTask(String textToSpeak, String relativeSoundFilePath, String synthesisLanguage)
 	{
-		owner.addPostProcessingTask(new TTSSynthesisTask(textToSpeak, relativeSoundFilePath, synthesisLanguage));
+		owner.addPostProcessingTask(new TTVSynthesisTask(textToSpeak, relativeSoundFilePath, synthesisLanguage));
 		return relativeSoundFilePath;
 	}
 	
