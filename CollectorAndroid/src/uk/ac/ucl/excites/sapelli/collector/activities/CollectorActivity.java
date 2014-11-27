@@ -291,7 +291,7 @@ public class CollectorActivity extends ProjectActivity
 		if(controller.isUIBlocked())
 		{
 			controller.addLogLine("BLOCKED_MOTION_EVENT", event.toString());
-			return false;
+			return true;
 		}
 		else
 		{
