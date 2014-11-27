@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import android.os.Handler;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
@@ -73,7 +74,7 @@ public class ClickAnimator
 			public void onAnimationEnd(Animation animation)
 			{
 				// Run the task on the main thread
-				controller.activity.runOnUiThread(taskAfterAnimation);
+				new Handler().post(taskAfterAnimation);
 
 				// Unblock the UI
 				controller.unblockUI();
