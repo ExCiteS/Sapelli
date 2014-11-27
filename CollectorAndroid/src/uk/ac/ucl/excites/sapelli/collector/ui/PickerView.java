@@ -108,11 +108,13 @@ public class PickerView extends GridView
 		public void addItem(Item item)
 		{
 			items.add(item);
+			notifyDataSetChanged();
 		}
 		
 		public void clear()
 		{
 			items.clear();
+			notifyDataSetChanged();
 		}
 
 		@Override
