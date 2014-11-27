@@ -18,13 +18,11 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
-import uk.ac.ucl.excites.sapelli.collector.ui.FontFitTextView;
-import uk.ac.ucl.excites.sapelli.collector.ui.FontFitTextView.TextSizeCoordinator;
+import uk.ac.ucl.excites.sapelli.collector.ui.FontFitSurfaceView;
+import uk.ac.ucl.excites.sapelli.collector.ui.FontFitSurfaceView.TextSizeCoordinator;
 import android.content.Context;
 import android.graphics.Color;
-import android.view.Gravity;
 import android.view.View;
-import android.widget.TextView;
 
 /**
  * An Item with Text rendered at a font size that fit the item bounds, possibly coordinated across other items/views
@@ -106,10 +104,8 @@ public class TextItem extends Item
 	@Override
 	protected View createView(Context context, boolean recycleChildren)
 	{
-		TextView txtView = new FontFitTextView(context, textSizeCoordinator, coordinatorSlot);
+		FontFitSurfaceView txtView = new FontFitSurfaceView(context, textSizeCoordinator, coordinatorSlot);
 		txtView.setTextColor(textColor);
-		txtView.setGravity(Gravity.CENTER_VERTICAL | Gravity.CENTER_HORIZONTAL);
-		//txtView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
 		txtView.setText(text);
 		return txtView;
 	}
