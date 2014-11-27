@@ -18,10 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import android.os.Handler;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationSet;
 import android.view.animation.ScaleAnimation;
 
@@ -31,55 +33,16 @@ import android.view.animation.ScaleAnimation;
  * @author Michalis Vitos, mstevens
  *
  */
-public class ClickAnimator extends Animator
+public class ClickAnimator
 {
-
 	public static final int DURATION = 400; // ms
 	
-	/**
-	 * @param taskAfterAnimation (may be null)
-	 * @param animateView
-	 * @param controller when not null controller is used to block entire UI during animation
-	 */
-	public ClickAnimator(Runnable taskAfterAnimation, View animateView, Controller controller)
+	public static void animate(final Runnable taskAfterAnimation, View clickView, final CollectorController controller)
 	{
-		this(DURATION, taskAfterAnimation, animateView, controller);
-	}
-	
-	/**
-	 * @param duration
-	 * @param taskAfterAnimation (may be null)
-	 * @param animateView
-	 * @param controller when not null controller is used to block entire UI during animation 
-	 */
-	public ClickAnimator(long duration, Runnable taskAfterAnimation, View animateView, Controller controller)
-	{
-		super(duration, taskAfterAnimation, animateView, controller);
-	}
-	
-	/**
-	 * @param taskAfterAnimation (may be null)
-	 * @param animateView
-	 * @param blockView specific view to block during animation (may be null)
-	 */
-	public ClickAnimator(Runnable taskAfterAnimation, View animateView, View blockView)
-	{
-		this(DURATION, taskAfterAnimation, animateView, blockView);
-	}
-	
-	/**
-	 * @param duration
-	 * @param taskAfterAnimation (may be null)
-	 * @param animateView
-	 * @param blockView specific view to block during animation (may be null)
-	 */
-	public ClickAnimator(long duration, Runnable taskAfterAnimation, View animateView, View blockView)
-	{
-		super(duration, taskAfterAnimation, animateView, blockView);
+		animate(DURATION, taskAfterAnimation, clickView, controller);
 	}
 
-	@Override
-	protected AnimationSet getAnimationSet()
+	public static void animate(long duration, final Runnable taskAfterAnimation, View clickView, final CollectorController controller)
 	{
 		// Set the alpha level of the object
 		AlphaAnimation alpha = new AlphaAnimation((float) 1.0, (float) 0.5);
@@ -93,8 +56,31 @@ public class ClickAnimator extends Animator
 		AnimationSet animationSet = new AnimationSet(true);
 		animationSet.addAnimation(alpha);
 		animationSet.addAnimation(scale);
-		
-		return animationSet;
-	}
 
+		// Set up listeners for the animation
+		animationSet.setAnimationListener(new AnimationListener()
+		{
+			@Override
+			public void onAnimationStart(Animation animation)
+			{
+				// Block the UI
+				controller.blockUI();
+			}
+
+			@Override
+			public void onAnimationRepeat(Animation animation) {}
+
+			@Override
+			public void onAnimationEnd(Animation animation)
+			{
+				// Run the task on the main thread
+				new Handler().post(taskAfterAnimation);
+
+				// Unblock the UI
+				controller.unblockUI();
+			}
+		});
+
+		clickView.startAnimation(animationSet);
+	}
 }
