@@ -290,12 +290,12 @@ public class CollectorActivity extends ProjectActivity
 			return false; // just in case...
 		if(controller.isUIBlocked())
 		{
-			controller.addLogLine("BLOCKED_MOTION_EVENT", event.toString());
-			return false;
+			// controller.addLogLine("BLOCKED_MOTION_EVENT", event.toString());
+			return true;
 		}
 		else
 		{
-			controller.addLogLine("DISPATCHED_MOTION_EVENT", event.toString());
+			// controller.addLogLine("DISPATCHED_MOTION_EVENT", event.toString());
 			return super.dispatchTouchEvent(event);
 		}
 	}
