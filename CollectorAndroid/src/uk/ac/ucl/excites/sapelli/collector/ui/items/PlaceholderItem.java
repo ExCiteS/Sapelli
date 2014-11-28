@@ -36,9 +36,10 @@ public class PlaceholderItem extends Item
 	}
 	
 	@Override
-	public void setVisibility(boolean visible)
+	public Item setVisibility(boolean visible)
 	{
 		//do nothing (placeholder can never be visible)
+		return this;
 	}
 
 	@Override

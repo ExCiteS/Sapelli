@@ -232,14 +232,18 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		public void setStartVisibility(boolean visible)
 		{
 			PickerAdapter adapter = getAdapter();
-			adapter.getItem(BUTTON_INDEX_START).setVisibility(visible);
+			Item startItem = adapter.getItem(BUTTON_INDEX_START);
+			if(startItem != null)
+				startItem.setVisibility(visible);
 			setAdapter(adapter); //this does not seem to be needed on Android 4.x, but it is needed on v2.3.x (TODO test if it is really so)
 		}
 		
 		public void setStopVisibility(boolean visible)
 		{
 			PickerAdapter adapter = getAdapter();
-			adapter.getItem(BUTTON_INDEX_STOP).setVisibility(visible);
+			Item stopItem = adapter.getItem(BUTTON_INDEX_STOP);
+			if(stopItem != null)
+				stopItem.setVisibility(visible);
 			setAdapter(adapter); // this does not seem to be needed on Android 4.x, but it is needed on v2.3.x (TODO test if it is really so)
 		}
 

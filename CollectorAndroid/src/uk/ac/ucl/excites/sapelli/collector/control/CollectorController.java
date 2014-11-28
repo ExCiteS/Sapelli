@@ -378,13 +378,14 @@ public class CollectorController extends Controller implements LocationListener,
 		if(getCurrentForm().isClickAnimation())
 		{
 			// execute animation and the action afterwards
-			ClickAnimator.animate(action, clickView, this);
+			ClickAnimator.Animate(action, clickView, this);
 		}
 		else
 		{
 			// Block the UI before running the action and unblock it afterwards
 			blockUI();
-			action.run();
+			if(action != null)
+				action.run();
 			unblockUI();
 		}
 	}

@@ -18,7 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+
 import android.os.Handler;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
@@ -33,16 +34,28 @@ import android.view.animation.ScaleAnimation;
  * @author Michalis Vitos, mstevens
  *
  */
-public class ClickAnimator
+public final class ClickAnimator
 {
+	
 	public static final int DURATION = 400; // ms
 	
-	public static void animate(final Runnable taskAfterAnimation, View clickView, final CollectorController controller)
+	/**
+	 * @param taskAfterAnimation (may be null)
+	 * @param clickView
+	 * @param controller pass non-null Controller in order to block UI during animation, when null no UI blocking will happen
+	 */
+	public static void Animate(Runnable taskAfterAnimation, View clickView, Controller controller)
 	{
-		animate(DURATION, taskAfterAnimation, clickView, controller);
+		Animate(DURATION, taskAfterAnimation, clickView, controller);
 	}
 
-	public static void animate(long duration, final Runnable taskAfterAnimation, View clickView, final CollectorController controller)
+	/**
+	 * @param duration
+	 * @param taskAfterAnimation (may be null)
+	 * @param clickView
+	 * @param controller pass non-null Controller in order to block UI during animation, when null no UI blocking will happen
+	 */
+	public static void Animate(long duration, final Runnable taskAfterAnimation, View clickView, final Controller controller)
 	{
 		// Set the alpha level of the object
 		AlphaAnimation alpha = new AlphaAnimation((float) 1.0, (float) 0.5);
@@ -57,14 +70,15 @@ public class ClickAnimator
 		animationSet.addAnimation(alpha);
 		animationSet.addAnimation(scale);
 
-		// Set up listeners for the animation
+		// Set up listener for the animation:
 		animationSet.setAnimationListener(new AnimationListener()
 		{
 			@Override
 			public void onAnimationStart(Animation animation)
 			{
 				// Block the UI
-				controller.blockUI();
+				if(controller != null)
+					controller.blockUI();
 			}
 
 			@Override
@@ -73,14 +87,23 @@ public class ClickAnimator
 			@Override
 			public void onAnimationEnd(Animation animation)
 			{
-				// Run the task on the main thread
-				new Handler().post(taskAfterAnimation);
+				// Run the task on the main/UI thread
+				if(taskAfterAnimation != null)
+					new Handler().post(taskAfterAnimation);
 
 				// Unblock the UI
-				controller.unblockUI();
+				if(controller != null)
+					controller.unblockUI();
 			}
 		});
 
+		// Run the animation:
 		clickView.startAnimation(animationSet);
 	}
+	
+	private ClickAnimator()
+	{
+		// should never be instantiated
+	}
+	
 }

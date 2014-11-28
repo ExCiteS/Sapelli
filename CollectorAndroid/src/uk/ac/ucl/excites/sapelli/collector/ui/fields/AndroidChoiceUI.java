@@ -319,7 +319,11 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			int c = 0;
 			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
-				adapter.getItem(c++).setVisibility(controller.isFieldEnabled(child));
+			{
+				Item childItem = adapter.getItem(c++);
+				if(childItem != null)
+					childItem.setVisibility(controller.isFieldEnabled(child));
+			}
 			setAdapter(adapter);
 		}
 		
