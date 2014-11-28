@@ -27,7 +27,6 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
 import uk.ac.ucl.excites.sapelli.shared.db.db4o.DB4OConnector;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
@@ -120,94 +119,87 @@ public class DB4ORecordStore extends RecordStore
 	}
 	
 	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStore(uk.ac.ucl.excites.sapelli.storage.model.Record)
+	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doStore(uk.ac.ucl.excites.sapelli.storage.model.Record, int)
 	 */
 	@Override
-	protected Boolean doStore(Record record) throws DBException, IllegalStateException
+	protected int doStore(Record record, int action) throws DBException, IllegalStateException
 	{
-		return doStore(record, true);
-	}
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStore#doInsert(uk.ac.ucl.excites.sapelli.storage.model.Record)
-	 */
-	@Override
-	protected boolean doInsert(Record record) throws DBPrimaryKeyException, DBException, IllegalStateException
-	{
-		Boolean inserted = doStore(record, false);
-		if(inserted == null)
-			return false; // record was already stored with identical values
-		if(inserted) // new record was inserted
-			return true;
-		else // record existed and would have been UPDATEd if it were allowed 
-			throw new DBPrimaryKeyException("This record already exists in the record store (with different values).");
-	}
-	
-	/**
-	 * @param record
-	 * @param updateAllowed whether or not updates are allowed
-	 * @return whether the record was new (i.e. it was INSERTed; returns {@code true}); was, or would have been if allowed, modified (i.e. it was UPDATEd; returns {@code false}); or neither (i.e. the exact same record was already stored; returns {@code null})
-	 * @throws DBException
-	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
-	 */
-	private Boolean doStore(Record record, boolean updateAllowed) throws DBException, IllegalStateException
-	{
+		// Get auto-incrementing ID column (if there is one):
+		IntegerColumn autoIncrIDColumn = record.getSchema().getAutoIncrementingPrimaryKeyColumn();
+		
 		try
 		{
-			// Get auto-incrementing ID column (if there is one):
-			IntegerColumn autoIncrIDColumn;
-			if(record.getSchema().getPrimaryKey() instanceof AutoIncrementingPrimaryKey)
-				autoIncrIDColumn = ((AutoIncrementingPrimaryKey) record.getSchema().getPrimaryKey()).getColumn();
-			else
-				autoIncrIDColumn = null;
 			// Get ExtObjectContainer:
 			ExtObjectContainer extDB4O = db4o.ext();
 			
+			// Variable to hold the Record instance which will be passed to db4o.store() below (provided that INSERT or UPDATE are allowed)
+			Record toBeStored = record; // will remain unchanged in INSERT-case and UPDATE_case-1, but not in UPDATE-case-2
+			
 			// Try to find a previously stored version of the record:
 			Record previouslyStored = null;
-			// Check if the exact same (i.e. pointer-equal) record object is already in DB4O...
+			// 	Check if the exact same (i.e. pointer-equal) record object is already in DB4O...
 			if(extDB4O.isStored(record))
 			{	// Yes it is (but not necessarily with the same values), get the stored version:
 				previouslyStored = extDB4O.peekPersisted(record, ACTIVATION_DEPTH, isInTransaction());
-				// We call this UPDATE-CASE-1
+				// Note: object returned by peekPersisted() is *not* "known" to the database (extDB4O.isStored(previouslyStored) would return false)
+				// We call this UPDATE-case-1
 			}
-			else // No it isn't, but perhaps there is a previously stored record with the same primary key value(s):
-				if(autoIncrIDColumn == null || autoIncrIDColumn.isValueSet(record))
+			// No it isn't, but perhaps there is a previously stored record with the same primary key value(s):
+			else if(autoIncrIDColumn == null || autoIncrIDColumn.isValueSet(record))
 			{
-				previouslyStored = retrieveRecord(record.getRecordQuery()); // (may be null if there is no matching record)
-				// if previouslyStored is now != null than we are we call this UPDATE-CASE-2
+				previouslyStored = retrieveRecord(record.getRecordQuery()); // will throw IllegalStateException if (part of) the non-autoIncrementing PK has not been set
+				if(previouslyStored != null)
+				{	// We call this UPDATE-case-2
+					// Note: the retrieved record *is* "known" to the database (extDB4O.isStored(previouslyStored) would return true) ...
+					toBeStored = previouslyStored; // ... hence this is the one we must pass to db4o.store() below (if UPDATEs are allowed)
+				}
+				//else: there was no matching record -> this is an INSERT-case
 			}
+			// Deal with autoIncrementing PK...
 			else
-			{	// This is INSERT case, and there is an autoIncrementing PK which has not been set, so we must set the key value:
+			{	// This is an INSERT-case, and there is an autoIncrementing PK which has not been set, so we must set the key value:
 				// Set auto-incrementing id:
 				autoIncrIDColumn.storeValue(record, autoIncrementDict.getNextID(record.getSchema()));
 				// Store the dictionary:
 				db4o.store(autoIncrementDict);
 			}
 			
-			if(previouslyStored != null)
-			{
-				// Check if there are changes at all...
-				if(record == previouslyStored || record.hasEqualValues(previouslyStored))
-				{
-					return null; // no changes (so neither an INSERT nor an UPDATE must happen)
-				}
-				// If update allowed & we are in UPDATE-CASE-2 (in which previousRecord is known by DB4O)...
-				else if(updateAllowed && extDB4O.isStored(previouslyStored))
-				{	// update values of previousRecord ...
-					for(Column<?> col : record.getSchema().getColumns(false)) 
-						col.storeObject(previouslyStored, col.retrieveValue(record));
-					// and make it the record that is passed to db4o.store() to be UPDATEd in the database:
-					record = previouslyStored;
-				}
-				// else: update is not allowed, OR we are in UPDATE-CASE-1 meaning record is an object known to DB4O which can thus be passed to db4o.store()
+			// INSERT or UPDATE?
+			boolean insert = previouslyStored == null;
+			
+			// Check if INSERT or UPDATE are need at all...
+			if(	!insert && // this is an UPDATE-case-x ...
+				record.hasEqualValues(previouslyStored, Collections.singleton(Schema.COLUMN_LAST_STORED_AT))) // (ignore LSA!)
+			{	// ... but in fact there are no changes ...
+				return RESULT_NEEDED_NO_ACTION; // ... so neither an INSERT nor an UPDATE must happen.
 			}
 			
-			// Insert, or update (i.e. replace; when allowed) the record:
-			boolean insert = previouslyStored == null;
-			if(insert || updateAllowed)
-				db4o.store(record);
-			return insert;
+			// An actual INSERT or UPDATE is needed, but is that allowed?
+			if(insert ? action == ACTION_INSERT_OR_UPDATE || action == ACTION_INSERT_ONLY :
+						action != ACTION_INSERT_ONLY)
+			{	// Yes, we are allowed to either INSERT or UPDATE... 
+				
+				// Set/update LSA on the given Record instance (if record != toBeStored it will be copied below)
+				if(action != ACTION_UPDATE_ONLY_EXCEPT_LSA)
+					setLastStoredAt(record, Now());
+				
+				// Update values of toBeStored when necessary...
+				if(toBeStored != record) // i.e. in UPDATE-case-2
+				{	// Update values of toBeStored (which is = previouslyStored) to match those of the given record ...
+					for(Column<?> col : record.getSchema().getColumns(false))
+						if(col != Schema.COLUMN_LAST_STORED_AT || action != ACTION_UPDATE_ONLY_EXCEPT_LSA)
+							col.storeObject(toBeStored, col.retrieveValue(record));
+					// Note:
+					//	We don't copy LSA form record for ACTION_UPDATE_ONLY_EXCEPT_LSA, because even
+					//	though it won't have been updated above it could still have been changed elsewhere.  
+				}
+				
+				// Perform the actual INSERT or UPDATE:
+				db4o.store(toBeStored);
+			}
+			
+			// Report back:
+			return insert ? RESULT_NEEDED_INSERT : RESULT_NEEDED_UPDATE;
 		}
 		catch(Exception e)
 		{

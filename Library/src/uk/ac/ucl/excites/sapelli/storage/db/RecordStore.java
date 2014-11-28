@@ -50,6 +50,48 @@ public abstract class RecordStore implements Store
 	static public final String DATABASE_NAME_SUFFIX = "-RecordStore";
 	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp
 	
+	/**
+	 * The Record should be INSERTed if it is not stored yet, or UPDATEed(/replaced) if it is.
+	 * If an INSERT or UPDATE takes place the lastStoredAt value must be set to the current time.
+	 */
+	static protected final int ACTION_INSERT_OR_UPDATE = 0;
+	
+	/**
+	 * The Record should be INSERTed if it is not stored yet, but UPDATE of existing record is not allowed.
+	 * If an INSERT takes place the lastStoredAt value must be set to the current time. 
+	 */
+	static protected final int ACTION_INSERT_ONLY = 1;
+	
+	/**
+	 * The Record should be UPDATEd if it exist, but should not be INSERTed if it does not.
+	 * If an UPDATE takes place the lastStoredAt value must be set to the current time.
+	 */
+	static protected final int ACTION_UPDATE_ONLY = 2;
+	
+	/**
+	 * The Record should be UPDATEd if it exist, but should not be INSERTed if it does not.
+	 * The lastStoredAt value should *not* be changed.
+	 */
+	static protected final int ACTION_UPDATE_ONLY_EXCEPT_LSA = 3;
+	
+	/**
+	 * The Record did not yet exist in the RecordStore,
+	 * and it will have been INSERTed if that was allowed.  
+	 */
+	static protected final int RESULT_NEEDED_INSERT = 0;
+	
+	/**
+	 * The Record already existed in the RecordStore,
+	 * and it will have been UPDATEd if that was allowed.
+	 */
+	static protected final int RESULT_NEEDED_UPDATE = 1;
+	
+	/**
+	 * The Record already existed in the RecordStore, with the exact same values (except perhaps LSA),
+	 * hence it was neither INSERTed nor UPDATEd.
+	 */
+	static protected final int RESULT_NEEDED_NO_ACTION = 2;
+	
 	static protected Long Now()
 	{
 		return Long.valueOf(System.currentTimeMillis());
@@ -179,12 +221,15 @@ public abstract class RecordStore implements Store
 	 * Verifies if a given record can be stored.
 	 * 
 	 * @param record
-	 * @return whether of not the given record can be stored in this RecordStore 
+	 * @throws NullPointerException when the record is null
+	 * @throws IllegalArgumentException when the record cannot be stored
 	 */
-	public boolean isStorable(Record record)
+	public void checkStorable(Record record) throws NullPointerException, IllegalArgumentException
 	{
-		return 	record != null &&					// obviously it makes no sense to store null records
-				!record.getSchema().isInternal();	// records of "internal" schemata cannot be stored directly
+		if(record == null)
+			throw new NullPointerException("Cannot store a null record");
+		else if(record.getSchema().isInternal()) // records of "internal" schemata cannot be stored directly
+			throw new IllegalArgumentException(String.format("Record (%s) cannot be inserted, because it is of an internal schema!", record.toString(false)));
 	}
 	
 	/**
@@ -192,33 +237,16 @@ public abstract class RecordStore implements Store
 	 * Note that this method does not start a new transaction. If this is a desired the client code should take care of that by first calling {@link #startTransaction()}.
 	 * However, if an error occurs any open transaction will be rolled back!
 	 * 
-	 * @param record - the record to store or update; records of internal schemata will be rejected
+	 * @param record - the record to store (i.e. insert or update); records of internal schemata will be rejected
 	 * @throws DBConstraintException when a table/index constraint is violated
 	 * @throws DBException in case of a database problem
-	 * @throws IllegalArgumentException when the given record cannot be stored
+	 * @throws NullPointerException when the record is null
+	 * @throws IllegalArgumentException when the record cannot be stored
 	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 	 */
 	public void store(Record record) throws DBException, IllegalArgumentException, IllegalStateException
 	{
-		if(!isStorable(record))
-			throw new IllegalArgumentException(String.format("Record (%s) cannot be stored!", record.toString(false)));
-		Boolean insert = null;
-		try
-		{
-			insert = doStore(record);
-		}
-		catch(DBException e)
-		{
-			rollbackTransactions(); // !!!
-			throw e;
-		}
-		// Inform client:
-		if(insert == null)
-			return; // record was unchanged
-		else if(insert)
-			client.recordInserted(record);
-		else
-			client.recordUpdated(record);
+		store(record, ACTION_INSERT_OR_UPDATE);
 	}
 	
 	/**
@@ -226,30 +254,64 @@ public abstract class RecordStore implements Store
 	 * Note that this method does not start a new transaction. If this is a desired the client code should take care of that by first calling {@link #startTransaction()}.
 	 * However, if an error occurs any open transaction will be rolled back!
 	 * 
-	 * @param record
-	 * @throws DBPrimaryKeyException when the record already exists
+	 * @param record - the record to insert; records of internal schemata will be rejected
+	 * @throws DBPrimaryKeyException when the record already exists in the database
 	 * @throws DBConstraintException when a table/index constraint is violated
 	 * @throws DBException in case of another database problem
-	 * @throws IllegalArgumentException when the given record cannot be stored
+	 * @throws NullPointerException when the record is null
+	 * @throws IllegalArgumentException when the record cannot be stored
 	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 	 */
-	public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException, IllegalArgumentException, IllegalStateException
+	public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException, NullPointerException, IllegalArgumentException, IllegalStateException
 	{
-		if(!isStorable(record))
-			throw new IllegalArgumentException(String.format("Record (%s) cannot be inserted!", record.toString(false)));
-		boolean inserted = false;
+		store(record, ACTION_INSERT_ONLY);
+	}
+	
+	/**
+	 * Updates a single record, if it does not exist a DuplicateException will be thrown.
+	 * Note that this method does not start a new transaction. If this is a desired the client code should take care of that by first calling {@link #startTransaction()}.
+	 * However, if an error occurs any open transaction will be rolled back!
+	 * 
+	 * @param record - the record to update; records of internal schemata will be rejected
+	 * @param updateLastStoredAt whether or not to update the lastStoredAt value
+	 * @throws DBPrimaryKeyException when the record does not exist in the database
+	 * @throws DBConstraintException when a table/index constraint is violated
+	 * @throws DBException in case of another database problem
+	 * @throws NullPointerException when the record is null
+	 * @throws IllegalArgumentException when the record cannot be stored
+	 * @throws IllegalStateException
+	 */
+	public void update(Record record, boolean updateLastStoredAt) throws DBPrimaryKeyException, DBConstraintException, DBException, NullPointerException, IllegalArgumentException, IllegalStateException
+	{
+		store(record, updateLastStoredAt ? ACTION_UPDATE_ONLY : ACTION_UPDATE_ONLY_EXCEPT_LSA);
+	}
+	
+	/**
+	 * Helper method to store a record using the given action(s).
+	 * 
+	 * @param record - the Record object to store
+	 * @param action - an {@code int} representing the allowed storage action(s), possible values: {@link #ACTION_INSERT_OR_UPDATE}, {@link #ACTION_INSERT_ONLY}, {@link #ACTION_UPDATE_ONLY} & {@link #ACTION_UPDATE_ONLY_EXCEPT_LSA}
+	 * @throws DBPrimaryKeyException
+	 * @throws DBConstraintException
+	 * @throws DBException in case of another database problem
+	 * @throws NullPointerException when the record is null
+	 * @throws IllegalArgumentException when the record cannot be stored
+	 * @throws IllegalStateException
+	 */
+	protected void store(Record record, int action) throws DBPrimaryKeyException, DBConstraintException, DBException, NullPointerException, IllegalArgumentException, IllegalStateException
+	{
+		checkStorable(record); // throws NullPointerException, IllegalArgumentException
+		int result = -1;
 		try
 		{
-			inserted = doInsert(record);
+			result = doStore(record, action);
 		}
 		catch(DBException e)
 		{
 			rollbackTransactions(); // !!!
 			throw e;
 		}
-		// Inform client if a real insert happened:
-		if(inserted)
-			client.recordInserted(record);
+		report(record, action, result); // reports to client or throws DBPrimaryKeyException
 	}
 	
 	/**
@@ -258,21 +320,24 @@ public abstract class RecordStore implements Store
 	 * 
 	 * @param records - the records to store or update
 	 * @throws DBException in case of a database problem
-	 * @throws IllegalArgumentException when the given record cannot be stored
+	 * @throws NullPointerException when one of the records is null
+	 * @throws IllegalArgumentException when one of records cannot be stored
 	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 	 */
-	public void store(List<Record> records) throws DBException, IllegalArgumentException, IllegalStateException
+	public void store(Collection<Record> records) throws DBException, NullPointerException, IllegalArgumentException, IllegalStateException
 	{
-		Boolean[] insert = new Boolean[records.size()]; 
+		if(records == null)
+			return;
+		int[] results = new int[records.size()]; 
 		startTransaction();
 		int r = 0;
 		try
 		{
 			for(Record record : records)
-				if(isStorable(record))
-					insert[r++] = doStore(record);
-				else
-					throw new IllegalArgumentException(String.format("Record (%s) cannot be stored!", record.toString(false)));
+			{
+				checkStorable(record); // throws NullPointerException, IllegalArgumentException
+				results[r++] = doStore(record, ACTION_INSERT_OR_UPDATE);
+			}
 		}
 		catch(Exception e)
 		{
@@ -283,36 +348,52 @@ public abstract class RecordStore implements Store
 		// Inform client:
 		r = 0;
 		for(Record record : records)
-			if(insert[r++] == null)
-				return; // record was unchanged
-			else if(insert[r])
-				client.recordInserted(record);
-			else
-				client.recordUpdated(record);
+			report(record, ACTION_INSERT_OR_UPDATE, results[r++]); // (will never throw DBPrimaryKeyException because action is ACTION_INSERT_OR_UPDATE)
 	}
 	
 	/**
-	 * Stores (insert or update/replace) a record
+	 * @param record
+	 * @param storeAction
+	 * @param storeResult
+	 * @throws DBPrimaryKeyException
+	 */
+	protected void report(Record record, int storeAction, int storeResult) throws DBPrimaryKeyException
+	{
+		switch(storeResult)
+		{
+			case RESULT_NEEDED_INSERT :
+				if(storeAction == ACTION_INSERT_OR_UPDATE || storeAction == ACTION_INSERT_ONLY)
+					// Record was INSERTed (i.e. it didn't exist before) ...
+					client.recordInserted(record); // inform client
+				else //if(storeAction == ACTION_UPDATE_ONLY || storeAction == ACTION_UPDATE_ONLY_EXCEPT_LSA)
+					// Record did not exist in database (and still doesn't because INSERT was not allowed), so it could not be UPDATEd...
+					throw new DBPrimaryKeyException("No such record exists in the record store.");
+				break;
+			case RESULT_NEEDED_UPDATE :
+				if(storeAction != ACTION_INSERT_ONLY)
+					// Record existed and was UPDATEd...
+					client.recordUpdated(record); // inform client
+				else //if(storeAction == ACTION_INSERT_ONLY)
+					// Record existed and would have been UPDATEd if it were allowed...
+					throw new DBPrimaryKeyException("This record already exists in the record store (with different values).");
+				break;
+			case RESULT_NEEDED_NO_ACTION :
+				// Record was already stored with identical values (except maybe LSA)
+				break; // do nothing
+		}
+	}
+	
+	/**
+	 * Store a record by INSERTing, if it is new (provided INSERTing is allowed), or UPDATEing if it existed (provided UPDATEing is allowed).
 	 * 
 	 * @param record - the record to store or update; can be assumed to be non-null and not of an internal schema
-	 * @return whether the record was new (i.e. it was INSERTed; returns {@code true}), modified (i.e. it was UPDATEd; returns {@code false}), or neither (i.e. the exact same record was already stored; returns {@code null})
+	 * @param action - an {@code int} representing the allowed storage action(s), possible values: {@link #ACTION_INSERT_OR_UPDATE}, {@link #ACTION_INSERT_ONLY}, {@link #ACTION_UPDATE_ONLY} & {@link #ACTION_UPDATE_ONLY_EXCEPT_LSA}
+	 * @return an {@code int} representing the result of the storing operation, possible values: {@link #RESULT_NEEDED_INSERT}, {@link #RESULT_NEEDED_UPDATE} & {@link #RESULT_NEEDED_NO_ACTION}
 	 * @throws DBConstraintException when a table/index constraint is violated
 	 * @throws DBException in case of a database problem
 	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
 	 */
-	protected abstract Boolean doStore(Record record) throws DBConstraintException, DBException, IllegalStateException;
-	
-	/**
-	 * Inserts a record, throws a DuplicateException if it already exists.
-	 * 
-	 * @param record - the record to insert; can be assumed to be non-null and not of an internal schema
-	 * @return whether the record was really inserted (true), or was already stored with identical values (false)
-	 * @throws DBPrimaryKeyException when the record already exists
-	 * @throws DBConstraintException when a table/index constraint is violated
-	 * @throws DBException in case of another database problem
-	 * @throws IllegalStateException when the columns that are part of the primary key have not all been assigned a value
-	 */
-	protected abstract boolean doInsert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException, IllegalStateException;
+	protected abstract int doStore(Record record, int action) throws DBConstraintException, DBException, IllegalStateException;
 	
 	/**
 	 * Retrieve all Records (of any schema)

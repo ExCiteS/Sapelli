@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
@@ -50,11 +51,96 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 {
 
 	// Statics----------------------------------------------	
-	static public final int DATABASE_VERSION = 2;
+	
+	// Note there never was a database version 1 (because SQLite storage was introduced in Sapelli v2.0) 
+	
+	/**
+	 * Used from "Sapelli Collector for Android" v2.0-beta-3 up to v2.0-beta-11
+	 */
+	static private final int DATABASE_VERSION_2 = 2;
+	
+	/**
+	 * Used from "Sapelli Collector for Android" v2.0-beta-12 and newer
+	 * 
+	 * Reason for version increase:
+	 * 	the introduction of the lastStoredAt, lastExportedAt & lastTransmittedAt columns
+	 * 
+	 * Because we are still in the beta phase _no_ "real" v2->v3 upgrade (i.e. adding those columns to
+	 * existing tables and schemata objects) is carried out, instead the database file is backed-up and
+	 * all existing tables and indexes are simply dropped (see {@link CustomSQLiteOpenHelper#onUpgrade(SQLiteDatabase, int, int)}).
+	 */
+	static private final int DATABASE_VERSION_3 = 3;
+	
+	/**
+	 * The current database version number
+	 */
+	static public final int CURRENT_DATABASE_VERSION = DATABASE_VERSION_3;
+	
+	/**
+	 * Helper method which returns a list with the names of all tables in the given database.
+	 * 
+	 * @param db
+	 * @param includeAndroidMetadataTable
+	 * @param includeSequenceTable
+	 * @return
+	 * @throws SQLiteException
+	 */
+	static private List<String> GetAllTables(SQLiteDatabase db, boolean includeAndroidMetadataTable, boolean includeSequenceTable) throws SQLiteException
+	{
+		List<String> tables = new ArrayList<String>();
+		Cursor cursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table';", null);
+		cursor.moveToFirst();
+		while(!cursor.isAfterLast())
+		{
+			String tableName = cursor.getString(0);
+			if(	(includeAndroidMetadataTable || !tableName.equals("android_metadata")) &&
+				(includeSequenceTable || !tableName.equals("sqlite_sequence")))
+				tables.add(tableName);
+			cursor.moveToNext();
+		}
+		cursor.close();
+		return tables;
+	}
+	
+	/**
+	 * Helper method which returns a list with the names of all indexes in the given database.
+	 * 
+	 * @param db
+	 * @return
+	 * @throws SQLiteException
+	 */
+	static private List<String> GetAllIndexes(SQLiteDatabase db) throws SQLiteException
+	{
+		List<String> indexes = new ArrayList<String>();
+		Cursor cursor = db.rawQuery("SELECT name FROM sqlite_master WHERE type='index';", null);
+		cursor.moveToFirst();
+		while(!cursor.isAfterLast())
+		{			
+			indexes.add(cursor.getString(0));
+			cursor.moveToNext();
+		}
+		cursor.close();
+		return indexes;
+	}
+	
+	/**
+	 * Helper method which drops all tables (except android_metadata) and indexes in the given database.
+	 * 
+	 * @param db
+	 * @throws SQLiteException
+	 */
+	static private void DropAllTablesAndIndexes(SQLiteDatabase db) throws SQLiteException
+	{
+		// Tables:
+		for(String tableName: GetAllTables(db, false, true))
+			db.execSQL("DROP TABLE IF EXISTS " + tableName);
+		// Indexes:
+		for(String indexName: GetAllIndexes(db))
+			db.execSQL("DROP INDEX IF EXISTS " + indexName);
+	}
 
 	// Dynamics---------------------------------------------
 	private SQLiteDatabase db;
-	private boolean newDB = false;
 	
 	/**
 	 * @param client
@@ -68,20 +154,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		super(client);
 		
 		// Helper:
-		SQLiteOpenHelper helper = new SQLiteOpenHelper(new CollectorContext(context, databaseFolder), GetDBFileName(baseName), new AndroidSQLiteCursorFactory(), DATABASE_VERSION)
-		{
-			@Override
-			public void onCreate(SQLiteDatabase db)
-			{
-				newDB = true;
-			}
-			
-			@Override
-			public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
-			{
-				// TODO onUpgrade(): what to do here?
-			}
-		};
+		CustomSQLiteOpenHelper helper = new CustomSQLiteOpenHelper(context, databaseFolder, baseName);		
 		
 		// Open writable database:
 		try
@@ -95,7 +168,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		Log.d("SQLite", "Opened SQLite database: " + db.getPath()); // TODO remove debug logging
 		
 		// Initialise:
-		initialise(newDB);
+		initialise(helper.newDB);
 	}
 	
 	@Override
@@ -246,6 +319,45 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 		    if(cursor != null)
 		        cursor.close();
 		}
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	private class CustomSQLiteOpenHelper extends SQLiteOpenHelper
+	{
+		
+		private boolean newDB = false;
+		
+		public CustomSQLiteOpenHelper(Context context, File databaseFolder, String baseName)
+		{			
+			super(new CollectorContext(context, databaseFolder), GetDBFileName(baseName), new AndroidSQLiteCursorFactory(), CURRENT_DATABASE_VERSION);
+		}
+		
+		@Override
+		public void onCreate(SQLiteDatabase db)
+		{
+			newDB = true;
+		}
+		
+		@Override
+		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
+		{
+			Log.w("SQLite", "Upgrading from database version " + oldVersion + " to version " + newVersion);
+			
+			// TODO backup !
+			
+			switch(oldVersion)
+			{
+				case DATABASE_VERSION_2 :
+					Log.w("SQLite", "Dropping all tables and indexes");
+					DropAllTablesAndIndexes(db); // see javadoc for DATABASE_VERSION_3
+					break;
+				// add cases for future versions here
+			}
+		}
+		
 	}
 
 	/**

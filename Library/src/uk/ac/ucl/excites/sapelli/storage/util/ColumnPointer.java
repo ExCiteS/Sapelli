@@ -207,7 +207,7 @@ public class ColumnPointer
 		Stack<Column<?>> path = columnStack;
 		
 		// Check if we have a complete path to the pointed-at column starting from the top-level schema:
-		if(!topLevelRecord.getSchema().containsColumn(path.firstElement(), true)) // Either the columnStack is missing parent columns, or this record is from another schema...
+		if(!topLevelRecord.getSchema().containsEquivalentColumn(path.firstElement(), true)) // Either the columnStack is missing parent columns, or this record is from another schema...
 			path = constructPathTo(topLevelRecord.getSchema(), getColumn()); // Try to construct a path to the pointed-at record
 		
 		// Get the right (sub)record:
@@ -322,7 +322,7 @@ public class ColumnPointer
 		Stack<Column<?>> path = columnStack;
 		
 		// Check if we have a complete path to the pointed-at column starting from the top-level schema (if one was given):
-		if(topLevelSchema != null && !topLevelSchema.containsColumn(path.firstElement(), true)) // Either the columnStack is missing parent columns, or this record is from another schema...
+		if(topLevelSchema != null && !topLevelSchema.containsEquivalentColumn(path.firstElement(), true)) // Either the columnStack is missing parent columns, or this record is from another schema...
 			path = constructPathTo(topLevelSchema, getColumn()); // Try to construct a path to the pointed-at record
 		
 		StringBuilder bldr = new StringBuilder();

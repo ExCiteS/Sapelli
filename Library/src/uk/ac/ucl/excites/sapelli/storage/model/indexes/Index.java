@@ -63,7 +63,9 @@ public class Index extends Schema
 		
 		// Add columns (but check if they are not virtual):
 		for(Column<?> iCol : columns)
-			if(iCol instanceof VirtualColumn)
+			if(iCol == null)
+				throw new NullPointerException("Indexed column cannot be null!");
+			else if(iCol instanceof VirtualColumn)
 				throw new IllegalArgumentException("Indexing of virtual columns is not supported!");
 			else
 				addColumn(iCol, false); // add column but *not* its virtual version

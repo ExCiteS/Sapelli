@@ -61,7 +61,7 @@ public abstract class SapelliSQLiteStatement
 	
 	/**
 	 * @param record
-	 * @param lastStoredAt if non null this value will be used as the new lastStoredAt time
+	 * @param lastStoredAt if non-null this value will be used as the new lastStoredAt time
 	 * @throws DBException
 	 */
 	public void retrieveAndBindAll(Record record, Long lastStoredAt) throws DBException

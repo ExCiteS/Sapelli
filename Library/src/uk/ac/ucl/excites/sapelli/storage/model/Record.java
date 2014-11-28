@@ -24,14 +24,15 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.text.ParseException;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.Objects;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
@@ -158,7 +159,7 @@ public class Record implements Serializable
 	 * 
 	 * @param newSchema
 	 * @throws IllegalArgumentException - when the new schema is incompatible with the old one
-	 * @deprecated probably unsafe, avoid this unless there is a very good reason and you know what you are doing
+	 * @deprecated unsafe, avoid this unless there is a very good reason and you know what you are doing
 	 */
 	public void setSchema(Schema newSchema) throws IllegalArgumentException
 	{
@@ -172,7 +173,7 @@ public class Record implements Serializable
 	 * @param force - if true the old and new schema are *not* compared, but the number of columns of the new schema must *always* match the number of values!
 	 * @throws IndexOutOfBoundsException - when the new schema has a different number of columns than the number of values in the record
 	 * @throws IllegalArgumentException - when the new schema is incompatible with the old one
-	 * @deprecated probably unsafe, avoid this unless there is a very good reason and you know what you are doing
+	 * @deprecated unsafe, avoid this unless there is a very good reason and you know what you are doing
 	 */
 	public void setSchema(Schema newSchema, boolean force) throws IndexOutOfBoundsException, IllegalArgumentException
 	{
@@ -343,7 +344,7 @@ public class Record implements Serializable
 	 * @param skipColumns
 	 * @return
 	 */
-	public String serialise(boolean includeVirtual, Set<Column<?>> skipColumns)
+	public String serialise(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
 	{
 		StringBuilder bldr = new StringBuilder();
 		boolean first = true;
@@ -387,7 +388,7 @@ public class Record implements Serializable
 	 * @throws IllegalArgumentException
 	 * @throws NullPointerException
 	 */
-	public Record parse(String serialisedRecord, boolean includeVirtual, Set<Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
+	public Record parse(String serialisedRecord, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws ParseException, IllegalArgumentException, NullPointerException
 	{
 		String[] parts = serialisedRecord.split("\\" + SERIALISATION_SEPARATOR);
 		if(parts.length != schema.getNumberOfColumns(includeVirtual))
@@ -446,7 +447,7 @@ public class Record implements Serializable
 	 * @param skipColumns
 	 * @throws IOException
 	 */
-	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<Column<?>> skipColumns) throws IOException
+	public void writeToBitStream(BitOutputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
 	{
 		try
 		{	//write fields:
@@ -501,7 +502,7 @@ public class Record implements Serializable
 	 * @param skipColumns
 	 * @throws IOException
 	 */
-	public void readFromBitStream(BitInputStream bitStream, boolean includeVirtual, Set<Column<?>> skipColumns) throws IOException
+	public void readFromBitStream(BitInputStream bitStream, boolean includeVirtual, Set<? extends Column<?>> skipColumns) throws IOException
 	{
 		try
 		{	//read fields:
@@ -523,7 +524,7 @@ public class Record implements Serializable
 	 * 
 	 * @return
 	 */
-	public int getSize(boolean includeVirtual, Set<Column<?>> skipColumns)
+	public int getSize(boolean includeVirtual, Set<? extends Column<?>> skipColumns)
 	{
 		BitOutputStream out = null;
 		try
@@ -602,7 +603,19 @@ public class Record implements Serializable
 	 */
 	public boolean hasEqualValues(Record other)
 	{
-		return hasEqualValues(other, false);
+		return hasEqualValues(other, Collections.<Column<?>> emptySet(), false);
+	}
+	
+	/**
+	 * Compare the values of this record with those of another.
+	 * 
+	 * @param other
+	 * @param skipColumns ignore these columns
+	 * @return
+	 */
+	public boolean hasEqualValues(Record other, Set<? extends Column<?>> skipColumns)
+	{
+		return hasEqualValues(other, skipColumns, false);
 	}
 	
 	/**
@@ -610,53 +623,52 @@ public class Record implements Serializable
 	 * If {@code asStoredBinary} is {@code true} the records must be of the same schema, otherwise an exception will be thrown.
 	 * 
 	 * @param other
-	 * @param asStoredBinary whether or not to compare values as if they've been writen/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
+	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
 	public boolean hasEqualValues(Record other, boolean asStoredBinary)
 	{
-		return other == null ?	false :
-								(asStoredBinary ?
-									hasEqualValues(other, this.schema.getColumns(false), true) : // compare all non-virtual columns, using values as if decoded from binary stream
-									Arrays.deepEquals(this.values, other.values));
+		return hasEqualValues(other, Collections.<Column<?>> emptySet(), asStoredBinary);
 	}
-	
+
 	/**
-	 * Compare the values of this record with those of another, across the given list of columns.
-	 * This and the other record as assumed to have schemata that are the same or at least each share the given columns (or equivalents).
+	 * Compare the values of this record with those of another.
+	 * If {@code asStoredBinary} is {@code true} the records must be of the same schema, otherwise an exception will be thrown.
 	 * 
 	 * @param other
-	 * @param columns
+	 * @param skipColumns ignore these columns
 	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
-	@SuppressWarnings("rawtypes")
-	public boolean hasEqualValues(Record other, List<Column> columns, boolean asStoredBinary)
+	public boolean hasEqualValues(Record other, Set<? extends Column<?>> skipColumns, boolean asStoredBinary)
 	{
-		if(other == null)
-			return false;
-		for(Column c : columns)
-		{
-			if(!EqualValues(asStoredBinary ? c.retrieveValueAsStoredBinary(this) : c.retrieveValue(this),
-							asStoredBinary ? c.retrieveValueAsStoredBinary(other) : c.retrieveValue(other)))
-				return false;
-		}
-		return true;
+		return other == null ?	false :
+								(!skipColumns.isEmpty() || asStoredBinary ?
+									hasEqualValues(other, this.schema.getColumns(false), skipColumns, asStoredBinary) :
+									this == other || Arrays.deepEquals(this.values, other.values));
 	}
 	
 	/**
-	 * Helper method to compare 2 potentially null objects
+	 * Compare the values of this record with those of another, across the given collection of columns.
+	 * This and the other record as assumed to have schemata that are the same or at least each share the given columns (or equivalents).
 	 * 
-	 * @param value1
-	 * @param value2
+	 * @param other
+	 * @param columns the columns that will be checked, unless they appear in skipColumns
+	 * @param skipColumns
+	 * @param asStoredBinary whether or not to compare values as if they've been written/read to/from a bitstream (meaning some elements may have been dropped or precision may have been reduced)
 	 * @return
 	 */
-	static public boolean EqualValues(Object value1, Object value2)
+	public boolean hasEqualValues(Record other, Collection<? extends Column<?>> columns, Set<? extends Column<?>> skipColumns, boolean asStoredBinary)
 	{
-		if(value1 != null)
-			return value1.equals(value2);
-		else
-			return value2 == null;
+		if(other == null)
+			return false;
+		if(this != other)
+			for(Column<?> c : columns)
+				if(	!skipColumns.contains(c) &&
+					!Objects.deepEquals(asStoredBinary ? c.retrieveValueAsStoredBinary(this) : c.retrieveValue(this),
+										asStoredBinary ? c.retrieveValueAsStoredBinary(other) : c.retrieveValue(other)))
+					return false;
+		return true;
 	}
 	
 }

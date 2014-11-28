@@ -71,6 +71,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	static public final String DATABASE_FILE_EXTENSION = "sqlite3";
 	static public final String PARAM_PLACEHOLDER = "?";
 	
+	static public final String NULL_STRING = "NULL";
+	static public final char QUOTE_CHAR = '\'';
+	static public final String QUOTE_ESCAPE_STRING = "''";
+	
 	/**
 	 * @see http://catalogue.pearsoned.co.uk/samplechapter/067232685X.pdf
 	 */
@@ -187,7 +191,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		try
 		{
 			cursor = executeQuery(	"SELECT name FROM sqlite_master WHERE type='table' AND name=?;",
-									Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null, null, null)),
+									Collections.<SQLiteColumn<?, ?>> singletonList(new SQLiteStringColumn<String>(this, "name", null, null, null)),
 									Collections.<Object> singletonList(tableName));
 			return cursor != null && cursor.hasRow();
 		}
@@ -210,6 +214,24 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	public boolean hasFullIndexSupport()
 	{
 		return true;
+	}
+	
+	@Override
+	protected String getNullString()
+	{
+		return NULL_STRING;
+	}
+
+	@Override
+	protected char getQuoteChar()
+	{
+		return QUOTE_CHAR;
+	}
+
+	@Override
+	protected String getQuoteEscapeString()
+	{
+		return QUOTE_ESCAPE_STRING;
 	}
 	
 	/**
@@ -286,7 +308,8 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 
 		private SapelliSQLiteStatement existsStatement;
 		private SapelliSQLiteStatement insertStatement;
-		private SapelliSQLiteStatement updateStatement;
+		private SapelliSQLiteStatement updateStatementWithLSA;
+		private SapelliSQLiteStatement updateStatementWithoutLSA;
 		private SapelliSQLiteStatement deleteStatement;
 		private SapelliSQLiteStatement countStatement;
 
@@ -301,8 +324,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public boolean isRecordInDB(Record record) throws DBException
 		{
-			if(autoIncrementKeyColumn != null)
-				return autoIncrementKeyColumn.isValueSet(record);
+			if(!isInDB())
+				return false;
+			if(autoIncrementKeySapColumn != null)
+				return autoIncrementKeySapColumn.isValueSet(record);
 			else
 			{
 				if(existsStatement == null)
@@ -343,51 +368,46 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			long rowID = insertStatement.executeInsert();
 			
 			// Set auto-incrementing key value:
-			if(autoIncrementKeyColumn != null)
-				autoIncrementKeyColumn.storeValue(record, rowID);
+			if(autoIncrementKeySapColumn != null)
+				autoIncrementKeySapColumn.storeValue(record, rowID);
 			
 			// Set lastStoredAt time on the Record object too:
 			setLastStoredAt(record, now);
 		}
 
 		/**
-		 * Note:
-		 * 	Currently the detection of _actual_ changes to the record does *not* work.
-		 * 	If the UPDATE statement's WHERE clause matches an existing row that row will (at least in SQLite) be considered
-		 * 	as changed/affected (i.e. this method will return true) even if the actual values remained unchanged.
-		 * 	The only obvious way to fix this is to generate UPDATE statements in which the WHERE clause checks whether
-		 * 	values _need_ to be updated. E.g. "UPDATE table SET col1 = "newVal1", col2 = "newVal2" WHERE id = X AND (col1 IS NOT 'newVal1' OR col2 IS NOT 'newVal2');"
-		 * 	We could implement such a solution in RecordUpdateHelper but will wait until we are certain this feature will be required.
-		 * @see See: <a href="http://stackoverflow.com/questions/26372449">http://stackoverflow.com/questions/26372449</a>
-		 * TODO implement solution to detect actual record value changes
-		 * 
 		 * @param record
+		 * @param updateLastStoredAt whether or not to update the lastStoredAt column to the current time, in both the DB and the Record object, but only if an actual UPDATE happened
 		 * @return whether the record was really updated or stayed unchanged (because the record that was passed is identical to the stored one)
 		 * @throws DBException
 		 * 
-		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#update(uk.ac.ucl.excites.sapelli.storage.model.Record)
+		 * @see uk.ac.ucl.excites.sapelli.storage.db.sql.SQLRecordStore.SQLTable#update(uk.ac.ucl.excites.sapelli.storage.model.Record, boolean)
 		 */
 		@Override
-		public boolean update(Record record) throws DBException
+		public boolean update(Record record, boolean updateLastStoredAt) throws DBException
 		{
+			SapelliSQLiteStatement updateStatement = updateLastStoredAt ? updateStatementWithLSA : updateStatementWithoutLSA; 
 			if(updateStatement == null)
 			{
-				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this);
+				RecordUpdateHelper updateHelper = new RecordUpdateHelper(this, updateLastStoredAt, true);
 				updateStatement = getStatement(updateHelper.getQuery(), updateHelper.getParameterColumns());
+				// Remember for next time:
+				if(updateLastStoredAt)
+					updateStatementWithLSA = updateStatement;
+				else
+					updateStatementWithoutLSA = updateStatement;
 			}
 			else
 				updateStatement.clearAllBindings(); // clear bindings for reuse
 
 			// Bind parameters:
-			Long now = Now();
-			updateStatement.retrieveAndBindAll(record, now);
-			
-			// Execute:
+			Long lastStoredAt = null;
+			updateStatement.retrieveAndBindAll(record, updateLastStoredAt ? lastStoredAt = Now() : null);
+
+			// Execute UPDATE:
 			boolean updated = updateStatement.executeUpdate() == 1;
-			
-			// Update lastStoredAt time on the Record object too:
-			if(updated)
-				setLastStoredAt(record, now);
+			if(updated && updateLastStoredAt)
+				setLastStoredAt(record, lastStoredAt); // update lastStoredAt time on the Record object too
 				
 			return updated;
 		}
@@ -483,8 +503,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				existsStatement.close();
 			if(insertStatement != null)
 				insertStatement.close();
-			if(updateStatement != null)
-				updateStatement.close();
+			if(updateStatementWithLSA != null)
+				updateStatementWithLSA.close();
+			if(updateStatementWithoutLSA != null)
+				updateStatementWithoutLSA.close();
 			if(deleteStatement != null)
 				deleteStatement.close();
 			if(countStatement != null)
@@ -504,27 +526,25 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 
 		/**
 		 * @param type
-		 * @param constraint
 		 * @param sourceSchema
 		 * @param sourceColumn
 		 * @param mapping - may be null in case SQLType = SapType
 		 */
-		public SQLiteColumn(String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
+		public SQLiteColumn(String type, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
 		{
-			super(type, constraint, sourceSchema, sourceColumn, mapping);
+			super(type, sourceSchema, sourceColumn, mapping);
 		}
 
 		/**
 		 * @param name
 		 * @param type
-		 * @param constraint
 		 * @param sourceSchema
 		 * @param sourceColumn
 		 * @param mapping - may be null in case SQLType = SapType
 		 */
-		public SQLiteColumn(String name, String type, String constraint, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
+		public SQLiteColumn(String name, String type, Schema sourceSchema, Column<SapType> sourceColumn, TypeMapping<SQLType, SapType> mapping)
 		{
-			super(name, type, constraint, sourceSchema, sourceColumn, mapping);
+			super(name, type, sourceSchema, sourceColumn, mapping);
 		}
 		/**
 		 * @param statement
@@ -569,24 +589,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		 * @throws DBException
 		 */
 		protected abstract void bindNonNull(SapelliSQLiteStatement statement, int paramIdx, SQLType value) throws DBException;
-
-		@Override
-		protected String getNullString()
-		{
-			return "null";
-		}
-
-		@Override
-		protected String getQuoteChar()
-		{
-			return "'";
-		}
-
-		@Override
-		protected String getQuoteEscape()
-		{
-			return "''";
-		}
 		
 		/**
 		 * @param record
@@ -631,9 +633,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	{
 		
 		@Override
-		protected void initialiseTable() throws DBException
+		protected SQLiteTable initialiseTable(Schema schema) throws DBException
 		{
-			table = new SQLiteTable(schema);
+			return new SQLiteTable(schema);
 		}
 		
 		private String getColumnConstraint(Column<?> sourceColum)
@@ -649,7 +651,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				{	// the sourceColumn is indexed (on its own) ...
 					bldr.openTransaction();
 					// Check which kind of index it is:
-					if(idx == schema.getPrimaryKey())
+					if(idx == table.schema.getPrimaryKey())
 					{	// the sourceColumn is the primary key
 						bldr.append("PRIMARY KEY");
 						// ASC/DESC?
@@ -700,10 +702,9 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			return bldr.toString();
 		}
 		
-		protected List<String> getTableConstraints()
+		@Override
+		protected void addTableConstraints()
 		{
-			List<String> tConstraints = new ArrayList<String>();
-			
 			// Primary key & unique indexes:
 			Iterator<Index> idxIter = indexesToProcess.iterator();
 			while(idxIter.hasNext()) // we use an iterator instead of a for-each loop to allow save remove of items during iteration
@@ -711,7 +712,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				Index idx = idxIter.next();
 				TransactionalStringBuilder bldr = new TransactionalStringBuilder(SPACE);
 				// Check which kind of index it is:
-				if(idx == schema.getPrimaryKey())
+				if(idx == table.schema.getPrimaryKey())
 					// index is the primary key:
 					bldr.append("PRIMARY KEY");
 				else if(idx.isUnique())
@@ -734,15 +735,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				// conflict-clause?
 				
 				// Add constraint:
-				tConstraints.add(bldr.toString());
+				spec.addTableConstraint(bldr.toString());
 				
 				// We are done processing this index:
 				idxIter.remove();
 			}
 			
 			// foreign-key-clause?
-			
-			return tConstraints;
 		}
 		
 		/* (non-Javadoc)
@@ -752,13 +751,13 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public void visit(BooleanColumn boolCol)
 		{
-			table.addColumn(new SQLiteBooleanColumn(SQLiteRecordStore.this, getColumnConstraint(boolCol), schema, boolCol));
+			addColumn(new SQLiteBooleanColumn(SQLiteRecordStore.this, table.schema, boolCol), getColumnConstraint(boolCol));
 		}
 		
 		@Override
 		public void visit(final TimeStampColumn timeStampCol)
 		{
-			table.addColumn(new SQLiteStringColumn<TimeStamp>(SQLiteRecordStore.this, getColumnConstraint(timeStampCol), schema, timeStampCol, new TypeMapping<String, TimeStamp>()
+			addColumn(new SQLiteStringColumn<TimeStamp>(SQLiteRecordStore.this, table.schema, timeStampCol, new TypeMapping<String, TimeStamp>()
 			{
 
 				@Override
@@ -773,31 +772,31 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 					return timeStampCol.parse(value);
 				}
 				
-			}));
+			}), getColumnConstraint(timeStampCol));
 		}
 		
 		@Override
 		public void visit(ByteArrayColumn byteArrayCol)
 		{
-			table.addColumn(new SQLiteBlobColumn<byte[]>(SQLiteRecordStore.this, getColumnConstraint(byteArrayCol), schema, byteArrayCol, null));
+			addColumn(new SQLiteBlobColumn<byte[]>(SQLiteRecordStore.this, table.schema, byteArrayCol, null), getColumnConstraint(byteArrayCol));
 		}
 		
 		@Override
 		public void visit(StringColumn stringCol)
 		{
-			table.addColumn(new SQLiteStringColumn<String>(SQLiteRecordStore.this, getColumnConstraint(stringCol), schema, stringCol, null));
+			addColumn(new SQLiteStringColumn<String>(SQLiteRecordStore.this, table.schema, stringCol, null), getColumnConstraint(stringCol));
 		}
 		
 		@Override
 		public void visit(IntegerColumn intCol)
 		{
-			table.addColumn(new SQLiteIntegerColumn<Long>(SQLiteRecordStore.this, getColumnConstraint(intCol), schema, intCol, null));
+			addColumn(new SQLiteIntegerColumn<Long>(SQLiteRecordStore.this, table.schema, intCol, null), getColumnConstraint(intCol));
 		}
 		
 		@Override
 		public void visit(FloatColumn floatCol)
 		{
-			table.addColumn(new SQLiteDoubleColumn<Double>(SQLiteRecordStore.this, getColumnConstraint(floatCol), schema, floatCol, null));
+			addColumn(new SQLiteDoubleColumn<Double>(SQLiteRecordStore.this, table.schema, floatCol, null), getColumnConstraint(floatCol));
 		}
 		
 		/**
@@ -808,7 +807,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public <L extends List<T>, T> void visitListColumn(final ListColumn<L, T> listCol)
 		{
-			table.addColumn(new SQLiteBlobColumn<L>(SQLiteRecordStore.this, getColumnConstraint(listCol), schema, listCol, new TypeMapping<byte[], L>()
+			addColumn(new SQLiteBlobColumn<L>(SQLiteRecordStore.this, table.schema, listCol, new TypeMapping<byte[], L>()
 			{
 
 				@Override
@@ -864,8 +863,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 					}
 				}
 				
-			}));
-			
+			}), getColumnConstraint(listCol));
 		}
 		
 	}
