@@ -30,7 +30,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.FontFitSurfaceView.TextSizeCoordinator;
+import uk.ac.ucl.excites.sapelli.collector.ui.FontFitView.TextSizeCoordinator;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;

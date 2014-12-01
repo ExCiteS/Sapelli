@@ -2,27 +2,25 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 
 import java.util.ArrayList;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Paint.FontMetrics;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.text.Layout;
+import android.text.StaticLayout;
+import android.text.TextPaint;
+import android.view.View;
 
 /**
- * A subclass of SurfaceView which acts as a simple text container (like a stripped-down TextView) but automatically scales its text to ensure that it will
- * always fit in the View's bounds. If a FontSizeCoordinator object is used then this property will be preserved, but any other FontFitTextViews which share a 
+ * A custom View which acts as a simple text container (like a stripped-down TextView) but automatically scales its text to ensure that it will
+ * always fit in the View's bounds. If a FontSizeCoordinator object is used then this property will be preserved, but any other FontFitViews which share a 
  * Coordinator will take the largest possible size that makes the text fit in all of them.
  * <br>
- * NOTE: Since this class is replacing a TextView without recreating much of its functionality it may be a source of bugs (e.g. if using unusual scripts). Features
- * such as text gravity and alignment are not supported beyond the default (vertical and horizontal centering). 
+ * NOTE: Since this class is replacing a TextView without recreating much of its functionality it may be a source of bugs (e.g. if using unusual scripts).
  * 
  * @author benelliott, mstevens
  *
  */
-public class FontFitSurfaceView extends SurfaceView implements SurfaceHolder.Callback
+public class FontFitView extends View
 {
 
 	/**
@@ -40,28 +38,33 @@ public class FontFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
 	 */
 	private static final float THRESHOLD = 0.5f;
 
-	private int textColor = Color.BLACK;
-	private FontMetrics fontMetrics = new FontMetrics();
-	private Paint paint;
+	private String text;
 	private TextSizeCoordinator coordinator;
 	private int coordinatorSlot;
+	private TextPaint paint;
+	private int textColor = Color.BLACK;
+	private float textSizePx;
 	private int lastTargetWidth = -1;
 	private int lastTargetHeight = -1;
-	private float textSizePx;
-	private String[] textLines; // an array where each element represents a line of text
-	private float[] leftOffsets; // array of measurements of the half-width of each line of text, to be used when centering them horizontally
-
-	public FontFitSurfaceView(Context context)
+	private StaticLayout layout;
+	private float heightOffset; //offset used to vertically centre text
+	// layout properties:
+	private Layout.Alignment alignment = Layout.Alignment.ALIGN_CENTER;
+	private float spacingMult = 1.0f; // amount by which the text height is multiplied to get line height
+	private float spacingAdd = 0.0f; // amount of leading to add to each line
+	private boolean includePad = false; // needed for StaticLayout constructor but completely undocumented in Android :) Think it decides whether or not to include padding in metrics
+	
+	public FontFitView(Context context)
 	{
 		this(context, null, -1);
 	}
 
-	public FontFitSurfaceView(Context context, TextSizeCoordinator coordinator)
+	public FontFitView(Context context, TextSizeCoordinator coordinator)
 	{
 		this(context, coordinator, -1);
 	}
 
-	public FontFitSurfaceView(Context context, TextSizeCoordinator coordinator, int coordinatorSlot)
+	public FontFitView(Context context, TextSizeCoordinator coordinator, int coordinatorSlot)
 	{
 		super(context);
 
@@ -72,120 +75,42 @@ public class FontFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
 
 		this.coordinatorSlot = coordinatorSlot;
 
-		paint = new Paint();
+		paint = new TextPaint();
 		paint.setAntiAlias(true); // text looks pixellated otherwise
 		paint.setColor(textColor);
 
-		getHolder().addCallback(this);
-	}
-
-	public void setText(String text)
-	{
-		String normalisedLineEndings = text.replace("\r", ""); // remove "CR" from line endings, leaving "LF"
-		String[] lines = normalisedLineEndings.split("\n"); // split on "LF"
-		this.textLines = lines;
-	}
-
-	public String[] getTextLines()
-	{
-		return textLines;
 	}
 
 	public void setTextSizePx(float textSizePx)
 	{
+		// update text size field (checked elsewhere)
 		this.textSizePx = textSizePx;
 		// set text size on paint
 		paint.setTextSize(textSizePx);
-		// update font metrics (to use when positioning text):
-		paint.getFontMetrics(fontMetrics);
-		
-		// calculate new text centering offsets:
-		leftOffsets = new float[textLines.length];
-
-		for(int i = 0; i < textLines.length; i++)
-			leftOffsets[i] = paint.measureText(textLines[i]) / 2;
+		// create a new static layout for this new text size:
+		layout = new StaticLayout(text, paint, (int) lastTargetWidth, alignment, spacingMult, spacingAdd, includePad);
+		// calculate new height offset for vertical centering -- want to start drawing text at height (container height - text height) / 2 :
+		this.heightOffset = 0.5f * (this.getHeight() - layout.getLineBottom(layout.getLineCount() - 1));
+		// ensure that this view will be redrawn:
+		this.invalidate();
 	}
 
-	public float getTextSizePx()
+	@Override
+	public void onLayout(boolean changed, int left, int top, int right, int bottom)
 	{
-		return this.textSizePx; // do not just use paint.getTextSize because the offsets may not have been calculated (that size could have been set in the iteration)
+		fitText(this.getWidth(), this.getHeight(), false);
 	}
-
-	public int getTextColor()
-	{
-		return textColor;
-	}
-
-	public void setTextColor(int textColor)
-	{
-		this.textColor = textColor;
-	}
-
 
 	@Override
 	public void onDraw(Canvas canvas)
 	{
-//		canvas.drawColor(backgroundColor); // wipe canvas (just in case)-- doesn't seem necessary but try this in case of bugs!
-		float halfWidth = this.getWidth() / 2;
-		float halfHeight = this.getHeight() / 2;
-		// assume text size was set in setTextSize
-		for(int i = 0; i < textLines.length; i++)
-			canvas.drawText(textLines[i],
-					// centre text horizontally by starting it at (half container width - half text width):
-					halfWidth - leftOffsets[i],
-					/*
-					 * We want the text to be vertically centred as well as horizontally. Achieve this by setting each line of text's baseline y-coordinate as:
-					 * 
-					 * half of container height - half of total text height + height of a line of text * the position of this line - the room needed for
-					 * descending chars (which go beneath the baseline)
-					 * 
-					 * = halfHeight - text.length * drawPaint.getFontMetrics(null) / 2 + (i + 1) * drawPaint.getFontMetrics(null) - fontMetrics.descent, or...
-					 */
-					halfHeight + (i + 1 - ((float) textLines.length) / 2) * paint.getFontMetrics(null) - fontMetrics.descent,
-					paint);
-	}
-
-	@Override
-	public void surfaceCreated(SurfaceHolder holder)
-	{
-		// when surface is created, do a text measurement
-		fitText(this.getWidth(), this.getHeight(), false);
-		// then draw the text...
-		doDraw(holder);
-	}
-
-	@Override
-	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height)
-	{
-		/// when surface is changed, do a text measurement
-		fitText(this.getWidth(), this.getHeight(), false);
-		// measure text because dimens may have changed
-		doDraw(holder);
-	}
-
-	@Override
-	public void surfaceDestroyed(SurfaceHolder arg0)
-	{
-		// nothing to do (?)
-	}
-
-	@SuppressLint("WrongCall")
-	private void doDraw(SurfaceHolder holder)
-	{
-		Canvas c = null;
-		try
-		{
-			c = holder.lockCanvas(null);
-			synchronized(holder)
-			{
-				this.onDraw(c);
-			}
-		}
-		finally
-		{
-			if(c != null)
-				holder.unlockCanvasAndPost(c);
-		}
+		// canvas.drawColor(backgroundColor); // wipe canvas (just in case)-- doesn't seem necessary but try this in case of bugs!
+		// shift canvas upwards so that the text will be vertically centred:
+		canvas.translate(0, heightOffset);
+		// draw text:
+		layout.draw(canvas);
+		// undo translate:
+		canvas.restore();
 	}
 
 	/**
@@ -204,7 +129,7 @@ public class FontFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
 			return;
 
 		// Avoid unnecessary (re)fitting: text is empty
-		if(textLines.length == 0 || textLines.length == 1 && textLines[0].isEmpty())
+		if(text == null || text.isEmpty())
 			return;
 
 		// Compute the target text width/height as the provided container width minus relevant padding
@@ -217,7 +142,7 @@ public class FontFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
 
 		// At this point we know a new size computation will take place...
 
-//		Log.d("FFTV", "fitText: IS REFITTING, text: " + this.getTextLines() + ", hash: " + hashCode() + " w=" + viewWidth + ", h=" + viewHeight + ", forced: " + force);
+		// Log.d("FFTV", "fitText: IS REFITTING, text: " + this.getText() + ", hash: " + hashCode() + " w=" + viewWidth + ", h=" + viewHeight + ", forced: " + force);
 
 		// Initialise lo & hi bounds:
 		float lo = MIN_TEXT_SIZE;
@@ -245,7 +170,7 @@ public class FontFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
 			textSize = lo;
 		}
 
-//		Log.d("FFTV", "final textSize for slot " + coordinatorSlot + ": " + textSize);
+		// Log.d("FFTV", "final textSize for slot " + coordinatorSlot + ": " + textSize);
 
 		// Remember target dimensions:
 		lastTargetWidth = targetWidth;
@@ -275,27 +200,96 @@ public class FontFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
 	{
 		paint.setTextSize(textSize);
 
-		float width = 0;
-		for(String line : textLines)
-			// measure bounds for each line of text:
-			width = Math.max(width, paint.measureText(line)); // max width is max(previous max width, this line width)
-		
-		// determine height by doing no. lines * interline spacing (= font height + spacing between bottom of one line and top of another)
-		// NOTE: do not use Paint#getTextBounds because this ignores any spacing above or below the character, which will be included by the
-		// TextView regardless (e.g. the bounds height of "." would be very low as it excludes the space above the character)
-		return(width <= targetWidth && textLines.length * paint.getFontMetrics(null) <= targetHeight);
+		layout = new StaticLayout(text, paint, (int) targetWidth, alignment, spacingMult, spacingAdd, includePad);
 
+		// Log.d("FFTV", "text: "+text+" text height: "+layout.getHeight()+" target: "+targetHeight+" fits: "+(layout.getWidth() <= targetWidth && layout.getHeight() <= targetHeight));
+		return(layout.getHeight() < targetHeight); // only check on height as width is already set. Use < not <= as when height == targetHeight the font looks a little too big
+	}
+	
+	public void setSpacingMult(float spacingMult)
+	{
+		this.spacingMult = spacingMult;
+		layout = new StaticLayout(text, paint, (int) lastTargetWidth, this.alignment, this.spacingMult, this.spacingAdd, this.includePad);
+		this.invalidate();
+	}
+	
+	public float getSpacingMult()
+	{
+		return spacingMult;
+	}
+	
+	
+	public void setSpacingAdd(float spacingAdd)
+	{
+		this.spacingAdd = spacingAdd;
+		layout = new StaticLayout(text, paint, (int) lastTargetWidth, this.alignment, this.spacingMult, this.spacingAdd, this.includePad);
+		this.invalidate();
+	}
+	
+	public float getSpacingAdd()
+	{
+		return spacingAdd;
+	}
+
+	public void setIncludePad(boolean includePad)
+	{
+		this.includePad = includePad;
+		layout = new StaticLayout(text, paint, (int) lastTargetWidth, this.alignment, this.spacingMult, this.spacingAdd, this.includePad);
+		this.invalidate();
+	}
+
+	public boolean isIncludePad()
+	{
+		return includePad;
+	}
+	
+	public void setAlignment(Layout.Alignment alignment)
+	{
+		this.alignment = alignment;
+		layout = new StaticLayout(text, paint, (int) lastTargetWidth, this.alignment, this.spacingMult, this.spacingAdd, this.includePad);
+		this.invalidate();
+	}
+
+	public Layout.Alignment getAlignment()
+	{
+		return alignment;
+	}
+
+	public void setText(String text)
+	{
+		this.text = text;
+	}
+
+	public String getText()
+	{
+		return text;
+	}
+
+
+	public float getTextSizePx()
+	{
+		return this.textSizePx; // do not just use paint.getTextSize because the offsets may not have been calculated (that size could have been set in the iteration)
+	}
+
+	public int getTextColor()
+	{
+		return textColor;
+	}
+
+	public void setTextColor(int textColor)
+	{
+		this.textColor = textColor;
 	}
 
 	/**
-	 * Helper class to coordinate text sizes across multiple FontFitTextView instances
+	 * Helper class to coordinate text sizes across multiple FontFitView instances
 	 * 
 	 * @author mstevens, benelliott
 	 */
 	static public class TextSizeCoordinator
 	{
 
-		private ArrayList<FontFitSurfaceView> views = new ArrayList<FontFitSurfaceView>();
+		private ArrayList<FontFitView> views = new ArrayList<FontFitView>();
 		private ArrayList<Float> intendedTextSizes = new ArrayList<Float>();
 
 		/**
@@ -312,11 +306,11 @@ public class FontFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
 		 * @param view
 		 * @return the claimed slot
 		 */
-		public int claimSlot(FontFitSurfaceView view)
+		public int claimSlot(FontFitView view)
 		{
 			views.add(view);
 			intendedTextSizes.add(MAX_TEXT_SIZE);
-			// Log.d("FFTV", "Coordinator.claimSlot: number of slots: " + views.size());
+//			Log.d("FFTV", "Coordinator.claimSlot: number of slots: " + views.size());
 			return views.size() - 1;
 		}
 
@@ -328,7 +322,7 @@ public class FontFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
 		 * @param maxTextSize
 		 *            - the max text size to record
 		 */
-		public void setMaxTextSize(FontFitSurfaceView view, float maxTextSize)
+		public void setMaxTextSize(FontFitView view, float maxTextSize)
 		{
 			// Just in case:
 			if(view.coordinatorSlot < 0 || view.coordinatorSlot >= views.size())
@@ -363,10 +357,10 @@ public class FontFitSurfaceView extends SurfaceView implements SurfaceHolder.Cal
 		public void coordinate()
 		{
 			float coordinatedTextSize = getCoordinatedTextSize();
-//			Log.d("FFTV", "Applying coordinated text size: " + coordinatedTextSize);
-			for(FontFitSurfaceView v : views)
+			// Log.d("FFTV", "Applying coordinated text size: " + coordinatedTextSize);
+			for(FontFitView v : views)
 			{
-//				if (v!= null) Log.d("FFTV", "Applying to: " + v.getTextLines());
+				// if (v!= null) Log.d("FFTV", "Applying to: " + v.getTextLines());
 				if(v != null && v.getTextSizePx() != coordinatedTextSize) // TODO use minimum difference instead of !=? E.g. Math.abs(v.getTextSize() - coordinatedTextSize) > 1.0 (or some other value)
 					v.setTextSizePx(coordinatedTextSize);
 			}

@@ -18,8 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
-import uk.ac.ucl.excites.sapelli.collector.ui.FontFitSurfaceView;
-import uk.ac.ucl.excites.sapelli.collector.ui.FontFitSurfaceView.TextSizeCoordinator;
+import uk.ac.ucl.excites.sapelli.collector.ui.FontFitView;
+import uk.ac.ucl.excites.sapelli.collector.ui.FontFitView.TextSizeCoordinator;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
@@ -104,7 +104,7 @@ public class TextItem extends Item
 	@Override
 	protected View createView(Context context, boolean recycleChildren)
 	{
-		FontFitSurfaceView txtView = new FontFitSurfaceView(context, textSizeCoordinator, coordinatorSlot);
+		FontFitView txtView = new FontFitView(context, textSizeCoordinator, coordinatorSlot);
 		txtView.setTextColor(textColor);
 		txtView.setText(text);
 		return txtView;
