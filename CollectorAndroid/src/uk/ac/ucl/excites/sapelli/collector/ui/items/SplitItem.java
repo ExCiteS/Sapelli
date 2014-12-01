@@ -28,15 +28,19 @@ import android.widget.LinearLayout;
 import android.widget.LinearLayout.LayoutParams;
 
 /**
- * A composite Item subclass which consists of any 2 child items being shown underneath one another
- * 
+ * A composite Item subclass which consists of any 2 child items being shown underneath or next to one another (depending on the 
+ * orientation specified). We use the same convention as Android's LinearLayout when describing orientation. That is,
+ * <ul>
+ * <li>Vertical - child items are stacked on top of one another (adding an item reduces existing items' height) </li>
+ * <li>Horizontal - child items are stacked next to one another (adding an item reduces existing items' width) </li>
+ * </ul>
  * @author benelliott, mstevens
  */
 public class SplitItem extends Item
 {
-
 	static public final int HORIZONTAL = LinearLayout.HORIZONTAL;
 	static public final int VERTICAL = LinearLayout.VERTICAL;
+	static public final int SPLIT_ITEM_SPACING_PX = 2;
 
 	private int orientation;
 	private List<WeightedItem> items;
@@ -102,11 +106,21 @@ public class SplitItem extends Item
 			
 			// LayoutParams:
 			LayoutParams lp = new LayoutParams(
-				// TODO does this actually work for horizontal splits? code looks weird, verify...
+				// set the "malleable" dimension to 0 so that Android decides what to do with it:
 				orientation == HORIZONTAL ? 0 : LinearLayout.LayoutParams.MATCH_PARENT, // horizontal -> take whole height
 				orientation == HORIZONTAL ? LinearLayout.LayoutParams.MATCH_PARENT : 0, // vertical -> take whole width
 				itemWeight);
-			//lp.setMargins(left, top, right, bottom); // TODO set spacing
+
+			// create margins array (top and bottom margins on items if vertical; left and right margins if horizontal)
+			int[] margins = orientation == HORIZONTAL ? new int[]{SPLIT_ITEM_SPACING_PX, 0, SPLIT_ITEM_SPACING_PX, 0} : new int[]{0, SPLIT_ITEM_SPACING_PX, 0, SPLIT_ITEM_SPACING_PX};
+			// apply margins:
+			if(i == 0) //if first item, don't add top or left margin (one of these is 0 anyway depending on orientation)
+				lp.setMargins(0, 0, margins[2], margins[3]);
+			else if(i == items.size() - 1) // if last item, don't add bottom or right margin (one of these is 0 anyway depending on orientation)
+				lp.setMargins(margins[0], margins[1], 0, 0);
+			else // if neither, just add whatever margins were specified
+				lp.setMargins(margins[0], margins[1], margins[2], margins[3]);
+			
 			itemView.setLayoutParams(lp);
 			
 			container.addView(itemView);

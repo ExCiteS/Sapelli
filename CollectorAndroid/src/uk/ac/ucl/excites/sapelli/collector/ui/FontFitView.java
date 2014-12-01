@@ -52,7 +52,11 @@ public class FontFitView extends View
 	private Layout.Alignment alignment = Layout.Alignment.ALIGN_CENTER;
 	private float spacingMult = 1.0f; // amount by which the text height is multiplied to get line height
 	private float spacingAdd = 0.0f; // amount of leading to add to each line
-	private boolean includePad = false; // needed for StaticLayout constructor but completely undocumented in Android :) Think it decides whether or not to include padding in metrics
+	/*
+	 * "includePad" needed for StaticLayout constructor but completely undocumented in Android :) Think it decides whether or not to include padding in metrics
+	 * (a bit like setIncludeFontPadding in TextView) so we want it to be TRUE to ensure there is enough room for accented characters:
+	 */
+	private boolean includePad = true; 
 	
 	public FontFitView(Context context)
 	{
@@ -201,9 +205,8 @@ public class FontFitView extends View
 		paint.setTextSize(textSize);
 
 		layout = new StaticLayout(text, paint, (int) targetWidth, alignment, spacingMult, spacingAdd, includePad);
-
 		// Log.d("FFTV", "text: "+text+" text height: "+layout.getHeight()+" target: "+targetHeight+" fits: "+(layout.getWidth() <= targetWidth && layout.getHeight() <= targetHeight));
-		return(layout.getHeight() < targetHeight); // only check on height as width is already set. Use < not <= as when height == targetHeight the font looks a little too big
+		return(layout.getHeight() <= targetHeight); // only check on height as width is already set
 	}
 	
 	public void setSpacingMult(float spacingMult)
