@@ -139,10 +139,10 @@ public class MultiListField extends Field
 		}
 		else
 		{
-			boolean opt = (optional != Optionalness.NEVER);
+			boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
 			
 			//Create column:
-			IntegerColumn col = new IntegerColumn(name, opt, 0, values.size() - 1);
+			IntegerColumn col = new IntegerColumn(name, colOptional, 0, values.size() - 1);
 			
 			// Add virtual columns to it:
 			//	Find maximum level:
@@ -168,7 +168,7 @@ public class MultiListField extends Field
 					}
 				}));
 				String vColName = getCaption(level).trim().isEmpty() ? (name + '_' + l) : Column.SanitiseName(getCaption(level).trim()); // Remove any illegal chars in caption before using it as column name
-				col.addVirtualVersion(StringColumn.ForCharacterCount(vColName, opt, Math.max(levelValueMapper.getMaxStringLength(), 1)), levelValueMapper);
+				col.addVirtualVersion(StringColumn.ForCharacterCount(vColName, colOptional, Math.max(levelValueMapper.getMaxStringLength(), 1)), levelValueMapper);
 			}
 
 			// Return the column:

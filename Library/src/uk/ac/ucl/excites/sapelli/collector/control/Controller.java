@@ -28,7 +28,6 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.Next;
@@ -182,7 +181,7 @@ public abstract class Controller implements FieldVisitor
 	
 	protected boolean handlingUserGoBackRequest = false;
 	
-	protected boolean blockedUI = false;
+	protected volatile boolean blockedUI = false;
 
 	public Controller(Project project, CollectorUI<?, ?> ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
 	{
@@ -489,7 +488,13 @@ public abstract class Controller implements FieldVisitor
 	protected void discardRecordAndAttachments()
 	{
 		// Discard record:
-		currFormSession.record = null; //!!!
+		currFormSession.record = null; // !!!
+		/* Note:
+		 * 	Making the record null is risky because an NPE will be thrown (most likely crashing the app)
+		 * 	when some FieldUI or controller method attempts to (illegally!) use the record after this
+		 * 	discard operation. Obviously that shouldn't happen but we've had several cases in which it did.
+		 * 	However, all (known) cases have been resolved and keeping the above line also enables us to
+		 * 	detect any new similar cases (revealed by an NPE and/or crash). */
 		
 		// Delete any attachments:
 		for(File attachment : currFormSession.getMediaAttachments())
@@ -507,6 +512,8 @@ public abstract class Controller implements FieldVisitor
 		// 	Deal with leaves:
 		if(cf.isLeaf())
 			return false; // this should never happen
+		// Add the choice options to the log files
+		addLogLine("CHOICE_OPTIONS", cf.getChildren().toString());
 		// 	The UI needs to be updated to show this ChoiceField, but only is there is at least one enable (i.e. selectable) child:
 		for(ChoiceField child : cf.getChildren())
 			if(IsFieldEnabled(currFormSession, child))
@@ -535,7 +542,7 @@ public abstract class Controller implements FieldVisitor
 	@Override
 	public boolean enterLocationField(LocationField lf, FieldParameters arguments, boolean withPage)
 	{
-		if(withPage && !lf.isStartWithPage())
+		if(withPage && !(lf.getStartWith() == LocationField.START_WITH.PAGE))
 			return false;
 		
 		if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currFormSession.record, getCurrentBestLocation()))
@@ -657,7 +664,7 @@ public abstract class Controller implements FieldVisitor
 				}
 				else
 				{	// Either the relatedForm did not save its record (i.e. it is now null), OR it doesn't meet the constraints
-					if(foreignKey != null || belongsTo.getOptional() == Optionalness.ALWAYS)
+					if(foreignKey != null || belongsTo.isOptional())
 						// Either we already have a (previously set) foreign key value, OR we don't need one because the field is optional
 						goForward(true); // continue to next field (keeping the currently stored foreign key if there is one, or keeping it blank if there is none)
 					
@@ -845,7 +852,7 @@ public abstract class Controller implements FieldVisitor
 	
 	/**
 	 * Stops all use/activities of the controller but does not exit the containing application.
-	 * I.e. the controller can still be restarted.
+	 * I.e. the controller can still be restarted!
 	 */
 	public void discard()
 	{
@@ -877,7 +884,7 @@ public abstract class Controller implements FieldVisitor
 		// Close log file:
 		if(logger != null)
 		{
-			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.getID());
+			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.getID()); // closes the logger & underlying file(writer)
 			logger = null;
 		}
 
@@ -983,7 +990,7 @@ public abstract class Controller implements FieldVisitor
 	/**
 	 * @return the blockedUI
 	 */
-	public boolean isUIBlocked()
+	public synchronized boolean isUIBlocked()
 	{
 		return blockedUI;
 	}
@@ -991,7 +998,7 @@ public abstract class Controller implements FieldVisitor
 	/**
 	 * Block UI
 	 */
-	public void blockUI()
+	public synchronized void blockUI()
 	{
 		this.blockedUI = true;
 	}
@@ -999,7 +1006,7 @@ public abstract class Controller implements FieldVisitor
 	/**
 	 * Unblock UI
 	 */
-	public void unblockUI()
+	public synchronized void unblockUI()
 	{
 		this.blockedUI = false;
 	}

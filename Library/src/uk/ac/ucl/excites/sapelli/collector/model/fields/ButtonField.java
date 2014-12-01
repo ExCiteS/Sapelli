@@ -45,7 +45,7 @@ public class ButtonField extends Field
 	}
 	
 	static public final String ID_PREFIX = "btn";
-	static public final ButtonColumnType DEFAULT_COLUMN = ButtonColumnType.NONE;
+	static public final ButtonColumnType DEFAULT_COLUMN_TYPE = ButtonColumnType.NONE;
 	
 	// Dynamics -------------------------------------------
 	private ButtonColumnType columnType;
@@ -58,7 +58,7 @@ public class ButtonField extends Field
 	public ButtonField(Form form, String id, String caption)
 	{	
 		super(form, (id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id), caption);
-		setColumnType(DEFAULT_COLUMN);
+		setColumnType(DEFAULT_COLUMN_TYPE); // also sets noColumn
 	}
 	
 	/* (non-Javadoc)
@@ -94,11 +94,10 @@ public class ButtonField extends Field
 		this.noColumn = noColumn;
 		if(noColumn)
 			columnType = ButtonColumnType.NONE;
-		else if(columnType == ButtonColumnType.NONE) // intended column type is still unknown
-		{
-			throw new UnsupportedOperationException("setNoColumn(false) is unsupported on ButtonFields, use setColumnType(String) or setColumnType(ButtonColumnType) instead.");
-			// If we were to start parsing noColumn for more than just ChoiceFields (as currently), then this warning would be nicer than the exception above:
-			//form.addWarning("Attribute 'noColumn=\"false\"' is ambiguous (and therefore ignored) on <Button>s, please use 'column=\"boolean\"' or 'column=\"datetime\"' instead."); 
+		else if(columnType == ButtonColumnType.NONE) // intended column type is (still) unknown
+		{	// for now noColumn is only parsed on <Choice>s, but we already post this warning in case this would change in the future:
+			form.addWarning("Attribute 'noColumn=\"false\"' on <Button> is ambiguous (and therefore ignored), please use 'column=\"boolean\"' or 'column=\"datetime\"' instead.");
+			//throw new UnsupportedOperationException("setNoColumn(false) is unsupported on ButtonFields, use setColumnType(String) or setColumnType(ButtonColumnType) instead.");
 		}
 	}
 	
@@ -110,8 +109,8 @@ public class ButtonField extends Field
 	{
 		switch(columnType)
 		{
-			case BOOLEAN : return new BooleanColumn(name, optional != Optionalness.NEVER);
-			case DATETIME : return TimeStampColumn.Century21NoMS(name, optional != Optionalness.NEVER, true);
+			case BOOLEAN : return new BooleanColumn(name, form.getColumnOptionalityAdvisor().getColumnOptionality(this));
+			case DATETIME : return TimeStampColumn.Century21NoMS(name, form.getColumnOptionalityAdvisor().getColumnOptionality(this), true);
 			/* case NONE */ default : return null;
 		}
 	}

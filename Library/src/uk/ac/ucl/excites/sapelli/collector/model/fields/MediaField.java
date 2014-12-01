@@ -25,10 +25,10 @@ import java.util.regex.Pattern;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.load.parse.FormParser;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.xml.FormParser;
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
@@ -74,7 +74,7 @@ public abstract class MediaField extends Field
 	 */
 	public int getMin()
 	{
-		return optional == Optionalness.ALWAYS ? 0 : 1; 
+		return optional ? 0 : 1; 
 	}
 	
 	/**
@@ -142,7 +142,8 @@ public abstract class MediaField extends Field
 	@Override
 	protected IntegerColumn createColumn(String name)
 	{
-		return new IntegerColumn(name, (optional != Optionalness.NEVER), (optional != Optionalness.NEVER ? 0 : 1), max);
+		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
+		return new IntegerColumn(name, colOptional, (colOptional ? 0 : 1), max);
 	}
 	
 	public int getCount(Record record)
@@ -211,7 +212,7 @@ public abstract class MediaField extends Field
 		
 		// Obfuscate filename and/or extension if necessary:
 		if(obfuscateFilename)
-			filename = BinaryHelpers.toHexadecimealString(Hashing.getMD5Hash(filename.getBytes()).toByteArray(), 16, true); // Format: HEX(MD5(filename))
+			filename = BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(filename.getBytes()), 16, true); // Format: HEX(MD5(filename))
 		if(obfuscateExtension)
 		{
 			extensionSeparator = FILENAME_ELEMENT_SEPARATOR; // '_' instead of '.'

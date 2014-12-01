@@ -51,7 +51,7 @@ public class LabelField extends Field
 				(id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id),
 				caption);
 		this.noColumn = true;
-		this.optional = Optionalness.ALWAYS;
+		this.optional = true;
 	}
 	
 	/**
@@ -121,7 +121,7 @@ public class LabelField extends Field
 	}
 	
 	@Override
-	public void setOptional(Optionalness optionalness)
+	public void setOptional(boolean optional)
 	{
 		// does nothing, labels are always optional
 	}

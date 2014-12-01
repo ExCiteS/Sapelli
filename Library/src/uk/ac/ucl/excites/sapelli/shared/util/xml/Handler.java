@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.shared.util.xml;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,12 +29,14 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
+
 
 /**
  * @author mstevens
  *
  */
-public abstract class Handler extends DefaultHandler
+public abstract class Handler extends DefaultHandler implements WarningKeeper
 {
 
 	// Static
@@ -41,19 +44,18 @@ public abstract class Handler extends DefaultHandler
 	protected static final String DISABLED = "disabled";
 	
 	// Dynamic
-	private final Map<String, SubtreeParser> subtreeParsers;
-	private SubtreeParser activeSubtreeParser;
+	private final Map<String, SubtreeParser<?>> subtreeParsers;
+	private SubtreeParser<?> activeSubtreeParser;
 	
-	protected final List<String> warnings;
+	private List<String> warnings;
 
 	public Handler()
 	{
-		this.warnings = new ArrayList<String>();
-		this.subtreeParsers = new HashMap<String, SubtreeParser>();
+		this.subtreeParsers = new HashMap<String, SubtreeParser<?>>();
 		this.activeSubtreeParser = null;
 	}
 	
-	public void addSubtreeParser(SubtreeParser subtreeParser)
+	public void addSubtreeParser(SubtreeParser<?> subtreeParser)
 	{
 		if(subtreeParser != null)
 			subtreeParsers.put(subtreeParser.getRootElementQName(), subtreeParser);
@@ -72,14 +74,14 @@ public abstract class Handler extends DefaultHandler
 		activeSubtreeParser = null;
 	}
 	
-	public void activateSubtreeParser(SubtreeParser subtreeParser)
+	public void activateSubtreeParser(SubtreeParser<?> subtreeParser)
 	{
 		if(subtreeParsers.get(subtreeParser.getRootElementQName()) == null)
 			throw new IllegalArgumentException("Unknown SubtreeParser");
 		this.activeSubtreeParser = subtreeParser;
 	}
 	
-	public void deactivateSubtreeParser(SubtreeParser subtreeParser)
+	public void deactivateSubtreeParser(SubtreeParser<?> subtreeParser)
 	{
 		if(activeSubtreeParser != subtreeParser)
 			return;
@@ -96,7 +98,7 @@ public abstract class Handler extends DefaultHandler
 	/**
 	 * @return the activeSubtreeParser
 	 */
-	public SubtreeParser getActiveSubtreeParser()
+	public SubtreeParser<?> getActiveSubtreeParser()
 	{
 		return activeSubtreeParser;
 	}
@@ -185,24 +187,32 @@ public abstract class Handler extends DefaultHandler
 		super.characters(ch, start, length);
 	}
 
-	protected void addWarning(String warning)
+	@Override
+	public void addWarning(String warning)
 	{
+		if(warnings == null)
+			warnings = new ArrayList<String>();
 		warnings.add(warning);
 	}
 
-	protected void addWarnings(Collection<String> warnings)
+	@Override
+	public void addWarnings(Collection<String> warnings)
 	{
+		if(this.warnings == null)
+			this.warnings = new ArrayList<String>();
 		this.warnings.addAll(warnings);
 	}
 
+	@Override
 	public List<String> getWarnings()
 	{
-		return warnings;
+		return warnings != null ? warnings : Collections.<String> emptyList();
 	}
 	
+	@Override
 	public void clearWarnings()
 	{
-		warnings.clear();
+		warnings = null;
 	}
 
 }

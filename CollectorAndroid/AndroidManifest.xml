@@ -14,7 +14,8 @@
 	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 	See the License for the specific language governing permissions and
 	limitations under the License.
- --><manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="200" android:versionName="2.0.0-beta-10" package="uk.ac.ucl.excites.sapelli.collector">
+ -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="200" android:versionName="2.0.0-SNAPSHOT" package="uk.ac.ucl.excites.sapelli.collector">
 
     <uses-sdk android:minSdkVersion="10" android:targetSdkVersion="11"/>
 

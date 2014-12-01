@@ -27,6 +27,6 @@ public interface Store
 
 	public void finalise() throws DBException;
 	
-	public void backup(File destinationFolder) throws DBException;
+	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException;
 	
 }

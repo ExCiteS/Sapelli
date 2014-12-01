@@ -38,9 +38,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.SQLiteRecordStore;
-import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -55,6 +53,8 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.LineColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.LocationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.OrientationColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.PolygonColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.queries.ExtremeValueRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
@@ -100,9 +100,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	/**
 	 * @param client
 	 * @param valuePlaceHolder - may be null if no parameters are to be used on SQL statements/queries (only literal values)
-	 * @throws DBException 
 	 */
-	public SQLRecordStore(StorageClient client, String valuePlaceHolder) throws DBException
+	public SQLRecordStore(StorageClient client, String valuePlaceHolder)
 	{
 		super(client);
 		this.tables = new HashMap<RecordReference, STable>();
@@ -113,9 +112,9 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 	 * Must be called from subclass constructor!
 	 * 
 	 * @param newDB whether or not the database file is new (i.e. empty)
-	 * @throws Exception
+	 * @throws DBException
 	 */
-	protected void initialise(boolean newDB) throws Exception
+	protected void initialise(boolean newDB) throws DBException
 	{
 		// create the Models and Schemata tables if they doesn't exist yet (i.e. for a new database)
 		this.modelsTable = getTable(Model.MODEL_SCHEMA, newDB);

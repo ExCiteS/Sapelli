@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.storage.model;
 
 import java.io.IOException;
 
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;

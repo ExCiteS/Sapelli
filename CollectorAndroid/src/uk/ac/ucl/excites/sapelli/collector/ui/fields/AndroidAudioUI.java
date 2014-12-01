@@ -28,7 +28,6 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
@@ -50,7 +49,8 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 {
 	
 	static private final String TAG = "AndroidAudioUI";
-	
+
+	private CollectorController controller;
 	private AudioView view;
 	private File audioFile;
 	private AudioRecorder audioRecorder;
@@ -58,6 +58,8 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 	public AndroidAudioUI(AudioField audioField, CollectorController controller, CollectorView collectorView)
 	{
 		super(audioField, controller, collectorView);
+
+		this.controller = controller;
 	}
 	
 	private boolean startRecording()
@@ -223,24 +225,25 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 				}
 			};
 
-			// Execute the "press" animation if allowed, then perform the action: 
-			if(controller.getCurrentForm().isClickAnimation())
-				(new ClickAnimator(action, v, controller)).execute(); // execute animation and the action afterwards
-			else
-				action.run(); //perform task now (animation is disabled)
+			// Perform the click
+			controller.clickView(v, action);
 		}
 		
 		public void setStartVisibility(boolean visible)
 		{
 			PickerAdapter adapter = getAdapter();
-			adapter.getItem(BUTTON_INDEX_START).setVisibility(visible);
+			Item startItem = adapter.getItem(BUTTON_INDEX_START);
+			if(startItem != null)
+				startItem.setVisibility(visible);
 			setAdapter(adapter); //this does not seem to be needed on Android 4.x, but it is needed on v2.3.x (TODO test if it is really so)
 		}
 		
 		public void setStopVisibility(boolean visible)
 		{
 			PickerAdapter adapter = getAdapter();
-			adapter.getItem(BUTTON_INDEX_STOP).setVisibility(visible);
+			Item stopItem = adapter.getItem(BUTTON_INDEX_STOP);
+			if(stopItem != null)
+				stopItem.setVisibility(visible);
 			setAdapter(adapter); // this does not seem to be needed on Android 4.x, but it is needed on v2.3.x (TODO test if it is really so)
 		}
 

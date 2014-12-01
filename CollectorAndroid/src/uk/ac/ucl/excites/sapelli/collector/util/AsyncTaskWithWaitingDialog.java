@@ -26,13 +26,20 @@ import android.os.AsyncTask;
  * @author mstevens
  *
  * @param <Params>
- * @param <Progress>
  * @param <Result>
  */
-public abstract class AsyncTaskWithWaitingDialog<Params, Progress, Result> extends AsyncTask<Params, Progress, Result>
+public abstract class AsyncTaskWithWaitingDialog<Params, Result> extends AsyncTask<Params, String, Result>
 {
 
-	private ProgressDialog dialog;		
+	private final ProgressDialog dialog;
+	
+	/**
+	 * @param context
+	 */
+	public AsyncTaskWithWaitingDialog(Context context)
+	{
+		this(context, null);
+	}
 	
 	/**
 	 * @param context
@@ -41,10 +48,21 @@ public abstract class AsyncTaskWithWaitingDialog<Params, Progress, Result> exten
 	public AsyncTaskWithWaitingDialog(Context context, String waitingMsg)
 	{
 		dialog = new ProgressDialog(context);
-		dialog.setMessage(waitingMsg);
+		if(waitingMsg != null)
+			dialog.setMessage(waitingMsg);
 		dialog.setCancelable(false);
 	}
-	
+
+	/* (non-Javadoc)
+	 * @see android.os.AsyncTask#onProgressUpdate(java.lang.Object[])
+	 */
+	@Override
+	protected void onProgressUpdate(String... msgs)
+	{
+		if(msgs != null && msgs.length > 0)
+			dialog.setMessage(msgs[0]);
+	}
+
 	@Override
 	protected void onPreExecute()
 	{

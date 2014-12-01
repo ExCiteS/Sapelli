@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.util.AudioPlayer;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
@@ -52,6 +53,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.View;
 
 import com.crashlytics.android.Crashlytics;
 
@@ -364,4 +366,28 @@ public class CollectorController extends Controller implements LocationListener,
 		return SystemClock.elapsedRealtime();
 	}
 
+	/**
+	 * Controls the way that clicked views behave (i.e. animate) and interact
+	 * 
+	 * @param clickView
+	 * @param action
+	 */
+	public void clickView(View clickView, Runnable action)
+	{
+		// Execute the "press" animation if allowed, then perform the action:
+		if(getCurrentForm().isClickAnimation())
+		{
+			// execute animation and the action afterwards
+			ClickAnimator.Animate(action, clickView, this);
+		}
+		else
+		{
+			// Block the UI before running the action and unblock it afterwards
+			blockUI();
+			if(action != null)
+				action.run();
+			unblockUI();
+		}
+	}
+	
 }

@@ -85,6 +85,16 @@ public class TextBoxField extends Field
 	static public final Content DEFAULT_CONTENT = Content.text;		// plain Text content by default
 	static public final Capitalisation DEFAULT_CAPITALISATION = Capitalisation.none; // use no automatic capitalisation by default
 	
+	static public int GetDefaultMinLength(boolean optional)
+	{
+		return optional ? DEFAULT_MIN_LENGTH_OPTIONAL : DEFAULT_MIN_LENGTH_NON_OPTIONAL;
+	}
+	
+	static public String GetDefaultInitialValue(boolean optional)
+	{
+		return optional ? DEFAULT_INITIAL_VALUE_OPTIONAL : DEFAULT_INITIAL_VALUE_NON_OPTIONAL;
+	}
+	
 	// Dynamics
 	private int maxLength;
 	private int minLength;
@@ -104,16 +114,11 @@ public class TextBoxField extends Field
 		super(	form,
 				(id == null || id.isEmpty() ? captionToID(ID_PREFIX, form, caption) : id),
 				caption);
-		this.setMinMaxLength(getDefaultMinLength(), DEFAULT_MAX_LENGTH);
-		this.setInitialValue(getDefaultInitialValue());
+		this.setMinMaxLength(GetDefaultMinLength(optional), DEFAULT_MAX_LENGTH);
+		this.setInitialValue(GetDefaultInitialValue(optional));
 		this.multiline = DEFAULT_MULTILINE;
 		this.content = DEFAULT_CONTENT;
 		this.capitalisation = DEFAULT_CAPITALISATION;
-	}
-
-	public int getDefaultMinLength()
-	{
-		return optional == Optionalness.ALWAYS ? DEFAULT_MIN_LENGTH_OPTIONAL : DEFAULT_MIN_LENGTH_NON_OPTIONAL;
 	}
 	
 	public void setMinMaxLength(int minLength, int maxLength)
@@ -140,11 +145,6 @@ public class TextBoxField extends Field
 		return minLength;
 	}
 	
-	public String getDefaultInitialValue()
-	{
-		return optional == Optionalness.ALWAYS ? DEFAULT_INITIAL_VALUE_OPTIONAL : DEFAULT_INITIAL_VALUE_NON_OPTIONAL;
-	}
-	
 	/**
 	 * @return the initValue
 	 */
@@ -158,7 +158,7 @@ public class TextBoxField extends Field
 	 */
 	public void setInitialValue(String initValue)
 	{
-		if(initValue == null && optional != Optionalness.ALWAYS)
+		if(initValue == null && !optional)
 			throw new IllegalArgumentException("Initial/default value can only be null if the field is (always) optional");
 		if(initValue != null && initValue.length() > maxLength)
 			throw new IllegalArgumentException("Initial/default value is too long (length: " + initValue.length() + "; max: " + maxLength + ")");
@@ -280,6 +280,7 @@ public class TextBoxField extends Field
 	@Override
 	protected Column<?> createColumn(String name)
 	{
+		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
 		switch(content)
 		{
 			case text :
@@ -287,23 +288,23 @@ public class TextBoxField extends Field
 			case email :
 			case phonenumber :
 			default :
-				return StringColumn.ForCharacterCount(name, optional != Optionalness.NEVER, maxLength);
+				return StringColumn.ForCharacterCount(name, colOptional, maxLength);
 			case unsignedint :
-				return new IntegerColumn(name, optional != Optionalness.NEVER, false, Integer.SIZE);
+				return new IntegerColumn(name, colOptional, false, Integer.SIZE);
 			case signedint :
-				return new IntegerColumn(name, optional != Optionalness.NEVER, true, Integer.SIZE);
+				return new IntegerColumn(name, colOptional, true, Integer.SIZE);
 			case unsignedlong :
-				return new IntegerColumn(name, optional != Optionalness.NEVER, false, Long.SIZE);
+				return new IntegerColumn(name, colOptional, false, Long.SIZE);
 			case signedlong :
-				return new IntegerColumn(name, optional != Optionalness.NEVER, true, Long.SIZE);
+				return new IntegerColumn(name, colOptional, true, Long.SIZE);
 			case unsignedfloat :
-				return new FloatColumn(name, optional != Optionalness.NEVER, false, false);
+				return new FloatColumn(name, colOptional, false, false);
 			case signedfloat :
-				return new FloatColumn(name, optional != Optionalness.NEVER, true, false);
+				return new FloatColumn(name, colOptional, true, false);
 			case unsigneddouble :
-				return new FloatColumn(name, optional != Optionalness.NEVER, false, true);
+				return new FloatColumn(name, colOptional, false, true);
 			case signeddouble :
-				return new FloatColumn(name, optional != Optionalness.NEVER, true, true);
+				return new FloatColumn(name, colOptional, true, true);
 		}
 	}
 

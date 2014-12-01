@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+
 import com.db4o.Db4oEmbedded;
 import com.db4o.ObjectContainer;
 import com.db4o.config.EmbeddedConfiguration;
@@ -40,7 +41,7 @@ public final class DB4OConnector
 	
 	static public File getFile(File folder, String filenameWithoutExtension) throws IOException
 	{
-		if(!FileHelpers.createFolder(folder))
+		if(!FileHelpers.createDirectory(folder))
 			throw new IOException("Path does not exist and could not be created: " + folder.getAbsolutePath());
 		return new File(folder.getAbsolutePath() + File.separator + filenameWithoutExtension + '.' + DB4O_FILE_EXTENSION);
 	}

@@ -26,9 +26,10 @@ import java.util.Map;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.io.ProjectLoader;
+import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -332,9 +333,9 @@ public class PrefProjectStore extends ProjectStore
 	}
 	
 	@Override
-	public void backup(File destinationFolder)
+	public void backup(StoreBackuper backuper, File destinationFolder)
 	{
-		// TODO backup
+		// TODO implement preferences backup
 	}
 
 }

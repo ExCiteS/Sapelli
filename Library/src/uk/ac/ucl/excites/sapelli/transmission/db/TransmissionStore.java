@@ -22,10 +22,12 @@ import java.io.File;
 import java.nio.charset.Charset;
 
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreProvider;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -34,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.Source;
@@ -57,7 +60,7 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextSMSTransmission
  * 
  * @author mstevens, Michalis Vitos
  */
-public class TransmissionStore implements Store
+public class TransmissionStore implements Store, StoreClient
 {
 	
 	// STATICS---------------------------------------------
@@ -117,13 +120,15 @@ public class TransmissionStore implements Store
 	}
 	
 	// DYNAMICS--------------------------------------------
-	private TransmissionClient client;
-	private RecordStore recordStore;
+	private final TransmissionClient client;
+	private final RecordStoreProvider recordStoreProvider;
+	private final RecordStore recordStore;
 
-	public TransmissionStore(TransmissionClient client, RecordStore recordStore)
+	public TransmissionStore(TransmissionClient client, RecordStoreProvider recordStoreProvider) throws DBException
 	{
 		this.client = client;
-		this.recordStore = recordStore;
+		this.recordStoreProvider = recordStoreProvider;
+		this.recordStore = recordStoreProvider.getRecordStore(this);
 	}
 	
 	/**
@@ -346,16 +351,22 @@ public class TransmissionStore implements Store
 		return null;
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
+	 */
 	@Override
 	public void finalise() throws DBException
 	{
-		recordStore.finalise();
+		recordStoreProvider.discardStoreUsage(recordStore, this); // signal to recordStoreProvider that this StoreClient is no longer using the recordStore
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#backup(uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper, java.io.File)
+	 */
 	@Override
-	public void backup(File destinationFolder) throws DBException
+	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
-		recordStore.backup(destinationFolder);
+		backuper.addStoreForBackup(recordStore);
 	}
 	
 }

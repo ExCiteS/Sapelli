@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
@@ -62,7 +61,7 @@ public abstract class SelfLeavingFieldUI<F extends Field, V, UI extends Collecto
 	@Override
 	public boolean isValid(Record record)
 	{
-		return field.isNoColumn() || field.getOptional() == Optionalness.ALWAYS || field.getColumn().isValueSet(record);
+		return field.isNoColumn() || field.isOptional() || field.getColumn().isValueSet(record);
 	}
 
 	/* (non-Javadoc)
@@ -71,7 +70,7 @@ public abstract class SelfLeavingFieldUI<F extends Field, V, UI extends Collecto
 	@Override
 	protected boolean isShowForward()
 	{
-		return field.getOptional() == Optionalness.ALWAYS;
+		return field.isOptional();
 	}
 	
 }

@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.collector.activities;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,7 +38,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
-import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.content.Context;
@@ -137,8 +135,24 @@ public class CollectorActivity extends ProjectActivity
 	}
 	
 	@Override
+	protected void onStart()
+	{
+		//Log.d(TAG, "onStart()");
+		
+		// super:
+		super.onStart();
+		
+		// Show demo disclaimer if needed:
+		if(app.getBuildInfo().isDemoBuild())
+			showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
+	}
+
+	@Override
 	protected void onNewIntent(Intent intent)
 	{
+		//Log.d(TAG, "onNewIntent()");
+		
+		// super:
 		super.onNewIntent(intent);
 		
 		// Change the current intent
@@ -151,8 +165,9 @@ public class CollectorActivity extends ProjectActivity
 			controller.discard();
 			controller = null;
 		}
+		timedOut = false; // forget about timeouts in previous project/intent !!!
 		
-		// onResume() will be called next, where the new project will be loaded and a new controller instantiated 
+		// onStart() and onResume() will be called next, in the latter the new project will be loaded and a new controller instantiated 
 	}
 	
 	@Override
@@ -170,19 +185,20 @@ public class CollectorActivity extends ProjectActivity
 		if(pausedForActivityResult)
 		{
 			pausedForActivityResult = false;
-			return; // everything else should still be in order
+			// (controller & project should still be there so nothing will happen below)
 		}
 		
 		// Deal with returning from timeout:
 		if(timedOut)
 		{
+			timedOut = false;
 			if(controller != null)
 				controller.startProject(); // restart project
-			timedOut = false;
-			return; // everything else should still be in order
+			// (unless the controller is null nothing will happen below)
 		}
 		
-		// Load project & set-up controller:
+		/* If there is no loaded project yet (or not anymore) and/or the controller is (or has been made) null, then:
+		 * 	Load the project, set-up controller, (re)initialise UI & start the project: */
 		if(project == null || controller == null) // check both just in case
 		{
 			// Load the project specified by the intent (mandatory):
@@ -193,23 +209,19 @@ public class CollectorActivity extends ProjectActivity
 			catch(Exception e)
 			{
 				showErrorDialog(e.getMessage(), true); // show error and exit activity (hence the return; below to stop onResume() from completing)
-				return;
+				return; // !!!
 			}
 			// ... if we get here this.project is initialised
 	
 			// Set-up controller:
 			controller = new CollectorController(project, collectorView, projectStore, recordStore, fileStorageProvider, this);
-			collectorView.initialise(controller); // !!!
+			collectorView.initialise(controller); // (re)initialise the UI !!!
 			
 			// Start project:
 			controller.startProject();
 			
-			// Show demo disclaimer if needed:
-			if(app.getBuildInfo().isDemoBuild())
-				showOKDialog("Disclaimer", "This is " + app.getBuildInfo().getVersionInfo() + ".\nFor demonstration purposes only.");
-			
 			// Enable audio feedback
-			controller.enableAudioFeedback();
+			controller.enableAudioFeedback(); // TODO make the Controller/collectorController handle this on its own
 		}
 	}
 
@@ -263,21 +275,29 @@ public class CollectorActivity extends ProjectActivity
 	{
 		switch(keyCode)
 		{
-		case KeyEvent.KEYCODE_VOLUME_DOWN:
-			return true;
-		case KeyEvent.KEYCODE_VOLUME_UP:
-			return true;
+			case KeyEvent.KEYCODE_VOLUME_DOWN:
+				return true;
+			case KeyEvent.KEYCODE_VOLUME_UP:
+				return true;
 		}
 		return super.onKeyUp(keyCode, event);
 	}
 	
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent event)
-	{
+	{ 
+		if(controller == null)
+			return false; // just in case...
 		if(controller.isUIBlocked())
-			return false;
+		{
+			// controller.addLogLine("BLOCKED_MOTION_EVENT", event.toString());
+			return true;
+		}
 		else
+		{
+			// controller.addLogLine("DISPATCHED_MOTION_EVENT", event.toString());
 			return super.dispatchTouchEvent(event);
+		}
 	}
 
 	public void startAudioRecorderApp(AndroidAudioUI audioUI)
@@ -477,11 +497,14 @@ public class CollectorActivity extends ProjectActivity
 	@Override
 	protected void onDestroy()
 	{
+		//Log.d(TAG, "onDestory()");
+		
 		// Clean up:
 		collectorView.cancelCurrentField();
 		cancelExitFuture(); // cancel exit timer if needed
 		if(controller != null)
 			controller.cancelAndStop();
+		
 		// super:
 		super.onDestroy(); // discards projectStore & recordStore
 	}

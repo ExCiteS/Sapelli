@@ -39,6 +39,11 @@ public class FileStorageProvider
 	public static enum Folder
 	{
 		/**
+		 * Folder for (live, i.e. non-dumped/backed-up) databases and auxiliary files (e.g. journal file)
+		 */
+		DB,
+		
+		/**
 		 * Folder for (media) attachments, files produced during data collection (e.g. photos, audio, video), grouped per project
 		 */
 		Attachments,
@@ -92,16 +97,21 @@ public class FileStorageProvider
 		this.downloadsFolder = downloadsFolder;
 	}
 	
+	/**
+	 * @return the root Sapelli folder
+	 * @throws FileStorageException
+	 */
 	public File getSapelliFolder() throws FileStorageException
-	{
-		if(sapelliFolder.exists() && sapelliFolder.canRead())
+	{	
+		// Use FileHelpers.createFolder() to check if folder exists, and create it if it doesn't:
+		if(FileHelpers.createDirectory(sapelliFolder) && sapelliFolder.canRead())
 			return sapelliFolder;
 		else
 			throw new FileStorageException("Sapelli folder is not or no longer accessible (path: " + sapelliFolder.getAbsolutePath());
 	}
 	
 	/**
-	 * @return absolute path to Sapelli folder, including trailing file separator (/ or \)
+	 * @return absolute path to the root Sapelli folder, including trailing file separator (/ or \)
 	 */
 	public String getSapelliFolderPath() throws FileStorageException
 	{
@@ -115,31 +125,26 @@ public class FileStorageProvider
 	 *            the type of storage file to return.
 	 * @return
 	 */
-	public File getSapelliFolder(Folder folderType, boolean create)
+	public File getFolder(Folder folderType, boolean create)
 	{
 		switch(folderType)
 		{
+			case DB: 
+				return getDBFolder(create);
 			case Attachments:
 				return getAttachmentsFolder(create);
-	
 			case Downloads:
-				return getDownloadsFolder();
-	
+				return getSapelliDownloadsFolder();
 			case Crashes:
 				return getCrashFolder(create);
-	
 			case Export:
 				return getExportFolder(create);
-	
 			case Logs:
 				return getLogsFolder(create);
-	
 			case Projects:
 				return getProjectsFolder(create);
-	
 			case Temp:
 				return getTempFolder(create);
-	
 			default:
 				return null;
 		}
@@ -148,9 +153,9 @@ public class FileStorageProvider
 	/**
 	 * @return absolute path to Sapelli folder for a given type, including trailing file separator (/ or \)
 	 */
-	public String getSapelliFolderPath(Folder folderType, boolean create)
+	public String getFolderPath(Folder folderType, boolean create)
 	{
-		File folder = getSapelliFolder(folderType, create);
+		File folder = getFolder(folderType, create);
 		return folder != null ? folder.getAbsolutePath() + File.separator : null;
 	}
 
@@ -177,15 +182,17 @@ public class FileStorageProvider
 	 */
 	protected File getProjectSpecificSubFolder(File parent, String projectName, String projectVariant, String projectVersion, boolean create) throws FileStorageException
 	{
-		return createIfNeeded(
-				// (PARENT]/(projectName)[ (projectVariant)]/v(projectVersion)
-				parent.getAbsolutePath() + File.separatorChar + projectName + (projectVariant != null ? " " + projectVariant : "") + File.separatorChar + "v" + projectVersion + File.separatorChar,
-				create);
+		// Hierarchy: (PARENT]/(projectName)[ (projectVariant)]/v(projectVersion)
+		return	getSubFolder(	getSubFolder(	parent,
+												FileHelpers.makeValidFileName(projectName + (projectVariant != null ? " " + projectVariant : "")),
+												create),
+								FileHelpers.makeValidFileName("v" + projectVersion),
+								create);
 	}
 	
 	public File getProjectsFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folder.Projects.name(), create);
+		return getSubFolder(getSapelliFolder(), Folder.Projects.name(), create);
 	}
 
 	public File getProjectInstallationFolder(Project project, boolean create) throws FileStorageException
@@ -199,38 +206,54 @@ public class FileStorageProvider
 	}
 	
 	/**
-	 * Returns and creates a Sapelli-specific subfolder of the device/system Downloads folder
+	 * Returns and creates a Sapelli-specific subfolder of the device/system Download folder
 	 * 
-	 * @param create
 	 * @return
 	 * @throws FileStorageException
 	 */
-	public File getDownloadsFolder() throws FileStorageException
+	public File getSapelliDownloadsFolder() throws FileStorageException
 	{
 		if(downloadsFolder.exists() && downloadsFolder.canWrite())
-			return createIfNeeded(downloadsFolder + File.separator + DOWNLOADS_SAPELLI_FOLDER + File.separator, true);
+			return getSubFolder(downloadsFolder, DOWNLOADS_SAPELLI_FOLDER, true);
 		else
 			throw new FileStorageException("Downloads folder is not or no longer accessible (path: " + downloadsFolder.getAbsolutePath());
 	}
 	
+	public File getDBFolder(boolean create) throws FileStorageException
+	{
+		return getSubFolder(getSapelliFolder(), Folder.DB.name(), create);
+	}
+	
 	public File getCrashFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folder.Crashes.name(), create);
+		return getSubFolder(getSapelliFolder(), Folder.Crashes.name(), create);
 	}
 	
 	public File getTempFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folder.Temp.name(), create);
+		return getSubFolder(getSapelliFolder(), Folder.Temp.name(), create);
+	}
+	
+	/**
+	 * Creates a folder with the given name inside of the Sapelli Temp folder
+	 * 
+	 * @param name
+	 * @return
+	 * @throws FileStorageException
+	 */
+	public File getTempSubFolder(String name) throws FileStorageException
+	{
+		return getSubFolder(getTempFolder(true), name, true);
 	}
 	
 	public File getExportFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getDownloadsFolder().getAbsolutePath() + File.separator + Folder.Export.name(), create);
+		return getSubFolder(getSapelliDownloadsFolder(), Folder.Export.name(), create);
 	}
 
 	public File getAttachmentsFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folder.Attachments.name(), create);
+		return getSubFolder(getSapelliFolder(), Folder.Attachments.name(), create);
 	}
 	
 	public File getProjectAttachmentFolder(Project project, boolean create) throws FileStorageException
@@ -240,7 +263,7 @@ public class FileStorageProvider
 	
 	public File getLogsFolder(boolean create) throws FileStorageException
 	{
-		return createIfNeeded(getSapelliFolder().getAbsolutePath() + File.separator + Folder.Logs.name(), create);
+		return getSubFolder(getSapelliFolder(), Folder.Logs.name(), create);
 	}
 	
 	public File getProjectLogsFolder(Project project, boolean create) throws FileStorageException
@@ -249,23 +272,33 @@ public class FileStorageProvider
 	}
 	
 	/**
-	 * @return the location for creating a zip with backup data i.e. Downloads/Sapelli/Backup_timestamp.zip
+	 * Returns a File object representing a (still uncreated) ZIP file which will be used for a Collector back-up.
+	 * The path will be: <device_download_folder>/Sapelli/Backup_timestamp.zip
+	 * 
+	 * @return the ZIP file (not yet created!)
 	 */
-	public File getBackupFile()
+	public File getNewBackupFile()
 	{
-		return new File(getDownloadsFolder() + File.separator + BACKUP_FILE + "_" + TimeUtils.getTimestampForFileName() + "." + Zipper.ZIP_EXTENSION);
+		return new File(getSapelliDownloadsFolder(), BACKUP_FILE + "_" + TimeUtils.getTimestampForFileName() + "." + Zipper.ZIP_EXTENSION);
 	}
 
-	private File createIfNeeded(String folderPath, boolean create) throws FileStorageException
+	/**
+	 * @param parentFolder
+	 * @param subFolderName
+	 * @param create
+	 * @return
+	 * @throws FileStorageException
+	 */
+	private File getSubFolder(File parentFolder, String subFolderName, boolean create) throws FileStorageException
 	{
-		File folder = new File(folderPath);
-		
-		// Create and test the folder
-		if(create)
+		try
 		{
-			if(!FileHelpers.createFolder(folder))
-				throw new FileStorageException("Could not create folder: " + folder.getAbsolutePath());
+			return FileHelpers.getSubDirectory(parentFolder, subFolderName, create);
 		}
-		return folder;
+		catch(Exception e)
+		{	// Wrap as FileStorageException:
+			throw new FileStorageException(e);
+		}
 	}
+	
 }

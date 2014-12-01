@@ -126,8 +126,8 @@ public abstract class Column<T> implements Serializable
 	}
 
 	// DYNAMICS------------------------------------------------------
-	protected final String name;
-	protected final boolean optional;
+	public final String name;
+	public final boolean optional;
 	protected List<VirtualColumn<?, T>> virtualVersions;
 
 	public Column(String name, boolean optional)

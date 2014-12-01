@@ -18,9 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
+import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
-import uk.ac.ucl.excites.sapelli.collector.model.Field.Optionalness;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField.Content;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
@@ -55,7 +55,7 @@ import android.widget.TextView;
 public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 {
 
-	// STATIC -------------------------------------------------------
+	// STATIC -------------------------------------------------------	
 	private static final float NULL_MODE_CROSS_LINE_WIDTH_DIP = 5.0f;
 	private static final int NULL_MODE_CROSS_COLOR = Color.LTGRAY;
 	private static final int NULL_MODE_TEXT_COLOR = Color.DKGRAY;
@@ -97,7 +97,7 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 
 			// Set default or current value:
 			String value = retrieveValue(record);
-			view.setValue(value != null || (field.getOptional() == Optionalness.ALWAYS && controller.getCurrentMode() == Mode.EDIT) ? value : field.getInitialValue());
+			view.setValue(value != null || (field.isOptional() && controller.getCurrentMode() == Mode.EDIT) ? value : field.getInitialValue());
 		}
 
 		// Return view:
@@ -105,10 +105,34 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 	}
 
 	@Override
-	protected void setValidationError(String errorDescr)
+	protected void setValidationError(int errorCode, Integer argument, boolean hintOptional)
 	{
-		if(view != null)
-			view.setError(errorDescr);
+		if(view == null)
+			return; // !!!
+		String errorDescr = null;
+		switch(errorCode)
+		{
+			case VALIDATION_ERROR_NON_OPTIONAL_MISSING :
+				errorDescr = collectorUI.getContext().getString(R.string.txtValidationErrorMissing);
+				break;
+			case VALIDATION_ERROR_TOO_SHORT :
+				errorDescr = collectorUI.getContext().getString(R.string.txtValidationErrorShort, argument);
+				break;
+			case VALIDATION_ERROR_TOO_LONG :
+				errorDescr = collectorUI.getContext().getString(R.string.txtValidationErrorLong, argument);
+				break;
+			case VALIDATION_ERROR_PATTERN_MISMATCH :
+				errorDescr = collectorUI.getContext().getString(R.string.txtValidationErrorrPattern);
+				break;
+			case VALIDATION_ERROR_INVALID_NUMERIC :
+				errorDescr = collectorUI.getContext().getString(R.string.txtValidationErrorInvalidNumber);
+				break;
+			case VALIDATION_ERROR_INVALID :
+			default:
+				errorDescr = collectorUI.getContext().getString(R.string.txtValidationErrorInvalid);
+				break;
+		}
+		view.setError(errorDescr);
 	}
 
 	@Override
@@ -244,11 +268,11 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 					editTextColors = editText.getTextColors();
 					editText.setTextColor(NULL_MODE_TEXT_COLOR);
 					// Set "Touch to set/edit" String:
-					editText.setText(controller.getCurrentMode() == Mode.CREATE ? NULL_MODE_CREATE : NULL_MODE_EDIT);					
+					editText.setText(controller.getCurrentMode() == Mode.CREATE ? R.string.txtNullModeCreate : R.string.txtNullModeEdit);					
 				}
 				else
 					// Set "(no value set)" String:
-					editText.setText(NULL_MODE_DISABED);
+					editText.setText(R.string.txtNullModeDisabled);
 				// Lose focus:
 				editText.clearFocus();
 			}
@@ -368,11 +392,16 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			// Event handlers:
 			editText.setOnFocusChangeListener(enabled ? this : null);
 			editText.addTextChangedListener(enabled ? this : null);
-			editText.setOnKeyListener(enabled && field.getOptional() == Optionalness.ALWAYS ? this : null); // only used on optional fields
+			editText.setOnKeyListener(enabled && field.isOptional() ? this : null); // only used on optional fields
 		}
 		
 		public void setError(String error)
 		{
+			if(error == null || error.isEmpty())
+			{	// just to be sure
+				clearError();
+				return;
+			}
 			errorMsg.setText(error);
 			errorMsg.setVisibility(VISIBLE);
 		}

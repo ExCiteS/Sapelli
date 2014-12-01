@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
@@ -45,9 +46,11 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 public abstract class RecordStore implements Store
 {
 
+	// STATIC -----------------------------------------------------------------
 	static public final String DATABASE_NAME_SUFFIX = "-RecordStore";
-	static public final String BACKUP_SUFFIX = "_Backup";
+	static public final String BACKUP_SUFFIX = "_Backup_"; // to be followed by a timestamp 
 	
+	// DYNAMIC ----------------------------------------------------------------
 	protected StorageClient client;
 	
 	/**
@@ -476,14 +479,23 @@ public abstract class RecordStore implements Store
 	
 	protected abstract void close() throws DBException;
 	
-	public void backup(File destinationFolder) throws DBException
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#backup(uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper, java.io.File)
+	 */
+	@Override
+	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
 		if(isInTransaction())
-			throw new DBException("Cannot back-up database due to uncommited transaction!"); // TODO remove this?
-		doBackup(destinationFolder);
+			throw new DBException("Cannot back-up database due to uncommited transaction!");
+		doBackup(backuper, destinationFolder);
 	}
 	
-	protected abstract void doBackup(File destinationFolder) throws DBException;
+	/**
+	 * @param backuper
+	 * @param destinationFolder
+	 * @throws DBException
+	 */
+	protected abstract void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException;
 	
 	/**
 	 * @return whether or not this RecordStore implementation has full support for indexes (and the constraints they impose)

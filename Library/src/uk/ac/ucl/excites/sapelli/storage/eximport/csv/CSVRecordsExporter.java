@@ -108,7 +108,7 @@ public class CSVRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	
 	public CSVRecordsExporter(File exportFolder, Separator separator)
 	{
-		if(!FileHelpers.createFolder(exportFolder))
+		if(!FileHelpers.createDirectory(exportFolder))
 			throw new IllegalArgumentException("Export folder (" + exportFolder + ") does not exist and could not be created!");
 		this.exportFolder = exportFolder;
 		this.separator = separator;
