@@ -115,7 +115,7 @@ public class XMLRecordsExporter extends SimpleSchemaTraverser implements Exporte
 	
 	public XMLRecordsExporter(File exportFolder, CompositeMode compositeMode)
 	{
-		if(!FileHelpers.createFolder(exportFolder))
+		if(!FileHelpers.createDirectory(exportFolder))
 			throw new IllegalArgumentException("Export folder (" + exportFolder + ") does not exist and could not be created!");
 		this.exportFolder = exportFolder;
 		this.compositeMode = compositeMode;

@@ -16,30 +16,24 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.io;
+package uk.ac.ucl.excites.sapelli.storage.db;
+
+import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreProvider;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 
 /**
  * @author mstevens
  *
  */
-public class FileStorageException extends IllegalStateException
+public interface RecordStoreProvider extends StoreProvider
 {
 
-	private static final long serialVersionUID = 2L;
-
-	public FileStorageException(String detailMessage)
-	{
-		super(detailMessage);
-	}
-
-	public FileStorageException(String message, Throwable cause)
-	{
-		super(message, cause);
-	}
-	
-	public FileStorageException(Throwable cause)
-	{
-		super(cause);
-	}
+	/**
+	 * @param client
+	 * @return
+	 * @throws DBException
+	 */
+	public RecordStore getRecordStore(StoreClient client) throws DBException;
 
 }

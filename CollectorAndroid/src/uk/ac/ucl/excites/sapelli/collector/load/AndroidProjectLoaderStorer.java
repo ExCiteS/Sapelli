@@ -69,7 +69,7 @@ public class AndroidProjectLoaderStorer extends ProjectLoaderStorer
 	/**
 	 * @author mstevens
 	 */
-	private class AsyncProjectLoadStoreTask extends AsyncTaskWithWaitingDialog<Void, Void, Project>
+	private class AsyncProjectLoadStoreTask extends AsyncTaskWithWaitingDialog<Void, Project>
 	{
 
 		private File sapelliFile;

@@ -16,30 +16,32 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.io;
+package uk.ac.ucl.excites.sapelli.shared.db;
+
+import java.io.File;
 
 /**
  * @author mstevens
  *
  */
-public class FileStorageException extends IllegalStateException
+public interface StoreProvider
 {
 
-	private static final long serialVersionUID = 2L;
+	/**
+	 * Called by a DataAccessClient to signal it will no longer use its DataAccess object 
+	 * 
+	 * @param store
+	 * @param client
+	 */
+	public void discardStoreUsage(Store store, StoreClient client);
 
-	public FileStorageException(String detailMessage)
-	{
-		super(detailMessage);
-	}
-
-	public FileStorageException(String message, Throwable cause)
-	{
-		super(message, cause);
-	}
-	
-	public FileStorageException(Throwable cause)
-	{
-		super(cause);
-	}
+	/**
+	 * Backs-up all known Stores
+	 * 
+	 * @param destinationFolder
+	 * @param labelFilesAsBackup whether or not the files which are created should be labels (in their filename) as backups or not (in which case the name of the original file, if there is one, will be used)
+	 * @throws Exception
+	 */
+	public void backupStores(File destinationFolder, boolean labelFilesAsBackup) throws Exception;
 
 }

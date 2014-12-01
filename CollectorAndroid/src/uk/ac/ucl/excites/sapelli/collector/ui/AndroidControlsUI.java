@@ -192,9 +192,12 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		ControlItem item = (ControlItem) view.getAdapter().getItem(position);
 
 		// Audio Feedback
-		AudioFeedbackController audioController = new AudioFeedbackController(controller);
-		audioController.playAnswer(parent.getContext(), item, v);
-
+		if(item != null)
+		{
+			AudioFeedbackController audioController = new AudioFeedbackController(controller);
+			audioController.playAnswer(parent.getContext(), item, v);
+		}
+		
 		return true;
 	}
 

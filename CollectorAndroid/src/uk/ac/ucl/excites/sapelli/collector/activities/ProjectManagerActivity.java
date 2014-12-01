@@ -29,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.load.AndroidProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoaderStorer;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.ui.dialogs.BackupDialogBuilder;
+import uk.ac.ucl.excites.sapelli.collector.tasks.Backup;
 import uk.ac.ucl.excites.sapelli.collector.util.AsyncDownloader;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
@@ -371,23 +371,16 @@ public class ProjectManagerActivity extends BaseActivity implements StoreClient,
 
 		return true;
 	}
-
-	public boolean copyDBtoSD(MenuItem item)
-	{
-		try
-		{
-			app.backupStores();
-		}
-		catch(Exception e)
-		{
-			showErrorDialog(getString(R.string.backupFailDueTo, ExceptionHelpers.getMessageAndCause(e)), false);
-		}
-		return true;
-	}
 	
+	/**
+	 * Create Sapelli back-up package
+	 * 
+	 * @param item
+	 * @return
+	 */
 	public boolean backupSapelli(MenuItem item)
 	{
-		BackupDialogBuilder.Build(fileStorageProvider, this).show();
+		Backup.Run(this, fileStorageProvider, app);
 		return true;
 	}
 	

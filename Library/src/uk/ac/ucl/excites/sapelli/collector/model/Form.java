@@ -32,11 +32,11 @@ import uk.ac.ucl.excites.sapelli.collector.util.ColumnOptionalityAdvisor;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.ModelFullException;
 
@@ -539,7 +539,7 @@ public class Form implements WarningKeeper
 		{
 			List<LocationField> startLF = new ArrayList<LocationField>();
 			for(LocationField lf : getLocationFields())
-				if(lf.isStartWithForm())
+				if(lf.getStartWith() == LocationField.START_WITH.FORM)
 					startLF.add(lf);
 			return startLF;
 		}

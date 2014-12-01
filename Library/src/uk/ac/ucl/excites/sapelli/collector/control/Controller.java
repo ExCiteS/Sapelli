@@ -537,7 +537,7 @@ public abstract class Controller implements FieldVisitor
 	@Override
 	public boolean enterLocationField(LocationField lf, FieldParameters arguments, boolean withPage)
 	{
-		if(withPage && !lf.isStartWithPage())
+		if(withPage && !(lf.getStartWith() == LocationField.START_WITH.PAGE))
 			return false;
 		
 		if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currFormSession.record, getCurrentBestLocation()))

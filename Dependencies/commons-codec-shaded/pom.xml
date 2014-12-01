@@ -7,7 +7,7 @@
 	<name>Apache Commons Codec (shaded)</name>
 	<!-- The version of this project specifies the Apache Commons Codec version which will
 		 be used, it must therefore match an existing (and preferably current) version. -->
-	<version>1.9</version>
+	<version>1.10</version>
 	<packaging>jar</packaging>
 	
 	<!--

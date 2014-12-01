@@ -99,9 +99,10 @@ public abstract class Item
 		view.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
 	}
 
-	public void setVisibility(boolean visible)
+	public Item setVisibility(boolean visible)
 	{
 		this.visible = visible;
+		return this;
 	}
 	
 	public boolean isVisible()
@@ -120,9 +121,10 @@ public abstract class Item
 	/**
 	 * @param paddingPx the paddingPx to set
 	 */
-	public void setPaddingPx(int paddingPx)
+	public Item setPaddingPx(int paddingPx)
 	{
 		this.paddingPx = paddingPx;
+		return this;
 	}
 	
 	public boolean hasID()
@@ -146,9 +148,10 @@ public abstract class Item
 	/**
 	 * @param backgroundColor the backgroundColor to set
 	 */
-	public void setBackgroundColor(int backgroundColor)
+	public Item setBackgroundColor(int backgroundColor)
 	{
 		this.backgroundColor = backgroundColor;
+		return this;
 	}
 
 	/**
@@ -162,8 +165,9 @@ public abstract class Item
 	/**
 	 * @param description the description to set
 	 */
-	public void setDescription(String description)
+	public Item setDescription(String description)
 	{
 		this.description = description;
+		return this;
 	}
 }

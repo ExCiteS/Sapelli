@@ -378,7 +378,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				controller.blockUI();
 				// Execute the "press" animation if allowed, then perform the action:
 				if(controller.getCurrentForm().isClickAnimation())
-					(new ClickAnimator(onClickRunnable, view, collectorUI)).execute(); // execute animation and the action afterwards
+					ClickAnimator.Animate(onClickRunnable, view, controller); // execute animation and the action afterwards
 				else
 					onClickRunnable.run(); // perform task now (animation is disabled)
 

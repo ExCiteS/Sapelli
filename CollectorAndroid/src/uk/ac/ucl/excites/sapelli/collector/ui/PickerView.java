@@ -23,6 +23,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.TextItem;
 import android.content.Context;
 import android.view.View;
 import android.view.ViewGroup;
@@ -108,6 +109,7 @@ public class PickerView extends GridView
 		public void addItem(Item item)
 		{
 			items.add(item);
+			notifyDataSetChanged();
 		}
 		
 		public void addItemAt(int location, Item item) {
@@ -122,6 +124,7 @@ public class PickerView extends GridView
 		public void clear()
 		{
 			items.clear();
+			notifyDataSetChanged();
 		}
 
 		@Override
@@ -133,6 +136,8 @@ public class PickerView extends GridView
 		@Override
 		public Item getItem(int position)
 		{
+			if(position < 0 || position >= items.size())
+				return null; // prevent IndexOutOfBoundsException (should never happen)
 			return items.get(position);
 		}
 
@@ -140,7 +145,7 @@ public class PickerView extends GridView
 		public long getItemId(int position)
 		{
 			Item item = getItem(position);
-			if(item.hasID())
+			if(item != null && item.hasID())
 				return (long) item.getID();
 			return position;
 		}
@@ -151,15 +156,19 @@ public class PickerView extends GridView
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent)
 		{
+			Item item = getItem(position);
+			if(item == null)
+				return new TextItem("Error").getView(getContext()); // this really shouldn't ever happen ;-)
+			
 			if(recycleViews && convertView != null && convertView.getId() == getItemId(position))
 			{
-				items.get(position).applyVisibility(convertView); // in case visibility has changed
+				item.applyVisibility(convertView); // in case visibility has changed
 				return convertView;
 			}
 			else
 			{
 				// Create the view:
-				View view = items.get(position).getView(getContext(), recycleViews);
+				View view = item.getView(getContext(), recycleViews);
 				
 				// Set id:
 				view.setId((int) getItemId(position));

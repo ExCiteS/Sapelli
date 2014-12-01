@@ -258,7 +258,7 @@ public class FileWriter
 
 	public String getContainingFolderPath()
 	{
-		return FileHelpers.getFolderPath(file.getAbsolutePath());
+		return FileHelpers.getParentPath(file.getAbsolutePath());
 	}
 	
 	public File getFile()

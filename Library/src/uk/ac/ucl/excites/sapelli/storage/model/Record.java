@@ -588,7 +588,7 @@ public class Record implements Serializable
 	{
 		int hash = 1;
 		hash = 31 * hash + schema.hashCode();
-		hash = 31 * hash + Arrays.hashCode(values);
+		hash = 31 * hash + Arrays.deepHashCode(values);
 		return hash;
 	}
 	
@@ -652,7 +652,7 @@ public class Record implements Serializable
 		return other == null ?	false :
 								(asStoredBinary ?
 									hasEqualValues(other, this.schema.getColumns(false), true) : // compare all non-virtual columns, using values as if decoded from binary stream
-									Arrays.equals(this.values, other.values));
+									Arrays.deepEquals(this.values, other.values));
 	}
 	
 	/**

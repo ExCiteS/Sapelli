@@ -30,6 +30,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
@@ -45,9 +46,7 @@ import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteBooleanColumn
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteDoubleColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteIntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.types.SQLiteStringColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
-import uk.ac.ucl.excites.sapelli.storage.model.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.ListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -57,6 +56,8 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 
 /**
@@ -68,7 +69,6 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	
 	// Statics----------------------------------------------
 	static public final String DATABASE_FILE_EXTENSION = "sqlite3";
-	static public final String BACKUP_SUFFIX = "_Backup";
 	static public final String PARAM_PLACEHOLDER = "?";
 	
 	/**
@@ -96,7 +96,10 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	// Dynamics---------------------------------------------
 	private final SQLiteTableFactory factory;
 	
-	public SQLiteRecordStore(StorageClient client) throws Exception
+	/**
+	 * @param client
+	 */
+	public SQLiteRecordStore(StorageClient client)
 	{
 		super(client, PARAM_PLACEHOLDER);
 		factory = new SQLiteTableFactory();
@@ -219,18 +222,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	protected abstract ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException;
 
 	@Override
-	protected void doBackup(File destinationFolder) throws DBException
+	protected void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
 		File currentDB = getDatabaseFile();
-		String extension = FileHelpers.getFileExtension(currentDB);
-		File backupDB = new File(destinationFolder, FileHelpers.trimFileExtensionAndDot(currentDB.getName()) + BACKUP_SUFFIX + "_" + TimeUtils.getTimestampForFileName() + "." + (extension.isEmpty() ? DATABASE_FILE_EXTENSION : extension));
 		if(currentDB != null && currentDB.exists() && destinationFolder.canWrite())
-		{	// File copy:
+		{
+			// Get destination file:
+			File backupDB;
+			if(backuper.isLabelFilesAsBackup())
+			{	// File name format: [original_name_w/o_extension]_Backup_[timestamp].[original_extension]
+				String extension = FileHelpers.getFileExtension(currentDB);
+				backupDB = new File(destinationFolder,
+									FileHelpers.trimFileExtensionAndDot(currentDB.getName()) + BACKUP_SUFFIX + TimeUtils.getTimestampForFileName() + "." + (extension.isEmpty() ? DATABASE_FILE_EXTENSION : extension));
+			}
+			else
+				// Using original file name
+				backupDB = new File(destinationFolder, currentDB.getName());
+			// Perform the actual back-up:
 			try
 			{
-				FileUtils.copyFile(currentDB, backupDB);
+				doBackup(backupDB);
 			}
-			catch(IOException e)
+			catch(Exception e)
 			{
 				throw new DBException("Failed to back-up SQLite database to: " + backupDB.getAbsolutePath(), e);
 			}
@@ -239,6 +252,21 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			throw new DBException("Failed to back-up SQLite database");
 	}
 	
+	/**
+	 * Back-up by means of file copy.
+	 * May be overridden.
+	 * 
+	 * @param destinationFile
+	 * @throws Exception
+	 */
+	protected void doBackup(File destinationFile) throws Exception
+	{
+		FileUtils.copyFile(getDatabaseFile(), destinationFile);
+	}
+	
+	/**
+	 * @return
+	 */
 	protected abstract File getDatabaseFile();
 	
 	/**
