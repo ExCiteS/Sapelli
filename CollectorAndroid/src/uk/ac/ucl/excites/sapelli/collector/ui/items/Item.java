@@ -67,6 +67,14 @@ public abstract class Item
 		if(view == null || !recycle)
 			view = createView(context, recycle);
 		
+		// (Re)apply properties:
+		applyProperties(view);
+		
+		return view;
+	}
+	
+	public void applyProperties(View view)
+	{
 		// Set padding:
 		view.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
 		
@@ -74,9 +82,7 @@ public abstract class Item
 		view.setBackgroundColor(backgroundColor);
 		
 		// Set view visibility:
-		applyVisibility(view);
-		
-		return view;
+		view.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
 	}
 	
 	public void invalidateView()
@@ -90,11 +96,6 @@ public abstract class Item
 	 * @return
 	 */
 	protected abstract View createView(Context context, boolean recycleChildren);
-	
-	public void applyVisibility(View view)
-	{
-		view.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
-	}
 
 	public Item setVisibility(boolean visible)
 	{

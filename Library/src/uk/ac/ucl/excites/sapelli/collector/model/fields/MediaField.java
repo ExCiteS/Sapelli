@@ -47,6 +47,8 @@ public abstract class MediaField extends Field
 	static public final int DEFAULT_MAX = 255; //column will use 1 byte (up to 255 items)
 	static public final char FILENAME_ELEMENT_SEPARATOR = '_';
 	
+	static public final String ID_PREFIX = "media";
+	
 	static private final Pattern OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
 	
 	//protected int min;
@@ -54,9 +56,14 @@ public abstract class MediaField extends Field
 	protected int max;
 	protected ChoiceField disableChoice;
 
+	/**
+	 * @param form
+	 * @param id the id of the field, may be null (but not recommended)
+	 * @param caption the caption of the field, may be null (in which case the id is used as the caption)
+	 */
 	public MediaField(Form form, String id, String caption)
 	{
-		super(form, id, caption);
+		super(form, GetID(id, form, ID_PREFIX, caption), GetCaption(id, caption));
 		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);		
 	}
 	

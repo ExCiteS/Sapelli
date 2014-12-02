@@ -52,14 +52,14 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	}
 	
 	// Dynamics------------------------------------------------------
-	protected Controller controller;
+	protected Controller<UI> controller;
 	protected UI collectorUI;
 	protected boolean enabled;
 	
 	private Form currentForm;
 	private State[] controlStates;
 	
-	public ControlsUI(Controller controller, UI collectorUI)
+	public ControlsUI(Controller<UI> controller, UI collectorUI)
 	{
 		this.controller = controller;
 		this.collectorUI = collectorUI;

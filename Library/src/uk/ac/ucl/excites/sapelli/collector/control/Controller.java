@@ -60,10 +60,12 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
  * Abstract Controller class
+ *
+ * @param <CUI>
  * 
  * @author mstevens, Michalis Vitos, Julia
  */
-public abstract class Controller implements FieldVisitor
+public abstract class Controller<CUI extends CollectorUI<?, ?>> implements FieldVisitor
 {
 	
 	// STATICS-------------------------------------------------------
@@ -169,7 +171,7 @@ public abstract class Controller implements FieldVisitor
 	
 	// DYNAMICS------------------------------------------------------
 	protected final Project project;
-	protected final CollectorUI<?, ?> ui;
+	protected final CUI ui;
 	protected final ProjectStore projectStore;
 	protected final RecordStore recordStore;
 	protected final FileStorageProvider fileStorageProvider;
@@ -183,7 +185,7 @@ public abstract class Controller implements FieldVisitor
 	
 	protected volatile boolean blockedUI = false;
 
-	public Controller(Project project, CollectorUI<?, ?> ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
+	public Controller(Project project, CUI ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
 	{
 		this.project = project;
 		this.ui = ui;
@@ -480,7 +482,7 @@ public abstract class Controller implements FieldVisitor
 		if(currFormSession.form.isVibrateOnSave())
 			vibrate(VIBRATION_DURATION_MS);
 		// Play sound
-		File endSoundFile = project.getSoundFile(fileStorageProvider, currFormSession.form.getSaveSoundRelativePath());
+		File endSoundFile = fileStorageProvider.getProjectSoundFile(project, currFormSession.form.getSaveSoundRelativePath());
 		if(FileHelpers.isReadableFile(endSoundFile))
 			playSound(endSoundFile);
 	}

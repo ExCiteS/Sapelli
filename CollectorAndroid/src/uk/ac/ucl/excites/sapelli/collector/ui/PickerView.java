@@ -153,7 +153,7 @@ public class PickerView extends GridView
 			
 			if(recycleViews && convertView != null && convertView.getId() == getItemId(position))
 			{
-				item.applyVisibility(convertView); // in case visibility has changed
+				item.applyProperties(convertView); // in case item properties (e.g. visibility) have changed in the meantime
 				return convertView;
 			}
 			else

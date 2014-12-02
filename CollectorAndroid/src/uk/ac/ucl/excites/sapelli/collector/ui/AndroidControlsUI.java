@@ -191,11 +191,16 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		// Get the pressed ControlItem
 		ControlItem item = (ControlItem) view.getAdapter().getItem(position);
 
-		// Audio Feedback
-		if(item != null)
+		if(item != null) // just in case...
 		{
-			AudioFeedbackController audioController = new AudioFeedbackController(controller);
-			audioController.playAnswer(parent.getContext(), item, v);
+			// Audio Feedback
+			if(controller.isAudioFeedbackUsed() && item != null)
+			{
+				AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
+				//afc.play(afc.new PlaybackJob(item.getDescriptionAudioRelativePath()), v)); TODO
+			}
+			else
+				controller.addLogLine("LONG_CLICK", "LongClick on " + Control.values()[(int) id].name() + " but AudioFeedback is disabled");
 		}
 		
 		return true;
@@ -253,8 +258,8 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 					drawable = new HorizontalArrow(FOREGROUND_COLOR, false);
 					this.setDescription(form.getForwardButtonDescription());
 					break;
-			}				
-			File imgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), imgRelativePath);
+			}
+			File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), imgRelativePath);
 			Item button = null;
 			if(FileHelpers.isReadableFile(imgFile))
 				button = new FileImageItem(imgFile);

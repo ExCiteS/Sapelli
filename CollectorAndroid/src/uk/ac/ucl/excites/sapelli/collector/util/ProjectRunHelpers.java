@@ -109,7 +109,7 @@ public class ProjectRunHelpers
 	static public void createShortcut(ContextWrapper contextWrapper, FileStorageProvider fileStorageProvider, Project project)
 	{
 		// Icon image file:
-		File shortcutImageFile = project.getImageFile(fileStorageProvider, project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
+		File shortcutImageFile = fileStorageProvider.getProjectImageFile(project, project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
 
 		// Shortcut name:
 		String shortcutName = project.toString();

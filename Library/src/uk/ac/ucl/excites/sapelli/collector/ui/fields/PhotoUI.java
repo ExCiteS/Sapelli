@@ -29,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 public abstract class PhotoUI<V, UI extends CollectorUI<V, UI>> extends MediaUI<PhotoField, V, UI>
 {
 	
-	public PhotoUI(PhotoField field, Controller controller, UI collectorUI)
+	public PhotoUI(PhotoField field, Controller<UI> controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

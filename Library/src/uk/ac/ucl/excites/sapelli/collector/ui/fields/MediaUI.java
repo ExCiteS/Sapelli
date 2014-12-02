@@ -35,7 +35,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<MF, V, UI>
 {
 
-	public MediaUI(MF field, Controller controller, UI collectorUI)
+	public MediaUI(MF field, Controller<UI> controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

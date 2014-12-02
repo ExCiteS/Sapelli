@@ -23,7 +23,7 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
-import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
@@ -35,12 +35,14 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<ChoiceField, V, UI>
 {
 
+	static public final String MISSING_CAPTION_TEXT = "?";
+	
 	/**
 	 * @param field
 	 * @param controller
 	 * @param collectorUI
 	 */
-	public ChoiceUI(ChoiceField choice, Controller controller, UI collectorUI)
+	public ChoiceUI(ChoiceField choice, Controller<UI> controller, UI collectorUI)
 	{
 		super(choice, controller, collectorUI);
 		if(choice.isLeaf()) // just in case...
@@ -68,9 +70,9 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	protected void choiceMade(ChoiceField chosenChild)
 	{
 		if(!controller.isFieldEnabled(chosenChild))
-			throw new IllegalArgumentException("This choice is disabled:" + chosenChild.getAltText()); // should never happen
+			throw new IllegalArgumentException("This choice is disabled:" + chosenChild.getID()); // should never happen
 
-		controller.addLogLine("CLICKED", chosenChild.getAltText());
+		controller.addLogLine("CLICKED", chosenChild.toString(true));
 
 		FieldWithArguments next;
 		if(chosenChild.isLeaf())
@@ -86,6 +88,40 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 		// Go...
 		controller.goTo(next, chosenChild.isLeaf() && field.getDictionary().contains(chosenChild) ? LeaveRule.CONDITIONAL : LeaveRule.UNCONDITIONAL_NO_STORAGE);
 	}
+	
+	/**
+	 * Returns the String to display as the caption under an image or instead of an image when no image was specified
+	 * 
+	 * @param choice
+	 * @param allowCaption whether the ChoiceField.caption can be used (because it is isn't already displayed above the caption item)
+	 * @return text to use a caption (not necessarily taken from choice#caption)
+	 */
+	protected String getCaptionText(ChoiceField choice, boolean allowCaption)
+	{
+		if(choice.hasCaption() && allowCaption) // only use caption if it is not already displayed underneath the image, or above it in a page label
+			return choice.getCaption();
+		if(choice.getValue() != null)
+			return choice.getValue();
+		return MISSING_CAPTION_TEXT;
+	}
+	
+	/**
+	 * Returns the String to display *instead* of an image which the form designer
+	 * wanted to show (meaning that choice#imageRelativePath is not null) but which
+	 * cannot be displayed (due to missing/inaccessible file).
+	 * 
+	 * @param choice
+	 * @param standAlone whether the text will be displayed on its own, or not (i.e. under an image or under a page caption-label)
+	 * @return text to display instead of a missing image
+	 */
+	protected String getAltText(ChoiceField choice, boolean standAlone)
+	{
+		if(choice.hasCaption() && standAlone) // only use caption if it is not already displayed underneath the image, or above it in a page label
+			return choice.getCaption();
+		if(choice.getValue() != null)
+			return choice.getValue();
+		return choice.getImageRelativePath();
+	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#isFieldUsingAudioFeedback(boolean)
@@ -93,13 +129,13 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	@Override
 	protected boolean isFieldUsingAudioFeedback(boolean withPage)
 	{
-		return true;
+		return !withPage; // do not use if on page (yet)
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#getAudioFeedbackJobs(uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback, boolean)
 	 */
 	@Override
-	protected abstract List<AbstractAudioFeedbackController<V>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage);
+	protected abstract List<AudioFeedbackController<V>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage);
 
 }

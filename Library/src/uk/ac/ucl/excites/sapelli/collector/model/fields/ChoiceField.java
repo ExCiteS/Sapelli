@@ -34,9 +34,9 @@ import uk.ac.ucl.excites.sapelli.collector.model.dictionary.Dictionary.Dictionar
 import uk.ac.ucl.excites.sapelli.collector.model.dictionary.DictionaryItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.ChoiceUI;
-import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
+import uk.ac.ucl.excites.sapelli.shared.util.TransactionalStringBuilder;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
@@ -48,12 +48,28 @@ import uk.ac.ucl.excites.sapelli.storage.util.StringListMapper;
  * 
  * @author mstevens
  */
+/**
+ * @author mstevens
+ *
+ */
 public class ChoiceField extends Field implements DictionaryItem
 {
 	
 	static public final int DEFAULT_NUM_COLS = 1;
 	static public final int DEFAULT_NUM_ROWS = 2;
-	static public final String DEFAULT_ALT_TEXT = "?";
+	
+	/**
+	 * By default the caption (if one is specified!) will take up a quarter of the available height.
+	 */
+	static public final float DEFAULT_CAPTION_HEIGHT = 0.25f;
+	
+	/**
+	 * When the caption was specified using the deprecated "alt" attribute then it is not displayed by default
+	 * (hence the default height is 0). It will only be displayed underneath the image if a different captionHeight
+	 * is specified in the XML, or instead of the image if no image path is given or the image file is not accessible.
+	 */
+	static public final float DEFAULT_CAPTION_ALT_HEIGHT = 0.0f;
+	
 	static public final boolean DEFAULT_CROSSED = false;
 	static public final String DEFAULT_CROSS_COLOR = "#A5FF0000"; // Red with 65% alpha
 	
@@ -64,11 +80,11 @@ public class ChoiceField extends Field implements DictionaryItem
 	private ChoiceField root;
 	private List<ChoiceField> children;
 	private String imageRelativePath;
-	private String answerDesc;
-	private String questionDesc;
+	private String answerDescription;
+	private String answerDescriptionAudioRelativePath;
 	private int cols = DEFAULT_NUM_COLS;
 	private int rows = DEFAULT_NUM_ROWS;
-	private String altText;
+	private float captionHeight = DEFAULT_CAPTION_HEIGHT;
 	private boolean crossed = DEFAULT_CROSSED;
 	private String crossColor = DEFAULT_CROSS_COLOR;
 	private final String value;
@@ -133,71 +149,21 @@ public class ChoiceField extends Field implements DictionaryItem
 	{
 		return imageRelativePath != null;
 	}
-
+	
 	/**
-	 * @return the answerDesc
+	 * @return the fraction of the choice field's height that will be taken up by the caption text.
 	 */
-	public String getAnswerDesc()
+	public float getCaptionHeight()
 	{
-		return answerDesc;
+		return captionHeight;
 	}
-
+	
 	/**
-	 * @param answerDesc
-	 *            the answerDesc to set
+	 * @param captionHeight - the fraction of the choice field's height that will be taken up by the caption text.
 	 */
-	public void setAnswerDesc(String answerDesc)
+	public void setCaptionHeight(float captionHeight)
 	{
-		this.answerDesc = answerDesc;
-	}
-
-	public boolean hasAudioAnswerDesc()
-	{
-		return answerDesc != null && FileHelpers.isAudioFileName(answerDesc);
-	}
-
-	/**
-	 * @return the questionDesc
-	 */
-	public String getQuestionDesc()
-	{
-		return questionDesc;
-	}
-
-	/**
-	 * @param questionDesc
-	 *            the questionDesc to set
-	 */
-	public void setQuestionDesc(String questionDesc)
-	{
-		this.questionDesc = questionDesc;
-	}
-
-	public boolean hasQuestionDesc()
-	{
-		return questionDesc != null && FileHelpers.isAudioFileName(questionDesc);
-	}
-
-	/**
-	 * @return the altText
-	 */
-	public String getAltText()
-	{
-		if(altText != null)
-			return altText;
-		if(value != null)
-			return value;
-		if(imageRelativePath != null)
-			return imageRelativePath;
-		return DEFAULT_ALT_TEXT;
-	}
-
-	/**
-	 * @param altText the altText to set
-	 */
-	public void setAltText(String altText)
-	{
-		this.altText = altText;
+		this.captionHeight = captionHeight;
 	}
 	
 	/**
@@ -217,16 +183,6 @@ public class ChoiceField extends Field implements DictionaryItem
 	public ChoiceField getRoot()
 	{
 		return root;
-	}
-	
-	/** Always return the caption of the root
-	 * 
-	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#getCaption()
-	 */
-	@Override
-	public String getCaption()
-	{
-		return root.caption;
 	}
 	
 	/**
@@ -329,28 +285,86 @@ public class ChoiceField extends Field implements DictionaryItem
 		return root.optional;
 	}
 
+	/**
+	 * @return the answerDescription
+	 */
+	public String getAnswerDescription()
+	{
+		return answerDescription;
+	}
+
+	/**
+	 * @param answerDescription the answerDescription to set
+	 */
+	public void setAnswerDescription(String answerDescription)
+	{
+		this.answerDescription = answerDescription;
+	}
+
+	/**
+	 * @return the answerDescriptionAudioRelativePath
+	 */
+	public String getAnswerDescriptionAudioRelativePath()
+	{
+		return answerDescriptionAudioRelativePath;
+	}
+
+	/**
+	 * @param answerDescriptionAudioRelativePath the answerDescriptionAudioRelativePath to set
+	 */
+	public void setAnswerDescriptionAudioRelativePath(String answerDescriptionAudioRelativePath)
+	{
+		this.answerDescriptionAudioRelativePath = answerDescriptionAudioRelativePath;
+	}
+
 	@Override
 	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
 		List<File> paths = new ArrayList<File>();
 		if(hasImage())
-			CollectionUtils.addIgnoreNull(paths, form.getProject().getImageFile(fileStorageProvider, imageRelativePath));
+			CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.getProject(), imageRelativePath));
+		// TODO add audio feedback files!
 		for(ChoiceField child : getChildren())
 			CollectionUtils.addAllIgnoreNull(paths, child.getFiles(fileStorageProvider));
 		return paths;
 	}
 	
+	@Override
 	public String toString()
 	{
 		return toString(false);
 	}
 	
-	public String toString(boolean printValue)
+	/**
+	 * @param verbose
+	 * @return
+	 */
+	public String toString(boolean verbose)
 	{
-		if(printValue)
-			return "ChoiceField " + id + (value != null ? " (value: " + value + ")" : " (no value set)");
-		else
-			return id;
+		TransactionalStringBuilder bldr = new TransactionalStringBuilder(" ");
+		bldr.append("ChoiceField");
+		bldr.append(id);
+		if(verbose)
+		{
+			bldr.openTransaction("");
+			bldr.append("(");
+			bldr.openTransaction("; ");
+			if(value != null)
+				bldr.append("value: " + value);
+			if(imageRelativePath != null)
+				bldr.append("img: " + imageRelativePath);
+			if(hasCaption())
+				bldr.append("caption: " + caption);
+			if(!bldr.isCurrentTransactionEmpty())
+			{
+				bldr.commitTransaction();
+				bldr.append(")");
+				bldr.commitTransaction();
+			}
+			else
+				bldr.rollbackTransactions(2);
+		}
+		return bldr.toString();
 	}
 	
 	@Override
@@ -472,11 +486,11 @@ public class ChoiceField extends Field implements DictionaryItem
 					(this.root != null ? that.root != null && this.root.getID().equals(that.root.getID()) : that.root == null) &&
 					this.getChildren().equals(that.getChildren()) &&
 					(this.imageRelativePath != null ? this.imageRelativePath.equals(that.imageRelativePath) : that.imageRelativePath == null) &&
-					(this.answerDesc != null ? that.answerDesc.equals(that.answerDesc) : that.answerDesc == null) &&
-					(this.questionDesc != null ? that.questionDesc.equals(that.questionDesc) : that.questionDesc == null) &&
+					(this.answerDescription != null ? that.answerDescription.equals(that.answerDescription) : that.answerDescription == null) &&
+					(this.answerDescriptionAudioRelativePath != null ? that.answerDescriptionAudioRelativePath.equals(that.answerDescriptionAudioRelativePath) : that.answerDescriptionAudioRelativePath == null) &&
+					this.captionHeight == that.captionHeight &&
 					this.cols == that.cols &&
 					this.rows == that.rows &&
-					(this.altText != null ? this.altText.equals(that.altText) : that.altText == null) &&
 					this.crossed == that.crossed &&
 					this.crossColor.equals(that.crossColor) &&
 					(this.value != null ? this.value.equals(that.value) : that.value == null);
@@ -494,11 +508,11 @@ public class ChoiceField extends Field implements DictionaryItem
 		hash = 31 * hash + (root != null ? root.getID().hashCode() : 0);
 		hash = 31 * hash + getChildren().hashCode();
 		hash = 31 * hash + (imageRelativePath != null ? imageRelativePath.hashCode() : 0);
-		hash = 31 * hash + (answerDesc != null ? answerDesc.hashCode() : 0);
-		hash = 31 * hash + (questionDesc != null ? questionDesc.hashCode() : 0);
+		hash = 31 * hash + (answerDescription != null ? answerDescription.hashCode() : 0);
+		hash = 31 * hash + (answerDescriptionAudioRelativePath != null ? answerDescriptionAudioRelativePath.hashCode() : 0);
+		hash = 31 * hash + Float.floatToIntBits(captionHeight);
 		hash = 31 * hash + cols;
 		hash = 31 * hash + rows;
-		hash = 31 * hash + (altText != null ? altText.hashCode() : 0);
 		hash = 31 * hash + (crossed ? 0 : 1);
 		hash = 31 * hash + crossColor.hashCode();
 		hash = 31 * hash + (value != null ? value.hashCode() : 0);

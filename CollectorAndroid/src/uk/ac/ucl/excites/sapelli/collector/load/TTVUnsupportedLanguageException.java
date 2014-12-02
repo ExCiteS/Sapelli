@@ -16,22 +16,23 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.ui.fields;
+package uk.ac.ucl.excites.sapelli.collector.load;
 
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
-import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-
-/**
- * @author mstevens
- *
- */
-public abstract class OrientationUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<OrientationField, V, UI>
+public class TTVUnsupportedLanguageException extends Exception
 {
 
-	public OrientationUI(OrientationField field, Controller<UI> controller, UI collectorUI)
+	private static final long serialVersionUID = 2L;
+
+	private final String languageCode;
+
+	public TTVUnsupportedLanguageException(String languageCode)
 	{
-		super(field, controller, collectorUI);
+		this.languageCode = languageCode;
+	}
+
+	public String getLanguageCode()
+	{
+		return languageCode;
 	}
 
 }

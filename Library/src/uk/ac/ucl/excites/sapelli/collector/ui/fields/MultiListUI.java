@@ -34,7 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class MultiListUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<MultiListField, V, UI>
 {
 
-	public MultiListUI(MultiListField listField, Controller controller, UI collectorUI)
+	public MultiListUI(MultiListField listField, Controller<UI> controller, UI collectorUI)
 	{
 		super(listField, controller, collectorUI);
 	}

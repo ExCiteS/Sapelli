@@ -16,22 +16,27 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.collector.ui.fields;
-
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
-import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
+package uk.ac.ucl.excites.sapelli.collector.load;
 
 /**
- * @author mstevens
+ * @author benelliott
  *
  */
-public abstract class OrientationUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<OrientationField, V, UI>
+public class TTVSynthesisFailedException extends Exception
 {
 
-	public OrientationUI(OrientationField field, Controller<UI> controller, UI collectorUI)
+	private static final long serialVersionUID = 2L;
+
+	private final String text;
+
+	public TTVSynthesisFailedException(String text)
 	{
-		super(field, controller, collectorUI);
+		this.text = text;
+	}
+
+	public String getText()
+	{
+		return text;
 	}
 
 }

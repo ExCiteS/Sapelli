@@ -156,7 +156,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			// Adapter & button images:
 			// Start rec button:
 			Item startButton = null;
-			File startRecImageFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStartRecImageRelativePath());
+			File startRecImageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStartRecImageRelativePath());
 			if(FileHelpers.isReadableFile(startRecImageFile))
 				startButton = new FileImageItem(startRecImageFile);
 			else
@@ -166,7 +166,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 
 			// Stop rec button:
 			Item stopButton = null;
-			File stopRecImageFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStopRecImageRelativePath());
+			File stopRecImageFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStopRecImageRelativePath());
 			if(FileHelpers.isReadableFile(stopRecImageFile))
 				stopButton = new FileImageItem(stopRecImageFile);
 			else

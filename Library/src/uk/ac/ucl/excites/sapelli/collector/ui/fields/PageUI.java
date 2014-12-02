@@ -37,7 +37,7 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 
 	protected List<FieldUI<?, V, UI>> fieldUIs;
 	
-	public PageUI(Page page, Controller controller, UI collectorUI)
+	public PageUI(Page page, Controller<UI> controller, UI collectorUI)
 	{
 		super(page, controller, collectorUI);
 		fieldUIs = new ArrayList<FieldUI<?, V, UI>>();

@@ -42,7 +42,7 @@ public abstract class TextBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSel
 	static protected final int VALIDATION_ERROR_INVALID_NUMERIC = 6;
 	
 	// DYNAMIC ------------------------------------------------------
-	public TextBoxUI(TextBoxField textBox, Controller controller, UI collectorUI)
+	public TextBoxUI(TextBoxField textBox, Controller<UI> controller, UI collectorUI)
 	{
 		super(textBox, controller, collectorUI);
 	}

@@ -29,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 public abstract class AudioUI<V, UI extends CollectorUI<V, UI>> extends MediaUI<AudioField, V, UI>
 {
 	
-	public AudioUI(AudioField field, Controller controller, UI collectorUI)
+	public AudioUI(AudioField field, Controller<UI> controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

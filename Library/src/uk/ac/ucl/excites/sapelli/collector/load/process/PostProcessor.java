@@ -26,17 +26,29 @@ import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
  * Interface for post-loading task execution.
  * Add an execute() method here for each new class which implements {@link PostProcessTask}.
  * 
- * @author mstevens
+ * @author mstevens, benelliott
  */
 public interface PostProcessor
 {
 
+	/**
+	 * To be called before the first task execution for a given Project
+	 *  
+	 * @param project
+	 */
+	public void initialise(Project project);
+	
 	/**
 	 * @param ttsTask
 	 * @param project
 	 * @param warningKeeper
 	 * @throws Exception
 	 */
-	public void execute(TTSSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception;
+	public void execute(TTVSynthesisTask ttsTask, Project project, WarningKeeper warningKeeper) throws Exception;
 	
+	/**
+	 * Free any resources used by the post-processor.
+	 */
+	public void freeResources();
+
 }

@@ -219,9 +219,7 @@ public class CollectorActivity extends ProjectActivity
 			
 			// Start project:
 			controller.startProject();
-			
-			// Enable audio feedback
-			controller.enableAudioFeedback(); // TODO make the Controller/collectorController handle this on its own
+
 		}
 	}
 
@@ -476,10 +474,9 @@ public class CollectorActivity extends ProjectActivity
 
 			//Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
-
-		// Release audio feedback resources
+		// Stop all audio (feedback) playback & release associated resources:
 		if(controller != null)
-			controller.disableAudioFeedback();
+			controller.destroyAudio();
 
 		// super:
 		super.onPause();
