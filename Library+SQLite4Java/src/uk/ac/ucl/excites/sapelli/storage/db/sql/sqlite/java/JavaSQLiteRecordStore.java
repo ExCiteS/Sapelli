@@ -62,7 +62,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	@Override
 	protected void executeSQL(String sql) throws DBException
 	{
-		System.out.println("SQLite> Raw execute: " + sql);
+		//System.out.println("SQLite> Raw execute: " + sql);
 		try
 		{
 			db.exec(sql);
@@ -110,7 +110,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	{
 		try
 		{
-			System.out.println("SQLite> Compile/reuse statement: " + sql); // TODO remove debug logging
+			//System.out.println("SQLite> Compile/reuse statement: " + sql);
 			return new JavaSQLiteStatement(db, sql, paramCols);
 		}
 		catch(SQLiteException sqliteE)
