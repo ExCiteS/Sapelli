@@ -181,7 +181,7 @@ public class DB4ORecordStore extends RecordStore
 				
 				// Set/update LSA on the given Record instance (if record != toBeStored it will be copied below)
 				if(action != ACTION_UPDATE_ONLY_EXCEPT_LSA)
-					setLastStoredAt(record, Now());
+					SetLastStoredAt(record, Now());
 				
 				// Update values of toBeStored when necessary...
 				if(toBeStored != record) // i.e. in UPDATE-case-2

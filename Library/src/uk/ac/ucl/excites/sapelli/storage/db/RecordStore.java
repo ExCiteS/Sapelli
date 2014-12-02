@@ -97,9 +97,17 @@ public abstract class RecordStore implements Store
 		return Long.valueOf(System.currentTimeMillis());
 	}
 	
-	protected void setLastStoredAt(Record record, Long lastStoredAt)
+	static protected Long GetLastStoredAt(Record record)
 	{
-		if(!record.getSchema().isInternal())
+		if(record != null && !record.getSchema().isInternal())
+			return Schema.COLUMN_LAST_STORED_AT.retrieveValue(record);
+		else
+			return null;
+	}
+	
+	static protected void SetLastStoredAt(Record record, Long lastStoredAt)
+	{
+		if(record != null && !record.getSchema().isInternal())
 			Schema.COLUMN_LAST_STORED_AT.storeValue(record, lastStoredAt);
 		// else: do nothing
 	}
@@ -265,6 +273,20 @@ public abstract class RecordStore implements Store
 	public void insert(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException, NullPointerException, IllegalArgumentException, IllegalStateException
 	{
 		store(record, ACTION_INSERT_ONLY);
+	}
+	
+	/**
+	 * @param record
+	 * @throws DBPrimaryKeyException
+	 * @throws DBConstraintException
+	 * @throws DBException
+	 * @throws NullPointerException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalStateException
+	 */
+	public void update(Record record) throws DBPrimaryKeyException, DBConstraintException, DBException, NullPointerException, IllegalArgumentException, IllegalStateException
+	{
+		update(record, true);
 	}
 	
 	/**

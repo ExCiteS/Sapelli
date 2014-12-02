@@ -324,26 +324,28 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 		@Override
 		public boolean isRecordInDB(Record record) throws DBException
 		{
+			// Check if table itself exists in db:
 			if(!isInDB())
 				return false;
-			if(autoIncrementKeySapColumn != null)
-				return autoIncrementKeySapColumn.isValueSet(record);
-			else
+			
+			// Check if there an autoIncrementingPK, if there is and it is not set on the record then we
+			//	can assume this record doesn't exist in the db (we wouldn't be able to find it if it did):
+			if(autoIncrementKeySapColumn != null && !autoIncrementKeySapColumn.isValueSet(record))
+				return false;
+			
+			// Perform actual check by querying...
+			//	Get/recycle statement...
+			if(existsStatement == null)
 			{
-				if(existsStatement == null)
-				{
-					SelectROWIDHelper selectROWIDHelper = new SelectROWIDHelper(this);
-					existsStatement = getStatement(selectROWIDHelper.getQuery(), selectROWIDHelper.getParameterColumns());
-				}
-				else
-					existsStatement.clearAllBindings();
-				
-				// Bind parameters:
-				existsStatement.retrieveAndBindAll(record);
-				
-				// Execute:
-				return existsStatement.executeLongQuery() != null;
+				SelectROWIDHelper selectROWIDHelper = new SelectROWIDHelper(this);
+				existsStatement = getStatement(selectROWIDHelper.getQuery(), selectROWIDHelper.getParameterColumns());
 			}
+			else
+				existsStatement.clearAllBindings();
+			//	Bind parameters:
+			existsStatement.retrieveAndBindAll(record);
+			//	Execute:
+			return existsStatement.executeLongQuery() != null;
 		}
 		
 		/* (non-Javadoc)
@@ -360,9 +362,12 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			else
 				insertStatement.clearAllBindings(); // clear bindings for reuse
 			
+			// lastStoredAt time: keep lsa of record if it has one (this typically means the record was received from a remote source), otherwise use current time
+			Long recLsa = GetLastStoredAt(record);
+			Long lsa = recLsa != null ? recLsa : Now();
+			
 			// Bind parameters:
-			Long now = Now();
-			insertStatement.retrieveAndBindAll(record, now);
+			insertStatement.retrieveAndBindAll(record, lsa);
 			
 			// Execute:
 			long rowID = insertStatement.executeInsert();
@@ -372,7 +377,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 				autoIncrementKeySapColumn.storeValue(record, rowID);
 			
 			// Set lastStoredAt time on the Record object too:
-			setLastStoredAt(record, now);
+			SetLastStoredAt(record, lsa);
 		}
 
 		/**
@@ -407,7 +412,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 			// Execute UPDATE:
 			boolean updated = updateStatement.executeUpdate() == 1;
 			if(updated && updateLastStoredAt)
-				setLastStoredAt(record, lastStoredAt); // update lastStoredAt time on the Record object too
+				SetLastStoredAt(record, lastStoredAt); // update lastStoredAt time on the Record object too
 				
 			return updated;
 		}

@@ -657,7 +657,10 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		 */
 		public int store(Record record, int action) throws DBPrimaryKeyException, DBConstraintException, DBException, IllegalStateException
 		{
-			if(!isRecordInDB(record))
+			// Get the lsa time for the stored version of the record:
+			Long dbLsa = getLastStoredAtInDB(record); // (will be null if the table or the record does not exist yet in the db)
+			
+			if(dbLsa == null) // equivalent to : !isRecordInDB(record)
 			{	// the record does not yet exist, we must INSERT it if that is allowed...
 				if(action == ACTION_INSERT_OR_UPDATE || action == ACTION_INSERT_ONLY)
 					insert(record); // INSERT
@@ -677,10 +680,8 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		}
 		
 		/**
-		 * Checks if the given record already exists in the database table.
+		 * Checks if the given {@link Record} instance already exists in the database table.
 		 * Also works for recordReferences to records of this table's schema!
-		 * 
-		 * Warning: If the autoIncrementing PK is set we assume the record is in the/this database, without actually checking!
 		 * 
 		 * May be overridden.
 		 * 
@@ -693,9 +694,28 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public boolean isRecordInDB(Record record) throws DBException, IllegalStateException
 		{
 			return	isInDB() &&
-					(autoIncrementKeySapColumn == null ?
+					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValueSet(record)) ? 
 						select(record.getRecordQuery()) != null :
-						autoIncrementKeySapColumn.isValueSet(record));
+						false;
+		}
+		
+		/**
+		 * Gets the lastStoredTime for the stored version of the given {@link Record} instance.
+		 * Also works for recordReferences to records of this table's schema!
+		 * 
+		 * May be overridden.
+		 * 
+		 * @param record
+		 * @return lastStoredAt value for the currently stored version of the given record, or {@code null} if the record, or the table itself, does not (yet) exist in the database
+		 * @throws DBException
+		 * @throws IllegalStateException
+		 */
+		public Long getLastStoredAtInDB(Record record) throws DBException, IllegalStateException
+		{
+			return 	isInDB() &&
+					(autoIncrementKeySapColumn == null || autoIncrementKeySapColumn.isValueSet(record)) ?
+						GetLastStoredAt(select(record.getRecordQuery())) :
+						null;
 		}
 		
 		/**
@@ -715,14 +735,15 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 			if(autoIncrementKeySapColumn != null)
 				throw new UnsupportedOperationException("Default SQLRecordStore.SQLTable#insert(Record) implementation does not support setting auto-incrementing key values.");
 			
-			// lastStoredAt time:
-			Long now = Now();
+			// lastStoredAt time: keep lsa of record if it has one (this typically means the record was received from a remote source), otherwise use current time
+			Long recLsa = GetLastStoredAt(record);
+			Long lsa = recLsa != null ? recLsa : Now();
 			
 			// Perform INSERT:
-			executeSQL(new RecordInsertHelper((STable) this, record, now).getQuery());
+			executeSQL(new RecordInsertHelper((STable) this, record, lsa).getQuery());
 			
 			// Set lastStoredAt time on the Record object too (only if no exception is thrown above):
-			setLastStoredAt(record, now);
+			SetLastStoredAt(record, lsa);
 		}
 		
 		/**
@@ -739,14 +760,14 @@ public abstract class SQLRecordStore<SRS extends SQLRecordStore<SRS, STable, SCo
 		public boolean update(Record record, boolean updateLastStoredAt) throws DBConstraintException, DBException
 		{
 			// lastStoredAt time:
-			Long lastStoredAt = null; // set to current time below unless updateLastStoredAt = false
+			Long lastStoredAt = null; // is set to current time below unless updateLastStoredAt = false
 			
 			// Perform UPDATE:
 			boolean updated = executeSQLReturnAffectedRows(new RecordUpdateHelper((STable) this, record, updateLastStoredAt ? lastStoredAt = Now() : null, true).getQuery()) == 1;
 			
 			// Update Record object LSA when needed & allowed: 
 			if(updated && updateLastStoredAt) // (only if no exception is thrown above)
-				setLastStoredAt(record, lastStoredAt);
+				SetLastStoredAt(record, lastStoredAt);
 			
 			// Report back:
 			return updated;
