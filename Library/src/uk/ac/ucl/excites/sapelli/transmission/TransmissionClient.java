@@ -110,7 +110,6 @@ public abstract class TransmissionClient extends StorageClient
 	public Set<Column<?>> getNonTransmittableColumns(Schema schema)
 	{
 		Set<Column<?>> skipCols = new HashSet<Column<?>>();
-		skipCols.add(Schema.COLUMN_LAST_STORED_AT);
 		skipCols.add(Schema.COLUMN_LAST_EXPORTED_AT);
 		skipCols.add(COLUMN_LAST_TRANSMITTED_AT);
 		return skipCols;
