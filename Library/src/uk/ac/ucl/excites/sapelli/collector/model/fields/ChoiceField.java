@@ -316,6 +316,38 @@ public class ChoiceField extends Field implements DictionaryItem
 	{
 		this.answerDescriptionAudioRelativePath = answerDescriptionAudioRelativePath;
 	}
+	
+	/**
+	 * @return the questionDescription
+	 */
+	public String getQuestionDescription()
+	{
+		return super.getDescription();
+	}
+
+	/**
+	 * @param questionDescription the questionDescription to set
+	 */
+	public void setQuestionDescription(String questionDescription)
+	{
+		super.setDescription(questionDescription);
+	}
+
+	/**
+	 * @return the questionDescriptionAudioRelativePath
+	 */
+	public String getQuestionDescriptionAudioRelativePath()
+	{
+		return super.getDescriptionAudioRelativePath();
+	}
+
+	/**
+	 * @param questionDescriptionAudioRelativePath the questionDescriptionAudioRelativePath to set
+	 */
+	public void setQuestionDescriptionAudioRelativePath(String questionDescriptionAudioRelativePath)
+	{
+		super.setDescriptionAudioRelativePath(questionDescriptionAudioRelativePath);
+	}
 
 	@Override
 	public List<File> getFiles(FileStorageProvider fileStorageProvider)

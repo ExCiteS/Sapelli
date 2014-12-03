@@ -482,14 +482,14 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			case LONG_CLICK:
 				// just play question description when entering choice field:
 				playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>(); // do not use singletonList as list should be mutable
-				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getAnswerDescriptionAudioRelativePath()));
+				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getQuestionDescriptionAudioRelativePath()));
 				return playlist;
 	
 			case SEQUENTIAL:
 				// create a playlist that includes firstly the question description and then each answer description:
 				playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>();
 				// question description:
-				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getDescriptionAudioRelativePath()));
+				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getQuestionDescriptionAudioRelativePath()));
 				// answer descriptions:
 				List<ChoiceField> children = field.getChildren();
 				// enqueue each answer:

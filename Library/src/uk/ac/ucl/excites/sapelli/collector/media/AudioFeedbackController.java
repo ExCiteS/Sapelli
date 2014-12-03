@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.media;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -37,11 +37,7 @@ public abstract class AudioFeedbackController<V>
 	 */
 	public void play(PlaybackJob job)
 	{
-		// note: list should be mutable (as jobs will be removed) so do not use a (immutable)
-		// Collections.singletonList here
-		ArrayList<PlaybackJob> singletonPlaylist = new ArrayList<PlaybackJob>();
-		singletonPlaylist.add(job);
-		play(singletonPlaylist);
+		play(Collections.<PlaybackJob> singletonList(job));
 	}
 	
 	/**

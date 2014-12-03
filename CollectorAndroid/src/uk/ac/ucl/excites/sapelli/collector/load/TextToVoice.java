@@ -34,7 +34,7 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 	public TextToVoice(Context context)
 	{
 		this.context = context;
-		setupTTS();
+		// TTS engine will be set-up when the first process request arrives
 	}
 
 	/**
@@ -47,7 +47,7 @@ public class TextToVoice implements TextToSpeech.OnInitListener
 		if(ttvInitialised == null)
 			ttvInitialised = new Semaphore(0);
 		
-		// Instantiate TTS engine and subscribe to updates as to when it is ready:
+		// Instantiate TTS engine and subscribe to updates as to when it is ready (it will then call onInit()):
 		tts = new TextToSpeech(context, this);
 		
 		// Set up listener for when synthesis jobs complete (pre-API 15 listener is now deprecated):

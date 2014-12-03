@@ -39,7 +39,7 @@ public class SplitItem extends Item
 {
 	static public final int HORIZONTAL = LinearLayout.HORIZONTAL;
 	static public final int VERTICAL = LinearLayout.VERTICAL;
-	static public final int SPLIT_ITEM_SPACING_PX = 2;
+	static public final int SPLIT_ITEM_SPACING_PX = 4;
 
 	private int orientation;
 	private List<WeightedItem> items;
@@ -110,16 +110,13 @@ public class SplitItem extends Item
 				orientation == HORIZONTAL ? LinearLayout.LayoutParams.MATCH_PARENT : 0, // vertical -> take whole width
 				itemWeight);
 
-			// create margins array (top and bottom margins on items if vertical; left and right margins if horizontal)
-			int[] margins = orientation == HORIZONTAL ? new int[]{SPLIT_ITEM_SPACING_PX, 0, SPLIT_ITEM_SPACING_PX, 0} : new int[]{0, SPLIT_ITEM_SPACING_PX, 0, SPLIT_ITEM_SPACING_PX};
-			// apply margins:
-			if(i == 0) //if first item, don't add top or left margin (one of these is 0 anyway depending on orientation)
-				lp.setMargins(0, 0, margins[2], margins[3]);
-			else if(i == items.size() - 1) // if last item, don't add bottom or right margin (one of these is 0 anyway depending on orientation)
-				lp.setMargins(margins[0], margins[1], 0, 0);
-			else // if neither, just add whatever margins were specified
-				lp.setMargins(margins[0], margins[1], margins[2], margins[3]);
-			
+			// apply margins so that there is spacing between adjacent items (but not before first item or after last item):
+			lp.setMargins(
+					(orientation == HORIZONTAL && i != 0) ? SPLIT_ITEM_SPACING_PX : 0, // left: 0 if vertical or first item
+					(orientation == VERTICAL && i != 0) ? SPLIT_ITEM_SPACING_PX : 0, // top: 0 if horizontal or first item
+					0, // no margin on right (since if horizontal we are adding it on the left of the next item anyway)
+					0  // no margin on bottom (since if vertical we are adding it on the top of the next item anyway)
+					);
 			itemView.setLayoutParams(lp);
 			
 			container.addView(itemView);

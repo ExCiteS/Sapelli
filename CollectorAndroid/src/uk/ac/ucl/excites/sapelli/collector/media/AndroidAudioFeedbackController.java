@@ -19,13 +19,12 @@
 package uk.ac.ucl.excites.sapelli.collector.media;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -62,7 +61,7 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 	}
 
 	@Override
-	public void play(final List<AudioFeedbackController<View>.PlaybackJob> sequence)
+	public void play(final List<PlaybackJob> sequence)
 	{
 		stop(); // stop any already-playing playlists prematurely
 		Log.d(TAG, "Starting playback...");
@@ -76,10 +75,9 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 			@Override
 			public void run()
 			{
-				while(running && !sequence.isEmpty())
-				{
-					playNextQueueItem(sequence);
-				}
+				Iterator<PlaybackJob> jobs = sequence.iterator();
+				while(running && jobs.hasNext())
+					playJob(jobs.next());
 			}
 
 		};
@@ -131,22 +129,18 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 	}
 
 	/**
-	 * Play the next item in the queue, and once it has finished, remove it from the queue and delete the file if necessary (if the file was a temporary file
-	 * used to store synthesised text). Precisely, this method executes the following steps:
+	 * Play the next item in the playback queue. Precisely, this method executes the following steps:
 	 * <ul>
 	 * <li>Wait for a new track (acquire {@link AndroidAudioFeedbackController#audioAvailableSem})</li>
 	 * <li>Start playing track</li>
 	 * <li>Wait for playback to finish (acquire {@link AndroidAudioFeedbackController#playbackCompletedSem})</li>
-	 * <li>Remove the just-played item from the queue</li>
 	 * </ul>
 	 */
-	private void playNextQueueItem(List<PlaybackJob> mediaQueue)
+	private void playJob(PlaybackJob job)
 	{
 		try
 		{
-
-			PlaybackJob currentTrack = mediaQueue.remove(0);
-			File audioFile = controller.getFileStorageProvider().getProjectSoundFile(controller.getProject(), currentTrack.soundRelativePath);
+			File audioFile = controller.getFileStorageProvider().getProjectSoundFile(controller.getProject(), job.soundRelativePath);
 
 			// set the media player's source to the new audio track
 			if(audioFile != null)
@@ -171,8 +165,8 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 				}
 				catch(Exception e)
 				{
-					Log.e(TAG, "Error when trying to change media player data source to file " + currentTrack.soundRelativePath, e);
-					// Playing failed so completed listener will never fire. Allow file to be deleted and playback to continue:
+					Log.e(TAG, "Error when trying to change media player data source to file " + job.soundRelativePath, e);
+					// Playing failed so completed listener will never fire. Allow playback to continue:
 					playbackCompletedSem.release();
 				}
 			}
@@ -184,7 +178,7 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 				playbackCompletedSem.release();
 			}
 			// animate the view corresponding to the played choice, if necessary:
-			animateViewShake(currentTrack.viewToAnimate);
+			animateViewShake(job.viewToAnimate);
 
 			// wait for the media player to finish playing the track
 			playbackCompletedSem.acquire();
@@ -197,44 +191,6 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 		{
 			// was probably caused by the ChoiceField being exited
 			Log.d(TAG, "Playback thread interrupted while waiting for semaphore.");
-		}
-	}
-
-	/**
-	 * Speaks aloud the description of a ControlItem and animates the ControlItem. The description used can be either audio file or text that uses Android's TTS
-	 * (Text-To-Speech) engine to read it aloud which is defined in the XML of a project.
-	 * 
-	 * @param controlItem
-	 * @param controlView
-	 */
-	public void playAnswer(Item controlItem, View controlView)
-	{
-		// Check whether AudioFeedback is supported for the current form
-		AudioFeedback audioFeedback = controller.getCurrentForm().getAudioFeedback();
-
-		if(audioFeedback != null)
-		{
-			switch(audioFeedback)
-			{
-				case LONG_CLICK:
-				case SEQUENTIAL:
-	
-					// TODO: decide TTS / MediaPlayer
-	
-					// If the choice has an audio, pass that audio to the Media Player
-					if(false)
-						return;
-					else
-						// Enable TTS Audio Feedback
-						// textToVoice(controlItem.getDescription()); TODO
-						break;
-	
-				case NONE:
-					return;
-			}
-
-			// Apply an alpha animation to the long pressed view
-			// animateViewAlpha(controlView);
 		}
 	}
 
