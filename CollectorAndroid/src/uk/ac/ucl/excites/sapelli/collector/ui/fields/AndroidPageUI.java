@@ -31,6 +31,7 @@ import android.graphics.Paint.Style;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
@@ -162,6 +163,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 		
 		public void markValidity(FieldUI<?, View, CollectorView> fieldUI, boolean valid)
 		{
+			Log.d("Page","Marking validity of "+fieldUI.getField().getCaption()+" as "+valid);
 			markValidity((LinearLayout) container.getChildAt(fieldUIs.indexOf(fieldUI)), valid);
 		}
 		

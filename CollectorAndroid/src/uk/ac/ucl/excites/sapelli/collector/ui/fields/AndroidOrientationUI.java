@@ -19,17 +19,15 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.OnPageView;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.ProgressBar;
@@ -43,14 +41,16 @@ import android.widget.RelativeLayout.LayoutParams;
 public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 {
 
-	private Button pageView;
+	private CollectorController controller;
+	private OrientationOnPageView pageView;
 	private RelativeLayout waitView;
 
 	static public final float PADDING = 40.0f;
 
-	public AndroidOrientationUI(OrientationField field, Controller controller, CollectorView collectorUI)
+	public AndroidOrientationUI(OrientationField field, CollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
+		this.controller = controller;
 	}
 
 	@Override
@@ -60,20 +60,9 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 		if(onPage)
 		{
 			if(pageView == null)
-			{
-				pageView = new Button(collectorUI.getContext());
-				pageView.setText(field.getCaption());
-				// TODO some kind of icon/image would be nice (an arrow?)
-				pageView.setOnClickListener(new OnClickListener()
-				{
-					@Override
-					public void onClick(View v)
-					{
-						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field
-																											// itself
-					}
-				});
-			}
+				pageView = new OrientationOnPageView(collectorUI.getContext(), controller, this);
+
+			pageView.setEnabled(enabled);
 			return pageView;
 		}
 		else
@@ -96,5 +85,16 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 		}
 		return waitView;
 
+	}
+	
+	private class OrientationOnPageView extends OnPageView<OrientationField> {
+
+		public OrientationOnPageView(Context context, CollectorController controller, FieldUI<OrientationField, View, CollectorView> fieldUi)
+		{
+			super(context, controller, fieldUi);
+			// get compass image (TODO make customisable?):
+			View content = ((new ResourceImageItem(context.getResources(), R.drawable.compass)).getView(context));
+			this.setContentView(content);
+		}		
 	}
 }

@@ -22,14 +22,13 @@ import java.io.File;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.OnPageView;
 import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
@@ -45,11 +44,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.view.View.OnFocusChangeListener;
 import android.widget.AdapterView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
 /**
  * The UI for ChoiceFields
@@ -58,12 +53,9 @@ import android.widget.TextView;
  */
 public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 {
-	
-	static public final float PAGE_CHOSEN_ITEM_SIZE_DIP = 60.0f; // width = height
-	static public final float PAGE_CHOSEN_ITEM_MARGIN_DIP = 1.0f; // same margin all round
 	static public final float CROSS_THICKNESS = 0.02f;
 	
-	private PageView pageView;
+	private ChoiceOnPageView pageView;
 	private ChoiceView choiceView;
 
 	private CollectorController controller;
@@ -88,10 +80,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				return null; // just in case
 			
 			if(pageView == null)
-				pageView = new PageView(collectorUI.getContext());
-			
-			// Enable/disable (do this before calling setChosen()!):
-			pageView.setEnabled(enabled); // also sets up event listeners!
+				pageView = new ChoiceOnPageView(collectorUI.getContext(), controller, this);
 			
 			// Update pageView:
 			ChoiceField chosen = field.getSelectedChoice(record);
@@ -99,6 +88,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				pageView.setChosen(chosen);
 			else
 				pageView.setChosen(field);
+			
+			// Enable/disable (do this before calling setChosen()!): // TODO why before?!
+			pageView.setEnabled(enabled); // also sets up event listeners!
 			
 			return pageView;
 		}
@@ -161,109 +153,26 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	{
 		return new PreICSChoiceView(collectorUI.getContext());
 	}
-	
-	/**
-	 * View for displaying a ChoiceField as part of a Page
-	 * 
-	 * @author mstevens
-	 */
-	public class PageView extends LinearLayout implements OnClickListener, OnFocusChangeListener
+
+	private class ChoiceOnPageView extends OnPageView<ChoiceField>
 	{
 
-		private TextView label;
-		private View chosenView;
-		private int chosenSizePx;
-		private int chosenPaddingPx;
-		private int chosenMarginPx;
-		
-		public PageView(Context context)
+		public ChoiceOnPageView(Context context, CollectorController controller, FieldUI<ChoiceField, View, CollectorView> fieldUi)
 		{
-			super(context);
-			this.setOrientation(LinearLayout.VERTICAL);
-			
-			// Add label:
-			label = new TextView(getContext());
-			label.setText(field.getCaption());
-			this.addView(label);
-			
-			chosenSizePx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_SIZE_DIP);
-			chosenPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
-			chosenMarginPx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_MARGIN_DIP);
+			super(context, controller, fieldUi);
 		}
-		
+
 		public void setChosen(ChoiceField chosenField)
 		{
-			// Remove previous:
-			if(chosenView != null)
-				this.removeView(chosenView);
-			
 			// New chosenView
-			chosenView = createItem(chosenField, chosenPaddingPx, !isEnabled()).getView(getContext());
-			
-			// Set margins on layoutparams:
-			LayoutParams chosenLP = new LinearLayout.LayoutParams(chosenSizePx, chosenSizePx);
-			chosenLP.setMargins(chosenMarginPx, chosenMarginPx, chosenMarginPx, chosenMarginPx);
-			
-			// Add the view:
-			this.addView(chosenView, chosenLP);
-			
+			View contentView = createItem(chosenField, 0, !isEnabled()).getView(getContext());
 			// Enable/disable the chosenView:
 			setEnabled(isEnabled());
+			// Add the view:
+			this.setContentView(contentView);
 		}
-		
-		@Override
-		public void setEnabled(boolean enabled)
-		{
-			super.setEnabled(enabled);
-			if(chosenView != null)
-			{
-				chosenView.setEnabled(enabled);
-				chosenView.setOnClickListener(enabled ? this : null);
-				// Make other fields lose focus and simulate clicking with onFocusChange:
-				chosenView.setFocusable(enabled);
-				chosenView.setFocusableInTouchMode(enabled);
-				chosenView.setOnFocusChangeListener(enabled ? this : null);
-			}
-		}
-
-		@Override
-		public void onFocusChange(View v, boolean hasFocus)
-		{
-			if(hasFocus && isFieldShown() && isEnabled() && v.isEnabled())
-			{
-				// Lose focus again:
-				v.clearFocus();
-				
-				// Simulate click:
-				onClick(v);
-			}
-		}
-
-		@Override
-		public void onClick(View v)
-		{
-			// Do nothing if not shown or enabled:
-			if(!isFieldShown() || !isEnabled() || !v.isEnabled())
-				return;
-			
-			// The user will make a choice now, so don't annoy him/her with the red box:
-			clearPageInvalidMark();
-			
-			// Task to perform after animation has finished:
-			Runnable action = new Runnable()
-			{
-				public void run()
-				{
-					controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field itself
-				}
-			};
-
-			// Perform the click
-			controller.clickView(v, action);
-		}
-		
 	}
-	
+
 	/**
 	 * ChoiceView interface
 	 * 

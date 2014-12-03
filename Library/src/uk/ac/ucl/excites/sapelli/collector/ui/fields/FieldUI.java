@@ -186,7 +186,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * If the field is not a page its own validation method is used directly.
 	 */
 	@SuppressWarnings("unchecked")
-	protected boolean isValidInformPage(Record record)
+	public boolean isValidInformPage(Record record)
 	{
 		if(isShownOnPage())
 			return ((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).isValid(this, record); 
@@ -199,7 +199,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * If the field is not on a page nothing happens.
 	 */
 	@SuppressWarnings("unchecked")
-	protected void clearPageInvalidMark()
+	public void clearPageInvalidMark()
 	{
 		if(isShownOnPage())
 			((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).clearInvalidity(this);

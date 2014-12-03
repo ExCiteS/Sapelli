@@ -22,18 +22,16 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.OnPageView;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.util.Timeoutable;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.view.View;
-import android.view.View.OnClickListener;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.ProgressBar;
@@ -46,14 +44,16 @@ import android.widget.RelativeLayout.LayoutParams;
  */
 public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 
-	private Button pageView;
+	private CollectorController controller;
+	private LocationOnPageView pageView;
 	private RelativeLayout waitView;
 	private Timer timeoutCounter = null;
 	
 	static public final float PADDING = 20.0f;
 
-	public AndroidLocationUI(LocationField field, Controller controller, CollectorView collectorUI) {
+	public AndroidLocationUI(LocationField field, CollectorController controller, CollectorView collectorUI) {
 		super(field, controller, collectorUI);
+		this.controller = controller;
 	}
 
 	@Override
@@ -67,20 +67,11 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord) {
 		// TODO editable
 		if (onPage) {
-			if (pageView == null) {
-				pageView = new Button(collectorUI.getContext());
-				pageView.setText(field.getCaption());
-				// TODO some kind of icon/image would be nice (an little flag or crosshairs?)
-				pageView.setOnClickListener(new OnClickListener() {
-					@Override
-					public void onClick(View v) {
-						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field itself
-					}
-				});
-				// TODO add spinner on button (when startWithForm or startWithPage), make change it for a "got location" icon when location is obtained
-				// TODO show "got location" icon when already has location
-				// TODO take "enabled" into account!
-			}
+			if (pageView == null) 
+				pageView = new LocationOnPageView(collectorUI.getContext(), controller, this);
+			
+			pageView.setEnabled(enabled);
+			
 			return pageView;
 		} else {
 			// TODO show coordinates/accuracy to literate users (this will need a new XML attribute)
@@ -118,6 +109,20 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 			return waitView;
 		}
 
+	}
+	
+	private class LocationOnPageView extends OnPageView<LocationField> {
+
+		public LocationOnPageView(Context context, CollectorController controller, FieldUI<LocationField, View, CollectorView> fieldUi)
+		{
+			super(context, controller, fieldUi);
+			// TODO add spinner on button (when startWithForm or startWithPage), make change it for a "got location" icon when location is obtained
+			// TODO show "got location" icon when already has location
+			// get compass image (TODO make customisable?):
+			View content = ((new ResourceImageItem(context.getResources(), R.drawable.gps_location_marker)).getView(context));
+			this.setContentView(content);
+		}
+		
 	}
 
 }
