@@ -413,7 +413,7 @@ public class LocationField extends Field implements Timeoutable
 	{
 		int hash = super.hashCode(); // Field#hashCode()
 		hash = 31 * hash + type;
-		hash = 31 * hash + (startWith.ordinal());
+		hash = 31 * hash + startWith.ordinal();
 		hash = 31 * hash + (waitAtField ? 0 : 1);
 		hash = 31 * hash + timeoutS;
 		hash = 31 * hash + maxAgeS;

@@ -27,6 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
  * @author mstevens
@@ -181,6 +182,16 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 	protected boolean isShowForward()
 	{
 		return true;
+	}
+	
+	@Override
+	public void onLocationChanged(Location location)
+	{
+		if(location == null)
+			return;
+		for(FieldUI<?, V, UI> fUI : fieldUIs)
+			if(controller.isFieldEnabled(fUI.getField())) // field is enabled (and shown)
+				fUI.onLocationChanged(location);
 	}
 
 }

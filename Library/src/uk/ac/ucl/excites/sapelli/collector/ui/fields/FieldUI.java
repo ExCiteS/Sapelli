@@ -32,6 +32,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.State;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
  * Abstract class to represent the UI of a Field
@@ -330,6 +331,16 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param withPage
 	 */
 	protected void onDisplayNonAudioFeedback(boolean withPage)
+	{
+		// does nothing by default
+	}
+	
+	/**
+	 * To be be overridden by FieldUIs that need to receive location updates
+	 * 
+	 * @param location
+	 */
+	public void onLocationChanged(Location location)
 	{
 		// does nothing by default
 	}

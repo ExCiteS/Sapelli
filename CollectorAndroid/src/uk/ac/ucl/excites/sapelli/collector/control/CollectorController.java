@@ -38,6 +38,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.util.AudioPlayer;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
@@ -234,20 +235,31 @@ public class CollectorController extends Controller implements LocationListener,
 		if(LocationUtils.isBetterLocation(location, currentBestLocation))
 		{
 			currentBestLocation = location;
-			// check if we can/need to use the location now:
-			if(getCurrentField() instanceof LocationField)
-			{ // user is currently waiting for a location for the currFormSession.currField
-				LocationField lf = (LocationField) getCurrentField();
-				// try to store location:
-				if(lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(location)))
-				{ // location successfully stored:
-					if(currFormSession.form.getLocationFields(true).isEmpty())
-						stopLocationListener(); // there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)
-					goForward(false); // continue (will leave waiting screen & stop the timeout timer)
-				}
-				// else (location was not accepted): do nothing (keep listening for a better location)
-			}
+			FieldUI currentFieldUI = ui.getCurrentFieldUI();
+			if(currentFieldUI != null)
+				currentFieldUI.onLocationChanged(LocationUtils.getSapelliLocation(location));
+			
+			// TODO when do we stopLocationListener(); // there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)
 		}
+		
+		
+//		if(LocationUtils.isBetterLocation(location, currentBestLocation))
+//		{
+//			currentBestLocation = location;
+//			// check if we can/need to use the location now:
+//			if(getCurrentField() instanceof LocationField)
+//			{ // user is currently waiting for a location for the currFormSession.currField
+//				LocationField lf = (LocationField) getCurrentField();
+//				// try to store location:
+//				if(lf.storeLocation(currFormSession.record, LocationUtils.getSapelliLocation(location)))
+//				{ // location successfully stored:
+//					if(currFormSession.form.getLocationFields(true).isEmpty())
+//						stopLocationListener(); // there are no locationfields with startWithForm=true (so there is no reason to keep listening for locations)
+//					goForward(false); // continue (will leave waiting screen & stop the timeout timer)
+//				}
+//				// else (location was not accepted): do nothing (keep listening for a better location)
+//			}
+//		}
 	}
 
 	@Override

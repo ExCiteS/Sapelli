@@ -22,6 +22,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
  * @author mstevens
@@ -35,6 +36,20 @@ public abstract class LocationUI<V, UI extends CollectorUI<V, UI>> extends SelfL
 		super(field, controller, collectorUI);
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#onLocationChanged(uk.ac.ucl.excites.sapelli.storage.types.Location)
+	 */
+	@Override
+	public void onLocationChanged(Location location)
+	{
+		// isShownOnPage()
+		// field.getStartWith() != StartWith.FIELD				
+		// TODO what to do with waitAtField?		
+		
+		if(field.storeLocation(controller.getCurrentRecord(), location))
+			controller.goForward(false); // continue (will leave waiting screen & stop the timeout timer)
+	}
+
 	@Override
 	protected abstract void cancel(); // force concrete subclass to implement this (e.g. to stop listening for locations)!
 	
