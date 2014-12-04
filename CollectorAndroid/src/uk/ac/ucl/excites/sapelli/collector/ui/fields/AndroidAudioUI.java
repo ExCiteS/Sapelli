@@ -62,7 +62,7 @@ import android.widget.LinearLayout;
 public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 {
 
-	private volatile Boolean recording = false;
+	private boolean recording = false;
 
 	private static final String TAG = "AndroidAudioUI";
 
@@ -90,7 +90,6 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		catch(IOException ioe)
 		{
 			Log.e(TAG, "Could not get audio file.", ioe);
-			attachMedia(null); //TODO remove? only functionality is to log that attaching failed
 			if (isValid(controller.getCurrentRecord()))
 				controller.goForward(false);
 			else
@@ -100,7 +99,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		catch(Exception e)
 		{
 			Log.e(TAG, "Could not start audio recording.", e);
-			attachMedia(null);
+			attachMedia(null); //TODO remove? only functionality is to log that attaching failed
 			if (isValid(controller.getCurrentRecord()))
 				controller.goForward(false);
 			else
@@ -137,28 +136,25 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	@Override
 	protected boolean onCapture()
 	{
-		synchronized(recording)
+		if(!recording)
 		{
-			if(!recording)
-			{
-				// start recording
-				minimiseCaptureButton(); // show volume levels while recording
-				captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
-				startRecording();
-				recording = true;
-			}
+			// start recording
+			minimiseCaptureButton(); // show volume levels while recording
+			captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
+			startRecording();
+			recording = true;
+		}
+		else
+		{
+			// stop recording
+			stopRecording();
+			// a capture has been made so show it for review:
+			attachMedia(captureFile);
+			recording = false;
+			if(field.isShowReview())
+				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 			else
-			{
-				// stop recording
-				stopRecording();
-				// a capture has been made so show it for review:
-				attachMedia(captureFile);
-				recording = false;
-				if(field.isShowReview())
-					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
-				else
-					controller.goForward(true);
-			}
+				controller.goForward(true);
 		}
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
 		return true;
@@ -236,16 +232,13 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	protected void cancel()
 	{
 		super.cancel();
-		synchronized(recording)
-		{
-			if(audioRecorder != null)
-			{
-				stopRecording();
-			}
-			recording = false;
-		}
+		if(audioRecorder != null)
+			stopRecording();
+
+		recording = false;
 		if(audioReviewView != null)
 			audioReviewView.finalise();
+
 		audioReviewView = null;
 		volumeDisplay = null;
 	}
@@ -262,7 +255,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		private Runnable buttonAction;
 		private final View playButton;
 		private final View stopButton;
-		private volatile Boolean playing = false;
+		private boolean playing = false;
 
 		public AudioReviewView(Context context, File audioFile)
 		{
@@ -298,20 +291,17 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 			{
 				public void run()
 				{
-					synchronized(playing)
+					if(!playing)
 					{
-						if(!playing)
-						{
-							// if not playing, then start playing audio
-							playAudio();
-							playing = true;
-						}
-						else
-						{
-							// if already playing, then stop audio
-							stopAudio();
-							playing = false;
-						}
+						// if not playing, then start playing audio
+						playAudio();
+						playing = true;
+					}
+					else
+					{
+						// if already playing, then stop audio
+						stopAudio();
+						playing = false;
 					}
 					controller.unblockUI();
 				}
@@ -370,16 +360,13 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		 */
 		private void finalise()
 		{
-			synchronized(playing)
+			if(mediaPlayer != null)
 			{
-				if(mediaPlayer != null)
-				{
-					mediaPlayer.reset();
-					mediaPlayer.release();
-				}
-				mediaPlayer = null;
-				playing = false;
+				mediaPlayer.reset();
+				mediaPlayer.release();
 			}
+			mediaPlayer = null;
+			playing = false;
 		}
 
 		/**
@@ -390,12 +377,9 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		public void onCompletion(MediaPlayer mp)
 		{
 			// called when the media player finishes playing its media file
-			synchronized(playing)
-			{
-				// go from PlaybackCompleted to Stopped
-				stopAudio();
-				playing = false;
-			}
+			// go from PlaybackCompleted to Stopped
+			stopAudio();
+			playing = false;
 		}
 	}
 

@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.VideoItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.media.MediaPlayer;
@@ -41,7 +42,6 @@ import android.media.MediaPlayer.OnCompletionListener;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -57,19 +57,20 @@ import android.widget.VideoView;
 /**
  * A subclass of AndroidMediaUI which allows for the capture and review of videos from the device's camera.
  * 
+ * NOTE: Samsung decided not to bother to enable portrait photo/video capture in the xCover 1 kernel, so captures may display incorrectly on that model.
+ * -- See http://stackoverflow.com/questions/19176038/
+ * 
  * @author mstevens, Michalis Vitos, benelliott
- *
  */
 public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnCompletionListener
 {
-
-	static private final String TAG = "AndroidVideoUI";
+	// static private final String TAG = "AndroidVideoUI";
 
 	// Camera & image data:
 	private CameraController cameraController;
 	private SurfaceView captureSurface;
 	private VideoView playbackView;
-	private volatile Boolean recording = false;
+	private boolean recording = false;
 	private int playbackPosition = 0;
 
 	public AndroidVideoUI(VideoField field, CollectorController controller, CollectorView collectorUI)
@@ -77,8 +78,8 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		super(field, controller, collectorUI);
 	}
 
-	@SuppressWarnings("deprecation")
 	@Override
+	@SuppressWarnings("deprecation")
 	protected View getCaptureContent(Context context)
 	{
 		if(cameraController == null)
@@ -118,28 +119,26 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	@Override
 	protected boolean onCapture()
 	{
-		synchronized(recording)
+		if(!recording)
 		{
-			if(!recording)
-			{
-				// start recording
-				captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
-				cameraController.startVideoCapture(captureFile);
-				recording = true;
-			}
-			else
-			{
-				// stop recording
-				cameraController.stopVideoCapture();
-				// a capture has been made so show it for review:
-				attachMedia(captureFile);
-				recording = false;
-				if(field.isShowReview())
-					controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
-				else
-					controller.goForward(true);
-			}
+			// start recording
+			captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(), controller.getCurrentRecord());
+			cameraController.startVideoCapture(captureFile);
+			recording = true;
 		}
+		else
+		{
+			// stop recording
+			cameraController.stopVideoCapture();
+			// a capture has been made so show it for review:
+			attachMedia(captureFile);
+			recording = false;
+			if(field.isShowReview())
+				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
+			else
+				controller.goForward(true);
+		}
+
 		// always allow other click events after this completes (so recording can be stopped by pressing again):
 		return true;
 	}
@@ -178,6 +177,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		playbackView.setOnTouchListener(new OnTouchListener()
 		{
 			@Override
+			@SuppressLint("ClickableViewAccessibility")
 			public boolean onTouch(View v, MotionEvent ev)
 			{
 				controller.blockUI();
@@ -187,7 +187,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 					if(playbackView.isPlaying())
 					{
 						// if playing, pause
-						Log.d(TAG, "Pausing video...");
+						// Log.d(TAG, "Pausing video...");
 						playbackPosition = playbackView.getCurrentPosition();
 						playbackView.pause();
 					}
@@ -195,7 +195,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 					else
 					{
 						// if not playing, play
-						Log.d(TAG, "Playing video...");
+						// Log.d(TAG, "Playing video...");
 						playbackView.seekTo(playbackPosition);
 						playbackView.start();
 					}
@@ -270,14 +270,11 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	protected void cancel()
 	{
 		super.cancel();
-		synchronized(recording)
-		{
-			recording = false;
-			if(cameraController != null)
-			{
-				cameraController.close();
-			}
-		}
+		
+		recording = false;
+		if(cameraController != null)
+			cameraController.close();
+		
 		cameraController = null;
 
 		playbackView = null;
