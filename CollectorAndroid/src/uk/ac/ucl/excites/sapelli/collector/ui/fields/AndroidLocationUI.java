@@ -123,7 +123,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 			// TODO show "got location" icon when already has location
 			// get compass image (TODO make customisable?):
 			Item image = new ResourceImageItem(context.getResources(), R.drawable.gps_location_marker);
-			if (field.getStartWith() == LocationField.START_WITH.FIELD)
+			if (field.getStartWith() == LocationField.StartWith.FIELD)
 				this.setContentView(image.getView(context));
 			else { // FORM or PAGE: add a spinner on top of the image and remove it when a location is found
 				this.setContentView(new LayeredItem()

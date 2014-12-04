@@ -230,6 +230,11 @@ public class Form implements WarningKeeper
 		return getID();
 	}
 
+	/**
+	 * Returns all top-level fields of the form
+	 * 
+	 * @return
+	 */
 	public List<Field> getFields()
 	{
 		return fields;
@@ -539,7 +544,7 @@ public class Form implements WarningKeeper
 		{
 			List<LocationField> startLF = new ArrayList<LocationField>();
 			for(LocationField lf : getLocationFields())
-				if(lf.getStartWith() == LocationField.START_WITH.FORM)
+				if(lf.getStartWith() == LocationField.StartWith.FORM)
 					startLF.add(lf);
 			return startLF;
 		}

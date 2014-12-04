@@ -155,13 +155,16 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	public abstract boolean isValid(Record record);
 	
+	/**
+	 * @return whether or not the FieldUI is currently being shown as part of a page
+	 */
 	protected boolean isShownOnPage()
 	{
-		return controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI;
+		return shown && controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI;
 	}
 	
 	/**
-	 * @return whether or not the FieldUI is currently being shown
+	 * @return whether or not the FieldUI is currently being shown (possibly as part of a page)
 	 */
 	public boolean isFieldShown()
 	{
@@ -189,7 +192,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	public boolean isValidInformPage(Record record)
 	{
 		if(isShownOnPage())
-			return ((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).isValid(this, record); 
+			return ((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).isValid(this, record);
 		else
 			return this.isValid(record); // validate field on its own
 	}

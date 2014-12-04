@@ -26,6 +26,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
@@ -63,6 +64,7 @@ public abstract class Field extends JumpSource
 	//Dynamics---------------------------------------------
 	protected final String id;
 	protected final Form form;
+	protected Page page = null;
 	protected final String caption;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
@@ -120,6 +122,30 @@ public abstract class Field extends JumpSource
 		}
 	}
 	
+	/**
+	 * @return the page (will be null if this field is not contained by a page)
+	 */
+	public Page getPage()
+	{
+		return page;
+	}
+
+	/**
+	 * @return whether or not the field is part of a page
+	 */
+	public boolean isOnPage()
+	{
+		return page != null;
+	}
+	
+	/**
+	 * @param page the page to set
+	 */
+	public void setPage(Page page)
+	{
+		this.page = page;
+	}
+
 	/**
 	 * @return the id
 	 */
