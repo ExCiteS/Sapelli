@@ -598,20 +598,20 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// When to start listening for a location:
 		String startWith = attributes.getString(ATTRIBUTE_LOCATION_START_WITH, null, true, false);
 		if("field".equalsIgnoreCase(startWith))
-			locField.setStartWith(LocationField.START_WITH.FIELD);
+			locField.setStartWith(LocationField.StartWith.FIELD);
 		else if("page".equalsIgnoreCase(startWith))
 		{
 			if(getCurrentPage() != null)
-				locField.setStartWith(LocationField.START_WITH.PAGE);
+				locField.setStartWith(LocationField.StartWith.PAGE);
 			else
 			{
 				// told to start on page, but there is no page! Start with field instead (assume the user was trying to avoid "form")
 				addWarning("Location field specified to start with page, but no containing page was found. Location detection will start with the field instead.");
-				locField.setStartWith(LocationField.START_WITH.FIELD);
+				locField.setStartWith(LocationField.StartWith.FIELD);
 			}
 		}
 		else if("form".equalsIgnoreCase(startWith) || attributes.getBoolean(ATTRIBUTE_LOCATION_START_WITH_FORM, false))
-			locField.setStartWith(LocationField.START_WITH.FORM);
+			locField.setStartWith(LocationField.StartWith.FORM);
 		
 		else if (startWith != null)
 			// unknown setting, default will be used 

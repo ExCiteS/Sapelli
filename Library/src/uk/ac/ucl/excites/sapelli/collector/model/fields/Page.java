@@ -71,6 +71,7 @@ public class Page extends Field
 			throw new NullPointerException("Cannot add a null field object to a Page");
 		
 		fields.add(field);
+		field.setPage(this); // make the field know the page which contains it
 		
 		// Make child field "jump back" to the page, unless it is allowed to jump elsewhere:
 		if(!field.canJumpFromPage())
