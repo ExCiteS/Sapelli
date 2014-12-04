@@ -185,7 +185,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 		{
 			if(fieldUIView == null)
 				return null;
-			final LinearLayout wrapper = new LinearLayout(getContext());
+			LinearLayout wrapper = new LinearLayout(getContext());
 			wrapper.setPadding(wrapperPaddingPx, wrapperPaddingPx, wrapperPaddingPx, wrapperPaddingPx);
 			wrapper.setLayoutParams(wrapperLayoutParams);
 			wrapper.addView(fieldUIView);
