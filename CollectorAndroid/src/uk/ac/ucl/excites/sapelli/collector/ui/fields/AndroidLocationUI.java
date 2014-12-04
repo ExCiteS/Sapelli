@@ -111,7 +111,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 
 	}
 	
-	private class LocationOnPageView extends OnPageView<LocationField> {
+	private class LocationOnPageView extends OnPageView {
 
 		public LocationOnPageView(Context context, CollectorController controller, FieldUI<LocationField, View, CollectorView> fieldUi)
 		{

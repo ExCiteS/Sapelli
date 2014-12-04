@@ -87,7 +87,8 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 
 	}
 	
-	private class OrientationOnPageView extends OnPageView<OrientationField> {
+	private class OrientationOnPageView extends OnPageView
+	{
 
 		public OrientationOnPageView(Context context, CollectorController controller, FieldUI<OrientationField, View, CollectorView> fieldUi)
 		{

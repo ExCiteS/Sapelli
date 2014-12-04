@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
-import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.content.Context;
@@ -37,9 +36,8 @@ import android.widget.TextView;
  * 
  * @author benelliott, mstevens
  *
- * @param <F>
  */
-public class OnPageView<F extends Field> extends LinearLayout implements OnClickListener, OnFocusChangeListener
+public class OnPageView extends LinearLayout implements OnClickListener, OnFocusChangeListener
 {
 	static public final float CONTENT_DEFAULT_WIDTH_DIP = 60.0f;
 	static public final float CONTENT_DEFAULT_HEIGHT_DIP = 60.0f;
@@ -47,7 +45,7 @@ public class OnPageView<F extends Field> extends LinearLayout implements OnClick
 
 
 	private CollectorController controller;
-	private FieldUI<F, View, CollectorView> fieldUi;
+	private FieldUI<?, View, CollectorView> fieldUi;
 	private TextView label;
 	private View contentView;
 
@@ -58,7 +56,7 @@ public class OnPageView<F extends Field> extends LinearLayout implements OnClick
 
 	private LinearLayout.LayoutParams contentParams;
 
-	public OnPageView(Context context, CollectorController controller, FieldUI<F, View, CollectorView> fieldUi)
+	public OnPageView(Context context, CollectorController controller, FieldUI<?, View, CollectorView> fieldUi)
 	{
 		super(context);
 		this.controller = controller;

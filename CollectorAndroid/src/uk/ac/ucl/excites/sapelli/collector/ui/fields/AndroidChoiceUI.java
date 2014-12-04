@@ -154,7 +154,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		return new PreICSChoiceView(collectorUI.getContext());
 	}
 
-	private class ChoiceOnPageView extends OnPageView<ChoiceField>
+	private class ChoiceOnPageView extends OnPageView
 	{
 
 		public ChoiceOnPageView(Context context, CollectorController controller, FieldUI<ChoiceField, View, CollectorView> fieldUi)
