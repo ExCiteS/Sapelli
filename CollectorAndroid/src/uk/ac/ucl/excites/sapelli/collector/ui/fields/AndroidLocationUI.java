@@ -26,7 +26,10 @@ import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.OnPageView;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.SpinnerItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.util.Timeoutable;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -119,8 +122,15 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 			// TODO add spinner on button (when startWithForm or startWithPage), make change it for a "got location" icon when location is obtained
 			// TODO show "got location" icon when already has location
 			// get compass image (TODO make customisable?):
-			View content = ((new ResourceImageItem(context.getResources(), R.drawable.gps_location_marker)).getView(context));
-			this.setContentView(content);
+			Item image = new ResourceImageItem(context.getResources(), R.drawable.gps_location_marker);
+			if (field.getStartWith() == LocationField.START_WITH.FIELD)
+				this.setContentView(image.getView(context));
+			else { // FORM or PAGE: add a spinner on top of the image and remove it when a location is found
+				this.setContentView(new LayeredItem()
+				.addLayer(image)
+				.addLayer(new SpinnerItem())
+				.getView(context));
+			}
 		}
 		
 	}

@@ -135,7 +135,7 @@ public class OnPageView extends LinearLayout implements OnClickListener, OnFocus
 			return;
 
 		// The user will make a choice now, so don't annoy him/her with the red box:
-		//fieldUi.clearPageInvalidMark();
+		fieldUi.clearPageInvalidMark();
 
 		// Task to perform after animation has finished:
 		Runnable action = new Runnable()

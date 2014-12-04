@@ -51,10 +51,11 @@ public class LayeredItem extends Item
 	 * Add a layer, newly added layers will be rendered on top of previously added ones 
 	 * 
 	 * @param item
+	 * @return this (for chaining)
 	 */
-	public void addLayer(Item item)
+	public LayeredItem addLayer(Item item)
 	{
-		addLayer(item, true); // make background transparent by default
+		return addLayer(item, true); // make background transparent by default
 	}
 	
 	/**
@@ -62,12 +63,14 @@ public class LayeredItem extends Item
 	 * 
 	 * @param item
 	 * @param transparentBackground	whether or not to make the layer's background transparent
+	 * @return this (for chaining)
 	 */
-	public void addLayer(Item item, boolean transparentBackground)
+	public LayeredItem addLayer(Item item, boolean transparentBackground)
 	{
 		if(transparentBackground)
 			item.setBackgroundColor(Color.TRANSPARENT);
 		layers.add(item);
+		return this;
 	}
 	
 	@Override
