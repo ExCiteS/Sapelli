@@ -22,6 +22,7 @@ import android.view.View;
 public class FontFitView extends View
 {
 
+	// STATICS ------------------------------------------------------
 	/**
 	 * Maximum font size which we will ever use in this view. This does need to be this high because some text gets pretty big.
 	 */
@@ -36,92 +37,144 @@ public class FontFitView extends View
 	 * How close we have to be to accept the size we have converged on and stop iterating.
 	 */
 	private static final float THRESHOLD = 0.5f;
-
-	private String text;
-	private TextSizeCoordinator coordinator;
-	private int coordinatorSlot;
-	private TextPaint paint;
-	private int textColor = Color.BLACK;
-	private float textSizePx;
-	private int lastTargetWidth = -1;
-	private int lastTargetHeight = -1;
-	private StaticLayout layout;
 	
 	/**
-	 * Offset used to vertically centre text
+	 * The default text color is black
 	 */
-	private float heightOffset;
-	
-	// layout properties:
+	public static final int DEFAULT_TEXT_COLOR = Color.BLACK; 
+
+	// DYNAMICS ------------------------------------------------------
+	/**
+	 * TODO 
+	 */
 	private Layout.Alignment alignment = Layout.Alignment.ALIGN_CENTER;
-	private float spacingMult = 1.0f; // amount by which the text height is multiplied to get line height
-	private float spacingAdd = 0.0f; // amount of leading to add to each line
+	
+	/**
+	 * Amount by which the text height is multiplied to get line height
+	 */
+	private float spacingMult = 1.0f;
+	
+	/**
+	 * Amount of leading to add to each line
+	 */
+	private float spacingAdd = 0.0f;
 	
 	/**
 	 * "includePad" needed for StaticLayout constructor but completely undocumented in Android :) Think it decides whether or not to include padding in metrics
 	 * (a bit like setIncludeFontPadding in TextView) so we want it to be TRUE to ensure there is enough room for accented characters:
 	 */
-	private boolean includePad = true; 
+	private boolean includePad = true;
 	
+	private String text = "";
+	private float textSizePx = MAX_TEXT_SIZE;
+	
+	private TextSizeCoordinator coordinator;
+	private int coordinatorSlot;
+	private TextPaint paint;
+	private int lastTargetWidth = -1;
+	private int lastTargetHeight = -1;
+	private StaticLayout layout;
+	
+	/**
+	 * @param context
+	 */
 	public FontFitView(Context context)
 	{
 		this(context, null, -1);
 	}
 
+	/**
+	 * @param context
+	 * @param coordinator
+	 */
 	public FontFitView(Context context, TextSizeCoordinator coordinator)
 	{
 		this(context, coordinator, -1);
 	}
 
+	/**
+	 * @param context
+	 * @param coordinator
+	 * @param coordinatorSlot
+	 */
 	public FontFitView(Context context, TextSizeCoordinator coordinator, int coordinatorSlot)
 	{
 		super(context);
-
+		
 		this.coordinator = coordinator;
-
+		// Set or claim coordinator slot:
 		if(coordinator != null)
 			this.coordinatorSlot = coordinatorSlot >= 0 ? coordinatorSlot : coordinator.claimSlot(this);
-
-		this.coordinatorSlot = coordinatorSlot;
-
+		
+		// Initialise paint:
 		paint = new TextPaint();
 		paint.setAntiAlias(true); // text looks pixellated otherwise
-		paint.setColor(textColor);
-
+		paint.setColor(DEFAULT_TEXT_COLOR);
+		paint.setTextSize(textSizePx);
 	}
 
-	public void setTextSizePx(float textSizePx)
+	/**
+	 * @param textSizePx
+	 * @param applyNow
+	 */
+	private void setTextSizePx(float textSizePx, boolean applyNow)
 	{
+		boolean different = this.textSizePx == textSizePx; // TODO use minimum difference instead of ==? E.g. Math.abs(v.getTextSize() - coordinatedTextSize) > 1.0 (or some other value)
+		
 		// update text size field (checked elsewhere)
 		this.textSizePx = textSizePx;
-		// set text size on paint
-		paint.setTextSize(textSizePx);
-		// create a new static layout for this new text size:
-		layout = new StaticLayout(text, paint, (int) lastTargetWidth, alignment, spacingMult, spacingAdd, includePad);
-		// calculate new height offset for vertical centering -- want to start drawing text at height (container height - text height) / 2 :
-		this.heightOffset = 0.5f * (this.getHeight() - layout.getLineBottom(layout.getLineCount() - 1));
-		// ensure that this view will be redrawn:
-		this.invalidate();
+		
+		if(applyNow && different)
+		{
+			// set text size on paint:
+			paint.setTextSize(textSizePx);
+			
+			updateLayout();
+		}
 	}
-
-	@Override
-	public void onLayout(boolean changed, int left, int top, int right, int bottom)
+	
+	/**
+	 * Update layout instance & invalidate view
+	 */
+	private void updateLayout()
 	{
-		fitText(this.getWidth(), this.getHeight(), false);
+		// New layout instance:
+		layout = new StaticLayout(text, paint, (int) lastTargetWidth, alignment, spacingMult, spacingAdd, includePad);
+		
+		// TODO shouldn't we use a DynamicLayout instead? As it is clearly changing...
+		
+		// TODO not sure it's save to use lastTargetWidth here because it is initialised to -1 ...
+		//	perhaps it's better to do 
+		// TODO maybe it's better to round width nearest whole px? instead of (int) which floors
+		
+		// Ensure that the view will be redrawn:
+		this.invalidate();
 	}
 
 	@Override
 	public void onDraw(Canvas canvas)
 	{
 		// canvas.drawColor(backgroundColor); // wipe canvas (just in case)-- doesn't seem necessary but try this in case of bugs!
+		
+		// calculate new height offset for vertical text centering -- want to start drawing text at height (container height - text height) / 2 :
+		float heightOffset = 0.5f * (this.getHeight() - layout.getLineBottom(layout.getLineCount() - 1));
+		
 		// shift canvas upwards so that the text will be vertically centred:
 		canvas.translate(0, heightOffset);
+		
 		// draw text:
 		layout.draw(canvas);
+		
 		// undo translate:
 		canvas.restore();
 	}
-
+	
+	@Override
+	public void onLayout(boolean changed, int left, int top, int right, int bottom)
+	{
+		fitText(this.getWidth(), this.getHeight(), false); // TODO use changed instead of false?		
+	}
+	
 	/**
 	 * Computes the maximum font size which makes the TextView's (possibly multi-line) text fit in the bounding box defined by the viewWidth and viewHeight
 	 * parameters, always within the range ({@link #MIN_TEXT_SIZE}, {@link #MAX_TEXT_SIZE}) but taking into account any predetermined font size constraints that
@@ -185,17 +238,19 @@ public class FontFitView extends View
 		lastTargetWidth = targetWidth;
 		lastTargetHeight = targetHeight;
 
+		// Set new textSize:
+		this.setTextSizePx(textSize, coordinator == null); // if there is a coordinate the new size is not applied immediately but at a later time determined by the coordinator
+
+		// Inform coordinator if there is one:
 		if(coordinator != null)
-			// Let the coordinator apply the textSize at the appropriate time:
-			coordinator.setMaxTextSize(this, textSize);
-		else if(this.getTextSizePx() != textSize)
-			// Apply now:
-			this.setTextSizePx(textSize);
+			coordinator.updated(this);
 	}
 
 	/**
 	 * Computes whether or not the provided (possibly multi-line) text will fit within a
 	 * bounding box defined by the supplied parameters, using the supplied text (font) size.
+	 * 
+	 * TODO explain why we don't do any explicit width checks
 	 * 
 	 * @param textSize - the text/font size to use
 	 * @param targetWidth - the width of the containing box
@@ -208,14 +263,23 @@ public class FontFitView extends View
 
 		layout = new StaticLayout(text, paint, (int) targetWidth, alignment, spacingMult, spacingAdd, includePad);
 		// Log.d("FFV", "text: "+text+" text height: "+layout.getHeight()+" target: "+targetHeight+" fits: "+(layout.getWidth() <= targetWidth && layout.getHeight() <= targetHeight));
-		return(layout.getHeight() <= targetHeight); // only check on height as width is already set
+		return layout.getHeight() <= targetHeight; // only check on height as width is already set
+		
+		// TODO maybe leave some commented out code for the other ways of measuring height/width of text?
 	}
 	
-	public void setSpacingMult(float spacingMult)
+	/**
+	 * TODO document (and possibly rename) this or remove the setter if it doesn't make sense for client code to ever call this
+	 * 
+	 * @param spacingMult
+	 */
+	public void setSpacingMultiplier(float spacingMult)
 	{
-		this.spacingMult = spacingMult;
-		layout = new StaticLayout(text, paint, (int) lastTargetWidth, this.alignment, this.spacingMult, this.spacingAdd, this.includePad);
-		this.invalidate();
+		if(this.spacingMult != spacingMult)
+		{	
+			this.spacingMult = spacingMult;
+			updateLayout();
+		}
 	}
 	
 	public float getSpacingMult()
@@ -223,11 +287,18 @@ public class FontFitView extends View
 		return spacingMult;
 	}
 	
+	/**
+	 * TODO document (and possibly rename) this or remove the setter if it doesn't make sense for client code to ever call this
+	 * 
+	 * @param spacingAdd
+	 */
 	public void setSpacingAdd(float spacingAdd)
 	{
-		this.spacingAdd = spacingAdd;
-		layout = new StaticLayout(text, paint, (int) lastTargetWidth, this.alignment, this.spacingMult, this.spacingAdd, this.includePad);
-		this.invalidate();
+		if(this.spacingAdd != spacingAdd)
+		{
+			this.spacingAdd = spacingAdd;
+			updateLayout();
+		}
 	}
 	
 	public float getSpacingAdd()
@@ -235,11 +306,18 @@ public class FontFitView extends View
 		return spacingAdd;
 	}
 
+	/**
+	 * TODO document (and possibly rename) this or remove the setter if it doesn't make sense for client code to ever call this
+	 * 
+	 * @param includePad
+	 */
 	public void setIncludePad(boolean includePad)
 	{
-		this.includePad = includePad;
-		layout = new StaticLayout(text, paint, (int) lastTargetWidth, this.alignment, this.spacingMult, this.spacingAdd, this.includePad);
-		this.invalidate();
+		if(this.includePad != includePad)
+		{
+			this.includePad = includePad;
+			updateLayout();
+		}
 	}
 
 	public boolean isIncludePad()
@@ -247,21 +325,32 @@ public class FontFitView extends View
 		return includePad;
 	}
 	
-	public void setAlignment(Layout.Alignment alignment)
+	/**
+	 * TODO document this
+	 * 
+	 * @param alignment
+	 */
+	public void setHorizontalAlignment(Layout.Alignment alignment)
 	{
-		this.alignment = alignment;
-		layout = new StaticLayout(text, paint, (int) lastTargetWidth, this.alignment, this.spacingMult, this.spacingAdd, this.includePad);
-		this.invalidate();
+		if(this.alignment != alignment)
+		{
+			this.alignment = alignment;
+			updateLayout();
+		}
 	}
 
-	public Layout.Alignment getAlignment()
+	public Layout.Alignment getHorizontalAlignment()
 	{
 		return alignment;
 	}
 
 	public void setText(String text)
 	{
-		this.text = text;
+		if(this.text != null ? !this.text.equals(text) : text != null)
+		{
+			this.text = text;
+			fitText(this.getWidth(), this.getHeight(), true);
+		}
 	}
 
 	public String getText()
@@ -269,20 +358,18 @@ public class FontFitView extends View
 		return text;
 	}
 
-
-	public float getTextSizePx()
-	{
-		return this.textSizePx; // do not just use paint.getTextSize because the offsets may not have been calculated (that size could have been set in the iteration)
-	}
-
 	public int getTextColor()
 	{
-		return textColor;
+		return paint.getColor();
 	}
 
 	public void setTextColor(int textColor)
 	{
-		this.textColor = textColor;
+		if(paint.getColor() != textColor)
+		{
+			paint.setColor(textColor);
+			updateLayout();
+		}
 	}
 
 	/**
@@ -294,7 +381,6 @@ public class FontFitView extends View
 	{
 
 		private ArrayList<FontFitView> views = new ArrayList<FontFitView>();
-		private ArrayList<Float> intendedTextSizes = new ArrayList<Float>();
 
 		/**
 		 * Requests that the coordinator reserve a 'slot' for this view so that it will update its font size at some point.
@@ -313,7 +399,6 @@ public class FontFitView extends View
 		public int claimSlot(FontFitView view)
 		{
 			views.add(view);
-			intendedTextSizes.add(MAX_TEXT_SIZE);
 			//Log.d("FFV", "Coordinator.claimSlot: number of slots: " + views.size());
 			return views.size() - 1;
 		}
@@ -321,12 +406,9 @@ public class FontFitView extends View
 		/**
 		 * Requests that the controller record the provided maximum text size for the provided view, and then coordinates font sizes across all views.
 		 * 
-		 * @param view
-		 *            - the view whose max text size is being recorded
-		 * @param maxTextSize
-		 *            - the max text size to record
+		 * @param view - the view whose max text size is being recorded
 		 */
-		public void setMaxTextSize(FontFitView view, float maxTextSize)
+		public void updated(FontFitView view)
 		{
 			// Just in case:
 			if(view.coordinatorSlot < 0 || view.coordinatorSlot >= views.size())
@@ -334,11 +416,8 @@ public class FontFitView extends View
 
 			// Register the view:
 			views.set(view.coordinatorSlot, view);
-
-			intendedTextSizes.set(view.coordinatorSlot, maxTextSize);
-			// always coordinate regardless of whether or not the size has changed because it may now be a new view object
-			// (e.g. if restarting a form):
-
+			
+			// always coordinate regardless of whether or not the size has changed because it may now be a new view object (e.g. if restarting a form):
 			// TODO wait until all fitted? (causes more "requestLayout() improperly called" warnings in some case)
 			coordinate();
 		}
@@ -350,8 +429,8 @@ public class FontFitView extends View
 		{
 			float min = MAX_TEXT_SIZE; // keep track of the smallest font size of all of the views we're tracking
 			for(int v = 0; v < views.size(); v++)
-				if(views.get(v) != null && intendedTextSizes.get(v) < min)
-					min = intendedTextSizes.get(v);
+				if(views.get(v) != null && views.get(v).textSizePx < min)
+					min = views.get(v).textSizePx;
 			return min;
 		}
 
@@ -363,12 +442,11 @@ public class FontFitView extends View
 			float coordinatedTextSize = getCoordinatedTextSize();
 			// Log.d("FFV", "Applying coordinated text size: " + coordinatedTextSize);
 			for(FontFitView v : views)
-			{
-				//if (v!= null)
-				//	Log.d("FFV", "Applying to: " + v.getTextLines());
-				if(v != null && v.getTextSizePx() != coordinatedTextSize) // TODO use minimum difference instead of !=? E.g. Math.abs(v.getTextSize() - coordinatedTextSize) > 1.0 (or some other value)
-					v.setTextSizePx(coordinatedTextSize);
-			}
+				if(v != null)
+				{
+					//Log.d("FFV", "Applying to: " + v.text);
+					v.setTextSizePx(coordinatedTextSize, true); // won't redraw if size is same as current one
+				}
 		}
 
 	}
