@@ -50,10 +50,10 @@ public abstract class LocationUI<V, UI extends CollectorUI<V, UI>> extends SelfL
 		// if don't have to wait at field (or do and field is shown in full), try to store:
 		if (field.storeLocation(controller.getCurrentRecord(), location))
 		{
-			if(isShownOnPage())
+			if(field.isOnPage())
 				// if field is shown on a page, update the page representation to show a store has been made:
-				updatePageRepresentation(); // if part of a page but page not shown, UI will be updated next time page is displayed
-			else if (isFieldShown())
+				showLocationStoredOnPage(); // if part of a page but page not shown, UI will be updated next time page is displayed
+			if (isFieldShown() && !isShownOnPage())
 				// store successful and field is full-screen so leave the field and stop the timeout:
 				controller.goForward(false);
 		}
@@ -62,7 +62,7 @@ public abstract class LocationUI<V, UI extends CollectorUI<V, UI>> extends SelfL
 	/**
 	 * What to do when the page-representation of this Location UI should be updated to show that a store has been made.
 	 */
-	public abstract boolean updatePageRepresentation();
+	public abstract void showLocationStoredOnPage();
 
 	@Override
 	protected abstract void cancel(); // force concrete subclass to implement this (e.g. to stop listening for locations)!

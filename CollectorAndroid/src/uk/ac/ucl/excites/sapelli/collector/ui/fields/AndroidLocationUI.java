@@ -75,7 +75,6 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 				pageView = new LocationOnPageView(collectorUI.getContext(), controller, this);
 			
 			pageView.setEnabled(enabled);
-			updatePageRepresentation(); // may be recycling pageView so check if it needs updating
 			
 			return pageView;
 		} else {
@@ -115,21 +114,10 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 		}
 	}
 	
-	/**
-	 * Checks whether the page representation needs to be updated (to show that a location has already been stored).
-	 * @return whether or not an update took place
-	 */
-	public boolean updatePageRepresentation()
-	{
-		if (pageView == null) // will happen if update was made while in full-screen field UI
-			return false;
-		
-		if (field.getColumn().isValueSet(controller.getCurrentRecord())) // already have a valid location for this record, so show this on the page
-		{
-			pageView.locationStored();
-			return true;
-		}
-		return false;
+	public void showLocationStoredOnPage() {
+		if (pageView == null) // should be impossible
+			return;
+		pageView.locationStored();
 	}
 
 	private class LocationOnPageView extends OnPageView {
@@ -143,8 +131,11 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 			this.context = context;
 			// get location image (TODO make customisable?):
 			Item image = new ResourceImageItem(context.getResources(), R.drawable.gps_location_marker);
-			if (updatePageRepresentation()) // already have a valid location for this record, so show this on the page
+			if(field.getColumn().isValueSet(controller.getCurrentRecord()))
+			{ // already have a valid location for this record, so show this on the page
+				locationStored();
 				return;
+			}
 			// else... create an item (with spinner depending on StartWith)
 			if(field.getStartWith() == LocationField.StartWith.FIELD)
 				this.setContentView(image.getView(context));
@@ -156,7 +147,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 		}
 		
 		/**
-		 * Remove the current page representation (including spinner, if present) and replace with one that is overlayed by a tick
+		 * Remove the current page representation (including spinner, if present) and replace with one that is overlaid by a tick to represent that a valid store has been made
 		 */
 		public void locationStored()
 		{
