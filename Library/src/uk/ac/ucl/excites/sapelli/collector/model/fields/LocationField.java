@@ -64,7 +64,7 @@ public class LocationField extends Field implements Timeoutable
 	static public final boolean DEFAULT_STORE_ACCURACY = true;		// store accuracy
 	static public final boolean DEFAULT_STORE_PROVIDER = false;		// do not store provider
 	
-	// ZDynamics---------------------------------------------
+	// Dynamics---------------------------------------------
 	private int type = DEFAULT_TYPE;
 	private StartWith startWith = DEFAULT_START_WITH;
 	private boolean waitAtField = DEFAULT_WAIT_AT_FIELD;

@@ -44,7 +44,7 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 		fieldUIs = new ArrayList<FieldUI<?, V, UI>>();
 		
 		for(Field f : page.getFields())
-			CollectionUtils.addIgnoreNull(fieldUIs, f.createUI(collectorUI));
+			CollectionUtils.addIgnoreNull(fieldUIs, collectorUI.getFieldUI(f));
 	}
 	
 	@Override
