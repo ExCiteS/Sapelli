@@ -34,6 +34,7 @@ import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.util.Timeoutable;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
+import android.graphics.Color;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
@@ -74,6 +75,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 				pageView = new LocationOnPageView(collectorUI.getContext(), controller, this);
 			
 			pageView.setEnabled(enabled);
+			updatePageRepresentation(); // may be recycling pageView so check if it needs updating
 			
 			return pageView;
 		} else {
@@ -111,28 +113,59 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 
 			return waitView;
 		}
-
 	}
 	
+	/**
+	 * Checks whether the page representation needs to be updated (to show that a location has already been stored).
+	 * @return whether or not an update took place
+	 */
+	public boolean updatePageRepresentation()
+	{
+		if (pageView == null) // will happen if update was made while in full-screen field UI
+			return false;
+		
+		if (field.getColumn().isValueSet(controller.getCurrentRecord())) // already have a valid location for this record, so show this on the page
+		{
+			pageView.locationStored();
+			return true;
+		}
+		return false;
+	}
+
 	private class LocationOnPageView extends OnPageView {
+		
+		private Context context;
+		private Item content;
 
 		public LocationOnPageView(Context context, CollectorController controller, FieldUI<LocationField, View, CollectorView> fieldUi)
 		{
 			super(context, controller, fieldUi);
-			// TODO add spinner on button (when startWithForm or startWithPage), make change it for a "got location" icon when location is obtained
-			// TODO show "got location" icon when already has location
-			// get compass image (TODO make customisable?):
+			this.context = context;
+			// get location image (TODO make customisable?):
 			Item image = new ResourceImageItem(context.getResources(), R.drawable.gps_location_marker);
-			if (field.getStartWith() == LocationField.StartWith.FIELD)
+			if (updatePageRepresentation()) // already have a valid location for this record, so show this on the page
+				return;
+			// else... create an item (with spinner depending on StartWith)
+			if(field.getStartWith() == LocationField.StartWith.FIELD)
 				this.setContentView(image.getView(context));
-			else { // FORM or PAGE: add a spinner on top of the image and remove it when a location is found
-				this.setContentView(new LayeredItem()
-				.addLayer(image)
-				.addLayer(new SpinnerItem())
-				.getView(context));
+			else
+			{ // FORM or PAGE: add a spinner on top of the image (remove it when a location is found)
+				content = new LayeredItem().addLayer(image).addLayer(new SpinnerItem());
+				this.setContentView(content.getView(context));
 			}
 		}
 		
+		/**
+		 * Remove the current page representation (including spinner, if present) and replace with one that is overlayed by a tick
+		 */
+		public void locationStored()
+		{
+			// TODO disable field?
+			Item tick = new ResourceImageItem(context.getResources(), R.drawable.button_tick_svg);
+			Item image = new ResourceImageItem(context.getResources(), R.drawable.gps_location_marker); // TODO can't simply reuse this item as its view is already associated with the old layered item - remove items?
+			tick.setBackgroundColor(Color.TRANSPARENT);
+			content = new LayeredItem().addLayer(image).addLayer(tick);
+			this.setContentView(content.getView(context));
+		}
 	}
-
 }

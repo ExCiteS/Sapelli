@@ -42,13 +42,27 @@ public abstract class LocationUI<V, UI extends CollectorUI<V, UI>> extends SelfL
 	@Override
 	public void onLocationChanged(Location location)
 	{
-		// isShownOnPage()
-		// field.getStartWith() != StartWith.FIELD				
-		// TODO what to do with waitAtField?		
+		// System.err.println("Location changed. start with: "+field.getStartWith()+" wait: "+field.isWaitAtField()+" shown: "+isFieldShown()+" shown on page: "+isShownOnPage()+" is on page: "+field.isOnPage());
+		// if must wait/start at field, only store if currently showing field and not on page:
+		if (field.isWaitAtField() || field.getStartWith() == LocationField.StartWith.FIELD && (!isFieldShown() || isShownOnPage()))
+			return;
 		
-		if(field.storeLocation(controller.getCurrentRecord(), location))
-			controller.goForward(false); // continue (will leave waiting screen & stop the timeout timer)
+		// if don't have to wait at field (or do and field is shown in full), try to store:
+		if (field.storeLocation(controller.getCurrentRecord(), location))
+		{
+			if(isShownOnPage())
+				// if field is shown on a page, update the page representation to show a store has been made:
+				updatePageRepresentation(); // if part of a page but page not shown, UI will be updated next time page is displayed
+			else if (isFieldShown())
+				// store successful and field is full-screen so leave the field and stop the timeout:
+				controller.goForward(false);
+		}
 	}
+	
+	/**
+	 * What to do when the page-representation of this Location UI should be updated to show that a store has been made.
+	 */
+	public abstract boolean updatePageRepresentation();
 
 	@Override
 	protected abstract void cancel(); // force concrete subclass to implement this (e.g. to stop listening for locations)!

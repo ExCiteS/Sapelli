@@ -235,7 +235,7 @@ public class CollectorController extends Controller implements LocationListener,
 		if(LocationUtils.isBetterLocation(location, currentBestLocation))
 		{
 			currentBestLocation = location;
-			FieldUI currentFieldUI = ui.getCurrentFieldUI();
+			FieldUI<?, ?, ?> currentFieldUI = ui.getCurrentFieldUI();
 			if(currentFieldUI != null)
 				currentFieldUI.onLocationChanged(LocationUtils.getSapelliLocation(location));
 			
