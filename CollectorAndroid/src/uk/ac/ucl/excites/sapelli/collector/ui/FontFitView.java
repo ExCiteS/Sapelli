@@ -45,7 +45,7 @@ public class FontFitView extends View
 
 	// DYNAMICS ------------------------------------------------------
 	/**
-	 * TODO 
+	 *  Horizontal text alignment setting -- default is centred.
 	 */
 	private Layout.Alignment alignment = Layout.Alignment.ALIGN_CENTER;
 	
@@ -60,12 +60,13 @@ public class FontFitView extends View
 	private float spacingAdd = 0.0f;
 	
 	/**
-	 * "includePad" needed for StaticLayout constructor but completely undocumented in Android :) Think it decides whether or not to include padding in metrics
-	 * (a bit like setIncludeFontPadding in TextView) so we want it to be TRUE to ensure there is enough room for accented characters:
+	 * "includePad" needed for StaticLayout constructor but completely undocumented in Android :) Experiments have suggested that the value of this variable does not affect
+	 *  the amount of spacing between lines but does affect the amount of padding at the top and bottom of an entire piece of text.
 	 */
 	private boolean includePad = true;
 	
 	private String text = "";
+	private String[] textLines = new String[]{ text };
 	private float textSizePx = MAX_TEXT_SIZE;
 	
 	private TextSizeCoordinator coordinator;
@@ -119,7 +120,7 @@ public class FontFitView extends View
 	 */
 	private void setTextSizePx(float textSizePx, boolean applyNow)
 	{
-		boolean different = this.textSizePx == textSizePx; // TODO use minimum difference instead of ==? E.g. Math.abs(v.getTextSize() - coordinatedTextSize) > 1.0 (or some other value)
+		boolean different = this.textSizePx == textSizePx;
 		
 		// update text size field (checked elsewhere)
 		this.textSizePx = textSizePx;
@@ -138,15 +139,8 @@ public class FontFitView extends View
 	 */
 	private void updateLayout()
 	{
-		// New layout instance:
-		layout = new StaticLayout(text, paint, (int) lastTargetWidth, alignment, spacingMult, spacingAdd, includePad);
-		
-		// TODO shouldn't we use a DynamicLayout instead? As it is clearly changing...
-		
-		// TODO not sure it's save to use lastTargetWidth here because it is initialised to -1 ...
-		//	perhaps it's better to do 
-		// TODO maybe it's better to round width nearest whole px? instead of (int) which floors
-		
+		// New layout instance (DynamicLayout is intended for text that changes frequently -- e.g. in an EditText, constantly updating as the user types)
+		layout = new StaticLayout(text, paint, this.getWidth() - this.getPaddingLeft() - this.getPaddingRight(), alignment, spacingMult, spacingAdd, includePad);
 		// Ensure that the view will be redrawn:
 		this.invalidate();
 	}
@@ -155,9 +149,10 @@ public class FontFitView extends View
 	public void onDraw(Canvas canvas)
 	{
 		// canvas.drawColor(backgroundColor); // wipe canvas (just in case)-- doesn't seem necessary but try this in case of bugs!
-		
-		// calculate new height offset for vertical text centering -- want to start drawing text at height (container height - text height) / 2 :
-		float heightOffset = 0.5f * (this.getHeight() - layout.getLineBottom(layout.getLineCount() - 1));
+		// Log.d("FFV", "Font metrics float: "+paint.getFontMetrics(null) * textLines.length +" font metrics int: "+paint.getFontMetricsInt(null)*textLines.length+" layout height: "+layout.getHeight()+" layout line bottom: "+layout.getLineBottom(layout.getLineCount() - 1)+" pad top: "+layout.getTopPadding()+" pad bottom: "+layout.getBottomPadding()+" attempt: "+(paint.getFontMetricsInt(null)*textLines.length - layout.getTopPadding() + layout.getBottomPadding()));
+		// calculate new height offset for vertical text centering -- want to start drawing text at
+		// (container height - text height) /2 = (container height - (text box height - (negative padding)) / 2 = (container height - text box height + negative padding) / 2
+		float heightOffset = 0.5f * (this.getHeight() - layout.getHeight() + layout.getTopPadding() /* this is negative! */ );
 		
 		// shift canvas upwards so that the text will be vertically centred:
 		canvas.translate(0, heightOffset);
@@ -172,7 +167,7 @@ public class FontFitView extends View
 	@Override
 	public void onLayout(boolean changed, int left, int top, int right, int bottom)
 	{
-		fitText(this.getWidth(), this.getHeight(), false); // TODO use changed instead of false?		
+		fitText(this.getWidth(), this.getHeight(), changed); // only force text size to be recalculated if Android tells us the layout has changed (but that should cause it to recalculate anyway)		
 	}
 	
 	/**
@@ -250,8 +245,6 @@ public class FontFitView extends View
 	 * Computes whether or not the provided (possibly multi-line) text will fit within a
 	 * bounding box defined by the supplied parameters, using the supplied text (font) size.
 	 * 
-	 * TODO explain why we don't do any explicit width checks
-	 * 
 	 * @param textSize - the text/font size to use
 	 * @param targetWidth - the width of the containing box
 	 * @param targetHeight - the height of the containing box
@@ -260,75 +253,24 @@ public class FontFitView extends View
 	private boolean textFits(float textSize, float targetWidth, float targetHeight)
 	{
 		paint.setTextSize(textSize);
-
-		layout = new StaticLayout(text, paint, (int) targetWidth, alignment, spacingMult, spacingAdd, includePad);
+				
+		float width = 0;
 		// Log.d("FFV", "text: "+text+" text height: "+layout.getHeight()+" target: "+targetHeight+" fits: "+(layout.getWidth() <= targetWidth && layout.getHeight() <= targetHeight));
-		return layout.getHeight() <= targetHeight; // only check on height as width is already set
-		
-		// TODO maybe leave some commented out code for the other ways of measuring height/width of text?
-	}
-	
-	/**
-	 * TODO document (and possibly rename) this or remove the setter if it doesn't make sense for client code to ever call this
-	 * 
-	 * @param spacingMult
-	 */
-	public void setSpacingMultiplier(float spacingMult)
-	{
-		if(this.spacingMult != spacingMult)
-		{	
-			this.spacingMult = spacingMult;
-			updateLayout();
-		}
-	}
-	
-	public float getSpacingMult()
-	{
-		return spacingMult;
-	}
-	
-	/**
-	 * TODO document (and possibly rename) this or remove the setter if it doesn't make sense for client code to ever call this
-	 * 
-	 * @param spacingAdd
-	 */
-	public void setSpacingAdd(float spacingAdd)
-	{
-		if(this.spacingAdd != spacingAdd)
-		{
-			this.spacingAdd = spacingAdd;
-			updateLayout();
-		}
-	}
-	
-	public float getSpacingAdd()
-	{
-		return spacingAdd;
+
+		for(String line : textLines)
+			// measure bounds for each line of text:
+			width = Math.max(width, paint.measureText(line)); // max width is max(previous max width, this line width)
+			// determine height by doing no. lines * interline spacing (= font height + spacing between bottom of one line and top of another)
+			// NOTE: do not use Paint#getTextBounds because this ignores any spacing above or below the character, which will be included by the
+			// TextView regardless (e.g. the bounds height of "." would be very low as it excludes the space above the character)
+		return(width <= targetWidth && textLines.length * paint.getFontMetrics(null) <= targetHeight);
 	}
 
 	/**
-	 * TODO document (and possibly rename) this or remove the setter if it doesn't make sense for client code to ever call this
-	 * 
-	 * @param includePad
-	 */
-	public void setIncludePad(boolean includePad)
-	{
-		if(this.includePad != includePad)
-		{
-			this.includePad = includePad;
-			updateLayout();
-		}
-	}
-
-	public boolean isIncludePad()
-	{
-		return includePad;
-	}
-	
-	/**
-	 * TODO document this
+	 * Sets the horizontal alignment setting for the text in this View.
 	 * 
 	 * @param alignment
+	 * @see <a href="http://developer.android.com/reference/android/text/Layout.Alignment.html">http://developer.android.com/reference/android/text/Layout.Alignment.html</a>
 	 */
 	public void setHorizontalAlignment(Layout.Alignment alignment)
 	{
@@ -339,20 +281,36 @@ public class FontFitView extends View
 		}
 	}
 
+	/**
+	 * Get the current horizontal alignment setting for this View.
+	 * @return
+	 */
 	public Layout.Alignment getHorizontalAlignment()
 	{
 		return alignment;
 	}
 
+	/**
+	 * Set the text to be displayed by the View. "CRLF" line endings are normalised to "LF".
+	 * @param text
+	 */
 	public void setText(String text)
 	{
-		if(this.text != null ? !this.text.equals(text) : text != null)
+		if(text == null)
+			text = "";
+		text = text.replace("\r", ""); // remove "CR" of line endings, leaving "LF"
+		if(!this.text.equals(text))
 		{
-			this.text = text;
+			this.text = text; // keep the un-split text around so we can paint with a StaticLayout
+			this.textLines = text.split("\n"); // split on "LF" to get an array of the lines in the text for multi-line font fitting
 			fitText(this.getWidth(), this.getHeight(), true);
 		}
 	}
 
+	/**
+	 * Get the text that is displayed by this View.
+	 * @return
+	 */
 	public String getText()
 	{
 		return text;
@@ -418,7 +376,6 @@ public class FontFitView extends View
 			views.set(view.coordinatorSlot, view);
 			
 			// always coordinate regardless of whether or not the size has changed because it may now be a new view object (e.g. if restarting a form):
-			// TODO wait until all fitted? (causes more "requestLayout() improperly called" warnings in some case)
 			coordinate();
 		}
 
