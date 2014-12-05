@@ -503,6 +503,6 @@ public abstract class Field extends JumpSource
 	 * @param collectorUI
 	 * @return
 	 */
-	public abstract <V, UI extends CollectorUI<V, UI>> FieldUI<?, V, UI> createUI(UI collectorUI);
+	public abstract <V, UI extends CollectorUI<V, UI>> FieldUI<? extends Field, V, UI> createUI(UI collectorUI);
 	
 }
