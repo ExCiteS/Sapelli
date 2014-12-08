@@ -65,13 +65,14 @@ public class FontFitView extends View
 	 */
 	private boolean includePad = true;
 	
+	private final TextSizeCoordinator coordinator;
+	private final int coordinatorSlot;
+	private final TextPaint paint;
+	
 	private String text = "";
 	private String[] textLines = new String[]{ text };
 	private float textSizePx = MAX_TEXT_SIZE;
 	
-	private TextSizeCoordinator coordinator;
-	private int coordinatorSlot;
-	private TextPaint paint;
 	private int lastTargetWidth = -1;
 	private int lastTargetHeight = -1;
 	private StaticLayout layout;
@@ -104,8 +105,9 @@ public class FontFitView extends View
 		
 		this.coordinator = coordinator;
 		// Set or claim coordinator slot:
-		if(coordinator != null)
-			this.coordinatorSlot = coordinatorSlot >= 0 ? coordinatorSlot : coordinator.claimSlot(this);
+		this.coordinatorSlot = coordinator != null ?
+									coordinatorSlot >= 0 ? coordinatorSlot : coordinator.claimSlot(this) :
+									-1;
 		
 		// Initialise paint:
 		paint = new TextPaint();
@@ -148,19 +150,21 @@ public class FontFitView extends View
 	@Override
 	public void onDraw(Canvas canvas)
 	{
-		// canvas.drawColor(backgroundColor); // wipe canvas (just in case)-- doesn't seem necessary but try this in case of bugs!
-		// Log.d("FFV", "Font metrics float: "+paint.getFontMetrics(null) * textLines.length +" font metrics int: "+paint.getFontMetricsInt(null)*textLines.length+" layout height: "+layout.getHeight()+" layout line bottom: "+layout.getLineBottom(layout.getLineCount() - 1)+" pad top: "+layout.getTopPadding()+" pad bottom: "+layout.getBottomPadding()+" attempt: "+(paint.getFontMetricsInt(null)*textLines.length - layout.getTopPadding() + layout.getBottomPadding()));
-		// calculate new height offset for vertical text centering -- want to start drawing text at
-		// (container height - text height) /2 = (container height - (text box height - (negative padding)) / 2 = (container height - text box height + negative padding) / 2
-		float heightOffset = 0.5f * (this.getHeight() - layout.getHeight() + layout.getTopPadding() /* this is negative! */ );
+		//Log.d("FFV", "Font metrics float: "+paint.getFontMetrics(null) * textLines.length +" font metrics int: "+paint.getFontMetricsInt(null)*textLines.length+" layout height: "+layout.getHeight()+" layout line bottom: "+layout.getLineBottom(layout.getLineCount() - 1)+" pad top: "+layout.getTopPadding()+" pad bottom: "+layout.getBottomPadding()+" attempt: "+(paint.getFontMetricsInt(null)*textLines.length - layout.getTopPadding() + layout.getBottomPadding()));
 		
-		// shift canvas upwards so that the text will be vertically centred:
+		//canvas.drawColor(backgroundColor); // wipe canvas (just in case)-- doesn't seem necessary but try this in case of bugs!
+		
+		// Calculate new height offset for vertical text centering -- want to start drawing text at
+		// (container height - text height) /2 = (container height - (text box height - (negative padding)) / 2 = (container height - text box height + negative padding) / 2
+		float heightOffset = 0.5f * (this.getHeight() - layout.getHeight() + layout.getTopPadding() /* this is negative! */);
+		
+		// Shift canvas upwards so that the text will be vertically centred:
 		canvas.translate(0, heightOffset);
 		
-		// draw text:
+		// Draw text:
 		layout.draw(canvas);
 		
-		// undo translate:
+		// Undo translate:
 		canvas.restore();
 	}
 	
@@ -199,16 +203,16 @@ public class FontFitView extends View
 
 		// At this point we know a new size computation will take place...
 
-		// Log.d("FFV", "fitText: IS REFITTING, text: " + this.getText() + ", hash: " + hashCode() + " w=" + viewWidth + ", h=" + viewHeight + ", forced: " + force);
+		//Log.d("FFV", "fitText: IS REFITTING, text: " + this.getText() + ", hash: " + hashCode() + " w=" + viewWidth + ", h=" + viewHeight + ", forced: " + force);
 
 		// Initialise lo & hi bounds:
 		float lo = MIN_TEXT_SIZE;
 		float hi = (coordinator == null) ? MAX_TEXT_SIZE : coordinator.getCoordinatedTextSize();
 		
-		// see if we can use the "hi" instead of iterating (if "hi" fits then iterating will only get us back to a value marginally smaller than "hi"):
+		// See if we can use the "hi" instead of iterating (if "hi" fits then iterating will only get us back to a value marginally smaller than "hi"):
 		float textSize = hi;
 
-		// only iterate if "hi" was too big:
+		// Only iterate if "hi" was too big:
 		if(!textFits(textSize, targetWidth, targetHeight))
 		{
 			// Fitting loop (binary search):
@@ -216,7 +220,7 @@ public class FontFitView extends View
 			{
 				textSize = (hi + lo) / 2;
 
-				// see if our text fits
+				// See if our text fits
 				if(textFits(textSize, targetWidth, targetHeight))
 					lo = textSize; // was too small, so increase lo
 				else
@@ -227,7 +231,7 @@ public class FontFitView extends View
 			textSize = lo;
 		}
 
-		// Log.d("FFV", "final textSize for slot " + coordinatorSlot + ": " + textSize);
+		//Log.d("FFV", "final textSize for slot " + coordinatorSlot + ": " + textSize);
 
 		// Remember target dimensions:
 		lastTargetWidth = targetWidth;
@@ -255,7 +259,7 @@ public class FontFitView extends View
 		paint.setTextSize(textSize);
 				
 		float width = 0;
-		// Log.d("FFV", "text: "+text+" text height: "+layout.getHeight()+" target: "+targetHeight+" fits: "+(layout.getWidth() <= targetWidth && layout.getHeight() <= targetHeight));
+		//Log.d("FFV", "text: "+text+" text height: "+layout.getHeight()+" target: "+targetHeight+" fits: "+(layout.getWidth() <= targetWidth && layout.getHeight() <= targetHeight));
 
 		for(String line : textLines)
 			// measure bounds for each line of text:
@@ -291,18 +295,28 @@ public class FontFitView extends View
 	}
 
 	/**
-	 * Set the text to be displayed by the View. "CRLF" line endings are normalised to "LF".
-	 * @param text
+	 * Set the text to be displayed by the View.
+	 * "CRLF" line endings are normalised to "LF".
+	 * 
+	 * @param text the text to display, will be replaced by "" if null
 	 */
 	public void setText(String text)
 	{
+		// Normalise:
 		if(text == null)
+			// Replace null with empty string:
 			text = "";
-		text = text.replace("\r", ""); // remove "CR" of line endings, leaving "LF"
+		else
+			// Remove "CR" from line endings, leaving only "LF"
+			text = text.replace("\r", "");
+		
+		// Is this really different from the current text?
 		if(!this.text.equals(text))
 		{
 			this.text = text; // keep the un-split text around so we can paint with a StaticLayout
 			this.textLines = text.split("\n"); // split on "LF" to get an array of the lines in the text for multi-line font fitting
+			
+			// Compute new font size:
 			fitText(this.getWidth(), this.getHeight(), true);
 		}
 	}
@@ -385,9 +399,9 @@ public class FontFitView extends View
 		public float getCoordinatedTextSize()
 		{
 			float min = MAX_TEXT_SIZE; // keep track of the smallest font size of all of the views we're tracking
-			for(int v = 0; v < views.size(); v++)
-				if(views.get(v) != null && views.get(v).textSizePx < min)
-					min = views.get(v).textSizePx;
+			for(FontFitView v : views)
+				if(v != null && v.textSizePx < min)
+					min = v.textSizePx;
 			return min;
 		}
 
@@ -397,7 +411,7 @@ public class FontFitView extends View
 		public void coordinate()
 		{
 			float coordinatedTextSize = getCoordinatedTextSize();
-			// Log.d("FFV", "Applying coordinated text size: " + coordinatedTextSize);
+			//Log.d("FFV", "Applying coordinated text size: " + coordinatedTextSize);
 			for(FontFitView v : views)
 				if(v != null)
 				{
