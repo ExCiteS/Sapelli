@@ -24,7 +24,6 @@ import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.content.Context;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
@@ -32,7 +31,9 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /**
- * TODO
+ * General on-page view for various field UIs that deals with invalidation on focus change and presents the field
+ * as some "content view" below the field's label. Subclasses should call setContentView(View contentView) with the content
+ * they would like the page to display below the field label.
  * 
  * @author benelliott, mstevens
  *
@@ -113,7 +114,6 @@ public class OnPageView extends LinearLayout implements OnClickListener, OnFocus
 		if(!fieldUi.isFieldShown() || !this.isEnabled() || !v.isEnabled())
 			return;
 	
-		Log.d("OnPageView","Focus changed. Has focus: "+hasFocus);
 		if(hasFocus)
 		{
 			// Lose focus again:

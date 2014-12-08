@@ -43,7 +43,7 @@ import android.widget.RelativeLayout;
 import android.widget.RelativeLayout.LayoutParams;
 
 /**
- * @author Julia, mstevens
+ * @author Julia, mstevens, benelliott
  *
  */
 public class AndroidLocationUI extends LocationUI<View, CollectorView> {
@@ -123,7 +123,6 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 	private class LocationOnPageView extends OnPageView {
 		
 		private Context context;
-		private Item content;
 
 		public LocationOnPageView(Context context, CollectorController controller, FieldUI<LocationField, View, CollectorView> fieldUi)
 		{
@@ -141,8 +140,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 				this.setContentView(image.getView(context));
 			else
 			{ // FORM or PAGE: add a spinner on top of the image (remove it when a location is found)
-				content = new LayeredItem().addLayer(image).addLayer(new SpinnerItem());
-				this.setContentView(content.getView(context));
+				this.setContentView(new LayeredItem().addLayer(image).addLayer(new SpinnerItem()).getView(context));
 			}
 		}
 		
@@ -155,8 +153,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 			Item tick = new ResourceImageItem(context.getResources(), R.drawable.button_tick_svg);
 			Item image = new ResourceImageItem(context.getResources(), R.drawable.gps_location_marker); // TODO can't simply reuse this item as its view is already associated with the old layered item - remove items?
 			tick.setBackgroundColor(Color.TRANSPARENT);
-			content = new LayeredItem().addLayer(image).addLayer(tick);
-			this.setContentView(content.getView(context));
+			this.setContentView(new LayeredItem().addLayer(image).addLayer(tick).getView(context));
 		}
 	}
 }

@@ -23,10 +23,13 @@ import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.OnPageView;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.LayeredItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
+import android.graphics.Color;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
@@ -35,7 +38,7 @@ import android.widget.RelativeLayout;
 import android.widget.RelativeLayout.LayoutParams;
 
 /**
- * @author Julia, mstevens
+ * @author Julia, mstevens, benelliott
  *
  */
 public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
@@ -63,6 +66,11 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 				pageView = new OrientationOnPageView(collectorUI.getContext(), controller, this);
 
 			pageView.setEnabled(enabled);
+			
+			if(field.getColumn().isValueSet(controller.getCurrentRecord()))
+				// already have a valid location for this record, so show this on the page -- check this every time the page is shown
+					pageView.orientationStored();
+			
 			return pageView;
 		}
 		else
@@ -90,12 +98,22 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 	private class OrientationOnPageView extends OnPageView
 	{
 
+		private Context context;
+		
 		public OrientationOnPageView(Context context, CollectorController controller, FieldUI<OrientationField, View, CollectorView> fieldUi)
 		{
 			super(context, controller, fieldUi);
+			this.context = context;
 			// get compass image (TODO make customisable?):
-			View content = ((new ResourceImageItem(context.getResources(), R.drawable.compass)).getView(context));
-			this.setContentView(content);
-		}		
+			this.setContentView((new ResourceImageItem(context.getResources(), R.drawable.compass)).getView(context));
+		}
+		
+		private void orientationStored()
+		{
+			Item tick = new ResourceImageItem(context.getResources(), R.drawable.button_tick_svg);
+			Item image = new ResourceImageItem(context.getResources(), R.drawable.compass);
+			tick.setBackgroundColor(Color.TRANSPARENT);
+			this.setContentView(new LayeredItem().addLayer(image).addLayer(tick).getView(context)); // TODO creating new item so views are fresh
+		}
 	}
 }
