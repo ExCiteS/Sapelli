@@ -45,7 +45,7 @@
             android:layout_alignParentLeft="true"
             android:layout_alignParentTop="true"
             android:contentDescription="@string/app_name"
-            android:src="@drawable/ic_excites_transparent" />
+            android:src="@drawable/ic_sapelli_logo" />
 
         <TextView
             android:id="@+id/aboutInfo"
