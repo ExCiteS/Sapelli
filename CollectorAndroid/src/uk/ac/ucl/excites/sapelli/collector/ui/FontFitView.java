@@ -154,6 +154,10 @@ public class FontFitView extends View
 		
 		//canvas.drawColor(backgroundColor); // wipe canvas (just in case)-- doesn't seem necessary but try this in case of bugs!
 		
+		// Just in case (do not remove!):
+		if(layout == null)
+			updateLayout();
+		
 		// Calculate new height offset for vertical text centering -- want to start drawing text at
 		// (container height - text height) /2 = (container height - (text box height - (negative padding)) / 2 = (container height - text box height + negative padding) / 2
 		float heightOffset = 0.5f * (this.getHeight() - layout.getHeight() + layout.getTopPadding() /* this is negative! */);

@@ -25,6 +25,8 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.TextItem;
 import android.content.Context;
+import android.graphics.Color;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -40,6 +42,8 @@ public class PickerView extends GridView
 	// Statics:
 	static public final int DEFAULT_HEIGHT_PX = 100;
 	static public final int DEFAULT_WIDTH_PX = 100;
+	
+	static private final String TAG = "PickerView";
 	
 	// Dynamics:
 	protected LayoutParams itemLayoutParams = new LayoutParams(DEFAULT_WIDTH_PX, DEFAULT_HEIGHT_PX);
@@ -147,17 +151,24 @@ public class PickerView extends GridView
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent)
 		{
-			Item item = getItem(position);
-			if(item == null)
-				return new TextItem("Error").getView(getContext()); // this really shouldn't ever happen ;-)
+			// Get item:
+			Item item = getItem(position); // should never be null, but we check anyway below
 			
-			if(recycleViews && convertView != null && convertView.getId() == getItemId(position))
+			// Try recycling convertView:
+			if(item != null && recycleViews && convertView != null && convertView.getId() == getItemId(position))
 			{
 				item.applyProperties(convertView); // in case item properties (e.g. visibility) have changed in the meantime
 				return convertView;
 			}
+			// Get view from item:
 			else
 			{
+				if(item == null) // this really shouldn't ever happen ;-)
+				{
+					item = new TextItem(getContext().getString(R.string.error)).setBackgroundColor(Color.RED);
+					Log.e(TAG, "getView(): got null item at position " + position + "!");
+				}
+					
 				// Create the view:
 				View view = item.getView(getContext(), recycleViews);
 				
@@ -166,9 +177,6 @@ public class PickerView extends GridView
 				
 				// Set layout params (width & height):
 				view.setLayoutParams(itemLayoutParams);
-				
-				// Set the description used for accessibility support:
-				view.setContentDescription(items.get(position).getDescription());
 
 				// Return view:
 				return view;
