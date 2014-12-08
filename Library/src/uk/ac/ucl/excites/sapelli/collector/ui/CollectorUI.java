@@ -46,6 +46,8 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.TextBoxUI;
 
 public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 {
+	
+	public FieldUI<? extends Field, V, UI> getFieldUI(Field field);
 
 	public ChoiceUI<V, UI> createChoiceUI(ChoiceField cf);
 

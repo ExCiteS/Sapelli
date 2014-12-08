@@ -96,7 +96,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	private AndroidControlsUI controlsUI;
 	private FieldUI<?, View, CollectorView> fieldUI;
 	private View fieldUIView = null;
-	private HashMap<Field, FieldUI<?, View, CollectorView>> fieldUICache;
+	private HashMap<Field, FieldUI<? extends Field, View, CollectorView>> fieldUICache;
 
 	// Input manager:
 	private InputMethodManager imm;
@@ -108,7 +108,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	{
 		super(activity);
 		this.activity = activity;
-		this.fieldUICache = new HashMap<Field, FieldUI<?, View, CollectorView>>();
+		this.fieldUICache = new HashMap<Field, FieldUI<? extends Field, View, CollectorView>>();
 
 		this.imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
 
@@ -158,14 +158,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI.disable();
 
 		// Get or create fieldUI for field...
-		FieldUI<?, View, CollectorView> newFieldUI = fieldUICache.get(field); // try to recycle cached fieldUI
-		if(newFieldUI == null)
-		{ // no cached fieldUI for this field...
-			newFieldUI = field.createUI(this); // create new fieldUI for field
-			if(newFieldUI == null) // just in case
-				throw new IllegalStateException("Could not construct UI for field \"" + field.getID() + "\".");
-			fieldUICache.put(field, newFieldUI); // cache the fieldUI for later reuse
-		}
+		FieldUI<?, View, CollectorView> newFieldUI = getFieldUI(field);
 		
 		// Hide current fieldUI, if there is one, it is not the same as the new one (i.e. it does probably not represent the same field), and it is currently shown...
 		if(fieldUI != null && newFieldUI != fieldUI && fieldUI.isFieldShown())
@@ -259,6 +252,23 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI.enable();
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI#getFieldUI(uk.ac.ucl.excites.sapelli.collector.model.Field)
+	 */
+	@Override
+	public FieldUI<? extends Field, View, CollectorView> getFieldUI(Field field)
+	{
+		FieldUI<? extends Field, View, CollectorView> newFieldUI = fieldUICache.get(field); // try to recycle cached fieldUI
+		if(newFieldUI == null)
+		{	// no cached fieldUI for this field...
+			newFieldUI =  field.createUI(this); // create new fieldUI for field
+			if(newFieldUI == null) // just in case
+				throw new IllegalStateException("Could not construct UI for field \"" + field.id + "\".");
+			fieldUICache.put(field, newFieldUI); // cache the fieldUI for later reuse
+		}
+		return newFieldUI;
+	}
+	
 	public CollectorActivity getActivity()
 	{
 		return activity;

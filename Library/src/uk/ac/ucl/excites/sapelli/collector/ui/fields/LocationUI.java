@@ -44,7 +44,7 @@ public abstract class LocationUI<V, UI extends CollectorUI<V, UI>> extends SelfL
 			return; // this shouldn't happen really
 		
 		//Log:
-		controller.addLogLine("TIMEOUT", field.getID());
+		controller.addLogLine("TIMEOUT", field.id);
 		
 		Record record = controller.getCurrentRecord();
 		

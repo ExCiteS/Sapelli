@@ -44,7 +44,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	{
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
-			controller.addLogLine("ATTACHMENT", field.getID(), mediaAttachment.getName());
+			controller.addLogLine("ATTACHMENT", field.id, mediaAttachment.getName());
 			
 			field.incrementCount(controller.getCurrentRecord()); // Store/increase number of pictures/recordings taken
 			
@@ -55,7 +55,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		}
 		else
 		{
-			controller.addLogLine("ATTACHMENT", field.getID(), "-NONE-");
+			controller.addLogLine("ATTACHMENT", field.id, "-NONE-");
 			
 			if(!isValid(controller.getCurrentRecord()))
 				// at least one attachment is required & we have none:

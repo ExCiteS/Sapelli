@@ -43,7 +43,7 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 		fieldUIs = new ArrayList<FieldUI<?, V, UI>>();
 		
 		for(Field f : page.getFields())
-			CollectionUtils.addIgnoreNull(fieldUIs, f.createUI(collectorUI));
+			CollectionUtils.addIgnoreNull(fieldUIs, collectorUI.getFieldUI(f));
 	}
 	
 	@Override
@@ -52,7 +52,7 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 		super.hideField(); // !!!
 		// hide all contained fields:
 		for(FieldUI<?, V, UI> fUI : fieldUIs)
-			if(controller.isFieldEnabled(fUI.getField())) // field is enabled (and shown)
+			if(controller.isFieldEnabled(fUI.field)) // field is enabled (and shown)
 				fUI.hideField(); // cancel() of each field will also be called
 	}
 	
@@ -73,7 +73,7 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 		{
 			// Leave contained fields, but without repeating validation (values will be stored however):
 			for(FieldUI<?, V, UI> fUI : fieldUIs)
-				if(controller.isFieldEnabled(fUI.getField())) // field is enabled (and shown)
+				if(controller.isFieldEnabled(fUI.field)) // field is enabled (and shown)
 					fUI.leave(record, true); // storage only (no repeated validation)
 			// Allow leaving:
 			return true;
@@ -90,9 +90,9 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 		boolean valid = true;
 		for(FieldUI<?, V, UI> fUI : fieldUIs)
 		{
-			if(	controller.isFieldEnabled(fUI.getField())	// field is enabled (and shown),
-				&& !isValid(fUI, record))					// but not valid
-				valid = false;								// don't return false here, some isValid() implementations may have side effects
+			if(	controller.isFieldEnabled(fUI.field)	// field is enabled (and shown),
+				&& !isValid(fUI, record))				// but not valid
+				valid = false;							// don't return false here, some isValid() implementations may have side effects
 		}
 		return valid;
 	}
@@ -156,7 +156,7 @@ public abstract class PageUI<V, UI extends CollectorUI<V, UI>> extends FieldUI<P
 	public boolean claimFocus()
 	{
 		for(FieldUI<?, V, UI> fUI : fieldUIs)
-			if(	controller.isFieldEnabled(fUI.getField())	// field is enabled (and shown)
+			if(	controller.isFieldEnabled(fUI.field)	// field is enabled (and shown)
 				&& fUI.claimFocus())
 				return true; // the first child field to claim the focus gets it.
 		return false;

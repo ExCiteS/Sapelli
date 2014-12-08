@@ -177,7 +177,7 @@ public abstract class MediaField extends Field
 	public File getNewTempFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
 	{
 		String filename = generateFilename(record, getCount(record));
-		String dataFolderPath = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
+		String dataFolderPath = fileStorageProvider.getProjectAttachmentFolder(form.project, true).getAbsolutePath();
 		return new File(dataFolderPath + File.separator + filename);
 	}
 	
@@ -276,7 +276,7 @@ public abstract class MediaField extends Field
 					//this.min == that.min &&
 					this.max == that.max &&
 					this.useNativeApp == that.useNativeApp &&
-					(this.disableChoice != null ? that.disableChoice != null && this.disableChoice.getID().equals(that.disableChoice.getID()) : that.disableChoice == null); // do not use disableChoice itself to avoid potential endless loops!
+					(this.disableChoice != null ? that.disableChoice != null && this.disableChoice.id.equals(that.disableChoice.id) : that.disableChoice == null); // do not use disableChoice itself to avoid potential endless loops!
 		}
 		else
 			return false;
@@ -289,7 +289,7 @@ public abstract class MediaField extends Field
 		//hash = 31 * hash + min;
 		hash = 31 * hash + max;
 		hash = 31 * hash + (useNativeApp ? 0 : 1);
-		hash = 31 * hash + (disableChoice == null ? 0 : disableChoice.getID().hashCode()); // do not use disableChoice itself to avoid potential endless loops!
+		hash = 31 * hash + (disableChoice == null ? 0 : disableChoice.id.hashCode()); // do not use disableChoice itself to avoid potential endless loops!
 		return hash;
 	}
 	

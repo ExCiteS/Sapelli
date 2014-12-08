@@ -105,7 +105,7 @@ public class Form implements WarningKeeper
 
 	// Dynamics-------------------------------------------------------
 	public final Project project;
-	private final String id;
+	public final String id;
 	private final short position;
 	private boolean producesRecords = true;
 	private boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
@@ -170,7 +170,7 @@ public class Form implements WarningKeeper
 	/**
 	 * @return the project
 	 */
-	public Project getProject()
+	public final Project getProject()
 	{
 		return project;
 	}
@@ -218,7 +218,7 @@ public class Form implements WarningKeeper
 	 * 
 	 * @return
 	 */
-	public String getID()
+	public final String getID()
 	{
 		return id;
 	}
@@ -228,11 +228,16 @@ public class Form implements WarningKeeper
 	 * 
 	 * @return
 	 */
-	public String getName()
+	public final String getName()
 	{
 		return getID();
 	}
 
+	/**
+	 * Returns all top-level fields of the form
+	 * 
+	 * @return
+	 */
 	public List<Field> getFields()
 	{
 		return fields;
@@ -247,7 +252,7 @@ public class Form implements WarningKeeper
 	public Field getField(String fieldID)
 	{
 		for(Field f : fields)
-			if(f.getID().equalsIgnoreCase(fieldID)) // field IDs are treated as case insensitive
+			if(f.id.equalsIgnoreCase(fieldID)) // field IDs are treated as case insensitive
 				return f;
 		return null;
 	}
@@ -553,7 +558,7 @@ public class Form implements WarningKeeper
 		{
 			List<LocationField> startLF = new ArrayList<LocationField>();
 			for(LocationField lf : getLocationFields())
-				if(lf.getStartWith() == LocationField.START_WITH.FORM)
+				if(lf.getStartWith() == LocationField.StartWith.FORM)
 					startLF.add(lf);
 			return startLF;
 		}
@@ -769,9 +774,9 @@ public class Form implements WarningKeeper
 	{
 		if(!field.isNoColumn() && producesRecords && schema != null)
 		{
-			Column<?> col = schema.getColumn(field.getID(), false);
+			Column<?> col = schema.getColumn(field.id, false);
 			if(col == null)
-				col = schema.getColumn(Column.SanitiseName(field.getID()), false); // try again with sanitised name!
+				col = schema.getColumn(Column.SanitiseName(field.id), false); // try again with sanitised name!
 			return col; // may still be null
 		}
 		else

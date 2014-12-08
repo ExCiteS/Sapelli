@@ -163,9 +163,9 @@ public class PhotoField extends MediaField
 	{
 		List<File> paths = new ArrayList<File>();
 		
-		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.getProject(), captureButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.getProject(), approveButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.getProject(), discardButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, captureButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, approveButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
 		
 		return paths;
 	}

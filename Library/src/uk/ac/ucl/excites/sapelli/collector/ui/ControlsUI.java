@@ -74,9 +74,9 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	public void update(FieldUI<?, V, UI> fieldUI)
 	{
 		// Form change?
-		if(fieldUI.getField().getForm() != currentForm)
+		if(fieldUI.getField().form != currentForm)
 		{
-			currentForm = fieldUI.getField().getForm();
+			currentForm = fieldUI.getField().form;
 			updateForm(currentForm);
 		}
 		
@@ -127,7 +127,7 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 			return;
 		
 		// Log interaction:
-		controller.addLogLine((hardwareKeyPress ? "KEY" : "CLICK") + "_CONTROL_" + control.name(), controller.getCurrentField().getID());
+		controller.addLogLine((hardwareKeyPress ? "KEY" : "CLICK") + "_CONTROL_" + control.name(), controller.getCurrentField().id);
 		
 		// Handle event:
 		switch(control)

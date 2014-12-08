@@ -26,6 +26,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
@@ -100,8 +101,9 @@ public abstract class Field extends JumpSource
 	}
 	
 	//Dynamics---------------------------------------------
-	protected final String id;
+	public final String id;
 	public final Form form;
+	protected Page page = null;
 	protected final String caption;
 	protected String description;
 	protected String descriptionAudioRelativePath;
@@ -161,9 +163,33 @@ public abstract class Field extends JumpSource
 	}
 	
 	/**
+	 * @return the page (will be null if this field is not contained by a page)
+	 */
+	public Page getPage()
+	{
+		return page;
+	}
+
+	/**
+	 * @return whether or not the field is part of a page
+	 */
+	public boolean isOnPage()
+	{
+		return page != null;
+	}
+	
+	/**
+	 * @param page the page to set
+	 */
+	public void setPage(Page page)
+	{
+		this.page = page;
+	}
+
+	/**
 	 * @return the id
 	 */
-	public String getID()
+	public final String getID()
 	{
 		return id;
 	}
@@ -502,7 +528,7 @@ public abstract class Field extends JumpSource
 			return	super.equals(that) && // JumpSource#equals(Object)
 					this.id.equals(that.id) &&
 					this.form.toString().equals(that.form.toString()) && // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
-					this.form.getProject().toString().equals(that.form.getProject().toString()) && // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
+					this.form.project.toString().equals(that.form.project.toString()) && // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
 					(this.caption != null ? caption.equals(that.caption) : that.caption == null) &&
 					(this.description != null ? this.description.equals(that.description) : that.description == null) &&
 					(this.descriptionAudioRelativePath != null ? this.descriptionAudioRelativePath.equals(that.descriptionAudioRelativePath) : that.descriptionAudioRelativePath == null) &&
@@ -525,7 +551,7 @@ public abstract class Field extends JumpSource
 		int hash = super.hashCode(); // JumpSource#hashCode()
 		hash = 31 * hash + id.hashCode();
 		hash = 31 * hash + form.toString().hashCode(); // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
-		hash = 31 * hash + form.getProject().toString().hashCode(); // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
+		hash = 31 * hash + form.project.toString().hashCode(); // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
 		hash = 31 * hash + (caption == null ? 0 : caption.hashCode());
 		hash = 31 * hash + (description == null ? 0 : description.hashCode());
 		hash = 31 * hash + (descriptionAudioRelativePath == null ? 0 : descriptionAudioRelativePath.hashCode());
@@ -561,6 +587,6 @@ public abstract class Field extends JumpSource
 	 * @param collectorUI
 	 * @return
 	 */
-	public abstract <V, UI extends CollectorUI<V, UI>> FieldUI<?, V, UI> createUI(UI collectorUI);
+	public abstract <V, UI extends CollectorUI<V, UI>> FieldUI<? extends Field, V, UI> createUI(UI collectorUI);
 	
 }

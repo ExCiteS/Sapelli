@@ -405,7 +405,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					throw new SAXException("Invalid '" + ATTRIBUTE_BUTTON_COLUMN + "' attribute value on <" + TAG_BUTTON + ">.", iae);
 				}
 				if(btn.getColumnType() == ButtonColumnType.DATETIME && !btn.isOptional())
-					addWarning("Button \"" + btn.getID() + "\" has a DateTime column but is not optional, this means the button will *have* to be pressed.");
+					addWarning("Button \"" + btn.id + "\" has a DateTime column but is not optional, this means the button will *have* to be pressed.");
 			}
 			// <Label>
 			else if(qName.equals(TAG_LABEL))
@@ -423,7 +423,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				
 				// Deal with minimum & maximum length:
 				if(!txtField.isOptional() && !attributes.contains(ATTRIBUTE_TEXT_MINLENGTH))
-					addWarning("Text field \"" + txtField.getID() + "\" is non-optional but no minimal length is defined, therefore the minimum will be set to " + TextBoxField.DEFAULT_MIN_LENGTH_NON_OPTIONAL + " character(s). It is recommended to use the '" + ATTRIBUTE_TEXT_MINLENGTH + "' attribute to set an appropriate minimum length explicitly.");				
+					addWarning("Text field \"" + txtField.id + "\" is non-optional but no minimal length is defined, therefore the minimum will be set to " + TextBoxField.DEFAULT_MIN_LENGTH_NON_OPTIONAL + " character(s). It is recommended to use the '" + ATTRIBUTE_TEXT_MINLENGTH + "' attribute to set an appropriate minimum length explicitly.");				
 				txtField.setMinMaxLength(	attributes.getInteger(ATTRIBUTE_TEXT_MINLENGTH, TextBoxField.GetDefaultMinLength(txtField.isOptional())),
 											attributes.getInteger(ATTRIBUTE_TEXT_MAXLENGTH, TextBoxField.DEFAULT_MAX_LENGTH));
 				// Multi-line:
@@ -490,7 +490,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 							if(currentListItem.getParent().getDefaultChild() == null)
 								currentListItem.getParent().setDefaultChild(currentListItem);
 							else
-								addWarning("More than 1 item marked as default within one of the (sub)lists of MultiListField " + currentListItem.getField().getID() + ", using 1st item marked as default as the default for the list.");
+								addWarning("More than 1 item marked as default within one of the (sub)lists of MultiListField " + currentListItem.getField().id + ", using 1st item marked as default as the default for the list.");
 						}
 					}
 					else
@@ -527,7 +527,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				// <?> within field
 				else
 				{
-					addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within field with id \"" + currentField.getID() + "\".");
+					addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within field with id \"" + currentField.id + "\".");
 				}
 			}
 			
@@ -617,7 +617,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 								// playback of audio generated from text (TTS):
 								newTTSSynthesisTask(choice.getAnswerDescription(),
 										// Filename: "[id]_[md5Hex(id)]_A.EXTENSION"
-										FileHelpers.makeValidFileName(choice.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(choice.getID().getBytes())) + "_A." + owner.getGeneratedAudioExtension()),
+										FileHelpers.makeValidFileName(choice.id + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(choice.id.getBytes())) + "_A." + owner.getGeneratedAudioExtension()),
 										// synthesis language:
 										(currentForm.getDefaultLanguage() != null) ? currentForm.getDefaultLanguage() : project.getDefaultLanguage()
 										)
@@ -641,8 +641,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			throw new SAXException("<Page> elements must be apprear directly within <Form> and cannot be nested.");
 		Page newPage = new Page(currentForm,
 								attributes == null ?
-									currentForm.getID() + "_page" :
-									attributes.getString(currentForm.getID() + "_page_" + currentForm.getFields().size(), true, false, ATTRIBUTE_FIELD_ID));
+									currentForm.id + "_page" :
+									attributes.getString(currentForm.id + "_page_" + currentForm.getFields().size(), true, false, ATTRIBUTE_FIELD_ID));
 		newField(newPage, attributes);
 	}
 	
@@ -663,20 +663,20 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// When to start listening for a location:
 		String startWith = attributes.getString(ATTRIBUTE_LOCATION_START_WITH, null, true, false);
 		if("field".equalsIgnoreCase(startWith))
-			locField.setStartWith(LocationField.START_WITH.FIELD);
+			locField.setStartWith(LocationField.StartWith.FIELD);
 		else if("page".equalsIgnoreCase(startWith))
 		{
 			if(getCurrentPage() != null)
-				locField.setStartWith(LocationField.START_WITH.PAGE);
+				locField.setStartWith(LocationField.StartWith.PAGE);
 			else
 			{
 				// told to start on page, but there is no page! Start with field instead (assume the user was trying to avoid "form")
 				addWarning("Location field specified to start with page, but no containing page was found. Location detection will start with the field instead.");
-				locField.setStartWith(LocationField.START_WITH.FIELD);
+				locField.setStartWith(LocationField.StartWith.FIELD);
 			}
 		}
 		else if("form".equalsIgnoreCase(startWith) || attributes.getBoolean(ATTRIBUTE_LOCATION_START_WITH_FORM, false))
-			locField.setStartWith(LocationField.START_WITH.FORM);
+			locField.setStartWith(LocationField.StartWith.FORM);
 		
 		else if (startWith != null)
 			// unknown setting, default will be used 
@@ -727,13 +727,13 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		try
 		{	
 			// Warn about IDs starting with '_': //TODO test if no invalid XML chars
-			if(field.getID().startsWith("_"))
+			if(field.id.startsWith("_"))
 			{
 				// For really stupid cases ;-):
 				for(EndField ef : EndField.GetEndFields(currentForm))
-					if(ef.getID().equals(field.getID()))
-						throw new SAXException(field.getID() + " is a reserved ID, don't use it for user-defined fields.");
-				addWarning("Please avoid field IDs starting with '_' (" + field.getID() + ")."); 
+					if(ef.id.equals(field.id))
+						throw new SAXException(field.id + " is a reserved ID, don't use it for user-defined fields.");
+				addWarning("Please avoid field IDs starting with '_' (" + field.id + ")."); 
 			}
 			
 			// Get current page if there is one:
@@ -747,8 +747,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				{	// field is top-level (directly contained within the form, and not in a page first)...
 					currentForm.addField(field);
 					// ... and therefore it can be jumped to, so remember its ID (upper cased, for case insensitivity):
-					if(idToField.put(field.getID().toUpperCase(), field) != null)
-						throw new SAXException("Duplicate field ID '" + field.getID() + "' in Form '" + currentForm.getID() + "'! (Note: field and form IDs are case insensitive)");
+					if(idToField.put(field.id.toUpperCase(), field) != null)
+						throw new SAXException("Duplicate field ID '" + field.id + "' in Form '" + currentForm.id + "'! (Note: field and form IDs are case insensitive)");
 				}
 				else
 					// the field is contained by a page:
@@ -789,7 +789,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					if(currentPage == null || field.canJumpFromPage())
 						jumpSourceToJumpTargetId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // trimmed (because id's on fields are too) & upper cased (for case insensitivity)
 					else if(currentPage != null)
-						addWarning("Field \"" + field.getID() + "\" tries to jump away from the page, but is not allowed.");
+						addWarning("Field \"" + field.id + "\" tries to jump away from the page, but is not allowed.");
 				}
 				
 				// Skip on back:
@@ -825,7 +825,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 										// playback of audio generated from text (TTS):
 										newTTSSynthesisTask(field.getDescription(),
 												// Filename: "[id]_[md5Hex(id)]_Q.EXTENSION"
-												FileHelpers.makeValidFileName(field.getID() + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(field.getID().getBytes())) + "_Q." + owner.getGeneratedAudioExtension()),
+												FileHelpers.makeValidFileName(field.id + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(field.id.getBytes())) + "_Q." + owner.getGeneratedAudioExtension()),
 												// synthesis language:
 												(currentForm.getDefaultLanguage() != null) ? currentForm.getDefaultLanguage() : project.getDefaultLanguage()
 												)
@@ -838,7 +838,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		}
 		catch(Exception e)
 		{
-			throw new SAXException("Error on parsing field '" + field.getID() + "'", e);
+			throw new SAXException("Error on parsing field '" + field.id + "'", e);
 		}
 	}
 	
@@ -984,7 +984,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			
 			// Add EndField instances to idToField map (these don't need to be added as actual fields to the form itself)
 			for(EndField endF : EndField.GetEndFields(currentForm))
-				idToField.put(endF.getID().toUpperCase(), endF); // upper cased, for case insensitivity (they should already be upper case, but just in case...)
+				idToField.put(endF.id.toUpperCase(), endF); // upper cased, for case insensitivity (they should already be upper case, but just in case...)
 			
 			// Resolve jumps...
 			for(Entry<JumpSource, String> jump : jumpSourceToJumpTargetId.entrySet())

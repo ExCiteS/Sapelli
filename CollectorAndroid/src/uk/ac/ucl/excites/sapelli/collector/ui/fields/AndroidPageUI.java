@@ -143,10 +143,10 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 					continue;
 				
 				// Deal with showOnCreate/Edit:
-				if(!controller.isFieldToBeShown(fUI.getField()))
+				if(!controller.isFieldToBeShown(fUI.field))
 				{	// Note: even disabled fieldUIs are added to the container (but then hidden), this is to ensure that fieldUIs.indexOf(fieldUI) can always be used as a child index within the container
 					currentWrappedView.setVisibility(View.GONE);
-					controller.addLogLine("HIDING", fUI.getField().getID());
+					controller.addLogLine("HIDING", fUI.field.id);
 				}
 				else
 					currentWrappedView.setVisibility(View.VISIBLE);
@@ -185,7 +185,7 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 		{
 			if(fieldUIView == null)
 				return null;
-			final LinearLayout wrapper = new LinearLayout(getContext());
+			LinearLayout wrapper = new LinearLayout(getContext());
 			wrapper.setPadding(wrapperPaddingPx, wrapperPaddingPx, wrapperPaddingPx, wrapperPaddingPx);
 			wrapper.setLayoutParams(wrapperLayoutParams);
 			wrapper.addView(fieldUIView);

@@ -70,7 +70,7 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	protected void choiceMade(ChoiceField chosenChild)
 	{
 		if(!controller.isFieldEnabled(chosenChild))
-			throw new IllegalArgumentException("This choice is disabled:" + chosenChild.getID()); // should never happen
+			throw new IllegalArgumentException("This choice is disabled:" + chosenChild.id); // should never happen
 
 		controller.addLogLine("CLICKED", chosenChild.toString(true));
 
@@ -80,7 +80,7 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 			if(!field.isNoColumn() && chosenChild.isLeaf() && field.getDictionary().contains(chosenChild))
 				field.getColumn().storeValue(controller.getCurrentRecord(), field.getDictionary().lookupIndex(chosenChild));
 			// Go to next/jump of chosenChild (not to the chosen child itself because it is a leaf):
-			next = field.getForm().getNextFieldAndArguments(chosenChild);
+			next = field.form.getNextFieldAndArguments(chosenChild);
 		}
 		else
 			// Go to chosen child:

@@ -41,12 +41,12 @@ public class FormSession
 {
 	
 	// STATIC -------------------------------------------------------
-	static public FormSession Create(Form form, Controller controller)
+	static public FormSession Create(Form form, Controller<?> controller)
 	{
 		return new FormSession(form, Mode.CREATE, form.isProducesRecords() ? form.newRecord(controller.getDeviceID()) : null, controller.getElapsedMillis());
 	}
 	
-	static public FormSession Edit(Form form, Record record, Controller controller)
+	static public FormSession Edit(Form form, Record record, Controller<?> controller)
 	{
 		return new FormSession(form, Mode.EDIT, record, controller.getElapsedMillis());
 	}

@@ -36,12 +36,14 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
 public class LocationField extends Field implements Timeoutable
 {
 	
-	//Statics----------------------------------------------
+	// Statics----------------------------------------------
 	static public final int TYPE_ANY = 0;
 	static public final int TYPE_GPS = 1;
 	static public final int TYPE_NETWORK = 2;
 	//static public final int TYPE_PASSIVE = 3;
-	static public enum START_WITH {
+	
+	static public enum StartWith
+	{
 		FORM,
 		PAGE,
 		FIELD
@@ -49,9 +51,9 @@ public class LocationField extends Field implements Timeoutable
 	
 	static public final String ID_PREFIX = "loc";
 	
-	//Defaults:
+	// Defaults:
 	static public final int DEFAULT_TYPE = TYPE_GPS; 				// use GPS by default
-	static public final START_WITH DEFAULT_START_WITH = START_WITH.FORM;	// start listening for locations at the start of the form
+	static public final StartWith DEFAULT_START_WITH = StartWith.FORM;	// start listening for locations at the start of the form
 	static public final boolean DEFAULT_WAIT_AT_FIELD = false;		// do not wait for a new(er) location when at the field
 	static public final int DEFAULT_TIMEOUT_S = 5 * 60; 			// use timeout of 5 minutes (300 seconds)
 	static public final int DEFAULT_MAX_AGE_S = 10 * 60;			// use max age of 10 minutes (600 seconds)
@@ -64,20 +66,20 @@ public class LocationField extends Field implements Timeoutable
 	static public final boolean DEFAULT_STORE_ACCURACY = true;		// store accuracy
 	static public final boolean DEFAULT_STORE_PROVIDER = false;		// do not store provider
 	
-	//Dynamics---------------------------------------------
-	private int type;
-	private START_WITH startWith;
-	private boolean waitAtField;
-	private int timeoutS;
-	private int maxAgeS;
-	private float maxAccuracyRadius;
-	private boolean useBestNonQualifyingLocationAfterTimeout;
-	private boolean doublePrecision;
-	private boolean storeAltitude;
-	private boolean storeBearing;
-	private boolean storeSpeed;
-	private boolean storeAccuracy;
-	private boolean storeProvider;
+	// Dynamics---------------------------------------------
+	private int type = DEFAULT_TYPE;
+	private StartWith startWith = DEFAULT_START_WITH;
+	private boolean waitAtField = DEFAULT_WAIT_AT_FIELD;
+	private int timeoutS = DEFAULT_TIMEOUT_S;
+	private int maxAgeS = DEFAULT_MAX_AGE_S;
+	private float maxAccuracyRadius = DEFAULT_MAX_ACCURACY_RADIUS;
+	private boolean useBestNonQualifyingLocationAfterTimeout = DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT;
+	private boolean doublePrecision = DEFAULT_DOUBLE_PRECISION;
+	private boolean storeAltitude = DEFAULT_STORE_ALTITUDE;
+	private boolean storeBearing = DEFAULT_STORE_BEARING;
+	private boolean storeSpeed = DEFAULT_STORE_SPEED;
+	private boolean storeAccuracy = DEFAULT_STORE_ACCURACY;
+	private boolean storeProvider = DEFAULT_STORE_PROVIDER;
 	
 	/**
 	 * @param form the form the field belongs to
@@ -87,16 +89,6 @@ public class LocationField extends Field implements Timeoutable
 	public LocationField(Form form, String id, String caption)
 	{
 		super(form, GetID(id, form, ID_PREFIX, caption), GetCaption(id, caption));
-		this.type = DEFAULT_TYPE;
-		this.startWith = DEFAULT_START_WITH;
-		this.waitAtField = DEFAULT_WAIT_AT_FIELD;
-		this.timeoutS = DEFAULT_TIMEOUT_S;
-		this.doublePrecision = DEFAULT_DOUBLE_PRECISION;
-		this.storeAltitude = DEFAULT_STORE_ALTITUDE;
-		this.storeBearing = DEFAULT_STORE_BEARING;
-		this.storeSpeed = DEFAULT_STORE_SPEED;
-		this.storeAccuracy = DEFAULT_STORE_ACCURACY;
-		this.storeProvider = DEFAULT_STORE_PROVIDER;
 	}
 	
 	/**
@@ -154,7 +146,7 @@ public class LocationField extends Field implements Timeoutable
 	/**
 	 * @return the startWith
 	 */
-	public START_WITH getStartWith()
+	public StartWith getStartWith()
 	{
 		return startWith;
 	}
@@ -162,7 +154,7 @@ public class LocationField extends Field implements Timeoutable
 	/**
 	 * @param startWithForm the startWith to set
 	 */
-	public void setStartWith(START_WITH startWith)
+	public void setStartWith(StartWith startWith)
 	{
 		this.startWith = startWith;
 	}

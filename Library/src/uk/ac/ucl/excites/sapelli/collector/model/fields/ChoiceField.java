@@ -104,7 +104,7 @@ public class ChoiceField extends Field implements DictionaryItem
 					(parent == null ?
 						null /* id is mandatory for the root: Field constructor will throw NullPointerException */ :
 						/* generate id based on parent ID and value or child number: */
-						parent.getID() + "." + (value == null || value.trim().isEmpty() ? parent.getChildren().size() + 1 : StringUtils.replaceWhitespace(value.trim(), "_"))) :
+						parent.id + "." + (value == null || value.trim().isEmpty() ? parent.getChildren().size() + 1 : StringUtils.replaceWhitespace(value.trim(), "_"))) :
 					id,
 				caption);
 		this.parent = parent;
@@ -354,7 +354,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	{
 		List<File> paths = new ArrayList<File>();
 		if(hasImage())
-			CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.getProject(), imageRelativePath));
+			CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, imageRelativePath));
 		// TODO add audio feedback files!
 		for(ChoiceField child : getChildren())
 			CollectionUtils.addAllIgnoreNull(paths, child.getFiles(fileStorageProvider));
@@ -407,7 +407,7 @@ public class ChoiceField extends Field implements DictionaryItem
 		dictionary.initialise(this); //!!!
 		if(dictionary.isEmpty())
 		{	//no values set
-			form.addWarning("noColumn was forced to true on ChoiceField " + getID() + " because it has no values.");
+			form.addWarning("noColumn was forced to true on ChoiceField " + id + " because it has no values.");
 			noColumn = true; //!!!
 			return null;
 		}
@@ -514,8 +514,8 @@ public class ChoiceField extends Field implements DictionaryItem
 		{
 			ChoiceField that = (ChoiceField) obj;
 			return	super.equals(that) && // Field#equals(Object)
-					(this.parent != null ? that.parent != null && this.parent.getID().equals(that.parent.getID()) : that.parent == null) &&
-					(this.root != null ? that.root != null && this.root.getID().equals(that.root.getID()) : that.root == null) &&
+					(this.parent != null ? that.parent != null && this.parent.id.equals(that.parent.id) : that.parent == null) &&
+					(this.root != null ? that.root != null && this.root.id.equals(that.root.id) : that.root == null) &&
 					this.getChildren().equals(that.getChildren()) &&
 					(this.imageRelativePath != null ? this.imageRelativePath.equals(that.imageRelativePath) : that.imageRelativePath == null) &&
 					(this.answerDescription != null ? that.answerDescription.equals(that.answerDescription) : that.answerDescription == null) &&
@@ -536,8 +536,8 @@ public class ChoiceField extends Field implements DictionaryItem
 	public int hashCode()
 	{
 		int hash = super.hashCode(); // Field#hashCode()
-		hash = 31 * hash + (parent != null ? parent.getID().hashCode() : 0);
-		hash = 31 * hash + (root != null ? root.getID().hashCode() : 0);
+		hash = 31 * hash + (parent != null ? parent.id.hashCode() : 0);
+		hash = 31 * hash + (root != null ? root.id.hashCode() : 0);
 		hash = 31 * hash + getChildren().hashCode();
 		hash = 31 * hash + (imageRelativePath != null ? imageRelativePath.hashCode() : 0);
 		hash = 31 * hash + (answerDescription != null ? answerDescription.hashCode() : 0);

@@ -261,7 +261,7 @@ public class ProjectParser extends DocumentParser
 						Relationship rel = entry.getKey();
 						Form relatedForm = project.getForm(entry.getValue()); // uses equalsIgnoreCase()
 						if(relatedForm == null)
-							throw new SAXException("Relationship \"" + rel.getID() + "\" in form \"" + rel.getForm().getID() + "\" refers to unknown related form \"" + entry.getValue() + "\".");
+							throw new SAXException("Relationship \"" + rel.id + "\" in form \"" + rel.form.id + "\" refers to unknown related form \"" + entry.getValue() + "\".");
 						rel.setRelatedForm(relatedForm); // will trigger initialisation of Schema of relatedForm (this should not be a problem, it will not be done again below)
 					}
 				
@@ -294,7 +294,7 @@ public class ProjectParser extends DocumentParser
 							}
 							catch(Exception e)
 							{
-								throw new SAXException("Error upon resolving constraint on Relationship \"" + entry.getKey().getID() + "\"", e);
+								throw new SAXException("Error upon resolving constraint on Relationship \"" + entry.getKey().id + "\"", e);
 							}
 			}
 		}
@@ -387,7 +387,7 @@ public class ProjectParser extends DocumentParser
 				throw new NullPointerException("Non-null form is needed to resolve Constraint");
 			if(!form.isProducesRecords())
 			{
-				addWarning("Cannot impose constraint on records of form \"" + form.getID() + "\" because it does not produce data records.");
+				addWarning("Cannot impose constraint on records of form \"" + form.id + "\" because it does not produce data records.");
 				return null;
 			}
 			
