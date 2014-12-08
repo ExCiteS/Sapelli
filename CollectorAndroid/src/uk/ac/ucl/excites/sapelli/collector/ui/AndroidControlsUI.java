@@ -236,7 +236,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			
 			// Background & padding:
 			this.setBackgroundColor(backgroundColor);
-			this.setPaddingPx(0);
+			this.setPaddingDip(0);
 			
 			// the actual button:
 			String imgRelativePath = null;
@@ -268,11 +268,11 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			/* Unused -- replaced by Drawable buttons (arrow & cross)
 			// Resource image (e.g. R.drawable.button_back_svg, .button_back, .button_delete_svg, .button_delete, .button_forward_svg, .button_forward)
 			button = new ResourceImageItem(getContext().getResources(), R.drawable.button_back_svg); */
-			button.setPaddingPx(ScreenMetrics.ConvertDipToPx(context, PADDING_DIP));
+			button.setPaddingDip(PADDING_DIP);
 			
 			// the overlay
 			grayOutOverlay = new EmptyItem();
-			grayOutOverlay.setPaddingPx(0);
+			grayOutOverlay.setPaddingDip(0);
 			setGrayedOut(false);
 			
 			// add the layers:

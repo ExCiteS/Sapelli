@@ -68,7 +68,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	static public final float PAGE_CHOSEN_ITEM_MARGIN_DIP = 1.0f; // same margin all round
 	static public final float CROSS_THICKNESS = 0.02f;
 	
-	static public final int SPLIT_ITEM_CHILD_PADDING_PX = 0;
+	static public final int SPLIT_ITEM_CHILD_PADDING_DIP = 0;
 	
 	private PageView pageView;
 	private ChoiceView choiceView;
@@ -320,10 +320,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// Number of columns:
 			setNumColumns(field.getCols());
 			
-			// Item size & padding:
+			// Item size:
 			setItemDimensionsPx(collectorUI.getFieldUIPartWidthPx(field.getCols()),
 								collectorUI.getFieldUIPartHeightPx(field.getRows()));
-			int itemPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 			
 			// Text size coordinators:
 			TextSizeCoordinator textOnlyCoordinator = new TextSizeCoordinator();
@@ -332,7 +331,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// Add items for children:
 			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
-				adapter.addItem(createItem(child, itemPaddingPx, !controller.isFieldEnabled(child), textOnlyCoordinator, captionCoordinator));
+				adapter.addItem(createItem(child, CollectorView.PADDING_DIP, !controller.isFieldEnabled(child), textOnlyCoordinator, captionCoordinator));
 			// Click listeners:
 			setOnItemClickListener(this);
 			if(isUsingAudioFeedback(false))
@@ -376,11 +375,11 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * Creates an Item object responding to the provided (child) ChoiceField
 	 * 
 	 * @param choice
-	 * @param itemPaddingPx
+	 * @param itemPaddingDip
 	 * @param grayedOut
 	 * @return
 	 */
-	public Item createItem(ChoiceField choice, int itemPaddingPx, boolean grayedOut, TextSizeCoordinator textOnlyCoordinator, TextSizeCoordinator captionCoordinator)
+	public Item createItem(ChoiceField choice, float itemPaddingDip, boolean grayedOut, TextSizeCoordinator textOnlyCoordinator, TextSizeCoordinator captionCoordinator)
 	{
 		/* Note
 		 * 	If the choice is the root it means we are on a page (meaning the item will be
@@ -394,11 +393,11 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		{	// the is an image path (but not necessarily an accessible file) and the caption does not take up the full height
 			if(choice.hasCaption() && choice.getCaptionHeight() > 0 && !choice.isRoot())
 			{	// there is a caption, a non-zero caption height & the choice not the root --> IMAGE + CAPTION:
-				item = new SplitItem(SplitItem.VERTICAL) // create new split item
+				item = new SplitItem(SplitItem.VERTICAL, itemPaddingDip) // create new split item (using same amount of spacing between split children as the outer item padding)
 					// add item for image (take up all space not taken up by caption):
-					.addItem(createImageItem(choice, false, textOnlyCoordinator), 1.0f - choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_PX)
+					.addItem(createImageItem(choice, false, textOnlyCoordinator), 1.0f - choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_DIP)
 					// add item for caption (show value text rather than caption if choice is root -- caption would be above page item already):
-					.addItem(createCaptionItem(choice, true, captionCoordinator), choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_PX);
+					.addItem(createCaptionItem(choice, true, captionCoordinator), choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_DIP);
 			}
 			else
 			{	// there is no caption, or its height is 0, or we are dealing with the root --> IMAGE ONLY
@@ -436,7 +435,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		}
 		
 		// Set size & padding:
-		item.setPaddingPx(itemPaddingPx);
+		item.setPaddingDip(itemPaddingDip);
 		
 		// Set the description used for accessibility support
 		item.setDescription(choice.getAnswerDescription()); // TODO fallbacks ? (question)desc? caption? (e.g. when on page)

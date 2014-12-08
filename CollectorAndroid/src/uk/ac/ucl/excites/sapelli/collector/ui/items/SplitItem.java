@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.items;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.content.Context;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -37,11 +38,13 @@ import android.widget.LinearLayout.LayoutParams;
  */
 public class SplitItem extends Item
 {
+
 	static public final int HORIZONTAL = LinearLayout.HORIZONTAL;
 	static public final int VERTICAL = LinearLayout.VERTICAL;
-	static public final int SPLIT_ITEM_SPACING_PX = 4;
+	static public final float DEFAULT_CHILD_SPACING_DIP = Item.DEFAULT_PADDING_DIP;
 
 	private int orientation;
+	private float spacingDip = DEFAULT_CHILD_SPACING_DIP;
 	private List<WeightedItem> items;
 
 	/**
@@ -49,20 +52,31 @@ public class SplitItem extends Item
 	 */
 	public SplitItem(int orientation)
 	{
-		this(null, orientation);
+		this(null, orientation, DEFAULT_CHILD_SPACING_DIP);
 	}
 
 	/**
+	 * @param orientation
+	 * @param childSpacingDip
+	 */
+	public SplitItem(int orientation, float childSpacingDip)
+	{
+		this(null, orientation, childSpacingDip);
+	}
+	
+	/**
 	 * @param id
 	 * @param orientation
+	 * @param childSpacingDip
 	 */
-	public SplitItem(Integer id, int orientation)
+	public SplitItem(Integer id, int orientation, float childSpacingDip)
 	{
 		super(id);
 		if(orientation != HORIZONTAL && orientation != VERTICAL)
 			throw new IllegalArgumentException("Invalid orientation");
 		this.orientation = orientation;
 		items = new ArrayList<WeightedItem>();
+		spacingDip = childSpacingDip;
 	}
 
 	/**
@@ -81,12 +95,28 @@ public class SplitItem extends Item
 	 * @param paddingPx padding applied to item, unless it is = -1
 	 * @return
 	 */
-	public SplitItem addItem(Item item, float weight, int paddingPx)
+	public SplitItem addItem(Item item, float weight, float paddingDip)
 	{
 		items.add(new WeightedItem(item, weight));
-		if(paddingPx != -1)
-			item.setPaddingPx(paddingPx);
+		if(paddingDip != -1)
+			item.setPaddingDip(paddingDip);
 		return this;
+	}
+
+	/**
+	 * @return the spacingDip
+	 */
+	public float getSpacingDip()
+	{
+		return spacingDip;
+	}
+
+	/**
+	 * @param spacingDip the spacingDip to set
+	 */
+	public void setSpacingDip(float spacingDip)
+	{
+		this.spacingDip = spacingDip;
 	}
 
 	@Override
@@ -105,21 +135,24 @@ public class SplitItem extends Item
 			
 			// LayoutParams:
 			LayoutParams lp = new LayoutParams(
-				// set the "malleable" dimension to 0 so that Android decides what to do with it:
+				// Set the "malleable" dimension to 0 so that Android decides what to do with it:
 				orientation == HORIZONTAL ? 0 : LinearLayout.LayoutParams.MATCH_PARENT, // horizontal -> take whole height
 				orientation == HORIZONTAL ? LinearLayout.LayoutParams.MATCH_PARENT : 0, // vertical -> take whole width
 				itemWeight);
-
-			// apply margins so that there is spacing between adjacent items (but not before first item or after last item):
+			// 	Apply margins so that there is spacing between adjacent items (but not before first item):
+			int spacingPx = ScreenMetrics.ConvertDipToPx(context, spacingDip);
 			lp.setMargins(
-					(orientation == HORIZONTAL && i != 0) ? SPLIT_ITEM_SPACING_PX : 0, // left: 0 if vertical or first item
-					(orientation == VERTICAL && i != 0) ? SPLIT_ITEM_SPACING_PX : 0, // top: 0 if horizontal or first item
-					0, // no margin on right (since if horizontal we are adding it on the left of the next item anyway)
-					0  // no margin on bottom (since if vertical we are adding it on the top of the next item anyway)
-					);
+				(orientation == HORIZONTAL	&& i != 0) ? spacingPx : 0,	// left: 0 if vertical or first item
+				(orientation == VERTICAL	&& i != 0) ? spacingPx : 0,	// top: 0 if horizontal or first item
+				0, 	// no margin on right (since if horizontal we are adding it on the left of the next item anyway)
+				0);	// no margin on bottom (since if vertical we are adding it on the top of the next item anyway)
+			//	Set lp on view:
 			itemView.setLayoutParams(lp);
 			
+			//	Add view to container:
 			container.addView(itemView);
+			
+			//	Add up the weights:
 			weightSum += itemWeight;
 		}
 
@@ -145,6 +178,7 @@ public class SplitItem extends Item
 			this.item = item;
 			this.weight = weight;
 		}
+		
 	}
 	
 }

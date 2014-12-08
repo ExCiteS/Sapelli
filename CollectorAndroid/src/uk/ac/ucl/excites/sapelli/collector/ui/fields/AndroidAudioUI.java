@@ -32,7 +32,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
-import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
@@ -132,7 +131,6 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		static private final int BUTTON_INDEX_START = 0;
 		static private final int BUTTON_INDEX_STOP = 1;
 		
-		private int buttonPadding;
 		private int buttonBackColor;
 
 		public AudioView(Context context)
@@ -150,7 +148,6 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 
 			// Button size, padding & background colour:
 			this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, collectorUI.getFieldUIPartHeightPx(2));
-			this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 			this.buttonBackColor = ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR);
 			
 			// Adapter & button images:
@@ -180,7 +177,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		
 		private void addButton(Item button)
 		{
-			button.setPaddingPx(buttonPadding);
+			button.setPaddingDip(CollectorView.PADDING_DIP);
 			button.setBackgroundColor(buttonBackColor);
 			getAdapter().addItem(button);
 		}

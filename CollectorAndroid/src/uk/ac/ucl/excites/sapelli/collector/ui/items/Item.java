@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
+import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
@@ -32,12 +33,12 @@ public abstract class Item
 {
 	
 	// Static (defaults):
-	static public final int DEFAULT_PADDING_PX = 4;
+	static public final float DEFAULT_PADDING_DIP = 3.0f;
 	static public final int DEFAULT_BACKGROUND_COLOR = Color.WHITE;
 	
 	// Dynamics:
 	protected Integer id;
-	protected int paddingPx = DEFAULT_PADDING_PX;
+	protected float paddingDip = DEFAULT_PADDING_DIP;
 	protected int backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	protected boolean visible = true;
 	protected String description;
@@ -75,7 +76,8 @@ public abstract class Item
 	
 	public void applyProperties(View view)
 	{
-		// Set padding:
+		// Set padding (same all round):
+		int paddingPx = ScreenMetrics.ConvertDipToPx(view.getContext(), paddingDip);
 		view.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
 		
 		// Set background color:
@@ -109,22 +111,21 @@ public abstract class Item
 	}
 	
 	/**
-	 * @return the paddingPx
+	 * @return the paddingDip
 	 */
-	public int getPaddingPx()
+	public float getPaddingDip()
 	{
-		return paddingPx;
+		return paddingDip;
 	}
 
 	/**
-	 * @param paddingPx the paddingPx to set
+	 * @param paddingDip the paddingDip to set
 	 */
-	public Item setPaddingPx(int paddingPx)
+	public void setPaddingDip(float paddingDip)
 	{
-		this.paddingPx = paddingPx;
-		return this;
+		this.paddingDip = paddingDip;
 	}
-	
+
 	public boolean hasID()
 	{
 		return id != null;
