@@ -18,9 +18,15 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -109,8 +115,6 @@ public class AudioField extends MediaField
 		this.stopAudioImageRelativePath = stopAudioImageRelativePath;
 	}
 
-
-
 	@Override
 	public String getMediaType()
 	{
@@ -125,6 +129,18 @@ public class AudioField extends MediaField
 		//else if //...
 		else
 			return EXTENSION_3GPP; //or the default
+	}
+	
+	@Override
+	public List<File> getFiles(FileStorageProvider fileStorageProvider)
+	{
+		List<File> paths = new ArrayList<File>();
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, startRecImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, stopRecImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, playAudioImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, stopAudioImageRelativePath));
+		return paths;
 	}
 
 	@Override

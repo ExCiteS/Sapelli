@@ -18,9 +18,15 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 
 /**
  * @author Michalis Vitos, mstevens
@@ -106,8 +112,6 @@ public class PhotoField extends MediaField
 		this.captureButtonImageRelativePath = captureButtonImageRelativePath;
 	}
 
-
-
 	@Override
 	public String getMediaType()
 	{
@@ -118,6 +122,15 @@ public class PhotoField extends MediaField
 	protected String getFileExtension(String mediaType)
 	{
 		return EXTENSION_JPEG;
+	}
+	
+	@Override
+	public List<File> getFiles(FileStorageProvider fileStorageProvider)
+	{
+		List<File> paths = new ArrayList<File>();
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, captureButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
+		return paths;
 	}
 
 	@Override

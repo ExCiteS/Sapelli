@@ -940,10 +940,6 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		return currFormSession.getCurrentFieldArguments();
 	}
 	
-	public void addCurrentFieldToHistory() {
-		currFormSession.addCurrentFieldToHistory();
-	}
-	
 	public void addLogLine(String... fields)
 	{
 		if(logger != null)

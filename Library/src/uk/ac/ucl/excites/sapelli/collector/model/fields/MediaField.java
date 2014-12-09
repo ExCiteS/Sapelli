@@ -82,7 +82,7 @@ public abstract class MediaField extends Field
 	}
 	
 	protected abstract String getFileExtension(String mediaType);
-
+	
 	/**
 	 * @return the min
 	 */
