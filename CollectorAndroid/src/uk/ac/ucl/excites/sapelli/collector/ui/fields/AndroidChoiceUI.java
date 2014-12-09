@@ -395,17 +395,25 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		 * 	In this case we never show both an image and a caption (due to limited space),
 		 * 	we also avoid repeating the caption which is already displayed above the item. */
 		
+		int bgColor = ColourHelpers.ParseColour(choice.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR);
+		
 		Item item = null;
 		// Decide on appearance and get appropriate item(s):
 		if(choice.getImageRelativePath() != null && choice.getCaptionHeight() < 1)
 		{	// the is an image path (but not necessarily an accessible file) and the caption does not take up the full height
 			if(choice.hasCaption() && choice.getCaptionHeight() > 0 && !choice.isRoot())
 			{	// there is a caption, a non-zero caption height & the choice not the root --> IMAGE + CAPTION:
-				item = new SplitItem(SplitItem.VERTICAL, itemPaddingDip) // create new split item (using same amount of spacing between split children as the outer item padding)
+				item = new SplitItem(SplitItem.VERTICAL).setSpacingDip(itemPaddingDip) // use same amount of spacing between split children as the outer item padding
 					// add item for image (take up all space not taken up by caption):
-					.addItem(createImageItem(choice, false, textOnlyCoordinator), 1.0f - choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_DIP)
-					// add item for caption (show value text rather than caption if choice is root -- caption would be above page item already):
-					.addItem(createCaptionItem(choice, true, captionCoordinator), choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_DIP);
+					.addItem(	createImageItem(choice, false, textOnlyCoordinator)
+									.setPaddingDip(SPLIT_ITEM_CHILD_PADDING_DIP) // 0 dip
+									.setBackgroundColor(bgColor),
+								1.0f - choice.getCaptionHeight())
+					// add item for caption:
+					.addItem(	createCaptionItem(choice, true, captionCoordinator)
+									.setPaddingDip(SPLIT_ITEM_CHILD_PADDING_DIP) // 0 dip
+									.setBackgroundColor(bgColor),
+								choice.getCaptionHeight());
 			}
 			else
 			{	// there is no caption, or its height is 0, or we are dealing with the root --> IMAGE ONLY
@@ -418,7 +426,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		}
 		
 		// Set background colour:
-		item.setBackgroundColor(ColourHelpers.ParseColour(choice.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+		item.setBackgroundColor(bgColor);
 
 		// Crossing & graying out
 		if(choice.isCrossed() || grayedOut)
