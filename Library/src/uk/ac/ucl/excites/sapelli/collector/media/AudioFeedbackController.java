@@ -55,6 +55,25 @@ public abstract class AudioFeedbackController<V>
 	 * Destroy all resources required for audio feedback.
 	 */
 	public abstract void destroy();
+
+	/**
+	 * @param soundRelativePath
+	 * @return a PlaybackJob
+	 */
+	public PlaybackJob newPlaybackJob(String soundRelativePath)
+	{
+		return new PlaybackJob(soundRelativePath);
+	}
+	
+	/**
+	 * @param soundRelativePath
+	 * @param viewToAnimate
+	 * @return a PlaybackJob
+	 */
+	public PlaybackJob newPlaybackJob(String soundRelativePath, V viewToAnimate)
+	{
+		return new PlaybackJob(soundRelativePath, viewToAnimate);
+	}
 	
 	/**
 	 * A class that encapsulates the concept of an "audio feedback job" with a filepath for the sound to play
@@ -69,26 +88,25 @@ public abstract class AudioFeedbackController<V>
 		/*package*/ final V viewToAnimate;
 		
 		/**
-		 * Creates a PlaybackJob with the provided sound filepath and UI object to animate.
-		 * 
-		 * @param soundRelativePath - relative filepath of the sound to play
-		 * @param viewToAnimate - the UI object to animate while playing the sound
-		 */
-		public PlaybackJob(String soundRelativePath, V viewToAnimate)
-		{
-			this.soundRelativePath = soundRelativePath;
-			this.viewToAnimate = viewToAnimate;
-		}
-		
-		/**
 		 * Creates a PlaybackJob with the provided sound filepath but no UI object to animate.
 		 * 
 		 * @param soundRelativePath - relative filepath of the sound to play
 		 */
-		public PlaybackJob(String soundRelativePath)
+		private PlaybackJob(String soundRelativePath)
+		{
+			this(soundRelativePath, null);
+		}
+		
+		/**
+		 * Creates a PlaybackJob with the provided sound filepath and UI object to animate.
+		 * 
+		 * @param soundRelativePath - relative filepath of the sound to play
+		 * @param viewToAnimate - the UI object to animate while playing the sound (may be null)
+		 */
+		private PlaybackJob(String soundRelativePath, V viewToAnimate)
 		{
 			this.soundRelativePath = soundRelativePath;
-			this.viewToAnimate = null;
+			this.viewToAnimate = viewToAnimate;
 		}
 		
 	}

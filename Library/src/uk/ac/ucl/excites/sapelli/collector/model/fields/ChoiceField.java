@@ -290,7 +290,13 @@ public class ChoiceField extends Field implements DictionaryItem
 	 */
 	public String getAnswerDescription()
 	{
-		return answerDescription;
+		if(answerDescription != null)
+			return answerDescription;
+		if(caption != null)
+			return caption;
+		if(value != null)
+			return value;
+		return null;
 	}
 
 	/**

@@ -202,12 +202,11 @@ public class ProjectParser extends DocumentParser
 										attributes.getString(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, true, false),
 										fingerPrint);
 				
-				// set default language (or "en" if not specified):
+				// Set default language (or "en" if not specified):
 				String lang = attributes.getString(ATTRIBUTE_PROJECT_DEFAULT_LANG, null, true, false);
-				if (lang != null) 
-					project.setDefaultLanguage(lang);
-				else if (format == Format.v2_x)
-					addWarning("No valid default language has been specified for this project. Languages should be declared using the BCP-47 syntax (e.g. \"fr-CA\" for Canadian French). English (en) will be set as the default language within this project.");
+				project.setDefaultLanguage(lang != null ? lang : Project.DEFAULT_DEFAULT_LANGUAGE);
+				if(lang == null && format == Format.v2_x)
+					addWarning("No valid default language has been specified for this project. Languages should be declared using the BCP-47 syntax (e.g. \"fr-CA\" for Canadian French). English (en) will be set as the default language for this project.");
 				
 				// Read startForm ID:
 				startFormID = attributes.getString(ATTRIBUTE_PROJECT_START_FORM, null, true, false); 

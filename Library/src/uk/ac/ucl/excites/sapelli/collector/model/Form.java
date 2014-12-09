@@ -349,11 +349,11 @@ public class Form implements WarningKeeper
 	}
 	
 	/**
-	 * @return the BCP 47 format string representing the currently set default language for this form
+	 * @return the BCP-47 format string representing the currently set default language for this form
 	 */
 	public String getDefaultLanguage()
 	{
-		return defaultLanguage;
+		return defaultLanguage != null ? defaultLanguage : project.getDefaultLanguage();
 	}
 
 	/**
@@ -388,15 +388,11 @@ public class Form implements WarningKeeper
 	{
 		if(audioFeedbackStr == null)
 			return; // default Audio Feedback will be used
-		audioFeedbackStr = audioFeedbackStr.toUpperCase(); // Make upper case
 		try
 		{
-			this.audioFeedback = AudioFeedback.valueOf(audioFeedbackStr);
+			this.audioFeedback = AudioFeedback.valueOf(audioFeedbackStr.toUpperCase());
 		}
-		catch(IllegalArgumentException iae)
-		{
-			throw iae;
-		}
+		catch(IllegalArgumentException ignore) {}
 	}
 
 	/**

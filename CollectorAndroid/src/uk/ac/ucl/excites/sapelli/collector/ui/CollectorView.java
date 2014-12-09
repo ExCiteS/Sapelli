@@ -441,7 +441,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return ScreenMetrics.GetScreenHeight(activity);
 	}
 
-	// TODO pull all getFieldUI*Px methods up to CollectorUI
 	public int getFieldUIWidthPx()
 	{
 		return getScreenWidthPx();
