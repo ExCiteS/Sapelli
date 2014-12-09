@@ -255,7 +255,7 @@ public class Backup
 				
 				// Phase 3: Create ZIP archive
 				publishProgress(activity.getString(R.string.backup_progress_zipping));
-				destZipFile = fileStorageProvider.getNewBackupFile();destZipFile = fileStorageProvider.getNewBackupFile();
+				destZipFile = fileStorageProvider.getNewBackupFile();
 				Zipper.Zip(destZipFile, toZip);
 			}
 			catch(Exception e)

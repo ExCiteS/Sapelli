@@ -19,7 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
@@ -48,7 +48,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 
 	static public final float PADDING = 40.0f;
 
-	public AndroidOrientationUI(OrientationField field, Controller controller, CollectorView collectorUI)
+	public AndroidOrientationUI(OrientationField field, CollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}
@@ -68,9 +68,8 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 				{
 					@Override
 					public void onClick(View v)
-					{
-						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field
-																											// itself
+					{	// force leaving of the page, to go to the field itself:
+						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); 
 					}
 				});
 			}

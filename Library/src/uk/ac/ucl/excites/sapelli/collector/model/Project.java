@@ -53,9 +53,7 @@ public class Project
 	// Backwards compatibility:
 	static public final int PROJECT_ID_V1X_TEMP = -1;
 
-	// Subfolders of project installation folder:
-	static public final String IMAGE_FOLDER = "img";
-	static public final String SOUND_FOLDER = "snd";
+	static public final String DEFAULT_DEFAULT_LANGUAGE = "en"; // the default "default language" to set if there isn't one specified (English)
 	
 	static public final boolean DEFAULT_LOGGING = true;
 		
@@ -71,6 +69,7 @@ public class Project
 	private String version;
 
 	private TransmissionSettings transmissionSettings;
+	private String defaultLanguage;
 	private boolean logging;
 	private Schema heartbeatSchema;
 	private final List<Form> forms;
@@ -112,6 +111,8 @@ public class Project
 		
 		// Forms list:
 		this.forms = new ArrayList<Form>();
+		// Project language (for TTV):
+		this.defaultLanguage = DEFAULT_DEFAULT_LANGUAGE;
 		// Logging:
 		this.logging = DEFAULT_LOGGING;
 	}
@@ -260,7 +261,7 @@ public class Project
 	public Form getForm(String id)
 	{
 		for(Form f : forms)
-			if(f.getID().equalsIgnoreCase(id)) // form IDs are treated as case insensitive
+			if(f.id.equalsIgnoreCase(id)) // form IDs are treated as case insensitive
 				return f;
 		return null; // no such form
 	}
@@ -312,28 +313,6 @@ public class Project
 		this.transmissionSettings = transmissionSettings;
 	}
 	
-	/**
-	 * @param imageFileRelativePath
-	 * @return file object, or null if the given path was null or empty
-	 */
-	public File getImageFile(FileStorageProvider fileStorageProvider, String imageFileRelativePath)
-	{
-		if(imageFileRelativePath == null || imageFileRelativePath.isEmpty())
-			return null;
-		return new File(fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath() + File.separator + IMAGE_FOLDER + File.separator + imageFileRelativePath);
-	}
-	
-	/**
-	 * @param soundFileRelativePath
-	 * @return file object, or null if the given path was null or empty
-	 */
-	public File getSoundFile(FileStorageProvider fileStorageProvider, String soundFileRelativePath)
-	{
-		if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
-			return null;
-		return new File(fileStorageProvider.getProjectInstallationFolder(this, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
-	}
-	
 	@Override
 	public String toString()
 	{
@@ -360,6 +339,23 @@ public class Project
 	public void setLogging(boolean logging)
 	{
 		this.logging = logging;
+	}
+	
+	/**
+	 * @return the BCP 47 format string representing the currently set default language for this project
+	 */
+	public String getDefaultLanguage()
+	{
+		return defaultLanguage;
+	}
+	
+	/**
+	 * Set the project's default language (the language that will be used for text-to-speech synthesis unless a language is specified in the current form)
+	 * @param defaultLanguage the language to set, as a valid BCP 47 format string (e.g. "en-GB")
+	 */
+	public void setDefaultLanguage(String defaultLanguage)
+	{
+		this.defaultLanguage = defaultLanguage;
 	}
 	
 	/**
@@ -429,6 +425,7 @@ public class Project
 					equalSignature(that) && // checks name, variant & version
 					this.fingerPrint == that.fingerPrint &&
 					// TODO transmission settings?
+					(this.defaultLanguage != null ? this.defaultLanguage.equals(that.defaultLanguage) : that.defaultLanguage == null) &&
 					this.logging == that.logging &&
 					this.forms.equals(that.forms) &&
 					(this.startForm != null ? this.startForm.equals(that.startForm) : that.startForm == null) &&
@@ -448,6 +445,7 @@ public class Project
 		hash = 31 * hash + version.hashCode();
 		hash = 31 * hash + fingerPrint;
 		// TODO include transmission settings?
+		hash = 31 * hash + (defaultLanguage == null ? 0 : defaultLanguage.hashCode());
 		hash = 31 * hash + (logging ? 0 : 1);
 		hash = 31 * hash + forms.hashCode();
 		hash = 31 * hash + (startForm == null ? 0 : startForm.hashCode());

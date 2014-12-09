@@ -178,7 +178,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		if(!recording)
 		{
 			// recording hasn't started yet, so present "record" button
-			File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStartRecImageRelativePath());
+			File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStartRecImageRelativePath());
 			if(FileHelpers.isReadableFile(captureImgFile))
 				// use a custom audio capture image if available
 				captureButton = new FileImageItem(captureImgFile);
@@ -189,7 +189,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 		else
 		{
 			// recording started, so present "stop" button instead
-			File stopImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStopRecImageRelativePath());
+			File stopImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(),  field.getStopRecImageRelativePath());
 			if(FileHelpers.isReadableFile(stopImgFile))
 				captureButton = new FileImageItem(stopImgFile);
 			else
@@ -271,7 +271,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 				Log.e(TAG, "Could not play audio file.");
 				e.printStackTrace();
 			}
-			File playImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getPlayAudioImageRelativePath());
+			File playImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getPlayAudioImageRelativePath());
 			if(FileHelpers.isReadableFile(playImgFile))
 				playButton = new FileImageItem(playImgFile).getView(context);
 			else
@@ -279,7 +279,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 			// playAudioButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 			playButton.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT));
 
-			File stopImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStopAudioImageRelativePath());
+			File stopImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStopAudioImageRelativePath());
 			if(FileHelpers.isReadableFile(stopImgFile))
 				stopButton = new FileImageItem(stopImgFile).getView(context);
 			else

@@ -26,6 +26,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
@@ -41,10 +42,6 @@ public abstract class Field extends JumpSource
 {
 	
 	//Statics----------------------------------------------
-	static public String captionToID(String prefix, Form form, String caption)
-	{	
-		return prefix + (caption.trim().isEmpty() ? form.getFields().size() : Column.SanitiseName(caption.trim())); // remove chars that are illegal in Column (& XML) names
-	}
 	
 	//Defaults:
 	static public final boolean DEFAULT_SHOW_BACK = true;
@@ -58,12 +55,58 @@ public abstract class Field extends JumpSource
 	static public final boolean DEFAULT_NO_COLUMN = false;
 	static public final boolean DEFAULT_EDITABLE = true;
 	static public final String DEFAULT_BACKGROUND_COLOR = "#FFFFFF"; //white
+
+	/**
+	 * Returns the (trimmed) id to use or throws a NullPointerException if the id null, empty or white-space
+	 * 
+	 * @param parsedID
+	 * @return
+	 * @throws NullPointerException
+	 */
+	static private String GetID(String parsedID) throws NullPointerException
+	{
+		if(parsedID == null || parsedID.trim().isEmpty())
+			throw new NullPointerException("Top-level field ID cannot be null, empty or consist only of white-space.");
+		return parsedID.trim(); // don't sanitise here!
+	}
 	
+	/**
+	 * Returns the id to use, possibly generated from a caption or the field index within the form
+	 * 
+	 * @param parsedId
+	 * @param form
+	 * @param captionPrefix
+	 * @param parsedCaption
+	 * @return the id to use (will never be null)
+	 */
+	static protected String GetID(String parsedId, Form form, String captionPrefix, String parsedCaption)
+	{		
+		if(parsedId != null && !parsedId.trim().isEmpty())
+			return parsedId; // don't sanitise here!
+		return Column.SanitiseName(captionPrefix + (parsedCaption == null || parsedCaption.trim().isEmpty() ? form.getFields().size() : parsedCaption.trim())); // this generated id will not occur in the XML so we can already sanitise
+	}
+	
+	/**
+	 * Returns the caption to use, possibly taken as the id
+	 * 
+	 * @param parsedId
+	 * @param parsedCaption
+	 * @return the caption to use (may be null!)
+	 */
+	static protected String GetCaption(String parsedId, String parsedCaption)
+	{
+		if(parsedCaption != null)
+			return parsedCaption;
+		return parsedId;
+	}
 	
 	//Dynamics---------------------------------------------
-	protected final String id;
-	protected final Form form;
+	public final String id;
+	public final Form form;
+	protected Page page = null;
 	protected final String caption;
+	protected String description;
+	protected String descriptionAudioRelativePath;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	protected boolean showOnCreate = DEFAULT_SHOW_ON_CREATE;
@@ -80,23 +123,22 @@ public abstract class Field extends JumpSource
 	 * @param form the form the field belongs to
 	 * @param id the id of the field, should not be null
 	 */
-	public Field(Form form, String id)
+	public Field(Form form, String id) throws NullPointerException
 	{
-		this(form, id, id); // use id as default caption
+		this(form, id, null); // caption is null
 	}
 	
 	/**
 	 * @param form the form the field belongs to
-	 * @param id the id of the field, should not be null
-	 * @param caption the caption of the field, may be null (in which case the id is used as the caption)
+	 * @param id the id of the field, should not be null, or empty after trimming
+	 * @param caption the caption of the field, may be null
+	 * @throws NullPointerException when id is null or empty after trimming
 	 */
-	public Field(Form form, String id, String caption)
+	public Field(Form form, String id, String caption) throws NullPointerException
 	{
-		if(id == null || id.trim().isEmpty())
-			throw new NullPointerException("Top-level field ID cannot be null or empty.");
+		this.id = GetID(id); // will trim the id and throw an NPE when the id is null, empty or whitespace
 		this.form = form;
-		this.id = id.trim(); // always trim id string!
-		this.caption = caption == null ? this.id : caption;
+		this.caption = caption; // may be null!
 		
 		// Construct a 2-dimensional boolean array (Controls * FormMode):
 		this.showControlByMode = new boolean[ControlsUI.Control.values().length][];
@@ -121,9 +163,33 @@ public abstract class Field extends JumpSource
 	}
 	
 	/**
+	 * @return the page (will be null if this field is not contained by a page)
+	 */
+	public Page getPage()
+	{
+		return page;
+	}
+
+	/**
+	 * @return whether or not the field is part of a page
+	 */
+	public boolean isOnPage()
+	{
+		return page != null;
+	}
+	
+	/**
+	 * @param page the page to set
+	 */
+	public void setPage(Page page)
+	{
+		this.page = page;
+	}
+
+	/**
 	 * @return the id
 	 */
-	public String getID()
+	public final String getID()
 	{
 		return id;
 	}
@@ -136,6 +202,46 @@ public abstract class Field extends JumpSource
 		return caption;
 	}
 	
+	/**
+	 * @return whether or not there is a non-null caption ("" is a valid caption)
+	 */
+	public boolean hasCaption()
+	{
+		return getCaption() != null; // don't change getCaption() to caption (needed for MultiListField)
+	}
+	
+	/**
+	 * @return the description
+	 */
+	public String getDescription()
+	{
+		return description;
+	}
+
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description)
+	{
+		this.description = description;
+	}
+
+	/**
+	 * @return the descriptionAudioRelativePath
+	 */
+	public String getDescriptionAudioRelativePath()
+	{
+		return descriptionAudioRelativePath;
+	}
+
+	/**
+	 * @param descriptionAudioRelativePath the descriptionAudioRelativePath to set
+	 */
+	public void setDescriptionAudioRelativePath(String descriptionAudioRelativePath)
+	{
+		this.descriptionAudioRelativePath = descriptionAudioRelativePath;
+	}
+
 	/**
 	 * @return the noColumn
 	 */
@@ -422,8 +528,10 @@ public abstract class Field extends JumpSource
 			return	super.equals(that) && // JumpSource#equals(Object)
 					this.id.equals(that.id) &&
 					this.form.toString().equals(that.form.toString()) && // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
-					this.form.getProject().toString().equals(that.form.getProject().toString()) && // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
-					this.caption.equals(that.caption) &&
+					this.form.project.toString().equals(that.form.project.toString()) && // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
+					(this.caption != null ? caption.equals(that.caption) : that.caption == null) &&
+					(this.description != null ? this.description.equals(that.description) : that.description == null) &&
+					(this.descriptionAudioRelativePath != null ? this.descriptionAudioRelativePath.equals(that.descriptionAudioRelativePath) : that.descriptionAudioRelativePath == null) &&
 					this.enabled == that.enabled &&
 					this.skipOnBack == that.skipOnBack &&
 					this.showOnCreate == that.showOnCreate &&
@@ -443,8 +551,10 @@ public abstract class Field extends JumpSource
 		int hash = super.hashCode(); // JumpSource#hashCode()
 		hash = 31 * hash + id.hashCode();
 		hash = 31 * hash + form.toString().hashCode(); // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
-		hash = 31 * hash + form.getProject().toString().hashCode(); // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
-		hash = 31 * hash + caption.hashCode();
+		hash = 31 * hash + form.project.toString().hashCode(); // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
+		hash = 31 * hash + (caption == null ? 0 : caption.hashCode());
+		hash = 31 * hash + (description == null ? 0 : description.hashCode());
+		hash = 31 * hash + (descriptionAudioRelativePath == null ? 0 : descriptionAudioRelativePath.hashCode());
 		hash = 31 * hash + (enabled ? 0 : 1);
 		hash = 31 * hash + (skipOnBack ? 0 : 1);
 		hash = 31 * hash + (showOnCreate ? 0 : 1);
@@ -477,5 +587,5 @@ public abstract class Field extends JumpSource
 	 * @param collectorUI
 	 * @return
 	 */
-	public abstract <V, UI extends CollectorUI<V, UI>> FieldUI<?, V, UI> createUI(UI collectorUI);
+	public abstract <V, UI extends CollectorUI<V, UI>> FieldUI<? extends Field, V, UI> createUI(UI collectorUI);
 }

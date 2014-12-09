@@ -23,7 +23,7 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
@@ -45,21 +45,21 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 {
 	
-	protected F field;
-	protected Controller controller;
-	protected UI collectorUI;
+	protected final F field;
+	protected final Controller<UI> controller;
+	protected final UI collectorUI;
 	private boolean shown = false;
 	
 	private Record lastKnownRecord = null;
 	
-	public FieldUI(F field, Controller controller, UI collectorUI)
+	public FieldUI(F field, Controller<UI> controller, UI collectorUI)
 	{
 		this.field = field;
 		this.controller = controller;
 		this.collectorUI = collectorUI;
 	}
 	
-	public F getField()
+	public final F getField()
 	{
 		return field;
 	}
@@ -155,13 +155,16 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	public abstract boolean isValid(Record record);
 	
+	/**
+	 * @return whether or not the FieldUI is currently being shown as part of a page
+	 */
 	protected boolean isShownOnPage()
 	{
-		return controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI;
+		return shown && controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI;
 	}
 	
 	/**
-	 * @return whether or not the FieldUI is currently being shown
+	 * @return whether or not the FieldUI is currently being shown (possibly as part of a page)
 	 */
 	public boolean isFieldShown()
 	{
@@ -189,7 +192,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	protected boolean isValidInformPage(Record record)
 	{
 		if(isShownOnPage())
-			return ((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).isValid(this, record); 
+			return ((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).isValid(this, record);
 		else
 			return this.isValid(record); // validate field on its own
 	}
@@ -293,7 +296,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		// Audio feedback:
 		if(isUsingAudioFeedback(withPage))
 			// Play (sequence of) audio feedback jobs:
-			collectorUI.getAudioFeebackController().play(getAudioFeedbackJobs(field.getForm().getAudioFeedback(), withPage));
+			collectorUI.getAudioFeebackController().play(getAudioFeedbackJobs(field.form.getAudioFeedback(), withPage));
 		// Other onDisplay behaviour:
 		if(informOnDisplayNonAudioFeedback(withPage))
 			onDisplayNonAudioFeedback(withPage);
@@ -307,7 +310,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	public final boolean isUsingAudioFeedback(boolean withPage)
 	{
-		return field.getForm().isUsingAudioFeedback() && isFieldUsingAudioFeedback(withPage);
+		return field.form.isUsingAudioFeedback() && isFieldUsingAudioFeedback(withPage);
 	}
 	
 	/**
@@ -329,9 +332,9 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param withPage whether the field is being display as part of a page (true) or on its own (false)
 	 * @return
 	 */
-	protected List<AbstractAudioFeedbackController<V>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
+	protected List<AudioFeedbackController<V>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
 	{
-		return Collections.<AbstractAudioFeedbackController<V>.PlaybackJob> emptyList(); // no jobs by default
+		return Collections.<AudioFeedbackController<V>.PlaybackJob> emptyList(); // no jobs by default
 	}
 	
 	/**

@@ -22,7 +22,8 @@ import java.util.HashMap;
 
 import uk.ac.ucl.excites.sapelli.collector.activities.CollectorActivity;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
-import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AndroidAudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.ScreenTransition;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
@@ -55,8 +56,10 @@ import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
+import android.os.Build;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
@@ -81,6 +84,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	static public final float SPACING_DIP = 8.0f;
 	static public final float PADDING_DIP = 2.0f;
 
+	// Colors:
 	static public final int COLOR_SEMI_TRANSPARENT_GRAY = Color.parseColor("#80777777");
 	static public final int COLOR_MOSTLY_OPAQUE_GRAY = Color.parseColor("#CC777777");
 	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
@@ -95,16 +99,19 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	private AndroidControlsUI controlsUI;
 	private FieldUI<?, View, CollectorView> fieldUI;
 	private View fieldUIView = null;
-	private HashMap<Field, FieldUI<?, View, CollectorView>> fieldUICache;
+	private HashMap<Field, FieldUI<? extends Field, View, CollectorView>> fieldUICache;
 
 	// Input manager:
 	private InputMethodManager imm;
+	
+	// Audio feedback controller:
+	private AndroidAudioFeedbackController audioFeedbackController;
 
 	public CollectorView(CollectorActivity activity)
 	{
 		super(activity);
 		this.activity = activity;
-		this.fieldUICache = new HashMap<Field, FieldUI<?, View, CollectorView>>();
+		this.fieldUICache = new HashMap<Field, FieldUI<? extends Field, View, CollectorView>>();
 
 		this.imm = (InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE);
 
@@ -154,14 +161,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI.disable();
 
 		// Get or create fieldUI for field...
-		FieldUI<?, View, CollectorView> newFieldUI = fieldUICache.get(field); // try to recycle cached fieldUI
-		if(newFieldUI == null)
-		{ // no cached fieldUI for this field...
-			newFieldUI = field.createUI(this); // create new fieldUI for field
-			if(newFieldUI == null) // just in case
-				throw new IllegalStateException("Could not construct UI for field \"" + field.getID() + "\".");
-			fieldUICache.put(field, newFieldUI); // cache the fieldUI for later reuse
-		}
+		FieldUI<?, View, CollectorView> newFieldUI = getFieldUI(field);
 		
 		// Hide current fieldUI, if there is one, it is not the same as the new one (i.e. it does probably not represent the same field), and it is currently shown...
 		if(fieldUI != null && newFieldUI != fieldUI && fieldUI.isFieldShown())
@@ -223,10 +223,28 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			// New becomes current:
 			fieldUIView = newFieldUIView;
 			
-			// Set up listener if needed:
+			// Set up view tree listener if needed (notify field when Android is actually displaying its View):
 			if(fieldUI.informOnDisplay(false))
 			{
-				// TODO set up listener and if listeren called call fieldUI.onDisplay(false);
+				fieldUIView.getViewTreeObserver().addOnGlobalLayoutListener(new OnGlobalLayoutListener()
+				{
+					
+					@SuppressLint("NewApi")
+					@SuppressWarnings("deprecation")
+					@Override
+					public void onGlobalLayout()
+					{
+						// call the field's onDisplay method:
+						fieldUI.onDisplay(false);
+						// remove this listener once this has occurred, so the field's onDisplay method is not called too many times:
+						if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN /* 16 */)
+							fieldUIView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+						else
+							// use deprecated version (probably changed due to "on" typo):
+							fieldUIView.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+					}
+
+				});
 			}
 		}
 
@@ -237,6 +255,23 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI.enable();
 	}
 
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI#getFieldUI(uk.ac.ucl.excites.sapelli.collector.model.Field)
+	 */
+	@Override
+	public FieldUI<? extends Field, View, CollectorView> getFieldUI(Field field)
+	{
+		FieldUI<? extends Field, View, CollectorView> newFieldUI = fieldUICache.get(field); // try to recycle cached fieldUI
+		if(newFieldUI == null)
+		{	// no cached fieldUI for this field...
+			newFieldUI =  field.createUI(this); // create new fieldUI for field
+			if(newFieldUI == null) // just in case
+				throw new IllegalStateException("Could not construct UI for field \"" + field.id + "\".");
+			fieldUICache.put(field, newFieldUI); // cache the fieldUI for later reuse
+		}
+		return newFieldUI;
+	}
+	
 	public CollectorActivity getActivity()
 	{
 		return activity;
@@ -501,10 +536,30 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	}
 
 	@Override
-	public AbstractAudioFeedbackController<View> getAudioFeebackController()
+	public AudioFeedbackController<View> getAudioFeebackController()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		if (audioFeedbackController == null)
+			audioFeedbackController = new AndroidAudioFeedbackController(controller);
+		return audioFeedbackController;
+	}
+	
+	/**
+	 * Stop audio feedback playback
+	 */
+	public void stopAudioFeedback()
+	{
+		if(audioFeedbackController != null)
+			audioFeedbackController.stop();
+	}
+
+	/**
+	 * Stop audio feedback playback & release associated resources
+	 */
+	public void destroyAudioFeedback()
+	{
+		if(audioFeedbackController != null)
+			audioFeedbackController.destroy();
+		audioFeedbackController = null;
 	}
 
 }

@@ -202,6 +202,8 @@ public class ProjectLoader implements WarningKeeper
 			if(!tasks.isEmpty())
 			{
 				if(postProcessor != null)
+				{
+					postProcessor.initialise(project);
 					for(PostProcessTask task : tasks)
 					{
 						try
@@ -213,6 +215,9 @@ public class ProjectLoader implements WarningKeeper
 							throw new Exception("Error on executing post-processing task", e);
 						}
 					}
+					
+					postProcessor.freeResources();
+				}
 				else
 					addWarning("Unable to perform " + tasks.size() + " post-processing");
 			}

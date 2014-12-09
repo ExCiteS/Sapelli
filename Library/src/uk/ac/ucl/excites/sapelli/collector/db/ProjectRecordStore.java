@@ -328,19 +328,17 @@ public class ProjectRecordStore extends ProjectStore implements StoreClient
 	
 	private Record getHFKRecord(Relationship relationship, RecordReference foreignKey)
 	{
-		Form form = relationship.getForm();
-		return HFK_SCHEMA.createRecord(	getProjectRecordReference(form.getProject()),
-										form.getPosition(),
-										form.getFieldPosition(relationship),
+		return HFK_SCHEMA.createRecord(	getProjectRecordReference(relationship.form.project),
+										relationship.form.getPosition(),
+										relationship.form.getFieldPosition(relationship),
 										foreignKey.serialise());
 	}
 	
 	private RecordReference getHFKRecordReference(Relationship relationship)
 	{
-		Form form = relationship.getForm();
-		return HFK_SCHEMA.createRecordReference(getProjectRecordReference(form.getProject()),
-												form.getPosition(),
-												form.getFieldPosition(relationship)); 
+		return HFK_SCHEMA.createRecordReference(getProjectRecordReference(relationship.form.project),
+												relationship.form.getPosition(),
+												relationship.form.getFieldPosition(relationship)); 
 	}
 
 	/* (non-Javadoc)

@@ -48,6 +48,8 @@ public abstract class MediaField extends Field
 	static public final boolean DEFAULT_SHOW_REVIEW = true;
 	static public final char FILENAME_ELEMENT_SEPARATOR = '_';
 	
+	static public final String ID_PREFIX = "media";
+	
 	// no longer used as filenames are now just ROT13-ed, but may be useful for backwards compatibility:
 	static private final Pattern HISTORIC_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
 	
@@ -60,9 +62,14 @@ public abstract class MediaField extends Field
 	protected boolean showReview;
 	protected int max;
 	
+	/**
+	 * @param form
+	 * @param id the id of the field, may be null (but not recommended)
+	 * @param caption the caption of the field, may be null (in which case the id is used as the caption)
+	 */
 	public MediaField(Form form, String id, String caption)
 	{
-		super(form, id, caption);
+		super(form, GetID(id, form, ID_PREFIX, caption), GetCaption(id, caption));
 		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);
 		setShowReview(DEFAULT_SHOW_REVIEW);
 	}
@@ -296,7 +303,7 @@ public abstract class MediaField extends Field
 	{
 		long creationTimeOffset = System.currentTimeMillis() - form.getStartTime(record, true).getMsSinceEpoch();
 		String filename = generateFilename(record, creationTimeOffset);
-		String dataFolderPath = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
+		String dataFolderPath = fileStorageProvider.getProjectAttachmentFolder(form.project, true).getAbsolutePath();
 		File file = new File(dataFolderPath + File.separator + filename);
 		return file;
 	}

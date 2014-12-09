@@ -104,8 +104,8 @@ public class Form implements WarningKeeper
 	public static final String DEFAULT_BACK_BUTTON_DESCRIPTION = "Back";
 
 	// Dynamics-------------------------------------------------------
-	private final Project project;
-	private final String id;
+	public final Project project;
+	public final String id;
 	private final short position;
 	private boolean producesRecords = true;
 	private boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
@@ -119,6 +119,9 @@ public class Form implements WarningKeeper
 	private final List<Field> fields;
 	private List<Trigger> triggers;
 	
+	// Form language:
+	private String defaultLanguage; // null by default (because project language should be used if form language not specified)
+
 	// Android shortcut:
 	private String shortcutImageRelativePath;
 
@@ -167,7 +170,7 @@ public class Form implements WarningKeeper
 	/**
 	 * @return the project
 	 */
-	public Project getProject()
+	public final Project getProject()
 	{
 		return project;
 	}
@@ -215,7 +218,7 @@ public class Form implements WarningKeeper
 	 * 
 	 * @return
 	 */
-	public String getID()
+	public final String getID()
 	{
 		return id;
 	}
@@ -225,11 +228,16 @@ public class Form implements WarningKeeper
 	 * 
 	 * @return
 	 */
-	public String getName()
+	public final String getName()
 	{
 		return getID();
 	}
 
+	/**
+	 * Returns all top-level fields of the form
+	 * 
+	 * @return
+	 */
 	public List<Field> getFields()
 	{
 		return fields;
@@ -244,7 +252,7 @@ public class Form implements WarningKeeper
 	public Field getField(String fieldID)
 	{
 		for(Field f : fields)
-			if(f.getID().equalsIgnoreCase(fieldID)) // field IDs are treated as case insensitive
+			if(f.id.equalsIgnoreCase(fieldID)) // field IDs are treated as case insensitive
 				return f;
 		return null;
 	}
@@ -276,12 +284,11 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param start
-	 *            the start to set
+	 * @param startField the startField to set
 	 */
-	public void setStartField(Field start)
+	public void setStartField(Field startField)
 	{
-		this.startField = start;
+		this.startField = startField;
 	}
 
 	public void addTrigger(Trigger trigger)
@@ -308,8 +315,7 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param clickAnimation
-	 *            the animation to set
+	 * @param clickAnimation the clickAnimation to set
 	 */
 	public void setClickAnimation(boolean clickAnimation)
 	{
@@ -325,8 +331,7 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param screenTransitionStr
-	 *            the screenTransition to set
+	 * @param screenTransitionStr the screenTransition to set
 	 */
 	public void setScreenTransition(String screenTransitionStr)
 	{
@@ -342,7 +347,24 @@ public class Form implements WarningKeeper
 			throw iae;
 		}
 	}
+	
+	/**
+	 * @return the BCP 47 format string representing the currently set default language for this form
+	 */
+	public String getDefaultLanguage()
+	{
+		return defaultLanguage;
+	}
 
+	/**
+	 * Set the project's default language (the language that will be used for text-to-speech synthesis).
+	 * @param defaultLanguage the language to set, as a valid BCP 47 format string (e.g. "en-GB")
+	 */
+	public void setDefaultLanguage(String defaultLanguage)
+	{
+		this.defaultLanguage = defaultLanguage;
+	}
+	
 	/**
 	 * @return the obfuscateMediaFiles
 	 */
@@ -360,8 +382,7 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param audioFeedbackStr
-	 *            the audioFeedbackStr to set
+	 * @param audioFeedbackStr the audioFeedbackStr to set
 	 */
 	public void setAudioFeedback(String audioFeedbackStr)
 	{
@@ -387,8 +408,7 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param obfuscateMediaFiles
-	 *            the obfuscateMediaFiles to set
+	 * @param obfuscateMediaFiles the obfuscateMediaFiles to set
 	 */
 	public void setObfuscateMediaFiles(boolean obfuscateMediaFiles)
 	{
@@ -404,8 +424,7 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param shortcutImageRelativePath
-	 *            the shortcutImageRelativePath to set
+	 * @param shortcutImageRelativePath the shortcutImageRelativePath to set
 	 */
 	public void setShortcutImageRelativePath(String shortcutImageRelativePath)
 	{
@@ -539,7 +558,7 @@ public class Form implements WarningKeeper
 		{
 			List<LocationField> startLF = new ArrayList<LocationField>();
 			for(LocationField lf : getLocationFields())
-				if(lf.getStartWith() == LocationField.START_WITH.FORM)
+				if(lf.getStartWith() == LocationField.StartWith.FORM)
 					startLF.add(lf);
 			return startLF;
 		}
@@ -555,8 +574,7 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @param storeEndTime
-	 *            the storeEndTime to set
+	 * @param storeEndTime the storeEndTime to set
 	 */
 	public void setStoreEndTime(boolean storeEndTime)
 	{
@@ -756,9 +774,9 @@ public class Form implements WarningKeeper
 	{
 		if(!field.isNoColumn() && producesRecords && schema != null)
 		{
-			Column<?> col = schema.getColumn(field.getID(), false);
+			Column<?> col = schema.getColumn(field.id, false);
 			if(col == null)
-				col = schema.getColumn(Column.SanitiseName(field.getID()), false); // try again with sanitised name!
+				col = schema.getColumn(Column.SanitiseName(field.id), false); // try again with sanitised name!
 			return col; // may still be null
 		}
 		else
@@ -864,11 +882,12 @@ public class Form implements WarningKeeper
 	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
 		List<File> paths = new ArrayList<File>();
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, backButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, cancelButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, forwardButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getImageFile(fileStorageProvider, shortcutImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, project.getSoundFile(fileStorageProvider, saveSoundRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, backButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, cancelButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, forwardButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, shortcutImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, saveSoundRelativePath));
+		
 		//Add paths for fields:
 		for(Field field : fields)
 			CollectionUtils.addAllIgnoreNull(paths, field.getFiles(fileStorageProvider));
@@ -900,6 +919,7 @@ public class Form implements WarningKeeper
 					(this.shortcutImageRelativePath != null ? this.shortcutImageRelativePath.equals(that.shortcutImageRelativePath) : that.shortcutImageRelativePath == null) &&
 					this.clickAnimation == that.clickAnimation &&
 					this.screenTransition == that.screenTransition &&
+					(this.defaultLanguage != null ? this.defaultLanguage.equals(that.defaultLanguage) : that.defaultLanguage == null) &&
 					this.audioFeedback == that.audioFeedback &&
 					this.obfuscateMediaFiles == that.obfuscateMediaFiles &&
 					this.storeEndTime == that.storeEndTime &&
@@ -933,6 +953,7 @@ public class Form implements WarningKeeper
 		hash = 31 * hash + (shortcutImageRelativePath == null ? 0 : shortcutImageRelativePath.hashCode());
 		hash = 31 * hash + (clickAnimation ? 0 : 1);
 		hash = 31 * hash + screenTransition.ordinal();
+		hash = 31 * hash + (defaultLanguage == null ? 0 : defaultLanguage.hashCode());
 		hash = 31 * hash + audioFeedback.ordinal();
 		hash = 31 * hash + (obfuscateMediaFiles ? 0 : 1);
 		hash = 31 * hash + (storeEndTime ? 0 : 1);

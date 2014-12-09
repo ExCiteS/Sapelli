@@ -278,7 +278,7 @@ public class PrefProjectStore extends ProjectStore
 
 	private String getHeldForeignKeyPrefKey(Relationship relationship)
 	{
-		return HELD_FOREIGN_KEY_PREFIX + "(" + getProjectPathPrefKey(relationship.getForm().getProject()) + ")_" + relationship.getForm().getPosition() + "_" + relationship.getID() + HELD_FOREIGN_KEY_POSTFIX;
+		return HELD_FOREIGN_KEY_PREFIX + "(" + getProjectPathPrefKey(relationship.form.project) + ")_" + relationship.form.getPosition() + "_" + relationship.id + HELD_FOREIGN_KEY_POSTFIX;
 	}
 	
 	@Override

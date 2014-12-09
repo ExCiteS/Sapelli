@@ -294,7 +294,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	public Item generateDiscardButton(Context context)
 	{
 		Item discardButton = null;
-		File discardImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getDiscardButtonImageRelativePath());
+		File discardImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getDiscardButtonImageRelativePath());
 		if(FileHelpers.isReadableFile(discardImgFile))
 			discardButton = new FileImageItem(discardImgFile);
 		else
@@ -660,8 +660,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			private static final int NUM_COLUMNS = 3; // TODO make configurable?
 			private static final int NUM_ROWS = 3;
 
-			private int buttonPadding;
-
 			private GalleryPicker(Context context)
 			{
 				super(context);
@@ -675,7 +673,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				// Item size & padding:
 				setItemDimensionsPx(collectorUI.getFieldUIPartWidthPx(NUM_COLUMNS), collectorUI.getFieldUIPartHeightPx(NUM_ROWS));
 
-				this.buttonPadding = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 				// Item spacing:
 				int spacingPx = collectorUI.getSpacingPx();
 				setHorizontalSpacing(spacingPx);
@@ -738,7 +735,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 							galleryCache.put(file, toAdd);
 						}
 						// set padding and add item to adapter
-						toAdd.setPaddingPx(buttonPadding);
+						toAdd.setPaddingDip(CollectorView.PADDING_DIP);
 						adapter.addItem(toAdd);
 					}
 

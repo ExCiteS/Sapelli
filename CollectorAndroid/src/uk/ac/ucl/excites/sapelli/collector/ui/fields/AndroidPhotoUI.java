@@ -143,7 +143,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	protected ImageItem generateCaptureButton(Context context)
 	{
 		ImageItem captureButton = null;
-		File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getCaptureButtonImageRelativePath());
+		File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getCaptureButtonImageRelativePath());
 		if(FileHelpers.isReadableFile(captureImgFile))
 			// return a custom photo capture button if it exists
 			captureButton = new FileImageItem(captureImgFile);

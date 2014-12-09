@@ -239,7 +239,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		if(!recording)
 		{
 			// recording hasn't started yet, so present "record" button
-			File captureImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStartRecImageRelativePath());
+			File captureImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStartRecImageRelativePath());
 			if(FileHelpers.isReadableFile(captureImgFile))
 				// use a custom video capture image if available
 				captureButton = new FileImageItem(captureImgFile);
@@ -250,7 +250,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		else
 		{
 			// recording started, so present "stop" button instead
-			File stopImgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), field.getStopRecImageRelativePath());
+			File stopImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getStopRecImageRelativePath());
 			if(FileHelpers.isReadableFile(stopImgFile))
 				captureButton = new FileImageItem(stopImgFile);
 			else

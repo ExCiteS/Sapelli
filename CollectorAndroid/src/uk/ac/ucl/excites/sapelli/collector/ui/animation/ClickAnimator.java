@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import android.os.Handler;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
@@ -43,7 +43,7 @@ public final class ClickAnimator
 	 * @param clickView
 	 * @param controller pass non-null Controller in order to block UI during animation, when null no UI blocking will happen
 	 */
-	public static void Animate(Runnable taskAfterAnimation, View clickView, CollectorController controller)
+	public static void Animate(Runnable taskAfterAnimation, View clickView, Controller<?> controller)
 	{
 		Animate(DURATION, taskAfterAnimation, clickView, controller);
 	}
@@ -54,7 +54,7 @@ public final class ClickAnimator
 	 * @param clickView
 	 * @param controller pass non-null Controller in order to block UI during animation, when null no UI blocking will happen
 	 */
-	public static void Animate(long duration, final Runnable taskAfterAnimation, View clickView, final CollectorController controller)
+	public static void Animate(long duration, final Runnable taskAfterAnimation, View clickView, final Controller<?> controller)
 	{
 		// Set the alpha level of the object
 		AlphaAnimation alpha = new AlphaAnimation((float) 1.0, (float) 0.5);

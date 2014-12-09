@@ -52,14 +52,14 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	}
 	
 	// Dynamics------------------------------------------------------
-	protected Controller controller;
+	protected Controller<UI> controller;
 	protected UI collectorUI;
 	protected boolean enabled;
 	
 	private Form currentForm;
 	private State[] controlStates;
 	
-	public ControlsUI(Controller controller, UI collectorUI)
+	public ControlsUI(Controller<UI> controller, UI collectorUI)
 	{
 		this.controller = controller;
 		this.collectorUI = collectorUI;
@@ -74,9 +74,9 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	public void update(FieldUI<?, V, UI> fieldUI)
 	{
 		// Form change?
-		if(fieldUI.getField().getForm() != currentForm)
+		if(fieldUI.getField().form != currentForm)
 		{
-			currentForm = fieldUI.getField().getForm();
+			currentForm = fieldUI.getField().form;
 			updateForm(currentForm);
 		}
 		
@@ -135,7 +135,7 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 			return;
 		
 		// Log interaction:
-		controller.addLogLine((hardwareKeyPress ? "KEY" : "CLICK") + "_CONTROL_" + control.name(), controller.getCurrentField().getID());
+		controller.addLogLine((hardwareKeyPress ? "KEY" : "CLICK") + "_CONTROL_" + control.name(), controller.getCurrentField().id);
 		
 		// pass the control event to the current field UI in case it wants to do something unusual:
 		if (!collectorUI.getCurrentFieldUI().handleControlEvent(control)) {

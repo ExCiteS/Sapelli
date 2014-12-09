@@ -84,7 +84,7 @@ public class AudioPlayer
 	}
 
 	/**
-	 * Destroy the media player and release any resources
+	 * Destroy the media player: stop playback and release any/all resources
 	 */
 	public void destroy()
 	{

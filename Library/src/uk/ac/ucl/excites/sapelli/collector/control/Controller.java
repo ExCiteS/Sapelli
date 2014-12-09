@@ -60,10 +60,12 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
  * Abstract Controller class
+ *
+ * @param <CUI>
  * 
  * @author mstevens, Michalis Vitos, Julia
  */
-public abstract class Controller implements FieldVisitor
+public abstract class Controller<CUI extends CollectorUI<?, ?>> implements FieldVisitor
 {
 	
 	// STATICS-------------------------------------------------------
@@ -169,7 +171,7 @@ public abstract class Controller implements FieldVisitor
 	
 	// DYNAMICS------------------------------------------------------
 	protected final Project project;
-	protected final CollectorUI<?, ?> ui;
+	protected final CUI ui;
 	protected final ProjectStore projectStore;
 	protected final RecordStore recordStore;
 	protected final FileStorageProvider fileStorageProvider;
@@ -180,8 +182,11 @@ public abstract class Controller implements FieldVisitor
 	protected FormSession prevFormSession; 
 	
 	protected boolean handlingUserGoBackRequest = false;
+	
+	protected volatile boolean blockedUI = false;
+
 			
-	public Controller(Project project, CollectorUI<?, ?> ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
+	public Controller(Project project, CUI ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
 	{
 		this.project = project;
 		this.ui = ui;
@@ -385,7 +390,7 @@ public abstract class Controller implements FieldVisitor
 		// Try to leave the currently displayed field...
 		if(currFormSession.atField() && currFormSession.isCurrentFieldDisplayed() && !ui.getCurrentFieldUI().leaveField(currFormSession.record, leaveRule))
 		{
-			addLogLine("STAY", "Not allowed to leave field " + getCurrentField().getID());
+			addLogLine("STAY", "Not allowed to leave field " + getCurrentField().id);
 			return; // not allowed to leave
 		}
 		
@@ -398,13 +403,13 @@ public abstract class Controller implements FieldVisitor
 		// Skip the new current field if it is not meant to be shown in the current form mode:
 		if(!isFieldToBeShown(currField))
 		{
-			addLogLine("SKIPPING", currField.getID(), "Not shown on " + currFormSession.mode.name());
+			addLogLine("SKIPPING", currField.id, "Not shown on " + currFormSession.mode.name());
 			goForward(false);
 			return;
 		}
 		
 		// Entering new current field...
-		addLogLine("REACHED", currField.getID());
+		addLogLine("REACHED", currField.id);
 		boolean needsUIUpdate = currField.enter(this, currFormSession.getCurrentFieldArguments(), false); // pass arguments to enter()
 		
 		// UI update, if (still) needed:
@@ -477,7 +482,7 @@ public abstract class Controller implements FieldVisitor
 		if(currFormSession.form.isVibrateOnSave())
 			vibrate(VIBRATION_DURATION_MS);
 		// Play sound
-		File endSoundFile = project.getSoundFile(fileStorageProvider, currFormSession.form.getSaveSoundRelativePath());
+		File endSoundFile = fileStorageProvider.getProjectSoundFile(project, currFormSession.form.getSaveSoundRelativePath());
 		if(FileHelpers.isReadableFile(endSoundFile))
 			playSound(endSoundFile);
 	}
@@ -537,7 +542,7 @@ public abstract class Controller implements FieldVisitor
 	@Override
 	public boolean enterLocationField(LocationField lf, FieldParameters arguments, boolean withPage)
 	{
-		if(withPage && !(lf.getStartWith() == LocationField.START_WITH.PAGE))
+		if(withPage && !(lf.getStartWith() == LocationField.StartWith.PAGE))
 			return false;
 		
 		if(lf.isWaitAtField() || /*try to use currentBestLocation:*/ !lf.storeLocation(currFormSession.record, getCurrentBestLocation()))
@@ -569,7 +574,7 @@ public abstract class Controller implements FieldVisitor
 		for(Field f : page.getFields())
 		{	
 			if(!isFieldToBeShown(f))
-				addLogLine("SKIPPING", f.getID(), "not shown on " + currFormSession.mode.name());
+				addLogLine("SKIPPING", f.id, "not shown on " + currFormSession.mode.name());
 			else
 				f.enter(this, FieldParameters.EMPTY, true); // enter with page (but don't pass on the arguments)
 		}
@@ -713,7 +718,7 @@ public abstract class Controller implements FieldVisitor
 	public boolean enterEndField(EndField ef, FieldParameters arguments)
 	{
 		// Logging:
-		addLogLine("FORM_END", ef.getID(), currFormSession.form.getName(), Long.toString((getElapsedMillis() - currFormSession.startTime) / 1000) + " seconds");
+		addLogLine("FORM_END", ef.id, currFormSession.form.getName(), Long.toString((getElapsedMillis() - currFormSession.startTime) / 1000) + " seconds");
 		
 		// Save or discard:
 		if(ef.isSave() && currFormSession.form.isProducesRecords())
@@ -841,7 +846,7 @@ public abstract class Controller implements FieldVisitor
 	{
 		if(trigger.getJump() == null)
 			return;
-		addLogLine("TRIGGER", "Fired, jumping to: " + trigger.getJump().getID());
+		addLogLine("TRIGGER", "Fired, jumping to: " + trigger.getJump().id);
 		goTo(new FieldWithArguments(trigger.getJump(), trigger.getNextFieldArguments()));
 	}
 	
@@ -879,7 +884,7 @@ public abstract class Controller implements FieldVisitor
 		// Close log file:
 		if(logger != null)
 		{
-			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.getID()); // closes the logger & underlying file(writer)
+			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.id); // closes the logger & underlying file(writer)
 			logger = null;
 		}
 
@@ -996,5 +1001,29 @@ public abstract class Controller implements FieldVisitor
 	 * @return number of milliseconds since system boot
 	 */
 	protected abstract long getElapsedMillis();
+	
+	/**
+	 * @return the blockedUI
+	 */
+	public synchronized boolean isUIBlocked()
+	{
+		return blockedUI;
+	}
+
+	/**
+	 * Block UI
+	 */
+	public synchronized void blockUI()
+	{
+		this.blockedUI = true;
+	}
+
+	/**
+	 * Unblock UI
+	 */
+	public synchronized void unblockUI()
+	{
+		this.blockedUI = false;
+	}
 	
 }

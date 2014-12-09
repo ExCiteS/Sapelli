@@ -95,7 +95,7 @@ public class ProjectRunHelpers
 		Intent addIntent = new Intent();
 		addIntent.putExtra(Intent.EXTRA_SHORTCUT_INTENT, shortcutIntent);
 		addIntent.putExtra(Intent.EXTRA_SHORTCUT_NAME, context.getString(R.string.app_name));
-		addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(context, R.drawable.ic_excites_grey));
+		addIntent.putExtra(Intent.EXTRA_SHORTCUT_ICON_RESOURCE, Intent.ShortcutIconResource.fromContext(context, R.drawable.ic_sapelli_logo));
 
 		addIntent.setAction("com.android.launcher.action.INSTALL_SHORTCUT");
 		context.sendBroadcast(addIntent);
@@ -109,7 +109,7 @@ public class ProjectRunHelpers
 	static public void createShortcut(ContextWrapper contextWrapper, FileStorageProvider fileStorageProvider, Project project)
 	{
 		// Icon image file:
-		File shortcutImageFile = project.getImageFile(fileStorageProvider, project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
+		File shortcutImageFile = fileStorageProvider.getProjectImageFile(project, project.getStartForm().getShortcutImageRelativePath()); // use icon of the startForm
 
 		// Shortcut name:
 		String shortcutName = project.toString();
@@ -122,7 +122,7 @@ public class ProjectRunHelpers
 		//-----------------------------------------------------
 		Intent androidLauncherIntent = getShortcutCreationIntent(contextWrapper, shortcutName, shortcutIntent, false);
 		// Get up icon bitmap:
-		Drawable iconResource = FileHelpers.isReadableFile(shortcutImageFile) ?	Drawable.createFromPath(shortcutImageFile.getAbsolutePath()) : contextWrapper.getResources().getDrawable(R.drawable.ic_excites_grey);
+		Drawable iconResource = FileHelpers.isReadableFile(shortcutImageFile) ?	Drawable.createFromPath(shortcutImageFile.getAbsolutePath()) : contextWrapper.getResources().getDrawable(R.drawable.ic_sapelli_logo);
 		Bitmap icon = ((BitmapDrawable) iconResource).getBitmap();
 		// Resize the icon bitmap according to the default size:
 		int maxIconSize = (int) contextWrapper.getResources().getDimension(android.R.dimen.app_icon_size); // Get standard system icon size

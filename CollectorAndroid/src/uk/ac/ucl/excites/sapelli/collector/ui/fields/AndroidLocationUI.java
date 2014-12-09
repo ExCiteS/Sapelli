@@ -22,7 +22,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
@@ -44,7 +44,8 @@ import android.widget.RelativeLayout.LayoutParams;
  * @author Julia, mstevens
  *
  */
-public class AndroidLocationUI extends LocationUI<View, CollectorView> {
+public class AndroidLocationUI extends LocationUI<View, CollectorView>
+{
 
 	private Button pageView;
 	private RelativeLayout waitView;
@@ -52,39 +53,51 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 	
 	static public final float PADDING = 20.0f;
 
-	public AndroidLocationUI(LocationField field, Controller controller, CollectorView collectorUI) {
+	public AndroidLocationUI(LocationField field, CollectorController controller, CollectorView collectorUI)
+	{
 		super(field, controller, collectorUI);
 	}
 
 	@Override
-	protected void cancel() {
+	protected void cancel()
+	{
 		if (timeoutCounter != null)
 			timeoutCounter.cancel();
 		// else: do nothing
 	}
 
 	@Override
-	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord) {
+	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
+	{
+		// TODO refactor using separate methods or inner classes
 		// TODO editable
-		if (onPage) {
-			if (pageView == null) {
+		if (onPage)
+		{
+			if (pageView == null)
+			{
 				pageView = new Button(collectorUI.getContext());
 				pageView.setText(field.getCaption());
 				// TODO some kind of icon/image would be nice (an little flag or crosshairs?)
-				pageView.setOnClickListener(new OnClickListener() {
+				pageView.setOnClickListener(new OnClickListener()
+				{
 					@Override
-					public void onClick(View v) {
+					public void onClick(View v)
+					{
 						controller.goTo(new FieldWithArguments(field), LeaveRule.UNCONDITIONAL_NO_STORAGE); // force leaving of the page, to go to the field itself
 					}
 				});
+				
 				// TODO add spinner on button (when startWithForm or startWithPage), make change it for a "got location" icon when location is obtained
 				// TODO show "got location" icon when already has location
 				// TODO take "enabled" into account!
 			}
 			return pageView;
-		} else {
+		}
+		else
+		{
 			// TODO show coordinates/accuracy to literate users (this will need a new XML attribute)
-			if (waitView == null) {
+			if (waitView == null)
+			{
 				Context context = collectorUI.getContext();
 				waitView = new RelativeLayout(context);
 				RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
@@ -103,12 +116,15 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 
 			// Start timeout counter
 			timeoutCounter = new Timer();
-			timeoutCounter.schedule(new TimerTask() {
+			timeoutCounter.schedule(new TimerTask()
+			{
 				@Override
 				public void run() { // time's up!
-					collectorUI.getActivity().runOnUiThread(new Runnable() {
+					collectorUI.getActivity().runOnUiThread(new Runnable()
+					{
 						@Override
-						public void run() {
+						public void run()
+						{
 							timeout();
 						}
 					});

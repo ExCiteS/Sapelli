@@ -34,7 +34,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<MF, V, UI>
 {
 	
-	public MediaUI(MF field, Controller controller, UI collectorUI)
+	public MediaUI(MF field, Controller<UI> controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}
@@ -48,8 +48,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	{
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
-			// log the attachment
-			controller.addLogLine("ATTACHMENT", field.getID(), mediaAttachment.getName());
+			controller.addLogLine("ATTACHMENT", field.id, mediaAttachment.getName());
 			// add it to the record
 			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());
 			// mark it to be added when the user saves their session
@@ -58,8 +57,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 		}
 		else
 		{
-			// log empty attachment
-			controller.addLogLine("ATTACHMENT", field.getID(), "-NONE-");
+			controller.addLogLine("ATTACHMENT", field.id, "-NONE-");
 		}
 	}
 	

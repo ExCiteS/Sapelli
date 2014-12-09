@@ -86,20 +86,39 @@ public class ProjectParser extends DocumentParser
 	static private final String ATTRIBUTE_PROJECT_VARIANT = "variant";
 	static private final String ATTRIBUTE_PROJECT_VERSION = "version";
 	static private final String ATTRIBUTE_PROJECT_START_FORM = "startForm";
+	static private final String ATTRIBUTE_PROJECT_DEFAULT_LANG = "defaultLanguage";
+	
+	// Potentially platform-specific parameters:
+	static public final String DEFAULT_GENERATED_AUDIO_EXTENSION = "wav";
 	
 
 	// DYNAMICS-------------------------------------------------------
 	private Format format = DEFAULT_FORMAT;
+	private final String generatedAudioExtension;
 	private Integer fingerPrint;
 	private Project project;
 	private String startFormID;
 	private HashMap<Relationship, String> relationshipToFormID;
 	private HashMap<Relationship, List<ConstraintDescription>> relationshipToConstraints;
-	private List<PostProcessTask> postProcessingTasks;
+	private List<PostProcessTask> postProcessingTasks; 
 
 	public ProjectParser()
 	{
+		this(DEFAULT_GENERATED_AUDIO_EXTENSION);
+	}
+
+	public ProjectParser(String generatedAudioExtension)
+	{
 		super();
+		this.generatedAudioExtension = generatedAudioExtension;
+	}
+	
+	/**
+	 * @return the generatedAudioExtension
+	 */
+	public String getGeneratedAudioExtension()
+	{
+		return generatedAudioExtension;
 	}
 
 	public Project parseProject(File xmlFile) throws Exception
@@ -172,7 +191,7 @@ public class ProjectParser extends DocumentParser
 				}
 				//	within range (or default because missing attribute):
 				else
-					format = Format.values()[formatVersion]; 
+					format = Format.values()[formatVersion];
 				
 				// Project...
 				project = new Project(	(format == Format.v1_x) ?
@@ -182,6 +201,13 @@ public class ProjectParser extends DocumentParser
 										attributes.getString(ATTRIBUTE_PROJECT_VARIANT, null, true, false),
 										attributes.getString(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, true, false),
 										fingerPrint);
+				
+				// set default language (or "en" if not specified):
+				String lang = attributes.getString(ATTRIBUTE_PROJECT_DEFAULT_LANG, null, true, false);
+				if (lang != null) 
+					project.setDefaultLanguage(lang);
+				else if (format == Format.v2_x)
+					addWarning("No valid default language has been specified for this project. Languages should be declared using the BCP-47 syntax (e.g. \"fr-CA\" for Canadian French). English (en) will be set as the default language within this project.");
 				
 				// Read startForm ID:
 				startFormID = attributes.getString(ATTRIBUTE_PROJECT_START_FORM, null, true, false); 
@@ -235,7 +261,7 @@ public class ProjectParser extends DocumentParser
 						Relationship rel = entry.getKey();
 						Form relatedForm = project.getForm(entry.getValue()); // uses equalsIgnoreCase()
 						if(relatedForm == null)
-							throw new SAXException("Relationship \"" + rel.getID() + "\" in form \"" + rel.getForm().getID() + "\" refers to unknown related form \"" + entry.getValue() + "\".");
+							throw new SAXException("Relationship \"" + rel.id + "\" in form \"" + rel.form.id + "\" refers to unknown related form \"" + entry.getValue() + "\".");
 						rel.setRelatedForm(relatedForm); // will trigger initialisation of Schema of relatedForm (this should not be a problem, it will not be done again below)
 					}
 				
@@ -268,7 +294,7 @@ public class ProjectParser extends DocumentParser
 							}
 							catch(Exception e)
 							{
-								throw new SAXException("Error upon resolving constraint on Relationship \"" + entry.getKey().getID() + "\"", e);
+								throw new SAXException("Error upon resolving constraint on Relationship \"" + entry.getKey().id + "\"", e);
 							}
 			}
 		}
@@ -361,7 +387,7 @@ public class ProjectParser extends DocumentParser
 				throw new NullPointerException("Non-null form is needed to resolve Constraint");
 			if(!form.isProducesRecords())
 			{
-				addWarning("Cannot impose constraint on records of form \"" + form.getID() + "\" because it does not produce data records.");
+				addWarning("Cannot impose constraint on records of form \"" + form.id + "\" because it does not produce data records.");
 				return null;
 			}
 			

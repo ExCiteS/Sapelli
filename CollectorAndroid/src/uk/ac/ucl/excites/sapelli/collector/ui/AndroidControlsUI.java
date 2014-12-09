@@ -191,11 +191,16 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		// Get the pressed ControlItem
 		ControlItem item = (ControlItem) view.getAdapter().getItem(position);
 
-		// Audio Feedback
-		if(item != null)
+		if(item != null) // just in case...
 		{
-			AudioFeedbackController audioController = new AudioFeedbackController(controller);
-			audioController.playAnswer(parent.getContext(), item, v);
+			// Audio Feedback
+			if(controller.isAudioFeedbackUsed() && item != null)
+			{
+				AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
+				//afc.play(afc.new PlaybackJob(item.getDescriptionAudioRelativePath()), v)); TODO
+			}
+			else
+				controller.addLogLine("LONG_CLICK", "LongClick on " + Control.values()[(int) id].name() + " but AudioFeedback is disabled");
 		}
 		
 		return true;
@@ -231,7 +236,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			
 			// Background & padding:
 			this.setBackgroundColor(backgroundColor);
-			this.setPaddingPx(0);
+			this.setPaddingDip(0);
 			
 			// the actual button:
 			String imgRelativePath = null;
@@ -253,8 +258,8 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 					drawable = new HorizontalArrow(FOREGROUND_COLOR, false);
 					this.setDescription(form.getForwardButtonDescription());
 					break;
-			}				
-			File imgFile = controller.getProject().getImageFile(controller.getFileStorageProvider(), imgRelativePath);
+			}
+			File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), imgRelativePath);
 			Item button = null;
 			if(FileHelpers.isReadableFile(imgFile))
 				button = new FileImageItem(imgFile);
@@ -263,11 +268,11 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			/* Unused -- replaced by Drawable buttons (arrow & cross)
 			// Resource image (e.g. R.drawable.button_back_svg, .button_back, .button_delete_svg, .button_delete, .button_forward_svg, .button_forward)
 			button = new ResourceImageItem(getContext().getResources(), R.drawable.button_back_svg); */
-			button.setPaddingPx(ScreenMetrics.ConvertDipToPx(context, PADDING_DIP));
+			button.setPaddingDip(PADDING_DIP);
 			
 			// the overlay
 			grayOutOverlay = new EmptyItem();
-			grayOutOverlay.setPaddingPx(0);
+			grayOutOverlay.setPaddingDip(0);
 			setGrayedOut(false);
 			
 			// add the layers:

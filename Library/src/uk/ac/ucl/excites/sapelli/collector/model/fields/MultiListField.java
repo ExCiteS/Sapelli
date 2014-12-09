@@ -134,7 +134,7 @@ public class MultiListField extends Field
 		if(values.isEmpty())
 		{	//no values set
 			noColumn = true; //!!!
-			form.addWarning("noColumn was forced to true on MultiListField " + getID() + " because it has no items.");
+			form.addWarning("noColumn was forced to true on MultiListField " + id + " because it has no items.");
 			return null;
 		}
 		else
@@ -409,7 +409,7 @@ public class MultiListField extends Field
 			if(obj instanceof MultiListItem)
 			{
 				MultiListItem that = (MultiListItem) obj;
-				return	this.field.getID().equals(that.field.getID()) &&
+				return	this.field.id.equals(that.field.id) &&
 						(this.parent != null ? that.parent != null && (this.parent.value != null ? this.parent.value.equals(that.parent.value) : that.parent.value == null) : that.parent == null) &&
 						(this.value != null ? this.value.equals(that.value) : that.value == null) &&
 						this.getChildren().equals(that.getChildren()) &&
@@ -423,7 +423,7 @@ public class MultiListField extends Field
 		public int hashCode()
 		{
 			int hash = 1;
-			hash = 31 * hash + field.getID().hashCode();
+			hash = 31 * hash + field.id.hashCode();
 			hash = 31 * hash + (parent != null ? (parent.value != null ? parent.value.hashCode() : 1) : 0); // do not use parent.hashCode() (to avoid endless loop)			
 			hash = 31 * hash + (value != null ? value.hashCode() : 0);
 			hash = 31 * hash + getChildren().hashCode();

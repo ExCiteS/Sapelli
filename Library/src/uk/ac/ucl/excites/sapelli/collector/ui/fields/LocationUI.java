@@ -30,7 +30,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class LocationUI<V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<LocationField, V, UI>
 {
 
-	public LocationUI(LocationField field, Controller controller, UI collectorUI)
+	public LocationUI(LocationField field, Controller<UI> controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}
@@ -44,7 +44,7 @@ public abstract class LocationUI<V, UI extends CollectorUI<V, UI>> extends SelfL
 			return; // this shouldn't happen really
 		
 		//Log:
-		controller.addLogLine("TIMEOUT", field.getID());
+		controller.addLogLine("TIMEOUT", field.id);
 		
 		Record record = controller.getCurrentRecord();
 		

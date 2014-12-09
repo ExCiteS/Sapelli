@@ -101,7 +101,7 @@ public class ColumnOptionalityAdvisor
 	{
 		if(fieldWithColumn == null)
 			throw new NullPointerException("Field cannot be null!");
-		if(fieldWithColumn.getForm() != form)
+		if(fieldWithColumn.form != form)
 			throw new IllegalArgumentException("This field does not belong to the correct form.");
 		if(fieldWithColumn.isNoColumn())
 			throw new IllegalArgumentException("This is a noColumn field!");

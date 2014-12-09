@@ -26,6 +26,8 @@ import java.util.Stack;
 import org.xml.sax.SAXException;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
+import uk.ac.ucl.excites.sapelli.collector.load.process.TTVSynthesisTask;
+import uk.ac.ucl.excites.sapelli.collector.media.MediaHelpers;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -53,6 +55,9 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
+import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
@@ -114,6 +119,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FORM_SHORTCUT_IMAGE = "shortcutImage";
 	static private final String ATTRIBUTE_FORM_CLICK_ANIMATION = "clickAnimation";
 	static private final String ATTRIBUTE_FORM_ANIMATION = "animation"; // 1.x compatibility, the same as clickAnimation
+	static private final String ATTRIBUTE_FORM_DEFAULT_LANGUAGE = "defaultLanguage";
 	static private final String ATTRIBUTE_FORM_SCREEN_TRANSITION = "screenTransition";
 	static private final String ATTRIBUTE_FORM_AUDIO_FEEDBACK = "audioFeedback";
 	static private final String ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES = "obfuscateMediaFiles";
@@ -124,8 +130,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FIELD_OPTIONAL = "optional";
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
 	static private final String ATTRIBUTE_FIELD_EDITABLE = "editable";
-	static private final String ATTRIBUTE_FIELD_ALT = "alt";
 	static private final String ATTRIBUTE_FIELD_IMG = "img";
+	static private final String ATTRIBUTE_FIELD_AUDIO_DESC = "audioDescription";
 	static private final String ATTRIBUTE_FIELD_ANSWER_DESC = "answerDesc";
 	static private final String ATTRIBUTE_FIELD_QUESTION_DESC = "questionDesc";
 	static private final String ATTRIBUTE_FIELD_CAPTION = "caption";
@@ -149,16 +155,18 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FIELD_VALUE = "value";
 	static private final String ATTRIBUTE_FIELD_DEFAULTVALUE = "defaultValue";
 	static private final String ATTRIBUTE_FIELD_INITVALUE = "initialValue";
+	static private final String ATTRIBUTE_CHOICE_ALT = "alt";
 	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
 	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
 	static private final String ATTRIBUTE_CHOICE_CROSSED = "crossed";
 	static private final String ATTRIBUTE_CHOICE_CROSS_COLOR = "crossColor";
+	static private final String ATTRIBUTE_CHOICE_CAPTION_HEIGHT = "captionHeight";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
 	static private final String ATTRIBUTE_RELATIONSHIP_HOLD = "hold";
 	static private final String ATTRIBUTE_CONSTRAINT_COLUMN = "column";
 	static private final String ATTRIBUTE_LOCATION_TYPE = "type";
 	static private final String ATTRIBUTE_LOCATION_START_WITH = "startWith";
-	static private final String ATTRIBUTE_LOCATION_START_WITH_FORM = "startWithForm"; // deprecated in favour of enum above
+	static private final String ATTRIBUTE_LOCATION_START_WITH_FORM = "startWithForm"; // deprecated in favour of attribute above
 	static private final String ATTRIBUTE_LOCATION_WAIT_AT_FIELD = "waitAtField";
 	static private final String ATTRIBUTE_LOCATION_TIMEOUT = "timeout";
 	static private final String ATTRIBUTE_LOCATION_MAX_AGE = "maxAge";
@@ -303,7 +311,9 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			{
 				addWarning("Invalid '" + ATTRIBUTE_FORM_SCREEN_TRANSITION + "' attribute value on <" + TAG_FORM + ">. Default Screen Transition is going to be used.");
 			}
-			// Add AudioFeedbakc:
+			// Form language (for TTS synthesis) -- allow null so that we can fall back on project language:
+			currentForm.setDefaultLanguage(attributes.getString(ATTRIBUTE_FORM_DEFAULT_LANGUAGE, null, true, false));
+			// Add AudioFeedback:
 			try
 			{
 				currentForm.setAudioFeedback(attributes.getString(ATTRIBUTE_FORM_AUDIO_FEEDBACK, Form.DEFAULT_AUDIO_FEEDBACK.name(), true, false));
@@ -345,23 +355,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// <Choice>
 			if(qName.equals(TAG_CHOICE))
 			{
-				ChoiceField choice = new ChoiceField(currentForm,
-												attributes.getValue(ATTRIBUTE_FIELD_ID),
-												attributes.getValue(ATTRIBUTE_FIELD_VALUE),
-												!openFields.isEmpty() && openFields.peek() instanceof ChoiceField ? (ChoiceField) openFields.peek() : null, // old currentChoice becomes the parent (if it is null that's ok)
-												readCaption(attributes, TAG_CHOICE, false));
-				newField(choice, attributes);
-				// noColumn:
-				choice.setNoColumn(attributes.getBoolean(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
-				// Other attributes:
-				choice.setImageRelativePath(attributes.getString(ATTRIBUTE_FIELD_IMG, null, false, false));
-				choice.setAnswerDesc(attributes.getString(ATTRIBUTE_FIELD_ANSWER_DESC, null, false, false));
-				choice.setQuestionDesc(attributes.getString(ATTRIBUTE_FIELD_QUESTION_DESC, null, false, false));
-				choice.setAltText(attributes.getString(ATTRIBUTE_FIELD_ALT, null, false, false));
-				choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
-				choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
-				choice.setCrossed(attributes.getBoolean(ATTRIBUTE_CHOICE_CROSSED, ChoiceField.DEFAULT_CROSSED));
-				choice.setCrossColor(attributes.getString(ATTRIBUTE_CHOICE_CROSS_COLOR, ChoiceField.DEFAULT_CROSS_COLOR, true, false));
+				newChoice(attributes);
 			}
 			// <Location>
 			else if(qName.equals(TAG_LOCATION))
@@ -446,7 +440,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					throw new SAXException("Invalid '" + ATTRIBUTE_BUTTON_COLUMN + "' attribute value on <" + TAG_BUTTON + ">.", iae);
 				}
 				if(btn.getColumnType() == ButtonColumnType.DATETIME && !btn.isOptional())
-					addWarning("Button \"" + btn.getID() + "\" has a DateTime column but is not optional, this means the button will *have* to be pressed.");
+					addWarning("Button \"" + btn.id + "\" has a DateTime column but is not optional, this means the button will *have* to be pressed.");
 			}
 			// <Label>
 			else if(qName.equals(TAG_LABEL))
@@ -464,7 +458,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				
 				// Deal with minimum & maximum length:
 				if(!txtField.isOptional() && !attributes.contains(ATTRIBUTE_TEXT_MINLENGTH))
-					addWarning("Text field \"" + txtField.getID() + "\" is non-optional but no minimal length is defined, therefore the minimum will be set to " + TextBoxField.DEFAULT_MIN_LENGTH_NON_OPTIONAL + " character(s). It is recommended to use the '" + ATTRIBUTE_TEXT_MINLENGTH + "' attribute to set an appropriate minimum length explicitly.");				
+					addWarning("Text field \"" + txtField.id + "\" is non-optional but no minimal length is defined, therefore the minimum will be set to " + TextBoxField.DEFAULT_MIN_LENGTH_NON_OPTIONAL + " character(s). It is recommended to use the '" + ATTRIBUTE_TEXT_MINLENGTH + "' attribute to set an appropriate minimum length explicitly.");				
 				txtField.setMinMaxLength(	attributes.getInteger(ATTRIBUTE_TEXT_MINLENGTH, TextBoxField.GetDefaultMinLength(txtField.isOptional())),
 											attributes.getInteger(ATTRIBUTE_TEXT_MAXLENGTH, TextBoxField.DEFAULT_MAX_LENGTH));
 				// Multi-line:
@@ -531,7 +525,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 							if(currentListItem.getParent().getDefaultChild() == null)
 								currentListItem.getParent().setDefaultChild(currentListItem);
 							else
-								addWarning("More than 1 item marked as default within one of the (sub)lists of MultiListField " + currentListItem.getField().getID() + ", using 1st item marked as default as the default for the list.");
+								addWarning("More than 1 item marked as default within one of the (sub)lists of MultiListField " + currentListItem.getField().id + ", using 1st item marked as default as the default for the list.");
 						}
 					}
 					else
@@ -568,7 +562,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				// <?> within field
 				else
 				{
-					addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within field with id \"" + currentField.getID() + "\".");
+					addWarning("Ignored unrecognised or invalidly placed element <" + qName + "> occuring within field with id \"" + currentField.id + "\".");
 				}
 			}
 			
@@ -602,6 +596,77 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	}
 	
 	/**
+	 * Parses a <Choice>
+	 * 
+	 * @param attributes
+	 * @throws SAXException
+	 */
+	private void newChoice(XMLAttributes attributes) throws SAXException
+	{
+		// Parent:
+		ChoiceField parent = !openFields.isEmpty() && openFields.peek() instanceof ChoiceField ? (ChoiceField) openFields.peek() : null; 
+		
+		// Caption:
+		String caption = null;
+		boolean captionFromAlt = false;
+		// 	First try singular caption attributes ("caption" & "label") ...
+		caption = attributes.getString(caption, false, true, ATTRIBUTE_FIELD_CAPTION_SINGULAR);
+		//	... if that failed, try "alt" (for backwards compatibility), but only if this is not a root choice(!) ...
+		if(caption == null && parent != null && attributes.contains(ATTRIBUTE_CHOICE_ALT))
+		{
+			caption = attributes.getString(ATTRIBUTE_CHOICE_ALT, caption, false, true);
+			captionFromAlt = true; // !!!
+		}
+		
+		// Create ChoiceField:
+		ChoiceField choice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getValue(ATTRIBUTE_FIELD_VALUE), parent, caption);
+		newField(choice, attributes);
+		
+		// Parse noColumn:
+		choice.setNoColumn(attributes.getBoolean(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
+		// Parse img path:
+		choice.setImageRelativePath(attributes.getString(ATTRIBUTE_FIELD_IMG, null, false, false));
+		
+		// Parse/set caption height:
+		float defaultCaptionHeight = !captionFromAlt ?
+										ChoiceField.DEFAULT_CAPTION_HEIGHT /* if there is a caption it did not come from "alt" */ :
+										ChoiceField.DEFAULT_CAPTION_ALT_HEIGHT /* the caption came from "alt" */;
+		float captionHeight = attributes.getFloat(ATTRIBUTE_CHOICE_CAPTION_HEIGHT, defaultCaptionHeight);
+		if(captionHeight < 0.0f || captionHeight > 1.0f) // check if the captionHeight not out of bounds
+		{
+			addWarning("Value of attribute " + ATTRIBUTE_CHOICE_CAPTION_HEIGHT + " on <" + TAG_CHOICE  + "> must be in range [0.0, 1.0].");
+			captionHeight = defaultCaptionHeight;
+		}
+		choice.setCaptionHeight(captionHeight);
+		
+		// Audio feedback:
+		//	Question: "questionDesc" is parsed in newField()!
+		//	Answer:
+		choice.setAnswerDescription(attributes.getString(ATTRIBUTE_FIELD_ANSWER_DESC, null, true, false));
+		if(choice.getAnswerDescription() != null && currentForm.isUsingAudioFeedback())
+		{
+			choice.setAnswerDescriptionAudioRelativePath(
+					MediaHelpers.isAudioFileName(choice.getAnswerDescription()) ?
+							// playback of audio file included with project:
+							choice.getAnswerDescription() :
+								// playback of audio generated from text (TTS):
+								newTTSSynthesisTask(choice.getAnswerDescription(),
+										// Filename: "[id]_[md5Hex(id)]_A.EXTENSION"
+										FileHelpers.makeValidFileName(choice.id + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(choice.id.getBytes())) + "_A." + owner.getGeneratedAudioExtension()),
+										// synthesis language:
+										(currentForm.getDefaultLanguage() != null) ? currentForm.getDefaultLanguage() : project.getDefaultLanguage()
+										)
+					);
+		}
+
+		// Other attributes:
+		choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
+		choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
+		choice.setCrossed(attributes.getBoolean(ATTRIBUTE_CHOICE_CROSSED, ChoiceField.DEFAULT_CROSSED));
+		choice.setCrossColor(attributes.getString(ATTRIBUTE_CHOICE_CROSS_COLOR, ChoiceField.DEFAULT_CROSS_COLOR, true, false));
+	}
+	
+	/**
 	 * @param attributes	may be null for implicit pages (i.e. the one for a singlePage form)
 	 * @throws SAXException
 	 */
@@ -611,8 +676,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			throw new SAXException("<Page> elements must be apprear directly within <Form> and cannot be nested.");
 		Page newPage = new Page(currentForm,
 								attributes == null ?
-									currentForm.getID() + "_page" :
-									attributes.getString(currentForm.getID() + "_page_" + currentForm.getFields().size(), true, false, ATTRIBUTE_FIELD_ID));
+									currentForm.id + "_page" :
+									attributes.getString(currentForm.id + "_page_" + currentForm.getFields().size(), true, false, ATTRIBUTE_FIELD_ID));
 		newField(newPage, attributes);
 	}
 	
@@ -633,20 +698,20 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// When to start listening for a location:
 		String startWith = attributes.getString(ATTRIBUTE_LOCATION_START_WITH, null, true, false);
 		if("field".equalsIgnoreCase(startWith))
-			locField.setStartWith(LocationField.START_WITH.FIELD);
+			locField.setStartWith(LocationField.StartWith.FIELD);
 		else if("page".equalsIgnoreCase(startWith))
 		{
 			if(getCurrentPage() != null)
-				locField.setStartWith(LocationField.START_WITH.PAGE);
+				locField.setStartWith(LocationField.StartWith.PAGE);
 			else
 			{
 				// told to start on page, but there is no page! Start with field instead (assume the user was trying to avoid "form")
 				addWarning("Location field specified to start with page, but no containing page was found. Location detection will start with the field instead.");
-				locField.setStartWith(LocationField.START_WITH.FIELD);
+				locField.setStartWith(LocationField.StartWith.FIELD);
 			}
 		}
 		else if("form".equalsIgnoreCase(startWith) || attributes.getBoolean(ATTRIBUTE_LOCATION_START_WITH_FORM, false))
-			locField.setStartWith(LocationField.START_WITH.FORM);
+			locField.setStartWith(LocationField.StartWith.FORM);
 		
 		else if (startWith != null)
 			// unknown setting, default will be used 
@@ -697,15 +762,15 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	private void newField(Field field, XMLAttributes attributes) throws SAXException
 	{
 		try
-		{
+		{	
 			// Warn about IDs starting with '_': //TODO test if no invalid XML chars
-			if(field.getID().startsWith("_"))
+			if(field.id.startsWith("_"))
 			{
 				// For really stupid cases ;-):
 				for(EndField ef : EndField.GetEndFields(currentForm))
-					if(ef.getID().equals(field.getID()))
-						throw new SAXException(field.getID() + " is a reserved ID, don't use it for user-defined fields.");
-				addWarning("Please avoid field IDs starting with '_' (" + field.getID() + ")."); 
+					if(ef.id.equals(field.id))
+						throw new SAXException(field.id + " is a reserved ID, don't use it for user-defined fields.");
+				addWarning("Please avoid field IDs starting with '_' (" + field.id + ")."); 
 			}
 			
 			// Get current page if there is one:
@@ -719,8 +784,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				{	// field is top-level (directly contained within the form, and not in a page first)...
 					currentForm.addField(field);
 					// ... and therefore it can be jumped to, so remember its ID (upper cased, for case insensitivity):
-					if(idToField.put(field.getID().toUpperCase(), field) != null)
-						throw new SAXException("Duplicate field ID '" + field.getID() + "' in Form '" + currentForm.getID() + "'! (Note: field and form IDs are case insensitive)");
+					if(idToField.put(field.id.toUpperCase(), field) != null)
+						throw new SAXException("Duplicate field ID '" + field.id + "' in Form '" + currentForm.id + "'! (Note: field and form IDs are case insensitive)");
 				}
 				else
 					// the field is contained by a page:
@@ -761,7 +826,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					if(currentPage == null || field.canJumpFromPage())
 						jumpSourceToJumpTargetId.put(field, attributes.getValue(ATTRIBUTE_FIELD_JUMP).trim().toUpperCase()); // trimmed (because id's on fields are too) & upper cased (for case insensitivity)
 					else if(currentPage != null)
-						addWarning("Field \"" + field.getID() + "\" tries to jump away from the page, but is not allowed.");
+						addWarning("Field \"" + field.id + "\" tries to jump away from the page, but is not allowed.");
 				}
 				
 				// Skip on back:
@@ -785,15 +850,45 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					field.setShowCancel((v1xFormShowCancel != null ? v1xFormShowCancel : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_CANCEL, Field.DEFAULT_SHOW_CANCEL));
 				if(attributes.contains(ATTRIBUTE_FIELD_SHOW_FORWARD) || v1xFormShowForward != null)
 					field.setShowForward((v1xFormShowForward != null ? v1xFormShowForward : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
+
+				// audio feedback description:
+				field.setDescription(attributes.getString(null, true, false, ATTRIBUTE_FIELD_AUDIO_DESC, ATTRIBUTE_FIELD_QUESTION_DESC /* alias for choice fields */));
+				if(field.getDescription() != null && currentForm.isUsingAudioFeedback())
+				{
+					field.setDescriptionAudioRelativePath(
+							MediaHelpers.isAudioFileName(field.getDescription()) ?
+									// playback of audio file included with project:
+									field.getDescription() :
+										// playback of audio generated from text (TTS):
+										newTTSSynthesisTask(field.getDescription(),
+												// Filename: "[id]_[md5Hex(id)]_Q.EXTENSION"
+												FileHelpers.makeValidFileName(field.id + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(field.id.getBytes())) + "_Q." + owner.getGeneratedAudioExtension()),
+												// synthesis language:
+												(currentForm.getDefaultLanguage() != null) ? currentForm.getDefaultLanguage() : project.getDefaultLanguage()
+												)
+							);
+				}
 			}
-			
+
 			// Remember current field:
 			openFields.push(field); //!!!
 		}
 		catch(Exception e)
 		{
-			throw new SAXException("Error on parsing field '" + field.getID() + "'", e);
+			throw new SAXException("Error on parsing field '" + field.id + "'", e);
 		}
+	}
+	
+	/**
+	 * @param textToSpeak
+	 * @param relativeSoundFilePath
+	 * @param synthesisLanguage
+	 * @return the relativeSoundFilePath
+	 */
+	private String newTTSSynthesisTask(String textToSpeak, String relativeSoundFilePath, String synthesisLanguage)
+	{
+		owner.addPostProcessingTask(new TTVSynthesisTask(textToSpeak, relativeSoundFilePath, synthesisLanguage));
+		return relativeSoundFilePath;
 	}
 	
 	private void newTrigger(Trigger trigger, XMLAttributes attributes)
@@ -927,7 +1022,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			
 			// Add EndField instances to idToField map (these don't need to be added as actual fields to the form itself)
 			for(EndField endF : EndField.GetEndFields(currentForm))
-				idToField.put(endF.getID().toUpperCase(), endF); // upper cased, for case insensitivity (they should already be upper case, but just in case...)
+				idToField.put(endF.id.toUpperCase(), endF); // upper cased, for case insensitivity (they should already be upper case, but just in case...)
 			
 			// Resolve jumps...
 			for(Entry<JumpSource, String> jump : jumpSourceToJumpTargetId.entrySet())
@@ -943,7 +1038,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			deactivate(); //will call reset() (+ warnings will be copied to owner)
 		}
 	}
-	
+
 	private String readCaption(XMLAttributes tagAttributes, String tag, boolean required) throws Exception
 	{
 		return readCaption(tagAttributes, tag, required, false); // singular by default
