@@ -48,10 +48,6 @@ import uk.ac.ucl.excites.sapelli.storage.util.StringListMapper;
  * 
  * @author mstevens
  */
-/**
- * @author mstevens
- *
- */
 public class ChoiceField extends Field implements DictionaryItem
 {
 	
@@ -78,7 +74,16 @@ public class ChoiceField extends Field implements DictionaryItem
 	
 	private ChoiceField parent;
 	private ChoiceField root;
+	
+	/**
+	 * Used to avoid cases in which siblings with the same attributes would produce the 
+	 * same {@link #hashCode()} and would be treated as equal by {@link #equals(Object)},
+	 * and therefore be represented by only a single dictionary entry.
+	 */
+	private int position;
+	
 	private List<ChoiceField> children;
+	
 	private String imageRelativePath;
 	private String answerDescription;
 	private String answerDescriptionAudioRelativePath;
@@ -122,11 +127,12 @@ public class ChoiceField extends Field implements DictionaryItem
 		}
 	}
 	
-	public void addChild(ChoiceField c)
+	public void addChild(ChoiceField child)
 	{
 		if(children == null)
 			children = new ArrayList<ChoiceField>();
-		children.add(c);
+		child.position = children.size(); 
+		children.add(child);
 	}
 
 	/**
@@ -520,8 +526,10 @@ public class ChoiceField extends Field implements DictionaryItem
 		{
 			ChoiceField that = (ChoiceField) obj;
 			return	super.equals(that) && // Field#equals(Object)
+					// only compare the id's of parents and roots, not the objects themselves!:
 					(this.parent != null ? that.parent != null && this.parent.id.equals(that.parent.id) : that.parent == null) &&
 					(this.root != null ? that.root != null && this.root.id.equals(that.root.id) : that.root == null) &&
+					this.position == that.position &&
 					this.getChildren().equals(that.getChildren()) &&
 					(this.imageRelativePath != null ? this.imageRelativePath.equals(that.imageRelativePath) : that.imageRelativePath == null) &&
 					(this.answerDescription != null ? that.answerDescription.equals(that.answerDescription) : that.answerDescription == null) &&
@@ -542,8 +550,10 @@ public class ChoiceField extends Field implements DictionaryItem
 	public int hashCode()
 	{
 		int hash = super.hashCode(); // Field#hashCode()
+		// only call hashCode on the id of the parent & root, not on the objects themselves!:
 		hash = 31 * hash + (parent != null ? parent.id.hashCode() : 0);
 		hash = 31 * hash + (root != null ? root.id.hashCode() : 0);
+		hash = 31 * hash + position;
 		hash = 31 * hash + getChildren().hashCode();
 		hash = 31 * hash + (imageRelativePath != null ? imageRelativePath.hashCode() : 0);
 		hash = 31 * hash + (answerDescription != null ? answerDescription.hashCode() : 0);
