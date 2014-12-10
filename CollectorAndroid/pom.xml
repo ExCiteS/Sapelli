@@ -126,7 +126,7 @@
 					<exclusions>-->
 						<!-- 	The exclusion below is needed due to appcompat-v7-21.0.3.pom not
 							specifying the packaging type of support-v4 is aar (instead of jar),
-							which causes mvn to look forcom.android.support:support-v4:jar:xxxxx.
+							which causes mvn to look for com.android.support:support-v4:jar:*.
 							See: https://github.com/simpligility/maven-android-sdk-deployer/issues/246
 						-->
 					<!--	<exclusion>
