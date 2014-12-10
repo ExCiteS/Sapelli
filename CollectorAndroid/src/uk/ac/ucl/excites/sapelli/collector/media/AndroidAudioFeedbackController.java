@@ -83,7 +83,7 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 
 		};
 
-		running = true;
+		running = true; // TODO this is never actually used?
 		playbackThread.start();
 	}
 
