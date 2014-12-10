@@ -19,7 +19,7 @@ import android.view.View;
  * 
  * @author benelliott, mstevens
  */
-public class FontFitView extends View
+public class TextFitView extends View
 {
 
 	// STATICS ------------------------------------------------------
@@ -80,7 +80,7 @@ public class FontFitView extends View
 	/**
 	 * @param context
 	 */
-	public FontFitView(Context context)
+	public TextFitView(Context context)
 	{
 		this(context, null, -1);
 	}
@@ -89,7 +89,7 @@ public class FontFitView extends View
 	 * @param context
 	 * @param coordinator
 	 */
-	public FontFitView(Context context, TextSizeCoordinator coordinator)
+	public TextFitView(Context context, TextSizeCoordinator coordinator)
 	{
 		this(context, coordinator, -1);
 	}
@@ -99,15 +99,13 @@ public class FontFitView extends View
 	 * @param coordinator
 	 * @param coordinatorSlot
 	 */
-	public FontFitView(Context context, TextSizeCoordinator coordinator, int coordinatorSlot)
+	public TextFitView(Context context, TextSizeCoordinator coordinator, int coordinatorSlot)
 	{
 		super(context);
 		
 		this.coordinator = coordinator;
 		// Set or claim coordinator slot:
-		this.coordinatorSlot = coordinator != null ?
-									coordinatorSlot >= 0 ? coordinatorSlot : coordinator.claimSlot(this) :
-									-1;
+		this.coordinatorSlot = coordinator != null ? (coordinatorSlot >= 0 ? coordinatorSlot : coordinator.claimSlot(this)) : -1;
 		
 		// Initialise paint:
 		paint = new TextPaint();
@@ -150,7 +148,7 @@ public class FontFitView extends View
 	@Override
 	public void onDraw(Canvas canvas)
 	{
-		//Log.d("FFV", "Font metrics float: "+paint.getFontMetrics(null) * textLines.length +" font metrics int: "+paint.getFontMetricsInt(null)*textLines.length+" layout height: "+layout.getHeight()+" layout line bottom: "+layout.getLineBottom(layout.getLineCount() - 1)+" pad top: "+layout.getTopPadding()+" pad bottom: "+layout.getBottomPadding()+" attempt: "+(paint.getFontMetricsInt(null)*textLines.length - layout.getTopPadding() + layout.getBottomPadding()));
+		//Log.d("TFV", "Font metrics float: "+paint.getFontMetrics(null) * textLines.length +" font metrics int: "+paint.getFontMetricsInt(null)*textLines.length+" layout height: "+layout.getHeight()+" layout line bottom: "+layout.getLineBottom(layout.getLineCount() - 1)+" pad top: "+layout.getTopPadding()+" pad bottom: "+layout.getBottomPadding()+" attempt: "+(paint.getFontMetricsInt(null)*textLines.length - layout.getTopPadding() + layout.getBottomPadding()));
 		
 		//canvas.drawColor(backgroundColor); // wipe canvas (just in case)-- doesn't seem necessary but try this in case of bugs!
 		
@@ -207,7 +205,7 @@ public class FontFitView extends View
 
 		// At this point we know a new size computation will take place...
 
-		//Log.d("FFV", "fitText: IS REFITTING, text: " + this.getText() + ", hash: " + hashCode() + " w=" + viewWidth + ", h=" + viewHeight + ", forced: " + force);
+		//Log.d("TFV", "fitText: IS REFITTING, text: " + this.getText() + ", hash: " + hashCode() + " w=" + viewWidth + ", h=" + viewHeight + ", forced: " + force);
 
 		// Initialise lo & hi bounds:
 		float lo = MIN_TEXT_SIZE;
@@ -235,7 +233,7 @@ public class FontFitView extends View
 			textSize = lo;
 		}
 
-		//Log.d("FFV", "final textSize for slot " + coordinatorSlot + ": " + textSize);
+		//Log.d("TFV", "final textSize for slot " + coordinatorSlot + ": " + textSize);
 
 		// Remember target dimensions:
 		lastTargetWidth = targetWidth;
@@ -263,7 +261,7 @@ public class FontFitView extends View
 		paint.setTextSize(textSize);
 				
 		float width = 0;
-		//Log.d("FFV", "text: "+text+" text height: "+layout.getHeight()+" target: "+targetHeight+" fits: "+(layout.getWidth() <= targetWidth && layout.getHeight() <= targetHeight));
+		//Log.d("TFV", "text: "+text+" text height: "+layout.getHeight()+" target: "+targetHeight+" fits: "+(layout.getWidth() <= targetWidth && layout.getHeight() <= targetHeight));
 
 		for(String line : textLines)
 			// measure bounds for each line of text:
@@ -356,7 +354,7 @@ public class FontFitView extends View
 	static public class TextSizeCoordinator
 	{
 
-		private ArrayList<FontFitView> views = new ArrayList<FontFitView>();
+		private ArrayList<TextFitView> views = new ArrayList<TextFitView>();
 
 		/**
 		 * Requests that the coordinator reserve a 'slot' for this view so that it will update its font size at some point.
@@ -372,10 +370,10 @@ public class FontFitView extends View
 		 * @param view
 		 * @return the claimed slot
 		 */
-		public int claimSlot(FontFitView view)
+		public int claimSlot(TextFitView view)
 		{
 			views.add(view);
-			//Log.d("FFV", "Coordinator.claimSlot: number of slots: " + views.size());
+			//Log.d("TFV", "Coordinator.claimSlot: number of slots: " + views.size());
 			return views.size() - 1;
 		}
 
@@ -384,7 +382,7 @@ public class FontFitView extends View
 		 * 
 		 * @param view - the view whose max text size is being recorded
 		 */
-		public void updated(FontFitView view)
+		public void updated(TextFitView view)
 		{
 			// Just in case:
 			if(view.coordinatorSlot < 0 || view.coordinatorSlot >= views.size())
@@ -403,7 +401,7 @@ public class FontFitView extends View
 		public float getCoordinatedTextSize()
 		{
 			float min = MAX_TEXT_SIZE; // keep track of the smallest font size of all of the views we're tracking
-			for(FontFitView v : views)
+			for(TextFitView v : views)
 				if(v != null && v.textSizePx < min)
 					min = v.textSizePx;
 			return min;
@@ -415,11 +413,11 @@ public class FontFitView extends View
 		public void coordinate()
 		{
 			float coordinatedTextSize = getCoordinatedTextSize();
-			//Log.d("FFV", "Applying coordinated text size: " + coordinatedTextSize);
-			for(FontFitView v : views)
+			//Log.d("TFV", "Applying coordinated text size: " + coordinatedTextSize);
+			for(TextFitView v : views)
 				if(v != null)
 				{
-					//Log.d("FFV", "Applying to: " + v.text);
+					//Log.d("TFV", "Applying to: " + v.text);
 					v.setTextSizePx(coordinatedTextSize, true); // won't redraw if size is same as current one
 				}
 		}

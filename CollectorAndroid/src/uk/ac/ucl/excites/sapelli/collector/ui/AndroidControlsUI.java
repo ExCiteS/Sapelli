@@ -23,7 +23,7 @@ import java.io.File;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.ui.PickerView.PickerAdapter;
+import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView.PickerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
@@ -57,7 +57,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	
 	// Dynamics------------------------------------------------------
 	private ControlItem[] controlItems;
-	private PickerView view;
+	private ItemPickerView view;
 	private CollectorController controller;
 	
 	public AndroidControlsUI(CollectorController controller, CollectorView collectorView)
@@ -75,7 +75,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	{
 		if(view == null)
 		{
-			view = new PickerView(collectorUI.getContext());
+			view = new ItemPickerView(collectorUI.getContext());
 			
 			// UI set-up:
 			view.setBackgroundColor(Color.BLACK);

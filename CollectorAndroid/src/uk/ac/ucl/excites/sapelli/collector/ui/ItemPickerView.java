@@ -36,7 +36,7 @@ import android.widget.GridView;
  * @author Julia, Michalis Vitos, mstevens
  * 
  */
-public class PickerView extends GridView
+public class ItemPickerView extends GridView
 {
 
 	// Statics:
@@ -49,12 +49,12 @@ public class PickerView extends GridView
 	protected LayoutParams itemLayoutParams = new LayoutParams(DEFAULT_WIDTH_PX, DEFAULT_HEIGHT_PX);
 	protected boolean recycleViews;
 	
-	public PickerView(Context context)
+	public ItemPickerView(Context context)
 	{
 		this(context, true); // allow recycled views by default
 	}
 	
-	public PickerView(Context context, boolean recycleViews)
+	public ItemPickerView(Context context, boolean recycleViews)
 	{
 		super(context);
 		this.recycleViews = recycleViews;

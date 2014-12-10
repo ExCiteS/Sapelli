@@ -27,7 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
+import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
@@ -125,7 +125,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 		return view;
 	}
 	
-	public class AudioView extends PickerView implements AdapterView.OnItemClickListener
+	public class AudioView extends ItemPickerView implements AdapterView.OnItemClickListener
 	{
 		
 		static private final int BUTTON_INDEX_START = 0;

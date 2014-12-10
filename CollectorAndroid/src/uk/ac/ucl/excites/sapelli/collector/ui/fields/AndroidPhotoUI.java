@@ -29,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
+import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
@@ -353,7 +353,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 		/**
 		 * @author mstevens
 		 */
-		private abstract class CameraButtonView extends PickerView
+		private abstract class CameraButtonView extends ItemPickerView
 		{
 			
 			private int buttonBackColor;
