@@ -54,9 +54,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
-import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
@@ -612,7 +610,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		String answerDesc = attributes.getString(null, true, false, ATTRIBUTE_CHOICE_ANSWER_DESC_DESCRIPTION); // may be null
 		String answerDescAudioPath = getDescriptionAudioRelativePath(choice, answerDesc, "A"); // may be null
 		choice.setAnswerDescriptionAudioRelativePath(answerDescAudioPath);
-		if(answerDesc != null & !answerDesc.equals(answerDescAudioPath))
+		if(answerDesc != null && !answerDesc.equals(answerDescAudioPath))
 			choice.setAnswerDescription(answerDesc); // this means answerDesc is not a path but a readable/pronounceable String
 
 		// Other attributes:

@@ -121,6 +121,7 @@ public abstract class Handler extends DefaultHandler implements WarningKeeper
 		}
 		catch(Exception e)
 		{
+			e.printStackTrace();
 			throw new SAXException(e);
 		}
 	}
