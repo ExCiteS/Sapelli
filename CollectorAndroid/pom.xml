@@ -28,6 +28,10 @@
 		<version>2.0.0-SNAPSHOT</version>
 	</parent>
 	<properties>
+		<!-- Always change Android version & API level together!: -->
+		<android.version>4.4.2_r4</android.version>
+		<android.api-level>19</android.api-level>
+		<android.support.libs.version>21.0.3</android.support.libs.version>
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
 		<release.properties.file>${project.basedir}/release.properties</release.properties.file>
 		<!-- Must contain these properties: keystore-path, keystore-passwd, key-alias, key-passwd -->
@@ -51,21 +55,8 @@
 		<dependency>
 			<groupId>android</groupId>
 			<artifactId>android</artifactId>
-			<version>4.4.2_r4</version>
+			<version>${android.version}</version>
 			<scope>provided</scope>
-		</dependency>
-		<!-- <dependency>
-			<groupId>android.support</groupId>
-			<artifactId>compatibility-v7-appcompat</artifactId> 
-			<version>20.0.0</version>
-			<type>apklib</type>
-		</dependency> -->
-		<dependency>
-			<groupId>android.support</groupId>
-			<artifactId>compatibility-v4</artifactId>
-			<version>20.0.0</version>
-			<type>jar</type>
-			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>uk.ac.ucl.excites</groupId>
@@ -90,6 +81,24 @@
 	</dependencies>
 	<profiles>
 		<profile>
+			<id>eclipse</id>
+			<activation>
+				<property>
+					<name>m2e.version</name>
+				</property>
+			</activation>
+			<dependencies>
+				<dependency>
+					<groupId>android.support</groupId>
+					<artifactId>compatibility-v4</artifactId>
+					<version>${android.support.libs.version}</version>
+					<type>jar</type>
+				</dependency>
+				<!-- appcompat-v7 to be included as Android Library project in Eclipse -->
+				<!-- afilechooser-library to be included as Android Library project in Eclipse -->
+			</dependencies>
+		</profile>
+		<profile>
 			<id>maven</id>
 			<activation>
 				<property>
@@ -103,6 +112,29 @@
 				</repository>
 			</repositories>
 			<dependencies>
+				<dependency>
+					<groupId>com.android.support</groupId>
+					<artifactId>support-v4</artifactId>
+					<version>${android.support.libs.version}</version>
+					<type>aar</type>
+				</dependency>
+				<!--<dependency>
+					<groupId>com.android.support</groupId>
+					<artifactId>appcompat-v7</artifactId>
+					<version>${android.support.libs.version}</version>
+					<type>aar</type>
+					<exclusions>-->
+						<!-- 	The exclusion below is needed due to appcompat-v7-21.0.3.pom not
+							specifying the packaging type of support-v4 is aar (instead of jar),
+							which causes mvn to look forcom.android.support:support-v4:jar:xxxxx.
+							See: https://github.com/simpligility/maven-android-sdk-deployer/issues/246
+						-->
+					<!--	<exclusion>
+							<groupId>com.android.support</groupId>
+							<artifactId>support-v4</artifactId>
+						</exclusion>
+					</exclusions>
+				</dependency>-->
 				<dependency>
 					<groupId>com.ipaulpro</groupId>
 					<artifactId>afilechooser-library</artifactId>
@@ -188,17 +220,6 @@
 					</plugin>
 				</plugins>
 			</build>
-		</profile>
-		<profile>
-			<id>eclipse</id>
-			<activation>
-				<property>
-					<name>m2e.version</name>
-				</property>
-			</activation>
-			<dependencies>
-				<!-- nothing for now -->
-			</dependencies>
 		</profile>
 		<profile>
 			<id>release</id>
@@ -389,7 +410,7 @@
 					<!-- General config: -->
 					<sdk>
 						<!-- <path>${sdk-home}</path> -->
-						<platform>19</platform>
+						<platform>${android.api-level}</platform>
 					</sdk>
 					<deleteConflictingFiles>true</deleteConflictingFiles>
 					<undeployBeforeDeploy>true</undeployBeforeDeploy>
