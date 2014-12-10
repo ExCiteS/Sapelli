@@ -77,6 +77,7 @@ public class ProjectLoader implements WarningKeeper
 		}
 		catch(Exception e)
 		{
+			System.err.println("Failed to load project from path: " + folderPath);
 			e.printStackTrace(System.err);
 			return null;
 		}

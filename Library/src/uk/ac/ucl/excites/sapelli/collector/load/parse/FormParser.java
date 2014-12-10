@@ -257,7 +257,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			}
 			catch(IllegalArgumentException iae)
 			{
-				throw new SAXException("Invalid '" + ATTRIBUTE_FORM_NEXT + "' attribute value on <" + TAG_FORM + ">.", iae);
+				throw new Exception("Invalid '" + ATTRIBUTE_FORM_NEXT + "' attribute value on <" + TAG_FORM + ">.", iae);
 			}
 			// Store end time?:
 			currentForm.setStoreEndTime(attributes.getBoolean(ATTRIBUTE_FORM_STORE_END_TIME, Form.END_TIME_DEFAULT));
@@ -402,7 +402,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				}
 				catch(IllegalArgumentException iae)
 				{
-					throw new SAXException("Invalid '" + ATTRIBUTE_BUTTON_COLUMN + "' attribute value on <" + TAG_BUTTON + ">.", iae);
+					throw new Exception("Invalid '" + ATTRIBUTE_BUTTON_COLUMN + "' attribute value on <" + TAG_BUTTON + ">.", iae);
 				}
 				if(btn.getColumnType() == ButtonColumnType.DATETIME && !btn.isOptional())
 					addWarning("Button \"" + btn.id + "\" has a DateTime column but is not optional, this means the button will *have* to be pressed.");
@@ -564,9 +564,9 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	 * Parses a <Choice>
 	 * 
 	 * @param attributes
-	 * @throws SAXException
+	 * @throws Exception
 	 */
-	private void newChoice(XMLAttributes attributes) throws SAXException
+	private void newChoice(XMLAttributes attributes) throws Exception
 	{
 		// Parent:
 		ChoiceField parent = !openFields.isEmpty() && openFields.peek() instanceof ChoiceField ? (ChoiceField) openFields.peek() : null; 
@@ -622,9 +622,9 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	
 	/**
 	 * @param attributes	may be null for implicit pages (i.e. the one for a singlePage form)
-	 * @throws SAXException
+	 * @throws Exception
 	 */
-	private void newPage(XMLAttributes attributes) throws SAXException
+	private void newPage(XMLAttributes attributes) throws Exception
 	{
 		if(!openFields.isEmpty())
 			throw new SAXException("<Page> elements must be apprear directly within <Form> and cannot be nested.");
@@ -696,7 +696,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// TODO ? updateStartTimeUponLeave, saveBeforeFormChange, discardBeforeLeave (only for linksTo) ?
 	}
 	
-	private void newMediaField(MediaField ma, XMLAttributes attributes) throws SAXException
+	private void newMediaField(MediaField ma, XMLAttributes attributes) throws Exception
 	{
 		newField(ma, attributes);
 		ma.setMax(attributes.getInteger(ATTRIBUTE_MEDIA_MAX , MediaField.DEFAULT_MAX));
@@ -709,9 +709,9 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	 * 
 	 * @param field		the Field object
 	 * @param attributes	may be null for implicit fields (fields that are inserted by the parser but do not explicitly appear in the XML, e.g. the Page for a singlePage form) 
-	 * @throws SAXException
+	 * @throws Exception
 	 */
-	private void newField(Field field, XMLAttributes attributes) throws SAXException
+	private void newField(Field field, XMLAttributes attributes) throws Exception
 	{
 		try
 		{	
@@ -816,7 +816,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		}
 		catch(Exception e)
 		{
-			throw new SAXException("Error on parsing field '" + field.id + "'", e);
+			throw new Exception("Error on parsing field '" + field.id + "'", e);
 		}
 	}
 	
@@ -918,7 +918,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	}
 	
 	@Override
-	protected void parseEndElement(String uri, String localName, String qName) throws SAXException
+	protected void parseEndElement(String uri, String localName, String qName) throws Exception
 	{
 		// Close field: </Choice>, </Location>, </Photo>, </Audio>, </Orientation>, </BelongsTo>, </LinksTo>, </Button>, </Label>, </Textbox>, </Checkbox>, </List>, </MultiList>, </Page>
 		if(	!openFields.isEmpty() && (

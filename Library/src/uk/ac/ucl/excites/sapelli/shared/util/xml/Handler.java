@@ -119,9 +119,12 @@ public abstract class Handler extends DefaultHandler implements WarningKeeper
 			else
 				this.parseStartElement(uri, localName, qName, tagAttributes);
 		}
+		catch(SAXException saxE)
+		{
+			throw saxE;
+		}
 		catch(Exception e)
 		{
-			e.printStackTrace();
 			throw new SAXException(e);
 		}
 	}
@@ -143,12 +146,23 @@ public abstract class Handler extends DefaultHandler implements WarningKeeper
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException
 	{
-		// Try delegating to active SubtreeParser:
-		if(activeSubtreeParser != null)
-			activeSubtreeParser.parseEndElement(uri, localName, qName);
-		// Handle locally:
-		else
-			this.parseEndElement(uri, localName, qName);
+		try
+		{
+			// Try delegating to active SubtreeParser:
+			if(activeSubtreeParser != null)
+				activeSubtreeParser.parseEndElement(uri, localName, qName);
+			// Handle locally:
+			else
+					this.parseEndElement(uri, localName, qName);
+		}
+		catch(SAXException saxE)
+		{
+			throw saxE;
+		}
+		catch(Exception e)
+		{
+			throw new SAXException(e);
+		}
 	}
 	
 	/**
@@ -157,9 +171,9 @@ public abstract class Handler extends DefaultHandler implements WarningKeeper
 	 * @param uri
 	 * @param localName
 	 * @param qName
-	 * @throws SAXException
+	 * @throws Exception
 	 */
-	protected void parseEndElement(String uri, String localName, String qName) throws SAXException
+	protected void parseEndElement(String uri, String localName, String qName) throws Exception
 	{
 		super.endElement(uri, localName, qName);
 	}
