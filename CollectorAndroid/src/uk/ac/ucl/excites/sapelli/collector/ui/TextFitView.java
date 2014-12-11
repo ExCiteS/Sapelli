@@ -120,12 +120,10 @@ public class TextFitView extends View
 	 */
 	private void setTextSizePx(float textSizePx, boolean applyNow)
 	{
-		boolean different = this.textSizePx == textSizePx;
-		
 		// update text size field (checked elsewhere)
 		this.textSizePx = textSizePx;
 		
-		if(applyNow && different)
+		if(applyNow && paint.getTextSize() != textSizePx)
 		{
 			// set text size on paint:
 			paint.setTextSize(textSizePx);
@@ -258,6 +256,10 @@ public class TextFitView extends View
 	 */
 	private boolean textFits(float textSize, float targetWidth, float targetHeight)
 	{
+		// Remember current text size set on the paint:
+		float currTextSize = paint.getTextSize();
+		
+		// Set text size used for simulation:
 		paint.setTextSize(textSize);
 				
 		float width = 0;
@@ -269,7 +271,12 @@ public class TextFitView extends View
 			// determine height by doing no. lines * interline spacing (= font height + spacing between bottom of one line and top of another)
 			// NOTE: do not use Paint#getTextBounds because this ignores any spacing above or below the character, which will be included by the
 			// TextView regardless (e.g. the bounds height of "." would be very low as it excludes the space above the character)
-		return(width <= targetWidth && textLines.length * paint.getFontMetrics(null) <= targetHeight);
+		
+		// Reset text size on paint:
+		paint.setTextSize(currTextSize);
+		
+		// Check whether the text fits:
+		return width <= targetWidth && textLines.length * paint.getFontMetrics(null) <= targetHeight;
 	}
 
 	/**
