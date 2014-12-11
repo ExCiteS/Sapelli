@@ -47,7 +47,7 @@ public class TextFitView extends View
 	/**
 	 *  Horizontal text alignment setting -- default is centred.
 	 */
-	private Layout.Alignment alignment = Layout.Alignment.ALIGN_CENTER;
+	private Layout.Alignment horizontalAlignment = Layout.Alignment.ALIGN_CENTER;
 	
 	/**
 	 * Amount by which the text height is multiplied to get line height
@@ -125,9 +125,7 @@ public class TextFitView extends View
 		
 		if(applyNow && paint.getTextSize() != textSizePx)
 		{
-			// set text size on paint:
 			paint.setTextSize(textSizePx);
-			
 			updateLayout();
 		}
 	}
@@ -138,7 +136,8 @@ public class TextFitView extends View
 	private void updateLayout()
 	{
 		// New layout instance (DynamicLayout is intended for text that changes frequently -- e.g. in an EditText, constantly updating as the user types)
-		layout = new StaticLayout(text, paint, this.getWidth() - this.getPaddingLeft() - this.getPaddingRight(), alignment, spacingMult, spacingAdd, includePad);
+		layout = new StaticLayout(text, paint, this.getWidth() - this.getPaddingLeft() - this.getPaddingRight(), horizontalAlignment, spacingMult, spacingAdd, includePad);
+		
 		// Ensure that the view will be redrawn:
 		this.invalidate();
 	}
@@ -246,8 +245,8 @@ public class TextFitView extends View
 	}
 
 	/**
-	 * Computes whether or not the provided (possibly multi-line) text will fit within a
-	 * bounding box defined by the supplied parameters, using the supplied text (font) size.
+	 * Computes (using "simulated" drawing/measuring) whether or not the (possibly multi-line) text, will fit
+	 * within a bounding box defined by the supplied parameters, when rendered at the supplied text (font) size. 
 	 * 
 	 * @param textSize - the text/font size to use
 	 * @param targetWidth - the width of the containing box
@@ -256,15 +255,13 @@ public class TextFitView extends View
 	 */
 	private boolean textFits(float textSize, float targetWidth, float targetHeight)
 	{
-		// Remember current text size set on the paint:
-		float currTextSize = paint.getTextSize();
-		
-		// Set text size used for simulation:
-		paint.setTextSize(textSize);
-				
-		float width = 0;
 		//Log.d("TFV", "text: "+text+" text height: "+layout.getHeight()+" target: "+targetHeight+" fits: "+(layout.getWidth() <= targetWidth && layout.getHeight() <= targetHeight));
+		
+		// Set the paint's text size to the value used for simulation:
+		paint.setTextSize(textSize);
 
+		// Compute maximum width accross the lines:
+		float width = 0;
 		for(String line : textLines)
 			// measure bounds for each line of text:
 			width = Math.max(width, paint.measureText(line)); // max width is max(previous max width, this line width)
@@ -272,11 +269,14 @@ public class TextFitView extends View
 			// NOTE: do not use Paint#getTextBounds because this ignores any spacing above or below the character, which will be included by the
 			// TextView regardless (e.g. the bounds height of "." would be very low as it excludes the space above the character)
 		
-		// Reset text size on paint:
-		paint.setTextSize(currTextSize);
-		
 		// Check whether the text fits:
-		return width <= targetWidth && textLines.length * paint.getFontMetrics(null) <= targetHeight;
+		boolean fits = width <= targetWidth && textLines.length * paint.getFontMetrics(null) <= targetHeight;
+		
+		// Reset text size on paint to the view's:
+		paint.setTextSize(this.textSizePx);
+		
+		// Return result:
+		return fits;
 	}
 
 	/**
@@ -287,9 +287,9 @@ public class TextFitView extends View
 	 */
 	public void setHorizontalAlignment(Layout.Alignment alignment)
 	{
-		if(this.alignment != alignment)
+		if(this.horizontalAlignment != alignment)
 		{
-			this.alignment = alignment;
+			this.horizontalAlignment = alignment;
 			updateLayout();
 		}
 	}
@@ -300,7 +300,7 @@ public class TextFitView extends View
 	 */
 	public Layout.Alignment getHorizontalAlignment()
 	{
-		return alignment;
+		return horizontalAlignment;
 	}
 
 	/**
@@ -346,11 +346,11 @@ public class TextFitView extends View
 
 	public void setTextColor(int textColor)
 	{
-		if(paint.getColor() != textColor)
-		{
-			paint.setColor(textColor);
-			updateLayout();
-		}
+		paint.setColor(textColor);
+		/* there should be no need to update the StaticLayout here,
+		 * as it has a pointer to the same Paint object (and will thus
+		 * draw text in the new colour) and a colour change alone won't
+		 * affect any dimensions/measurements. */
 	}
 
 	/**
