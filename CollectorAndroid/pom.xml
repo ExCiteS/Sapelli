@@ -31,7 +31,7 @@
 		<!-- Always change Android version & API level together!: -->
 		<android.version>4.4.2_r4</android.version>
 		<android.api-level>19</android.api-level>
-		<android.support.libs.version>21.0.3</android.support.libs.version>
+		<android.support.libs.version>20.0.0</android.support.libs.version>
 		<buildinfo.antfile>${project.basedir}/buildinfo.xml</buildinfo.antfile>
 		<release.properties.file>${project.basedir}/release.properties</release.properties.file>
 		<!-- Must contain these properties: keystore-path, keystore-passwd, key-alias, key-passwd -->
