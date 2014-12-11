@@ -272,7 +272,7 @@ public class TextFitView extends View
 		// Check whether the text fits:
 		boolean fits = width <= targetWidth && textLines.length * paint.getFontMetrics(null) <= targetHeight;
 		
-		// Reset text size on paint to the view's:
+		// Reset the paint's text size to match the value held by the view:
 		paint.setTextSize(this.textSizePx);
 		
 		// Return result:
@@ -347,7 +347,7 @@ public class TextFitView extends View
 	public void setTextColor(int textColor)
 	{
 		paint.setColor(textColor);
-		/* there should be no need to update the StaticLayout here,
+		/* There should be no need to update the StaticLayout here,
 		 * as it has a pointer to the same Paint object (and will thus
 		 * draw text in the new colour) and a colour change alone won't
 		 * affect any dimensions/measurements. */
