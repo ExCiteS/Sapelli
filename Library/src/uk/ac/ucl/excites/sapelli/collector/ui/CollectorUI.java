@@ -83,4 +83,14 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 	
 	public AudioFeedbackController<V> getAudioFeebackController();
 	
+	/**
+	 * Stop audio feedback playback
+	 */
+	public void stopAudioFeedback();
+
+	/**
+	 * Stop audio feedback playback & release associated resources
+	 */
+	public void destroyAudioFeedback();
+	
 }

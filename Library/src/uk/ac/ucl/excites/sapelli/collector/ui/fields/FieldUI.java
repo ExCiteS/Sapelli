@@ -103,8 +103,13 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	public void hideField()
 	{
-		// mark fieldUI as *not* currently shown:
+		// Mark fieldUI as *not* currently shown:
 		this.shown = false;
+		
+		// Stop any audiofeedbavk which may still be running:
+		if(isUsingAudioFeedback(isShownOnPage()))
+			collectorUI.stopAudioFeedback();
+		
 		// Run cancel behaviour:
 		cancel();
 	}

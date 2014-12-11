@@ -533,18 +533,14 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return audioFeedbackController;
 	}
 	
-	/**
-	 * Stop audio feedback playback
-	 */
+	@Override
 	public void stopAudioFeedback()
 	{
 		if(audioFeedbackController != null)
 			audioFeedbackController.stop();
 	}
 
-	/**
-	 * Stop audio feedback playback & release associated resources
-	 */
+	@Override
 	public void destroyAudioFeedback()
 	{
 		if(audioFeedbackController != null)

@@ -156,13 +156,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 
 		return true;
 	}
-	
-	@Override
-	public void cancel()
-	{
-		if (isFieldUsingAudioFeedback(false))
-			collectorUI.stopAudioFeedback();
-	}
 
 	/**
 	 * To be overridden by AndroidICSChoiceUI

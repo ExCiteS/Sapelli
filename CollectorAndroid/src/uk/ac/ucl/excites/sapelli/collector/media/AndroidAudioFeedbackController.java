@@ -83,7 +83,7 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 
 		};
 
-		running = true; // TODO this is never actually used?
+		running = true;
 		playbackThread.start();
 	}
 
@@ -92,9 +92,6 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 	{
 		Log.d(TAG, "Stopping playback...");
 		running = false;
-		// stop currently playing track:
-		if(queuePlayer != null && queuePlayer.isPlaying())
-			queuePlayer.stop();
 		// interrupt playback thread since it is probably blocked on a semaphore:
 		if(playbackThread != null)
 		{
@@ -109,6 +106,9 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 				Log.e(TAG, "Main thread interrupted while waiting for playback thread to join.");
 			}
 		}
+		// stop currently playing track:
+		if(queuePlayer != null && queuePlayer.isPlaying())
+			queuePlayer.stop();
 		// nullify thread so it must be re-initialised:
 		playbackThread = null;
 		// destroy semaphore so it isn't reused by later ChoiceFields:a
@@ -162,33 +162,35 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 					}
 					// start it playing:
 					queuePlayer.start();
-
+					
+					// animate the view corresponding to the played choice, if necessary:
+					animateViewShake(job.viewToAnimate);
 				}
 				catch(Exception e)
 				{
 					Log.e(TAG, "Error when trying to change media player data source to file " + job.soundRelativePath, e);
 					// Playing failed so completed listener will never fire. Allow playback to continue:
 					playbackCompletedSem.release();
+					animationCompletedSem.release();
 				}
 			}
 			else
 			{
-				// sleep for a while to indicate "gap" in audio playback:
+				// Sleep for a while to indicate "gap" in audio playback:
 				Thread.sleep(FFEDBACK_GAP_DURATION_MILISEC);
 				// Playing failed so completed listener will never fire. Allow playback to continue:
 				playbackCompletedSem.release();
+				animationCompletedSem.release();
 			}
-			// animate the view corresponding to the played choice, if necessary:
-			animateViewShake(job.viewToAnimate);
 
 			// wait for the media player to finish playing the track
-			playbackCompletedSem.acquire(); // TODO shouldn't this happen earlier?
+			playbackCompletedSem.acquire();
 
 			// wait for the UI thread to finish animating the view
-			animationCompletedSem.acquire(); // TODO shouldn't this happen earlier?
+			animationCompletedSem.acquire();
 
 		}
-		catch(InterruptedException e1)
+		catch(InterruptedException ie)
 		{
 			// was probably caused by the ChoiceField being exited
 			Log.d(TAG, "Playback thread interrupted while waiting for semaphore.");
