@@ -260,7 +260,7 @@ public class TextFitView extends View
 		// Set the paint's text size to the value used for simulation:
 		paint.setTextSize(textSize);
 
-		// Compute maximum width accross the lines:
+		// Compute maximum width across the lines:
 		float width = 0;
 		for(String line : textLines)
 			// measure bounds for each line of text:
