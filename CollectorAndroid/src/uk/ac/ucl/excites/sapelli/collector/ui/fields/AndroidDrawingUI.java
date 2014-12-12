@@ -140,16 +140,16 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 	private class DrawingViewContainer extends RelativeLayout
 	{
 		private DrawingView drawingView;
-		private int backgroundColor;
+		private int canvasColor;
 
 		public DrawingViewContainer(Context context)
 		{
 			super(context);
-			this.backgroundColor = Color.parseColor(field.getBackgroundColor());
+			this.canvasColor = Color.parseColor(field.getCanvasColor());
 			LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
 
 			ImageItem background = null;
-			File backgroundImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getBackgroundImageRelativePath());
+			File backgroundImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getCanvasImageRelativePath());
 			if(FileHelpers.isReadableFile(backgroundImgFile))
 				// return a custom background image if it exists
 				background = new FileImageItem(backgroundImgFile);
@@ -157,7 +157,7 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 				// otherwise just use the default resource (a pencil)
 				background = new ResourceImageItem(context.getResources(), R.drawable.pencil_grey_svg);
 			
-			background.setBackgroundColor(backgroundColor);
+			background.setBackgroundColor(canvasColor);
 			addView(background.getView(context), params);
 			
 			drawingView = new DrawingView(context);
@@ -167,7 +167,7 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 		
 		private Bitmap captureDrawingBitmap()
 		{
-			return drawingView.captureDrawingBitmap(backgroundColor);
+			return drawingView.captureDrawingBitmap(canvasColor);
 		}
 	}
 

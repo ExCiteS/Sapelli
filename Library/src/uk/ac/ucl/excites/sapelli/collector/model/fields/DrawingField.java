@@ -20,15 +20,15 @@ public class DrawingField extends MediaField
 {
 	static private final String MEDIA_TYPE_PNG = "DRAWING_PNG";
 	static private final String EXTENSION_PNG = "png";
-	public static final String DEFAULT_BACKGROUND_COLOR = "#BABABA"; // light grey
+	public static final String DEFAULT_CANVAS_COLOR = "#BABABA"; // light grey
 	public static final String DEFAULT_STROKE_COLOR = "#000000"; // black
 	public static final float DEFAULT_STROKE_WIDTH = 20f;
 
-	private String backgroundColor = DEFAULT_BACKGROUND_COLOR;
+	private String canvasColor = DEFAULT_CANVAS_COLOR;
 	private String strokeColor = DEFAULT_STROKE_COLOR;
 	private float strokeWidth = DEFAULT_STROKE_WIDTH;
 	private String captureButtonImageRelativePath;
-	private String backgroundImageRelativePath;
+	private String canvasImageRelativePath;
 
 	public DrawingField(Form form, String id, String caption)
 	{
@@ -70,19 +70,19 @@ public class DrawingField extends MediaField
 	}
 	
 	/**
-	 * @return the backgroundImageRelativePath
+	 * @return the canvasImageRelativePath
 	 */
-	public String getBackgroundImageRelativePath()
+	public String getCanvasImageRelativePath()
 	{
-		return backgroundImageRelativePath;
+		return canvasImageRelativePath;
 	}
 
 	/**
-	 * @param backgroundImageRelativePath the backgroundImageRelativePath to set
+	 * @param canvasImageRelativePath the canvasImageRelativePath to set
 	 */
-	public void setBackgroundImageRelativePath(String backgroundImageRelativePath)
+	public void setCanvasImageRelativePath(String canvasImageRelativePath)
 	{
-		this.backgroundImageRelativePath = backgroundImageRelativePath;
+		this.canvasImageRelativePath = canvasImageRelativePath;
 	}
 
 	@Override
@@ -91,24 +91,24 @@ public class DrawingField extends MediaField
 		List<File> paths = new ArrayList<File>();
 		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, captureButtonImageRelativePath));
 		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, backgroundImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, canvasImageRelativePath));
 		return paths;
 	}
 	
 	/**
-	 * @return the backgroundColor
+	 * @return the canvasColor
 	 */
-	public String getBackgroundColor()
+	public String getCanvasColor()
 	{
-		return backgroundColor;
+		return canvasColor;
 	}
 
 	/**
-	 * @param backgroundColor the backgroundColor to set
+	 * @param canvasColor the canvasColor to set
 	 */
-	public void setBackgroundColor(String backgroundColor)
+	public void setCanvasColor(String canvasColor)
 	{
-		this.backgroundColor = backgroundColor;
+		this.canvasColor = canvasColor;
 	}
 
 	/**
@@ -154,8 +154,8 @@ public class DrawingField extends MediaField
 			return	super.equals(that) && // MediaField#equals(Object)
 					(this.captureButtonImageRelativePath != null ? this.captureButtonImageRelativePath.equals(that.captureButtonImageRelativePath) : that.captureButtonImageRelativePath == null) &&
 					(this.discardButtonImageRelativePath != null ? this.discardButtonImageRelativePath.equals(that.discardButtonImageRelativePath) : that.discardButtonImageRelativePath == null) &&
-					(this.backgroundImageRelativePath != null ? this.backgroundImageRelativePath.equals(that.backgroundImageRelativePath) : that.backgroundImageRelativePath == null) &&
-					this.backgroundColor == that.backgroundColor &&
+					(this.canvasImageRelativePath != null ? this.canvasImageRelativePath.equals(that.canvasImageRelativePath) : that.canvasImageRelativePath == null) &&
+					this.canvasColor == that.canvasColor &&
 					this.strokeColor == that.strokeColor &&
 					this.strokeWidth == that.strokeWidth;
 		}
@@ -169,7 +169,7 @@ public class DrawingField extends MediaField
 		int hash = super.hashCode(); // MediaField#hashCode()
 		hash = 31 * hash + (captureButtonImageRelativePath == null ? 0 : captureButtonImageRelativePath.hashCode());
 		hash = 31 * hash + (discardButtonImageRelativePath == null ? 0 : discardButtonImageRelativePath.hashCode());	
-		hash = 31 * hash + backgroundColor.hashCode();
+		hash = 31 * hash + canvasColor.hashCode();
 		hash = 31 * hash + strokeColor.hashCode();
 		hash = 31 * hash + (int)strokeWidth;
 		return hash;
