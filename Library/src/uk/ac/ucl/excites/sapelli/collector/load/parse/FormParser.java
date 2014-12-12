@@ -41,6 +41,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField.ButtonColumnType;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.DrawingField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LinksToField;
@@ -80,6 +81,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String TAG_AUDIO = "Audio";
 	static private final String TAG_PHOTO = "Photo";
 	static private final String TAG_VIDEO = "Video";
+	static private final String TAG_DRAWING = "Drawing";
 	static private final String TAG_LOCATION = "Location";
 	static private final String TAG_ORIENTATION = "Orientation";
 	static public final String TAG_BELONGS_TO = "BelongsTo";
@@ -406,6 +408,13 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				audioField.setUseNativeApp(attributes.getBoolean(ATTRIBUTE_MEDIA_NATIVE_APP, AudioField.DEFAULT_USE_NATIVE_APP));
 				audioField.setStartRecImageRelativePath(attributes.getString(ATTRIBUTE_AUDIO_START_REC_IMG, null, false, false));
 				audioField.setStopRecImageRelativePath(attributes.getString(ATTRIBUTE_AUDIO_STOP_REC_IMG, null, false, false));
+			}
+			// <Drawing>
+			else if(qName.equals(TAG_DRAWING))
+			{
+				DrawingField drawingField = new DrawingField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_AUDIO, false));
+				newMediaField(drawingField, attributes);
+				//TODO? 
 			}
 			// <Orientation>
 			else if(qName.equals(TAG_ORIENTATION))

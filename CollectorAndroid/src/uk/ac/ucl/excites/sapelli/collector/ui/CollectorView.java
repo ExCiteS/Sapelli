@@ -30,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.DrawingField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
@@ -43,6 +44,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidButtonUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidCheckBoxUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidChoiceUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidDrawingUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLabelUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidLocationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidMultiListUI;
@@ -294,17 +296,23 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	{
 		return new AndroidPhotoUI(pf, controller, this);
 	}
+
+	@Override
+	public AndroidAudioUI createAudioUI(AudioField af)
+	{
+		return new AndroidAudioUI(af, controller, this);
+	}
 	
 	@Override
 	public AndroidVideoUI createVideoUI(VideoField pf)
 	{
 		return new AndroidVideoUI(pf, controller, this);
 	}
-
+	
 	@Override
-	public AndroidAudioUI createAudioUI(AudioField af)
+	public AndroidDrawingUI createDrawingUI(DrawingField df)
 	{
-		return new AndroidAudioUI(af, controller, this);
+		return new AndroidDrawingUI(df, controller, this);
 	}
 
 	@Override
@@ -561,5 +569,4 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			audioFeedbackController.destroy();
 		audioFeedbackController = null;
 	}
-
 }

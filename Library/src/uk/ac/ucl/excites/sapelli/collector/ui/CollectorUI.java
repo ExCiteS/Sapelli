@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ButtonField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.CheckBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.DrawingField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LabelField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
@@ -53,9 +54,11 @@ public interface CollectorUI<V, UI extends CollectorUI<V, UI>>
 
 	public MediaUI<PhotoField,V, UI> createPhotoUI(PhotoField pf);
 	
-	public MediaUI<VideoField,V, UI> createVideoUI(VideoField pf);
-
 	public MediaUI<AudioField,V, UI> createAudioUI(AudioField af);
+	
+	public MediaUI<VideoField,V, UI> createVideoUI(VideoField vf);
+	
+	public MediaUI<DrawingField,V, UI> createDrawingUI(DrawingField df);
 
 	public LocationUI<V, UI> createLocationUI(LocationField lf);
 	
