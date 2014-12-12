@@ -204,6 +204,10 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_VIDEO_FRONT_CAMERA = "useFrontCamera";
 	static private final String ATTRIBUTE_VIDEO_START_REC_IMG = "startRecImg";
 	static private final String ATTRIBUTE_VIDEO_STOP_REC_IMG = "stopRecImg";
+	static private final String ATTRIBUTE_DRAWING_BACKGROUND_COLOR = "backgroundColor";
+	static private final String ATTRIBUTE_DRAWING_BACKGOUND_IMG = "backgroundImg";
+	static private final String ATTRIBUTE_DRAWING_STROKE_COLOR = "strokeColor";
+	static private final String ATTRIBUTE_DRAWING_STROKE_WIDTH = "strokeWidth";
 	static private final String ATTRIBUTE_TRIGGER_KEY = "key";
 	static private final String ATTRIBUTE_TRIGGER_KEYS = "keys";
 	static private final String ATTRIBUTE_TRIGGER_FIXED_TIMER = "fixedTimer";
@@ -412,9 +416,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// <Drawing>
 			else if(qName.equals(TAG_DRAWING))
 			{
-				DrawingField drawingField = new DrawingField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_AUDIO, false));
-				newMediaField(drawingField, attributes);
-				//TODO? 
+				newDrawingField(new DrawingField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_AUDIO, false)), attributes);
 			}
 			// <Orientation>
 			else if(qName.equals(TAG_ORIENTATION))
@@ -759,6 +761,15 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		ma.setDiscardButtonImageRelativePath(attributes.getString(ATTRIBUTE_MEDIA_DISCARD_IMG, null, false, false));
 		if(attributes.getValue(ATTRIBUTE_MEDIA_DISABLE_FIELD) != null)
 			addWarning("\"disableField\" attribute is no longer supported and will be ignored for media fields in this project.");
+	}
+	
+	private void newDrawingField(DrawingField df, XMLAttributes attributes) throws Exception
+	{
+		newMediaField(df, attributes);
+		df.setBackgroundColor(attributes.getString(ATTRIBUTE_DRAWING_BACKGROUND_COLOR, DrawingField.DEFAULT_BACKGROUND_COLOR, true, false));
+		df.setBackgroundImageRelativePath(attributes.getString(ATTRIBUTE_DRAWING_BACKGOUND_IMG, null, true, false));
+		df.setStrokeColor(attributes.getString(ATTRIBUTE_DRAWING_STROKE_COLOR, DrawingField.DEFAULT_STROKE_COLOR, true, false));
+		df.setStrokeWidth(attributes.getFloat(ATTRIBUTE_DRAWING_STROKE_WIDTH, DrawingField.DEFAULT_STROKE_WIDTH));
 	}
 	
 	/**
