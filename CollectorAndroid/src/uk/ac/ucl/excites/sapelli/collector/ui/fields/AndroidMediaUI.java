@@ -358,6 +358,16 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	protected abstract View getReviewContent(Context context, File mediaFile);
 	
 	/**
+	 * @param context
+	 * @return the item to use as the "capture more" button in the gallery - just uses the normal "capture" button by default
+	 * but can be overridden by subclasses to do something else.
+	 */
+	protected Item generateCaptureMoreButton(Context context)
+	{
+		return generateCaptureButton(context);
+	}
+	
+	/**
 	 * Creates a {@code View} to be used as a (capture/discard/etc) button in the media UI.
 	 * @param context
 	 * @param buttonItem - the {@code Item} from which to create the button.
@@ -630,7 +640,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		{
 			// creates a "normal" capture button and then disables it if max reached.
 
-			Item captureButton = generateCaptureButton(getContext());
+			Item captureButton = generateCaptureMoreButton(getContext());
 
 			if(!maxReached)
 				return captureButton;

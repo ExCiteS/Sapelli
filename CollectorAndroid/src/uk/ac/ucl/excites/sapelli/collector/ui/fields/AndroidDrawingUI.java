@@ -18,7 +18,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -28,6 +27,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
+import android.widget.RelativeLayout;
 
 /**
  * A UI for Drawing fields, which allow for the capture of "finger drawings" created on the touchscreen.
@@ -40,7 +40,7 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 	public static final Bitmap.CompressFormat DRAWING_OUTPUT_FORMAT = CompressFormat.PNG; // TODO link to DrawingField?
 	public static final int DRAWING_OUTPUT_QUALITY = 0; // PNG will ignore compression factor anyway
 
-	private DrawingView drawingView;
+	private DrawingViewContainer drawingViewContainter;
 
 	public AndroidDrawingUI(DrawingField field, CollectorController controller, CollectorView collectorUI)
 	{
@@ -55,7 +55,7 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 			// get a new file into which to store the capture:
 			captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
 			// get a bitmap of the current drawing:
-			Bitmap drawing = drawingView.captureDrawingBitmap();
+			Bitmap drawing = drawingViewContainter.captureDrawingBitmap();
 			// compress the bitmap into a PNG and save it into the file:
 			FileOutputStream fos;
 			fos = new FileOutputStream(captureFile);
@@ -87,8 +87,8 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 	protected View getCaptureContent(Context context)
 	{
 		// note views aren't cached in media UIs so create one each time
-		drawingView = new DrawingView(context);
-		return drawingView;
+		drawingViewContainter = new DrawingViewContainer(context);
+		return drawingViewContainter;
 	}
 
 	@Override
@@ -122,6 +122,54 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 		captureButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		return captureButton;
 	}
+	
+	// TODO this is a bit of a mess
+	@Override
+	protected Item generateCaptureMoreButton(Context context)
+	{
+		Item captureMoreButton = new ResourceImageItem(context.getResources(), R.drawable.pencil_black_svg);
+		captureMoreButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+		return captureMoreButton;
+	}
+	
+	/**
+	 * Container for the View on which the user can draw, which has a specified background colour and background image.
+	 * 
+	 * @author benelliott
+	 */
+	private class DrawingViewContainer extends RelativeLayout
+	{
+		private DrawingView drawingView;
+		private int backgroundColor;
+
+		public DrawingViewContainer(Context context)
+		{
+			super(context);
+			this.backgroundColor = Color.parseColor(field.getBackgroundColor());
+			LayoutParams params = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+
+			ImageItem background = null;
+			File backgroundImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getBackgroundImageRelativePath());
+			if(FileHelpers.isReadableFile(backgroundImgFile))
+				// return a custom background image if it exists
+				background = new FileImageItem(backgroundImgFile);
+			else
+				// otherwise just use the default resource (a pencil)
+				background = new ResourceImageItem(context.getResources(), R.drawable.pencil_grey_svg);
+			
+			background.setBackgroundColor(backgroundColor);
+			addView(background.getView(context), params);
+			
+			drawingView = new DrawingView(context);
+			drawingView.setBackgroundColor(Color.TRANSPARENT);
+			addView(drawingView, params);
+		}
+		
+		private Bitmap captureDrawingBitmap()
+		{
+			return drawingView.captureDrawingBitmap(backgroundColor);
+		}
+	}
 
 	/**
 	 * A view that interprets "drag" gestures as the user "painting" the view with their finger.
@@ -135,21 +183,10 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 		private Paint paint;
 		private Path path; // the path the user has painted
 		private boolean downClicked; // need this for accessibility
-		private int backgroundColor;
-		private Bitmap backgroundImg;
-		private float backgroundLeft; // left x-coordinate of background image (for centering)
-		private float backgroundTop; // top y-coordinate of background image (for centering)
 
 		public DrawingView(Context context)
 		{
 			super(context);
-			// create the background image:
-			File backgroundImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getBackgroundImageRelativePath());
-			if(!FileHelpers.isReadableFile(backgroundImgFile) || (backgroundImg = BitmapFactory.decodeFile(backgroundImgFile.getAbsolutePath())) == null)
-				// failed to use custom background image so use default:
-				backgroundImg = BitmapFactory.decodeResource(context.getResources(),R.drawable.edit);
-
-			backgroundColor = Color.parseColor(field.getBackgroundColor());
 			
 			paint = new Paint();
 			paint.setAntiAlias(true); // looks pixellated otherwise
@@ -160,22 +197,10 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 
 			path = new Path();
 		}
-
-		@Override
-		protected void onLayout(boolean changed, int left, int top, int right, int bottom)
-		{
-			if (changed)
-			{	// calculate where the background image has to be in order for it to be centred:
-				backgroundLeft = 0.5f * (right - left - backgroundImg.getWidth()); // left coord is (view width - image width) / 2
-				backgroundTop = 0.5f * (bottom - top - backgroundImg.getHeight()); // top coord is (view height - image height) / 2 
-			}
-		};
-
+		
 		@Override
 		public void onDraw(Canvas canvas)
 		{
-			canvas.drawColor(backgroundColor); // draw background colour
-			canvas.drawBitmap(backgroundImg, backgroundLeft, backgroundTop, paint); // draw background image
 			canvas.drawPath(path, paint); // draw the user's cumulative path
 		}
 
@@ -223,7 +248,7 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 		/**
 		 * @return a Bitmap containing the user's drawing up until now, including the background colour (in case a custom one is set) but NOT the background image
 		 */
-		private Bitmap captureDrawingBitmap()
+		private Bitmap captureDrawingBitmap(int backgroundColor)
 		{
 			// create a bitmap to return:
 			Bitmap toReturn = Bitmap.createBitmap(this.getWidth(), this.getHeight(), Bitmap.Config.ARGB_8888);

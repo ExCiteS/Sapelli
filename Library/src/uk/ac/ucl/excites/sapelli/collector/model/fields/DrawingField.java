@@ -22,7 +22,7 @@ public class DrawingField extends MediaField
 	static private final String EXTENSION_PNG = "png";
 	public static final String DEFAULT_BACKGROUND_COLOR = "#BABABA"; // light grey
 	public static final String DEFAULT_STROKE_COLOR = "#000000"; // black
-	public static final float DEFAULT_STROKE_WIDTH = 8f;
+	public static final float DEFAULT_STROKE_WIDTH = 20f;
 
 	private String backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	private String strokeColor = DEFAULT_STROKE_COLOR;
