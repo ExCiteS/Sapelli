@@ -426,12 +426,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				{
 					// just made a capture, so go to gallery/review when the field is re-entered:
 					controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY);
+					// force gallery to check for new files next time it is entered (do this here as gallery may be entered in onCapture()):
+					mediaItemsChanged = true;
 					// execute subclass's capture behaviour and make note of whether or not to unblock UI afterwards
 					boolean unblock = onCapture();
 					// refresh capture button on press (e.g. might need to change from "record" to "stop recording")
 					refreshCaptureButton(null);
-					// force gallery to check for new files next time it is entered:
-					mediaItemsChanged = true;
 					if(unblock)
 						// unblock UI if requested by subclass
 						controller.unblockUI();
