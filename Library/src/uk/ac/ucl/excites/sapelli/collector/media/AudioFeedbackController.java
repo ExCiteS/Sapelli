@@ -31,6 +31,9 @@ import java.util.List;
 public abstract class AudioFeedbackController<V>
 {
 	
+	public static final int ANIMATION_SHAKE = 0;
+	public static final int ANIMATION_ALPHA = 1;
+	
 	/**
 	 * Play a single audio feedback job.
 	 * @param job - the audio feedback job to play
@@ -68,11 +71,12 @@ public abstract class AudioFeedbackController<V>
 	/**
 	 * @param soundRelativePath
 	 * @param viewToAnimate
+	 * @param animation
 	 * @return a PlaybackJob
 	 */
-	public PlaybackJob newPlaybackJob(String soundRelativePath, V viewToAnimate)
+	public PlaybackJob newPlaybackJob(String soundRelativePath, V viewToAnimate, int animation)
 	{
-		return new PlaybackJob(soundRelativePath, viewToAnimate);
+		return new PlaybackJob(soundRelativePath, viewToAnimate, animation);
 	}
 	
 	/**
@@ -86,6 +90,7 @@ public abstract class AudioFeedbackController<V>
 		
 		/*package*/ final String soundRelativePath;
 		/*package*/ final V viewToAnimate;
+		/*package*/ final int animation;
 		
 		/**
 		 * Creates a PlaybackJob with the provided sound filepath but no UI object to animate.
@@ -94,7 +99,7 @@ public abstract class AudioFeedbackController<V>
 		 */
 		private PlaybackJob(String soundRelativePath)
 		{
-			this(soundRelativePath, null);
+			this(soundRelativePath, null, -1);
 		}
 		
 		/**
@@ -103,10 +108,11 @@ public abstract class AudioFeedbackController<V>
 		 * @param soundRelativePath - relative filepath of the sound to play
 		 * @param viewToAnimate - the UI object to animate while playing the sound (may be null)
 		 */
-		private PlaybackJob(String soundRelativePath, V viewToAnimate)
+		private PlaybackJob(String soundRelativePath, V viewToAnimate, int animation)
 		{
 			this.soundRelativePath = soundRelativePath;
 			this.viewToAnimate = viewToAnimate;
+			this.animation = animation;
 		}
 		
 	}

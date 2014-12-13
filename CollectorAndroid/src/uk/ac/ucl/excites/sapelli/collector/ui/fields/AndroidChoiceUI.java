@@ -149,7 +149,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		if(isUsingAudioFeedback(false)) // check if both the form and the field use audio feedback
 		{
 			AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
-			afc.play(afc.newPlaybackJob(child.getAnswerDescriptionAudioRelativePath(), childView));
+			afc.play(afc.newPlaybackJob(child.getAnswerDescriptionAudioRelativePath(), childView, AudioFeedbackController.ANIMATION_SHAKE));
 		}
 		else
 			controller.addLogLine("LONG_CLICK", "LongClick on " + choice.toString(false) + " but AudioFeedback is disabled");
@@ -501,7 +501,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				// Enqueue answer description for each child:
 				int c = 0;
 				for(ChoiceField child : field.getChildren())
-					playlist.add(afc.newPlaybackJob(child.getAnswerDescriptionAudioRelativePath(), choiceView.getChildAt(c++)));
+					playlist.add(afc.newPlaybackJob(child.getAnswerDescriptionAudioRelativePath(), choiceView.getChildAt(c++), AudioFeedbackController.ANIMATION_SHAKE));
 				// Return playlist:
 				return playlist;
 	
