@@ -107,6 +107,7 @@ public abstract class AudioFeedbackController<V>
 		 * 
 		 * @param soundRelativePath - relative filepath of the sound to play
 		 * @param viewToAnimate - the UI object to animate while playing the sound (may be null)
+		 * @param animation - indicates the animation to use
 		 */
 		private PlaybackJob(String soundRelativePath, V viewToAnimate, int animation)
 		{
