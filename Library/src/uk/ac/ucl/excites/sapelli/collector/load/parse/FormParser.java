@@ -153,6 +153,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FIELD_INITVALUE = "initialValue";
 	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
 	static private final String ATTRIBUTE_CHOICE_CAPTION_HEIGHT = "captionHeight";
+	static private final String ATTRIBUTE_CHOICE_MATCH_TEXT_SIZE = "matchTextSize";
 	static private final String ATTRIBUTE_CHOICE_ALT = "alt";
 	static private final String[] ATTRIBUTE_CHOICE_ANSWER_DESC_DESCRIPTION = { "answerDesc", "answerDescription" };
 	static private final String[] ATTRIBUTE_CHOICE_QUESTION_DESC_DESCRIPTION = { ATTRIBUTE_FIELD_DESC, ATTRIBUTE_FIELD_DESCRIPTION, "questionDesc", "questionDescription" };
@@ -198,6 +199,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	private HashMap<JumpSource, String> jumpSourceToJumpTargetId;
 	private Hashtable<String, Field> idToField;
 	private HashMap<MediaField, String> mediaAttachToDisableId;
+	
+	private boolean choiceParentHadCaptionHeightAttribute = false;
 
 	public FormParser(ProjectParser projectParser)
 	{
@@ -581,28 +584,45 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		{
 			caption = attributes.getString(ATTRIBUTE_CHOICE_ALT, caption, false, true);
 			captionFromAlt = true; // !!!
-		}
+		} // Note: if neither "caption" nor "alt" appeared the caption variable is still null here
 		
 		// Create ChoiceField:
 		ChoiceField choice = new ChoiceField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), attributes.getValue(ATTRIBUTE_FIELD_VALUE), parent, caption);
 		newField(choice, attributes);
 		
-		// Parse noColumn:
-		choice.setNoColumn(attributes.getBoolean(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
+		// Parse noColumn (for root only):
+		if(choice.isRoot())
+			choice.setNoColumn(attributes.getBoolean(ATTRIBUTE_FIELD_NO_COLUMN, Field.DEFAULT_NO_COLUMN));
+		
 		// Parse img path:
 		choice.setImageRelativePath(attributes.getString(ATTRIBUTE_FIELD_IMG, null, false, false));
 		
-		// Parse/set caption height:
-		float defaultCaptionHeight = !captionFromAlt ?
-										ChoiceField.DEFAULT_CAPTION_HEIGHT /* if there is a caption it did not come from "alt" */ :
-										ChoiceField.DEFAULT_CAPTION_ALT_HEIGHT /* the caption came from "alt" */;
-		float captionHeight = attributes.getFloat(ATTRIBUTE_CHOICE_CAPTION_HEIGHT, defaultCaptionHeight);
-		if(captionHeight < 0.0f || captionHeight > 1.0f) // check if the captionHeight not out of bounds
+		// Caption height:
+		//	Parse "captionHeight" attribute (if it exists):
+		Float parsedCaptionHeight = attributes.getFloat(ATTRIBUTE_CHOICE_CAPTION_HEIGHT, null);
+		// 	Check if parsed value is not out of bounds:
+		if(parsedCaptionHeight != null && (!Float.isFinite(parsedCaptionHeight) || parsedCaptionHeight < 0.0f || parsedCaptionHeight > 1.0f))
 		{
-			addWarning("Value of attribute " + ATTRIBUTE_CHOICE_CAPTION_HEIGHT + " on <" + TAG_CHOICE  + "> must be in range [0.0, 1.0].");
-			captionHeight = defaultCaptionHeight;
+			addWarning("Value of attribute " + ATTRIBUTE_CHOICE_CAPTION_HEIGHT + " on <" + TAG_CHOICE  + "> must be in range [0.0, 1.0] (read: " + parsedCaptionHeight + ").");
+			parsedCaptionHeight = null; // "forget" parsed value
 		}
-		choice.setCaptionHeight(captionHeight);
+		//	Set Choice caption height:
+		choice.setCaptionHeight(
+			parsedCaptionHeight != null ?
+				parsedCaptionHeight :								// use parsed value
+				!choice.isRoot() && choiceParentHadCaptionHeightAttribute ? 
+					parent.getCaptionHeight() :						// inherit explicitly specified caption height of parent
+					!captionFromAlt ?
+						ChoiceField.DEFAULT_CAPTION_HEIGHT : 		// use default height for non-"alt" captions
+						ChoiceField.DEFAULT_CAPTION_ALT_HEIGHT);	// use default height for "alt" captions
+		//	Set flag to dis/allow inheritance of caption height by children of this choice:
+		choiceParentHadCaptionHeightAttribute = parsedCaptionHeight != null; // we only allow inheritance of explicitly specified, valid captionHeight values
+		
+		// Text size coordination:
+		choice.setMatchTextSize(attributes.getBoolean(ATTRIBUTE_CHOICE_MATCH_TEXT_SIZE,
+								choice.isRoot() ?
+									ChoiceField.DEFAULT_MATCH_TEXT_SIZE :	// root: use overall default as default
+									parent.isMatchTextSize()));				// child: use parent's value as default
 		
 		// Description & audio feedback:
 		//	Question - desc/description/questionDesc/questionDescription is parsed in newField()

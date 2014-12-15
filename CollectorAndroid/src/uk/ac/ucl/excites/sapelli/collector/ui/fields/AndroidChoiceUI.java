@@ -322,13 +322,14 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 								collectorUI.getFieldUIPartHeightPx(field.getRows()));
 			
 			// Text size coordinators:
-			TextSizeCoordinator textOnlyCoordinator = new TextSizeCoordinator();
-			TextSizeCoordinator captionCoordinator = new TextSizeCoordinator();
+			TextSizeCoordinator textOnlyCoordinator = field.isMatchTextSize() ? new TextSizeCoordinator() : null;
+			TextSizeCoordinator captionCoordinator = field.isMatchTextSize() ? new TextSizeCoordinator() : null;
 			
 			// Add items for children:
 			PickerAdapter adapter = getAdapter();
 			for(ChoiceField child : field.getChildren())
 				adapter.addItem(createItem(child, CollectorView.PADDING_DIP, !controller.isFieldEnabled(child), textOnlyCoordinator, captionCoordinator));
+			
 			// Click listeners:
 			setOnItemClickListener(this);
 			if(isUsingAudioFeedback(false))

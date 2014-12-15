@@ -226,7 +226,7 @@ public class Project
 	
 	public List<Form> getForms()
 	{
-		return forms;
+		return Collections.unmodifiableList(forms);
 	}
 	
 	public Model getModel()

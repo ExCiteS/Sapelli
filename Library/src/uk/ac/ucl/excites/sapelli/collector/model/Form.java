@@ -240,7 +240,7 @@ public class Form implements WarningKeeper
 	 */
 	public List<Field> getFields()
 	{
-		return fields;
+		return Collections.unmodifiableList(fields);
 	}
 	
 	/**

@@ -53,6 +53,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	
 	static public final int DEFAULT_NUM_COLS = 1;
 	static public final int DEFAULT_NUM_ROWS = 2;
+	static public final boolean DEFAULT_MATCH_TEXT_SIZE = true;
 	
 	/**
 	 * By default the caption (if one is specified!) will take up a quarter of the available height.
@@ -90,6 +91,7 @@ public class ChoiceField extends Field implements DictionaryItem
 	private int cols = DEFAULT_NUM_COLS;
 	private int rows = DEFAULT_NUM_ROWS;
 	private float captionHeight = DEFAULT_CAPTION_HEIGHT;
+	private boolean matchTextSize = DEFAULT_MATCH_TEXT_SIZE;
 	private boolean crossed = DEFAULT_CROSSED;
 	private String crossColor = DEFAULT_CROSS_COLOR;
 	private final String value;
@@ -124,6 +126,7 @@ public class ChoiceField extends Field implements DictionaryItem
 			parent.addChild(this); //add myself as a child of my parent
 			root = parent.root;
 			dictionary = root.dictionary; //children share the dictionary of the root (so there is only 1 instance per choice tree)
+			noColumn = root.noColumn;
 		}
 	}
 	
@@ -173,6 +176,22 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 	
 	/**
+	 * @return the matchTextSize
+	 */
+	public boolean isMatchTextSize()
+	{
+		return matchTextSize;
+	}
+
+	/**
+	 * @param matchTextSize the matchTextSize to set
+	 */
+	public void setMatchTextSize(boolean matchTextSize)
+	{
+		this.matchTextSize = matchTextSize;
+	}
+
+	/**
 	 * @return the parent
 	 */
 	public ChoiceField getParent()
@@ -196,7 +215,9 @@ public class ChoiceField extends Field implements DictionaryItem
 	 */
 	public List<ChoiceField> getChildren()
 	{
-		return children != null ? children : Collections.<ChoiceField> emptyList();
+		return children != null ?
+			Collections.unmodifiableList(children) :
+			Collections.<ChoiceField> emptyList();
 	}
 
 	/**

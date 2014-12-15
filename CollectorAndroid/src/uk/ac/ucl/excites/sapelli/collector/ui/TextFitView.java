@@ -267,7 +267,7 @@ public class TextFitView extends View
 			width = Math.max(width, paint.measureText(line)); // max width is max(previous max width, this line width)
 			// determine height by doing no. lines * interline spacing (= font height + spacing between bottom of one line and top of another)
 			// NOTE: do not use Paint#getTextBounds because this ignores any spacing above or below the character, which will be included by the
-			// TextView regardless (e.g. the bounds height of "." would be very low as it excludes the space above the character)
+			// StaticLayout regardless (e.g. the bounds height of "." would be very low as it excludes the space above the character)
 		
 		// Check whether the text fits:
 		boolean fits = width <= targetWidth && textLines.length * paint.getFontMetrics(null) <= targetHeight;
