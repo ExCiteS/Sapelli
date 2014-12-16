@@ -675,24 +675,23 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		
 		// Caption height:
 		//	Parse "captionHeight" attribute (if it exists):
-		Float parsedCaptionHeight = attributes.getFloat(ATTRIBUTE_CHOICE_CAPTION_HEIGHT, null);
+		Float parsedCH = attributes.getFloat(ATTRIBUTE_CHOICE_CAPTION_HEIGHT, null);
 		// 	Check if parsed value is not out of bounds:
-		if(parsedCaptionHeight != null && (!Float.isFinite(parsedCaptionHeight) || parsedCaptionHeight < 0.0f || parsedCaptionHeight > 1.0f))
+		if(parsedCH != null && (Float.isNaN(parsedCH) || parsedCH < 0.0f || parsedCH > 1.0f))
 		{
-			addWarning("Value of attribute " + ATTRIBUTE_CHOICE_CAPTION_HEIGHT + " on <" + TAG_CHOICE  + "> must be in range [0.0, 1.0] (read: " + parsedCaptionHeight + ").");
-			parsedCaptionHeight = null; // "forget" parsed value
+			addWarning("Value of attribute " + ATTRIBUTE_CHOICE_CAPTION_HEIGHT + " on <" + TAG_CHOICE  + "> must be in range [0.0, 1.0] (read: " + parsedCH + ").");
+			parsedCH = null; // "forget" parsed value
 		}
 		//	Set Choice caption height:
-		choice.setCaptionHeight(
-			parsedCaptionHeight != null ?
-				parsedCaptionHeight :								// use parsed value
-				!choice.isRoot() && choiceParentHadCaptionHeightAttribute ? 
-					parent.getCaptionHeight() :						// inherit explicitly specified caption height of parent
-					!captionFromAlt ?
-						ChoiceField.DEFAULT_CAPTION_HEIGHT : 		// use default height for non-"alt" captions
-						ChoiceField.DEFAULT_CAPTION_ALT_HEIGHT);	// use default height for "alt" captions
+		choice.setCaptionHeight(parsedCH != null ?
+									parsedCH :											// use parsed value
+									!choice.isRoot() && choiceParentHadCaptionHeightAttribute ? 
+										parent.getCaptionHeight() :						// inherit explicitly specified caption height of parent
+										!captionFromAlt ?
+											ChoiceField.DEFAULT_CAPTION_HEIGHT : 		// use default height for non-"alt" captions
+											ChoiceField.DEFAULT_CAPTION_ALT_HEIGHT);	// use default height for "alt" captions
 		//	Set flag to dis/allow inheritance of caption height by children of this choice:
-		choiceParentHadCaptionHeightAttribute = parsedCaptionHeight != null; // we only allow inheritance of explicitly specified, valid captionHeight values
+		choiceParentHadCaptionHeightAttribute = parsedCH != null; // we only allow inheritance of explicitly specified, valid captionHeight values
 		
 		// Text size coordination:
 		choice.setMatchTextSize(attributes.getBoolean(ATTRIBUTE_CHOICE_MATCH_TEXT_SIZE,
