@@ -205,18 +205,17 @@ public class IntegerColumn extends ComparableColumn<Long>
 	@Override
 	protected void validate(Long value) throws IllegalArgumentException
 	{
-		if(rangeMapping != null && !rangeMapping.inRange(value))
+		if(rangeMapping != null && !rangeMapping.inStrictRange(value))
 			throw new IllegalArgumentException("The value (" + value + ") is not in the allowed range of [" + rangeMapping.lowBound() + ", " + rangeMapping.highBound() + "].");
 		else
-		{
-			//Size checks:
+		{	// Size checks:
 			if(signed)
-			{	//Signed
-				if(value < (long) (- Math.pow(2, size - 1)) || value > (long) (Math.pow(2, size - 1) - 1))
+			{	// Signed
+				if(value < getMinValue() || value > getMaxValue())
 					throw new IllegalArgumentException("Signed value (" + value + ") does not fit in " + size + " bits.");
 			}
 			else
-			{	//Unsigned
+			{	// Unsigned
 				if(value < 0l)
 					throw new IllegalArgumentException("Cannot store negative value as unsigned interger.");
 				if(value > (long) (Math.pow(2, size) - 1))

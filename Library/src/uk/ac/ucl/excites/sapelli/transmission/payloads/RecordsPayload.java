@@ -344,7 +344,7 @@ public class RecordsPayload extends Payload
 				List<Record> records = recordsBySchema.get(schema);
 				
 				// Write number of records:
-				if(numberOfRecordsPerSchemaField.fits(records.size()))
+				if(numberOfRecordsPerSchemaField.inEffectiveRange(records.size()))
 					numberOfRecordsPerSchemaField.write(records.size(), out); // write number of records that will follow
 				else
 					throw new TransmissionCapacityExceededException("Cannot fit " + records.size() + " of schema " + schema.getName() + " (max allowed: " + numberOfRecordsPerSchemaField.highBound(false) + ").");
