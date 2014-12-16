@@ -30,11 +30,11 @@ import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
@@ -248,10 +248,10 @@ public class CollectorActivity extends ProjectActivity
 		{
 			case KeyEvent.KEYCODE_BACK:
 			case KeyEvent.KEYCODE_DPAD_LEFT:
-				collectorView.getControlsUI().handleControlEvent(Control.BACK, true);
+				collectorView.getControlsUI().handleControlEvent(Control.Type.Back, true);
 				return true;
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
-				collectorView.getControlsUI().handleControlEvent(Control.FORWARD, true);
+				collectorView.getControlsUI().handleControlEvent(Control.Type.Forward, true);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				DeviceControl.safeDecreaseMediaVolume(this);

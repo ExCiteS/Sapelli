@@ -19,8 +19,8 @@
 package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
@@ -28,8 +28,6 @@ import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -105,8 +103,7 @@ public abstract class Field extends JumpSource
 	public final Form form;
 	protected Page page = null;
 	protected final String caption;
-	protected String description;
-	protected String descriptionAudioRelativePath;
+	public final Description description;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	protected boolean showOnCreate = DEFAULT_SHOW_ON_CREATE;
@@ -139,25 +136,26 @@ public abstract class Field extends JumpSource
 		this.id = GetID(id); // will trim the id and throw an NPE when the id is null, empty or whitespace
 		this.form = form;
 		this.caption = caption; // may be null!
+		this.description = new Description();
 		
-		// Construct a 2-dimensional boolean array (Controls * FormMode):
-		this.showControlByMode = new boolean[ControlsUI.Control.values().length][];
-		for(Control control : ControlsUI.Control.values())
+		// Construct a 2-dimensional boolean array (Control.Type * FormMode):
+		this.showControlByMode = new boolean[Control.Type.values().length][];
+		for(Control.Type controlType : Control.Type.values())
 		{
-			showControlByMode[control.ordinal()] = new boolean[Controller.Mode.values().length];
+			showControlByMode[controlType.ordinal()] = new boolean[Controller.Mode.values().length];
 			for(Mode mode : Controller.Mode.values())
 			{
 				boolean defaultShown = true;
-				switch(control)
+				switch(controlType)
 				{
-				case BACK: defaultShown = DEFAULT_SHOW_BACK;
-					break;
-				case CANCEL: defaultShown = DEFAULT_SHOW_CANCEL;
-					break;
-				case FORWARD: defaultShown = DEFAULT_SHOW_FORWARD;
-					break;					
+					case Back: defaultShown = DEFAULT_SHOW_BACK;
+						break;
+					case Cancel: defaultShown = DEFAULT_SHOW_CANCEL;
+						break;
+					case Forward: defaultShown = DEFAULT_SHOW_FORWARD;
+						break;
 				}
-				showControlByMode[control.ordinal()][mode.ordinal()] = defaultShown;
+				showControlByMode[controlType.ordinal()][mode.ordinal()] = defaultShown;
 			}
 		}
 	}
@@ -210,38 +208,6 @@ public abstract class Field extends JumpSource
 		return getCaption() != null; // don't change getCaption() to caption (needed for MultiListField)
 	}
 	
-	/**
-	 * @return the description
-	 */
-	public String getDescription()
-	{
-		return description;
-	}
-
-	/**
-	 * @param description the description to set
-	 */
-	public void setDescription(String description)
-	{
-		this.description = description;
-	}
-
-	/**
-	 * @return the descriptionAudioRelativePath
-	 */
-	public String getDescriptionAudioRelativePath()
-	{
-		return descriptionAudioRelativePath;
-	}
-
-	/**
-	 * @param descriptionAudioRelativePath the descriptionAudioRelativePath to set
-	 */
-	public void setDescriptionAudioRelativePath(String descriptionAudioRelativePath)
-	{
-		this.descriptionAudioRelativePath = descriptionAudioRelativePath;
-	}
-
 	/**
 	 * @return the noColumn
 	 */
@@ -371,33 +337,33 @@ public abstract class Field extends JumpSource
 	}
 
 	/**
-	 * @param control
+	 * @param controlType
 	 * @param formMode
 	 * @return whether of the the giving control is allowed to be show for this field when in the given formMode
 	 */
-	public boolean isControlAllowedToBeShown(Control control, Mode formMode)
+	public boolean isControlAllowedToBeShown(Control.Type controlType, Mode formMode)
 	{
-		return showControlByMode[control.ordinal()][formMode.ordinal()];
+		return showControlByMode[controlType.ordinal()][formMode.ordinal()];
 	}
 	
 	/**
-	 * @param control
+	 * @param controlType
 	 * @param formMode
 	 * @param show
 	 */
-	public void setShowControlOnMode(Control control, Mode formMode, boolean show)
+	public void setShowControlOnMode(Control.Type controlType, Mode formMode, boolean show)
 	{
-		showControlByMode[control.ordinal()][formMode.ordinal()] = show;
+		showControlByMode[controlType.ordinal()][formMode.ordinal()] = show;
 	}
 	
 	/**
-	 * @param control
+	 * @param controlType
 	 * @param show
 	 */
-	public void setShowControl(Control control, boolean show)
+	public void setShowControl(Control.Type controlType, boolean show)
 	{
 		for(Mode mode : Controller.Mode.values())
-			showControlByMode[control.ordinal()][mode.ordinal()] = show;
+			showControlByMode[controlType.ordinal()][mode.ordinal()] = show;
 	}
 
 	/**
@@ -405,7 +371,7 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowBack(boolean showBack)
 	{
-		setShowControl(Control.BACK, showBack);
+		setShowControl(Control.Type.Back, showBack);
 	}
 
 	/**
@@ -413,7 +379,7 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowCancel(boolean showCancel)
 	{
-		setShowControl(Control.CANCEL, showCancel);
+		setShowControl(Control.Type.Cancel, showCancel);
 	}
 
 	/**
@@ -421,7 +387,7 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowForward(boolean showForward)
 	{
-		setShowControl(Control.FORWARD, showForward);
+		setShowControl(Control.Type.Forward, showForward);
 	}
 
 	public Column<?> getColumn()
@@ -507,14 +473,17 @@ public abstract class Field extends JumpSource
 	}
 
 	/**
-	 * To be overridden by Fields that use files (images, sounds, etc.) that are stored with the project
+	 * To be overridden by Fields that use additional files (images, sounds, etc.) that are stored with the project,
+	 * all overrides *must* include: super.addFiles(filesSet, fileStorageProvider);
 	 * 
+	 * @param filesSet set to add files to
 	 * @param fileStorageProvider to resolve relative paths
 	 * @return
 	 */
-	public List<File> getFiles(FileStorageProvider fileStorageProvider)
+	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
-		return Collections.<File> emptyList();
+		// Audio description:
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectSoundFile(form.project, description.getAudioRelativePath()));
 	}
 	
 	@Override
@@ -530,8 +499,7 @@ public abstract class Field extends JumpSource
 					this.form.toString().equals(that.form.toString()) && // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
 					this.form.project.toString().equals(that.form.project.toString()) && // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
 					(this.caption != null ? caption.equals(that.caption) : that.caption == null) &&
-					(this.description != null ? this.description.equals(that.description) : that.description == null) &&
-					(this.descriptionAudioRelativePath != null ? this.descriptionAudioRelativePath.equals(that.descriptionAudioRelativePath) : that.descriptionAudioRelativePath == null) &&
+					this.description.equals(that.description) &&
 					this.enabled == that.enabled &&
 					this.skipOnBack == that.skipOnBack &&
 					this.showOnCreate == that.showOnCreate &&
@@ -553,8 +521,7 @@ public abstract class Field extends JumpSource
 		hash = 31 * hash + form.toString().hashCode(); // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
 		hash = 31 * hash + form.project.toString().hashCode(); // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
 		hash = 31 * hash + (caption == null ? 0 : caption.hashCode());
-		hash = 31 * hash + (description == null ? 0 : description.hashCode());
-		hash = 31 * hash + (descriptionAudioRelativePath == null ? 0 : descriptionAudioRelativePath.hashCode());
+		hash = 31 * hash + description.hashCode();
 		hash = 31 * hash + (enabled ? 0 : 1);
 		hash = 31 * hash + (skipOnBack ? 0 : 1);
 		hash = 31 * hash + (showOnCreate ? 0 : 1);

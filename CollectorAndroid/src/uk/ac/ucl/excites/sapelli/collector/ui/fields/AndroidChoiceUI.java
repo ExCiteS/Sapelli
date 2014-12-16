@@ -146,10 +146,11 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return false;
 
-		if(isUsingAudioFeedback(false)) // check if both the form and the field use audio feedback
+		// check if both the form and the field use audio feedback, and make sure were not given a root choice (which doesn't have an answersDescription)
+		if(isUsingAudioFeedback(false) && !child.isRoot())
 		{
 			AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
-			afc.play(afc.newPlaybackJob(child.getAnswerDescriptionAudioRelativePath(), childView, AudioFeedbackController.ANIMATION_SHAKE));
+			afc.play(afc.newPlaybackJob(child.getAnswerDescription().getAudioRelativePath(), childView, AudioFeedbackController.ANIMATION_SHAKE));
 		}
 		else
 			controller.addLogLine("LONG_CLICK", "LongClick on " + choice.toString(false) + " but AudioFeedback is disabled");
@@ -190,9 +191,11 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			if(field.hasCaption())
 			{
 				label = new TextView(getContext());
-				//ensure that the label text is not truncated, by setting width to WRAP_CONTENT:
+				
+				// Ensure that the label text is not truncated, by setting width to WRAP_CONTENT:
 				label.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
 				label.setText(field.getCaption());
+				
 				this.addView(label);
 			}
 			
@@ -201,7 +204,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			chosenMarginPx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_MARGIN_DIP);
 			
 			// Set the description used for accessibility support:
-			setContentDescription(field.getQuestionDescription());
+			setContentDescription(field.getCaption());
 		}
 		
 		public void setChosen(ChoiceField chosenField)
@@ -336,7 +339,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 				setOnItemLongClickListener(this);
 			
 			// Set the description used for accessibility support:
-			setContentDescription(field.getQuestionDescription());
+			setContentDescription(field.getQuestionDescription().getText());
 		}
 		
 		@Override
@@ -447,9 +450,10 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		// Set size & padding:
 		item.setPaddingDip(itemPaddingDip);
 		
-		// Set the description used for accessibility support:
-		item.setDescription(choice.getAnswerDescription()); // has fall-backs: answerDesc->caption->value->null
+		// Set the answer description used for accessibility support
+		item.setDescription(getAnswerDescriptionText(choice)); // has fall-backs & returns null for roots
 
+		// Return the item:
 		return item;
 	}
 	
@@ -491,18 +495,18 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		{
 			case LONG_CLICK:
 				// Just play question description when entering choice field:
-				return Collections.singletonList(collectorUI.getAudioFeebackController().newPlaybackJob(field.getQuestionDescriptionAudioRelativePath()));
+				return Collections.singletonList(collectorUI.getAudioFeebackController().newPlaybackJob(field.getQuestionDescription().getAudioRelativePath()));
 	
 			case SEQUENTIAL:
 				// Create a playlist that includes firstly the question description and then each answer description:
 				List<AudioFeedbackController<View>.PlaybackJob> playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>();
 				AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
 				// Enqueue question description:
-				playlist.add(afc.newPlaybackJob(field.getQuestionDescriptionAudioRelativePath()));
+				playlist.add(afc.newPlaybackJob(field.getQuestionDescription().getAudioRelativePath()));
 				// Enqueue answer description for each child:
 				int c = 0;
 				for(ChoiceField child : field.getChildren())
-					playlist.add(afc.newPlaybackJob(child.getAnswerDescriptionAudioRelativePath(), choiceView.getChildAt(c++), AudioFeedbackController.ANIMATION_SHAKE));
+					playlist.add(afc.newPlaybackJob(child.getAnswerDescription().getAudioRelativePath(), choiceView.getChildAt(c++), AudioFeedbackController.ANIMATION_SHAKE));
 				// Return playlist:
 				return playlist;
 	

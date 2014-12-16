@@ -172,7 +172,6 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 
 			// Add the CaptureLayout to the screen
 			this.addView(captureLayout);
-
 			
 			// --- Review UI:
 			reviewLayout = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.collector_camera_review, null);
@@ -379,7 +378,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 
 				// Button size, padding & background colour:
 				this.setItemDimensionsPx(LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(context, AndroidControlsUI.CONTROL_HEIGHT_DIP));
-				this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR /*light gray*/);
+				this.buttonBackColor = ColourHelpers.ParseColour(controller.getCurrentForm().getControlBackgroundColor(), Form.DEFAULT_CONTROL_BACKGROUND_COLOR /*light gray*/);
 				
 				// The addButtons() should be called after the button parameters (size, padding etc.) have been setup
 				addButtons();

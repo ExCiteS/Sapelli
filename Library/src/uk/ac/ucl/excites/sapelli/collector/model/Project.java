@@ -22,14 +22,15 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
-import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -362,14 +363,14 @@ public class Project
 	 * Find all files used by the project
 	 * 
 	 * @param fileStorageProvider to resolve relative paths
-	 * @return a list of files that the project depends on
+	 * @return a set of files that the project depends on
 	 */
-	public List<File> getFiles(FileStorageProvider fileStorageProvider)
+	public Set<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
-		List<File> files = new ArrayList<File>();
+		Set<File> filesSet = new HashSet<File>();
 		for(Form form : forms)
-			CollectionUtils.addAllIgnoreNull(files, form.getFiles(fileStorageProvider));
-		return files;
+			form.addFiles(filesSet, fileStorageProvider);
+		return filesSet;
 	}
 	
 	/**
@@ -379,7 +380,7 @@ public class Project
 	{
 		SortedSet<File> missingFiles = new TreeSet<File>();
 		for(File file : getFiles(fileStorageProvider))
-			if(!file.isFile() || !file.exists() || !file.canRead())
+			if(file != null && (!file.isFile() || !file.exists() || !file.canRead()))
 				missingFiles.add(file);
 		// Return as list:
 		if(missingFiles.isEmpty())

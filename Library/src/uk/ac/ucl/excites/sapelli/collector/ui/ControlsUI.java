@@ -21,6 +21,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 import java.util.Arrays;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
+import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 
@@ -36,14 +37,6 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 {
 	
 	// Statics-------------------------------------------------------
-	static public enum Control
-	{
-		BACK,
-		//UP,
-		CANCEL,
-		FORWARD
-	}
-	
 	static public enum State
 	{
 		HIDDEN,
@@ -81,8 +74,8 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 		}
 		
 		// What do we need to show?
-		State[] newControlStates = new State[Control.values().length];
-		for(Control control : ControlsUI.Control.values())
+		State[] newControlStates = new State[Control.Type.values().length];
+		for(Control.Type control : Control.Type.values())
 			newControlStates[control.ordinal()] = fieldUI.getControlState(control); // takes into account the current FormMode
 		
 		// Is this different from the currently shown controls?
@@ -112,33 +105,33 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 		return enabled;
 	}
 	
-	public boolean isControlEnabled(Control control)
+	public boolean isControlEnabled(Control.Type controlType)
 	{
-		return enabled && controlStates[control.ordinal()] == State.SHOWN_ENABLED;
+		return enabled && controlStates[controlType.ordinal()] == State.SHOWN_ENABLED;
 	}
 	
 	/**
 	 * @param control
 	 * @param hardwareKeyPress
 	 */
-	public void handleControlEvent(Control control, boolean hardwareKeyPress)
+	public void handleControlEvent(Control.Type controlType, boolean hardwareKeyPress)
 	{
-		if(!isControlEnabled(control))
+		if(!isControlEnabled(controlType))
 			return;
 		
 		// Log interaction:
-		controller.addLogLine((hardwareKeyPress ? "KEY" : "CLICK") + "_CONTROL_" + control.name(), controller.getCurrentField().id);
+		controller.addLogLine((hardwareKeyPress ? "KEY" : "CLICK") + "_CONTROL_" + controlType.name(), controller.getCurrentField().id);
 		
 		// Handle event:
-		switch(control)
+		switch(controlType)
 		{
-			case BACK :				
+			case Back :				
 				controller.goBack(true);
 				break;
-			case CANCEL : 
+			case Cancel : 
 				controller.cancelAndRestartForm();
 				break;
-			case FORWARD :
+			case Forward :
 				controller.goForward(true);
 				break;
 			default : return;

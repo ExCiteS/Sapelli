@@ -24,11 +24,11 @@ import java.util.List;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.State;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 
@@ -217,7 +217,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 			((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).clearInvalidity(this);
 	}
 	
-	public ControlsUI.State getControlState(Control control)
+	public ControlsUI.State getControlState(Control.Type control)
 	{
 		// Check if the field allows this control to be shown in the current formMode:
 		boolean show = field.isControlAllowedToBeShown(control, controller.getCurrentMode());
@@ -226,13 +226,13 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		if(show)
 			switch(control)
 			{
-				case BACK:
+				case Back:
 					show &= controller.canGoBack(false); // can we go back to a previous field or form
 					break;
-				case CANCEL:
+				case Cancel:
 					show &= isShowCancel();
 					break;
-				case FORWARD:
+				case Forward:
 					show &= isShowForward();
 					break;
 			}
