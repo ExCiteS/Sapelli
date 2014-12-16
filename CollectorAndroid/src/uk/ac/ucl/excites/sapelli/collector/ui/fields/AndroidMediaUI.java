@@ -358,6 +358,14 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	protected abstract View getReviewContent(Context context, File mediaFile);
 	
 	/**
+	 * @return whether or not a "discard" button should be displayed during capture (as opposed to only after a capture has been made). False
+	 * by default since most media UIs won't want to do this but can be overridden if they do - e.g. to clear the canvas on Drawing fields.
+	 */
+	protected boolean isShowDiscardDuringCapture()
+	{
+		return false;
+	}
+	/**
 	 * @param context
 	 * @return the item to use as the "capture more" button in the gallery - just uses the normal "capture" button by default
 	 * but can be overridden by subclasses to do something else.
@@ -406,7 +414,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	{
 
 		private View contentView; // capture UI content (e.g. viewfinder)
-		private View buttonView; // capture button
+		private View captureButtonView; // capture button
 		private Runnable buttonAction; // capture button action
 		private boolean captureButtonMaximised = false;
 		private Context context;
@@ -428,7 +436,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			contentParams.weight = 1.0f;
 			addView(contentView, contentParams);
 
-			// add button:
+			// add button(s):
 			buttonAction = new Runnable()
 			{
 				@Override
@@ -448,9 +456,37 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				}
 			};
 
-			buttonView = buttonFromItem(context, generateCaptureButton(context), buttonAction);
-			addView(buttonView, buttonParams);
+			captureButtonView = buttonFromItem(context, generateCaptureButton(context), buttonAction);
+			
+			if (isShowDiscardDuringCapture()) // don't need a discard button so add the capture button straight to the capture UI
+			{
+				// do need a discard button, so put both in a LinearLayout...
+				LinearLayout buttonContainer = new LinearLayout(context);
+				buttonContainer.setWeightSum(1f);
+				
+				Runnable discardAction = new Runnable() {
 
+					@Override
+					public void run()
+					{
+						// nothing has actually been stored yet so just call the subclass' onDiscard method
+						onDiscard();
+					}
+					
+				};
+				
+				View discardButtonView = buttonFromItem(context, generateDiscardButton(context), discardAction);
+				LayoutParams splitCaptureParams = new LayoutParams(0, LayoutParams.MATCH_PARENT); // set width to 0 so we can specify width using weight
+				splitCaptureParams.weight = 0.5f;
+				buttonContainer.addView(captureButtonView, splitCaptureParams);
+				LayoutParams splitDiscardParams = new LayoutParams(0, LayoutParams.MATCH_PARENT); // set width to 0 so we can specify width using weight
+				splitDiscardParams.weight = 0.5f;
+				splitDiscardParams.setMargins(collectorUI.getSpacingPx(), 0, 0, 0); // put some left margin on the discard button to separate the two buttons
+				buttonContainer.addView(discardButtonView, splitDiscardParams);
+				captureButtonView = buttonContainer;
+			}
+				addView(captureButtonView, buttonParams); // TODO maximise capture button?!	
+			
 			// maximise capture button initially, if required:
 			if(maximiseCaptureButton)
 				maximiseCaptureButton();
@@ -494,11 +530,11 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		private void refreshCaptureButton(ViewGroup.LayoutParams newLayoutParams)
 		{
 			if(newLayoutParams == null) // use whatever params it had before:
-				newLayoutParams = buttonView.getLayoutParams();
+				newLayoutParams = captureButtonView.getLayoutParams();
 
-			this.removeView(buttonView);
-			buttonView = buttonFromItem(context, generateCaptureButton(context), buttonAction);
-			this.addView(buttonView, newLayoutParams);
+			this.removeView(captureButtonView);
+			captureButtonView = buttonFromItem(context, generateCaptureButton(context), buttonAction);
+			this.addView(captureButtonView, newLayoutParams);
 		}
 	}
 	

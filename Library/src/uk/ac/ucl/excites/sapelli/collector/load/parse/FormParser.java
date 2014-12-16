@@ -204,6 +204,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_VIDEO_FRONT_CAMERA = "useFrontCamera";
 	static private final String ATTRIBUTE_VIDEO_START_REC_IMG = "startRecImg";
 	static private final String ATTRIBUTE_VIDEO_STOP_REC_IMG = "stopRecImg";
+	static private final String ATTRIBUTE_DRAWING_ADD_DRAWING_IMG = "addDrawingImg";
 	static private final String ATTRIBUTE_DRAWING_CANVAS_COLOR = "canvasColor";
 	static private final String ATTRIBUTE_DRAWING_CANVAS_IMG = "canvasImg";
 	static private final String ATTRIBUTE_DRAWING_STROKE_COLOR = "strokeColor";
@@ -766,6 +767,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	private void newDrawingField(DrawingField df, XMLAttributes attributes) throws Exception
 	{
 		newMediaField(df, attributes);
+		df.setAddDrawingImageRelativePath(attributes.getString(ATTRIBUTE_DRAWING_ADD_DRAWING_IMG, null, true, false));
 		df.setCanvasColor(attributes.getString(ATTRIBUTE_DRAWING_CANVAS_COLOR, DrawingField.DEFAULT_CANVAS_COLOR, true, false));
 		df.setCanvasImageRelativePath(attributes.getString(ATTRIBUTE_DRAWING_CANVAS_IMG, null, true, false));
 		df.setStrokeColor(attributes.getString(ATTRIBUTE_DRAWING_STROKE_COLOR, DrawingField.DEFAULT_STROKE_COLOR, true, false));

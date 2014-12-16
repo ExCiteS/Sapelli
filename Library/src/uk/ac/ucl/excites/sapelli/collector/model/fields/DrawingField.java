@@ -28,6 +28,7 @@ public class DrawingField extends MediaField
 	private String strokeColor = DEFAULT_STROKE_COLOR;
 	private float strokeWidth = DEFAULT_STROKE_WIDTH;
 	private String captureButtonImageRelativePath;
+	private String addDrawingImageRelativePath;
 	private String canvasImageRelativePath;
 
 	public DrawingField(Form form, String id, String caption)
@@ -85,12 +86,29 @@ public class DrawingField extends MediaField
 		this.canvasImageRelativePath = canvasImageRelativePath;
 	}
 
+	/**
+	 * @return the addDrawingImageRelativePath
+	 */
+	public String getAddDrawingImageRelativePath()
+	{
+		return addDrawingImageRelativePath;
+	}
+
+	/**
+	 * @param addDrawingImageRelativePath the addDrawingImageRelativePath to set
+	 */
+	public void setAddDrawingImageRelativePath(String addDrawingImageRelativePath)
+	{
+		this.addDrawingImageRelativePath = addDrawingImageRelativePath;
+	}
+
 	@Override
 	public List<File> getFiles(FileStorageProvider fileStorageProvider)
 	{
 		List<File> paths = new ArrayList<File>();
 		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, captureButtonImageRelativePath));
 		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, addDrawingImageRelativePath));
 		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, canvasImageRelativePath));
 		return paths;
 	}
@@ -155,6 +173,7 @@ public class DrawingField extends MediaField
 					(this.captureButtonImageRelativePath != null ? this.captureButtonImageRelativePath.equals(that.captureButtonImageRelativePath) : that.captureButtonImageRelativePath == null) &&
 					(this.discardButtonImageRelativePath != null ? this.discardButtonImageRelativePath.equals(that.discardButtonImageRelativePath) : that.discardButtonImageRelativePath == null) &&
 					(this.canvasImageRelativePath != null ? this.canvasImageRelativePath.equals(that.canvasImageRelativePath) : that.canvasImageRelativePath == null) &&
+					(this.addDrawingImageRelativePath != null ? this.addDrawingImageRelativePath.equals(that.addDrawingImageRelativePath) : that.addDrawingImageRelativePath == null) &&
 					this.canvasColor == that.canvasColor &&
 					this.strokeColor == that.strokeColor &&
 					this.strokeWidth == that.strokeWidth;
@@ -168,7 +187,9 @@ public class DrawingField extends MediaField
 	{
 		int hash = super.hashCode(); // MediaField#hashCode()
 		hash = 31 * hash + (captureButtonImageRelativePath == null ? 0 : captureButtonImageRelativePath.hashCode());
-		hash = 31 * hash + (discardButtonImageRelativePath == null ? 0 : discardButtonImageRelativePath.hashCode());	
+		hash = 31 * hash + (discardButtonImageRelativePath == null ? 0 : discardButtonImageRelativePath.hashCode());
+		hash = 31 * hash + (canvasImageRelativePath == null ? 0 : canvasImageRelativePath.hashCode());	
+		hash = 31 * hash + (addDrawingImageRelativePath == null ? 0 : addDrawingImageRelativePath.hashCode());	
 		hash = 31 * hash + canvasColor.hashCode();
 		hash = 31 * hash + strokeColor.hashCode();
 		hash = 31 * hash + (int)strokeWidth;
