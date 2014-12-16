@@ -18,12 +18,16 @@
 
 package uk.ac.ucl.excites.sapelli.collector.model;
 
+import java.io.Serializable;
+
 /**
  * @author mstevens
  *
  */
-public class Description
+public class Description implements Serializable
 {
+
+	private static final long serialVersionUID = 2L;
 
 	protected String text;
 	protected String audioRelativePath;
