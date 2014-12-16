@@ -102,6 +102,10 @@ public abstract class Item
 	 */
 	protected abstract View createView(Context context, boolean recycleChildren);
 
+	/**
+	 * @param visible
+	 * @return
+	 */
 	public Item setVisibility(boolean visible)
 	{
 		this.visible = visible;
@@ -123,10 +127,12 @@ public abstract class Item
 
 	/**
 	 * @param paddingDip the paddingDip to set
+	 * @return
 	 */
-	public void setPaddingDip(float paddingDip)
+	public Item setPaddingDip(float paddingDip)
 	{
 		this.paddingDip = paddingDip;
+		return this;
 	}
 
 	public boolean hasID()
@@ -172,4 +178,5 @@ public abstract class Item
 		this.description = description;
 		return this;
 	}
+	
 }

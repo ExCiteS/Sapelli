@@ -30,7 +30,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
-import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
+import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
@@ -655,7 +655,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		 * 
 		 * @author benelliott
 		 */
-		private class GalleryPicker extends PickerView
+		private class GalleryPicker extends ItemPickerView
 		{
 			private static final int NUM_COLUMNS = 3; // TODO make configurable?
 			private static final int NUM_ROWS = 3;

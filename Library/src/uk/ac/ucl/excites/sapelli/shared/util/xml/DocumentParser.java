@@ -27,6 +27,7 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 
 /**
@@ -56,11 +57,19 @@ public abstract class DocumentParser extends Handler
 			xr.setContentHandler(this);
 			xr.parse(new InputSource(input)); // start parsing (this will call startDocument(), startElement(), ...)
 		}
+		catch(SAXException saxE)
+		{
+			/* Deal with the stupidness of SAXException not storing
+			 * their cause in the way Exception expects (it's in an
+			 * additional field called 'exception' instead of being
+			 * passed as the cause to the super (Exception), which
+			 * means causes aren't printed as part of a stacktrace). */
+			Exception cause = saxE.getException();
+			throw new Exception("XML Parsing Exception", cause != null ? cause : saxE); 
+		}
 		catch(Exception e)
 		{
-			System.err.println("XML Parsing Exception = " + e);
-			// e.printStackTrace(System.err);
-			throw e;
+			throw new Exception("XML Parsing Exception", e);
 		}
 		finally
 		{	// In case the stream is still open:

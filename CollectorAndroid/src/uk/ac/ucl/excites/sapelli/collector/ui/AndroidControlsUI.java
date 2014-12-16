@@ -23,7 +23,7 @@ import java.io.File;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.ui.PickerView.PickerAdapter;
+import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView.PickerAdapter;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
@@ -57,7 +57,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	
 	// Dynamics------------------------------------------------------
 	private ControlItem[] controlItems;
-	private PickerView view;
+	private ItemPickerView view;
 	private CollectorController controller;
 	
 	public AndroidControlsUI(CollectorController controller, CollectorView collectorView)
@@ -75,7 +75,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	{
 		if(view == null)
 		{
-			view = new PickerView(collectorUI.getContext());
+			view = new ItemPickerView(collectorUI.getContext());
 			
 			// UI set-up:
 			view.setBackgroundColor(Color.BLACK);
@@ -188,20 +188,19 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	@Override
 	public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id)
 	{
-		// Get the pressed ControlItem
-		ControlItem item = (ControlItem) view.getAdapter().getItem(position);
-
-		if(item != null) // just in case...
+		// Audio Feedback
+		if(controller.getCurrentForm().isUsingAudioFeedback())
 		{
-			// Audio Feedback
-			if(controller.isAudioFeedbackUsed() && item != null)
+			AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
+			// Get the pressed ControlItem
+			ControlItem item = (ControlItem) view.getAdapter().getItem(position);
+			if(item != null)
 			{
-				AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
 				//afc.play(afc.new PlaybackJob(item.getDescriptionAudioRelativePath()), v)); TODO
 			}
-			else
-				controller.addLogLine("LONG_CLICK", "LongClick on " + Control.values()[(int) id].name() + " but AudioFeedback is disabled");
 		}
+		else
+			controller.addLogLine("LONG_CLICK", "LongClick on " + Control.values()[(int) id].name() + " but AudioFeedback is disabled");
 		
 		return true;
 	}
@@ -246,17 +245,17 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 				case BACK:
 					imgRelativePath = form.getBackButtonImageRelativePath();
 					drawable = new HorizontalArrow(FOREGROUND_COLOR, true);
-					this.setDescription(form.getBackButtonDescription());
+					this.setDescription(form.getBackButtonDescription()); // TODO this may need to change when audio desc attrib is implemented?
 					break;
 				case CANCEL:
 					imgRelativePath = form.getCancelButtonImageRelativePath();
 					drawable = new SaltireCross(FOREGROUND_COLOR);
-					this.setDescription(form.getCancelButtonDescription());
+					this.setDescription(form.getCancelButtonDescription()); // TODO this may need to change when audio desc attrib is implemented?
 					break;
 				case FORWARD:
 					imgRelativePath = form.getForwardButtonImageRelativePath();
 					drawable = new HorizontalArrow(FOREGROUND_COLOR, false);
-					this.setDescription(form.getForwardButtonDescription());
+					this.setDescription(form.getForwardButtonDescription()); // TODO this may need to change when audio desc attrib is implemented?
 					break;
 			}
 			File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), imgRelativePath);

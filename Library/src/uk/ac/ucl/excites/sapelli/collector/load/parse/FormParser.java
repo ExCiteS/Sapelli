@@ -55,9 +55,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
-import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
@@ -131,9 +129,9 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FIELD_NO_COLUMN = "noColumn";
 	static private final String ATTRIBUTE_FIELD_EDITABLE = "editable";
 	static private final String ATTRIBUTE_FIELD_IMG = "img";
-	static private final String ATTRIBUTE_FIELD_AUDIO_DESC = "audioDescription";
-	static private final String ATTRIBUTE_FIELD_ANSWER_DESC = "answerDesc";
-	static private final String ATTRIBUTE_FIELD_QUESTION_DESC = "questionDesc";
+	static private final String ATTRIBUTE_FIELD_DESC = "desc";
+	static private final String ATTRIBUTE_FIELD_DESCRIPTION = "description";
+	static private final String[] ATTRIBUTE_FIELD_DESC_DESCRIPTION = { ATTRIBUTE_FIELD_DESC, ATTRIBUTE_FIELD_DESCRIPTION };
 	static private final String ATTRIBUTE_FIELD_CAPTION = "caption";
 	static private final String ATTRIBUTE_FIELD_CAPTIONS = "captions";
 	static private final String ATTRIBUTE_FIELD_LABEL = "label"; // synonym for caption
@@ -155,12 +153,14 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FIELD_VALUE = "value";
 	static private final String ATTRIBUTE_FIELD_DEFAULTVALUE = "defaultValue";
 	static private final String ATTRIBUTE_FIELD_INITVALUE = "initialValue";
+	static private final String ATTRIBUTE_CHOICE_CAPTION_HEIGHT = "captionHeight";
 	static private final String ATTRIBUTE_CHOICE_ALT = "alt";
+	static private final String[] ATTRIBUTE_CHOICE_ANSWER_DESC_DESCRIPTION = { "answerDesc", "answerDescription" };
+	static private final String[] ATTRIBUTE_CHOICE_QUESTION_DESC_DESCRIPTION = { ATTRIBUTE_FIELD_DESC, ATTRIBUTE_FIELD_DESCRIPTION, "questionDesc", "questionDescription" };
 	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
 	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
 	static private final String ATTRIBUTE_CHOICE_CROSSED = "crossed";
 	static private final String ATTRIBUTE_CHOICE_CROSS_COLOR = "crossColor";
-	static private final String ATTRIBUTE_CHOICE_CAPTION_HEIGHT = "captionHeight";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
 	static private final String ATTRIBUTE_RELATIONSHIP_HOLD = "hold";
 	static private final String ATTRIBUTE_CONSTRAINT_COLUMN = "column";
@@ -281,7 +281,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			}
 			catch(IllegalArgumentException iae)
 			{
-				throw new SAXException("Invalid '" + ATTRIBUTE_FORM_NEXT + "' attribute value on <" + TAG_FORM + ">.", iae);
+				throw new Exception("Invalid '" + ATTRIBUTE_FORM_NEXT + "' attribute value on <" + TAG_FORM + ">.", iae);
 			}
 			// Store end time?:
 			currentForm.setStoreEndTime(attributes.getBoolean(ATTRIBUTE_FORM_STORE_END_TIME, Form.END_TIME_DEFAULT));
@@ -318,7 +318,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			{
 				currentForm.setAudioFeedback(attributes.getString(ATTRIBUTE_FORM_AUDIO_FEEDBACK, Form.DEFAULT_AUDIO_FEEDBACK.name(), true, false));
 				if(currentForm.getAudioFeedback() != null && currentForm.getAudioFeedback() != AudioFeedback.NONE)
-					addWarning("Older Android devices may require SpeechSynthesis Data Installer to be installed for text-to-speech to work");
+					addWarning("Older Android devices may require SpeechSynthesis Data Installer to be installed for text-to-speech to work."); // TODO move this to synthesis?
 			}
 			catch(IllegalArgumentException iae)
 			{
@@ -437,7 +437,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				}
 				catch(IllegalArgumentException iae)
 				{
-					throw new SAXException("Invalid '" + ATTRIBUTE_BUTTON_COLUMN + "' attribute value on <" + TAG_BUTTON + ">.", iae);
+					throw new Exception("Invalid '" + ATTRIBUTE_BUTTON_COLUMN + "' attribute value on <" + TAG_BUTTON + ">.", iae);
 				}
 				if(btn.getColumnType() == ButtonColumnType.DATETIME && !btn.isOptional())
 					addWarning("Button \"" + btn.id + "\" has a DateTime column but is not optional, this means the button will *have* to be pressed.");
@@ -599,9 +599,9 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	 * Parses a <Choice>
 	 * 
 	 * @param attributes
-	 * @throws SAXException
+	 * @throws Exception
 	 */
-	private void newChoice(XMLAttributes attributes) throws SAXException
+	private void newChoice(XMLAttributes attributes) throws Exception
 	{
 		// Parent:
 		ChoiceField parent = !openFields.isEmpty() && openFields.peek() instanceof ChoiceField ? (ChoiceField) openFields.peek() : null; 
@@ -639,25 +639,14 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		}
 		choice.setCaptionHeight(captionHeight);
 		
-		// Audio feedback:
-		//	Question: "questionDesc" is parsed in newField()!
-		//	Answer:
-		choice.setAnswerDescription(attributes.getString(ATTRIBUTE_FIELD_ANSWER_DESC, null, true, false));
-		if(choice.getAnswerDescription() != null && currentForm.isUsingAudioFeedback())
-		{
-			choice.setAnswerDescriptionAudioRelativePath(
-					MediaHelpers.isAudioFileName(choice.getAnswerDescription()) ?
-							// playback of audio file included with project:
-							choice.getAnswerDescription() :
-								// playback of audio generated from text (TTS):
-								newTTSSynthesisTask(choice.getAnswerDescription(),
-										// Filename: "[id]_[md5Hex(id)]_A.EXTENSION"
-										FileHelpers.makeValidFileName(choice.id + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(choice.id.getBytes())) + "_A." + owner.getGeneratedAudioExtension()),
-										// synthesis language:
-										(currentForm.getDefaultLanguage() != null) ? currentForm.getDefaultLanguage() : project.getDefaultLanguage()
-										)
-					);
-		}
+		// Description & audio feedback:
+		//	Question - desc/description/questionDesc/questionDescription is parsed in newField()
+		//	Answer   - answerDesc/answerDescription is parsed here:
+		String answerDesc = attributes.getString(null, true, false, ATTRIBUTE_CHOICE_ANSWER_DESC_DESCRIPTION); // may be null
+		String answerDescAudioPath = getDescriptionAudioRelativePath(choice, answerDesc, "A"); // may be null
+		choice.setAnswerDescriptionAudioRelativePath(answerDescAudioPath);
+		if(answerDesc != null && !answerDesc.equals(answerDescAudioPath))
+			choice.setAnswerDescription(answerDesc); // this means answerDesc is not a path but a readable/pronounceable String
 
 		// Other attributes:
 		choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
@@ -668,9 +657,9 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	
 	/**
 	 * @param attributes	may be null for implicit pages (i.e. the one for a singlePage form)
-	 * @throws SAXException
+	 * @throws Exception
 	 */
-	private void newPage(XMLAttributes attributes) throws SAXException
+	private void newPage(XMLAttributes attributes) throws Exception
 	{
 		if(!openFields.isEmpty())
 			throw new SAXException("<Page> elements must be apprear directly within <Form> and cannot be nested.");
@@ -742,7 +731,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// TODO ? updateStartTimeUponLeave, saveBeforeFormChange, discardBeforeLeave (only for linksTo) ?
 	}
 	
-	private void newMediaField(MediaField ma, XMLAttributes attributes) throws SAXException
+	private void newMediaField(MediaField ma, XMLAttributes attributes) throws Exception
 	{
 		newField(ma, attributes);
 		ma.setMax(attributes.getInteger(ATTRIBUTE_MEDIA_MAX , MediaField.DEFAULT_MAX));
@@ -757,9 +746,9 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	 * 
 	 * @param field		the Field object
 	 * @param attributes	may be null for implicit fields (fields that are inserted by the parser but do not explicitly appear in the XML, e.g. the Page for a singlePage form) 
-	 * @throws SAXException
+	 * @throws Exception
 	 */
-	private void newField(Field field, XMLAttributes attributes) throws SAXException
+	private void newField(Field field, XMLAttributes attributes) throws Exception
 	{
 		try
 		{	
@@ -851,23 +840,12 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				if(attributes.contains(ATTRIBUTE_FIELD_SHOW_FORWARD) || v1xFormShowForward != null)
 					field.setShowForward((v1xFormShowForward != null ? v1xFormShowForward : true) && attributes.getBoolean(ATTRIBUTE_FIELD_SHOW_FORWARD, Field.DEFAULT_SHOW_FORWARD));
 
-				// audio feedback description:
-				field.setDescription(attributes.getString(null, true, false, ATTRIBUTE_FIELD_AUDIO_DESC, ATTRIBUTE_FIELD_QUESTION_DESC /* alias for choice fields */));
-				if(field.getDescription() != null && currentForm.isUsingAudioFeedback())
-				{
-					field.setDescriptionAudioRelativePath(
-							MediaHelpers.isAudioFileName(field.getDescription()) ?
-									// playback of audio file included with project:
-									field.getDescription() :
-										// playback of audio generated from text (TTS):
-										newTTSSynthesisTask(field.getDescription(),
-												// Filename: "[id]_[md5Hex(id)]_Q.EXTENSION"
-												FileHelpers.makeValidFileName(field.id + "_" + BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(field.id.getBytes())) + "_Q." + owner.getGeneratedAudioExtension()),
-												// synthesis language:
-												(currentForm.getDefaultLanguage() != null) ? currentForm.getDefaultLanguage() : project.getDefaultLanguage()
-												)
-							);
-				}
+				// Description & audio feedback:
+				String desc = attributes.getString(null, true, false,  field instanceof ChoiceField ? ATTRIBUTE_CHOICE_QUESTION_DESC_DESCRIPTION : ATTRIBUTE_FIELD_DESC_DESCRIPTION); // may be null
+				String descAudioPath = getDescriptionAudioRelativePath(field, desc, field instanceof ChoiceField ? "Q" : ""); // may be null
+				field.setDescriptionAudioRelativePath(descAudioPath);
+				if(desc != null && !desc.equals(descAudioPath))
+					field.setDescription(desc); // this means desc is not a path but a readable/pronounceable String
 			}
 
 			// Remember current field:
@@ -875,20 +853,43 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		}
 		catch(Exception e)
 		{
-			throw new SAXException("Error on parsing field '" + field.id + "'", e);
+			throw new Exception("Error on parsing field '" + field.id + "'", e);
 		}
 	}
 	
 	/**
-	 * @param textToSpeak
-	 * @param relativeSoundFilePath
-	 * @param synthesisLanguage
-	 * @return the relativeSoundFilePath
+	 * @param field
+	 * @param description a String which may either be null, OR a path to a sound file packaged with the project (relative to the snd/ folder, although we do not check here whether such a file actually exists), OR a readable/pronounceable piece of text to be used for speech synthesis 
+	 * @param fileNamePostfix
+	 * @return a String which is null if description was null or the form doesn't have audio feedback enabled, OR the description itself if it was sound file path already, OR the path (relative to the snd/ folder) or a to-be-generated sound file containing speech synthesised from the description 
 	 */
-	private String newTTSSynthesisTask(String textToSpeak, String relativeSoundFilePath, String synthesisLanguage)
+	private String getDescriptionAudioRelativePath(Field field, String description, String fileNamePostfix)
 	{
-		owner.addPostProcessingTask(new TTVSynthesisTask(textToSpeak, relativeSoundFilePath, synthesisLanguage));
-		return relativeSoundFilePath;
+		if(fileNamePostfix != null && fileNamePostfix.isEmpty())
+			fileNamePostfix = null;
+		if(description != null && currentForm.isUsingAudioFeedback())
+		{
+			if(MediaHelpers.isAudioFileName(description))
+				// Playback of audio file included with project:
+				return description;
+			else
+			{	// Playback of audio generated from text (TTS):
+				String languageCode = currentForm.getDefaultLanguage();
+				String relativeSoundFilePath =
+					// Filename: "[form.id]_[field.id]_[UpperCase(Hex(hashCode(description)))]_[language][_postfix].[EXTENSION]"
+					FileHelpers.makeValidFileName(	currentForm.id +
+													"_" + field.id +
+													"_" + Integer.toHexString(description.hashCode()).toUpperCase() +
+													"_" + languageCode +
+													(fileNamePostfix != null ? "_" + fileNamePostfix : "") +
+													"." + owner.getGeneratedAudioExtension());
+				// Add synthesis task to be executed during post-processing:
+				owner.addPostProcessingTask(new TTVSynthesisTask(description, relativeSoundFilePath, languageCode));
+				return relativeSoundFilePath;
+			}
+		}
+		//else:
+		return null;
 	}
 	
 	private void newTrigger(Trigger trigger, XMLAttributes attributes)
@@ -954,7 +955,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	}
 	
 	@Override
-	protected void parseEndElement(String uri, String localName, String qName) throws SAXException
+	protected void parseEndElement(String uri, String localName, String qName) throws Exception
 	{
 		// Close field: </Choice>, </Location>, </Photo>, </Audio>, </Orientation>, </BelongsTo>, </LinksTo>, </Button>, </Label>, </Textbox>, </Checkbox>, </List>, </MultiList>, </Page>
 		if(	!openFields.isEmpty() && (

@@ -301,11 +301,6 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 	{
 		return SystemClock.elapsedRealtime();
 	}
-	
-	public boolean isAudioFeedbackUsed()
-	{
-		return currFormSession.form.isUsingAudioFeedback();
-	}
 
 	/**
 	 * Controls the way that clicked views behave (i.e. animate) and interact

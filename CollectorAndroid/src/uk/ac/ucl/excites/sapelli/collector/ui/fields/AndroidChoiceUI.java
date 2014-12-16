@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
@@ -30,8 +31,8 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.ChoiceField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.FontFitView.TextSizeCoordinator;
-import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
+import uk.ac.ucl.excites.sapelli.collector.ui.TextFitView.TextSizeCoordinator;
+import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
@@ -145,22 +146,15 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		if(!isFieldShown() && !controller.isFieldEnabled(child))
 			return false;
 
-		if(isFieldUsingAudioFeedback(false))
+		if(isUsingAudioFeedback(false)) // check if both the form and the field use audio feedback
 		{
 			AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
-			afc.play(afc.new PlaybackJob(child.getAnswerDescriptionAudioRelativePath(), childView));
+			afc.play(afc.newPlaybackJob(child.getAnswerDescriptionAudioRelativePath(), childView));
 		}
 		else
 			controller.addLogLine("LONG_CLICK", "LongClick on " + choice.toString(false) + " but AudioFeedback is disabled");
 
 		return true;
-	}
-	
-	@Override
-	public void cancel()
-	{
-		if (isFieldUsingAudioFeedback(false))
-			collectorUI.stopAudioFeedback();
 	}
 
 	/**
@@ -205,6 +199,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			chosenSizePx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_SIZE_DIP);
 			chosenPaddingPx = ScreenMetrics.ConvertDipToPx(context, CollectorView.PADDING_DIP);
 			chosenMarginPx = ScreenMetrics.ConvertDipToPx(context, PAGE_CHOSEN_ITEM_MARGIN_DIP);
+			
+			// Set the description used for accessibility support:
+			setContentDescription(field.getQuestionDescription());
 		}
 		
 		public void setChosen(ChoiceField chosenField)
@@ -304,7 +301,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * 
 	 * @author Julia, mstevens, Michalis Vitos
 	 */
-	private class PreICSChoiceView extends PickerView implements ChoiceView, AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener
+	private class PreICSChoiceView extends ItemPickerView implements ChoiceView, AdapterView.OnItemClickListener, AdapterView.OnItemLongClickListener
 	{
 						
 		public PreICSChoiceView(Context context)
@@ -336,6 +333,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			setOnItemClickListener(this);
 			if(isUsingAudioFeedback(false))
 				setOnItemLongClickListener(this);
+			
+			// Set the description used for accessibility support:
+			setContentDescription(field.getQuestionDescription());
 		}
 		
 		@Override
@@ -365,7 +365,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		{
 			if(isEnabled())
 				return onChildLongClick(getContext(), field.getChildren().get(position) /* pass the chosen child */, v);
-
 			return false;
 		}
 
@@ -377,6 +376,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	 * @param choice
 	 * @param itemPaddingDip
 	 * @param grayedOut
+	 * @param textOnlyCoordinator
+	 * @param captionCoordinator
 	 * @return
 	 */
 	public Item createItem(ChoiceField choice, float itemPaddingDip, boolean grayedOut, TextSizeCoordinator textOnlyCoordinator, TextSizeCoordinator captionCoordinator)
@@ -387,17 +388,25 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		 * 	In this case we never show both an image and a caption (due to limited space),
 		 * 	we also avoid repeating the caption which is already displayed above the item. */
 		
+		int bgColor = ColourHelpers.ParseColour(choice.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR);
+		
 		Item item = null;
 		// Decide on appearance and get appropriate item(s):
 		if(choice.getImageRelativePath() != null && choice.getCaptionHeight() < 1)
 		{	// the is an image path (but not necessarily an accessible file) and the caption does not take up the full height
 			if(choice.hasCaption() && choice.getCaptionHeight() > 0 && !choice.isRoot())
 			{	// there is a caption, a non-zero caption height & the choice not the root --> IMAGE + CAPTION:
-				item = new SplitItem(SplitItem.VERTICAL, itemPaddingDip) // create new split item (using same amount of spacing between split children as the outer item padding)
+				item = new SplitItem(SplitItem.VERTICAL).setSpacingDip(itemPaddingDip) // use same amount of spacing between split children as the outer item padding
 					// add item for image (take up all space not taken up by caption):
-					.addItem(createImageItem(choice, false, textOnlyCoordinator), 1.0f - choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_DIP)
-					// add item for caption (show value text rather than caption if choice is root -- caption would be above page item already):
-					.addItem(createCaptionItem(choice, true, captionCoordinator), choice.getCaptionHeight(), SPLIT_ITEM_CHILD_PADDING_DIP);
+					.addItem(	createImageItem(choice, false, textOnlyCoordinator)
+									.setPaddingDip(SPLIT_ITEM_CHILD_PADDING_DIP) // 0 dip
+									.setBackgroundColor(bgColor),
+								1.0f - choice.getCaptionHeight())
+					// add item for caption:
+					.addItem(	createCaptionItem(choice, true, captionCoordinator)
+									.setPaddingDip(SPLIT_ITEM_CHILD_PADDING_DIP) // 0 dip
+									.setBackgroundColor(bgColor),
+								choice.getCaptionHeight());
 			}
 			else
 			{	// there is no caption, or its height is 0, or we are dealing with the root --> IMAGE ONLY
@@ -410,7 +419,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		}
 		
 		// Set background colour:
-		item.setBackgroundColor(ColourHelpers.ParseColour(choice.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
+		item.setBackgroundColor(bgColor);
 
 		// Crossing & graying out
 		if(choice.isCrossed() || grayedOut)
@@ -436,8 +445,8 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		// Set size & padding:
 		item.setPaddingDip(itemPaddingDip);
 		
-		// Set the description used for accessibility support
-		item.setDescription(choice.getAnswerDescription()); // TODO fallbacks ? (question)desc? caption? (e.g. when on page)
+		// Set the description used for accessibility support:
+		item.setDescription(choice.getAnswerDescription()); // has fall-backs: answerDesc->caption->value->null
 
 		return item;
 	}
@@ -445,9 +454,10 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	/**
 	 * @param choice
 	 * @param standAlone whether the item will be displayed on its own, or not (i.e. under an image or under a page caption-label)
+	 * @param coordinator
 	 * @return
 	 */
-	private Item createImageItem(ChoiceField choice, boolean standAlone, TextSizeCoordinator textOnlyCoordinator)
+	private Item createImageItem(ChoiceField choice, boolean standAlone, TextSizeCoordinator coordinator)
 	{
 		File imageFile = controller.getFileStorageProvider().getProjectImageFile(field.form.project, choice.getImageRelativePath());
 		if(FileHelpers.isReadableFile(imageFile))
@@ -457,13 +467,14 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		{	// render "alt" text instead of image:
 			String alt = getAltText(choice, standAlone);
 			// We make text color red if the alt text is the image path (meaning we couldn't display a caption or value String):
-			return new TextItem(alt, alt.equals(choice.getImageRelativePath()) ? Color.RED : TextItem.DEFAULT_TEXT_COLOR, textOnlyCoordinator);
+			return new TextItem(alt, alt.equals(choice.getImageRelativePath()) ? Color.RED : TextItem.DEFAULT_TEXT_COLOR, coordinator);
 		}
 	}
-	
+
 	/**
 	 * @param child
 	 * @param allowCaption whether the ChoiceField.caption can be used (because it is isn't already displayed above the caption item)
+	 * @param coordinator
 	 * @return
 	 */
 	private Item createCaptionItem(ChoiceField child, boolean allowCaption, TextSizeCoordinator coordinator)
@@ -474,30 +485,28 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	@Override
 	protected List<AudioFeedbackController<View>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
 	{
-		List<AudioFeedbackController<View>.PlaybackJob> playlist;
 		switch(audioFeedbackMode)
 		{
 			case LONG_CLICK:
-				// just play question description when entering choice field:
-				playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>(); // do not use singletonList as list should be mutable
-				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getQuestionDescriptionAudioRelativePath()));
-				return playlist;
+				// Just play question description when entering choice field:
+				return Collections.singletonList(collectorUI.getAudioFeebackController().newPlaybackJob(field.getQuestionDescriptionAudioRelativePath()));
 	
 			case SEQUENTIAL:
-				// create a playlist that includes firstly the question description and then each answer description:
-				playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>();
-				// question description:
-				playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(field.getQuestionDescriptionAudioRelativePath()));
-				// answer descriptions:
-				List<ChoiceField> children = field.getChildren();
-				// enqueue each answer:
-				for(int i = 0; i < children.size(); i++)
-					playlist.add(collectorUI.getAudioFeebackController().new PlaybackJob(children.get(i).getAnswerDescriptionAudioRelativePath(), choiceView.getChildAt(i)));
+				// Create a playlist that includes firstly the question description and then each answer description:
+				List<AudioFeedbackController<View>.PlaybackJob> playlist = new ArrayList<AudioFeedbackController<View>.PlaybackJob>();
+				AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
+				// Enqueue question description:
+				playlist.add(afc.newPlaybackJob(field.getQuestionDescriptionAudioRelativePath()));
+				// Enqueue answer description for each child:
+				int c = 0;
+				for(ChoiceField child : field.getChildren())
+					playlist.add(afc.newPlaybackJob(child.getAnswerDescriptionAudioRelativePath(), choiceView.getChildAt(c++)));
+				// Return playlist:
 				return playlist;
 	
 			default:
-				// should never get here since this method is only called if audio feedback is enabled
-				return null;
+				// Should never get here since this method is only called if audio feedback is enabled
+				return Collections.<AudioFeedbackController<View>.PlaybackJob> emptyList();
 		}
 	}
 	

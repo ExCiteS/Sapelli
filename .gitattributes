@@ -14,6 +14,7 @@
 *.svg text
 *.bat text
 *.sh text
+*.readme text
 *.md text
 *.mf text
 *.jsp text
