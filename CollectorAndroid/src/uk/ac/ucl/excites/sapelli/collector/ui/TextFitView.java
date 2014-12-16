@@ -260,19 +260,19 @@ public class TextFitView extends View
 		// Set the paint's text size to the value used for simulation:
 		paint.setTextSize(textSize);
 
-		// Compute maximum width accross the lines:
+		// Compute maximum width across the lines:
 		float width = 0;
 		for(String line : textLines)
 			// measure bounds for each line of text:
 			width = Math.max(width, paint.measureText(line)); // max width is max(previous max width, this line width)
 			// determine height by doing no. lines * interline spacing (= font height + spacing between bottom of one line and top of another)
 			// NOTE: do not use Paint#getTextBounds because this ignores any spacing above or below the character, which will be included by the
-			// TextView regardless (e.g. the bounds height of "." would be very low as it excludes the space above the character)
+			// StaticLayout regardless (e.g. the bounds height of "." would be very low as it excludes the space above the character)
 		
 		// Check whether the text fits:
 		boolean fits = width <= targetWidth && textLines.length * paint.getFontMetrics(null) <= targetHeight;
 		
-		// Reset text size on paint to the view's:
+		// Reset the paint's text size to match the value held by the view:
 		paint.setTextSize(this.textSizePx);
 		
 		// Return result:
@@ -347,7 +347,7 @@ public class TextFitView extends View
 	public void setTextColor(int textColor)
 	{
 		paint.setColor(textColor);
-		/* there should be no need to update the StaticLayout here,
+		/* There should be no need to update the StaticLayout here,
 		 * as it has a pointer to the same Paint object (and will thus
 		 * draw text in the new colour) and a colour change alone won't
 		 * affect any dimensions/measurements. */

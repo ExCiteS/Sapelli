@@ -35,7 +35,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.util.AudioPlayer;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
@@ -308,18 +308,29 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 	 * @param clickView
 	 * @param action
 	 */
-	public void clickView(View clickView, Runnable action)
+	public void clickView(View clickedView, final Runnable action)
 	{
+		// Block the UI so other events are ignored until we are done:
+		blockUI();
+		
 		// Execute the "press" animation if allowed, then perform the action:
 		if(getCurrentForm().isClickAnimation())
-		{
-			// execute animation and the action afterwards
-			ClickAnimator.Animate(action, clickView, this);
-		}
+			// Execute animation and the action afterwards:
+			ViewAnimator.Click(	clickedView,
+								null,
+								new Runnable()
+								{
+									@Override
+									public void run()
+									{
+										if(action != null)
+											action.run();
+										unblockUI(); // !!!
+									}
+								});
 		else
 		{
 			// Block the UI before running the action and unblock it afterwards
-			blockUI();
 			if(action != null)
 				action.run();
 			unblockUI();

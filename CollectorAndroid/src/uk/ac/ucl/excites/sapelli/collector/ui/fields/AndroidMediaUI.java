@@ -25,13 +25,13 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
+import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileItem;
@@ -222,12 +222,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * from the single-item review UI.
 	 */
 	@Override
-	public boolean handleControlEvent(Control control)
+	public boolean handleControlEvent(Control.Type controlType)
 	{
 		// ignore user's request to return to capture now we are leaving the field (do this in any case)
 		controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY);
 
-		if(control.equals(Control.BACK) && getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY)
+		if(controlType.equals(Control.Type.Back) && getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY)
 		{
 			// remove the filepath from the field's arguments so we do not re-enter single-item review unintentionally
 			controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY);
@@ -375,7 +375,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				controller.blockUI();
 				// Execute the "press" animation if allowed, then perform the action:
 				if(controller.getCurrentForm().isClickAnimation())
-					ClickAnimator.Animate(onClickRunnable, view, controller); // execute animation and the action afterwards
+					ViewAnimator.Click(view, onClickRunnable, null); // execute animation and the action
 				else
 					onClickRunnable.run(); // perform task now (animation is disabled)
 

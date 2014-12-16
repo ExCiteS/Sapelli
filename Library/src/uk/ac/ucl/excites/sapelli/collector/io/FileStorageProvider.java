@@ -285,9 +285,17 @@ public class FileStorageProvider
 	 */
 	public File getProjectImageFile(Project project, String imageFileRelativePath)
 	{
-		if(imageFileRelativePath == null || imageFileRelativePath.isEmpty())
+		try
+		{
+			if(imageFileRelativePath == null || imageFileRelativePath.isEmpty())
+				return null;
+			return new File(getProjectInstallationFolder(project, false).getAbsolutePath() + File.separator + IMAGE_FOLDER + File.separator + imageFileRelativePath);
+		}
+		catch(FileStorageException fse)
+		{
+			fse.printStackTrace(System.err);
 			return null;
-		return new File(getProjectInstallationFolder(project, false).getAbsolutePath() + File.separator + IMAGE_FOLDER + File.separator + imageFileRelativePath);
+		}		
 	}
 	
 	/**
@@ -297,9 +305,17 @@ public class FileStorageProvider
 	 */
 	public File getProjectSoundFile(Project project, String soundFileRelativePath)
 	{
-		if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
+		try
+		{
+			if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
+				return null;
+			return new File(getProjectInstallationFolder(project, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
+		}
+		catch(FileStorageException fse)
+		{
+			fse.printStackTrace(System.err);
 			return null;
-		return new File(getProjectInstallationFolder(project, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
+		}
 	}
 	
 	/**
@@ -307,8 +323,9 @@ public class FileStorageProvider
 	 * The path will be: <device_download_folder>/Sapelli/Backup_timestamp.zip
 	 * 
 	 * @return the ZIP file (not yet created!)
+	 * @throws FileStorageException
 	 */
-	public File getNewBackupFile()
+	public File getNewBackupFile() throws FileStorageException
 	{
 		return new File(getSapelliDownloadsFolder(), BACKUP_FILE + "_" + TimeUtils.getTimestampForFileName() + "." + Zipper.ZIP_EXTENSION);
 	}

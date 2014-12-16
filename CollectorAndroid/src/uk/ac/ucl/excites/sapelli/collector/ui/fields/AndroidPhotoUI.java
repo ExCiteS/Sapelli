@@ -138,7 +138,6 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	{
 		// nothing to do
 	}
-
 	@Override
 	protected ImageItem generateCaptureButton(Context context)
 	{

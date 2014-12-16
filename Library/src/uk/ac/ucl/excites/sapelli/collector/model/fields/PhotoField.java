@@ -19,8 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -124,14 +123,15 @@ public class PhotoField extends MediaField
 		return EXTENSION_JPEG;
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#addFiles(java.util.Set, uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider)
+	 */
 	@Override
-	public List<File> getFiles(FileStorageProvider fileStorageProvider)
+	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
-		List<File> paths = new ArrayList<File>();
-		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, captureButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
-		return paths;
-	}
+		super.addFiles(filesSet, fileStorageProvider); // !!!
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, captureButtonImageRelativePath));
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));	}
 
 	@Override
 	public <V, UI extends CollectorUI<V, UI>> MediaUI<PhotoField,V, UI> createUI(UI collectorUI)

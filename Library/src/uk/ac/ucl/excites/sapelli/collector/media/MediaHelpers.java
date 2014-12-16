@@ -53,7 +53,7 @@ public final class MediaHelpers
 	 */
 	static public boolean isAudioFileName(String fileName)
 	{
-		if(fileName == null)
+		if(fileName == null || fileName.isEmpty())
 			return false;
 		return audioFilePattern.matcher(fileName.toLowerCase()).matches();
 	}
@@ -66,7 +66,7 @@ public final class MediaHelpers
 	 */
 	static public boolean isImageFileName(String fileName)
 	{
-		if(fileName == null)
+		if(fileName == null || fileName.isEmpty())
 			return false;
 		return imageFilePattern.matcher(fileName.toLowerCase()).matches();
 	}
