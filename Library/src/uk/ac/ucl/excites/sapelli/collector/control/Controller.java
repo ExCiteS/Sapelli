@@ -410,10 +410,20 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		if(currFormSession.getCurrentField() == currField)
 		{	// If the current field hasn't changed as a result of the enter() call...
 			if(needsUIUpdate)
-				ui.setField(currField); // update UI if needed
+				setFieldInUI(currField); // update UI if needed
 			currFormSession.setCurrentFieldDisplayed(needsUIUpdate); // remember whether current field is displayed
 		}
 		//else: when the current field *has* changed as part of the entering then we are done here
+	}
+	
+	/**
+	 * Can be overridden, e.g. to ensure the right (main/UI) thread is used
+	 * 
+	 * @param newCurrentField
+	 */
+	protected void setFieldInUI(Field newCurrentField)
+	{
+		ui.setField(newCurrentField);
 	}
 	
 	/**

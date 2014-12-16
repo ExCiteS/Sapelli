@@ -74,15 +74,9 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 	private PageView pageView;
 	private ChoiceView choiceView;
 
-	private CollectorController controller;
-	private ChoiceField choice;
-
 	public AndroidChoiceUI(ChoiceField choice, CollectorController controller, CollectorView collectorView)
 	{
 		super(choice, controller, collectorView);
-		
-		this.controller = controller;
-		this.choice = choice;
 	}
 
 	@Override
@@ -137,7 +131,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 		};
 
 		// Perform the click
-		controller.clickView(childView, action);
+		collectorUI.clickView(childView, action);
 	}
 	
 	protected boolean onChildLongClick(Context context, final ChoiceField child, View childView)
@@ -153,7 +147,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			afc.play(afc.newPlaybackJob(child.getAnswerDescription().getAudioRelativePath(), childView, AudioFeedbackController.ANIMATION_SHAKE));
 		}
 		else
-			controller.addLogLine("LONG_CLICK", "LongClick on " + choice.toString(false) + " but AudioFeedback is disabled");
+			controller.addLogLine("LONG_CLICK", "LongClick on " + child.toString(false) + " but AudioFeedback is disabled");
 
 		return true;
 	}
@@ -275,7 +269,7 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			};
 
 			// Perform the click
-			controller.clickView(v, action);
+			collectorUI.clickView(v, action);
 		}
 		
 	}

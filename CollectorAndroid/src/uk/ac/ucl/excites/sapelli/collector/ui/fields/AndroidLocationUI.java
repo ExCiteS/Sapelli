@@ -120,7 +120,7 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView>
 			{
 				@Override
 				public void run() { // time's up!
-					collectorUI.getActivity().runOnUiThread(new Runnable()
+					collectorUI.activity.runOnUiThread(new Runnable()
 					{
 						@Override
 						public void run()

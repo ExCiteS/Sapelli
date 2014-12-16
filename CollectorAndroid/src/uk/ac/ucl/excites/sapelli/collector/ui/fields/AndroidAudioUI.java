@@ -49,7 +49,6 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 	
 	static private final String TAG = "AndroidAudioUI";
 
-	private CollectorController controller;
 	private AudioView view;
 	private File audioFile;
 	private AudioRecorder audioRecorder;
@@ -57,8 +56,6 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 	public AndroidAudioUI(AudioField audioField, CollectorController controller, CollectorView collectorView)
 	{
 		super(audioField, controller, collectorView);
-
-		this.controller = controller;
 	}
 	
 	private boolean startRecording()
@@ -197,7 +194,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 							controller.addLogLine("CLICK_START_RECORDING");
 							
 							if(field.isUseNativeApp())
-								collectorUI.getActivity().startAudioRecorderApp(AndroidAudioUI.this);
+								collectorUI.activity.startAudioRecorderApp(AndroidAudioUI.this);
 							else if(startRecording())
 							{
 								view.setStartVisibility(false);
@@ -223,7 +220,7 @@ public class AndroidAudioUI extends AudioUI<View, CollectorView>
 			};
 
 			// Perform the click
-			controller.clickView(v, action);
+			collectorUI.clickView(v, action);
 		}
 		
 		public void setStartVisibility(boolean visible)
