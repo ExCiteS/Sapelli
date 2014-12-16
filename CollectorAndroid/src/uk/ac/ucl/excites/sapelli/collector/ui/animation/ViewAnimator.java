@@ -20,14 +20,15 @@ package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.view.animation.AnimationSet;
 import android.view.animation.CycleInterpolator;
 import android.view.animation.ScaleAnimation;
 import android.view.animation.TranslateAnimation;
-import android.view.animation.Animation.AnimationListener;
-import android.view.animation.AnimationSet;
 
 /**
  * Library of different animations that can be applied to Views
@@ -56,7 +57,7 @@ public class ViewAnimator
 				{
 					if(onAnimationStart != null)
 						// Run the task on the main/UI thread
-						new Handler().post(onAnimationStart); // TODO is this really the UI thread? see javadoc on Handler()
+						new Handler(Looper.getMainLooper()).post(onAnimationStart); // TODO is this really the UI thread? see javadoc on Handler()
 				}
 	
 				@Override
@@ -70,7 +71,7 @@ public class ViewAnimator
 				{
 					if(onAnimationEnd != null)
 						// Run the task on the main/UI thread
-						new Handler().post(onAnimationEnd); // TODO is this really the UI thread? see javadoc on Handler()
+						new Handler(Looper.getMainLooper()).post(onAnimationEnd); // TODO is this really the UI thread? see javadoc on Handler()
 				}
 			});
 
