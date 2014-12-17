@@ -72,14 +72,11 @@ import android.widget.ViewSwitcher;
 public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 {
 	
-	private CollectorController controller;
 	private CameraView photoView;
 	
 	public AndroidPhotoUI(PhotoField field, CollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
-
-		this.controller = controller;
 	}
 	
 	@Override
@@ -245,7 +242,7 @@ public class AndroidPhotoUI extends PhotoUI<View, CollectorView>
 			};
 
 			// Perform the click
-			controller.clickView(v, action);
+			collectorUI.clickView(v, action);
 		}
 		
 		public void update()
