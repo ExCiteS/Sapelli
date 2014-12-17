@@ -19,6 +19,8 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
@@ -52,7 +54,7 @@ public class ViewAnimator
 			{
 				@Override
 				public void onAnimationStart(Animation animation)
-				{	// We are on the main/UI thread here
+				{	// We are on the main/UI thread here so must spawn a new thread to do something concurrently with the animation
 					if(duringAnimation != null)
 						new Thread(duringAnimation).start(); // run *off* main/UI thread
 				}
@@ -65,9 +67,16 @@ public class ViewAnimator
 	
 				@Override
 				public void onAnimationEnd(Animation animation)
-				{	// We are on the main/UI thread here
+				{
+					/*
+					 * We are on the main/UI thread here BUT we still need to post this runnable into the event queue (rather than running it directly) because
+					 * Android is not expecting us to touch the View hierarchy here and doing so can cause NullPointerExceptions -- see
+					 * http://stackoverflow.com/a/7445557/4186768.
+					 * 
+					 * For some reason using a Handler also prevents a strange "splitting" effect when SplitItems are animated on-click.
+					 */
 					if(afterAnimation != null)
-						afterAnimation.run(); // run *on* main/UI thread
+						new Handler(Looper.getMainLooper()).post(afterAnimation); 
 				}
 			});
 
