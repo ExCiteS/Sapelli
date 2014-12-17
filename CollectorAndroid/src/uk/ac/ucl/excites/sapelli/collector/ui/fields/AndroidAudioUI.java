@@ -313,7 +313,7 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 				@Override
 				public void onClick(View v)
 				{
-					controller.clickView(v, buttonAction);
+					collectorUI.clickView(v, buttonAction);
 				}
 
 			});

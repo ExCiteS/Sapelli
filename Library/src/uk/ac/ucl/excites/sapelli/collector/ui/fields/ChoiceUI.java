@@ -122,6 +122,23 @@ public abstract class ChoiceUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 			return choice.getValue();
 		return choice.getImageRelativePath();
 	}
+	
+	/**
+	 * @return a textual answer description (only for non-root choices)
+	 */
+	public String getAnswerDescriptionText(ChoiceField choice)
+	{
+		// Roots are never answers:
+		if(choice.isRoot())
+			return null;
+		// Try textual answer description: based on "answerDesc[ription]" <Choice> attribution, with fall-back to "caption" or "alt" attributes
+		if(choice.getAnswerDescription().getText() != null)
+			return choice.getAnswerDescription().getText();
+		// Additional fall-back:
+		if(choice.getValue() != null)
+			return choice.getValue();
+		return null;
+	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI#isFieldUsingAudioFeedback(boolean)

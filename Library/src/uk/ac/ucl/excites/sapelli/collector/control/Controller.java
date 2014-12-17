@@ -416,10 +416,20 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		if(currFormSession.getCurrentField() == currField)
 		{	// If the current field hasn't changed as a result of the enter() call...
 			if(needsUIUpdate)
-				ui.setField(currField); // update UI if needed
+				setFieldInUI(currField); // update UI if needed
 			currFormSession.setCurrentFieldDisplayed(needsUIUpdate); // remember whether current field is displayed
 		}
 		//else: when the current field *has* changed as part of the entering then we are done here
+	}
+	
+	/**
+	 * Can be overridden, e.g. to ensure the right (main/UI) thread is used
+	 * 
+	 * @param newCurrentField
+	 */
+	protected void setFieldInUI(Field newCurrentField)
+	{
+		ui.setField(newCurrentField);
 	}
 	
 	/**
@@ -487,6 +497,20 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 			playSound(endSoundFile);
 	}
 	
+	/**
+	 * Makes the record null & deletes any media attachments.
+	 * 
+	 * Note:
+	 * 	Making the record null is necessary to avoid that unsaved foreign records are used
+	 * 	(i.e. referred to with a foreign key value) when returning to a BelongsTo field in
+	 * 	a previous form (see {@link #enterBelongsTo(BelongsToField, FieldParameters)}).
+	 *  Doing so is risky however because an NPE will be thrown (likely crashing the app)
+	 *  when some FieldUI or controller method attempts to (illegally!) use the record
+	 *  after this discard operation. Obviously that shouldn't happen but we've had several
+	 *  cases in which it did. However, all (known) cases have been resolved and any new
+	 *  similar cases would be revealed soon by an NPE and/or crash. 
+	 * 
+	 */
 	protected void discardRecordAndAttachments()
 	{
 		// delete any files that were added but have now been discarded:
@@ -499,12 +523,6 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		
 		// Discard record itself:
 		currFormSession.record = null; // !!!
-		/* Note:
-		 * 	Making the record null is risky because an NPE will be thrown (most likely crashing the app)
-		 * 	when some FieldUI or controller method attempts to (illegally!) use the record after this
-		 * 	discard operation. Obviously that shouldn't happen but we've had several cases in which it did.
-		 * 	However, all (known) cases have been resolved and keeping the above line also enables us to
-		 * 	detect any new similar cases (revealed by an NPE and/or crash). */
 	}
 	
 	@Override
@@ -652,7 +670,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 			arguments.clear(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM);
 			// Check if we really came back from the relatedForm:
 			if(prevFormSession != null && prevFormSession.form == belongsTo.getRelatedForm())
-			{	// ... and we did indeed return from it
+			{	// ... yes we did.
 				Record foreignRecord = prevFormSession.record;
 				if(constraints.isValid(foreignRecord)) // passing null will return false
 				{	// The relatedForm produced/edited a non-null record which meets the constraints
@@ -674,7 +692,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 				}
 			}
 			else
-			{	// we were waiting to return from related for but the previous form is another one: this should never happen(?)
+			{	// we were waiting to return from relatedForm but the previous form is another one: this should never happen(?)
 				// TODO show error & restartForm?
 			}
 		}

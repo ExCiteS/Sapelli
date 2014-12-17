@@ -132,14 +132,32 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 				errorDescr = collectorUI.getContext().getString(R.string.txtValidationErrorInvalid);
 				break;
 		}
-		view.setError(errorDescr);
+		
+		// Update UI, from the main/UI thread:
+		final String finalErrorDescr = errorDescr;
+		collectorUI.activity.runOnUiThread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				view.setError(finalErrorDescr);
+			}
+		});
 	}
 
 	@Override
 	protected void clearValidationError()
 	{
 		if(view != null)
-			view.clearError();
+			// Use the main/UI thread:
+			collectorUI.activity.runOnUiThread(new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					view.clearError();
+				}
+			});
 	}
 	
 	/* (non-Javadoc)

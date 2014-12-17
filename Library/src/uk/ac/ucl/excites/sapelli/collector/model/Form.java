@@ -20,9 +20,11 @@ package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
@@ -72,7 +74,7 @@ public class Form implements WarningKeeper
 	public static final boolean DEFAULT_SKIP_ON_BACK = false;
 	public static final boolean DEFAULT_SINGLE_PAGE = false;
 	public static final boolean DEFAULT_VIBRATE = true;
-	public static final String DEFAULT_BUTTON_BACKGROUND_COLOR = "#BABABA"; // gray
+	public static final String DEFAULT_CONTROL_BACKGROUND_COLOR = "#BABABA"; // light gray
 	public static final boolean DEFAULT_CLICK_ANIMATION = true;
 	public static final boolean DEFAULT_OBFUSCATE_MEDIA_FILES = false;
 
@@ -97,11 +99,6 @@ public class Form implements WarningKeeper
 	}
 
 	public static final AudioFeedback DEFAULT_AUDIO_FEEDBACK = AudioFeedback.NONE;
-
-	// Buttons Default Description Text (used for accessibility support)
-	public static final String DEFAULT_FORWARD_BUTTON_DESCRIPTION = "Forward";
-	public static final String DEFAULT_CANCEL_BUTTON_DESCRIPTION = "Cancel";
-	public static final String DEFAULT_BACK_BUTTON_DESCRIPTION = "Back";
 
 	// Dynamics-------------------------------------------------------
 	public final Project project;
@@ -145,14 +142,9 @@ public class Form implements WarningKeeper
 	private boolean vibrateOnSave = DEFAULT_VIBRATE;
 	private String saveSoundRelativePath;
 
-	// Buttons:
-	private String buttonBackgroundColor = DEFAULT_BUTTON_BACKGROUND_COLOR;
-	private String backButtonImageRelativePath;
-	private String backButtonDescription = DEFAULT_BACK_BUTTON_DESCRIPTION;
-	private String cancelButtonImageRelativePath;
-	private String cancelButtonDescription = DEFAULT_CANCEL_BUTTON_DESCRIPTION;
-	private String forwardButtonImageRelativePath;
-	private String forwardButtonDescription = DEFAULT_FORWARD_BUTTON_DESCRIPTION;
+	// Controls:
+	private String controlBackgroundColor = DEFAULT_CONTROL_BACKGROUND_COLOR;
+	private final Control[] controls;
 	
 	public Form(Project project, String id)
 	{
@@ -165,6 +157,11 @@ public class Form implements WarningKeeper
 		this.fields = new ArrayList<Field>();
 		this.position = (short) project.getForms().size();
 		project.addForm(this); //!!!
+		
+		// Initialise controls array:
+		controls = new Control[Control.Type.values().length];
+		for(Control.Type type : Control.Type.values())
+			controls[type.ordinal()] = new Control(this, type);
 	}
 
 	/**
@@ -240,7 +237,7 @@ public class Form implements WarningKeeper
 	 */
 	public List<Field> getFields()
 	{
-		return fields;
+		return Collections.unmodifiableList(fields);
 	}
 	
 	/**
@@ -349,11 +346,11 @@ public class Form implements WarningKeeper
 	}
 	
 	/**
-	 * @return the BCP 47 format string representing the currently set default language for this form
+	 * @return the BCP-47 format string representing the currently set default language for this form
 	 */
 	public String getDefaultLanguage()
 	{
-		return defaultLanguage;
+		return defaultLanguage != null ? defaultLanguage : project.getDefaultLanguage();
 	}
 
 	/**
@@ -388,15 +385,11 @@ public class Form implements WarningKeeper
 	{
 		if(audioFeedbackStr == null)
 			return; // default Audio Feedback will be used
-		audioFeedbackStr = audioFeedbackStr.toUpperCase(); // Make upper case
 		try
 		{
-			this.audioFeedback = AudioFeedback.valueOf(audioFeedbackStr);
+			this.audioFeedback = AudioFeedback.valueOf(audioFeedbackStr.toUpperCase());
 		}
-		catch(IllegalArgumentException iae)
-		{
-			throw iae;
-		}
+		catch(IllegalArgumentException ignore) {}
 	}
 
 	/**
@@ -432,117 +425,29 @@ public class Form implements WarningKeeper
 	}
 
 	/**
-	 * @return the backButtonImageRelativePath
+	 * @param controlType
+	 * @return
 	 */
-	public String getBackButtonImageRelativePath()
+	public Control getControl(Control.Type controlType)
 	{
-		return backButtonImageRelativePath;
+		return controls[controlType.ordinal()];
 	}
 
 	/**
-	 * @param backButtonImageRelativePath the backButtonImageRelativePath to set
+	 * @return the controlBackgroundColor
 	 */
-	public void setBackButtonImageRelativePath(String backButtonImageRelativePath)
+	public String getControlBackgroundColor()
 	{
-		this.backButtonImageRelativePath = backButtonImageRelativePath;
+		return controlBackgroundColor;
 	}
 
 	/**
-	 * @return the cancelButtonImageRelativePath
+	 * @param controlBackgroundColor the controlBackgroundColor to set
 	 */
-	public String getBackButtonDescription()
+	public void setControlBackgroundColor(String controlBackgroundColor)
 	{
-		return backButtonDescription;
+		this.controlBackgroundColor = controlBackgroundColor;
 	}
-
-	/**
-	 * @param backButtonDescription the backButtonDescription to set
-	 */
-	public void setBackButtonDescription(String backButtonDescription)
-	{
-		this.backButtonDescription = backButtonDescription;
-	}
-
-	/**
-	 * @return the cancelButtonImageRelativePath
-	 */
-	public String getCancelButtonImageRelativePath()
-	{
-		return cancelButtonImageRelativePath;
-	}
-
-	/**
-	 * @param cancelButtonImageRelativePath the cancelButtonImageRelativePath to set
-	 */
-	public void setCancelButtonImageRelativePath(String cancelButtonImageRelativePath)
-	{
-		this.cancelButtonImageRelativePath = cancelButtonImageRelativePath;
-	}
-
-	/**
-	 * @return the forwardButtonImageRelativePath
-	 */
-	public String getCancelButtonDescription()
-	{
-		return cancelButtonDescription;
-	}
-
-	/**
-	 * @param cancelButtonDescription the cancelButtonDescription to set
-	 */
-	public void setCancelButtonDescription(String cancelButtonDescription)
-	{
-		this.cancelButtonDescription = cancelButtonDescription;
-	}
-
-	/**
-	 * @return the forwardButtonImageRelativePath
-	 */
-	public String getForwardButtonImageRelativePath()
-	{
-		return forwardButtonImageRelativePath;
-	}
-
-	/**
-	 * @param forwardButtonImageRelativePath the forwardButtonImageRelativePath to set
-	 */
-	public void setForwardButtonImageRelativePath(String forwardButtonImageRelativePath)
-	{
-		this.forwardButtonImageRelativePath = forwardButtonImageRelativePath;
-	}
-
-	/**
-	 * @return the buttonBackgroundColor
-	 */
-	public String getForwardButtonDescription()
-	{
-		return forwardButtonDescription;
-	}
-
-	/**
-	 * @param forwardButtonDescription the forwardButtonDescription to set
-	 */
-	public void setForwardButtonDescription(String forwardButtonDescription)
-	{
-		this.forwardButtonDescription = forwardButtonDescription;
-	}
-
-	/**
-	 * @return the buttonBackgroundColor
-	 */
-	public String getButtonBackgroundColor()
-	{
-		return buttonBackgroundColor;
-	}
-
-	/**
-	 * @param buttonBackgroundColor the buttonBackgroundColor to set
-	 */
-	public void setButtonBackgroundColor(String buttonBackgroundColor)
-	{
-		this.buttonBackgroundColor = buttonBackgroundColor;
-	}
-
 	public List<LocationField> getLocationFields()
 	{
 		List<LocationField> locFields = new ArrayList<LocationField>();
@@ -876,22 +781,21 @@ public class Form implements WarningKeeper
 	}
 
 	/**
+	 * @param filesSet set to add files to
 	 * @param fileStorageProvider to resolve relative paths
-	 * @return
 	 */
-	public List<File> getFiles(FileStorageProvider fileStorageProvider)
+	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
-		List<File> paths = new ArrayList<File>();
-		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, backButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, cancelButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, forwardButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, shortcutImageRelativePath));
-		CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(project, saveSoundRelativePath));
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(project, shortcutImageRelativePath));
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectSoundFile(project, saveSoundRelativePath));
+	
+		// Add files for controls:
+		for(Control control : controls)
+			control.addFiles(filesSet, fileStorageProvider);
 		
-		//Add paths for fields:
+		// Add files for fields:
 		for(Field field : fields)
-			CollectionUtils.addAllIgnoreNull(paths, field.getFiles(fileStorageProvider));
-		return paths;
+			field.addFiles(filesSet, fileStorageProvider);
 	}
 	
 	public String toString()
@@ -926,13 +830,8 @@ public class Form implements WarningKeeper
 					this.next == that.next &&
 					this.vibrateOnSave == that.vibrateOnSave &&
 					(this.saveSoundRelativePath != null ? this.saveSoundRelativePath.equals(that.saveSoundRelativePath) : that.saveSoundRelativePath == null) &&
-					this.buttonBackgroundColor.equals(that.backButtonImageRelativePath) &&
-					(this.backButtonImageRelativePath != null ? this.backButtonImageRelativePath.equals(that.backButtonImageRelativePath) : that.backButtonImageRelativePath == null) &&
-					this.backButtonDescription.equals(that.backButtonDescription) &&
-					(this.cancelButtonImageRelativePath != null ? this.cancelButtonImageRelativePath.equals(that.cancelButtonImageRelativePath) : that.cancelButtonImageRelativePath == null) &&
-					this.cancelButtonDescription.equals(that.cancelButtonDescription) &&
-					(this.forwardButtonImageRelativePath != null ? this.forwardButtonImageRelativePath.equals(that.forwardButtonImageRelativePath) : that.forwardButtonImageRelativePath == null) &&
-					this.forwardButtonDescription.equals(that.forwardButtonDescription);
+					this.controlBackgroundColor.equals(that.controlBackgroundColor) &&
+					Arrays.equals(this.controls, that.controls);
 		}
 		else
 			return false;
@@ -960,13 +859,8 @@ public class Form implements WarningKeeper
 		hash = 31 * hash + next.ordinal();
 		hash = 31 * hash + (vibrateOnSave ? 0 : 1);
 		hash = 31 * hash + (saveSoundRelativePath == null ? 0 : saveSoundRelativePath.hashCode());
-		hash = 31 * hash + buttonBackgroundColor.hashCode();
-		hash = 31 * hash + (backButtonImageRelativePath == null ? 0 : backButtonImageRelativePath.hashCode());
-		hash = 31 * hash + backButtonDescription.hashCode();
-		hash = 31 * hash + (cancelButtonImageRelativePath == null ? 0 : cancelButtonImageRelativePath.hashCode());
-		hash = 31 * hash + cancelButtonDescription.hashCode();
-		hash = 31 * hash + (forwardButtonImageRelativePath == null ? 0 : forwardButtonImageRelativePath.hashCode());
-		hash = 31 * hash + forwardButtonDescription.hashCode();
+		hash = 31 * hash + controlBackgroundColor.hashCode();
+		hash = 31 * hash + Arrays.hashCode(controls);
 		// There is no need to include the schema.hashCode() in this computation because the schema it is entirely inferred from things that are included in the computation.
 		return hash;
 	}

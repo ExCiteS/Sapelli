@@ -88,11 +88,20 @@ public class AndroidPageUI extends PageUI<View, CollectorView>
 	}
 	
 	@Override
-	protected void markValidity(FieldUI<?, View, CollectorView> fieldUI, boolean valid)
+	protected void markValidity(final FieldUI<?, View, CollectorView> fieldUI, final boolean valid)
 	{
 		if(view == null)
 			return; // (this should never happen)
-		view.markValidity(fieldUI, valid);
+		
+		// Update UI (from the main/UI thread):
+		collectorUI.activity.runOnUiThread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				view.markValidity(fieldUI, valid);
+			}
+		});
 	}
 	
 	/**

@@ -23,9 +23,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.model.Description;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
@@ -48,15 +50,12 @@ import uk.ac.ucl.excites.sapelli.storage.util.StringListMapper;
  * 
  * @author mstevens
  */
-/**
- * @author mstevens
- *
- */
 public class ChoiceField extends Field implements DictionaryItem
 {
 	
 	static public final int DEFAULT_NUM_COLS = 1;
 	static public final int DEFAULT_NUM_ROWS = 2;
+	static public final boolean DEFAULT_MATCH_TEXT_SIZE = true;
 	
 	/**
 	 * By default the caption (if one is specified!) will take up a quarter of the available height.
@@ -78,13 +77,22 @@ public class ChoiceField extends Field implements DictionaryItem
 	
 	private ChoiceField parent;
 	private ChoiceField root;
+	
+	/**
+	 * Used to avoid cases in which siblings with the same attributes would produce the 
+	 * same {@link #hashCode()} and would be treated as equal by {@link #equals(Object)},
+	 * and therefore be represented by only a single dictionary entry.
+	 */
+	private int position;
+	
 	private List<ChoiceField> children;
+	
 	private String imageRelativePath;
-	private String answerDescription;
-	private String answerDescriptionAudioRelativePath;
+	private final Description answerDescription;
 	private int cols = DEFAULT_NUM_COLS;
 	private int rows = DEFAULT_NUM_ROWS;
 	private float captionHeight = DEFAULT_CAPTION_HEIGHT;
+	private boolean matchTextSize = DEFAULT_MATCH_TEXT_SIZE;
 	private boolean crossed = DEFAULT_CROSSED;
 	private String crossColor = DEFAULT_CROSS_COLOR;
 	private final String value;
@@ -110,23 +118,27 @@ public class ChoiceField extends Field implements DictionaryItem
 		this.parent = parent;
 		this.value = ((value == null || value.isEmpty()) ? null : value); //replace empty string with null (so we don't need to check for empty string elsewhere)
 		if(parent == null)
-		{	//this is a root choice
+		{	// this is a root choice
 			root = this; //self-pointer
-			dictionary = new ChoiceDictionary(); //root holds the dictionary
+			dictionary = new ChoiceDictionary(); // root holds the one & only dictionary
+			answerDescription = null; // root does not have an answer description (as it is never an "answer")
 		}
 		else
-		{	//this is a child choice
+		{	// this is a child choice
 			parent.addChild(this); //add myself as a child of my parent
 			root = parent.root;
 			dictionary = root.dictionary; //children share the dictionary of the root (so there is only 1 instance per choice tree)
+			noColumn = root.noColumn;
+			answerDescription = new Description();
 		}
 	}
 	
-	public void addChild(ChoiceField c)
+	public void addChild(ChoiceField child)
 	{
 		if(children == null)
 			children = new ArrayList<ChoiceField>();
-		children.add(c);
+		child.position = children.size(); 
+		children.add(child);
 	}
 
 	/**
@@ -167,6 +179,22 @@ public class ChoiceField extends Field implements DictionaryItem
 	}
 	
 	/**
+	 * @return the matchTextSize
+	 */
+	public boolean isMatchTextSize()
+	{
+		return matchTextSize;
+	}
+
+	/**
+	 * @param matchTextSize the matchTextSize to set
+	 */
+	public void setMatchTextSize(boolean matchTextSize)
+	{
+		this.matchTextSize = matchTextSize;
+	}
+
+	/**
 	 * @return the parent
 	 */
 	public ChoiceField getParent()
@@ -190,7 +218,9 @@ public class ChoiceField extends Field implements DictionaryItem
 	 */
 	public List<ChoiceField> getChildren()
 	{
-		return children != null ? children : Collections.<ChoiceField> emptyList();
+		return children != null ?
+			Collections.unmodifiableList(children) :
+			Collections.<ChoiceField> emptyList();
 	}
 
 	/**
@@ -288,77 +318,36 @@ public class ChoiceField extends Field implements DictionaryItem
 	/**
 	 * @return the answerDescription
 	 */
-	public String getAnswerDescription()
+	public Description getAnswerDescription()
 	{
 		return answerDescription;
 	}
-
-	/**
-	 * @param answerDescription the answerDescription to set
-	 */
-	public void setAnswerDescription(String answerDescription)
-	{
-		this.answerDescription = answerDescription;
-	}
-
-	/**
-	 * @return the answerDescriptionAudioRelativePath
-	 */
-	public String getAnswerDescriptionAudioRelativePath()
-	{
-		return answerDescriptionAudioRelativePath;
-	}
-
-	/**
-	 * @param answerDescriptionAudioRelativePath the answerDescriptionAudioRelativePath to set
-	 */
-	public void setAnswerDescriptionAudioRelativePath(String answerDescriptionAudioRelativePath)
-	{
-		this.answerDescriptionAudioRelativePath = answerDescriptionAudioRelativePath;
-	}
 	
 	/**
-	 * @return the questionDescription
+	 * @return the question description
 	 */
-	public String getQuestionDescription()
+	public Description getQuestionDescription()
 	{
-		return super.getDescription();
+		return super.description;
 	}
-
-	/**
-	 * @param questionDescription the questionDescription to set
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#addFiles(java.util.Set, uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider)
 	 */
-	public void setQuestionDescription(String questionDescription)
-	{
-		super.setDescription(questionDescription);
-	}
-
-	/**
-	 * @return the questionDescriptionAudioRelativePath
-	 */
-	public String getQuestionDescriptionAudioRelativePath()
-	{
-		return super.getDescriptionAudioRelativePath();
-	}
-
-	/**
-	 * @param questionDescriptionAudioRelativePath the questionDescriptionAudioRelativePath to set
-	 */
-	public void setQuestionDescriptionAudioRelativePath(String questionDescriptionAudioRelativePath)
-	{
-		super.setDescriptionAudioRelativePath(questionDescriptionAudioRelativePath);
-	}
-
 	@Override
-	public List<File> getFiles(FileStorageProvider fileStorageProvider)
+	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
-		List<File> paths = new ArrayList<File>();
+		super.addFiles(filesSet, fileStorageProvider); // !!!
+		
+		// image:
 		if(hasImage())
-			CollectionUtils.addIgnoreNull(paths, fileStorageProvider.getProjectImageFile(form.project, imageRelativePath));
-		// TODO add audio feedback files!
+			CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, imageRelativePath));
+		// answer audio description (only for non-roots):
+		if(!isRoot())
+			CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectSoundFile(form.project, answerDescription.getAudioRelativePath()));
+		// Recursive through children:
 		for(ChoiceField child : getChildren())
-			CollectionUtils.addAllIgnoreNull(paths, child.getFiles(fileStorageProvider));
-		return paths;
+			child.addFiles(filesSet, fileStorageProvider);
 	}
 	
 	@Override
@@ -514,12 +503,13 @@ public class ChoiceField extends Field implements DictionaryItem
 		{
 			ChoiceField that = (ChoiceField) obj;
 			return	super.equals(that) && // Field#equals(Object)
+					// only compare the id's of parents and roots, not the objects themselves!:
 					(this.parent != null ? that.parent != null && this.parent.id.equals(that.parent.id) : that.parent == null) &&
 					(this.root != null ? that.root != null && this.root.id.equals(that.root.id) : that.root == null) &&
+					this.position == that.position &&
 					this.getChildren().equals(that.getChildren()) &&
 					(this.imageRelativePath != null ? this.imageRelativePath.equals(that.imageRelativePath) : that.imageRelativePath == null) &&
 					(this.answerDescription != null ? that.answerDescription.equals(that.answerDescription) : that.answerDescription == null) &&
-					(this.answerDescriptionAudioRelativePath != null ? that.answerDescriptionAudioRelativePath.equals(that.answerDescriptionAudioRelativePath) : that.answerDescriptionAudioRelativePath == null) &&
 					this.captionHeight == that.captionHeight &&
 					this.cols == that.cols &&
 					this.rows == that.rows &&
@@ -536,12 +526,13 @@ public class ChoiceField extends Field implements DictionaryItem
 	public int hashCode()
 	{
 		int hash = super.hashCode(); // Field#hashCode()
+		// only call hashCode on the id of the parent & root, not on the objects themselves!:
 		hash = 31 * hash + (parent != null ? parent.id.hashCode() : 0);
 		hash = 31 * hash + (root != null ? root.id.hashCode() : 0);
+		hash = 31 * hash + position;
 		hash = 31 * hash + getChildren().hashCode();
 		hash = 31 * hash + (imageRelativePath != null ? imageRelativePath.hashCode() : 0);
 		hash = 31 * hash + (answerDescription != null ? answerDescription.hashCode() : 0);
-		hash = 31 * hash + (answerDescriptionAudioRelativePath != null ? answerDescriptionAudioRelativePath.hashCode() : 0);
 		hash = 31 * hash + Float.floatToIntBits(captionHeight);
 		hash = 31 * hash + cols;
 		hash = 31 * hash + rows;

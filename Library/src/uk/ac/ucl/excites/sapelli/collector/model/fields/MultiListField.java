@@ -258,6 +258,12 @@ public class MultiListField extends Field
 		private final MultiListField field;
 		private final MultiListItem parent;
 		
+		/**
+		 * Used to avoid cases in which siblings with the same attributes would produce the 
+		 * same {@link #hashCode()} and would be treated as equal by {@link #equals(Object)},
+		 * and therefore be represented by only a single dictionary entry.
+		 */
+		private int position;
 		private String value;
 		
 		private List<MultiListItem> children;
@@ -304,6 +310,7 @@ public class MultiListField extends Field
 		{
 			if(children == null)
 				children = new ArrayList<MultiListItem>();
+			child.position = children.size();
 			children.add(child);
 		}
 		
@@ -411,6 +418,7 @@ public class MultiListField extends Field
 				MultiListItem that = (MultiListItem) obj;
 				return	this.field.id.equals(that.field.id) &&
 						(this.parent != null ? that.parent != null && (this.parent.value != null ? this.parent.value.equals(that.parent.value) : that.parent.value == null) : that.parent == null) &&
+						this.position == that.position &&
 						(this.value != null ? this.value.equals(that.value) : that.value == null) &&
 						this.getChildren().equals(that.getChildren()) &&
 						this.defaultChildIdx == that.defaultChildIdx;
@@ -424,7 +432,8 @@ public class MultiListField extends Field
 		{
 			int hash = 1;
 			hash = 31 * hash + field.id.hashCode();
-			hash = 31 * hash + (parent != null ? (parent.value != null ? parent.value.hashCode() : 1) : 0); // do not use parent.hashCode() (to avoid endless loop)			
+			hash = 31 * hash + (parent != null ? (parent.value != null ? parent.value.hashCode() : 1) : 0); // do not use parent.hashCode() (to avoid endless loop)
+			hash = 31 * hash + position;
 			hash = 31 * hash + (value != null ? value.hashCode() : 0);
 			hash = 31 * hash + getChildren().hashCode();
 			hash = 31 * hash + defaultChildIdx;

@@ -94,7 +94,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	// ScreenTransition duration
 	static public final int SCREEN_TRANSITION_DURATION = 800;
 
-	private CollectorActivity activity;
+	public final CollectorActivity activity;
 	private CollectorController controller;
 
 	// UI elements:
@@ -191,20 +191,20 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 					// Check whether it is a backwards or forwards direction and create Right or Left animation:
 					if(controller.isGoBack())
 						// Right:
-						ViewAnimator.SlideRight(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						ViewAnimator.SlideRight(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					else
 						// Left:
-						ViewAnimator.SlideLeft(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						ViewAnimator.SlideLeft(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					break;
 
 				case VERTICAL:
 					// Check whether it is a backwards or forwards direction and create Up or Down animation:
 					if(controller.isGoBack())
 						// Down:
-						ViewAnimator.slideDown(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						ViewAnimator.SlideDown(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					else
 						// Up:
-						ViewAnimator.slideUp(activity, fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						ViewAnimator.SlideUp(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
 					break;
 
 				default:
@@ -273,16 +273,46 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		}
 		return newFieldUI;
 	}
-	
-	public CollectorActivity getActivity()
-	{
-		return activity;
-	}
 
 	@Override
 	public FieldUI<?, View, CollectorView> getCurrentFieldUI()
 	{
 		return fieldUI;
+	}
+	
+	/**
+	 * Controls the way that clicked views behave (i.e. animate) and interact
+	 * 
+	 * @param clickView
+	 * @param action
+	 */
+	public void clickView(View clickedView, final Runnable action)
+	{
+		// Block the UI so other events are ignored until we are done:
+		controller.blockUI();
+		
+		// Execute the "press" animation if allowed, then perform the action:
+		if(controller.getCurrentForm().isClickAnimation())
+			// Execute animation and the action afterwards:
+			ViewAnimator.Click(	clickedView,
+								null,
+								new Runnable()
+								{
+									@Override
+									public void run()
+									{
+										if(action != null)
+											action.run();
+										controller.unblockUI(); // !!!
+									}
+								});
+		else
+		{
+			// Block the UI before running the action and unblock it afterwards
+			if(action != null)
+				action.run();
+			controller.unblockUI();
+		}
 	}
 
 	@Override
@@ -458,7 +488,6 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return ScreenMetrics.GetScreenHeight(activity);
 	}
 
-	// TODO pull all getFieldUI*Px methods up to CollectorUI
 	public int getFieldUIWidthPx()
 	{
 		return getScreenWidthPx();
@@ -551,18 +580,14 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		return audioFeedbackController;
 	}
 	
-	/**
-	 * Stop audio feedback playback
-	 */
+	@Override
 	public void stopAudioFeedback()
 	{
 		if(audioFeedbackController != null)
 			audioFeedbackController.stop();
 	}
 
-	/**
-	 * Stop audio feedback playback & release associated resources
-	 */
+	@Override
 	public void destroyAudioFeedback()
 	{
 		if(audioFeedbackController != null)

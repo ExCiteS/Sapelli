@@ -21,9 +21,12 @@ package uk.ac.ucl.excites.sapelli.collector.ui;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.media.AndroidAudioFeedbackController;
 import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.collector.ui.PickerView.PickerAdapter;
+import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView.PickerAdapter;
+import uk.ac.ucl.excites.sapelli.collector.ui.drawables.EmptyDrawable;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.HorizontalArrow;
 import uk.ac.ucl.excites.sapelli.collector.ui.drawables.SaltireCross;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
@@ -36,7 +39,6 @@ import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.widget.AbsListView.LayoutParams;
 import android.widget.AdapterView;
@@ -57,7 +59,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	
 	// Dynamics------------------------------------------------------
 	private ControlItem[] controlItems;
-	private PickerView view;
+	private ItemPickerView view;
 	private CollectorController controller;
 	
 	public AndroidControlsUI(CollectorController controller, CollectorView collectorView)
@@ -66,8 +68,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		
 		this.controller = controller;
 		// ControlItem array:
-		// ControlItem array:
-		this.controlItems = new ControlItem[Control.values().length];
+		this.controlItems = new ControlItem[Control.Type.values().length];
 	}
 
 	@Override
@@ -75,7 +76,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 	{
 		if(view == null)
 		{
-			view = new PickerView(collectorUI.getContext());
+			view = new ItemPickerView(collectorUI.getContext());
 			
 			// UI set-up:
 			view.setBackgroundColor(Color.BLACK);
@@ -121,12 +122,9 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		 * 	is to always create now views for the control items. */
 		view.setRecycleViews(!newForm.isClickAnimation());
 		
-		// Background colour:
-		int controlBackgroundColor = ColourHelpers.ParseColour(newForm.getButtonBackgroundColor(), Form.DEFAULT_BUTTON_BACKGROUND_COLOR); //default is light gray
-		
 		// (Re)instantiate control items (i.e. buttons):
-		for(Control control : ControlsUI.Control.values())
-			controlItems[control.ordinal()] = new ControlItem(collectorUI.getContext(), control, newForm, controlBackgroundColor);
+		for(Control.Type controlType : Control.Type.values())
+			controlItems[controlType.ordinal()] = new ControlItem(collectorUI.getContext(), newForm.getControl(controlType));
 	}
 	
 	@Override
@@ -138,13 +136,13 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		// Update shown controlItems:
 		PickerAdapter adapter = view.getAdapter();
 		adapter.clear();
-		for(Control control : ControlsUI.Control.values())
+		for(Control.Type controlType : Control.Type.values())
 		{
-			State state = newControlStates[control.ordinal()]; 
+			State state = newControlStates[controlType.ordinal()]; 
 			if(state != State.HIDDEN)
 			{
-				controlItems[control.ordinal()].setGrayedOut(state == State.SHOWN_DISABLED);
-				adapter.addItem(controlItems[control.ordinal()]);
+				controlItems[controlType.ordinal()].setGrayedOut(state == State.SHOWN_DISABLED);
+				adapter.addItem(controlItems[controlType.ordinal()]);
 			}
 		}
 		
@@ -177,32 +175,26 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		{
 			public void run()
 			{
-				handleControlEvent(Control.values()[(int) id], false);
+				handleControlEvent(Control.Type.values()[(int) id], false);
 			}
 		};
 
 		// Perform the click
-		controller.clickView(v, action);
+		collectorUI.clickView(v, action);
 	}
 	
 	@Override
 	public boolean onItemLongClick(AdapterView<?> parent, View v, int position, long id)
 	{
-		// Get the pressed ControlItem
-		ControlItem item = (ControlItem) view.getAdapter().getItem(position);
-
-		if(item != null) // just in case...
-		{
-			// Audio Feedback
-			if(controller.isAudioFeedbackUsed() && item != null)
-			{
-				AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
-				//afc.play(afc.new PlaybackJob(item.getDescriptionAudioRelativePath()), v)); TODO
-			}
-			else
-				controller.addLogLine("LONG_CLICK", "LongClick on " + Control.values()[(int) id].name() + " but AudioFeedback is disabled");
+		Control.Type controlType = Control.Type.values()[(int) id];
+		Form form = controller.getCurrentForm();
+		if(form.isUsingAudioFeedback())
+		{	// Audio Feedback...
+			AudioFeedbackController<View> afc = collectorUI.getAudioFeebackController();
+			afc.play(afc.newPlaybackJob(form.getControl(controlType).description.getAudioRelativePath(), v, AndroidAudioFeedbackController.ANIMATION_ALPHA));
 		}
-		
+		else
+			controller.addLogLine("LONG_CLICK", "LongClick on " + controlType.name() + " but AudioFeedback is disabled");
 		return true;
 	}
 
@@ -229,42 +221,37 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		// Overlay to gray-out disabled (but shown) buttons
 		private Item grayOutOverlay;
 	
-		public ControlItem(Context context, Control control, Form form, int backgroundColor)
+		public ControlItem(Context context, Control control)
 		{
-			// Pass control ordinal as id:
-			super(control.ordinal());
+			// Pass control type ordinal as id:
+			super(control.type.ordinal());
 			
 			// Background & padding:
-			this.setBackgroundColor(backgroundColor);
+			this.setBackgroundColor(ColourHelpers.ParseColour(control.getBackgroundColor(), Control.DEFAULT_BACKGROUND_COLOR));
 			this.setPaddingDip(0);
 			
-			// the actual button:
-			String imgRelativePath = null;
-			Drawable drawable = null;
-			switch(control)
-			{
-				case BACK:
-					imgRelativePath = form.getBackButtonImageRelativePath();
-					drawable = new HorizontalArrow(FOREGROUND_COLOR, true);
-					this.setDescription(form.getBackButtonDescription());
-					break;
-				case CANCEL:
-					imgRelativePath = form.getCancelButtonImageRelativePath();
-					drawable = new SaltireCross(FOREGROUND_COLOR);
-					this.setDescription(form.getCancelButtonDescription());
-					break;
-				case FORWARD:
-					imgRelativePath = form.getForwardButtonImageRelativePath();
-					drawable = new HorizontalArrow(FOREGROUND_COLOR, false);
-					this.setDescription(form.getForwardButtonDescription());
-					break;
-			}
-			File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), imgRelativePath);
-			Item button = null;
+			// The actual button:
+			Item button;
+			File imgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), control.getImageRelativePath());
 			if(FileHelpers.isReadableFile(imgFile))
+				// Use XML specified image:
 				button = new FileImageItem(imgFile);
 			else
-				button = new DrawableItem(drawable);
+				// Use default drawable for control type:
+				switch(control.type)
+				{
+					case Back:
+						button = new DrawableItem(new HorizontalArrow(FOREGROUND_COLOR, true));
+						break;
+					case Cancel:
+						button = new DrawableItem(new SaltireCross(FOREGROUND_COLOR));
+						break;
+					case Forward:
+						button = new DrawableItem(new HorizontalArrow(FOREGROUND_COLOR, false));
+						break;
+					default : 
+						button = new DrawableItem(new EmptyDrawable());
+				}
 			/* Unused -- replaced by Drawable buttons (arrow & cross)
 			// Resource image (e.g. R.drawable.button_back_svg, .button_back, .button_delete_svg, .button_delete, .button_forward_svg, .button_forward)
 			button = new ResourceImageItem(getContext().getResources(), R.drawable.button_back_svg); */
@@ -278,6 +265,9 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 			// add the layers:
 			this.addLayer(button, true);
 			this.addLayer(grayOutOverlay, false);
+			
+			// Set description:
+			this.setDescription(control.description.getText());
 		}
 		
 		public void setGrayedOut(boolean grayedOut)

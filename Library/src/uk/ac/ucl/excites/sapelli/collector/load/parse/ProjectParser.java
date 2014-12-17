@@ -165,7 +165,7 @@ public class ProjectParser extends DocumentParser
 	}
 
 	@Override
-	protected void parseStartElement(String uri, String localName, String qName, XMLAttributes attributes) throws SAXException
+	protected void parseStartElement(String uri, String localName, String qName, XMLAttributes attributes) throws Exception
 	{
 		try
 		{
@@ -202,12 +202,11 @@ public class ProjectParser extends DocumentParser
 										attributes.getString(ATTRIBUTE_PROJECT_VERSION, Project.DEFAULT_VERSION, true, false),
 										fingerPrint);
 				
-				// set default language (or "en" if not specified):
+				// Set default language (or "en" if not specified):
 				String lang = attributes.getString(ATTRIBUTE_PROJECT_DEFAULT_LANG, null, true, false);
-				if (lang != null) 
-					project.setDefaultLanguage(lang);
-				else if (format == Format.v2_x)
-					addWarning("No valid default language has been specified for this project. Languages should be declared using the BCP-47 syntax (e.g. \"fr-CA\" for Canadian French). English (en) will be set as the default language within this project.");
+				project.setDefaultLanguage(lang != null ? lang : Project.DEFAULT_DEFAULT_LANGUAGE);
+				if(lang == null && format == Format.v2_x)
+					addWarning("No valid default language has been specified for this project. Languages should be declared using the BCP-47 syntax (e.g. \"fr-CA\" for Canadian French). English (en) will be set as the default language for this project.");
 				
 				// Read startForm ID:
 				startFormID = attributes.getString(ATTRIBUTE_PROJECT_START_FORM, null, true, false); 
@@ -220,19 +219,15 @@ public class ProjectParser extends DocumentParser
 			else
 				addWarning("Ignored unrecognised or invalidly placed/repeated element <" + qName + ">.");
 		}
-		catch(SAXException se)
-		{
-			throw se;
-		}
 		catch(Exception e)
 		{
 			e.printStackTrace(System.err);
-			throw new SAXException("Error while parsing element <" + qName + ">: " + e.getMessage(), e);
+			throw new Exception("Error while parsing element <" + qName + ">: " + e.getMessage(), e);
 		}
 	}
 
 	@Override
-	protected void parseEndElement(String uri, String localName, String qName) throws SAXException
+	protected void parseEndElement(String uri, String localName, String qName) throws Exception
 	{
 		// </Sapelli-Collector-Project>, or </ExCiteS-Collector-Project> (for backwards compatibility)
 		if(qName.equals(TAG_PROJECT) || qName.equals(TAG_PROJECT_V1X))
@@ -294,7 +289,7 @@ public class ProjectParser extends DocumentParser
 							}
 							catch(Exception e)
 							{
-								throw new SAXException("Error upon resolving constraint on Relationship \"" + entry.getKey().id + "\"", e);
+								throw new Exception("Error upon resolving constraint on Relationship \"" + entry.getKey().id + "\"", e);
 							}
 			}
 		}
@@ -336,9 +331,9 @@ public class ProjectParser extends DocumentParser
 	 * @param columnName
 	 * @param comparisonAttrib
 	 * @param valueString
-	 * @throws SAXException
+	 * @throws Exception
 	 */
-	/*package*/ void addRelationshipConstraint(Relationship relationship, String columnName, String comparisonAttrib, String valueString) throws SAXException
+	/*package*/ void addRelationshipConstraint(Relationship relationship, String columnName, String comparisonAttrib, String valueString) throws Exception
 	{
 		if(relationshipToConstraints == null)
 			relationshipToConstraints = new HashMap<Relationship, List<ConstraintDescription>>();
@@ -351,7 +346,7 @@ public class ProjectParser extends DocumentParser
 		}
 		catch(ParseException pe)
 		{
-			throw new SAXException("Error upon parsing constraint", pe);
+			throw new Exception("Error upon parsing constraint", pe);
 		}
 	}
 	

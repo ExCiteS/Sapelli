@@ -58,6 +58,9 @@ public class AndroidLabelUI extends LabelUI<View, CollectorView>
 			label.setTextSize(TypedValue.COMPLEX_UNIT_PX, label.getTextSize() * field.getTextSizeScale());
 			
 			//TODO bold? italic?
+			
+			// Set description for accessibility support:
+			label.setContentDescription(field.description.getText());
 		}
 		return label;
 	}

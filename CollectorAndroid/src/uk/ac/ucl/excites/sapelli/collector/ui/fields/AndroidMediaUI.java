@@ -25,13 +25,13 @@ import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
+import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.AndroidControlsUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
-import uk.ac.ucl.excites.sapelli.collector.ui.PickerView;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
+import uk.ac.ucl.excites.sapelli.collector.ui.ItemPickerView;
+import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.EmptyItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileItem;
@@ -77,7 +77,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH";
 	private static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 
-	protected CollectorController controller; // keep reference to the Android-specific controller (shadows controller in FieldUI)
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
 	protected File captureFile; // file used to store media while it is being captured
@@ -95,7 +94,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	public AndroidMediaUI(MF field, CollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
-		this.controller = controller; // Android-specific controller
 		maxReached = (field.getCount(controller.getCurrentRecord()) >= field.getMax());
 		// create button params to be used for all bottom-of-screen buttons:
 		buttonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(collectorUI.getContext(), AndroidControlsUI.CONTROL_HEIGHT_DIP));
@@ -222,12 +220,12 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	 * from the single-item review UI.
 	 */
 	@Override
-	public boolean handleControlEvent(Control control)
+	public boolean handleControlEvent(Control.Type controlType)
 	{
 		// ignore user's request to return to capture now we are leaving the field (do this in any case)
 		controller.getCurrentFieldArguments().remove(GO_TO_CAPTURE_KEY);
 
-		if(control.equals(Control.BACK) && getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY)
+		if(controlType.equals(Control.Type.Back) && getCurrentDisplayState() == DisplayState.SINGLE_REVIEW_FROM_GALLERY)
 		{
 			// remove the filepath from the field's arguments so we do not re-enter single-item review unintentionally
 			controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY);
@@ -385,7 +383,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				controller.blockUI();
 				// Execute the "press" animation if allowed, then perform the action:
 				if(controller.getCurrentForm().isClickAnimation())
-					ClickAnimator.Animate(onClickRunnable, view, controller); // execute animation and the action afterwards
+					ViewAnimator.Click(view, null, onClickRunnable); // execute animation and the action afterwards (action will often change the page before the animation occurs)
 				else
 					onClickRunnable.run(); // perform task now (animation is disabled)
 
@@ -665,7 +663,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		 * 
 		 * @author benelliott
 		 */
-		private class GalleryPicker extends PickerView
+		private class GalleryPicker extends ItemPickerView
 		{
 			private static final int NUM_COLUMNS = 3; // TODO make configurable?
 			private static final int NUM_ROWS = 3;
@@ -694,7 +692,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					@Override
 					public void onItemClick(AdapterView<?> parent, View view, int position, long id)
 					{
-						controller.clickView(view, getItemClickRunnable(position));
+						collectorUI.clickView(view, getItemClickRunnable(position));
 					}
 				});
 			}
@@ -853,7 +851,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			};
 
 			// Perform the click
-			controller.clickView(v, action);
+			collectorUI.clickView(v, action);
 		}
 		
 	}

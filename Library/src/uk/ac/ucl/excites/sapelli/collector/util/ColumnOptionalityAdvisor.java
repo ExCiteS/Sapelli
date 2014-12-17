@@ -46,7 +46,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.MultiListField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
+import uk.ac.ucl.excites.sapelli.collector.model.Control;
 
 /**
  * Helper class used to determine the optionality of columns backing Fields of a Form.
@@ -269,7 +269,7 @@ public class ColumnOptionalityAdvisor
 			//	Next field of choice itself:
 			//		either because there are no children (meaning we automatically advance),
 			//		or because the user hits "forward" instead of making a choice (if field is optional and the forward button is shown)
-			if(!atLeast1Child || (cf.isOptional() && cf.isControlAllowedToBeShown(Control.FORWARD, mode)))
+			if(!atLeast1Child || (cf.isOptional() && cf.isControlAllowedToBeShown(Control.Type.Forward, mode)))
 				goForward();
 			
 			return false;
@@ -285,7 +285,7 @@ public class ColumnOptionalityAdvisor
 			simulateTriggers(form.getTriggers());
 			
 			// Simulate forward press from page (if allowed):
-			if(page.isControlAllowedToBeShown(Control.FORWARD, mode))
+			if(page.isControlAllowedToBeShown(Control.Type.Forward, mode))
 				goForward();
 			
 			// Enter child fields (but signal that they are entered as part of entering the page):
@@ -311,7 +311,7 @@ public class ColumnOptionalityAdvisor
 			if(!withPage)
 			{
 				// "Forward" press (if allowed):
-				if(buttonField.isOptional() && buttonField.isControlAllowedToBeShown(Control.FORWARD, mode))
+				if(buttonField.isOptional() && buttonField.isControlAllowedToBeShown(Control.Type.Forward, mode))
 					goForward();
 				
 				// Simulate form triggers firing before user is able to click button or hit "forward"

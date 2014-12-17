@@ -30,12 +30,12 @@ import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationListener;
 import uk.ac.ucl.excites.sapelli.collector.geo.OrientationSensor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.animation.ClickAnimator;
 import uk.ac.ucl.excites.sapelli.collector.util.AudioPlayer;
 import uk.ac.ucl.excites.sapelli.collector.util.DeviceID;
 import uk.ac.ucl.excites.sapelli.collector.util.LocationUtils;
@@ -50,7 +50,6 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.util.Log;
-import android.view.View;
 
 import com.crashlytics.android.Crashlytics;
 
@@ -67,7 +66,7 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 	public static final int LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M = 5; // 5 meters
 
 	// DYNAMICS------------------------------------------------------
-	public CollectorActivity activity;
+	public final CollectorActivity activity;
 
 	private LocationManager locationManager;
 	private Location currentBestLocation = null;
@@ -98,6 +97,22 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 		}
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.collector.control.Controller#setFieldInUI(uk.ac.ucl.excites.sapelli.collector.model.Field)
+	 */
+	@Override
+	protected void setFieldInUI(final Field newCurrentField)
+	{
+		activity.runOnUiThread(new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				CollectorController.super.setFieldInUI(newCurrentField);
+			}
+		});
+	}
+
 	@Override
 	public uk.ac.ucl.excites.sapelli.storage.types.Location getCurrentBestLocation()
 	{
@@ -167,34 +182,43 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 		}
 	}
 
-	protected void startLocationListener(List<LocationField> locFields)
+	protected void startLocationListener(final List<LocationField> locFields)
 	{
 		if(locFields.isEmpty())
 			return;
-		// Get locationmanager:
-		if(locationManager == null)
-			locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
-		// Determine which provider(s) we need:
-		Set<String> providers = new HashSet<String>();
-		for(LocationField lf : locFields)
-			providers.addAll(LocationUtils.getProvider(locationManager, lf));
-		// Start listening to each provider:
-		for(String provider : providers)
+		activity.runOnUiThread(new Runnable()
 		{
-			locationManager.requestLocationUpdates(provider, LOCATION_LISTENER_UPDATE_MIN_TIME_MS, LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M, this);
-			// Test if provider is active:
-			if(!locationManager.isProviderEnabled(provider))
+			
+			@Override
+			public void run()
 			{
-				activity.showOKDialog(R.string.app_name, activity.getString(R.string.enableLocationProvider, provider), true, new Runnable()
-				{ 	// TODO how will non/illiterates deal with this, and what if the Sapelli launcher is used (settings screen will be inaccessible)?
-					@Override
-					public void run()
+				// Get locationmanager:
+				if(locationManager == null)
+					locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
+				// Determine which provider(s) we need:
+				Set<String> providers = new HashSet<String>();
+				for(LocationField lf : locFields)
+					providers.addAll(LocationUtils.getProvider(locationManager, lf));
+				// Start listening to each provider:
+				for(String provider : providers)
+				{
+					// Test if provider is active:
+					if(!locationManager.isProviderEnabled(provider))
 					{
-						activity.startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), 0);
+						activity.showOKDialog(R.string.app_name, activity.getString(R.string.enableLocationProvider, provider), true, new Runnable()
+						{ 	// TODO how will non/illiterates deal with this, and what if the Sapelli launcher is used (settings screen will be inaccessible)?
+							@Override
+							public void run()
+							{
+								activity.startActivityForResult(new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS), 0);
+							}
+						});
 					}
-				});
+					
+					locationManager.requestLocationUpdates(provider, LOCATION_LISTENER_UPDATE_MIN_TIME_MS, LOCATION_LISTENER_UPDATE_MIN_DISTANCE_M, CollectorController.this);
+				}	
 			}
-		}
+		});
 	}
 
 	protected void stopLocationListener()
@@ -300,35 +324,6 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 	protected long getElapsedMillis()
 	{
 		return SystemClock.elapsedRealtime();
-	}
-	
-	public boolean isAudioFeedbackUsed()
-	{
-		return currFormSession.form.isUsingAudioFeedback();
-	}
-
-	/**
-	 * Controls the way that clicked views behave (i.e. animate) and interact
-	 * 
-	 * @param clickView
-	 * @param action
-	 */
-	public void clickView(View clickView, Runnable action)
-	{
-		// Execute the "press" animation if allowed, then perform the action:
-		if(getCurrentForm().isClickAnimation())
-		{
-			// execute animation and the action afterwards
-			ClickAnimator.Animate(action, clickView, this);
-		}
-		else
-		{
-			// Block the UI before running the action and unblock it afterwards
-			blockUI();
-			if(action != null)
-				action.run();
-			unblockUI();
-		}
 	}
 	
 	/**

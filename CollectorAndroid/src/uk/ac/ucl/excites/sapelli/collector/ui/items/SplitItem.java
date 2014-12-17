@@ -52,31 +52,20 @@ public class SplitItem extends Item
 	 */
 	public SplitItem(int orientation)
 	{
-		this(null, orientation, DEFAULT_CHILD_SPACING_DIP);
-	}
-
-	/**
-	 * @param orientation
-	 * @param childSpacingDip
-	 */
-	public SplitItem(int orientation, float childSpacingDip)
-	{
-		this(null, orientation, childSpacingDip);
+		this(null, orientation);
 	}
 	
 	/**
 	 * @param id
 	 * @param orientation
-	 * @param childSpacingDip
 	 */
-	public SplitItem(Integer id, int orientation, float childSpacingDip)
+	public SplitItem(Integer id, int orientation)
 	{
 		super(id);
 		if(orientation != HORIZONTAL && orientation != VERTICAL)
 			throw new IllegalArgumentException("Invalid orientation");
 		this.orientation = orientation;
 		items = new ArrayList<WeightedItem>();
-		spacingDip = childSpacingDip;
 	}
 
 	/**
@@ -86,20 +75,7 @@ public class SplitItem extends Item
 	 */
 	public SplitItem addItem(Item item, float weight)
 	{
-		return addItem(item, weight, -1);
-	}
-	
-	/**
-	 * @param item
-	 * @param weight
-	 * @param paddingPx padding applied to item, unless it is = -1
-	 * @return
-	 */
-	public SplitItem addItem(Item item, float weight, float paddingDip)
-	{
 		items.add(new WeightedItem(item, weight));
-		if(paddingDip != -1)
-			item.setPaddingDip(paddingDip);
 		return this;
 	}
 
@@ -113,10 +89,12 @@ public class SplitItem extends Item
 
 	/**
 	 * @param spacingDip the spacingDip to set
+	 * @return
 	 */
-	public void setSpacingDip(float spacingDip)
+	public SplitItem setSpacingDip(float spacingDip)
 	{
 		this.spacingDip = spacingDip;
+		return this;
 	}
 
 	@Override

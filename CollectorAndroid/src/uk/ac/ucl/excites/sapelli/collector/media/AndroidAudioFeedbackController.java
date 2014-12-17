@@ -25,6 +25,7 @@ import java.util.concurrent.Semaphore;
 
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
+import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
@@ -66,6 +67,7 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 		stop(); // stop any already-playing playlists prematurely
 		Log.d(TAG, "Starting playback...");
 
+		// Initialise semaphores with 0 permits (release() must be called to issue permit):
 		playbackCompletedSem = new Semaphore(0);
 		animationCompletedSem = new Semaphore(0);
 
@@ -81,7 +83,6 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 			}
 
 		};
-
 		running = true;
 		playbackThread.start();
 	}
@@ -91,16 +92,12 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 	{
 		Log.d(TAG, "Stopping playback...");
 		running = false;
-		// stop currently playing track:
-		if(queuePlayer != null && queuePlayer.isPlaying())
-			queuePlayer.stop();
-		// interrupt playback thread since it is probably blocked on a semaphore:
+		// Interrupt playback thread since it is probably blocked on a semaphore:
 		if(playbackThread != null)
 		{
 			playbackThread.interrupt();
 			try
-			{
-				// wait for playback thread to die before continuing:
+			{	// Wait for playback thread to die before continuing:
 				playbackThread.join();
 			}
 			catch(InterruptedException e)
@@ -108,9 +105,12 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 				Log.e(TAG, "Main thread interrupted while waiting for playback thread to join.");
 			}
 		}
-		// nullify thread so it must be re-initialised:
+		// Stop currently playing track:
+		if(queuePlayer != null && queuePlayer.isPlaying())
+			queuePlayer.stop();
+		// Nullify thread so it must be re-initialised:
 		playbackThread = null;
-		// destroy semaphore so it isn't reused by later ChoiceFields:a
+		// Destroy semaphores so they aren't reused for later jobs/sequences:
 		animationCompletedSem = null;
 		playbackCompletedSem = null;
 	}
@@ -142,8 +142,8 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 		{
 			File audioFile = controller.getFileStorageProvider().getProjectSoundFile(controller.getProject(), job.soundRelativePath);
 
-			// set the media player's source to the new audio track
-			if(audioFile != null)
+			// Set the media player's source to the new audio track
+			if(FileHelpers.isReadableFile(audioFile))
 			{
 				try
 				{
@@ -159,35 +159,64 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 						queuePlayer.setDataSource(context, Uri.fromFile(audioFile));
 						queuePlayer.prepare();
 					}
-					// start it playing:
+					// Start audio playback:
 					queuePlayer.start();
-
+					
+					// Animate the view, if necessary:
+					if(job.viewToAnimate != null)
+					{
+						Runnable releaseSem = new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								animationCompletedSem.release();
+							}
+						};
+						switch(job.animation)
+						{
+							case ANIMATION_ALPHA :
+								ViewAnimator.Alpha(job.viewToAnimate, null, releaseSem);
+								break;
+							case ANIMATION_SHAKE :
+								ViewAnimator.Shake(job.viewToAnimate, null, releaseSem);
+								break;
+							default :
+								throw new Exception("Unknown animation: " + job.animation);
+						}
+					}
+					else
+						animationCompletedSem.release();
+				}
+				catch(InterruptedException ie)
+				{	// re-throw so InterruptedExceptions are not caught by the Exception catch below and instead by the outer InterruptionException catch:
+					throw ie;
 				}
 				catch(Exception e)
 				{
 					Log.e(TAG, "Error when trying to change media player data source to file " + job.soundRelativePath, e);
 					// Playing failed so completed listener will never fire. Allow playback to continue:
 					playbackCompletedSem.release();
+					animationCompletedSem.release();
 				}
 			}
 			else
 			{
-				// sleep for a while to indicate "gap" in audio playback:
+				// Sleep for a while to indicate "gap" in audio playback:
 				Thread.sleep(FFEDBACK_GAP_DURATION_MILISEC);
-				// Playing failed so completed listener will never fire. Allow file to be deleted and playback to continue:
+				// Allow playback to continue:
 				playbackCompletedSem.release();
+				animationCompletedSem.release();
 			}
-			// animate the view corresponding to the played choice, if necessary:
-			animateViewShake(job.viewToAnimate);
 
-			// wait for the media player to finish playing the track
+			// Wait for the media player to finish playing the track
 			playbackCompletedSem.acquire();
 
-			// wait for the UI thread to finish animating the view
+			// Wait for the UI thread to finish animating the view
 			animationCompletedSem.acquire();
 
 		}
-		catch(InterruptedException e1)
+		catch(InterruptedException ie)
 		{
 			// was probably caused by the ChoiceField being exited
 			Log.d(TAG, "Playback thread interrupted while waiting for semaphore.");
@@ -201,43 +230,6 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 	public void onCompletion(MediaPlayer mp)
 	{
 		playbackCompletedSem.release();
-	}
-
-	@SuppressWarnings("unused")
-	private void animateViewAlpha(final View toAnimate)
-	{
-		if(toAnimate != null)
-		{
-			controller.activity.runOnUiThread(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					ViewAnimator.alphaAnimation(toAnimate);
-					animationCompletedSem.release();
-				}
-			});
-		}
-		else
-			animationCompletedSem.release();
-	}
-
-	private void animateViewShake(final View toAnimate)
-	{
-		if(toAnimate != null)
-		{
-			controller.activity.runOnUiThread(new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					ViewAnimator.shakeAnimation(context, toAnimate);
-					animationCompletedSem.release();
-				}
-			});
-		}
-		else
-			animationCompletedSem.release();
 	}
 	
 }

@@ -31,6 +31,9 @@ import java.util.List;
 public abstract class AudioFeedbackController<V>
 {
 	
+	public static final int ANIMATION_SHAKE = 0;
+	public static final int ANIMATION_ALPHA = 1;
+	
 	/**
 	 * Play a single audio feedback job.
 	 * @param job - the audio feedback job to play
@@ -55,6 +58,26 @@ public abstract class AudioFeedbackController<V>
 	 * Destroy all resources required for audio feedback.
 	 */
 	public abstract void destroy();
+
+	/**
+	 * @param soundRelativePath
+	 * @return a PlaybackJob
+	 */
+	public PlaybackJob newPlaybackJob(String soundRelativePath)
+	{
+		return new PlaybackJob(soundRelativePath);
+	}
+	
+	/**
+	 * @param soundRelativePath
+	 * @param viewToAnimate
+	 * @param animation
+	 * @return a PlaybackJob
+	 */
+	public PlaybackJob newPlaybackJob(String soundRelativePath, V viewToAnimate, int animation)
+	{
+		return new PlaybackJob(soundRelativePath, viewToAnimate, animation);
+	}
 	
 	/**
 	 * A class that encapsulates the concept of an "audio feedback job" with a filepath for the sound to play
@@ -67,28 +90,30 @@ public abstract class AudioFeedbackController<V>
 		
 		/*package*/ final String soundRelativePath;
 		/*package*/ final V viewToAnimate;
-		
-		/**
-		 * Creates a PlaybackJob with the provided sound filepath and UI object to animate.
-		 * 
-		 * @param soundRelativePath - relative filepath of the sound to play
-		 * @param viewToAnimate - the UI object to animate while playing the sound
-		 */
-		public PlaybackJob(String soundRelativePath, V viewToAnimate)
-		{
-			this.soundRelativePath = soundRelativePath;
-			this.viewToAnimate = viewToAnimate;
-		}
+		/*package*/ final int animation;
 		
 		/**
 		 * Creates a PlaybackJob with the provided sound filepath but no UI object to animate.
 		 * 
 		 * @param soundRelativePath - relative filepath of the sound to play
 		 */
-		public PlaybackJob(String soundRelativePath)
+		private PlaybackJob(String soundRelativePath)
+		{
+			this(soundRelativePath, null, -1);
+		}
+		
+		/**
+		 * Creates a PlaybackJob with the provided sound filepath and UI object to animate.
+		 * 
+		 * @param soundRelativePath - relative filepath of the sound to play
+		 * @param viewToAnimate - the UI object to animate while playing the sound (may be null)
+		 * @param animation - indicates the animation to use
+		 */
+		private PlaybackJob(String soundRelativePath, V viewToAnimate, int animation)
 		{
 			this.soundRelativePath = soundRelativePath;
-			this.viewToAnimate = null;
+			this.viewToAnimate = viewToAnimate;
+			this.animation = animation;
 		}
 		
 	}
