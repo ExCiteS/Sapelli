@@ -40,7 +40,7 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 	public static final Bitmap.CompressFormat DRAWING_OUTPUT_FORMAT = CompressFormat.PNG; // TODO link to DrawingField?
 	public static final int DRAWING_OUTPUT_QUALITY = 0; // PNG will ignore compression factor anyway
 
-	private DrawingViewContainer drawingViewContainter;
+	private DrawingViewContainer drawingViewContainer;
 
 	public AndroidDrawingUI(DrawingField field, CollectorController controller, CollectorView collectorUI)
 	{
@@ -55,7 +55,7 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 			// get a new file into which to store the capture:
 			captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
 			// get a bitmap of the current drawing:
-			Bitmap drawing = drawingViewContainter.captureDrawingBitmap();
+			Bitmap drawing = drawingViewContainer.captureDrawingBitmap();
 			// compress the bitmap into a PNG and save it into the file:
 			FileOutputStream fos;
 			fos = new FileOutputStream(captureFile);
@@ -80,15 +80,16 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 	@Override
 	protected void onDiscard()
 	{
-		// nothing to do
+		if (drawingViewContainer != null)
+			drawingViewContainer.wipeCanvas();
 	}
 
 	@Override
 	protected View getCaptureContent(Context context)
 	{
 		// note views aren't cached in media UIs so create one each time
-		drawingViewContainter = new DrawingViewContainer(context);
-		return drawingViewContainter;
+		drawingViewContainer = new DrawingViewContainer(context);
+		return drawingViewContainer;
 	}
 
 	@Override
@@ -127,9 +128,22 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 	@Override
 	protected Item generateCaptureMoreButton(Context context)
 	{
-		Item captureMoreButton = new ResourceImageItem(context.getResources(), R.drawable.pencil_black_svg);
+		ImageItem captureMoreButton = null;
+		File captureMoreImgFile = controller.getFileStorageProvider().getProjectImageFile(controller.getProject(), field.getAddDrawingImageRelativePath());
+		if(FileHelpers.isReadableFile(captureMoreImgFile))
+			// return a custom drawing capture button if it exists
+			captureMoreButton = new FileImageItem(captureMoreImgFile);
+		else
+			// otherwise just use the default resource (a pencil)
+			captureMoreButton = new ResourceImageItem(context.getResources(), R.drawable.pencil_black_svg);
 		captureMoreButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		return captureMoreButton;
+	}
+	
+	@Override
+	protected boolean isShowDiscardDuringCapture()
+	{
+		return true;
 	}
 	
 	/**
@@ -163,6 +177,11 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 			drawingView = new DrawingView(context);
 			drawingView.setBackgroundColor(Color.TRANSPARENT);
 			addView(drawingView, params);
+		}
+	
+		private void wipeCanvas()
+		{
+			drawingView.wipeCanvas();
 		}
 		
 		private Bitmap captureDrawingBitmap()
@@ -243,6 +262,12 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 			super.performClick();
 			// do nothing -- lint moans if this method is not overridden though
 			return true;
+		}
+		
+		private void wipeCanvas()
+		{
+			path = new Path();
+			invalidate();
 		}
 		
 		/**
