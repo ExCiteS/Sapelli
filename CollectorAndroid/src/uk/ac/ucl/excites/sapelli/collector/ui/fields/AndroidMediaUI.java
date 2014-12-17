@@ -77,7 +77,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	private static final String REVIEW_FILE_PATH_KEY = "REVIEW_FILE_PATH";
 	private static final String GO_TO_CAPTURE_KEY = "GO_TO_CAPTURE";
 
-	protected CollectorController controller; // keep reference to the Android-specific controller (shadows controller in FieldUI)
 	private boolean maxReached; // whether or not the maximum number of pieces of media have been captured for this field
 	private boolean mediaItemsChanged = false; 	// whether or not the media items have been changed (whether the gallery needs to be redrawn)
 	protected File captureFile; // file used to store media while it is being captured
@@ -95,7 +94,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 	public AndroidMediaUI(MF field, CollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
-		this.controller = controller; // Android-specific controller
 		maxReached = (field.getCount(controller.getCurrentRecord()) >= field.getMax());
 		// create button params to be used for all bottom-of-screen buttons:
 		buttonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, ScreenMetrics.ConvertDipToPx(collectorUI.getContext(), AndroidControlsUI.CONTROL_HEIGHT_DIP));
@@ -684,7 +682,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					@Override
 					public void onItemClick(AdapterView<?> parent, View view, int position, long id)
 					{
-						controller.clickView(view, getItemClickRunnable(position));
+						collectorUI.clickView(view, getItemClickRunnable(position));
 					}
 				});
 			}
@@ -843,7 +841,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			};
 
 			// Perform the click
-			controller.clickView(v, action);
+			collectorUI.clickView(v, action);
 		}
 		
 	}

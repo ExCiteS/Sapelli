@@ -20,14 +20,15 @@ package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
+import android.view.animation.Animation.AnimationListener;
+import android.view.animation.AnimationSet;
 import android.view.animation.CycleInterpolator;
 import android.view.animation.ScaleAnimation;
 import android.view.animation.TranslateAnimation;
-import android.view.animation.Animation.AnimationListener;
-import android.view.animation.AnimationSet;
 
 /**
  * Library of different animations that can be applied to Views
@@ -42,21 +43,20 @@ public class ViewAnimator
 	/**
 	 * @param viewToAnimate
 	 * @param animationSet
-	 * @param onAnimationStart code to run (on the main/UI thread) when the animation starts (may be null)
-	 * @param onAnimationEnd code to run (on the main/UI thread) when the animation ends (may be null)
+	 * @param duringAnimation code to run, *off* the main/UI thread, when the animation starts and while it is running (may be null; should not touch views directly; animation will invisible or interrupted if work is passed to the main/UI thread before it completes)
+	 * @param afterAnimation code to run, *on* the main/UI thread, when the animation ends (may be null)
 	 */
-	static protected void Animate(View viewToAnimate, AnimationSet animationSet, final Runnable onAnimationStart, final Runnable onAnimationEnd)
+	static protected void Animate(View viewToAnimate, AnimationSet animationSet, final Runnable duringAnimation, final Runnable afterAnimation)
 	{
 		// Set up listener for the animation:
-		if(onAnimationStart != null || onAnimationEnd != null)
+		if(duringAnimation != null || afterAnimation != null)
 			animationSet.setAnimationListener(new AnimationListener()
 			{
 				@Override
 				public void onAnimationStart(Animation animation)
-				{
-					if(onAnimationStart != null)
-						// Run the task on the main/UI thread
-						new Handler().post(onAnimationStart); // TODO is this really the UI thread? see javadoc on Handler()
+				{	// We are on the main/UI thread here so must spawn a new thread to do something concurrently with the animation
+					if(duringAnimation != null)
+						new Thread(duringAnimation).start(); // run *off* main/UI thread
 				}
 	
 				@Override
@@ -68,9 +68,15 @@ public class ViewAnimator
 				@Override
 				public void onAnimationEnd(Animation animation)
 				{
-					if(onAnimationEnd != null)
-						// Run the task on the main/UI thread
-						new Handler().post(onAnimationEnd); // TODO is this really the UI thread? see javadoc on Handler()
+					/*
+					 * We are on the main/UI thread here BUT we still need to post this runnable into the event queue (rather than running it directly) because
+					 * Android is not expecting us to touch the View hierarchy here and doing so can cause NullPointerExceptions -- see
+					 * http://stackoverflow.com/a/7445557/4186768.
+					 * 
+					 * For some reason using a Handler also prevents a strange "splitting" effect when SplitItems are animated on-click.
+					 */
+					if(afterAnimation != null)
+						new Handler(Looper.getMainLooper()).post(afterAnimation); 
 				}
 			});
 

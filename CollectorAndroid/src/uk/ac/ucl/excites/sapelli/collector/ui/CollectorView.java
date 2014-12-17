@@ -92,7 +92,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	// ScreenTransition duration
 	static public final int SCREEN_TRANSITION_DURATION = 800;
 
-	private CollectorActivity activity;
+	public final CollectorActivity activity;
 	private CollectorController controller;
 
 	// UI elements:
@@ -271,16 +271,46 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		}
 		return newFieldUI;
 	}
-	
-	public CollectorActivity getActivity()
-	{
-		return activity;
-	}
 
 	@Override
 	public FieldUI<?, View, CollectorView> getCurrentFieldUI()
 	{
 		return fieldUI;
+	}
+	
+	/**
+	 * Controls the way that clicked views behave (i.e. animate) and interact
+	 * 
+	 * @param clickView
+	 * @param action
+	 */
+	public void clickView(View clickedView, final Runnable action)
+	{
+		// Block the UI so other events are ignored until we are done:
+		controller.blockUI();
+		
+		// Execute the "press" animation if allowed, then perform the action:
+		if(controller.getCurrentForm().isClickAnimation())
+			// Execute animation and the action afterwards:
+			ViewAnimator.Click(	clickedView,
+								null,
+								new Runnable()
+								{
+									@Override
+									public void run()
+									{
+										if(action != null)
+											action.run();
+										controller.unblockUI(); // !!!
+									}
+								});
+		else
+		{
+			// Block the UI before running the action and unblock it afterwards
+			if(action != null)
+				action.run();
+			controller.unblockUI();
+		}
 	}
 
 	@Override

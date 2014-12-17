@@ -19,6 +19,7 @@
 package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
@@ -28,10 +29,12 @@ import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
  * @author mstevens
  *
  */
-public class Control
+public class Control implements Serializable
 {
 
 	// Statics-------------------------------------------------------
+	private static final long serialVersionUID = 2L;
+	
 	static public enum Type
 	{
 		Back,

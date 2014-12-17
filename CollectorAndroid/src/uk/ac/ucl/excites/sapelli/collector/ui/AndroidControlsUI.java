@@ -180,7 +180,7 @@ public class AndroidControlsUI extends ControlsUI<View, CollectorView> implement
 		};
 
 		// Perform the click
-		controller.clickView(v, action);
+		collectorUI.clickView(v, action);
 	}
 	
 	@Override
