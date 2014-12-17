@@ -580,7 +580,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// Check if we have not already parsed a tag for this type of control:
 		if(parsedControls[type.ordinal()])
 			// Yes we have...
-			addWarning("More than one occurance of <" + type.name() + "> found, ignoring all but first");
+			addWarning("More than one occurrence of <" + type.name() + "> found, ignoring all but first");
 		else // No we haven't...
 		{
 			// Remember we parsed this control tag:
