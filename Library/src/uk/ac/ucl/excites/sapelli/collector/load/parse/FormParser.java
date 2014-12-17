@@ -162,6 +162,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_LOCATION_START_WITH_FORM = "startWithForm"; // deprecated in favour of attribute above
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
 	static private final String ATTRIBUTE_RELATIONSHIP_HOLD = "hold";
+	static private final String ATTRIBUTE_RELATIONSHIP_REMEMBER = "remember";
 	static private final String ATTRIBUTE_CONSTRAINT_COLUMN = "column";
 	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
@@ -753,7 +754,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		owner.addRelationship(relationship, attributes.getRequiredString(getRelationshipTag(relationship), ATTRIBUTE_RELATIONSHIP_FORM, true, false));
 		
 		// Other attributes:
-		relationship.setHoldForeignRecord(attributes.getBoolean(ATTRIBUTE_RELATIONSHIP_HOLD, Relationship.DEFAULT_HOLD_FOREIGN_RECORD));
+		relationship.setHoldForeignRecord(attributes.getBoolean(Relationship.DEFAULT_HOLD_FOREIGN_RECORD, ATTRIBUTE_RELATIONSHIP_REMEMBER, ATTRIBUTE_RELATIONSHIP_HOLD));
 		// TODO ? updateStartTimeUponLeave, saveBeforeFormChange, discardBeforeLeave (only for linksTo) ?
 	}
 	
