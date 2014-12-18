@@ -977,7 +977,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			source.setNextFieldArguments(new FieldParameters());
 		source.getNextFieldArguments().put(	tagAttributes.getRequiredString(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_PARAM, true, false),
 											tagAttributes.getRequiredString(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_VALUE, false, true));
-		// TODO Let Field instance validate param & value? 
+		// TODO Let Field instance validate param & value?
 	}
 
 	private Page getCurrentPage()
@@ -1060,7 +1060,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			if(formStartFieldId != null) // try with field specified by ID in <Form startField="..."> (may be null)
 			{
 				Field specifiedStartField = currentForm.getField(formStartFieldId); // uses equalsIgnoreCase()
-				if(specifiedStartField == null) //TODO throw exception instead
+				if(specifiedStartField == null) // TODO throw exception instead
 					addWarning("The specified start field (\"" + formStartFieldId + "\") of currentForm \"" + currentForm.getName() + "\" does not exist, using first field instead.");
 				else
 					startField = specifiedStartField;
@@ -1091,6 +1091,15 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					disable.getKey().setDisableChoice((ChoiceField) target);
 			}
 			
+			// Generate (audio) descriptions for missing Control tags:
+			for(Control.Type type : Control.Type.values())
+				if(!parsedControls[type.ordinal()])
+					setDescription(	currentForm.getControl(type).description,
+									type.name(),
+									Control.GetDefaultDescriptionText(type),
+									null,
+									null);
+
 			// Deactivate this subtree parser:
 			deactivate(); //will call reset() (+ warnings will be copied to owner)
 		}
