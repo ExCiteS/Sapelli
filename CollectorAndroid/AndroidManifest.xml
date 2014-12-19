@@ -95,13 +95,11 @@
                 <data android:mimeType="*/*"/>
             </intent-filter>
         </activity>
-        <!--
         <service
             android:name="uk.ac.ucl.excites.sapelli.sender.DataSenderService"
-            android:icon="@drawable/ic_excites_grey"
+            android:icon="@drawable/ic_sapelli_logo"
             android:label="@string/service_name" >
         </service>
-        -->
 
 <!--         <service android:enabled="true" android:exported="false" android:label="Dropbox Sync" android:name="com.dropbox.sync.android.DbxSyncService">
         </service> -->
