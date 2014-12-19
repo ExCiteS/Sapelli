@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.transmission.db;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
@@ -39,6 +40,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.TimeStampColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Order;
+import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
@@ -101,7 +103,7 @@ public class TransmissionStore implements Store, StoreClient
 	}
 	//	Transmission Part Schema
 	static final public Schema TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "TransmissionPart");
-	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_TRANSMISSION_ID = new ForeignKeyColumn(TRANSMISSION_SCHEMA.getName() + TRANSMISSION_COLUMN_ID.getName(), TRANSMISSION_SCHEMA, false);
+	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_TRANSMISSION_ID = new ForeignKeyColumn(TRANSMISSION_SCHEMA, false);
 	static final public IntegerColumn TRANSMISSION_PART_COLUMN_NUMBER = new IntegerColumn("PartNumber", false, false, Integer.SIZE);
 	static final public TimeStampColumn TRANSMISSION_PART_COLUMN_DELIVERED_AT = TimeStampColumn.JavaMSTime("DeliveredAt", true, false);
 	static final public ByteArrayColumn TRANSMISSION_PART_COLUMN_BODY = new ByteArrayColumn("Body", false);
@@ -109,6 +111,7 @@ public class TransmissionStore implements Store, StoreClient
 	static
 	{	// Add columns to Transmission Part Schema & seal it:
 		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_TRANSMISSION_ID);
+		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_NUMBER);
 		TRANSMISSION_PART_SCHEMA.addColumn(COLUMN_SENT_AT);
 		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_DELIVERED_AT);
 		TRANSMISSION_PART_SCHEMA.addColumn(COLUMN_RECEIVED_AT);
@@ -306,10 +309,8 @@ public class TransmissionStore implements Store, StoreClient
 		TimeStamp sentAt = COLUMN_SENT_AT.retrieveValue(tRec);
 		TimeStamp receivedAt = COLUMN_RECEIVED_AT.retrieveValue(tRec);
 		
-		// Query for part records:
-		//TODO
-		
-		//List<Record> tPartRecs = recordStore.retrieveRecords(new RecordsQuery(TRANSMISSION_PART_SCHEMA, new RuleConstraint(TRANSMISSION_PART_COLUMN_TRANSMISSION_ID, 
+		// Query for part records:		
+		List<Record> tPartRecs = recordStore.retrieveRecords(new RecordsQuery(Source.From(TRANSMISSION_PART_SCHEMA), Order.AscendingBy(TRANSMISSION_PART_COLUMN_NUMBER), tRec.getRecordQueryConstraint()));
 		
 		// Construct object:
 		switch(type)
