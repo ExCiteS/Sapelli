@@ -162,6 +162,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_LOCATION_START_WITH_FORM = "startWithForm"; // deprecated in favour of attribute above
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
 	static private final String ATTRIBUTE_RELATIONSHIP_HOLD = "hold";
+	static private final String ATTRIBUTE_RELATIONSHIP_REMEMBER = "remember";
 	static private final String ATTRIBUTE_CONSTRAINT_COLUMN = "column";
 	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
@@ -580,7 +581,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// Check if we have not already parsed a tag for this type of control:
 		if(parsedControls[type.ordinal()])
 			// Yes we have...
-			addWarning("More than one occurance of <" + type.name() + "> found, ignoring all but first");
+			addWarning("More than one occurrence of <" + type.name() + "> found, ignoring all but first");
 		else // No we haven't...
 		{
 			// Remember we parsed this control tag:
@@ -753,7 +754,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		owner.addRelationship(relationship, attributes.getRequiredString(getRelationshipTag(relationship), ATTRIBUTE_RELATIONSHIP_FORM, true, false));
 		
 		// Other attributes:
-		relationship.setHoldForeignRecord(attributes.getBoolean(ATTRIBUTE_RELATIONSHIP_HOLD, Relationship.DEFAULT_HOLD_FOREIGN_RECORD));
+		relationship.setHoldForeignRecord(attributes.getBoolean(Relationship.DEFAULT_HOLD_FOREIGN_RECORD, ATTRIBUTE_RELATIONSHIP_REMEMBER, ATTRIBUTE_RELATIONSHIP_HOLD));
 		// TODO ? updateStartTimeUponLeave, saveBeforeFormChange, discardBeforeLeave (only for linksTo) ?
 	}
 	
@@ -976,7 +977,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			source.setNextFieldArguments(new FieldParameters());
 		source.getNextFieldArguments().put(	tagAttributes.getRequiredString(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_PARAM, true, false),
 											tagAttributes.getRequiredString(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_VALUE, false, true));
-		// TODO Let Field instance validate param & value? 
+		// TODO Let Field instance validate param & value?
 	}
 
 	private Page getCurrentPage()
@@ -1059,7 +1060,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			if(formStartFieldId != null) // try with field specified by ID in <Form startField="..."> (may be null)
 			{
 				Field specifiedStartField = currentForm.getField(formStartFieldId); // uses equalsIgnoreCase()
-				if(specifiedStartField == null) //TODO throw exception instead
+				if(specifiedStartField == null) // TODO throw exception instead
 					addWarning("The specified start field (\"" + formStartFieldId + "\") of currentForm \"" + currentForm.getName() + "\" does not exist, using first field instead.");
 				else
 					startField = specifiedStartField;
@@ -1090,6 +1091,15 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					disable.getKey().setDisableChoice((ChoiceField) target);
 			}
 			
+			// Generate (audio) descriptions for missing Control tags:
+			for(Control.Type type : Control.Type.values())
+				if(!parsedControls[type.ordinal()])
+					setDescription(	currentForm.getControl(type).description,
+									type.name(),
+									Control.GetDefaultDescriptionText(type),
+									null,
+									null);
+
 			// Deactivate this subtree parser:
 			deactivate(); //will call reset() (+ warnings will be copied to owner)
 		}

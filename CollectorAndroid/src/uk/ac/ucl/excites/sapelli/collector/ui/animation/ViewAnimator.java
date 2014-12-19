@@ -19,6 +19,8 @@
 package uk.ac.ucl.excites.sapelli.collector.ui.animation;
 
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
@@ -44,15 +46,17 @@ public class ViewAnimator
 	 * @param duringAnimation code to run, *off* the main/UI thread, when the animation starts and while it is running (may be null; should not touch views directly; animation will invisible or interrupted if work is passed to the main/UI thread before it completes)
 	 * @param afterAnimation code to run, *on* the main/UI thread, when the animation ends (may be null)
 	 */
-	static protected void Animate(View viewToAnimate, AnimationSet animationSet, final Runnable duringAnimation, final Runnable afterAnimation)
+	static protected void Animate(final View viewToAnimate, final AnimationSet animationSet, final Runnable duringAnimation, final Runnable afterAnimation)
 	{
+		final Looper mainLooper = Looper.getMainLooper();
+
 		// Set up listener for the animation:
 		if(duringAnimation != null || afterAnimation != null)
 			animationSet.setAnimationListener(new AnimationListener()
 			{
 				@Override
 				public void onAnimationStart(Animation animation)
-				{	// We are on the main/UI thread here
+				{	// We are on the main/UI thread here so must spawn a new thread to do something concurrently with the animation
 					if(duringAnimation != null)
 						new Thread(duringAnimation).start(); // run *off* main/UI thread
 				}
@@ -65,14 +69,34 @@ public class ViewAnimator
 	
 				@Override
 				public void onAnimationEnd(Animation animation)
-				{	// We are on the main/UI thread here
+				{
+					/*
+					 * We are on the main/UI thread here BUT we still need to post this runnable into the event queue (rather than running it directly) because
+					 * Android is not expecting us to touch the View hierarchy here and doing so can cause NullPointerExceptions -- see
+					 * http://stackoverflow.com/a/7445557/4186768.
+					 * 
+					 * For some reason using a Handler also prevents a strange "splitting" effect when SplitItems are animated on-click.
+					 */
 					if(afterAnimation != null)
-						afterAnimation.run(); // run *on* main/UI thread
+						new Handler(mainLooper).post(afterAnimation);
 				}
 			});
 
 		// Run the animation:
-		viewToAnimate.startAnimation(animationSet);
+		Runnable runAnimation = new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				viewToAnimate.startAnimation(animationSet);
+			}
+		};
+
+		// Decide on thread:
+		if(Thread.currentThread() != mainLooper.getThread())
+			new Handler(mainLooper).post(runAnimation);
+		else
+			runAnimation.run();
 	}
 	
 	/**

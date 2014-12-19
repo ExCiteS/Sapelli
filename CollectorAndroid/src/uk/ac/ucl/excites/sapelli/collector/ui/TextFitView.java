@@ -157,10 +157,10 @@ public class TextFitView extends View
 		// (container height - text height) /2 = (container height - (text box height - (negative padding)) / 2 = (container height - text box height + negative padding) / 2
 		float heightOffset = 0.5f * (this.getHeight() - layout.getHeight() + layout.getTopPadding() /* this is negative! */);
 		
-		// Shift canvas upwards so that the text will be vertically centred:
-		canvas.translate(0, heightOffset);
+		// Shift canvas downwards and rightwards so that the text will be vertically and horizontally centred:
+		canvas.translate(this.getPaddingLeft(), heightOffset);
 		
-		// Draw text:
+		// Draw text on shifted canvas:
 		layout.draw(canvas);
 		
 		// Undo translate:
