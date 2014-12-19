@@ -104,15 +104,13 @@
 <!--         <service android:enabled="true" android:exported="false" android:label="Dropbox Sync" android:name="com.dropbox.sync.android.DbxSyncService">
         </service> -->
 
-        <!--
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.sender.BootReceiver"
-            android:exported="true" >
+            android:exported="false" >
             <intent-filter android:priority="9999999999" >
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
-        -->
         
         <activity android:label="@string/title_activity_export" android:name="uk.ac.ucl.excites.sapelli.collector.activities.ExportActivity" android:parentActivityName="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity">
             <meta-data android:name="android.support.PARENT_ACTIVITY" android:value="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity"/>
