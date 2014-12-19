@@ -63,8 +63,8 @@ public class AlarmScheduler extends IntentService implements StoreClient
 			{
 				// TODO if (p.isSending())
 				// TODO interval should be saved in project -> p.getSendingInterval()
-				SapelliAlarmManager.setAlarm(this, 60 * 1000, p.getID());
-				Debug.d("Projects: " + p);
+				SapelliAlarmManager.setAlarm(this, 60 * 1000, p.getID(), p.getFingerPrint());
+				Debug.d("Projects: " + p.toString(true));
 			}
 		}
 		catch(Exception e)

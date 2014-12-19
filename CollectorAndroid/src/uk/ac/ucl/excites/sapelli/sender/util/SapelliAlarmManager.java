@@ -19,7 +19,7 @@ import android.os.SystemClock;
 public class SapelliAlarmManager
 {
 	public static final String PROJECT_ID = "projectId";
-	public static final String PROJECT_HASH = "projectHash";
+	public static final String PROJECT_FINGERPRINT = "fingerPrint";
 
 	public SapelliAlarmManager()
 	{
@@ -31,11 +31,12 @@ public class SapelliAlarmManager
 	 * 
 	 * @param context
 	 * @param intervalMillis
-	 * @param projectHashCode
+	 * @param projectID
+	 * @param fingerPrint
 	 */
-	public static void setAlarm(Context context, int intervalMillis, int projectID)
+	public static void setAlarm(Context context, int intervalMillis, int projectID, int fingerPrint)
 	{
-		setAlarm(context, 60 * 1000, intervalMillis, projectID);
+		setAlarm(context, 60 * 1000, intervalMillis, projectID, fingerPrint);
 	}
 
 	/**
@@ -45,36 +46,50 @@ public class SapelliAlarmManager
 	 * @param context
 	 * @param triggerDelay
 	 * @param intervalMillis
-	 * @param projectHashCode
+	 * @param projectID
+	 * @param fingerPrint
 	 */
-	public static void setAlarm(Context context, int triggerDelay, int intervalMillis, int projectID)
+	public static void setAlarm(Context context, int triggerDelay, int intervalMillis, int projectID, int fingerPrint)
 	{
 		// Create Alarm Manager
 		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
 		// Setup the alarm to be triggered every intervalMillis
 		alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + triggerDelay, intervalMillis,
-				getAlarmIntent(context, projectID));
+				getAlarmIntent(context, projectID, fingerPrint));
 
 		// Enable the Broadcast Receiver
 		enableBootReceiver(context, true);
 	}
 
-	public static void cancelAlarm(Context context, int projectID)
+
+	/**
+	 * @param context
+	 * @param projectID
+	 * @param fingerPrint
+	 */
+	public static void cancelAlarm(Context context, int projectID, int fingerPrint)
 	{
 		// Create Alarm Manager
 		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-		alarmManager.cancel(getAlarmIntent(context, projectID));
+		alarmManager.cancel(getAlarmIntent(context, projectID, fingerPrint));
 
 		// Check whether to cancel BootReceiver
 		checkBootReceiver(context);
 	}
 
-	private static PendingIntent getAlarmIntent(Context context, int projectID)
+	/**
+	 * @param context
+	 * @param projectID
+	 * @param fingerPrint
+	 * @return
+	 */
+	private static PendingIntent getAlarmIntent(Context context, int projectID, int fingerPrint)
 	{
 		// Create the PendingIntent for the DataSenderService
 		Intent serviceIntent = new Intent(context, DataSenderService.class);
 		serviceIntent.putExtra(PROJECT_ID, projectID);
+		serviceIntent.putExtra(PROJECT_FINGERPRINT, fingerPrint);
 		PendingIntent alarmIntent = PendingIntent.getService(context, projectID, serviceIntent, 0);
 		return alarmIntent;
 	}
@@ -103,6 +118,10 @@ public class SapelliAlarmManager
 		enableBootReceiver(context, isSending);
 	}
 
+	/**
+	 * @param context
+	 * @param enable
+	 */
 	private static void enableBootReceiver(Context context, boolean enable)
 	{
 		ComponentName receiver = new ComponentName(context, BootReceiver.class);
