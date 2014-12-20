@@ -15,6 +15,7 @@ Currently the core Sapelli team consists of:
   * [Matthias Stevens](https://github.com/mstevens83), [UCL](http://iris.ucl.ac.uk/iris/browse/profile?upi=MLLST21): lead architect/developer
   * [Michalis Vitos](https://github.com/michalis-vitos), UCL: developer
   * [Julia Altenbuchner](https://github.com/julia-altenbuchner), UCL: developer
+  * [Ben Elliott](http://benjaminelliott.co.uk), intern: developer
   * Gillian Conquest, UCL: anthropologist
   * [Jerome Lewis](http://www.ucl.ac.uk/anthropology/people/academic_staff/j_lewis), UCL: anthropologist
 
