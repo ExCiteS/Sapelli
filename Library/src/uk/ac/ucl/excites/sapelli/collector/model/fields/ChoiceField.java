@@ -405,7 +405,7 @@ public class ChoiceField extends Field implements DictionaryItem
 			boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
 			
 			//Create column:
-			IntegerColumn col = new IntegerColumn(name, colOptional, 0, dictionary.size() - 1);
+			IntegerColumn col = new IntegerColumn(name, colOptional, 0, dictionary.size() - 1, true); // Allow empty! For when dictionary.size() = 1
 			
 			// Add virtual columns to it:
 			//	Value String column:
