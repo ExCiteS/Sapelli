@@ -197,7 +197,7 @@ public class StringColumn extends ComparableColumn<String>
 	protected String read(BitInputStream bitStream) throws IOException
 	{
 		//Read length:
-		int numberOfBytes = (int) sizeField.read(bitStream);
+		int numberOfBytes = sizeField.read(bitStream).intValue();
 		//Read actual string:
 		return bitStream.readString(numberOfBytes, getCharset());
 	}
@@ -216,7 +216,7 @@ public class StringColumn extends ComparableColumn<String>
 	
 	public int getMaximumBytes()
 	{
-		return (int) sizeField.highBound();
+		return sizeField.highBound().intValue();
 	}
 	
 	/**

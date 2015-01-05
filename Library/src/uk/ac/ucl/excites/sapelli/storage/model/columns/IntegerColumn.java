@@ -19,9 +19,11 @@
 package uk.ac.ucl.excites.sapelli.storage.model.columns;
 
 import java.io.IOException;
+import java.math.BigInteger;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
+import uk.ac.ucl.excites.sapelli.shared.util.BigIntegerUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.ComparableColumn;
@@ -36,16 +38,16 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
 public class IntegerColumn extends ComparableColumn<Long>
 {
 	
-	//STATICS
+	// STATICS -----------------------------------------------------------
 	private static final long serialVersionUID = 2L;
 	
-	private static final boolean DEFAULT_SIGNEDNESS = true; //allow signed values by default
-	private static final int DEFAULT_SIZE_BITS = 32; //use 32 bit integers by default
+	private static final boolean DEFAULT_SIGNEDNESS = true; // allow signed values by default
+	private static final int DEFAULT_SIZE_BITS = Integer.SIZE; // use 32 bit integers by default
 	
-	//DYNAMICS
-	private int size; //size in number of bits
-	private boolean signed;
-	private IntegerRangeMapping rangeMapping;
+	// DYNAMICS ----------------------------------------------------------
+	private final int size; // size in number of bits
+	private final boolean signed;
+	private final IntegerRangeMapping rangeMapping;
 	
 	/**
 	 * Creates an IntegerColumn with the default number of bits ({@value #DEFAULT_SIZE_BITS}) and the default signedness ({@value #DEFAULT_SIGNEDNESS})
@@ -88,15 +90,33 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 * @param name
 	 * @param optional
 	 * @param signed
-	 * @param sizeBits	size in number of bits (minimum 1, maximum 64)
+	 * @param sizeBits	size in number of bits (minimum 1, maximum 64 or 63, depending on signed)
 	 */
 	public IntegerColumn(String name, boolean optional, boolean signed, int sizeBits)
 	{
+		this(name, optional, signed, sizeBits, false);
+	}
+	
+	/**
+	 * Creates an IntegerColumn of the specified size (in bits) and the specified signedness.
+	 * {@code sizeBits} can be 0 but to avoid this being done by accident {@code allowEmpty} must be {@code true} in that case.
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param signed
+	 * @param sizeBits	size in number of bits (minimum 0 or 1, depending on allowEmpty; maximum 64 or 63, depending on signed)
+	 * @param allowEmpty	whether or not to allow sizeBits to be 0
+	 */
+	public IntegerColumn(String name, boolean optional, boolean signed, int sizeBits, boolean allowEmpty)
+	{
 		super(name, optional);
-		if(sizeBits < 1 || sizeBits > 64)
-			throw new IllegalArgumentException("Invalid size (" + sizeBits + "). Size must be between 1 and 64 bits.");
+		if(sizeBits < (allowEmpty ? 0 : 1) || sizeBits > (Long.SIZE - (signed ? 0 : 1)))
+			throw new IllegalArgumentException(	"Invalid size (" + sizeBits + " bits), allowed range for " +
+												(signed ? "" : "un") + "signed and " + (allowEmpty ? "" : "not ") + "allowed empty is [" +
+												(allowEmpty ? 0 : 1) + ", " + (Long.SIZE - (signed ? 0 : 1)) + "] bits.");
 		this.size = sizeBits;
 		this.signed = signed;
+		this.rangeMapping = null;
 	}
 
 	/**
@@ -106,11 +126,26 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 * @param name
 	 * @param optional
 	 * @param minLogicalValue
-	 * @param maxLogicalValue
+	 * @param maxLogicalValue	must be strictly larger than minLogicalValue
 	 */
 	public IntegerColumn(String name, boolean optional, long minLogicalValue, long maxLogicalValue)
 	{
-		this(name, optional, new IntegerRangeMapping(minLogicalValue, maxLogicalValue));
+		this(name, optional, minLogicalValue, maxLogicalValue, false);
+	}
+	
+	/**
+	 * Creates an IntegerColumn that is just big enough to be able to store any integer
+	 * from the range [minLogicalValue; maxLogicalValue] (inclusive).
+	 * 
+	 * @param name
+	 * @param optional
+	 * @param minLogicalValue
+	 * @param maxLogicalValue
+	 * @param allowEmpty	when {@code false} minLogicalValue must be < maxLogicalValue, when {@code true} minLogicalValue must be <= maxLogicalValue
+	 */
+	public IntegerColumn(String name, boolean optional, long minLogicalValue, long maxLogicalValue, boolean allowEmpty)
+	{
+		this(name, optional, new IntegerRangeMapping(minLogicalValue, maxLogicalValue, allowEmpty));
 	}
 	
 	/**
@@ -124,8 +159,11 @@ public class IntegerColumn extends ComparableColumn<Long>
 	{
 		super(name, optional);
 		this.rangeMapping = rangeMapping;
+		if(	rangeMapping.lowBound().compareTo(BigInteger.valueOf(Long.MIN_VALUE)) < 0 ||
+			rangeMapping.highBound(false).compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0)
+			throw new IllegalArgumentException("The given rangeMapping accepts BigInteger values of magnitudes beyond the bounds of Long integers");
 		this.size = rangeMapping.size();
-		this.signed = false;
+		this.signed = rangeMapping.lowBound().compareTo(BigInteger.ZERO) < 0;
 	}
 	
 	@Override
@@ -134,7 +172,7 @@ public class IntegerColumn extends ComparableColumn<Long>
 		if(rangeMapping == null)
 			return new IntegerColumn(name, optional, signed, size);
 		else
-			return new IntegerColumn(name, optional, rangeMapping);
+			return new IntegerColumn(name, optional, new IntegerRangeMapping(rangeMapping));
 	}
 	
 	/**
@@ -147,8 +185,7 @@ public class IntegerColumn extends ComparableColumn<Long>
 	 */
 	public void storeValue(Record record, Integer value) throws IllegalArgumentException, NullPointerException
 	{
-		Long longValue = (value != null ? Long.valueOf(value.intValue()) : null);
-		storeValue(record, longValue);
+		storeValue(record, (Long) convert(value));
 	}
 
 	/**
@@ -206,40 +243,26 @@ public class IntegerColumn extends ComparableColumn<Long>
 	protected void validate(Long value) throws IllegalArgumentException
 	{
 		if(rangeMapping != null && !rangeMapping.inStrictRange(value))
-			throw new IllegalArgumentException("The value (" + value + ") is not in the allowed range of [" + rangeMapping.lowBound() + ", " + rangeMapping.highBound() + "].");
-		else
-		{	// Size checks:
-			if(signed)
-			{	// Signed
-				if(value < getMinValue() || value > getMaxValue())
-					throw new IllegalArgumentException("Signed value (" + value + ") does not fit in " + size + " bits.");
-			}
-			else
-			{	// Unsigned
-				if(value < 0l)
-					throw new IllegalArgumentException("Cannot store negative value as unsigned interger.");
-				if(value > (long) (Math.pow(2, size) - 1))
-					throw new IllegalArgumentException("Unsigned value (" + value + ") does not fit in " + size + " bits.");
-			}
+			throw new IllegalArgumentException("The value (" + value + ") is not in the allowed range: " + rangeMapping.getStrictRangeString() + ".");
+		if(value < getMinValue() || value > getMaxValue())
+		{
+			if(!signed && value < 0l)
+				throw new IllegalArgumentException("Cannot store negative value (" + value + ") as an unsigned integer.");
+			//else:
+			throw new IllegalArgumentException("The value (" + value + ") does not fit a" + (signed ? " " : "n un") + "signed integer of " + size + " bits (allowed range: " + IntegerRangeMapping.GetRangeString(getMinValue(), getMaxValue()) + ").");
 		}
 	}
 	
 	public long getMinValue()
 	{
-		if(rangeMapping != null)
-			return rangeMapping.lowBound();
-		else
-			return (signed ?	(long) (- Math.pow(2, size - 1)) : 
-								0l);
+		return (rangeMapping != null ?	rangeMapping.lowBound() :
+										BigIntegerUtils.GetMinValue(size, signed)).longValue();
 	}
 
 	public long getMaxValue()
 	{
-		if(rangeMapping != null)
-			return rangeMapping.highBound();
-		else
-			return (signed ?	(long) (Math.pow(2, size - 1) - 1) : 
-								(long) (Math.pow(2, size) - 1));
+		return (rangeMapping != null ?	rangeMapping.highBound() :
+										BigIntegerUtils.GetMaxValue(size, signed)).longValue();
 	}
 	
 	@Override
@@ -255,7 +278,7 @@ public class IntegerColumn extends ComparableColumn<Long>
 	protected Long read(BitInputStream bitStream) throws IOException
 	{
 		if(rangeMapping != null)
-			return rangeMapping.read(bitStream);
+			return rangeMapping.read(bitStream).longValue();
 		else
 			return bitStream.readInteger(size, signed);
 	}

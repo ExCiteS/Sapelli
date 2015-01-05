@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigInteger;
 
-import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
-import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 
@@ -40,22 +38,100 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 public class IntegerRangeMapping implements Serializable
 {
 
-	private static final long serialVersionUID = 2L;
+	// STATICS ----------------------------------------------------------------
+	static private final long serialVersionUID = 2L;
+	
+	/**
+	 * @param min (inclusive)
+	 * @param max (inclusive)
+	 * @return the String "[min, max]"
+	 */
+	static public String GetRangeString(long min, long max)
+	{
+		return GetRangeString(BigInteger.valueOf(min), BigInteger.valueOf(max));
+	}
+	
+	/**
+	 * @param min (inclusive)
+	 * @param max (inclusive)
+	 * @return the String "[min, max]"
+	 */
+	static public String GetRangeString(BigInteger min, BigInteger max)
+	{
+		return "[" + min + ", " + max + "]";
+	}
 	
 	/**
 	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = {@code loBound} and y = (2^{@code sizeBits} - 1) + {@code loBound}.
 	 * 
 	 * @param loBound
-	 * @param sizeBits
+	 * @param sizeBits must be >= 1
 	 * @return
 	 */
 	static public IntegerRangeMapping ForSize(long loBound, int sizeBits)
 	{
-		if(sizeBits > Long.SIZE)
-			throw new IllegalArgumentException("Maximum size is " + Long.SIZE + "bits, requested size was " + sizeBits + " bits.");
-		return new IntegerRangeMapping(loBound, BigInteger.valueOf(2).pow(sizeBits).add(BigInteger.valueOf(-1)).add(BigInteger.valueOf(loBound)).longValue());
+		return ForSize(BigInteger.valueOf(loBound), sizeBits, false);
 	}
 	
+	/**
+	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = {@code loBound} and y = (2^{@code sizeBits} - 1) + {@code loBound}.
+	 * 
+	 * @param loBound
+	 * @param sizeBits {@code sizeBits} must be >= 1, unless {@code allowEmpty} is {@code true}, in which case it must be >= 0
+	 * @param allowEmpty
+	 * @return
+	 */
+	static public IntegerRangeMapping ForSize(long loBound, int sizeBits, boolean allowEmpty)
+	{
+		return ForSize(BigInteger.valueOf(loBound), sizeBits, allowEmpty);
+	}
+	
+	/**
+	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = {@code loBound} and y = (2^{@code sizeBits} - 1) + {@code loBound}.
+	 * 
+	 * @param loBound
+	 * @param sizeBits {@code sizeBits} must be >= 1, unless {@code allowEmpty} is {@code true}, in which case it must be >= 0
+	 * @param allowEmpty
+	 * @return
+	 */
+	static public IntegerRangeMapping ForSize(BigInteger loBound, int sizeBits, boolean allowEmpty)
+	{
+		if(sizeBits < (allowEmpty ? 0 : 1))
+			throw new IllegalArgumentException("Number of bits must not be less than " + (allowEmpty ? 0 : 1));
+		return new IntegerRangeMapping(loBound, BigIntegerUtils.GetMaxValue(sizeBits, false).add(loBound), allowEmpty);
+	}
+
+	/**
+	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!), with x and y taken respectively as the minimum and maximum
+	 * signed (if {@code signed} is {@code true}) or unsigned (if it is {@code false}) integer that can be stored in {@code sizeBits} bits.
+	 * 
+	 * @param sizeBits must be >= 1
+	 * @param signed
+	 * @return
+	 */
+	static public IntegerRangeMapping ForSize(int sizeBits, boolean signed)
+	{
+		return ForSize(sizeBits, signed, false);
+	}
+	
+	/**
+	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!), with x and y taken respectively as the minimum and maximum
+	 * signed (if {@code signed} is {@code true}) or unsigned (if it is {@code false}) integer that can be stored in {@code sizeBits} bits.
+	 * 
+	 * @param sizeBits {@code sizeBits} must be >= 1, unless {@code allowEmpty} is {@code true}, in which case it must be >= 0
+	 * @param signed
+	 * @param allowEmpty
+	 * @return
+	 */
+	static public IntegerRangeMapping ForSize(int sizeBits, boolean signed, boolean allowEmpty)
+	{
+		if(sizeBits < (allowEmpty ? 0 : 1))
+			throw new IllegalArgumentException("Number of bits must not be less than " + (allowEmpty ? 0 : 1));
+		return new IntegerRangeMapping(	BigIntegerUtils.GetMinValue(sizeBits, signed),
+										BigIntegerUtils.GetMaxValue(sizeBits, signed), allowEmpty);
+	}
+	
+	// DYNAMICS ---------------------------------------------------------------
 	/**
 	 * Number of bits needed to store values in the range.
 	 */
@@ -65,14 +141,14 @@ public class IntegerRangeMapping implements Serializable
 	 * The lower bound of the range,
 	 * acts as the "shift" value which is subtracted to map values from the logical range to the raw range.
 	 */
-	private final long loBound;
+	private final BigInteger loBound;
 	
 	/**
 	 * The strict upper bound of the range. 
 	 * 
 	 * @see #highBound(boolean)
 	 */
-	private final long hiBound;
+	private final BigInteger hiBound;
 	
 	/**
 	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = 0 and y = {@code hiBound}.
@@ -81,7 +157,17 @@ public class IntegerRangeMapping implements Serializable
 	 */
 	public IntegerRangeMapping(long hiBound)
 	{
-		this(0, hiBound);
+		this(BigIntegerUtils.ZERO, BigInteger.valueOf(hiBound), false);
+	}
+	
+	/**
+	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = 0 and y = {@code hiBound}.
+	 * 
+	 * @param hiBound
+	 */
+	public IntegerRangeMapping(BigInteger hiBound)
+	{
+		this(BigIntegerUtils.ZERO, hiBound, false);
 	}
 	
 	/**
@@ -96,17 +182,42 @@ public class IntegerRangeMapping implements Serializable
 	}
 	
 	/**
+	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = {@code loBound} and y = {@code hiBound}.
+	 * 
 	 * @param loBound
 	 * @param hiBound
-	 * @param allowEmpty
+	 * @param allowEmpty when {@code false} loBound must be < hiBound, when {@code true} loBound must be <= hiBound
 	 */
 	public IntegerRangeMapping(long loBound, long hiBound, boolean allowEmpty)
+	{
+		this(BigInteger.valueOf(loBound), BigInteger.valueOf(hiBound), allowEmpty);
+	}
+	
+	/**
+	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = {@code loBound} and y = {@code hiBound}.
+	 * 
+	 * @param loBound
+	 * @param hiBound must be strictly larger than loBound
+	 */
+	public IntegerRangeMapping(BigInteger loBound, BigInteger hiBound)
+	{
+		this(loBound, hiBound, false);
+	}
+	
+	/**
+	 * Creates an {@link IntegerRangeMapping} [x, y] (inclusive!) with x = {@code loBound} and y = {@code hiBound}.
+	 * 
+	 * @param loBound
+	 * @param hiBound
+	 * @param allowEmpty when {@code false} loBound must be < hiBound, when {@code true} loBound must be <= hiBound
+	 */
+	public IntegerRangeMapping(BigInteger loBound, BigInteger hiBound, boolean allowEmpty)
 	{	
-		if(allowEmpty ? hiBound < loBound : hiBound <= loBound)
+		if(allowEmpty ? hiBound.compareTo(loBound) < 0 : hiBound.compareTo(loBound) <= 0)
 			throw new IllegalArgumentException("hiBound (" + hiBound + ") must be " + (allowEmpty ? "" : "strictly ") + "larger than " + (allowEmpty ? "or equal to " : "") + "lowBound (" + loBound + ")");
 		this.loBound = loBound; // "shift" value
 		this.hiBound = hiBound;
-		BigInteger max = BigInteger.valueOf(hiBound).subtract(BigInteger.valueOf(loBound));
+		BigInteger max = hiBound.subtract(loBound);
 		size = max.bitLength(); // will be 0 if loBound = hiBound (only allowed when allowEmpty = true)
 		// Without BigInteger: size = Long.SIZE - Long.numberOfLeadingZeros(max); //gets the numbers of bits needed to store a positive non-0 integer (log2(x))
 	}
@@ -147,7 +258,8 @@ public class IntegerRangeMapping implements Serializable
 	 */
 	public BigInteger numberOfPossibleValues(boolean strict)
 	{
-		return BigInteger.valueOf(highBound(strict)).subtract(BigInteger.valueOf(loBound)).add(BigInteger.valueOf(1l));
+		return strict ?	hiBound.subtract(loBound).add(BigIntegerUtils.ONE) :
+						BigIntegerUtils.NumberOfPossibleValues(size);
 	}
 	
 	/**
@@ -155,7 +267,7 @@ public class IntegerRangeMapping implements Serializable
 	 * 
 	 * @return the loBound (inclusive!)
 	 */
-	public long lowBound()
+	public BigInteger lowBound()
 	{
 		return loBound;
 	}
@@ -165,7 +277,7 @@ public class IntegerRangeMapping implements Serializable
 	 * 
 	 * @return the hiBound (inclusive!)
 	 */
-	public long highBound()
+	public BigInteger highBound()
 	{
 		return highBound(true);
 	}
@@ -185,12 +297,12 @@ public class IntegerRangeMapping implements Serializable
 	 * @param strict indicates whether the strict/specified (pass {@code true}) or effective (pass {@code false}) upper bound is returned
 	 * @return the hiBound (inclusive!)
 	 */
-	public long highBound(boolean strict)
+	public BigInteger highBound(boolean strict)
 	{
 		if(strict)
 			return hiBound;
 		else
-			return BigInteger.valueOf(2).pow(size).subtract(BigInteger.ONE).add(BigInteger.valueOf(loBound)).longValue();
+			return BigIntegerUtils.TWO.pow(size).subtract(BigIntegerUtils.ONE).add(loBound);
 	}
 
 	/**
@@ -219,7 +331,7 @@ public class IntegerRangeMapping implements Serializable
 		return inRange(logicalValue, false);
 		/*//Alternative implementation:
 		BigInteger raw = toRawValue(logicalValue);
-		return raw.signum() >= 0 && raw.bitLength() <= size; */
+		return raw.signum() >= 0 && raw.bitLength() <= size;*/
 	}
 	
 	/**
@@ -233,7 +345,21 @@ public class IntegerRangeMapping implements Serializable
 	 */
 	public boolean inRange(long logicalValue, boolean strict)
 	{
-		return (lowBound() <= logicalValue) && (logicalValue <= highBound(strict));
+		return inRange(BigInteger.valueOf(logicalValue), strict);
+	}
+	
+	/**
+	 * This method checks if the given value is in the logical range
+	 * 
+	 * @param logicalValue
+	 * @param strict whether to use the strict/specified logical range (pass {@code true}), or the effective logical range (pass {@code false})
+	 * @return whether or not the logical value is in the valid range
+	 * 
+	 * @see #highBound(boolean)
+	 */
+	public boolean inRange(BigInteger logicalValue, boolean strict)
+	{
+		return (lowBound().compareTo(logicalValue) <= 0) && (logicalValue.compareTo(highBound(strict)) <= 0);
 	}
 	
 	/**
@@ -264,17 +390,22 @@ public class IntegerRangeMapping implements Serializable
 	 */
 	public String getRangeString(boolean strict)
 	{
-		return "[" + loBound + ", " + highBound(strict) + "]";
+		return GetRangeString(loBound, highBound(strict));
 	}
 	
 	public BigInteger toRawValue(long logicalValue)
 	{
-		return BigInteger.valueOf(logicalValue).subtract(BigInteger.valueOf(loBound));
+		return toRawValue(BigInteger.valueOf(logicalValue));
 	}
 	
-	public long toLogicalValue(BigInteger rawValue)
+	public BigInteger toRawValue(BigInteger logicalValue)
 	{
-		return rawValue.add(BigInteger.valueOf(loBound)).longValue();
+		return logicalValue.subtract(loBound);
+	}
+	
+	public BigInteger toLogicalValue(BigInteger rawValue)
+	{
+		return rawValue.add(loBound);
 	}
 	
 	/**
@@ -284,6 +415,17 @@ public class IntegerRangeMapping implements Serializable
 	 * @throws IOException in case of an I/O problem
 	 */
 	public void write(long logicalValue, BitOutputStream to) throws IllegalArgumentException, IOException
+	{
+		write(BigInteger.valueOf(logicalValue), to);
+	}
+
+	/**
+	 * @param logicalValue
+	 * @param to
+	 * @throws IllegalArgumentException in case the {@code logicalValue} does not fit in the effective logical range
+	 * @throws IOException in case of an I/O problem
+	 */
+	public void write(BigInteger logicalValue, BitOutputStream to) throws IllegalArgumentException, IOException
 	{
 		if(!inRange(logicalValue, false))
 			throw new IllegalArgumentException("Logical value (" + logicalValue + ") does not fit in effective logical range: " + getRangeString(false));
@@ -295,36 +437,46 @@ public class IntegerRangeMapping implements Serializable
 	 * @return
 	 * @throws IOException in case of an I/O problem
 	 */
-	public long read(BitInputStream from) throws IOException
+	public BigInteger read(BitInputStream from) throws IOException
 	{
 		return toLogicalValue(from.readBigInteger(size, false));
 	}
-
+	
 	/**
-	 * @param array
-	 * @param offset
+	 * @param from
 	 * @return
-	 * @throws IOException in case of an I/O problem
+	 * @throws IOException
 	 */
-	public long read(BitArray array, int offset) throws IOException
+	public long readLong(BitInputStream from) throws IOException
 	{
-		BitArrayInputStream stream = new BitArrayInputStream(array);
-		try
-		{
-			stream.skipBits(offset);
-			return read(stream);
-		}
-		finally
-		{
-			stream.close();
-		}
+		return read(from).longValue();
+	}
+	
+	/**
+	 * @param from
+	 * @return
+	 * @throws IOException
+	 */
+	public int readInt(BitInputStream from) throws IOException
+	{
+		return read(from).intValue();
+	}
+	
+	/**
+	 * @param from
+	 * @return
+	 * @throws IOException
+	 */
+	public short readShort(BitInputStream from) throws IOException
+	{
+		return read(from).shortValue();
 	}
 	
 	public String toString()
 	{
-		BigInteger max = BigInteger.valueOf(hiBound).subtract(BigInteger.valueOf(loBound));
+		BigInteger rawMax = hiBound.subtract(loBound);
 		return "IntegerRangeMapping of logical range " + getStrictRangeString() +
-				" to raw range [0, " + max + "] (shift: " + loBound + "; size: " + size + " bits" +
+				" to raw range " + GetRangeString(BigIntegerUtils.ZERO, rawMax) + " (shift: " + loBound + "; size: " + size + " bits" +
 				(highBound(true) != highBound(false) ? "; effective logical range: " + getEffectiveRangeString() : "") + ")";
 	}
 	
@@ -336,7 +488,7 @@ public class IntegerRangeMapping implements Serializable
 		if(obj instanceof IntegerRangeMapping)
 		{
 			IntegerRangeMapping that = (IntegerRangeMapping) obj;
-			return this.loBound == that.loBound && this.hiBound == that.hiBound;
+			return this.loBound.compareTo(that.loBound) == 0 && this.hiBound.compareTo(that.hiBound) == 0;
 			// no need to check size as it depends only on loBound & hiBound
 		}
 		else
@@ -347,8 +499,8 @@ public class IntegerRangeMapping implements Serializable
     public int hashCode()
 	{
 		int hash = 1;
-		hash = 31 * hash + (int)(loBound ^ (loBound >>> Integer.SIZE));
-		hash = 31 * hash + (int)(hiBound ^ (hiBound >>> Integer.SIZE));
+		hash = 31 * hash + loBound.hashCode();
+		hash = 31 * hash + hiBound.hashCode();
 		// no need to check size as it depends only on loBound & hiBound
 		return hash;
 	}

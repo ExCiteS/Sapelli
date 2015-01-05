@@ -139,10 +139,10 @@ public class BinaryMessage extends Message
 			in = new BitWrapInputStream(new ByteArrayInputStream(data));
 			
 			//Read header:
-			sendingSideTransmissionID = (int) Transmission.TRANSMISSION_ID_FIELD.read(in);	// transmission ID on sending side
-			payloadHash = (int) Transmission.PAYLOAD_HASH_FIELD.read(in);					// Payload hash
-			partNumber = (int) PART_NUMBER_FIELD.read(in);									// Part number
-			totalParts = (int) PART_NUMBER_FIELD.read(in);									// Total parts
+			sendingSideTransmissionID = Transmission.TRANSMISSION_ID_FIELD.readInt(in);	// transmission ID on sending side
+			payloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(in);					// Payload hash
+			partNumber = PART_NUMBER_FIELD.readInt(in);									// Part number
+			totalParts = PART_NUMBER_FIELD.readInt(in);									// Total parts
 			
 			//Read payload:
 			body = in.readBitArray(in.bitsAvailable()); // may include trailing 0 padding if this is the last message in the transmission

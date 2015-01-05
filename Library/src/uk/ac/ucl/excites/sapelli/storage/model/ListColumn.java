@@ -44,7 +44,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	
 	static protected int GetMaxLengthForSizeFieldSize(int minLength, int sizeBits)
 	{
-		return (int) IntegerRangeMapping.ForSize(minLength, sizeBits).highBound();
+		return IntegerRangeMapping.ForSize(minLength, sizeBits).highBound().intValue();
 	}
 	
 	private final IntegerRangeMapping sizeField;
@@ -124,7 +124,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	protected L read(BitInputStream bitStream) throws IOException
 	{
 		// Read size:
-		int size = (int) sizeField.read(bitStream);
+		int size = sizeField.readInt(bitStream);
 		// Read values:
 		L values = getNewList(size);
 		for(int i = 0; i < size; i++)
@@ -135,10 +135,10 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	@Override
 	protected void validate(L values) throws IllegalArgumentException
 	{
-		if(values.size() < sizeField.lowBound())
-			throw new IllegalArgumentException(getTypeString() + " does not contain enough " + singleColumn.getTypeString() + "s, minimum is " + sizeField.lowBound() + ", given value has " + values.size() + ".");
-		if(values.size() > sizeField.highBound())
-			throw new IllegalArgumentException(getTypeString() + " contains too many " + singleColumn.getTypeString() + "s, maximum is " + sizeField.lowBound() + ", given value has " + values.size() + ".");
+		if(values.size() < getMinimumLength())
+			throw new IllegalArgumentException(getTypeString() + " does not contain enough " + singleColumn.getTypeString() + "s, minimum is " + getMinimumLength() + ", given value has " + values.size() + ".");
+		if(values.size() > getMaximumLength())
+			throw new IllegalArgumentException(getTypeString() + " contains too many " + singleColumn.getTypeString() + "s, maximum is " + getMaximumLength() + ", given value has " + values.size() + ".");
 	}
 
 	@Override
@@ -190,7 +190,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	 */
 	public int getMinimumLength()
 	{
-		return (int) sizeField.lowBound();
+		return sizeField.lowBound().intValue();
 	}
 	
 	/**
@@ -198,7 +198,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	 */
 	public int getMaximumLength()
 	{
-		return (int) sizeField.highBound();
+		return sizeField.highBound().intValue();
 	}
 
 	@Override
