@@ -161,7 +161,7 @@ public class BinaryMessage extends Message
 			catch(Exception ignore) {}
 		}
 	}
-	
+
 	/**
 	 * Called when retrieving transmission from database
 	 * 
@@ -169,13 +169,13 @@ public class BinaryMessage extends Message
 	 * @param partNumber
 	 * @param totalParts
 	 * @param sentAt - may be null
-	 * @param deliverdAt - may be null
+	 * @param deliveredAt - may be null
 	 * @param receivedAt - may be null
 	 * @param body
 	 */
-	protected BinaryMessage(BinarySMSTransmission transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliverdAt, TimeStamp receivedAt, BitArray body)
+	public BinaryMessage(BinarySMSTransmission transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliveredAt, TimeStamp receivedAt, BitArray body)
 	{
-		super(transmission, partNumber, totalParts, sentAt, deliverdAt, receivedAt);
+		super(transmission, partNumber, totalParts, sentAt, deliveredAt, receivedAt);
 		this.body = body;
 	}
 	

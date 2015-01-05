@@ -162,7 +162,7 @@ public class TextMessage extends Message
 	 * @param receivedAt - may be null
 	 * @param body
 	 */
-	protected TextMessage(TextSMSTransmission transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliverdAt, TimeStamp receivedAt, String body)
+	public TextMessage(TextSMSTransmission transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliverdAt, TimeStamp receivedAt, String body)
 	{
 		super(transmission, partNumber, totalParts, sentAt, deliverdAt, receivedAt);
 		this.body = body;
