@@ -163,6 +163,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_CHOICE_CROSS_COLOR = "crossColor";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
 	static private final String ATTRIBUTE_RELATIONSHIP_HOLD = "hold";
+	static private final String ATTRIBUTE_RELATIONSHIP_REMEMBER = "remember";
 	static private final String ATTRIBUTE_CONSTRAINT_COLUMN = "column";
 	static private final String ATTRIBUTE_LOCATION_TYPE = "type";
 	static private final String ATTRIBUTE_LOCATION_START_WITH = "startWith";
@@ -468,7 +469,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// <Text>
 			else if(qName.equals(TAG_TEXTFIELD))
 			{
-				TextBoxField txtField = new TextBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_TEXTFIELD, true));
+				TextBoxField txtField = new TextBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_TEXTFIELD, false));
 				newField(txtField, attributes); // first set general things like optionality (needed for getDefaultMinLength() below).
 				
 				// Deal with minimum & maximum length:
@@ -494,7 +495,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// <Check>
 			else if(qName.equals(TAG_CHECKBOX))
 			{
-				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_CHECKBOX, true));
+				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_CHECKBOX, false));
 				chbxField.setInitialValue(attributes.getBoolean(ATTRIBUTE_FIELD_DEFAULTVALUE, CheckBoxField.DEFAULT_INITIAL_VALUE));
 				newField(chbxField, attributes);
 			}
@@ -788,7 +789,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		owner.addRelationship(relationship, attributes.getRequiredString(getRelationshipTag(relationship), ATTRIBUTE_RELATIONSHIP_FORM, true, false));
 		
 		// Other attributes:
-		relationship.setHoldForeignRecord(attributes.getBoolean(ATTRIBUTE_RELATIONSHIP_HOLD, Relationship.DEFAULT_HOLD_FOREIGN_RECORD));
+		relationship.setHoldForeignRecord(attributes.getBoolean(Relationship.DEFAULT_HOLD_FOREIGN_RECORD, ATTRIBUTE_RELATIONSHIP_REMEMBER, ATTRIBUTE_RELATIONSHIP_HOLD));
 		// TODO ? updateStartTimeUponLeave, saveBeforeFormChange, discardBeforeLeave (only for linksTo) ?
 	}
 	
@@ -1013,7 +1014,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			source.setNextFieldArguments(new FieldParameters());
 		source.getNextFieldArguments().put(	tagAttributes.getRequiredString(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_PARAM, true, false),
 											tagAttributes.getRequiredString(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_VALUE, false, true));
-		// TODO Let Field instance validate param & value? 
+		// TODO Let Field instance validate param & value?
 	}
 
 	private Page getCurrentPage()
@@ -1097,7 +1098,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			if(formStartFieldId != null) // try with field specified by ID in <Form startField="..."> (may be null)
 			{
 				Field specifiedStartField = currentForm.getField(formStartFieldId); // uses equalsIgnoreCase()
-				if(specifiedStartField == null) //TODO throw exception instead
+				if(specifiedStartField == null) // TODO throw exception instead
 					addWarning("The specified start field (\"" + formStartFieldId + "\") of currentForm \"" + currentForm.getName() + "\" does not exist, using first field instead.");
 				else
 					startField = specifiedStartField;
@@ -1118,6 +1119,15 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					jump.getKey().setJump(target); // set jump pointer (to a field object)
 			}
 			
+			// Generate (audio) descriptions for missing Control tags:
+			for(Control.Type type : Control.Type.values())
+				if(!parsedControls[type.ordinal()])
+					setDescription(	currentForm.getControl(type).description,
+									type.name(),
+									Control.GetDefaultDescriptionText(type),
+									null,
+									null);
+
 			// Deactivate this subtree parser:
 			deactivate(); //will call reset() (+ warnings will be copied to owner)
 		}

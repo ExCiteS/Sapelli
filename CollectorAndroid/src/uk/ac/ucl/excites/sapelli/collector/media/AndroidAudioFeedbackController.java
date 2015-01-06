@@ -51,7 +51,7 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 
 	private Thread playbackThread;
 	private volatile boolean running = false;
-	private MediaPlayer queuePlayer;
+	private MediaPlayer mediaPlayer;
 	private Semaphore playbackCompletedSem; // semaphore used to notify when the media player has finished playing the current track
 	private Semaphore animationCompletedSem; // semaphore used to notify when the UI thread has finished animating the view
 
@@ -73,7 +73,6 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 
 		playbackThread = new Thread()
 		{
-
 			@Override
 			public void run()
 			{
@@ -81,7 +80,6 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 				while(running && jobs.hasNext())
 					playJob(jobs.next());
 			}
-
 		};
 		running = true;
 		playbackThread.start();
@@ -106,8 +104,8 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 			}
 		}
 		// Stop currently playing track:
-		if(queuePlayer != null && queuePlayer.isPlaying())
-			queuePlayer.stop();
+		if(mediaPlayer != null && mediaPlayer.isPlaying())
+			mediaPlayer.stop();
 		// Nullify thread so it must be re-initialised:
 		playbackThread = null;
 		// Destroy semaphores so they aren't reused for later jobs/sequences:
@@ -121,10 +119,10 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 		// Stop playback:
 		stop();
 		// Release resources:
-		if(queuePlayer != null)
+		if(mediaPlayer != null)
 		{
-			queuePlayer.release();
-			queuePlayer = null;
+			mediaPlayer.release();
+			mediaPlayer = null;
 		}
 	}
 
@@ -147,20 +145,20 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 			{
 				try
 				{
-					if(queuePlayer == null)
+					if(mediaPlayer == null)
 					{
-						queuePlayer = MediaPlayer.create(context, Uri.fromFile(audioFile));
-						queuePlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-						queuePlayer.setOnCompletionListener(this);
+						mediaPlayer = MediaPlayer.create(context, Uri.fromFile(audioFile));
+						mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+						mediaPlayer.setOnCompletionListener(this);
 					}
 					else
 					{
-						queuePlayer.reset(); // reset to idle state
-						queuePlayer.setDataSource(context, Uri.fromFile(audioFile));
-						queuePlayer.prepare();
+						mediaPlayer.reset(); // reset to idle state
+						mediaPlayer.setDataSource(context, Uri.fromFile(audioFile));
+						mediaPlayer.prepare();
 					}
 					// Start audio playback:
-					queuePlayer.start();
+					mediaPlayer.start();
 					
 					// Animate the view, if necessary:
 					if(job.viewToAnimate != null)
@@ -194,7 +192,7 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 				}
 				catch(Exception e)
 				{
-					Log.e(TAG, "Error when trying to change media player data source to file " + job.soundRelativePath, e);
+					Log.e(TAG, "Error upon audio feedback job playback (media file: " + job.soundRelativePath + "; animation: " + job.animation + ")", e);
 					// Playing failed so completed listener will never fire. Allow playback to continue:
 					playbackCompletedSem.release();
 					animationCompletedSem.release();
@@ -214,7 +212,6 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 
 			// Wait for the UI thread to finish animating the view
 			animationCompletedSem.acquire();
-
 		}
 		catch(InterruptedException ie)
 		{

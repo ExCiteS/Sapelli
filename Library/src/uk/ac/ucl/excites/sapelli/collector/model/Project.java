@@ -126,12 +126,12 @@ public class Project
 	private void initialise(int id)
 	{
 		// Check & set id:
-		if(PROJECT_ID_FIELD.fits(this.id)) // check is there is already a valid id set
+		if(PROJECT_ID_FIELD.inEffectiveRange(this.id)) // check is there is already a valid id set
 			throw new IllegalStateException("Project id cannot be changed after it has been set.");
-		if(PROJECT_ID_FIELD.fits(id))
+		if(PROJECT_ID_FIELD.inEffectiveRange(id))
 			this.id = id;
 		else
-			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getLogicalRangeString() + ".");
+			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getEffectiveRangeString() + ".");
 		
 		// Initialise Model (important this should remain last):
 		this.model = new Model(SapelliCollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
@@ -170,10 +170,10 @@ public class Project
 		if(!isV1xProject())
 			throw new IllegalStateException("Only allowed for v1.x projects (created with id=PROJECT_ID_V1X_TEMP).");
 		initialise(schemaID); // schemaID of first (and only) form is used as projectID
-		if(Schema.V1X_SCHEMA_VERSION_FIELD.fits(schemaVersion))
+		if(Schema.V1X_SCHEMA_VERSION_FIELD.inEffectiveRange(schemaVersion))
 			this.v1xSchemaVersion = schemaVersion;
 		else
-			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.V1X_SCHEMA_VERSION_FIELD.getLogicalRangeString() + ".");
+			throw new IllegalArgumentException("Invalid schema version, valid values are " + Schema.V1X_SCHEMA_VERSION_FIELD.getEffectiveRangeString() + ".");
 	}
 	
 	/**

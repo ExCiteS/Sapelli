@@ -18,11 +18,16 @@
 
 package uk.ac.ucl.excites.sapelli.transmission;
 
+import java.io.IOException;
+
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
+import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 
 /**
  * @author mstevens
@@ -42,16 +47,38 @@ public abstract class Receiver
 		this.receivedTransmissionStore = receivedTransmissionStore;
 	}
 	
-	public void receive(BinaryMessage binSms)
+	protected boolean receive(Transmission transmission) throws Exception
 	{
-//		BinarySMSTransmission transmission = receivedTransmissionStore.retrieveBinarySMSTransmission(binSms.getSender(), false, 0, binSms.getPayloadHash());
-//		if(transmission == null)
-//			transmission = new BinarySMSTransmission(binSms.getSender(), client, binSms);
+		// Receive (i.e. decode) the transmission if it is complete
+		if(transmission.isComplete()) // TODO maybe this should be done in Message.receivePart()?
+		{
+			transmission.receive();
+			
+			// TODO Read payload...
+			
+			// Delete transmission (and parts) from store:
+			receivedTransmissionStore.deleteTransmission(transmission);
+			
+			// TODO make & send ACK
+			
+			return true;
+		}
+		else
+			return false;
+	}
+	
+	
+	public void receive(BinaryMessage binSms) throws Exception
+	{
+		BinarySMSTransmission transmission = receivedTransmissionStore.retrieveBinarySMSTransmission(binSms.getSender(), false, binSms.getSendingSideTransmissionID(), binSms.getPayloadHash());
+		if(transmission == null) // we received the the first part
+			transmission = new BinarySMSTransmission(client, binSms);
+		else
+			transmission.receivePart(binSms);
 		
-		// store/update transmisison!
-		
-		
-		//TODO make & send ACK
+		// Store/Update transmission unless it was successfully received in its entirety:
+		if(!receive(transmission))
+			receivedTransmissionStore.storeTransmission(transmission);
 	}
 	
 	public void receive(TextMessage txtSms)

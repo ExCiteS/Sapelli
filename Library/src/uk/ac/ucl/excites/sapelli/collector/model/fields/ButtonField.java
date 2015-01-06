@@ -52,12 +52,12 @@ public class ButtonField extends Field
 	
 	/**
 	 * @param form
-	 * @param id
-	 * @param caption
+	 * @param id (may be null)
+	 * @param caption (may not be null)
 	 */
 	public ButtonField(Form form, String id, String caption)
 	{	
-		super(form, GetID(id, form, ID_PREFIX, caption), GetCaption(id, caption));
+		super(form, GetID(id, form, ID_PREFIX, caption), CheckCaption(caption));
 		setColumnType(DEFAULT_COLUMN_TYPE); // also sets noColumn
 	}
 	

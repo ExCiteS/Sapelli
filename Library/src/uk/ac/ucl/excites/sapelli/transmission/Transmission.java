@@ -320,11 +320,11 @@ public abstract class Transmission
 		BitArrayInputStream bitstream = new BitArrayInputStream(bodyBits);
 		
 		// Read payload type & instantiate Payload object:
-		this.payload = Payload.New(client, (int) Payload.PAYLOAD_TYPE_FIELD.read(bitstream));
+		this.payload = Payload.New(client, Payload.PAYLOAD_TYPE_FIELD.readInt(bitstream));
 		this.payload.setTransmission(this); // !!!
 		
 		// Read payload bits length:
-		int payloadBitsLength = (int) payloadBitsLengthField.read(bitstream);
+		int payloadBitsLength = payloadBitsLengthField.readInt(bitstream);
 		
 		// Read the actual payload bits:
 		BitArray payloadBits;
@@ -364,7 +364,7 @@ public abstract class Transmission
 	 */
 	public int getMaxPayloadBits()
 	{
-		return (int) payloadBitsLengthField.highBound(true);
+		return payloadBitsLengthField.highBound(true).intValue();
 	}
 	
 	/**

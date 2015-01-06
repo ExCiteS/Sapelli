@@ -141,10 +141,10 @@ public class TextMessage extends Message
 		}
 		//	Read header fields:
 		BitArrayInputStream hdrFieldBitsIn = new BitArrayInputStream(hdrFieldBitsOut.toBitArray());
-		sendingSideTransmissionID = (int) Transmission.TRANSMISSION_ID_FIELD.read(hdrFieldBitsIn);
-		payloadHash = (int) Transmission.PAYLOAD_HASH_FIELD.read(hdrFieldBitsIn);
-		partNumber = (int) PART_NUMBER_FIELD.read(hdrFieldBitsIn);
-		totalParts = (int) PART_NUMBER_FIELD.read(hdrFieldBitsIn);
+		sendingSideTransmissionID = Transmission.TRANSMISSION_ID_FIELD.readInt(hdrFieldBitsIn);
+		payloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(hdrFieldBitsIn);
+		partNumber = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
+		totalParts = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
 		hdrFieldBitsIn.close();
 		
 		// Set body:
@@ -162,7 +162,7 @@ public class TextMessage extends Message
 	 * @param receivedAt - may be null
 	 * @param body
 	 */
-	protected TextMessage(TextSMSTransmission transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliverdAt, TimeStamp receivedAt, String body)
+	public TextMessage(TextSMSTransmission transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliverdAt, TimeStamp receivedAt, String body)
 	{
 		super(transmission, partNumber, totalParts, sentAt, deliverdAt, receivedAt);
 		this.body = body;

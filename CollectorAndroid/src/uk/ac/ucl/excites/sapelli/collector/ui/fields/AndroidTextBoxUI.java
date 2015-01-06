@@ -212,11 +212,14 @@ public class AndroidTextBoxUI extends TextBoxUI<View, CollectorView>
 			setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
 
 			// Label:
-			TextView label = new TextView(context);
-			label.setText(field.getCaption());
-			label.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
-			addView(label);
-
+			if (field.hasCaption())
+			{
+				TextView label = new TextView(context);
+				label.setText(field.getCaption());
+				label.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
+				addView(label);
+			}
+			
 			// Textbox:
 			editText = new EditText(context);
 			editText.setLayoutParams(CollectorView.FULL_WIDTH_LAYOUTPARAMS);
