@@ -30,6 +30,7 @@ import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.EndField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.util.ColumnOptionalityAdvisor;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.WarningKeeper;
@@ -238,6 +239,23 @@ public class Form implements WarningKeeper
 	public List<Field> getFields()
 	{
 		return Collections.unmodifiableList(fields);
+	}
+	
+	/**
+	 * @param recurse when true the fields contained within Pages will be counted as well
+	 * @return
+	 */
+	public int getNumberOfFields(boolean recurse)
+	{
+		// Top-level fields:
+		int total = fields.size();
+		// Fields contained in Pages:
+		if(recurse)
+			for(Field f : fields)
+				if(f instanceof Page)
+					total += ((Page) f).getFields().size();
+		// Return total:
+		return total;
 	}
 	
 	/**

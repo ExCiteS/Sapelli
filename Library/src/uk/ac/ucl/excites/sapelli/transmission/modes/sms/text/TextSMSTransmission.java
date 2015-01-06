@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.transmission.modes.sms.text;
 
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
@@ -258,9 +257,9 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	 * @param receiver - may be null on receiving side
 	 * @param parts - list of {@link TextMessage}s
 	 */	
-	public TextSMSTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, SMSAgent sender, SMSAgent receiver, List<TextMessage> parts) 
+	public TextSMSTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, SMSAgent sender, SMSAgent receiver) 
 	{
-		super(client, localID, remoteID, payloadHash, sentAt, receivedAt, sender, receiver, parts);
+		super(client, localID, remoteID, payloadHash, sentAt, receivedAt, sender, receiver);
 	}
 	
 	private int minNumberOfCharactersNeededFor(int bits)

@@ -65,11 +65,8 @@ public abstract class DocumentParser extends Handler
 			 * passed as the cause to the super (Exception), which
 			 * means causes aren't printed as part of a stacktrace). */
 			Exception cause = saxE.getException();
-			throw new Exception("XML Parsing Exception", cause != null ? cause : saxE); 
-		}
-		catch(Exception e)
-		{
-			throw new Exception("XML Parsing Exception", e);
+			throw cause != null ? 	cause : // throw unwrapped cause
+									saxE;
 		}
 		finally
 		{	// In case the stream is still open:

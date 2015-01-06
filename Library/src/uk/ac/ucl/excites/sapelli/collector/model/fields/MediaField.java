@@ -65,11 +65,11 @@ public abstract class MediaField extends Field
 	/**
 	 * @param form
 	 * @param id the id of the field, may be null (but not recommended)
-	 * @param caption the caption of the field, may be null (in which case the id is used as the caption)
+	 * @param caption the caption of the field, may be null
 	 */
 	public MediaField(Form form, String id, String caption)
 	{
-		super(form, GetID(id, form, ID_PREFIX, caption), GetCaption(id, caption));
+		super(form, GetID(id, form, ID_PREFIX, caption), caption);
 		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);
 		setShowReview(DEFAULT_SHOW_REVIEW);
 	}

@@ -139,10 +139,10 @@ public class BinaryMessage extends Message
 			in = new BitWrapInputStream(new ByteArrayInputStream(data));
 			
 			//Read header:
-			sendingSideTransmissionID = (int) Transmission.TRANSMISSION_ID_FIELD.read(in);	// transmission ID on sending side
-			payloadHash = (int) Transmission.PAYLOAD_HASH_FIELD.read(in);					// Payload hash
-			partNumber = (int) PART_NUMBER_FIELD.read(in);									// Part number
-			totalParts = (int) PART_NUMBER_FIELD.read(in);									// Total parts
+			sendingSideTransmissionID = Transmission.TRANSMISSION_ID_FIELD.readInt(in);	// transmission ID on sending side
+			payloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(in);					// Payload hash
+			partNumber = PART_NUMBER_FIELD.readInt(in);									// Part number
+			totalParts = PART_NUMBER_FIELD.readInt(in);									// Total parts
 			
 			//Read payload:
 			body = in.readBitArray(in.bitsAvailable()); // may include trailing 0 padding if this is the last message in the transmission
@@ -161,7 +161,7 @@ public class BinaryMessage extends Message
 			catch(Exception ignore) {}
 		}
 	}
-	
+
 	/**
 	 * Called when retrieving transmission from database
 	 * 
@@ -169,13 +169,13 @@ public class BinaryMessage extends Message
 	 * @param partNumber
 	 * @param totalParts
 	 * @param sentAt - may be null
-	 * @param deliverdAt - may be null
+	 * @param deliveredAt - may be null
 	 * @param receivedAt - may be null
 	 * @param body
 	 */
-	protected BinaryMessage(BinarySMSTransmission transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliverdAt, TimeStamp receivedAt, BitArray body)
+	public BinaryMessage(BinarySMSTransmission transmission, int partNumber, int totalParts, TimeStamp sentAt, TimeStamp deliveredAt, TimeStamp receivedAt, BitArray body)
 	{
-		super(transmission, partNumber, totalParts, sentAt, deliverdAt, receivedAt);
+		super(transmission, partNumber, totalParts, sentAt, deliveredAt, receivedAt);
 		this.body = body;
 	}
 	

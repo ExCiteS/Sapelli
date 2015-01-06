@@ -46,8 +46,10 @@ public class ViewAnimator
 	 * @param duringAnimation code to run, *off* the main/UI thread, when the animation starts and while it is running (may be null; should not touch views directly; animation will invisible or interrupted if work is passed to the main/UI thread before it completes)
 	 * @param afterAnimation code to run, *on* the main/UI thread, when the animation ends (may be null)
 	 */
-	static protected void Animate(View viewToAnimate, AnimationSet animationSet, final Runnable duringAnimation, final Runnable afterAnimation)
+	static protected void Animate(final View viewToAnimate, final AnimationSet animationSet, final Runnable duringAnimation, final Runnable afterAnimation)
 	{
+		final Looper mainLooper = Looper.getMainLooper();
+
 		// Set up listener for the animation:
 		if(duringAnimation != null || afterAnimation != null)
 			animationSet.setAnimationListener(new AnimationListener()
@@ -76,12 +78,25 @@ public class ViewAnimator
 					 * For some reason using a Handler also prevents a strange "splitting" effect when SplitItems are animated on-click.
 					 */
 					if(afterAnimation != null)
-						new Handler(Looper.getMainLooper()).post(afterAnimation); 
+						new Handler(mainLooper).post(afterAnimation);
 				}
 			});
 
 		// Run the animation:
-		viewToAnimate.startAnimation(animationSet);
+		Runnable runAnimation = new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				viewToAnimate.startAnimation(animationSet);
+			}
+		};
+
+		// Decide on thread:
+		if(Thread.currentThread() != mainLooper.getThread())
+			new Handler(mainLooper).post(runAnimation);
+		else
+			runAnimation.run();
 	}
 	
 	/**

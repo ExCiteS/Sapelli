@@ -142,7 +142,7 @@ public class MultiListField extends Field
 			boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
 			
 			//Create column:
-			IntegerColumn col = new IntegerColumn(name, colOptional, 0, values.size() - 1);
+			IntegerColumn col = new IntegerColumn(name, colOptional, 0, values.size() - 1, true); // Allow empty! For when values.size() = 1
 			
 			// Add virtual columns to it:
 			//	Find maximum level:
