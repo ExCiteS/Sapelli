@@ -50,11 +50,11 @@ public class OrientationField extends Field
 	/**
 	 * @param form the form the field belongs to
 	 * @param id the id of the field, may be null (but not recommended)
-	 * @param caption the caption of the field, may be null (in which case the id is used as the caption)
+	 * @param caption the caption of the field, may be null
 	 */
 	public OrientationField(Form form, String id, String caption)
 	{
-		super(form, GetID(id, form, ID_PREFIX, caption), GetCaption(id, caption));
+		super(form, GetID(id, form, ID_PREFIX, caption), caption);
 	}
 
 	/**

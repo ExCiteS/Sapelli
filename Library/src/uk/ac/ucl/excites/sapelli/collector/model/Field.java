@@ -64,7 +64,7 @@ public abstract class Field extends JumpSource
 	static private String GetID(String parsedID) throws NullPointerException
 	{
 		if(parsedID == null || parsedID.trim().isEmpty())
-			throw new NullPointerException("Top-level field ID cannot be null, empty or consist only of white-space.");
+			throw new NullPointerException("Field ID cannot be null, empty or consist only of white-space.");
 		return parsedID.trim(); // don't sanitise here!
 	}
 	
@@ -85,17 +85,19 @@ public abstract class Field extends JumpSource
 	}
 	
 	/**
-	 * Returns the caption to use, possibly taken as the id
+	 * Returns the (parsed) caption if it isn't null or throws a NullPointerException if it is.
+	 * Only to be used on Fields on which a caption is required!
+	 * Note that empty-String and all-whitespace captions are accepted.
 	 * 
-	 * @param parsedId
 	 * @param parsedCaption
-	 * @return the caption to use (may be null!)
+	 * @return
+	 * @throws NullPointerException
 	 */
-	static protected String GetCaption(String parsedId, String parsedCaption)
+	static protected String CheckCaption(String parsedCaption) throws NullPointerException
 	{
-		if(parsedCaption != null)
-			return parsedCaption;
-		return parsedId;
+		if(parsedCaption == null)
+			throw new NullPointerException("Caption cannot be null.");
+		return parsedCaption; // don't sanitise here!
 	}
 	
 	//Dynamics---------------------------------------------

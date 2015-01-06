@@ -247,13 +247,14 @@ public class Form implements WarningKeeper
 	 */
 	public int getNumberOfFields(boolean recurse)
 	{
-		int total = 0;
-		for(Field f : fields)
-		{
-			total++;
-			if(f instanceof Page)
-				total += ((Page) f).getFields().size();
-		}
+		// Top-level fields:
+		int total = fields.size();
+		// Fields contained in Pages:
+		if(recurse)
+			for(Field f : fields)
+				if(f instanceof Page)
+					total += ((Page) f).getFields().size();
+		// Return total:
 		return total;
 	}
 	

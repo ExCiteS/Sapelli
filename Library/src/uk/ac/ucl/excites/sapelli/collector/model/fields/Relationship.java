@@ -32,7 +32,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
  *	In this case the Relation field merely provides a "passage way" through which navigation to the other form is possible.
  *	An "intra-form" jump to the relation field will automatically result in a subsequent "inter-form" jump to the {@code relatedForm}. 
  *</p><p>
- * One-to-one: TODO not yet implemented</br>
+ * One-to-one: TODO not yet implemented (but a BelongsTo with holdForeignRecord=false is basically the same)</br>
  *	A 1:1 relationship between this form (holder of of the Relationship object) and another {@code relatedForm}.
  *	The consequence is that a new record of the {@code relatedForm} will be created for every instance of this form (unless the relationship is optional). 
  * </p><p>
