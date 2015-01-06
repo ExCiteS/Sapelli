@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
+	<prerequisites>
+		<maven>3.2.5</maven>
+	</prerequisites>
+	
 	<groupId>commons-codec</groupId>
 	<artifactId>commons-codec-shaded</artifactId>
 	<name>Apache Commons Codec (shaded)</name>
@@ -89,7 +92,7 @@
 		<!-- plugin versions -->
 		<dependency-plugin-version>2.9</dependency-plugin-version>
 		<compiler-plugin-version>3.2</compiler-plugin-version>
-		<antrun-plugin-version>1.7</antrun-plugin-version>
+		<antrun-plugin-version>1.8</antrun-plugin-version>
 		<jar-plugin-version>2.5</jar-plugin-version>
 		<source-plugin-version>2.4</source-plugin-version>
 		<shade-plugin-version>2.3</shade-plugin-version>
