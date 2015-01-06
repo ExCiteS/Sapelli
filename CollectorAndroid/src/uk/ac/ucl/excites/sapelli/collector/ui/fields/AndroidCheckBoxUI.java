@@ -90,7 +90,8 @@ public class AndroidCheckBoxUI extends CheckBoxUI<View, CollectorView>
 			this.onPage = onPage;
 			
 			// Caption:
-			setText(field.getCaption());
+			if (field.hasCaption())
+				setText(field.getCaption());
 			
 			// LayoutParams:
 			LayoutParams lp = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);

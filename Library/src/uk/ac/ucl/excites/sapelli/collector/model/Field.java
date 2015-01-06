@@ -81,7 +81,7 @@ public abstract class Field extends JumpSource
 	{		
 		if(parsedId != null && !parsedId.trim().isEmpty())
 			return parsedId; // don't sanitise here!
-		return Column.SanitiseName(captionPrefix + (parsedCaption == null || parsedCaption.trim().isEmpty() ? form.getFields().size() : parsedCaption.trim())); // this generated id will not occur in the XML so we can already sanitise
+		return Column.SanitiseName(captionPrefix + (parsedCaption == null || parsedCaption.trim().isEmpty() ? form.getNumberOfFields(true) : parsedCaption.trim())); // this generated id will not occur in the XML so we can already sanitise
 	}
 	
 	/**

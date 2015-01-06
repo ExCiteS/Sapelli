@@ -434,7 +434,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// <Text>
 			else if(qName.equals(TAG_TEXTFIELD))
 			{
-				TextBoxField txtField = new TextBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_TEXTFIELD, true));
+				TextBoxField txtField = new TextBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_TEXTFIELD, false));
 				newField(txtField, attributes); // first set general things like optionality (needed for getDefaultMinLength() below).
 				
 				// Deal with minimum & maximum length:
@@ -460,7 +460,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// <Check>
 			else if(qName.equals(TAG_CHECKBOX))
 			{
-				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_CHECKBOX, true));
+				CheckBoxField chbxField = new CheckBoxField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_CHECKBOX, false));
 				chbxField.setInitialValue(attributes.getBoolean(ATTRIBUTE_FIELD_DEFAULTVALUE, CheckBoxField.DEFAULT_INITIAL_VALUE));
 				newField(chbxField, attributes);
 			}
