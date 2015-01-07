@@ -32,6 +32,8 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
  */
 public class FileStorageProvider
 {
+	
+	// STATICS-------------------------------------------------------
 	public static String DOWNLOADS_SAPELLI_FOLDER = "Sapelli";
 	public static String BACKUP_FILE = "Backup";
 	
@@ -78,7 +80,12 @@ public class FileStorageProvider
 		 */
 		Temp
 	}
-
+	
+	// Subfolders of project installation folder:
+	static public final String IMAGE_FOLDER = "img";
+	static public final String SOUND_FOLDER = "snd";
+	
+	// DYNAMICS------------------------------------------------------
 	private final File sapelliFolder;
 	private final File downloadsFolder;
 	
@@ -272,12 +279,53 @@ public class FileStorageProvider
 	}
 	
 	/**
+	 * @param project
+	 * @param imageFileRelativePath
+	 * @return file object (pointing to a file which does *not* necessarily exist), or null if the given path was null or empty
+	 */
+	public File getProjectImageFile(Project project, String imageFileRelativePath)
+	{
+		try
+		{
+			if(imageFileRelativePath == null || imageFileRelativePath.isEmpty())
+				return null;
+			return new File(getProjectInstallationFolder(project, false).getAbsolutePath() + File.separator + IMAGE_FOLDER + File.separator + imageFileRelativePath);
+		}
+		catch(FileStorageException fse)
+		{
+			fse.printStackTrace(System.err);
+			return null;
+		}		
+	}
+	
+	/**
+	 * @param project
+	 * @param soundFileRelativePath
+	 * @return file object (pointing to a file which does *not* necessarily exist), or null if the given path was null or empty
+	 */
+	public File getProjectSoundFile(Project project, String soundFileRelativePath)
+	{
+		try
+		{
+			if(soundFileRelativePath == null || soundFileRelativePath.isEmpty())
+				return null;
+			return new File(getProjectInstallationFolder(project, false).getAbsolutePath() + File.separator + SOUND_FOLDER + File.separator + soundFileRelativePath);
+		}
+		catch(FileStorageException fse)
+		{
+			fse.printStackTrace(System.err);
+			return null;
+		}
+	}
+	
+	/**
 	 * Returns a File object representing a (still uncreated) ZIP file which will be used for a Collector back-up.
 	 * The path will be: <device_download_folder>/Sapelli/Backup_timestamp.zip
 	 * 
 	 * @return the ZIP file (not yet created!)
+	 * @throws FileStorageException
 	 */
-	public File getNewBackupFile()
+	public File getNewBackupFile() throws FileStorageException
 	{
 		return new File(getSapelliDownloadsFolder(), BACKUP_FILE + "_" + TimeUtils.getTimestampForFileName() + "." + Zipper.ZIP_EXTENSION);
 	}

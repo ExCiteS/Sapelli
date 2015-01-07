@@ -49,6 +49,8 @@ public class LocationField extends Field implements Timeoutable
 		FIELD
 	};
 	
+	static public final String ID_PREFIX = "loc";
+	
 	// Defaults:
 	static public final int DEFAULT_TYPE = TYPE_GPS; 				// use GPS by default
 	static public final StartWith DEFAULT_START_WITH = StartWith.FORM;	// start listening for locations at the start of the form
@@ -81,14 +83,12 @@ public class LocationField extends Field implements Timeoutable
 	
 	/**
 	 * @param form the form the field belongs to
-	 * @param id the id of the field, should not be null
-	 * @param caption the caption of the field, may be null (in which case the id is used as the caption)
+	 * @param id the id of the field, may be null (but not recommended)
+	 * @param caption the caption of the field, may be null
 	 */
 	public LocationField(Form form, String id, String caption)
 	{
-		super(form, id, caption);
-		if(id == null)
-			throw new NullPointerException("ID of top-level field cannot be null");
+		super(form, GetID(id, form, ID_PREFIX, caption), caption);
 	}
 	
 	/**

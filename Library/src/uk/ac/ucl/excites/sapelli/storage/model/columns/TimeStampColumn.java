@@ -283,7 +283,7 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	@Override
 	protected TimeStamp read(BitInputStream bitStream) throws IOException
 	{
-		long msSinceJavaEpoch = timeMapping.read(bitStream) * (keepMS ? 1 : 1000);
+		long msSinceJavaEpoch = timeMapping.readLong(bitStream) * (keepMS ? 1 : 1000);
 		return new TimeStamp(msSinceJavaEpoch, keepLocalTimezone ? TimeStamp.getDateTimeZoneFor((int) bitStream.readInteger(TIMEZONE_QH_OFFSET_SIZE, true)) : DateTimeZone.UTC);
 	}		
 
@@ -309,12 +309,12 @@ public class TimeStampColumn extends ComparableColumn<TimeStamp>
 	
 	public TimeStamp getLowBound()
 	{
-		return new TimeStamp(timeMapping.lowBound() * (keepMS ? 1 : 1000));
+		return new TimeStamp(timeMapping.lowBound().longValue() * (keepMS ? 1 : 1000));
 	}
 
 	public TimeStamp getHighBound()
 	{
-		return new TimeStamp(timeMapping.highBound(strict) * (keepMS ? 1 : 1000));
+		return new TimeStamp(timeMapping.highBound(strict).longValue() * (keepMS ? 1 : 1000));
 	}
 
 	@Override

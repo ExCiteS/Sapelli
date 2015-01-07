@@ -24,6 +24,8 @@ import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 
+import uk.ac.ucl.excites.sapelli.shared.util.BigIntegerUtils;
+
 /**
  * A stream of bits that can be read. Provides read methods for various (primitive) types.<br/>
  * <br/>
@@ -283,7 +285,7 @@ public abstract class BitInputStream extends InputStream
  	 * Signed values are assumed to be stored using Two's complement format.
 	 * Currently only supports big-endian byte order (and MSB 0 bit numbering), meaning the more significant bits (and bytes) are read first.
 	 * 
-	 * @param numberOfBits the number of bits (> 0; <= 64 if signed; <= 63 if unsigned)
+	 * @param numberOfBits the number of bits (>= 0; but when = 0 the but read value will always be 0; <= 64 if signed; <= 63 if unsigned)
 	 * @param signed the "signedness" (true = signed; false = unsigned)
 	 * @return the value that was read
 	 * @throws IOException if the stream is closed or another I/O error occurs
@@ -309,7 +311,7 @@ public abstract class BitInputStream extends InputStream
  	 * Signed values are assumed to be stored using Two's complement format.
 	 * Currently only supports big-endian byte order (and MSB 0 bit numbering), meaning the more significant bits (and bytes) are read first.
 	 * 
-	 * @param numberOfBits  the number of bits to be read (> 0)
+	 * @param numberOfBits  the number of bits to be read (>= 0, but when = 0 the but read value will always be 0)
 	 * @param signed  the "signedness" (true = signed; false = unsigned)
 	 * 
 	 * @return the value that was read
@@ -328,11 +330,6 @@ public abstract class BitInputStream extends InputStream
 	{
 		if(numberOfBits < 0)
 			throw new IllegalArgumentException("numberOfBits (" + numberOfBits + ") cannot be negative!");
-		// Determine min/max values:
-		BigInteger minValue = signed ? 	BigInteger.valueOf(2).pow(numberOfBits - 1).negate() :
-										BigInteger.ZERO;
-		BigInteger maxValue = signed ? 	BigInteger.valueOf(2).pow(numberOfBits - 1).subtract(BigInteger.ONE) :
-										BigInteger.valueOf(2).pow(numberOfBits).subtract(BigInteger.ONE);
 		/* Read the value bit by bit...
 		 *	The most significant bit is read first ("MSB 0" bit numbering).
 		 *	But because  BigInteger uses "LSB 0" bit numbering internally we will always set its (numberOfBits - 1 - i)-th bit
@@ -343,9 +340,10 @@ public abstract class BitInputStream extends InputStream
 				value = value.setBit(numberOfBits - 1 - i);
 			//Alternative for the 2 lines above:
 			//	value = value.add(BigInteger.valueOf(bits[i] ? (1l << i) : 0l));
-		//Overflowing values become negative:
-		if(value.compareTo(maxValue) > 0) //is value bigger than maxValue?
-			value = minValue.add(value.subtract(maxValue).subtract(BigInteger.ONE));
+		// Overflowing values become negative:
+		BigInteger maxValue = BigIntegerUtils.GetMaxValue(numberOfBits, signed);
+		if(value.compareTo(maxValue) > 0) // is value bigger than maxValue?
+			value = BigIntegerUtils.GetMinValue(numberOfBits, signed).add(value.subtract(maxValue).subtract(BigInteger.ONE));
 		return value;
 	}
 	

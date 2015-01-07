@@ -47,6 +47,8 @@ public abstract class MediaField extends Field
 	static public final int DEFAULT_MAX = 255; //column will use 1 byte (up to 255 items)
 	static public final char FILENAME_ELEMENT_SEPARATOR = '_';
 	
+	static public final String ID_PREFIX = "media";
+	
 	static private final Pattern OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
 	
 	//protected int min;
@@ -54,9 +56,14 @@ public abstract class MediaField extends Field
 	protected int max;
 	protected ChoiceField disableChoice;
 
+	/**
+	 * @param form
+	 * @param id the id of the field, may be null (but not recommended)
+	 * @param caption the caption of the field, may be null
+	 */
 	public MediaField(Form form, String id, String caption)
 	{
-		super(form, id, caption);
+		super(form, GetID(id, form, ID_PREFIX, caption), caption);
 		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);		
 	}
 	
@@ -170,7 +177,7 @@ public abstract class MediaField extends Field
 	public File getNewTempFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
 	{
 		String filename = generateFilename(record, getCount(record));
-		String dataFolderPath = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
+		String dataFolderPath = fileStorageProvider.getProjectAttachmentFolder(form.project, true).getAbsolutePath();
 		return new File(dataFolderPath + File.separator + filename);
 	}
 	
@@ -269,7 +276,7 @@ public abstract class MediaField extends Field
 					//this.min == that.min &&
 					this.max == that.max &&
 					this.useNativeApp == that.useNativeApp &&
-					(this.disableChoice != null ? that.disableChoice != null && this.disableChoice.getID().equals(that.disableChoice.getID()) : that.disableChoice == null); // do not use disableChoice itself to avoid potential endless loops!
+					(this.disableChoice != null ? that.disableChoice != null && this.disableChoice.id.equals(that.disableChoice.id) : that.disableChoice == null); // do not use disableChoice itself to avoid potential endless loops!
 		}
 		else
 			return false;
@@ -282,7 +289,7 @@ public abstract class MediaField extends Field
 		//hash = 31 * hash + min;
 		hash = 31 * hash + max;
 		hash = 31 * hash + (useNativeApp ? 0 : 1);
-		hash = 31 * hash + (disableChoice == null ? 0 : disableChoice.getID().hashCode()); // do not use disableChoice itself to avoid potential endless loops!
+		hash = 31 * hash + (disableChoice == null ? 0 : disableChoice.id.hashCode()); // do not use disableChoice itself to avoid potential endless loops!
 		return hash;
 	}
 	

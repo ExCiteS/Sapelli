@@ -23,13 +23,12 @@ import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
-import uk.ac.ucl.excites.sapelli.collector.media.AbstractAudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.media.AudioFeedbackController;
+import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.Form.AudioFeedback;
-import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.State;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.Location;
@@ -46,21 +45,25 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
 public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 {
 	
-	protected F field;
-	protected Controller controller;
-	protected UI collectorUI;
-	private boolean shown = false;
+	static public final int STATE_HIDDEN = 0;
+	static public final int STATE_SHOWN_ALONE = 1;
+	static public final int STATE_SHOWN_ON_PAGE = 2;
+	
+	protected final F field;
+	protected final Controller<UI> controller;
+	protected final UI collectorUI;
+	private int state = STATE_HIDDEN;
 	
 	private Record lastKnownRecord = null;
 	
-	public FieldUI(F field, Controller controller, UI collectorUI)
+	public FieldUI(F field, Controller<UI> controller, UI collectorUI)
 	{
 		this.field = field;
 		this.controller = controller;
 		this.collectorUI = collectorUI;
 	}
 	
-	public F getField()
+	public final F getField()
 	{
 		return field;
 	}
@@ -82,7 +85,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		lastKnownRecord = record;
 		
 		// Mark the fieldUI as currently shown:
-		this.shown = true;
+		this.state = onPage ? STATE_SHOWN_ON_PAGE : STATE_SHOWN_ALONE;
 		
 		return getPlatformView(onPage, controller.isFieldEnabled(field), record, newRecord);
 	}
@@ -92,7 +95,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * the object may be recycled but should be updated w.r.t. the provided record.
 	 * 
 	 * @param onPage
-	 * @parem enabled
+	 * @param enabled
 	 * @param record
 	 * @param newRecord whether or not this is a new record
 	 * @return
@@ -104,8 +107,13 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	public void hideField()
 	{
-		// mark fieldUI as *not* currently shown:
-		this.shown = false;
+		// Stop any audiofeedback which may still be running:
+		if(isUsingAudioFeedback(isShownOnPage()))
+			collectorUI.stopAudioFeedback();
+		
+		// Mark fieldUI as *not* currently shown:
+		this.state = STATE_HIDDEN; // (do not move this above the call to isShownOnPage())
+		
 		// Run cancel behaviour:
 		cancel();
 	}
@@ -161,7 +169,8 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	protected boolean isShownOnPage()
 	{
-		return shown && controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI;
+		return state == STATE_SHOWN_ON_PAGE;
+		// Alternative: return controller.getCurrentField() instanceof Page && collectorUI.getCurrentFieldUI() instanceof PageUI;
 	}
 	
 	/**
@@ -169,7 +178,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	public boolean isFieldShown()
 	{
-		return shown;
+		return state != STATE_HIDDEN;
 	}
 	
 	/**
@@ -209,7 +218,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 			((PageUI<V, UI>) collectorUI.getCurrentFieldUI()).clearInvalidity(this);
 	}
 	
-	public ControlsUI.State getControlState(Control control)
+	public ControlsUI.State getControlState(Control.Type control)
 	{
 		// Check if the field allows this control to be shown in the current formMode:
 		boolean show = field.isControlAllowedToBeShown(control, controller.getCurrentMode());
@@ -218,13 +227,13 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		if(show)
 			switch(control)
 			{
-				case BACK:
+				case Back:
 					show &= controller.canGoBack(false); // can we go back to a previous field or form
 					break;
-				case CANCEL:
+				case Cancel:
 					show &= isShowCancel();
 					break;
-				case FORWARD:
+				case Forward:
 					show &= isShowForward();
 					break;
 			}
@@ -271,7 +280,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		// Audio feedback:
 		if(isUsingAudioFeedback(withPage))
 			// Play (sequence of) audio feedback jobs:
-			collectorUI.getAudioFeebackController().play(getAudioFeedbackJobs(field.getForm().getAudioFeedback(), withPage));
+			collectorUI.getAudioFeebackController().play(getAudioFeedbackJobs(field.form.getAudioFeedback(), withPage));
 		// Other onDisplay behaviour:
 		if(informOnDisplayNonAudioFeedback(withPage))
 			onDisplayNonAudioFeedback(withPage);
@@ -285,7 +294,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 */
 	public final boolean isUsingAudioFeedback(boolean withPage)
 	{
-		return field.getForm().isUsingAudioFeedback() && isFieldUsingAudioFeedback(withPage);
+		return field.form.isUsingAudioFeedback() && isFieldUsingAudioFeedback(withPage);
 	}
 	
 	/**
@@ -307,9 +316,9 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @param withPage whether the field is being display as part of a page (true) or on its own (false)
 	 * @return
 	 */
-	protected List<AbstractAudioFeedbackController<V>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
+	protected List<AudioFeedbackController<V>.PlaybackJob> getAudioFeedbackJobs(AudioFeedback audioFeedbackMode, boolean withPage)
 	{
-		return Collections.<AbstractAudioFeedbackController<V>.PlaybackJob> emptyList(); // no jobs by default
+		return Collections.<AudioFeedbackController<V>.PlaybackJob> emptyList(); // no jobs by default
 	}
 	
 	/**

@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui.items;
 
+import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
@@ -32,12 +33,12 @@ public abstract class Item
 {
 	
 	// Static (defaults):
-	static public final int DEFAULT_PADDING_PX = 4;
+	static public final float DEFAULT_PADDING_DIP = 3.0f;
 	static public final int DEFAULT_BACKGROUND_COLOR = Color.WHITE;
 	
 	// Dynamics:
 	protected Integer id;
-	protected int paddingPx = DEFAULT_PADDING_PX;
+	protected float paddingDip = DEFAULT_PADDING_DIP;
 	protected int backgroundColor = DEFAULT_BACKGROUND_COLOR;
 	protected boolean visible = true;
 	protected String description;
@@ -67,16 +68,27 @@ public abstract class Item
 		if(view == null || !recycle)
 			view = createView(context, recycle);
 		
-		// Set padding:
+		// (Re)apply properties:
+		applyProperties(view);
+		
+		return view;
+	}
+	
+	public void applyProperties(View view)
+	{
+		// Set padding (same all round):
+		int paddingPx = ScreenMetrics.ConvertDipToPx(view.getContext(), paddingDip);
 		view.setPadding(paddingPx, paddingPx, paddingPx, paddingPx);
 		
 		// Set background color:
 		view.setBackgroundColor(backgroundColor);
 		
-		// Set view visibility:
-		applyVisibility(view);
+		// Set the description used for accessibility support:
+		if(description != null)
+			view.setContentDescription(description);
 		
-		return view;
+		// Set view visibility:
+		view.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
 	}
 	
 	public void invalidateView()
@@ -90,12 +102,11 @@ public abstract class Item
 	 * @return
 	 */
 	protected abstract View createView(Context context, boolean recycleChildren);
-	
-	public void applyVisibility(View view)
-	{
-		view.setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
-	}
 
+	/**
+	 * @param visible
+	 * @return
+	 */
 	public Item setVisibility(boolean visible)
 	{
 		this.visible = visible;
@@ -108,22 +119,23 @@ public abstract class Item
 	}
 	
 	/**
-	 * @return the paddingPx
+	 * @return the paddingDip
 	 */
-	public int getPaddingPx()
+	public float getPaddingDip()
 	{
-		return paddingPx;
+		return paddingDip;
 	}
 
 	/**
-	 * @param paddingPx the paddingPx to set
+	 * @param paddingDip the paddingDip to set
+	 * @return
 	 */
-	public Item setPaddingPx(int paddingPx)
+	public Item setPaddingDip(float paddingDip)
 	{
-		this.paddingPx = paddingPx;
+		this.paddingDip = paddingDip;
 		return this;
 	}
-	
+
 	public boolean hasID()
 	{
 		return id != null;
@@ -167,4 +179,5 @@ public abstract class Item
 		this.description = description;
 		return this;
 	}
+	
 }

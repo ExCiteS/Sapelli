@@ -35,7 +35,7 @@ public abstract class ButtonUI<V, UI extends CollectorUI<V, UI>> extends SelfLea
 	 * @param field
 	 * @param controller
 	 */
-	public ButtonUI(ButtonField field, Controller controller, UI collectorUI)
+	public ButtonUI(ButtonField field, Controller<UI> controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}

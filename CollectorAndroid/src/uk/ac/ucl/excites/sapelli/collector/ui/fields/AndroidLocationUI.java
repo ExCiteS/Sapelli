@@ -23,6 +23,7 @@ import java.util.TimerTask;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.LocationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.OnPageView;
@@ -36,8 +37,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
-import android.widget.ImageView;
-import android.widget.ImageView.ScaleType;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.RelativeLayout.LayoutParams;
@@ -46,50 +45,54 @@ import android.widget.RelativeLayout.LayoutParams;
  * @author Julia, mstevens, benelliott
  *
  */
-public class AndroidLocationUI extends LocationUI<View, CollectorView> {
+public class AndroidLocationUI extends LocationUI<View, CollectorView>
+{
 
-	private CollectorController controller;
 	private LocationOnPageView pageView;
 	private RelativeLayout waitView;
 	private Timer timeoutCounter = null;
 	
 	static public final float PADDING = 20.0f;
 
-	public AndroidLocationUI(LocationField field, CollectorController controller, CollectorView collectorUI) {
+	public AndroidLocationUI(LocationField field, CollectorController controller, CollectorView collectorUI)
+	{
 		super(field, controller, collectorUI);
-		this.controller = controller;
 	}
 
 	@Override
-	protected void cancel() {
+	protected void cancel()
+	{
 		if (timeoutCounter != null)
 			timeoutCounter.cancel();
 		// else: do nothing
 	}
 
 	@Override
-	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord) {
+	protected View getPlatformView(boolean onPage, boolean enabled, Record record, boolean newRecord)
+	{
+		// TODO refactor using separate methods or inner classes
 		// TODO editable
 		if (onPage) {
 			if (pageView == null) 
-				pageView = new LocationOnPageView(collectorUI.getContext(), controller, this);
+				pageView = new LocationOnPageView(collectorUI.getContext(), controller, collectorUI, this);
 			
 			pageView.setEnabled(enabled);
 			
 			return pageView;
-		} else {
+		}
+		else
+		{
 			// TODO show coordinates/accuracy to literate users (this will need a new XML attribute)
-			if (waitView == null) {
+			if (waitView == null)
+			{
 				Context context = collectorUI.getContext();
 				waitView = new RelativeLayout(context);
-				RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-				params.addRule(RelativeLayout.CENTER_IN_PARENT);
-				ImageView gpsIcon = new ImageView(context);
-				gpsIcon.setImageDrawable(context.getResources().getDrawable(R.drawable.gps_location));
-				gpsIcon.setScaleType(ScaleType.CENTER_INSIDE);
+				View gpsIcon = new ResourceImageItem(context.getResources(), R.drawable.gps_location_svg).setBackgroundColor(Color.BLACK).getView(context);
 				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
 				gpsIcon.setPadding(padding, padding, padding, padding);
-				waitView.addView(gpsIcon);
+				waitView.addView(gpsIcon, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+				RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
+				params.addRule(RelativeLayout.CENTER_IN_PARENT);
 				waitView.addView(new ProgressBar(context, null, android.R.attr.progressBarStyleLarge), params);
 			}
 
@@ -98,12 +101,15 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 
 			// Start timeout counter
 			timeoutCounter = new Timer();
-			timeoutCounter.schedule(new TimerTask() {
+			timeoutCounter.schedule(new TimerTask()
+			{
 				@Override
 				public void run() { // time's up!
-					collectorUI.getActivity().runOnUiThread(new Runnable() {
+					collectorUI.activity.runOnUiThread(new Runnable()
+					{
 						@Override
-						public void run() {
+						public void run()
+						{
 							timeout();
 						}
 					});
@@ -124,9 +130,9 @@ public class AndroidLocationUI extends LocationUI<View, CollectorView> {
 		
 		private Context context;
 
-		public LocationOnPageView(Context context, CollectorController controller, FieldUI<LocationField, View, CollectorView> fieldUi)
+		public LocationOnPageView(Context context, Controller<CollectorView> controller, CollectorView collectorView, FieldUI<LocationField, View, CollectorView> fieldUI)
 		{
-			super(context, controller, fieldUi);
+			super(context, controller, collectorView, fieldUI);
 			this.context = context;
 			// get location image (TODO make customisable?):
 			Item image = new ResourceImageItem(context.getResources(), R.drawable.gps_location_marker);

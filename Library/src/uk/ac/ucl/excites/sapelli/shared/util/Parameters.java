@@ -37,6 +37,15 @@ public abstract class Parameters
 	
 	public abstract boolean contains(String param);
 	
+	public boolean containsOneOf(String... params)
+	{
+		if(params != null)
+			for(String param : params)
+				if(contains(param))
+					return true;
+		return false;
+	}
+	
 	/**
 	 * Read parameter
 	 * 
@@ -160,10 +169,11 @@ public abstract class Parameters
 			String value = getValue(attributeName);
 			if(value != null)
 			{
-				if(allowEmpty || !"".equals(trim ? value.trim() : value))
-					return trim ? value.trim() : value;
-				else
-					return defaultValue; // attribute is present but empty -> don't try next alternative and return defaultValue
+				if(trim)
+					value = value.trim();
+				return allowEmpty || !value.isEmpty() ?
+					value :
+					defaultValue; // attribute is present but empty -> don't try next alternative and return defaultValue
 			}
 			//else :  there is no attribute with the attributeName, try next alternative
 		}
@@ -178,7 +188,7 @@ public abstract class Parameters
 	 * @param defaultValue
 	 * @return
 	 */
-	public boolean getBoolean(String attributeName, boolean defaultValue)
+	public Boolean getBoolean(String attributeName, Boolean defaultValue)
 	{
 		return getBoolean(defaultValue, attributeName);
 	}
@@ -191,7 +201,7 @@ public abstract class Parameters
 	 * @param attributeNames	alternative attribute names ("synonyms")
 	 * @return
 	 */
-	public boolean getBoolean(boolean defaultValue, String... attributeNames)
+	public Boolean getBoolean(Boolean defaultValue, String... attributeNames)
 	{
 		for(String attributeName : attributeNames)
 		{
@@ -294,7 +304,7 @@ public abstract class Parameters
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 * @return
 	 */
-	public int getInteger(String attributeName, int defaultValue) throws NumberFormatException
+	public Integer getInteger(String attributeName, Integer defaultValue) throws NumberFormatException
 	{
 		return getInteger(defaultValue, attributeName);
 	}
@@ -308,7 +318,7 @@ public abstract class Parameters
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 * @return
 	 */
-	public int getInteger(int defaultValue, String... attributeNames) throws NumberFormatException
+	public Integer getInteger(Integer defaultValue, String... attributeNames) throws NumberFormatException
 	{
 		for(String attributeName : attributeNames)
 		{
@@ -317,10 +327,11 @@ public abstract class Parameters
 				continue; // there is no attribute with the attributeName, try next alternative
 			else
 			{
-				if(strVal.trim().isEmpty())
+				strVal = strVal.trim();
+				if(strVal.isEmpty())
 					return defaultValue;
 				else
-					return Integer.parseInt(strVal.trim()); // throws NumberFormatException
+					return Integer.parseInt(strVal); // throws NumberFormatException
 			}
 		}
 		return defaultValue;
@@ -402,7 +413,7 @@ public abstract class Parameters
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 * @return
 	 */
-	public long getLong(String attributeName, long defaultValue) throws NumberFormatException
+	public Long getLong(String attributeName, Long defaultValue) throws NumberFormatException
 	{
 		return getLong(defaultValue, attributeName);
 	}
@@ -416,7 +427,7 @@ public abstract class Parameters
 	 * @throws NumberFormatException when the attribute value string does not hold a valid integer (e.g. because it is empty)
 	 * @return
 	 */
-	public long getLong(long defaultValue, String... attributeNames) throws NumberFormatException
+	public Long getLong(Long defaultValue, String... attributeNames) throws NumberFormatException
 	{
 		for(String attributeName : attributeNames)
 		{
@@ -425,10 +436,11 @@ public abstract class Parameters
 				continue; // there is no attribute with the attributeName, try next alternative
 			else
 			{
-				if(strVal.trim().isEmpty())
+				strVal = strVal.trim();
+				if(strVal.isEmpty())
 					return defaultValue;
 				else
-					return Long.parseLong(strVal.trim()); // throws NumberFormatException
+					return Long.parseLong(strVal); // throws NumberFormatException
 			}
 		}
 		return defaultValue;
@@ -443,7 +455,7 @@ public abstract class Parameters
 	 * @throws NumberFormatException when the attribute value string does not hold a valid float (e.g. because it is empty)
 	 * @return
 	 */
-	public float getFloat(String attributeName, float defaultValue) throws NumberFormatException
+	public Float getFloat(String attributeName, Float defaultValue) throws NumberFormatException
 	{
 		return getFloat(defaultValue, attributeName);
 	}
@@ -457,7 +469,7 @@ public abstract class Parameters
 	 * @throws NumberFormatException when the attribute value string does not hold a valid float (e.g. because it is empty)
 	 * @return
 	 */
-	public float getFloat(float defaultValue, String... attributeNames) throws NumberFormatException
+	public Float getFloat(Float defaultValue, String... attributeNames) throws NumberFormatException
 	{
 		for(String attributeName : attributeNames)
 		{
@@ -466,10 +478,11 @@ public abstract class Parameters
 				continue; // there is no attribute with the attributeName, try next alternative
 			else
 			{
-				if(strVal.trim().isEmpty())
+				strVal = strVal.trim();
+				if(strVal.isEmpty())
 					return defaultValue;
 				else
-					return Float.parseFloat(strVal.trim()); // throws NumberFormatException
+					return Float.valueOf(strVal); // throws NumberFormatException
 			}
 		}
 		return defaultValue;

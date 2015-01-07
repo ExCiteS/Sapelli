@@ -118,7 +118,7 @@ public class ByteArrayColumn extends Column<byte[]>
 	protected byte[] read(BitInputStream bitStream) throws IOException
 	{
 		//Read length:
-		int numberOfBytes = (int) sizeField.read(bitStream);
+		int numberOfBytes = sizeField.read(bitStream).intValue();
 		//Read actual bytes:
 		return bitStream.readBytes(numberOfBytes);
 	}
@@ -150,7 +150,7 @@ public class ByteArrayColumn extends Column<byte[]>
 	@Override
 	protected int _getMaximumSize()
 	{
-		return sizeField.size() + ((int) sizeField.highBound()) * Byte.SIZE;
+		return sizeField.size() + sizeField.highBound().intValue() * Byte.SIZE;
 	}
 
 	/* (non-Javadoc)

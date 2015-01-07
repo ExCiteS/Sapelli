@@ -29,14 +29,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
  * 
  * @author mstevens
  */
-/**
- * @author mstevens
- *
- */
-/**
- * @author mstevens
- *
- */
 public abstract class Constraint
 {
 	

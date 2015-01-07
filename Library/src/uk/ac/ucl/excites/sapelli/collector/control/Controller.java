@@ -60,10 +60,12 @@ import uk.ac.ucl.excites.sapelli.storage.types.Location;
 
 /**
  * Abstract Controller class
+ *
+ * @param <CUI>
  * 
  * @author mstevens, Michalis Vitos, Julia
  */
-public abstract class Controller implements FieldVisitor
+public abstract class Controller<CUI extends CollectorUI<?, ?>> implements FieldVisitor
 {
 	
 	// STATICS-------------------------------------------------------
@@ -169,7 +171,7 @@ public abstract class Controller implements FieldVisitor
 	
 	// DYNAMICS------------------------------------------------------
 	protected final Project project;
-	protected final CollectorUI<?, ?> ui;
+	protected final CUI ui;
 	protected final ProjectStore projectStore;
 	protected final RecordStore recordStore;
 	protected final FileStorageProvider fileStorageProvider;
@@ -183,7 +185,7 @@ public abstract class Controller implements FieldVisitor
 	
 	protected volatile boolean blockedUI = false;
 
-	public Controller(Project project, CollectorUI<?, ?> ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
+	public Controller(Project project, CUI ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
 	{
 		this.project = project;
 		this.ui = ui;
@@ -382,7 +384,7 @@ public abstract class Controller implements FieldVisitor
 		// Try to leave the currently displayed field...
 		if(currFormSession.atField() && currFormSession.isCurrentFieldDisplayed() && !ui.getCurrentFieldUI().leaveField(currFormSession.record, leaveRule))
 		{
-			addLogLine("STAY", "Not allowed to leave field " + getCurrentField().getID());
+			addLogLine("STAY", "Not allowed to leave field " + getCurrentField().id);
 			return; // not allowed to leave
 		}
 		
@@ -395,23 +397,33 @@ public abstract class Controller implements FieldVisitor
 		// Skip the new current field if it is not meant to be shown in the current form mode:
 		if(!isFieldToBeShown(currField))
 		{
-			addLogLine("SKIPPING", currField.getID(), "Not shown on " + currFormSession.mode.name());
+			addLogLine("SKIPPING", currField.id, "Not shown on " + currFormSession.mode.name());
 			goForward(false);
 			return;
 		}
 		
 		// Entering new current field...
-		addLogLine("REACHED", currField.getID());
+		addLogLine("REACHED", currField.id);
 		boolean needsUIUpdate = currField.enter(this, currFormSession.getCurrentFieldArguments(), false); // pass arguments to enter()
 		
 		// UI update, if (still) needed:
 		if(currFormSession.getCurrentField() == currField)
 		{	// If the current field hasn't changed as a result of the enter() call...
 			if(needsUIUpdate)
-				ui.setField(currField); // update UI if needed
+				setFieldInUI(currField); // update UI if needed
 			currFormSession.setCurrentFieldDisplayed(needsUIUpdate); // remember whether current field is displayed
 		}
 		//else: when the current field *has* changed as part of the entering then we are done here
+	}
+	
+	/**
+	 * Can be overridden, e.g. to ensure the right (main/UI) thread is used
+	 * 
+	 * @param newCurrentField
+	 */
+	protected void setFieldInUI(Field newCurrentField)
+	{
+		ui.setField(newCurrentField);
 	}
 	
 	/**
@@ -480,21 +492,29 @@ public abstract class Controller implements FieldVisitor
 		if(currFormSession.form.isVibrateOnSave())
 			vibrate(VIBRATION_DURATION_MS);
 		// Play sound
-		File endSoundFile = project.getSoundFile(fileStorageProvider, currFormSession.form.getSaveSoundRelativePath());
+		File endSoundFile = fileStorageProvider.getProjectSoundFile(project, currFormSession.form.getSaveSoundRelativePath());
 		if(FileHelpers.isReadableFile(endSoundFile))
 			playSound(endSoundFile);
 	}
 	
+	/**
+	 * Makes the record null & deletes any media attachments.
+	 * 
+	 * Note:
+	 * 	Making the record null is necessary to avoid that unsaved foreign records are used
+	 * 	(i.e. referred to with a foreign key value) when returning to a BelongsTo field in
+	 * 	a previous form (see {@link #enterBelongsTo(BelongsToField, FieldParameters)}).
+	 *  Doing so is risky however because an NPE will be thrown (likely crashing the app)
+	 *  when some FieldUI or controller method attempts to (illegally!) use the record
+	 *  after this discard operation. Obviously that shouldn't happen but we've had several
+	 *  cases in which it did. However, all (known) cases have been resolved and any new
+	 *  similar cases would be revealed soon by an NPE and/or crash. 
+	 * 
+	 */
 	protected void discardRecordAndAttachments()
 	{
 		// Discard record:
 		currFormSession.record = null; // !!!
-		/* Note:
-		 * 	Making the record null is risky because an NPE will be thrown (most likely crashing the app)
-		 * 	when some FieldUI or controller method attempts to (illegally!) use the record after this
-		 * 	discard operation. Obviously that shouldn't happen but we've had several cases in which it did.
-		 * 	However, all (known) cases have been resolved and keeping the above line also enables us to
-		 * 	detect any new similar cases (revealed by an NPE and/or crash). */
 		
 		// Delete any attachments:
 		for(File attachment : currFormSession.getMediaAttachments())
@@ -574,7 +594,7 @@ public abstract class Controller implements FieldVisitor
 		for(Field f : page.getFields())
 		{	
 			if(!isFieldToBeShown(f))
-				addLogLine("SKIPPING", f.getID(), "not shown on " + currFormSession.mode.name());
+				addLogLine("SKIPPING", f.id, "not shown on " + currFormSession.mode.name());
 			else
 				f.enter(this, FieldParameters.EMPTY, true); // enter with page (but don't pass on the arguments)
 		}
@@ -652,7 +672,7 @@ public abstract class Controller implements FieldVisitor
 			arguments.clear(BelongsToField.PARAMETER_WAITING_FOR_RELATED_FORM);
 			// Check if we really came back from the relatedForm:
 			if(prevFormSession != null && prevFormSession.form == belongsTo.getRelatedForm())
-			{	// ... and we did indeed return from it
+			{	// ... yes we did.
 				Record foreignRecord = prevFormSession.record;
 				if(constraints.isValid(foreignRecord)) // passing null will return false
 				{	// The relatedForm produced/edited a non-null record which meets the constraints
@@ -674,7 +694,7 @@ public abstract class Controller implements FieldVisitor
 				}
 			}
 			else
-			{	// we were waiting to return from related for but the previous form is another one: this should never happen(?)
+			{	// we were waiting to return from relatedForm but the previous form is another one: this should never happen(?)
 				// TODO show error & restartForm?
 			}
 		}
@@ -718,7 +738,7 @@ public abstract class Controller implements FieldVisitor
 	public boolean enterEndField(EndField ef, FieldParameters arguments)
 	{
 		// Logging:
-		addLogLine("FORM_END", ef.getID(), currFormSession.form.getName(), Long.toString((getElapsedMillis() - currFormSession.startTime) / 1000) + " seconds");
+		addLogLine("FORM_END", ef.id, currFormSession.form.getName(), Long.toString((getElapsedMillis() - currFormSession.startTime) / 1000) + " seconds");
 		
 		// Save or discard:
 		if(ef.isSave() && currFormSession.form.isProducesRecords())
@@ -846,7 +866,7 @@ public abstract class Controller implements FieldVisitor
 	{
 		if(trigger.getJump() == null)
 			return;
-		addLogLine("TRIGGER", "Fired, jumping to: " + trigger.getJump().getID());
+		addLogLine("TRIGGER", "Fired, jumping to: " + trigger.getJump().id);
 		goTo(new FieldWithArguments(trigger.getJump(), trigger.getNextFieldArguments()));
 	}
 	
@@ -884,7 +904,7 @@ public abstract class Controller implements FieldVisitor
 		// Close log file:
 		if(logger != null)
 		{
-			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.getID()); // closes the logger & underlying file(writer)
+			logger.addFinalLine("EXIT_COLLECTOR", project.getName(), currFormSession.form.id); // closes the logger & underlying file(writer)
 			logger = null;
 		}
 

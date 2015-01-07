@@ -31,7 +31,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 public abstract class CheckBoxUI<V, UI extends CollectorUI<V, UI>> extends NonSelfLeavingFieldUI<CheckBoxField, V, UI>
 {
 
-	public CheckBoxUI(CheckBoxField checkBox, Controller controller, UI collectorUI)
+	public CheckBoxUI(CheckBoxField checkBox, Controller<UI> controller, UI collectorUI)
 	{
 		super(checkBox, controller, collectorUI);
 	}

@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.collector.ui;
 
-import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.control.FieldWithArguments;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
@@ -45,7 +45,8 @@ public class OnPageView extends LinearLayout implements OnClickListener, OnFocus
 	static public final float CONTENT_DEFAULT_MARGIN_DIP = 1.0f; // same margin all round
 
 
-	private CollectorController controller;
+	private Controller<CollectorView> controller;
+	private CollectorView collectorUI;
 	private FieldUI<?, View, CollectorView> fieldUi;
 	private TextView label;
 	private View contentView;
@@ -57,11 +58,12 @@ public class OnPageView extends LinearLayout implements OnClickListener, OnFocus
 
 	private LinearLayout.LayoutParams contentParams;
 
-	public OnPageView(Context context, CollectorController controller, FieldUI<?, View, CollectorView> fieldUi)
+	public OnPageView(Context context, Controller<CollectorView> controller, CollectorView collectorUI, FieldUI<?, View, CollectorView> fieldUI)
 	{
 		super(context);
 		this.controller = controller;
-		this.fieldUi = fieldUi;
+		this.fieldUi = fieldUI;
+		this.collectorUI = collectorUI;
 
 		contentWidthPx = ScreenMetrics.ConvertDipToPx(context, CONTENT_DEFAULT_WIDTH_DIP);
 		contentHeightPx = ScreenMetrics.ConvertDipToPx(context, CONTENT_DEFAULT_HEIGHT_DIP);
@@ -76,7 +78,7 @@ public class OnPageView extends LinearLayout implements OnClickListener, OnFocus
 		label = new TextView(context);
 		//ensure that the label text is not truncated, by setting width to WRAP_CONTENT:
 		label.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT));
-		label.setText(fieldUi.getField().getCaption());
+		label.setText(fieldUI.getField().getCaption());
 		this.addView(label);
 	}
 
@@ -148,7 +150,7 @@ public class OnPageView extends LinearLayout implements OnClickListener, OnFocus
 		};
 
 		// Perform the click
-		controller.clickView(v, action);
+		collectorUI.clickView(v, action);
 	}
 
 	public void setContentWidthPx(int contentWidthPx)

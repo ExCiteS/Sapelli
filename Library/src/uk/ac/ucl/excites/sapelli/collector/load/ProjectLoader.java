@@ -77,6 +77,7 @@ public class ProjectLoader implements WarningKeeper
 		}
 		catch(Exception e)
 		{
+			System.err.println("Failed to load project from path: " + folderPath);
 			e.printStackTrace(System.err);
 			return null;
 		}
@@ -202,6 +203,8 @@ public class ProjectLoader implements WarningKeeper
 			if(!tasks.isEmpty())
 			{
 				if(postProcessor != null)
+				{
+					postProcessor.initialise(project);
 					for(PostProcessTask task : tasks)
 					{
 						try
@@ -213,6 +216,9 @@ public class ProjectLoader implements WarningKeeper
 							throw new Exception("Error on executing post-processing task", e);
 						}
 					}
+					
+					postProcessor.freeResources();
+				}
 				else
 					addWarning("Unable to perform " + tasks.size() + " post-processing");
 			}

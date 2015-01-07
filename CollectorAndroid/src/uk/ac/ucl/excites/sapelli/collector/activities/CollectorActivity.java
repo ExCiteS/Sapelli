@@ -30,11 +30,11 @@ import java.util.concurrent.TimeUnit;
 
 import uk.ac.ucl.excites.sapelli.collector.BuildConfig;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.model.Control;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger;
 import uk.ac.ucl.excites.sapelli.collector.model.Trigger.Key;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
@@ -219,9 +219,7 @@ public class CollectorActivity extends ProjectActivity
 			
 			// Start project:
 			controller.startProject();
-			
-			// Enable audio feedback
-			controller.enableAudioFeedback(); // TODO make the Controller/collectorController handle this on its own
+
 		}
 	}
 
@@ -250,10 +248,10 @@ public class CollectorActivity extends ProjectActivity
 		{
 			case KeyEvent.KEYCODE_BACK:
 			case KeyEvent.KEYCODE_DPAD_LEFT:
-				collectorView.getControlsUI().handleControlEvent(Control.BACK, true);
+				collectorView.getControlsUI().handleControlEvent(Control.Type.Back, true);
 				return true;
 			case KeyEvent.KEYCODE_DPAD_RIGHT:
-				collectorView.getControlsUI().handleControlEvent(Control.FORWARD, true);
+				collectorView.getControlsUI().handleControlEvent(Control.Type.Forward, true);
 				return true;
 			case KeyEvent.KEYCODE_VOLUME_DOWN:
 				DeviceControl.safeDecreaseMediaVolume(this);
@@ -476,10 +474,9 @@ public class CollectorActivity extends ProjectActivity
 
 			//Debug.d("Scheduled a timeout to take place at: " + TimeUtils.formatTime(TimeUtils.getShiftedCalendar(Calendar.MINUTE, TIMEOUT_MIN), "HH:mm:ss.S"));
 		}
-
-		// Release audio feedback resources
+		// Stop all audio (feedback) playback & release associated resources:
 		if(controller != null)
-			controller.disableAudioFeedback();
+			controller.destroyAudio();
 
 		// super:
 		super.onPause();

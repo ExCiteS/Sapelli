@@ -19,8 +19,8 @@
 package uk.ac.ucl.excites.sapelli.collector.model;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.control.Controller.Mode;
@@ -28,8 +28,6 @@ import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.ControlsUI.Control;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -42,10 +40,6 @@ public abstract class Field extends JumpSource
 {
 	
 	//Statics----------------------------------------------
-	static public String captionToID(String prefix, Form form, String caption)
-	{	
-		return prefix + (caption.trim().isEmpty() ? form.getFields().size() : Column.SanitiseName(caption.trim())); // remove chars that are illegal in Column (& XML) names
-	}
 	
 	//Defaults:
 	static public final boolean DEFAULT_SHOW_BACK = true;
@@ -59,13 +53,59 @@ public abstract class Field extends JumpSource
 	static public final boolean DEFAULT_NO_COLUMN = false;
 	static public final boolean DEFAULT_EDITABLE = true;
 	static public final String DEFAULT_BACKGROUND_COLOR = "#FFFFFF"; //white
+
+	/**
+	 * Returns the (trimmed) id to use or throws a NullPointerException if the id null, empty or white-space
+	 * 
+	 * @param parsedID
+	 * @return
+	 * @throws NullPointerException
+	 */
+	static private String GetID(String parsedID) throws NullPointerException
+	{
+		if(parsedID == null || parsedID.trim().isEmpty())
+			throw new NullPointerException("Field ID cannot be null, empty or consist only of white-space.");
+		return parsedID.trim(); // don't sanitise here!
+	}
 	
+	/**
+	 * Returns the id to use, possibly generated from a caption or the field index within the form
+	 * 
+	 * @param parsedId
+	 * @param form
+	 * @param captionPrefix
+	 * @param parsedCaption
+	 * @return the id to use (will never be null)
+	 */
+	static protected String GetID(String parsedId, Form form, String captionPrefix, String parsedCaption)
+	{		
+		if(parsedId != null && !parsedId.trim().isEmpty())
+			return parsedId; // don't sanitise here!
+		return Column.SanitiseName(captionPrefix + (parsedCaption == null || parsedCaption.trim().isEmpty() ? form.getNumberOfFields(true) : parsedCaption.trim())); // this generated id will not occur in the XML so we can already sanitise
+	}
+	
+	/**
+	 * Returns the (parsed) caption if it isn't null or throws a NullPointerException if it is.
+	 * Only to be used on Fields on which a caption is required!
+	 * Note that empty-String and all-whitespace captions are accepted.
+	 * 
+	 * @param parsedCaption
+	 * @return
+	 * @throws NullPointerException
+	 */
+	static protected String CheckCaption(String parsedCaption) throws NullPointerException
+	{
+		if(parsedCaption == null)
+			throw new NullPointerException("Caption cannot be null.");
+		return parsedCaption; // don't sanitise here!
+	}
 	
 	//Dynamics---------------------------------------------
-	protected final String id;
-	protected final Form form;
+	public final String id;
+	public final Form form;
 	protected Page page = null;
 	protected final String caption;
+	public final Description description;
 	protected boolean enabled = DEFAULT_ENABLED;
 	protected boolean skipOnBack = DEFAULT_SKIP_ON_BACK;
 	protected boolean showOnCreate = DEFAULT_SHOW_ON_CREATE;
@@ -82,42 +122,42 @@ public abstract class Field extends JumpSource
 	 * @param form the form the field belongs to
 	 * @param id the id of the field, should not be null
 	 */
-	public Field(Form form, String id)
+	public Field(Form form, String id) throws NullPointerException
 	{
-		this(form, id, id); // use id as default caption
+		this(form, id, null); // caption is null
 	}
 	
 	/**
 	 * @param form the form the field belongs to
-	 * @param id the id of the field, should not be null
-	 * @param caption the caption of the field, may be null (in which case the id is used as the caption)
+	 * @param id the id of the field, should not be null, or empty after trimming
+	 * @param caption the caption of the field, may be null
+	 * @throws NullPointerException when id is null or empty after trimming
 	 */
-	public Field(Form form, String id, String caption)
+	public Field(Form form, String id, String caption) throws NullPointerException
 	{
-		if(id == null || id.trim().isEmpty())
-			throw new NullPointerException("Top-level field ID cannot be null or empty.");
+		this.id = GetID(id); // will trim the id and throw an NPE when the id is null, empty or whitespace
 		this.form = form;
-		this.id = id.trim(); // always trim id string!
-		this.caption = caption == null ? this.id : caption;
+		this.caption = caption; // may be null!
+		this.description = new Description();
 		
-		// Construct a 2-dimensional boolean array (Controls * FormMode):
-		this.showControlByMode = new boolean[ControlsUI.Control.values().length][];
-		for(Control control : ControlsUI.Control.values())
+		// Construct a 2-dimensional boolean array (Control.Type * FormMode):
+		this.showControlByMode = new boolean[Control.Type.values().length][];
+		for(Control.Type controlType : Control.Type.values())
 		{
-			showControlByMode[control.ordinal()] = new boolean[Controller.Mode.values().length];
+			showControlByMode[controlType.ordinal()] = new boolean[Controller.Mode.values().length];
 			for(Mode mode : Controller.Mode.values())
 			{
 				boolean defaultShown = true;
-				switch(control)
+				switch(controlType)
 				{
-				case BACK: defaultShown = DEFAULT_SHOW_BACK;
-					break;
-				case CANCEL: defaultShown = DEFAULT_SHOW_CANCEL;
-					break;
-				case FORWARD: defaultShown = DEFAULT_SHOW_FORWARD;
-					break;					
+					case Back: defaultShown = DEFAULT_SHOW_BACK;
+						break;
+					case Cancel: defaultShown = DEFAULT_SHOW_CANCEL;
+						break;
+					case Forward: defaultShown = DEFAULT_SHOW_FORWARD;
+						break;
 				}
-				showControlByMode[control.ordinal()][mode.ordinal()] = defaultShown;
+				showControlByMode[controlType.ordinal()][mode.ordinal()] = defaultShown;
 			}
 		}
 	}
@@ -149,7 +189,7 @@ public abstract class Field extends JumpSource
 	/**
 	 * @return the id
 	 */
-	public String getID()
+	public final String getID()
 	{
 		return id;
 	}
@@ -160,6 +200,14 @@ public abstract class Field extends JumpSource
 	public String getCaption()
 	{
 		return caption;
+	}
+	
+	/**
+	 * @return whether or not there is a non-null caption ("" is a valid caption)
+	 */
+	public boolean hasCaption()
+	{
+		return getCaption() != null; // don't change getCaption() to caption (needed for MultiListField)
 	}
 	
 	/**
@@ -291,33 +339,33 @@ public abstract class Field extends JumpSource
 	}
 
 	/**
-	 * @param control
+	 * @param controlType
 	 * @param formMode
 	 * @return whether of the the giving control is allowed to be show for this field when in the given formMode
 	 */
-	public boolean isControlAllowedToBeShown(Control control, Mode formMode)
+	public boolean isControlAllowedToBeShown(Control.Type controlType, Mode formMode)
 	{
-		return showControlByMode[control.ordinal()][formMode.ordinal()];
+		return showControlByMode[controlType.ordinal()][formMode.ordinal()];
 	}
 	
 	/**
-	 * @param control
+	 * @param controlType
 	 * @param formMode
 	 * @param show
 	 */
-	public void setShowControlOnMode(Control control, Mode formMode, boolean show)
+	public void setShowControlOnMode(Control.Type controlType, Mode formMode, boolean show)
 	{
-		showControlByMode[control.ordinal()][formMode.ordinal()] = show;
+		showControlByMode[controlType.ordinal()][formMode.ordinal()] = show;
 	}
 	
 	/**
-	 * @param control
+	 * @param controlType
 	 * @param show
 	 */
-	public void setShowControl(Control control, boolean show)
+	public void setShowControl(Control.Type controlType, boolean show)
 	{
 		for(Mode mode : Controller.Mode.values())
-			showControlByMode[control.ordinal()][mode.ordinal()] = show;
+			showControlByMode[controlType.ordinal()][mode.ordinal()] = show;
 	}
 
 	/**
@@ -325,7 +373,7 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowBack(boolean showBack)
 	{
-		setShowControl(Control.BACK, showBack);
+		setShowControl(Control.Type.Back, showBack);
 	}
 
 	/**
@@ -333,7 +381,7 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowCancel(boolean showCancel)
 	{
-		setShowControl(Control.CANCEL, showCancel);
+		setShowControl(Control.Type.Cancel, showCancel);
 	}
 
 	/**
@@ -341,7 +389,7 @@ public abstract class Field extends JumpSource
 	 */
 	public void setShowForward(boolean showForward)
 	{
-		setShowControl(Control.FORWARD, showForward);
+		setShowControl(Control.Type.Forward, showForward);
 	}
 
 	public Column<?> getColumn()
@@ -427,14 +475,17 @@ public abstract class Field extends JumpSource
 	}
 
 	/**
-	 * To be overridden by Fields that use files (images, sounds, etc.) that are stored with the project
+	 * To be overridden by Fields that use additional files (images, sounds, etc.) that are stored with the project,
+	 * all overrides *must* include: super.addFiles(filesSet, fileStorageProvider);
 	 * 
+	 * @param filesSet set to add files to
 	 * @param fileStorageProvider to resolve relative paths
 	 * @return
 	 */
-	public List<File> getFiles(FileStorageProvider fileStorageProvider)
+	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
-		return Collections.<File> emptyList();
+		// Audio description:
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectSoundFile(form.project, description.getAudioRelativePath()));
 	}
 	
 	@Override
@@ -448,8 +499,9 @@ public abstract class Field extends JumpSource
 			return	super.equals(that) && // JumpSource#equals(Object)
 					this.id.equals(that.id) &&
 					this.form.toString().equals(that.form.toString()) && // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
-					this.form.getProject().toString().equals(that.form.getProject().toString()) && // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
-					this.caption.equals(that.caption) &&
+					this.form.project.toString().equals(that.form.project.toString()) && // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
+					(this.caption != null ? caption.equals(that.caption) : that.caption == null) &&
+					this.description.equals(that.description) &&
 					this.enabled == that.enabled &&
 					this.skipOnBack == that.skipOnBack &&
 					this.showOnCreate == that.showOnCreate &&
@@ -469,8 +521,9 @@ public abstract class Field extends JumpSource
 		int hash = super.hashCode(); // JumpSource#hashCode()
 		hash = 31 * hash + id.hashCode();
 		hash = 31 * hash + form.toString().hashCode(); // DO NOT INCLUDE form ITSELF HERE (otherwise we create an endless loop!)
-		hash = 31 * hash + form.getProject().toString().hashCode(); // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
-		hash = 31 * hash + caption.hashCode();
+		hash = 31 * hash + form.project.toString().hashCode(); // DO NOT INCLUDE form.project ITSELF HERE (otherwise we create an endless loop!)
+		hash = 31 * hash + (caption == null ? 0 : caption.hashCode());
+		hash = 31 * hash + description.hashCode();
 		hash = 31 * hash + (enabled ? 0 : 1);
 		hash = 31 * hash + (skipOnBack ? 0 : 1);
 		hash = 31 * hash + (showOnCreate ? 0 : 1);

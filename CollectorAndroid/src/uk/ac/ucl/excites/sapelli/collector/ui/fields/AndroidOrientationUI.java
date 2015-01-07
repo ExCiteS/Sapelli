@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 
 import uk.ac.ucl.excites.sapelli.collector.R;
 import uk.ac.ucl.excites.sapelli.collector.control.CollectorController;
+import uk.ac.ucl.excites.sapelli.collector.control.Controller;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
 import uk.ac.ucl.excites.sapelli.collector.ui.OnPageView;
@@ -31,8 +32,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import android.content.Context;
 import android.graphics.Color;
 import android.view.View;
-import android.widget.ImageView;
-import android.widget.ImageView.ScaleType;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.RelativeLayout.LayoutParams;
@@ -44,7 +43,6 @@ import android.widget.RelativeLayout.LayoutParams;
 public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 {
 
-	private CollectorController controller;
 	private OrientationOnPageView pageView;
 	private RelativeLayout waitView;
 
@@ -53,7 +51,6 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 	public AndroidOrientationUI(OrientationField field, CollectorController controller, CollectorView collectorUI)
 	{
 		super(field, controller, collectorUI);
-		this.controller = controller;
 	}
 
 	@Override
@@ -63,7 +60,7 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 		if(onPage)
 		{
 			if(pageView == null)
-				pageView = new OrientationOnPageView(collectorUI.getContext(), controller, this);
+				pageView = new OrientationOnPageView(collectorUI.getContext(), controller, collectorUI, this);
 
 			pageView.setEnabled(enabled);
 			
@@ -79,14 +76,12 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 			{
 				Context context = collectorUI.getContext();
 				waitView = new RelativeLayout(context);
+				View compassIcon = new ResourceImageItem(context.getResources(), R.drawable.compass_svg).setBackgroundColor(Color.BLACK).getView(context);
+				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
+				compassIcon.setPadding(padding, padding, padding, padding);
+				waitView.addView(compassIcon, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 				RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
 				params.addRule(RelativeLayout.CENTER_IN_PARENT);
-				ImageView gpsIcon = new ImageView(context);
-				gpsIcon.setImageDrawable(context.getResources().getDrawable(R.drawable.compass));
-				gpsIcon.setScaleType(ScaleType.CENTER_INSIDE);
-				int padding = ScreenMetrics.ConvertDipToPx(context, PADDING);
-				gpsIcon.setPadding(padding, padding, padding, padding);
-				waitView.addView(gpsIcon);
 				waitView.addView(new ProgressBar(context, null, android.R.attr.progressBarStyleLarge), params);
 
 			}
@@ -100,18 +95,18 @@ public class AndroidOrientationUI extends OrientationUI<View, CollectorView>
 
 		private Context context;
 		
-		public OrientationOnPageView(Context context, CollectorController controller, FieldUI<OrientationField, View, CollectorView> fieldUi)
+		public OrientationOnPageView(Context context, Controller<CollectorView> controller, CollectorView collectorView, FieldUI<OrientationField, View, CollectorView> fieldUI)
 		{
-			super(context, controller, fieldUi);
+			super(context, controller, collectorView, fieldUI);
 			this.context = context;
 			// get compass image (TODO make customisable?):
-			this.setContentView((new ResourceImageItem(context.getResources(), R.drawable.compass)).getView(context));
+			this.setContentView((new ResourceImageItem(context.getResources(), R.drawable.compass_svg)).getView(context));
 		}
 		
 		private void orientationStored()
 		{
 			Item tick = new ResourceImageItem(context.getResources(), R.drawable.button_tick_svg);
-			Item image = new ResourceImageItem(context.getResources(), R.drawable.compass);
+			Item image = new ResourceImageItem(context.getResources(), R.drawable.compass_svg);
 			tick.setBackgroundColor(Color.TRANSPARENT);
 			this.setContentView(new LayeredItem().addLayer(image).addLayer(tick).getView(context)); // TODO creating new item so views are fresh
 		}

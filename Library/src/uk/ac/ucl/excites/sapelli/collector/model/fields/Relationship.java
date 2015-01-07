@@ -32,7 +32,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
  *	In this case the Relation field merely provides a "passage way" through which navigation to the other form is possible.
  *	An "intra-form" jump to the relation field will automatically result in a subsequent "inter-form" jump to the {@code relatedForm}. 
  *</p><p>
- * One-to-one: TODO not yet implemented</br>
+ * One-to-one: TODO not yet implemented (but a BelongsTo with holdForeignRecord=false is basically the same)</br>
  *	A 1:1 relationship between this form (holder of of the Relationship object) and another {@code relatedForm}.
  *	The consequence is that a new record of the {@code relatedForm} will be created for every instance of this form (unless the relationship is optional). 
  * </p><p>
@@ -130,7 +130,7 @@ public abstract class Relationship extends UILessField
 		{
 			Relationship that = (Relationship) obj;
 			return	super.equals(that) && // Field#equals(Object)
-					(this.relatedForm != null ? that.relatedForm != null && this.relatedForm.getID().equals(that.relatedForm.getID()) : that.relatedForm == null) && // do not use relatedForm itself to avoid potential endless loops!
+					(this.relatedForm != null ? that.relatedForm != null && this.relatedForm.id.equals(that.relatedForm.id) : that.relatedForm == null) && // do not use relatedForm itself to avoid potential endless loops!
 					this.holdForeignRecord == that.holdForeignRecord &&
 					this.constraints.equals(that.constraints);
 		}
@@ -142,7 +142,7 @@ public abstract class Relationship extends UILessField
 	public int hashCode()
 	{
 		int hash = super.hashCode(); // Field#hashCode()
-		hash = 31 * hash + (relatedForm == null ? 0 : relatedForm.getID().hashCode()); // do not use relatedForm itself to avoid potential endless loops!
+		hash = 31 * hash + (relatedForm == null ? 0 : relatedForm.id.hashCode()); // do not use relatedForm itself to avoid potential endless loops!
 		hash = 31 * hash + (holdForeignRecord ? 0 : 1);
 		hash = 31 * hash + constraints.hashCode();
 		return hash;

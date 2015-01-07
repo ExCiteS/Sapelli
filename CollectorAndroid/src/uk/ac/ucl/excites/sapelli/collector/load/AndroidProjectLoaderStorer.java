@@ -40,7 +40,7 @@ public class AndroidProjectLoaderStorer extends ProjectLoaderStorer
 	
 	public AndroidProjectLoaderStorer(Context context, FileStorageProvider fileStorageProvider, ProjectStore projectStore) throws FileStorageException
 	{
-		super(fileStorageProvider, projectStore, new AndroidPostProcessor());
+		super(fileStorageProvider, projectStore, new AndroidPostProcessor(context, fileStorageProvider));
 		this.context = context;
 	}
 	
