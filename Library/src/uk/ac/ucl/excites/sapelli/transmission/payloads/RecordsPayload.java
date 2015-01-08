@@ -290,19 +290,19 @@ public class RecordsPayload extends Payload
 	{
 		// Read HEADER ----------------------------------------------
 		//	Read format version:
-		short format = (short) FORMAT_VERSION_FIELD.read(in);
+		short format = FORMAT_VERSION_FIELD.readShort(in);
 		if(format > HIGHEST_SUPPORTED_FORMAT)
 			throw new RecordsPayloadDecodeException(this, "Unsupported payload format version: " + format + " (highest supported version: " + HIGHEST_SUPPORTED_FORMAT + ").");
 		//	Read schema identification:
 		//		Read Model ID & loop-up model:
-		this.model = transmission.getClient().getModel(Model.MODEL_ID_FIELD.read(in));
+		this.model = transmission.getClient().getModel(Model.MODEL_ID_FIELD.readLong(in));
 		//		Read schema occurrence bits:
 		List<Schema> schemataInT = new ArrayList<Schema>();
 		for(Schema sInM : model.getSchemata())
 			if(in.readBit())
 				schemataInT.add(sInM);
 		//	Compression flag:
-		int compressionMode = (int) COMPRESSION_FLAG_FIELD.read(in);
+		int compressionMode = COMPRESSION_FLAG_FIELD.readInt(in);
 
 		// Read BODY: encoded records, possibly compressed ----------
 		BitArray recordsBits;
@@ -344,7 +344,7 @@ public class RecordsPayload extends Payload
 				List<Record> records = recordsBySchema.get(schema);
 				
 				// Write number of records:
-				if(numberOfRecordsPerSchemaField.fits(records.size()))
+				if(numberOfRecordsPerSchemaField.inEffectiveRange(records.size()))
 					numberOfRecordsPerSchemaField.write(records.size(), out); // write number of records that will follow
 				else
 					throw new TransmissionCapacityExceededException("Cannot fit " + records.size() + " of schema " + schema.getName() + " (max allowed: " + numberOfRecordsPerSchemaField.highBound(false) + ").");
@@ -453,7 +453,7 @@ public class RecordsPayload extends Payload
 				recordsBySchema.put(schema, records);
 				
 				// Read number of records:
-				int numberOfRecordsForSchema = (int) numberOfRecordsPerSchemaField.read(in);
+				int numberOfRecordsForSchema = numberOfRecordsPerSchemaField.readInt(in);
 				
 				// Factoring-out logic ...
 				Map<Column<?>, Object> factoredOutValues = Collections.<Column<?>, Object> emptyMap();

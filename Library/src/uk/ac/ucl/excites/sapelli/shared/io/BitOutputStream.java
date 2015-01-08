@@ -23,6 +23,8 @@ import java.io.OutputStream;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 
+import uk.ac.ucl.excites.sapelli.shared.util.BigIntegerUtils;
+
 
 /**
  * A stream where bits can be written to. Provides write methods for various (primitive) types.<br/>
@@ -185,7 +187,7 @@ public abstract class BitOutputStream extends OutputStream
 	 * Currently only supports big-endian byte order (and MSB 0 bit numbering), meaning the more significant bits (and bytes) are written first.
 	 * 
 	 * @param value integer value to write to the output
-	 * @param numberOfBits number of bits to use
+	 * @param numberOfBits number of bits to use (a size of 0 bits is allowed but only a {@code value} equal to 0 will fit)
 	 * @param signed the "signedness" (true = signed; false = unsigned)
 	 * @throws IOException if an I/O error occurs
 	 * @see <a href="http://en.wikipedia.org/wiki/Integer_(computer_science)">http://en.wikipedia.org/wiki/Integer_(computer_science)</a>
@@ -227,7 +229,7 @@ public abstract class BitOutputStream extends OutputStream
 	 * Currently only supports big-endian byte order (and MSB 0 bit numbering), meaning the more significant bits (and bytes) are written first.
 	 * 
 	 * @param value BigInteger value to write to the output
-	 * @param numberOfBits number of bits to use
+	 * @param numberOfBits number of bits to use (a size of 0 bits is allowed but only a {@code value} equal to 0 will fit)
 	 * @param signed the "signedness" (true = signed; false = unsigned)
 	 * @throws IOException if an I/O error occurs
 	 * @see java.math.BigInteger
@@ -242,14 +244,14 @@ public abstract class BitOutputStream extends OutputStream
 		//Do checks:
 		if(value == null)
 			throw new NullPointerException("value cannot be null.");
-		if(numberOfBits < 1)
-			throw new IllegalArgumentException("Invalid number of bits (" + numberOfBits + ").");
+		if(numberOfBits < 0)
+			throw new IllegalArgumentException("numberOfBits (" + numberOfBits + ") cannot be negative!");
 		if(!signed && value.signum() == -1)
 			throw new IllegalArgumentException("Cannot write negative value (" + value.toString() + ") as unsigned integer.");
-		BigInteger minValue = signed ? 	BigInteger.valueOf(2).pow(numberOfBits - 1).negate() :
-										BigInteger.ZERO;
-		BigInteger maxValue = signed ? 	BigInteger.valueOf(2).pow(numberOfBits - 1).subtract(BigInteger.ONE) :
-										BigInteger.valueOf(2).pow(numberOfBits).subtract(BigInteger.ONE);
+		// Compute min/maxValues:
+		BigInteger minValue = BigIntegerUtils.GetMinValue(numberOfBits, signed);
+		BigInteger maxValue = BigIntegerUtils.GetMaxValue(numberOfBits, signed);
+		// Check if value fits:
 		if(value.compareTo(minValue) < 0 || value.compareTo(maxValue) > 0)
 			throw new IllegalArgumentException((signed ? "S" : "Uns") + "igned value (" + value.toString() + ") does not fit in " + numberOfBits + " bits, values must be in range [" + minValue.toString() + "; " + maxValue.toString() + "] (inclusive).");
 		/*Write the bits

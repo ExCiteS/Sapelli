@@ -39,7 +39,7 @@ public abstract class StorageClient
 	public Model getModel(long modelID) throws UnknownModelException
 	{
 		// First check reserved models:
-		for(Model model : getReserveredModels())
+		for(Model model : getReservedModels())
 			if(model.getID() == modelID)
 				return model;
 		// Get client model:
@@ -51,7 +51,7 @@ public abstract class StorageClient
 	 * 
 	 * @return
 	 */
-	public List<Model> getReserveredModels()
+	public List<Model> getReservedModels()
 	{
 		return new ArrayList<Model>();
 	}

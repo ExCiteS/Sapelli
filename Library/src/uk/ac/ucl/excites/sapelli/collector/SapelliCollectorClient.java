@@ -88,9 +88,9 @@ public class SapelliCollectorClient extends TransmissionClient
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
 	 */
 	@Override
-	public List<Model> getReserveredModels()
+	public List<Model> getReservedModels()
 	{
-		List<Model> reserved = super.getReserveredModels();
+		List<Model> reserved = super.getReservedModels();
 		reserved.add(ProjectRecordStore.COLLECTOR_MANAGEMENT_MODEL);
 		return reserved;
 	}

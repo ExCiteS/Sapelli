@@ -18,15 +18,14 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
 
-import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.Sender;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.Sender;
 
 
 /**
@@ -81,14 +80,12 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * @param receiver - may be null on receiving side
 	 * @param parts - list of {@link Message}s
 	 */
-	protected SMSTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, SMSAgent sender, SMSAgent receiver, List<M> parts) 
+	protected SMSTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, SMSAgent sender, SMSAgent receiver)
 	{
 		super(client, localID, remoteID, payloadHash, sentAt, receivedAt);
 		this.sender = sender;
 		this.receiver = receiver;
-		if(parts != null)
-			for(M msg : parts)
-				parts.add(msg);
+		// add parts by calling receivePart (not by passing them through this constructor)
 	}
 	
 	/**
