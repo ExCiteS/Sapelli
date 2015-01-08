@@ -1,8 +1,6 @@
 package uk.ac.ucl.excites.sapelli.transmission.model;
 
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission.Type;
 
 public class Receiver // TODO rename
 {
@@ -12,15 +10,13 @@ public class Receiver // TODO rename
 	static public final int RETRANSMIT_INTERVAL_SIZE_BITS = 32;
 	private int projectId;
 	private int correspondentName;
-	private Transmission.Type transmissionType;
 	private int retransmitIntervalSec;
 	private boolean encrypt;
 	
-	public Receiver(int projectId, int correspondentName, Type transmissionType, int retransmitIntervalSec, boolean encrypt)
+	public Receiver(int projectId, int correspondentName, int retransmitIntervalSec, boolean encrypt)
 	{
 		this.projectId = projectId;
 		this.correspondentName = correspondentName;
-		this.transmissionType = transmissionType;
 		this.retransmitIntervalSec = retransmitIntervalSec;
 		this.encrypt = encrypt;
 	}
@@ -55,22 +51,6 @@ public class Receiver // TODO rename
 	public void setCorrespondentName(int correspondentName)
 	{
 		this.correspondentName = correspondentName;
-	}
-
-	/**
-	 * @return the transmissionType
-	 */
-	public Transmission.Type getTransmissionType()
-	{
-		return transmissionType;
-	}
-
-	/**
-	 * @param transmissionType the transmissionType to set
-	 */
-	public void setTransmissionType(Transmission.Type transmissionType)
-	{
-		this.transmissionType = transmissionType;
 	}
 
 	/**

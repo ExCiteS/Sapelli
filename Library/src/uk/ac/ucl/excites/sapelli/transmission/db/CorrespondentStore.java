@@ -30,6 +30,7 @@ public class CorrespondentStore implements Store
 	static final public Schema CORRESPONDENT_SCHEMA = new Schema(CORRESPONDENT_MANAGEMENT_MODEL, "Correspondent");
 	static final public IntegerColumn CORRESPONDENT_COLUMN_ID = new IntegerColumn("ID", false, Correspondent.CORRESPONDENT_ID_FIELD);
 	static final public StringColumn CORRESPONDENT_COLUMN_NAME = new StringColumn("Name", false, Correspondent.CORRESPONDENT_NAME_MAX_LENGTH_BYTES);
+	static final public IntegerColumn CORRESPONDENT_COLUMN_TRANSMISSION_TYPE = new IntegerColumn("TransmissionType", false, false, Integer.SIZE);
 	static final public StringColumn CORRESPONDENT_COLUMN_ADDRESS = new StringColumn("PhoneNum", true, Correspondent.CORRESPONDENT_ADDRESS_MAX_LENGTH_BYTES);
 	static final public StringColumn CORRESPONDENT_COLUMN_ENCRYPTION_KEY = new StringColumn("Key", false, Correspondent.CORRESPONDENT_ENCRYPTION_KEY_MAX_LENGTH_BYTES);
 	//	Add columns and index to Correspondent Schema & seal it:
@@ -37,6 +38,7 @@ public class CorrespondentStore implements Store
 	{
 		CORRESPONDENT_SCHEMA.addColumn(CORRESPONDENT_COLUMN_ID);
 		CORRESPONDENT_SCHEMA.addColumn(CORRESPONDENT_COLUMN_NAME);
+		CORRESPONDENT_SCHEMA.addColumn(CORRESPONDENT_COLUMN_TRANSMISSION_TYPE);
 		CORRESPONDENT_SCHEMA.addColumn(CORRESPONDENT_COLUMN_ADDRESS);
 		CORRESPONDENT_SCHEMA.addColumn(CORRESPONDENT_COLUMN_ENCRYPTION_KEY);
 		CORRESPONDENT_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", CORRESPONDENT_COLUMN_ID));
@@ -47,7 +49,6 @@ public class CorrespondentStore implements Store
 	static final public IntegerColumn RECEIVER_COLUMN_ID = new IntegerColumn("ID", false, Receiver.RECEIVER_ID_FIELD);
 	static final public ForeignKeyColumn RECEIVER_COLUMN_PROJECT_ID = new ForeignKeyColumn("ProjectID", ProjectRecordStore.PROJECT_SCHEMA, false);
 	static final public ForeignKeyColumn RECEIVER_COLUMN_CORRESPONDENT_NAME = new ForeignKeyColumn("CorrespondentName", CORRESPONDENT_SCHEMA, false);
-	static final public IntegerColumn RECEIVER_COLUMN_TRANSMISSION_TYPE = new IntegerColumn("TransmissionType", false, false, Integer.SIZE);
 	static final public IntegerColumn RECEIVER_COLUMN_RETRANSMIT_INTERVAL = new IntegerColumn("RetransmitInterval", false, false, Receiver.RETRANSMIT_INTERVAL_SIZE_BITS);
 	static final public BooleanColumn RECEIVER_COLUMN_ENCRYPT = new BooleanColumn("Encrypt", false);
 	//	Add columns to Receiver Schema & seal it:
@@ -56,7 +57,6 @@ public class CorrespondentStore implements Store
 		RECEIVER_SCHEMA.addColumn(RECEIVER_COLUMN_ID);
 		RECEIVER_SCHEMA.addColumn(RECEIVER_COLUMN_PROJECT_ID);
 		RECEIVER_SCHEMA.addColumn(RECEIVER_COLUMN_CORRESPONDENT_NAME);
-		RECEIVER_SCHEMA.addColumn(RECEIVER_COLUMN_TRANSMISSION_TYPE);
 		RECEIVER_SCHEMA.addColumn(RECEIVER_COLUMN_RETRANSMIT_INTERVAL);
 		RECEIVER_SCHEMA.addColumn(RECEIVER_COLUMN_ENCRYPT);
 		RECEIVER_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", RECEIVER_COLUMN_ID));

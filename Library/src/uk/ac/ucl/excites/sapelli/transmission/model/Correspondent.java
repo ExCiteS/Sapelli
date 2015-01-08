@@ -1,6 +1,7 @@
 package uk.ac.ucl.excites.sapelli.transmission.model;
 
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 
 public class Correspondent
 {
@@ -11,15 +12,16 @@ public class Correspondent
 	static public final int CORRESPONDENT_NAME_MAX_LENGTH_BYTES = 32; // TODO 32 chars?
 	static public final int CORRESPONDENT_ADDRESS_MAX_LENGTH_BYTES = 128; // TODO 128 chars? UTF8?
 	static public final int CORRESPONDENT_ENCRYPTION_KEY_MAX_LENGTH_BYTES = 32; //TODO 256 bit?
-	// TODO static method for encryption key?
 	
 	private String name; // name
+	private Transmission.Type transmissionType;
 	private String address; // phone number (for SMS) or URL (for HTTP)
 	private String key; // encryption key TODO ??
 	
-	public Correspondent(String id, String address)
+	public Correspondent(String id, Transmission.Type transmissionType, String address)
 	{
 		this.name = id;
+		this.transmissionType = transmissionType;
 		this.address = address;
 	}
 
@@ -37,6 +39,22 @@ public class Correspondent
 	public void setName(String name)
 	{
 		this.name = name;
+	}
+
+	/**
+	 * @return the transmissionType
+	 */
+	public Transmission.Type getTransmissionType()
+	{
+		return transmissionType;
+	}
+
+	/**
+	 * @param transmissionType the transmissionType to set
+	 */
+	public void setTransmissionType(Transmission.Type transmissionType)
+	{
+		this.transmissionType = transmissionType;
 	}
 
 	/**
