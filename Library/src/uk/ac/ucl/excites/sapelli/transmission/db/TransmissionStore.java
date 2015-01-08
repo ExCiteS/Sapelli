@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.transmission.db;
 
 import java.io.File;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
@@ -71,6 +72,16 @@ public class TransmissionStore implements Store, StoreClient
 	
 	// STATICS---------------------------------------------
 	static private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
+	
+	static private byte[] StringToBytes(String str)
+	{
+		return str.getBytes(UTF8_CHARSET);
+	}
+	
+	static private String BytesToString(byte[] bytes)
+	{
+		return new String(bytes, UTF8_CHARSET);
+	}
 	
 	// Transmission storage model:
 	//	Model:
@@ -139,52 +150,6 @@ public class TransmissionStore implements Store, StoreClient
 	}
 	
 	/**
-	 * Creates a Record representing a Transmission.
-	 * The values of all columns will be set except for Sender, Receiver & NumberOfParts.
-	 * 
-	 * @param transmission
-	 * @return
-	 */
-	private Record createTransmissionRecord(Transmission transmission)
-	{
-		// Create a transmission record:
-		Record tRec = TRANSMISSION_SCHEMA.createRecord();
-		// Set values:
-		if(transmission.isLocalIDSet())
-			TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());
-		TRANSMISSION_COLUMN_REMOTE_ID.storeValue(tRec, transmission.getRemoteID());
-		TRANSMISSION_COLUMN_TYPE.storeValue(tRec, transmission.getType().ordinal());
-		TRANSMISSION_COLUMN_PAYLOAD_HASH.storeValue(tRec, transmission.getPayloadHash()); // payload hash should always be set before storage
-		if(transmission.isPayloadSet())
-			TRANSMISSION_COLUMN_PAYLOAD_TYPE.storeValue(tRec, transmission.getPayload().getType());
-		COLUMN_SENT_AT.storeValue(tRec, transmission.getSentAt());
-		COLUMN_RECEIVED_AT.storeValue(tRec, transmission.getReceivedAt());
-		// Return:
-		return tRec;
-	}
-	
-	/**
-	 * Creates a Record representing an SMSTransmission.
-	 * The values of all columns will be set.
-	 * 
-	 * @param transmission
-	 * @return
-	 */
-	private Record createTransmissionRecord(SMSTransmission<?> transmission)
-	{
-		// Get record for transmission:
-		Record tRec = createTransmissionRecord((Transmission) transmission);
-		// Set remaining values:
-		TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, transmission.getTotalNumberOfParts());
-		if(transmission.isSenderSet())
-			TRANSMISSION_COLUMN_SENDER.storeValue(tRec, transmission.getSender().toString());
-		if(transmission.isReceiverSet())
-			TRANSMISSION_COLUMN_SENDER.storeValue(tRec, transmission.getReceiver().toString());
-		// Return:
-		return tRec;
-	}
-	
-	/**
 	 * @param transmission assumed to have all values set, except the (local) ID when inserting
 	 * @throws Exception 
 	 */
@@ -204,82 +169,23 @@ public class TransmissionStore implements Store, StoreClient
 			transmission.setLocalID(TRANSMISSION_COLUMN_ID.retrieveValue(transmissionRecord).intValue());
 	}
 	
-	public void storeTransmission(SMSTransmission<?> smsTransmission) throws Exception
+	public void storeTransmission(Transmission transmission) throws Exception
 	{
 		// Start transaction
 		recordStore.startTransaction();
 		
 		try
 		{
-			// Create & store record:
-			Record tRec = createTransmissionRecord(smsTransmission);
-			doStoreTransmission(smsTransmission, tRec); // after this the localID should always be known
+			// Use RecordGenerator to create a transmission record and part record(s):
+			RecordGenerator generator = new RecordGenerator(transmission);
 			
-			// Parts...
-			for(Message msg : smsTransmission.getParts())
-			{
-				Record tPartRec = TRANSMISSION_PART_SCHEMA.createRecord();
-				TRANSMISSION_PART_COLUMN_TRANSMISSION_ID.storeValue(tPartRec, tRec.getReference()); // set foreign key
-				TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, msg.getPartNumber());
-				msg.setBody(this, tPartRec);
-				COLUMN_SENT_AT.storeValue(tPartRec, msg.getSentAt());
-				TRANSMISSION_PART_COLUMN_DELIVERED_AT.storeValue(tPartRec, msg.getDeliveredAt());
-				COLUMN_RECEIVED_AT.storeValue(tPartRec, msg.getReceivedAt());
-				
-				// Store part record:
+			// Store part records:
+			for(Record tPartRec : generator.tPartRecs)
 				recordStore.store(tPartRec);
-			}
-		}
-		catch(Exception e)
-		{
-			recordStore.rollbackTransactions();
-			throw e;
-		}
-		
-		// Commit transaction
-		recordStore.commitTransaction();
-	}
-	
-	public void setPartBody(BitArray bodyBits, Record transmissionPartRecord)
-	{
-		TRANSMISSION_PART_COLUMN_BODY.storeValue(transmissionPartRecord, bodyBits.toByteArray());
-		TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.storeValue(transmissionPartRecord, bodyBits.length());
-	}
-	
-	public void setPartBody(String bodyString, Record transmissionPartRecord)
-	{
-		byte[] bytes = bodyString.getBytes(UTF8_CHARSET);
-		TRANSMISSION_PART_COLUMN_BODY.storeValue(transmissionPartRecord, bytes);
-		TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.storeValue(transmissionPartRecord, bytes.length * Byte.SIZE);
-	}
-	
-	public void storeTransmission(HTTPTransmission httpTransmission) throws Exception
-	{
-		// Start transaction
-		recordStore.startTransaction();
-		
-		try
-		{
-			// Create record:
-			Record tRec = createTransmissionRecord(httpTransmission);
 			
-			// Set receiver (= serverURL) and number of parts (always = 1):
-			TRANSMISSION_COLUMN_RECEIVER.storeValue(tRec, httpTransmission.getServerURL());
-			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, 1);
+			// Store transmission record:
+			doStoreTransmission(transmission, generator.tRec); // after this the localID should always be known
 			
-			// Store the transmission record:
-			doStoreTransmission(httpTransmission, tRec); // after this the localID should always be known
-			
-			// Create a single transmission part (only used to store the body):
-			Record tPartRec = TRANSMISSION_PART_SCHEMA.createRecord();
-			TRANSMISSION_PART_COLUMN_TRANSMISSION_ID.storeValue(tPartRec, tRec.getReference()); // set foreign key
-			TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, 1);
-			byte[] bytes = httpTransmission.getBody();
-			TRANSMISSION_PART_COLUMN_BODY.storeValue(tPartRec, bytes);
-			TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.storeValue(tPartRec, bytes.length * Byte.SIZE);
-			
-			// Store the part:
-			recordStore.store(tPartRec);
 		}
 		catch(Exception e)
 		{
@@ -332,14 +238,21 @@ public class TransmissionStore implements Store, StoreClient
 			BinarySMSTransmission binarySMS =  new BinarySMSTransmission(client, localID, remoteID, payloadHash, sentAt, receivedAt, senderAgent, receiverAgent);
 			// add each part we got from the query:
 			for(Record partRecord : tPartRecs)
-				binarySMS.receivePart(new BinaryMessage(binarySMS, TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(), totalParts, sentAt, TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(partRecord), receivedAt, BitArray.FromBytes(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord))));
+				binarySMS.receivePart(new BinaryMessage(binarySMS,
+														TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(),
+														totalParts,
+														sentAt,
+														TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(partRecord),
+														receivedAt,
+														BitArray.FromBytes(	TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord),
+																			TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.retrieveValue(partRecord).intValue())));
 			return binarySMS;
 		case TEXTUAL_SMS:
 			// create a new SMSTransmission object:
 			TextSMSTransmission textSMS = new TextSMSTransmission(client, localID, remoteID, payloadHash, sentAt, receivedAt, senderAgent, receiverAgent);
 			// add each part we got from the query:
 			for(Record partRecord : tPartRecs)
-				textSMS.receivePart(new TextMessage(textSMS, TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(), totalParts, sentAt, TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(partRecord), receivedAt, new String(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord))));
+				textSMS.receivePart(new TextMessage(textSMS, TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(), totalParts, sentAt, TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(partRecord), receivedAt, BytesToString(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord))));
 			return textSMS;
 		case HTTP:
 			return new HTTPTransmission(client, localID, remoteID, payloadHash, sentAt, receivedAt, receiver, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)) /* only one part for HTTP */ );
@@ -438,6 +351,123 @@ public class TransmissionStore implements Store, StoreClient
 	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException
 	{
 		backuper.addStoreForBackup(recordStore);
+	}
+	
+	/**
+	 * @author mstevens
+	 *
+	 */
+	private class RecordGenerator implements Transmission.Handler, Message.Handler
+	{
+
+		public final Record tRec;
+		public final List<Record> tPartRecs = new ArrayList<Record>();
+		
+		public RecordGenerator(Transmission transmission)
+		{			
+			// Create transmission record:
+			tRec = TRANSMISSION_SCHEMA.createRecord();
+			
+			// Set values of all columns will be set except for Sender, Receiver & NumberOfParts:
+			if(transmission.isLocalIDSet())
+				TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());
+			TRANSMISSION_COLUMN_REMOTE_ID.storeValue(tRec, transmission.getRemoteID());
+			TRANSMISSION_COLUMN_TYPE.storeValue(tRec, transmission.getType().ordinal());
+			TRANSMISSION_COLUMN_PAYLOAD_HASH.storeValue(tRec, transmission.getPayloadHash()); // payload hash should always be set before storage
+			if(transmission.isPayloadSet())
+				TRANSMISSION_COLUMN_PAYLOAD_TYPE.storeValue(tRec, transmission.getPayload().getType());
+			COLUMN_SENT_AT.storeValue(tRec, transmission.getSentAt());
+			COLUMN_RECEIVED_AT.storeValue(tRec, transmission.getReceivedAt());
+			
+			// Use double dispatch for type-specific work:
+			transmission.handle(this);
+		}
+		
+		private Record newPartRecord()
+		{
+			Record tPartRec = TRANSMISSION_PART_SCHEMA.createRecord();
+			tPartRecs.add(tPartRec);
+			return tPartRec;
+		}
+		
+		private void handleSMS(SMSTransmission<?> smsT)
+		{
+			// Set SMS-specific values:
+			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, smsT.getTotalNumberOfParts());
+			if(smsT.isSenderSet())
+				TRANSMISSION_COLUMN_SENDER.storeValue(tRec, smsT.getSender().toString());
+			if(smsT.isReceiverSet())
+				TRANSMISSION_COLUMN_SENDER.storeValue(tRec, smsT.getReceiver().toString());
+
+			// Make records for the parts...
+			for(Message msg : smsT.getParts())
+			{
+				Record tPartRec = newPartRecord(); // adds to the list as well
+				
+				// Set columns:
+				TRANSMISSION_PART_COLUMN_TRANSMISSION_ID.storeValue(tPartRec, tRec.getReference()); // set foreign key
+				TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, msg.getPartNumber());
+				COLUMN_SENT_AT.storeValue(tPartRec, msg.getSentAt());
+				TRANSMISSION_PART_COLUMN_DELIVERED_AT.storeValue(tPartRec, msg.getDeliveredAt());
+				COLUMN_RECEIVED_AT.storeValue(tPartRec, msg.getReceivedAt());
+				msg.handle(this); // will set part body and body bit length
+			}
+		}
+		
+		@Override
+		public void handle(BinarySMSTransmission binSMST)
+		{
+			handleSMS(binSMST);
+		}
+
+		@Override
+		public void handle(TextSMSTransmission txtSMST)
+		{
+			handleSMS(txtSMST);
+		}
+
+		@Override
+		public void handle(BinaryMessage binMsg)
+		{
+			BitArray bits = binMsg.getBody();
+			setPartBody(bits.toByteArray(), bits.length());
+		}
+
+		@Override
+		public void handle(TextMessage txtMsg)
+		{
+			setPartBody(StringToBytes(txtMsg.getBody()));
+		}
+		
+		@Override
+		public void handle(HTTPTransmission httpT)
+		{
+			// Set receiver (= serverURL) and number of parts (always = 1):
+			TRANSMISSION_COLUMN_RECEIVER.storeValue(tRec, httpT.getServerURL());
+			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, 1);
+			
+			// Create a single transmission part (only used to store the body):
+			Record tPartRec = newPartRecord(); // adds to the list as well
+			TRANSMISSION_PART_COLUMN_TRANSMISSION_ID.storeValue(tPartRec, tRec.getReference()); // set foreign key
+			TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, 1l);
+			setPartBody(httpT.getBody()); // will set part body and body bit length
+		}
+		
+		private void setPartBody(byte[] bodyBytes)
+		{
+			setPartBody(bodyBytes, bodyBytes.length * Byte.SIZE);
+		}
+		
+		private void setPartBody(byte[] bodyBytes, int bitLength)
+		{
+			// Last tPartRec in the list:
+			Record tPartRec = tPartRecs.get(tPartRecs.size() - 1);
+			
+			// Set body & body bit length columns:
+			TRANSMISSION_PART_COLUMN_BODY.storeValue(tPartRec, bodyBytes);
+			TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.storeValue(tPartRec, bitLength);
+		}
+		
 	}
 	
 }

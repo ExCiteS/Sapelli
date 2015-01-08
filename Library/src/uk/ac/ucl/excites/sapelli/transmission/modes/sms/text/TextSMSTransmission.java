@@ -392,4 +392,10 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 		return Type.TEXTUAL_SMS;
 	}
 	
+	@Override
+	public void handle(Handler handler)
+	{
+		handler.handle(this);
+	}
+	
 }

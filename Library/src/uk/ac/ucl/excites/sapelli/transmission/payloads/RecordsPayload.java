@@ -252,7 +252,7 @@ public class RecordsPayload extends Payload
 			// Encode records ---------------------------------------
 			BitArray recordsBits = encodeRecords(schemataInT);
 			// Compress record bits with various compression modes:
-			byte[][] comprResults = compress(recordsBits, COMPRESSION_MODES);
+			byte[][] comprResults = Compress(recordsBits, COMPRESSION_MODES);
 			// Determine most space-efficient compression mode:
 			int bestComprIdx = 0;
 			for(int c = 1; c < COMPRESSION_MODES.length; c++)
@@ -310,7 +310,7 @@ public class RecordsPayload extends Payload
 			recordsBits = in.readBitArray(in.bitsAvailable()); // not compressed: read as bits
 		else
 		{	// Read compressed data as bytes & decompress them:
-			byte[] recordBytes = decompress(in.readBytes(in.available()), COMPRESSION_MODES[compressionMode]);
+			byte[] recordBytes = Decompress(in.readBytes(in.available()), COMPRESSION_MODES[compressionMode]);
 			// Convert to bit array:
 			recordsBits = BitArray.FromBytes(recordBytes);
 		}
@@ -541,5 +541,10 @@ public class RecordsPayload extends Payload
 	{
 		return new IntegerRangeMapping(1, getMaxUncompressedRecordsBits() * 2 / recordsBySchema.size());
 	}
-	
+
+	@Override
+	public void handle(Handler handler)
+	{
+		handler.handle(this);
+	}
 }

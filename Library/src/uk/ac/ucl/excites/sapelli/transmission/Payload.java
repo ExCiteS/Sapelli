@@ -77,11 +77,50 @@ public abstract class Payload
 			return client.newPayload(payloadType);
 		else
 		{
-			if(payloadType < BuiltinType.values().length)
+			if(payloadType >= 0 && payloadType < BuiltinType.values().length)
 				return New(BuiltinType.values()[payloadType]);
 			else
 				throw new IllegalArgumentException("Unsupport Payload type: " + payloadType);
 		}
+	}
+	
+	/**
+	 * Interface for dispatching on payload type
+	 * 
+	 */
+	static public interface Handler
+	{
+
+		public void handle(AckPayload ackPayload);
+		
+		public void handle(RecordsPayload recordsPayload);
+		
+		/**
+		 * Handle method for non-built-in payload types
+		 * 
+		 * @param customPayload
+		 * @param type
+		 */
+		public void handle(Payload customPayload, int type);
+		
+	}
+	
+	static protected byte[][] Compress(BitArray data, Compression[] modes) throws IOException
+	{
+		return Compress(data.toByteArray(), modes);
+	}
+	
+	static protected byte[][] Compress(byte[] data, Compression[] modes) throws IOException
+	{
+		byte[][] result = new byte[modes.length][];
+		for(int m = 0; m < modes.length; m++)
+			result[m] = CompressorFactory.getCompressor(modes[m]).compress(data);
+		return result;
+	}
+
+	static protected byte[] Decompress(byte[] compressedData, Compression mode) throws IOException
+	{
+		return CompressorFactory.getCompressor(mode).decompress(compressedData);
 	}
 	
 	// DYNAMICS------------------------------------------------------
@@ -147,22 +186,14 @@ public abstract class Payload
 	
 	protected abstract void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException;
 	
-	protected byte[][] compress(BitArray data, Compression[] modes) throws IOException
+	/**
+	 * To be overridden by built-in payload types!
+	 * 
+	 * @param handler
+	 */
+	public void handle(Handler handler)
 	{
-		return compress(data.toByteArray(), modes);
-	}
-	
-	protected byte[][] compress(byte[] data, Compression[] modes) throws IOException
-	{
-		byte[][] result = new byte[modes.length][];
-		for(int m = 0; m < modes.length; m++)
-			result[m] = CompressorFactory.getCompressor(modes[m]).compress(data);
-		return result;
-	}
-
-	protected byte[] decompress(byte[] compressedData, Compression mode) throws IOException
-	{
-		return CompressorFactory.getCompressor(mode).decompress(compressedData);
+		handler.handle(this, getType()); // use generic handler method
 	}
 	
 }

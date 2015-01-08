@@ -18,9 +18,9 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
 
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
 
 /**
  * Abstract class representing an SMS message which is one part of an {@link SMSTransmission}
@@ -30,6 +30,17 @@ import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 public abstract class Message implements Comparable<Message>
 {
 	
+	// STATIC -------------------------------------------------------
+	static public interface Handler
+	{
+		
+		public void handle(BinaryMessage binMsg);
+		
+		public void handle(TextMessage txtMsg);
+		
+	}
+	
+	// DYNAMIC ------------------------------------------------------
 	protected int sendingSideTransmissionID;
 	protected SMSTransmission<?> transmission;
 	protected int payloadHash;
@@ -244,6 +255,9 @@ public abstract class Message implements Comparable<Message>
 	
 	protected abstract boolean equalBody(Message another);
 	
-	public abstract void setBody(TransmissionStore store, Record transmissionPartRecord);
+	/**
+	 * @param handler
+	 */
+	public abstract void handle(Handler handler);
 	
 }
