@@ -45,7 +45,7 @@ import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.transmission.Sender;
+import uk.ac.ucl.excites.sapelli.transmission.control.SendController;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
@@ -66,7 +66,7 @@ import android.util.Log;
  * @author Michalis Vitos, mstevens
  * 
  */
-public class DataSenderService extends Service implements Sender, StoreClient
+public class DataSenderService extends Service implements SendController, StoreClient
 {
 
 	// Statics-------------------------------------------------------
