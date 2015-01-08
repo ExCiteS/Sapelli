@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission;
+package uk.ac.ucl.excites.sapelli.transmission.control;
 
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
 
@@ -26,11 +27,21 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
  * @author mstevens
  *
  */
-public interface Sender
+public abstract class SendController
 {
 
-	public SMSClient getSMSService();
+	private final TransmissionStore transmissionStore;
 	
-	public HTTPClient getHTTPClient();
+	/**
+	 * @param transmissionStore
+	 */
+	public SendController(TransmissionStore transmissionStore)
+	{
+		this.transmissionStore = transmissionStore;
+	}
+
+	public abstract SMSClient getSMSService();
+	
+	public abstract HTTPClient getHTTPClient();
 	
 }

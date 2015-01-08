@@ -112,4 +112,10 @@ public class AckPayload extends Payload
 		return subjectReceivedAt;
 	}
 
+	@Override
+	public void handle(Handler handler)
+	{
+		handler.handle(this);
+	}
+
 }

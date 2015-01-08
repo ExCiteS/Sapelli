@@ -43,8 +43,8 @@ public abstract class BitOutputStream extends OutputStream
 	private static final Charset UTF16BE = Charset.forName("UTF-16BE");
 	
 	//DYNAMIC
-	protected boolean closed;
-	protected int numberOfBitsWritten;
+	private boolean closed;
+	private int numberOfBitsWritten;
 	
 	public BitOutputStream()
 	{
@@ -57,16 +57,28 @@ public abstract class BitOutputStream extends OutputStream
 	 * 
 	 * @param bit bit (true = 1; false = 0) to be written
 	 * @throws IOException if an I/O error occurs
+	 * @throws CapacityReachedException when the output is "full"
 	 */
-	public void write(boolean bit) throws IOException
+	public void write(boolean bit) throws IOException, CapacityReachedException
 	{
 		if(closed)
 			throw new IOException("This stream is closed");
+		if(isFull())
+			throw new CapacityReachedException();
 		writeBit(bit);
 		numberOfBitsWritten++;
 	}
 	
+	/**
+	 * @param bit bit (true = 1; false = 0) to be written
+	 * @throws IOException
+	 */
 	protected abstract void writeBit(boolean bit) throws IOException;
+	
+	/**
+	 * @return whether or not the output is "full"
+	 */
+	protected abstract boolean isFull();
 	
 	/**
 	 * Writes an array series of bits (booleans) to the output
@@ -321,13 +333,12 @@ public abstract class BitOutputStream extends OutputStream
 	 */
 	public void write(char value) throws IOException
 	{
-		//TODO support other character encodings?
+		// TODO support other character encodings?
 		write(new String(new char[] { value }).getBytes(UTF16BE));
 	}
 	
 	/**
 	 * Closes this stream and the underlying OutputStream.
-	 * If called when this bit stream is not at a byte boundary, then the minimum number of zeros (between 0 and 7) are written as padding to reach a byte boundary.
 	 * 
 	 * @throws IOException if an I/O error occurs
 	 * @see java.io.OutputStream#close()
@@ -335,6 +346,14 @@ public abstract class BitOutputStream extends OutputStream
 	public void close() throws IOException
 	{
 		this.closed = true;
+	}
+	
+	/**
+	 * @return whether or not the stream is closed
+	 */
+	protected boolean isClosed()
+	{
+		return closed;
 	}
     
     public int getNumberOfBitsWritten()

@@ -28,6 +28,10 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.control.SendController;
+import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinarySMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
@@ -50,6 +54,20 @@ public abstract class Transmission
 		TEXTUAL_SMS,
 		HTTP,
 		// More later?
+	}
+	
+	/**
+	 * Interface for dispatching on transmission type
+	 */
+	static public interface Handler
+	{
+
+		public void handle(BinarySMSTransmission binSMST);
+		
+		public void handle(TextSMSTransmission txtSMST);
+		
+		public void handle(HTTPTransmission httpT);
+		
 	}
 	
 	static public final int TRANSMISSION_ID_SIZE = 24; // bits
@@ -235,7 +253,7 @@ public abstract class Transmission
 		return payloadHash;
 	}
 	
-	public void send(Sender transmissionSender) throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	public void send(SendController transmissionSender) throws IOException, TransmissionCapacityExceededException, UnknownModelException
 	{
 		//Some checks:
 		if(transmissionSender == null)
@@ -287,7 +305,7 @@ public abstract class Transmission
 		doSend(transmissionSender);
 	}
 
-	public void resend(Sender sender) throws Exception
+	public void resend(SendController sender) throws Exception
 	{
 		// Clear early sentAt value (otherwise send() won't work):
 		sentAt = null;
@@ -296,7 +314,7 @@ public abstract class Transmission
 		send(sender);
 	}
 	
-	protected abstract void doSend(Sender transmissionSender);
+	protected abstract void doSend(SendController transmissionSender);
 	
 	public void receive() throws IncompleteTransmissionException, IOException, IllegalArgumentException, IllegalStateException, PayloadDecodeException, UnknownModelException
 	{
@@ -435,5 +453,10 @@ public abstract class Transmission
 	 * @return
 	 */
 	public abstract Type getType();
+	
+	/**
+	 * @param handler
+	 */
+	public abstract void handle(Handler handler);
 	
 }

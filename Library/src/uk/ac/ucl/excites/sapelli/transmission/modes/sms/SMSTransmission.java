@@ -23,9 +23,9 @@ import java.util.TreeSet;
 
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.Sender;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
+import uk.ac.ucl.excites.sapelli.transmission.control.SendController;
 
 
 /**
@@ -174,7 +174,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * @see uk.ac.ucl.excites.sapelli.transmission.Transmission#doSend(uk.ac.ucl.excites.sapelli.transmission.TransmissionSender)
 	 */
 	@Override
-	protected void doSend(Sender transmissionSender)
+	protected void doSend(SendController transmissionSender)
 	{
 		if(parts.isEmpty())
 			throw new IllegalStateException("No messages to send.");
@@ -191,7 +191,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * @param transmissionSender
 	 * @param partNumber
 	 */
-	public void resend(Sender transmissionSender, int partNumber)
+	public void resend(SendController transmissionSender, int partNumber)
 	{
 		int i = 1; // partNumbers start from 1!
 		for(Message m : parts)

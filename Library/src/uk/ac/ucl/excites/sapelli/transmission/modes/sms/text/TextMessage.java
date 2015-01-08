@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.transmission.modes.sms.text;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
@@ -169,11 +168,11 @@ public class TextMessage extends Message
 	}
 
 	/**
-	 * Called by {@link TextSMSTransmission#unwrap()}. 
+	 * Called by {@link TextSMSTransmission#unwrap()} and {@link TransmissionStore}
 	 * 
 	 * @return
 	 */
-	protected String getBody()
+	public String getBody()
 	{
 		return body;
 	}
@@ -248,9 +247,9 @@ public class TextMessage extends Message
 	}
 
 	@Override
-	public void setBody(TransmissionStore store, Record transmissionPartRecord)
+	public void handle(Handler handler)
 	{
-		store.setPartBody(body, transmissionPartRecord);
+		handler.handle(this);
 	}
 
 }

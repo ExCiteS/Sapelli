@@ -28,7 +28,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
-import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
@@ -180,11 +179,11 @@ public class BinaryMessage extends Message
 	}
 	
 	/**
-	 * Called by {@link BinarySMSTransmission#unwrap()}
+	 * Called by {@link BinarySMSTransmission#unwrap()} and {@link TransmissionStore}
 	 * 
 	 * @return
 	 */
-	protected BitArray getBody()
+	public BitArray getBody()
 	{
 		return body;
 	}
@@ -257,11 +256,11 @@ public class BinaryMessage extends Message
 	{
 		return another instanceof BinaryMessage && body.equals(((BinaryMessage) another).body);
 	}
-
+	
 	@Override
-	public void setBody(TransmissionStore store, Record transmissionPartRecord)
+	public void handle(Handler handler)
 	{
-		store.setPartBody(body, transmissionPartRecord);
+		handler.handle(this);
 	}
 
 }

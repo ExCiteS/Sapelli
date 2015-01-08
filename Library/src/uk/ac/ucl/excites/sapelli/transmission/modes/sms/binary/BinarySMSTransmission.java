@@ -137,4 +137,10 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 		return Type.BINARY_SMS;
 	}
 	
+	@Override
+	public void handle(Handler handler)
+	{
+		handler.handle(this);
+	}
+	
 }
