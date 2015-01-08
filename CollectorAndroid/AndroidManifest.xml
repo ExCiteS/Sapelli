@@ -102,10 +102,6 @@
         </service>
         <service android:name="uk.ac.ucl.excites.sapelli.sender.util.AlarmScheduler" >
         </service>
-
-<!--         <service android:enabled="true" android:exported="false" android:label="Dropbox Sync" android:name="com.dropbox.sync.android.DbxSyncService">
-        </service> -->
-
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.sender.BootReceiver"
             android:exported="false" >
@@ -113,6 +109,22 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+<!--         <service android:enabled="true" android:exported="false" android:label="Dropbox Sync" android:name="com.dropbox.sync.android.DbxSyncService">
+        </service> -->
+
+        <service android:name="uk.ac.ucl.excites.sapelli.receiver.SMSReceiverService" >
+        </service>
+        <receiver
+            android:name="uk.ac.ucl.excites.sapelli.receiver.SMSBroadcastReceiver"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+                <action android:name="android.intent.action.DATA_SMS_RECEIVED"/>
+            </intent-filter>
+        </receiver>
+
         
         <activity android:label="@string/title_activity_export" android:name="uk.ac.ucl.excites.sapelli.collector.activities.ExportActivity" android:parentActivityName="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity">
             <meta-data android:name="android.support.PARENT_ACTIVITY" android:value="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity"/>
