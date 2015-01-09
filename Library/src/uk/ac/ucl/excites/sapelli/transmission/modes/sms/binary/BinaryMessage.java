@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.InvalidMessageException;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
@@ -125,25 +126,34 @@ public class BinaryMessage extends Message
 	 * @param sender
 	 * @param data
 	 * @param receivedAt
+	 * @throws InvalidMessageException
 	 * @throws Exception
 	 */
-	public BinaryMessage(SMSAgent sender, byte[] data, TimeStamp receivedAt) throws Exception
+	public BinaryMessage(SMSAgent sender, byte[] data, TimeStamp receivedAt) throws InvalidMessageException, Exception
 	{
 		super(sender, receivedAt);
 		// Read data:
 		BitInputStream in = null;
 		try
 		{
-			//Input stream:
+			// Input stream:
 			in = new BitWrapInputStream(new ByteArrayInputStream(data));
 			
-			//Read header:
-			sendingSideTransmissionID = Transmission.TRANSMISSION_ID_FIELD.readInt(in);	// transmission ID on sending side
+			// Check data size:
+			if(data.length * Byte.SIZE < HEADER_SIZE_BITS)
+				throw new InvalidMessageException("Data byte array is too short for this to be a valid Sapelli binary SMS message");
+			
+			// Read header:
+			sendingSideTransmissionID = Transmission.TRANSMISSION_ID_FIELD.readInt(in);	// Transmission ID on sending side
 			payloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(in);					// Payload hash
 			partNumber = PART_NUMBER_FIELD.readInt(in);									// Part number
 			totalParts = PART_NUMBER_FIELD.readInt(in);									// Total parts
 			
-			//Read payload:
+			// Part number check:
+			if(partNumber > totalParts)
+				throw new InvalidMessageException("Inconsistent part number (" + partNumber + "/" + totalParts + "), this is not a valid Sapelli binary SMS message");
+			
+			// Read payload:
 			body = in.readBitArray(in.bitsAvailable()); // may include trailing 0 padding if this is the last message in the transmission
 		}
 		catch(IOException ioe)

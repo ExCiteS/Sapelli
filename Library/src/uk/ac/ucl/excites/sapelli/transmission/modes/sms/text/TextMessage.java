@@ -24,6 +24,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.InvalidMessageException;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
@@ -31,18 +32,17 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
 /**
  * Textual SMS message in which data in encoding as 7-bit characters using the default GSM 03.38 alphabet.
  * 
- * The contents of the message always start with a {@value #HEADER_CHARS} character header. Only 24 of the 28 bits
- * of the header have actual meaning ({@value TODO} bits for the hash, and twice {@value TODO} bits for the partNumber
- * and totalParts), but they are split in groups of 6 bits and prefixed by a separator bit (= {@value #HEADER_SEPARATOR_BIT}).
- * This achieves 2 things:
+ * The contents of the message always start with a {@value #HEADER_SIZE_CHARS} character header.
+ * Only 6 out of 7 of the bits represented by the header characters have actual meaning, the other are separator bits (= {@value #HEADER_SEPARATOR_BIT})
+ * each of which prefixes a groups of 6 meaningful bits. This mechanism achieves 2 things:
  * <ul>
- * <li>it causes the header to take up exactly 4 characters (4 * 7  = 28),
+ * <li>it causes the header to take up exactly {@value #HEADER_SIZE_CHARS} characters,
  * meaning the message header can be easily separated from the message payload
  * (because they are aligned to the character boundary);</li>
  * <li>the choice of the separator bit ensures that none of the header characters
  * will ever be <code>ESC</code>, thereby avoiding the need for additional escaping
  * (unlike is necessary for the transmission payload, see {@link TextSMSTransmission}),
- * which thus allows for a fixed header length.</li> 
+ * which thus allows for a fixed header length.</li>
  * </ul>
  * 
  * @author mstevens
@@ -62,12 +62,12 @@ public class TextMessage extends Message
 	
 	private static IntegerRangeMapping PART_NUMBER_FIELD = new IntegerRangeMapping(1, TextSMSTransmission.MAX_TRANSMISSION_PARTS);
 	
-	private static final int HEADER_CHARS = (Transmission.TRANSMISSION_ID_FIELD.size() +
-											Transmission.PAYLOAD_HASH_FIELD.size() +
-											PART_NUMBER_FIELD.size() +
-											PART_NUMBER_FIELD.size()) / (TextSMSTransmission.BITS_PER_CHAR - 1 /* for separator bit */); // = 8 chars
+	private static final int HEADER_SIZE_CHARS = (	Transmission.TRANSMISSION_ID_FIELD.size() +
+													Transmission.PAYLOAD_HASH_FIELD.size() +
+													PART_NUMBER_FIELD.size() +
+													PART_NUMBER_FIELD.size()) / (TextSMSTransmission.BITS_PER_CHAR - 1 /* for separator bit */); // = 8 chars
 	
-	public static final int MAX_BODY_CHARS = MAX_TOTAL_CHARS - HEADER_CHARS;	
+	public static final int MAX_BODY_CHARS = MAX_TOTAL_CHARS - HEADER_SIZE_CHARS;	
 
 	// DYNAMICS------------------------------------------------------
 	/**
@@ -118,18 +118,22 @@ public class TextMessage extends Message
 	{
 		super(sender, receivedAt);
 		
+		// Check content size:
+		if(content.length() < HEADER_SIZE_CHARS)
+			throw new InvalidMessageException("Data byte array is too short for this to be a valid Sapelli text SMS message");
+		
 		// Read header:
 		//	Convert from chars and remove separator bits:
 		BitArrayOutputStream hdrFieldBitsOut = new BitArrayOutputStream();
 		try
 		{
-			for(int h = 0; h < HEADER_CHARS; h++)
+			for(int h = 0; h < HEADER_SIZE_CHARS; h++)
 			{
 				// Read header char (7 bits):				
 				int c = TextSMSTransmission.GSM_0338_REVERSE_CHAR_TABLE.get(content.charAt(h));
 				// Check separator bit:
 				if(c >> (TextSMSTransmission.BITS_PER_CHAR - 1) != HEADER_SEPARATOR_BIT)
-					throw new Exception("Invalid message (illegal header).");
+					throw new InvalidMessageException("This is not a valid Sapelli text SMS message (invalid separator bit in header)");
 				// Strip away the separator bit and write remaining 6 bit header part:
 				hdrFieldBitsOut.write(c - (HEADER_SEPARATOR_BIT << (TextSMSTransmission.BITS_PER_CHAR - 1)), TextSMSTransmission.BITS_PER_CHAR - 1, false); 
 			}
@@ -146,8 +150,12 @@ public class TextMessage extends Message
 		totalParts = PART_NUMBER_FIELD.readInt(hdrFieldBitsIn);
 		hdrFieldBitsIn.close();
 		
+		// Part number check:
+		if(partNumber > totalParts)
+			throw new InvalidMessageException("Inconsistent part number (" + partNumber + "/" + totalParts + "), this is not a valid Sapelli text SMS message");
+		
 		// Set body:
-		body = content.substring(HEADER_CHARS);
+		body = content.substring(HEADER_SIZE_CHARS);
 	}
 	
 	/**
@@ -205,7 +213,7 @@ public class TextMessage extends Message
 		{
 			while(hdrFieldBitsIn.bitsAvailable() >= TextSMSTransmission.BITS_PER_CHAR - 1)
 			{
-				int c = (HEADER_SEPARATOR_BIT << TextSMSTransmission.BITS_PER_CHAR - 1) + (int) hdrFieldBitsIn.readInteger(TextSMSTransmission.BITS_PER_CHAR - 1, false);; // the separator bit ensures none of the header chars will ever be 'ESC'
+				int c = (HEADER_SEPARATOR_BIT << TextSMSTransmission.BITS_PER_CHAR - 1) + (int) hdrFieldBitsIn.readInteger(TextSMSTransmission.BITS_PER_CHAR - 1, false); // the separator bit ensures none of the header chars will ever be 'ESC'
 				if(c == TextSMSTransmission.ESCAPE_ESC)
 					throw new IllegalStateException("Cannot encode 0x1B (ESC)!"); // (this should never happen)
 				// Add header char to content:

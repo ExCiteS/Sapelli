@@ -81,7 +81,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	 * 
 	 * @see <a href="http://en.wikipedia.org/wiki/GSM_03.38">GSM 03.38 / 3GPP TS 23.038</a> 
 	 */
-	public static final char[] GSM_0338_CHAR_TABLE =
+	/*package*/ static final char[] GSM_0338_CHAR_TABLE =
 	{
 		/*	0	0x00	@	*/	'\u0040',
 		/*	1	0x01	£	*/	'\u00A3',
