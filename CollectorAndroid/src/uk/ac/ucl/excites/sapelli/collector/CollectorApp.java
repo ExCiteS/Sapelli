@@ -45,6 +45,10 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreProvider;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteRecordStore;
+import uk.ac.ucl.excites.sapelli.transmission.control.ReceiveController;
+import uk.ac.ucl.excites.sapelli.transmission.control.SendController;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStoreProvider;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.app.Application;
@@ -60,7 +64,7 @@ import com.crashlytics.android.Crashlytics;
  * @author Michalis Vitos, mstevens
  * 
  */
-public class CollectorApp extends Application implements StoreClient, RecordStoreProvider, ProjectStoreProvider
+public class CollectorApp extends Application implements StoreClient, RecordStoreProvider, ProjectStoreProvider, TransmissionStoreProvider
 {
 
 	// STATICS------------------------------------------------------------
@@ -88,8 +92,11 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 	private SapelliCollectorClient collectorClient;
 	private RecordStore recordStore = null;
 	private ProjectStore projectStore = null;
-	//private TransmissionStore transmissionStore = null; 
+	private TransmissionStore transmissionStore = null; 
 	private Map<Store, Set<StoreClient>> storeClients;
+	
+	private ReceiveController receiveController;
+	private SendController sendController;
 
 	// Files storage:
 	private FileStorageProvider fileStorageProvider;
@@ -333,6 +340,18 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 		return recordStore;
 	}
 	
+	@Override
+	public TransmissionStore getTransmissionStore(StoreClient client) throws Exception
+	{
+		if(transmissionStore == null)
+		{
+			transmissionStore = new TransmissionStore(collectorClient, this);
+			storeClients.put(transmissionStore, new HashSet<StoreClient>());
+		}
+		storeClients.get(transmissionStore).add(client); // add to set of clients currently using the recordStore
+		return transmissionStore;
+	}
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.StoreProvider#discardStoreUsage(uk.ac.ucl.excites.sapelli.shared.db.Store, uk.ac.ucl.excites.sapelli.shared.db.StoreClient)
 	 */
@@ -384,4 +403,24 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 			discardStoreUsage(store, this);
 	}
 	
+	public ReceiveController getReceiveController() throws Exception
+	{
+		if (receiveController == null)
+		{
+			receiveController = new ReceiveController(collectorClient);
+			receiveController.setRxTStore(getTransmissionStore(receiveController));
+		}
+		
+		return receiveController;
+	}
+	
+	public SendController getSendController()
+	{
+		if (sendController == null)
+		{
+			
+		}
+		
+		return sendController;
+	}
 }

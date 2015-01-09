@@ -18,11 +18,13 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.control;
 
+import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
@@ -34,20 +36,20 @@ import uk.ac.ucl.excites.sapelli.transmission.payloads.RecordsPayload;
  * @author mstevens
  *
  */
-public abstract class ReceiveController implements Payload.Handler
+public class ReceiveController implements Payload.Handler, Message.Handler, StoreClient
 {
 
 	private TransmissionStore rxTStore;
-	private TransmissionClient client;
+	private TransmissionClient transmissionClient;
 	
 	/**
 	 * 
 	 */
-	public ReceiveController(TransmissionStore receivedTransmissionStore, TransmissionClient client)
+	public ReceiveController(TransmissionClient transmissionClient)
 	{
-		this.rxTStore = receivedTransmissionStore;
+		this.transmissionClient = transmissionClient;
 	}
-	
+
 	protected boolean doReceive(Transmission transmission) throws Exception
 	{	
 		// Receive (i.e. decode) the transmission if it is complete
@@ -80,31 +82,7 @@ public abstract class ReceiveController implements Payload.Handler
 			return false;
 	}
 	
-	public void receive(BinaryMessage binSms) throws Exception
-	{
-		BinarySMSTransmission transmission = rxTStore.retrieveBinarySMSTransmission(binSms.getSender(), false, binSms.getSendingSideTransmissionID(), binSms.getPayloadHash());
-		if(transmission == null) // we received the the first part
-			transmission = new BinarySMSTransmission(client, binSms);
-		else
-			transmission.receivePart(binSms);
-		
-		// Store/Update transmission unless it was successfully received in its entirety:
-		if(!doReceive(transmission))
-			rxTStore.storeTransmission(transmission);
-	}
-	
-	public void receive(TextMessage txtSms) throws Exception
-	{
-		TextSMSTransmission transmission = rxTStore.retrieveTextSMSTransmission(txtSms.getSender(), false, txtSms.getSendingSideTransmissionID(), txtSms.getPayloadHash());
-		if(transmission == null) // we received the the first part
-			transmission = new TextSMSTransmission(client, txtSms);
-		else
-			transmission.receivePart(txtSms);
-		
-		// Store/Update transmission unless it was successfully received in its entirety:
-		if(!doReceive(transmission))
-			rxTStore.storeTransmission(transmission);
-	}
+
 	
 	public void receive(HTTPTransmission httpTransmission) throws Exception
 	{
@@ -118,7 +96,11 @@ public abstract class ReceiveController implements Payload.Handler
 		// else have already seen this transmission... TODO is this check necessary?
 	}
 
-	public abstract boolean deleteTransmissionUponDecoding();
+	public boolean deleteTransmissionUponDecoding()
+	{
+		// TODO was abstract ......
+		return false;
+	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.transmission.PayloadHandler#handle(uk.ac.ucl.excites.sapelli.transmission.payloads.AckPayload)
@@ -140,4 +122,70 @@ public abstract class ReceiveController implements Payload.Handler
 		
 	}
 	
+	public void handle(Message msg)
+	{
+		msg.handle(this); // TODO forces subtype behaviour
+	}
+
+	@Override
+	public void handle(BinaryMessage binSms)
+	{
+		BinarySMSTransmission transmission = rxTStore.retrieveBinarySMSTransmission(binSms.getSender(), false, binSms.getSendingSideTransmissionID(), binSms.getPayloadHash());
+		if(transmission == null) // we received the the first part
+			transmission = new BinarySMSTransmission(transmissionClient, binSms);
+		else
+			transmission.receivePart(binSms);
+		
+		// Store/Update transmission unless it was successfully received in its entirety:
+		
+		try
+		{
+			if(!doReceive(transmission))
+				rxTStore.storeTransmission(transmission);
+		}
+		catch(Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void handle(TextMessage txtSms)
+	{
+		TextSMSTransmission transmission = rxTStore.retrieveTextSMSTransmission(txtSms.getSender(), false, txtSms.getSendingSideTransmissionID(), txtSms.getPayloadHash());
+		if(transmission == null) // we received the the first part
+			transmission = new TextSMSTransmission(transmissionClient, txtSms);
+		else
+			transmission.receivePart(txtSms);
+		
+		// Store/Update transmission unless it was successfully received in its entirety:
+		try
+		{
+			if(!doReceive(transmission))
+				rxTStore.storeTransmission(transmission);
+		}
+		catch(Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}		
+	}
+
+	@Override
+	public void handle(Payload customPayload, int type)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+	
+	public void setRxTStore(TransmissionStore rxTStore)
+	{
+		this.rxTStore = rxTStore;
+	}
+	
+	public TransmissionStore getRxTStore()
+	{
+		return rxTStore;
+	}
 }

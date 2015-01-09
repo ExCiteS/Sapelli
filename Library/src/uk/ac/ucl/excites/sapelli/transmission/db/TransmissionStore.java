@@ -369,8 +369,9 @@ public class TransmissionStore implements Store, StoreClient
 			tRec = TRANSMISSION_SCHEMA.createRecord();
 			
 			// Set values of all columns will be set except for Sender, Receiver & NumberOfParts:
-			if(transmission.isLocalIDSet())
-				TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());
+			if(!transmission.isLocalIDSet())
+				transmission.setLocalID(0); // TODO !!!
+			TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());
 			TRANSMISSION_COLUMN_REMOTE_ID.storeValue(tRec, transmission.getRemoteID());
 			TRANSMISSION_COLUMN_TYPE.storeValue(tRec, transmission.getType().ordinal());
 			TRANSMISSION_COLUMN_PAYLOAD_HASH.storeValue(tRec, transmission.getPayloadHash()); // payload hash should always be set before storage

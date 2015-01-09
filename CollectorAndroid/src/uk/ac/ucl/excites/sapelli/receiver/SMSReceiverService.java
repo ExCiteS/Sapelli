@@ -1,5 +1,7 @@
 package uk.ac.ucl.excites.sapelli.receiver;
 
+import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
+import uk.ac.ucl.excites.sapelli.transmission.control.ReceiveController;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.InvalidMessageException;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
@@ -58,8 +60,9 @@ public class SMSReceiverService extends IntentService
 		try
 		{
 			final Message message = messageFromPDU(pdu, binary);
-						
-			// TODO pass this message object to the app's ReceiveController so it can be inserted into the TransmissionStore (and eventually RecordStore etc)
+									
+			ReceiveController receiveController = ((CollectorApp) this.getApplication()).getReceiveController();
+			message.handle(receiveController);
 			
 			mainHandler.post(new Runnable()
 			{

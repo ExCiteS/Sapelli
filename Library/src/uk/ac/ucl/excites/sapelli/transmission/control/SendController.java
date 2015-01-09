@@ -18,6 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.control;
 
+import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
@@ -30,15 +31,26 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
 public abstract class SendController
 {
 
-	private final TransmissionStore transmissionStore;
+	private TransmissionClient transmissionClient; 
+	private TransmissionStore transmissionStore;
 	
 	/**
 	 * @param transmissionStore
 	 */
-	public SendController(TransmissionStore transmissionStore)
+	public SendController(TransmissionClient transmissionClient)
+	{
+		this.transmissionClient = transmissionClient;
+	}
+	
+	public void setTransmissionStore(TransmissionStore transmissionStore)
 	{
 		this.transmissionStore = transmissionStore;
 	}
+	
+	public TransmissionStore getTransmissionStore()
+	{
+		return transmissionStore;
+	}	
 
 	public abstract SMSClient getSMSService();
 	

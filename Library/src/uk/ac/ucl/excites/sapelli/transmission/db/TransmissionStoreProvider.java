@@ -20,19 +20,18 @@ package uk.ac.ucl.excites.sapelli.transmission.db;
 
 import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreProvider;
-import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 
 /**
  * @author mstevens
  *
  */
-public interface TransmisssionStoreProvider extends StoreProvider
+public interface TransmissionStoreProvider extends StoreProvider
 {
 
 	/**
 	 * @param client
 	 * @return
 	 */
-	public RecordStore getTransmissionStore(StoreClient client) throws Exception;
+	public TransmissionStore getTransmissionStore(StoreClient client) throws Exception;
 	
 }
