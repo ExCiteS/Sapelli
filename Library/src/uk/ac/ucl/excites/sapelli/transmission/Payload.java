@@ -56,7 +56,7 @@ public abstract class Payload
 	
 	static public final int MAX_BUILTIN_TYPES = (int) Math.pow(2, PAYLOAD_TYPE_SIZE - 1); // = 16
 	
-	static Payload New(BuiltinType type)
+	static public Payload New(BuiltinType type)
 	{
 		switch(type)
 		{
@@ -70,7 +70,7 @@ public abstract class Payload
 		}
 	}
 	
-	static Payload New(TransmissionClient client, int payloadType) throws IllegalArgumentException
+	static public Payload New(TransmissionClient client, int payloadType) throws IllegalArgumentException
 	{
 		// Try to instantiate Payload object for the type: 
 		if(payloadType >= MAX_BUILTIN_TYPES)

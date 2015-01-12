@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.Constraint;
@@ -56,11 +57,21 @@ public class Source extends Constraint
 		return new Source(new HashSet<Schema>(Arrays.asList(schemata)), BY_INCLUSION);
 	}
 	
+	static public Source From(Model model)
+	{
+		return From(model.getSchemata());
+	}
+	
 	static public Source From(Collection<Schema> schemata)
 	{
 		if(schemata == null || schemata.isEmpty())
 			return ANY;
 		return new Source(schemata, BY_INCLUSION);
+	}
+	
+	static public Source NotFrom(Model model)
+	{
+		return NotFrom(model.getSchemata());
 	}
 	
 	static public Source NotFrom(Schema schema)

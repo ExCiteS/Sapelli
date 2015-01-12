@@ -255,9 +255,25 @@ public abstract class Transmission
 	
 	public void send(SendController transmissionSender) throws IOException, TransmissionCapacityExceededException, UnknownModelException
 	{
-		//Some checks:
 		if(transmissionSender == null)
 			throw new IllegalStateException("Please provide a non-null TransmissionSender instance.");
+		prepareAndSend(transmissionSender);
+	}
+	
+	public void checkCapacity() throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	{
+		prepareAndSend(null);
+	}
+	
+	/**
+	 * @param transmissionSender pass null for capacity check
+	 * @throws IOException
+	 * @throws TransmissionCapacityExceededException
+	 * @throws UnknownModelException
+	 */
+	private void prepareAndSend(SendController transmissionSender) throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	{
+		//Some checks:
 		if(payload == null)
 			throw new NullPointerException("Cannot send transmission without payload");
 		if(isSent())
@@ -284,6 +300,10 @@ public abstract class Transmission
 		if(payloadBits.length() > getMaxPayloadBits())
 			throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + payloadBits.length() + " bits; max for this type of transmission: " + getMaxPayloadBits() + " bits");
 		
+		// Abort capacity check if possible:
+		if(transmissionSender == null && !canWrapIncreaseSize())
+			return;
+		
 		// Compute & store payload hash:
 		this.payloadHash = computePayloadHash(payloadBits); // must be set before wrap() is called!	
 		
@@ -302,7 +322,8 @@ public abstract class Transmission
 		wrap(bodyBits); // note: payloadHash must be set before this call
 		
 		// Do the actual sending:
-		doSend(transmissionSender);
+		if (transmissionSender != null)
+			doSend(transmissionSender);
 	}
 
 	public void resend(SendController sender) throws Exception
@@ -313,7 +334,7 @@ public abstract class Transmission
 		// Resend:
 		send(sender);
 	}
-	
+
 	protected abstract void doSend(SendController transmissionSender);
 	
 	public void receive() throws IncompleteTransmissionException, IOException, IllegalArgumentException, IllegalStateException, PayloadDecodeException, UnknownModelException

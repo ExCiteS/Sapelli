@@ -101,17 +101,16 @@ public class RecordsPayload extends Payload
 	}
 	
 	/**
-	 * To be called from the sending side
+	 * To be called from the sending side. This method will remove records from the list that were successfully added to the Payload.
 	 * 
 	 * @param records to try adding
-	 * @return the subset of records that were actually added
-	 * @throws Exception
+=	 * @throws Exception
 	 */
-	public List<Record> addRecords(List<Record> records) throws Exception
+	public void addRecords(List<Record> records) throws Exception
 	{
 		if(!isTansmissionSet())
 			throw new IllegalStateException("No transmission set!");
-		
+				
 		for(Record record : records)
 		{
 			if(!record.isFilled())
@@ -128,7 +127,20 @@ public class RecordsPayload extends Payload
 			else if(model != schema.getModel())
 				throw new IllegalArgumentException("The schemata of the records in a single Transmission must all belong to the same model.");
 	
-			// Add the record:
+
+			// Try serialising and check capacity:
+			try
+			{
+				transmission.checkCapacity();
+			}
+			catch(TransmissionCapacityExceededException tcee)
+			{	// adding this record caused transmission capacity to be exceeded so do not "mark" it as added (i.e. do not remove it from the input list)
+				return;
+			}
+			
+			// If we succeeded...
+			
+			// Add the record to the list of attached records for this schema:
 			List<Record> recordsOfSchema = recordsBySchema.get(schema);
 			if(recordsOfSchema == null)
 			{
@@ -137,30 +149,9 @@ public class RecordsPayload extends Payload
 			}
 			recordsOfSchema.add(record);
 			
-			// Try serialising and check capacity:
-//			try
-//			{
-//				//TODO!
-//				
-////				serialise();
-////				
-////				// Capacity checks: //TODO this happens once too many when sending, change!
-////				if(bits.length() > transmission.getMaxPayloadBits())
-////					throw new TransmissionCapacityExceededException("Payload is too large for the associated transmission (size: " + bits.length() + " bits; max for transmission: " + transmission.getMaxPayloadBits() + " bits");
-////				if(transmission.canWrapIncreaseSize()) // the the transmission is one in which payload size can grow upon wrapping (e.g. due to escaping), then ... 
-////					transmission.wrap(bits); // try wrapping the payload in the transmission, a TransmissionCapacityExceededException will be thrown when the size goes over the limit
-	//
-//			}
-//			catch(TransmissionCapacityExceededException tcee)
-//			{	// adding this record caused transmission capacity to be exceeded, so remove it and mark the transmission as full (unless there are no other records)
-//				recordsOfSchema.remove(record);
-//				if(recordsOfSchema.isEmpty())
-//					recordsBySchema.remove(schema);
-//				return false;
-//			}
+			// Remove the record from the list of remaining records:
+			records.remove(record);
 		}
-		
-		return getRecords();
 	}
 	
 	/**
@@ -489,7 +480,7 @@ public class RecordsPayload extends Payload
 					for(Entry<Column<?>, Object> fEntry : factoredOutValues.entrySet())
 						fEntry.getKey().storeObject(record, fEntry.getValue());
 					// Add the record:
-					records.add(record);				
+					records.add(record);
 				}
 			}
 		}
