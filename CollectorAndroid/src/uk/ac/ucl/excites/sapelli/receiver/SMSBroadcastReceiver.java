@@ -40,7 +40,18 @@ public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 			// launch the service using the intent:
 			context.startService(launchReceiverService);
 		}
+		
+		/**
+		 * On pre-KitKat devices (API 19) calling abortBroadcast on an SMS message will prevent lower-priority receivers from "hearing" the broadcast.
+		 * On API 19+ devices (and reportedly also API 18) this call will be completely ignored by the OS because the SMS APIs have been reworked and one can only "consume"
+		 * SMS broadcasts by registering as the default SMS app (which we don't really want to do, as it would mean worrying about ALL SMSs).
+		 */
+		abortBroadcast();
 	}
 	
+	/**
+	 * To be overriden by subclasses that listen for different Intents (either Data SMS or Textual SMS Intents).
+	 * @return whether or not the SMS PDU passed by this BroadcastReceiver represents a binary (data) SMS as opposed to a textual one.
+	 */
 	public abstract boolean isBinary();
 }
