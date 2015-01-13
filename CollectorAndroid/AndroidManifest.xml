@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
 	Sapelli data collection platform: http://sapelli.org
 	
@@ -66,26 +67,7 @@
 
             </intent-filter>
         </activity>
-<!--         <activity android:name="uk.ac.ucl.excites.sapelli.sender.dropbox.DropboxLogin">
-        </activity>
-        <activity android:name="uk.ac.ucl.excites.sapelli.collector.activities.StatisticsActivity" android:theme="@android:style/Theme.NoTitleBar">
-        </activity>
-        <activity android:label="@string/title_activity_dropbox" android:name="uk.ac.ucl.excites.sapelli.sender.dropbox.DropboxAuthentication">
-        </activity>
-        <activity android:name="com.dropbox.sync.android.DbxAuthActivity"/>
-        <activity android:launchMode="singleTask" android:name="com.dropbox.client2.android.AuthActivity">
-            <intent-filter>
-
-                HERE NEEDS THE ACTUAL DROPBOX APP KEY
-                <data android:scheme="db-5nmqrrg0m50fu7z"/>
-
-                <action android:name="android.intent.action.VIEW"/>
-
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-        </activity>
- -->        <activity android:enabled="true" android:exported="true" android:icon="@drawable/ic_menu_archive" android:label="File Manager" android:name="com.ipaulpro.afilechooser.FileChooserActivity">
+        <activity android:enabled="true" android:exported="true" android:icon="@drawable/ic_menu_archive" android:label="File Manager" android:name="com.ipaulpro.afilechooser.FileChooserActivity">
             <intent-filter>
                 <action android:name="android.intent.action.GET_CONTENT"/>
 
@@ -102,9 +84,6 @@
             android:label="@string/service_name" >
         </service>
         -->
-
-<!--         <service android:enabled="true" android:exported="false" android:label="Dropbox Sync" android:name="com.dropbox.sync.android.DbxSyncService">
-        </service> -->
 
         <!--
         <receiver
