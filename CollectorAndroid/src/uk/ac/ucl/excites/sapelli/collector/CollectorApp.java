@@ -45,8 +45,6 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreProvider;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteRecordStore;
-import uk.ac.ucl.excites.sapelli.transmission.control.ReceiveController;
-import uk.ac.ucl.excites.sapelli.transmission.control.SendController;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStoreProvider;
 import uk.ac.ucl.excites.sapelli.util.Debug;
@@ -95,9 +93,6 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 	private TransmissionStore transmissionStore = null; 
 	private Map<Store, Set<StoreClient>> storeClients;
 	
-	private ReceiveController receiveController;
-	private SendController sendController;
-
 	// Files storage:
 	private FileStorageProvider fileStorageProvider;
 	private FileStorageException fileStorageException = null;
@@ -401,26 +396,5 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 		// Unregister the CollectorApp as a StoreClient
 		for(Store store : toBackup) 
 			discardStoreUsage(store, this);
-	}
-	
-	public ReceiveController getReceiveController() throws Exception
-	{
-		if (receiveController == null)
-		{
-			receiveController = new ReceiveController(collectorClient);
-			receiveController.setRxTStore(getTransmissionStore(receiveController));
-		}
-		
-		return receiveController;
-	}
-	
-	public SendController getSendController()
-	{
-		if (sendController == null)
-		{
-			
-		}
-		
-		return sendController;
 	}
 }

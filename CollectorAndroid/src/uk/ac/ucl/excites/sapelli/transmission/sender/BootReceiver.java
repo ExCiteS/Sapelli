@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.sender;
+package uk.ac.ucl.excites.sapelli.transmission.sender;
 
 import uk.ac.ucl.excites.sapelli.sender.util.AlarmScheduler;
 import android.content.BroadcastReceiver;

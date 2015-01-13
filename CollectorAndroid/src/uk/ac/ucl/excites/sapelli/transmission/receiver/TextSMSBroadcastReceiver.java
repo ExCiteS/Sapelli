@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.receiver;
+package uk.ac.ucl.excites.sapelli.transmission.receiver;
 
 public class TextSMSBroadcastReceiver extends SMSBroadcastReceiver
 {

@@ -1,4 +1,4 @@
-package uk.ac.ucl.excites.sapelli.receiver;
+package uk.ac.ucl.excites.sapelli.transmission.receiver;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -41,7 +41,7 @@ public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 			context.startService(launchReceiverService);
 		}
 		
-		/**
+		/*
 		 * On pre-KitKat devices (API 19) calling abortBroadcast on an SMS message will prevent lower-priority receivers from "hearing" the broadcast.
 		 * On API 19+ devices (and reportedly also API 18) this call will be completely ignored by the OS because the SMS APIs have been reworked and one can only "consume"
 		 * SMS broadcasts by registering as the default SMS app (which we don't really want to do, as it would mean worrying about ALL SMSs).

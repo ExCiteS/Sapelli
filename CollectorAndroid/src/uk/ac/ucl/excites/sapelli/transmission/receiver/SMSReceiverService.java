@@ -1,7 +1,8 @@
-package uk.ac.ucl.excites.sapelli.receiver;
+package uk.ac.ucl.excites.sapelli.transmission.receiver;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.transmission.control.ReceiveController;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.InvalidMessageException;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
@@ -22,7 +23,7 @@ import android.widget.Toast;
  * @author benelliott
  *
  */
-public class SMSReceiverService extends IntentService
+public class SMSReceiverService extends IntentService implements StoreClient
 {
 	private static final String TAG = "SMSReceiverService";
 	public static final String PDU_BYTES_EXTRA_NAME = "pdu"; // intent key for passing the PDU bytes
@@ -57,12 +58,12 @@ public class SMSReceiverService extends IntentService
 			return;
 		
 		// try to create a (Sapelli) Message object from the PDU:
+		
 		try
 		{
 			final Message message = messageFromPDU(pdu, binary);
 									
-			ReceiveController receiveController = ((CollectorApp) this.getApplication()).getReceiveController();
-			message.handle(receiveController);
+			message.handle(new AndroidTransmissionController(((CollectorApp)this.getApplication()).getCollectorClient(), ((CollectorApp)this.getApplication()).getTransmissionStore(this)));
 			
 			mainHandler.post(new Runnable()
 			{

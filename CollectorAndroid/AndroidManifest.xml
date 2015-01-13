@@ -96,14 +96,14 @@
             </intent-filter>
         </activity>
         <service
-            android:name="uk.ac.ucl.excites.sapelli.sender.DataSenderService"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.DataSenderService"
             android:icon="@drawable/ic_sapelli_logo"
             android:label="@string/service_name" >
         </service>
         <service android:name="uk.ac.ucl.excites.sapelli.sender.util.AlarmScheduler" >
         </service>
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.sender.BootReceiver"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.BootReceiver"
             android:exported="false" >
             <intent-filter android:priority="9999999999" >
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
@@ -113,10 +113,10 @@
 <!--         <service android:enabled="true" android:exported="false" android:label="Dropbox Sync" android:name="com.dropbox.sync.android.DbxSyncService">
         </service> -->
 
-        <service android:name="uk.ac.ucl.excites.sapelli.receiver.SMSReceiverService" >
+        <service android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.SMSReceiverService" >
         </service>
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.receiver.TextSMSBroadcastReceiver"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.TextSMSBroadcastReceiver"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS">
             <intent-filter>
@@ -124,7 +124,7 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.receiver.DataSMSBroadcastReceiver"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.DataSMSBroadcastReceiver"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS">
             <intent-filter>

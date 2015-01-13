@@ -25,7 +25,7 @@ import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.control.SendController;
+import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
@@ -93,7 +93,7 @@ public class HTTPTransmission extends Transmission
 	}
 	
 	@Override
-	protected void doSend(SendController transmissionSender)
+	protected void doSend(TransmissionController transmissionSender)
 	{
 		//HTTPClient client = sender.getHTTPClient();
 		// TODO HTTP sending

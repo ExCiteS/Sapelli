@@ -2,8 +2,8 @@ package uk.ac.ucl.excites.sapelli.sender.util;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.sender.BootReceiver;
-import uk.ac.ucl.excites.sapelli.sender.DataSenderService;
+import uk.ac.ucl.excites.sapelli.transmission.sender.BootReceiver;
+import uk.ac.ucl.excites.sapelli.transmission.sender.DataSenderService;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.ComponentName;
