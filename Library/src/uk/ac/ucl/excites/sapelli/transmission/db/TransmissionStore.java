@@ -118,14 +118,14 @@ public class TransmissionStore implements Store, StoreClient
 	}
 	//	Transmission Part Schema
 	static final public Schema TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "TransmissionPart");
-	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_TRANSMISSION_ID = new ForeignKeyColumn(TRANSMISSION_SCHEMA, false);
+	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_TRANSMISSION = new ForeignKeyColumn(TRANSMISSION_SCHEMA, false);
 	static final public IntegerColumn TRANSMISSION_PART_COLUMN_NUMBER = new IntegerColumn("PartNumber", false, false, Integer.SIZE);
 	static final public TimeStampColumn TRANSMISSION_PART_COLUMN_DELIVERED_AT = TimeStampColumn.JavaMSTime("DeliveredAt", true, false);
 	static final public ByteArrayColumn TRANSMISSION_PART_COLUMN_BODY = new ByteArrayColumn("Body", false);
 	static final public IntegerColumn TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH = new IntegerColumn("BodyBitLength", false, false, Integer.SIZE);
 	static
 	{	// Add columns to Transmission Part Schema & seal it:
-		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_TRANSMISSION_ID);
+		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_TRANSMISSION);
 		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_NUMBER);
 		TRANSMISSION_PART_SCHEMA.addColumn(COLUMN_SENT_AT);
 		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_DELIVERED_AT);
@@ -178,14 +178,16 @@ public class TransmissionStore implements Store, StoreClient
 		{
 			// Use RecordGenerator to create a transmission record and part record(s):
 			RecordGenerator generator = new RecordGenerator(transmission);
-			
-			// Store part records:
-			for(Record tPartRec : generator.tPartRecs)
-				recordStore.store(tPartRec);
-			
+
 			// Store transmission record:
 			doStoreTransmission(transmission, generator.tRec); // after this the localID should always be known
 			
+			// Store part records:
+			for(Record tPartRec : generator.tPartRecs)
+			{
+				TRANSMISSION_PART_COLUMN_TRANSMISSION.storeValue(tPartRec, generator.tRec.getReference()); // set foreign key
+				recordStore.store(tPartRec);
+			}
 		}
 		catch(Exception e)
 		{
@@ -369,8 +371,6 @@ public class TransmissionStore implements Store, StoreClient
 			tRec = TRANSMISSION_SCHEMA.createRecord();
 			
 			// Set values of all columns will be set except for Sender, Receiver & NumberOfParts:
-			if(!transmission.isLocalIDSet())
-				transmission.setLocalID(0); // TODO !!!
 			TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());
 			TRANSMISSION_COLUMN_REMOTE_ID.storeValue(tRec, transmission.getRemoteID());
 			TRANSMISSION_COLUMN_TYPE.storeValue(tRec, transmission.getType().ordinal());
@@ -405,8 +405,7 @@ public class TransmissionStore implements Store, StoreClient
 			{
 				Record tPartRec = newPartRecord(); // adds to the list as well
 				
-				// Set columns:
-				TRANSMISSION_PART_COLUMN_TRANSMISSION_ID.storeValue(tPartRec, tRec.getReference()); // set foreign key
+				// Set columns (except for foreign key):
 				TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, msg.getPartNumber());
 				COLUMN_SENT_AT.storeValue(tPartRec, msg.getSentAt());
 				TRANSMISSION_PART_COLUMN_DELIVERED_AT.storeValue(tPartRec, msg.getDeliveredAt());
@@ -449,8 +448,7 @@ public class TransmissionStore implements Store, StoreClient
 			
 			// Create a single transmission part (only used to store the body):
 			Record tPartRec = newPartRecord(); // adds to the list as well
-			TRANSMISSION_PART_COLUMN_TRANSMISSION_ID.storeValue(tPartRec, tRec.getReference()); // set foreign key
-			TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, 1l);
+			TRANSMISSION_PART_COLUMN_NUMBER.storeValue(tPartRec, 1l); // (foreign key is not set yet)
 			setPartBody(httpT.getBody()); // will set part body and body bit length
 		}
 		
