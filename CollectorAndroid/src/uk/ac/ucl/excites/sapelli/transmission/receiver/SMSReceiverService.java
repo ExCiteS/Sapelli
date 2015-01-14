@@ -1,3 +1,21 @@
+/**
+ * Sapelli data collection platform: http://sapelli.org
+ * 
+ * Copyright 2012-2014 University College London - ExCiteS group
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and 
+ * limitations under the License.
+ */
+
 package uk.ac.ucl.excites.sapelli.transmission.receiver;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
@@ -21,19 +39,20 @@ import android.widget.Toast;
  * converting them into SMSTransmission objects and passing them on to a ReceiveController.
  * 
  * @author benelliott
- *
  */
 public class SMSReceiverService extends IntentService implements StoreClient
 {
 	private static final String TAG = "SMSReceiverService";
 	public static final String PDU_BYTES_EXTRA_NAME = "pdu"; // intent key for passing the PDU bytes
 	public static final String BINARY_FLAG_EXTRA_NAME = "binary"; // intent key for passing whether or not the message is binary (data message)
+	private final CollectorApp app;
 	private AndroidTransmissionController transmissionController;
 	private Handler mainHandler; // only used in order to display Toasts
 
 	public SMSReceiverService()
 	{
 		super("SMSReceiverService");
+		app = ((CollectorApp) getApplication());
 	}
 
 	@Override
@@ -109,7 +128,7 @@ public class SMSReceiverService extends IntentService implements StoreClient
 	public AndroidTransmissionController getTransmissionController() throws Exception
 	{
 		if (transmissionController == null)
-			transmissionController = new AndroidTransmissionController(((CollectorApp)this.getApplication()).getCollectorClient(), ((CollectorApp)this.getApplication()).getTransmissionStore(this), this.getApplicationContext());
+			transmissionController = new AndroidTransmissionController(app.getCollectorClient(), app, this.getApplicationContext());
 		return transmissionController;
 	}
 

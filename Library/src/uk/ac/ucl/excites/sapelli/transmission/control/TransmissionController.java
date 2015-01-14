@@ -29,7 +29,9 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.db.ReceivedTransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStoreProvider;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPTransmission;
@@ -52,24 +54,15 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 {
 
 	private RecordStore recordStore;
-	private TransmissionStore transmissionStore;
+	private SentTransmissionStore sentTStore;
+	private ReceivedTransmissionStore receivedTStore;
 	private TransmissionClient transmissionClient;
 	
-	public TransmissionController(TransmissionClient transmissionClient, TransmissionStore transmissionStore)
+	public TransmissionController(TransmissionClient transmissionClient, TransmissionStoreProvider transmissionsStoreProvider) throws Exception
 	{
 		this.transmissionClient = transmissionClient;
-		this.transmissionStore = transmissionStore;
-	}
-	
-	
-	public void setTransmissionStore(TransmissionStore transmissionStore)
-	{
-		this.transmissionStore = transmissionStore;
-	}
-	
-	public TransmissionStore getTransmissionStore()
-	{
-		return transmissionStore;
+		this.sentTStore = transmissionsStoreProvider.getSentTransmissionStore(this);
+		this.receivedTStore = transmissionsStoreProvider.getReceivedTransmissionStore(this);
 	}
 	
 	public boolean deleteTransmissionUponDecoding()
@@ -104,7 +97,7 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 				
 				// Delete transmission (and parts) from store:
 				if(deleteTransmissionUponDecoding())
-					transmissionStore.deleteTransmission(transmission);
+					receivedTStore.deleteTransmission(transmission);
 				
 				// make & send ACK
 				sendAck(transmission);
@@ -126,12 +119,12 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 	
 	public void receive(HTTPTransmission httpTransmission) throws Exception
 	{
-		HTTPTransmission existingTransmission = transmissionStore.retrieveHTTPTransmission(httpTransmission.getPayload().getType(), httpTransmission.getPayloadHash());
+		HTTPTransmission existingTransmission = receivedTStore.retrieveHTTPTransmission(httpTransmission.getPayload().getType(), httpTransmission.getPayloadHash());
 		if(existingTransmission == null)
 		{
 			// Store/Update transmission unless it was successfully received in its entirety: TODO HTTP transmissions will usually be received in entirety??
 			if(!doReceive(httpTransmission))
-				transmissionStore.storeTransmission(httpTransmission);
+				receivedTStore.storeTransmission(httpTransmission);
 		}
 		// else have already seen this transmission... TODO is this check necessary?
 	}
@@ -155,7 +148,7 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 			if(!doReceive(transmission))
 			{
 				// Transmission incomplete, waiting for more parts
-				transmissionStore.storeTransmission(transmission);
+				receivedTStore.storeTransmission(transmission);
 				// TODO schedule resend request
 			}	
 		}
@@ -269,7 +262,7 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 		@Override
 		public void handle(BinaryMessage binSms)
 		{
-			BinarySMSTransmission t = transmissionStore.retrieveBinarySMSTransmission(binSms.getSender(), false, binSms.getSendingSideTransmissionID(), binSms.getPayloadHash());
+			BinarySMSTransmission t = receivedTStore.retrieveBinarySMSTransmission(binSms.getSender(), binSms.getSendingSideTransmissionID(), binSms.getPayloadHash());
 			if(t == null) // we received the the first part
 				t = new BinarySMSTransmission(transmissionClient, binSms);
 			else
@@ -280,7 +273,7 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 		@Override
 		public void handle(TextMessage txtSms)
 		{
-			TextSMSTransmission t = transmissionStore.retrieveTextSMSTransmission(txtSms.getSender(), false, txtSms.getSendingSideTransmissionID(), txtSms.getPayloadHash());
+			TextSMSTransmission t = receivedTStore.retrieveTextSMSTransmission(txtSms.getSender(), txtSms.getSendingSideTransmissionID(), txtSms.getPayloadHash());
 			if(t == null) // we received the the first part
 				t = new TextSMSTransmission(transmissionClient, txtSms);
 			else

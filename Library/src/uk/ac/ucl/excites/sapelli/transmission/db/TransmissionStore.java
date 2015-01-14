@@ -63,11 +63,9 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextSMSTransmission
 /**
  * Class to handle storage of transmissions and their parts. Based on {@link RecordStore}.
  * 
- * TODO delete methods
- * 
- * @author mstevens, Michalis Vitos
+ * @author mstevens, Michalis Vitos, 
  */
-public class TransmissionStore implements Store, StoreClient
+public abstract class TransmissionStore implements Store, StoreClient
 {
 	
 	// STATICS---------------------------------------------
@@ -86,54 +84,74 @@ public class TransmissionStore implements Store, StoreClient
 	// Transmission storage model:
 	//	Model:
 	static public final Model TRANSMISSION_MANAGEMENT_MODEL = new Model(TransmissionClient.TRANSMISSION_MANAGEMENT_MODEL_ID, "TransmissionManagement");
-	// Schema(s) & columns:
-	//	Transmission Schema
-	static final public Schema TRANSMISSION_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Transmission");
+	// Schemas & columns:
+	//	Transmission cchemas:
+	static final public Schema SENT_TRANSMISSION_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "SentTransmission");
+	static final public Schema RECEIVED_TRANSMISSION_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "ReceivedTransmission");
+	//	Transmission columns:
 	static final public IntegerColumn TRANSMISSION_COLUMN_ID = new IntegerColumn("ID", false, Transmission.TRANSMISSION_ID_FIELD);
 	static final public IntegerColumn TRANSMISSION_COLUMN_REMOTE_ID = new IntegerColumn("RemoteID", true, Transmission.TRANSMISSION_ID_FIELD);
 	static final public IntegerColumn TRANSMISSION_COLUMN_TYPE = new IntegerColumn("Type", false);
 	static final public IntegerColumn TRANSMISSION_COLUMN_PAYLOAD_HASH = new IntegerColumn("PayloadHash", false, Transmission.PAYLOAD_HASH_FIELD);
 	static final public IntegerColumn TRANSMISSION_COLUMN_PAYLOAD_TYPE = new IntegerColumn("PayloadType", true, Payload.PAYLOAD_TYPE_FIELD);
-	static final public StringColumn TRANSMISSION_COLUMN_SENDER = StringColumn.ForCharacterCount("Sender", false, Transmission.CORRESPONDENT_MAX_LENGTH);
-	static final public StringColumn TRANSMISSION_COLUMN_RECEIVER = StringColumn.ForCharacterCount("Receiver", false, Transmission.CORRESPONDENT_MAX_LENGTH);
+	static final public StringColumn SENT_TRANSMISSION_COLUMN_RECEIVER = StringColumn.ForCharacterCount("Receiver", false, Transmission.CORRESPONDENT_MAX_LENGTH);
+	static final public StringColumn RECEIVED_TRANSMISSION_COLUMN_SENDER = StringColumn.ForCharacterCount("Sender", false, Transmission.CORRESPONDENT_MAX_LENGTH);
 	static final public IntegerColumn TRANSMISSION_COLUMN_NUMBER_OF_PARTS = new IntegerColumn("NumberOfParts", false, false, Integer.SIZE);
 	//	Columns shared with TransmisionPart:
 	static final public TimeStampColumn COLUMN_SENT_AT = TimeStampColumn.JavaMSTime("SentAt", true, false);
 	static final public TimeStampColumn COLUMN_RECEIVED_AT = TimeStampColumn.JavaMSTime("ReceivedAt", true, false);
-	//	Add columns and index to Transmission Schema & seal it:
+	//	Add columns and index to Transmission schemas & seal them:
 	static
 	{
-		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_ID);
-		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_REMOTE_ID);
-		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_TYPE);
-		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_PAYLOAD_HASH);
-		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_PAYLOAD_TYPE);
-		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_SENDER);
-		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_RECEIVER);
-		TRANSMISSION_SCHEMA.addColumn(TRANSMISSION_COLUMN_NUMBER_OF_PARTS);
-		TRANSMISSION_SCHEMA.addColumn(COLUMN_SENT_AT);
-		TRANSMISSION_SCHEMA.addColumn(COLUMN_RECEIVED_AT);
-		TRANSMISSION_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", TRANSMISSION_COLUMN_ID));
-		TRANSMISSION_SCHEMA.seal();
+		for(Schema schema : new Schema[] { SENT_TRANSMISSION_SCHEMA, RECEIVED_TRANSMISSION_SCHEMA } )
+		{
+			schema.addColumn(TRANSMISSION_COLUMN_ID);
+			schema.addColumn(TRANSMISSION_COLUMN_REMOTE_ID);
+			schema.addColumn(TRANSMISSION_COLUMN_TYPE);
+			schema.addColumn(TRANSMISSION_COLUMN_PAYLOAD_HASH);
+			schema.addColumn(TRANSMISSION_COLUMN_PAYLOAD_TYPE);
+			if(schema == SENT_TRANSMISSION_SCHEMA)
+				schema.addColumn(RECEIVED_TRANSMISSION_COLUMN_SENDER);
+			else
+				schema.addColumn(SENT_TRANSMISSION_COLUMN_RECEIVER);
+			schema.addColumn(TRANSMISSION_COLUMN_NUMBER_OF_PARTS);
+			schema.addColumn(COLUMN_SENT_AT);
+			schema.addColumn(COLUMN_RECEIVED_AT);
+			schema.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", TRANSMISSION_COLUMN_ID));
+			schema.seal();
+		}
 	}
-	//	Transmission Part Schema
-	static final public Schema TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "TransmissionPart");
-	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_TRANSMISSION = new ForeignKeyColumn(TRANSMISSION_SCHEMA, false);
+	//	Transmission Part schemas:
+	static final public Schema SENT_TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "SentTransmissionPart");
+	static final public Schema RECEIVED_TRANSMISSION_PART_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "RecieverTransmissionPart");
+	//	Transmission Part columns:
+	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_SENT_TRANSMISSION = new ForeignKeyColumn(SENT_TRANSMISSION_SCHEMA, false);
+	static final public ForeignKeyColumn TRANSMISSION_PART_COLUMN_RECEIVED_TRANSMISSION = new ForeignKeyColumn(RECEIVED_TRANSMISSION_SCHEMA, false);
 	static final public IntegerColumn TRANSMISSION_PART_COLUMN_NUMBER = new IntegerColumn("PartNumber", false, false, Integer.SIZE);
 	static final public TimeStampColumn TRANSMISSION_PART_COLUMN_DELIVERED_AT = TimeStampColumn.JavaMSTime("DeliveredAt", true, false);
 	static final public ByteArrayColumn TRANSMISSION_PART_COLUMN_BODY = new ByteArrayColumn("Body", false);
 	static final public IntegerColumn TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH = new IntegerColumn("BodyBitLength", false, false, Integer.SIZE);
+	//	Add columns to Transmission Part schemas & seal them:
 	static
-	{	// Add columns to Transmission Part Schema & seal it:
-		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_TRANSMISSION);
-		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_NUMBER);
-		TRANSMISSION_PART_SCHEMA.addColumn(COLUMN_SENT_AT);
-		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_DELIVERED_AT);
-		TRANSMISSION_PART_SCHEMA.addColumn(COLUMN_RECEIVED_AT);
-		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_BODY);
-		TRANSMISSION_PART_SCHEMA.addColumn(TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH);
-		TRANSMISSION_PART_SCHEMA.seal();
-		// Seal the model:
+	{
+		for(Schema schema : new Schema[] { SENT_TRANSMISSION_PART_SCHEMA, RECEIVED_TRANSMISSION_PART_SCHEMA } )
+		{
+			if(schema == SENT_TRANSMISSION_PART_SCHEMA)
+				schema.addColumn(TRANSMISSION_PART_COLUMN_SENT_TRANSMISSION);
+			else
+				schema.addColumn(TRANSMISSION_PART_COLUMN_RECEIVED_TRANSMISSION);
+			schema.addColumn(TRANSMISSION_PART_COLUMN_NUMBER);
+			schema.addColumn(COLUMN_SENT_AT);
+			schema.addColumn(TRANSMISSION_PART_COLUMN_DELIVERED_AT);
+			schema.addColumn(COLUMN_RECEIVED_AT);
+			schema.addColumn(TRANSMISSION_PART_COLUMN_BODY);
+			schema.addColumn(TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH);
+			schema.seal();
+		}
+	}
+	//	Seal the model:
+	static
+	{
 		TRANSMISSION_MANAGEMENT_MODEL.seal();
 	}
 	
@@ -185,7 +203,7 @@ public class TransmissionStore implements Store, StoreClient
 			// Store part records:
 			for(Record tPartRec : generator.tPartRecs)
 			{
-				TRANSMISSION_PART_COLUMN_TRANSMISSION.storeValue(tPartRec, generator.tRec.getReference()); // set foreign key
+				getTransmissionPartTransmissionColumn().storeValue(tPartRec, generator.tRec.getReference()); // set foreign key
 				recordStore.store(tPartRec);
 			}
 		}
@@ -206,7 +224,7 @@ public class TransmissionStore implements Store, StoreClient
 	public Transmission retrieveTransmissionForID(int localID) throws Exception
 	{
 		// Query for record:
-		return retrieveTransmissionForQuery(TRANSMISSION_SCHEMA.createRecordReference(localID).getRecordQuery());
+		return retrieveTransmissionForQuery(getTransmissionSchema().createRecordReference(localID).getRecordQuery());
 	}
 	
 	private Transmission retrieveTransmissionForQuery(SingleRecordQuery recordQuery)
@@ -223,13 +241,13 @@ public class TransmissionStore implements Store, StoreClient
 		Transmission.Type type = Transmission.Type.values()[TRANSMISSION_COLUMN_TYPE.retrieveValue(tRec).intValue()]; 
 		Integer remoteID = TRANSMISSION_COLUMN_REMOTE_ID.isValueSet(tRec) ? TRANSMISSION_COLUMN_REMOTE_ID.retrieveValue(tRec).intValue() : null; 
 		int payloadHash = TRANSMISSION_COLUMN_PAYLOAD_HASH.retrieveValue(tRec).intValue();
-		String sender = TRANSMISSION_COLUMN_SENDER.retrieveValue(tRec);
-		String receiver = TRANSMISSION_COLUMN_RECEIVER.retrieveValue(tRec);
+		String sender = RECEIVED_TRANSMISSION_COLUMN_SENDER.retrieveValue(tRec);
+		String receiver = SENT_TRANSMISSION_COLUMN_RECEIVER.retrieveValue(tRec);
 		TimeStamp sentAt = COLUMN_SENT_AT.retrieveValue(tRec);
 		TimeStamp receivedAt = COLUMN_RECEIVED_AT.retrieveValue(tRec);
 		int totalParts = TRANSMISSION_COLUMN_NUMBER_OF_PARTS.retrieveValue(tRec).intValue();
 		// Query for part records:		
-		List<Record> tPartRecs = recordStore.retrieveRecords(new RecordsQuery(Source.From(TRANSMISSION_PART_SCHEMA), Order.AscendingBy(TRANSMISSION_PART_COLUMN_NUMBER), tRec.getRecordQueryConstraint()));
+		List<Record> tPartRecs = recordStore.retrieveRecords(new RecordsQuery(Source.From(getTransmissionPartSchema()), Order.AscendingBy(TRANSMISSION_PART_COLUMN_NUMBER), tRec.getRecordQueryConstraint()));
 		// Construct object:
 		SMSAgent senderAgent = SMSAgent.Parse(sender);
 		SMSAgent receiverAgent = SMSAgent.Parse(receiver);
@@ -265,32 +283,30 @@ public class TransmissionStore implements Store, StoreClient
 	
 	/**
 	 * @param correspondent - the agent involved in the message
-	 * @param sent - whether or not the correspondent is the sender of this message
 	 * @param remoteID - the remote agent's ID for this transmission
 	 * @param payloadHash - the hash of the transmission payload
 	 * @return the (first) binary SMS transmission that obeys the conditions specified by the provided arguments.
 	 */
-	public BinarySMSTransmission retrieveBinarySMSTransmission(SMSAgent correspondent, boolean sent, int remoteID, int payloadHash)
+	public BinarySMSTransmission retrieveBinarySMSTransmission(SMSAgent correspondent, int remoteID, int payloadHash)
 	{
-		return (BinarySMSTransmission) retrieveTransmissionForQuery(new FirstRecordQuery(TRANSMISSION_SCHEMA,
+		return (BinarySMSTransmission) retrieveTransmissionForQuery(new FirstRecordQuery(getTransmissionSchema(),
 				new RuleConstraint(TRANSMISSION_COLUMN_TYPE, Comparison.EQUAL, Transmission.Type.BINARY_SMS.ordinal()),
-				new RuleConstraint(sent ? TRANSMISSION_COLUMN_RECEIVER : TRANSMISSION_COLUMN_SENDER, Comparison.EQUAL, correspondent),
+				new RuleConstraint(getCorrespondentColumn(), Comparison.EQUAL, correspondent),
 				new RuleConstraint(TRANSMISSION_COLUMN_REMOTE_ID, Comparison.EQUAL, remoteID),
 				new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
 	}
 	
 	/**
 	 * @param correspondent - the agent involved in the message
-	 * @param sent - whether or not the correspondent is the sender of this message
 	 * @param remoteID - the remote agent's ID for this transmission
 	 * @param payloadHash - the hash of the transmission payload
 	 * @return the (first) textual SMS transmission that obeys the conditions specified by the provided arguments.
 	 */
-	public TextSMSTransmission retrieveTextSMSTransmission(SMSAgent correspondent, boolean sent, int remoteID, int payloadHash)
+	public TextSMSTransmission retrieveTextSMSTransmission(SMSAgent correspondent, int remoteID, int payloadHash)
 	{ 
-		return (TextSMSTransmission) retrieveTransmissionForQuery(new FirstRecordQuery(TRANSMISSION_SCHEMA,
+		return (TextSMSTransmission) retrieveTransmissionForQuery(new FirstRecordQuery(getTransmissionSchema(),
 				new RuleConstraint(TRANSMISSION_COLUMN_TYPE, Comparison.EQUAL, Transmission.Type.TEXTUAL_SMS.ordinal()),
-				new RuleConstraint(sent ? TRANSMISSION_COLUMN_RECEIVER : TRANSMISSION_COLUMN_SENDER, Comparison.EQUAL, correspondent),
+				new RuleConstraint(getCorrespondentColumn(), Comparison.EQUAL, correspondent),
 				new RuleConstraint(TRANSMISSION_COLUMN_REMOTE_ID, Comparison.EQUAL, remoteID),
 				new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
 	}
@@ -302,7 +318,7 @@ public class TransmissionStore implements Store, StoreClient
 	 */
 	public HTTPTransmission retrieveHTTPTransmission(int payloadType, int payloadHash)
 	{
-		return (HTTPTransmission) retrieveTransmissionForQuery(new FirstRecordQuery(TRANSMISSION_SCHEMA,
+		return (HTTPTransmission) retrieveTransmissionForQuery(new FirstRecordQuery(getTransmissionSchema(),
 				new RuleConstraint(TRANSMISSION_COLUMN_TYPE, Comparison.EQUAL, Transmission.Type.HTTP.ordinal()),
 				new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_TYPE, Comparison.EQUAL, payloadType),
 				new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
@@ -317,10 +333,10 @@ public class TransmissionStore implements Store, StoreClient
 			recordStore.startTransaction();
 			
 			// Get record reference:
-			RecordReference tRecRef = TRANSMISSION_SCHEMA.createRecordReference(transmission.getLocalID());
+			RecordReference tRecRef = getTransmissionSchema().createRecordReference(transmission.getLocalID());
 				
 			// Delete transmission part records:
-			recordStore.delete(new RecordsQuery(Source.From(TRANSMISSION_PART_SCHEMA), tRecRef.getRecordQueryConstraint()));
+			recordStore.delete(new RecordsQuery(Source.From(getTransmissionPartSchema()), tRecRef.getRecordQueryConstraint()));
 			
 			// Delete transmission record:
 			recordStore.delete(tRecRef);
@@ -355,6 +371,14 @@ public class TransmissionStore implements Store, StoreClient
 		backuper.addStoreForBackup(recordStore);
 	}
 	
+	protected abstract Schema getTransmissionSchema();
+
+	protected abstract StringColumn getCorrespondentColumn();
+	
+	protected abstract Schema getTransmissionPartSchema();
+	
+	protected abstract ForeignKeyColumn getTransmissionPartTransmissionColumn();
+	
 	/**
 	 * @author mstevens
 	 *
@@ -368,7 +392,7 @@ public class TransmissionStore implements Store, StoreClient
 		public RecordGenerator(Transmission transmission)
 		{			
 			// Create transmission record:
-			tRec = TRANSMISSION_SCHEMA.createRecord();
+			tRec = getTransmissionSchema().createRecord();
 			
 			// Set values of all columns will be set except for Sender, Receiver & NumberOfParts:
 			TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());
@@ -386,7 +410,7 @@ public class TransmissionStore implements Store, StoreClient
 		
 		private Record newPartRecord()
 		{
-			Record tPartRec = TRANSMISSION_PART_SCHEMA.createRecord();
+			Record tPartRec = getTransmissionPartSchema().createRecord();
 			tPartRecs.add(tPartRec);
 			return tPartRec;
 		}
@@ -396,9 +420,9 @@ public class TransmissionStore implements Store, StoreClient
 			// Set SMS-specific values:
 			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, smsT.getTotalNumberOfParts());
 			if(smsT.isSenderSet())
-				TRANSMISSION_COLUMN_SENDER.storeValue(tRec, smsT.getSender().toString());
+				RECEIVED_TRANSMISSION_COLUMN_SENDER.storeValue(tRec, smsT.getSender().toString());
 			if(smsT.isReceiverSet())
-				TRANSMISSION_COLUMN_SENDER.storeValue(tRec, smsT.getReceiver().toString());
+				SENT_TRANSMISSION_COLUMN_RECEIVER.storeValue(tRec, smsT.getReceiver().toString());
 
 			// Make records for the parts...
 			for(Message msg : smsT.getParts())
@@ -443,7 +467,7 @@ public class TransmissionStore implements Store, StoreClient
 		public void handle(HTTPTransmission httpT)
 		{
 			// Set receiver (= serverURL) and number of parts (always = 1):
-			TRANSMISSION_COLUMN_RECEIVER.storeValue(tRec, httpT.getReceiverURL());
+			SENT_TRANSMISSION_COLUMN_RECEIVER.storeValue(tRec, httpT.getReceiverURL());
 			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, 1);
 			
 			// Create a single transmission part (only used to store the body):

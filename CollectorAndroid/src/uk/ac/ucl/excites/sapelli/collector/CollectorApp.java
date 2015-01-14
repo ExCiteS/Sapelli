@@ -45,6 +45,8 @@ import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreProvider;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteRecordStore;
+import uk.ac.ucl.excites.sapelli.transmission.db.ReceivedTransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStoreProvider;
 import uk.ac.ucl.excites.sapelli.util.Debug;
@@ -90,7 +92,8 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 	private SapelliCollectorClient collectorClient;
 	private RecordStore recordStore = null;
 	private ProjectStore projectStore = null;
-	private TransmissionStore transmissionStore = null;
+	private SentTransmissionStore sentTransmissionStore = null;
+	private ReceivedTransmissionStore receivedTransmissionStore = null;
 	private Map<Store, Set<StoreClient>> storeClients;
 	
 	// Files storage:
@@ -336,15 +339,27 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 	}
 	
 	@Override
-	public TransmissionStore getTransmissionStore(StoreClient client) throws Exception
+	public SentTransmissionStore getSentTransmissionStore(StoreClient client) throws Exception
 	{
-		if(transmissionStore == null)
+		if(sentTransmissionStore == null)
 		{
-			transmissionStore = new TransmissionStore(collectorClient, this);
-			storeClients.put(transmissionStore, new HashSet<StoreClient>());
+			sentTransmissionStore = new SentTransmissionStore(collectorClient, this);
+			storeClients.put(sentTransmissionStore, new HashSet<StoreClient>());
 		}
-		storeClients.get(transmissionStore).add(client); // add to set of clients currently using the recordStore
-		return transmissionStore;
+		storeClients.get(sentTransmissionStore).add(client); // add to set of clients currently using the recordStore
+		return sentTransmissionStore;
+	}
+	
+	@Override
+	public ReceivedTransmissionStore getReceivedTransmissionStore(StoreClient client) throws Exception
+	{
+		if(receivedTransmissionStore == null)
+		{
+			receivedTransmissionStore = new ReceivedTransmissionStore(collectorClient, this);
+			storeClients.put(receivedTransmissionStore, new HashSet<StoreClient>());
+		}
+		storeClients.get(receivedTransmissionStore).add(client); // add to set of clients currently using the recordStore
+		return receivedTransmissionStore;
 	}
 	
 	/* (non-Javadoc)

@@ -57,10 +57,14 @@ public abstract class TransmissionClient extends StorageClient
 	@Override
 	public String getTableName(Schema schema)
 	{
-		if(schema == TransmissionStore.TRANSMISSION_SCHEMA)
-			return "Transmissions";
-		if(schema == TransmissionStore.TRANSMISSION_PART_SCHEMA)
-			return "Transmission_Parts";
+		if(schema == TransmissionStore.SENT_TRANSMISSION_SCHEMA)
+			return "Sent_Transmissions";
+		if(schema == TransmissionStore.SENT_TRANSMISSION_PART_SCHEMA)
+			return "Sent_Transmission_Parts";
+		if(schema == TransmissionStore.RECEIVED_TRANSMISSION_SCHEMA)
+			return "Received_Transmissions";
+		if(schema == TransmissionStore.RECEIVED_TRANSMISSION_PART_SCHEMA)
+			return "Received_Transmission_Parts";
 		return super.getTableName(schema);
 	}
 	

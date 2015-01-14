@@ -31,7 +31,15 @@ public interface TransmissionStoreProvider extends StoreProvider
 	/**
 	 * @param client
 	 * @return
+	 * @throws Exception
 	 */
-	public TransmissionStore getTransmissionStore(StoreClient client) throws Exception;
+	public SentTransmissionStore getSentTransmissionStore(StoreClient client) throws Exception;
+	
+	/**
+	 * @param client
+	 * @return
+	 * @throws Exception
+	 */
+	public ReceivedTransmissionStore getReceivedTransmissionStore(StoreClient client) throws Exception;
 	
 }
