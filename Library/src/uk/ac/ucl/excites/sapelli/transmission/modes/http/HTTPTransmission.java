@@ -41,7 +41,8 @@ public class HTTPTransmission extends Transmission
 	
 	public static final int MAX_BODY_SIZE = 4096; // bytes (TODO determine a good value)
 	
-	private String serverURL;
+	private String receiverURL;
+	private String senderURL;
 	private byte[] body;
 	
 	/**
@@ -51,10 +52,10 @@ public class HTTPTransmission extends Transmission
 	 * @param serverURL
 	 * @param payload
 	 */
-	public HTTPTransmission(TransmissionClient client, String serverURL, Payload payload)
+	public HTTPTransmission(TransmissionClient client, String receiverURL, Payload payload)
 	{
 		super(client, payload);
-		this.serverURL = serverURL;
+		this.receiverURL = receiverURL;
 	}
 	
 	/**
@@ -66,9 +67,10 @@ public class HTTPTransmission extends Transmission
 	 * @param body
 	 * @param receivedAt
 	 */
-	public HTTPTransmission(TransmissionClient client, int sendingSideID, int payloadHash, byte[] body, TimeStamp receivedAt)
+	public HTTPTransmission(TransmissionClient client, String senderURL, int sendingSideID, int payloadHash, byte[] body, TimeStamp receivedAt)
 	{
 		super(client, sendingSideID, payloadHash);
+		this.senderURL = senderURL;
 		this.body = body;
 		setReceivedAt(receivedAt);
 	}
@@ -85,10 +87,11 @@ public class HTTPTransmission extends Transmission
 	 * @param serverURL - may be null on receiving side
 	 * @param body
 	 */
-	public HTTPTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, String serverURL, byte[] body) 
+	public HTTPTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, String receiverURL, String senderURL, byte[] body) 
 	{
 		super(client, localID, remoteID, payloadHash, sentAt, receivedAt);
-		this.serverURL = serverURL;
+		this.receiverURL = receiverURL;
+		this.senderURL = senderURL;
 		this.body = body;
 	}
 	
@@ -129,13 +132,18 @@ public class HTTPTransmission extends Transmission
 	}
 	
 	/**
-	 * @return the serverURL
+	 * @return the receiverURL
 	 */
-	public String getServerURL()
+	public String getReceiverURL()
 	{
-		return serverURL;
+		return receiverURL;
 	}
 
+	public String getSenderURL()
+	{
+		return senderURL;
+	}
+	
 	@Override
 	protected int getMaxBodyBits()
 	{

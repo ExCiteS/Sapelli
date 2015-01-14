@@ -28,6 +28,7 @@ public class SMSReceiverService extends IntentService implements StoreClient
 	private static final String TAG = "SMSReceiverService";
 	public static final String PDU_BYTES_EXTRA_NAME = "pdu"; // intent key for passing the PDU bytes
 	public static final String BINARY_FLAG_EXTRA_NAME = "binary"; // intent key for passing whether or not the message is binary (data message)
+	private AndroidTransmissionController transmissionController;
 	private Handler mainHandler; // only used in order to display Toasts
 
 	public SMSReceiverService()
@@ -63,7 +64,7 @@ public class SMSReceiverService extends IntentService implements StoreClient
 		{
 			final Message message = messageFromPDU(pdu, binary);
 									
-			message.handle(new AndroidTransmissionController(((CollectorApp)this.getApplication()).getCollectorClient(), ((CollectorApp)this.getApplication()).getTransmissionStore(this)));
+			getTransmissionController().receiveSMS(message);
 			
 			mainHandler.post(new Runnable()
 			{
@@ -103,6 +104,13 @@ public class SMSReceiverService extends IntentService implements StoreClient
 			return new BinaryMessage(new SMSAgent(androidMsg.getOriginatingAddress()), androidMsg.getUserData());
 		else
 			return new TextMessage(new SMSAgent(androidMsg.getOriginatingAddress()), androidMsg.getMessageBody());
+	}
+	
+	public AndroidTransmissionController getTransmissionController() throws Exception
+	{
+		if (transmissionController == null)
+			transmissionController = new AndroidTransmissionController(((CollectorApp)this.getApplication()).getCollectorClient(), ((CollectorApp)this.getApplication()).getTransmissionStore(this), this.getApplicationContext());
+		return transmissionController;
 	}
 
 }

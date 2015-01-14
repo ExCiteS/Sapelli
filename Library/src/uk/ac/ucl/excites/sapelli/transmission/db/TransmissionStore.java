@@ -255,7 +255,7 @@ public class TransmissionStore implements Store, StoreClient
 				textSMS.receivePart(new TextMessage(textSMS, TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(), totalParts, sentAt, TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(partRecord), receivedAt, BytesToString(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord))));
 			return textSMS;
 		case HTTP:
-			return new HTTPTransmission(client, localID, remoteID, payloadHash, sentAt, receivedAt, receiver, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)) /* only one part for HTTP */ );
+			return new HTTPTransmission(client, localID, remoteID, payloadHash, sentAt, receivedAt, receiver, sender, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)) /* only one part for HTTP */ );
 		default:
 			throw new IllegalStateException("Unsupported transmission type");
 		}
@@ -444,7 +444,7 @@ public class TransmissionStore implements Store, StoreClient
 		public void handle(HTTPTransmission httpT)
 		{
 			// Set receiver (= serverURL) and number of parts (always = 1):
-			TRANSMISSION_COLUMN_RECEIVER.storeValue(tRec, httpT.getServerURL());
+			TRANSMISSION_COLUMN_RECEIVER.storeValue(tRec, httpT.getReceiverURL());
 			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, 1);
 			
 			// Create a single transmission part (only used to store the body):

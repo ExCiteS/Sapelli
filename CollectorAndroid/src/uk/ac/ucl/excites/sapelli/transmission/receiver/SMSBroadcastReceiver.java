@@ -53,5 +53,28 @@ public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 	 * To be overriden by subclasses that listen for different Intents (either Data SMS or Textual SMS Intents).
 	 * @return whether or not the SMS PDU passed by this BroadcastReceiver represents a binary (data) SMS as opposed to a textual one.
 	 */
-	public abstract boolean isBinary();
+	protected abstract boolean isBinary();
+	
+	public class Binary extends SMSBroadcastReceiver
+	{
+
+		@Override
+		protected boolean isBinary()
+		{
+			return true;
+		}
+		
+	}
+	
+	public class Text extends SMSBroadcastReceiver
+	{
+
+		@Override
+		protected boolean isBinary()
+		{
+			return false;
+		}
+		
+	}
+	
 }

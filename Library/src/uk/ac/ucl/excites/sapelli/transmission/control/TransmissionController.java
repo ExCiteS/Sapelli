@@ -36,6 +36,7 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
+import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
@@ -47,7 +48,7 @@ import uk.ac.ucl.excites.sapelli.transmission.payloads.RecordsPayload;
  * @author mstevens, benelliott
  *
  */
-public abstract class TransmissionController implements Payload.Handler, Message.Handler, StoreClient
+public abstract class TransmissionController implements Payload.Handler, StoreClient
 {
 
 	private RecordStore recordStore;
@@ -59,7 +60,35 @@ public abstract class TransmissionController implements Payload.Handler, Message
 		this.transmissionClient = transmissionClient;
 		this.transmissionStore = transmissionStore;
 	}
+	
+	
+	public void setTransmissionStore(TransmissionStore transmissionStore)
+	{
+		this.transmissionStore = transmissionStore;
+	}
+	
+	public TransmissionStore getTransmissionStore()
+	{
+		return transmissionStore;
+	}
+	
+	public boolean deleteTransmissionUponDecoding()
+	{
+		// TODO was abstract ......
+		return false;
+	}
+	
+	public abstract SMSClient getSMSService();
+	
+	public abstract HTTPClient getHTTPClient();
+	
+	// ================= RECEIVE =================
 
+	/**
+	 * Method that does most of the shared busywork for receiving Transmissions (if complete, read contents and act on them).
+	 * @param transmission the transmission that has been received
+	 * @return true if the transmission was successfully "acted on" i.e. it was complete and no errors occured when reading it
+	 */
 	protected boolean doReceive(Transmission transmission) throws Exception
 	{	
 		// Receive (i.e. decode) the transmission if it is complete
@@ -77,7 +106,7 @@ public abstract class TransmissionController implements Payload.Handler, Message
 				if(deleteTransmissionUponDecoding())
 					transmissionStore.deleteTransmission(transmission);
 				
-				// TODO make & send ACK
+				// make & send ACK
 				sendAck(transmission);
 				
 				return true;
@@ -93,7 +122,7 @@ public abstract class TransmissionController implements Payload.Handler, Message
 			return false;
 	}
 	
-
+	// ----- "handle"/"receive" methods for different transmission types:
 	
 	public void receive(HTTPTransmission httpTransmission) throws Exception
 	{
@@ -107,20 +136,47 @@ public abstract class TransmissionController implements Payload.Handler, Message
 		// else have already seen this transmission... TODO is this check necessary?
 	}
 
-	public boolean deleteTransmissionUponDecoding()
+	/**
+	 * @param msg
+	 */
+	public void receiveSMS(Message msg)
 	{
-		// TODO was abstract ......
-		return false;
+		try
+		{
+			SMSReceiver receiver = new SMSReceiver(msg);
+			SMSTransmission<?> transmission = receiver.transmission;
+			
+			if(transmission.getCurrentNumberOfParts() > 1)
+			{
+				// TODO cancel scheduled resend request
+			}
+
+			// Store/Update transmission unless it was successfully received in its entirety:		
+			if(!doReceive(transmission))
+			{
+				// Transmission incomplete, waiting for more parts
+				transmissionStore.storeTransmission(transmission);
+				// TODO schedule resend request
+			}	
+		}
+		catch(Exception e)
+		{
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
+
+	// ----- "handle" methods for different payload types (called once the transmission is complete):
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.transmission.PayloadHandler#handle(uk.ac.ucl.excites.sapelli.transmission.payloads.AckPayload)
 	 */
 	@Override
 	public void handle(AckPayload ackPayload)
 	{
-		// TODO handle ACK
-		
+			
+		// TODO find appropriate "in-flight" transmission (from DB?), and mark it as ACKed by setting the receivedAt time to ackPayload.getSubjectReceivedAt()
 	}
 
 	/* (non-Javadoc)
@@ -132,56 +188,6 @@ public abstract class TransmissionController implements Payload.Handler, Message
 		// TODO Store received records...
 		
 	}
-	
-	public void handle(Message msg)
-	{
-		msg.handle(this); // TODO forces subtype behaviour
-	}
-
-	@Override
-	public void handle(BinaryMessage binSms)
-	{
-		BinarySMSTransmission transmission = transmissionStore.retrieveBinarySMSTransmission(binSms.getSender(), false, binSms.getSendingSideTransmissionID(), binSms.getPayloadHash());
-		if(transmission == null) // we received the the first part
-			transmission = new BinarySMSTransmission(transmissionClient, binSms);
-		else
-			transmission.receivePart(binSms);
-		
-		// Store/Update transmission unless it was successfully received in its entirety:
-		
-		try
-		{
-			if(!doReceive(transmission))
-				transmissionStore.storeTransmission(transmission);
-		}
-		catch(Exception e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
-	@Override
-	public void handle(TextMessage txtSms)
-	{
-		TextSMSTransmission transmission = transmissionStore.retrieveTextSMSTransmission(txtSms.getSender(), false, txtSms.getSendingSideTransmissionID(), txtSms.getPayloadHash());
-		if(transmission == null) // we received the the first part
-			transmission = new TextSMSTransmission(transmissionClient, txtSms);
-		else
-			transmission.receivePart(txtSms);
-		
-		// Store/Update transmission unless it was successfully received in its entirety:
-		try
-		{
-			if(!doReceive(transmission))
-				transmissionStore.storeTransmission(transmission);
-		}
-		catch(Exception e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}		
-	}
 
 	@Override
 	public void handle(Payload customPayload, int type)
@@ -190,15 +196,7 @@ public abstract class TransmissionController implements Payload.Handler, Message
 		
 	}
 	
-	public void setTransmissionStore(TransmissionStore transmissionStore)
-	{
-		this.transmissionStore = transmissionStore;
-	}
-	
-	public TransmissionStore getTransmissionStore()
-	{
-		return transmissionStore;
-	}
+	// ================= SEND =================
 	
 	public void sendRecords(Model model, Correspondent receiver) throws Exception
 	{
@@ -235,12 +233,61 @@ public abstract class TransmissionController implements Payload.Handler, Message
 		}
 	}
 	
-	public void sendAck(Transmission toAck)
+	public void sendAck(Transmission toAck) throws Exception
 	{
-		// TODO
+		AckPayload payload = new AckPayload(toAck);
+		Transmission ackTransmission;
+		
+		switch(toAck.getType())
+		{
+		case BINARY_SMS:
+			ackTransmission = new BinarySMSTransmission(transmissionClient, ((BinarySMSTransmission) toAck).getSender(), payload);
+			break;
+		case TEXTUAL_SMS:
+			ackTransmission = new TextSMSTransmission(transmissionClient, ((TextSMSTransmission) toAck).getSender(), payload);
+			break;
+		default: // HTTP:
+			ackTransmission = new HTTPTransmission(transmissionClient, ((HTTPTransmission) toAck).getSenderURL(), payload);
+		}
+		payload.setTransmission(ackTransmission);
+		ackTransmission.send(this);
+	}
+	
+	// TODO send custom payload?
+	
+	
+	private class SMSReceiver implements Message.Handler
+	{
+		
+		public SMSTransmission<?> transmission;
+		
+		public SMSReceiver(Message smsMsg) throws Exception
+		{
+			smsMsg.handle(this);
+		}
+		
+		@Override
+		public void handle(BinaryMessage binSms)
+		{
+			BinarySMSTransmission t = transmissionStore.retrieveBinarySMSTransmission(binSms.getSender(), false, binSms.getSendingSideTransmissionID(), binSms.getPayloadHash());
+			if(t == null) // we received the the first part
+				t = new BinarySMSTransmission(transmissionClient, binSms);
+			else
+				t.receivePart(binSms);
+			transmission = t;
+		}
+
+		@Override
+		public void handle(TextMessage txtSms)
+		{
+			TextSMSTransmission t = transmissionStore.retrieveTextSMSTransmission(txtSms.getSender(), false, txtSms.getSendingSideTransmissionID(), txtSms.getPayloadHash());
+			if(t == null) // we received the the first part
+				t = new TextSMSTransmission(transmissionClient, txtSms);
+			else
+				t.receivePart(txtSms);
+			transmission = t;
+		}
+		
 	}
 
-	public abstract SMSClient getSMSService();
-	
-	public abstract HTTPClient getHTTPClient();
 }

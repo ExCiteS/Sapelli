@@ -90,7 +90,7 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 	private SapelliCollectorClient collectorClient;
 	private RecordStore recordStore = null;
 	private ProjectStore projectStore = null;
-	private TransmissionStore transmissionStore = null; 
+	private TransmissionStore transmissionStore = null;
 	private Map<Store, Set<StoreClient>> storeClients;
 	
 	// Files storage:

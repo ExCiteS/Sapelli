@@ -18,7 +18,7 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.sender;
 
-import uk.ac.ucl.excites.sapelli.sender.util.AlarmScheduler;
+import uk.ac.ucl.excites.sapelli.transmission.sender.util.AlarmScheduler;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;

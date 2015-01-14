@@ -116,7 +116,7 @@
         <service android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.SMSReceiverService" >
         </service>
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.TextSMSBroadcastReceiver"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.SMSBroadcastReceiver$Text"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS">
             <intent-filter>
@@ -124,7 +124,7 @@
             </intent-filter>
         </receiver>
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.DataSMSBroadcastReceiver"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.SMSBroadcastReceiver$Binary"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS">
             <intent-filter>
