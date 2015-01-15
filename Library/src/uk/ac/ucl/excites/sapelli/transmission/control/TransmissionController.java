@@ -48,7 +48,6 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextSMSTransmission
 import uk.ac.ucl.excites.sapelli.transmission.payloads.AckPayload;
 import uk.ac.ucl.excites.sapelli.transmission.payloads.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.payloads.ResendRequestPayload;
-import uk.ac.ucl.excites.sapelli.transmission.util.AlarmManager;
 
 /**
  * @author mstevens, benelliott
@@ -61,15 +60,13 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 	private SentTransmissionStore sentTStore;
 	private ReceivedTransmissionStore receivedTStore;
 	private TransmissionClient transmissionClient;
-	private AlarmManager alarmManager;
-	private Map<SMSTransmission<?>, Runnable> smsAlarms;
+	private Map<SMSTransmission<?>, Runnable> smsAlarms; // keep track of the resend request alarms for SMS transmissions
 	
 	public TransmissionController(TransmissionClient transmissionClient, TransmissionStoreProvider transmissionsStoreProvider) throws Exception
 	{
 		this.transmissionClient = transmissionClient;
 		this.sentTStore = transmissionsStoreProvider.getSentTransmissionStore(this);
 		this.receivedTStore = transmissionsStoreProvider.getReceivedTransmissionStore(this);
-		// TODO alarmManager
 		smsAlarms = new HashMap<SMSTransmission<?>, Runnable>();
 	}
 	
@@ -228,9 +225,9 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 			final SMSTransmission<?> transmission = new SMSReceiver(msg).transmission;
 			
 			// cancel the resend request alarm associated with this transmission since we have just received a new part:
-			Runnable existingAlarm = smsAlarms.remove(transmission);
-			if (existingAlarm != null)
-				alarmManager.cancelAlarm(existingAlarm);
+//			Runnable existingAlarm = smsAlarms.remove(transmission);
+//			if (existingAlarm != null)
+//				alarmManager.cancelAlarm(existingAlarm);
 			
 			// Store/Update transmission unless it was successfully received in its entirety:		
 			if(!doReceive(transmission))
@@ -238,30 +235,30 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 				// Transmission incomplete, waiting for more parts
 				receivedTStore.storeTransmission(transmission);
 				
-				// create a new timer that will send a resend request if not cancelled in time:
-				Runnable newAlarm = new Runnable() {
-
-					@Override
-					public void run()
-					{
-						try
-						{
-							sendResendRequest(transmission);
-						}
-						catch(Exception e)
-						{
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					}
-					
-				};
-				
-				// remember this alarm so it can be cancelled later:
-				smsAlarms.put(transmission, newAlarm);
-				
-				// set the alarm:
-				alarmManager.setAlarm(SMSTransmission.RESEND_REQUEST_TIMEOUT_MILLIS, newAlarm);
+//				// create a new timer that will send a resend request if not cancelled in time:
+//				Runnable newAlarm = new Runnable() {
+//
+//					@Override
+//					public void run()
+//					{
+//						try
+//						{
+//							sendResendRequest(transmission);
+//						}
+//						catch(Exception e)
+//						{
+//							// TODO Auto-generated catch block
+//							e.printStackTrace();
+//						}
+//					}
+//					
+//				};
+//				
+//				// remember this alarm so it can be cancelled later:
+//				smsAlarms.put(transmission, newAlarm);
+//				
+//				// set the alarm:
+//				alarmManager.setAlarm(SMSTransmission.RESEND_REQUEST_TIMEOUT_MILLIS, newAlarm);
 			}	
 		}
 		catch(Exception e)
@@ -279,13 +276,29 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 	@Override
 	public void handle(AckPayload ackPayload) throws Exception
 	{
-		// TODO find appropriate "in-flight" transmission (from DB?), and mark it as ACKed by setting the receivedAt time to ackPayload.getSubjectReceivedAt()
+		// find appropriate "in-flight" transmission and mark it as ACKed by setting the receivedAt time to ackPayload.getSubjectReceivedAt()
+		Transmission toAck = sentTStore.retrieveTransmissionForID(ackPayload.getSubjectSenderSideID());
+		if (toAck == null)
+			throw new Exception("No transmission was found in the database to match the acknowledgement with transmission ID "+ackPayload.getSubjectSenderSideID());
+		toAck.setReceivedAt(ackPayload.getSubjectReceivedAt());
+		sentTStore.storeTransmission(toAck);
 	}
 	
 	@Override
 	public void handle(ResendRequestPayload resendRequestPayload) throws Exception
 	{
-		// TODO handle resend requests...
+		// get Transmission object from store - will definitely be an SMSTransmission since resend requests are only concerned with SMS (at least for now)
+		SMSTransmission<?> subject = ((SMSTransmission<?>) sentTStore.retrieveTransmissionForID(resendRequestPayload.getSubjectSenderSideID()));
+		if (subject == null)
+			throw new Exception("No transmission was found in the database to match the received resend request from sender "+((SMSTransmission<?>) resendRequestPayload.getTransmission()).getSender().getPhoneNumber());
+		// TODO assert hash equal?
+		for (Message message : subject.getParts())
+		{
+			// if this message was not one of the ones marked as received...
+			if (!resendRequestPayload.getPartsReceived().contains(message.getPartNumber()))
+				// send it again
+				message.send(getSMSService());
+		}
 	}
 
 	/* (non-Javadoc)
@@ -294,8 +307,15 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 	@Override
 	public void handle(RecordsPayload recordsPayload) throws Exception
 	{
-		// TODO Store received records...
-		
+		try
+		{
+			// Store received records...
+			recordStore.store(recordsPayload.getRecords());
+		}
+		catch (Exception e)
+		{
+			throw new Exception("Unable to store records that were received from transmission", e);
+		}
 		// send acknowledgement: 
 		sendAck(recordsPayload.getTransmission());
 	}
