@@ -34,6 +34,8 @@ import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
  */
 public abstract class SMSTransmission<M extends Message> extends Transmission
 {
+	public static final int RESEND_REQUEST_TIMEOUT_MILLIS = 60 * 10 * 1000; // wait 10 minutes before sending a resend request
+	public static final int MAX_NUM_PARTS = 16; // an SMS transmission can have up to 16 separate parts
 	
 	protected SMSAgent receiver;
 	protected SMSAgent sender;
