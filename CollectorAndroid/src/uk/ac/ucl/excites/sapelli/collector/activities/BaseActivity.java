@@ -35,7 +35,6 @@ import android.os.Bundle;
  * Provides dialog methods.
  * 
  * @author mstevens
- *
  */
 public abstract class BaseActivity extends Activity
 {
@@ -52,6 +51,11 @@ public abstract class BaseActivity extends Activity
 	{
 		super.onCreate(savedInstanceState);
 		this.app = (CollectorApp) getApplication();
+	}
+	
+	public CollectorApp getCollectorApp()
+	{
+		return app;
 	}
 	
 	@Override

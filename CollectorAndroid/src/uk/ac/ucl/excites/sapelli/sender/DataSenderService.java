@@ -39,7 +39,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.sender.gsm.SMSSender;
 import uk.ac.ucl.excites.sapelli.sender.gsm.SignalMonitor;
 import uk.ac.ucl.excites.sapelli.sender.util.Constants;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
@@ -66,7 +66,7 @@ import android.util.Log;
  * @author Michalis Vitos, mstevens
  * 
  */
-public class DataSenderService extends Service implements Sender, StoreClient
+public class DataSenderService extends Service implements Sender, StoreHandle.StoreUser
 {
 
 	// Statics-------------------------------------------------------
@@ -90,9 +90,13 @@ public class DataSenderService extends Service implements Sender, StoreClient
 	private ScheduledExecutorService scheduleTaskExecutor;
 	private ScheduledFuture<?> scheduledFuture;
 
+	protected CollectorApp app;
+	
 	@Override
 	public void onCreate()
 	{
+		this.app = (CollectorApp) getApplication();
+		
 		//Loggers
 		loggers = new HashMap<Project, Logger>();
 
@@ -116,8 +120,8 @@ public class DataSenderService extends Service implements Sender, StoreClient
 		// DataAccess instance:
 		try
 		{
-			projectStore = ((CollectorApp) getApplication()).getProjectStore(this);
-			recordStore = ((CollectorApp) getApplication()).getRecordStore(this);
+			projectStore = app.collectorClient.projectStoreHandle.getStore(this);
+			recordStore = app.collectorClient.recordStoreHandle.getStore(this);
 		}
 		catch(Exception e1)
 		{
@@ -221,9 +225,9 @@ public class DataSenderService extends Service implements Sender, StoreClient
 			Log.i(Constants.TAG, "BackgroundService: onDestroy() + killProcess(" + pid + ") ");
 		android.os.Process.killProcess(pid);
 		
-		//signal that the service no longer needs the DAOs:
-		((CollectorApp) getApplication()).discardStoreUsage(projectStore, this);
-		((CollectorApp) getApplication()).discardStoreUsage(recordStore, this);
+		// Signal that the service no longer needs the Store objects:
+		app.collectorClient.projectStoreHandle.doneUsing(this);
+		app.collectorClient.recordStoreHandle.doneUsing(this);
 	}
 	
 	private class SendingTask implements Runnable

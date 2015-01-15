@@ -21,6 +21,10 @@ package uk.ac.ucl.excites.sapelli.storage;
 import java.util.ArrayList;
 import java.util.List;
 
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -35,6 +39,14 @@ public abstract class StorageClient
 {
 	
 	// DYNAMICS------------------------------------------------------
+	public final StoreHandle<RecordStore> recordStoreHandle = new StoreHandle<RecordStore>(new StoreCreator<RecordStore>()
+	{
+		@Override
+		public RecordStore createStore() throws DBException
+		{
+			return createRecordStore();
+		}
+	});
 	
 	public Model getModel(long modelID) throws UnknownModelException
 	{
@@ -98,5 +110,13 @@ public abstract class StorageClient
 	public abstract void recordDeleted(Record record);
 	
 	public abstract void recordDeleted(RecordReference recordReference);
+	
+	/**
+	 * Returns a new RecordStore instance
+	 * 
+	 * @return
+	 * @throws DBException
+	 */
+	protected abstract RecordStore createRecordStore() throws DBException;
 	
 }

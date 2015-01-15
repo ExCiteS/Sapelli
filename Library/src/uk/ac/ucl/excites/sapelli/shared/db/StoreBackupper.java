@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.Stack;
 
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 
 /**
@@ -30,35 +31,65 @@ import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
  * 
  * @author mstevens
  */
-public class StoreBackuper
+public class StoreBackupper implements StoreUser
 {
 
+	public static void Backup(File destinationFolder, boolean labelFilesAsBackup, StoreHandle<?>... storesHandlesToBackup) throws DBException
+	{
+		// Check if we were actually passed at least 1 StoreHandle:
+		if(storesHandlesToBackup == null || storesHandlesToBackup.length == 0)
+			return;
+		// Create backupper instance:
+		StoreBackupper backupper = new StoreBackupper(destinationFolder, labelFilesAsBackup);
+		
+		// Add stores for backup:
+		for(StoreHandle<?> storeHandle : storesHandlesToBackup)
+		{
+			Store store = null;
+			try
+			{
+				store = storeHandle.getStore(backupper);
+			}
+			catch(DBException ignore) {}
+			backupper.addStoreForBackup(store);
+		}
+		// Run backup:
+		try
+		{
+			backupper.backup();
+		}
+		// Unregister with handles:
+		finally
+		{
+			for(StoreHandle<?> storeHandle : storesHandlesToBackup)
+				storeHandle.doneUsing(backupper);
+		}
+	}
+	
+	private final File destinationFolder;
 	private final boolean labelFilesAsBackup;
 	private final Stack<Store> toBackup;
 	private final Set<Store> backedUp;
 	
 	/**
+	 * @param destinationFolder
 	 * @param labelFilesAsBackup whether or not the files which are created should be labels (in their filename) as backups or not (in which case the name of the original file, if there is one, will be used)
-	 * @param storesToBackup
 	 */
-	public StoreBackuper(boolean labelFilesAsBackup, Store... storesToBackup)
+	private StoreBackupper(File destinationFolder, boolean labelFilesAsBackup)
 	{
+		this.destinationFolder = destinationFolder;
 		this.labelFilesAsBackup = labelFilesAsBackup;
 		toBackup = new Stack<Store>();
 		backedUp = new HashSet<Store>();
-		if(storesToBackup != null)
-			for(Store store : storesToBackup)
-				if(!toBackup.contains(store))
-					toBackup.push(store);
 	}
-	
+
 	public void addStoreForBackup(Store store)
 	{
-		if(!toBackup.contains(store) && !backedUp.contains(store))
+		if(store != null && !toBackup.contains(store) && !backedUp.contains(store))
 			this.toBackup.push(store);
 	}
 	
-	public void backup(File destinationFolder) throws DBException
+	private void backup() throws DBException
 	{
 		if(!toBackup.isEmpty())
 		{
@@ -68,7 +99,7 @@ public class StoreBackuper
 			backedUp.add(bStore);
 			
 			// Recurse (until stack is empty):
-			backup(destinationFolder);
+			backup();
 		}
 	}
 
