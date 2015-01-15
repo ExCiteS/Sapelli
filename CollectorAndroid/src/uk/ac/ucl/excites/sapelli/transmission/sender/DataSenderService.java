@@ -26,7 +26,7 @@ import java.util.concurrent.Executors;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.SMSSender;
 import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.SignalMonitor;
 import uk.ac.ucl.excites.sapelli.transmission.sender.util.SapelliAlarmManager;
@@ -49,9 +49,13 @@ public class DataSenderService extends Service
 	// Use a single Thread and Send the Projects sequential
 	private ExecutorService projectsExecutor = Executors.newSingleThreadExecutor();
 
+	private CollectorApp app;
+	
 	@Override
 	public synchronized int onStartCommand(Intent intent, int flags, int startId)
 	{
+		app = (CollectorApp) getApplication();
+		
 		// TODO TEMP:
 		TempProject p = new TempProject(intent.getExtras().getInt(SapelliAlarmManager.PROJECT_ID), intent.getExtras().getInt(
 				SapelliAlarmManager.PROJECT_FINGERPRINT));
@@ -138,7 +142,7 @@ public class DataSenderService extends Service
 	 * @author Michalis Vitos
 	 * 
 	 */
-	public class ProjectSendingTask implements StoreClient
+	public class ProjectSendingTask implements StoreHandle.StoreUser
 	{
 		private Project project;
 		private SMSSendingTask smsSendingTask;
@@ -148,7 +152,7 @@ public class DataSenderService extends Service
 			// Load the project
 			try
 			{
-				ProjectStore store = ((CollectorApp) getApplication()).getProjectStore(this);
+				ProjectStore store = app.collectorClient.projectStoreHandle.getStore(this);
 				this.project = store.retrieveProject(p.getId(), p.getFingerprint());
 			}
 			catch(Exception e)

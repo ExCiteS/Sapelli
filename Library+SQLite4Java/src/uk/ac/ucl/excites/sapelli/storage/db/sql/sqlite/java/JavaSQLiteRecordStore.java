@@ -120,7 +120,7 @@ public class JavaSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	@Override
-	protected void close() throws DBException
+	protected void closeConnection() throws DBException
 	{
 		db.dispose();
 	}

@@ -21,11 +21,15 @@ package uk.ac.ucl.excites.sapelli.transmission;
 import java.util.List;
 import java.util.Set;
 
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreCreator;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.db.ReceivedTransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
@@ -39,6 +43,23 @@ public abstract class TransmissionClient extends StorageClient
 	static public final long TRANSMISSION_MANAGEMENT_MODEL_ID = 0; // reserved!
 
 	// DYNAMICS------------------------------------------------------
+	public final StoreHandle<SentTransmissionStore> sentTransmissionStoreHandle = new StoreHandle<SentTransmissionStore>(new StoreCreator<SentTransmissionStore>()
+	{
+		@Override
+		public SentTransmissionStore createStore() throws DBException
+		{
+			return new SentTransmissionStore(TransmissionClient.this);
+		}
+	});
+	
+	public final StoreHandle<ReceivedTransmissionStore> receivedTransmissionStoreHandle = new StoreHandle<ReceivedTransmissionStore>(new StoreCreator<ReceivedTransmissionStore>()
+	{
+		@Override
+		public ReceivedTransmissionStore createStore() throws DBException
+		{
+			return new ReceivedTransmissionStore(TransmissionClient.this);
+		}
+	});
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.storage.StorageClient#getReserveredModels()
@@ -68,9 +89,7 @@ public abstract class TransmissionClient extends StorageClient
 		return super.getTableName(schema);
 	}
 	
-	public abstract EncryptionSettings getEncryptionSettingsFor(Model model) throws UnknownModelException;
-	
-	public abstract Payload newPayload(int nonBuiltinType);
+	public abstract Payload createPayload(int nonBuiltinType);
 	
 	/**
 	 * Returns columns from ther given schema that should not be transmitted.
@@ -80,5 +99,5 @@ public abstract class TransmissionClient extends StorageClient
 	 * @return
 	 */
 	public abstract Set<Column<?>> getNonTransmittableColumns(Schema schema);
-	
+
 }

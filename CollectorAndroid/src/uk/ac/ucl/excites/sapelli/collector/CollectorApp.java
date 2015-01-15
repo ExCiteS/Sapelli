@@ -19,16 +19,10 @@
 package uk.ac.ucl.excites.sapelli.collector;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.collector.db.CollectorPreferences;
-import uk.ac.ucl.excites.sapelli.collector.db.PrefProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
-import uk.ac.ucl.excites.sapelli.collector.db.ProjectStoreProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.AndroidFileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
@@ -36,19 +30,12 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageRemovedException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageUnavailableException;
 import uk.ac.ucl.excites.sapelli.collector.util.CrashReporter;
 import uk.ac.ucl.excites.sapelli.collector.util.ProjectRunHelpers;
-import uk.ac.ucl.excites.sapelli.shared.db.Store;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreProvider;
 import uk.ac.ucl.excites.sapelli.storage.db.sql.sqlite.android.AndroidSQLiteRecordStore;
-import uk.ac.ucl.excites.sapelli.transmission.db.ReceivedTransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStoreProvider;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.app.Application;
@@ -64,7 +51,7 @@ import com.crashlytics.android.Crashlytics;
  * @author Michalis Vitos, mstevens
  * 
  */
-public class CollectorApp extends Application implements StoreClient, RecordStoreProvider, ProjectStoreProvider, TransmissionStoreProvider
+public class CollectorApp extends Application
 {
 
 	// STATICS------------------------------------------------------------
@@ -72,8 +59,6 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 	
 	static private final String DATABASE_BASENAME = "Sapelli";
 	static private final String DEMO_PREFIX = "Demo_";
-	
-	static private final boolean USE_PREFS_FOR_PROJECT_STORAGE = false;
 	
 	static private final String CRASHLYTICS_VERSION_INFO = "VERSION_INFO";
 	static private final String CRASHLYTICS_BUILD_INFO = "BUILD_INFO";
@@ -89,12 +74,7 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 	// DYNAMICS-----------------------------------------------------------
 	private BuildInfo buildInfo;
 	
-	private SapelliCollectorClient collectorClient;
-	private RecordStore recordStore = null;
-	private ProjectStore projectStore = null;
-	private SentTransmissionStore sentTransmissionStore = null;
-	private ReceivedTransmissionStore receivedTransmissionStore = null;
-	private Map<Store, Set<StoreClient>> storeClients;
+	public final CollectorClient collectorClient = new AndroidCollectorClient();
 	
 	// Files storage:
 	private FileStorageProvider fileStorageProvider;
@@ -117,12 +97,6 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 			Crashlytics.setString(CRASHLYTICS_VERSION_INFO, buildInfo.getVersionInfo());
 			Crashlytics.setString(CRASHLYTICS_BUILD_INFO, buildInfo.getBuildInfo());
 		}
-	
-		// Collector client:
-		this.collectorClient = new SapelliCollectorClient();
-		
-		// Store clients:
-		storeClients = new HashMap<Store, Set<StoreClient>>();
 		
 		// Initialise file storage:
 		try
@@ -297,119 +271,39 @@ public class CollectorApp extends Application implements StoreClient, RecordStor
 		Debug.d("Should never be called!");
 	}
 
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.collector.db.ProjectStoreProvider#getProjectStore(uk.ac.ucl.excites.sapelli.shared.db.StoreClient)
+	/**
+	 * @return handles for all Stores that need to be backed-up
 	 */
-	@Override
-	public ProjectStore getProjectStore(StoreClient client) throws Exception
+	public StoreHandle<?>[] getStoreHandlesForBackup()
 	{
-		if(projectStore == null)
-		{
-			if(USE_PREFS_FOR_PROJECT_STORAGE)
-				projectStore = new PrefProjectStore(this, getFileStorageProvider(), getDemoPrefix());
-			else
-				projectStore = new ProjectRecordStore(this, getFileStorageProvider());
-			//projectStore = new DB4OProjectStore(getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
-			collectorClient.setProjectStore(projectStore); // !!!
-			storeClients.put(projectStore, new HashSet<StoreClient>());
-		}
-		storeClients.get(projectStore).add(client); //add to set of clients currently using the projectStore
-		return projectStore;
+		return new StoreHandle[] { 	collectorClient.recordStoreHandle,
+									collectorClient.sentTransmissionStoreHandle,
+									collectorClient.receivedTransmissionStoreHandle,
+									collectorClient.projectStoreHandle };
 	}
 	
-	public SapelliCollectorClient getCollectorClient() throws Exception
-	{
-		return collectorClient;
-	}
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.storage.db.RecordStoreProvider#getRecordStore(uk.ac.ucl.excites.sapelli.shared.db.StoreClient)
+	/**
+	 * @author mstevens
+	 *
 	 */
-	@Override
-	public RecordStore getRecordStore(StoreClient client) throws DBException
+	private class AndroidCollectorClient extends CollectorClient
 	{
-		if(recordStore == null)
-		{
-			//recordStore = new DB4ORecordStore(getCollectorClient(client), getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
-			recordStore = new AndroidSQLiteRecordStore(collectorClient, this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
-			storeClients.put(recordStore, new HashSet<StoreClient>());
-		}
-		storeClients.get(recordStore).add(client); // add to set of clients currently using the recordStore
-		return recordStore;
-	}
-	
-	@Override
-	public SentTransmissionStore getSentTransmissionStore(StoreClient client) throws Exception
-	{
-		if(sentTransmissionStore == null)
-		{
-			sentTransmissionStore = new SentTransmissionStore(collectorClient, this);
-			storeClients.put(sentTransmissionStore, new HashSet<StoreClient>());
-		}
-		storeClients.get(sentTransmissionStore).add(client); // add to set of clients currently using the recordStore
-		return sentTransmissionStore;
-	}
-	
-	@Override
-	public ReceivedTransmissionStore getReceivedTransmissionStore(StoreClient client) throws Exception
-	{
-		if(receivedTransmissionStore == null)
-		{
-			receivedTransmissionStore = new ReceivedTransmissionStore(collectorClient, this);
-			storeClients.put(receivedTransmissionStore, new HashSet<StoreClient>());
-		}
-		storeClients.get(receivedTransmissionStore).add(client); // add to set of clients currently using the recordStore
-		return receivedTransmissionStore;
-	}
-	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.shared.db.StoreProvider#discardStoreUsage(uk.ac.ucl.excites.sapelli.shared.db.Store, uk.ac.ucl.excites.sapelli.shared.db.StoreClient)
-	 */
-	@Override
-	public void discardStoreUsage(Store store, StoreClient client)
-	{
-		if(store == null)
-			return;
-		
-		// Remove client for this store:
-		Set<StoreClient> clients = storeClients.get(store);
-		if(clients != null)
-			clients.remove(client);
-		
-		// Finalise if no longer used by other clients:
-		if(clients == null || clients.isEmpty())
-		{
-			try
-			{
-				store.finalise();
-			}
-			catch(DBException ignore) { }
-			storeClients.remove(store); // remove empty set
 
-			// Slightly dirty but acceptable:
-			if(store == projectStore)
-				projectStore = null;
-			else if(store == recordStore)
-				recordStore = null;
-			//else if(store == transmissionStore)
-			//	transmissionStore = null;
+		@Override
+		protected RecordStore createRecordStore() throws DBException
+		{
+			return new AndroidSQLiteRecordStore(this, CollectorApp.this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
+			//return new DB4ORecordStore(this, getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + DATABASE_BASENAME);
 		}
+
+		@Override
+		protected ProjectStore createProjectStore() throws DBException
+		{
+			return new ProjectRecordStore(this, getFileStorageProvider());
+			//return new PrefProjectStore(CollectorApp.this, getFileStorageProvider(), getDemoPrefix());
+			//return new DB4OProjectStore(getFileStorageProvider().getDBFolder(true), getDemoPrefix() /*will be "" if not in demo mode*/ + "ProjectStore");
+		}
+
 	}
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.shared.db.StoreProvider#backupStores(java.io.File, boolean)
-	 */
-	@Override
-	public void backupStores(File destinationFolder, boolean labelFilesAsBackup) throws Exception
-	{
-		Store[] toBackup = new Store[] { getProjectStore(this), getRecordStore(this) };
-		// Note: by calling the get...Store(StoreClient) methods above we briefly register the CollectorApp itself as a StoreClient for each store
-		
-		StoreBackuper backuper = new StoreBackuper(labelFilesAsBackup, toBackup);
-		backuper.backup(destinationFolder);
-		
-		// Unregister the CollectorApp as a StoreClient
-		for(Store store : toBackup) 
-			discardStoreUsage(store, this);
-	}
 }

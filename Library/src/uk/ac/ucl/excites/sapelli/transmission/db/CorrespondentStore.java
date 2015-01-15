@@ -22,7 +22,7 @@ import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
@@ -39,7 +39,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Sender;
  * 
  * @author benelliott
  */
-public class CorrespondentStore implements Store
+public class CorrespondentStore extends Store
 {
 	// TODO correspondent client?
 	
@@ -105,14 +105,14 @@ public class CorrespondentStore implements Store
 	}
 	
 	@Override
-	public void finalise() throws DBException
+	protected void doClose() throws DBException
 	{
 		// TODO Auto-generated method stub
 
 	}
 
 	@Override
-	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException
+	public void backup(StoreBackupper backuper, File destinationFolder) throws DBException
 	{
 		// TODO Auto-generated method stub
 

@@ -195,7 +195,7 @@ public class AndroidSQLiteRecordStore extends SQLiteRecordStore
 	}
 	
 	@Override
-	protected void close()
+	protected void closeConnection()
 	{
 		db.close();
 	}

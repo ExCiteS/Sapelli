@@ -19,7 +19,6 @@
 package uk.ac.ucl.excites.sapelli.transmission.receiver;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.InvalidMessageException;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
@@ -40,19 +39,17 @@ import android.widget.Toast;
  * 
  * @author benelliott
  */
-public class SMSReceiverService extends IntentService implements StoreClient
+public class SMSReceiverService extends IntentService
 {
 	private static final String TAG = "SMSReceiverService";
 	public static final String PDU_BYTES_EXTRA_NAME = "pdu"; // intent key for passing the PDU bytes
 	public static final String BINARY_FLAG_EXTRA_NAME = "binary"; // intent key for passing whether or not the message is binary (data message)
-	private final CollectorApp app;
 	private AndroidTransmissionController transmissionController;
 	private Handler mainHandler; // only used in order to display Toasts
 
 	public SMSReceiverService()
 	{
 		super("SMSReceiverService");
-		app = ((CollectorApp) getApplication());
 	}
 
 	@Override
@@ -60,6 +57,15 @@ public class SMSReceiverService extends IntentService implements StoreClient
 	{
 		super.onCreate();
 		mainHandler = new Handler(Looper.getMainLooper());
+		try
+		{
+			transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient, this);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+		}
+		
 	}
 
 	/**
@@ -82,8 +88,11 @@ public class SMSReceiverService extends IntentService implements StoreClient
 		try
 		{
 			final Message message = messageFromPDU(pdu, binary);
-									
-			getTransmissionController().receiveSMS(message);
+
+			if(transmissionController == null)
+				throw new NullPointerException("Could not get TransmissionController instance");
+			
+			transmissionController.receiveSMS(message);
 			
 			mainHandler.post(new Runnable()
 			{
@@ -98,7 +107,7 @@ public class SMSReceiverService extends IntentService implements StoreClient
 		{
 			Log.d(TAG, "Received SMS message was found not to be relevant to Sapelli.", e);
 		}
-		catch (Exception e)
+		catch(Exception e)
 		{
 			Log.e(TAG, "An error occurred while trying to parse the received SMS.", e);
 		}
@@ -124,12 +133,15 @@ public class SMSReceiverService extends IntentService implements StoreClient
 		else
 			return new TextMessage(new SMSAgent(androidMsg.getOriginatingAddress()), androidMsg.getMessageBody());
 	}
-	
-	public AndroidTransmissionController getTransmissionController() throws Exception
+
+	/* (non-Javadoc)
+	 * @see android.app.IntentService#onDestroy()
+	 */
+	@Override
+	public void onDestroy()
 	{
-		if (transmissionController == null)
-			transmissionController = new AndroidTransmissionController(app.getCollectorClient(), app, this.getApplicationContext());
-		return transmissionController;
+		if(transmissionController != null)
+			transmissionController.discard();
 	}
 
 }

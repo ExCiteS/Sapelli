@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import uk.ac.ucl.excites.sapelli.collector.SapelliCollectorClient;
+import uk.ac.ucl.excites.sapelli.collector.CollectorClient;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.diagnostics.HeartbeatSchema;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
@@ -134,7 +134,7 @@ public class Project
 			throw new IllegalArgumentException("Invalid schema ID, valid values are " + PROJECT_ID_FIELD.getEffectiveRangeString() + ".");
 		
 		// Initialise Model (important this should remain last):
-		this.model = new Model(SapelliCollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
+		this.model = new Model(CollectorClient.GetModelID(this), this.toString().replaceAll(" ", "_"));
 		
 		// Heartbeat schema (Important: never put this before the model initialisation!):
 		this.heartbeatSchema = new HeartbeatSchema(this); // will add itself to the model

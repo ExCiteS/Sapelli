@@ -74,7 +74,7 @@ public abstract class Payload
 	{
 		// Try to instantiate Payload object for the type: 
 		if(payloadType >= MAX_BUILTIN_TYPES)
-			return client.newPayload(payloadType);
+			return client.createPayload(payloadType);
 		else
 		{
 			if(payloadType >= 0 && payloadType < BuiltinType.values().length)

@@ -18,8 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.control;
 
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStoreProvider;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
 import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.SMSSender;
@@ -35,9 +35,9 @@ public class AndroidTransmissionController extends TransmissionController
 	private Context context;
 	private SMSSender smsSender;
 	
-	public AndroidTransmissionController(TransmissionClient transmissionClient, TransmissionStoreProvider transmissionStoreProvider, Context context) throws Exception
+	public AndroidTransmissionController(TransmissionClient transmissionClient, Context context) throws DBException
 	{
-		super(transmissionClient, transmissionStoreProvider);
+		super(transmissionClient);
 		this.context = context;
 	}
 

@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 
-import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
@@ -222,7 +222,7 @@ public abstract class SQLiteRecordStore extends SQLRecordStore<SQLiteRecordStore
 	protected abstract ISQLiteCursor executeQuery(String sql, List<SQLiteColumn<?, ?>> paramCols, List<Object> sapArguments) throws DBException;
 
 	@Override
-	protected void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException
+	protected void doBackup(StoreBackupper backuper, File destinationFolder) throws DBException
 	{
 		File currentDB = getDatabaseFile();
 		if(currentDB != null && currentDB.exists() && destinationFolder.canWrite())

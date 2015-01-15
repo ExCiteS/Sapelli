@@ -21,7 +21,7 @@ package uk.ac.ucl.excites.sapelli.transmission.sender.util;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.IntentService;
 import android.content.Intent;
@@ -29,12 +29,14 @@ import android.content.Intent;
 /**
  * Simple Service for scheduling alarms for project that need transmission.
  * 
- * @author Michalis Vitos
+ * @author Michalis Vitos, mstevens
  *
  */
-public class AlarmScheduler extends IntentService implements StoreClient
+public class AlarmScheduler extends IntentService implements StoreHandle.StoreUser
 {
+	
 	private ProjectStore projectStore;
+	private final CollectorApp app;
 
 	/**
 	 * A constructor is required, and must call the super IntentService(String) constructor with a name for the worker thread.
@@ -42,6 +44,7 @@ public class AlarmScheduler extends IntentService implements StoreClient
 	public AlarmScheduler()
 	{
 		super("AlarmScheduler");
+		app = ((CollectorApp) getApplication());
 	}
 
 	/**
@@ -52,12 +55,12 @@ public class AlarmScheduler extends IntentService implements StoreClient
 	protected void onHandleIntent(Intent intent)
 	{
 		// Check if projects require data transmission and set up alarms for the DataSenderService
-		projectStore = null;
 		try
 		{
 			// Get ProjectStore instance:
-			projectStore = ((CollectorApp) getApplication()).getProjectStore(this);
-
+			if(projectStore == null || projectStore.isClosed())
+				projectStore = app.collectorClient.projectStoreHandle.getStore(this);
+			
 			// Set an Alarm, for each of the projects that has sending enabled
 			for(Project p : projectStore.retrieveProjects())
 			{
@@ -77,6 +80,8 @@ public class AlarmScheduler extends IntentService implements StoreClient
 	public void onDestroy()
 	{
 		super.onDestroy();
-		((CollectorApp) getApplication()).discardStoreUsage(projectStore, this);
+		if(projectStore != null)
+			app.collectorClient.projectStoreHandle.doneUsing(this);
 	}
+	
 }

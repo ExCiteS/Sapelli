@@ -20,7 +20,8 @@ package uk.ac.ucl.excites.sapelli.transmission.control;
 
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
+import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -31,7 +32,6 @@ import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.db.ReceivedTransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStoreProvider;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPTransmission;
@@ -50,7 +50,7 @@ import uk.ac.ucl.excites.sapelli.transmission.payloads.RecordsPayload;
  * @author mstevens, benelliott
  *
  */
-public abstract class TransmissionController implements Payload.Handler, StoreClient
+public abstract class TransmissionController implements Payload.Handler, StoreHandle.StoreUser
 {
 
 	private RecordStore recordStore;
@@ -58,11 +58,11 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 	private ReceivedTransmissionStore receivedTStore;
 	private TransmissionClient transmissionClient;
 	
-	public TransmissionController(TransmissionClient transmissionClient, TransmissionStoreProvider transmissionsStoreProvider) throws Exception
+	public TransmissionController(TransmissionClient client) throws DBException
 	{
-		this.transmissionClient = transmissionClient;
-		this.sentTStore = transmissionsStoreProvider.getSentTransmissionStore(this);
-		this.receivedTStore = transmissionsStoreProvider.getReceivedTransmissionStore(this);
+		this.transmissionClient = client;
+		this.sentTStore = client.sentTransmissionStoreHandle.getStore(this);
+		this.receivedTStore = client.receivedTransmissionStoreHandle.getStore(this);
 	}
 	
 	public boolean deleteTransmissionUponDecoding()
@@ -281,6 +281,22 @@ public abstract class TransmissionController implements Payload.Handler, StoreCl
 			transmission = t;
 		}
 		
+	}
+	
+	/**
+	 * 
+	 * 
+	 * @see java.lang.Object#finalize()
+	 */
+	public void finalize()
+	{
+		discard();
+	}
+	
+	public void discard()
+	{
+		transmissionClient.sentTransmissionStoreHandle.doneUsing(this);
+		transmissionClient.receivedTransmissionStoreHandle.doneUsing(this);
 	}
 
 }

@@ -19,7 +19,6 @@
 package uk.ac.ucl.excites.sapelli.transmission.db;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreProvider;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
@@ -33,9 +32,9 @@ import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 public class SentTransmissionStore extends TransmissionStore
 {
 	
-	public SentTransmissionStore(TransmissionClient client, RecordStoreProvider recordStoreProvider) throws DBException
+	public SentTransmissionStore(TransmissionClient client) throws DBException
 	{
-		super(client, recordStoreProvider);
+		super(client);
 	}
 
 	@Override

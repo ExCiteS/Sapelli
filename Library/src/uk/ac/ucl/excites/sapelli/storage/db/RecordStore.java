@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBPrimaryKeyException;
@@ -43,7 +43,7 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Source;
  * 
  * @author mstevens
  */
-public abstract class RecordStore implements Store
+public abstract class RecordStore extends Store
 {
 
 	// STATIC -----------------------------------------------------------------
@@ -459,14 +459,14 @@ public abstract class RecordStore implements Store
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
 	 */
-	public void finalise() throws DBException
+	protected void doClose() throws DBException
 	{
 		if(isInTransaction())
 			System.err.println("Warning: record store is being closed but there is an uncommited transaction (changes may be lost)!");
 		// Clean-up:
 		cleanup();
-		// Close:
-		close();
+		// Close DB connection:
+		closeConnection();
 	}
 	
 	/**
@@ -477,13 +477,18 @@ public abstract class RecordStore implements Store
 		// does nothing by default
 	}
 	
-	protected abstract void close() throws DBException;
+	/**
+	 * Subclasses must implement this to close the connection to the underlying database file/service
+	 * 
+	 * @throws DBException
+	 */
+	protected abstract void closeConnection() throws DBException;
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#backup(uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper, java.io.File)
 	 */
 	@Override
-	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException
+	public void backup(StoreBackupper backuper, File destinationFolder) throws DBException
 	{
 		if(isInTransaction())
 			throw new DBException("Cannot back-up database due to uncommited transaction!");
@@ -495,7 +500,7 @@ public abstract class RecordStore implements Store
 	 * @param destinationFolder
 	 * @throws DBException
 	 */
-	protected abstract void doBackup(StoreBackuper backuper, File destinationFolder) throws DBException;
+	protected abstract void doBackup(StoreBackupper backuper, File destinationFolder) throws DBException;
 	
 	/**
 	 * @return whether or not this RecordStore implementation has full support for indexes (and the constraints they impose)

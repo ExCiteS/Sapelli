@@ -24,12 +24,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper;
-import uk.ac.ucl.excites.sapelli.shared.db.StoreClient;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
+import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
-import uk.ac.ucl.excites.sapelli.storage.db.RecordStoreProvider;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
@@ -65,7 +64,7 @@ import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextSMSTransmission
  * 
  * @author mstevens, Michalis Vitos, 
  */
-public abstract class TransmissionStore implements Store, StoreClient
+public abstract class TransmissionStore extends Store implements StoreHandle.StoreUser
 {
 	
 	// STATICS---------------------------------------------
@@ -157,14 +156,16 @@ public abstract class TransmissionStore implements Store, StoreClient
 	
 	// DYNAMICS--------------------------------------------
 	private final TransmissionClient client;
-	private final RecordStoreProvider recordStoreProvider;
 	private final RecordStore recordStore;
 
-	public TransmissionStore(TransmissionClient client, RecordStoreProvider recordStoreProvider) throws DBException
+	/**
+	 * @param client
+	 * @throws DBException
+	 */
+	public TransmissionStore(TransmissionClient client) throws DBException
 	{
 		this.client = client;
-		this.recordStoreProvider = recordStoreProvider;
-		this.recordStore = recordStoreProvider.getRecordStore(this);
+		this.recordStore = client.recordStoreHandle.getStore(this);
 	}
 	
 	/**
@@ -357,16 +358,16 @@ public abstract class TransmissionStore implements Store, StoreClient
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
 	 */
 	@Override
-	public void finalise() throws DBException
+	protected void doClose() throws DBException
 	{
-		recordStoreProvider.discardStoreUsage(recordStore, this); // signal to recordStoreProvider that this StoreClient is no longer using the recordStore
+		client.recordStoreHandle.doneUsing(this); // signal to recordStoreProvider that this StoreClient is no longer using the recordStore
 	}
 
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#backup(uk.ac.ucl.excites.sapelli.shared.db.StoreBackuper, java.io.File)
 	 */
 	@Override
-	public void backup(StoreBackuper backuper, File destinationFolder) throws DBException
+	public void backup(StoreBackupper backuper, File destinationFolder) throws DBException
 	{
 		backuper.addStoreForBackup(recordStore);
 	}
