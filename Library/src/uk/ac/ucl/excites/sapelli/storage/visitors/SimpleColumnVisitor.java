@@ -20,6 +20,7 @@ package uk.ac.ucl.excites.sapelli.storage.visitors;
 
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ByteArrayColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.FloatColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
@@ -100,6 +101,15 @@ public abstract class SimpleColumnVisitor implements ColumnVisitor
 	public void visit(IntegerListColumn intListCol)
 	{
 		this.visit((Column<?>) intListCol);
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.storage.util.ColumnVisitor#visit(uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn)
+	 */
+	@Override
+	public void visit(BooleanListColumn boolListCol)
+	{
+		this.visit((Column<?>) boolListCol);
 	}
 
 	/* (non-Javadoc)
