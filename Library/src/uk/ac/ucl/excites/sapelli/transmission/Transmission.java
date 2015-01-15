@@ -115,8 +115,15 @@ public abstract class Transmission
 	 */
 	protected Integer payloadHash;
 	
-	protected TimeStamp sentAt; //used only on sending side
-	protected TimeStamp receivedAt; //used on receiving side, and on sending side if an acknowledgement was received
+	/**
+	 * 
+	 */
+	private TimeStamp sentAt; //used only on sending side
+	
+	/**
+	 * used on receiving side, and on sending side if an acknowledgement was received
+	 */
+	private TimeStamp receivedAt;
 	
 	/**
 	 * To be called from the sending side

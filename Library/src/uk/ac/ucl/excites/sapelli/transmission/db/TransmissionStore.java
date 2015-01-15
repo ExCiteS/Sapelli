@@ -224,11 +224,17 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	 */
 	public Transmission retrieveTransmissionForID(int localID) throws Exception
 	{
-		// Query for record:
 		return retrieveTransmissionForQuery(getTransmissionSchema().createRecordReference(localID).getRecordQuery());
+
 	}
 	
-	private Transmission retrieveTransmissionForQuery(SingleRecordQuery recordQuery)
+	public Transmission retrieveTransmissionForID(int localID, int payloadHash) throws Exception
+	{
+		return retrieveTransmissionForQuery(new FirstRecordQuery(getTransmissionSchema(), getTransmissionSchema().createRecordReference(localID).getRecordQueryConstraint(), new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
+	}
+	
+	
+	protected Transmission retrieveTransmissionForQuery(SingleRecordQuery recordQuery)
 	{
 		// Query for record:
 		Record tRec = recordStore.retrieveRecord(recordQuery);
@@ -236,7 +242,25 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		// Null check:
 		if(tRec == null)
 			return null; // no such transmission found
+
+		return transmissionFromRecord(tRec);
+	}
+	
+	protected List<Transmission> retrieveTransmissionsForQuery(RecordsQuery multiRecordQuery)
+	{
+		List<Record> records = recordStore.retrieveRecords(multiRecordQuery);
 		
+		List<Transmission> transmissions = new ArrayList<Transmission>();
+		
+		for (Record record : records)
+			transmissions.add(transmissionFromRecord(record));
+		
+		return transmissions;
+	}
+	
+	
+	private Transmission transmissionFromRecord(Record tRec)
+	{
 		// Values:
 		Integer localID = TRANSMISSION_COLUMN_ID.retrieveValue(tRec).intValue();
 		Transmission.Type type = Transmission.Type.values()[TRANSMISSION_COLUMN_TYPE.retrieveValue(tRec).intValue()]; 

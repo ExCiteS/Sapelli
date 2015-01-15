@@ -34,6 +34,8 @@ import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
  */
 public abstract class SMSTransmission<M extends Message> extends Transmission
 {
+	public static final int RESEND_REQUEST_TIMEOUT_MILLIS = 60 * 10 * 1000; // wait 10 minutes before sending a resend request
+	public static final int MAX_NUM_PARTS = 16; // an SMS transmission can have up to 16 separate parts
 	
 	protected SMSAgent receiver;
 	protected SMSAgent sender;
@@ -125,6 +127,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 			for(Message m : parts)
 				if(lastReceivedAt == null || lastReceivedAt.isBefore(m.getReceivedAt()))
 					lastReceivedAt = m.getReceivedAt();
+			// the reception time of the most recently received part becomes the receivedAt time of the transmission as a whole:
 			setReceivedAt(lastReceivedAt);
 		}
 	}
@@ -215,10 +218,11 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 		for(Message m : parts)
 		{
 			if(!m.isSent())
-				return;
+				return; // not all parts have been sent yet
 			if(lastSentAt == null || lastSentAt.isBefore(m.getSentAt()))
 				lastSentAt = m.getSentAt();
 		}
+		// all parts have been sent, use the sending time of the most recently sent part as the sentAt time for the transmission as a whole:
 		setSentAt(lastSentAt);
 	}
 	

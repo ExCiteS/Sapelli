@@ -29,7 +29,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.SMSSender;
 import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.SignalMonitor;
-import uk.ac.ucl.excites.sapelli.transmission.sender.util.SapelliAlarmManager;
+import uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmManager;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
 import android.app.Service;
@@ -57,8 +57,8 @@ public class DataSenderService extends Service
 		app = (CollectorApp) getApplication();
 		
 		// TODO TEMP:
-		TempProject p = new TempProject(intent.getExtras().getInt(SapelliAlarmManager.PROJECT_ID), intent.getExtras().getInt(
-				SapelliAlarmManager.PROJECT_FINGERPRINT));
+		TempProject p = new TempProject(intent.getExtras().getInt(SendAlarmManager.PROJECT_ID), intent.getExtras().getInt(
+				SendAlarmManager.PROJECT_FINGERPRINT));
 
 		// Add project to queue:
 		try

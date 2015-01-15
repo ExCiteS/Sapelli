@@ -31,6 +31,7 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.payloads.AckPayload;
 import uk.ac.ucl.excites.sapelli.transmission.payloads.RecordsPayload;
+import uk.ac.ucl.excites.sapelli.transmission.payloads.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
@@ -50,7 +51,8 @@ public abstract class Payload
 	{
 		Records,
 		Files,
-		Ack
+		Ack,
+		ResendRequest
 		//... up to 16 different built-in types (ordinals 0 to 15)
 	}
 	
@@ -91,9 +93,11 @@ public abstract class Payload
 	static public interface Handler
 	{
 
-		public void handle(AckPayload ackPayload);
+		public void handle(AckPayload ackPayload) throws Exception;
 		
-		public void handle(RecordsPayload recordsPayload);
+		public void handle(RecordsPayload recordsPayload) throws Exception;
+		
+		public void handle(ResendRequestPayload resendRequestPayload) throws Exception;
 		
 		/**
 		 * Handle method for non-built-in payload types
@@ -101,7 +105,7 @@ public abstract class Payload
 		 * @param customPayload
 		 * @param type
 		 */
-		public void handle(Payload customPayload, int type);
+		public void handle(Payload customPayload, int type) throws Exception;
 		
 	}
 	
@@ -191,7 +195,7 @@ public abstract class Payload
 	 * 
 	 * @param handler
 	 */
-	public void handle(Handler handler)
+	public void handle(Handler handler) throws Exception
 	{
 		handler.handle(this, getType()); // use generic handler method
 	}

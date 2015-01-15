@@ -113,7 +113,7 @@ public class AckPayload extends Payload
 	}
 
 	@Override
-	public void handle(Handler handler)
+	public void handle(Handler handler) throws Exception
 	{
 		handler.handle(this);
 	}
