@@ -32,14 +32,14 @@ import android.content.Intent;
  * @author Michalis Vitos
  *
  */
-public class AlarmScheduler extends IntentService implements StoreClient
+public class SendingAlarmScheduler extends IntentService implements StoreClient
 {
 	private ProjectStore projectStore;
 
 	/**
 	 * A constructor is required, and must call the super IntentService(String) constructor with a name for the worker thread.
 	 */
-	public AlarmScheduler()
+	public SendingAlarmScheduler()
 	{
 		super("AlarmScheduler");
 	}
@@ -63,7 +63,7 @@ public class AlarmScheduler extends IntentService implements StoreClient
 			{
 				// TODO if (p.isSending())
 				// TODO interval should be saved in project -> p.getSendingInterval()
-				SapelliAlarmManager.setAlarm(this, 60 * 1000, p.getID(), p.getFingerPrint());
+				SendAlarmManager.setAlarm(this, 60 * 1000, p.getID(), p.getFingerPrint());
 				Debug.d("Projects: " + p.toString(true));
 			}
 		}

@@ -103,7 +103,7 @@
         <service android:name="uk.ac.ucl.excites.sapelli.sender.util.AlarmScheduler" >
         </service>
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.BootReceiver"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.SenderBootInitializer"
             android:exported="false" >
             <intent-filter android:priority="9999999999" >
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

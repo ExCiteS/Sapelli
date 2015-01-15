@@ -10,7 +10,6 @@ import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanListColumn;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
 import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
@@ -29,8 +28,8 @@ public class ResendRequestPayload extends Payload
 	
 	private int subjectSenderSideID;
 	private int subjectPayloadHash;
-	// maintain the list of parts received as an integer array (of part indices) for convenience but convert to/from boolean flags when writing/reading the payload
-	private List<Integer> partsReceived;
+	// maintain the list of parts requested as an integer array (of part indices) for convenience but convert to/from boolean flags when writing/reading the payload
+	private List<Integer> partsRequested;
 	
 	/**
 	 * 
@@ -39,10 +38,11 @@ public class ResendRequestPayload extends Payload
 	public ResendRequestPayload(SMSTransmission<?> subject) {
 		this.subjectSenderSideID = subject.getRemoteID();
 		this.subjectPayloadHash = subject.getPayloadHash();
-		partsReceived = new ArrayList<Integer>();
-		for (Message message : subject.getParts())
+		partsRequested = new ArrayList<Integer>();
+		for (int i = 0; i < subject.getTotalNumberOfParts(); i++)
 		{
-			partsReceived.add(message.getPartNumber());
+			if (subject.getPart(i) == null)
+				partsRequested.add(i);
 		}
 	}
 
@@ -59,10 +59,10 @@ public class ResendRequestPayload extends Payload
 		Transmission.PAYLOAD_HASH_FIELD.write(subjectPayloadHash, bitstream);
 		// turn our List<Integer> of part indices into a List<Boolean> of "presence" flags
 		List<Boolean> receivedFlags = new ArrayList<Boolean>();
-		for (int i = 0; i < partsReceived.size(); i++)
+		for (int i = 0; i < partsRequested.size(); i++)
 		{
-			// if index is present in partsReceived then put a "true" flag, else put a "false"
-			receivedFlags.add((partsReceived.contains(i)));
+			// if index is present in partsRequested then put a "false" flag, else put a "true"
+			receivedFlags.add(!(partsRequested.contains(i)));
 		}
 		RECEIVED_PARTS_FLAGS_COL.writeValue(receivedFlags, bitstream);
 	}
@@ -74,12 +74,12 @@ public class ResendRequestPayload extends Payload
 		subjectPayloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(bitstream);
 		List<Boolean> receivedFlags = RECEIVED_PARTS_FLAGS_COL.readValue(bitstream);
 		// create a List<Integer> of part indices from the "presence" flags in the payload body 
-		partsReceived = new ArrayList<Integer>();
+		partsRequested = new ArrayList<Integer>();
 		for (int i = 0; i < receivedFlags.size(); i++)
 		{
 			// add indices to partsReceived for parts that are marked "true" in the payload body
-			if (receivedFlags.get(i))
-				partsReceived.add(i);
+			if (!receivedFlags.get(i))
+				partsRequested.add(i);
 		}
 	}
 	
@@ -100,11 +100,11 @@ public class ResendRequestPayload extends Payload
 	}
 	
 	/**
-	 * @return a List containing the part numbers of the transmission parts that were successfully received by the receiver
+	 * @return a List containing the part numbers of the transmission parts that not received by the receiver (i.e. those requested for retransmission)
 	 */
-	public List<Integer> getPartsReceived()
+	public List<Integer> getPartsRequested()
 	{
-		return partsReceived;				
+		return partsRequested;				
 	}
 
 }

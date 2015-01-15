@@ -41,7 +41,6 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Sender;
  */
 public class CorrespondentStore implements Store
 {
-	// TODO correspondent client?
 	
 	// STATICS---------------------------------------------	
 	// Correspondent storage model:

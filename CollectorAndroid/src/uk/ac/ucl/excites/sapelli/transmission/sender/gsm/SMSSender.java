@@ -164,7 +164,8 @@ public class SMSSender implements SMSClient
 					case Activity.RESULT_OK:
 						msg.sentCallback(); //!!!
 						
-						// TODO update stored transmission !
+						// update stored transmission
+						
 						//dao.store(msg.getTransmission()); //!!! update the transmission
 						
 						Log.i(TAG, "Sending " + msgDescription + ": success.");

@@ -2,7 +2,7 @@ package uk.ac.ucl.excites.sapelli.transmission.sender.util;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.transmission.sender.BootReceiver;
+import uk.ac.ucl.excites.sapelli.transmission.sender.SenderBootInitializer;
 import uk.ac.ucl.excites.sapelli.transmission.sender.DataSenderService;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -13,18 +13,15 @@ import android.content.pm.PackageManager;
 import android.os.SystemClock;
 
 /**
+ * Class which schedules the DataSenderService to send records from a particular project with initial delays and fixed intervals.
+ * 
  * @author Michalis Vitos
  * 
  */
-public class SapelliAlarmManager
+public class SendAlarmManager
 {
 	public static final String PROJECT_ID = "projectId";
 	public static final String PROJECT_FINGERPRINT = "fingerPrint";
-
-	public SapelliAlarmManager()
-	{
-		// Nothing goes here
-	}
 
 	/**
 	 * Set up an Alarm for a project that calls the {@link DataSenderService}, initially after a minute and then every <code>intervalMillis</code>
@@ -58,7 +55,7 @@ public class SapelliAlarmManager
 		alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + triggerDelay, intervalMillis,
 				getAlarmIntent(context, projectID, fingerPrint));
 
-		// Enable the Broadcast Receiver
+		// We know at least one project needs to send, so make sure alarms are re-enabled on boot:
 		enableBootReceiver(context, true);
 	}
 
@@ -74,7 +71,7 @@ public class SapelliAlarmManager
 		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 		alarmManager.cancel(getAlarmIntent(context, projectID, fingerPrint));
 
-		// Check whether to cancel BootReceiver
+		// Check whether or not we need to worry about re-enabling alarms on boot:
 		checkBootReceiver(context);
 	}
 
@@ -124,7 +121,7 @@ public class SapelliAlarmManager
 	 */
 	private static void enableBootReceiver(Context context, boolean enable)
 	{
-		ComponentName receiver = new ComponentName(context, BootReceiver.class);
+		ComponentName receiver = new ComponentName(context, SenderBootInitializer.class);
 		PackageManager pm = context.getPackageManager();
 
 		final int newState = (enable) ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
