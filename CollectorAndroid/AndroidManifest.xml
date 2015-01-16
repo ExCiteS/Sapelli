@@ -108,6 +108,7 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="uk.ac.ucl.excites.sapelli.collector.activities.ProjectManagerActivity" />
         </activity>
+
         <service
             android:name="uk.ac.ucl.excites.sapelli.transmission.sender.DataSenderService"
             android:icon="@drawable/ic_sapelli_logo"
@@ -115,6 +116,7 @@
         </service>
         <service android:name="uk.ac.ucl.excites.sapelli.sender.util.AlarmScheduler" >
         </service>
+
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.transmission.sender.SenderBootInitializer"
             android:exported="false" >
@@ -122,23 +124,25 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
         <service android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.SMSReceiverService" >
         </service>
+
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.SMSBroadcastReceiver$Text"
             android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS">
+            android:permission="android.permission.BROADCAST_SMS" >
             <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
         </receiver>
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.SMSBroadcastReceiver$Binary"
             android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS">
+            android:permission="android.permission.BROADCAST_SMS" >
             <intent-filter>
-                <action android:name="android.intent.action.DATA_SMS_RECEIVED"/>
-                <!--  TODO port number -->
+                <action android:name="android.intent.action.DATA_SMS_RECEIVED" />
+                <!-- TODO port number -->
             </intent-filter>
         </receiver>
 
