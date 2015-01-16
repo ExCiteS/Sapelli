@@ -509,7 +509,7 @@
 										<artifactId>android-maven-plugin</artifactId>
 										<versionRange>[4.0.0,)</versionRange>
 										<goals>
-											<goal>manifest-update</goal>
+											<goal>manifest-merger</goal>
 											<goal>emma</goal>
 										</goals>
 									</pluginExecutionFilter>
