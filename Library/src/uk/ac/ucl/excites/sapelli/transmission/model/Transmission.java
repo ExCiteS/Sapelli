@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission;
+package uk.ac.ucl.excites.sapelli.transmission.model;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -28,10 +28,11 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
+import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
-import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinarySMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextSMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.IncompleteTransmissionException;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
@@ -41,7 +42,7 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
  * 
  * @author mstevens
  */
-public abstract class Transmission
+public abstract class Transmission<C extends Correspondent>
 {
 
 	// STATICS-------------------------------------------------------
@@ -84,8 +85,6 @@ public abstract class Transmission
 	 */
 	static private final int MIN_BODY_LENGTH_BITS = Payload.PAYLOAD_TYPE_SIZE + 1 + 1; // bits
 	
-	static public final int CORRESPONDENT_MAX_LENGTH = 256;
-	
 	// DYNAMICS------------------------------------------------------
 	protected final TransmissionClient client;
 	
@@ -98,6 +97,12 @@ public abstract class Transmission
 	 * ID by which this transmission is identified in the context of the remote device/server
 	 */
 	protected Integer remoteID;
+	
+	/**
+	 * The remote correspondent.
+	 * On the sending side this will be the receiver, on the receiver side it will be the sender.
+	 */
+	protected final C correspondent;
 	
 	/**
 	 * The payloadBitsLengthField is an IntegerRangeMapping which will be used to read/write the length of the payload data (in number of bits).<br/>
@@ -116,9 +121,9 @@ public abstract class Transmission
 	protected Integer payloadHash;
 	
 	/**
-	 * 
+	 * used only on sending side
 	 */
-	private TimeStamp sentAt; //used only on sending side
+	private TimeStamp sentAt;
 	
 	/**
 	 * used on receiving side, and on sending side if an acknowledgement was received
@@ -129,13 +134,15 @@ public abstract class Transmission
 	 * To be called from the sending side
 	 * 
 	 * @param client
+	 * @param receiver
 	 * @param payload
 	 */
-	public Transmission(TransmissionClient client, Payload payload)
+	public Transmission(TransmissionClient client, C receiver, Payload payload)
 	{
 		this.client = client;
+		this.correspondent = receiver;
 		this.payload = payload;
-		this.payload.setTransmission(this); // just in case
+		this.payload.setTransmission(this); // !!!
 		initialise(); // !!!
 	}
 	
@@ -143,12 +150,14 @@ public abstract class Transmission
 	 * To be called from the receiving side
 	 * 
 	 * @param client
+	 * @param sender
 	 * @param sendingSideID
 	 * @param payloadHash
 	 */
-	public Transmission(TransmissionClient client, int sendingSideID, int payloadHash)
+	public Transmission(TransmissionClient client, C sender, int sendingSideID, int payloadHash)
 	{
 		this.client = client;
+		this.correspondent = sender;
 		this.remoteID = sendingSideID;
 		this.payloadHash = payloadHash;
 		initialise(); // !!!
@@ -158,15 +167,17 @@ public abstract class Transmission
 	 * To be called upon database retrieval only
 	 * 
 	 * @param client
+	 * @param correspondent
 	 * @param localID
 	 * @param remoteID - may be null
 	 * @param payloadHash
 	 * @param sentAt - may be null
 	 * @param receivedAt - may be null
 	 */
-	protected Transmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
+	protected Transmission(TransmissionClient client, C correspondent, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
 	{
 		this.client = client;
+		this.correspondent = correspondent;
 		this.localID = localID;
 		this.remoteID = remoteID; 
 		this.payloadHash = payloadHash;
@@ -214,6 +225,14 @@ public abstract class Transmission
 		payloadBitsLengthField = new IntegerRangeMapping(0, b);
 	}
 	
+	/**
+	 * @return the correspondent
+	 */
+	public C getCorrespondent()
+	{
+		return correspondent;
+	}
+
 	public void setLocalID(int id)
 	{
 		if(localID != null && localID != id)

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary;
+package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary;
 
 import java.io.IOException;
 
@@ -24,11 +24,11 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
@@ -53,7 +53,7 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	 * @param receiver
 	 * @param payload
 	 */
-	public BinarySMSTransmission(TransmissionClient client, SMSAgent receiver, Payload payload)
+	public BinarySMSTransmission(TransmissionClient client, SMSCorrespondent receiver, Payload payload)
 	{
 		super(client, receiver, payload);
 	}
@@ -73,18 +73,17 @@ public class BinarySMSTransmission extends SMSTransmission<BinaryMessage>
 	 * Called when retrieving transmission from database
 	 * 
 	 * @param client
+	 * @param correspondent
 	 * @param localID
 	 * @param remoteID - may be null
 	 * @param payloadHash
 	 * @param sentAt - may be null
 	 * @param receivedAt - may be null
-	 * @param sender - may be null on sending side
-	 * @param receiver - may be null on receiving side
 	 * @param parts - list of {@link BinaryMessage}s
 	 */	
-	public BinarySMSTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, SMSAgent sender, SMSAgent receiver) 
+	public BinarySMSTransmission(TransmissionClient client, SMSCorrespondent correspondent, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt) 
 	{
-		super(client, localID, remoteID, payloadHash, sentAt, receivedAt, sender, receiver);
+		super(client, correspondent, localID, remoteID, payloadHash, sentAt, receivedAt);
 	}
 	
 	@Override

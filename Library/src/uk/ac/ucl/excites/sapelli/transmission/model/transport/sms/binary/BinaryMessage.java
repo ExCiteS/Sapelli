@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary;
+package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -29,12 +29,12 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitWrapInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitWrapOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.InvalidMessageException;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSSender;
 
 /**
  * Binary SMS message
@@ -94,8 +94,8 @@ public class BinaryMessage extends Message
 	 * Called by {@link BinarySMSTransmission#wrap(BitArray)}.
 	 * 
 	 * @param transmission
-	 * @param partNumber
-	 * @param totalParts
+	 * @param partNumber a value from [1, totalParts]
+	 * @param totalParts a value from [1, BinarySMSTransmission.MAX_TRANSMISSION_PARTS]
 	 * @param payload
 	 */
 	protected BinaryMessage(BinarySMSTransmission transmission, int partNumber, int totalParts, BitArray body)
@@ -115,7 +115,7 @@ public class BinaryMessage extends Message
 	 * @param data
 	 * @throws Exception
 	 */
-	public BinaryMessage(SMSAgent sender, byte[] data) throws Exception
+	public BinaryMessage(SMSCorrespondent sender, byte[] data) throws Exception
 	{
 		this(sender, data, TimeStamp.now() /*received NOW*/);
 	}
@@ -129,7 +129,7 @@ public class BinaryMessage extends Message
 	 * @throws InvalidMessageException
 	 * @throws Exception
 	 */
-	public BinaryMessage(SMSAgent sender, byte[] data, TimeStamp receivedAt) throws InvalidMessageException, Exception
+	public BinaryMessage(SMSCorrespondent sender, byte[] data, TimeStamp receivedAt) throws InvalidMessageException, Exception
 	{
 		super(sender, receivedAt);
 		// Read data:
@@ -250,9 +250,9 @@ public class BinaryMessage extends Message
 	}
 
 	@Override
-	public void send(SMSClient smsService)
+	public void send(SMSSender smsService)
 	{
-		smsService.send(transmission.getReceiver(), this);
+		smsService.send(transmission.getCorrespondent(), this);
 	}
 
 	@Override

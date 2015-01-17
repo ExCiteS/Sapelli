@@ -16,33 +16,47 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
+package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
+
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 
 
 /**
  * @author julia, mstevens
  *
  */
-public class SMSAgent
+public class SMSCorrespondent extends Correspondent
 {
 	
-	//Statics
-	static final char SEPARATOR = ';';
-	
-	static public SMSAgent Parse(String str)
-	{
-		String[] parts = str.split("\\" + SEPARATOR);
-		return new SMSAgent(parts[0]);
-	}
-	
-	//Dynamics
 	private String phoneNumber;
 	
-	public SMSAgent(String phoneNumber)
+	public SMSCorrespondent(String name, String phoneNumber, boolean binarySMS)
 	{
+		super(name, binarySMS ? Transmission.Type.BINARY_SMS : Transmission.Type.TEXTUAL_SMS);
 		if(phoneNumber == null || phoneNumber.isEmpty())
 			throw new IllegalArgumentException("Invalid phone number.");
 		this.phoneNumber = phoneNumber;
+	}
+
+	/**
+	 * To be called upon database retrieval only
+	 * 
+	 * @param localID
+	 * @param name
+	 * @param address
+	 * @param binarySMS
+	 */
+	public SMSCorrespondent(int localID, String name, String address, boolean binarySMS)
+	{
+		this(name, address, binarySMS); // address = phoneNumber
+		setLocalID(localID);
+	}
+	
+	@Override
+	public String getAddress()
+	{
+		return getPhoneNumber();
 	}
 	
 	/**
@@ -52,26 +66,11 @@ public class SMSAgent
 	{
 		return phoneNumber;
 	}
-	
+
 	@Override
-	public int hashCode()
+	public void handle(Handler handle)
 	{
-		return phoneNumber.hashCode();
-	}
-	
-	@Override
-	public boolean equals(Object o)
-	{
-		if(o instanceof SMSAgent)
-			return phoneNumber.equals(((SMSAgent) o).phoneNumber);
-		else
-			return false;
-	}
-	
-	@Override
-	public String toString()
-	{
-		return phoneNumber + SEPARATOR;
+		handle.handle(this);
 	}
 
 }

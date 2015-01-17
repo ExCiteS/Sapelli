@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.payloads;
+package uk.ac.ucl.excites.sapelli.transmission.model.content;
 
 import java.util.ArrayList;
 import java.util.List;

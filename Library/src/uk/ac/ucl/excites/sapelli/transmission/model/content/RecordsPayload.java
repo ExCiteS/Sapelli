@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.payloads;
+package uk.ac.ucl.excites.sapelli.transmission.model.content;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
-import uk.ac.ucl.excites.sapelli.transmission.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
@@ -274,7 +274,7 @@ public class RecordsPayload extends Payload
 	 * @throws RecordsPayloadDecodeException
 	 * @throws UnknownModelException
 	 * 
-	 * @see uk.ac.ucl.excites.sapelli.transmission.Payload#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Payload#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream)
 	 */
 	@Override
 	protected void read(BitInputStream in) throws IOException, RecordsPayloadDecodeException, UnknownModelException
@@ -534,8 +534,15 @@ public class RecordsPayload extends Payload
 	}
 
 	@Override
+	public boolean acknowledgeReception()
+	{
+		return true;
+	}
+	
+	@Override
 	public void handle(Handler handler) throws Exception
 	{
 		handler.handle(this);
 	}
+
 }

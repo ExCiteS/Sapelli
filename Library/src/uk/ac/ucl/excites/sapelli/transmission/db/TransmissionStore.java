@@ -28,6 +28,7 @@ import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -44,25 +45,27 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.SingleRecordQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Source;
+import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.RuleConstraint.Comparison;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinarySMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextSMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
 
 /**
  * Class to handle storage of transmissions and their parts. Based on {@link RecordStore}.
  * 
- * @author mstevens, Michalis Vitos, 
+ * @author mstevens, Michalis Vitos, benelliott
  */
 public abstract class TransmissionStore extends Store implements StoreHandle.StoreUser
 {
@@ -83,8 +86,31 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	// Transmission storage model:
 	//	Model:
 	static public final Model TRANSMISSION_MANAGEMENT_MODEL = new Model(TransmissionClient.TRANSMISSION_MANAGEMENT_MODEL_ID, "TransmissionManagement");
-	// Schemas & columns:
-	//	Transmission cchemas:
+	// Schema(s) & columns:
+	//	Correspondent schemas:
+	static final public Schema RECEIVER_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Receiver");
+	static final public Schema SENDER_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Sender");
+	//	Correspondent columns:
+	static final public IntegerColumn CORRESPONDENT_COLUMN_ID = new IntegerColumn("ID", false, Correspondent.CORRESPONDENT_ID_FIELD);
+	static final public StringColumn CORRESPONDENT_COLUMN_NAME = new StringColumn("Name", false, Correspondent.CORRESPONDENT_NAME_MAX_LENGTH_BYTES);
+	static final public IntegerColumn CORRESPONDENT_COLUMN_TRANSMISSION_TYPE = new IntegerColumn("TransmissionType", false);
+	static final public StringColumn CORRESPONDENT_COLUMN_ADDRESS = new StringColumn("Address", true, Correspondent.CORRESPONDENT_ADDRESS_MAX_LENGTH_BYTES);
+	//static final public StringColumn CORRESPONDENT_COLUMN_ENCRYPTION_KEY = new StringColumn("Key", false, Correspondent.CORRESPONDENT_ENCRYPTION_KEY_MAX_LENGTH_BYTES);
+	//	Add columns and index to Correspondent Schema & seal it:
+	static
+	{
+		for(Schema schema : new Schema[] { RECEIVER_SCHEMA, SENDER_SCHEMA } )
+		{
+			schema.addColumn(CORRESPONDENT_COLUMN_ID);
+			schema.addColumn(CORRESPONDENT_COLUMN_NAME);
+			schema.addColumn(CORRESPONDENT_COLUMN_TRANSMISSION_TYPE);
+			schema.addColumn(CORRESPONDENT_COLUMN_ADDRESS);
+			//schema.addColumn(CORRESPONDENT_COLUMN_ENCRYPTION_KEY);
+			schema.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", CORRESPONDENT_COLUMN_ID));
+			schema.seal();
+		}
+	}
+	//	Transmission schemas:
 	static final public Schema SENT_TRANSMISSION_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "SentTransmission");
 	static final public Schema RECEIVED_TRANSMISSION_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "ReceivedTransmission");
 	//	Transmission columns:
@@ -93,8 +119,8 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	static final public IntegerColumn TRANSMISSION_COLUMN_TYPE = new IntegerColumn("Type", false);
 	static final public IntegerColumn TRANSMISSION_COLUMN_PAYLOAD_HASH = new IntegerColumn("PayloadHash", false, Transmission.PAYLOAD_HASH_FIELD);
 	static final public IntegerColumn TRANSMISSION_COLUMN_PAYLOAD_TYPE = new IntegerColumn("PayloadType", true, Payload.PAYLOAD_TYPE_FIELD);
-	static final public StringColumn SENT_TRANSMISSION_COLUMN_RECEIVER = StringColumn.ForCharacterCount("Receiver", false, Transmission.CORRESPONDENT_MAX_LENGTH);
-	static final public StringColumn RECEIVED_TRANSMISSION_COLUMN_SENDER = StringColumn.ForCharacterCount("Sender", false, Transmission.CORRESPONDENT_MAX_LENGTH);
+	static final public ForeignKeyColumn SENT_TRANSMISSION_COLUMN_RECEIVER = new ForeignKeyColumn("Receiver", RECEIVER_SCHEMA, false);
+	static final public ForeignKeyColumn RECEIVED_TRANSMISSION_COLUMN_SENDER = new ForeignKeyColumn("Sender", SENDER_SCHEMA, false);
 	static final public IntegerColumn TRANSMISSION_COLUMN_NUMBER_OF_PARTS = new IntegerColumn("NumberOfParts", false, false, Integer.SIZE);
 	//	Columns shared with TransmisionPart:
 	static final public TimeStampColumn COLUMN_SENT_AT = TimeStampColumn.JavaMSTime("SentAt", true, false);
@@ -168,16 +194,82 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		this.recordStore = client.recordStoreHandle.getStore(this);
 	}
 	
+	public void store(Correspondent correspondent) throws Exception
+	{
+		// Start transaction
+		recordStore.startTransaction();
+		
+		try
+		{
+			doStoreCorrespondent(correspondent);
+		}
+		catch(Exception e)
+		{
+			recordStore.rollbackTransactions();
+			throw e;
+		}
+		
+		// Commit transaction
+		recordStore.commitTransaction();
+	}
+	
+	private RecordReference doStoreCorrespondent(Correspondent correspondent) throws Exception
+	{
+		CorrespondentRecordGenerator generator = new CorrespondentRecordGenerator(correspondent);
+		
+		// Store the correspondent record:
+		recordStore.store(generator.rec);
+		//	local ID should now be set in the record...
+		
+		// Check/set it on the object:
+		if(correspondent.isLocalIDSet()) // if the object already had a local transmissionID...
+		{	// then it should match the ID on the record, so let's verify:
+			if(correspondent.getLocalID() != CORRESPONDENT_COLUMN_ID.retrieveValue(generator.rec))
+				throw new IllegalStateException("Non-matching correspodent ID"); // this should never happen
+		}
+		else
+			// Set local transmissionID in object as on the record: 
+			correspondent.setLocalID(CORRESPONDENT_COLUMN_ID.retrieveValue(generator.rec).intValue());
+		
+		return generator.rec.getReference();
+	}
+	
+	protected Correspondent retrieveCorrespondentByQuery(SingleRecordQuery recordQuery)
+	{
+		// Query for record and convert to Correspondent object:
+		return correspondentFromRecord(recordStore.retrieveRecord(recordQuery));
+	}
+	
+	/**
+	 * Retrieves the SMSCorrespondent with the given phone number and binary/text mode
+	 * 
+	 * @param phoneNumber
+	 * @param binarySMS
+	 * @return the correspondent or null
+	 */
+	public SMSCorrespondent retrieveSMSCorrespondent(String phoneNumber, boolean binarySMS)
+	{
+		return (SMSCorrespondent) retrieveCorrespondentByQuery(
+			new FirstRecordQuery(	getCorrespondentSchema(),
+									new EqualityConstraint(CORRESPONDENT_COLUMN_ADDRESS, phoneNumber),
+									new RuleConstraint(	CORRESPONDENT_COLUMN_TRANSMISSION_TYPE,
+														Comparison.EQUAL,
+														(binarySMS ?
+															Transmission.Type.BINARY_SMS :
+															Transmission.Type.TEXTUAL_SMS).ordinal())));
+	}
+	
 	/**
 	 * @param transmission assumed to have all values set, except the (local) ID when inserting
 	 * @throws Exception 
 	 */
-	private void doStoreTransmission(Transmission transmission, Record transmissionRecord) throws Exception
+	private void doStoreTransmission(Transmission<?> transmission, Record transmissionRecord) throws Exception
 	{
-		// Store the transmission
+		// Store the transmission record:
 		recordStore.store(transmissionRecord);
+		//	local ID should now be set in the record...
 		
-		// Transmission ID should now be set in the record...
+		// Check/set it on the object:
 		if(transmission.isLocalIDSet()) // if the object already had a local transmissionID...
 		{	// then it should match the ID on the record, so let's verify:
 			if(transmission.getLocalID() != TRANSMISSION_COLUMN_ID.retrieveValue(transmissionRecord))
@@ -188,7 +280,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 			transmission.setLocalID(TRANSMISSION_COLUMN_ID.retrieveValue(transmissionRecord).intValue());
 	}
 	
-	public void storeTransmission(Transmission transmission) throws Exception
+	public void store(Transmission<?> transmission) throws Exception
 	{
 		// Start transaction
 		recordStore.startTransaction();
@@ -196,15 +288,18 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		try
 		{
 			// Use RecordGenerator to create a transmission record and part record(s):
-			RecordGenerator generator = new RecordGenerator(transmission);
+			TransmissionRecordGenerator generator = new TransmissionRecordGenerator(transmission);
 
+			// Set foreign key for Correspondent record (possibly first storing/updating it):
+			getCorrespondentColumn().storeValue(generator.tRec, doStoreCorrespondent(transmission.getCorrespondent()));
+			
 			// Store transmission record:
 			doStoreTransmission(transmission, generator.tRec); // after this the localID should always be known
 			
 			// Store part records:
 			for(Record tPartRec : generator.tPartRecs)
 			{
-				getTransmissionPartTransmissionColumn().storeValue(tPartRec, generator.tRec.getReference()); // set foreign key
+				getTransmissionPartTransmissionColumn().storeValue(tPartRec, generator.tRec.getReference()); // set foreign key!
 				recordStore.store(tPartRec);
 			}
 		}
@@ -222,87 +317,110 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	 * @param localID
 	 * @return the Transmission with the given {@code localID}, or {@code null} if no such transmission was found.
 	 */
-	public Transmission retrieveTransmissionForID(int localID) throws Exception
+	public Transmission<?> retrieveTransmissionForID(int localID) throws Exception
 	{
-		return retrieveTransmissionForQuery(getTransmissionSchema().createRecordReference(localID).getRecordQuery());
+		return retrieveTransmissionByQuery(getTransmissionSchema().createRecordReference(localID).getRecordQuery());
 
 	}
 	
-	public Transmission retrieveTransmissionForID(int localID, int payloadHash) throws Exception
+	public Transmission<?> retrieveTransmissionFor(int localID, int payloadHash) throws Exception
 	{
-		return retrieveTransmissionForQuery(new FirstRecordQuery(getTransmissionSchema(), getTransmissionSchema().createRecordReference(localID).getRecordQueryConstraint(), new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
+		return retrieveTransmissionByQuery(new FirstRecordQuery(getTransmissionSchema(), getTransmissionSchema().createRecordReference(localID).getRecordQueryConstraint(), new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
 	}
 	
 	
-	protected Transmission retrieveTransmissionForQuery(SingleRecordQuery recordQuery)
+	protected Transmission<?> retrieveTransmissionByQuery(SingleRecordQuery recordQuery)
 	{
-		// Query for record:
-		Record tRec = recordStore.retrieveRecord(recordQuery);
-				
-		// Null check:
-		if(tRec == null)
-			return null; // no such transmission found
-
-		return transmissionFromRecord(tRec);
+		// Query for record and convert to Transmission object:
+		return transmissionFromRecord(recordStore.retrieveRecord(recordQuery));
 	}
 	
-	protected List<Transmission> retrieveTransmissionsForQuery(RecordsQuery multiRecordQuery)
+	protected List<Transmission<?>> retrieveTransmissions(RecordsQuery multiRecordQuery)
 	{
-		List<Record> records = recordStore.retrieveRecords(multiRecordQuery);
-		
-		List<Transmission> transmissions = new ArrayList<Transmission>();
-		
-		for (Record record : records)
-			transmissions.add(transmissionFromRecord(record));
-		
+		List<Transmission<?>> transmissions = new ArrayList<Transmission<?>>();
+		for (Record record : recordStore.retrieveRecords(multiRecordQuery))
+			CollectionUtils.addIgnoreNull(transmissions, transmissionFromRecord(record));
 		return transmissions;
 	}
 	
-	
-	private Transmission transmissionFromRecord(Record tRec)
+	private Transmission<?> transmissionFromRecord(Record tRec)
 	{
+		// Null check:
+		if(tRec == null)
+			return null; // no such transmission found
+		
 		// Values:
 		Integer localID = TRANSMISSION_COLUMN_ID.retrieveValue(tRec).intValue();
 		Transmission.Type type = Transmission.Type.values()[TRANSMISSION_COLUMN_TYPE.retrieveValue(tRec).intValue()]; 
 		Integer remoteID = TRANSMISSION_COLUMN_REMOTE_ID.isValueSet(tRec) ? TRANSMISSION_COLUMN_REMOTE_ID.retrieveValue(tRec).intValue() : null; 
 		int payloadHash = TRANSMISSION_COLUMN_PAYLOAD_HASH.retrieveValue(tRec).intValue();
-		String sender = RECEIVED_TRANSMISSION_COLUMN_SENDER.retrieveValue(tRec);
-		String receiver = SENT_TRANSMISSION_COLUMN_RECEIVER.retrieveValue(tRec);
 		TimeStamp sentAt = COLUMN_SENT_AT.retrieveValue(tRec);
 		TimeStamp receivedAt = COLUMN_RECEIVED_AT.retrieveValue(tRec);
 		int totalParts = TRANSMISSION_COLUMN_NUMBER_OF_PARTS.retrieveValue(tRec).intValue();
+		
+		// Query for correspondent record:
+		Record cRec = recordStore.retrieveRecord(getCorrespondentColumn().retrieveValue(tRec).getRecordQuery());
+		
 		// Query for part records:		
 		List<Record> tPartRecs = recordStore.retrieveRecords(new RecordsQuery(Source.From(getTransmissionPartSchema()), Order.AscendingBy(TRANSMISSION_PART_COLUMN_NUMBER), tRec.getRecordQueryConstraint()));
-		// Construct object:
-		SMSAgent senderAgent = SMSAgent.Parse(sender);
-		SMSAgent receiverAgent = SMSAgent.Parse(receiver);
+		
 		switch(type)
 		{
-		case BINARY_SMS:
-			// create a new SMSTransmission object:
-			BinarySMSTransmission binarySMS =  new BinarySMSTransmission(client, localID, remoteID, payloadHash, sentAt, receivedAt, senderAgent, receiverAgent);
-			// add each part we got from the query:
-			for(Record partRecord : tPartRecs)
-				binarySMS.receivePart(new BinaryMessage(binarySMS,
+			case BINARY_SMS:
+				// create a new SMSTransmission object:
+				BinarySMSTransmission binarySMS =  new BinarySMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt);
+				// add each part we got from the query:
+				for(Record partRecord : tPartRecs)
+					binarySMS.receivePart(new BinaryMessage(binarySMS,
+															TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(),
+															totalParts,
+															sentAt,
+															TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(partRecord),
+															receivedAt,
+															BitArray.FromBytes(	TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord),
+																				TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.retrieveValue(partRecord).intValue())));
+				return binarySMS;
+			case TEXTUAL_SMS:
+				// create a new SMSTransmission object:
+				TextSMSTransmission textSMS = new TextSMSTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt);
+				// add each part we got from the query:
+				for(Record partRecord : tPartRecs)
+					textSMS.receivePart(new TextMessage(textSMS,
 														TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(),
 														totalParts,
 														sentAt,
 														TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(partRecord),
 														receivedAt,
-														BitArray.FromBytes(	TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord),
-																			TRANSMISSION_PART_COLUMN_BODY_BIT_LENGTH.retrieveValue(partRecord).intValue())));
-			return binarySMS;
-		case TEXTUAL_SMS:
-			// create a new SMSTransmission object:
-			TextSMSTransmission textSMS = new TextSMSTransmission(client, localID, remoteID, payloadHash, sentAt, receivedAt, senderAgent, receiverAgent);
-			// add each part we got from the query:
-			for(Record partRecord : tPartRecs)
-				textSMS.receivePart(new TextMessage(textSMS, TRANSMISSION_PART_COLUMN_NUMBER.retrieveValue(partRecord).intValue(), totalParts, sentAt, TRANSMISSION_PART_COLUMN_DELIVERED_AT.retrieveValue(partRecord), receivedAt, BytesToString(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord))));
-			return textSMS;
-		case HTTP:
-			return new HTTPTransmission(client, localID, remoteID, payloadHash, sentAt, receivedAt, receiver, sender, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)) /* only one part for HTTP */ );
-		default:
-			throw new IllegalStateException("Unsupported transmission type");
+														BytesToString(TRANSMISSION_PART_COLUMN_BODY.retrieveValue(partRecord))));
+				return textSMS;
+			case HTTP:
+				return null; // TODO !!!
+				//return new HTTPTransmission(client, (SMSCorrespondent) correspondentFromRecord(cRec), localID, remoteID, payloadHash, sentAt, receivedAt, receiver, sender, TRANSMISSION_PART_COLUMN_BODY.retrieveValue(tPartRecs.get(0)) /* only one part for HTTP */ );
+			default:
+				throw new IllegalStateException("Unsupported transmission type");
+		}
+	}
+	
+	private Correspondent correspondentFromRecord(Record cRec)
+	{
+		// Null check:
+		if(cRec == null)
+			return null;
+		
+		int localID = CORRESPONDENT_COLUMN_ID.retrieveValue(cRec).intValue();
+		String name = CORRESPONDENT_COLUMN_NAME.retrieveValue(cRec);
+		String address = CORRESPONDENT_COLUMN_ADDRESS.retrieveValue(cRec);
+		Transmission.Type ttype = Transmission.Type.values()[CORRESPONDENT_COLUMN_TRANSMISSION_TYPE.retrieveValue(cRec).intValue()];
+		switch(ttype)
+		{
+			case BINARY_SMS:
+				return new SMSCorrespondent(localID, name, address, true);
+			case TEXTUAL_SMS:
+				return new SMSCorrespondent(localID, name, address, false);
+			case HTTP:
+				return null; // TODO !!!
+			default:
+				throw new IllegalStateException("Unsupported transmission type");
 		}
 	}
 	
@@ -312,11 +430,15 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	 * @param payloadHash - the hash of the transmission payload
 	 * @return the (first) binary SMS transmission that obeys the conditions specified by the provided arguments.
 	 */
-	public BinarySMSTransmission retrieveBinarySMSTransmission(SMSAgent correspondent, int remoteID, int payloadHash)
+	public BinarySMSTransmission retrieveBinarySMSTransmission(SMSCorrespondent correspondent, int remoteID, int payloadHash)
 	{
-		return (BinarySMSTransmission) retrieveTransmissionForQuery(new FirstRecordQuery(getTransmissionSchema(),
+		// Check correspondent:
+		if(!correspondent.isLocalIDSet())
+			throw new IllegalStateException("Correspondent (" + correspondent.toString() + ") is unknown in database.");
+		
+		return (BinarySMSTransmission) retrieveTransmissionByQuery(new FirstRecordQuery(getTransmissionSchema(),
 				new RuleConstraint(TRANSMISSION_COLUMN_TYPE, Comparison.EQUAL, Transmission.Type.BINARY_SMS.ordinal()),
-				new RuleConstraint(getCorrespondentColumn(), Comparison.EQUAL, correspondent),
+				getCorrespondentSchema().createRecordReference(correspondent.getLocalID()).getRecordQueryConstraint(),
 				new RuleConstraint(TRANSMISSION_COLUMN_REMOTE_ID, Comparison.EQUAL, remoteID),
 				new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
 	}
@@ -327,11 +449,15 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	 * @param payloadHash - the hash of the transmission payload
 	 * @return the (first) textual SMS transmission that obeys the conditions specified by the provided arguments.
 	 */
-	public TextSMSTransmission retrieveTextSMSTransmission(SMSAgent correspondent, int remoteID, int payloadHash)
-	{ 
-		return (TextSMSTransmission) retrieveTransmissionForQuery(new FirstRecordQuery(getTransmissionSchema(),
+	public TextSMSTransmission retrieveTextSMSTransmission(SMSCorrespondent correspondent, int remoteID, int payloadHash)
+	{
+		// Check correspondent:
+		if(!correspondent.isLocalIDSet())
+			throw new IllegalStateException("Correspondent (" + correspondent.toString() + ") is unknown in database.");
+		
+		return (TextSMSTransmission) retrieveTransmissionByQuery(new FirstRecordQuery(getTransmissionSchema(),
 				new RuleConstraint(TRANSMISSION_COLUMN_TYPE, Comparison.EQUAL, Transmission.Type.TEXTUAL_SMS.ordinal()),
-				new RuleConstraint(getCorrespondentColumn(), Comparison.EQUAL, correspondent),
+				getCorrespondentSchema().createRecordReference(correspondent.getLocalID()).getRecordQueryConstraint(),
 				new RuleConstraint(TRANSMISSION_COLUMN_REMOTE_ID, Comparison.EQUAL, remoteID),
 				new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
 	}
@@ -343,13 +469,13 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	 */
 	public HTTPTransmission retrieveHTTPTransmission(int payloadType, int payloadHash)
 	{
-		return (HTTPTransmission) retrieveTransmissionForQuery(new FirstRecordQuery(getTransmissionSchema(),
+		return (HTTPTransmission) retrieveTransmissionByQuery(new FirstRecordQuery(getTransmissionSchema(),
 				new RuleConstraint(TRANSMISSION_COLUMN_TYPE, Comparison.EQUAL, Transmission.Type.HTTP.ordinal()),
 				new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_TYPE, Comparison.EQUAL, payloadType),
 				new RuleConstraint(TRANSMISSION_COLUMN_PAYLOAD_HASH, Comparison.EQUAL, payloadHash)));
 	}
 
-	public void deleteTransmission(Transmission transmission)
+	public void deleteTransmission(Transmission<?> transmission)
 	{
 		if(!transmission.isLocalIDSet())
 			return; // the transmission was never stored
@@ -397,37 +523,76 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	}
 	
 	protected abstract Schema getTransmissionSchema();
+	
+	protected abstract Schema getCorrespondentSchema();
 
-	protected abstract StringColumn getCorrespondentColumn();
+	protected abstract ForeignKeyColumn getCorrespondentColumn();
 	
 	protected abstract Schema getTransmissionPartSchema();
 	
 	protected abstract ForeignKeyColumn getTransmissionPartTransmissionColumn();
 	
 	/**
+	 * Helper class to generate Records representing Correspondents
+	 * 
 	 * @author mstevens
-	 *
 	 */
-	private class RecordGenerator implements Transmission.Handler, Message.Handler
+	private class CorrespondentRecordGenerator implements Correspondent.Handler
 	{
 
+		public final Record rec;
+		
+		public CorrespondentRecordGenerator(Correspondent correspondent)
+		{
+			rec = getCorrespondentSchema().createRecord();
+			
+			if(correspondent.isLocalIDSet())
+				CORRESPONDENT_COLUMN_ID.storeValue(rec, correspondent.getLocalID());
+			CORRESPONDENT_COLUMN_NAME.storeValue(rec, correspondent.getName());
+			CORRESPONDENT_COLUMN_TRANSMISSION_TYPE.storeValue(rec, correspondent.getTransmissionType().ordinal());
+			CORRESPONDENT_COLUMN_ADDRESS.storeValue(rec, correspondent.getAddress());
+			
+			// Use double dispatch for subclass-specific work:
+			correspondent.handle(this);
+		}
+		
+		@Override
+		public void handle(SMSCorrespondent smsCorrespondent)
+		{
+			// does nothing (for now)
+		}
+		
+	}
+	
+	/**
+	 * Helper class to generate Records representing Transmissions and their parts (Messages)
+	 * 
+	 * @author mstevens
+	 */
+	private class TransmissionRecordGenerator implements Transmission.Handler, Message.Handler
+	{
+
+		//public final Record cRec;
 		public final Record tRec;
 		public final List<Record> tPartRecs = new ArrayList<Record>();
 		
-		public RecordGenerator(Transmission transmission)
+		public TransmissionRecordGenerator(Transmission<?> transmission)
 		{			
 			// Create transmission record:
 			tRec = getTransmissionSchema().createRecord();
 			
-			// Set values of all columns will be set except for Sender, Receiver & NumberOfParts:
-			TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());
+			// Set values of all columns will be set except for Correspondent & NumberOfParts:
+			if(transmission.isLocalIDSet())
+				TRANSMISSION_COLUMN_ID.storeValue(tRec, transmission.getLocalID());			
 			TRANSMISSION_COLUMN_REMOTE_ID.storeValue(tRec, transmission.getRemoteID());
 			TRANSMISSION_COLUMN_TYPE.storeValue(tRec, transmission.getType().ordinal());
 			TRANSMISSION_COLUMN_PAYLOAD_HASH.storeValue(tRec, transmission.getPayloadHash()); // payload hash should always be set before storage
 			if(transmission.isPayloadSet())
 				TRANSMISSION_COLUMN_PAYLOAD_TYPE.storeValue(tRec, transmission.getPayload().getType());
-			COLUMN_SENT_AT.storeValue(tRec, transmission.getSentAt());
-			COLUMN_RECEIVED_AT.storeValue(tRec, transmission.getReceivedAt());
+			if(transmission.isSent())
+				COLUMN_SENT_AT.storeValue(tRec, transmission.getSentAt());
+			if(transmission.isReceived())
+				COLUMN_RECEIVED_AT.storeValue(tRec, transmission.getReceivedAt());
 			
 			// Use double dispatch for type-specific work:
 			transmission.handle(this);
@@ -444,10 +609,6 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		{
 			// Set SMS-specific values:
 			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, smsT.getTotalNumberOfParts());
-			if(smsT.isSenderSet())
-				RECEIVED_TRANSMISSION_COLUMN_SENDER.storeValue(tRec, smsT.getSender().toString());
-			if(smsT.isReceiverSet())
-				SENT_TRANSMISSION_COLUMN_RECEIVER.storeValue(tRec, smsT.getReceiver().toString());
 
 			// Make records for the parts...
 			for(Message msg : smsT.getParts())
@@ -492,7 +653,6 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		public void handle(HTTPTransmission httpT)
 		{
 			// Set receiver (= serverURL) and number of parts (always = 1):
-			SENT_TRANSMISSION_COLUMN_RECEIVER.storeValue(tRec, httpT.getReceiverURL());
 			TRANSMISSION_COLUMN_NUMBER_OF_PARTS.storeValue(tRec, 1);
 			
 			// Create a single transmission part (only used to store the body):

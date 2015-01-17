@@ -20,20 +20,20 @@ package uk.ac.ucl.excites.sapelli.transmission.control;
 
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
-import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.SMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPClient;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.AndroidSMSSender;
 import android.content.Context;
 
 /**
  * 
- * @author benelliott
+ * @author benelliott, mstevens
  */
 public class AndroidTransmissionController extends TransmissionController
 {
 
 	private Context context;
-	private SMSSender smsSender;
+	private AndroidSMSSender smsSender;
 	
 	public AndroidTransmissionController(TransmissionClient transmissionClient, Context context) throws DBException
 	{
@@ -42,17 +42,17 @@ public class AndroidTransmissionController extends TransmissionController
 	}
 
 	@Override
-	public SMSClient getSMSService()
+	public SMSSender getSMSService()
 	{
 		if (smsSender == null)
-			smsSender = new SMSSender(context);
+			smsSender = new AndroidSMSSender(context);
 		return smsSender;
 	}
 
 	@Override
 	public HTTPClient getHTTPClient()
 	{
-		// TODO Auto-generated method stub
+		// TODO create Android HTTP client
 		return null;
 	}
 

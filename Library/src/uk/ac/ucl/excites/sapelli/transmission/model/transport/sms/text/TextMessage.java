@@ -16,18 +16,18 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.modes.sms.text;
+package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.InvalidMessageException;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSSender;
 
 /**
  * Textual SMS message in which data in encoding as 7-bit characters using the default GSM 03.38 alphabet.
@@ -80,8 +80,8 @@ public class TextMessage extends Message
 	 * Called by {@link TextSMSTransmission#wrap(uk.ac.ucl.excites.sapelli.shared.io.BitArray)}.
 	 * 
 	 * @param transmission
-	 * @param partNumber
-	 * @param totalParts
+	 * @param partNumber a value from [1, totalParts]
+	 * @param totalParts a value from [1, TextSMSTransmission.MAX_TRANSMISSION_PARTS]
 	 * @param body
 	 */
 	protected TextMessage(TextSMSTransmission transmission, int partNumber, int totalParts, String body)
@@ -101,7 +101,7 @@ public class TextMessage extends Message
 	 * @param data
 	 * @throws Exception
 	 */
-	public TextMessage(SMSAgent sender, String text) throws Exception
+	public TextMessage(SMSCorrespondent sender, String text) throws Exception
 	{
 		this(sender, text, TimeStamp.now() /*received NOW*/);
 	}
@@ -114,7 +114,7 @@ public class TextMessage extends Message
 	 * @param receivedAt
 	 * @throws Exception
 	 */
-	public TextMessage(SMSAgent sender, String content, TimeStamp receivedAt) throws Exception
+	public TextMessage(SMSCorrespondent sender, String content, TimeStamp receivedAt) throws Exception
 	{
 		super(sender, receivedAt);
 		
@@ -232,9 +232,9 @@ public class TextMessage extends Message
 	}
 
 	@Override
-	public void send(SMSClient smsService)
+	public void send(SMSSender smsService)
 	{
-		smsService.send(transmission.getReceiver(), this);
+		smsService.send(transmission.getCorrespondent(), this);
 	}
 	
 	@Override

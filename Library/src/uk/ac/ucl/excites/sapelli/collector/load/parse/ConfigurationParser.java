@@ -25,7 +25,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.TransmissionSettings;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.XMLAttributes;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
  * @author mstevens
@@ -111,9 +111,9 @@ public class ConfigurationParser extends SubtreeParser<ProjectParser>
 				if(transmissionSettings == null)
 					throw new SAXException("<" + TAG_SMS_UPLOAD + "> should only appear in <" + TAG_TRANSMISSION + ">.");
 				transmissionSettings.setSMSUpload(attributes.getBoolean(ATTRIBUTE_ENABLED, TransmissionSettings.DEFAULT_SMS_UPLOAD));
-				String relay = attributes.getValue("relay");
-				if(relay != null && !relay.isEmpty())
-					transmissionSettings.setSMSRelay(new SMSAgent(relay));
+				String relayPhoneNumber = attributes.getValue("relay");
+				if(relayPhoneNumber != null && !relayPhoneNumber.isEmpty())
+					transmissionSettings.setSMSRelay(new SMSCorrespondent("relay", relayPhoneNumber, true)); // binary sms receiver
 				transmissionSettings.setSMSAllowRoaming(attributes.getBoolean(ATTRIBUTE_ROAMING, TransmissionSettings.DEFAULT_SMS_ALLOW_ROAMING));
 			}
 			// <Encryption>

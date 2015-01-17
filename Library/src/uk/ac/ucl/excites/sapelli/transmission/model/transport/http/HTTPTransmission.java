@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.modes.http;
+package uk.ac.ucl.excites.sapelli.transmission.model.transport.http;
 
 import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitArray;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
+import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
@@ -36,13 +36,11 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
  * http://stackoverflow.com/questions/4047731/send-imagejpg-via-httppost-from-android-to-servletwebserver
  * Use mimi type: "application/octet-stream"
  */
-public class HTTPTransmission extends Transmission
+public class HTTPTransmission extends Transmission<HTTPServer>
 {
 	
 	public static final int MAX_BODY_SIZE = 4096; // bytes (TODO determine a good value)
 	
-	private String receiverURL;
-	private String senderURL;
 	private byte[] body;
 	
 	/**
@@ -52,10 +50,9 @@ public class HTTPTransmission extends Transmission
 	 * @param serverURL
 	 * @param payload
 	 */
-	public HTTPTransmission(TransmissionClient client, String receiverURL, Payload payload)
+	public HTTPTransmission(TransmissionClient client, HTTPServer server, Payload payload)
 	{
-		super(client, payload);
-		this.receiverURL = receiverURL;
+		super(client, server, payload);
 	}
 	
 	/**
@@ -67,10 +64,9 @@ public class HTTPTransmission extends Transmission
 	 * @param body
 	 * @param receivedAt
 	 */
-	public HTTPTransmission(TransmissionClient client, String senderURL, int sendingSideID, int payloadHash, byte[] body, TimeStamp receivedAt)
+	public HTTPTransmission(TransmissionClient client, HTTPServer sender, int sendingSideID, int payloadHash, byte[] body, TimeStamp receivedAt)
 	{
-		super(client, sendingSideID, payloadHash);
-		this.senderURL = senderURL;
+		super(client, sender, sendingSideID, payloadHash);
 		this.body = body;
 		setReceivedAt(receivedAt);
 	}
@@ -79,19 +75,16 @@ public class HTTPTransmission extends Transmission
 	 * Called when retrieving transmission from database
 	 * 
 	 * @param client
+	 * @param correspondent
 	 * @param localID
 	 * @param remoteID - may be null
 	 * @param payloadHash
 	 * @param sentAt - may be null
-	 * @param receivedAt - may be null
-	 * @param serverURL - may be null on receiving side
 	 * @param body
 	 */
-	public HTTPTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, String receiverURL, String senderURL, byte[] body) 
+	public HTTPTransmission(TransmissionClient client, HTTPServer correspondent, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, byte[] body) 
 	{
-		super(client, localID, remoteID, payloadHash, sentAt, receivedAt);
-		this.receiverURL = receiverURL;
-		this.senderURL = senderURL;
+		super(client, correspondent, localID, remoteID, payloadHash, sentAt, receivedAt);
 		this.body = body;
 	}
 	
@@ -129,19 +122,6 @@ public class HTTPTransmission extends Transmission
 	public byte[] getBody()
 	{
 		return body;
-	}
-	
-	/**
-	 * @return the receiverURL
-	 */
-	public String getReceiverURL()
-	{
-		return receiverURL;
-	}
-
-	public String getSenderURL()
-	{
-		return senderURL;
 	}
 	
 	@Override

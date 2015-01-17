@@ -27,43 +27,64 @@ import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Source;
-import uk.ac.ucl.excites.sapelli.transmission.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.db.ReceivedTransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
-import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.http.HTTPTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinarySMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextSMSTransmission;
-import uk.ac.ucl.excites.sapelli.transmission.payloads.AckPayload;
-import uk.ac.ucl.excites.sapelli.transmission.payloads.RecordsPayload;
-import uk.ac.ucl.excites.sapelli.transmission.payloads.ResendRequestPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPClient;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
 
 /**
  * @author mstevens, benelliott
  *
  */
-public abstract class TransmissionController implements Payload.Handler, StoreHandle.StoreUser
+public abstract class TransmissionController implements StoreHandle.StoreUser
 {
+	
+	static public final String UNKNOWN_CORRESPONDENT_NAME = "anonymous";
 
-	private RecordStore recordStore;
-	private SentTransmissionStore sentTStore;
-	private ReceivedTransmissionStore receivedTStore;
+	// Client:
 	private TransmissionClient transmissionClient;
+	
+	// Stores:
+	protected final RecordStore recordStore;
+	protected final SentTransmissionStore sentTStore;
+	protected final ReceivedTransmissionStore receivedTStore;
+	
+	// Handlers:
+	private final SMSReceiver smsReceiver = new SMSReceiver();
+	private final PayloadReceiver payloadReceiver;
 	
 	public TransmissionController(TransmissionClient client) throws DBException
 	{
+		// Client:
 		this.transmissionClient = client;
+		
+		// Stores:
+		this.recordStore = client.recordStoreHandle.getStore(this);
 		this.sentTStore = client.sentTransmissionStoreHandle.getStore(this);
 		this.receivedTStore = client.receivedTransmissionStoreHandle.getStore(this);
+
+		// Payload receiver:
+		PayloadReceiver customPayloadReceiver = client.getCustomPayloadReceiver();
+		this.payloadReceiver =	customPayloadReceiver != null ?
+									customPayloadReceiver :
+									new DefaultPayloadReceiver();
+		
+		// TODO log!!!
 	}
 	
 	public boolean deleteTransmissionUponDecoding()
@@ -72,7 +93,7 @@ public abstract class TransmissionController implements Payload.Handler, StoreHa
 		return false;
 	}
 	
-	public abstract SMSClient getSMSService();
+	public abstract SMSSender getSMSService();
 	
 	public abstract HTTPClient getHTTPClient();
 	
@@ -90,20 +111,7 @@ public abstract class TransmissionController implements Payload.Handler, StoreHa
 			RecordsPayload payload = (RecordsPayload) Payload.New(Payload.BuiltinType.Records);
 
 			// create a new Transmission:
-			Transmission transmission = null;
-			switch(receiver.getTransmissionType())
-			{
-			case BINARY_SMS:
-				transmission = new BinarySMSTransmission(transmissionClient, new SMSAgent(receiver.getAddress()), payload);
-				break;
-			case TEXTUAL_SMS:
-				transmission = new TextSMSTransmission(transmissionClient, new SMSAgent(receiver.getAddress()), payload);
-				break;
-			case HTTP:
-				transmission = new HTTPTransmission(transmissionClient, receiver.getAddress(), payload);
-			}
-			
-			payload.setTransmission(transmission);
+			Transmission<?> transmission = createOutgoingTransmission(payload, receiver);
 
 			// add as many records to the Payload as possible (this call will remove from the list the records that were successfully added to the payload):
 			payload.addRecords(recsToSend);
@@ -112,58 +120,40 @@ public abstract class TransmissionController implements Payload.Handler, StoreHa
 			storeAndSend(transmission);
 		}
 	}
+	
+	protected Transmission<?> createOutgoingTransmission(Payload payload, Correspondent receiver)
+	{
+		switch(receiver.getTransmissionType())
+		{
+			case BINARY_SMS:
+				return new BinarySMSTransmission(transmissionClient, (SMSCorrespondent) receiver, payload);
+			case TEXTUAL_SMS:
+				return  new TextSMSTransmission(transmissionClient, (SMSCorrespondent) receiver, payload);
+			//case HTTP:
+			//	return  new HTTPTransmission(transmissionClient, receiver, payload); // TODO !!!
+			default:
+				System.err.println("Unsupported transmission type: " + receiver.getTransmissionType());
+				return null;
+		}
+	}
 
 	public void sendResendRequests() throws Exception
 	{
-		for (SMSTransmission<?> incompleteTransmission : receivedTStore.getIncompleteSMSTransmissions(SMSTransmission.RESEND_REQUEST_TIMEOUT_MILLIS))
-			sendResendRequest(incompleteTransmission);
-	}
-	
-	/**
-	 * 
-	 * @param toAck
-	 * @throws Exception
-	 */
-	public void sendAck(Transmission toAck) throws Exception
-	{
-		AckPayload payload = new AckPayload(toAck);
-		Transmission ackTransmission;
+		// Query for incomplete SMSTransmissions:
+		List<SMSTransmission<?>> incompleteSMSTs = receivedTStore.getIncompleteSMSTransmissions(SMSTransmission.RESEND_REQUEST_TIMEOUT_MILLIS);
 		
-		switch(toAck.getType())
-		{
-		case BINARY_SMS:
-			ackTransmission = new BinarySMSTransmission(transmissionClient, ((BinarySMSTransmission) toAck).getSender(), payload);
-			break;
-		case TEXTUAL_SMS:
-			ackTransmission = new TextSMSTransmission(transmissionClient, ((TextSMSTransmission) toAck).getSender(), payload);
-			break;
-		default: // HTTP:
-			ackTransmission = new HTTPTransmission(transmissionClient, ((HTTPTransmission) toAck).getSenderURL(), payload);
-		}
-		payload.setTransmission(ackTransmission);
-		storeAndSend(ackTransmission);
+		// TODO Log: found x incomplete transmissions 
+		
+		for(SMSTransmission<?> incomplete : incompleteSMSTs)
+			storeAndSend(createOutgoingTransmission(new ResendRequestPayload(incomplete), incomplete.getCorrespondent()));
+		
+		// TODO rememeber that a resend req was sent ...
 	}
 	
-	public void sendResendRequest(SMSTransmission<?> subject) throws Exception
-	{
-		ResendRequestPayload payload = new ResendRequestPayload(subject);
-		Transmission resendRequestTransmission;
-		switch(subject.getType())
-		{
-		case BINARY_SMS:
-			resendRequestTransmission = new BinarySMSTransmission(transmissionClient, subject.getSender(), payload);
-			break;
-		default: // TEXT_SMS:
-			resendRequestTransmission = new TextSMSTransmission(transmissionClient, subject.getSender(), payload);
-		}
-		payload.setTransmission(resendRequestTransmission);
-		storeAndSend(resendRequestTransmission);
-	}
-	
-	private void storeAndSend(Transmission transmission) throws Exception
+	private void storeAndSend(Transmission<?> transmission) throws Exception
 	{
 		// store in "in-flight transmissions" schema:
-		sentTStore.storeTransmission(transmission);
+		sentTStore.store(transmission);
 		// actually send the transmission:
 		transmission.send(this);
 	}
@@ -178,7 +168,7 @@ public abstract class TransmissionController implements Payload.Handler, StoreHa
 	 * @param transmission the transmission that has been received
 	 * @return true if the transmission was successfully "acted on" i.e. it was complete and no errors occured when reading it
 	 */
-	protected boolean doReceive(Transmission transmission) throws Exception
+	protected boolean doReceive(Transmission<?> transmission) throws Exception
 	{	
 		// Receive (i.e. decode) the transmission if it is complete
 		if(transmission.isComplete()) // TODO maybe this should be done in Message.receivePart()?
@@ -189,7 +179,14 @@ public abstract class TransmissionController implements Payload.Handler, StoreHa
 				transmission.receive();
 			
 				// Handle payload (including ACK, since this is payload-dependent):
-				transmission.getPayload().handle(this);
+				payloadReceiver.receive(transmission.getPayload());
+				
+				// Acknowledge reception if needed
+				if(transmission.getPayload().acknowledgeReception() /*&& transmission.getCorrespondent().wantsAck() TODO */)
+				{
+					// TODO this won't work for http? an http response is not quite like a sending a transmission, right?
+					storeAndSend(createOutgoingTransmission(new AckPayload(transmission), transmission.getCorrespondent()));
+				}
 				
 				// Delete transmission (and parts) from store:
 				if(deleteTransmissionUponDecoding())
@@ -215,9 +212,26 @@ public abstract class TransmissionController implements Payload.Handler, StoreHa
 		{
 			// Store/Update transmission unless it was successfully received in its entirety: TODO HTTP transmissions will usually be received in entirety??
 			if(!doReceive(httpTransmission))
-				receivedTStore.storeTransmission(httpTransmission);
+				receivedTStore.store(httpTransmission);
 		}
 		// else have already seen this transmission... TODO is this check necessary?
+	}
+	
+	/**
+	 * @param phoneNumber
+	 * @param binarySMS
+	 * @return
+	 * @throws Exception
+	 */
+	public SMSCorrespondent getSendingCorrespondentFor(String phoneNumber, boolean binarySMS) throws Exception
+	{
+		SMSCorrespondent corr = receivedTStore.retrieveSMSCorrespondent(phoneNumber, binarySMS);
+		if(corr == null)
+		{
+			corr = new SMSCorrespondent(UNKNOWN_CORRESPONDENT_NAME, phoneNumber, binarySMS);
+			receivedTStore.store(corr);
+		}
+		return corr;
 	}
 
 	/**
@@ -227,15 +241,15 @@ public abstract class TransmissionController implements Payload.Handler, StoreHa
 	{
 		try
 		{
-			final SMSTransmission<?> transmission = new SMSReceiver(msg).transmission;
+			smsReceiver.receive(msg);			
+			// Store/Update transmission unless it was successfully received in its entirety:
 			
-			// cancel the resend request alarm associated with this transmission since we have just received a new part:
+			// TODO also store if complete?
 			
-			// Store/Update transmission unless it was successfully received in its entirety:		
-			if(!doReceive(transmission))
+			if(!doReceive(smsReceiver.transmission))
 			{
 				// Transmission incomplete, waiting for more parts
-				receivedTStore.storeTransmission(transmission);
+				receivedTStore.store(smsReceiver.transmission);
 			}	
 		}
 		catch(Exception e)
@@ -244,71 +258,33 @@ public abstract class TransmissionController implements Payload.Handler, StoreHa
 			e.printStackTrace();
 		}
 	}
-
-	// ----- "handle" methods for different payload types (called once the transmission is complete):
 	
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.PayloadHandler#handle(uk.ac.ucl.excites.sapelli.transmission.payloads.AckPayload)
+	@Override
+	public void finalize()
+	{
+		discard();
+	}
+	
+	public void discard()
+	{
+		transmissionClient.recordStoreHandle.doneUsing(this);
+		transmissionClient.sentTransmissionStoreHandle.doneUsing(this);
+		transmissionClient.receivedTransmissionStoreHandle.doneUsing(this);
+	}
+	
+	/**
+	 * Helper class to handle incoming SMS messages
+	 * 
+	 * @author mstevens
 	 */
-	@Override
-	public void handle(AckPayload ackPayload) throws Exception
-	{
-		// find appropriate "in-flight" transmission and mark it as ACKed by setting the receivedAt time to ackPayload.getSubjectReceivedAt()
-		Transmission toAck = sentTStore.retrieveTransmissionForID(ackPayload.getSubjectSenderSideID(), ackPayload.getSubjectPayloadHash());
-		if (toAck == null)
-			throw new Exception("No transmission was found in the database to match the acknowledgement with transmission ID "+ackPayload.getSubjectSenderSideID());
-		
-		toAck.setReceivedAt(ackPayload.getSubjectReceivedAt());
-		sentTStore.storeTransmission(toAck);
-	}
-	
-	@Override
-	public void handle(ResendRequestPayload resendRequestPayload) throws Exception
-	{
-		// get Transmission object from store - will definitely be an SMSTransmission since resend requests are only concerned with SMS (at least for now)
-		SMSTransmission<?> subject = ((SMSTransmission<?>) sentTStore.retrieveTransmissionForID(resendRequestPayload.getSubjectSenderSideID(), resendRequestPayload.getSubjectPayloadHash()));
-		if (subject == null)
-			throw new Exception("No transmission was found in the database to match the received resend request from sender "+((SMSTransmission<?>) resendRequestPayload.getTransmission()).getSender().getPhoneNumber());
-		for (Integer part : resendRequestPayload.getPartsRequested())
-			// if this message was marked as missing then resend it 
-			subject.resend(this, part);
-	}
-
-	/* (non-Javadoc)
-	 * @see uk.ac.ucl.excites.sapelli.transmission.PayloadHandler#handle(uk.ac.ucl.excites.sapelli.transmission.payloads.RecordsPayload)
-	 */
-	@Override
-	public void handle(RecordsPayload recordsPayload) throws Exception
-	{
-		try
-		{
-			// Store received records...
-			recordStore.store(recordsPayload.getRecords());
-		}
-		catch (Exception e)
-		{
-			throw new Exception("Unable to store records that were received from transmission", e);
-		}
-		// send acknowledgement: 
-		sendAck(recordsPayload.getTransmission());
-	}
-
-	@Override
-	public void handle(Payload customPayload, int type) throws Exception
-	{
-		// TODO Handle custom payload...
-		
-		// send acknowledgement: TODO configurable? 
-		sendAck(customPayload.getTransmission());
-	}
-	
 	private class SMSReceiver implements Message.Handler
 	{
 		
 		public SMSTransmission<?> transmission;
 		
-		public SMSReceiver(Message smsMsg) throws Exception
+		public void receive(Message smsMsg) throws Exception
 		{
+			transmission = null; // wipe previous transmission !!!
 			smsMsg.handle(this);
 		}
 		
@@ -337,19 +313,81 @@ public abstract class TransmissionController implements Payload.Handler, StoreHa
 	}
 	
 	/**
+	 * Helper class with "handle" methods for different payload types (called once the transmission is complete)
 	 * 
-	 * 
-	 * @see java.lang.Object#finalize()
+	 * @author benelliott, mstevens
 	 */
-	public void finalize()
+	public abstract class PayloadReceiver implements Payload.Handler
 	{
-		discard();
+		
+		/**
+		 * Receive/decode payload
+		 * 
+		 * @param payload
+		 * @throws Exception
+		 */
+		public void receive(Payload payload) throws Exception
+		{
+			payload.handle(this);
+		}
+		
+		@Override
+		public void handle(AckPayload ack) throws Exception
+		{
+			// find appropriate "in-flight" transmission and mark it as ACKed by setting the receivedAt time to ackPayload.getSubjectReceivedAt()
+			Transmission<?> subject = sentTStore.retrieveTransmissionFor(ack.getSubjectSenderSideID(), ack.getSubjectPayloadHash());
+			if(subject == null)
+			{	// TODO log to file
+				System.err.println("No matching transmission (ID " + ack.getSubjectSenderSideID() + ") found in the database for acknowledgement from sender " + ack.getTransmission().getCorrespondent());
+				return;
+			}
+			
+			// Mark subject as received and update in database:
+			subject.setReceivedAt(ack.getSubjectReceivedAt());
+			sentTStore.store(subject);
+		}
+		
+		@Override
+		public void handle(ResendRequestPayload resendReq) throws Exception
+		{
+			// get Transmission object from store - will definitely be an SMSTransmission since resend requests are only concerned with SMS (at least for now)
+			SMSTransmission<?> subject = ((SMSTransmission<?>) sentTStore.retrieveTransmissionFor(resendReq.getSubjectSenderSideID(), resendReq.getSubjectPayloadHash()));
+			if(subject == null)
+			{	// TODO log to file
+				System.err.println("No matching transmission (ID " + resendReq.getSubjectSenderSideID() + ") found in the database for resend request from sender " + resendReq.getTransmission().getCorrespondent());
+				return;
+			}
+			
+			// Resend requested parts:
+			for(Integer partNumber : resendReq.getRequestedPartNumbers()) 
+				subject.resend(TransmissionController.this, partNumber);
+		}
+
+		@Override
+		public void handle(RecordsPayload recordsPayload) throws Exception
+		{
+			try
+			{
+				// Store received records...
+				recordStore.store(recordsPayload.getRecords());
+			}
+			catch (Exception e)
+			{
+				throw new Exception("Unable to store records that were received from transmission", e);
+			}
+		}
+		
 	}
 	
-	public void discard()
+	private class DefaultPayloadReceiver extends PayloadReceiver
 	{
-		transmissionClient.sentTransmissionStoreHandle.doneUsing(this);
-		transmissionClient.receivedTransmissionStoreHandle.doneUsing(this);
+
+		@Override
+		public void handle(Payload customPayload, int type) throws Exception
+		{
+			System.err.println("Receiving custom payload (type: " + type + ") not supported!");
+		}
+		
 	}
 
 }

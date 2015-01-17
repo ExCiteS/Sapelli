@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.modes.sms.text;
+package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -26,11 +26,11 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitArrayInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitArrayOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
 /**
@@ -40,14 +40,14 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
  * The binary data that is being sent is encoded to 7-bit characters from the default GSM 03.38 alphabet.
  * The encoding is done using 2 algorithms (both designed by Matthias Stevens):
  * <ul>
- * <li>one for the message headers: see {@link TextMessage#getContent()} and {@link TextMessage#TextMessage(SMSAgent, String, TimeStamp)}</li>
+ * <li>one for the message headers: see {@link TextMessage#getContent()} and {@link TextMessage#TextMessage(SMSCorrespondent, String, TimeStamp)}</li>
  * <li>and another one for the payload: see {@link #wrap(BitArray)} and {@link #unwrap()}.</li>
  * </ul>
  * Both encoding algorithms are designed to avoid ever producing the reserved {@code ESC} character, which plays a role in the SMS alphabet extension mechanism.
  * Avoidance of this character is achieved by different strategies for the header and payload:
  * <ul>
  * <li>	the strategy used for the message headers is the insertion of an additional "separator bit" before every group of 6 header bits, this bit is chosen such that the
- * 		none of the resulting 7 bit patterns will ever map to the {@code ESC} character (see {@link TextMessage#getContent()} and {@link TextMessage#TextMessage(SMSAgent, String, TimeStamp)}).
+ * 		none of the resulting 7 bit patterns will ever map to the {@code ESC} character (see {@link TextMessage#getContent()} and {@link TextMessage#TextMessage(SMSCorrespondent, String, TimeStamp)}).
  * <li> the strategy used for the payload is an escaping mechanism in which a 7 bit pattern that would normally map to {@code ESC} is instead encoded as {@code SP}. To differentiate which
  * 		{@code SP} occurrences are "real" ones and which are the result of {@code ESC} avoidance an additional bit is inserted (i.e. the first bit of the pattern represented by the character
  * 		which follows the {@code SP} occurrence), indicating how an {@code SP} occurance must be interpreted upon decoding. </li>
@@ -228,7 +228,7 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	 * @param receiver
 	 * @param payload
 	 */
-	public TextSMSTransmission(TransmissionClient client, SMSAgent receiver, Payload payload)
+	public TextSMSTransmission(TransmissionClient client, SMSCorrespondent receiver, Payload payload)
 	{
 		super(client, receiver, payload);
 	}
@@ -248,18 +248,17 @@ public class TextSMSTransmission extends SMSTransmission<TextMessage>
 	 * Called when retrieving transmission from database
 	 * 
 	 * @param client
+	 * @param correspondent
 	 * @param localID
 	 * @param remoteID - may be null
 	 * @param payloadHash
 	 * @param sentAt - may be null
 	 * @param receivedAt - may be null
-	 * @param sender - may be null on sending side
-	 * @param receiver - may be null on receiving side
 	 * @param parts - list of {@link TextMessage}s
 	 */	
-	public TextSMSTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, SMSAgent sender, SMSAgent receiver) 
+	public TextSMSTransmission(TransmissionClient client, SMSCorrespondent correspondent, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt) 
 	{
-		super(client, localID, remoteID, payloadHash, sentAt, receivedAt, sender, receiver);
+		super(client, correspondent, localID, remoteID, payloadHash, sentAt, receivedAt);
 	}
 	
 	private int minNumberOfCharactersNeededFor(int bits)

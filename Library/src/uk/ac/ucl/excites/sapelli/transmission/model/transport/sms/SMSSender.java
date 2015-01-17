@@ -16,20 +16,20 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
+package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
+
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 
 /**
  * @author mstevens
  *
  */
-public class InvalidMessageException extends Exception
+public interface SMSSender
 {
 
-	private static final long serialVersionUID = 1L;
-
-	public InvalidMessageException(String msg)
-	{
-		super(msg);
-	}
+	public boolean send(SMSCorrespondent receiver, BinaryMessage binarySMS);
+	
+	public boolean send(SMSCorrespondent receiver, TextMessage textSMS);
 	
 }

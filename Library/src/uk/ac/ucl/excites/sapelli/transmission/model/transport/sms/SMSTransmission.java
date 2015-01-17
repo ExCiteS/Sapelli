@@ -16,29 +16,26 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
+package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
 
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
+import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 
 
 /**
  * @author mstevens
  *
  */
-public abstract class SMSTransmission<M extends Message> extends Transmission
+public abstract class SMSTransmission<M extends Message> extends Transmission<SMSCorrespondent>
 {
-	public static final int RESEND_REQUEST_TIMEOUT_MILLIS = 60 * 10 * 1000; // wait 10 minutes before sending a resend request
-	public static final int MAX_NUM_PARTS = 16; // an SMS transmission can have up to 16 separate parts
 	
-	protected SMSAgent receiver;
-	protected SMSAgent sender;
+	public static final int RESEND_REQUEST_TIMEOUT_MILLIS = 60 * 10 * 1000; // wait 10 minutes before sending a resend request
 	
 	protected final SortedSet<M> parts = new TreeSet<M>();
 	
@@ -47,14 +44,13 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	/**
 	 * To be called on the sending side.
 	 * 
-	 * @param receiver
 	 * @param client
-	 * @param payloadType
+	 * @param receiver
+	 * @param payload
 	 */
-	public SMSTransmission(TransmissionClient client, SMSAgent receiver, Payload payload)
+	public SMSTransmission(TransmissionClient client, SMSCorrespondent receiver, Payload payload)
 	{
-		super(client, payload);
-		this.receiver = receiver;
+		super(client, receiver, payload);
 	}
 		
 	/**
@@ -65,7 +61,7 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 */
 	public SMSTransmission(TransmissionClient client, M firstReceivedPart)
 	{
-		super(client, firstReceivedPart.getSendingSideTransmissionID(), firstReceivedPart.getPayloadHash()); // pass on the remoteID & payload hash
+		super(client, firstReceivedPart.getSender(), firstReceivedPart.getSendingSideTransmissionID(), firstReceivedPart.getPayloadHash()); // pass on the remoteID & payload hash
 		receivePart(firstReceivedPart);
 	}
 	
@@ -73,20 +69,17 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 * Called when retrieving transmission from database
 	 * 
 	 * @param client
+	 * @param correspondent
 	 * @param localID
 	 * @param remoteID - may be null
 	 * @param payloadHash
 	 * @param sentAt - may be null
 	 * @param receivedAt - may be null
-	 * @param sender - may be null on sending side
-	 * @param receiver - may be null on receiving side
 	 * @param parts - list of {@link Message}s
 	 */
-	protected SMSTransmission(TransmissionClient client, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt, SMSAgent sender, SMSAgent receiver)
+	protected SMSTransmission(TransmissionClient client, SMSCorrespondent correspondent, int localID, Integer remoteID, int payloadHash, TimeStamp sentAt, TimeStamp receivedAt)
 	{
-		super(client, localID, remoteID, payloadHash, sentAt, receivedAt);
-		this.sender = sender;
-		this.receiver = receiver;
+		super(client, correspondent, localID, remoteID, payloadHash, sentAt, receivedAt);
 		// add parts by calling receivePart (not by passing them through this constructor)
 	}
 	
@@ -97,17 +90,14 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 	 */
 	public void receivePart(M msg)
 	{
-		if(parts.isEmpty())
-			// If this is the first part: register the sender
-			this.sender = msg.getSender();
-		else
-		{	// Each following received message must have a matching remote transmission id, payload hash, sender & total # of parts:
+		if(!parts.isEmpty())
+		{	// Each message that's received after the first one must have a matching remote transmission id, payload hash, sender & total # of parts:
 			String error = null;
 			if(remoteID != msg.getSendingSideTransmissionID())
 				error = "remote ID mismatch";
 			else if(payloadHash != msg.getPayloadHash())
 				error = "Payload hash mismatch";
-			else if(!sender.equals(msg.getSender()))
+			else if(!correspondent.equals(msg.getSender()))
 				error = "sender mismatch";
 			else if(parts.first().getTotalParts() != msg.getTotalParts())
 				error = "different number of parts";
@@ -137,17 +127,27 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 		return parts;
 	}
 	
-	public Message getPart(int i)
+	/**
+	 * Get part (Message) by part number
+	 * 
+	 * @param partNumber a value from [1, totalParts]
+	 * @return
+	 */
+	public Message getPart(int partNumber)
 	{
 		for(Message part : parts)
-			if(part.getPartNumber() == i)
+			if(part.getPartNumber() == partNumber)
 				return part;
 		return null;
 	}
 	
-	public boolean hasPart(int i)
+	/**
+	 * @param partNumber a value from [1, totalParts]
+	 * @return
+	 */
+	public boolean hasPart(int partNumber)
 	{
-		return getPart(i) != null;
+		return getPart(partNumber) != null;
 	}
 	
 	public int getCurrentNumberOfParts()
@@ -242,26 +242,6 @@ public abstract class SMSTransmission<M extends Message> extends Transmission
 				lastDeliveredAt = m.getDeliveredAt();
 		}
 		deliveredAt = lastDeliveredAt;		
-	}
-	
-	public SMSAgent getReceiver()
-	{
-		return receiver;
-	}
-	
-	public boolean isReceiverSet()
-	{
-		return receiver != null;
-	}
-	
-	public SMSAgent getSender()
-	{
-		return sender;
-	}
-	
-	public boolean isSenderSet()
-	{
-		return sender != null;
 	}
 	
 	public TimeStamp getDeliveredAt()

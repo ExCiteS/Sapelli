@@ -27,7 +27,7 @@ import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
-import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.SMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.AndroidSMSSender;
 import uk.ac.ucl.excites.sapelli.transmission.sender.gsm.SignalMonitor;
 import uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmManager;
 import uk.ac.ucl.excites.sapelli.util.Debug;
@@ -213,7 +213,7 @@ public class DataSenderService extends Service
 					// TODO Send them
 
 					// Test
-					SMSSender smsSender = new SMSSender(context);
+					AndroidSMSSender smsSender = new AndroidSMSSender(context);
 					// smsSender.send("Sapelli SMS Demo!!! " + TimeUtils.getPrettyTimestamp(), "phone");
 				}
 			}

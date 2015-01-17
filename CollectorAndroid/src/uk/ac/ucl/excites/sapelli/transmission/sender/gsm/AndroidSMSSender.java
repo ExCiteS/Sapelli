@@ -22,11 +22,11 @@ import java.util.ArrayList;
 
 import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSClient;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSSender;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -36,7 +36,7 @@ import android.content.IntentFilter;
 import android.telephony.SmsManager;
 import android.util.Log;
 
-public class SMSSender implements SMSClient
+public class AndroidSMSSender implements SMSSender
 {
 	
 	private static final String TAG = "SMSSender";
@@ -61,14 +61,14 @@ public class SMSSender implements SMSClient
 	private Context context;
 	private SmsManager smsManager;
 	
-	public SMSSender(Context context)
+	public AndroidSMSSender(Context context)
 	{
 		this.context = context;
 		this.smsManager = SmsManager.getDefault();
 	}
 
 	@Override
-	public boolean send(SMSAgent receiver, final TextMessage textSMS)
+	public boolean send(SMSCorrespondent receiver, final TextMessage textSMS)
 	{	
 		// Increment message ID!:
 		MESSAGE_ID++;
@@ -111,7 +111,7 @@ public class SMSSender implements SMSClient
 	}
 
 	@Override
-	public boolean send(SMSAgent receiver, final BinaryMessage binarySMS)
+	public boolean send(SMSCorrespondent receiver, final BinaryMessage binarySMS)
 	{
 		// Increment message ID!:
 		MESSAGE_ID++;

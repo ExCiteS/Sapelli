@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
+package uk.ac.ucl.excites.sapelli.transmission.model.transport.sms;
 
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 
 /**
  * Abstract class representing an SMS message which is one part of an {@link SMSTransmission}
@@ -49,9 +49,13 @@ public abstract class Message implements Comparable<Message>
 	protected TimeStamp deliveredAt; //only on sending side
 	protected TimeStamp receivedAt;	 //only on receiving side
 	
-	protected SMSAgent sender;	
+	protected SMSCorrespondent sender;
 	
+	/**
+	 * a value from [1, totalParts]
+	 */
 	protected int partNumber;
+	
 	protected int totalParts;
 
 	/**
@@ -59,7 +63,7 @@ public abstract class Message implements Comparable<Message>
 	 * 
 	 * @param receiver
 	 * @param transmission
-	 * @param partNumber
+	 * @param partNumber a value from [1, totalParts]
 	 * @param totalParts
 	 */
 	public Message(SMSTransmission<?> transmission, int partNumber, int totalParts)
@@ -85,7 +89,7 @@ public abstract class Message implements Comparable<Message>
 	 * 
 	 * @param sender
 	 */
-	public Message(SMSAgent sender, TimeStamp receivedAt)
+	public Message(SMSCorrespondent sender, TimeStamp receivedAt)
 	{
 		this.sender = sender;
 		this.receivedAt = receivedAt;
@@ -109,7 +113,7 @@ public abstract class Message implements Comparable<Message>
 		this.receivedAt = receivedAt;
 	}
 	
-	public abstract void send(SMSClient smsService);
+	public abstract void send(SMSSender smsService);
 	
 	protected void setTransmission(SMSTransmission<?> transmission)
 	{
@@ -184,7 +188,7 @@ public abstract class Message implements Comparable<Message>
 		transmission.partDelivered(this);
 	}
 	
-	public SMSAgent getSender()
+	public SMSCorrespondent getSender()
 	{
 		return sender;
 	}

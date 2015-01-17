@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission;
+package uk.ac.ucl.excites.sapelli.transmission.model;
 
 import java.io.IOException;
 
@@ -29,9 +29,10 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
-import uk.ac.ucl.excites.sapelli.transmission.payloads.AckPayload;
-import uk.ac.ucl.excites.sapelli.transmission.payloads.RecordsPayload;
-import uk.ac.ucl.excites.sapelli.transmission.payloads.ResendRequestPayload;
+import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
@@ -76,7 +77,7 @@ public abstract class Payload
 	{
 		// Try to instantiate Payload object for the type: 
 		if(payloadType >= MAX_BUILTIN_TYPES)
-			return client.createPayload(payloadType);
+			return client.createCustomPayload(payloadType);
 		else
 		{
 			if(payloadType >= 0 && payloadType < BuiltinType.values().length)
@@ -128,19 +129,19 @@ public abstract class Payload
 	}
 	
 	// DYNAMICS------------------------------------------------------
-	protected Transmission transmission;
+	protected Transmission<?> transmission;
 
 	public abstract int getType();
 
 	/**
 	 * @return the transmission
 	 */
-	public Transmission getTransmission()
+	public Transmission<?> getTransmission()
 	{
 		return transmission;
 	}
 	
-	public void setTransmission(Transmission transmission)
+	public void setTransmission(Transmission<?> transmission)
 	{
 		if(this.transmission != null && this.transmission != transmission)
 			throw new IllegalStateException("Transmission cannot be changed once it has been set!");
@@ -169,7 +170,7 @@ public abstract class Payload
 	
 	protected abstract void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException;
 	
-	protected void deserialise(BitArray payloadBits) throws IllegalStateException, IOException, PayloadDecodeException, UnknownModelException
+	public void deserialise(BitArray payloadBits) throws IllegalStateException, IOException, PayloadDecodeException, UnknownModelException
 	{
 		if(this.transmission == null)
 			throw new IllegalStateException("Cannot deserialise before transmission has been set!");
@@ -189,6 +190,8 @@ public abstract class Payload
 	}
 	
 	protected abstract void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException;
+	
+	public abstract boolean acknowledgeReception();
 	
 	/**
 	 * To be overridden by built-in payload types!

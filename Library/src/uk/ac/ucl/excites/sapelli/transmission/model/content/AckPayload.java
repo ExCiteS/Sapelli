@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.payloads;
+package uk.ac.ucl.excites.sapelli.transmission.model.content;
 
 import java.io.IOException;
 
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
-import uk.ac.ucl.excites.sapelli.transmission.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
 
@@ -56,7 +56,7 @@ public class AckPayload extends Payload
 	 * 
 	 * @param subject - the transmission whose successful reception (& decoding, processing, etc.) is being acknowledged
 	 */
-	public AckPayload(Transmission subject)
+	public AckPayload(Transmission<?> subject)
 	{
 		this.subjectSenderSideID = subject.getRemoteID();
 		this.subjectPayloadHash = subject.getPayloadHash();
@@ -110,6 +110,12 @@ public class AckPayload extends Payload
 	public TimeStamp getSubjectReceivedAt()
 	{
 		return subjectReceivedAt;
+	}
+
+	@Override
+	public boolean acknowledgeReception()
+	{
+		return false; // !!!
 	}
 
 	@Override

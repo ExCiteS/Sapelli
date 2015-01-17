@@ -16,20 +16,13 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.modes.sms;
-
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
+package uk.ac.ucl.excites.sapelli.transmission.model.transport.http;
 
 /**
  * @author mstevens
  *
  */
-public interface SMSClient
+public interface HTTPClient
 {
 
-	public boolean send(SMSAgent receiver, BinaryMessage binarySMS);
-	
-	public boolean send(SMSAgent receiver, TextMessage textSMS);
-	
 }

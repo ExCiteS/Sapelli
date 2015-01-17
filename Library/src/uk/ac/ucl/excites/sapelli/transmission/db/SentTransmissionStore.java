@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.transmission.db;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 
 /**
@@ -44,7 +43,7 @@ public class SentTransmissionStore extends TransmissionStore
 	}
 
 	@Override
-	protected StringColumn getCorrespondentColumn()
+	protected ForeignKeyColumn getCorrespondentColumn()
 	{
 		return SENT_TRANSMISSION_COLUMN_RECEIVER;
 	}
@@ -59,6 +58,12 @@ public class SentTransmissionStore extends TransmissionStore
 	protected ForeignKeyColumn getTransmissionPartTransmissionColumn()
 	{
 		return TRANSMISSION_PART_COLUMN_SENT_TRANSMISSION;
+	}
+
+	@Override
+	protected Schema getCorrespondentSchema()
+	{
+		return RECEIVER_SCHEMA;
 	}
 
 }

@@ -20,11 +20,11 @@ package uk.ac.ucl.excites.sapelli.transmission.receiver;
 
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.InvalidMessageException;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.Message;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.binary.BinaryMessage;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.text.TextMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.InvalidMessageException;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.Message;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinaryMessage;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextMessage;
 import android.app.IntentService;
 import android.content.Intent;
 import android.os.Handler;
@@ -75,23 +75,22 @@ public class SMSReceiverService extends IntentService
 	protected void onHandleIntent(Intent intent)
 	{
 		Log.d(TAG, "SMS received by Sapelli SMSReceiverService");
+	
+		if(transmissionController == null)
+			throw new NullPointerException("Could not get TransmissionController instance");
 		
 		// get PDU from intent:
 		byte[] pdu = intent.getByteArrayExtra(PDU_BYTES_EXTRA_NAME);
 		boolean binary = intent.getBooleanExtra(BINARY_FLAG_EXTRA_NAME, false);
 		
-		if (pdu == null) // should never happen
+		if(pdu == null) // should never happen
 			return;
-		
-		// try to create a (Sapelli) Message object from the PDU:
-		
 		try
 		{
+			// try to create a (Sapelli) Message object from the PDU:
 			final Message message = messageFromPDU(pdu, binary);
 
-			if(transmissionController == null)
-				throw new NullPointerException("Could not get TransmissionController instance");
-			
+			// Receive/decode:
 			transmissionController.receiveSMS(message);
 			
 			mainHandler.post(new Runnable()
@@ -99,7 +98,7 @@ public class SMSReceiverService extends IntentService
 				@Override
 				public void run()
 				{
-					Toast.makeText(SMSReceiverService.this, "Sapelli SMS received from phone number "+message.getSender().getPhoneNumber(), Toast.LENGTH_SHORT).show();
+					Toast.makeText(SMSReceiverService.this, "Sapelli SMS received from phone number " + message.getSender().getPhoneNumber(), Toast.LENGTH_SHORT).show();
 				}
 			});
 		}
@@ -122,16 +121,19 @@ public class SMSReceiverService extends IntentService
 	 */
 	private Message messageFromPDU(byte[] pdu, boolean binary) throws InvalidMessageException, Exception
 	{
-		
-		SmsMessage androidMsg = SmsMessage.createFromPdu(pdu);
-		
-		if (androidMsg == null)
+		// Get Android SMS msg representation for pdu:
+		SmsMessage androidMsg = SmsMessage.createFromPdu(pdu);		
+		if(androidMsg == null)
 			throw new Exception("Android could not parse the SMS message from its PDU.");
 		
-		if (binary)
-			return new BinaryMessage(new SMSAgent(androidMsg.getOriginatingAddress()), androidMsg.getUserData());
+		// Get correspondent:
+		SMSCorrespondent sender = transmissionController.getSendingCorrespondentFor(androidMsg.getOriginatingAddress(), binary);
+		
+		// Return Sapelli Message:
+		if(binary)
+			return new BinaryMessage(sender, androidMsg.getUserData());
 		else
-			return new TextMessage(new SMSAgent(androidMsg.getOriginatingAddress()), androidMsg.getMessageBody());
+			return new TextMessage(sender, androidMsg.getMessageBody());
 	}
 
 	/* (non-Javadoc)

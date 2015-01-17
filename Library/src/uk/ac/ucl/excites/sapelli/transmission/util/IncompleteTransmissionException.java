@@ -18,8 +18,8 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.util;
 
-import uk.ac.ucl.excites.sapelli.transmission.Transmission;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSTransmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 
 /**
  * @author mstevens
@@ -30,12 +30,12 @@ public class IncompleteTransmissionException extends Exception
 
 	private static final long serialVersionUID = 1L;
 
-	private Transmission transmission;
+	private Transmission<?> transmission;
 	
 	/**
 	 * @param transmission
 	 */
-	public IncompleteTransmissionException(Transmission transmission)
+	public IncompleteTransmissionException(Transmission<?> transmission)
 	{
 		this(transmission, "Incomplete transmission");
 	}
@@ -52,7 +52,7 @@ public class IncompleteTransmissionException extends Exception
 	 * @param transmission
 	 * @param detailMessage
 	 */
-	public IncompleteTransmissionException(Transmission transmission, String detailMessage)
+	public IncompleteTransmissionException(Transmission<?> transmission, String detailMessage)
 	{
 		super(detailMessage);
 		this.transmission = transmission;	
@@ -63,7 +63,7 @@ public class IncompleteTransmissionException extends Exception
 	 * @param detailMessage
 	 * @param cause
 	 */
-	public IncompleteTransmissionException(Transmission transmission, String detailMessage, Throwable cause)
+	public IncompleteTransmissionException(Transmission<?> transmission, String detailMessage, Throwable cause)
 	{
 		super(detailMessage, cause);
 		this.transmission = transmission;
@@ -72,7 +72,7 @@ public class IncompleteTransmissionException extends Exception
 	/**
 	 * @return the transmission
 	 */
-	public Transmission getTransmission()
+	public Transmission<?> getTransmission()
 	{
 		return transmission;
 	}

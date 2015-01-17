@@ -36,8 +36,8 @@ import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
-import uk.ac.ucl.excites.sapelli.transmission.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
+import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 
 /**
  * @author mstevens
@@ -248,7 +248,7 @@ public abstract class CollectorClient extends TransmissionClient implements Stor
 	}
 
 	@Override
-	public Payload createPayload(int nonBuiltinType)
+	public Payload createCustomPayload(int nonBuiltinType)
 	{
 		return null; // for now there are no Sapelli Collector-specific transmission payloads
 	}

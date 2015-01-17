@@ -16,13 +16,40 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.modes.http;
+package uk.ac.ucl.excites.sapelli.transmission.model.transport.http;
+
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
+import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 
 /**
  * @author mstevens
  *
  */
-public interface HTTPClient
+public class HTTPServer extends Correspondent
 {
+
+	private final String url;
+	
+	public HTTPServer(String name, String url)
+	{
+		super(name, Transmission.Type.HTTP);
+		this.url = url;
+	}
+	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.Correspondent#getAddress()
+	 */
+	@Override
+	public String getAddress()
+	{
+		return url;
+	}
+
+	@Override
+	public void handle(Handler handle)
+	{
+		// TODO Auto-generated method stub
+		
+	}
 
 }

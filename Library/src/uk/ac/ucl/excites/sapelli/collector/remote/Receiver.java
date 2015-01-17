@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package uk.ac.ucl.excites.sapelli.transmission.model;
+package uk.ac.ucl.excites.sapelli.collector.remote;
 
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 
@@ -25,21 +25,23 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
  * 
  * @author benelliott
  */
-public class Sender
+public class Receiver
 {
-	static public final int SENDER_ID_SIZE = 24; // bits
-	static public final IntegerRangeMapping SENDER_ID_FIELD = IntegerRangeMapping.ForSize(0, SENDER_ID_SIZE); // unsigned(!) 24 bit integer
+	static public final int RECEIVER_ID_SIZE = 24; // bits
+	static public final IntegerRangeMapping RECEIVER_ID_FIELD = IntegerRangeMapping.ForSize(0, RECEIVER_ID_SIZE); // unsigned(!) 24 bit integer
 	
+	static public final int RETRANSMIT_INTERVAL_SIZE_BITS = 32;
 	private int projectId;
-	private String correspondentName;
-	private boolean ack;
+	private int correspondentName;
+	private int retransmitIntervalSec;
+	private boolean encrypt;
 	
-	public Sender(int projectId, String correspondentName, boolean ack)
+	public Receiver(int projectId, int correspondentName, int retransmitIntervalSec, boolean encrypt)
 	{
-		super();
 		this.projectId = projectId;
 		this.correspondentName = correspondentName;
-		this.ack = ack;
+		this.retransmitIntervalSec = retransmitIntervalSec;
+		this.encrypt = encrypt;
 	}
 
 	/**
@@ -61,7 +63,7 @@ public class Sender
 	/**
 	 * @return the correspondentName
 	 */
-	public String getCorrespondentName()
+	public int getCorrespondentName()
 	{
 		return correspondentName;
 	}
@@ -69,25 +71,41 @@ public class Sender
 	/**
 	 * @param correspondentName the correspondentName to set
 	 */
-	public void setCorrespondentName(String correspondentName)
+	public void setCorrespondentName(int correspondentName)
 	{
 		this.correspondentName = correspondentName;
 	}
 
 	/**
-	 * @return the ack
+	 * @return the retransmitIntervalSec
 	 */
-	public boolean isAck()
+	public int getRetransmitIntervalSec()
 	{
-		return ack;
+		return retransmitIntervalSec;
 	}
 
 	/**
-	 * @param ack the ack to set
+	 * @param retransmitIntervalSec the retransmitIntervalSec to set
 	 */
-	public void setAck(boolean ack)
+	public void setRetransmitIntervalSec(int retransmitIntervalSec)
 	{
-		this.ack = ack;
+		this.retransmitIntervalSec = retransmitIntervalSec;
 	}
 
+	/**
+	 * @return the encrypt
+	 */
+	public boolean isEncrypt()
+	{
+		return encrypt;
+	}
+
+	/**
+	 * @param encrypt the encrypt to set
+	 */
+	public void setEncrypt(boolean encrypt)
+	{
+		this.encrypt = encrypt;
+	}
+	
 }

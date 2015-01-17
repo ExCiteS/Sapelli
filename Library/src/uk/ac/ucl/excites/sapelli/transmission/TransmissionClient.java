@@ -28,9 +28,11 @@ import uk.ac.ucl.excites.sapelli.storage.StorageClient;
 import uk.ac.ucl.excites.sapelli.storage.model.Column;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.transmission.control.TransmissionController;
 import uk.ac.ucl.excites.sapelli.transmission.db.ReceivedTransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 
 /**
  * @author mstevens
@@ -89,7 +91,23 @@ public abstract class TransmissionClient extends StorageClient
 		return super.getTableName(schema);
 	}
 	
-	public abstract Payload createPayload(int nonBuiltinType);
+	/**
+	 * TODO
+	 * 
+	 * @param nonBuiltinType
+	 * @return
+	 */
+	public abstract Payload createCustomPayload(int nonBuiltinType);
+	
+	/**
+	 * Override to add support for receiving custom payload or the change handling of built-in payload types
+	 * 
+	 * @return
+	 */
+	public TransmissionController.PayloadReceiver getCustomPayloadReceiver()
+	{
+		return null;
+	}
 	
 	/**
 	 * Returns columns from ther given schema that should not be transmitted.

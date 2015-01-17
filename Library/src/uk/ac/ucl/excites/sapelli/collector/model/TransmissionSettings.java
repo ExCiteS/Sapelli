@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import uk.ac.ucl.excites.sapelli.transmission.EncryptionSettings;
-import uk.ac.ucl.excites.sapelli.transmission.modes.sms.SMSAgent;
+import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSCorrespondent;
 
 /**
  * @author mstevens
@@ -77,10 +77,10 @@ public class TransmissionSettings
 	protected boolean smsAllowRoaming;
 	protected SMSMode smsMode;
 	// Sending side:
-	protected SMSAgent smsRelay;
+	protected SMSCorrespondent smsRelay;
 	protected boolean smsIntroductionSent;
 	// Receiving side:
-	protected List<SMSAgent> smsApprovedSenders;
+	protected List<SMSCorrespondent> smsApprovedSenders;
 	
 	public TransmissionSettings()
 	{
@@ -96,7 +96,7 @@ public class TransmissionSettings
 		smsAllowRoaming = DEFAULT_SMS_ALLOW_ROAMING;
 		smsMode = DEFAULT_SMS_MODE;
 		smsIntroductionSent = false;
-		smsApprovedSenders = new ArrayList<SMSAgent>();
+		smsApprovedSenders = new ArrayList<SMSCorrespondent>();
 	}
 
 	/**
@@ -117,7 +117,7 @@ public class TransmissionSettings
 		smsAllowRoaming = another.smsAllowRoaming;
 		smsMode = another.smsMode;
 		smsIntroductionSent = another.smsIntroductionSent;
-		smsApprovedSenders = new ArrayList<SMSAgent>(another.smsApprovedSenders);
+		smsApprovedSenders = new ArrayList<SMSCorrespondent>(another.smsApprovedSenders);
 	}
 	
 	/**
@@ -153,25 +153,9 @@ public class TransmissionSettings
 	}
 
 	/**
-	 * @return the smsMode
-	 */
-	public SMSMode getSMSMode()
-	{
-		return smsMode;
-	}
-
-	/**
-	 * @param smsMode the smsMode to set
-	 */
-	public void setSMSMode(SMSMode smsMode)
-	{
-		this.smsMode = smsMode;
-	}
-
-	/**
 	 * @return the smsRelay
 	 */
-	public SMSAgent getSMSRelay()
+	public SMSCorrespondent getSMSRelay()
 	{
 		return smsRelay;
 	}
@@ -179,7 +163,7 @@ public class TransmissionSettings
 	/**
 	 * @param smsRelay the smsRelay to set
 	 */
-	public void setSMSRelay(SMSAgent smsRelay)
+	public void setSMSRelay(SMSCorrespondent smsRelay)
 	{
 		this.smsRelay = smsRelay;
 	}
@@ -203,7 +187,7 @@ public class TransmissionSettings
 	/**
 	 * @return the smsApprovedSenders
 	 */
-	public List<SMSAgent> getSMSApprovedSenders()
+	public List<SMSCorrespondent> getSMSApprovedSenders()
 	{
 		return smsApprovedSenders;
 	}
