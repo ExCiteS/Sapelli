@@ -226,7 +226,8 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 	@Override
 	public void onCompletion(MediaPlayer mp)
 	{
-		playbackCompletedSem.release();
+		if (playbackCompletedSem != null)
+			playbackCompletedSem.release();
 	}
 	
 }
