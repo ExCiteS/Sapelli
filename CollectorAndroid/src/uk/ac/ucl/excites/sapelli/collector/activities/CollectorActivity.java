@@ -40,6 +40,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ViewServer;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import uk.ac.ucl.excites.sapelli.util.DeviceControl;
+import uk.ac.ucl.excites.sapelli.util.KeyEventUtils;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -229,6 +230,10 @@ public class CollectorActivity extends ProjectActivity
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event)
 	{
+		// Log interaction:
+		controller.addLogLine("KEY_DOWN", KeyEventUtils.keyEventCodeToString(event));
+		//Log.d(TAG, event.getDisplayLabel() + "; " + KeyEventUtils.keyEventCodeToString(event));
+		
 		// Check for keytriggers...
 		Trigger keyTrigger = null;
 		//	"Any" key trigger:
@@ -264,7 +269,7 @@ public class CollectorActivity extends ProjectActivity
 		// Pass to super...
 		return super.onKeyDown(keyCode, event);
 	}
-
+	
 	/**
 	 * Handle device key presses (up)
 	 */
