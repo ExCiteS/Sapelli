@@ -18,13 +18,13 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.sender;
 
-import uk.ac.ucl.excites.sapelli.transmission.sender.util.SendingAlarmScheduler;
+import uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmInitialiser;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
 /**
- * BroadcastReceiver that listens for device boot events and when one is received, starts the SendingAlarmScheduler service.
+ * BroadcastReceiver that listens for device boot events and when one is received, starts the SendAlarmInitialiser service.
  * 
  * Note that this BroadcastReceiver is only registered to listen for boot events if Sapelli determines that there is at least one project
  * with records to send - see {@link SendAlarmManager#checkBootReceiver(Context)}.
@@ -32,13 +32,13 @@ import android.content.Intent;
  * @author Michalis Vitos
  *
  */
-public class SenderBootInitializer extends BroadcastReceiver
+public class SendAlarmBootListener extends BroadcastReceiver
 {
 	@Override
 	public void onReceive(Context context, Intent intent)
 	{
 		// Start AlarmSchduler service to schedule alarms for the required projects
-		Intent alarmScheduler = new Intent(context, SendingAlarmScheduler.class);
+		Intent alarmScheduler = new Intent(context, SendAlarmInitialiser.class);
 		context.startService(alarmScheduler);
 	}
 }

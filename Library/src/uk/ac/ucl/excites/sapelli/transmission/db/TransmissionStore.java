@@ -259,6 +259,8 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 															Transmission.Type.TEXTUAL_SMS).ordinal())));
 	}
 	
+	// TODO delete correspondent?
+	
 	/**
 	 * @param transmission assumed to have all values set, except the (local) ID when inserting
 	 * @throws Exception 

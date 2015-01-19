@@ -20,12 +20,13 @@ package uk.ac.ucl.excites.sapelli.collector.db;
 
 import java.util.List;
 
-import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectAlreadyStoredException;
+import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectDuplicateException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationClashException;
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectSignatureClashException;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
+import uk.ac.ucl.excites.sapelli.collector.remote.Receiver;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 
@@ -119,6 +120,11 @@ public abstract class ProjectStore extends Store
 	 * @throws ProjectDuplicateException some implementation may throw this in case of a identification or signature clash
 	 */
 	protected abstract void doAdd(Project project) throws ProjectDuplicateException;
+	
+	public void storeReceiver(Receiver receiver)
+	{
+		// TODO
+	}
 
 	/**
 	 * Retrieves all projects
@@ -135,6 +141,18 @@ public abstract class ProjectStore extends Store
 	public Project retrieveProject(final String name, final String version)
 	{
 		return retrieveProject(name, null, version);
+	}
+	
+	public List<Receiver> retrieveReceiversForProject(Project project)
+	{
+		// TODO
+		return null;
+	}
+	
+	public Receiver retrieveReceiverForProject(Project project)
+	{
+		// TODO
+		return null;
 	}
 
 	/**

@@ -118,7 +118,7 @@
         </service>
 
         <receiver
-            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.SenderBootInitializer"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.SendAlarmBootListener"
             android:exported="false" >
             <intent-filter android:priority="9999999999" >
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

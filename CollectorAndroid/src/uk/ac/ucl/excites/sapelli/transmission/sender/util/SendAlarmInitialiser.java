@@ -21,47 +21,30 @@ package uk.ac.ucl.excites.sapelli.transmission.sender.util;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.remote.Receiver;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
-import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
-import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.IntentService;
 import android.content.Intent;
+import android.util.Log;
 
 /**
- * Simple Service for scheduling alarms for project that need transmission.
+ * Simple Service for scheduling alarms for projects that need transmission (activated on device boot).
  * 
- * @author Michalis Vitos, mstevens
+ * @author Michalis Vitos, mstevens, benelliott
  *
  */
-public class SendingAlarmScheduler extends IntentService implements StoreHandle.StoreUser
+public class SendAlarmInitialiser extends IntentService implements StoreHandle.StoreUser
 {
 	
 	private ProjectStore projectStore;
 	private final CollectorApp app;
-	private AndroidTransmissionController transmissionController;
-
 	/**
 	 * A constructor is required, and must call the super IntentService(String) constructor with a name for the worker thread.
 	 */
-	public SendingAlarmScheduler()
+	public SendAlarmInitialiser()
 	{
 		super("AlarmScheduler");
 		app = ((CollectorApp) getApplication());
-	}
-	
-	@Override
-	public void onCreate()
-	{
-		super.onCreate();
-		try
-		{
-			transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient,((CollectorApp) getApplication()).getFileStorageProvider(), this);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace(System.err);
-		}
-		
 	}
 
 	/**
@@ -79,13 +62,14 @@ public class SendingAlarmScheduler extends IntentService implements StoreHandle.
 				projectStore = app.collectorClient.projectStoreHandle.getStore(this);
 			
 			// Set an Alarm, for each of the projects that has sending enabled
-			for(Project p : projectStore.retrieveProjects())// TODO projectStore.getSendingProjects?
+			for(Project project : projectStore.retrieveProjects())// TODO projectStore.getSendingProjects?
 			{
-				
-				// TODO if (p.isSending())
-				// TODO interval should be saved in project -> p.getSendingInterval()
-				SendAlarmManager.setAlarm(this, 60 * 1000, p.getID(), p.getFingerPrint());
-				Debug.d("Projects: " + p.toString(true));
+				Receiver receiver = projectStore.retrieveReceiverForProject(project);
+				if (receiver != null)
+				{
+					SendAlarmManager.setAlarm(this, receiver.getRetransmitIntervalMillis(), project.getID(), project.getFingerPrint());
+					Log.d(SendAlarmInitialiser.class.getName(), "Set send alarm for project "+project.getID()+", interval: "+receiver.getRetransmitIntervalMillis()+"ms, receiver name: "+receiver.getCorrespondent().getName());
+				}
 			}
 		}
 		catch(Exception e)

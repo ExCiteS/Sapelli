@@ -18,10 +18,11 @@
 
 package uk.ac.ucl.excites.sapelli.collector.remote;
 
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
 /**
- * TODO rename
  * 
  * @author benelliott
  */
@@ -30,48 +31,47 @@ public class Sender
 	static public final int SENDER_ID_SIZE = 24; // bits
 	static public final IntegerRangeMapping SENDER_ID_FIELD = IntegerRangeMapping.ForSize(0, SENDER_ID_SIZE); // unsigned(!) 24 bit integer
 	
-	private int projectId;
-	private String correspondentName;
+	private Project project;
+	private Correspondent correspondent;
 	private boolean ack;
 	
-	public Sender(int projectId, String correspondentName, boolean ack)
+	public Sender(Project project, Correspondent correspondent, boolean ack)
 	{
-		super();
-		this.projectId = projectId;
-		this.correspondentName = correspondentName;
+		this.project = project;
+		this.correspondent = correspondent;
 		this.ack = ack;
 	}
 
 	/**
-	 * @return the projectId
+	 * @return the project
 	 */
-	public int getProjectId()
+	public Project getProject()
 	{
-		return projectId;
+		return project;
 	}
 
 	/**
-	 * @param projectId the projectId to set
+	 * @param project the project to set
 	 */
-	public void setProjectId(int projectId)
+	public void setProject(Project project)
 	{
-		this.projectId = projectId;
+		this.project = project;
 	}
 
 	/**
-	 * @return the correspondentName
+	 * @return the correspondent
 	 */
-	public String getCorrespondentName()
+	public Correspondent getCorrespondent()
 	{
-		return correspondentName;
+		return correspondent;
 	}
 
 	/**
-	 * @param correspondentName the correspondentName to set
+	 * @param correspondent the correspondent to set
 	 */
-	public void setCorrespondentName(String correspondentName)
+	public void setCorrespondent(Correspondent correspondent)
 	{
-		this.correspondentName = correspondentName;
+		this.correspondent = correspondent;
 	}
 
 	/**

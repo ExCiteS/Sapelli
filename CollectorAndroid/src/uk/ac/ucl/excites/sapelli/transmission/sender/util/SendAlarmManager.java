@@ -2,7 +2,7 @@ package uk.ac.ucl.excites.sapelli.transmission.sender.util;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.transmission.sender.SenderBootInitializer;
+import uk.ac.ucl.excites.sapelli.transmission.sender.SendAlarmBootListener;
 import uk.ac.ucl.excites.sapelli.transmission.sender.DataSenderService;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -121,7 +121,7 @@ public class SendAlarmManager
 	 */
 	private static void enableBootReceiver(Context context, boolean enable)
 	{
-		ComponentName receiver = new ComponentName(context, SenderBootInitializer.class);
+		ComponentName receiver = new ComponentName(context, SendAlarmBootListener.class);
 		PackageManager pm = context.getPackageManager();
 
 		final int newState = (enable) ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;

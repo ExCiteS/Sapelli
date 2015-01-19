@@ -18,10 +18,11 @@
 
 package uk.ac.ucl.excites.sapelli.collector.remote;
 
+import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
 /**
- * TODO rename
  * 
  * @author benelliott
  */
@@ -31,65 +32,65 @@ public class Receiver
 	static public final IntegerRangeMapping RECEIVER_ID_FIELD = IntegerRangeMapping.ForSize(0, RECEIVER_ID_SIZE); // unsigned(!) 24 bit integer
 	
 	static public final int RETRANSMIT_INTERVAL_SIZE_BITS = 32;
-	private int projectId;
-	private int correspondentName;
-	private int retransmitIntervalSec;
+	private Project project;
+	private Correspondent correspondent;
+	private int retransmitIntervalMillis;
 	private boolean encrypt;
 	
-	public Receiver(int projectId, int correspondentName, int retransmitIntervalSec, boolean encrypt)
+	public Receiver(Project project, Correspondent correspondent, int retransmitIntervalSec, boolean encrypt)
 	{
-		this.projectId = projectId;
-		this.correspondentName = correspondentName;
-		this.retransmitIntervalSec = retransmitIntervalSec;
+		this.project = project;
+		this.correspondent = correspondent;
+		this.retransmitIntervalMillis = retransmitIntervalSec;
 		this.encrypt = encrypt;
 	}
 
 	/**
-	 * @return the projectId
+	 * @return the project
 	 */
-	public int getProjectId()
+	public Project getProject()
 	{
-		return projectId;
+		return project;
+	}
+	
+	/**
+	 * @param project the project to set
+	 */
+	public void setProject(Project project)
+	{
+		this.project = project;
 	}
 
 	/**
-	 * @param projectId the projectId to set
+	 * @return the correspondent
 	 */
-	public void setProjectId(int projectId)
+	public Correspondent getCorrespondent()
 	{
-		this.projectId = projectId;
+		return correspondent;
 	}
 
 	/**
-	 * @return the correspondentName
+	 * @param correspondent the correspondent to set
 	 */
-	public int getCorrespondentName()
+	public void setCorrespondent(Correspondent correspondent)
 	{
-		return correspondentName;
+		this.correspondent = correspondent;
 	}
 
 	/**
-	 * @param correspondentName the correspondentName to set
+	 * @return the retransmitIntervalMillis
 	 */
-	public void setCorrespondentName(int correspondentName)
+	public int getRetransmitIntervalMillis()
 	{
-		this.correspondentName = correspondentName;
+		return retransmitIntervalMillis;
 	}
-
+	
 	/**
-	 * @return the retransmitIntervalSec
+	 * @param retransmitIntervalMillis the retransmitIntervalMillis to set
 	 */
-	public int getRetransmitIntervalSec()
+	public void setRetransmitIntervalMillis(int retransmitIntervalMillis)
 	{
-		return retransmitIntervalSec;
-	}
-
-	/**
-	 * @param retransmitIntervalSec the retransmitIntervalSec to set
-	 */
-	public void setRetransmitIntervalSec(int retransmitIntervalSec)
-	{
-		this.retransmitIntervalSec = retransmitIntervalSec;
+		this.retransmitIntervalMillis = retransmitIntervalMillis;
 	}
 
 	/**
