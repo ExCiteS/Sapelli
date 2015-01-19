@@ -24,7 +24,7 @@ import java.util.Set;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
-import uk.ac.ucl.excites.sapelli.collector.ui.fields.PhotoUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.MediaUI;
 import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 
 /**
@@ -52,10 +52,8 @@ public class PhotoField extends MediaField
 	//DYNAMICS-------------------------------------------------------
 	private boolean useFrontFacingCamera;
 	private FlashMode flashMode;
-	
 	private String captureButtonImageRelativePath;
-	private String approveButtonImageRelativePath;
-	private String discardButtonImageRelativePath;
+	
 	
 	public PhotoField(Form form, String id, String caption)
 	{
@@ -96,7 +94,7 @@ public class PhotoField extends MediaField
 	{
 		this.flashMode = flashMode;
 	}
-
+	
 	/**
 	 * @return the captureButtonImageRelativePath
 	 */
@@ -113,38 +111,6 @@ public class PhotoField extends MediaField
 		this.captureButtonImageRelativePath = captureButtonImageRelativePath;
 	}
 
-	/**
-	 * @return the approveButtonImageRelativePath
-	 */
-	public String getApproveButtonImageRelativePath()
-	{
-		return approveButtonImageRelativePath;
-	}
-
-	/**
-	 * @param approveButtonImageRelativePath the approveButtonImageRelativePath to set
-	 */
-	public void setApproveButtonImageRelativePath(String approveButtonImageRelativePath)
-	{
-		this.approveButtonImageRelativePath = approveButtonImageRelativePath;
-	}
-
-	/**
-	 * @return the discardButtonImageRelativePath
-	 */
-	public String getDiscardButtonImageRelativePath()
-	{
-		return discardButtonImageRelativePath;
-	}
-
-	/**
-	 * @param discardButtonImageRelativePath the discardButtonImageRelativePath to set
-	 */
-	public void setDiscardButtonImageRelativePath(String discardButtonImageRelativePath)
-	{
-		this.discardButtonImageRelativePath = discardButtonImageRelativePath;
-	}
-
 	@Override
 	public String getMediaType()
 	{
@@ -156,7 +122,7 @@ public class PhotoField extends MediaField
 	{
 		return EXTENSION_JPEG;
 	}
-
+	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.collector.model.Field#addFiles(java.util.Set, uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider)
 	 */
@@ -164,14 +130,11 @@ public class PhotoField extends MediaField
 	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
 	{
 		super.addFiles(filesSet, fileStorageProvider); // !!!
-		
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, captureButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, approveButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
 	}
-	
+
 	@Override
-	public <V, UI extends CollectorUI<V, UI>> PhotoUI<V, UI> createUI(UI collectorUI)
+	public <V, UI extends CollectorUI<V, UI>> MediaUI<PhotoField,V, UI> createUI(UI collectorUI)
 	{
 		return collectorUI.createPhotoUI(this);
 	}
@@ -187,9 +150,7 @@ public class PhotoField extends MediaField
 			return	super.equals(that) && // MediaField#equals(Object)
 					this.useFrontFacingCamera == that.useFrontFacingCamera &&
 					this.flashMode == that.flashMode &&
-					(this.captureButtonImageRelativePath != null ? this.captureButtonImageRelativePath.equals(that.captureButtonImageRelativePath) : that.captureButtonImageRelativePath == null) &&
-					(this.approveButtonImageRelativePath != null ? this.approveButtonImageRelativePath.equals(that.approveButtonImageRelativePath) : that.approveButtonImageRelativePath == null) &&
-					(this.discardButtonImageRelativePath != null ? this.discardButtonImageRelativePath.equals(that.discardButtonImageRelativePath) : that.discardButtonImageRelativePath == null);
+					(this.captureButtonImageRelativePath != null ? this.captureButtonImageRelativePath.equals(that.captureButtonImageRelativePath) : that.captureButtonImageRelativePath == null);
 		}
 		else
 			return false;
@@ -202,8 +163,6 @@ public class PhotoField extends MediaField
 		hash = 31 * hash + (useFrontFacingCamera ? 0 : 1);
 		hash = 31 * hash + flashMode.ordinal();
 		hash = 31 * hash + (captureButtonImageRelativePath == null ? 0 : captureButtonImageRelativePath.hashCode());
-		hash = 31 * hash + (approveButtonImageRelativePath == null ? 0 : approveButtonImageRelativePath.hashCode());
-		hash = 31 * hash + (discardButtonImageRelativePath == null ? 0 : discardButtonImageRelativePath.hashCode());		
 		return hash;
 	}
 	

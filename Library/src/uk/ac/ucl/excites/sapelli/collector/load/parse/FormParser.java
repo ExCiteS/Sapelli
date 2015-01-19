@@ -55,6 +55,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import uk.ac.ucl.excites.sapelli.shared.util.StringUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.xml.SubtreeParser;
@@ -80,6 +81,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String TAG_CHOICE = "Choice";
 	static private final String TAG_AUDIO = "Audio";
 	static private final String TAG_PHOTO = "Photo";
+	static private final String TAG_VIDEO = "Video";
 	static private final String TAG_LOCATION = "Location";
 	static private final String TAG_ORIENTATION = "Orientation";
 	static public final String TAG_BELONGS_TO = "BelongsTo";
@@ -150,7 +152,6 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_FIELD_VALUE = "value";
 	static private final String ATTRIBUTE_FIELD_DEFAULTVALUE = "defaultValue";
 	static private final String ATTRIBUTE_FIELD_INITVALUE = "initialValue";
-	static private final String ATTRIBUTE_DISABLE_FIELD = "disableField";
 	static private final String ATTRIBUTE_CHOICE_CAPTION_HEIGHT = "captionHeight";
 	static private final String ATTRIBUTE_CHOICE_MATCH_TEXT_SIZE = "matchTextSize";
 	static private final String ATTRIBUTE_CHOICE_ALT = "alt";
@@ -158,12 +159,26 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String[] ATTRIBUTE_CHOICE_QUESTION_DESC_DESCRIPTION = { ATTRIBUTE_FIELD_DESC, ATTRIBUTE_FIELD_DESCRIPTION, "questionDesc", "questionDescription" };
 	static private final String ATTRIBUTE_CHOICE_ROWS = "rows";
 	static private final String ATTRIBUTE_CHOICE_COLS = "cols";
-	static private final String ATTRIBUTE_LOCATION_START_WITH = "startWith";
-	static private final String ATTRIBUTE_LOCATION_START_WITH_FORM = "startWithForm"; // deprecated in favour of attribute above
+	static private final String ATTRIBUTE_CHOICE_CROSSED = "crossed";
+	static private final String ATTRIBUTE_CHOICE_CROSS_COLOR = "crossColor";
 	static private final String ATTRIBUTE_RELATIONSHIP_FORM = "form";
 	static private final String ATTRIBUTE_RELATIONSHIP_HOLD = "hold";
 	static private final String ATTRIBUTE_RELATIONSHIP_REMEMBER = "remember";
 	static private final String ATTRIBUTE_CONSTRAINT_COLUMN = "column";
+	static private final String ATTRIBUTE_LOCATION_TYPE = "type";
+	static private final String ATTRIBUTE_LOCATION_START_WITH = "startWith";
+	static private final String ATTRIBUTE_LOCATION_START_WITH_FORM = "startWithForm"; // deprecated in favour of attribute above
+	static private final String ATTRIBUTE_LOCATION_WAIT_AT_FIELD = "waitAtField";
+	static private final String ATTRIBUTE_LOCATION_TIMEOUT = "timeout";
+	static private final String ATTRIBUTE_LOCATION_MAX_AGE = "maxAge";
+	static private final String ATTRIBUTE_LOCATION_MAX_ACCURACY_RADIUS = "maxAccuracyRadius";
+	static private final String ATTRIBUTE_LOCATION_BEST_ON_TIMEOUT = "useBestKnownLocationOnTimeout";
+	static private final String ATTRIBUTE_LOCATION_DOUBLE_PRECISION = "doublePrecision";
+	static private final String ATTRIBUTE_LOCATION_STORE_ALTITUDE = "storeAltitude";
+	static private final String ATTRIBUTE_LOCATION_STORE_BEARING = "storeBearing";
+	static private final String ATTRIBUTE_LOCATION_STORE_SPEED = "storeSpeed";
+	static private final String ATTRIBUTE_LOCATION_STORE_ACCURACY = "storeAccuracy";
+	static private final String ATTRIBUTE_LOCATION_STORE_PROVIDER = "storeProvider";
 	static private final String ATTRIBUTE_TEXT_MINLENGTH = "minLength";
 	static private final String ATTRIBUTE_TEXT_MAXLENGTH = "maxLength";
 	static private final String ATTRIBUTE_TEXT_MULTILINE = "multiLine";
@@ -176,6 +191,18 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	static private final String ATTRIBUTE_LISTITEM_DEFAULT = "default";
 	static private final String ATTRIBUTE_BUTTON_COLUMN = "column";
 	static private final String ATTRIBUTE_MEDIA_MAX = "max";
+	static private final String ATTRIBUTE_MEDIA_REVIEW = "review";
+	static private final String ATTRIBUTE_MEDIA_NATIVE_APP = "useNativeApp";
+	static private final String ATTRIBUTE_MEDIA_DISABLE_FIELD = "disableField"; // deprecated
+	static private final String ATTRIBUTE_MEDIA_DISCARD_IMG = "discardImg";
+	static private final String ATTRIBUTE_AUDIO_START_REC_IMG = "startRecImg";
+	static private final String ATTRIBUTE_AUDIO_STOP_REC_IMG = "stopRecImg";
+	static private final String ATTRIBUTE_PHOTO_FLASH = "flash";
+	static private final String ATTRIBUTE_PHOTO_FRONT_CAMERA = "useFrontCamera";
+	static private final String ATTRIBUTE_PHOTO_CAPTURE_IMG = "captureImg";
+	static private final String ATTRIBUTE_VIDEO_FRONT_CAMERA = "useFrontCamera";
+	static private final String ATTRIBUTE_VIDEO_START_REC_IMG = "startRecImg";
+	static private final String ATTRIBUTE_VIDEO_STOP_REC_IMG = "stopRecImg";
 	static private final String ATTRIBUTE_TRIGGER_KEY = "key";
 	static private final String ATTRIBUTE_TRIGGER_KEYS = "keys";
 	static private final String ATTRIBUTE_TRIGGER_FIXED_TIMER = "fixedTimer";
@@ -200,7 +227,6 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	
 	private HashMap<JumpSource, String> jumpSourceToJumpTargetId;
 	private Hashtable<String, Field> idToField;
-	private HashMap<MediaField, String> mediaAttachToDisableId;
 	
 	private boolean choiceParentHadCaptionHeightAttribute = false;
 
@@ -211,7 +237,6 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		this.openFields = new Stack<Field>();
 		this.jumpSourceToJumpTargetId = new HashMap<JumpSource, String>();
 		this.idToField = new Hashtable<String, Field>();
-		this.mediaAttachToDisableId = new HashMap<MediaField, String>();
 	}
 
 	@Override
@@ -226,7 +251,6 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		formStartFieldId = null;
 		jumpSourceToJumpTargetId.clear();
 		idToField.clear();
-		mediaAttachToDisableId.clear();
 		v1xFormShowBack = null;
 		v1xFormShowCancel = null;
 		v1xFormShowForward = null;
@@ -359,10 +383,10 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			{
 				PhotoField photoField = new PhotoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_PHOTO, false));
 				newMediaField(photoField, attributes);
-				photoField.setUseNativeApp(attributes.getBoolean("useNativeApp", PhotoField.DEFAULT_USE_NATIVE_APP));
 				// Camera options (only used when useNativeApp=false):
-				photoField.setUseFrontFacingCamera(attributes.getBoolean("useFrontCamera", PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA));
-				String flashText = attributes.getValue("flash");
+				photoField.setUseNativeApp(attributes.getBoolean(ATTRIBUTE_MEDIA_NATIVE_APP, PhotoField.DEFAULT_USE_NATIVE_APP));
+				photoField.setUseFrontFacingCamera(attributes.getBoolean(ATTRIBUTE_PHOTO_FRONT_CAMERA, PhotoField.DEFAULT_USE_FRONT_FACING_CAMERA));
+				String flashText = attributes.getValue(ATTRIBUTE_PHOTO_FLASH);
 				PhotoField.FlashMode flash = PhotoField.DEFAULT_FLASH_MODE;
 				if(flashText != null && !flashText.isEmpty())
 				{
@@ -376,17 +400,28 @@ public class FormParser extends SubtreeParser<ProjectParser>
 				}
 				photoField.setFlashMode(flash);
 				// Custom buttons (only used when useNativeApp=false):
-				photoField.setCaptureButtonImageRelativePath(attributes.getString("captureImg", null, false, false));
-				photoField.setApproveButtonImageRelativePath(attributes.getString("approveImg", null, false, false));
-				photoField.setDiscardButtonImageRelativePath(attributes.getString("discardImg", null, false, false));
+				photoField.setCaptureButtonImageRelativePath(attributes.getString(ATTRIBUTE_PHOTO_CAPTURE_IMG, null, false, false));
+			}
+			// <Video>
+			else if(qName.equals(TAG_VIDEO))
+			{
+				VideoField videoField = new VideoField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_VIDEO, false));
+				newMediaField(videoField, attributes);
+				videoField.setUseNativeApp(attributes.getBoolean(ATTRIBUTE_MEDIA_NATIVE_APP, VideoField.DEFAULT_USE_NATIVE_APP));
+				// Camera options (only used when useNativeApp=false):
+				videoField.setUseFrontFacingCamera(attributes.getBoolean(ATTRIBUTE_VIDEO_FRONT_CAMERA, VideoField.DEFAULT_USE_FRONT_FACING_CAMERA));
+				// cannot have flash when capturing video
+				videoField.setStartRecImageRelativePath(attributes.getString(ATTRIBUTE_VIDEO_START_REC_IMG, null, false, false));
+				videoField.setStopRecImageRelativePath(attributes.getString(ATTRIBUTE_VIDEO_STOP_REC_IMG, null, false, false));
 			}
 			// <Audio>
 			else if(qName.equals(TAG_AUDIO))
 			{
 				AudioField audioField = new AudioField(currentForm, attributes.getValue(ATTRIBUTE_FIELD_ID), readCaption(attributes, TAG_AUDIO, false));
 				newMediaField(audioField, attributes);
-				audioField.setStartRecImageRelativePath(attributes.getString("startRecImg", null, false, false));
-				audioField.setStopRecImageRelativePath(attributes.getString("stopRecImg", null, false, false));
+				audioField.setUseNativeApp(attributes.getBoolean(ATTRIBUTE_MEDIA_NATIVE_APP, AudioField.DEFAULT_USE_NATIVE_APP));
+				audioField.setStartRecImageRelativePath(attributes.getString(ATTRIBUTE_AUDIO_START_REC_IMG, null, false, false));
+				audioField.setStopRecImageRelativePath(attributes.getString(ATTRIBUTE_AUDIO_STOP_REC_IMG, null, false, false));
 			}
 			// <Orientation>
 			else if(qName.equals(TAG_ORIENTATION))
@@ -678,8 +713,8 @@ public class FormParser extends SubtreeParser<ProjectParser>
 		// Other attributes:
 		choice.setCols(attributes.getInteger(ATTRIBUTE_CHOICE_COLS, ChoiceField.DEFAULT_NUM_COLS));
 		choice.setRows(attributes.getInteger(ATTRIBUTE_CHOICE_ROWS, ChoiceField.DEFAULT_NUM_ROWS));
-		choice.setCrossed(attributes.getBoolean("crossed", ChoiceField.DEFAULT_CROSSED));
-		choice.setCrossColor(attributes.getString("crossColor", ChoiceField.DEFAULT_CROSS_COLOR, true, false));
+		choice.setCrossed(attributes.getBoolean(ATTRIBUTE_CHOICE_CROSSED, ChoiceField.DEFAULT_CROSSED));
+		choice.setCrossColor(attributes.getString(ATTRIBUTE_CHOICE_CROSS_COLOR, ChoiceField.DEFAULT_CROSS_COLOR, true, false));
 	}
 	
 	/**
@@ -701,7 +736,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	{
 		newField(locField, attributes);
 		// Location type:
-		String type = attributes.getValue("type");
+		String type = attributes.getValue(ATTRIBUTE_LOCATION_TYPE);
 		if("Any".equalsIgnoreCase(type))
 			locField.setType(LocationField.TYPE_ANY);
 		else if("GPS".equalsIgnoreCase(type))
@@ -733,19 +768,19 @@ public class FormParser extends SubtreeParser<ProjectParser>
 			// unknown setting, default will be used 
 			addWarning("Unknown location field start preference (" + startWith +").");
 		
-		locField.setWaitAtField(attributes.getBoolean("waitAtField", LocationField.DEFAULT_WAIT_AT_FIELD));
-		locField.setTimeoutS(attributes.getInteger("timeout", LocationField.DEFAULT_TIMEOUT_S));
-		locField.setMaxAgeS(attributes.getInteger("maxAge", LocationField.DEFAULT_MAX_AGE_S));
-		locField.setMaxAccuracyRadius(attributes.getFloat("maxAccuracyRadius", LocationField.DEFAULT_MAX_ACCURACY_RADIUS));
-		locField.setUseBestNonQualifyingLocationAfterTimeout(attributes.getBoolean("useBestKnownLocationOnTimeout", LocationField.DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT));
+		locField.setWaitAtField(attributes.getBoolean(ATTRIBUTE_LOCATION_WAIT_AT_FIELD, LocationField.DEFAULT_WAIT_AT_FIELD));
+		locField.setTimeoutS(attributes.getInteger(ATTRIBUTE_LOCATION_TIMEOUT, LocationField.DEFAULT_TIMEOUT_S));
+		locField.setMaxAgeS(attributes.getInteger(ATTRIBUTE_LOCATION_MAX_AGE, LocationField.DEFAULT_MAX_AGE_S));
+		locField.setMaxAccuracyRadius(attributes.getFloat(ATTRIBUTE_LOCATION_MAX_ACCURACY_RADIUS, LocationField.DEFAULT_MAX_ACCURACY_RADIUS));
+		locField.setUseBestNonQualifyingLocationAfterTimeout(attributes.getBoolean(ATTRIBUTE_LOCATION_BEST_ON_TIMEOUT, LocationField.DEFAULT_USE_BEST_NON_QUALIFYING_LOCATION_AFTER_TIMEOUT));
 		// Storage settings:
-		locField.setDoublePrecision(attributes.getBoolean("doublePrecision", LocationField.DEFAULT_DOUBLE_PRECISION));
-		locField.setStoreAltitude(attributes.getBoolean("storeAltitude", LocationField.DEFAULT_STORE_ALTITUDE));
-		locField.setStoreBearing(attributes.getBoolean("storeBearing", LocationField.DEFAULT_STORE_BEARING));
-		locField.setStoreSpeed(attributes.getBoolean("storeSpeed", LocationField.DEFAULT_STORE_SPEED));
-		locField.setStoreAccuracy(attributes.getBoolean("storeAccuracy", LocationField.DEFAULT_STORE_ACCURACY));
-		locField.setStoreProvider(attributes.getBoolean("storeProvider", LocationField.DEFAULT_STORE_PROVIDER));
-	}
+		locField.setDoublePrecision(attributes.getBoolean(ATTRIBUTE_LOCATION_DOUBLE_PRECISION, LocationField.DEFAULT_DOUBLE_PRECISION));
+		locField.setStoreAltitude(attributes.getBoolean(ATTRIBUTE_LOCATION_STORE_ALTITUDE, LocationField.DEFAULT_STORE_ALTITUDE));
+		locField.setStoreBearing(attributes.getBoolean(ATTRIBUTE_LOCATION_STORE_BEARING, LocationField.DEFAULT_STORE_BEARING));
+		locField.setStoreSpeed(attributes.getBoolean(ATTRIBUTE_LOCATION_STORE_SPEED, LocationField.DEFAULT_STORE_SPEED));
+		locField.setStoreAccuracy(attributes.getBoolean(ATTRIBUTE_LOCATION_STORE_ACCURACY, LocationField.DEFAULT_STORE_ACCURACY));
+		locField.setStoreProvider(attributes.getBoolean(ATTRIBUTE_LOCATION_STORE_PROVIDER, LocationField.DEFAULT_STORE_PROVIDER));
+		}
 	
 	private void newRelationship(Relationship relationship, XMLAttributes attributes) throws Exception
 	{
@@ -762,8 +797,10 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	{
 		newField(ma, attributes);
 		ma.setMax(attributes.getInteger(ATTRIBUTE_MEDIA_MAX , MediaField.DEFAULT_MAX));
-		if(attributes.getValue(ATTRIBUTE_DISABLE_FIELD) != null)
-			mediaAttachToDisableId.put(ma, attributes.getValue(ATTRIBUTE_DISABLE_FIELD).trim().toUpperCase()); // upper cased, for case insensitivity
+		ma.setShowReview(attributes.getBoolean(ATTRIBUTE_MEDIA_REVIEW, MediaField.DEFAULT_SHOW_REVIEW));
+		ma.setDiscardButtonImageRelativePath(attributes.getString(ATTRIBUTE_MEDIA_DISCARD_IMG, null, false, false));
+		if(attributes.getValue(ATTRIBUTE_MEDIA_DISABLE_FIELD) != null)
+			addWarning("\"disableField\" attribute is no longer supported and will be ignored for media fields in this project.");
 	}
 	
 	/**
@@ -973,7 +1010,7 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	
 	private void parseArgument(JumpSource source, XMLAttributes tagAttributes) throws Exception
 	{
-		if(!source.hasNextFieldArguements())
+		if(!source.hasNextFieldArguments())
 			source.setNextFieldArguments(new FieldParameters());
 		source.getNextFieldArguments().put(	tagAttributes.getRequiredString(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_PARAM, true, false),
 											tagAttributes.getRequiredString(TAG_ARGUMENT, ATTRIBUTE_ARGUMENT_VALUE, false, true));
@@ -1006,13 +1043,14 @@ public class FormParser extends SubtreeParser<ProjectParser>
 	{
 		// Close field: </Choice>, </Location>, </Photo>, </Audio>, </Orientation>, </BelongsTo>, </LinksTo>, </Button>, </Label>, </Textbox>, </Checkbox>, </List>, </MultiList>, </Page>
 		if(	!openFields.isEmpty() && (
-			qName.equals(TAG_CHOICE) || qName.equals(TAG_LOCATION) ||
-			qName.equals(TAG_PHOTO) || qName.equals(TAG_AUDIO) ||
+			qName.equals(TAG_CHOICE)  || qName.equals(TAG_PAGE)|| 
+			qName.equals(TAG_LOCATION) ||qName.equals(TAG_PHOTO) || 
+			qName.equals(TAG_AUDIO) || qName.equals(TAG_VIDEO) ||
 			qName.equals(TAG_ORIENTATION) || qName.equals(TAG_BELONGS_TO) ||
 			qName.equals(TAG_LINKS_TO) || qName.equals(TAG_BUTTON) ||
 			qName.equals(TAG_LABEL) || qName.equals(TAG_TEXTFIELD) ||
 			qName.equals(TAG_CHECKBOX) || qName.equals(TAG_LIST) ||
-			qName.equals(TAG_MULTILIST) || qName.equals(TAG_PAGE)))
+			qName.equals(TAG_MULTILIST)))
 		{
 			Field currentField = openFields.pop(); // pop the field
 			
@@ -1079,16 +1117,6 @@ public class FormParser extends SubtreeParser<ProjectParser>
 					addWarning("Cannot resolve jump ID '" + jump.getValue() +  "' (case insensitive).");
 				else
 					jump.getKey().setJump(target); // set jump pointer (to a field object)
-			}
-			
-			// Resolve disabling of Choices by MediaAttachments...
-			for(Entry<MediaField, String> disable : mediaAttachToDisableId.entrySet())
-			{
-				Field target = idToField.get(disable.getValue());
-				if(target == null)
-					addWarning("Cannot resolve disable field ID '" + disable.getValue() +  "' (case insensitive).");
-				else
-					disable.getKey().setDisableChoice((ChoiceField) target);
 			}
 			
 			// Generate (audio) descriptions for missing Control tags:

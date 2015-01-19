@@ -35,7 +35,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 /**
  * Abstract class to represent the UI of a Field
  * 
- * @author mstevens
+ * @author mstevens, Ben
  *
  * @param <F>
  * @param <V>
@@ -227,7 +227,7 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 			switch(control)
 			{
 				case Back:
-					show &= controller.canGoBack(false); // can we go back to a previous field or form
+					show &= isShowBack();
 					break;
 				case Cancel:
 					show &= isShowCancel();
@@ -239,6 +239,17 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 		
 		// Return state
 		return show ? State.SHOWN_ENABLED : State.HIDDEN; // for now we don't use SHOWN_DISABLED (= "grayed-out")
+	}
+	
+	/**
+	 * Whether or not to show the Back control above this fieldUI
+	 * This should *only* be overridden if {@link #handleControlEvent(Control)} is also overridden to perform a custom "back action"
+	 *  
+	 * @return
+	 */
+	protected boolean isShowBack()
+	{
+		return controller.canGoBack(false); // can we go back to a previous field or form
 	}
 	
 	/**
@@ -256,6 +267,21 @@ public abstract class FieldUI<F extends Field, V, UI extends CollectorUI<V, UI>>
 	 * @return whether of not to show the Forward control above this fieldUI
 	 */
 	protected abstract boolean isShowForward();
+
+	/**
+	 * Allows subclasses to handle control events (i.e. pressing back/exit/forward)
+	 * in ways specific to their UI.
+	 * 
+	 * @param control - the control that was pressed
+	 * @return {@code true} if the control event was consumed and the default behaviour should not be
+	 * enacted, {@code false} if the control event was not consumed and the default behaviour should
+	 * be enacted.
+	 */
+	public boolean handleControlEvent(Control.Type control)
+	{
+		// by default, do not consume events:
+	    return false;
+    }
 
 	/**
 	 * Tells whether this FieldUI needs to have its onDisplay() method called when it appears on the screen.

@@ -37,6 +37,7 @@ import uk.ac.ucl.excites.sapelli.collector.model.fields.OrientationField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Page;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.TextBoxField;
+import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.animation.ViewAnimator;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidAudioUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidButtonUI;
@@ -49,6 +50,7 @@ import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidOrientationUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPageUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidPhotoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidTextBoxUI;
+import uk.ac.ucl.excites.sapelli.collector.ui.fields.AndroidVideoUI;
 import uk.ac.ucl.excites.sapelli.collector.ui.fields.FieldUI;
 import uk.ac.ucl.excites.sapelli.collector.util.ScreenMetrics;
 import android.annotation.SuppressLint;
@@ -84,6 +86,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 
 	// Colors:
 	static public final int COLOR_SEMI_TRANSPARENT_GRAY = Color.parseColor("#80777777");
+	static public final int COLOR_MOSTLY_OPAQUE_GRAY = Color.parseColor("#CC777777");
 	static public final int COLOR_GRAY = Color.parseColor("#B9B9B9");
 
 	// ScreenTransition duration
@@ -182,28 +185,26 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			{
 				switch(screenTransition)
 				{
-				case HORIZONTAL:
-					// Check whether it is a backwards or forwards direction and create Right or Left animation:
-					if(controller.isGoBack())
-						// Right:
-						ViewAnimator.SlideRight(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					else
-						// Left:
-						ViewAnimator.SlideLeft(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					break;
-
-				case VERTICAL:
-					// Check whether it is a backwards or forwards direction and create Up or Down animation:
-					if(controller.isGoBack())
-						// Down:
-						ViewAnimator.SlideDown(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					else
-						// Up:
-						ViewAnimator.SlideUp(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					break;
-
-				default:
-					break;
+					case HORIZONTAL:
+						// Check whether it is a backwards or forwards direction and create Right or Left animation:
+						if(controller.isGoBack())
+							// Right:
+							ViewAnimator.SlideRight(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						else
+							// Left:
+							ViewAnimator.SlideLeft(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						break;
+					case VERTICAL:
+						// Check whether it is a backwards or forwards direction and create Up or Down animation:
+						if(controller.isGoBack())
+							// Down:
+							ViewAnimator.SlideDown(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						else
+							// Up:
+							ViewAnimator.SlideUp(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						break;
+					default:
+						break;
 				}
 			}
 
@@ -320,6 +321,12 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	public AndroidPhotoUI createPhotoUI(PhotoField pf)
 	{
 		return new AndroidPhotoUI(pf, controller, this);
+	}
+	
+	@Override
+	public AndroidVideoUI createVideoUI(VideoField vf)
+	{
+		return new AndroidVideoUI(vf, controller, this);
 	}
 
 	@Override

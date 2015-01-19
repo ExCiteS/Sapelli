@@ -85,4 +85,11 @@ public class AudioRecorder
 		}
 	}
 	
+	public int getMaxAmplitude()
+	{
+		if(isRecording && mediaRecorder != null)
+			return mediaRecorder.getMaxAmplitude();
+		return -1;
+	}
+	
 }

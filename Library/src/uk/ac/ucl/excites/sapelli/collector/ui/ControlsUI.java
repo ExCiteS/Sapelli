@@ -88,6 +88,14 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 	
 	protected abstract void updateForm(Form newForm);
 	
+	public void setControlStates(State[] newControlStates) {
+		if(!Arrays.equals(newControlStates, controlStates))
+		{
+			controlStates = newControlStates;
+			updateControlStates(controlStates);
+		}
+	}
+	
 	protected abstract void updateControlStates(State[] newControlStates);
 	
 	public void disable()
@@ -122,19 +130,22 @@ public abstract class ControlsUI<V, UI extends CollectorUI<V, UI>>
 		// Log interaction:
 		controller.addLogLine((hardwareKeyPress ? "KEY" : "CLICK") + "_CONTROL_" + controlType.name(), controller.getCurrentField().id);
 		
-		// Handle event:
-		switch(controlType)
-		{
-			case Back :				
-				controller.goBack(true);
-				break;
-			case Cancel : 
-				controller.cancelAndRestartForm();
-				break;
-			case Forward :
-				controller.goForward(true);
-				break;
-			default : return;
+		// pass the control event to the current field UI in case it wants to do something unusual:
+		if (!collectorUI.getCurrentFieldUI().handleControlEvent(controlType)) {
+		// if the field UI didn't do anything with the control event, then handle in the default way:
+			switch(controlType)
+			{
+				case Back :				
+					controller.goBack(true);
+					break;
+				case Cancel : 
+					controller.cancelAndRestartForm();
+					break;
+				case Forward :
+					controller.goForward(true);
+					break;
+				default : return;
+			}
 		}
 	}
 	

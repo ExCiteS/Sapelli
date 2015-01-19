@@ -21,7 +21,6 @@ package uk.ac.ucl.excites.sapelli.collector.ui.fields;
 import java.io.File;
 
 import uk.ac.ucl.excites.sapelli.collector.control.Controller;
-import uk.ac.ucl.excites.sapelli.collector.control.Controller.LeaveRule;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.MediaField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorUI;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
@@ -34,35 +33,45 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
  */
 public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V, UI>> extends SelfLeavingFieldUI<MF, V, UI>
 {
-
+	
 	public MediaUI(MF field, Controller<UI> controller, UI collectorUI)
 	{
 		super(field, controller, collectorUI);
 	}
-
-	public void mediaDone(File mediaAttachment, boolean userRequested)
+	
+	/**
+	 * Logs the attachment of a media file, and requests that the controller proceed to the appropriate field.
+	 * 
+	 * @param mediaAttachment - the file to be attached to {@code field} in the current record.
+	 */
+	public void attachMedia(File mediaAttachment)
 	{
 		if(mediaAttachment != null && mediaAttachment.exists())
 		{
 			controller.addLogLine("ATTACHMENT", field.id, mediaAttachment.getName());
-			
-			field.incrementCount(controller.getCurrentRecord()); // Store/increase number of pictures/recordings taken
-			
-			// Store file:
-			controller.addMediaAttachment(mediaAttachment);
-			
-			controller.goForward(userRequested); // goto next/jump field
+			// add it to the record
+			field.addAttachmentToRecord(mediaAttachment, controller.getCurrentRecord());
+			// mark it to be added when the user saves their session
+			controller.addAttachment(mediaAttachment);
+			// goto next/jump field
 		}
 		else
 		{
 			controller.addLogLine("ATTACHMENT", field.id, "-NONE-");
-			
-			if(!isValid(controller.getCurrentRecord()))
-				// at least one attachment is required & we have none:
-				controller.goToCurrent(LeaveRule.UNCONDITIONAL_NO_STORAGE); // stay at this field ("return;" is not enough because if we are using a native app it needs to be restarted)
-			else
-				controller.goForward(userRequested); // goto next/jump field //TODO this needs changing when we allow review of photos/audio
 		}
+	}
+	
+	/**
+	 * Logs the deletion of a media file, removes it from the record and cancels the request of it being saved at the end
+	 * of the user's session.
+	 * 
+	 * @param mediaAttachment - the attachment to remove
+	 */
+	public void removeMedia(File mediaAttachment)
+	{
+		controller.addLogLine("ATTACHMENT REMOVED", field.getID(), mediaAttachment.getName());
+		field.removeAttachmentFromRecord(mediaAttachment, controller.getCurrentRecord());
+		controller.discardAttachment(mediaAttachment);
 	}
 	
 	protected boolean showCreateButton()
@@ -73,7 +82,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	@Override
 	public boolean isValid(Record record)
 	{
-		return field.isNoColumn() || (field.getCount(record) >= field.getMin() && field.getCount(record) <= field.getMax());
+		return field.isNoColumn() || (field.getAttachmentCount(record) >= field.getMin() && field.getAttachmentCount(record) <= field.getMax());
 	}
 	
 	@Override

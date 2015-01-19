@@ -361,6 +361,11 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		goTo(currFormSession.getCurrent(), leaveRule);
 	}
 	
+	public void goToCurrent(FieldParameters arguments, LeaveRule leaveRule)
+	{
+		goTo(new FieldWithArguments(currFormSession.getCurrentField(), arguments), leaveRule);
+	}
+	
 	public void goTo(FieldWithArguments nextFieldAndArguments)
 	{
 		goTo(nextFieldAndArguments, LeaveRule.CONDITIONAL); // only leave upon successful validation (& value storage)
@@ -454,7 +459,15 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	{
 		if(!currFormSession.form.isProducesRecords()) //!!!
 			return;
+				
+		// Delete any files that were "queued" for deletion but not actually deleted yet:
+		currFormSession.deleteDiscardedAttachments();
 		
+		// NOTE: no need to touch the added files since they were added on creation
+		
+		// Clear the list of added files so they cannot be deleted accidentally:
+		currFormSession.clearAddedAttachments();
+				
 		// Finalise the currentRecord:
 		currFormSession.form.finish(currFormSession.record); // (re)sets the end-time if necessary
 	
@@ -472,21 +485,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 			addLogLine("ERROR", "Upon saving record", ExceptionHelpers.getMessageAndCause(e));
 			return;
 		}
-	
-		// Move attachments from temp to data folder:
-		try
-		{
-			File dataFolder = fileStorageProvider.getProjectAttachmentFolder(project, true);
-			for(File attachment : currFormSession.getMediaAttachments())
-				attachment.renameTo(new File(dataFolder.getAbsolutePath() + File.separator + attachment.getName()));
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace(System.err);
-			addLogLine("ERROR", "Upon moving attachements", ExceptionHelpers.getMessageAndCause(e));
-			return;
-		}
-	
+		
 		// Signal the successful storage of the currentRecord
 		// Vibration
 		if(currFormSession.form.isVibrateOnSave())
@@ -513,14 +512,16 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	 */
 	protected void discardRecordAndAttachments()
 	{
-		// Discard record:
-		currFormSession.record = null; // !!!
+		// delete any files that were added but have now been discarded:
+		currFormSession.deleteAddedAttachments();
 		
-		// Delete any attachments:
-		for(File attachment : currFormSession.getMediaAttachments())
-			if(attachment.exists())
-				attachment.delete();
-		currFormSession.getMediaAttachments().clear();
+		// NOTE: no need to touch the deleted files since their deletion has been aborted
+		
+		// Clear the list of deleted files:
+		currFormSession.clearDiscardedAttachments();
+		
+		// Discard record itself:
+		currFormSession.record = null; // !!!
 	}
 	
 	@Override
@@ -546,19 +547,15 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	@Override
 	public boolean enterMediaField(MediaField mf, FieldParameters arguments, boolean withPage)
 	{
-		if(withPage)
-			return true;
-		else
-		{
-			if(mf.isMaxReached(currFormSession.record))
-			{ // Maximum number of attachments for this field is reached:
-				goForward(false); // skip field //TODO this needs to change if we allow to delete previously generated media
-				return false;
-			}
-			return true;
-		}
+		// we no longer skip media fields when max reached, so always return true
+		return true;
 	}
 	
+	/**
+	 * @param lf  the LocationField
+	 * @param whether or not the location field is entered together with a page that contains it, or entered on its own
+	 * @return whether or not a UI update is required after entering the field
+	 */
 	@Override
 	public boolean enterLocationField(LocationField lf, FieldParameters arguments, boolean withPage)
 	{
@@ -952,6 +949,14 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		return currFormSession.getCurrentField();
 	}
 	
+	/**
+	 * @return the current FieldArguments
+	 */
+	public FieldParameters getCurrentFieldArguments()
+	{
+		return currFormSession.getCurrentFieldArguments();
+	}
+	
 	public void addLogLine(String... fields)
 	{
 		if(logger != null)
@@ -968,6 +973,14 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	{
 		return fileStorageProvider;
 	}
+	
+	public void addAttachment(File file) {
+		currFormSession.addAttachment(file);
+	}
+	
+	public void discardAttachment(File file) {
+		currFormSession.discardAttachment(file);
+	}
 
 	protected void startLocationListener(LocationField locField)
 	{
@@ -983,11 +996,6 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	protected abstract void stopLocationListener();
 	
 	public abstract Location getCurrentBestLocation();
-	
-	public void addMediaAttachment(File mediaAttachment)
-	{
-		currFormSession.addMediaAttachment(mediaAttachment);
-	}
 	
 	protected abstract void vibrate(int durationMS);
 	

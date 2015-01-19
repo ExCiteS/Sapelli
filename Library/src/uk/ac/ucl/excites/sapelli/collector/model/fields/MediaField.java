@@ -19,43 +19,56 @@
 package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import uk.ac.ucl.excites.sapelli.collector.control.FieldVisitor;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
 import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
-import uk.ac.ucl.excites.sapelli.collector.load.parse.FormParser;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
-import uk.ac.ucl.excites.sapelli.shared.crypto.Hashing;
 import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
-import uk.ac.ucl.excites.sapelli.shared.util.BinaryHelpers;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
 
 /**
- * @author mstevens, Michalis Vitos
+ * @author mstevens, Michalis Vitos, benelliott
  *
  */
 public abstract class MediaField extends Field
 {
 
+	// STATIC -------------------------------------------------------
 	//static public final int DEFAULT_MIN = 0;
 	static public final int DEFAULT_MAX = 255; //column will use 1 byte (up to 255 items)
+	static public final boolean DEFAULT_SHOW_REVIEW = true;
 	static public final char FILENAME_ELEMENT_SEPARATOR = '_';
 	
 	static public final String ID_PREFIX = "media";
 	
-	static private final Pattern OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
+	/**
+	 * no longer used as filenames are now just ROT13-ed, but may be useful for backwards compatibility: 
+	 */
+	static private final Pattern HISTORIC_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
+	
+	static public final long MAX_ATTACHMENT_CREATION_TIME_OFFSET = (long) (10 * 365.25 * 24 * 60 * 60 * 1000); // 10 years in ms
+	
+	// DYNAMIC ------------------------------------------------------
+	protected String discardButtonImageRelativePath;
 	
 	//protected int min;
 	protected boolean useNativeApp;
+	protected boolean showReview;
 	protected int max;
-	protected ChoiceField disableChoice;
-
+	
 	/**
 	 * @param form
 	 * @param id the id of the field, may be null (but not recommended)
@@ -64,7 +77,8 @@ public abstract class MediaField extends Field
 	public MediaField(Form form, String id, String caption)
 	{
 		super(form, GetID(id, form, ID_PREFIX, caption), caption);
-		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);		
+		setMax(DEFAULT_MAX); //setMinMax(DEFAULT_MIN, DEFAULT_MAX);
+		setShowReview(DEFAULT_SHOW_REVIEW);
 	}
 	
 	public abstract String getMediaType();
@@ -75,7 +89,7 @@ public abstract class MediaField extends Field
 	}
 	
 	protected abstract String getFileExtension(String mediaType);
-
+	
 	/**
 	 * @return the min
 	 */
@@ -93,20 +107,15 @@ public abstract class MediaField extends Field
 	}
 	
 	/**
-	 * @return the useNativeApp
+	 * @param max the max to set
 	 */
-	public boolean isUseNativeApp()
+	public void setMax(int max)
 	{
-		return useNativeApp;
+		if(max < 1)
+			throw new IllegalArgumentException("Max must be >= 1, supplied value is " + max + ".");
+		this.max = max;
 	}
 
-	/**
-	 * @param useNativeApp the useNativeApp to set
-	 */
-	public void setUseNativeApp(boolean useNativeApp)
-	{
-		this.useNativeApp = useNativeApp;
-	}
 
 //	/**
 //	 * @param min the min to set
@@ -121,126 +130,304 @@ public abstract class MediaField extends Field
 //	}
 	
 	/**
-	 * @param max the max to set
+	 * @return the useNativeApp
 	 */
-	public void setMax(int max)
+	public boolean isUseNativeApp()
 	{
-		if(max < 1)
-			throw new IllegalArgumentException("Max must be >= 1, supplied value is " + max + ".");
-		this.max = max;
+		return useNativeApp;
 	}
 
 	/**
-	 * @return the disableChoice
+	 * @param useNativeApp the useNativeApp to set
 	 */
-	public ChoiceField getDisableChoice()
+	public void setUseNativeApp(boolean useNativeApp)
 	{
-		return disableChoice;
+		this.useNativeApp = useNativeApp;
+	}
+	
+	/**
+	 * @return whether or not the review screen should be shown after media is captured.
+	 */
+	public boolean isShowReview()
+	{
+		return showReview;
+	}
+	
+	/**
+	 * Set whether or not the review screen should be shown after media is captured.
+	 * @param showReview
+	 */
+	public void setShowReview(boolean showReview)
+	{
+		this.showReview = showReview;
 	}
 
 	/**
-	 * @param disableChoice the disableChoice to set
+	 * @return the discardButtonImageRelativePath
 	 */
-	public void setDisableChoice(ChoiceField disableChoice)
+	public String getDiscardButtonImageRelativePath()
 	{
-		this.disableChoice = disableChoice;
+		return discardButtonImageRelativePath;
+	}
+
+	/**
+	 * @param discardButtonImageRelativePath the discardButtonImageRelativePath to set
+	 */
+	public void setDiscardButtonImageRelativePath(String discardButtonImageRelativePath)
+	{
+		this.discardButtonImageRelativePath = discardButtonImageRelativePath;
+	}
+
+	@Override
+	protected IntegerListColumn createColumn(String name)
+	{
+		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
+		return new IntegerListColumn(name, new IntegerColumn("creationTimeOffset", false, 0, MAX_ATTACHMENT_CREATION_TIME_OFFSET), colOptional, (colOptional ? 0 : 1), max);
+
+	}
+	
+	public IntegerColumn createV1XColumn()
+	{
+		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
+		return new IntegerColumn(getColumn().getName() + "-v1x", colOptional, (colOptional ? 0 : 1), max);
 	}
 	
 	@Override
-	protected IntegerColumn createColumn(String name)
+	public IntegerListColumn getColumn()
 	{
-		boolean colOptional = form.getColumnOptionalityAdvisor().getColumnOptionality(this);
-		return new IntegerColumn(name, colOptional, (colOptional ? 0 : 1), max);
+		return (IntegerListColumn) super.getColumn();
 	}
 	
-	public int getCount(Record record)
+	public List<Long> getCurrentAttachmentOffsets(Record record)
 	{
-		Long currentCount = ((IntegerColumn) form.getColumnFor(this)).retrieveValue(record);
-		if(currentCount == null)
-			return 0;
-		return currentCount.intValue();
-	}
-	
-	public boolean isMaxReached(Record record)
-	{
-		return (getCount(record) >= max);
-	}
-	
-	public void incrementCount(Record record)
-	{
-		int currentCount = getCount(record);	
-		if(currentCount >= max)
-			throw new IllegalStateException("Maximum # of attachments (" + max + ") reached.");
-		((IntegerColumn) form.getColumnFor(this)).storeValue(record, ++currentCount);
-	}
-
-	public File getNewTempFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
-	{
-		String filename = generateFilename(record, getCount(record));
-		String dataFolderPath = fileStorageProvider.getProjectAttachmentFolder(form.project, true).getAbsolutePath();
-		return new File(dataFolderPath + File.separator + filename);
+		return getColumn().retrieveValue(record);
 	}
 	
 	/**
-	 * Generates a filename for the {@code attachmentNumber}-th attachment for this {@link MediaField} and the provided {@code record}.
-	 * Both the base filename and the extension will be obfuscated if the {@link FormParser#ATTRIBUTE_FORM_OBFUSCATE_MEDIA_FILES} attribute was set to {@code true},
-	 * and if so the generated filenames will match {@link #OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT}.
-	 * 
+	 * Returns the number of attachments for this field in the provided record.
 	 * @param record
-	 * @param attachmentNumber
+	 * @return the number of attachments
+	 */
+	public int getAttachmentCount(Record record)
+	{
+		List<Long> currentOffsets = getCurrentAttachmentOffsets(record);
+		return currentOffsets != null ? currentOffsets.size() : 0;
+	}
+	
+	/**
+	 *  Returns whether or not the maximum number of attachments has been added to this
+	 *  field in the provided record.
+	 * @param record
 	 * @return
 	 */
-	public String generateFilename(Record record, int attachmentNumber)
+	public boolean isMaxReached(Record record)
 	{
-		return generateFilename(record, attachmentNumber, form.isObfuscateMediaFiles(), form.isObfuscateMediaFiles());
+		return (getAttachmentCount(record) >= max);
 	}
 	
 	/**
-	 * Generates a filename for the {@code attachmentNumber}-th attachment for this {@link MediaField} and the provided {@code record}.
+	 * Add the provided attachment file to the column corresponding to this field in the provided record. <br>
+	 * Note: does not actually alter the file system, only the record contents. The file is added to the file system as soon as it is requested through the
+	 * {@link #getNewAttachmentFile(FileStorageProvider, Record)} method.
+	 * 
+	 * @param attachment - the file to attach to the record
+	 * @param record - the record to attach the file to
+	 */
+	public void addAttachmentToRecord(File attachment, Record record)
+	{
+		// check if adding would exceed max no attachments for this field
+		if(isMaxReached(record))
+			throw new IllegalStateException("Maximum # of attachments (" + max + ") reached.");
+		// retrieve creationTimeOffset from filename
+		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
+		// add creationTimeOffset to column
+		List<Long> offsets = getCurrentAttachmentOffsets(record);
+		if(offsets == null)
+			offsets = new ArrayList<Long>();
+		offsets.add(creationTimeOffset);
+		getColumn().storeValue(record, offsets);
+	}
+
+	/**
+	 * Remove the provided attachment file from the column corresponding to this field in the provided record.
+	 * <br>
+	 * Note: does not actually alter the file system, only the record contents. Files are actually deleted from the 
+	 * file system once the user's deletions are "confirmed" by them saving the record at the end.
+	 * 
+	 * @param attachment - the attachment to delete
+	 * @param record - the record to delete the attachment from
+	 */
+	public void removeAttachmentFromRecord(File attachment, Record record)
+	{
+		// retrieve creationTimeOffset from filename
+		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
+		// remove creationTimeOffset from column
+		List<Long> offsets = getCurrentAttachmentOffsets(record);
+		if(offsets != null)
+		{
+			if(offsets.remove(creationTimeOffset))
+				getColumn().storeValue(record, offsets);
+			else
+				System.err.println("Specified attachment could not be found for deletion.");
+		}
+	}
+	
+	/**
+	 * Returns the creation time offset for an existing media file (the time offset in milliseconds between 
+	 * the record's creation and the creation of that file), given the {@code File} object itself.
+	 * @param file
+	 * @return the creation time offset
+	 */
+	private long getCreationTimeOffsetFromFile(File file)
+	{
+		String deobfuscatedName = file.getName();
+		if(form.isObfuscateMediaFiles()) // deobfuscate if necessary by rotating
+			deobfuscatedName = ROT13.rot13NumRot5(file.getName());
+		else
+		{
+			// remove file extension before extracting creationTimeOffset (if obfuscated, name/ext separator is _ anyway)
+			int pos = deobfuscatedName.lastIndexOf(".");
+			if(pos > 0)
+			{
+				deobfuscatedName = deobfuscatedName.substring(0, pos);
+			}
+		}
+
+		// creationTimeOffset is the fourth part of the filename:
+		String[] parts = deobfuscatedName.split(Character.toString(FILENAME_ELEMENT_SEPARATOR));
+		try
+		{
+			return Long.parseLong(parts[3]);
+		}
+		catch(Exception e)
+		{
+			throw new IllegalStateException("Attachment filename did not have the expected syntax: " + deobfuscatedName);
+		}
+	}
+	
+	/**
+	 * Creates a new file in which to store media with a filename determined by the field ID, record start time and
+	 * time offset at which this file was requested from that start time.
+	 * @param fileStorageProvider - an object that provides information on the location of the attachments
+	 * @param record - the record with which the new file should be associated
+	 * @return the new file
+	 * @throws FileStorageException
+	 */
+	public File getNewAttachmentFile(FileStorageProvider fileStorageProvider, Record record) throws FileStorageException
+	{
+		long creationTimeOffset = System.currentTimeMillis() - form.getStartTime(record, true).getMsSinceEpoch();
+		String filename = generateFilename(record, creationTimeOffset);
+		return new File(fileStorageProvider.getProjectAttachmentFolder(form.project, true), filename);
+	}
+	
+	/**
+	 * Returns a list of the files attached to this field and record.
+	 * @param fileStorageProvider
+	 * @param record
+	 * @return the list of attachments
+	 */
+	public List<File> getAttachments(FileStorageProvider fileStorageProvider, Record record)
+	{
+		List<Long> offsets = getCurrentAttachmentOffsets(record);
+		if(offsets == null || offsets.isEmpty())
+			return Collections.<File> emptyList(); // return an empty list
+		// Construct list of files:	
+		List<File> files = new ArrayList<File>();
+		for(Long offset : offsets)
+			CollectionUtils.addIgnoreNull(files, getAttachmentFromOffset(fileStorageProvider, record, offset));
+		return files;
+	}
+	
+	public File getAttachment(FileStorageProvider fileStorageProvider, Record record, int index)
+	{
+		List<Long> offsets = getCurrentAttachmentOffsets(record);
+		if(offsets != null && index >= 0 && index < offsets.size())
+			return getAttachmentFromOffset(fileStorageProvider, record, offsets.get(index));
+		else
+			return null;
+	}
+	
+	private File getAttachmentFromOffset(FileStorageProvider fileStorageProvider, Record record, Long offset)
+	{
+		if(offset == null)
+			return null;
+		// Locate corresponding file:
+		File file = new File(fileStorageProvider.getProjectAttachmentFolder(form.getProject(), false), generateFilename(record, offset));
+		if(file.exists())
+			return file;
+		else
+			return null;
+	}
+	
+	/**
+	 * Returns the most recently attached file.
+	 * @param fileStorageProvider
+	 * @param record
+	 * @return
+	 */
+	public File getLastAttachment(FileStorageProvider fileStorageProvider, Record record)
+	{
+		List<Long> offsets = getCurrentAttachmentOffsets(record);
+		if(offsets == null || offsets.size() < 1)
+			return null;
+		String dir = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
+		String filename = generateFilename(record, offsets.get(offsets.size() - 1)); // get final offset from list
+		return new File(dir, filename);
+	}
+	
+	/**
+	 * Generates a new filename for the next media attachment for this field. If obfuscation is enabled,
+	 * the entire filename is obfuscated using ROT13.
+	 * 
+	 * @param record
+	 * @param creationTimeOffset
+	 * @return the generated filename
+	 */
+	public String generateFilename(Record record, long creationTimeOffset)
+	{
+		return generateFilename(record, creationTimeOffset, form.isObfuscateMediaFiles());
+	}
+	
+	/**
+	 * Generates a filename for a new attachment for this {@link MediaField} and the provided {@code record}.
 	 * The filename will be obfuscated if {@code obfuscate} is {@code true}.
 	 * 
 	 * @param record
-	 * @param attachmentNumber
-	 * @param obfuscateFilename
-	 * @param obfuscateExtension
-	 * @return
+	 * @param obfuscate
+	 * @return the generated filename
 	 */
-	public String generateFilename(Record record, int attachmentNumber, boolean obfuscateFilename, boolean obfuscateExtension)
+	public String generateFilename(Record record, long creationTimeOffset, boolean obfuscate)
 	{	
 		// Elements:
 		String dateTime = TimeUtils.getTimestampForFileName(form.getStartTime(record, true));
 		long deviceID = form.getDeviceID(record);
 		
 		// Assemble base filename
-		//	Format: "FieldID_DeviceID_DateTime_AttachmentNumber"
-		String filename = this.getID() + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + '#' + Integer.toString(attachmentNumber);
+		// Format: "FieldID_DeviceID_DateTime_CreationTimeOffset"
+		String filename = this.getID() + FILENAME_ELEMENT_SEPARATOR + Long.toString(deviceID) + FILENAME_ELEMENT_SEPARATOR + dateTime + FILENAME_ELEMENT_SEPARATOR + creationTimeOffset;
 		String extension = getFileExtension();
 		char extensionSeparator = '.';
 		
-		// Obfuscate filename and/or extension if necessary:
-		if(obfuscateFilename)
-			filename = BinaryHelpers.toHexadecimealString(Hashing.getMD5HashBytes(filename.getBytes()), 16, true); // Format: HEX(MD5(filename))
-		if(obfuscateExtension)
+		// Obfuscate filename if necessary:
+		if(obfuscate)
 		{
+			// TODO - remove custom extension separator and rotate all at once?
+			filename = ROT13.rot13NumRot5(filename);
 			extensionSeparator = FILENAME_ELEMENT_SEPARATOR; // '_' instead of '.'
 			extension = ROT13.rot13NumRot5(extension).toUpperCase(); // Format: UPPERCASE(ROT13(extension))
 		}
-		
 		return filename + extensionSeparator + extension;
 	}
 	
 	/**
-	 * Undoes the obfuscation of the extension on filenames that match the {@link #OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT} pattern.
-	 * Only the extension separator ('_' becomes '.') and extension (uppercase and ROT13 are undone) change, the base filename will stay obfuscated.
+	 * Undoes the obfuscation of the extension on filenames that match the {@link #HISTORIC_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT} pattern.
 	 * 
-	 * @param filename
-	 * @see #generateFilename(Record, int, boolean, boolean)
-	 * @return
-	 * 
+	 * @param filename 
+	 * @return the deobfuscated extension if the input matched the pattern, else the input filename
 	 */
-	public static String UndoExtensionObfuscation(String filename)
+	public static String undoHistoricExtensionObfuscation(String filename)
 	{
-		Matcher matcher = OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT.matcher(filename);
+		Matcher matcher = HISTORIC_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT.matcher(filename);
 		if(matcher.find() && matcher.groupCount() == 2)
 		{	// Got match!
 			/*
@@ -248,7 +435,7 @@ public abstract class MediaField extends Field
 			 * System.out.println("Found value: " + matcher.group(1)); //hash part
 			 * System.out.println("Found value: " + matcher.group(2)); //ROT13-ed and uppercased extension
 			 */
-			return matcher.group(1) /*hash*/ + '.' + ROT13.rot13NumRot5(matcher.group(2)).toLowerCase();
+			return ROT13.rot13NumRot5(matcher.group(1)) + '.' + ROT13.rot13NumRot5(matcher.group(2)).toLowerCase();
 		}
 		else
 			// No match, return filename as-is:
@@ -263,7 +450,14 @@ public abstract class MediaField extends Field
 	{
 		return visitor.enterMediaField(this, arguments, withPage);
 	}
-	
+
+	@Override
+	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
+	{
+		super.addFiles(filesSet, fileStorageProvider); // !!!
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
+	}
+
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -276,7 +470,8 @@ public abstract class MediaField extends Field
 					//this.min == that.min &&
 					this.max == that.max &&
 					this.useNativeApp == that.useNativeApp &&
-					(this.disableChoice != null ? that.disableChoice != null && this.disableChoice.id.equals(that.disableChoice.id) : that.disableChoice == null); // do not use disableChoice itself to avoid potential endless loops!
+					this.showReview == that.showReview &&
+					(this.discardButtonImageRelativePath != null ? this.discardButtonImageRelativePath.equals(that.discardButtonImageRelativePath) : that.discardButtonImageRelativePath == null);
 		}
 		else
 			return false;
@@ -289,7 +484,8 @@ public abstract class MediaField extends Field
 		//hash = 31 * hash + min;
 		hash = 31 * hash + max;
 		hash = 31 * hash + (useNativeApp ? 0 : 1);
-		hash = 31 * hash + (disableChoice == null ? 0 : disableChoice.id.hashCode()); // do not use disableChoice itself to avoid potential endless loops!
+		hash = 31 * hash + (showReview ? 0 : 1);
+		hash = 31 * hash + (discardButtonImageRelativePath == null ? 0 : discardButtonImageRelativePath.hashCode());
 		return hash;
 	}
 	

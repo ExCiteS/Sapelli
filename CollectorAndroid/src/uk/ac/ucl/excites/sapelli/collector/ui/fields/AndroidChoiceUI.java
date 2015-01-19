@@ -440,7 +440,6 @@ public class AndroidChoiceUI extends ChoiceUI<View, CollectorView>
 			// Item becomes layered:
 			item = layeredItem;
 		}
-		
 		// Set size & padding:
 		item.setPaddingDip(itemPaddingDip);
 		

@@ -20,7 +20,6 @@ package uk.ac.ucl.excites.sapelli.collector.control;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +60,8 @@ public class FormSession
 	private FieldWithArguments currFieldAndArguments = null;
 	private boolean currFieldDisplayed = false;
 	private Map<Field, Boolean> runtimeEnabled = null; // only instantiated when needed
-	private List<File> mediaAttachments = null; // only instantiated when needed
+	private List<File> addedAttachments; // list containing files to be added
+	private List<File> discardedAttachments; // list containing files to be deleted
 	
 	/**
 	 * @param form
@@ -118,6 +118,10 @@ public class FormSession
 		
 		// 	Next becomes the (new) current...
 		this.currFieldAndArguments = nextFieldAndArguments;
+	}
+	
+	public void addCurrentFieldToHistory() {
+		fieldAndArgumentHistory.push(currFieldAndArguments);
 	}
 	
 	/**
@@ -180,19 +184,61 @@ public class FormSession
 		return currFieldAndArguments != null;
 	}
 	
-	public void addMediaAttachment(File mediaAttachment)
-	{
-		if(mediaAttachments == null)
-			mediaAttachments = new ArrayList<File>();
-		mediaAttachments.add(mediaAttachment);
-	}
-
 	/**
-	 * @return the mediaAttachments
+	 * Adds a file to the list of attachments added in this form session.
+	 * @param file
 	 */
-	public List<File> getMediaAttachments()
+	public void addAttachment(File file)
 	{
-		return mediaAttachments != null ? mediaAttachments : Collections.<File>emptyList();
+		if(addedAttachments == null)
+			addedAttachments = new ArrayList<File>();
+		addedAttachments.add(file);
 	}
 	
+	/**
+	 * Adds a file to the list of attachments deleted in this form session.
+	 * @param file
+	 */
+	public void discardAttachment(File file)
+	{
+		if(discardedAttachments == null)
+			discardedAttachments = new ArrayList<File>();
+		discardedAttachments.add(file);
+	}
+	
+	/**
+	 * Deletes all attachments that were in the "discarded" list.
+	 */
+	public void deleteDiscardedAttachments()
+	{
+		if(discardedAttachments != null)
+		{
+			for(File file : discardedAttachments)
+				file.delete();
+		}
+		discardedAttachments = null;
+	}
+	
+	/**
+	 * Deletes all attachments that were in the "added" list.
+	 */
+	public void deleteAddedAttachments()
+	{
+		if(addedAttachments != null)
+		{
+			for(File file : addedAttachments)
+				file.delete();
+		}
+		addedAttachments = null;
+	}
+	
+	public void clearDiscardedAttachments()
+	{
+		discardedAttachments = null;
+	}
+
+	public void clearAddedAttachments()
+	{
+		addedAttachments = null;
+	}
 }
