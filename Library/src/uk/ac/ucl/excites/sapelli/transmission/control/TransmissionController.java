@@ -18,13 +18,21 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.control;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
+import org.joda.time.DateTime;
+
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.storage.db.RecordStore;
 import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
+import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
@@ -53,8 +61,8 @@ import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTr
  */
 public abstract class TransmissionController implements StoreHandle.StoreUser
 {
-	
 	static public final String UNKNOWN_CORRESPONDENT_NAME = "anonymous";
+	static protected final String LOG_FILENAME_PREFIX = "Transmission_";
 
 	// Client:
 	private TransmissionClient transmissionClient;
@@ -68,7 +76,10 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	private final SMSReceiver smsReceiver = new SMSReceiver();
 	private final PayloadReceiver payloadReceiver;
 	
-	public TransmissionController(TransmissionClient client) throws DBException
+	// Logger:
+	protected Logger logger;
+	
+	public TransmissionController(TransmissionClient client, FileStorageProvider fileStorageProvider) throws DBException
 	{
 		// Client:
 		this.transmissionClient = client;
@@ -84,13 +95,29 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 									customPayloadReceiver :
 									new DefaultPayloadReceiver();
 		
-		// TODO log!!!
+		try
+		{
+			logger = createLogger(fileStorageProvider);
+		}
+		catch(FileStorageException e)
+		{
+			e.printStackTrace();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
 	}
 	
 	public boolean deleteTransmissionUponDecoding()
 	{
 		// TODO was abstract ......
 		return false;
+	}
+	
+	protected Logger createLogger(FileStorageProvider fileStorageProvider) throws FileStorageException, IOException
+	{
+		return new Logger(fileStorageProvider.getLogsFolder(true).getAbsolutePath(), LOG_FILENAME_PREFIX + DateTime.now().toString("yyyy-mm-dd"), true);
 	}
 	
 	public abstract SMSSender getSMSService();
@@ -142,7 +169,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		// Query for incomplete SMSTransmissions:
 		List<SMSTransmission<?>> incompleteSMSTs = receivedTStore.getIncompleteSMSTransmissions(SMSTransmission.RESEND_REQUEST_TIMEOUT_MILLIS);
 		
-		// TODO Log: found x incomplete transmissions 
+		if (logger != null)
+			logger.addLine("Incomplete transmissions found: "+incompleteSMSTs.size());
 		
 		for(SMSTransmission<?> incomplete : incompleteSMSTs)
 			storeAndSend(createOutgoingTransmission(new ResendRequestPayload(incomplete), incomplete.getCorrespondent()));
@@ -152,6 +180,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	
 	private void storeAndSend(Transmission<?> transmission) throws Exception
 	{
+		if (logger != null)
+			logger.addLine("OUTGOING TRANSMISSION", transmission.getType().toString(), "PAYLOAD: "+transmission.getPayload().getType(), "ID: "+transmission.getLocalID(), "TO: "+transmission.getCorrespondent().getName()+" ("+transmission.getCorrespondent().getAddress()+")");
 		// store in "in-flight transmissions" schema:
 		sentTStore.store(transmission);
 		// actually send the transmission:
@@ -170,6 +200,9 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	 */
 	protected boolean doReceive(Transmission<?> transmission) throws Exception
 	{	
+		if (logger != null)
+			logger.addLine("INCOMING TRANSMISSION", transmission.getType().toString(), "PAYLOAD: "+transmission.getPayload().getType(), "ID: "+transmission.getLocalID(), "FROM: "+transmission.getCorrespondent().getName()+" ("+transmission.getCorrespondent().getAddress()+")");
+
 		// Receive (i.e. decode) the transmission if it is complete
 		if(transmission.isComplete()) // TODO maybe this should be done in Message.receivePart()?
 		{
@@ -179,14 +212,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 				transmission.receive();
 			
 				// Handle payload (including ACK, since this is payload-dependent):
-				payloadReceiver.receive(transmission.getPayload());
-				
-				// Acknowledge reception if needed
-				if(transmission.getPayload().acknowledgeReception() /*&& transmission.getCorrespondent().wantsAck() TODO */)
-				{
-					// TODO this won't work for http? an http response is not quite like a sending a transmission, right?
-					storeAndSend(createOutgoingTransmission(new AckPayload(transmission), transmission.getCorrespondent()));
-				}
+				payloadReceiver.receive(transmission, transmission.getPayload());
 				
 				// Delete transmission (and parts) from store:
 				if(deleteTransmissionUponDecoding())
@@ -291,6 +317,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(BinaryMessage binSms)
 		{
+			if (logger != null)
+				logger.addLine("INCOMING BINARY SMS", "SENDER ID: "+binSms.getSendingSideTransmissionID(), "PART: "+binSms.getPartNumber()+"/"+binSms.getTotalParts(), "FROM: "+binSms.getSender().getName()+" ("+binSms.getSender().getAddress()+")");
 			BinarySMSTransmission t = receivedTStore.retrieveBinarySMSTransmission(binSms.getSender(), binSms.getSendingSideTransmissionID(), binSms.getPayloadHash());
 			if(t == null) // we received the the first part
 				t = new BinarySMSTransmission(transmissionClient, binSms);
@@ -302,6 +330,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(TextMessage txtSms)
 		{
+			if (logger != null)
+				logger.addLine("INCOMING TEXT SMS", "SENDER ID: "+txtSms.getSendingSideTransmissionID(), "PART: "+txtSms.getPartNumber()+"/"+txtSms.getTotalParts(), "FROM: "+txtSms.getSender().getName()+" ("+txtSms.getSender().getAddress()+")");
 			TextSMSTransmission t = receivedTStore.retrieveTextSMSTransmission(txtSms.getSender(), txtSms.getSendingSideTransmissionID(), txtSms.getPayloadHash());
 			if(t == null) // we received the the first part
 				t = new TextSMSTransmission(transmissionClient, txtSms);
@@ -323,12 +353,20 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		/**
 		 * Receive/decode payload
 		 * 
+		 * @param transmission
 		 * @param payload
 		 * @throws Exception
 		 */
-		public void receive(Payload payload) throws Exception
+		public void receive(Transmission<?> transmission, Payload payload) throws Exception
 		{
 			payload.handle(this);
+			
+			// Acknowledge reception if needed
+			if(payload.acknowledgeReception() /*&& transmission.getCorrespondent().wantsAck() TODO */)
+			{
+				// TODO this won't work for http? an http response is not quite like a sending a transmission, right?
+				storeAndSend(createOutgoingTransmission(new AckPayload(transmission), transmission.getCorrespondent()));
+			}
 		}
 		
 		@Override
@@ -336,12 +374,16 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		{
 			// find appropriate "in-flight" transmission and mark it as ACKed by setting the receivedAt time to ackPayload.getSubjectReceivedAt()
 			Transmission<?> subject = sentTStore.retrieveTransmissionFor(ack.getSubjectSenderSideID(), ack.getSubjectPayloadHash());
+			
+			if (logger != null)
+				logger.addLine("INCOMING ACK", "SUBJECT ID: "+ack.getSubjectSenderSideID(), "SUBJECT HASH: "+ack.getSubjectPayloadHash(), "SUBJECT FOUND: "+!(subject == null));
+			
 			if(subject == null)
-			{	// TODO log to file
+			{	
 				System.err.println("No matching transmission (ID " + ack.getSubjectSenderSideID() + ") found in the database for acknowledgement from sender " + ack.getTransmission().getCorrespondent());
 				return;
 			}
-			
+						
 			// Mark subject as received and update in database:
 			subject.setReceivedAt(ack.getSubjectReceivedAt());
 			sentTStore.store(subject);
@@ -352,8 +394,22 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		{
 			// get Transmission object from store - will definitely be an SMSTransmission since resend requests are only concerned with SMS (at least for now)
 			SMSTransmission<?> subject = ((SMSTransmission<?>) sentTStore.retrieveTransmissionFor(resendReq.getSubjectSenderSideID(), resendReq.getSubjectPayloadHash()));
+			
+			
+			if (logger != null)
+			{
+				StringBuilder partsString = new StringBuilder();
+				for (Integer part : resendReq.getRequestedPartNumbers())
+				{
+					partsString.append(part);
+					partsString.append(",");
+				}
+				
+				logger.addLine("INCOMING RESEND REQUEST", "SUBJECT ID: "+resendReq.getSubjectSenderSideID(), "SUBJECT HASH: "+resendReq.getSubjectPayloadHash(), "REQUESTED: "+partsString.toString(), "SUBJECT FOUND: "+!(subject == null));
+			}
+			
 			if(subject == null)
-			{	// TODO log to file
+			{
 				System.err.println("No matching transmission (ID " + resendReq.getSubjectSenderSideID() + ") found in the database for resend request from sender " + resendReq.getTransmission().getCorrespondent());
 				return;
 			}
@@ -366,6 +422,21 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(RecordsPayload recordsPayload) throws Exception
 		{
+			if (logger != null)
+			{
+				StringBuilder schemataString = new StringBuilder();
+				Map<Schema, List<Record>> recordsBySchema = recordsPayload.getRecordsBySchema();
+				for (Schema schema : recordsPayload.getSchemata())
+				{
+					schemataString.append(schema.getName());
+					schemataString.append(" (");
+					schemataString.append((recordsBySchema.get(schema) != null) ? recordsBySchema.get(schema).size() : -1);
+					schemataString.append(")");
+					schemataString.append(",");
+				}
+				logger.addLine("INCOMING RECORDS", "TOTAL: "+recordsPayload.getNumberOfRecords(), "SCHEMATA: "+schemataString.toString());
+			}
+			
 			try
 			{
 				// Store received records...
@@ -385,6 +456,8 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		@Override
 		public void handle(Payload customPayload, int type) throws Exception
 		{
+			if (logger != null)
+				logger.addLine("INCOMING CUSTOM", "TRANS ID: "+customPayload.getTransmission().getLocalID());
 			System.err.println("Receiving custom payload (type: " + type + ") not supported!");
 		}
 		

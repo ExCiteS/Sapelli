@@ -59,7 +59,7 @@ public class SMSReceiverService extends IntentService
 		mainHandler = new Handler(Looper.getMainLooper());
 		try
 		{
-			transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient, this);
+			transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient, ((CollectorApp) getApplication()).getFileStorageProvider(), this);
 		}
 		catch(Exception e)
 		{

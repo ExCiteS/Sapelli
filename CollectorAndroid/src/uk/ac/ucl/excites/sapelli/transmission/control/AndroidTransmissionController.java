@@ -18,7 +18,15 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.control;
 
+import java.io.IOException;
+
+import org.joda.time.DateTime;
+
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageException;
+import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
+import uk.ac.ucl.excites.sapelli.collector.util.AndroidLogger;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
+import uk.ac.ucl.excites.sapelli.shared.util.Logger;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSSender;
@@ -35,9 +43,9 @@ public class AndroidTransmissionController extends TransmissionController
 	private Context context;
 	private AndroidSMSSender smsSender;
 	
-	public AndroidTransmissionController(TransmissionClient transmissionClient, Context context) throws DBException
+	public AndroidTransmissionController(TransmissionClient transmissionClient, FileStorageProvider fileStorageProvider, Context context) throws DBException
 	{
-		super(transmissionClient);
+		super(transmissionClient, fileStorageProvider);
 		this.context = context;
 	}
 
@@ -56,4 +64,9 @@ public class AndroidTransmissionController extends TransmissionController
 		return null;
 	}
 
+	@Override
+	protected Logger createLogger(FileStorageProvider fileStorageProvider) throws FileStorageException, IOException
+	{
+		return new AndroidLogger(fileStorageProvider.getLogsFolder(true).getAbsolutePath(), LOG_FILENAME_PREFIX + DateTime.now().toString("yyyy-mm-dd"), true);
+	}
 }

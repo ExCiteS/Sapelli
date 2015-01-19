@@ -30,7 +30,7 @@ import uk.ac.ucl.excites.sapelli.shared.io.FileWriter;
 
 
 /**
- * @author Michalis Vitos, mstevens
+ * @author Michalis Vitos, mstevens, benelliott
  *
  */
 public class Logger
@@ -41,11 +41,20 @@ public class Logger
 	
 	private DateTimeFormatter formatter;
 	private FileWriter fileWriter;
+	protected boolean printToOutputStream;
 
-	public Logger(String folderPath, String baseFileName) throws IOException
+	/**
+	 * 
+	 * @param folderPath path to the folder in which the log file is saved
+	 * @param baseFileName filename for the log file
+	 * @param printToOutputStream whether or not to also echo log statements to the standard output stream (e.g. System.out or Android Logcat)
+	 * @throws IOException from file system I/O
+	 */
+	public Logger(String folderPath, String baseFileName, boolean printToOutputStream) throws IOException
 	{
 		this.formatter = ISODateTimeFormat.dateTime();
 		this.fileWriter = new FileWriter(folderPath + File.separator + baseFileName + (TimeUtils.getTimestampForFileName()) + LOG_EXTENSION);
+		this.printToOutputStream = printToOutputStream;
 		fileWriter.open(FileHelpers.FILE_EXISTS_STRATEGY_APPEND, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 	}
 
@@ -58,6 +67,7 @@ public class Logger
 	{
 		checkWriter();
 		fileWriter.writeLine(getTime() + FIELD_SEPARATOR + line + FIELD_SEPARATOR);
+		printToOutputStream(line);
 	}
 
 	/**
@@ -68,10 +78,15 @@ public class Logger
 	public void addLine(String... fields)
 	{
 		checkWriter();
-		fileWriter.write(getTime());
+		
+		String time = getTime(); // hang on to this so the same time is printed to System.out
+		
+		fileWriter.write(time);
 		for(String field : fields)
 			fileWriter.write(FIELD_SEPARATOR + field);
 		fileWriter.writeLine(FIELD_SEPARATOR);
+		
+		printToOutputStream(time, fields);
 	}
 
 	/**
@@ -82,7 +97,7 @@ public class Logger
 	 */
 	public void addFinalLine(String... fields)
 	{
-		addLine(fields);
+		addLine(fields); // these calls will also print to output stream if appropriate
 		addBlankLine();
 		close();
 	}
@@ -94,6 +109,7 @@ public class Logger
 	{
 		checkWriter();
 		fileWriter.writeLine("");
+		// don't reproduce empty lines on System.out
 	}
 	
 	@Override
@@ -132,5 +148,22 @@ public class Logger
 		DateTime now = new DateTime();
 		return formatter.withZone(now.getZone()).print(now) + FIELD_SEPARATOR + TimeUtils.PrettyTimestampWithoutMSFormatter.print(now);
 	}
-
+	
+	
+	protected void printToOutputStream(String line)
+	{
+		if (printToOutputStream)
+			System.out.println(line);
+	}
+	
+	protected void printToOutputStream(String time, String... fields)
+	{
+		if (printToOutputStream)
+		{
+			System.out.print(time);
+			for (String field : fields)
+				System.out.print(FIELD_SEPARATOR + field);
+			System.out.println(FIELD_SEPARATOR);
+		}
+	}
 }

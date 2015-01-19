@@ -22,6 +22,7 @@ import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
+import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
 import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.IntentService;
 import android.content.Intent;
@@ -37,6 +38,7 @@ public class SendingAlarmScheduler extends IntentService implements StoreHandle.
 	
 	private ProjectStore projectStore;
 	private final CollectorApp app;
+	private AndroidTransmissionController transmissionController;
 
 	/**
 	 * A constructor is required, and must call the super IntentService(String) constructor with a name for the worker thread.
@@ -45,6 +47,21 @@ public class SendingAlarmScheduler extends IntentService implements StoreHandle.
 	{
 		super("AlarmScheduler");
 		app = ((CollectorApp) getApplication());
+	}
+	
+	@Override
+	public void onCreate()
+	{
+		super.onCreate();
+		try
+		{
+			transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient,((CollectorApp) getApplication()).getFileStorageProvider(), this);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace(System.err);
+		}
+		
 	}
 
 	/**
@@ -62,8 +79,9 @@ public class SendingAlarmScheduler extends IntentService implements StoreHandle.
 				projectStore = app.collectorClient.projectStoreHandle.getStore(this);
 			
 			// Set an Alarm, for each of the projects that has sending enabled
-			for(Project p : projectStore.retrieveProjects())
+			for(Project p : projectStore.retrieveProjects())// TODO projectStore.getSendingProjects?
 			{
+				
 				// TODO if (p.isSending())
 				// TODO interval should be saved in project -> p.getSendingInterval()
 				SendAlarmManager.setAlarm(this, 60 * 1000, p.getID(), p.getFingerPrint());

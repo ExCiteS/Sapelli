@@ -69,7 +69,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 {
 	
 	// STATICS-------------------------------------------------------
-	private static final String LOG_PREFIX = "Collector_";
+	protected static final String LOG_PREFIX = "Collector_";
 	public static final int VIBRATION_DURATION_MS = 600;
 	
 	/**
@@ -203,7 +203,7 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 		{
 			try
 			{
-				logger = new Logger(fileStorageProvider.getProjectLogsFolder(project, true).getAbsolutePath(), LOG_PREFIX);
+				logger = createLogger();
 
 				// Log the DeviceID
 				logger.addLine("DeviceID (CRC32)", String.valueOf(getDeviceID()));
@@ -972,6 +972,11 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	protected void startLocationListener(LocationField locField)
 	{
 		startLocationListener(Arrays.asList(locField));
+	}
+	
+	protected Logger createLogger() throws FileStorageException, IOException
+	{
+		return new Logger(fileStorageProvider.getProjectLogsFolder(project, true).getAbsolutePath(), LOG_PREFIX, true);
 	}
 
 	protected abstract void startOrientationListener();
