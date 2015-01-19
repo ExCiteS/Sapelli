@@ -72,7 +72,7 @@ public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 	 */
 	protected abstract boolean isBinary();
 	
-	public class Binary extends SMSBroadcastReceiver
+	public static class Binary extends SMSBroadcastReceiver
 	{
 
 		@Override
@@ -83,7 +83,7 @@ public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 		
 	}
 	
-	public class Text extends SMSBroadcastReceiver
+	public static class Text extends SMSBroadcastReceiver
 	{
 
 		@Override
