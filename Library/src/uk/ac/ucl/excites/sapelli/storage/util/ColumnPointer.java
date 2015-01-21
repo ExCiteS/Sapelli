@@ -351,9 +351,7 @@ public class ColumnPointer
 	@Override
 	public int hashCode()
 	{
-		int hash = 1;
-		hash = 31 * hash + columnStack.hashCode();
-		return hash;
+		return columnStack.hashCode();
 	}
 	
 	public Comparator<Record> getComparator()
