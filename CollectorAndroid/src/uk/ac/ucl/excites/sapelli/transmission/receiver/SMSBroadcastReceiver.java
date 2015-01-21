@@ -45,13 +45,17 @@ public abstract class SMSBroadcastReceiver extends BroadcastReceiver
 	public void onReceive(Context context, Intent intent)
 	{
 		// get PDU byte arrays from received SMS intent:
-		byte[][] pdus = (byte[][])intent.getExtras().get("pdus");
-		for (byte[] pdu : pdus)
+		Object[] pdus = (Object[])intent.getExtras().get("pdus");
+
+		if(pdus == null)
+			return;
+
+		for(Object pdu : pdus)
 		{
 			// for each message, create a new intent to launch the SMSReceiverService (effectively queues the messages):
 			Intent launchReceiverService = new Intent(context, SMSReceiverService.class);
 			// attach the PDU to the intent:
-			launchReceiverService.putExtra(SMSReceiverService.PDU_BYTES_EXTRA_NAME, pdu);
+			launchReceiverService.putExtra(SMSReceiverService.PDU_BYTES_EXTRA_NAME, (byte[]) pdu);
 			// also include whether or not the PDU represents a binary/data SMS:
 			launchReceiverService.putExtra(SMSReceiverService.BINARY_FLAG_EXTRA_NAME, this.isBinary()); // subclass will decide whether or not message is binary since they are registered to different intents
 			// launch the service using the intent:

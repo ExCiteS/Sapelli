@@ -31,6 +31,8 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ProjectModelPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
@@ -53,7 +55,9 @@ public abstract class Payload
 		Records,
 		Files,
 		Ack,
-		ResendRequest
+		ResendRequest,
+		ModelRequest,
+		ProjectModel
 		//... up to 16 different built-in types (ordinals 0 to 15)
 	}
 	
@@ -100,6 +104,9 @@ public abstract class Payload
 		
 		public void handle(ResendRequestPayload resendRequestPayload) throws Exception;
 		
+		public void handle(ModelRequestPayload modelRequestPayload) throws Exception;
+		
+		public void handle(ProjectModelPayload projectModelPayload) throws Exception;
 		/**
 		 * Handle method for non-built-in payload types
 		 * 

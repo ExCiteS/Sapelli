@@ -91,7 +91,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 	static final public Schema RECEIVER_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Receiver");
 	static final public Schema SENDER_SCHEMA = new Schema(TRANSMISSION_MANAGEMENT_MODEL, "Sender");
 	//	Correspondent columns:
-	static final public IntegerColumn CORRESPONDENT_COLUMN_ID = new IntegerColumn("ID", false, Correspondent.CORRESPONDENT_ID_FIELD);
+	static final public IntegerColumn CORRESPONDENT_COLUMN_ID = new IntegerColumn("ID_corr", false, Correspondent.CORRESPONDENT_ID_FIELD); // TODO rename!!! temporary column name to avoid clash in foreign keys
 	static final public StringColumn CORRESPONDENT_COLUMN_NAME = new StringColumn("Name", false, Correspondent.CORRESPONDENT_NAME_MAX_LENGTH_BYTES);
 	static final public IntegerColumn CORRESPONDENT_COLUMN_TRANSMISSION_TYPE = new IntegerColumn("TransmissionType", false);
 	static final public StringColumn CORRESPONDENT_COLUMN_ADDRESS = new StringColumn("Address", true, Correspondent.CORRESPONDENT_ADDRESS_MAX_LENGTH_BYTES);
@@ -106,7 +106,7 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 			schema.addColumn(CORRESPONDENT_COLUMN_TRANSMISSION_TYPE);
 			schema.addColumn(CORRESPONDENT_COLUMN_ADDRESS);
 			//schema.addColumn(CORRESPONDENT_COLUMN_ENCRYPTION_KEY);
-			schema.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", CORRESPONDENT_COLUMN_ID));
+			schema.setPrimaryKey(new AutoIncrementingPrimaryKey(schema.getName() + "_PK", CORRESPONDENT_COLUMN_ID));
 			schema.seal();
 		}
 	}
@@ -136,13 +136,13 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 			schema.addColumn(TRANSMISSION_COLUMN_PAYLOAD_HASH);
 			schema.addColumn(TRANSMISSION_COLUMN_PAYLOAD_TYPE);
 			if(schema == SENT_TRANSMISSION_SCHEMA)
-				schema.addColumn(RECEIVED_TRANSMISSION_COLUMN_SENDER);
-			else
 				schema.addColumn(SENT_TRANSMISSION_COLUMN_RECEIVER);
+			else
+				schema.addColumn(RECEIVED_TRANSMISSION_COLUMN_SENDER);
 			schema.addColumn(TRANSMISSION_COLUMN_NUMBER_OF_PARTS);
 			schema.addColumn(COLUMN_SENT_AT);
 			schema.addColumn(COLUMN_RECEIVED_AT);
-			schema.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", TRANSMISSION_COLUMN_ID));
+			schema.setPrimaryKey(new AutoIncrementingPrimaryKey(schema.getName() + "_PK", TRANSMISSION_COLUMN_ID));
 			schema.seal();
 		}
 	}
@@ -213,6 +213,13 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		recordStore.commitTransaction();
 	}
 	
+	/**
+	 * TODO explain
+	 * 
+	 * @param correspondent
+	 * @return
+	 * @throws Exception
+	 */
 	private RecordReference doStoreCorrespondent(Correspondent correspondent) throws Exception
 	{
 		CorrespondentRecordGenerator generator = new CorrespondentRecordGenerator(correspondent);

@@ -35,6 +35,7 @@ import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Source;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.db.ReceivedTransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.db.SentTransmissionStore;
@@ -42,6 +43,8 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ProjectModelPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPClient;
@@ -201,7 +204,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 	protected boolean doReceive(Transmission<?> transmission) throws Exception
 	{	
 		if (logger != null)
-			logger.addLine("INCOMING TRANSMISSION", transmission.getType().toString(), "PAYLOAD: "+transmission.getPayload().getType(), "ID: "+transmission.getLocalID(), "FROM: "+transmission.getCorrespondent().getName()+" ("+transmission.getCorrespondent().getAddress()+")");
+			logger.addLine("INCOMING TRANSMISSION", transmission.getType().toString(), "FROM: "+transmission.getCorrespondent().getName()+" ("+transmission.getCorrespondent().getAddress()+")");
 
 		// Receive (i.e. decode) the transmission if it is complete
 		if(transmission.isComplete()) // TODO maybe this should be done in Message.receivePart()?
@@ -219,6 +222,11 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 					receivedTStore.deleteTransmission(transmission);
 				
 				return true;
+			}
+			catch(UnknownModelException e)
+			{
+				// send model request payload
+				return false; // TODO
 			}
 			catch(Exception e)
 			{
@@ -446,6 +454,27 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 			{
 				throw new Exception("Unable to store records that were received from transmission", e);
 			}
+		}
+		
+		@Override
+		public void handle(ProjectModelPayload projectModelPayload) throws Exception
+		{
+			// TODO
+			if (logger != null)
+				logger.addLine("INCOMING MODEL", "ID: "+projectModelPayload.getModel().getID(), "NAME: "+projectModelPayload.getModel().getName());
+			// add model from payload
+			// try to decode records from unknown model
+		}
+		
+		@Override
+		public void handle(ModelRequestPayload modelRequestPayload) throws Exception
+		{
+			// TODO
+			if (logger != null)
+				logger.addLine("INCOMING MODEL REQUEST", "ID: "+modelRequestPayload.getUnknownModelID());
+			// look for requested model
+			
+			// create projectModelPayload and send
 		}
 		
 	}
