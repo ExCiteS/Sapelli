@@ -2,8 +2,9 @@ package uk.ac.ucl.excites.sapelli.transmission.sender.util;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
+import uk.ac.ucl.excites.sapelli.collector.remote.Receiver;
+import uk.ac.ucl.excites.sapelli.transmission.sender.RecordSenderService;
 import uk.ac.ucl.excites.sapelli.transmission.sender.SendAlarmBootListener;
-import uk.ac.ucl.excites.sapelli.transmission.sender.DataSenderService;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.ComponentName;
@@ -13,31 +14,32 @@ import android.content.pm.PackageManager;
 import android.os.SystemClock;
 
 /**
- * Class which schedules the DataSenderService to send records from a particular project with initial delays and fixed intervals.
+ * Class which schedules the RecordSenderService to send records from a particular project with initial delays and fixed intervals.
  * 
  * @author Michalis Vitos
  * 
  */
 public class SendAlarmManager
 {
-	public static final String PROJECT_ID = "projectId";
-	public static final String PROJECT_FINGERPRINT = "fingerPrint";
+	public static final String INTENT_KEY_PROJECT_ID = "projectId";
+	public static final String INTENT_KEY_PROJECT_FINGERPRINT = "fingerPrint";
+	private static final int DEFAULT_DELAY_MILLIS = 60 * 1000; // default delay is 1 minute
 
 	/**
-	 * Set up an Alarm for a project that calls the {@link DataSenderService}, initially after a minute and then every <code>intervalMillis</code>
+	 * Set up an Alarm for a project that calls the {@link RecordSenderService}, initially after a minute and then every <code>intervalMillis</code>
 	 * 
 	 * @param context
 	 * @param intervalMillis
 	 * @param projectID
 	 * @param fingerPrint
 	 */
-	public static void setAlarm(Context context, int intervalMillis, int projectID, int fingerPrint)
+	public static void setSendRecordsAlarm(Context context, int intervalMillis, int projectID, int fingerPrint)
 	{
-		setAlarm(context, 60 * 1000, intervalMillis, projectID, fingerPrint);
+		setSendRecordsAlarm(context, DEFAULT_DELAY_MILLIS, intervalMillis, projectID, fingerPrint);
 	}
 
 	/**
-	 * Set up an Alarm for a project that calls the {@link DataSenderService}, initially after <code>triggerAtMillis</code> and then every
+	 * Set up an Alarm for a project that calls the {@link RecordSenderService}, initially after <code>triggerAtMillis</code> and then every
 	 * <code>intervalMillis</code>
 	 * 
 	 * @param context
@@ -46,14 +48,14 @@ public class SendAlarmManager
 	 * @param projectID
 	 * @param fingerPrint
 	 */
-	public static void setAlarm(Context context, int triggerDelay, int intervalMillis, int projectID, int fingerPrint)
+	public static void setSendRecordsAlarm(Context context, int triggerDelay, int intervalMillis, int projectID, int fingerPrint)
 	{
 		// Create Alarm Manager
 		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 
 		// Setup the alarm to be triggered every intervalMillis
 		alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + triggerDelay, intervalMillis,
-				getAlarmIntent(context, projectID, fingerPrint));
+				getRecordsAlarmIntent(context, projectID, fingerPrint));
 
 		// We know at least one project needs to send, so make sure alarms are re-enabled on boot:
 		enableBootReceiver(context, true);
@@ -65,14 +67,14 @@ public class SendAlarmManager
 	 * @param projectID
 	 * @param fingerPrint
 	 */
-	public static void cancelAlarm(Context context, int projectID, int fingerPrint)
+	public static void cancelSendRecordsAlarm(ProjectStore projectStore, Context context, int projectID, int fingerPrint)
 	{
 		// Create Alarm Manager
 		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-		alarmManager.cancel(getAlarmIntent(context, projectID, fingerPrint));
+		alarmManager.cancel(getRecordsAlarmIntent(context, projectID, fingerPrint));
 
 		// Check whether or not we need to worry about re-enabling alarms on boot:
-		checkBootReceiver(context);
+		checkBootReceiver(projectStore, context);
 	}
 
 	/**
@@ -81,35 +83,35 @@ public class SendAlarmManager
 	 * @param fingerPrint
 	 * @return
 	 */
-	private static PendingIntent getAlarmIntent(Context context, int projectID, int fingerPrint)
+	private static PendingIntent getRecordsAlarmIntent(Context context, int projectID, int fingerPrint)
 	{
 		// Create the PendingIntent for the DataSenderService
-		Intent serviceIntent = new Intent(context, DataSenderService.class);
-		serviceIntent.putExtra(PROJECT_ID, projectID);
-		serviceIntent.putExtra(PROJECT_FINGERPRINT, fingerPrint);
+		Intent serviceIntent = new Intent(context, RecordSenderService.class);
+		serviceIntent.putExtra(INTENT_KEY_PROJECT_ID, projectID);
+		serviceIntent.putExtra(INTENT_KEY_PROJECT_FINGERPRINT, fingerPrint);
 		PendingIntent alarmIntent = PendingIntent.getService(context, projectID, serviceIntent, 0);
 		return alarmIntent;
 	}
-
+	
 	/**
 	 * Checks whether there is any project with Sending activated and either disables or enables the boot receiver
 	 * 
 	 * @param context
 	 */
-	private static void checkBootReceiver(Context context)
+	private static void checkBootReceiver(ProjectStore projectStore, Context context)
 	{
 		boolean isSending = false;
 
-		// Get ProjectStore instance:
-		ProjectStore projectStore = null; // TODO This will crash, it needs a way of accessing the CollectoApp and get the projectstore
-		// ((CollectorApp) context.getApplication()).getProjectStore(null);
-
-		// For each of the projects that has sending enabled, set an Alarm
-		for(Project p : projectStore.retrieveProjects())
+		// check if any of the projects in the project store need the boot receiver to be enabled:
+		for(Project project : projectStore.retrieveProjects()) // TODO projectStore.getSendingProjects?
 		{
-			// TODO if (p.isSending())
-			isSending = false; // TODO change
-			break;
+			Receiver receiver = projectStore.retrieveReceiverForProject(project);
+			if (receiver != null)
+			{
+				// we only need one sending project to know we must enable the receiver
+				isSending = true;
+				break;
+			}
 		}
 
 		enableBootReceiver(context, isSending);
