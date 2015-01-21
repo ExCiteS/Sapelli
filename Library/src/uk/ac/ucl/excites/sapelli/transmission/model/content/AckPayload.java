@@ -23,8 +23,8 @@ import java.io.IOException;
 import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.storage.types.TimeStamp;
+import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
-import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
 import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededException;
@@ -35,13 +35,9 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
  * 
  * @author mstevens
  */
-public class AckPayload extends Payload
+public class AckPayload extends ResponsePayload
 {
-
-	private int subjectSenderSideID;
-	private int subjectPayloadHash;
 	private TimeStamp subjectReceivedAt;
-	
 	/**
 	 * To be called from receiving side
 	 * 
@@ -58,11 +54,30 @@ public class AckPayload extends Payload
 	 */
 	public AckPayload(Transmission<?> subject)
 	{
-		this.subjectSenderSideID = subject.getRemoteID();
-		this.subjectPayloadHash = subject.getPayloadHash();
+		super(subject);
 		this.subjectReceivedAt = subject.getReceivedAt();
 	}
 	
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload#write(uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream)
+	 */
+	@Override
+	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException
+	{
+		super.write(bitstream);
+		TransmissionStore.COLUMN_RECEIVED_AT.writeValue(subjectReceivedAt, bitstream);
+	}
+
+	/* (non-Javadoc)
+	 * @see uk.ac.ucl.excites.sapelli.transmission.model.content.ResponsePayload#read(uk.ac.ucl.excites.sapelli.shared.io.BitInputStream)
+	 */
+	@Override
+	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException
+	{
+		super.read(bitstream);
+		subjectReceivedAt = TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream); 
+	}
+
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.transmission.Payload#getType()
 	 */
@@ -72,36 +87,11 @@ public class AckPayload extends Payload
 		return BuiltinType.Ack.ordinal();
 	}
 
-	@Override
-	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException
-	{
-		Transmission.TRANSMISSION_ID_FIELD.write(subjectSenderSideID, bitstream);
-		Transmission.PAYLOAD_HASH_FIELD.write(subjectPayloadHash, bitstream);
-		TransmissionStore.COLUMN_RECEIVED_AT.writeValue(subjectReceivedAt, bitstream);
-	}
 
 	@Override
-	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException
+	public boolean acknowledgeReception()
 	{
-		subjectSenderSideID = Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream);
-		subjectPayloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(bitstream);
-		subjectReceivedAt = TransmissionStore.COLUMN_RECEIVED_AT.readValue(bitstream); 
-	}
-
-	/**
-	 * @return the subjectSenderSideID
-	 */
-	public int getSubjectSenderSideID()
-	{
-		return subjectSenderSideID;
-	}
-
-	/**
-	 * @return the subjectPayloadHash
-	 */
-	public int getSubjectPayloadHash()
-	{
-		return subjectPayloadHash;
+		return false; // !!!
 	}
 
 	/**
@@ -110,12 +100,6 @@ public class AckPayload extends Payload
 	public TimeStamp getSubjectReceivedAt()
 	{
 		return subjectReceivedAt;
-	}
-
-	@Override
-	public boolean acknowledgeReception()
-	{
-		return false; // !!!
 	}
 
 	@Override

@@ -8,8 +8,6 @@ import uk.ac.ucl.excites.sapelli.shared.io.BitInputStream;
 import uk.ac.ucl.excites.sapelli.shared.io.BitOutputStream;
 import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
-import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
-import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.SMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.binary.BinarySMSTransmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.sms.text.TextSMSTransmission;
@@ -22,13 +20,11 @@ import uk.ac.ucl.excites.sapelli.transmission.util.TransmissionCapacityExceededE
  * 
  * @author benelliott, mstevens
  */
-public class ResendRequestPayload extends Payload
+public class ResendRequestPayload extends ResponsePayload
 {
 
 	static private IntegerRangeMapping TOTAL_PARTS_FIELD = new IntegerRangeMapping(1, Math.max(BinarySMSTransmission.MAX_TRANSMISSION_PARTS, TextSMSTransmission.MAX_TRANSMISSION_PARTS));
 	
-	private int subjectSenderSideID;
-	private int subjectPayloadHash;
 	private int subjectTotalParts;
 	private boolean[] requestedParts;
 	
@@ -38,8 +34,7 @@ public class ResendRequestPayload extends Payload
 	 */
 	public ResendRequestPayload(SMSTransmission<?> subject)
 	{
-		subjectSenderSideID = subject.getRemoteID();
-		subjectPayloadHash = subject.getPayloadHash();
+		super(subject);
 		subjectTotalParts = subject.getTotalNumberOfParts();
 		requestedParts = new boolean[subjectTotalParts];
 		for(int p = 0; p < subjectTotalParts; p++)
@@ -55,8 +50,7 @@ public class ResendRequestPayload extends Payload
 	@Override
 	protected void write(BitOutputStream bitstream) throws IOException, TransmissionCapacityExceededException, UnknownModelException
 	{
-		Transmission.TRANSMISSION_ID_FIELD.write(subjectSenderSideID, bitstream);
-		Transmission.PAYLOAD_HASH_FIELD.write(subjectPayloadHash, bitstream);
+		super.write(bitstream);
 		TOTAL_PARTS_FIELD.write(subjectTotalParts, bitstream);
 		// Write "true" bit for parts that are requested and "false" bits for parts that are not:
 		bitstream.write(requestedParts);
@@ -65,26 +59,9 @@ public class ResendRequestPayload extends Payload
 	@Override
 	protected void read(BitInputStream bitstream) throws IOException, PayloadDecodeException, UnknownModelException
 	{
-		subjectSenderSideID = Transmission.TRANSMISSION_ID_FIELD.readInt(bitstream);
-		subjectPayloadHash = Transmission.PAYLOAD_HASH_FIELD.readInt(bitstream);
+		super.read(bitstream);
 		subjectTotalParts = TOTAL_PARTS_FIELD.readInt(bitstream);
 		requestedParts = bitstream.readBits(subjectTotalParts);
-	}
-	
-	/**
-	 * @return the subjectSenderSideID
-	 */
-	public int getSubjectSenderSideID()
-	{
-		return subjectSenderSideID;
-	}
-
-	/**
-	 * @return the subjectPayloadHash
-	 */
-	public int getSubjectPayloadHash()
-	{
-		return subjectPayloadHash;
 	}
 	
 	/**

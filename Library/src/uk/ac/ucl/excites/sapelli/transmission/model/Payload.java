@@ -32,7 +32,7 @@ import uk.ac.ucl.excites.sapelli.storage.util.UnknownModelException;
 import uk.ac.ucl.excites.sapelli.transmission.TransmissionClient;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
-import uk.ac.ucl.excites.sapelli.transmission.model.content.ProjectModelPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.util.PayloadDecodeException;
@@ -106,7 +106,7 @@ public abstract class Payload
 		
 		public void handle(ModelRequestPayload modelRequestPayload) throws Exception;
 		
-		public void handle(ProjectModelPayload projectModelPayload) throws Exception;
+		public void handle(ModelPayload projectModelPayload) throws Exception;
 		/**
 		 * Handle method for non-built-in payload types
 		 * 

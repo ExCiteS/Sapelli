@@ -44,7 +44,7 @@ import uk.ac.ucl.excites.sapelli.transmission.model.Payload;
 import uk.ac.ucl.excites.sapelli.transmission.model.Transmission;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.AckPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelRequestPayload;
-import uk.ac.ucl.excites.sapelli.transmission.model.content.ProjectModelPayload;
+import uk.ac.ucl.excites.sapelli.transmission.model.content.ModelPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.RecordsPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.content.ResendRequestPayload;
 import uk.ac.ucl.excites.sapelli.transmission.model.transport.http.HTTPClient;
@@ -457,7 +457,7 @@ public abstract class TransmissionController implements StoreHandle.StoreUser
 		}
 		
 		@Override
-		public void handle(ProjectModelPayload projectModelPayload) throws Exception
+		public void handle(ModelPayload projectModelPayload) throws Exception
 		{
 			// TODO
 			if (logger != null)
