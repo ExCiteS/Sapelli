@@ -20,6 +20,11 @@ public class AndroidLogger extends Logger
 		super(folderPath, baseFileName, printToOutputStream);
 	}
 	
+	public AndroidLogger(String folderPath, String baseFileName, boolean timestampFilename, boolean printToOutputStream) throws IOException
+	{
+		super(folderPath, baseFileName, timestampFilename, printToOutputStream);
+	}
+	
 	@Override
 	protected void printToOutputStream(String line)
 	{

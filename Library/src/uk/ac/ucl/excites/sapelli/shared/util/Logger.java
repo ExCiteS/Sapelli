@@ -43,17 +43,31 @@ public class Logger
 	private FileWriter fileWriter;
 	protected boolean printToOutputStream;
 
+	
 	/**
 	 * 
 	 * @param folderPath path to the folder in which the log file is saved
-	 * @param baseFileName filename for the log file
+	 * @param baseFileName base filename for the log file (will be suffixed by a timestamp)
 	 * @param printToOutputStream whether or not to also echo log statements to the standard output stream (e.g. System.out or Android Logcat)
 	 * @throws IOException from file system I/O
 	 */
 	public Logger(String folderPath, String baseFileName, boolean printToOutputStream) throws IOException
 	{
+		this(folderPath, baseFileName, true, printToOutputStream);
+	}
+	
+	/**
+	 * 
+	 * @param folderPath path to the folder in which the log file is saved
+	 * @param baseFileName base filename for the log file
+	 * @param timestampFilename whether or not to suffix the base filename with a timestamp (precise to the second of file creation)
+	 * @param printToOutputStream whether or not to also echo log statements to the standard output stream (e.g. System.out or Android Logcat)
+	 * @throws IOException from file system I/O
+	 */
+	public Logger(String folderPath, String baseFileName, boolean timestampFilename, boolean printToOutputStream) throws IOException
+	{
 		this.formatter = ISODateTimeFormat.dateTime();
-		this.fileWriter = new FileWriter(folderPath + File.separator + baseFileName + (TimeUtils.getTimestampForFileName()) + LOG_EXTENSION);
+		this.fileWriter = new FileWriter(folderPath + File.separator + baseFileName + (timestampFilename ? TimeUtils.getTimestampForFileName() : "") + LOG_EXTENSION);
 		this.printToOutputStream = printToOutputStream;
 		fileWriter.open(FileHelpers.FILE_EXISTS_STRATEGY_APPEND, FileHelpers.FILE_DOES_NOT_EXIST_STRATEGY_CREATE);
 	}
