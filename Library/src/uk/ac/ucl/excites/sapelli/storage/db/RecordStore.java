@@ -401,6 +401,19 @@ public abstract class RecordStore extends Store
 	}
 	
 	/**
+	 * Deletes the single record which matches the query (if any)
+	 * 
+	 * Default implementation, may be overridden.
+	 * 
+	 * @param recordsQuery
+	 * @throws DBException
+	 */
+	public void delete(SingleRecordQuery query) throws DBException
+	{
+		delete(retrieveRecord(query));
+	}
+	
+	/**
 	 * Deletes a series of records.
 	 * A transaction will be used. Upon an error the whole operation will be rolled back.
 	 * 

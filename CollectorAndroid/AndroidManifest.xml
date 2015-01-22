@@ -110,20 +110,21 @@
         </activity>
 
         <service
-            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.DataSenderService"
+            android:name="uk.ac.ucl.excites.sapelli.transmission.sender.RecordSenderService"
             android:icon="@drawable/ic_sapelli_logo"
             android:label="@string/service_name" >
-        </service>
-        <service android:name="uk.ac.ucl.excites.sapelli.sender.util.AlarmScheduler" >
         </service>
 
         <receiver
             android:name="uk.ac.ucl.excites.sapelli.transmission.sender.SendAlarmBootListener"
             android:exported="false" >
-            <intent-filter android:priority="9999999999" >
+            <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+        
+        <service android:name="uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmInitialiserService" >
+        </service>
 
         <service android:name="uk.ac.ucl.excites.sapelli.transmission.receiver.SMSReceiverService" >
         </service>

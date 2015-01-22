@@ -29,8 +29,10 @@ import uk.ac.ucl.excites.sapelli.collector.io.FileStorageProvider;
 import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
+import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Log;
@@ -336,6 +338,27 @@ public class PrefProjectStore extends ProjectStore
 	public void backup(StoreBackupper backuper, File destinationFolder)
 	{
 		// TODO implement preferences backup
+	}
+
+	@Override
+	public void storeSendSchedule(SendRecordsSchedule schedule, TransmissionStore transmissionStore)
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public SendRecordsSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void deleteSendSchedule(SendRecordsSchedule schedule)
+	{
+		// TODO Auto-generated method stub
+		
 	}
 
 }

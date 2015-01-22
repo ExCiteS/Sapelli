@@ -246,6 +246,13 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		// Query for record and convert to Correspondent object:
 		return correspondentFromRecord(recordStore.retrieveRecord(recordQuery));
 	}
+	
+	public Record getCorrespondentRecord(Correspondent correspondent)
+	{
+		CorrespondentRecordGenerator generator = new CorrespondentRecordGenerator(correspondent);
+		
+		return generator.rec;
+	}
 
 	/**
 	 * Retrieves the SMSCorrespondent with the given phone number and binary/text mode

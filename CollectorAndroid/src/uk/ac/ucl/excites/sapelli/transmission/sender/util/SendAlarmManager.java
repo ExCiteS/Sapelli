@@ -13,6 +13,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.SystemClock;
+import android.util.Log;
 
 /**
  * Class which schedules the RecordSenderService to send records from a particular project with initial delays and fixed intervals.
@@ -22,6 +23,8 @@ import android.os.SystemClock;
  */
 public class SendAlarmManager
 {
+	private static final String TAG = SendAlarmManager.class.getName();
+	
 	public static final String INTENT_KEY_PROJECT_ID = "projectId";
 	public static final String INTENT_KEY_PROJECT_FINGERPRINT = "fingerPrint";
 	private static final int DEFAULT_DELAY_MILLIS = 60 * 1000; // default delay is 1 minute
@@ -57,7 +60,7 @@ public class SendAlarmManager
 		// Setup the alarm to be triggered every intervalMillis
 		alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime() + triggerDelay, intervalMillis,
 				getRecordsAlarmIntent(context, projectID, fingerPrint));
-
+		Log.d(TAG, "Just set an alarm for project with ID "+projectID+" to expire every "+intervalMillis+"ms after a delay of "+triggerDelay+"ms.");
 		// We know at least one project needs to send, so make sure alarms are re-enabled on boot:
 		enableBootReceiver(context, true);
 	}
@@ -129,5 +132,6 @@ public class SendAlarmManager
 
 		final int newState = (enable) ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
 		pm.setComponentEnabledSetting(receiver, newState, PackageManager.DONT_KILL_APP);
+		Log.d(TAG, "Enabled boot receiver");
 	}
 }

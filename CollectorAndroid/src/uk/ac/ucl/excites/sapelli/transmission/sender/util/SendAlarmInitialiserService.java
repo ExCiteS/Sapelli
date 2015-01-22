@@ -34,20 +34,21 @@ import android.util.Log;
  * @author Michalis Vitos, mstevens, benelliott
  *
  */
-public class SendAlarmInitialiser extends IntentService implements StoreHandle.StoreUser
+public class SendAlarmInitialiserService extends IntentService implements StoreHandle.StoreUser
 {
+	private static final String TAG = SendAlarmInitialiserService.class.getName();
 	
+	private CollectorApp app;
+
 	private ProjectStore projectStore;
 	private TransmissionStore sentTxStore;
 
-	private final CollectorApp app;
 	/**
 	 * A constructor is required, and must call the super IntentService(String) constructor with a name for the worker thread.
 	 */
-	public SendAlarmInitialiser()
+	public SendAlarmInitialiserService()
 	{
 		super("AlarmScheduler");
-		app = ((CollectorApp) getApplication());
 	}
 
 	/**
@@ -58,8 +59,12 @@ public class SendAlarmInitialiser extends IntentService implements StoreHandle.S
 	protected void onHandleIntent(Intent intent)
 	{
 		// Check if projects require data transmission and set up alarms for the DataSenderService
+		Log.d(TAG, "Scanning projects for alarms that need to be set");
 		try
 		{
+			// do not call this in the constructor!!:
+			app = ((CollectorApp) getApplication());
+
 			// Get ProjectStore instance:
 			if(projectStore == null || projectStore.isClosed())
 				projectStore = app.collectorClient.projectStoreHandle.getStore(this);
@@ -75,13 +80,18 @@ public class SendAlarmInitialiser extends IntentService implements StoreHandle.S
 				if(sendSchedule != null)
 				{
 					SendAlarmManager.setSendRecordsAlarm(this, sendSchedule.getRetransmitIntervalMillis(), project.getID(), project.getFingerPrint());
-					Log.d(SendAlarmInitialiser.class.getName(), "Set send alarm for project "+project.getID()+", interval: "+sendSchedule.getRetransmitIntervalMillis()+"ms, receiver name: "+sendSchedule.getReceiver().getName());
+					Log.d(TAG, "Set send alarm for project "+project.getID()+", interval: "+sendSchedule.getRetransmitIntervalMillis()+"ms, receiver name: "+sendSchedule.getReceiver().getName());
+				}
+				else 
+				{
+					Log.d(TAG, "No alarm found for project "+project.getID());
 				}
 			}
+			Log.d(TAG, "No project left to check");
 		}
 		catch(Exception e)
 		{
-			// TODO
+			Log.d(TAG, "Exception while looking for projects that need alarms", e);
 		}
 	}
 }

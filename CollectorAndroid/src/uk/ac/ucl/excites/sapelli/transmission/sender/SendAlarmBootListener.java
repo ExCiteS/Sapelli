@@ -18,10 +18,12 @@
 
 package uk.ac.ucl.excites.sapelli.transmission.sender;
 
-import uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmInitialiser;
+import uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmInitialiserService;
+import uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 
 /**
  * BroadcastReceiver that listens for device boot events and when one is received, starts the SendAlarmInitialiser service.
@@ -34,11 +36,14 @@ import android.content.Intent;
  */
 public class SendAlarmBootListener extends BroadcastReceiver
 {
+	private static final String TAG = SendAlarmBootListener.class.getName();
+	
 	@Override
 	public void onReceive(Context context, Intent intent)
 	{
 		// Start AlarmSchduler service to schedule alarms for the required projects
-		Intent alarmScheduler = new Intent(context, SendAlarmInitialiser.class);
+		Log.d(TAG, "Boot event received, starting alarm scheduler...");
+		Intent alarmScheduler = new Intent(context, SendAlarmInitialiserService.class);
 		context.startService(alarmScheduler);
 	}
 }

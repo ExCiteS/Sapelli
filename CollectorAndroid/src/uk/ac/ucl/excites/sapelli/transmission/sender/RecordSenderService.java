@@ -55,14 +55,13 @@ public class RecordSenderService extends IntentService implements StoreUser
 	public RecordSenderService()
 	{
 		super("Sapelli Record Sender");
-		
-		app = ((CollectorApp) getApplication());
 	}
 	
 
 	@Override
 	protected void onHandleIntent(Intent intent)
 	{	
+		Log.d(TAG, "Woken by alarm");
 		// alarm has just woken up the service with a project ID and fingerprint
 		int projectID = intent.getIntExtra(SendAlarmManager.INTENT_KEY_PROJECT_ID, -1);
 
@@ -77,6 +76,9 @@ public class RecordSenderService extends IntentService implements StoreUser
 		
 		try
 		{
+			// do not get the app in the constructor(!):
+			app = ((CollectorApp) getApplication());
+
 			// Get ProjectStore instance:
 			if(projectStore == null || projectStore.isClosed())
 				projectStore = app.collectorClient.projectStoreHandle.getStore(this);

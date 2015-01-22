@@ -122,11 +122,6 @@ public abstract class ProjectStore extends Store
 	 */
 	protected abstract void doAdd(Project project) throws ProjectDuplicateException;
 	
-	public void storeReceiver(SendRecordsSchedule receiver)
-	{
-		// TODO
-	}
-
 	/**
 	 * Retrieves all projects
 	 * 
@@ -144,8 +139,6 @@ public abstract class ProjectStore extends Store
 		return retrieveProject(name, null, version);
 	}
 		
-	public abstract SendRecordsSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore);
-
 	/**
 	 * Retrieves specific Project
 	 * 
@@ -185,6 +178,12 @@ public abstract class ProjectStore extends Store
 	 * @return
 	 */
 	public abstract void delete(Project project);
+	
+	public abstract void storeSendSchedule(SendRecordsSchedule schedule, TransmissionStore transmissionStore);
+	
+	public abstract SendRecordsSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore);
+	
+	public abstract void deleteSendSchedule(SendRecordsSchedule schedule);
 	
 	public abstract void storeHeldForeignKey(Relationship relationship, RecordReference foreignKey);
 	

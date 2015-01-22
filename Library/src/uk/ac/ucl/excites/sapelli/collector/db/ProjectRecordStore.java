@@ -33,7 +33,6 @@ import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.remote.RecordReceival;
 import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
@@ -142,26 +141,29 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		SEND_RECORDS_SCHEDULE_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", SEND_RECORDS_SCHEDULE_COLUMN_ID));
 		SEND_RECORDS_SCHEDULE_SCHEMA.seal();
 	}
-	// Sender Schema
-	static final public Schema RECORD_RECEIVAL_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "RecordReceival");
-	static final public IntegerColumn RECORD_RECEIVAL_COLUMN_ID = new IntegerColumn("ID", false, RecordReceival.SENDER_ID_FIELD);
-	static final public ForeignKeyColumn RECORD_RECEIVAL_COLUMN_PROJECT_ID = new ForeignKeyColumn("ProjectID", ProjectRecordStore.PROJECT_SCHEMA, false);
-	static final public ForeignKeyColumn RECORD_RECEIVAL_COLUMN_SENDER_ID = new ForeignKeyColumn("SenderID", TransmissionStore.SENDER_SCHEMA, false);
-	static final public BooleanColumn RECORD_RECEIVAL_COLUMN_ACK = new BooleanColumn("Ack", false);
-	// Add columns to Sender Schema and seal it:
+	
+	// "Record receival" (incoming records) Schema -- may be used at some point in the future to keep track of sending correspondents
+//	static final public Schema RECORD_RECEIVAL_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "RecordReceival");
+//	static final public IntegerColumn RECORD_RECEIVAL_COLUMN_ID = new IntegerColumn("ID", false, RecordReceival.SENDER_ID_FIELD);
+//	static final public ForeignKeyColumn RECORD_RECEIVAL_COLUMN_PROJECT_ID = new ForeignKeyColumn("ProjectID", ProjectRecordStore.PROJECT_SCHEMA, false);
+//	static final public ForeignKeyColumn RECORD_RECEIVAL_COLUMN_SENDER_ID = new ForeignKeyColumn("SenderID", TransmissionStore.SENDER_SCHEMA, false);
+//	static final public BooleanColumn RECORD_RECEIVAL_COLUMN_ACK = new BooleanColumn("Ack", false);
+//	// Add columns to Sender Schema and seal it:
+//	static
+//	{
+//		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_ID);
+//		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_PROJECT_ID);
+//		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_SENDER_ID);
+//		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_ACK);
+//		RECORD_RECEIVAL_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", RECORD_RECEIVAL_COLUMN_ID));
+//		RECORD_RECEIVAL_SCHEMA.seal();
+//	}
+	
+	// Seal the model itself:
 	static
 	{
-		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_ID);
-		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_PROJECT_ID);
-		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_SENDER_ID);
-		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_ACK);
-		RECORD_RECEIVAL_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", RECORD_RECEIVAL_COLUMN_ID));
-		RECORD_RECEIVAL_SCHEMA.seal();
-		
-		// seal the model too:
-		// COLLECTOR_MANAGEMENT_MODEL.seal(); ??? wasn't sealed before... TODO
+		COLLECTOR_MANAGEMENT_MODEL.seal();
 	}
-	
 			
 	// DYNAMICS--------------------------------------------
 	private final CollectorClient client;
@@ -437,15 +439,51 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 			e.printStackTrace();
 		}
 	}
+	
+	private Record getSendScheduleRecord(SendRecordsSchedule schedule, TransmissionStore transmissionStore)
+	{
+		Record record = SEND_RECORDS_SCHEDULE_SCHEMA.createRecord();
+		SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID.storeValue(record, getProjectRecordReference(schedule.getProject()));
+		SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER_ID.storeValue(record, transmissionStore.getCorrespondentRecord(schedule.getReceiver()).getReference());
+		SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL.storeValue(record, schedule.getRetransmitIntervalMillis());
+		SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT.storeValue(record, schedule.isEncrypt());
+		return record;
+	}
+	
+	@Override
+	public void storeSendSchedule(SendRecordsSchedule schedule, TransmissionStore transmissionStore)
+	{
+		try
+		{
+			recordStore.store(getSendScheduleRecord(schedule, transmissionStore));
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	}
 
 	@Override
 	public SendRecordsSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
 	{
-		return sendScheduleFromRecord(project, transmissionStore, recordStore.retrieveRecord(new FirstRecordQuery(SEND_RECORDS_SCHEDULE_SCHEMA, 
-				new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID, project.getID()))));
+		return getSendScheduleFromRecord(project, transmissionStore, recordStore.retrieveRecord(new FirstRecordQuery(SEND_RECORDS_SCHEDULE_SCHEMA, 
+				new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID, getProjectRecordReference(project)))));
 	}
 	
-	private SendRecordsSchedule sendScheduleFromRecord(Project project, TransmissionStore transmissionStore, Record sendScheduleRecord)
+	@Override
+	public void deleteSendSchedule(SendRecordsSchedule schedule)
+	{
+		try
+		{
+			recordStore.delete(new FirstRecordQuery(SEND_RECORDS_SCHEDULE_SCHEMA, new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID, schedule.getProject().getID())));
+		}
+		catch (DBException e)
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	private SendRecordsSchedule getSendScheduleFromRecord(Project project, TransmissionStore transmissionStore, Record sendScheduleRecord)
 	{
 		if (sendScheduleRecord == null)
 			return null;
