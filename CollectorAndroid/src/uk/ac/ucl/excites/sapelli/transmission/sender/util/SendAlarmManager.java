@@ -2,7 +2,8 @@ package uk.ac.ucl.excites.sapelli.transmission.sender.util;
 
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.remote.Receiver;
+import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.sender.RecordSenderService;
 import uk.ac.ucl.excites.sapelli.transmission.sender.SendAlarmBootListener;
 import android.app.AlarmManager;
@@ -67,14 +68,14 @@ public class SendAlarmManager
 	 * @param projectID
 	 * @param fingerPrint
 	 */
-	public static void cancelSendRecordsAlarm(ProjectStore projectStore, Context context, int projectID, int fingerPrint)
+	public static void cancelSendRecordsAlarm(ProjectStore projectStore, TransmissionStore transmissionStore, Context context, int projectID, int fingerPrint)
 	{
 		// Create Alarm Manager
 		AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
 		alarmManager.cancel(getRecordsAlarmIntent(context, projectID, fingerPrint));
 
 		// Check whether or not we need to worry about re-enabling alarms on boot:
-		checkBootReceiver(projectStore, context);
+		checkBootReceiver(projectStore, transmissionStore, context);
 	}
 
 	/**
@@ -98,14 +99,14 @@ public class SendAlarmManager
 	 * 
 	 * @param context
 	 */
-	private static void checkBootReceiver(ProjectStore projectStore, Context context)
+	private static void checkBootReceiver(ProjectStore projectStore, TransmissionStore transmissionStore, Context context)
 	{
 		boolean isSending = false;
 
 		// check if any of the projects in the project store need the boot receiver to be enabled:
 		for(Project project : projectStore.retrieveProjects()) // TODO projectStore.getSendingProjects?
 		{
-			Receiver receiver = projectStore.retrieveReceiverForProject(project);
+			SendRecordsSchedule receiver = projectStore.retrieveSendScheduleForProject(project, transmissionStore);
 			if (receiver != null)
 			{
 				// we only need one sending project to know we must enable the receiver

@@ -33,6 +33,8 @@ import uk.ac.ucl.excites.sapelli.collector.load.ProjectLoader;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
+import uk.ac.ucl.excites.sapelli.collector.remote.RecordReceival;
+import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBConstraintException;
@@ -44,9 +46,11 @@ import uk.ac.ucl.excites.sapelli.storage.model.Model;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
 import uk.ac.ucl.excites.sapelli.storage.model.Schema;
+import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
+import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.Index;
 import uk.ac.ucl.excites.sapelli.storage.model.indexes.PrimaryKey;
 import uk.ac.ucl.excites.sapelli.storage.queries.FirstRecordQuery;
@@ -54,6 +58,8 @@ import uk.ac.ucl.excites.sapelli.storage.queries.Order;
 import uk.ac.ucl.excites.sapelli.storage.queries.RecordsQuery;
 import uk.ac.ucl.excites.sapelli.storage.queries.Source;
 import uk.ac.ucl.excites.sapelli.storage.queries.constraints.EqualityConstraint;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
+import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
 /**
  * A RecordStore based implementation of ProjectStore
@@ -117,6 +123,45 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 		HFK_SCHEMA.setPrimaryKey(HFK_KEY);
 		HFK_SCHEMA.seal();
 	}
+	
+	// Record-sending schedule Schema
+	static final public Schema SEND_RECORDS_SCHEDULE_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "SendRecordsSchedule");
+	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_ID = new IntegerColumn("ID", false, SendRecordsSchedule.RECEIVER_ID_FIELD);
+	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID = new ForeignKeyColumn("ProjectID", ProjectRecordStore.PROJECT_SCHEMA, false);
+	static final public ForeignKeyColumn SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER_ID = new ForeignKeyColumn("ReceiverID", TransmissionStore.RECEIVER_SCHEMA, false);
+	static final public IntegerColumn SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL = new IntegerColumn("RetransmitInterval", false, false, SendRecordsSchedule.RETRANSMIT_INTERVAL_SIZE_BITS);
+	static final public BooleanColumn SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT = new BooleanColumn("Encrypt", false);
+	//	Add columns to Receiver Schema & seal it:
+	static
+	{
+		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_ID);
+		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID);
+		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER_ID);
+		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL);
+		SEND_RECORDS_SCHEDULE_SCHEMA.addColumn(SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT);
+		SEND_RECORDS_SCHEDULE_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", SEND_RECORDS_SCHEDULE_COLUMN_ID));
+		SEND_RECORDS_SCHEDULE_SCHEMA.seal();
+	}
+	// Sender Schema
+	static final public Schema RECORD_RECEIVAL_SCHEMA = new Schema(COLLECTOR_MANAGEMENT_MODEL, "RecordReceival");
+	static final public IntegerColumn RECORD_RECEIVAL_COLUMN_ID = new IntegerColumn("ID", false, RecordReceival.SENDER_ID_FIELD);
+	static final public ForeignKeyColumn RECORD_RECEIVAL_COLUMN_PROJECT_ID = new ForeignKeyColumn("ProjectID", ProjectRecordStore.PROJECT_SCHEMA, false);
+	static final public ForeignKeyColumn RECORD_RECEIVAL_COLUMN_SENDER_ID = new ForeignKeyColumn("SenderID", TransmissionStore.SENDER_SCHEMA, false);
+	static final public BooleanColumn RECORD_RECEIVAL_COLUMN_ACK = new BooleanColumn("Ack", false);
+	// Add columns to Sender Schema and seal it:
+	static
+	{
+		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_ID);
+		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_PROJECT_ID);
+		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_SENDER_ID);
+		RECORD_RECEIVAL_SCHEMA.addColumn(RECORD_RECEIVAL_COLUMN_ACK);
+		RECORD_RECEIVAL_SCHEMA.setPrimaryKey(new AutoIncrementingPrimaryKey("IDIdx", RECORD_RECEIVAL_COLUMN_ID));
+		RECORD_RECEIVAL_SCHEMA.seal();
+		
+		// seal the model too:
+		// COLLECTOR_MANAGEMENT_MODEL.seal(); ??? wasn't sealed before... TODO
+	}
+	
 			
 	// DYNAMICS--------------------------------------------
 	private final CollectorClient client;
@@ -392,6 +437,31 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 			e.printStackTrace();
 		}
 	}
+
+	@Override
+	public SendRecordsSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore)
+	{
+		return sendScheduleFromRecord(project, transmissionStore, recordStore.retrieveRecord(new FirstRecordQuery(SEND_RECORDS_SCHEDULE_SCHEMA, 
+				new EqualityConstraint(SEND_RECORDS_SCHEDULE_COLUMN_PROJECT_ID, project.getID()))));
+	}
+	
+	private SendRecordsSchedule sendScheduleFromRecord(Project project, TransmissionStore transmissionStore, Record sendScheduleRecord)
+	{
+		if (sendScheduleRecord == null)
+			return null;
+		
+		
+		Correspondent receiver = transmissionStore.retrieveCorrespondentByQuery(new FirstRecordQuery(TransmissionStore.RECEIVER_SCHEMA,
+				SEND_RECORDS_SCHEDULE_COLUMN_RECEIVER_ID.retrieveValue(sendScheduleRecord).getRecordQueryConstraint())); // TODO check
+		
+		if (receiver == null)
+			return null;
+		
+		Integer retransmitIntervalMillis = SEND_RECORDS_SCHEDULE_COLUMN_INTERVAL.retrieveValue(sendScheduleRecord).intValue();
+		Boolean encrypt = SEND_RECORDS_SCHEDULE_COLUMN_ENCRYPT.retrieveValue(sendScheduleRecord);
+
+		return new SendRecordsSchedule(project, receiver, retransmitIntervalMillis, encrypt);
+	}
 	
 	/* (non-Javadoc)
 	 * @see uk.ac.ucl.excites.sapelli.shared.db.Store#finalise()
@@ -410,5 +480,4 @@ public class ProjectRecordStore extends ProjectStore implements StoreHandle.Stor
 	{
 		backuper.addStoreForBackup(recordStore);
 	}
-
 }

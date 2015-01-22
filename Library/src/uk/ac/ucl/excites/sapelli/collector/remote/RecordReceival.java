@@ -23,22 +23,22 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
 /**
- * 
+ * Class that embodies a record-receiving relationship for a particular Project, from a particular sending Correspondent.
  * @author benelliott
  */
-public class Sender
+public class RecordReceival
 {
 	static public final int SENDER_ID_SIZE = 24; // bits
 	static public final IntegerRangeMapping SENDER_ID_FIELD = IntegerRangeMapping.ForSize(0, SENDER_ID_SIZE); // unsigned(!) 24 bit integer
 	
 	private Project project;
-	private Correspondent correspondent;
+	private Correspondent sender;
 	private boolean ack;
 	
-	public Sender(Project project, Correspondent correspondent, boolean ack)
+	public RecordReceival(Project project, Correspondent sender, boolean ack)
 	{
 		this.project = project;
-		this.correspondent = correspondent;
+		this.sender = sender;
 		this.ack = ack;
 	}
 
@@ -59,19 +59,19 @@ public class Sender
 	}
 
 	/**
-	 * @return the correspondent
+	 * @return the sender
 	 */
-	public Correspondent getCorrespondent()
+	public Correspondent getSender()
 	{
-		return correspondent;
+		return sender;
 	}
 
 	/**
-	 * @param correspondent the correspondent to set
+	 * @param sender the sender to set
 	 */
-	public void setCorrespondent(Correspondent correspondent)
+	public void setCorrespondent(Correspondent sender)
 	{
-		this.correspondent = correspondent;
+		this.sender = sender;
 	}
 
 	/**

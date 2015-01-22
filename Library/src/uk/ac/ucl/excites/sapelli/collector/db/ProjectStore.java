@@ -26,9 +26,10 @@ import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectIdentificationCl
 import uk.ac.ucl.excites.sapelli.collector.db.exceptions.ProjectSignatureClashException;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.Relationship;
-import uk.ac.ucl.excites.sapelli.collector.remote.Receiver;
+import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.storage.model.RecordReference;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 
 /**
  * Abstract super class for Project storage back-ends
@@ -121,7 +122,7 @@ public abstract class ProjectStore extends Store
 	 */
 	protected abstract void doAdd(Project project) throws ProjectDuplicateException;
 	
-	public void storeReceiver(Receiver receiver)
+	public void storeReceiver(SendRecordsSchedule receiver)
 	{
 		// TODO
 	}
@@ -142,18 +143,8 @@ public abstract class ProjectStore extends Store
 	{
 		return retrieveProject(name, null, version);
 	}
-	
-	public List<Receiver> retrieveReceiversForProject(Project project)
-	{
-		// TODO
-		return null;
-	}
-	
-	public Receiver retrieveReceiverForProject(Project project)
-	{
-		// TODO
-		return null;
-	}
+		
+	public abstract SendRecordsSchedule retrieveSendScheduleForProject(Project project, TransmissionStore transmissionStore);
 
 	/**
 	 * Retrieves specific Project

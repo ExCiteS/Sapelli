@@ -23,25 +23,26 @@ import uk.ac.ucl.excites.sapelli.shared.util.IntegerRangeMapping;
 import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
 /**
+ * Class that holds information about a Record-sending relationship between a Project and some receiving Correspondent.
  * 
  * @author benelliott
  */
-public class Receiver
+public class SendRecordsSchedule
 {
 	static public final int RECEIVER_ID_SIZE = 24; // bits
 	static public final IntegerRangeMapping RECEIVER_ID_FIELD = IntegerRangeMapping.ForSize(0, RECEIVER_ID_SIZE); // unsigned(!) 24 bit integer
 	
 	static public final int RETRANSMIT_INTERVAL_SIZE_BITS = 32;
 	private Project project;
-	private Correspondent correspondent;
+	private Correspondent receiver;
 	private int retransmitIntervalMillis;
 	private boolean encrypt;
 	
-	public Receiver(Project project, Correspondent correspondent, int retransmitIntervalSec, boolean encrypt)
+	public SendRecordsSchedule(Project project, Correspondent receiver, int retransmitIntervalMillis, boolean encrypt)
 	{
 		this.project = project;
-		this.correspondent = correspondent;
-		this.retransmitIntervalMillis = retransmitIntervalSec;
+		this.receiver = receiver;
+		this.retransmitIntervalMillis = retransmitIntervalMillis;
 		this.encrypt = encrypt;
 	}
 
@@ -62,19 +63,19 @@ public class Receiver
 	}
 
 	/**
-	 * @return the correspondent
+	 * @return the receiver
 	 */
-	public Correspondent getCorrespondent()
+	public Correspondent getReceiver()
 	{
-		return correspondent;
+		return receiver;
 	}
 
 	/**
-	 * @param correspondent the correspondent to set
+	 * @param receiver the receiver to set
 	 */
-	public void setCorrespondent(Correspondent correspondent)
+	public void setReceiver(Correspondent receiver)
 	{
-		this.correspondent = correspondent;
+		this.receiver = receiver;
 	}
 
 	/**

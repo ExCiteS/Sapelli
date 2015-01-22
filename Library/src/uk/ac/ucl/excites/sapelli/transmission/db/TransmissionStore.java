@@ -241,12 +241,12 @@ public abstract class TransmissionStore extends Store implements StoreHandle.Sto
 		return generator.rec.getReference();
 	}
 	
-	protected Correspondent retrieveCorrespondentByQuery(SingleRecordQuery recordQuery)
+	public Correspondent retrieveCorrespondentByQuery(SingleRecordQuery recordQuery)
 	{
 		// Query for record and convert to Correspondent object:
 		return correspondentFromRecord(recordStore.retrieveRecord(recordQuery));
 	}
-	
+
 	/**
 	 * Retrieves the SMSCorrespondent with the given phone number and binary/text mode
 	 * 

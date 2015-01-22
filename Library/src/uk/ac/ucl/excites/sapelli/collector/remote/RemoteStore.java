@@ -20,18 +20,9 @@ package uk.ac.ucl.excites.sapelli.collector.remote;
 
 import java.io.File;
 
-import uk.ac.ucl.excites.sapelli.collector.db.ProjectRecordStore;
 import uk.ac.ucl.excites.sapelli.shared.db.Store;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreBackupper;
 import uk.ac.ucl.excites.sapelli.shared.db.exceptions.DBException;
-import uk.ac.ucl.excites.sapelli.storage.model.Model;
-import uk.ac.ucl.excites.sapelli.storage.model.Schema;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.BooleanColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.ForeignKeyColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.columns.StringColumn;
-import uk.ac.ucl.excites.sapelli.storage.model.indexes.AutoIncrementingPrimaryKey;
-import uk.ac.ucl.excites.sapelli.transmission.model.Correspondent;
 
 /**
  * 

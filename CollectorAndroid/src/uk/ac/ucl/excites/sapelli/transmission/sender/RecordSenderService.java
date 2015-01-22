@@ -21,33 +21,51 @@ package uk.ac.ucl.excites.sapelli.transmission.sender;
 import uk.ac.ucl.excites.sapelli.collector.CollectorApp;
 import uk.ac.ucl.excites.sapelli.collector.db.ProjectStore;
 import uk.ac.ucl.excites.sapelli.collector.model.Project;
-import uk.ac.ucl.excites.sapelli.collector.remote.Receiver;
+import uk.ac.ucl.excites.sapelli.collector.remote.SendRecordsSchedule;
 import uk.ac.ucl.excites.sapelli.shared.db.StoreHandle.StoreUser;
 import uk.ac.ucl.excites.sapelli.transmission.control.AndroidTransmissionController;
+import uk.ac.ucl.excites.sapelli.transmission.db.TransmissionStore;
 import uk.ac.ucl.excites.sapelli.transmission.sender.util.SendAlarmManager;
 import android.app.IntentService;
 import android.content.Intent;
 import android.util.Log;
 
 /**
+ * IntentService which is awoken by a SendAlarm intent to send any pending Records for a particular Project according to the SendRecordsSchedule that it retrieves from the ProjectStore.
+ * <br>
+ * <br>
+ * Note that Android queues requests to the same service and they are dealt with one-by-one in a worker thread (off the main thread). Using an IntentService means that we can let Android handle the queueing of several
+ * requests to the same Intent for us. However the Android documentation for an IntentService is somewhat ambiguous about exactly when the IntentService object itself is destroyed
+ *  ("IntentService will receive the Intents, launch a worker thread, and stop the service as appropriate", see <a href=http://developer.android.com/reference/android/app/IntentService.html>the official documentation</a>).
+ * <br>
+ * <br>
+ * Hence all the checks to see if we already have resources such as Stores and Controllers or whether we need to (re-)initialise them. This could be an argument for explicitly managing the queue ourselves, but remember that
+ * the chances of a high number of send-record alarms going off at roughly the same time are quite low (would require very short intervals or synchronised intervals and a lot of actively sending projects).
  * 
  * @author Michalis Vitos, benelliott
  */
 public class RecordSenderService extends IntentService implements StoreUser
 {
 	private static final String TAG = RecordSenderService.class.getName();
+	private CollectorApp app;
+	private ProjectStore projectStore;
+	private TransmissionStore sentTxStore;
+	private AndroidTransmissionController transmissionController;
 	
 	public RecordSenderService()
 	{
 		super("Sapelli Record Sender");
+		
+		app = ((CollectorApp) getApplication());
 	}
+	
 
 	@Override
 	protected void onHandleIntent(Intent intent)
 	{	
 		// alarm has just woken up the service with a project ID and fingerprint
 		int projectID = intent.getIntExtra(SendAlarmManager.INTENT_KEY_PROJECT_ID, -1);
-		
+
 		int projectFingerprint = intent.getIntExtra(SendAlarmManager.INTENT_KEY_PROJECT_FINGERPRINT, -1);
 		
 		if (projectID == -1 || projectFingerprint == -1)
@@ -59,21 +77,28 @@ public class RecordSenderService extends IntentService implements StoreUser
 		
 		try
 		{
-			ProjectStore projectStore = ((CollectorApp) getApplication()).collectorClient.projectStoreHandle.getStore(this);
+			// Get ProjectStore instance:
+			if(projectStore == null || projectStore.isClosed())
+				projectStore = app.collectorClient.projectStoreHandle.getStore(this);
+			
+			// Get SentTransmissionStore instance:
+			if(sentTxStore == null || sentTxStore.isClosed())
+				sentTxStore = app.collectorClient.sentTransmissionStoreHandle.getStore(this);
 			
 			Project project = projectStore.retrieveProject(projectID, projectFingerprint);
 			
 			if (project == null)
 				throw new Exception("Project with ID "+projectID+" and fingerprint "+projectFingerprint+" was not found in project store");
 			
-			Receiver receiver = projectStore.retrieveReceiverForProject(project);
+			SendRecordsSchedule sendSchedule = projectStore.retrieveSendScheduleForProject(project, sentTxStore);
 			
-			if (receiver == null)
+			if (sendSchedule == null)
 				throw new Exception("Could not find receiver for project with ID "+projectID+" and fingerprint "+projectFingerprint+".");
 			
-			AndroidTransmissionController transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient, ((CollectorApp) getApplication()).getFileStorageProvider(), this);
+			if (transmissionController == null)
+				transmissionController = new AndroidTransmissionController(((CollectorApp) getApplication()).collectorClient, ((CollectorApp) getApplication()).getFileStorageProvider(), this);
 			
-			transmissionController.sendRecords(project.getModel(), receiver.getCorrespondent());
+			transmissionController.sendRecords(project.getModel(), sendSchedule.getReceiver());
 			
 		}
 		catch(Exception e)
@@ -81,9 +106,6 @@ public class RecordSenderService extends IntentService implements StoreUser
 			Log.e(TAG, "Sender service woken by alarm but some necessary data was not successfully retreived from the database", e);
 		}
 	}
-
-	
-
 }
 //
 //
