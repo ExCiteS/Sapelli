@@ -622,15 +622,13 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		 */
 		public void refresh()
 		{
-			//else...
-			
-			// An item has been added or deleted so reload gallery items					
-			//Log.d(TAG, "Media items changed, updating gallery...");
-			
-			// Update gallery contents...
+			// Update gallery contents & capture button if necessary...
 			PickerAdapter adapter = pickerView.getAdapter();
 			if (mediaItemsChanged)
 			{
+				// An item has been added or deleted so reload gallery items					
+				//Log.d(TAG, "Media items changed, updating gallery...");
+				
 				adapter.clear(); // reset adapter
 				int f = 0;
 				for(File file : field.getAttachments(controller.getFileStorageProvider(), controller.getCurrentRecord()))
@@ -646,15 +644,15 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 					toAdd.setPaddingDip(CollectorView.PADDING_DIP);
 					adapter.addItem(toAdd);
 				}
+				
+				// Refresh capture button in case it is now (un-)greyed out:
+				this.removeView(addButtonView);
+				addButtonView = buttonFromItem(getContext(), createCaptureMoreButton(), addButtonAction);
+				this.addView(addButtonView, buttonParams);
 			}
 			// Force the picker to update its views (do this regardless of mediaItemsChanged else there will be UI glitches)
 			pickerView.setAdapter(adapter);
 			mediaItemsChanged = false; // !!!
-			
-			// Refresh capture button in case it is now (un-)greyed out:
-			this.removeView(addButtonView);
-			addButtonView = buttonFromItem(getContext(), createCaptureMoreButton(), addButtonAction);
-			this.addView(addButtonView, buttonParams);
 		}
 
 		/**
