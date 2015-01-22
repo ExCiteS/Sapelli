@@ -240,7 +240,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		if(	controlType.equals(Control.Type.Back) &&
 			(state == DisplayState.SINGLE_REVIEW_FROM_GALLERY || state == DisplayState.CAPTURE_FROM_GALLERY))
 		{
-			
 			if(state == DisplayState.SINGLE_REVIEW_FROM_GALLERY)
 				// Remove the filepath from the field's arguments so we do not re-enter single-item review unintentionally
 				controller.getCurrentFieldArguments().remove(REVIEW_FILE_PATH_KEY);
