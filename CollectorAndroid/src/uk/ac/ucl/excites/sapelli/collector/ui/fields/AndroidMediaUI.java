@@ -622,8 +622,6 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 		 */
 		public void refresh()
 		{
-			if(!mediaItemsChanged)
-				return;
 			//else...
 			
 			// An item has been added or deleted so reload gallery items					
@@ -631,22 +629,25 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 			
 			// Update gallery contents...
 			PickerAdapter adapter = pickerView.getAdapter();
-			adapter.clear(); // reset adapter
-			int f = 0;
-			for(File file : field.getAttachments(controller.getFileStorageProvider(), controller.getCurrentRecord()))
+			if (mediaItemsChanged)
 			{
-				// See if it can be found in the gallery cache:
-				Item toAdd = galleryCache.get(file);
-				if(toAdd == null)
-				{	// If not, create a new item and put it in the cache:
-					toAdd = getItemForAttachment(f++, file);
-					galleryCache.put(file, toAdd);
+				adapter.clear(); // reset adapter
+				int f = 0;
+				for(File file : field.getAttachments(controller.getFileStorageProvider(), controller.getCurrentRecord()))
+				{
+					// See if it can be found in the gallery cache:
+					Item toAdd = galleryCache.get(file);
+					if(toAdd == null)
+					{	// If not, create a new item and put it in the cache:
+						toAdd = getItemForAttachment(f++, file);
+						galleryCache.put(file, toAdd);
+					}
+					// Set padding and add item to adapter:
+					toAdd.setPaddingDip(CollectorView.PADDING_DIP);
+					adapter.addItem(toAdd);
 				}
-				// Set padding and add item to adapter:
-				toAdd.setPaddingDip(CollectorView.PADDING_DIP);
-				adapter.addItem(toAdd);
 			}
-			// Force the picker to update its views
+			// Force the picker to update its views (do this regardless of mediaItemsChanged else there will be UI glitches)
 			pickerView.setAdapter(adapter);
 			mediaItemsChanged = false; // !!!
 			
