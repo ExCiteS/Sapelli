@@ -36,7 +36,7 @@ import uk.ac.ucl.excites.sapelli.storage.visitors.ColumnVisitor;
  * @param <L> the list type (extends List<T>)
  * @param <T> the content type
  * 
- * @author mstevens
+ * @author mstevens, benelliott
  */
 public abstract class ListColumn<L extends List<T>, T> extends Column<L> implements ListLikeColumn<L>
 {
@@ -291,7 +291,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		if(singleColumn instanceof ListColumn)
 			throw new IllegalArgumentException("Cannot nest " + getClass().getSimpleName() + "s!");
 		this.singleColumn = singleColumn;
-		this.sizeField = new IntegerRangeMapping(minLength, maxLength);
+		this.sizeField = new IntegerRangeMapping(minLength, maxLength, true); // allow empty in case the list must always have exactly one element (no fewer, no more)
 		this.serialisationDelimiterOpen = serialisationDelimiterOpen;
 		this.serialisationDelimiterClose = serialisationDelimiterClose;
 		this.separator = separator;
