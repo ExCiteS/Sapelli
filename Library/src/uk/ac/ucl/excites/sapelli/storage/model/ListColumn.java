@@ -291,7 +291,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L> impleme
 		if(singleColumn instanceof ListColumn)
 			throw new IllegalArgumentException("Cannot nest " + getClass().getSimpleName() + "s!");
 		this.singleColumn = singleColumn;
-		this.sizeField = new IntegerRangeMapping(minLength, maxLength, true); // allow empty in case the list must always have exactly one element (no fewer, no more)
+		this.sizeField = new IntegerRangeMapping(minLength, maxLength, true); // allow "empty" (0-sized) in case the list must always have exactly one element (no fewer, no more)
 		this.serialisationDelimiterOpen = serialisationDelimiterOpen;
 		this.serialisationDelimiterClose = serialisationDelimiterClose;
 		this.separator = separator;
