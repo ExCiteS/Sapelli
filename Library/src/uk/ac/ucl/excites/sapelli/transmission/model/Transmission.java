@@ -85,6 +85,36 @@ public abstract class Transmission<C extends Correspondent>
 	 */
 	static private final int MIN_BODY_LENGTH_BITS = Payload.PAYLOAD_TYPE_SIZE + 1 + 1; // bits
 	
+	/**
+	 * Transmission format V2, which was introduced in Sapelli v2.0.
+	 * This not in compatible with the format used in v1.x, which is no longer supported in Sapelli v2.0.
+	 * V2 is currently the only support format but in the future variations/extension could be introduced.
+	 */
+	static protected final short V2_FORMAT = 2;
+	
+	/**
+	 * The default Transmission format version being used.
+	 */
+	static protected final short DEFAULT_FORMAT = V2_FORMAT;
+	
+	/**
+	 * The highest supported Transmission format version
+	 */
+	static protected final short HIGHEST_SUPPORTED_FORMAT = V2_FORMAT;
+	
+	/**
+	 * We use 2 bits to store the format version This means up to 4 versions can be differentiated.
+	 * Currently only 1 supported format exists (= V2). If we ever get to V5 it would be best if an
+	 * additional flag is added to enable future extensions beyond V5.
+	 */
+	static protected final short FORMAT_VERSION_SIZE = 2; // bits
+	
+	/**
+	 * The field used to indicate the version of the Transmission format which is being used.
+	 */
+	static protected final IntegerRangeMapping FORMAT_VERSION_FIELD = IntegerRangeMapping.ForSize(V2_FORMAT, FORMAT_VERSION_SIZE); // can take values from [2, 5] (but stored binary as [0, 3])
+	
+	
 	// DYNAMICS------------------------------------------------------
 	protected final TransmissionClient client;
 	
@@ -311,7 +341,8 @@ public abstract class Transmission<C extends Correspondent>
 		// Open input stream:
 		BitArrayOutputStream bitstream = new BitArrayOutputStream();
 		
-		// TODO transmission format version !!!
+		//  Format version (2 bits):
+		FORMAT_VERSION_FIELD.write(DEFAULT_FORMAT, bitstream);
 		
 		// TODO anonymous / user-cred (maybe only for next transmission format version?)
 		// TODO encrypted flag + encryption-related fields (maybe only for next transmission format version?)
@@ -383,6 +414,10 @@ public abstract class Transmission<C extends Correspondent>
 		
 		// Open input stream:
 		BitArrayInputStream bitstream = new BitArrayInputStream(bodyBits);
+		
+		short format = FORMAT_VERSION_FIELD.readShort(bitstream);
+		if(format > HIGHEST_SUPPORTED_FORMAT)
+			throw new PayloadDecodeException(null, "Unsupported payload format version: " + format + " (highest supported version: " + HIGHEST_SUPPORTED_FORMAT + ")."); // TODO null payload or new exception type?
 		
 		// Read payload type & instantiate Payload object:
 		this.payload = Payload.New(client, Payload.PAYLOAD_TYPE_FIELD.readInt(bitstream));
