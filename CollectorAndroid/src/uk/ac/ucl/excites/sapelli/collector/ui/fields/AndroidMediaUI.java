@@ -490,7 +490,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				}
 			};
 			
-			if (isShowDiscardDuringCapture()) // don't need a discard button so add the capture button straight to the capture UI
+			if (isShowDiscardDuringCapture())
 			{
 				// do need a discard button, so put both in a LinearLayout...
 				LinearLayout buttonContainer = new LinearLayout(context);
@@ -520,7 +520,7 @@ public abstract class AndroidMediaUI<MF extends MediaField> extends MediaUI<MF, 
 				addView(buttonContainer, buttonParams); // TODO maximising capture button could actually break here, but we don't currently use it anywhere in conjunction with discard	
 			}
 			
-			else
+			else // don't need a discard button so add the capture button straight to the capture UI
 				refreshCaptureButton(maximiseCaptureButton);
 
 			
