@@ -74,7 +74,6 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 	private long deviceIDHash;
 	
 	private AudioPlayer audioPlayer;
-	private volatile boolean blockedUI = false;
 
 
 	public CollectorController(Project project, CollectorView collectorView, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider, CollectorActivity activity)
@@ -326,27 +325,4 @@ public class CollectorController extends Controller<CollectorView> implements Lo
 		return SystemClock.elapsedRealtime();
 	}
 	
-	/**
-	 * @return whether or not the UI is currently blocked from new user interaction.
-	 */
-	public synchronized boolean isUIBlocked()
-	{
-		return blockedUI;
-	}
-
-	/**
-	 * Block the UI from receiving any new user interaction.
-	 */
-	public synchronized void blockUI()
-	{
-		blockedUI = true;
-	}
-
-	/**
-	 * Unblock the UI from receiving any new user interaction.
-	 */
-	public synchronized void unblockUI()
-	{
-		blockedUI = false;
-	}
 }

@@ -64,6 +64,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	/**
 	 * Logs the deletion of a media file, removes it from the record and cancels the request of it being saved at the end
 	 * of the user's session.
+	 * 
 	 * @param mediaAttachment - the attachment to remove
 	 */
 	public void removeMedia(File mediaAttachment)
@@ -81,7 +82,7 @@ public abstract class MediaUI<MF extends MediaField, V, UI extends CollectorUI<V
 	@Override
 	public boolean isValid(Record record)
 	{
-		return field.isNoColumn() || (field.getCount(record) >= field.getMin() && field.getCount(record) <= field.getMax());
+		return field.isNoColumn() || (field.getAttachmentCount(record) >= field.getMin() && field.getAttachmentCount(record) <= field.getMax());
 	}
 	
 	@Override

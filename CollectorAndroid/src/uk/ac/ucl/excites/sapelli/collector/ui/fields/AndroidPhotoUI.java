@@ -34,7 +34,6 @@ import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
-import uk.ac.ucl.excites.sapelli.util.Debug;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.hardware.Camera;
@@ -62,12 +61,12 @@ import android.widget.ImageView.ScaleType;
  */
 public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements PictureCallback
 {
-	// static private final String TAG = "AndroidPhotoUI";
+	
+	static protected final String TAG = "AndroidPhotoUI";
 
 	// Camera & image data:
 	private CameraController cameraController;
 	private SurfaceView captureSurface;
-	private HandleImage handleImage;
 
 	public AndroidPhotoUI(PhotoField field, CollectorController controller, CollectorView collectorUI)
 	{
@@ -84,10 +83,10 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			// Camera controller & camera selection:
 			cameraController = new CameraController(field.isUseFrontFacingCamera());
 			if(!cameraController.foundCamera())
-			{ // no camera found, try the other one:
+			{ 	// No camera found, try the other one:
 				cameraController.findCamera(!field.isUseFrontFacingCamera());
 				if(!cameraController.foundCamera())
-				{ // still no camera, this device does not seem to have one:
+				{	// Still no camera, this device does not seem to have one:
 					attachMedia(null);
 					if(isValid(controller.getCurrentRecord()))
 						controller.goForward(false);
@@ -154,9 +153,10 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	}
 
 	@Override
-	protected Item getItemFromFile(File file)
+	protected Item getItemForAttachment(int index, File photoFile)
 	{
-		return new FileImageItem(file);
+		// TODO create thumbnail first? see http://alvinalexander.com/java/jwarehouse/android/media/java/android/media/ThumbnailUtils.java.shtml
+		return new FileImageItem(index, photoFile);
 	}
 
 	@Override
@@ -171,8 +171,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	@Override
 	public void onPictureTaken(byte[] data, Camera camera)
 	{
-		handleImage = new HandleImage(data, getContext());
-		handleImage.execute();
+		new HandleImage(data).execute();
 	}
 
 	/**
@@ -183,20 +182,19 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 	 */
 	public class HandleImage extends AsyncTask<Void, Void, Void>
 	{
+		
 		private ProgressDialog dialog;
 		private byte[] data;
-		private Context context;
 
-		public HandleImage(byte[] data, Context context)
+		public HandleImage(byte[] data)
 		{
 			this.data = data;
-			this.context = context;
 		}
 
 		@Override
 		protected void onPreExecute()
 		{
-			dialog = new ProgressDialog(context);
+			dialog = new ProgressDialog(collectorUI.getContext());
 			dialog.setCancelable(false);
 			dialog.show();
 		}
@@ -206,7 +204,7 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		{
 			try
 			{
-				captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider(),controller.getCurrentRecord());
+				captureFile = field.getNewAttachmentFile(controller.getFileStorageProvider() ,controller.getCurrentRecord());
 				FileOutputStream fos = new FileOutputStream(captureFile);
 				fos.write(data);
 				fos.close();
@@ -214,10 +212,8 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 			}
 			catch(Exception e)
 			{
-				Log.e("Handle image", "Image capture failed");
-				Debug.e(e);
+				Log.e("Handle image", "Image capture failed", e);
 			}
-			
 			return null;
 		}
 
@@ -225,14 +221,19 @@ public class AndroidPhotoUI extends AndroidMediaUI<PhotoField> implements Pictur
 		protected void onPostExecute(Void result)
 		{
 			cameraController.stopPreview();
-			// Close the dialog
+			
+			// Close the dialog:
 			dialog.cancel();
-			if (field.isShowReview())
+			
+			if(field.isShowReview())
 				controller.goToCurrent(LeaveRule.UNCONDITIONAL_WITH_STORAGE);
 			else
 				controller.goForward(true);
-			// allow clicks now we have finished
-			controller.unblockUI();
+			
+			// Allow clicks now we have finished
+			controller.unblockUI(); // !!!
 		}
+		
 	}
+	
 }

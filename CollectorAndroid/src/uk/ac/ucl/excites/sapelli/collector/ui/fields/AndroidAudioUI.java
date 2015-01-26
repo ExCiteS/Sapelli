@@ -30,7 +30,6 @@ import uk.ac.ucl.excites.sapelli.collector.media.AudioRecorder;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.AudioField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.AudioItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
@@ -200,9 +199,10 @@ public class AndroidAudioUI extends AndroidMediaUI<AudioField>
 	}
 
 	@Override
-	protected Item getItemFromFile(File file)
+	protected Item getItemForAttachment(int index, File attachement)
 	{
-		return new AudioItem(file);
+		// TODO allow for custom icon
+		return new ResourceImageItem(index, collectorUI.getResources(), R.drawable.audio_item_svg);
 	}
 
 	@Override

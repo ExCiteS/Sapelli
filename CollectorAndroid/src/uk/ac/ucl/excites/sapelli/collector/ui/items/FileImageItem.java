@@ -41,7 +41,7 @@ import com.larvalabs.svgandroid.SVGDrawable;
  * 
  * @author mstevens
  */
-public class FileImageItem extends ImageItem implements FileItem
+public class FileImageItem extends ImageItem
 {
 	
 	static private final String TAG = "FileImageItem";
@@ -104,10 +104,6 @@ public class FileImageItem extends ImageItem implements FileItem
 		{
 			Log.e(TAG, "Could not load image from file", e);
 		}
-	}
-	
-	public File getFile() {
-		return file;
 	}
 
 }

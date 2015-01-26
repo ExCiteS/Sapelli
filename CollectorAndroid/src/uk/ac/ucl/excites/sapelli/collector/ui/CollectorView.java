@@ -142,7 +142,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 		controlsUI = new AndroidControlsUI(controller, this);
 		View controlsView = controlsUI.getPlatformView();
 		controlsView.setId(BUTTONS_VIEW_ID);
-		this.addView(controlsView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));	
+		this.addView(controlsView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 	}
 
 	/**
@@ -171,7 +171,7 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 
 		// newFieldUI becomes the current fieldUI:
 		fieldUI = newFieldUI;
-		
+
 		// Update the controls:
 		controlsUI.update(fieldUI);
 
@@ -187,28 +187,26 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 			{
 				switch(screenTransition)
 				{
-				case HORIZONTAL:
-					// Check whether it is a backwards or forwards direction and create Right or Left animation:
-					if(controller.isGoBack())
-						// Right:
-						ViewAnimator.SlideRight(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					else
-						// Left:
-						ViewAnimator.SlideLeft(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					break;
-
-				case VERTICAL:
-					// Check whether it is a backwards or forwards direction and create Up or Down animation:
-					if(controller.isGoBack())
-						// Down:
-						ViewAnimator.SlideDown(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					else
-						// Up:
-						ViewAnimator.SlideUp(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
-					break;
-
-				default:
-					break;
+					case HORIZONTAL:
+						// Check whether it is a backwards or forwards direction and create Right or Left animation:
+						if(controller.isGoBack())
+							// Right:
+							ViewAnimator.SlideRight(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						else
+							// Left:
+							ViewAnimator.SlideLeft(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						break;
+					case VERTICAL:
+						// Check whether it is a backwards or forwards direction and create Up or Down animation:
+						if(controller.isGoBack())
+							// Down:
+							ViewAnimator.SlideDown(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						else
+							// Up:
+							ViewAnimator.SlideUp(fieldUIView, newFieldUIView, SCREEN_TRANSITION_DURATION);
+						break;
+					default:
+						break;
 				}
 			}
 
@@ -334,9 +332,9 @@ public class CollectorView extends LinearLayout implements CollectorUI<View, Col
 	}
 	
 	@Override
-	public AndroidVideoUI createVideoUI(VideoField pf)
+	public AndroidVideoUI createVideoUI(VideoField vf)
 	{
-		return new AndroidVideoUI(pf, controller, this);
+		return new AndroidVideoUI(vf, controller, this);
 	}
 	
 	@Override

@@ -38,18 +38,12 @@ public class VideoField extends MediaField
 	static private final String MEDIA_TYPE_MP4 = "VIDEO_MP4";
 	static private final String EXTENSION_MP4 = "mp4";
 
-	static public enum FlashMode
-	{
-		AUTO, ON, OFF
-	}
-
-	private String startRecImageRelativePath;
-	private String stopRecImageRelativePath;
-
 	static public final boolean DEFAULT_USE_NATIVE_APP = false;
 	static public final boolean DEFAULT_USE_FRONT_FACING_CAMERA = false;
 
 	// DYNAMICS-------------------------------------------------------
+	private String startRecImageRelativePath;
+	private String stopRecImageRelativePath;
 	private boolean useFrontFacingCamera;
 
 	public VideoField(Form form, String id, String caption)
@@ -97,8 +91,7 @@ public class VideoField extends MediaField
 	}
 
 	/**
-	 * @param startRecImageRelativePath
-	 *            the startRecImageRelativePath to set
+	 * @param startRecImageRelativePath the startRecImageRelativePath to set
 	 */
 	public void setStartRecImageRelativePath(String startRecImageRelativePath)
 	{
@@ -114,8 +107,7 @@ public class VideoField extends MediaField
 	}
 
 	/**
-	 * @param stopVideoImageRelativePath
-	 *            the stopVideoImageRelativePath to set
+	 * @param stopVideoImageRelativePath the stopVideoImageRelativePath to set
 	 */
 	public void setStopRecImageRelativePath(String stopRecImageRelativePath)
 	{
@@ -128,7 +120,6 @@ public class VideoField extends MediaField
 		super.addFiles(filesSet, fileStorageProvider); // !!!
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, startRecImageRelativePath));
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopRecImageRelativePath));
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
 	}
 
 	@Override
@@ -147,8 +138,8 @@ public class VideoField extends MediaField
 			VideoField that = (VideoField) obj;
 			return super.equals(that) && // MediaField#equals(Object)
 					(this.startRecImageRelativePath != null ? this.startRecImageRelativePath.equals(that.startRecImageRelativePath)
-							: that.startRecImageRelativePath == null)
-					&& (this.stopRecImageRelativePath != null ? this.stopRecImageRelativePath.equals(that.stopRecImageRelativePath)
+							: that.startRecImageRelativePath == null) &&
+					(this.stopRecImageRelativePath != null ? this.stopRecImageRelativePath.equals(that.stopRecImageRelativePath)
 							: that.stopRecImageRelativePath == null);
 		}
 		else
@@ -163,4 +154,5 @@ public class VideoField extends MediaField
 		hash = 31 * hash + (stopRecImageRelativePath == null ? 0 : stopRecImageRelativePath.hashCode());
 		return hash;
 	}
+	
 }

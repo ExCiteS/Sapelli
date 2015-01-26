@@ -116,15 +116,6 @@ public class ItemPickerView extends GridView
 			notifyDataSetChanged();
 		}
 		
-		public void addItemAt(int location, Item item) {
-	        items.add(location, item);
-        }
-		
-		public void removeItem(Item item)
-		{
-			items.remove(item);
-		}
-		
 		public void clear()
 		{
 			items.clear();

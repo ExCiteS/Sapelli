@@ -27,16 +27,17 @@ import uk.ac.ucl.excites.sapelli.collector.media.CameraController;
 import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.VideoField;
 import uk.ac.ucl.excites.sapelli.collector.ui.CollectorView;
+import uk.ac.ucl.excites.sapelli.collector.ui.items.DrawableItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.FileImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ImageItem;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.Item;
 import uk.ac.ucl.excites.sapelli.collector.ui.items.ResourceImageItem;
-import uk.ac.ucl.excites.sapelli.collector.ui.items.VideoItem;
 import uk.ac.ucl.excites.sapelli.collector.util.ColourHelpers;
 import uk.ac.ucl.excites.sapelli.shared.io.FileHelpers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
 import android.media.ThumbnailUtils;
@@ -64,7 +65,8 @@ import android.widget.VideoView;
  */
 public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnCompletionListener
 {
-	// static private final String TAG = "AndroidVideoUI";
+	
+	static protected final String TAG = "AndroidVideoUI";
 
 	// Camera & image data:
 	private CameraController cameraController;
@@ -86,7 +88,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 		{
 			// Set up cameraController:
 			// Camera controller & camera selection:
-			cameraController = new CameraController(field.isUseFrontFacingCamera());
+			cameraController = new CameraController(field.isUseFrontFacingCamera(), true);
 			if(!cameraController.foundCamera())
 			{ // no camera found, try the other one:
 				cameraController.findCamera(!field.isUseFrontFacingCamera());
@@ -261,9 +263,11 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 	}
 
 	@Override
-	protected Item getItemFromFile(File file)
+	protected Item getItemForAttachment(int index, File videoFile)
 	{
-		return new VideoItem(file);
+		// Create thumbnail from video file:
+		Bitmap thumbnail = ThumbnailUtils.createVideoThumbnail(videoFile.getAbsolutePath(), MediaStore.Images.Thumbnails.MINI_KIND);
+		return new DrawableItem(index, new BitmapDrawable(collectorUI.getResources(), thumbnail));
 	}
 
 	@Override
@@ -276,7 +280,7 @@ public class AndroidVideoUI extends AndroidMediaUI<VideoField> implements OnComp
 			cameraController.close();
 		
 		cameraController = null;
-
 		playbackView = null;
 	}
+	
 }

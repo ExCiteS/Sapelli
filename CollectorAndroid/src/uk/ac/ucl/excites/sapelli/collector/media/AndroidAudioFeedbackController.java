@@ -37,14 +37,14 @@ import android.view.View;
 /**
  * Class which plays the audio descriptions of choice fields.
  * 
- * @author Michalis Vitos, benelliott
+ * @author Michalis Vitos, benelliott, mstevens
  *
  */
 public class AndroidAudioFeedbackController extends AudioFeedbackController<View> implements OnCompletionListener
 {
 
 	private static final String TAG = "AudioFeedbackController";
-	private static final int FFEDBACK_GAP_DURATION_MILISEC = 1000; // time (in milisec) to pause if a piece of audio is not available
+	private static final int FFEDBACK_GAP_DURATION_MILISEC = 1000; // time (in milliseconds) to pause if a piece of audio is not available
 
 	private CollectorController controller;
 	private Context context;
@@ -163,21 +163,22 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 					// Animate the view, if necessary:
 					if(job.viewToAnimate != null)
 					{
-						Runnable releaseSem = new Runnable()
+						Runnable releaseAnimationSem = new Runnable()
 						{
 							@Override
 							public void run()
 							{
-								animationCompletedSem.release();
+								if(animationCompletedSem != null)
+									animationCompletedSem.release();
 							}
 						};
 						switch(job.animation)
 						{
 							case ANIMATION_ALPHA :
-								ViewAnimator.Alpha(job.viewToAnimate, null, releaseSem);
+								ViewAnimator.Alpha(job.viewToAnimate, null, releaseAnimationSem);
 								break;
 							case ANIMATION_SHAKE :
-								ViewAnimator.Shake(job.viewToAnimate, null, releaseSem);
+								ViewAnimator.Shake(job.viewToAnimate, null, releaseAnimationSem);
 								break;
 							default :
 								throw new Exception("Unknown animation: " + job.animation);
@@ -218,6 +219,10 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 			// was probably caused by the ChoiceField being exited
 			Log.d(TAG, "Playback thread interrupted while waiting for semaphore.");
 		}
+		catch(Exception e)
+		{	// not sure this is needed, but just in case (e.g. NPE on one of the semaphores?)
+			Log.e(TAG, "Exception during playback", e);
+		}
 	}
 
 	/**
@@ -226,7 +231,8 @@ public class AndroidAudioFeedbackController extends AudioFeedbackController<View
 	@Override
 	public void onCompletion(MediaPlayer mp)
 	{
-		playbackCompletedSem.release();
+		if(playbackCompletedSem != null)
+			playbackCompletedSem.release();
 	}
 	
 }

@@ -185,7 +185,6 @@ public abstract class Controller<CUI extends CollectorUI<?, ?>> implements Field
 	
 	protected volatile boolean blockedUI = false;
 
-			
 	public Controller(Project project, CUI ui, ProjectStore projectStore, RecordStore recordStore, FileStorageProvider fileStorageProvider)
 	{
 		this.project = project;

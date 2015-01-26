@@ -23,9 +23,9 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
-
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField;
 import uk.ac.ucl.excites.sapelli.collector.model.fields.PhotoField.FlashMode;
+import android.annotation.SuppressLint;
 import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
@@ -56,11 +56,14 @@ import android.view.SurfaceHolder;
 public class CameraController implements SurfaceHolder.Callback
 {
 
+	// STATICS ------------------------------------------------------
 	static private final String TAG = "CameraController";
 
 	static private final int NO_CAMERA_FOUND = -1;
 	static private final int ROTATION = 90;
 	static private final int VIDEO_CAPTURE_QUALITY = CamcorderProfile.QUALITY_HIGH; // TODO decide which quality
+	
+	// DYNAMIC ------------------------------------------------------
 	private Camera camera;
 	private int cameraID = NO_CAMERA_FOUND;
 	private PhotoField.FlashMode flashMode = PhotoField.DEFAULT_FLASH_MODE;
@@ -71,16 +74,30 @@ public class CameraController implements SurfaceHolder.Callback
 	private FileOutputStream videoFos;
 	private boolean recordingHint; // if set to true, reduces time to start video recording
 
+	/**
+	 * Generic camera use, using default/backward-facing camera, not optimised for video
+	 */
 	public CameraController()
 	{
 		this(false);
 	}
 
+	/**
+	 * Generic camera use, not optimised for video
+	 * 
+	 * @param frontFacing whether or not to use the front-facing camera
+	 */
 	public CameraController(boolean frontFacing)
 	{
 		this(frontFacing, false);
 	}
 	
+	/**
+	 * Specific camera use
+	 * 
+	 * @param frontFacing whether or not to use the front-facing camera
+	 * @param recordingHint pass true when video recording will happen
+	 */
 	public CameraController(boolean frontFacing, boolean recordingHint)
 	{
 		this.cameraID = findCamera(frontFacing);
@@ -129,8 +146,9 @@ public class CameraController implements SurfaceHolder.Callback
 	{
 		if(camera != null )
 		{
-			try {
-				//TODO lock camera here?
+			try
+			{
+				// TODO lock camera here?
 				
 				// Use auto focus if the camera supports it
 				String focusMode = camera.getParameters().getFocusMode();
@@ -147,7 +165,9 @@ public class CameraController implements SurfaceHolder.Callback
 				}
 				else
 					camera.takePicture(null, null, callback);
-			} catch (RuntimeException e) {
+			}
+			catch (RuntimeException e)
+			{
 				Log.e(TAG,"Camera in use by another process.", e);
 			}
 		}
@@ -155,45 +175,50 @@ public class CameraController implements SurfaceHolder.Callback
 	
 	public void startVideoCapture(File outputFile)
 	{
-		try {
-	        if (camera != null) {
-		        // set up a FileOutputStream for the output file:
-		        videoFos = new FileOutputStream(outputFile);
+		try
+		{
+			if(camera != null)
+			{
+				// set up a FileOutputStream for the output file:
+				videoFos = new FileOutputStream(outputFile);
 
-		        // unlock the camera for use by MediaRecorder:
-		        camera.unlock();
+				// unlock the camera for use by MediaRecorder:
+				camera.unlock(); // TODO explain?
 
-		        // configure MediaRecorder (MUST call in this order):
-		        if (videoRecorder == null) {
-			        videoRecorder = new MediaRecorder();
-			        videoRecorder.setCamera(camera);
-			        videoRecorder
-			                .setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
-			        videoRecorder
-			                .setVideoSource(MediaRecorder.VideoSource.CAMERA);
-			        videoRecorder.setProfile(CamcorderProfile.get(cameraID,
-			                VIDEO_CAPTURE_QUALITY));
-			        // TODO encorce mp4?
-			        videoRecorder.setOrientationHint(ROTATION);
-		        }
-		        videoRecorder.setOutputFile(videoFos.getFD());
-		        videoRecorder.setPreviewDisplay(previewSurface);
-		        // prepare MediaRecorder:
-		        videoRecorder.prepare();
-		        // start MediaRecorder (and start recording video):
-		        videoRecorder.start();
-	        }
-        } catch (FileNotFoundException e) {
-	        Log.e(TAG,"Could not open stream to output file.",e);
-        } catch (IOException e) {
-	        Log.e(TAG,"Error when trying to record video.",e);
-        }
+				// configure MediaRecorder (MUST call in this order):
+				if(videoRecorder == null)
+				{
+					videoRecorder = new MediaRecorder();
+					videoRecorder.setCamera(camera);
+					videoRecorder.setAudioSource(MediaRecorder.AudioSource.CAMCORDER);
+					videoRecorder.setVideoSource(MediaRecorder.VideoSource.CAMERA);
+					videoRecorder.setProfile(CamcorderProfile.get(cameraID, VIDEO_CAPTURE_QUALITY));
+					// TODO enforce mp4?
+					videoRecorder.setOrientationHint(ROTATION);
+				}
+				videoRecorder.setOutputFile(videoFos.getFD());
+				videoRecorder.setPreviewDisplay(previewSurface);
+				// prepare MediaRecorder:
+				videoRecorder.prepare();
+				// start MediaRecorder (and start recording video):
+				videoRecorder.start();
+			}
+		}
+		catch(FileNotFoundException e)
+		{
+			Log.e(TAG, "Could not open stream to output file.", e);
+		}
+		catch(IOException e)
+		{
+			Log.e(TAG, "Error when trying to record video.", e);
+		}
 	}
 	
-	public void stopVideoCapture() {
+	public void stopVideoCapture()
+	{
 		videoRecorder.stop();
 		videoRecorder.reset();
-		camera.lock();
+		camera.lock(); // TODO explain?
 	}
 
 	public void close()
@@ -205,7 +230,8 @@ public class CameraController implements SurfaceHolder.Callback
 			camera = null;
 			cameraConfigured = false;
 		}
-		if (videoRecorder != null) {
+		if(videoRecorder != null)
+		{
 			videoRecorder.release();
 			videoRecorder = null;
 		}
@@ -225,6 +251,18 @@ public class CameraController implements SurfaceHolder.Callback
 				Log.e(TAG, "Could not open camera.", e);
 			}
 		}
+	}
+	
+	/**
+	 * Set recording hint (not supported below API level 14)
+	 * 
+	 * @param parameters
+	 */
+	@SuppressLint("NewApi")
+	private void setVideoRecordingHint(Camera.Parameters parameters)
+	{
+		if(Build.VERSION.SDK_INT >= 14)
+			parameters.setRecordingHint(recordingHint);
 	}
 
 	@Override
@@ -251,9 +289,8 @@ public class CameraController implements SurfaceHolder.Callback
 				// IMAGE orientation (as opposed to preview):
 				parameters.setRotation(ROTATION); // should match preview
 				
-				// recording hint (not supported below API level 14):
-				if (Build.VERSION.SDK_INT >= 14)
-					parameters.setRecordingHint(recordingHint);
+				// Set recording hint (if supported):
+				setVideoRecordingHint(parameters);
 				
 				// Preview size:
 				Camera.Size previewSize = getBestPreviewSize(width, height, parameters);

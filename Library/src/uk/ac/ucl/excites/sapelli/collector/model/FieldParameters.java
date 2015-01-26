@@ -84,6 +84,10 @@ public class FieldParameters extends Parameters
 		return keyValuePairs.put(key, value);
 	}
 	
+	/**
+	 * @param key
+	 * @return the previous value for the key (or null if there was no such mapping)
+	 */
 	public String remove(String key)
 	{
 		return keyValuePairs.remove(key);

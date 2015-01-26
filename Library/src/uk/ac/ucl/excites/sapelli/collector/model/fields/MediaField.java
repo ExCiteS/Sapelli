@@ -20,7 +20,9 @@ package uk.ac.ucl.excites.sapelli.collector.model.fields;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,18 +33,20 @@ import uk.ac.ucl.excites.sapelli.collector.model.Field;
 import uk.ac.ucl.excites.sapelli.collector.model.FieldParameters;
 import uk.ac.ucl.excites.sapelli.collector.model.Form;
 import uk.ac.ucl.excites.sapelli.shared.crypto.ROT13;
+import uk.ac.ucl.excites.sapelli.shared.util.CollectionUtils;
 import uk.ac.ucl.excites.sapelli.shared.util.TimeUtils;
 import uk.ac.ucl.excites.sapelli.storage.model.Record;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerColumn;
 import uk.ac.ucl.excites.sapelli.storage.model.columns.IntegerListColumn;
 
 /**
- * @author mstevens, Michalis Vitos
+ * @author mstevens, Michalis Vitos, benelliott
  *
  */
 public abstract class MediaField extends Field
 {
 
+	// STATIC -------------------------------------------------------
 	//static public final int DEFAULT_MIN = 0;
 	static public final int DEFAULT_MAX = 255; //column will use 1 byte (up to 255 items)
 	static public final boolean DEFAULT_SHOW_REVIEW = true;
@@ -50,11 +54,14 @@ public abstract class MediaField extends Field
 	
 	static public final String ID_PREFIX = "media";
 	
-	// no longer used as filenames are now just ROT13-ed, but may be useful for backwards compatibility:
+	/**
+	 * no longer used as filenames are now just ROT13-ed, but may be useful for backwards compatibility: 
+	 */
 	static private final Pattern HISTORIC_OBFUSCATED_MEDIA_FILE_NAME_AND_EXTENSION_FORMAT = Pattern.compile("^([0-9A-F]{32})" + FILENAME_ELEMENT_SEPARATOR + "([0-9A-Z]+)$");
 	
 	static public final long MAX_ATTACHMENT_CREATION_TIME_OFFSET = (long) (10 * 365.25 * 24 * 60 * 60 * 1000); // 10 years in ms
 	
+	// DYNAMIC ------------------------------------------------------
 	protected String discardButtonImageRelativePath;
 	
 	//protected int min;
@@ -141,7 +148,8 @@ public abstract class MediaField extends Field
 	/**
 	 * @return whether or not the review screen should be shown after media is captured.
 	 */
-	public boolean isShowReview() {
+	public boolean isShowReview()
+	{
 		return showReview;
 	}
 	
@@ -149,7 +157,8 @@ public abstract class MediaField extends Field
 	 * Set whether or not the review screen should be shown after media is captured.
 	 * @param showReview
 	 */
-	public void setShowReview(boolean showReview) {
+	public void setShowReview(boolean showReview)
+	{
 		this.showReview = showReview;
 	}
 
@@ -183,19 +192,26 @@ public abstract class MediaField extends Field
 		return new IntegerColumn(getColumn().getName() + "-v1x", colOptional, (colOptional ? 0 : 1), max);
 	}
 	
+	@Override
+	public IntegerListColumn getColumn()
+	{
+		return (IntegerListColumn) super.getColumn();
+	}
+	
+	public List<Long> getCurrentAttachmentOffsets(Record record)
+	{
+		return getColumn().retrieveValue(record);
+	}
+	
 	/**
 	 * Returns the number of attachments for this field in the provided record.
 	 * @param record
 	 * @return the number of attachments
 	 */
-	public int getCount(Record record)
+	public int getAttachmentCount(Record record)
 	{
-		// get list of offsets from column
-		List<Long> currentOffsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
-		// return its size
-		if(currentOffsets == null)
-			return 0;
-		return currentOffsets.size();
+		List<Long> currentOffsets = getCurrentAttachmentOffsets(record);
+		return currentOffsets != null ? currentOffsets.size() : 0;
 	}
 	
 	/**
@@ -206,7 +222,7 @@ public abstract class MediaField extends Field
 	 */
 	public boolean isMaxReached(Record record)
 	{
-		return (getCount(record) >= max);
+		return (getAttachmentCount(record) >= max);
 	}
 	
 	/**
@@ -220,22 +236,16 @@ public abstract class MediaField extends Field
 	public void addAttachmentToRecord(File attachment, Record record)
 	{
 		// check if adding would exceed max no attachments for this field
-		int currentCount = getCount(record);
-		if(currentCount >= max)
-		{
-			attachment.delete(); // TODO check
+		if(isMaxReached(record))
 			throw new IllegalStateException("Maximum # of attachments (" + max + ") reached.");
-		}
 		// retrieve creationTimeOffset from filename
 		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
 		// add creationTimeOffset to column
-		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
+		List<Long> offsets = getCurrentAttachmentOffsets(record);
 		if(offsets == null)
-		{
 			offsets = new ArrayList<Long>();
-			((IntegerListColumn) getColumn()).storeValue(record, offsets);
-		}
 		offsets.add(creationTimeOffset);
+		getColumn().storeValue(record, offsets);
 	}
 
 	/**
@@ -243,6 +253,7 @@ public abstract class MediaField extends Field
 	 * <br>
 	 * Note: does not actually alter the file system, only the record contents. Files are actually deleted from the 
 	 * file system once the user's deletions are "confirmed" by them saving the record at the end.
+	 * 
 	 * @param attachment - the attachment to delete
 	 * @param record - the record to delete the attachment from
 	 */
@@ -251,11 +262,14 @@ public abstract class MediaField extends Field
 		// retrieve creationTimeOffset from filename
 		long creationTimeOffset = getCreationTimeOffsetFromFile(attachment);
 		// remove creationTimeOffset from column
-		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
-		if(!offsets.remove(creationTimeOffset))
-			throw new IllegalStateException("Specified attachment could not be found for deletion.");
-		((IntegerListColumn) getColumn()).storeValue(record, offsets);
-		// do not actually remove file, in case delete is not "committed" -- will be marked for deletion in FormSession
+		List<Long> offsets = getCurrentAttachmentOffsets(record);
+		if(offsets != null)
+		{
+			if(offsets.remove(creationTimeOffset))
+				getColumn().storeValue(record, offsets);
+			else
+				System.err.println("Specified attachment could not be found for deletion.");
+		}
 	}
 	
 	/**
@@ -303,9 +317,7 @@ public abstract class MediaField extends Field
 	{
 		long creationTimeOffset = System.currentTimeMillis() - form.getStartTime(record, true).getMsSinceEpoch();
 		String filename = generateFilename(record, creationTimeOffset);
-		String dataFolderPath = fileStorageProvider.getProjectAttachmentFolder(form.project, true).getAbsolutePath();
-		File file = new File(dataFolderPath + File.separator + filename);
-		return file;
+		return new File(fileStorageProvider.getProjectAttachmentFolder(form.project, true), filename);
 	}
 	
 	/**
@@ -316,26 +328,35 @@ public abstract class MediaField extends Field
 	 */
 	public List<File> getAttachments(FileStorageProvider fileStorageProvider, Record record)
 	{
+		List<Long> offsets = getCurrentAttachmentOffsets(record);
+		if(offsets == null || offsets.isEmpty())
+			return Collections.<File> emptyList(); // return an empty list
+		// Construct list of files:	
 		List<File> files = new ArrayList<File>();
-		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
-		if(offsets == null) // return an empty list
-			return files;
-		String dir = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
-		String filename;
-		File file;
-		// for each attachment...
 		for(Long offset : offsets)
-		{
-			// calculate filename from offset
-			filename = generateFilename(record, offset);
-			// locate corresponding file
-			file = new File(dir, filename);
-			if(file.exists())
-			{
-				files.add(file);
-			}
-		}
+			CollectionUtils.addIgnoreNull(files, getAttachmentFromOffset(fileStorageProvider, record, offset));
 		return files;
+	}
+	
+	public File getAttachment(FileStorageProvider fileStorageProvider, Record record, int index)
+	{
+		List<Long> offsets = getCurrentAttachmentOffsets(record);
+		if(offsets != null && index >= 0 && index < offsets.size())
+			return getAttachmentFromOffset(fileStorageProvider, record, offsets.get(index));
+		else
+			return null;
+	}
+	
+	private File getAttachmentFromOffset(FileStorageProvider fileStorageProvider, Record record, Long offset)
+	{
+		if(offset == null)
+			return null;
+		// Locate corresponding file:
+		File file = new File(fileStorageProvider.getProjectAttachmentFolder(form.getProject(), false), generateFilename(record, offset));
+		if(file.exists())
+			return file;
+		else
+			return null;
 	}
 	
 	/**
@@ -346,7 +367,7 @@ public abstract class MediaField extends Field
 	 */
 	public File getLastAttachment(FileStorageProvider fileStorageProvider, Record record)
 	{
-		List<Long> offsets = ((IntegerListColumn) getColumn()).retrieveValue(record);
+		List<Long> offsets = getCurrentAttachmentOffsets(record);
 		if(offsets == null || offsets.size() < 1)
 			return null;
 		String dir = fileStorageProvider.getProjectAttachmentFolder(form.getProject(), true).getAbsolutePath();
@@ -430,6 +451,12 @@ public abstract class MediaField extends Field
 		return visitor.enterMediaField(this, arguments, withPage);
 	}
 
+	@Override
+	public void addFiles(Set<File> filesSet, FileStorageProvider fileStorageProvider)
+	{
+		super.addFiles(filesSet, fileStorageProvider); // !!!
+		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
+	}
 
 	@Override
 	public boolean equals(Object obj)
@@ -442,7 +469,9 @@ public abstract class MediaField extends Field
 			return	super.equals(that) && // Field#equals(Object)
 					//this.min == that.min &&
 					this.max == that.max &&
-					this.useNativeApp == that.useNativeApp;
+					this.useNativeApp == that.useNativeApp &&
+					this.showReview == that.showReview &&
+					(this.discardButtonImageRelativePath != null ? this.discardButtonImageRelativePath.equals(that.discardButtonImageRelativePath) : that.discardButtonImageRelativePath == null);
 		}
 		else
 			return false;
@@ -455,6 +484,8 @@ public abstract class MediaField extends Field
 		//hash = 31 * hash + min;
 		hash = 31 * hash + max;
 		hash = 31 * hash + (useNativeApp ? 0 : 1);
+		hash = 31 * hash + (showReview ? 0 : 1);
+		hash = 31 * hash + (discardButtonImageRelativePath == null ? 0 : discardButtonImageRelativePath.hashCode());
 		return hash;
 	}
 	

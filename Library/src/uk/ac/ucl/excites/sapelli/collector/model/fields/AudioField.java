@@ -49,7 +49,6 @@ public class AudioField extends MediaField
 		useNativeApp = DEFAULT_USE_NATIVE_APP;
 	}
 
-
 	/**
 	 * @return the startRecImageRelativePath
 	 */
@@ -139,7 +138,6 @@ public class AudioField extends MediaField
 		super.addFiles(filesSet, fileStorageProvider); // !!!
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, startRecImageRelativePath));
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopRecImageRelativePath));
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, playAudioImageRelativePath));
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, stopAudioImageRelativePath));
 	}
@@ -160,7 +158,9 @@ public class AudioField extends MediaField
 			AudioField that = (AudioField) obj;
 			return	super.equals(that) && // MediaField#equals(Object)
 					(this.startRecImageRelativePath != null ? this.startRecImageRelativePath.equals(that.startRecImageRelativePath) : that.startRecImageRelativePath == null) &&
-					(this.stopRecImageRelativePath != null ? this.stopRecImageRelativePath.equals(that.stopRecImageRelativePath) : that.stopRecImageRelativePath == null);
+					(this.stopRecImageRelativePath != null ? this.stopRecImageRelativePath.equals(that.stopRecImageRelativePath) : that.stopRecImageRelativePath == null) &&
+					(this.playAudioImageRelativePath != null ? this.playAudioImageRelativePath.equals(that.playAudioImageRelativePath) : that.playAudioImageRelativePath == null) &&
+					(this.stopAudioImageRelativePath != null ? this.stopAudioImageRelativePath.equals(that.stopAudioImageRelativePath) : that.stopAudioImageRelativePath == null);
 		}
 		else
 			return false;
@@ -172,6 +172,8 @@ public class AudioField extends MediaField
 		int hash = super.hashCode(); // MediaField#hashCode()
 		hash = 31 * hash + (startRecImageRelativePath == null ? 0 : startRecImageRelativePath.hashCode());
 		hash = 31 * hash + (stopRecImageRelativePath == null ? 0 : stopRecImageRelativePath.hashCode());
+		hash = 31 * hash + (playAudioImageRelativePath == null ? 0 : playAudioImageRelativePath.hashCode());
+		hash = 31 * hash + (stopAudioImageRelativePath == null ? 0 : stopAudioImageRelativePath.hashCode());
 		return hash;
 	}
 

@@ -64,7 +64,7 @@ public abstract class ListColumn<L extends List<T>, T> extends Column<L>
 	{
 		super(name, optional);
 		this.singleColumn = singleColumn;
-		this.sizeField = new IntegerRangeMapping(minLength, maxLength);
+		this.sizeField = new IntegerRangeMapping(minLength, maxLength, true); // allow "empty" (0-sized) in case the list must always have exactly one element (no fewer, no more)
 	}
 	
 	protected abstract L getNewList(int minimumCapacity);

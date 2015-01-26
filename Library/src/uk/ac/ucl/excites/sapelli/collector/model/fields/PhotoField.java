@@ -131,7 +131,7 @@ public class PhotoField extends MediaField
 	{
 		super.addFiles(filesSet, fileStorageProvider); // !!!
 		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, captureButtonImageRelativePath));
-		CollectionUtils.addIgnoreNull(filesSet, fileStorageProvider.getProjectImageFile(form.project, discardButtonImageRelativePath));	}
+	}
 
 	@Override
 	public <V, UI extends CollectorUI<V, UI>> MediaUI<PhotoField,V, UI> createUI(UI collectorUI)
@@ -150,8 +150,7 @@ public class PhotoField extends MediaField
 			return	super.equals(that) && // MediaField#equals(Object)
 					this.useFrontFacingCamera == that.useFrontFacingCamera &&
 					this.flashMode == that.flashMode &&
-					(this.captureButtonImageRelativePath != null ? this.captureButtonImageRelativePath.equals(that.captureButtonImageRelativePath) : that.captureButtonImageRelativePath == null) &&
-					(this.discardButtonImageRelativePath != null ? this.discardButtonImageRelativePath.equals(that.discardButtonImageRelativePath) : that.discardButtonImageRelativePath == null);
+					(this.captureButtonImageRelativePath != null ? this.captureButtonImageRelativePath.equals(that.captureButtonImageRelativePath) : that.captureButtonImageRelativePath == null);
 		}
 		else
 			return false;
@@ -164,7 +163,6 @@ public class PhotoField extends MediaField
 		hash = 31 * hash + (useFrontFacingCamera ? 0 : 1);
 		hash = 31 * hash + flashMode.ordinal();
 		hash = 31 * hash + (captureButtonImageRelativePath == null ? 0 : captureButtonImageRelativePath.hashCode());
-		hash = 31 * hash + (discardButtonImageRelativePath == null ? 0 : discardButtonImageRelativePath.hashCode());		
 		return hash;
 	}
 	

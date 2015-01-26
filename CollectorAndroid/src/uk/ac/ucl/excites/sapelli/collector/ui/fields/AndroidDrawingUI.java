@@ -104,12 +104,6 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 	}
 
 	@Override
-	protected Item getItemFromFile(File file)
-	{
-		return new FileImageItem(file);
-	}
-
-	@Override
 	protected Item generateCaptureButton(Context context)
 	{
 		ImageItem captureButton = null;
@@ -138,6 +132,13 @@ public class AndroidDrawingUI extends AndroidMediaUI<DrawingField>
 			captureMoreButton = new ResourceImageItem(context.getResources(), R.drawable.pencil_black_svg);
 		captureMoreButton.setBackgroundColor(ColourHelpers.ParseColour(field.getBackgroundColor(), Field.DEFAULT_BACKGROUND_COLOR));
 		return captureMoreButton;
+	}
+	
+
+	@Override
+	protected Item getItemForAttachment(int index, File attachement)
+	{
+		return new FileImageItem(index, attachement);
 	}
 	
 	@Override
