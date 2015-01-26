@@ -141,6 +141,11 @@
 					<version>2.4</version>
 					<type>apklib</type>
 				</dependency>
+				<dependency>
+					<groupId>com.jpardogo.materialtabstrip</groupId>
+					<artifactId>library</artifactId>
+					<version>1.0.8</version>
+				</dependency>
 			</dependencies>
 			<build>
 				<plugins>
